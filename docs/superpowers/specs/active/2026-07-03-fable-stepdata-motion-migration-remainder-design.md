@@ -15,8 +15,8 @@ both of which the original plan flagged as intricate and **not yet safe to execu
 
 ## Evidence (read all four)
 
-- **Conversion plan:** `docs/superpowers/specs/active/2026-06-30-stepdata-step-conversion-plan.md`. Its own **§0 CORRECTION falsifies the plan's premise mid-execution:** *"The 'widening' premise in §1 is WRONG as stated… StepData is NOT assignable to Step… the '~120 files of free widening' does not exist until this is fixed."* The wave/cluster classifications later in the plan are therefore **suspect until re-validated.**
-- **Scope doc:** `docs/superpowers/specs/active/2026-06-30-stepdata-step-migration-scope.md` — notes the `MotionData`→`Motion` split hits *"the most intricate, regression-prone subsystem in the app, with no rendering parity harness."*
+- **Conversion plan:** `docs/superpowers/specs/active/2026-06-30-stepdata-step-conversion-plan.md`. Its own **§0 CORRECTION falsifies the plan's premise mid-execution:** _"The 'widening' premise in §1 is WRONG as stated… StepData is NOT assignable to Step… the '~120 files of free widening' does not exist until this is fixed."_ The wave/cluster classifications later in the plan are therefore **suspect until re-validated.**
+- **Scope doc:** `docs/superpowers/specs/active/2026-06-30-stepdata-step-migration-scope.md` — notes the `MotionData`→`Motion` split hits _"the most intricate, regression-prone subsystem in the app, with no rendering parity harness."_
 - **Presence register:** `docs/superpowers/specs/active/2026-07-01-presence-as-signal-register.md` — 110 sites where "is this motion present?" changes meaning after adoption; a "silent data corruption tier" of 32 sites touching hashing / TnD / loopability / equivalence-dedup where a wrong invariant rewrites letters or flips dedup verdicts.
 - **Absence encoding (shipped, the resolved design):** `docs/superpowers/specs/active/2026-07-02-stepdata-step-absence-encoding-design.md` (approach B).
 
@@ -37,6 +37,7 @@ both of which the original plan flagged as intricate and **not yet safe to execu
 ## Open decisions (left to Fable — the plan's explicit fork)
 
 From the conversion plan's open strategic question, decide before executing:
+
 1. **Merge A + B** (do the `Step` replacement and the `Motion` split together), or
 2. **Transitional app-local `Step` shape** (an intermediate type that widens cleanly, migrate in two hops), or
 3. **Re-run a corrected analysis** and let the data pick.
@@ -54,3 +55,37 @@ From the conversion plan's open strategic question, decide before executing:
 
 - Shares root cause **B** (identity/derivation) with Spec 3. V2 hashing excludes `gridMode` + reversal flags — know that when reasoning about what the migration may safely change.
 - The loop-wrap landmine ties this to Specs 2 and 3. Sequence and coordinate.
+
+---
+
+## Progress — 2026-07-05 (analysis + guardrail slice DONE; migration itself still open)
+
+Checkpoint package: `2026-07-05-stepdata-migration-checkpoint-package.md` (same directory).
+
+1. **Corrected analysis re-run at HEAD.** The §0-CORRECTION blocker no longer exists — the
+   2026-07-02 unification made `StepData extends Step` / `MotionData extends Motion` by
+   declaration, so the plan's waves 1–6 are obsolete as written. Full presence-register
+   re-validation (all 110 sites): 85 re-encoded, 5 gone (engine-delegated), 14
+   legitimately raw, **6 stragglers** (2 absence-blind in the corruption tier + 4 dead
+   gates). MotionData census (168 files): 75 producer / 40 view-reader / 45 structural /
+   8 type-only. StepData census (213 files): 78 producer / 40 extras-reader / 49
+   structural / 45 type-only.
+2. **A/B/C decision: C (data-driven).** B is already shipped as the permanent subtype
+   redefinition; A's forced rewrite buys nothing. Remaining migration = Wave 0 straggler
+   fixes + Wave 1 free widening (~120 overlapping file-slots) + Wave 2 extras retirement
+   (`isStep`/`isSelected`/factory dedup). Render pipeline keeps required view fields —
+   named non-goal.
+3. **Rendering-parity harness BUILT + COMMITTED** (`tests/render-parity/`,
+   `src/lib/shared/render/parity/render-parity-core.ts`). The old pixel page was
+   empirically blind to arrows/props (no preparer wired) AND reversal dots (flags
+   dropped); the v2 core fixes both, the page now shares it. Automated wave gate:
+   `npm run test:render-parity[:capture|:compare]` — capture→compare proved 360/360
+   pixel-identical at HEAD; teeth tests prove the reversal/structural/arrow channels
+   detect injected drift; failure path writes baseline|current|diff triplets.
+4. **Loop-wrap landmine reconciled against Spec 2's canon** (not re-decided): app
+   `processReversals` is a thin delegate of engine `deriveReversals(steps, { loop })`
+   since `6423f92e2b` — D1's premise is gone.
+5. Nets green at HEAD before any wave: presence guards 21/21 · data-parity 0-drift
+   (202×8) · roundtrip LOSSLESS (202/2,758×7) · render-parity 360/360 · svelte-check 0/0.
+
+**Open:** execute waves 0–2 after checkpoint approval, each gated by the full net.
