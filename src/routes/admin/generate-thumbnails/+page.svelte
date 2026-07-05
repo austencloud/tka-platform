@@ -23,6 +23,7 @@
     type WarmScope,
   } from "$lib/shared/browse/services/gallery-thumbnail-warmer";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import { loadCanonicalTnDSequences } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
 
   const ALL_PROPS: PropType[] = [
     PropType.STAFF,
@@ -47,6 +48,10 @@
   let lightMode = $state(false);
   let noQr = $state(true);
   let qr = $state(true);
+  // The canonical T&D pool (~930 turn combos) enters the gallery via the
+  // engine's extraCommunitySequences, not the public index — without this the
+  // warm pass never sees those cards and they stay on the slow render tier.
+  let includeTnDPool = $state(true);
 
   function toggleProp(prop: PropType) {
     const next = new Set(selectedProps);
@@ -99,10 +104,14 @@
     if (isRunning || !scopeValid) return;
     startTime = Date.now();
     progress = null;
-    handle = startGalleryWarm(scope, (p) => {
-      progress = p;
-      if (p.finished) handle = null;
-    });
+    handle = startGalleryWarm(
+      scope,
+      (p) => {
+        progress = p;
+        if (p.finished) handle = null;
+      },
+      includeTnDPool ? { extraSequences: loadCanonicalTnDSequences } : undefined
+    );
   }
 
   function cancel() {
@@ -158,6 +167,19 @@
         <div class="chips">
           <FilterChipBase label="No-QR" mode="toggle" size="sm" active={noQr} onclick={() => (noQr = !noQr)} />
           <FilterChipBase label="QR" mode="toggle" size="sm" active={qr} onclick={() => (qr = !qr)} />
+        </div>
+      </div>
+
+      <div class="scope-row">
+        <span class="scope-label">Pool</span>
+        <div class="chips">
+          <FilterChipBase
+            label="Canonical T&D (~930 combos)"
+            mode="toggle"
+            size="sm"
+            active={includeTnDPool}
+            onclick={() => (includeTnDPool = !includeTnDPool)}
+          />
         </div>
       </div>
     </section>

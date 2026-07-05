@@ -4,10 +4,12 @@ import type { ThumbnailResult } from "./thumbnail-render-orchestrator";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { expandCombos, startGalleryWarm, type WarmScope } from "./gallery-thumbnail-warmer";
 
-/** Minimal SequenceData — only identity + steps affect the warmer path. */
+/** Minimal SequenceData — only identity + steps affect the warmer path.
+ * id defaults to the word: real pool ids are unique, and the warmer now
+ * dedupes by id, so same-id fixtures would silently collapse. */
 function seq(overrides: Partial<SequenceData>): SequenceData {
   return {
-    id: "id",
+    id: overrides.word ?? "id",
     name: "",
     word: "",
     steps: [],
@@ -125,6 +127,35 @@ describe("startGalleryWarm", () => {
     const qrFlags = inputs.map((i) => (i.visibility as { showQRCode: boolean }).showQRCode);
     expect(qrFlags).toContain(true);
     expect(qrFlags).toContain(false);
+  });
+
+  it("includes extraSequences (canonical pool) and dedupes by id against the loader", async () => {
+    const warmedIds: string[] = [];
+    const { orchestrator } = fakeOrchestrator((_input, s) => {
+      warmedIds.push(s.id);
+      return okResult(false);
+    });
+    const single: WarmScope = { props: [PropType.STAFF], modes: ["dark"], qr: [false] };
+
+    const handle = startGalleryWarm(single, () => {}, {
+      orchestrator,
+      loader: loaderOf([seq({ id: "pub-1", word: "A" }), seq({ id: "shared", word: "B" })]),
+      extraSequences: async () => [
+        seq({ id: "shared", word: "B" }), // already in the public index — warms once
+        seq({ id: "tnd-split-same-aaaa__t_0-0", word: "AAAA" }),
+        seq({ id: "tnd-split-same-aaaa__t_0-0p5", word: "AAAA" }),
+      ],
+      concurrency: 1,
+    });
+    const final = await handle.promise;
+
+    expect(final.total).toBe(4);
+    expect(warmedIds.sort()).toEqual([
+      "pub-1",
+      "shared",
+      "tnd-split-same-aaaa__t_0-0",
+      "tnd-split-same-aaaa__t_0-0p5",
+    ]);
   });
 
   it("stops early and reports cancelled when cancel() is called", async () => {

@@ -1,0 +1,122 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { ThumbnailRenderInput } from "./thumbnail-key-deriver";
+
+// The cloud tier talks to Firebase Storage — stub it out entirely so a miss
+// there can't mask (or fake) the tiers under test.
+vi.mock("$lib/shared/browse/services/cloud-thumbnail-cache", () => ({
+  getCachedUrl: () => null,
+  getUrl: vi.fn(async () => null),
+  upload: vi.fn(async () => {}),
+  clearMemoryCache: () => {},
+  invalidateUrl: () => {},
+}));
+
+import { ThumbnailRenderOrchestrator } from "./thumbnail-render-orchestrator";
+import { deriveKey } from "./thumbnail-key-deriver";
+
+const sequence = { id: "seq-1", word: "AB", steps: [] } as unknown as SequenceData;
+
+/** Default-composition gallery input → usesDefaults=true → static tier eligible. */
+const input: ThumbnailRenderInput = {
+  sequenceName: "AB",
+  sequenceId: "seq-1",
+  bluePropType: PropType.STAFF,
+  redPropType: PropType.STAFF,
+  catDogModeEnabled: false,
+  lightMode: false,
+  variant: "gallery",
+};
+
+const staticKey = (() => {
+  // Same construction as orchestrator.buildStaticKey — asserted below so the
+  // test fails loudly if the formats ever drift apart.
+  const key = deriveKey(input);
+  return `${key.inputs.variant}/${key.propKey}/${key.inputs.sequenceName}_${key.inputs.sequenceId}_dark`;
+})();
+
+function makeOrchestrator() {
+  const render = vi.fn(async () => ({
+    blob: new Blob(["x"], { type: "image/webp" }),
+    qrConsistent: true,
+  }));
+  const queue = {
+    enqueue: (_hash: string, task: (signal?: AbortSignal) => Promise<unknown>) => task(),
+    getStats: () => ({ queued: 0, active: 0 }),
+    cancel: () => {},
+  };
+  const localCache = {
+    get: vi.fn(async () => null),
+    set: vi.fn(async () => {}),
+  };
+  const orchestrator = new ThumbnailRenderOrchestrator(
+    queue as never,
+    { render } as never,
+    localCache as never
+  );
+  return { orchestrator, render, localCache };
+}
+
+beforeEach(() => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string) => {
+      if (String(url).includes("/thumbnails/manifest.json")) {
+        return { ok: true, json: async () => ({ keys: [staticKey] }) } as Response;
+      }
+      return { ok: false, json: async () => ({}) } as Response;
+    })
+  );
+  vi.stubGlobal("URL", {
+    ...URL,
+    createObjectURL: vi.fn(() => "blob:test"),
+    revokeObjectURL: vi.fn(),
+  });
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
+
+describe("ThumbnailRenderOrchestrator cache tiers", () => {
+  it("buildStaticKey matches the manifest key format this test assumes", () => {
+    const { orchestrator } = makeOrchestrator();
+    expect(orchestrator.buildStaticKey(deriveKey(input))).toBe(staticKey);
+  });
+
+  it("serves the STATIC tier on the very first request of a session (no local render)", async () => {
+    // Regression: `renderedGenerations.get(hash) ?? -1` made -1 < generation(0)
+    // true for every unseen key, silently skipping static/local/cloud and
+    // re-rendering the whole gallery locally once per session.
+    const { orchestrator, render } = makeOrchestrator();
+
+    const result = await orchestrator.getThumbnail({ sequence, input });
+
+    expect(result.url).toBe(`/thumbnails/${staticKey}.webp`);
+    expect(result.fromCache).toBe(true);
+    expect(render).not.toHaveBeenCalled();
+  });
+
+  it("invalidateAllCaches() forces a fresh render even when the static manifest matched before", async () => {
+    const { orchestrator, render } = makeOrchestrator();
+    await orchestrator.getThumbnail({ sequence, input }); // static hit
+    expect(render).not.toHaveBeenCalled();
+
+    orchestrator.invalidateAllCaches();
+    const result = await orchestrator.getThumbnail({ sequence, input });
+
+    expect(render).toHaveBeenCalledTimes(1);
+    expect(result.fromCache).toBe(false);
+    expect(result.url).toBe("blob:test");
+  });
+
+  it("skipCache renders fresh without touching tiers", async () => {
+    const { orchestrator, render, localCache } = makeOrchestrator();
+    const result = await orchestrator.getThumbnail({ sequence, input, skipCache: true });
+
+    expect(render).toHaveBeenCalledTimes(1);
+    expect(result.fromCache).toBe(false);
+    expect(localCache.get).not.toHaveBeenCalled();
+  });
+});

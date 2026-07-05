@@ -68,6 +68,14 @@ export interface WarmDeps {
   loader: Pick<PublicSequencesLoader, "loadSequenceMetadata">;
   /** In-flight renders. Kept modest — rendering is CPU-heavy. */
   concurrency?: number;
+  /**
+   * Extra pool sequences the gallery shows beyond the public loader — the same
+   * provider BrowseModule hands the engine as `extraCommunitySequences` (today:
+   * the canonical T&D pool). Injected because this module lives in shared/ and
+   * must not import feature code. Without it a warm pass skips those cards and
+   * they stay on the slow local-render tier.
+   */
+  extraSequences?: () => Promise<readonly SequenceData[]>;
 }
 
 interface Combo {
@@ -133,7 +141,14 @@ export function startGalleryWarm(
       deps?.loader ??
       (await import("$lib/shared/browse/get-browse-loader")).getBrowseLoader();
 
-    const sequences = await loader.loadSequenceMetadata();
+    const loaded = await loader.loadSequenceMetadata();
+    const extras = deps?.extraSequences ? await deps.extraSequences() : [];
+    // Dedupe by id, extras last — a pool sequence that somehow also exists in
+    // the public index warms once under its public identity.
+    const byId = new Map<string, SequenceData>();
+    for (const s of loaded) byId.set(s.id, s);
+    for (const s of extras) if (!byId.has(s.id)) byId.set(s.id, s);
+    const sequences = [...byId.values()];
     if (cancelled) {
       progress.finished = true;
       progress.cancelled = true;

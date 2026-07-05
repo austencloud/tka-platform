@@ -188,7 +188,7 @@ export class ThumbnailRenderOrchestrator {
   }
 
   getCached(hash: string): string | null {
-    const lastRenderedGen = this.renderedGenerations.get(hash) ?? -1;
+    const lastRenderedGen = this.renderedGenerations.get(hash) ?? 0;
     if (lastRenderedGen < this.cacheGeneration) return null;
     return this.memoryCache.get(hash);
   }
@@ -198,8 +198,13 @@ export class ThumbnailRenderOrchestrator {
     const cloudKey = this.buildCloudKey(key);
 
     // If all caches were nuked (admin clear), force skip for this key
-    // until it's been freshly rendered in the current generation
-    const lastRenderedGen = this.renderedGenerations.get(key.hash) ?? -1;
+    // until it's been freshly rendered in the current generation.
+    // Unseen keys default to generation 0 — the SESSION-START generation —
+    // so they may use every cache tier. (`?? -1` here silently disabled
+    // static/cloud/local for the first request of every key each session,
+    // making the whole gallery re-render locally.) After an admin nuke bumps
+    // the generation, 0 < generation correctly forces a fresh render.
+    const lastRenderedGen = this.renderedGenerations.get(key.hash) ?? 0;
     const mustSkipCache = request.skipCache || lastRenderedGen < this.cacheGeneration;
 
     // Start metrics tracking
