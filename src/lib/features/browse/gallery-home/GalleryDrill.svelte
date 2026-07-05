@@ -362,6 +362,25 @@
   // Fixed per-slot tilts (deterministic; random tilt reads as instability).
   const FAN_TILTS = [-8, -2, 6];
 
+  // Peek art scales with the layout tier (the CSS container queries widen the
+  // tiles past 900px / 1600px, but SequencePeek's box is a prop — phone-sized
+  // art inside desktop tiles reads as an afterthought). Same thresholds as the
+  // @container rules so art and layout switch together. Thumbnails come from
+  // the 1024px static/cloud renders, so bigger boxes stay sharp.
+  const PEEK_TIERS = {
+    base: { fanW: 76, fanH: 92, shortW: 56, shortH: 84, longW: 118, longH: 84, collW: 44, collH: 34, levelW: 62, levelH: 56, badge: "18px" },
+    wide: { fanW: 112, fanH: 136, shortW: 82, shortH: 122, longW: 172, longH: 122, collW: 60, collH: 46, levelW: 84, levelH: 76, badge: "24px" },
+    ultra: { fanW: 132, fanH: 160, shortW: 96, shortH: 144, longW: 204, longH: 144, collW: 84, collH: 64, levelW: 104, levelH: 94, badge: "28px" },
+  } as const;
+  let drillWidth = $state(0);
+  const PEEK = $derived(
+    drillWidth >= 1600
+      ? PEEK_TIERS.ultra
+      : drillWidth >= 900
+        ? PEEK_TIERS.wide
+        : PEEK_TIERS.base,
+  );
+
   function submitSearch(event: Event) {
     event.preventDefault();
     const q = query.trim();
@@ -385,7 +404,7 @@
   }
 </script>
 
-<div class="drill" class:sheet={variant === "sheet"}>
+<div class="drill" class:sheet={variant === "sheet"} bind:clientWidth={drillWidth}>
   <!-- Search renders wherever the host wires it — the page front door AND the
        filter sheet (the grid toolbar carries no search input; the sheet is the
        grid's complete find-surface). -->
@@ -436,52 +455,60 @@
             </p>
           </header>
 
-          <button class="choice-tile" type="button" onclick={() => (section = "level")}>
-            <span class="choice-main">
-              <span class="choice-title">By level</span>
-              <span class="choice-sub">Beginner to advanced</span>
-            </span>
-            <span class="peek-fan" aria-hidden="true">
-              {#each LEVELS as lvl, i (lvl)}
-                <SequencePeek
-                  sequence={levelReps.get(lvl)}
-                  width={76}
-                  height={92}
-                  tilt={FAN_TILTS[i]}
-                >
-                  {#snippet overlay()}
-                    <DifficultyBadge level={lvl} size="18px" />
-                  {/snippet}
-                </SequencePeek>
-              {/each}
-            </span>
-            <i class="fas fa-chevron-right drill-chev" aria-hidden="true"></i>
-          </button>
+          <!-- hero-grid: single column on phones (identical to the old stacked
+               flow), two-up on wide containers so the front door actually uses
+               a desktop monitor instead of floating as a 520px ribbon. -->
+          <div class="hero-grid">
+            <button class="choice-tile" type="button" onclick={() => (section = "level")}>
+              <span class="choice-main">
+                <span class="choice-title">By level</span>
+                <span class="choice-sub">Beginner to advanced</span>
+              </span>
+              <span class="peek-fan" aria-hidden="true">
+                {#each LEVELS as lvl, i (lvl)}
+                  <SequencePeek
+                    sequence={levelReps.get(lvl)}
+                    width={PEEK.fanW}
+                    height={PEEK.fanH}
+                    tilt={FAN_TILTS[i]}
+                  >
+                    {#snippet overlay()}
+                      <DifficultyBadge level={lvl} size={PEEK.badge} />
+                    {/snippet}
+                  </SequencePeek>
+                {/each}
+              </span>
+              <i class="fas fa-chevron-right drill-chev" aria-hidden="true"></i>
+            </button>
 
-          <button class="choice-tile" type="button" onclick={() => (section = "length")}>
-            <span class="choice-main">
-              <span class="choice-title">By length</span>
-              <span class="choice-sub">{lengthSub}</span>
-            </span>
-            <span class="peek-fan pair" aria-hidden="true">
-              <SequencePeek sequence={lengthPair.short} width={56} height={84} tilt={-3} />
-              <SequencePeek sequence={lengthPair.long} width={118} height={84} tilt={3} />
-            </span>
-            <i class="fas fa-chevron-right drill-chev" aria-hidden="true"></i>
-          </button>
+            <button class="choice-tile" type="button" onclick={() => (section = "length")}>
+              <span class="choice-main">
+                <span class="choice-title">By length</span>
+                <span class="choice-sub">{lengthSub}</span>
+              </span>
+              <span class="peek-fan pair" aria-hidden="true">
+                <SequencePeek sequence={lengthPair.short} width={PEEK.shortW} height={PEEK.shortH} tilt={-3} />
+                <SequencePeek sequence={lengthPair.long} width={PEEK.longW} height={PEEK.longH} tilt={3} />
+              </span>
+              <i class="fas fa-chevron-right drill-chev" aria-hidden="true"></i>
+            </button>
 
-          <button class="choice-tile compact" type="button" onclick={() => onShowAll?.()}>
-            <span class="choice-main">
-              <span class="choice-title">Show all {pool.length} sequences</span>
-              <span class="choice-sub">The whole gallery, one grid</span>
-            </span>
-            <span class="peek-collage" aria-hidden="true">
-              {#each collageSlots as seq, i (i)}
-                <SequencePeek sequence={seq} width={44} height={34} />
-              {/each}
-            </span>
-            <i class="fas fa-chevron-right drill-chev" aria-hidden="true"></i>
-          </button>
+            <!-- Show-all lives IN the hero rank: it's the main door, not a
+                 footnote. Phone: third stacked tile (same order as before).
+                 Two-up tier: spans the full row. Ultra-wide: third hero door. -->
+            <button class="choice-tile compact" type="button" onclick={() => onShowAll?.()}>
+              <span class="choice-main">
+                <span class="choice-title">Show all {pool.length} sequences</span>
+                <span class="choice-sub">The whole gallery, one grid</span>
+              </span>
+              <span class="peek-collage" aria-hidden="true">
+                {#each collageSlots as seq, i (i)}
+                  <SequencePeek sequence={seq} width={PEEK.collW} height={PEEK.collH} />
+                {/each}
+              </span>
+              <i class="fas fa-chevron-right drill-chev" aria-hidden="true"></i>
+            </button>
+          </div>
 
           {#if pool.length > 0}
             <p class="more-head">More ways to browse</p>
@@ -642,7 +669,7 @@
                   </span>
                 </span>
                 <span class="value-count">{v.count}</span>
-                <SequencePeek sequence={levelReps.get(v.value)} width={62} height={56} />
+                <SequencePeek sequence={levelReps.get(v.value)} width={PEEK.levelW} height={PEEK.levelH} />
               </button>
             {/each}
           </div>
@@ -908,6 +935,11 @@
     gap: 0.9rem;
     padding: 0.9rem 1rem 1.25rem;
     overflow: hidden;
+    /* Width-driven desktop layout below. inline-size containment only — the
+       drill's height keeps flexing normally. The filter-sheet variant lives in
+       a ≤480px drawer, so the ≥900px rules can never fire there. */
+    container-type: inline-size;
+    container-name: drill;
   }
   /* Sheet variant: fills the fixed-height drawer body, top-aligned. */
   .drill.sheet {
@@ -1057,6 +1089,14 @@
   }
 
   /* ── Chooser tiles ─────────────────────────────────────────────── */
+  /* Phone: one column, same rhythm as the old stacked flow (gap matches the
+     drill-screen gap so the wrapper is visually invisible). */
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    width: 100%;
+  }
   .choice-tile {
     position: relative;
     display: flex;
@@ -1478,6 +1518,207 @@
     .mini-tile:active,
     .letter-chip:active {
       transform: none;
+    }
+  }
+
+  /* ── Desktop (wide container) ──────────────────────────────────────
+     The drill was born mobile-first and shipped as a 520px ribbon on every
+     screen size — on a 4K monitor that's a strip floating in empty ocean.
+     Past 900px of container width the stage earns real estate: hero tiles go
+     two-up, the mini-grid spreads to four columns, and every value screen
+     lays its choices out as a multi-column wall instead of a phone list.
+     Nothing here touches the phone layout, and the filter-sheet variant's
+     drawer (≤480px) can never reach these rules. */
+  @container drill (min-width: 900px) {
+    .drill {
+      gap: 1.25rem;
+      padding: 1.5rem 2rem 2rem;
+    }
+    .drill-search {
+      max-width: 640px;
+      padding: 0.7rem 1.1rem;
+    }
+    .drill-stage {
+      max-width: 1160px;
+    }
+    .drill-head h2 {
+      font-size: 1.6rem;
+    }
+    .drill-head p {
+      font-size: 0.95rem;
+    }
+    .drill-screen {
+      gap: 1rem;
+    }
+
+    /* Chooser: the two big doors side by side, taller and roomier.
+       Show-all spans the full row beneath them at this tier. */
+    .hero-grid {
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .choice-tile {
+      min-height: 158px;
+      padding: 1.15rem 2.4rem 1.15rem 1.5rem;
+      border-radius: 22px;
+    }
+    .choice-tile.compact {
+      min-height: 92px;
+      grid-column: 1 / -1;
+    }
+    .choice-title {
+      font-size: 1.3rem;
+    }
+    .choice-sub {
+      font-size: 0.92rem;
+    }
+    .more-head {
+      margin-top: 0.75rem;
+    }
+    .mini-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.8rem;
+    }
+    .mini-tile {
+      min-height: 78px;
+      padding: 0.75rem 0.9rem;
+    }
+    .mini-title {
+      font-size: 0.98rem;
+    }
+
+    /* Value screens: choices tile the width instead of stacking as a phone
+       list. auto-fill keeps short catalogs (3 positions, 2 grid modes)
+       centered-looking without stranding one giant row. */
+    .value-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 0.8rem;
+    }
+
+    /* Levels: three monument columns — the numeral and gradient carry the
+       screen the way the difficulty badges carry the cards. */
+    .value-list:has(.level-tile) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .level-tile {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 0.6rem;
+      min-height: 230px;
+      padding: 1.4rem 1.2rem;
+      border-radius: 20px;
+    }
+    .level-tile .value-numeral {
+      font-size: 3.6rem;
+      min-width: 0;
+    }
+    .level-tile .value-main {
+      align-items: center;
+      gap: 0.45rem;
+    }
+    .level-tile .value-label {
+      font-size: 1.1rem;
+    }
+    .level-tile .value-desc {
+      font-size: 0.85rem;
+    }
+    .level-tile .value-count {
+      font-size: 1.05rem;
+    }
+
+    .letter-grid {
+      grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+      gap: 0.6rem;
+    }
+    .letter-chip {
+      min-height: 70px;
+    }
+  }
+
+  /* ── Ultra-wide (4K-class) ─────────────────────────────────────────
+     Past 1600px the two-up tier starts leaving real acreage unused, so the
+     chooser becomes a three-door hub: level / length / show-all as equal hero
+     panels in one row, with the ultra PEEK art tier filling them. The stage
+     itself widens to ~1760px — wider still just stretches travel distance
+     between choices without adding information. */
+  @container drill (min-width: 1600px) {
+    .drill-stage {
+      max-width: 1760px;
+    }
+    .drill-search {
+      max-width: 720px;
+    }
+    .drill-head h2 {
+      font-size: 1.85rem;
+    }
+    .drill-head p {
+      font-size: 1.05rem;
+    }
+    .hero-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.1rem;
+    }
+    .choice-tile,
+    .choice-tile.compact {
+      min-height: 216px;
+      grid-column: auto;
+      padding: 1.3rem 2.6rem 1.3rem 1.7rem;
+      border-radius: 24px;
+    }
+    .choice-title {
+      font-size: 1.45rem;
+    }
+    .choice-sub {
+      font-size: 1rem;
+    }
+    .mini-grid {
+      gap: 1rem;
+    }
+    .mini-tile {
+      min-height: 92px;
+      padding: 0.9rem 1.1rem;
+      border-radius: 16px;
+    }
+    .mini-art {
+      min-width: 52px;
+      font-size: 1.2rem;
+    }
+    .mini-title {
+      font-size: 1.05rem;
+    }
+    .mini-sub {
+      font-size: 0.82rem;
+    }
+    .element-dot {
+      width: 10px;
+      height: 10px;
+    }
+
+    .value-list {
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 1rem;
+    }
+    .level-tile {
+      min-height: 290px;
+    }
+    .level-tile .value-numeral {
+      font-size: 4.4rem;
+    }
+    .length-row {
+      min-height: 64px;
+    }
+    .length-row.tall {
+      min-height: 88px;
+    }
+    .letter-grid {
+      grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+      gap: 0.7rem;
+    }
+    .letter-chip {
+      min-height: 78px;
     }
   }
 </style>

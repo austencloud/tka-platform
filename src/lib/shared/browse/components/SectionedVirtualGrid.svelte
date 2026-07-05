@@ -213,7 +213,13 @@
     if (it.type === "header") return HEADER_H;
     // row
     const cols = engine.columnCount;
-    const width = listWidth > 0 ? listWidth : 360;
+    // Never estimate from a made-up width: a 360px guess on a 4K container
+    // under-estimated every row ~4x, so first paint scattered rows into wrong
+    // slots (visible as a hole between rows until measurement caught up). The
+    // scroller's width is always real and available before the list's own
+    // ResizeObserver fires.
+    const width =
+      listWidth > 0 ? listWidth : (scrollElement?.clientWidth ?? 360);
     const gap = 8;
     const cardWidth = (width - (cols - 1) * gap) / cols;
     let maxSteps = 4;
@@ -267,6 +273,15 @@
     const sig = `${flat.items.length}|${engine.columnCount}`;
     if (sig === createSignature && currentVirtualizer) return;
     createSignature = sig;
+
+    // Seed the row width SYNCHRONOUSLY before the first estimates. The rAF
+    // seed below (onMount) lands a frame after the virtualizer has already
+    // positioned every row from a zero-width fallback — that one bad frame is
+    // the "hole" between rows on wide screens.
+    if (listEl) {
+      const w = listEl.getBoundingClientRect().width;
+      if (w > 0 && Math.abs(w - listWidth) > 1) listWidth = w;
+    }
 
     // Refresh the (stable) list offset within the scroller before creating.
     scrollMargin = measureScrollMargin();
