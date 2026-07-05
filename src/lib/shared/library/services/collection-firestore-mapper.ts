@@ -100,6 +100,11 @@ export function mapDocToSequence(
     id,
     createdAt: toDate(data["createdAt"]),
     updatedAt: toDate(data["updatedAt"]),
+    // birthday stays a raw Firestore Timestamp without this, and the card
+    // renderer calls .getFullYear() on it for the footer date — every live
+    // thumbnail render in a collection crashed on that. Absent stays absent
+    // (the renderer falls back to createdAt).
+    ...(data["birthday"] != null && { birthday: toDate(data["birthday"]) }),
     steps: data["steps"] ?? [],
   } as LibrarySequence;
 

@@ -200,4 +200,33 @@ describe("scan-import save/read round-trip (decoded blob → library copy → vi
     expect(member.steps.length).toBe(2);
     expect(member.steps[0]?.motions?.blue?.motionType).toBe(MotionType.PRO);
   });
+
+  it("collection member mapping converts birthday Timestamps to Dates", async () => {
+    // The card renderer calls birthday.getFullYear() for the footer date; a
+    // raw Firestore Timestamp there crashed every live thumbnail render in a
+    // collection (cards stuck on the word placeholder).
+    const { mapDocToSequence } = await import(
+      "$lib/shared/library/services/collection-firestore-mapper"
+    );
+
+    const fakeTimestamp = { toDate: () => new Date("2024-03-01T00:00:00Z") };
+    const member = mapDocToSequence(
+      {
+        word: "AB",
+        createdAt: fakeTimestamp,
+        updatedAt: fakeTimestamp,
+        birthday: fakeTimestamp,
+      },
+      "doc-1"
+    );
+    expect(member.birthday).toBeInstanceOf(Date);
+    expect((member.birthday as Date).getFullYear()).toBe(2024);
+
+    // Absent stays absent — the renderer falls back to createdAt.
+    const noBirthday = mapDocToSequence(
+      { word: "AB", createdAt: fakeTimestamp, updatedAt: fakeTimestamp },
+      "doc-2"
+    );
+    expect(noBirthday.birthday).toBeUndefined();
+  });
 });
