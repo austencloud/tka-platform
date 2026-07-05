@@ -128,6 +128,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handleDelete: () => Promise<void>;
     handleOpenInBrowser: (pendingType?: PendingActionType | null) => void;
     invokeGatedAction: (type: PendingActionType, realHandler: (() => void) | (() => Promise<void>) | undefined) => void;
+    /** Open the sign-in sheet with no queued action (the /q header account chip). */
+    openSignInPrompt: () => void;
     handleUnifiedDarkModeToggle: () => void;
     handlePracticeStart: () => void;
     enterPracticeMode: () => void;
@@ -245,6 +247,10 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     /** Effect to activate on mount (e.g. "trails" for the QR scan landing page).
      *  Defaults to the stored/none config when omitted. */
     initialActiveEffect?: EffectType;
+    /** Replay handler for the gated download action (/q scan funnel): runs the
+     *  page's export once the guest finishes signing in. Receives the live ctx
+     *  because the export needs the playback controller + export options. */
+    onGatedDownload?: (ctx: OrchestratorContext) => void;
     children: Snippet<[OrchestratorContext]>;
   }
 
@@ -263,6 +269,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     initialBlueVisible = true,
     initialRedVisible = true,
     initialActiveEffect,
+    onGatedDownload,
     children,
   }: Props = $props();
 
@@ -578,6 +585,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       handlePublishAction: libraryActions.handlePublishAction,
       handleEdit,
       handleShare,
+      handleDownload: () => onGatedDownload?.(context),
       handleOpenInBrowser,
     });
   });
@@ -1095,6 +1103,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handleOpenInBrowser,
     invokeGatedAction: (type: PendingActionType, realHandler: (() => void) | (() => Promise<void>) | undefined) =>
       authQueue.invokeGatedAction(type, realHandler, sequence),
+    openSignInPrompt: () => authQueue.openSignInSheet("account"),
     handleUnifiedDarkModeToggle,
     handlePracticeStart: () => {
       // Practice needs the clean Side-by-Side view (animation + steps). The

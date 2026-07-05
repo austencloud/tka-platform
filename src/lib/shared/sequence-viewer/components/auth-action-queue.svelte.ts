@@ -28,12 +28,19 @@ import { isInAppWebview } from "../services/webview-detector";
 import type { PendingActionType } from "$lib/shared/sequence-viewer/services/pending-action-queue";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
+/**
+ * Everything the sign-in sheet can be opened FOR. Pending actions replay after
+ * auth; "account" is the /q header chip's plain sign-in (no queued action).
+ */
+export type SignInReason = PendingActionType | "account";
+
 export interface AuthActionQueueCallbacks {
   handleSave: () => void;
   handleFavoriteToggle: () => void;
   handlePublishAction: () => Promise<void>;
   handleEdit: () => void;
   handleShare: () => void;
+  handleDownload: () => void;
   handleOpenInBrowser: (pendingType?: PendingActionType | null) => void;
 }
 
@@ -41,9 +48,9 @@ export function createAuthActionQueue() {
   const pendingActionQueue = getPendingActionQueue();
 
   let signInSheetOpen = $state(false);
-  let signInSheetReason = $state<PendingActionType | null>(null);
+  let signInSheetReason = $state<SignInReason | null>(null);
 
-  function openSignInSheet(reason: PendingActionType) {
+  function openSignInSheet(reason: SignInReason) {
     signInSheetReason = reason;
     signInSheetOpen = true;
   }
@@ -101,7 +108,8 @@ export function createAuthActionQueue() {
 
   async function onSignInSheetPrimary(handleOpenInBrowser: (pendingType?: PendingActionType | null) => void) {
     if (isInAppWebview()) {
-      handleOpenInBrowser(signInSheetReason);
+      // "account" has no queued action to hand off — open the browser plain.
+      handleOpenInBrowser(signInSheetReason === "account" ? null : signInSheetReason);
       return;
     }
 
@@ -181,6 +189,7 @@ export function createAuthActionQueue() {
         case "publish":  void callbacks.handlePublishAction(); break;
         case "remix":    callbacks.handleEdit(); break;
         case "sendTo":   callbacks.handleShare(); break;
+        case "download": callbacks.handleDownload(); break;
       }
       signInSheetOpen = false;
       return true;

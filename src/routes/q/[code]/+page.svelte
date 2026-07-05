@@ -368,6 +368,30 @@
     }
   }
 
+  // ── Download gate (account-creation funnel) ──
+  // Watching stays free; taking the export home requires a free account.
+  // invokeGatedAction runs the export immediately for full accounts; for
+  // guests it queues ?pending=download, opens the SignInSheet, and the
+  // orchestrator's replay resumes the export after sign-in (onGatedDownload
+  // on the orchestrator below). pendingExportKind remembers WHICH export was
+  // requested so the replay resumes the right one — page state only, so a
+  // webview handoff falls back to the primary video export.
+  let pendingExportKind: "video" | "card" = "video";
+
+  function requestGatedExport(ctx: OrchestratorContext, kind: "video" | "card") {
+    pendingExportKind = kind;
+    if (!authState.isFullAccount) {
+      captureEvent("qr_download_gated", {
+        short_code: shortCode,
+        sequence_word: seqWord,
+        export_kind: kind,
+      });
+    }
+    ctx.invokeGatedAction("download", () =>
+      kind === "card" ? handleCardExport(ctx) : handleExport(ctx)
+    );
+  }
+
   // ── Open in Composer (festival signup funnel) ──
   // Stores the scanned sequence as a pending edit (the exact handoff the
   // viewer's Remix uses; the create module consumes it on init) and heads to
@@ -703,6 +727,8 @@
       initialBpm={BASE_BPM}
       initialActiveEffect="trails"
       onClose={() => goto(`/browse/gallery?from=scan&code=${shortCode}`)}
+      onGatedDownload={(ctx) =>
+        pendingExportKind === "card" ? void handleCardExport(ctx) : void handleExport(ctx)}
     >
       {#snippet children(ctx)}
         <div
@@ -717,7 +743,7 @@
             sequence={resolvedSeq}
             onOpenInComposer={openInComposer}
             openAppHref={`/browse/gallery?from=scan&code=${shortCode}`}
-            onDownload={() => handleExport(ctx)}
+            onDownload={() => requestGatedExport(ctx, "video")}
             downloadBusy={isExporting}
           />
           {#if isSidebarLayout}
@@ -809,7 +835,7 @@
                   onPlaybackToggle={ctx.handlePlaybackToggle}
                   onPlaybackModeChange={ctx.handlePlaybackModeChange}
                   onBpmChange={ctx.handleBpmChange}
-                  onExport={() => handleExport(ctx)}
+                  onExport={() => requestGatedExport(ctx, "video")}
                   secondaryActions={[]}
                 />
               {/await}
@@ -828,7 +854,7 @@
                     isExporting={isCardExporting}
                     layout={drawerLayout}
                     stepCount={resolvedSeq?.steps?.length ?? 0}
-                    onExport={() => handleCardExport(ctx)}
+                    onExport={() => requestGatedExport(ctx, "card")}
                   />
                 {/await}
               </div>

@@ -1,4 +1,4 @@
-export type PendingActionType = 'save' | 'favorite' | 'publish' | 'remix' | 'sendTo';
+export type PendingActionType = 'save' | 'favorite' | 'publish' | 'remix' | 'sendTo' | 'download';
 
 export interface PendingAction {
   type: PendingActionType;
@@ -15,6 +15,7 @@ const VALID_TYPES: ReadonlySet<PendingActionType> = new Set([
   "publish",
   "remix",
   "sendTo",
+  "download",
 ]);
 
 function isValidType(value: string): value is PendingActionType {

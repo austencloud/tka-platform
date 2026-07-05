@@ -1,8 +1,8 @@
 <script lang="ts">
-  import type { PendingActionType } from "$lib/shared/sequence-viewer/services/pending-action-queue";
+  import type { SignInReason } from "./auth-action-queue.svelte";
   interface Props {
     open: boolean;
-    reason: PendingActionType | null;
+    reason: SignInReason | null;
     webviewMode: boolean;
     onPrimaryAction: () => void;
     onDismiss: () => void;
@@ -10,20 +10,24 @@
 
   let { open, reason, webviewMode, onPrimaryAction, onDismiss }: Props = $props();
 
-  const REASON_COPY: Record<PendingActionType, string> = {
+  const REASON_COPY: Record<SignInReason, string> = {
     save: "Sign in to save this to your library.",
     favorite: "Sign in to favorite this sequence.",
     publish: "Sign in to publish this sequence.",
     remix: "Sign in to remix this sequence.",
     sendTo: "Sign in to send this to someone.",
+    download: "Create a free account to download this sequence.",
+    account: "Sign in to save your scans and build your library.",
   };
 
-  const REASON_COPY_WEBVIEW: Record<PendingActionType, string> = {
+  const REASON_COPY_WEBVIEW: Record<SignInReason, string> = {
     save: "Saving works best in your browser. We'll open this sequence in Chrome so you can sign in - your save will happen automatically.",
     favorite: "Favoriting works best in your browser. We'll open this sequence in Chrome so you can sign in - your favorite will apply automatically.",
     publish: "Publishing works best in your browser. We'll open this sequence in Chrome so you can sign in - your publish will go through automatically.",
     remix: "Remixing works best in your browser. We'll open this sequence in Chrome so you can sign in - you'll land in the editor.",
     sendTo: "Sending works best in your browser. We'll open this sequence in Chrome so you can sign in.",
+    download: "Downloading works best in your browser. We'll open this sequence in Chrome so you can sign in - your download will start automatically.",
+    account: "Sign-in works best in your browser. We'll open this sequence in Chrome so you can sign in.",
   };
 
   const message = $derived.by(() => {

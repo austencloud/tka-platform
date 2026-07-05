@@ -13,7 +13,9 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
+  import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
+  import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import ViewerOverflowMenu from "./ViewerOverflowMenu.svelte";
   import { buildHeaderActions, type ViewerHeaderProfile } from "../services/viewer-actions";
 
@@ -60,6 +62,17 @@
   );
 
   const practiceActive = $derived(ctx.practiceActive);
+
+  // Scan account chip: signed-out scanners get a Sign in entry (opens the
+  // sheet with the plain-account reason); full accounts get their avatar as an
+  // Open TKA link. Anonymous guests count as signed-out — the chip is the
+  // account-creation funnel, and a guest identity isn't an account.
+  const isFullAccount = $derived(authState.isFullAccount);
+
+  function handleChipSignIn() {
+    captureEvent("qr_signin_from_chip", {});
+    ctx.openSignInPrompt();
+  }
 
   let copyClaudeFeedback = $state(false);
   async function handleCopyForClaude() {
@@ -152,16 +165,33 @@
   </div>
 
   <div class="header-right">
-    {#if profile === "scan" && !isMobile}
-      {#if onOpenInComposer}
-        <button type="button" class="cta accent" onclick={onOpenInComposer}>
-          <i class="fas fa-pen" aria-hidden="true"></i><span>Open in Composer</span>
-        </button>
+    {#if profile === "scan"}
+      {#if !isMobile}
+        {#if onOpenInComposer}
+          <button type="button" class="cta accent" onclick={onOpenInComposer}>
+            <i class="fas fa-pen" aria-hidden="true"></i><span>Open in Composer</span>
+          </button>
+        {/if}
+        {#if openAppHref}
+          <a class="cta ghost" href={openAppHref}>
+            <i class="fas fa-compass" aria-hidden="true"></i><span>Open TKA</span>
+          </a>
+        {/if}
       {/if}
-      {#if openAppHref}
-        <a class="cta ghost" href={openAppHref}>
-          <i class="fas fa-compass" aria-hidden="true"></i><span>Open TKA</span>
-        </a>
+      {#if isFullAccount}
+        {#if openAppHref}
+          <a class="avatar-chip" href={openAppHref} aria-label="Open TKA" title="Open TKA">
+            <RobustAvatar
+              src={authState.user?.photoURL}
+              name={authState.user?.displayName || authState.user?.email}
+              size="sm"
+            />
+          </a>
+        {/if}
+      {:else}
+        <button type="button" class="cta ghost" onclick={handleChipSignIn}>
+          <i class="fas fa-user" aria-hidden="true"></i><span>Sign in</span>
+        </button>
       {/if}
     {:else if profile === "full" && !practiceActive}
       {#if !isMobile && actions.onFavoriteToggle}
@@ -450,6 +480,25 @@
   }
 
   .cta:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+
+  /* Signed-in scan chip: avatar as an Open TKA link. 44px touch target around
+     the 32px avatar so the corner tap area meets the floor. */
+  .avatar-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+    border-radius: 50%;
+    text-decoration: none;
+  }
+  .avatar-chip:hover {
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+  .avatar-chip:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 2px;
   }
