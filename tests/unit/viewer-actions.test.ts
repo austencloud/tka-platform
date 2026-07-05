@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { buildHeaderActions } from "./viewer-actions";
+import { buildHeaderActions } from "$lib/shared/sequence-viewer/services/viewer-actions";
 
 function makeCtx(over: Partial<Record<string, unknown>> = {}) {
   return {
