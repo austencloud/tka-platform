@@ -976,7 +976,15 @@
     flex-direction: column;
     gap: var(--spacing-md);
     overflow-y: auto;
-    padding-right: var(--spacing-xs);
+    /* Scrim: the live background bleeds through otherwise, so headings and the
+       empty-state copy fight swimming fish. Backdrop-blur mutes that detail
+       while keeping ambient color; the translucent panel lifts contrast. */
+    padding: var(--spacing-sm);
+    background: color-mix(in srgb, var(--theme-panel-bg, #14141c) 55%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 10px;
   }
 
   .rail-title {
@@ -1189,7 +1197,11 @@
     flex: 1;
     min-width: 0;
     overflow-y: auto;
-    background: var(--theme-bg-subtle, rgba(0, 0, 0, 0.2));
+    /* Same scrim treatment as the rail: cards cover this when populated, but
+       the empty-state copy and loading status sit directly on the background. */
+    background: color-mix(in srgb, var(--theme-panel-bg, #14141c) 45%, transparent);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-radius: 8px;
     padding: var(--spacing-sm);
   }
