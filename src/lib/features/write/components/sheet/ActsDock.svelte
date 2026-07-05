@@ -71,19 +71,27 @@
   let switching = $state(false);
   let switchError = $state<string | null>(null);
 
+  // Generation guard: overlapping refreshKey bumps can resolve out of order.
+  // Only the latest-launched refresh is allowed to write results, so a slow
+  // earlier fetch can't clobber a newer list.
+  let refreshGen = 0;
   async function refresh(): Promise<void> {
+    const gen = ++refreshGen;
     loading = true;
     loadError = null;
     try {
-      acts = await getChoreoSheetRepository().listSheets();
+      const listed = await getChoreoSheetRepository().listSheets();
+      if (gen !== refreshGen) return;
+      acts = listed;
     } catch (e) {
+      if (gen !== refreshGen) return;
       console.error("[ActsDock] Failed to list saved acts:", e);
       loadError =
         e instanceof Error && e.message === "Authentication required"
           ? "Sign in to save and open acts."
           : "Couldn't load your acts.";
     } finally {
-      loading = false;
+      if (gen === refreshGen) loading = false;
     }
   }
 

@@ -259,10 +259,12 @@
 
   let exporting = $state(false);
   let exportPct = $state(0);
+  let exportError = $state<string | null>(null);
   async function exportPdf() {
     if (builder.hydratedSequences.length === 0 || exporting) return;
     exporting = true;
     exportPct = 0;
+    exportError = null;
     try {
       const filename = `${(builder.sheet.name || "choreo-sheet").trim().replace(/\s+/g, "-").toLowerCase()}.pdf`;
       await downloadChoreoSheetPDF(
@@ -274,6 +276,9 @@
         },
         builder.breakSequenceIds,
       );
+    } catch (error) {
+      console.error("[ChoreoSheetView] PDF export failed:", error);
+      exportError = "PDF export failed. Try again.";
     } finally {
       exporting = false;
     }
@@ -436,6 +441,9 @@
     {/if}
     {#if saveMessage}
       <span class="save-message" role="alert">{saveMessage}</span>
+    {/if}
+    {#if exportError}
+      <span class="save-message" role="alert">{exportError}</span>
     {/if}
   </header>
 
