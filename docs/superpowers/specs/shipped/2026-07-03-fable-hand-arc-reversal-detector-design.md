@@ -60,6 +60,12 @@ Consequence: comparing only `rotationDirection` sees prop/full-style spin flips 
 
 ## Completion note — 2026-07-05 (Fable)
 
+> **Display-policy correction (Austen, 2026-07-05, same day — see the
+> follow-up section at the end):** dots = prop reversals only; the
+> hand-reversal signal is retained as a non-display channel. The
+> "ENABLED"/display-diff claims immediately below describe the initial
+> shipment and are SUPERSEDED by that section.
+
 **Shipped and ENABLED.** Ship-gate verified satisfied before enabling:
 `CONTENT_HASH_VERSION === HASH_VERSION_V2` at
 `src/lib/shared/library/services/sequence-content-hasher.ts:51` — derived
@@ -130,3 +136,42 @@ affected pictographs re-render once.)
 Display-level effect (expected): reversal dots increase on cards/UI for 69%
 of the published corpus; render caches for those sequences invalidate once.
 Identity hashes are untouched (V2 excludes the flags).
+
+---
+
+## Display-policy correction — 2026-07-05 (Austen, same day)
+
+**Dots = prop reversals only, per Austen 2026-07-05; hand-reversal signal
+retained as non-display channel.** ("That's only for prop-er reversals.")
+The initial enablement above fed the hand-arc channel into the pictograph
+dots — a product regression. Corrected surgically the same day; the
+consolidation, canonical detector, dead-class deletion, and signal-level
+coverage all stand.
+
+What changed:
+
+- **Canonical API split into explicit channels.** `deriveReversals` now
+  returns per-hand `{ propReversal, handReversal }`
+  (`ChannelReversals`): `propReversal` = prop rotation direction flipped
+  (fires on PROP and FULL reversals — both flip prop direction) — THE dot
+  display channel; `handReversal` = hand arc flipped (HAND and FULL
+  reversals) — non-display signal channel kept for future consumers (e.g.
+  the practice judgment loop).
+- **App adapter reads `propReversal` only.** `processReversals`,
+  `detectReversal`, and both option-preview helpers render dots from the
+  prop channel exclusively; option previews are back to raw
+  rotationDirection comparison on the option side (legacy behavior).
+- **Corpus proof of byte-identical display**
+  (`tests/unit/hand-arc-reversal-impact.test.ts`, hard-asserted): 460
+  sequences / 6188 steps — legacy 1032 dot cells, consolidated 1032 dot
+  cells, **0 gained, 0 suppressed**. The 2582-cell increase from the initial
+  enablement is gone from rendered output. The non-display `handReversal`
+  channel carries 2925 cells on the same corpus (informational; feeds
+  nothing today).
+- **Tests updated:** the three MCP reversal types stay covered at the SIGNAL
+  level (engine channel tests + app-level `deriveReversals` assertions);
+  display-channel tests assert prop-only (hand reversal → NO dot; float
+  handPath flip → NO dot; pure hand-reversal loop → no dots). Engine
+  267/267; app reversal suites 33/33 (incl. untouched
+  `ReversalDetectionService` and `reversal-matrix-solver`);
+  `svelte-check` 0 errors.

@@ -1,25 +1,30 @@
 /**
- * deriveReversals — THE canonical reversal detector. Computes per-hand
- * reversal flags for a sequence of steps.
+ * deriveReversals — THE canonical reversal detector. Computes per-hand,
+ * per-channel reversal signals for a sequence of steps.
  *
  * TKA ground truth (MCP `get_term_definition("reversal")`, verified
- * 2026-07-05) defines three reversal types, all indicated by dots:
+ * 2026-07-05) defines three reversal types:
  *   - **hand reversal** — hand retraces its arc, prop continues its spin
  *     (switches pro/anti);
  *   - **prop reversal** — hand continues its arc, prop reverses its spin
  *     (switches pro/anti);
  *   - **full reversal** — both retrace (maintains pro/anti).
  *
- * A motion therefore carries TWO independent directional signals — prop
- * rotation (`rotationDirection`) and hand arc (locations / authored handPath,
- * see ./motion-signals.ts) — and a step is a reversal for a hand when EITHER
- * signal flips against that signal's last active value. The pre-2026-07-05
- * detectors compared only `rotationDirection`, which caught prop and full
- * reversals but was blind to hand reversals (false negatives; see
- * docs/superpowers/specs/active/2026-06-30-reversal-derivation-reconciliation-findings.md).
+ * A motion carries TWO independent directional signals — prop rotation
+ * (`rotationDirection`) and hand arc (locations / authored handPath, see
+ * ./motion-signals.ts) — reported here as separate channels:
+ *   - `propReversal`: the prop's rotation direction flipped. Fires on prop
+ *     reversals AND full reversals (both flip prop direction).
+ *   - `handReversal`: the hand's arc direction flipped. Fires on hand
+ *     reversals AND full reversals.
  *
- * Canonical semantics (adopted from the production app detector, which was
- * adversarially verified to emit zero false positives over the corpus):
+ * DISPLAY POLICY (Austen, 2026-07-05): the pictograph reversal DOTS render
+ * from `propReversal` ONLY — dots are for prop-direction reversals, identical
+ * to the legacy rotation-only detector. `handReversal` is a non-display
+ * signal channel retained for future consumers (e.g. the practice judgment
+ * loop). Do NOT feed it into dot rendering.
+ *
+ * Canonical chain semantics (adopted from the production app detector):
  *   - **Loop wrap** (`options.loop`): a loop sequence is cyclic, so early
  *     steps look back through the tail — step 1's predecessor context includes
  *     the last step. Non-loop sequences never wrap.
@@ -44,9 +49,17 @@ import {
   type PropRotation,
 } from "./motion-signals.js";
 
+/** One hand's reversal channels for one step. */
+export interface ChannelReversals {
+  /** Prop rotation direction flipped — THE dot display channel (prop + full reversals). */
+  readonly propReversal: boolean;
+  /** Hand arc direction flipped — non-display signal channel (hand + full reversals). */
+  readonly handReversal: boolean;
+}
+
 export interface StepReversals {
-  readonly blue: boolean;
-  readonly red: boolean;
+  readonly blue: ChannelReversals;
+  readonly red: ChannelReversals;
 }
 
 export interface DeriveReversalsOptions {
@@ -70,7 +83,14 @@ export interface ReversalStepLike {
   } | null;
 }
 
-const NO_REVERSAL: StepReversals = Object.freeze({ blue: false, red: false });
+const NO_CHANNELS: ChannelReversals = Object.freeze({
+  propReversal: false,
+  handReversal: false,
+});
+const NO_REVERSAL: StepReversals = Object.freeze({
+  blue: NO_CHANNELS,
+  red: NO_CHANNELS,
+});
 
 interface HandSignals {
   readonly prop: PropRotation | null;
@@ -80,7 +100,7 @@ interface HandSignals {
 const INERT: HandSignals = Object.freeze({ prop: null, arc: null });
 
 /**
- * Compute reversal flags for each step. Pure function: no side effects.
+ * Compute per-channel reversal signals for each step. Pure function.
  */
 export function deriveReversals(
   steps: readonly ReversalStepLike[],
@@ -111,10 +131,12 @@ export function deriveReversals(
       out.push(NO_REVERSAL);
       continue;
     }
-    const blue = flipsAgainstAnchor(blueSignals, i, loop);
-    const red = flipsAgainstAnchor(redSignals, i, loop);
+    const blue = channelFlips(blueSignals, i, loop);
+    const red = channelFlips(redSignals, i, loop);
     out.push(
-      blue || red ? Object.freeze({ blue, red }) : NO_REVERSAL
+      blue === NO_CHANNELS && red === NO_CHANNELS
+        ? NO_REVERSAL
+        : Object.freeze({ blue, red })
     );
   }
 
@@ -130,18 +152,18 @@ function signalsOf(motion: MotionSignalSource | null | undefined): HandSignals {
 }
 
 /**
- * True when either of the step's active signals flips against that signal's
- * last active value among its predecessors (cyclic when `loop`).
+ * Per-channel flips of the step's active signals against each signal's last
+ * active value among its predecessors (cyclic when `loop`).
  */
-function flipsAgainstAnchor(
+function channelFlips(
   signals: ReadonlyArray<HandSignals>,
   i: number,
   loop: boolean
-): boolean {
+): ChannelReversals {
   const cur = signals[i]!;
   const propActive = cur.prop === "cw" || cur.prop === "ccw";
   const arcActive = cur.arc !== null;
-  if (!propActive && !arcActive) return false;
+  if (!propActive && !arcActive) return NO_CHANNELS;
 
   const n = signals.length;
   // Predecessor visit order matches production: i-1 … 0, then (loop only)
@@ -169,8 +191,8 @@ function flipsAgainstAnchor(
     if (!stillNeedProp && !stillNeedArc) break;
   }
 
-  return (
-    (anchorProp !== null && anchorProp !== cur.prop) ||
-    (anchorArc !== null && anchorArc !== cur.arc)
-  );
+  const propReversal = anchorProp !== null && anchorProp !== cur.prop;
+  const handReversal = anchorArc !== null && anchorArc !== cur.arc;
+  if (!propReversal && !handReversal) return NO_CHANNELS;
+  return Object.freeze({ propReversal, handReversal });
 }

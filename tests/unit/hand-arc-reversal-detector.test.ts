@@ -1,21 +1,22 @@
 /**
- * Hand-Arc-Aware Reversal Detector — app-level proof
- * ===================================================
+ * Reversal Detector — display policy + signal channels (app-level proof)
+ * ======================================================================
  *
- * Exercises the production `processReversals` / option-preview API after the
- * 2026-07-05 consolidation onto the canonical engine detector
- * (`deriveReversals` in @tka/sequence-engine).
+ * DISPLAY POLICY (Austen, 2026-07-05): pictograph reversal DOTS are for
+ * prop-direction reversals ONLY. `processReversals` / option previews must
+ * behave exactly like the legacy rotation-only detector: dot iff the prop's
+ * rotation direction flips (covers PROP reversals and FULL reversals — both
+ * flip prop direction). HAND reversals (hand retraces, prop continues —
+ * rotationDirection unchanged) must NOT produce dots.
  *
- * Fixtures are grounded in MCP definitions (verified 2026-07-05):
- *   - pro = prop rotates the SAME direction as the hand's arc; anti = opposite.
- *     Proven by canonical letters A/B: identical blue hand path w→n (clockwise
- *     arc); A (pro) stores rotationDirection "cw", B (anti) stores "ccw".
- *   - reversal types: HAND (hand retraces, prop continues), PROP (hand
- *     continues, prop reverses), FULL (both retrace). All three get dots.
+ * The hand-reversal signal is retained as a separate, non-display channel
+ * (`handReversal`) on the canonical engine API for future consumers (e.g. the
+ * practice judgment loop) — proven here by running app StepData through
+ * `deriveReversals` directly.
  *
- * The rotation-only detector this replaces caught prop + full reversals but
- * missed hand reversals (rotationDirection unchanged). These tests prove the
- * miss is closed and the legacy behavior is preserved.
+ * Fixtures are grounded in MCP definitions (verified 2026-07-05); the
+ * pro/anti convention is proven by canonical letters A/B (same blue hand path
+ * w→n, a clockwise arc; A/pro stores rotationDirection "cw", B/anti "ccw").
  */
 
 import { describe, expect, it } from "vitest";
@@ -24,6 +25,7 @@ import {
   detectReversalForOption,
   detectReversalsForOptions,
 } from "../../src/lib/shared/create/services/reversal-detector";
+import { deriveReversals } from "@tka/sequence-engine";
 import type { StepData } from "../../src/lib/shared/foundation/domain/models/step-data";
 import type { SequenceData } from "../../src/lib/shared/foundation/domain/models/sequence-data";
 import type { PictographData } from "../../src/lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -84,18 +86,18 @@ function seq(steps: StepData[], loopType?: string): SequenceData {
 // Letter-A-shaped opener: blue hand w→n (clockwise arc), prop cw → pro.
 const proOpener = () => motion("pro", "w", "n", "cw");
 
-describe("processReversals — three reversal types (MCP-grounded)", () => {
-  it("HAND reversal: hand retraces, prop continues — now flagged (was the false negative)", () => {
-    // Step 2: hand retraces n→w (ccw arc), prop CONTINUES cw → anti.
-    // rotationDirection is unchanged cw→cw; the old detector saw nothing.
+describe("processReversals — dots are prop-direction reversals ONLY", () => {
+  it("HAND reversal (hand retraces, prop continues) → NO dot", () => {
+    // rotationDirection unchanged cw→cw; hand retraces n→w. Legacy showed no
+    // dot here, and per the display policy the dot must stay absent.
     const result = processReversals(
       seq([step(1, proOpener(), parked()), step(2, motion("anti", "n", "w", "cw"), parked())])
     );
-    expect(result.steps[1]!.blueReversal).toBe(true);
+    expect(result.steps[1]!.blueReversal).toBe(false);
     expect(result.steps[1]!.redReversal).toBe(false);
   });
 
-  it("PROP reversal: hand continues, prop reverses — still flagged", () => {
+  it("PROP reversal (hand continues, prop reverses) → dot", () => {
     const result = processReversals(
       seq([step(1, proOpener(), parked()), step(2, motion("anti", "n", "e", "ccw"), parked())])
     );
@@ -103,14 +105,14 @@ describe("processReversals — three reversal types (MCP-grounded)", () => {
     expect(result.steps[1]!.redReversal).toBe(false);
   });
 
-  it("FULL reversal: both retrace (pro stays pro) — still flagged", () => {
+  it("FULL reversal (both retrace — prop direction flips too) → dot", () => {
     const result = processReversals(
       seq([step(1, proOpener(), parked()), step(2, motion("pro", "n", "w", "ccw"), parked())])
     );
     expect(result.steps[1]!.blueReversal).toBe(true);
   });
 
-  it("natural continuation: hand continues arc, prop continues spin — no dot", () => {
+  it("natural continuation → no dot", () => {
     const result = processReversals(
       seq([step(1, proOpener(), parked()), step(2, motion("pro", "n", "e", "cw"), parked())])
     );
@@ -118,38 +120,45 @@ describe("processReversals — three reversal types (MCP-grounded)", () => {
     expect(result.steps[1]!.redReversal).toBe(false);
   });
 
-  it("FLOAT hand reversal via authored handPath (no prop rotation to compare)", () => {
-    // Two floats: hand arcs cw then retraces ccw; rotationDirection is
-    // noRotation on both, so only the authored hand path can see the flip.
+  it("FLOAT hand-arc flip via authored handPath → NO dot (no prop-direction flip)", () => {
     const result = processReversals(
       seq([
         step(1, motion("float", "w", "n", "noRotation", "cw"), parked()),
         step(2, motion("float", "n", "w", "noRotation", "ccw"), parked()),
       ])
     );
-    expect(result.steps[1]!.blueReversal).toBe(true);
+    expect(result.steps[1]!.blueReversal).toBe(false);
   });
 
-  it("loop wrap: first step flags a hand reversal against the sequence tail", () => {
+  it("loop wrap applies to the DOT channel (alternating prop spin dots every step)", () => {
+    const steps = [
+      step(1, motion("pro", "w", "n", "cw"), parked()),
+      step(2, motion("anti", "n", "e", "ccw"), parked()),
+      step(3, motion("pro", "e", "s", "cw"), parked()),
+      step(4, motion("anti", "s", "w", "ccw"), parked()),
+    ];
+    const looped = processReversals(seq(steps, "rotated"));
+    expect(looped.steps.map((s) => s.blueReversal)).toEqual([true, true, true, true]);
+
+    const linear = processReversals(seq(steps));
+    expect(linear.steps.map((s) => s.blueReversal)).toEqual([false, true, true, true]);
+  });
+
+  it("loop wrap does NOT dot a pure hand-reversal loop (prop direction never flips)", () => {
     const steps = [
       step(1, proOpener(), parked()),
       step(2, motion("anti", "n", "w", "cw"), parked()),
     ];
     const looped = processReversals(seq(steps, "rotated"));
-    expect(looped.steps[0]!.blueReversal).toBe(true); // via wrap
-    expect(looped.steps[1]!.blueReversal).toBe(true);
-
-    const linear = processReversals(seq(steps));
-    expect(linear.steps[0]!.blueReversal).toBe(false); // no wrap without loopType
-    expect(linear.steps[1]!.blueReversal).toBe(true);
+    expect(looped.steps.map((s) => s.blueReversal)).toEqual([false, false]);
   });
 
-  it("blanks stay transparent and never flag (production semantics preserved)", () => {
+  it("blanks stay transparent for the dot chain (production semantics preserved)", () => {
     const result = processReversals(
       seq([
         step(1, proOpener(), parked()),
         step(2, parked(), parked(), true), // blank
-        step(3, motion("anti", "n", "w", "cw"), parked()), // hand reversal across the blank
+        step(3, motion("anti", "n", "e", "ccw"), parked()), // prop reversal across the blank
       ])
     );
     expect(result.steps[1]!.blueReversal).toBe(false);
@@ -157,26 +166,43 @@ describe("processReversals — three reversal types (MCP-grounded)", () => {
   });
 });
 
-describe("option previews — hand-arc aware", () => {
+describe("canonical engine API — handReversal signal channel retained (non-display)", () => {
+  it("reports the HAND reversal on the signal channel for app StepData", () => {
+    const steps = [
+      step(1, proOpener(), parked()),
+      step(2, motion("anti", "n", "w", "cw"), parked()),
+    ];
+    const signals = deriveReversals(steps);
+    expect(signals[1]!.blue.handReversal).toBe(true);
+    expect(signals[1]!.blue.propReversal).toBe(false); // and the dot channel stays quiet
+  });
+
+  it("reports both channels on a FULL reversal", () => {
+    const steps = [
+      step(1, proOpener(), parked()),
+      step(2, motion("pro", "n", "w", "ccw"), parked()),
+    ];
+    const signals = deriveReversals(steps);
+    expect(signals[1]!.blue).toEqual({ propReversal: true, handReversal: true });
+  });
+
+  it("sees float hand-arc flips (authored handPath) on the signal channel only", () => {
+    const steps = [
+      step(1, motion("float", "w", "n", "noRotation", "cw"), parked()),
+      step(2, motion("float", "n", "w", "noRotation", "ccw"), parked()),
+    ];
+    const signals = deriveReversals(steps);
+    expect(signals[1]!.blue).toEqual({ propReversal: false, handReversal: true });
+  });
+});
+
+describe("option previews — dot channel only (prop-direction flip)", () => {
   const currentSequence = [step(1, proOpener(), parked())];
 
-  it("detectReversalForOption flags a hand-reversal option", () => {
+  it("does NOT flag a hand-reversal option (prop direction unchanged)", () => {
     const option = {
       motions: {
         blue: motion("anti", "n", "w", "cw"), // hand retraces, prop continues
-        red: parked(),
-      },
-    } as unknown as PictographData;
-    expect(detectReversalForOption(currentSequence, option)).toEqual({
-      blueReversal: true,
-      redReversal: false,
-    });
-  });
-
-  it("detectReversalForOption stays quiet on a continuation option", () => {
-    const option = {
-      motions: {
-        blue: motion("pro", "n", "e", "cw"),
         red: parked(),
       },
     } as unknown as PictographData;
@@ -186,19 +212,33 @@ describe("option previews — hand-arc aware", () => {
     });
   });
 
-  it("detectReversalsForOptions annotates hand, prop, and continuation options correctly", () => {
+  it("flags a prop-reversal option", () => {
+    const option = {
+      motions: {
+        blue: motion("anti", "n", "e", "ccw"),
+        red: parked(),
+      },
+    } as unknown as PictographData;
+    expect(detectReversalForOption(currentSequence, option)).toEqual({
+      blueReversal: true,
+      redReversal: false,
+    });
+  });
+
+  it("detectReversalsForOptions dots prop/full options, not hand-reversal or continuation options", () => {
     const sequencePictographs = [
       { motions: { blue: proOpener(), red: parked() } },
     ] as unknown as PictographData[];
     const options = [
-      { motions: { blue: motion("anti", "n", "w", "cw"), red: parked() } }, // hand reversal
-      { motions: { blue: motion("anti", "n", "e", "ccw"), red: parked() } }, // prop reversal
-      { motions: { blue: motion("pro", "n", "e", "cw"), red: parked() } }, // continuation
+      { motions: { blue: motion("anti", "n", "w", "cw"), red: parked() } }, // hand reversal → no dot
+      { motions: { blue: motion("anti", "n", "e", "ccw"), red: parked() } }, // prop reversal → dot
+      { motions: { blue: motion("pro", "n", "w", "ccw"), red: parked() } }, // full reversal → dot
+      { motions: { blue: motion("pro", "n", "e", "cw"), red: parked() } }, // continuation → no dot
     ] as unknown as PictographData[];
 
     const annotated = detectReversalsForOptions(sequencePictographs, options);
-    expect(annotated.map((o) => o.blueReversal)).toEqual([true, true, false]);
-    expect(annotated.map((o) => o.redReversal)).toEqual([false, false, false]);
+    expect(annotated.map((o) => o.blueReversal)).toEqual([false, true, true, false]);
+    expect(annotated.map((o) => o.redReversal)).toEqual([false, false, false, false]);
   });
 
   it("returns all-false for an empty sequence", () => {

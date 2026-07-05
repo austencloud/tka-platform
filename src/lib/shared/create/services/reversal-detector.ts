@@ -1,25 +1,25 @@
 /**
  * reversal-detector.ts
  *
- * App adapter over THE canonical reversal detector,
- * `deriveReversals` in `@tka/sequence-engine` (hand-arc aware since
- * 2026-07-05). This module keeps the app-facing API (SequenceData in,
- * StepData out, option-preview helpers) and delegates all detection
- * semantics — loop wrap, transparent blank/noRotation chains, and the
- * two-signal (prop rotation + hand arc) reversal rule — to the engine.
+ * App adapter over THE canonical reversal detector, `deriveReversals` in
+ * `@tka/sequence-engine`. This module keeps the app-facing API (SequenceData
+ * in, StepData out, option-preview helpers) and delegates detection
+ * semantics — loop wrap, transparent blank/noRotation chains — to the engine.
  *
- * Why two signals: pro/anti is the relation between prop rotation and the
- * hand's arc (MCP ground truth). Comparing `rotationDirection` alone missed
- * hand reversals (hand retraces, prop spin unchanged). See
- * packages/sequence-engine/src/analysis/deriveReversals.ts for the canon.
+ * DISPLAY POLICY (Austen, 2026-07-05): the pictograph reversal DOTS are for
+ * prop-direction reversals ONLY. This adapter therefore consumes the engine's
+ * `propReversal` channel exclusively — a dot appears iff the prop's rotation
+ * direction flips (which covers prop reversals AND full reversals; both flip
+ * prop direction). Byte-identical to the legacy rotation-only detector over
+ * the published corpus (proven in tests/unit/hand-arc-reversal-impact.test.ts).
+ *
+ * The engine's `handReversal` channel (hand retraces its arc, prop continues
+ * — MCP hand-reversal type) is deliberately NOT read here. It is a separate,
+ * non-display signal retained for future consumers (e.g. the practice
+ * judgment loop).
  */
 
-import {
-  deriveReversals,
-  handArcDirection,
-  propRotationDirection,
-  type MotionSignalSource,
-} from "@tka/sequence-engine";
+import { deriveReversals } from "@tka/sequence-engine";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -44,6 +44,8 @@ export interface PictographWithReversals extends PictographData {
  * For loop sequences (rotated, mirrored, etc.) the last steps wrap into the
  * first steps, so step 1's "previous" context includes the tail of the
  * sequence — the engine detector handles the wrap when `loop` is set.
+ *
+ * Dots = engine `propReversal` channel only (display policy above).
  */
 export function processReversals(sequence: SequenceData): SequenceData {
   const flags = deriveReversals(sequence.steps, {
@@ -52,8 +54,8 @@ export function processReversals(sequence: SequenceData): SequenceData {
 
   const processedSteps = sequence.steps.map((step, i) =>
     applyReversalSymbols(step, {
-      blueReversal: flags[i]?.blue ?? false,
-      redReversal: flags[i]?.red ?? false,
+      blueReversal: flags[i]?.blue.propReversal ?? false,
+      redReversal: flags[i]?.red.propReversal ?? false,
     })
   );
 
@@ -64,8 +66,8 @@ export function processReversals(sequence: SequenceData): SequenceData {
 }
 
 /**
- * Detect reversal for a single step based on previous steps (non-loop
- * context: no wrap).
+ * Detect reversal (dot channel: prop-direction flip) for a single step based
+ * on previous steps (non-loop context: no wrap).
  */
 export function detectReversal(
   previousSteps: StepData[],
@@ -74,8 +76,8 @@ export function detectReversal(
   const flags = deriveReversals([...previousSteps, currentStep]);
   const last = flags[flags.length - 1];
   return {
-    blueReversal: last?.blue ?? false,
-    redReversal: last?.red ?? false,
+    blueReversal: last?.blue.propReversal ?? false,
+    redReversal: last?.red.propReversal ?? false,
   };
 }
 
@@ -96,6 +98,7 @@ export function applyReversalSymbols(
 /**
  * Detect reversal for an option preview based on current sequence.
  * Used to show reversal indicators on options before they're selected.
+ * Dot channel only: prop rotation-direction flip.
  */
 export function detectReversalForOption(
   currentSequence: StepData[],
@@ -115,15 +118,13 @@ export function detectReversalForOption(
     return reversalInfo;
   }
 
-  reversalInfo.blueReversal = optionFlips(
-    currentSequence,
-    optionPictographData,
-    "blue"
+  reversalInfo.blueReversal = propFlips(
+    lastActivePropDir(currentSequence, "blue"),
+    optionPictographData.motions.blue
   );
-  reversalInfo.redReversal = optionFlips(
-    currentSequence,
-    optionPictographData,
-    "red"
+  reversalInfo.redReversal = propFlips(
+    lastActivePropDir(currentSequence, "red"),
+    optionPictographData.motions.red
   );
 
   return reversalInfo;
@@ -147,8 +148,8 @@ export function detectReversalsForOptions(
   }
 
   // Anchor once for the whole option set.
-  const blueAnchor = lastActiveSignals(currentSequence, "blue");
-  const redAnchor = lastActiveSignals(currentSequence, "red");
+  const blueAnchor = lastActivePropDir(currentSequence, "blue");
+  const redAnchor = lastActivePropDir(currentSequence, "red");
 
   return options.map((option) => {
     if (!option.motions) {
@@ -156,93 +157,77 @@ export function detectReversalsForOptions(
     }
     return {
       ...option,
-      blueReversal: flipsAgainst(blueAnchor, option.motions.blue),
-      redReversal: flipsAgainst(redAnchor, option.motions.red),
+      blueReversal: propFlips(blueAnchor, option.motions.blue),
+      redReversal: propFlips(redAnchor, option.motions.red),
     };
   });
 }
 
 // ============================================================================
-// MODULE-PRIVATE HELPERS
+// MODULE-PRIVATE HELPERS (option-preview dot channel — prop rotation only)
 // ============================================================================
 
-interface SignalAnchors {
-  prop: "cw" | "ccw" | null;
-  arc: "cw" | "ccw" | null;
+interface MotionLike {
+  readonly rotationDirection?: string;
+  readonly motionType?: string;
 }
 
 interface SignalCarrier {
   readonly isBlank?: boolean;
   readonly motions?: {
-    readonly blue?: MotionSignalSource | null;
-    readonly red?: MotionSignalSource | null;
+    readonly blue?: MotionLike | null;
+    readonly red?: MotionLike | null;
   } | null;
 }
 
 /**
- * Last active prop-rotation and hand-arc values for one hand, walking
- * backwards through the sequence. Each signal anchors independently and looks
- * past blanks / inactive values (production chain semantics).
+ * Prop rotation of a motion with the production fallbacks: explicit value
+ * wins; static/dash without one legitimately have no rotation; pro/anti/float
+ * without one is bad data → warn and default cw.
  */
-function lastActiveSignals(
+function propDirOf(motion: MotionLike | null | undefined): string | null {
+  if (!motion) return null;
+  if (motion.rotationDirection) return motion.rotationDirection;
+  if (motion.motionType === "static" || motion.motionType === "dash") {
+    return "noRotation";
+  }
+  console.warn(
+    `Missing rotationDirection for motion type "${motion.motionType}". Defaulting to 'cw'.`
+  );
+  return "cw";
+}
+
+/**
+ * Last active prop rotation direction for one hand, walking backwards through
+ * the sequence and looking past blanks / noRotation (production semantics).
+ */
+function lastActivePropDir(
   items: readonly SignalCarrier[],
   color: "blue" | "red"
-): SignalAnchors {
-  let prop: "cw" | "ccw" | null = null;
-  let arc: "cw" | "ccw" | null = null;
-
+): string | null {
   for (let i = items.length - 1; i >= 0; i--) {
     const item = items[i];
     if (!item || item.isBlank) continue;
     const motion = item.motions?.[color];
     if (!motion) continue;
-
-    if (prop === null) {
-      const p = propRotationDirection(motion);
-      if (p === "cw" || p === "ccw") prop = p;
-    }
-    if (arc === null) {
-      arc = handArcDirection(motion);
-    }
-    if (prop !== null && arc !== null) break;
+    const dir = propDirOf(motion);
+    if (dir && dir !== "noRotation") return dir;
   }
-
-  return { prop, arc };
+  return null;
 }
 
 /**
- * Reversal rule for an option's motion against the sequence anchors: either
- * the prop rotation or the hand arc flips. The option's prop side reads the
- * raw rotationDirection (no bad-data defaulting), preserving the pre-existing
- * option-preview behavior; the arc side is the new hand-reversal signal.
+ * Dot rule for an option's motion against the sequence anchor: the prop's
+ * rotation direction flips. The option side reads the raw rotationDirection
+ * (no bad-data defaulting), preserving the legacy option-preview behavior.
  */
-function flipsAgainst(
-  anchors: SignalAnchors,
-  motion: MotionSignalSource | null | undefined
+function propFlips(
+  anchor: string | null,
+  motion: MotionLike | null | undefined
 ): boolean {
-  if (!motion) return false;
-
-  const curProp = motion.rotationDirection || null;
-  const propFlip =
-    anchors.prop !== null &&
-    curProp !== null &&
-    curProp !== "noRotation" &&
-    curProp !== anchors.prop;
-
-  const curArc = handArcDirection(motion);
-  const arcFlip =
-    anchors.arc !== null && curArc !== null && curArc !== anchors.arc;
-
-  return propFlip || arcFlip;
-}
-
-function optionFlips(
-  currentSequence: readonly SignalCarrier[],
-  option: PictographData,
-  color: "blue" | "red"
-): boolean {
-  const anchors = lastActiveSignals(currentSequence, color);
-  return flipsAgainst(anchors, option.motions?.[color]);
+  if (!anchor || !motion) return false;
+  const cur = motion.rotationDirection || null;
+  return cur !== null && cur !== "noRotation" && cur !== anchor;
 }
 
 // ============================================================================

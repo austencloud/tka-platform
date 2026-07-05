@@ -35,6 +35,7 @@ export type {
 export {
   deriveReversals,
   type StepReversals,
+  type ChannelReversals,
   type DeriveReversalsOptions,
   type ReversalStepLike,
 } from "./analysis/deriveReversals.js";

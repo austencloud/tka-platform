@@ -1,26 +1,20 @@
 /**
- * Hand-Arc Reversal Impact — corpus superset guarantee + display-diff report
- * ==========================================================================
+ * Reversal Dot Display — corpus byte-identical guarantee vs legacy
+ * ================================================================
  *
- * Two jobs:
+ * DISPLAY POLICY (Austen, 2026-07-05): pictograph reversal DOTS are for
+ * prop-direction reversals ONLY. The consolidated detector's dot output must
+ * be BYTE-IDENTICAL to the legacy rotation-only production detector over the
+ * whole published corpus: zero dots gained, zero dots suppressed.
  *
- * 1. GUARANTEE (hard assert): the hand-arc-aware detector never suppresses a
- *    dot the legacy rotation-only detector emitted. The findings doc
- *    (2026-06-30-reversal-derivation-reconciliation-findings.md) established
- *    the legacy detector has zero false positives — this work only ADDS the
- *    hand reversals it missed. new ⊇ old, cell for cell, over the whole
- *    published corpus.
- *
- * 2. REPORT (diagnostic): how many sequences/steps GAIN dots — the
- *    display-level magnitude of enabling hand-arc awareness. Reversal flags
- *    are no longer identity-bearing (content-hash V2 live since 2026-06-30,
- *    CONTENT_HASH_VERSION === HASH_VERSION_V2), so this is a pure display
- *    diff: more dots on cards/UI, no identity forks.
- *
- * The legacy reference below is a frozen copy of the pre-2026-07-05
+ * The legacy reference below is a frozen copy of the pre-consolidation
  * production algorithm (rotation-only, loop-wrap, blank-transparent) — kept
  * here verbatim so the comparison is against the real shipped behavior, not a
  * reimagining of it.
+ *
+ * The engine's `handReversal` channel (hand retraces, prop continues) is a
+ * separate NON-DISPLAY signal retained for future consumers; its corpus
+ * footprint is reported informationally at the end (it feeds nothing today).
  */
 
 import { describe, it, expect } from "vitest";
@@ -29,6 +23,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { deriveSteps } from "../../src/lib/shared/foundation/services/step-deriver";
 import { processReversals } from "../../src/lib/shared/create/services/reversal-detector";
+import { deriveReversals } from "@tka/sequence-engine";
 import type { SequenceData } from "../../src/lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "../../src/lib/shared/foundation/domain/models/step-data";
 
@@ -38,7 +33,7 @@ const projectRoot = path.resolve(
 );
 
 // ---------------------------------------------------------------------------
-// Frozen legacy reference (pre-hand-arc production processReversals)
+// Frozen legacy reference (pre-consolidation production processReversals)
 // ---------------------------------------------------------------------------
 
 function legacyGetPropRotDir(step: StepData, color: "blue" | "red"): string | null {
@@ -127,21 +122,18 @@ function loadCorpus(): RawDoc[] {
   );
 }
 
-describe("hand-arc reversal impact (public corpus)", () => {
-  it("never suppresses a legacy dot, and reports the dots gained", () => {
+describe("reversal dot display — corpus parity with the legacy detector", () => {
+  it("dot output is byte-identical to legacy: 0 gained, 0 suppressed", () => {
     const corpus = loadCorpus();
     expect(corpus.length).toBeGreaterThan(0);
 
     let analyzed = 0;
     let stepTotal = 0;
-    let cellsOld = 0;
+    let cellsLegacy = 0;
     let cellsNew = 0;
-    let gainedBlue = 0;
-    let gainedRed = 0;
+    let gained = 0;
     let suppressed = 0;
-    let seqGained = 0;
-    let loopGained = 0;
-    const examples: string[] = [];
+    let handSignalCells = 0; // non-display channel footprint (informational)
 
     for (const doc of corpus) {
       let derived;
@@ -156,7 +148,7 @@ describe("hand-arc reversal impact (public corpus)", () => {
       }
 
       const sequence = {
-        id: "impact",
+        id: "parity",
         name: doc.word ?? "",
         word: doc.word ?? "",
         steps: derived,
@@ -171,64 +163,52 @@ describe("hand-arc reversal impact (public corpus)", () => {
       } as unknown as SequenceData;
 
       analyzed++;
-      const oldFlags = legacyProcessReversals(sequence);
+      const legacyFlags = legacyProcessReversals(sequence);
       const processed = processReversals(sequence);
+      const signals = deriveReversals(sequence.steps, {
+        loop: !!sequence.loopType,
+      });
 
-      let thisGained = false;
       for (let i = 0; i < processed.steps.length; i++) {
         stepTotal++;
-        const oldStep = oldFlags[i]!;
+        const legacyStep = legacyFlags[i]!;
         const newStep = processed.steps[i] as {
           blueReversal?: boolean;
           redReversal?: boolean;
         };
 
         for (const color of ["blue", "red"] as const) {
-          const oldDot = oldStep[color];
+          const legacyDot = legacyStep[color];
           const newDot =
             color === "blue" ? !!newStep.blueReversal : !!newStep.redReversal;
-          if (oldDot) cellsOld++;
+          if (legacyDot) cellsLegacy++;
           if (newDot) cellsNew++;
-          if (oldDot && !newDot) suppressed++;
-          if (!oldDot && newDot) {
-            thisGained = true;
-            if (color === "blue") gainedBlue++;
-            else gainedRed++;
-          }
-        }
-      }
-
-      if (thisGained) {
-        seqGained++;
-        if (doc.loopType) loopGained++;
-        if (examples.length < 8) {
-          examples.push(
-            `${(doc.word ?? "?").slice(0, 18).padEnd(18)} loop=${String(doc.loopType ?? "—")}`
-          );
+          if (legacyDot && !newDot) suppressed++;
+          if (!legacyDot && newDot) gained++;
+          if (signals[i]?.[color].handReversal) handSignalCells++;
         }
       }
     }
 
     /* eslint-disable no-console */
-    console.log("\n===== HAND-ARC REVERSAL IMPACT =====");
-    console.log(`sequences analyzed:                 ${analyzed}`);
-    console.log(`steps analyzed:                     ${stepTotal}`);
-    console.log(`reversal cells (legacy detector):   ${cellsOld}`);
-    console.log(`reversal cells (hand-arc detector): ${cellsNew}`);
+    console.log("\n===== REVERSAL DOT DISPLAY PARITY (vs legacy) =====");
+    console.log(`sequences analyzed:                ${analyzed}`);
+    console.log(`steps analyzed:                    ${stepTotal}`);
+    console.log(`dot cells (legacy detector):       ${cellsLegacy}`);
+    console.log(`dot cells (consolidated detector): ${cellsNew}`);
+    console.log(`cells GAINED (must be 0):          ${gained}`);
+    console.log(`cells SUPPRESSED (must be 0):      ${suppressed}`);
     console.log(
-      `cells GAINED (hand reversals found): ${gainedBlue + gainedRed}  (blue=${gainedBlue}, red=${gainedRed})`
+      `handReversal signal cells (non-display channel, informational): ${handSignalCells}`
     );
-    console.log(
-      `sequences gaining ≥1 dot:           ${seqGained} / ${analyzed}  (loop=${loopGained}, non-loop=${seqGained - loopGained})`
-    );
-    console.log(`cells SUPPRESSED (must be 0):       ${suppressed}`);
-    console.log("examples gaining dots:");
-    for (const e of examples) console.log("  " + e);
-    console.log("====================================\n");
+    console.log("===================================================\n");
     /* eslint-enable no-console */
 
-    // The hard guarantee: hand-arc awareness only ADDS dots.
+    // The display policy, hard-asserted: dots = prop-direction reversals
+    // only, byte-identical to legacy.
+    expect(gained).toBe(0);
     expect(suppressed).toBe(0);
+    expect(cellsNew).toBe(cellsLegacy);
     expect(analyzed).toBeGreaterThan(0);
   });
 });
