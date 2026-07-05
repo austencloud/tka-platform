@@ -14,17 +14,12 @@
  * rotation detection, compound pattern analysis, and LOOPType mapping.
  */
 
-import type { SequenceStep, MotionData } from "../../core/types/sequence-engine-types.js";
+import type { SequenceStep } from "../../core/types/sequence-engine-types.js";
 import { gridPositionDeriver } from "../../core/positions/GridPositionDeriver.js";
 import {
-  HALF_POSITION_MAP,
   QUARTER_POSITION_MAP_CW,
   QUARTER_POSITION_MAP_CCW,
 } from "../position-maps/circular-position-maps.js";
-import {
-  VERTICAL_MIRROR_POSITION_MAP,
-  INVERTED_LETTER_MAP,
-} from "../position-maps/strict-loop-position-maps.js";
 import { LOOPType, Period } from "../loop-types.js";
 import {
   LOOPComponent,
@@ -32,6 +27,15 @@ import {
   type PropLOOPSpec,
   type ComponentSpec,
 } from "../loop-spec.js";
+import {
+  uniformHalvedRelation,
+  uniformRelationAtInterval,
+  detectRewoundPattern,
+  detectsInnerRotation,
+  type PairMotions,
+  type PairComponentId,
+  type RotationAngle,
+} from "./pair-relation.js";
 
 export { LOOPComponent };
 
@@ -106,6 +110,8 @@ function deriveLoopTypeFromComponents(components: Set<LOOPComponent>): LOOPType 
       return LOOPType.MIRRORED_INVERTED_ROTATED;
     if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.ROTATED) && has(LOOPComponent.SWAPPED))
       return LOOPType.MIRRORED_ROTATED_SWAPPED;
+    if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.SWAPPED) && has(LOOPComponent.INVERTED))
+      return LOOPType.MIRRORED_SWAPPED_INVERTED;
   }
   if (size === 4) {
     if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.ROTATED) && has(LOOPComponent.INVERTED) && has(LOOPComponent.SWAPPED))
@@ -163,18 +169,28 @@ export function detectLOOPFromSteps(steps: SequenceStep[]): LOOPDetectionResult 
     };
   }
 
-  const halfLength = letterSteps.length / 2;
+  const pairMotions = toPairMotions(letterSteps);
+  const uniform = uniformHalvedRelation(pairMotions);
+
   const components: LOOPComponentId[] = [];
+  let rotationAngle: RotationAngle | undefined;
 
-  const rotatedMatches = checkRotatedPattern(letterSteps, halfLength);
-  const mirroredMatches = checkMirroredPattern(letterSteps, halfLength);
-  const swappedMatches = checkSwappedPattern(letterSteps, halfLength);
-  const invertedMatches = checkInvertedPattern(letterSteps, halfLength);
+  if (uniform && uniform.components.length > 0) {
+    for (const c of uniform.components) {
+      components.push(c as LOOPComponentId);
+    }
+    rotationAngle = uniform.rotation;
 
-  if (rotatedMatches.matched) components.push("rotated");
-  if (mirroredMatches) components.push("mirrored");
-  if (swappedMatches) components.push("swapped");
-  if (invertedMatches) components.push("inverted");
+    // Nested loops (mirrored_rotated family) carry the rotation one quarter
+    // apart WITHIN each half; the halved relation only shows the outer
+    // reflection. Surface the inner rotation when it holds uniformly.
+    if (!components.includes("rotated") && detectsInnerRotation(pairMotions)) {
+      components.push("rotated");
+    }
+  } else if (detectRewoundPattern(pairMotions)) {
+    // Time reversal has no uniform index-wise relation — checked separately.
+    components.push("rewound");
+  }
 
   if (components.length === 0) {
     return {
@@ -186,13 +202,44 @@ export function detectLOOPFromSteps(steps: SequenceStep[]): LOOPDetectionResult 
     };
   }
 
+  // Rotation direction: 90° relations carry it structurally; 180° relations
+  // are direction-ambiguous, so keep the legacy first-step heuristic.
+  let direction: "cw" | "ccw" | null = null;
+  if (components.includes("rotated")) {
+    if (rotationAngle === "90cw") direction = "cw";
+    else if (rotationAngle === "90ccw") direction = "ccw";
+    else {
+      const blueRotDir = letterSteps[0]?.motions.blue?.rotationDirection;
+      if (blueRotDir === "cw" || blueRotDir === "ccw") direction = blueRotDir;
+    }
+  }
+
   return {
     isCircular: true,
     components,
     isFreeform: false,
-    rotationDirection: rotatedMatches.direction,
+    rotationDirection: direction,
     description: `LOOP: ${components.join(" + ")}`,
   };
+}
+
+/**
+ * Project engine steps down to the minimal per-hand view the pair-relation
+ * algebra reads (locations + motionType — MCP-grounded LOOP signal space).
+ */
+function toPairMotions(steps: readonly SequenceStep[]): PairMotions[] {
+  return steps.map((s) => ({
+    blue: {
+      startLocation: s.motions.blue?.startLocation ?? "",
+      endLocation: s.motions.blue?.endLocation ?? "",
+      motionType: s.motions.blue?.motionType ?? "",
+    },
+    red: {
+      startLocation: s.motions.red?.startLocation ?? "",
+      endLocation: s.motions.red?.endLocation ?? "",
+      motionType: s.motions.red?.motionType ?? "",
+    },
+  }));
 }
 
 
@@ -211,21 +258,6 @@ export class LOOPDetectorClass {
       return gridPositionDeriver.getGridPositionFromLocations(
         blue.startLocation,
         red.startLocation
-      );
-    } catch {
-      return null;
-    }
-  }
-
-  private deriveEndPosition(step: SequenceStep): string | null {
-    const blue = step.motions.blue;
-    const red = step.motions.red;
-    if (!blue?.endLocation || !red?.endLocation) return null;
-
-    try {
-      return gridPositionDeriver.getGridPositionFromLocations(
-        blue.endLocation,
-        red.endLocation
       );
     } catch {
       return null;
@@ -286,13 +318,16 @@ export class LOOPDetectorClass {
       return { isCircular: true, spec: null, loopType: null, period: null, confidence: "accidental" };
     }
 
+    const pairMotions = toPairMotions(letterSteps);
+
     // Detect transformations at BOTH intervals independently
-    const quarteredTransformations = this.detectAtQuartered(letterSteps);
-    const halvedTransformations = this.detectAtHalved(letterSteps);
+    const quarteredTransformations = this.detectAtQuartered(letterSteps, pairMotions);
+    const halvedTransformations = this.detectAtHalved(pairMotions);
 
     // Check for compound pattern (transformations at different intervals)
     const compoundPattern = this.detectCompoundPattern(
       letterSteps,
+      pairMotions,
       quarteredTransformations,
       halvedTransformations
     );
@@ -308,10 +343,13 @@ export class LOOPDetectorClass {
     } else {
       period = this.determinePeriod(letterSteps);
 
-      if (this.detectsRotation(letterSteps, period)) detectedComponents.add(LOOPComponent.ROTATED);
-      if (this.detectsMirroring(letterSteps)) detectedComponents.add(LOOPComponent.MIRRORED);
-      if (this.detectsSwapping(letterSteps)) detectedComponents.add(LOOPComponent.SWAPPED);
-      if (this.detectsInversion(letterSteps)) detectedComponents.add(LOOPComponent.INVERTED);
+      for (const comp of halvedTransformations) detectedComponents.add(comp);
+
+      // Time reversal has no uniform index-wise relation — checked separately,
+      // and only when nothing else explains the loop.
+      if (detectedComponents.size === 0 && detectRewoundPattern(pairMotions)) {
+        detectedComponents.add(LOOPComponent.REWOUND);
+      }
     }
 
     // Map components to LOOP type
@@ -374,247 +412,53 @@ export class LOOPDetectorClass {
     return cwMatch || ccwMatch;
   }
 
-  // ============ ROTATION DETECTION ============
-
-  private detectsRotation(steps: readonly SequenceStep[], period: Period): boolean {
-    const length = steps.length;
-
-    if (period === Period.QUARTERED) {
-      return this.detectsQuarteredRotation(steps);
-    }
-
-    if (period === Period.HALVED && length >= 2 && length % 2 === 0) {
-      const halfLength = length / 2;
-      const h1Start = steps[0] ? this.deriveStartPosition(steps[0]) : null;
-      const h2Start = steps[halfLength] ? this.deriveStartPosition(steps[halfLength]!) : null;
-
-      if (!h1Start || !h2Start) return false;
-      return HALF_POSITION_MAP[h1Start] === h2Start;
-    }
-
-    return false;
-  }
-
-  // ============ MIRROR DETECTION ============
-
-  private detectsMirroring(steps: readonly SequenceStep[]): boolean {
-    const length = steps.length;
-    if (length < 2 || length % 2 !== 0) return false;
-
-    const halfLength = length / 2;
-    let validComparisons = 0;
-
-    for (let i = 0; i < halfLength; i++) {
-      const firstStep = steps[i]!;
-      const secondStep = steps[halfLength + i]!;
-
-      const firstEnd = this.deriveEndPosition(firstStep);
-      const secondEnd = this.deriveEndPosition(secondStep);
-
-      if (!firstEnd || !secondEnd) continue;
-      validComparisons++;
-
-      const expected = VERTICAL_MIRROR_POSITION_MAP[firstEnd];
-      if (secondEnd !== expected) return false;
-    }
-
-    return validComparisons > 0;
-  }
-
-  // ============ SWAP DETECTION ============
-
-  private detectsSwapping(steps: readonly SequenceStep[]): boolean {
-    const length = steps.length;
-    if (length < 2 || length % 2 !== 0) return false;
-
-    const halfLength = length / 2;
-    let swapCount = 0;
-    let checkCount = 0;
-
-    for (let i = 0; i < Math.min(halfLength, 4); i++) {
-      const firstStep = steps[i]!;
-      const secondStep = steps[halfLength + i]!;
-
-      const firstBlue = firstStep.motions.blue;
-      const firstRed = firstStep.motions.red;
-      const secondBlue = secondStep.motions.blue;
-      const secondRed = secondStep.motions.red;
-
-      if (firstBlue && firstRed && secondBlue && secondRed) {
-        // Skip pairs where both hands have the same motion type
-        if (firstBlue.motionType === firstRed.motionType) continue;
-
-        checkCount++;
-        if (
-          secondBlue.motionType === firstRed.motionType &&
-          secondRed.motionType === firstBlue.motionType
-        ) {
-          swapCount++;
-        }
-      }
-    }
-
-    return checkCount > 0 && swapCount >= checkCount * 0.75;
-  }
-
-  // ============ INVERSION DETECTION ============
-
-  private detectsInversion(steps: readonly SequenceStep[]): boolean {
-    const length = steps.length;
-    if (length < 2 || length % 2 !== 0) return false;
-
-    const halfLength = length / 2;
-    let validComparisons = 0;
-
-    for (let i = 0; i < halfLength; i++) {
-      const firstStep = steps[i]!;
-      const secondStep = steps[halfLength + i]!;
-
-      // Check letter inversion
-      if (firstStep.letter && secondStep.letter) {
-        validComparisons++;
-        const expectedLetter = INVERTED_LETTER_MAP[firstStep.letter ?? ""];
-        if (expectedLetter && secondStep.letter !== expectedLetter) return false;
-      }
-
-      // Check motion type inversion (PRO <-> ANTI)
-      if (firstStep.motions.blue && secondStep.motions.blue) {
-        validComparisons++;
-        if (!isMotionTypeInverted(firstStep.motions.blue.motionType, secondStep.motions.blue.motionType)) {
-          return false;
-        }
-      }
-
-      if (firstStep.motions.red && secondStep.motions.red) {
-        validComparisons++;
-        if (!isMotionTypeInverted(firstStep.motions.red.motionType, secondStep.motions.red.motionType)) {
-          return false;
-        }
-      }
-    }
-
-    return validComparisons > 0;
-  }
-
   // ============ COMPOUND PATTERN DETECTION ============
 
-  private detectAtQuartered(steps: readonly SequenceStep[]): LOOPComponent[] {
+  private detectAtQuartered(
+    steps: readonly SequenceStep[],
+    pairMotions: readonly PairMotions[]
+  ): LOOPComponent[] {
     const components: LOOPComponent[] = [];
     const length = steps.length;
 
     if (length < 4 || length % 4 !== 0) return components;
 
     if (this.detectsQuarteredRotation(steps)) components.push(LOOPComponent.ROTATED);
-    if (this.detectsSwappingAtInterval(steps, length / 4)) components.push(LOOPComponent.SWAPPED);
-    if (this.detectsInversionAtInterval(steps, length / 4)) components.push(LOOPComponent.INVERTED);
+
+    // Swap/invert at the quarter interval, read through the pair-relation
+    // algebra (hand-identity aware — see pair-relation.ts).
+    const rel = uniformRelationAtInterval(pairMotions, length / 4, { wrap: true });
+    if (rel) {
+      if (rel.components.includes("swapped")) components.push(LOOPComponent.SWAPPED);
+      if (rel.components.includes("inverted")) components.push(LOOPComponent.INVERTED);
+    }
 
     return components;
   }
 
-  private detectAtHalved(steps: readonly SequenceStep[]): LOOPComponent[] {
+  private detectAtHalved(pairMotions: readonly PairMotions[]): LOOPComponent[] {
     const components: LOOPComponent[] = [];
-    const length = steps.length;
+    const rel = uniformHalvedRelation(pairMotions);
+    if (!rel) return components;
 
-    if (length < 2 || length % 2 !== 0) return components;
-
-    const halfLength = length / 2;
-
-    // Check 180 degree rotation
-    const h1Start = steps[0] ? this.deriveStartPosition(steps[0]) : null;
-    const h2Start = steps[halfLength] ? this.deriveStartPosition(steps[halfLength]!) : null;
-    if (h1Start && h2Start && HALF_POSITION_MAP[h1Start] === h2Start) {
-      components.push(LOOPComponent.ROTATED);
+    const MAP: Partial<Record<PairComponentId, LOOPComponent>> = {
+      rotated: LOOPComponent.ROTATED,
+      mirrored: LOOPComponent.MIRRORED,
+      flipped: LOOPComponent.FLIPPED,
+      swapped: LOOPComponent.SWAPPED,
+      inverted: LOOPComponent.INVERTED,
+    };
+    for (const c of rel.components) {
+      const mapped = MAP[c];
+      if (mapped) components.push(mapped);
     }
-
-    if (this.detectsSwappingAtInterval(steps, halfLength)) components.push(LOOPComponent.SWAPPED);
-    if (this.detectsInversionAtInterval(steps, halfLength)) components.push(LOOPComponent.INVERTED);
-    if (this.detectsMirroring(steps)) components.push(LOOPComponent.MIRRORED);
 
     return components;
-  }
-
-  private detectsSwappingAtInterval(steps: readonly SequenceStep[], interval: number): boolean {
-    const length = steps.length;
-    if (interval <= 0 || interval >= length) return false;
-
-    let swapCount = 0;
-    let checkCount = 0;
-    const pairsToCheck = Math.min(4, length - interval);
-
-    for (let i = 0; i < pairsToCheck; i++) {
-      const firstStep = steps[i]!;
-      const secondStep = steps[i + interval]!;
-
-      const firstBlue = firstStep.motions.blue;
-      const firstRed = firstStep.motions.red;
-      const secondBlue = secondStep.motions.blue;
-      const secondRed = secondStep.motions.red;
-
-      if (firstBlue && firstRed && secondBlue && secondRed) {
-        if (firstBlue.motionType === firstRed.motionType) continue;
-
-        checkCount++;
-        if (
-          secondBlue.motionType === firstRed.motionType &&
-          secondRed.motionType === firstBlue.motionType
-        ) {
-          swapCount++;
-        }
-      }
-    }
-
-    return checkCount > 0 && swapCount >= checkCount * 0.75;
-  }
-
-  private detectsInversionAtInterval(steps: readonly SequenceStep[], interval: number): boolean {
-    const length = steps.length;
-    if (interval <= 0 || interval >= length) return false;
-
-    const pairsToCheck = Math.min(4, length - interval);
-    let validComparisons = 0;
-
-    for (let i = 0; i < pairsToCheck; i++) {
-      const firstStep = steps[i]!;
-      const secondStep = steps[i + interval]!;
-
-      if (firstStep.letter && secondStep.letter) {
-        validComparisons++;
-        const expectedLetter = INVERTED_LETTER_MAP[firstStep.letter ?? ""];
-        if (expectedLetter && secondStep.letter !== expectedLetter) return false;
-      }
-
-      if (firstStep.motions.blue && secondStep.motions.blue) {
-        validComparisons++;
-        if (!isMotionTypeInverted(firstStep.motions.blue.motionType, secondStep.motions.blue.motionType)) {
-          return false;
-        }
-      }
-
-      if (firstStep.motions.red && secondStep.motions.red) {
-        validComparisons++;
-        if (!isMotionTypeInverted(firstStep.motions.red.motionType, secondStep.motions.red.motionType)) {
-          return false;
-        }
-      }
-    }
-
-    return validComparisons > 0;
-  }
-
-  private detectsInnerHalvedRotation(steps: readonly SequenceStep[]): boolean {
-    const length = steps.length;
-    if (length < 8 || length % 4 !== 0) return false;
-
-    const quarterLength = length / 4;
-    const q1Start = steps[0] ? this.deriveStartPosition(steps[0]) : null;
-    const q2Start = steps[quarterLength] ? this.deriveStartPosition(steps[quarterLength]!) : null;
-
-    if (!q1Start || !q2Start) return false;
-    return HALF_POSITION_MAP[q1Start] === q2Start;
   }
 
   private detectCompoundPattern(
     steps: readonly SequenceStep[],
+    pairMotions: readonly PairMotions[],
     quarteredComponents: LOOPComponent[],
     halvedComponents: LOOPComponent[]
   ): CompoundPattern | null {
@@ -666,7 +510,7 @@ export class LOOPDetectorClass {
     }
 
     // Compound: inner halved rotation + outer mirrored/swapped
-    if (!hasQuarteredRotation && this.detectsInnerHalvedRotation(steps)) {
+    if (!hasQuarteredRotation && detectsInnerRotation(pairMotions)) {
       const outerTransformations = halvedComponents.filter(
         (c) => c !== LOOPComponent.ROTATED
       );
@@ -696,141 +540,6 @@ export class LOOPDetectorClass {
     if (QUARTER_POSITION_MAP_CCW[q1Start] === q2Start) return "ccw";
     return null;
   }
-}
-
-
-/**
- * PRO <-> ANTI are inverted. STATIC, FLOAT, DASH are self-inverted.
- */
-function isMotionTypeInverted(type1: string, type2: string): boolean {
-  const t1 = type1.toLowerCase();
-  const t2 = type2.toLowerCase();
-
-  if ((t1 === "pro" && t2 === "anti") || (t1 === "anti" && t2 === "pro")) return true;
-
-  if (t1 === t2) {
-    return ["static", "float", "dash"].includes(t1);
-  }
-
-  return false;
-}
-
-
-function checkRotatedPattern(
-  steps: SequenceStep[],
-  halfLength: number
-): { matched: boolean; direction: "cw" | "ccw" | null } {
-  let matchCount = 0;
-
-  for (let i = 0; i < halfLength; i++) {
-    const step1 = steps[i];
-    const step2 = steps[i + halfLength];
-    if (!step1 || !step2) continue;
-
-    const expectedPosition = HALF_POSITION_MAP[step1.endPosition ?? ""];
-    if (expectedPosition === step2.endPosition) {
-      matchCount++;
-    }
-  }
-
-  const threshold = Math.floor(halfLength * 0.75);
-  const matched = matchCount >= threshold;
-
-  let direction: "cw" | "ccw" | null = null;
-  if (matched && steps[0]) {
-    const blueRotDir = steps[0].motions.blue?.rotationDirection;
-    if (blueRotDir === "cw" || blueRotDir === "ccw") {
-      direction = blueRotDir;
-    }
-  }
-
-  return { matched, direction };
-}
-
-function checkMirroredPattern(steps: SequenceStep[], halfLength: number): boolean {
-  let matchCount = 0;
-
-  for (let i = 0; i < halfLength; i++) {
-    const step1 = steps[i];
-    const step2 = steps[i + halfLength];
-    if (!step1 || !step2) continue;
-
-    const expectedPosition = VERTICAL_MIRROR_POSITION_MAP[step1.endPosition ?? ""];
-    if (expectedPosition === step2.endPosition) {
-      matchCount++;
-    }
-  }
-
-  const threshold = Math.floor(halfLength * 0.75);
-  return matchCount >= threshold;
-}
-
-function checkSwappedPattern(steps: SequenceStep[], halfLength: number): boolean {
-  let matchCount = 0;
-
-  for (let i = 0; i < halfLength; i++) {
-    const step1 = steps[i];
-    const step2 = steps[i + halfLength];
-    if (!step1 || !step2) continue;
-
-    const motionSwapped =
-      step1.motions.blue?.startLocation === step2.motions.red?.startLocation &&
-      step1.motions.blue?.endLocation === step2.motions.red?.endLocation &&
-      step1.motions.red?.startLocation === step2.motions.blue?.startLocation &&
-      step1.motions.red?.endLocation === step2.motions.blue?.endLocation;
-
-    if (motionSwapped) {
-      matchCount++;
-    }
-  }
-
-  const threshold = Math.floor(halfLength * 0.75);
-  return matchCount >= threshold;
-}
-
-/**
- * Inversion is signalled by motion TYPE flipping PRO↔ANTI — never by rotation
- * direction. Only the INVERTED transform touches motion type; MIRROR, FLIP,
- * ROTATE, and SWAP leave it alone. Rotation direction is unreliable: MIRROR and
- * FLIP already flip it, so a composite like mirrored+inverted PRESERVES rotation
- * direction (the two flips cancel). Keying off a rotation-direction flip made
- * this detector miss inversion on every mirrored+inverted / flipped+inverted
- * loop and report a bare "mirrored" instead — matching the class detector's
- * motion-type check fixes that.
- *
- * A pair contributes a genuine flip when a PRO/ANTI motion becomes its opposite.
- * A PRO/ANTI motion that stays the same (or drops to static/dash) contradicts
- * inversion. STATIC/DASH/FLOAT carry no PRO/ANTI signal and are neutral. The
- * pattern is inverted only when at least one genuine flip is seen and nothing
- * contradicts it.
- */
-function checkInvertedPattern(steps: SequenceStep[], halfLength: number): boolean {
-  let genuineFlips = 0;
-  let contradictions = 0;
-
-  for (let i = 0; i < halfLength; i++) {
-    const step1 = steps[i];
-    const step2 = steps[i + halfLength];
-    if (!step1 || !step2) continue;
-
-    for (const color of ["blue", "red"] as const) {
-      const t1 = step1.motions[color]?.motionType;
-      const t2 = step2.motions[color]?.motionType;
-      if (!t1 || !t2) continue;
-
-      const proAnti1 = t1 === "pro" || t1 === "anti";
-      const proAnti2 = t2 === "pro" || t2 === "anti";
-
-      if (proAnti1 && proAnti2) {
-        if (t1 !== t2) genuineFlips++;
-        else contradictions++;
-      } else if (proAnti1 !== proAnti2) {
-        contradictions++;
-      }
-    }
-  }
-
-  return genuineFlips > 0 && contradictions === 0;
 }
 
 

@@ -14,21 +14,26 @@ const admin = require("firebase-admin");
 const path = require("path");
 const fs = require("fs");
 
-// Initialize Firebase Admin
+// Initialize Firebase Admin — lazily, inside main(). Top-level init made the
+// module un-requirable from tests (missing serviceAccountKey.json killed the
+// process at import time). The detection functions below are pure and are
+// exported for the loop round-trip audit harness.
 const serviceAccountPath = path.join(__dirname, "..", "serviceAccountKey.json");
 let db;
 
-try {
-  const serviceAccount = require(serviceAccountPath);
-  if (!admin.apps.length) {
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-    });
+function initFirebase() {
+  try {
+    const serviceAccount = require(serviceAccountPath);
+    if (!admin.apps.length) {
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+    }
+    db = admin.firestore();
+  } catch (error) {
+    console.error("Failed to initialize Firebase:", error.message);
+    process.exit(1);
   }
-  db = admin.firestore();
-} catch (error) {
-  console.error("Failed to initialize Firebase:", error.message);
-  process.exit(1);
 }
 
 // ============================================================================
@@ -1810,6 +1815,7 @@ function generateMinimalSequenceJSON(sequence, detected) {
 }
 
 async function main() {
+  initFirebase();
   const args = process.argv.slice(2);
   const applyMode = args.includes("--apply");
   const forceMode = args.includes("--force");
@@ -2212,7 +2218,23 @@ async function main() {
   process.exit(0);
 }
 
-main().catch((error) => {
-  console.error("Error:", error);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((error) => {
+    console.error("Error:", error);
+    process.exit(1);
+  });
+}
+
+// Pure detection functions, exported for the loop round-trip audit harness
+// (tests/unit/loop/real-loop-detector-audit.test.ts). No Firebase needed.
+module.exports = {
+  detectLOOPType,
+  isCircular,
+  extractBeats,
+  isRotated,
+  isSwapped,
+  isMirrored,
+  isFlipped,
+  isInverted,
+  isRepeated,
+};

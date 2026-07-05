@@ -292,6 +292,37 @@ export class LOOPDetector implements ILOOPDetector {
       };
     }
 
+    // Pure rewound: checkRewound matched but no uniform index-wise relation
+    // exists (time reversal never produces one). This used to fall through to
+    // the fallback result, silently dropping the rewound candidate — a
+    // 16-step rewound loop whose reverse relation held on every beat pair
+    // was reported as freeform (2026-07-05 loop-detection audit, confirmed
+    // against production-generated fixtures).
+    if (rewoundCandidate) {
+      const rewoundPairs =
+        this.comparisonOrchestrator.generateHalvedBeatPairs(steps);
+      this.analysisService.reprioritizeBeatPairs(rewoundPairs);
+      return {
+        loopType: "rewound",
+        components: ["rewound"],
+        transformationIntervals: {},
+        rotationDirection: null,
+        candidateDesignations: [rewoundCandidate],
+        stepPairs: toPublicStepPairs(rewoundPairs),
+        stepPairGroups: this.analysisService.groupStepPairsByPattern(rewoundPairs),
+        isCircular: true,
+        isFreeform: false,
+        isModular: false,
+        layeredPath,
+        isLayeredPath: layeredPath.isLayeredPath,
+        polyrhythmic,
+        isPolyrhythmic: polyrhythmic.isPolyrhythmic,
+        isAxisAlternating: false,
+        period: 2,
+        componentsDetailed: componentsToDetailed(["rewound"]),
+      };
+    }
+
     const halvedStepPairs =
       this.comparisonOrchestrator.generateHalvedBeatPairs(steps);
     this.analysisService.reprioritizeBeatPairs(halvedStepPairs);

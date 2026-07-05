@@ -57,3 +57,43 @@ TKA has **five near-duplicate loop detectors**. One confirmed bug was fixed 2026
 ## Dependencies
 
 Shares root-cause **A** with Spec 2 (hand-arc reversal detector). If you build a unified motion-signal model (hand-arc + motionType + rotationDirection), both detectors benefit — consider doing them together.
+
+---
+
+## ✅ COMPLETED 2026-07-05 (Fable 5)
+
+**Status: DONE.** All three tasks executed; every confirmed detector bug fixed and locked with regression tests. The 2026-07-03 fix + harness were already committed (`2f8ff015e2`, `a14903046f`) — the spec's "uncommitted" note was stale.
+
+### What shipped
+
+1. **Real-loop fixtures replace hand-built partials.** `scripts/generate-loop-audit-fixtures.mjs` drives the production pipeline (Diamond CSV → `SequenceBuilder` beam search with seam targeting → `executeLOOPSpec` — the exact path behind MCP `generate_sequence loopType=…` and the app's circular generation) and commits 3 samples × 15 generatable LOOPTypes to `tests/fixtures/loop-audit/real-loop-fixtures.json`.
+2. **Harness extended to ALL detectors** — `tests/unit/loop/real-loop-detector-audit.test.ts` audits #1–#5 (6 surfaces: functional, engine class, app class, loop-labeler, both `.cjs` scripts) against the real fixtures, prints the recovery table, and hard-locks the verdicts. The `.cjs` scripts got lazy Firebase init + `require.main` guards + `module.exports` so they are requirable.
+3. **Architecture decision: consolidate on ONE canonical detection algebra in the engine** (`packages/sequence-engine/src/loop/detection/pair-relation.ts`), not per-detector patches and not routing through #4 (the loop-labeler lives in app-land with UI deps; the engine cannot import it, but its per-pair composite-hypothesis approach was the correct model and is what the algebra ports). Detectors #1 and #2 are rebuilt on it; **#3 is now a thin delegate to the engine class detector** (~500 lines of near-fork deleted; keeps its stricter `isSeamlesslyLoopable` gate + placeholder-visibility guard); #4 keeps its own pipeline (it was already near-correct) with its one confirmed bug fixed; #5 left as-is, behavior-locked, migration noted as follow-up.
+4. **The disambiguation invariant: hand identity via locations, not letters.** MCP-grounded ("LOOP type is determined by step data — positions, motion types, hand identity — not by the word or letters"): the algebra first finds the (location-transform × hand-correspondence) hypothesis that maps pair A onto pair B, then reads inversion as a pro↔anti flip along that correspondence. Letter checks were removed from detection (they remain generation-side).
+
+### Findings per detector (real-loop evidence)
+
+| Detector | Confirmed bugs (fixed) | Notes |
+|---|---|---|
+| #1 functional | no FLIPPED path; no REWOUND path; swap∘invert cancelled (`swapped_inverted → swapped`); mirrored_swapped collapsed to `inverted+mirrored`/none; nested rotation missed | Rebuilt on pair-relation algebra. Now exact on all 12 contract-valid types. |
+| #2 engine class | same alias family + single-point rotation false positives (`mirrored → +rotated`, `inverted → +swapped` EXTRAs); no FLIPPED/REWOUND emission; missing `MIRRORED_SWAPPED_INVERTED` in loopType derivation | Rebuilt on the same algebra; agrees with #1 everywhere. |
+| #3 app class | inherited all of #2's bugs (near-fork) | Replaced with delegation to #2. Orientation gate retained and regression-locked. |
+| #4 loop-labeler | **pure-rewound candidate dropped** (checkRewound passed but the result fell through to the freeform fallback) — fixed | Otherwise the strongest detector (already hand-identity aware). Known remaining partials: nested inner-rotation types report only the outer reflection; one modular-path EXTRA on a mirrored_rotated sample. Documented, unasserted. |
+| #5 .cjs | no confirmed false positives; gaps: no swapped_inverted / rewound path, mirrored_inverted loses the inverted component, validate misses rotated_180_inverted | Left as-is (batch-label utilities), solid coverage locked; migrating them onto the engine detector is the natural follow-up. |
+
+### Contract mismatches (NOT detector bugs — generator findings, out of this spec's scope)
+
+- **Mirror "phase-fragility" (handoff F) = contract mismatch, resolved in the detector's favor.** With builder-validated seams (the fixed-point theorem: the outer transform's seam must satisfy `T(start) = end`), absolute index-wise mirror detection is exact on every real mirrored loop. The old harness's diagonal-orbit failures were artifacts of seam-less hand-built partials.
+- **G1 — `LOOPEndPositionSelector` seams `MIRRORED_SWAPPED_INVERTED` at `startPosition`; correct is `SWAP(VMIRROR(start))`.** Real loops of this type are not absolute mirror+swap+invert — sample 0 factually reads as `flipped+inverted+swapped` (the composite the wrong seam produces). Same family affects `MIRRORED_ROTATED_INVERTED_SWAPPED` from non-beta axis starts.
+- **G2 — continuity-based `FusedExecutor` + dash/static-heavy seeds** can emit swap-family loops with no uniform absolute halved relation (2 of 3 `rotated_swapped` samples). Detectors stay data-faithful (never fabricate components) — locked.
+- **G3 — swap-family halved loops are emitted without orientation parity** (close positionally, orientations end `out` vs `in`). #3's `isSeamlesslyLoopable` gate correctly refuses to stamp them — locked.
+- `MIRRORED_ROTATED_SWAPPED` is not generatable at all (no seam map, absent from the MCP enum).
+
+### Tests
+
+- `packages/sequence-engine`: 230 → **249 passed** (new `real-loop-recovery.test.ts`: 19 regression locks incl. alias non-regressions; the original mirrored+inverted regression and all prior tests stay green).
+- App: `tests/unit/loop/real-loop-detector-audit.test.ts` — recovery table + 4 hard-lock suites across #3/#4/#5.
+
+### Shipping note
+
+Detector #1 backs MCP `detect_loop_pattern`: **`@tka/domain` rebuild + Flow Arts MCP service restart required to ship the engine change** (memory `reference_flow_arts_mcp_deploy`). Not done here.
