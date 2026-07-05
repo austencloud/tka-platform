@@ -52,6 +52,38 @@ export function calculateBeatState(
 }
 
 /**
+ * Beat number to DISPLAY (glyph letter, step number, path lines) for a given
+ * currentStep. Returns 0 for the start position, N for beat N.
+ *
+ * An integer currentStep is ambiguous: it is both the end of beat N-1's motion
+ * and the start of beat N's. Two attribution conventions exist:
+ *
+ * - Continuous / seek convention (dwellOnCompletedBeat = false): beat N owns
+ *   [N, N+1) — plain floor. Correct while time flows through the boundary, and
+ *   for explicit beat selection (step-cell click parks at N to preview beat N).
+ *
+ * - Step-dwell convention (dwellOnCompletedBeat = true): the boundary belongs
+ *   to the beat whose motion just COMPLETED — ceil(currentStep - 1). Step
+ *   playback parks on integer boundaries for its pause; during that freeze the
+ *   props hold the completed beat's END position, so the glyph must keep
+ *   showing the completed beat's letter (a pictograph = motion + end position).
+ *   Labeling the freeze with the upcoming beat describes a motion not yet seen.
+ */
+export function displayedBeatNumber(
+  currentStep: number,
+  dwellOnCompletedBeat: boolean,
+  epsilon = 0.01
+): number {
+  if (dwellOnCompletedBeat) {
+    const rounded = Math.round(currentStep);
+    if (Math.abs(currentStep - rounded) < epsilon) {
+      return Math.max(0, rounded - 1);
+    }
+  }
+  return Math.floor(currentStep);
+}
+
+/**
  * Validate step data array
  */
 export function validateSteps(steps: readonly StepData[]): boolean {

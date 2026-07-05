@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import { isVisibleMotion, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { getPathD } from "$lib/features/hand-paths/hand-path-builder/services/hand-path-animator";
@@ -12,12 +14,18 @@
   let {
     sequenceData = null,
     currentStep = 0,
+    stepData = null,
     showBlue = false,
     showRed = false,
     vm = null,
   }: {
     sequenceData?: SequenceData | null;
     currentStep?: number;
+    /** Parent-attributed step (same object the glyph shows). When it's one of
+     *  sequenceData's step refs, path lines follow it — keeping them in sync
+     *  with the glyph during step-playback dwells, where the integer boundary
+     *  is attributed to the COMPLETED beat rather than the upcoming one. */
+    stepData?: StepData | StartPositionData | null;
     showBlue?: boolean;
     showRed?: boolean;
     /** Per-surface visibility manager; falls back to the global singleton. */
@@ -48,6 +56,14 @@
 
   const currentStepData = $derived.by(() => {
     if (!sequenceData?.steps?.length) return null;
+    // Prefer the parent's attribution when stepData is one of the sequence's
+    // step refs (glyph and path lines then can never disagree). Start position
+    // draws no path lines.
+    if (stepData) {
+      const idx = sequenceData.steps.indexOf(stepData as StepData);
+      if (idx >= 0) return sequenceData.steps[idx] ?? null;
+      if (sequenceData.startPosition && stepData === sequenceData.startPosition) return null;
+    }
     if (stepIndex < 0 || stepIndex >= sequenceData.steps.length) return null;
     return sequenceData.steps[stepIndex] ?? null;
   });

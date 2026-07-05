@@ -425,12 +425,18 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   $effect(() => { libraryActions.syncSavedState(sequence); });
   $effect(() => { libraryActions.syncFavoriteState(sequence); });
 
-  const showPreviousBeat = $derived(
-    playback.arrivedViaStepping &&
-    !playback.isPlayingLocal &&
-    playback.currentStepLocal >= 1 &&
-    Math.abs(playback.currentStepLocal - Math.round(playback.currentStepLocal)) < 0.01
-  );
+  const showPreviousBeat = $derived.by(() => {
+    const parkedOnBoundary =
+      playback.currentStepLocal >= 1 &&
+      Math.abs(playback.currentStepLocal - Math.round(playback.currentStepLocal)) < 0.01;
+    if (!parkedOnBoundary) return false;
+    // Manual step-forward/backward parks: show the beat just stepped past.
+    if (playback.arrivedViaStepping && !playback.isPlayingLocal) return true;
+    // Step-mode playback dwells: the freeze holds the COMPLETED beat's end
+    // position, so the glyph/highlight must keep attributing the boundary to
+    // that beat — not the upcoming one whose motion hasn't played yet.
+    return playback.isPlayingLocal && modalAnimationState.playbackMode === "step";
+  });
 
   const highlightedStepIndex = $derived.by(() => {
     if (playbackSource === "video" && videoPlaybackBeatIndex !== null) {

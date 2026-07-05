@@ -451,6 +451,7 @@ captureEffectDiagnostics to the context menu.
       <PathLinesOverlay
         {sequenceData}
         {currentStep}
+        {stepData}
         showBlue={bluePathLinesVisible}
         showRed={redPathLinesVisible}
         vm={visibilityManager}

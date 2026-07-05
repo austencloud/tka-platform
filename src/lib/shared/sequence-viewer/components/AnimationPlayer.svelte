@@ -23,6 +23,7 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
+	import { displayedBeatNumber } from "$lib/shared/animation-engine/services/step-calculator";
 	import { createAnimationPanelState, type AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 	import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
 	import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
@@ -103,8 +104,8 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 	const bluePropState = $derived(useContext ? ctx?.state?.bluePropState ?? null : animState?.bluePropState ?? null);
 	const redPropState = $derived(useContext ? ctx?.state?.redPropState ?? null : animState?.redPropState ?? null);
 	const sequenceData = $derived(useContext ? ctx?.state?.sequenceData ?? sequence : animState?.sequenceData ?? sequence);
-	const playbackMode = $derived(useContext ? ctx?.state?.playbackMode ?? "continuous" : "continuous" as const);
-	const stepSize = $derived(useContext ? ctx?.state?.stepPlaybackStepSize ?? 1 : 1 as const);
+	const playbackMode = $derived(useContext ? ctx?.state?.playbackMode ?? "continuous" : animState?.playbackMode ?? "continuous");
+	const stepSize = $derived(useContext ? ctx?.state?.stepPlaybackStepSize ?? 1 : animState?.stepPlaybackStepSize ?? 1);
 	const isExporting = $derived(useContext ? ctx?.state?.isExporting ?? false : false);
 	const exportProgress = $derived(useContext ? ctx?.state?.exportProgress ?? null : null);
 	// Deterministic export time. The video orchestrator freezes panelState's
@@ -113,12 +114,19 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 	// during live playback → render loop falls back to its free-running rAF clock.
 	const virtualTime = $derived(animState?.virtualTime);
 
+	// Step playback parks on integer beat boundaries for its pause. During that
+	// freeze the props hold the COMPLETED beat's end position, so glyph/labels
+	// must keep attributing the boundary to the completed beat (not the upcoming
+	// one). See displayedBeatNumber for the two attribution conventions.
+	const stepDwell = $derived(playbackMode === "step" && isPlaying);
+
 	// Derived: current step data for canvas
 	const stepData = $derived.by(() => {
 		const seq = sequenceData;
 		if (!seq) return null;
-		if (currentStep < 1) return seq.startPosition ?? null;
-		const idx = Math.min(Math.max(0, Math.floor(currentStep) - 1), (seq.steps?.length ?? 1) - 1);
+		const beat = displayedBeatNumber(currentStep, stepDwell);
+		if (beat < 1) return seq.startPosition ?? null;
+		const idx = Math.min(Math.max(0, beat - 1), (seq.steps?.length ?? 1) - 1);
 		return seq.steps?.[idx] ?? null;
 	});
 
@@ -127,11 +135,13 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 
 	// Notify parent of step changes for animation sync (e.g., highlighting in dual view)
 	$effect(() => {
-		const step = currentStep;
 		const playing = isPlaying;
-		// Convert currentStep (1-indexed) to stepIndex (0-indexed)
-		// When step < 1, it's the start position - pass null
-		const stepIndex = step < 1 ? null : Math.max(0, Math.floor(step) - 1);
+		// Same boundary attribution as the canvas glyph so highlights never point
+		// at a different beat than the displayed pictograph.
+		const beat = displayedBeatNumber(currentStep, stepDwell);
+		// Convert beat number (1-indexed) to stepIndex (0-indexed)
+		// When beat < 1, it's the start position - pass null
+		const stepIndex = beat < 1 ? null : Math.max(0, beat - 1);
 		onStepChange?.(stepIndex, playing);
 	});
 

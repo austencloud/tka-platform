@@ -455,6 +455,24 @@ Last audit: 2025-12-27
   const computedRotationPeriod = $derived(loopDisplay.rotationPeriod);
   const computedInversionPeriod = $derived(loopDisplay.inversionPeriod);
 
+  // Word-header underline follows the parent's stepData attribution (identity
+  // lookup) so it always agrees with the glyph letter — including step-playback
+  // dwells, where the parent attributes the integer boundary to the COMPLETED
+  // beat, not the upcoming one. Falls back to positional floor when stepData
+  // isn't one of sequenceData's step refs (cloned/preview data).
+  const headerActiveStepNumber = $derived.by(() => {
+    const steps = sequenceData?.steps;
+    if (!steps?.length) return null;
+    if (stepData) {
+      const idx = steps.indexOf(stepData as (typeof steps)[number]);
+      if (idx >= 0) return idx + 1;
+      if (sequenceData?.startPosition && stepData === sequenceData.startPosition) return null;
+    }
+    return currentStep >= 1 && currentStep < steps.length + 0.99
+      ? Math.floor(currentStep)
+      : null;
+  });
+
   function handleContextMenu(e: MouseEvent) {
     e.preventDefault();
     contextMenuHost?.openContextMenu(e.clientX, e.clientY);
@@ -500,7 +518,7 @@ Last audit: 2025-12-27
         {word}
         visible={wordHeaderVisible}
         darkMode={darkModeEnabled}
-        activeStepNumber={currentStep >= 1 && currentStep < (sequenceData?.steps?.length ?? 0) + 0.99 ? Math.floor(currentStep) : null}
+        activeStepNumber={headerActiveStepNumber}
         difficultyLevel={computedDifficultyLevel}
         loopComponents={computedLoopComponents}
         rotationPeriod={computedRotationPeriod}
