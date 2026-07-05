@@ -7,7 +7,7 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     description: "Navigate to a module (main section of the app)",
     validTargets: [
       "create", "browse", "compose", "learn", "train", "watch",
-      "settings", "tika", "choreo_card", "write", "lab", "feedback",
+      "settings", "tika", "choreo_card", "choreo", "lab", "feedback",
     ],
   },
   {

@@ -120,7 +120,7 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   settings: true, // Settings always available
   choreo_card: false, // Choreo card generator (internal tool)
   word_card: false, // Legacy alias for choreo_card
-  write: false, // Write module (unreleased)
+  choreo: false, // Choreo sheet builder (route renamed from "write" Jul 2026)
   watch: false, // Watch videos/performances (unreleased)
   moderation: false, // Content moderation (admin-only)
   arena: false, // Arena pairwise ranking (unreleased)

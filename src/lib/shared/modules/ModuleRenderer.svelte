@@ -171,7 +171,7 @@
     // Backwards compatibility alias for old bookmarks/deep links
     word_card: () =>
       import("../../features/choreo-card/components/ChoreoCardTab.svelte"),
-    write: () => import("../../features/write/components/WriteTab.svelte"),
+    choreo: () => import("../../features/write/components/WriteTab.svelte"),
     // account module retired - merged into dashboard (profile widget handles auth, library is a Browse tab)
     feedback: () =>
       import("../../features/feedback/components/FeedbackModule.svelte"),

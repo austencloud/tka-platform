@@ -29,8 +29,8 @@
   const currentTabs = $derived(currentModuleDef?.sections ?? []);
 
   // Module categorization for filtering
-  const SEQUENCE_MODULES = new Set(["create", "browse", "compose", "learn", "train", "watch", "choreo_card", "write"]);
-  const SETTINGS_MODULES = new Set(["create", "browse", "compose", "learn", "train", "watch", "choreo_card", "write", "settings"]);
+  const SEQUENCE_MODULES = new Set(["create", "browse", "compose", "learn", "train", "watch", "choreo_card", "choreo"]);
+  const SETTINGS_MODULES = new Set(["create", "browse", "compose", "learn", "train", "watch", "choreo_card", "choreo", "settings"]);
   const PROP_MODULES = new Set(["create", "browse", "compose", "learn", "train", "choreo_card"]);
 
   const isSequenceModule = $derived(SEQUENCE_MODULES.has(currentModule));

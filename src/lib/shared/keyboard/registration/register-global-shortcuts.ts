@@ -55,7 +55,7 @@ export function registerGlobalShortcuts(
       return false;
     }
     // Filter out modules that aren't implemented yet
-    const notImplemented = ["write"];
+    const notImplemented = ["choreo"];
     if (notImplemented.includes(module.id)) {
       return false;
     }

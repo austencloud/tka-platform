@@ -61,7 +61,7 @@ export type ModuleId =
   | "train"
   | "choreo_card" // Choreography reference cards (printable)
   | "word_card" // Legacy alias for choreo_card
-  | "write"
+  | "choreo" // Choreo sheet builder (route renamed from "write" Jul 2026; dir stays features/write)
   | "feedback"
   | "admin"
   | "settings"

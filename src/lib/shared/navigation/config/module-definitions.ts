@@ -37,6 +37,7 @@ import {
  * Used to handle stale data from localStorage/Firestore.
  */
 const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
+  write: "choreo", // Module id + route renamed write -> choreo (Jul 2026); dir stays features/write internally
   TIKA: "tika", // Module renamed back to lowercase for cleaner URLs
   discover: "browse", // Module renamed from Discover to Browse (Jan 2026)
   explore: "browse", // Module renamed from Explore to Browse (Jan 2026)
@@ -230,7 +231,7 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     adminOnly: true, // Operator-only: deck releaser is an admin tool
   },
   {
-    id: "write",
+    id: "choreo",
     labelKey: "module_write",
     descKey: "module_desc_write",
     label: "Choreo",
@@ -400,7 +401,7 @@ const FEATURE_ENABLED: Record<string, boolean> = {
   arena: typeof __FEATURE_ARENA__ !== "undefined" ? __FEATURE_ARENA__ : true,
   train: typeof __FEATURE_TRAIN__ !== "undefined" ? __FEATURE_TRAIN__ : true,
   choreo_card: typeof __FEATURE_CHOREO_CARD__ !== "undefined" ? __FEATURE_CHOREO_CARD__ : true,
-  write: typeof __FEATURE_WRITE__ !== "undefined" ? __FEATURE_WRITE__ : true,
+  choreo: typeof __FEATURE_WRITE__ !== "undefined" ? __FEATURE_WRITE__ : true,
   admin: typeof __FEATURE_ADMIN__ !== "undefined" ? __FEATURE_ADMIN__ : true,
   festivals: typeof __FEATURE_FESTIVALS__ !== "undefined" ? __FEATURE_FESTIVALS__ : true,
   museum: typeof __FEATURE_MUSEUM__ !== "undefined" ? __FEATURE_MUSEUM__ : true,
