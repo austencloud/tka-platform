@@ -180,6 +180,11 @@
   // (search included there), no toolbar magnifier, no inline dropdown chips.
   let pickerFilterSheetOpen = $state(false);
   let pickerSideBySide = $state(false);
+  // Perf: the picker's gallery (virtualized grid) is too heavy to mount inside
+  // the click frame — it cost a traced 254ms presentation delay and re-measured
+  // itself every frame of the dock glide. The dock shell slides in immediately;
+  // the heavy content mounts on introend, over a skeleton.
+  let browseSettled = $state(false);
   onMount(() => {
     pickerSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
     const unsubscribe = responsiveLayoutManager.onLayoutChange(() => {
@@ -206,9 +211,18 @@
 
   onMount(() => {
     // Restore: if the picker was left open, bring its data back up immediately.
-    if (browseOpen) initEngineOnce();
+    // (No intro plays on initial mount — local transition — so settle now.)
+    if (browseOpen) {
+      browseSettled = true;
+      initEngineOnce();
+    }
     return () => browseEngine.destroy();
   });
+
+  function settleBrowse(): void {
+    browseSettled = true;
+    initEngineOnce();
+  }
 
   // Persist picker UI state on every change (the engine persists its own
   // source/sort/filters under its persistKey).
@@ -228,10 +242,12 @@
 
   function toggleBrowse(): void {
     browseOpen = !browseOpen;
+    browseSettled = false;
     if (!browseOpen) return;
     playerOpen = false; // docks are mutually exclusive — keep the page readable
     actsOpen = false;
-    initEngineOnce();
+    // Engine init + gallery mount both wait for the dock's introend so the
+    // glide gets the main thread to itself.
   }
 
   function togglePlayer(): void {
@@ -671,7 +687,12 @@
     {#if browseOpen}
       <!-- Inline docked picker. The page stays fully visible (preview just
            narrows) instead of being covered by an overlay. -->
-      <aside class="browse-dock" aria-label="Add sequences" transition:dockSlide>
+      <aside
+        class="browse-dock"
+        aria-label="Add sequences"
+        transition:dockSlide
+        onintroend={settleBrowse}
+      >
         <div class="browse-drawer-head">
           <span class="browse-drawer-title">Add sequences — tap a card to add a row</span>
           <button
@@ -684,21 +705,35 @@
           </button>
         </div>
 
-        <!-- Collections lead the grid as chips: yours on My Library, followed
-             ones on Community — the row's count gate routes per pool. Sources
-             are the toolbar's standard Community | My Library toggle. -->
-        <CollectionChipsRow engine={browseEngine} />
+        {#if browseSettled}
+          <!-- Collections lead the grid as chips: yours on My Library, followed
+               ones on Community — the row's count gate routes per pool. Sources
+               are the toolbar's standard Community | My Library toggle. -->
+          <CollectionChipsRow engine={browseEngine} />
 
-        <div class="browse-panel-host">
-          <BrowsePanel
-            engine={browseEngine}
-            layout="compact"
-            showSourceToggle
-            onSelect={(seq) => handleBrowseSelect(seq)}
-            hideToolbarSearch
-            onOpenFilters={() => (pickerFilterSheetOpen = true)}
-          />
-        </div>
+          <div class="browse-panel-host" in:flyFade={{ duration: 150 }}>
+            <BrowsePanel
+              engine={browseEngine}
+              layout="compact"
+              showSourceToggle
+              onSelect={(seq) => handleBrowseSelect(seq)}
+              hideToolbarSearch
+              onOpenFilters={() => (pickerFilterSheetOpen = true)}
+            />
+          </div>
+        {:else}
+          <!-- Skeleton mirroring the real dock layout (chips row, toolbar, card
+               grid) so the settle swap doesn't jump. -->
+          <div class="dock-skeleton" aria-hidden="true">
+            <div class="dock-skel-row"></div>
+            <div class="dock-skel-row dock-skel-toolbar"></div>
+            <div class="dock-skel-grid">
+              {#each { length: 6 } as _, i (i)}
+                <div class="dock-skel-card" style="animation-delay: {i * 70}ms"></div>
+              {/each}
+            </div>
+          </div>
+        {/if}
       </aside>
 
       <GalleryFilterSheet
@@ -904,6 +939,62 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 8px;
     overflow: hidden;
+  }
+
+  /* dockSlide perf contract: pin children at the dock's final width so the
+     width animation is a pure clip-reveal — without this, the virtualized
+     gallery re-measures itself every frame (traced at 180ms+ of reflow). */
+  .browse-dock > :global(*) {
+    width: min(460px, 42vw);
+  }
+
+  .dock-skeleton {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    overflow: hidden;
+  }
+
+  .dock-skel-row {
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 18px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    animation: dock-skel-pulse 1.1s ease-in-out infinite;
+  }
+
+  .dock-skel-toolbar {
+    border-radius: 8px;
+  }
+
+  .dock-skel-grid {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-sm);
+    align-content: start;
+    overflow: hidden;
+  }
+
+  .dock-skel-card {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    animation: dock-skel-pulse 1.1s ease-in-out infinite;
+  }
+
+  @keyframes dock-skel-pulse {
+    0%,
+    100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 1;
+    }
   }
 
   .browse-drawer-head {
@@ -1242,6 +1333,9 @@
     .browse-dock {
       width: 100%;
       max-height: 45vh;
+    }
+    .browse-dock > :global(*) {
+      width: auto;
     }
   }
 

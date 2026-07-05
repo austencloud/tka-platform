@@ -460,6 +460,16 @@
     overflow: hidden;
   }
 
+  /* display:none skips layout but NOT style recalc — a hidden keep-alive
+     module (e.g. the Browse gallery, ~9k elements) was re-walked on every
+     global style invalidation, including the keyframe stylesheets Svelte
+     transitions inject (traced: 112ms recalc per animation on /choreo).
+     content-visibility gives the hidden subtree full style/layout/paint
+     containment while keeping component state alive. */
+  .keep-alive-host[aria-hidden="true"] {
+    content-visibility: hidden;
+  }
+
   .module-content {
     position: absolute;
     top: 0;

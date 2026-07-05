@@ -21,13 +21,32 @@ interface DockSlideParams {
  * reused: it is a modal overlay (backdrop, inert siblings), whereas these docks
  * stay inline so the page remains fully visible.
  *
+ * PERF CONTRACT: pin the dock's direct children at the dock's final width in
+ * consumer CSS (e.g. `.dock > :global(*) { width: <final>; }`). The children
+ * then lay out ONCE and the width animation becomes a pure clip-reveal —
+ * without the pin, every frame re-lays-out the children (virtualized grids
+ * re-measure per frame; traced at 180ms+ of reflow on the Choreo picker).
+ *
  * Reduced-motion collapses the whole thing to an instant show/hide.
  */
+/**
+ * Width cache keyed by element. The outro's rect read used to force a full
+ * layout of a style-dirty document (traced at 103ms with the gallery mounted);
+ * the intro already measured the same final width, so reuse it. A window
+ * resize between intro and outro yields a marginally stale start width — the
+ * collapse still lands at 0, visually indistinguishable.
+ */
+const widthCache = new WeakMap<HTMLElement, number>();
+
 export function dockSlide(
   node: HTMLElement,
   { duration = DURATION.emphasis, distance = 24 }: DockSlideParams = {}
 ): TransitionConfig {
-  const width = node.getBoundingClientRect().width;
+  let width = widthCache.get(node);
+  if (width === undefined) {
+    width = node.getBoundingClientRect().width;
+    widthCache.set(node, width);
+  }
 
   return {
     duration: motionDuration(duration),

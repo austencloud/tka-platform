@@ -118,6 +118,7 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
 
   onDestroy(() => {
     visibilityManager.unregisterObserver(handleVisibilityChange);
+    if (measureRaf !== null) cancelAnimationFrame(measureRaf);
   });
 
   let scrollElement = $state<HTMLDivElement | null>(null);
@@ -217,10 +218,32 @@ import { prefetch as prefetchSequenceData } from "$lib/shared/sequence-viewer/se
 
   // Svelte action: measures each row's actual DOM height after render.
   // TanStack Virtual reads data-index from the element to know which row it is.
-  function measureRow(node: HTMLElement) {
-    if (currentVirtualizer) {
-      currentVirtualizer.measureElement(node);
+  //
+  // Measures are BATCHED into one rAF pass: measureElement reads offsetHeight,
+  // and calling it per-row while rows are still mounting interleaves reads with
+  // writes — a forced full-document layout per row (traced at 1,964ms while the
+  // Choreo picker's gallery filled). One batched pass = one layout flush;
+  // estimateSize covers the single frame before precise heights land.
+  let pendingMeasures = new Set<HTMLElement>();
+  let measureRaf: number | null = null;
+
+  function flushMeasures() {
+    measureRaf = null;
+    if (!currentVirtualizer) return;
+    for (const el of pendingMeasures) {
+      if (el.isConnected) currentVirtualizer.measureElement(el);
     }
+    pendingMeasures.clear();
+  }
+
+  function measureRow(node: HTMLElement) {
+    pendingMeasures.add(node);
+    measureRaf ??= requestAnimationFrame(flushMeasures);
+    return {
+      destroy() {
+        pendingMeasures.delete(node);
+      },
+    };
   }
 
   // Scroll event listeners for the sidebar

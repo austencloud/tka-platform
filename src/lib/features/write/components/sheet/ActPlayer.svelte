@@ -130,6 +130,12 @@
     overflow: hidden;
   }
 
+  /* dockSlide perf contract: children pinned at final width so the glide is a
+     pure clip-reveal (no per-frame relayout of the dock's contents). */
+  .act-player > :global(*) {
+    width: min(460px, 42vw);
+  }
+
   .dock-head {
     display: flex;
     align-items: center;
@@ -210,6 +216,9 @@
   @media (max-width: 900px) {
     .act-player {
       width: 100%;
+    }
+    .act-player > :global(*) {
+      width: auto;
     }
   }
 </style>

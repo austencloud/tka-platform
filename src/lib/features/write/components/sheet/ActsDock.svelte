@@ -403,6 +403,12 @@
     overflow: hidden;
   }
 
+  /* dockSlide perf contract: children pinned at final width so the glide is a
+     pure clip-reveal (no per-frame relayout of the dock's contents). */
+  .acts-dock > :global(*) {
+    width: min(360px, 36vw);
+  }
+
   .dock-head {
     display: flex;
     align-items: center;
@@ -972,6 +978,9 @@
     .acts-dock {
       width: 100%;
       max-height: 45vh;
+    }
+    .acts-dock > :global(*) {
+      width: auto;
     }
   }
 
