@@ -32,8 +32,10 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   import {
     browseNavigationState,
     getCreatorIdFromURL,
+    getCollectionScanTargetFromURL,
     type BrowseLocation,
   } from "$lib/shared/browse/state/browse-navigation-state.svelte";
+  import { setPendingScanIntent } from "$lib/features/browse/state/pending-scan-intent.svelte";
   import { BrowseScrollBehavior } from "../services/browse-scroll-behavior";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -403,12 +405,23 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     // so a page refresh lands on the same profile the user was viewing.
     const initialCreatorId = getCreatorIdFromURL();
 
+    // Same idea for collection deep links (/browse/collections/[id]?scan=1) —
+    // this is the URL a phone lands on after scanning the desktop scan sheet's
+    // handoff QR. The scan flag asks the detail view to open the scanner
+    // immediately, so the phone goes from QR scan to camera in one hop.
+    const scanTarget = getCollectionScanTargetFromURL();
+
     // Initialize navigation state (restores from localStorage if available)
     browseNavigationState.initialize("gallery");
 
     if (initialCreatorId) {
       // Override whatever localStorage had - the URL is the source of truth on load.
       browseNavigationState.viewCreatorProfile(initialCreatorId);
+    } else if (scanTarget) {
+      browseNavigationState.viewCollectionDetail(scanTarget.collectionId);
+      if (scanTarget.scan) {
+        setPendingScanIntent(scanTarget.collectionId);
+      }
     }
 
     // Resolve event handler service from ITI container
