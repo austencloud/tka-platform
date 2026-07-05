@@ -55,10 +55,10 @@ Old guide = 47 pages. Mapping → our 3 chapters. Status: ⬜ todo · 🔧 in pr
 | 4 | Read Me First | print cover pg2 | 🔧 |
 | 5 | Table of Contents | front matter | 🔧 |
 | 6 | 1.0 Positions & Motions (title) | positions-motions | ⬜ |
-| 7 | The Grid | ch10/TheGrid | ⬜ |
-| 8 | Hand Positions (α/β/Γ, 16 picto) | ch10/HandPositions | ⬜ |
-| 9 | Hand Motions (shift/dash/static, 5) | ch10/HandMotions | ⬜ |
-| 10 | Type 1 Dual-Shifts (matrices) | ch10/Type1AlphaBeta + Type1Gamma | ⬜ |
+| 7 | The Grid | `_pages/TheGridPage` (body p1) | ✅ |
+| 8 | Hand Positions (α/β/Γ, 16 picto) | `_pages/HandPositionsPage` (body p2) | ✅ |
+| 9 | Hand Motions (shift/dash/static, 5) | `_pages/HandMotionsPage` (body p3) | ✅ |
+| 10 | Type 1 Dual-Shifts (matrices) | `_pages/Type1AlphaBetaPage` (body p4) | 🔧 |
 | 11 | Gamma (Quarter-Opp/Same intro) | ch10/Type1Gamma | ⬜ |
 | 12 | Type 2 Shifts | ch10/Type2Shifts | ⬜ |
 | 13 | Type 3 Cross-Shifts (β→γ) | ch10/Type3CrossShifts | ⬜ |
@@ -172,6 +172,20 @@ LOOP terminology, per existing section filenames already named Loops*.)
 - 2026-06-22: READ ME (p4) text corrected — a fabricated "In a pictograph, the
   arrow shows…" paragraph was removed and the original transcribed verbatim from
   the artboard (salutation + work-in-progress + "I can't wait to see…" closing).
+- 2026-07-05: TYPE 1 α/β PAGE (body p4, `hm-type1`) built. Composition approach:
+  the page renders `ProofTextPage` as its text layer (the proof's extracted runs,
+  unchanged) and adds the four pictograph strips the proof baked as images.
+  Strip geometry extracted from the PDF's own operator list (image transforms):
+  500×100pt strips at (95.3,142.8)/(95.3,262.0)/(92.6,472.0)/(92.6,588.3), five
+  100pt boxes each. Every box = a canonical `startPositionManager` diamond
+  position selected by (blueLoc, redLoc) with props forced to HAND (renderer owns
+  beta side-by-side offsets); straight teaching arrows (solid triangular heads,
+  matching the proof's p10 markers — NOT p9's open chevrons) drawn along the
+  outer-point chord in the grid's 950 space, paired arrows split perpendicular
+  (blue inside) on the Tog rows. α→α/β→β row labels the text extraction dropped
+  (glyph font) restored as editable runs. Content confirmed against MCP VTG data:
+  α→α=SS, β→β=TS, α↔β = SO from a side-point start / TO from a bottom start —
+  the original book's teaching matches current domain data exactly.
 - 2026-06-22: PAGE NUMBERING + AUTO-TOC system shipped (spec
   `2026-06-22-guide-page-numbering-toc-design.md`). Single source of truth =
   `_data/guide-manifest.ts` (34 body pages, 1 entry = 1 page, number = index+1).
