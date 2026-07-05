@@ -1,14 +1,14 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from "vitest";
 import { createHoverIntent } from "../hover-intent";
 
 describe("createHoverIntent", () => {
-  let onOpen: ReturnType<typeof vi.fn>;
-  let onClose: ReturnType<typeof vi.fn>;
+  let onOpen: Mock<() => void>;
+  let onClose: Mock<() => void>;
 
   beforeEach(() => {
     vi.useFakeTimers();
-    onOpen = vi.fn();
-    onClose = vi.fn();
+    onOpen = vi.fn<() => void>();
+    onClose = vi.fn<() => void>();
   });
 
   afterEach(() => {

@@ -16,8 +16,7 @@
     currentModule,
     currentSection,
     isExpanded,
-    isCollapsed,
-    isTransitioningFromCollapsed,
+    isCollapsed = false,
     moduleColor,
     onModuleClick,
     onSectionClick,
@@ -30,8 +29,7 @@
     currentModule: string;
     currentSection: string;
     isExpanded: boolean;
-    isCollapsed: boolean;
-    isTransitioningFromCollapsed: boolean;
+    isCollapsed?: boolean;
     moduleColor?: string;
     onModuleClick: (moduleId: string, isDisabled: boolean) => void;
     onSectionClick: (moduleId: string, section: Section) => void;
@@ -115,7 +113,7 @@
   />
 
   <!-- Module Sections/Tabs (collapsible) -->
-  {#if isExpanded && filteredSections.length > 0 && !isCollapsed && !isTransitioningFromCollapsed}
+  {#if isExpanded && filteredSections.length > 0 && !isCollapsed}
     <SectionsList
       sections={filteredSections}
       groups={module.groups}
@@ -137,7 +135,8 @@
   .module-group {
     margin-bottom: 8px;
     border-radius: 12px;
-    padding: 4px;
+    /* 2px horizontal: keeps ModuleButton icon centers at x=32px (rail parity) */
+    padding: 4px 2px;
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -145,7 +144,7 @@
   .module-group.active.has-sections {
     background: color-mix(in srgb, var(--module-color) 12%, rgba(0, 0, 0, 0.3));
     border: 1px solid color-mix(in srgb, var(--module-color) 20%, transparent);
-    padding: 8px 6px;
+    padding: 8px 2px;
     margin-bottom: 12px;
   }
 

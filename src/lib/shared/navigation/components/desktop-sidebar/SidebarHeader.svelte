@@ -1,25 +1,39 @@
 <!-- Sidebar Header Component -->
-<!-- Shows "TKA Composer" branding that doubles as collapse/expand toggle -->
+<!-- Shows "TKA Composer" branding that doubles as pin/collapse toggle -->
 <script lang="ts">
-  let { isCollapsed, onLogoClick, onToggleCollapse } = $props<{
-    isCollapsed: boolean;
-    onLogoClick: () => void;
+  // rail: icon-only "TKA" mark (not hovered, not pinned)
+  // hover: overlay-expanded — clicking PINS the sidebar open
+  // pinned: classic push layout — clicking collapses back to the rail
+  let { mode, onToggleCollapse } = $props<{
+    mode: "rail" | "hover" | "pinned";
     onToggleCollapse: () => void;
   }>();
+
+  const actionLabel = $derived(
+    mode === "pinned"
+      ? "Collapse sidebar to rail"
+      : mode === "hover"
+        ? "Pin sidebar open"
+        : "Expand sidebar"
+  );
 </script>
 
 <div class="sidebar-header">
   <button
     class="brand-toggle"
     onclick={onToggleCollapse}
-    aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-    title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+    aria-label={actionLabel}
+    title={actionLabel}
   >
-    {#if isCollapsed}
+    {#if mode === "rail"}
       <span class="brand-icon">TKA</span>
     {:else}
       <span class="brand-text">TKA Composer</span>
-      <i class="fas fa-chevron-left toggle-icon" aria-hidden="true"></i>
+      {#if mode === "hover"}
+        <i class="fas fa-thumbtack toggle-icon pin-visible" aria-hidden="true"></i>
+      {:else}
+        <i class="fas fa-chevron-left toggle-icon" aria-hidden="true"></i>
+      {/if}
     {/if}
   </button>
 </div>
@@ -110,6 +124,16 @@
   }
 
   .brand-toggle:hover .toggle-icon {
+    opacity: 1;
+  }
+
+  /* Pin affordance in hover-overlay mode is always visible — it is the only
+     discoverable path to pinning, so it cannot hide behind another hover. */
+  .toggle-icon.pin-visible {
+    opacity: 0.7;
+  }
+
+  .brand-toggle:hover .toggle-icon.pin-visible {
     opacity: 1;
   }
 

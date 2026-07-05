@@ -34,8 +34,6 @@
     'var(--muted-foreground)'};"
 >
   <span class="tab-icon">{@html section.icon}</span>
-  <!-- Hover Label -->
-  <span class="hover-label">{translatedLabel}</span>
 </button>
 
 <style>
@@ -109,31 +107,6 @@
   .collapsed-tab-button.active .tab-icon :global(i) {
     opacity: 1;
     filter: drop-shadow(0 0 12px var(--section-color)) brightness(1.15);
-  }
-
-  /* Hover Label - slides in from right */
-  .hover-label {
-    position: absolute;
-    left: 48px;
-    padding: 5px 10px;
-    background: var(--theme-panel-bg);
-    border: 1px solid var(--theme-stroke-strong);
-    border-radius: 5px;
-    color: var(--theme-text);
-    font-size: var(--font-size-compact);
-    font-weight: 500;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    transform: translateX(-8px);
-    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: var(--theme-shadow, 0 4px 12px var(--theme-shadow));
-    z-index: 200;
-  }
-
-  .collapsed-tab-button:hover .hover-label {
-    opacity: 1;
-    transform: translateX(0);
   }
 
   /* Focus styles for keyboard navigation */

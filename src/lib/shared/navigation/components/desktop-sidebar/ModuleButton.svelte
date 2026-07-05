@@ -148,9 +148,12 @@
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 0;
     min-height: var(--min-touch-target);
-    padding: 12px 14px;
+    /* Zero left padding: the fixed 44px icon column below centers the icon
+       at x=32px from the sidebar edge — the same center as the rail's icons,
+       so the rail↔expanded tree swap doesn't move icons. */
+    padding: 12px 14px 12px 0;
     background: transparent;
     border: 1px solid transparent;
     border-radius: 12px;
@@ -300,12 +303,15 @@
     );
   }
 
-  /* Icon wrapper - for badge positioning */
+  /* Icon wrapper - for badge positioning. Fixed 44px column matches the
+     rail's button width so icon centers align across the tree swap. */
   .icon-wrapper {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 44px;
+    flex-shrink: 0;
   }
 
   .module-icon {

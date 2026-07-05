@@ -13,6 +13,8 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     initializeDesktopSidebarCollapsedState,
     saveDesktopSidebarCollapsedState,
   } from "../../layout/desktop-sidebar-state.svelte";
+  import { createHoverIntent } from "../services/hover-intent";
+  import { hasOpenDrawers } from "../../foundation/ui/drawer/drawer-stack";
   import SidebarHeader from "./desktop-sidebar/SidebarHeader.svelte";
   import SidebarFooter from "./desktop-sidebar/SidebarFooter.svelte";
   import ModuleGroup from "./desktop-sidebar/ModuleGroup.svelte";
@@ -106,9 +108,24 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     })
   );
 
-  // Track when we're transitioning from collapsed to expanded
-  // This prevents sections from sliding in while the sidebar is still narrow
-  let isTransitioningFromCollapsed = $state(false);
+  // --- Hover-expand overlay state (rail mode only) -------------------------
+  // hoverExpanded is a purely VISUAL flag: it widens the sidebar above the
+  // content without touching desktopSidebarState.width (the reserved width).
+  let hoverExpanded = $state(false);
+  let pointerInside = $state(false);
+  let hoverCapable = $state(false);
+
+  // What the user SEES (and therefore how the sidebar behaves)
+  const visuallyExpanded = $derived(!isCollapsed || hoverExpanded);
+
+  const hoverIntent = createHoverIntent({
+    onOpen: () => {
+      hoverExpanded = true;
+    },
+    onClose: () => {
+      hoverExpanded = false;
+    },
+  });
 
   // Context menu state
   let contextMenuState = $state<ContextMenuState>({ mode: "closed" });
@@ -116,6 +133,57 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
   // Account popover state (rendered outside nav to avoid overflow clipping)
   let accountPopoverOpen = $state(false);
   let accountSectionEl = $state<HTMLElement | null>(null);
+
+  // Floating UI anchored to sidebar elements must hold the overlay open —
+  // collapsing under an open menu/popover would orphan its anchor.
+  const holdOpen = $derived(
+    contextMenuState.mode !== "closed" || accountPopoverOpen
+  );
+
+  function handleSidebarPointerEnter() {
+    pointerInside = true;
+    // Drawers (z 400) sit above the sidebar (z 200) anchored at the reserved
+    // edge — expanding underneath one looks broken, so suppress.
+    if (!hoverCapable || !isCollapsed || hasOpenDrawers()) return;
+    hoverIntent.pointerEnter();
+  }
+
+  function handleSidebarPointerLeave() {
+    pointerInside = false;
+    if (!hoverExpanded) {
+      hoverIntent.cancel();
+      return;
+    }
+    if (holdOpen) return; // the $effect below re-arms close when guard clears
+    hoverIntent.pointerLeave();
+  }
+
+  function handleSidebarFocusIn() {
+    if (!isCollapsed) return;
+    // Keyboard users get no intent delay
+    hoverIntent.openNow();
+  }
+
+  function handleSidebarFocusOut(e: FocusEvent) {
+    const next = e.relatedTarget as Node | null;
+    if (next && sidebarElement?.contains(next)) return;
+    if (pointerInside || holdOpen) return;
+    hoverIntent.closeNow();
+  }
+
+  function handleSidebarKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape" && hoverExpanded) {
+      hoverIntent.closeNow();
+    }
+  }
+
+  // When a hold-open guard clears and the pointer is already gone, start the
+  // close grace so the overlay doesn't hang open forever.
+  $effect(() => {
+    if (!holdOpen && !pointerInside && hoverExpanded) {
+      hoverIntent.pointerLeave();
+    }
+  });
 
   function toggleAccountPopover() {
     accountPopoverOpen = !accountPopoverOpen;
@@ -195,12 +263,14 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     const hasNoSections = !moduleDefinition?.sections?.length;
     const isCurrentModule = moduleId === currentModule;
 
-    // If sidebar is collapsed OR module has no sections, switch to the module directly
-    if (isCollapsed || hasNoSections) {
+    // If sidebar reads as a rail OR module has no sections, switch directly.
+    // Keyed off VISUAL state: a hover-expanded rail behaves like the
+    // expanded sidebar because that is what the user is looking at.
+    if (!visuallyExpanded || hasNoSections) {
       // Switch to the clicked module
       onModuleChange?.(moduleId as ModuleId);
       // Also expand/collapse the module group
-      if (!isCollapsed) {
+      if (visuallyExpanded) {
         toggleModuleExpansion(moduleId);
       }
     } else if (!isCurrentModule) {
@@ -247,14 +317,13 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
 
   function handleToggleCollapse() {
     hapticService?.trigger("selection");
+    const pinning = desktopSidebarState.isCollapsed; // rail → pinned
     toggleDesktopSidebarCollapsed();
     saveDesktopSidebarCollapsedState(desktopSidebarState.isCollapsed);
-  }
-
-  async function handleLogoTap() {
-    hapticService?.trigger("selection");
-    await onModuleChange?.("browse");
-    navigationState.setActiveTab("gallery");
+    hoverIntent.cancel();
+    // Pinning: visual expansion now comes from !isCollapsed. Unpinning under
+    // the cursor: stay visually open until the pointer leaves (no snap-shut).
+    hoverExpanded = pinning ? false : pointerInside;
   }
 
   function handleDebugTap() {
@@ -308,6 +377,15 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     // Initialize services
     hapticService = getHapticFeedback();
 
+    // Hover-expand only for real pointers; convertibles can flip mid-session
+    const hoverMq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    hoverCapable = hoverMq.matches;
+    const onHoverMqChange = (ev: MediaQueryListEvent) => {
+      hoverCapable = ev.matches;
+      if (!ev.matches) hoverIntent.closeNow();
+    };
+    hoverMq.addEventListener("change", onHoverMqChange);
+
     // Set up ResizeObserver to measure and report sidebar height
     let resizeObserver: ResizeObserver | null = null;
     if (sidebarElement) {
@@ -330,29 +408,37 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     // Return cleanup function
     return () => {
       resizeObserver?.disconnect();
+      hoverMq.removeEventListener("change", onHoverMqChange);
+      hoverIntent.cancel();
     };
   });
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <nav
   class="desktop-navigation-sidebar"
-  class:collapsed={isCollapsed}
+  class:collapsed={!visuallyExpanded}
+  class:hover-expanded={hoverExpanded && isCollapsed}
   class:entry-animating={isEntryAnimating}
   bind:this={sidebarElement}
   style="view-transition-name: sidebar"
   aria-label="Main navigation"
+  onpointerenter={handleSidebarPointerEnter}
+  onpointerleave={handleSidebarPointerLeave}
+  onfocusin={handleSidebarFocusIn}
+  onfocusout={handleSidebarFocusOut}
+  onkeydown={handleSidebarKeydown}
 >
   <!-- Sidebar Header/Branding -->
   <SidebarHeader
-    {isCollapsed}
-    onLogoClick={handleLogoTap}
+    mode={!visuallyExpanded ? "rail" : isCollapsed ? "hover" : "pinned"}
     onToggleCollapse={handleToggleCollapse}
   />
 
   <!-- Unified Navigation Content Container -->
   <!-- Single container holds both modules and settings tabs - no flexbox recalculation -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="navigation-content themed-scrollbar" class:tabs-mode={isCollapsed} onscroll={closeContextMenu} oncontextmenu={handleEmptySpaceContextMenu}>
+  <div class="navigation-content themed-scrollbar" class:tabs-mode={!visuallyExpanded} onscroll={closeContextMenu} oncontextmenu={handleEmptySpaceContextMenu}>
     {#if isInSettings}
       <!-- Settings Content with Back Button Header -->
       <div
@@ -361,7 +447,7 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
         out:slide={{ duration: 200, axis: "y" }}
       >
         <!-- Settings Header (expanded only) -->
-        {#if !isCollapsed}
+        {#if visuallyExpanded}
           <div class="settings-header">
             <i class="fas fa-cog settings-header-icon" aria-hidden="true"></i>
             <span class="settings-header-text">Settings</span>
@@ -371,19 +457,19 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
         <!-- Back Button Header -->
         <button
           class="settings-back-button"
-          class:collapsed={isCollapsed}
+          class:collapsed={!visuallyExpanded}
           onclick={handleSettingsTap}
           aria-label="Back to modules"
         >
           <div class="back-icon">
             <i class="fas fa-arrow-left" aria-hidden="true"></i>
           </div>
-          {#if !isCollapsed}
+          {#if visuallyExpanded}
             <span class="back-label">Back</span>
           {/if}
         </button>
 
-        {#if isCollapsed}
+        {#if !visuallyExpanded}
           <!-- Collapsed Settings Tabs -->
           <div class="collapsed-settings-tabs">
             {#each filteredSettingsSections as section, index}
@@ -426,7 +512,7 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
         in:slide={{ duration: 250, axis: "y" }}
         out:slide={{ duration: 200, axis: "y" }}
       >
-        {#if isCollapsed}
+        {#if !visuallyExpanded}
           <!-- VS Code-style Activity Bar: Modules with nested tabs -->
           <div class="activity-bar">
             {#each modules.filter((m: ModuleDefinition) => m.isMain) as module}
@@ -509,8 +595,6 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
               {currentModule}
               {currentSection}
               {isExpanded}
-              {isCollapsed}
-              {isTransitioningFromCollapsed}
               {moduleColor}
               onModuleClick={handleModuleTap}
               onSectionClick={handleSectionTap}
@@ -527,7 +611,7 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
 
   <!-- Sidebar Footer - settings, inbox, version -->
   <SidebarFooter
-    {isCollapsed}
+    isCollapsed={!visuallyExpanded}
     {isInSettings}
     onSettingsClick={handleSettingsTap}
     onAccountClick={toggleAccountPopover}
@@ -567,6 +651,8 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     transition:
       width var(--duration-emphasis, 280ms)
         var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+      box-shadow var(--duration-emphasis, 280ms)
+        var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
       top 0.2s ease;
 
     /* Completely exclude from view transitions */
@@ -580,6 +666,13 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     width: 64px;
   }
 
+  /* Hover-expanded overlay (rail mode): floats above content, so it gets
+     elevation. Width comes from the base rule (collapsed class is absent). */
+  .desktop-navigation-sidebar.hover-expanded {
+    box-shadow: 24px 0 48px -12px rgba(0, 0, 0, 0.45);
+    border-right-color: var(--theme-stroke-strong, var(--theme-stroke));
+  }
+
   /* ============================================================================
      UNIFIED NAVIGATION CONTENT CONTAINER
      ============================================================================ */
@@ -587,8 +680,13 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 16px 12px;
+    padding: 16px 8px;
     position: relative;
+    /* Pin inner content to the expanded width; the nav's overflow:hidden
+       clips it while the width animates. Prevents cqw font rescaling and
+       label wrap during expansion — the 64→220 animation is a reveal, not
+       a reflow. */
+    width: 220px;
 
     /* Enable container queries for responsive sizing */
     container-type: inline-size;
@@ -601,6 +699,7 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     flex-direction: column;
     align-items: center;
     padding: 16px 8px;
+    width: 64px;
   }
 
   /* Inner content wrappers for transition targeting */

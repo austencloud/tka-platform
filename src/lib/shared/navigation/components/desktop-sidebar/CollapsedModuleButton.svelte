@@ -85,9 +85,6 @@
       <NotificationBadge count={inboxUnreadCount} />
     {/if}
   </div>
-
-  <!-- Hover Label -->
-  <span class="hover-label">{translatedLabel}</span>
 </button>
 
 <style>
@@ -182,31 +179,6 @@
 
   .collapsed-module-button.active .module-icon {
     transform: scale(1.05);
-  }
-
-  /* Hover Label - slides in from right */
-  .hover-label {
-    position: absolute;
-    left: 60px;
-    padding: 6px 12px;
-    background: var(--theme-panel-bg);
-    border: 1px solid var(--theme-stroke-strong, var(--theme-stroke-strong));
-    border-radius: 6px;
-    color: var(--theme-text);
-    font-size: var(--font-size-compact);
-    font-weight: 600;
-    white-space: nowrap;
-    pointer-events: none;
-    opacity: 0;
-    transform: translateX(-8px);
-    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: var(--theme-shadow, 0 4px 12px rgba(0, 0, 0, 0.4));
-    z-index: 200;
-  }
-
-  .collapsed-module-button:hover .hover-label {
-    opacity: 1;
-    transform: translateX(0);
   }
 
   /* Focus styles for keyboard navigation */
