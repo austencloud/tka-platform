@@ -65,6 +65,36 @@ export function getCreatorIdFromURL(): string | null {
 }
 
 /**
+ * A collection deep link: /browse/collections/[collectionId], optionally with
+ * ?scan=1. This is the URL a phone lands on after scanning the desktop scan
+ * sheet's handoff QR — it opens that collection, and the scan flag asks the
+ * detail view to open the card scanner immediately.
+ */
+export interface CollectionScanTarget {
+  collectionId: string;
+  scan: boolean;
+}
+
+/**
+ * Read a collection deep link from the current URL. Returns null on any other
+ * path. Safe to call anywhere (returns null during SSR).
+ */
+export function getCollectionScanTargetFromURL(): CollectionScanTarget | null {
+  if (typeof window === "undefined") return null;
+  const parts = window.location.pathname
+    .replace(/^\/+/, "")
+    .split("/")
+    .filter(Boolean);
+  // Expect: browse / collections / [collectionId]
+  if (parts[0] === "browse" && parts[1] === "collections" && parts[2]) {
+    const scan =
+      new URLSearchParams(window.location.search).get("scan") === "1";
+    return { collectionId: decodeURIComponent(parts[2]), scan };
+  }
+  return null;
+}
+
+/**
  * Push /browse/creators/[userId] into the browser history stack.
  * Skips the push if the URL already reflects this creator (e.g., on initial load).
  */
