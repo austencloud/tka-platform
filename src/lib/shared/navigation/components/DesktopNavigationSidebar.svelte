@@ -700,6 +700,14 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     align-items: center;
     padding: 16px 8px;
     width: 64px;
+    /* Hide the scrollbar in rail mode (wheel/keys still scroll): a visible
+       bar eats 10px of the 64px rail and shifts the centered icon column
+       off the expanded tree's x=32 anchor. */
+    scrollbar-width: none;
+  }
+
+  .navigation-content.tabs-mode::-webkit-scrollbar {
+    display: none;
   }
 
   /* Inner content wrappers for transition targeting */
