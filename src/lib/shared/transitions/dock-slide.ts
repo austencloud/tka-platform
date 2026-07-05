@@ -1,5 +1,6 @@
 import { cubicOut } from "svelte/easing";
 import type { TransitionConfig } from "svelte/transition";
+import { motionDuration } from "./motion";
 import { DURATION } from "./transitions";
 
 interface DockSlideParams {
@@ -26,14 +27,10 @@ export function dockSlide(
   node: HTMLElement,
   { duration = DURATION.emphasis, distance = 24 }: DockSlideParams = {}
 ): TransitionConfig {
-  const reduce =
-    typeof window !== "undefined" &&
-    window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
-
   const width = node.getBoundingClientRect().width;
 
   return {
-    duration: reduce ? 0 : duration,
+    duration: motionDuration(duration),
     easing: cubicOut,
     css: (t) =>
       `width: ${t * width}px; opacity: ${t}; ` +

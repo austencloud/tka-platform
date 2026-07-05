@@ -36,6 +36,12 @@
   import ActsDock from "./ActsDock.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { dockSlide } from "$lib/shared/transitions/dock-slide";
+  import {
+    flyFade,
+    growFade,
+    popIn,
+    flipDuration,
+  } from "$lib/shared/transitions/motion";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
@@ -427,6 +433,7 @@
     </div>
     {#if builder.sequenceIds.length > 0}
       <span
+        transition:growFade={{ axis: "x" }}
         class="loop-badge"
         class:loops={builder.loopStatus === "loops"}
         class:open={builder.loopStatus === "open"}
@@ -441,10 +448,14 @@
       </span>
     {/if}
     {#if saveMessage}
-      <span class="save-message" role="alert">{saveMessage}</span>
+      <span class="save-message" role="alert" transition:flyFade={{ x: -6, y: 0 }}>
+        {saveMessage}
+      </span>
     {/if}
     {#if exportError}
-      <span class="save-message" role="alert">{exportError}</span>
+      <span class="save-message" role="alert" transition:flyFade={{ x: -6, y: 0 }}>
+        {exportError}
+      </span>
     {/if}
   </header>
 
@@ -453,15 +464,18 @@
     <aside class="rail">
       <section class="rail-block">
         <h2 class="rail-title">Sequences ({builder.sequenceIds.length})</h2>
-        {#if builder.sequenceIds.length === 0}
-          <p class="rail-empty">No sequences yet. Add some to build the sheet.</p>
-        {:else}
+        <Crossfade key={builder.sequenceIds.length === 0}>
+          {#if builder.sequenceIds.length === 0}
+            <p class="rail-empty">No sequences yet. Add some to build the sheet.</p>
+          {:else}
           <ul class="row-list">
             {#each builder.sequenceIds as id, i (id)}
               <li
                 class="row-item"
                 class:selected={builder.selectedSequenceId === id}
-                animate:flip={{ duration: 200 }}
+                animate:flip={{ duration: flipDuration() }}
+                in:growFade={{ axis: "y", x: -8 }}
+                out:growFade={{ axis: "y" }}
               >
                 <button
                   type="button"
@@ -473,11 +487,12 @@
                   {rowLabel(id)}
                 </button>
                 {#if rowCount(id) != null}
-                  <span class="row-count">{rowCount(id)}</span>
+                  <span class="row-count" in:growFade={{ axis: "x" }}>{rowCount(id)}</span>
                 {/if}
                 <div class="row-actions">
                   {#if builder.failedSequenceIds.has(id)}
                     <button
+                      transition:popIn
                       type="button"
                       class="icon-btn row-retry"
                       aria-label="Sequence failed to load — retry"
@@ -517,7 +532,8 @@
               </li>
             {/each}
           </ul>
-        {/if}
+          {/if}
+        </Crossfade>
       </section>
 
       <section class="rail-block">
@@ -558,7 +574,7 @@
           />
         </div>
         {#if isAnnotated}
-          <div class="setting-col">
+          <div class="setting-col" transition:growFade={{ axis: "y" }}>
             <span class="setting-label">Orientation</span>
             <SegmentedControl
               options={orientationOptions}
@@ -568,7 +584,10 @@
               size="sm"
             />
           </div>
-          <div class="setting-col">
+          <div
+            class="setting-col"
+            transition:growFade={{ axis: "y", duration: 240, delay: 40 }}
+          >
             <span class="setting-label">Annotations</span>
             <div class="chip-row">
               <FilterChipBase
@@ -591,7 +610,7 @@
             </div>
           </div>
           {#if builder.layout.showCueRail}
-            <div class="setting-col">
+            <div class="setting-col" transition:growFade={{ axis: "y" }}>
               <span class="setting-label">Timestamps</span>
               <div class="bpm-row">
                 <input
@@ -628,7 +647,7 @@
     <!-- Preview -->
     <div class="preview-pane">
       {#if builder.isHydrating && builder.hydratedSequences.length === 0}
-        <p class="preview-status">Loading sequences…</p>
+        <p class="preview-status" transition:flyFade>Loading sequences…</p>
       {/if}
       <SheetPreviewPages
         pages={builder.pages}

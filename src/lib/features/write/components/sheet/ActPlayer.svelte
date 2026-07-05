@@ -9,6 +9,7 @@
 -->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import { dockSlide } from "$lib/shared/transitions/dock-slide";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import AnimationPlayer from "$lib/shared/sequence-viewer/components/AnimationPlayer.svelte";
   import MusicPlayer from "../MusicPlayer.svelte";
@@ -78,7 +79,7 @@
   }
 </script>
 
-<aside class="act-player" aria-label="Play act">
+<aside class="act-player" aria-label="Play act" transition:dockSlide>
   <div class="dock-head">
     <span class="dock-title">Play act</span>
     <button type="button" class="dock-close" aria-label="Close player" onclick={() => onClose?.()}>

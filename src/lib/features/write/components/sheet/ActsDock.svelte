@@ -20,6 +20,7 @@
   import { flip } from "svelte/animate";
   import { scale } from "svelte/transition";
   import { dockSlide } from "$lib/shared/transitions/dock-slide";
+  import { flipDuration, motionDuration } from "$lib/shared/transitions/motion";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { formatTimeAgo } from "$lib/shared/i18n/i18n-formatters";
   import { getChoreoSheetRepository } from "../../services/choreo-sheet-repository";
@@ -331,8 +332,8 @@
                 class:armed={confirmDeleteId === act.id}
                 class:flash={flashId === act.id}
                 style="--enter-delay: {Math.min(i * 35, 280)}ms"
-                animate:flip={{ duration: 200 }}
-                out:scale={{ duration: 160, start: 0.92 }}
+                animate:flip={{ duration: flipDuration() }}
+                out:scale={{ duration: motionDuration(160), start: 0.92 }}
               >
                 <button
                   type="button"

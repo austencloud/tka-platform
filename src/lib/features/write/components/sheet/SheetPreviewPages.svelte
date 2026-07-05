@@ -24,6 +24,8 @@
 -->
 <script lang="ts">
   import { onDestroy } from "svelte";
+  import { flip } from "svelte/animate";
+  import { flyFade, growFade, flipDuration } from "$lib/shared/transitions/motion";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import type { SheetPage, SheetCell, SheetBand, SheetBandPage } from "../../services/sheet-row-planner";
   import type { SheetPageGeometry } from "../../domain/sheet-page-layout";
@@ -169,11 +171,12 @@
 
 {#if layout.packing === "aligned"}
   {#if bandPages.length === 0}
-    <p class="empty">No sequences yet.</p>
+    <p class="empty" transition:flyFade>No sequences yet.</p>
   {:else}
     <div class="pages-scroll">
       {#each bandPages as page (page.pageIndex)}
         <div
+          in:flyFade|global={{ y: 12, delay: Math.min(page.pageIndex * 60, 240) }}
           class="page annotated"
           class:no-rail={!layout.showCueRail}
           class:no-strip={!layout.showNoteStrips}
@@ -231,7 +234,12 @@
 
             <div class="bands">
               {#each page.bands as band, bi (band.key)}
-                <div class="band">
+                <div
+                  class="band"
+                  animate:flip={{ duration: flipDuration() }}
+                  in:flyFade={{ y: 8 }}
+                  out:growFade={{ axis: "y" }}
+                >
                   {#if layout.showCueRail}
                     <div class="rail">
                       <input
@@ -371,11 +379,16 @@
     </div>
   {/if}
 {:else if pages.length === 0}
-  <p class="empty">No sequences yet.</p>
+  <p class="empty" transition:flyFade>No sequences yet.</p>
 {:else}
   <div class="pages-scroll">
     {#each pages as page, pi (pi)}
-      <div class="page" use:observePage={pi} style="aspect-ratio: {pageAspect};">
+      <div
+        in:flyFade|global={{ y: 12, delay: Math.min(pi * 60, 240) }}
+        class="page"
+        use:observePage={pi}
+        style="aspect-ratio: {pageAspect};"
+      >
         <div
           class="grid-area"
           style="inset: {marginYPct}% {marginXPct}%; row-gap: {rowGapPct}%;"
