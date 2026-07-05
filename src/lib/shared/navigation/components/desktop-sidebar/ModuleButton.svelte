@@ -46,8 +46,8 @@
   });
 
   function handleClick() {
-    // When expanded, act as a non-interactive header (ignore left clicks)
-    if (isExpanded) return;
+    // Module headers toggle their tab list in both directions — peek open,
+    // click again to tuck away. Navigation belongs to the tabs.
     hapticService?.trigger("selection");
     onClick();
   }
@@ -211,21 +211,21 @@
     transition-duration: var(--duration-instant);
   }
 
-  /* Expanded state - blends with surrounding panel, acts as header */
+  /* Expanded state - blends with surrounding panel, acts as a collapsible
+     group header. Still clickable: click tucks the tab list away. */
   .module-button.expanded {
     color: var(--theme-text);
     background: transparent;
     border-color: transparent;
-    cursor: default;
   }
 
   .module-button.expanded:hover {
     transform: none;
-    background: transparent;
+    background: var(--theme-card-bg);
   }
 
   .module-button.expanded::before {
-    display: none; /* No shimmer on non-interactive state */
+    display: none; /* No shimmer on the header state */
   }
 
   /* Active module indicator - glass effect with module color */
@@ -253,7 +253,10 @@
   .module-button.active.expanded {
     background: transparent;
     border-color: transparent;
-    cursor: default;
+  }
+
+  .module-button.active.expanded:hover {
+    background: var(--theme-card-bg);
   }
 
   .module-button.active::after {

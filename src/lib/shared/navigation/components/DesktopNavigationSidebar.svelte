@@ -113,6 +113,7 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
   // content without touching desktopSidebarState.width (the reserved width).
   let hoverExpanded = $state(false);
   let pointerInside = $state(false);
+  let focusInside = $state(false);
   let hoverCapable = $state(false);
 
   // What the user SEES (and therefore how the sidebar behaves)
@@ -159,6 +160,7 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
   }
 
   function handleSidebarFocusIn() {
+    focusInside = true;
     if (!isCollapsed) return;
     // Keyboard users get no intent delay
     hoverIntent.openNow();
@@ -167,6 +169,7 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
   function handleSidebarFocusOut(e: FocusEvent) {
     const next = e.relatedTarget as Node | null;
     if (next && sidebarElement?.contains(next)) return;
+    focusInside = false;
     if (pointerInside || holdOpen) return;
     hoverIntent.closeNow();
   }
@@ -177,10 +180,12 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     }
   }
 
-  // When a hold-open guard clears and the pointer is already gone, start the
-  // close grace so the overlay doesn't hang open forever.
+  // When a hold-open guard clears and both pointer and focus are already
+  // gone, start the close grace so the overlay doesn't hang open forever.
+  // focusInside matters: a keyboard-focus expansion has no pointer inside,
+  // and must not self-close while the user is still tabbing through it.
   $effect(() => {
-    if (!holdOpen && !pointerInside && hoverExpanded) {
+    if (!holdOpen && !pointerInside && !focusInside && hoverExpanded) {
       hoverIntent.pointerLeave();
     }
   });
@@ -273,14 +278,11 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
       if (visuallyExpanded) {
         toggleModuleExpansion(moduleId);
       }
-    } else if (!isCurrentModule) {
-      // When clicking a different module (not the current one), navigate to it
-      // This will use either the default tab or the most recent tab for that module
-      onModuleChange?.(moduleId as ModuleId);
-      // Replace the expanded modules set with only the new module (collapse all others)
-      expandedModules = new Set([moduleId]);
     } else {
-      // When clicking the current module, toggle expansion
+      // Peek, don't navigate: module headers toggle their tab list so the
+      // expanded sidebar is a discovery surface. Navigating here would fire
+      // a view transition that yanks the hover overlay shut mid-browse and
+      // bounce the user to the module's last tab. Tabs are the navigators.
       toggleModuleExpansion(moduleId);
     }
   }
