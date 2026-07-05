@@ -46,8 +46,7 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
-  import type { SplitConfig } from "$lib/shared/sequence-viewer/services/viewer-state-persistence";
-  import type { ContentType, ViewerMode } from "$lib/shared/sequence-viewer/state/viewer-state.svelte";
+  import type { ContentType } from "$lib/shared/sequence-viewer/state/viewer-state.svelte";
   import type { OrchestratorContext } from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import { setScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
   import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
@@ -167,30 +166,44 @@
   let ViewerSplitPaneComponent:
     | typeof import("$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte").default
     | null = $state(null);
-  // View mode for the embedded viewer — the single source of truth that the
-  // ViewerContentRail (landscape side rail) and ViewerModeBottomBar (portrait
-  // bottom bar) drive, mirroring SequenceViewerDrawerHost. No 3D mode is offered
-  // on the scan page: webgl2Available={false} filters 'animation-3d' out of both
-  // switchers, so the only modes are split / animation / card / mandala / tunnel.
-  let qrViewerMode = $state<ViewerMode>("split");
-  // Pane layout derived from the mode: mandala swaps the left pane; every other
-  // mode is the 2D-animation + choreo-card pairing. Single-view modes focus one
-  // pane (DrawerHost convention: 'image' = right/card, 'animation' = left).
-  const qrSplitConfig = $derived<SplitConfig>(
-    qrViewerMode === "mandala"
-      ? { leftPane: "mandala", rightPane: "card" }
-      : qrViewerMode === "tunnel"
-        ? { leftPane: "tunnel", rightPane: "card" }
-        : { leftPane: "animation", rightPane: "card" }
-  );
-  const qrFocusedPane = $derived<"animation" | "image" | null>(
-    qrViewerMode === "split" ? null : qrViewerMode === "card" ? "image" : "animation"
-  );
-  function selectQrMode(mode: ContentType) {
-    qrViewerMode = mode as ViewerMode;
+  // View-mode routing: drive the orchestrator's REAL viewerState — the exact
+  // same enterExport/exitExport state machine SequenceViewerDrawerHost runs —
+  // instead of a parallel scan-only mode variable. This is what makes the scan
+  // page's per-mode chrome (the "Download Animation"/"Download Card" header,
+  // pane focus, panel mounting) identical to the app viewer by construction.
+  // No 3D on the scan page: webgl2Available={false} filters 'animation-3d' out
+  // of both switchers.
+  function selectScanSplit(ctx: OrchestratorContext) {
+    ctx.viewerState.exitExport();
+    ctx.viewerState.setSplitConfig({ leftPane: "animation", rightPane: "card" });
+    ctx.viewerState.setViewerMode("split");
   }
-  function selectQrSplit() {
-    qrViewerMode = "split";
+  function selectScanMode(ctx: OrchestratorContext, mode: ContentType) {
+    if (mode === "animation") {
+      ctx.viewerState.enterExport("animation-export", "animation");
+    } else if (mode === "card") {
+      ctx.viewerState.enterExport("image-export");
+    } else if (mode === "mandala") {
+      ctx.viewerState.exitExport();
+      ctx.viewerState.setViewerMode("mandala");
+    } else if (mode === "tunnel") {
+      ctx.viewerState.exitExport();
+      ctx.viewerState.setViewerMode("tunnel");
+    }
+  }
+
+  // viewerState persists across the whole origin (tka-viewer-mode /
+  // exportContext), so a scanner whose localStorage holds a stale app-viewer
+  // export context would land mid-export instead of on the split first
+  // impression. One-shot reset to split when the player mounts; from then on
+  // the live state machine is shared with the app viewer.
+  let viewerStateReset = false;
+  function ensureFreshViewerState(ctx: OrchestratorContext): string {
+    if (!viewerStateReset) {
+      viewerStateReset = true;
+      queueMicrotask(() => selectScanSplit(ctx));
+    }
+    return "";
   }
 
   // ── Export state (drives the QR ExportTakeover overlay + native share) ──
@@ -731,15 +744,17 @@
         pendingExportKind === "card" ? void handleCardExport(ctx) : void handleExport(ctx)}
     >
       {#snippet children(ctx)}
+        {@const _reset = ensureFreshViewerState(ctx)}
         <div
           class="player-layout"
           class:sidebar-mode={isSidebarLayout}
-          class:with-panel={isSidebarLayout && (qrViewerMode === "animation" || qrViewerMode === "card")}
+          class:with-panel={isSidebarLayout && (ctx.editingPane === "animation" || ctx.editingPane === "image")}
         >
           <ViewerHeader
             profile="scan"
             {ctx}
             isMobile={!isSidebarLayout}
+            editingPane={ctx.editingPane === "video-upload" ? null : ctx.editingPane}
             sequence={resolvedSeq}
             onOpenInComposer={openInComposer}
             openAppHref={`/browse/gallery?from=scan&code=${shortCode}`}
@@ -751,10 +766,10 @@
                  ViewerContentRail the desktop viewer uses. webgl2Available={false}
                  drops the 3D option (no Three.js on the scan page). -->
             <ViewerContentRail
-              activeMode={qrViewerMode}
+              activeMode={ctx.viewerState.viewerMode}
               webgl2Available={false}
-              onSelectMode={selectQrMode}
-              onSelectSplit={selectQrSplit}
+              onSelectMode={(mode) => selectScanMode(ctx, mode)}
+              onSelectSplit={() => selectScanSplit(ctx)}
             />
           {/if}
           <div class="canvas-area">
@@ -765,24 +780,37 @@
               bpm={ctx.bpmLocal}
               onBpmChange={ctx.handleBpmChange}
               playback={ctx.splitPanePlayback}
-              imageComposition={ctx.splitPaneImageComposition}
+              imageComposition={ctx.editingPane === "image"
+                ? {
+                    ...ctx.splitPaneImageComposition,
+                    darkMode: ctx.exportOptions.imageDarkMode,
+                    columnCount: ctx.exportOptions.imageColumnCount,
+                    forceContain: true,
+                  }
+                : ctx.splitPaneImageComposition}
               propRendering={ctx.splitPanePropRendering}
               layout={{
                 isFullscreen: false,
                 fullscreenStackVertical: false,
                 isMobile: !isSidebarLayout,
                 isLandscapeMobile: false,
-                // Drive focus ONLY from the QR mode. The orchestrator's
-                // ctx.editingPane derives from the viewer's PERSISTED state
-                // (tka-viewer-mode / exportContext), which leaks across to the
-                // scan page: a scanner whose localStorage holds a stale
-                // export/videos context would get editingPane != null, which in
-                // split focuses the animation pane and HIDES the choreo card.
-                focusedPane: qrFocusedPane,
-                suppressCloseButton: qrViewerMode !== "split",
+                // Same focus derivation as SequenceViewerDrawerHost:603 — the
+                // stale-persistence leak the old scan-only mode variable
+                // guarded against is now handled by ensureFreshViewerState's
+                // one-shot reset to split on mount.
+                focusedPane: ctx.viewerState.viewerMode !== "split"
+                  ? (ctx.viewerState.viewerMode === "card" ? "image" : "animation")
+                  : (ctx.editingPane === "video-upload" ? null : ctx.editingPane),
+                suppressCloseButton: ctx.viewerState.viewerMode !== "split",
               }}
-              splitConfig={qrSplitConfig}
-              suppressProgress={qrViewerMode === "split"}
+              splitConfig={ctx.viewerState.viewerMode === "split"
+                ? { leftPane: "animation", rightPane: "card" }
+                : (ctx.viewerState.viewerMode === "card"
+                  ? { ...ctx.viewerState.splitConfig, rightPane: "card" }
+                  : (ctx.viewerState.viewerMode === "animation" || ctx.viewerState.viewerMode === "mandala" || ctx.viewerState.viewerMode === "tunnel"
+                    ? { ...ctx.viewerState.splitConfig, leftPane: ctx.viewerState.viewerMode }
+                    : ctx.viewerState.splitConfig))}
+              suppressProgress={ctx.viewerState.viewerMode === "split"}
               onFocusPane={ctx.enterEditMode}
               onUnfocusPane={ctx.exitEditMode}
               onStepClick={ctx.handleStepClick}
@@ -813,8 +841,9 @@
                appears ONLY in 2D Animation mode (where watching the animation
                while you change props/effects is the point). Split / Card /
                Mandala / Tunnel fill the body; their funnel actions live in the
-               floating "…" menu over the stage. -->
-          {#if qrViewerMode === "animation"}
+               floating "…" menu over the stage. Keyed off ctx.editingPane —
+               the same discriminant the app viewer's DrawerHost uses. -->
+          {#if ctx.editingPane === "animation"}
           <div class="controls-column">
             <div class="drawer-host">
               {#await import("$lib/shared/animation-panel/components/AnimationPanel.svelte") then mod}
@@ -841,7 +870,7 @@
               {/await}
             </div>
           </div>
-          {:else if qrViewerMode === "card"}
+          {:else if ctx.editingPane === "image"}
             <!-- Card mode mirrors the viewer: the choreo-card customization row
                  (labels / pictograph / columns / theme + share). Its toggles write
                  the shared image-composition + visibility managers, which feed
@@ -869,10 +898,10 @@
             <div class="mode-bar-slot" transition:slide={{ duration: prefersReducedMotion ? 0 : 260, easing: cubicOut }}>
               <div transition:fly={{ y: 72, duration: prefersReducedMotion ? 0 : 260, easing: cubicOut }}>
                 <ViewerModeBottomBar
-                  activeMode={qrViewerMode}
+                  activeMode={ctx.viewerState.viewerMode}
                   webgl2Available={false}
-                  onSelectMode={selectQrMode}
-                  onSelectSplit={selectQrSplit}
+                  onSelectMode={(mode) => selectScanMode(ctx, mode)}
+                  onSelectSplit={() => selectScanSplit(ctx)}
                 />
               </div>
             </div>
