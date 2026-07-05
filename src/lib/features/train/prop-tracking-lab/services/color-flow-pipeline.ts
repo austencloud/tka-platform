@@ -1,7 +1,8 @@
 import { ColorEndTracker } from './color-end-tracker';
 import type { ColorTarget, EndpointPair } from './color-end-tracker';
 import { ScreenToGrid } from './screen-to-grid';
-import type { StaffPose3D } from '../domain/notation-3d';
+import type { StaffPose3D, TrackConfidence } from '../domain/notation-3d';
+import { zeroTrackConfidence } from '../domain/notation-3d';
 import { framesToNotation } from './notation-pipeline';
 import type { BeatNotation } from './notation-pipeline';
 
@@ -17,17 +18,19 @@ export function endpointPairToPose(pair: EndpointPair, cal: ScreenToGrid): Staff
 
 /**
  * Track one staff's color across frames -> grid-frame pose stream + confidence.
- * On a blob dropout, holds the last good pose (the segmenter interpolates) and
- * records confidence 0 for that frame.
+ * On a blob dropout, holds the last good pose (so the two staff streams stay
+ * frame-aligned) and records zero confidence for that frame — the beat
+ * segmenter treats those frames as unknown, not as evidence of a hold.
  */
 export function trackStaffPoses(
   frames: ImageData[],
   color: ColorTarget,
   cal: ScreenToGrid,
-): { poses: StaffPose3D[]; confidence: number[] } {
+): { poses: StaffPose3D[]; confidence: number[]; detail: TrackConfidence[] } {
   const tracker = new ColorEndTracker();
   const poses: StaffPose3D[] = [];
   const confidence: number[] = [];
+  const detail: TrackConfidence[] = [];
   let last: StaffPose3D | null = null;
 
   for (const frame of frames) {
@@ -35,13 +38,15 @@ export function trackStaffPoses(
     if (pair) {
       last = endpointPairToPose(pair, cal);
       confidence.push(pair.confidence);
+      detail.push(pair.detail);
     } else {
       confidence.push(0);
+      detail.push(zeroTrackConfidence());
     }
     // Hold last good pose so the two staff streams stay frame-aligned.
     if (last) poses.push(last);
   }
-  return { poses, confidence };
+  return { poses, confidence, detail };
 }
 
 /** Full color-flow notation: track both staves, then run the TKA brain. */
@@ -53,5 +58,14 @@ export function notateColorFlow(
 ): BeatNotation[] {
   const blue = trackStaffPoses(frames, blueColor, cal);
   const red = trackStaffPoses(frames, redColor, cal);
-  return framesToNotation(blue.poses, red.poses, blue.confidence, red.confidence);
+  return framesToNotation(
+    blue.poses,
+    red.poses,
+    blue.confidence,
+    red.confidence,
+    undefined,
+    undefined,
+    blue.detail,
+    red.detail,
+  );
 }

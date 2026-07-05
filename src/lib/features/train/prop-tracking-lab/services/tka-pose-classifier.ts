@@ -1,3 +1,30 @@
+/**
+ * TkaPoseClassifier — staff pose streams -> TKA notation attributes.
+ *
+ * SIGN CONVENTIONS (MCP-grounded 2026-07-05 against the Flow Arts Knowledge
+ * server; do not re-derive these from intuition):
+ * - Grid frame: X = East, Y = North; location angle = atan2(x, y) measured
+ *   CLOCKWISE from North. "Clockwise" in TKA = the N -> E -> S -> W direction
+ *   as drawn on the grid (glossary: "clockwise").
+ * - In the X=East/Y=North frame, math-positive angles (atan2 increasing) are
+ *   COUNTER-clockwise. All accumulated angles here are signed CCW-positive;
+ *   `additional >= 0` therefore maps to RotationDirection.COUNTER_CLOCKWISE.
+ * - Orientation is CENTER-RELATIVE (topic: center-relative-orientation):
+ *   in = prop faces toward center, out = away, clock/counter = perpendicular,
+ *   facing the clockwise/counter-clockwise direction of travel. The clockwise
+ *   tangent at radial direction (rx, ry) is (ry, -rx).
+ * - 1 turn = 180 degrees of ADDITIONAL prop rotation beyond the motion's base
+ *   rotation (topic: base-rotation). Pro base = rotates with the arc
+ *   (+arcAngle, preserves center-relative orientation); anti base = against
+ *   (-arcAngle, reverses it); dash/static/float have zero base rotation.
+ * - Float holds absolute spatial angle during a shift (net spatial rotation
+ *   ~0) and carries no turn count — it renders as turns 'fl'.
+ *
+ * CAMERA-MIRROR CAVEAT: whether the video's screen-right is the performer's
+ * East or West depends on camera facing. The validation scorecard tests both
+ * hypotheses (see validation/scorecard.ts mirrorBeatNotation); resolve it
+ * against the first real ground-truth clip, not by assumption.
+ */
 import { Vector3 } from 'three';
 import type { GridLocation } from '../domain/models';
 import { GridMode } from '$lib/shared/pictograph/grid/domain/enums/grid-enums';
@@ -115,7 +142,7 @@ export class TkaPoseClassifier {
    * Full per-staff notation across a beat pair.
    * @param arcAngle signed CCW-positive hand-arc rotation about center (shift only; 0 otherwise)
    * @param propNetRotation signed CCW-positive net prop spin over the span
-   * @param confidence lowest per-frame ArUco confidence over the span
+   * @param confidence lowest per-frame tracking confidence over the span
    */
   classifyMotion(
     staff: StaffColor,

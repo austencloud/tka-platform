@@ -28,7 +28,12 @@ function paintLine(img: ImageData, p0: PixelPoint, p1: PixelPoint, color: number
 describe('endpointPairToPose', () => {
   it('grip = midpoint, axisDir = unit(thumb - pinky) in grid frame', () => {
     // thumb above center (North, out), pinky toward center. Both at x=100.
-    const pair: EndpointPair = { thumb: { x: 100, y: 40 }, pinky: { x: 100, y: 60 }, confidence: 1 };
+    const pair: EndpointPair = {
+      thumb: { x: 100, y: 40 },
+      pinky: { x: 100, y: 60 },
+      confidence: 1,
+      detail: { overall: 1, blob: 1, correspondence: 1, orientation: 1 },
+    };
     const pose = endpointPairToPose(pair, cal);
     expect(pose.gripPos.x).toBeCloseTo(0, 5);
     expect(pose.gripPos.y).toBeCloseTo(1, 5);   // midpoint (100,50) -> North
