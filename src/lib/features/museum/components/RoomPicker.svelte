@@ -123,7 +123,7 @@
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     background: rgba(0, 0, 0, 0.5);
     backdrop-filter: blur(8px);
     color: rgba(255, 255, 255, 0.8);
@@ -136,8 +136,8 @@
   }
 
   .teleport-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
     color: #fff;
   }
 
@@ -159,7 +159,7 @@
     width: min(600px, 90vw);
     max-height: 80vh;
     background: rgba(18, 18, 28, 0.97);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 16px;
     padding: 20px;
     overflow-y: auto;
@@ -184,7 +184,7 @@
     width: 32px;
     height: 32px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     background: transparent;
     color: rgba(255, 255, 255, 0.5);
     font-size: 14px;
@@ -195,7 +195,7 @@
   }
 
   .close-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
     color: rgba(255, 255, 255, 0.8);
   }
 
@@ -212,8 +212,8 @@
     gap: 8px;
     padding: 16px 8px;
     border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
     font-family: inherit;
@@ -221,8 +221,8 @@
   }
 
   .room-card:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.12));
     color: #fff;
   }
 

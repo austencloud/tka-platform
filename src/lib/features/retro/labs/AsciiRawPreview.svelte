@@ -80,7 +80,7 @@
 
   .raw-canvas {
     background: #0a0a0f;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 6px;
     padding: 16px 20px;
     overflow: auto;
@@ -110,7 +110,7 @@
   .compact-divider {
     height: 1px;
     margin: 8px 0;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
   }
 
   .copy-btn {

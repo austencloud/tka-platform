@@ -475,7 +475,7 @@
     cursor: pointer;
     transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
   }
-  .card-square:hover { border-color: rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.03); }
+  .card-square:hover { border-color: var(--theme-stroke, rgba(255, 255, 255, 0.18)); background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.03)); }
   .card-square:focus-visible { outline: 2px solid #4ea7e8; outline-offset: 2px; }
   .card.selected .card-square { border-color: #4ea7e8; background: rgba(78, 167, 232, 0.08); }
   .card-grid { position: absolute; inset: 0; }
@@ -516,7 +516,7 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     background: rgba(20, 20, 28, 0.92);
     color: #e6e6f0;
     font-size: 1.05rem;
@@ -542,8 +542,8 @@
     gap: 0.4rem;
     padding: 0.6rem 0.8rem;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: #e6e6f0;
     font-size: 0.95rem;
     white-space: nowrap;
@@ -559,7 +559,7 @@
   .intro-list .ic { color: #4ea7e8; font-size: 1.25rem; width: 1.4em; text-align: center; flex: none; line-height: 1.2; }
   .intro-list b { color: #fff; }
   .intro-go { margin-top: 0.25rem; }
-  .tbtn:hover { background: rgba(255, 255, 255, 0.1); }
+  .tbtn:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1)); }
   .tbtn:active { transform: scale(0.96); }
   .tbtn:focus-visible { outline: 2px solid #4ea7e8; outline-offset: 2px; }
 
@@ -569,7 +569,7 @@
     width: 16px;
     height: 16px;
     border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.22);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.22));
     background: transparent;
     transition: background 0.3s ease, border-color 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
@@ -605,13 +605,13 @@
     gap: 1.75rem;
     padding: 1rem;
     background: rgba(12, 12, 18, 0.92);
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     backdrop-filter: blur(8px);
   }
   .navbtn {
     padding: 0.6rem 1.5rem;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.18));
     background: transparent;
     color: #d0d0e0;
     font-size: 0.95rem;
@@ -623,7 +623,7 @@
   .ticks { display: flex; gap: 0.5rem; }
   .tick {
     width: 12px; height: 12px; border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     background: transparent; cursor: pointer; padding: 0;
   }
   .tick.on { background: #4ea7e8; border-color: #4ea7e8; }

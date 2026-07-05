@@ -35,7 +35,7 @@
   .showroom-header {
     padding: 12px 20px;
     background: rgba(18, 18, 28, 0.98);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     flex-shrink: 0;
   }
 

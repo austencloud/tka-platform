@@ -218,7 +218,7 @@ Follows Svelte 5 runes + microservices architecture.
     flex-direction: column;
     height: 100%;
     width: 100%;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
     border-right: var(--glass-border);
     backdrop-filter: blur(10px);
     overflow: hidden;
@@ -262,7 +262,7 @@ Follows Svelte 5 runes + microservices architecture.
   }
 
   .section-header:not(:disabled):hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
   }
 
   .section-header:disabled {
@@ -326,11 +326,11 @@ Follows Svelte 5 runes + microservices architecture.
   .navigation-item:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: -2px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
   }
 
   .navigation-item:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
     color: white;
   }
 
@@ -386,8 +386,8 @@ Follows Svelte 5 runes + microservices architecture.
   }
 
   .letter-item:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: white;
   }
 

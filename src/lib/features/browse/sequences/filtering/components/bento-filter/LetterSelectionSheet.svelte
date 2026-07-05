@@ -84,7 +84,7 @@ Displays A-Z grid with clear option
 
   .clear-btn {
     padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
     border: none;
     border-radius: 100px;
     color: rgba(255, 255, 255, 0.8);
@@ -95,7 +95,7 @@ Displays A-Z grid with clear option
   }
 
   .clear-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
     color: white;
   }
 
@@ -116,7 +116,7 @@ Displays A-Z grid with clear option
     min-height: var(--min-touch-target);
     min-width: var(--min-touch-target);
     padding: 0;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border: 1px solid transparent;
     border-radius: 12px;
     color: rgba(255, 255, 255, 0.85);
@@ -127,7 +127,7 @@ Displays A-Z grid with clear option
   }
 
   .letter-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     border-color: var(--theme-stroke);
     transform: translateY(-1px);
   }

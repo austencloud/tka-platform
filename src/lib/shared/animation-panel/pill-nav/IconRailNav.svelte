@@ -138,7 +138,7 @@
     color: rgba(255, 255, 255, 0.62);
     background: rgba(20, 22, 32, 0.78);
     backdrop-filter: blur(20px) saturate(140%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     cursor: pointer;
     transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
@@ -147,7 +147,7 @@
 
   .rail-btn:hover:not([aria-selected="true"]) {
     transform: scale(1.08);
-    border-color: rgba(255, 255, 255, 0.22);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.22));
     color: rgba(255, 255, 255, 0.85);
   }
 
@@ -180,7 +180,7 @@
 
   @media (prefers-contrast: more) {
     .rail-btn {
-      border: 1px solid rgba(255, 255, 255, 0.3);
+      border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     }
     .rail-btn[aria-selected="true"] {
       background: #1a1a2e;
