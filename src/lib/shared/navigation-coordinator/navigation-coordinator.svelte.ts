@@ -558,7 +558,16 @@ function buildPath(moduleId: ModuleId, sectionId?: string) {
 function replaceHistoryState(moduleId: ModuleId, sectionId?: string) {
   if (typeof window === "undefined") return;
   const url = new URL(window.location.href);
-  url.pathname = buildPath(moduleId, sectionId);
+  const canonical = buildPath(moduleId, sectionId);
+  // Deep links carry more path than the canonical /module/tab —
+  // /browse/collections/{id}?scan=1 (the phone scan handoff) or
+  // /browse/creators/{userId}. This runs at boot BEFORE the lazy-loaded
+  // module reads the URL, so flattening to the canonical path here would
+  // eat those segments and strand the deep link on the tab's list view.
+  // Keep the longer pathname whenever it sits under the canonical path.
+  if (!url.pathname.startsWith(`${canonical}/`)) {
+    url.pathname = canonical;
+  }
   url.hash = "";
   svelteKitReplaceState(url, { moduleId, sectionId });
 }

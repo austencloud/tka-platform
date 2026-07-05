@@ -36,6 +36,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     type BrowseLocation,
   } from "$lib/shared/browse/state/browse-navigation-state.svelte";
   import { setPendingScanIntent } from "$lib/features/browse/state/pending-scan-intent.svelte";
+  import { replaceState as svelteKitReplaceState } from "$app/navigation";
   import { BrowseScrollBehavior } from "../services/browse-scroll-behavior";
   import { desktopSidebarState } from "$lib/shared/layout/desktop-sidebar-state.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -421,6 +422,11 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       browseNavigationState.viewCollectionDetail(scanTarget.collectionId);
       if (scanTarget.scan) {
         setPendingScanIntent(scanTarget.collectionId);
+        // Consume the flag from the URL too: a refresh should show the
+        // collection, not relaunch the scanner.
+        const url = new URL(window.location.href);
+        url.searchParams.delete("scan");
+        svelteKitReplaceState(url.toString(), {});
       }
     }
 
