@@ -19,10 +19,15 @@ export const desktopSidebarState = $state({
   // Sidebar collapsed state - toggled by user
   isCollapsed: false,
 
-  // Sidebar widths
-  expandedWidth: 220, // Full sidebar width (reduced for minimal footprint)
-  collapsedWidth: 64, // Collapsed sidebar width (icon-only)
-  width: 220, // Current width (computed based on collapsed state)
+  // Sidebar widths. `width` is the RESERVED layout width — the space content
+  // permanently cedes to the sidebar (64 rail / 220 pinned). Hover-expansion
+  // is a purely visual overlay inside DesktopNavigationSidebar and NEVER
+  // changes this value. All --desktop-sidebar-width consumers (MainInterface
+  // padding, drawer left edges, TabIntro, BrowseModule) align to this
+  // reserved edge by design.
+  expandedWidth: 220, // Pinned sidebar width
+  collapsedWidth: 64, // Rail width (icon-only)
+  width: 220, // Current RESERVED width (computed from collapsed state)
 
   // Track if conditions are met for showing sidebar
   isDesktopDevice: false,
@@ -110,13 +115,16 @@ export function updateDesktopSidebarVisibility(
 const STORAGE_KEY = "tka-desktop-sidebar-collapsed";
 
 export function loadDesktopSidebarCollapsedState(): boolean {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined") return true;
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored === "true";
+    // No stored preference → rail mode (collapsed) is the default: content
+    // keeps max width and the rail hover-expands as an overlay. Users who
+    // explicitly pinned the sidebar open (stored "false") keep push layout.
+    return stored === null ? true : stored === "true";
   } catch (error) {
     console.warn("Failed to load desktop sidebar collapsed state:", error);
-    return false;
+    return true;
   }
 }
 
