@@ -55,11 +55,27 @@ interface ShortCodeData {
   createdAt: string;
   createdBy: string;
   scanCount: number;
+  /** The sequence's word as printed on the card. Newer records carry it;
+   *  without it an imported copy would be nameless ("Shared Sequence"). */
+  sequenceName?: string;
   sequenceData?: Record<string, unknown>;
   /** Self-contained "s~..." blob from SequenceEncoder.encodeForQR.
    *  When present, the resolver can decode the sequence without any
    *  cross-collection lookups - the primary path for static snapshot fallback. */
   encoded?: string;
+}
+
+/**
+ * The word to stamp on a sequence imported from this record's encoded blob.
+ * Prefers the explicit sequenceName; older records stored the word in
+ * `sequence` — but oldest records stored the ENCODED BLOB there, so anything
+ * containing encoding separators ("|") or compression prefixes (":") is not a
+ * word and yields "" (the import keeps its decoded placeholder name).
+ */
+function importedWord(data: ShortCodeData): string {
+  const candidate = data.sequenceName || data.sequence || "";
+  if (!candidate || candidate.includes("|") || candidate.includes(":")) return "";
+  return candidate;
 }
 
 export class ShortCodeManager {
@@ -603,7 +619,20 @@ export class ShortCodeManager {
     if (data.encoded) {
       try {
         const decoded = await decodeSequenceFromQR(data.encoded);
-        return { sequence: { ...decoded, id: code } as SequenceData, docBacked: false };
+        // The blob carries motion only — decoding names it "Shared Sequence"
+        // with an empty word. The record knows what the card actually says
+        // (sequenceName; older records put the word in `sequence`), so stamp
+        // it. Without this, the imported copy is unrecognizable in the
+        // library: a card labeled "SS" instead of its word.
+        const word = importedWord(data);
+        return {
+          sequence: {
+            ...decoded,
+            id: code,
+            ...(word && { word, name: word }),
+          } as SequenceData,
+          docBacked: false,
+        };
       } catch {
         // fall through
       }

@@ -17,6 +17,7 @@ import {
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 import { LibrarySequenceDocSchema } from "$lib/shared/library/domain/library-schemas";
+import { hydrate } from "$lib/shared/foundation/services/sequence-hydrator";
 
 /**
  * Error class for collection operations
@@ -94,12 +95,25 @@ export function mapDocToSequence(
   data: DocumentData,
   id: string
 ): LibrarySequence {
-  return {
+  const mapped = {
     ...data,
     id,
     createdAt: toDate(data["createdAt"]),
     updatedAt: toDate(data["updatedAt"]),
+    steps: data["steps"] ?? [],
   } as LibrarySequence;
+
+  // Saved docs don't persist steps — saveSequence strips them and they
+  // re-derive from the compositional fields (stepPairings + solo props) on
+  // read, same as library-repository's own read paths. Skipping this left
+  // collection members with no steps: blank thumbnails, an empty viewer
+  // (hover-prefetch sometimes masked it by swapping in a hydrated copy).
+  try {
+    return hydrate(mapped) as LibrarySequence;
+  } catch {
+    // A malformed doc shouldn't sink the whole batch — return it unhydrated.
+    return mapped;
+  }
 }
 
 const BATCH_SIZE = 30; // Firestore 'in' query limit

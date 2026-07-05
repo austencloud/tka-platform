@@ -96,6 +96,42 @@ describe("resolveForImport", () => {
 		expect(result?.sequence.id).toBe("AB3D");
 	});
 
+	it("stamps the record's sequenceName onto an encoded-blob import", async () => {
+		// Repro of the 2026-07-05 "SS card" bug: the decoded blob is nameless
+		// (name "Shared Sequence", word "") — the record's sequenceName is the
+		// word printed on the card and must survive onto the imported copy.
+		const { manager } = makeManager({
+			record: {
+				sequence: "ALΦB",
+				sequenceName: "ALΦBALΦBALΦBALΦB",
+				encoded: "s~blob",
+			},
+			publicHit: null,
+		});
+		const result = await manager.resolveForImport("X6DK", "me");
+		expect(result?.sequence.word).toBe("ALΦBALΦBALΦBALΦB");
+		expect(result?.sequence.name).toBe("ALΦBALΦBALΦBALΦB");
+	});
+
+	it("falls back to the record's word-shaped `sequence` field for the stamp", async () => {
+		const { manager } = makeManager({
+			record: { sequence: "KAKA", encoded: "s~blob" },
+			publicHit: null,
+		});
+		const result = await manager.resolveForImport("AB3D", "me");
+		expect(result?.sequence.word).toBe("KAKA");
+	});
+
+	it("does NOT stamp when `sequence` holds a legacy encoded blob", async () => {
+		const { manager } = makeManager({
+			record: { sequence: "iiSS|N,E:S,W|N,S", encoded: "s~blob" },
+			publicHit: null,
+		});
+		const result = await manager.resolveForImport("AB3D", "me");
+		// Falls through to whatever the decode produced — no garbage word.
+		expect(result?.sequence.word).toBe("decoded:s~blob");
+	});
+
 	it("falls back to embedded sequenceData as NOT docBacked", async () => {
 		const { manager } = makeManager({
 			record: {
