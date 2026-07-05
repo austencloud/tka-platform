@@ -33,6 +33,7 @@
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
 
@@ -57,11 +58,14 @@
     });
 
   // [blueFrom, blueTo, redFrom, redTo]; start boxes hold (from === to).
+  // The letter keys the special-placement tier — G's per-color "(fl, fl)"
+  // adjustments are what separate the Tog rows' same-path float arrows.
+  // MCP-confirmed: A = α→α, G = β→β, D = β→α, J = α→β (all Type 1 dual-pro).
   type Move = [GridLocation, GridLocation, GridLocation, GridLocation];
-  const box = (m: Move, stepNumber: number): StepData =>
+  const box = (m: Move, stepNumber: number, letter: Letter | null): StepData =>
     ({
       id: `t1ab-${stepNumber}-${m.join("-")}`,
-      letter: null,
+      letter,
       gridMode: GridMode.DIAMOND,
       startPosition: getGridPositionFromLocations(m[0], m[2]),
       endPosition: getGridPositionFromLocations(m[1], m[3]),
@@ -78,14 +82,15 @@
 
   // ── Strip geometry from the proof's image placements (pt) ──────────────────
   const BOX = 100;
-  type Strip = { x: number; y: number; moves: Move[] };
+  type Strip = { x: number; y: number; moves: Move[]; letters: (Letter | null)[] };
 
   // Each row = Start + a four-count loop, read straight off the proof page.
   const STRIPS: Strip[] = [
-    // Split-Same: α→α, both hands clockwise.
+    // Split-Same: α→α (letter A), both hands clockwise.
     {
       x: 95.3,
       y: 142.8,
+      letters: [null, Letter.A, Letter.A, Letter.A, Letter.A],
       moves: [
         [SO_, SO_, N, N],
         [SO_, W, N, E],
@@ -94,10 +99,11 @@
         [E, SO_, W, N],
       ],
     },
-    // Tog-Same: β→β, both hands clockwise together.
+    // Tog-Same: β→β (letter G), both hands clockwise together.
     {
       x: 95.3,
       y: 262.0,
+      letters: [null, Letter.G, Letter.G, Letter.G, Letter.G],
       moves: [
         [SO_, SO_, SO_, SO_],
         [SO_, W, SO_, W],
@@ -106,10 +112,11 @@
         [E, SO_, E, SO_],
       ],
     },
-    // Split-Opp: side-point start (β at W), hands arc opposite ways.
+    // Split-Opp: side-point start (β at W); β→α = D, α→β = J.
     {
       x: 92.6,
       y: 472.0,
+      letters: [null, Letter.D, Letter.J, Letter.D, Letter.J],
       moves: [
         [W, W, W, W],
         [W, N, W, SO_],
@@ -122,6 +129,7 @@
     {
       x: 92.6,
       y: 588.3,
+      letters: [null, Letter.D, Letter.J, Letter.D, Letter.J],
       moves: [
         [SO_, SO_, SO_, SO_],
         [SO_, W, SO_, E],
@@ -212,7 +220,7 @@
       {#each strip.moves as m, bi (bi)}
         <div class="cell">
           <PictographContainer
-            pictographData={box(m, bi)}
+            pictographData={box(m, bi, strip.letters[bi] ?? null)}
             gridMode={GridMode.DIAMOND}
             bluePropTypeOverride={PropType.HAND}
             redPropTypeOverride={PropType.HAND}

@@ -13,7 +13,7 @@ import type { PropPosition } from "../../prop/domain/models/prop-position";
 import type { PropAssets } from "../../prop/domain/models/prop-assets";
 import { GridMode } from "../../grid/domain/enums/grid-enums";
 import { PropType } from "../../prop/domain/enums/prop-type";
-import { MotionType, HandPath, RotationDirection, type Orientation } from "../domain/enums/pictograph-enums";
+import { MotionType, HandPath, RotationDirection, Orientation } from "../domain/enums/pictograph-enums";
 // Prop-type defaults used when callers don't pass explicit options.
 // Formerly imported getSettings() from app-state.svelte, but that module chain
 // pulls in Firebase auth which accesses `window` — crashing in Web Workers.
@@ -315,14 +315,21 @@ export class PictographPreparer {
               ? RotationDirection.COUNTER_CLOCKWISE
               : RotationDirection.NO_ROTATION;
 
+        // Orientations stay radial (IN) rather than blanked: hands have no
+        // orientation of their own, but the placement pipeline keys off them —
+        // undefined orientations killed layer detection (default keys degraded
+        // to a bare "float" miss → 0,0) and with it the per-color special
+        // placements that separate same-path float arrows (G/H "(fl, fl)").
+        // IN matches what the static branch keeps and what hand start
+        // positions carry, so prop rendering is unchanged.
         return {
           ...motion,
           motionType: MotionType.FLOAT,
           turns: "fl" as const,
           handPath,
           rotationDirection: handpathRotDir,
-          startOrientation: undefined as unknown as Orientation,
-          endOrientation: undefined as unknown as Orientation,
+          startOrientation: Orientation.IN,
+          endOrientation: Orientation.IN,
           propType: PropType.HAND,
         };
       }
