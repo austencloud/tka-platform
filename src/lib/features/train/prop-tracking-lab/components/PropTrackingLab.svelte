@@ -14,10 +14,10 @@
 	import { endpointPairToPose } from '../services/color-flow-pipeline';
 	import { ScreenToGrid } from '../services/screen-to-grid';
 	import { framesToNotation } from '../services/notation-pipeline';
-	import { notationToPictographData } from '../services/notation-to-pictograph';
-	import type { StaffPose3D } from '../domain/notation-3d';
-	import PictographContainer from '$lib/shared/pictograph/shared/components/PictographContainer.svelte';
-	import type { PictographData } from '$lib/shared/pictograph/shared/domain/models/pictograph-data';
+	import type { BeatNotation } from '../services/notation-pipeline';
+	import type { StaffPose3D, TrackConfidence } from '../domain/notation-3d';
+	import { zeroTrackConfidence } from '../domain/notation-3d';
+	import NotationReviewPanel from './NotationReviewPanel.svelte';
 
 	let videoFile = $state<File | null>(null);
 	let videoUrl = $state<string | null>(null);
@@ -143,7 +143,7 @@
 		});
 	}
 
-	let notationPictographs = $state<PictographData[]>([]);
+	let notationBeats = $state<BeatNotation[]>([]);
 	let isNotating = $state(false);
 	// Grid calibration (defaults filled once the video dims are known).
 	let centerX = $state(0);
@@ -188,7 +188,7 @@
 		if (!videoElement) return;
 		const video = videoElement;
 		isNotating = true;
-		notationPictographs = [];
+		notationBeats = [];
 
 		const cal = new ScreenToGrid({ x: centerX, y: centerY }, radiusPx);
 		const blueTracker = new ColorEndTracker();
@@ -198,6 +198,8 @@
 		const redFrames: StaffPose3D[] = [];
 		const blueConf: number[] = [];
 		const redConf: number[] = [];
+		const blueDetail: TrackConfidence[] = [];
+		const redDetail: TrackConfidence[] = [];
 		let lastBlue: StaffPose3D | null = null;
 		let lastRed: StaffPose3D | null = null;
 
@@ -222,8 +224,10 @@
 			if (bluePair) {
 				lastBlue = endpointPairToPose(bluePair, cal);
 				blueConf.push(bluePair.confidence);
+				blueDetail.push(bluePair.detail);
 			} else {
 				blueConf.push(0);
+				blueDetail.push(zeroTrackConfidence());
 			}
 			if (lastBlue) blueFrames.push(lastBlue);
 
@@ -231,14 +235,24 @@
 			if (redPair) {
 				lastRed = endpointPairToPose(redPair, cal);
 				redConf.push(redPair.confidence);
+				redDetail.push(redPair.detail);
 			} else {
 				redConf.push(0);
+				redDetail.push(zeroTrackConfidence());
 			}
 			if (lastRed) redFrames.push(lastRed);
 		}
 
-		const beats = framesToNotation(blueFrames, redFrames, blueConf, redConf);
-		notationPictographs = beats.map((b, i) => notationToPictographData(b.blue, b.red, `beat-${i}`));
+		notationBeats = framesToNotation(
+			blueFrames,
+			redFrames,
+			blueConf,
+			redConf,
+			undefined,
+			undefined,
+			blueDetail,
+			redDetail,
+		);
 		isNotating = false;
 	}
 
@@ -464,14 +478,8 @@
 					{isNotating ? 'Notating…' : 'Notate Flow'}
 				</button>
 			</div>
-			{#if notationPictographs.length > 0}
-				<div class="notation-strip">
-					{#each notationPictographs as pd (pd.id)}
-						<div class="notation-cell">
-							<PictographContainer pictographData={pd} disableTransitions />
-						</div>
-					{/each}
-				</div>
+			{#if notationBeats.length > 0}
+				<NotationReviewPanel beats={notationBeats} />
 			{/if}
 		</div>
 	{/if}
@@ -758,21 +766,6 @@
 		display: flex;
 		justify-content: center;
 		padding: 0.5rem;
-	}
-
-	.notation-strip {
-		display: flex;
-		gap: 0.5rem;
-		overflow-x: auto;
-		padding: 0.5rem;
-		background: var(--theme-card-bg);
-		border-radius: 8px;
-	}
-
-	.notation-cell {
-		flex: 0 0 auto;
-		width: 120px;
-		aspect-ratio: 1;
 	}
 
 	@media (max-width: 600px) {
