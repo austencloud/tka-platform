@@ -25,6 +25,16 @@ const DISMISS_THRESHOLDS = {
   FAST_SWIPE_MAX_DURATION: 500,
   /** Minimum movement (px) to consider gesture as intentional drag */
   MOVEMENT_THRESHOLD: 5,
+  /**
+   * Distance (px) a pull must travel to dismiss when the gesture STARTS at a
+   * scrollable container's dismiss edge (e.g. a message list already scrolled to
+   * the top). Deliberately larger than DISTANCE_SLOW and velocity-independent so
+   * a quick scroll flick at the edge rubber-bands back instead of closing —
+   * matching native iOS / Facebook bottom sheets.
+   */
+  DISTANCE_BOUNDARY: 140,
+  /** Resistance applied to the visual drag offset for edge-origin pulls (0-1). */
+  RUBBER_BAND_FACTOR: 0.5,
 } as const;
 
 export type SwipePlacement = "bottom" | "top" | "right" | "left";
@@ -73,6 +83,11 @@ export class SwipeToDismiss {
   // Scroll-aware dismiss: track scrollable container state
   private scrollableContainer: HTMLElement | null = null;
   private scrollAtBoundary = true; // True if scroll is at the edge where dismiss would occur
+  // True when THIS gesture began with the scroll container already at its
+  // dismiss edge. Such pulls get rubber-band resistance + a higher,
+  // velocity-independent dismiss threshold so an accidental scroll flick at the
+  // edge springs back instead of closing.
+  private startedAtScrollBoundary = false;
 
   // Delegation flag: when true, this drawer is not the top drawer,
   // so swipe gestures should dismiss the top drawer instead
@@ -230,7 +245,7 @@ export class SwipeToDismiss {
    */
   getDragOffsetY(): number {
     if (!this.isDragging) return 0;
-    const delta = this.currentY - this.startY;
+    const delta = this.damp(this.currentY - this.startY);
 
     if (this.options.placement === "bottom") {
       return Math.max(0, delta); // Only allow downward
@@ -245,7 +260,7 @@ export class SwipeToDismiss {
    */
   getDragOffsetX(): number {
     if (!this.isDragging) return 0;
-    const delta = this.currentX - this.startX;
+    const delta = this.damp(this.currentX - this.startX);
 
     if (this.options.placement === "right") {
       return Math.max(0, delta); // Only allow rightward
@@ -273,6 +288,14 @@ export class SwipeToDismiss {
     this.currentX = 0;
     this.scrollableContainer = null;
     this.scrollAtBoundary = true;
+    this.startedAtScrollBoundary = false;
+  }
+
+  /** Apply overscroll resistance to edge-origin pulls (native rubber-band). */
+  private damp(delta: number): number {
+    return this.startedAtScrollBoundary
+      ? delta * DISMISS_THRESHOLDS.RUBBER_BAND_FACTOR
+      : delta;
   }
 
   private handleTouchStart(event: TouchEvent | MouseEvent) {
@@ -355,6 +378,10 @@ export class SwipeToDismiss {
     this.scrollAtBoundary = this.scrollableContainer
       ? this.isScrollAtDismissBoundary(this.scrollableContainer)
       : true;
+    // Rubber-band only when there IS scrollable content and we start at its
+    // edge. A non-scrollable panel keeps the easy pull-to-dismiss.
+    this.startedAtScrollBoundary =
+      !!this.scrollableContainer && this.scrollAtBoundary;
 
     if (event instanceof TouchEvent) {
       const touch = event.touches[0]!;
@@ -584,20 +611,22 @@ export class SwipeToDismiss {
 
   /** Internal offset calculation that takes the raw delta */
   private getDragOffsetYInternal(delta: number): number {
+    const damped = this.damp(delta);
     if (this.options.placement === "bottom") {
-      return Math.max(0, delta);
+      return Math.max(0, damped);
     } else if (this.options.placement === "top") {
-      return Math.min(0, delta);
+      return Math.min(0, damped);
     }
     return 0;
   }
 
   /** Internal offset calculation that takes the raw delta */
   private getDragOffsetXInternal(delta: number): number {
+    const damped = this.damp(delta);
     if (this.options.placement === "right") {
-      return Math.max(0, delta);
+      return Math.max(0, damped);
     } else if (this.options.placement === "left") {
-      return Math.min(0, delta);
+      return Math.min(0, damped);
     }
     return 0;
   }
@@ -611,8 +640,32 @@ export class SwipeToDismiss {
     deltaY: number,
     duration: number
   ): boolean {
-    const { DISTANCE_SLOW, DISTANCE_FAST, FAST_SWIPE_MAX_DURATION } =
-      DISMISS_THRESHOLDS;
+    const {
+      DISTANCE_SLOW,
+      DISTANCE_FAST,
+      FAST_SWIPE_MAX_DURATION,
+      DISTANCE_BOUNDARY,
+    } = DISMISS_THRESHOLDS;
+
+    // Gestures that began at a scroll edge require a deliberate, distance-based
+    // pull — the fast-swipe shortcut is dropped so an accidental scroll flick at
+    // the top of a list springs back instead of dismissing. deltaX/deltaY are
+    // raw finger travel (undamped), so this gates on physical pull distance.
+    if (this.startedAtScrollBoundary) {
+      switch (this.options.placement) {
+        case "bottom":
+          return deltaY > DISTANCE_BOUNDARY;
+        case "top":
+          return deltaY < -DISTANCE_BOUNDARY;
+        case "right":
+          return deltaX > DISTANCE_BOUNDARY;
+        case "left":
+          return deltaX < -DISTANCE_BOUNDARY;
+        default:
+          return false;
+      }
+    }
+
     const isFastSwipe = duration < FAST_SWIPE_MAX_DURATION;
 
     switch (this.options.placement) {

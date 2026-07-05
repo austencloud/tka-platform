@@ -230,12 +230,27 @@
     box-sizing: border-box;
     container-type: inline-size;
   }
+  /* Dock mode (mobile): the settings become a flow ControlDock at the bottom
+     (overlay dropped), and the art shrinks above it — the same lift the card
+     export uses — instead of the dock floating over and covering the art.
+     Full-bleed art, no sidebar gap/padding. */
+  .art-pane.dock-mode {
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+  }
   .art-body {
     position: relative;
     flex: 1 1 auto;
     min-width: 0;
     height: 100%;
     overflow: hidden;
+  }
+  /* In the column, flex drives the height; the fixed 100% would ignore the dock
+     below and let the canvas cover it. */
+  .art-pane.dock-mode .art-body {
+    height: auto;
+    min-height: 0;
   }
 
   /* Inline export preview floated over the canvas. Dim + blur the kaleidoscope

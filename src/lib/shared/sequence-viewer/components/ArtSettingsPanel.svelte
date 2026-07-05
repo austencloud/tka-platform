@@ -299,16 +299,18 @@
 {/snippet}
 
 {#if layout === "bottom"}
-  <!-- Mobile: the shared ControlDock floats over the art. A pill-tab bar opens a
-       slide-up tray; the trailing action is Export. Same chrome as the 2D
-       Download-Animation panel and the native mandala dock. -->
+  <!-- Mobile: the shared ControlDock is a flow child at the bottom (NOT overlay)
+       so ArtPane's column shrinks the art above it — the art lifts like the card
+       export instead of the dock covering it. A pill-tab bar opens a slide-up
+       tray; the trailing action is Export. Same chrome as the 2D
+       Download-Animation panel and the card dock. -->
   {#if artType === "tunnel"}
     <ControlDock
-      overlay
       tabs={tunnelDockTabs}
       activeTab={openTunnelTab}
       onTabSelect={selectTunnelDock}
       trailingAction={tunnelDockExport}
+      trayMaxHeight="min(33vh, 250px)"
     >
       {#snippet tray()}
         <div class="dock-dense">
@@ -318,11 +320,11 @@
     </ControlDock>
   {:else}
     <ControlDock
-      overlay
       tabs={mandalaDockTabs}
       activeTab={openMandalaCat}
       onTabSelect={selectMandalaDock}
       trailingAction={mandalaDockExport}
+      trayMaxHeight="min(33vh, 250px)"
     >
       {#snippet tray()}
         <div class="dock-dense">
@@ -630,8 +632,14 @@
   .dock-dense .group { gap: 6px; }
   .dock-dense .presets { gap: 6px; }
   /* EffectsPanel lives in a child component — mirror AnimationPanel's dock-dense
-     compression (:global) so the tunnel tray fits the 4×4 picker without scroll. */
+     compression (:global): 6-column picker puts all 16 effects (3 rows at the
+     44px touch floor) inside the capped tray with no scrolling. */
   .dock-dense :global(.mep) { gap: 6px; }
-  .dock-dense :global(.fx-tile) { height: 52px; }
+  .dock-dense :global(.drill-view) { gap: 6px; }
+  .dock-dense :global(.fx-picker) { grid-template-columns: repeat(6, 1fr); gap: 4px; }
+  .dock-dense :global(.fx-tile) { height: 44px; }
+  .dock-dense :global(.fx-picker .fx-tile) { gap: 1px; padding: 0 2px; }
+  .dock-dense :global(.fx-picker .fx-tile i) { font-size: 12px; }
+  .dock-dense :global(.fx-picker .fx-tile > span) { font-size: 9px; letter-spacing: 0.01em; }
   .dock-dense :global(.slider-row) { padding: 6px 10px; gap: 8px; }
 </style>

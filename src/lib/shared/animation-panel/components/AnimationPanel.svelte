@@ -556,6 +556,7 @@
         onTabSelect={(id) => handlePillSelect(id as PillId)}
         trailingAction={dockTrailing}
         {secondaryActions}
+        trayMaxHeight="min(33vh, 250px)"
       >
         {#snippet tray()}
           <div class="dock-dense">
@@ -744,10 +745,16 @@
    * stay >=44px — we only collapse gaps, paddings, and >44px tiles.
    * ============================================================ */
   .dock-dense :global(.section-pad) { gap: 8px; padding: 4px 12px 10px; }
-  /* EffectsPanel drill-down: the picker grid owns tile WIDTH (4 equal columns);
-     only compress height in the dock tray. */
+  /* EffectsPanel drill-down: recolumn the picker 4 -> 6 so 16 tiles land in 3
+     rows at the 44px touch floor — the whole palette (plus Off) fits inside the
+     capped tray with NO scrolling, per "show all the options in one screen". */
   .dock-dense :global(.mep) { gap: 6px; }
-  .dock-dense :global(.fx-tile) { height: 52px; }
+  .dock-dense :global(.drill-view) { gap: 6px; }
+  .dock-dense :global(.fx-picker) { grid-template-columns: repeat(6, 1fr); gap: 4px; }
+  .dock-dense :global(.fx-tile) { height: 44px; }
+  .dock-dense :global(.fx-picker .fx-tile) { gap: 1px; padding: 0 2px; }
+  .dock-dense :global(.fx-picker .fx-tile i) { font-size: 12px; }
+  .dock-dense :global(.fx-picker .fx-tile > span) { font-size: 9px; letter-spacing: 0.01em; }
   .dock-dense :global(.slider-row) { padding: 6px 10px; gap: 8px; }
   /* BentoPropGrid */
   .dock-dense :global(.grid-scroll) { padding: 6px 12px; }

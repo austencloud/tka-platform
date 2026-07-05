@@ -614,11 +614,22 @@
   .fx-picker {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
+    gap: 6px;
   }
+  /* 46px: just above the 44px touch floor. At 16 tiles / 4 cols that's 4 rows,
+     so every px shaved here is 4px off the tray — the effect picker was eating
+     ~46% of an iPhone SE; this pulls the media hero back. Icon+label still fit
+     (icon 16 + gap + 10px label). */
   .fx-picker .fx-tile {
     width: 100%;
-    height: 60px;
+    height: 46px;
+    gap: 2px;
+  }
+  .fx-picker .fx-tile i {
+    font-size: 15px;
+  }
+  .fx-picker .fx-tile > span {
+    font-size: 10px;
   }
 
   /* Tap-again affordance on the active tile: a sliders badge signals the

@@ -84,6 +84,13 @@
      * stacked below a canvas.
      */
     overlay?: boolean;
+    /**
+     * CSS length capping the open tray's height. Tall docks (the animation
+     * Props/Visibility/Effects tabs) pass a low value so a big tab scrolls
+     * instead of crushing the media hero above the dock; short docks (card
+     * export, mandala) inherit the generous default. Any valid CSS `max-height`.
+     */
+    trayMaxHeight?: string;
   }
 
   let {
@@ -96,6 +103,7 @@
     onHeightChange,
     labelMinWidth = 380,
     overlay = false,
+    trayMaxHeight,
   }: Props = $props();
 
   // Reduced-motion gate for the Svelte slide transition.
@@ -222,6 +230,7 @@
   class:overlay
   class:wide={overlay && wide}
   class:compact
+  style:--dock-tray-max={trayMaxHeight}
   data-swipe-block
   bind:this={dockEl}
   in:fly={{ y: 80, duration: dur(250), easing: cubicOut }}
@@ -246,7 +255,6 @@
         aria-label="Hide controls"
       >
         <span class="grab" aria-hidden="true"></span>
-        <i class="fas fa-chevron-down" aria-hidden="true"></i>
       </button>
       <div class="tray-scroll">
         <!-- Height-animated body: .tray-measure reports the active content's
@@ -267,19 +275,26 @@
     </div>
   {/if}
 
-  <div class="cat-bar" class:stacked>
+  <div class="cat-bar" class:stacked class:tray-open={trayOpen}>
     <div class="cat-scroll">
       {#each tabs as t, i (t.id)}
         <button
           class="dock-btn cat"
           class:active={activeTab === t.id}
+          class:open={activeTab === t.id && trayOpen}
           style:--cat-accent={t.accentColor ?? null}
           style:--btn-i={i}
           onclick={() => onTabSelect(t.id)}
           aria-pressed={activeTab === t.id}
-          aria-label={t.label}
+          aria-expanded={activeTab === t.id && trayOpen}
+          aria-label={activeTab === t.id && trayOpen ? `Close ${t.label}` : t.label}
         >
-          {#if t.dots}
+          {#if activeTab === t.id && trayOpen}
+            <!-- Open: this tab has become the tray's folder tab — its glyph is a
+                 collapse chevron, and re-tapping it closes the tray (restoring
+                 the ducked nav). -->
+            <i class="fas fa-chevron-down" aria-hidden="true"></i>
+          {:else if t.dots}
             <span class="cat-dots">
               <span class="dot" style:background={t.dots[0]}></span>
               <span class="dot" style:background={t.dots[1]}></span>
@@ -353,6 +368,9 @@
   .dock {
     display: flex;
     flex-direction: column;
+    /* One glass fill shared by the tray and the merged "open" folder tab, so
+       the open tab reads as a continuous surface with the panel above it. */
+    --tray-fill: color-mix(in srgb, var(--theme-panel-bg, rgba(18, 18, 28, 0.96)) 92%, transparent);
     /* Clip the tray while a swipe drags it down past the tab bar. */
     overflow: hidden;
   }
@@ -380,8 +398,14 @@
   .tray {
     display: flex;
     flex-direction: column;
-    max-height: min(58vh, 440px);
-    background: color-mix(in srgb, var(--theme-panel-bg, rgba(18, 18, 28, 0.96)) 92%, transparent);
+    /* Capped so a tall tab can't crush the media hero — beyond this the
+       tray-scroll scrolls instead of eating the canvas. Per-dock overridable via
+       the trayMaxHeight prop (--dock-tray-max): the tall animation/art docks
+       pass a low value; short docks (card export, mandala) keep this default.
+       Default trimmed from 58vh/440px, which let the dock swallow >55% of an
+       iPhone SE. */
+    max-height: var(--dock-tray-max, min(42vh, 340px));
+    background: var(--tray-fill);
     backdrop-filter: blur(16px);
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     /* Snap-back after a below-threshold swipe; disabled while the finger owns it. */
@@ -397,6 +421,11 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     padding: 0 12px 8px;
+    /* Reserve the scrollbar lane so tab switches don't shift content width. */
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.3))
+      var(--scrollbar-track, rgba(255, 255, 255, 0.06));
   }
   /* Height-tween wrapper: clips while it interpolates between content states so
      the tray resizes smoothly. --tray-anim-dur collapses to 0ms under reduced
@@ -432,16 +461,23 @@
     border-radius: 2px;
     background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
   }
-  .tray-handle i {
-    font-size: 11px;
-  }
   @media (hover: hover) {
     .tray-handle:hover {
       color: var(--theme-text, #fff);
     }
   }
-  .tray-scroll::-webkit-scrollbar { width: 5px; }
-  .tray-scroll::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
+  /* Classic (non-overlay) scrollbar with a visible track, so a capped tray
+     advertises "there's more below" from the moment it opens instead of only
+     while the user is already scrolling. */
+  .tray-scroll::-webkit-scrollbar { width: 8px; }
+  .tray-scroll::-webkit-scrollbar-track {
+    background: var(--scrollbar-track, rgba(255, 255, 255, 0.06));
+    border-radius: 4px;
+  }
+  .tray-scroll::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.3));
+    border-radius: 4px;
+  }
 
   .cat-bar {
     display: flex;
@@ -527,6 +563,40 @@
     transform: translateY(-1px);
   }
 
+  /* ── Open folder tab ──────────────────────────────────────────────────
+     While its tray is open, the active tab fuses to the panel above it: the
+     cat-bar's top border clears, the tab takes the tray's glass fill, squares
+     its top corners, and a ::before bridge fills the cat-bar's top gap so the
+     seam vanishes — the open tab hangs off the tray like a folder tab. The
+     accent survives as an underline (fill now matches the tray). Its glyph is
+     a chevron; re-tapping collapses the tray. Fill/border/shadow ride the
+     .dock-btn transition, so the merge eases in with the tray's slide. */
+  .cat-bar.tray-open {
+    border-top-color: transparent;
+  }
+  .dock-btn.cat.open {
+    position: relative;
+    background: var(--tray-fill);
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-top-color: transparent;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    color: var(--theme-text, #fff);
+    transform: none;
+    box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--cat-accent, var(--theme-accent, #6366f1)) 70%, transparent);
+  }
+  /* Bridge across the cat-bar's top padding (6px) + border (1px) so the tab's
+     fill runs continuously up into the tray bottom above it. */
+  .dock-btn.cat.open::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -7px;
+    height: 8px;
+    background: var(--tray-fill);
+  }
+
   .dock-btn.download {
     flex: 0 0 auto;
     width: 46px;
@@ -567,6 +637,11 @@
     .dock-btn.cat.active:hover {
       background: color-mix(in srgb, var(--cat-accent, var(--theme-accent, #6366f1)) 45%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
       transform: translateY(-2px);
+    }
+    /* An open folder tab stays merged on hover — no accent pop, no lift. */
+    .dock-btn.cat.open:hover {
+      background: var(--tray-fill);
+      transform: none;
     }
     .dock-btn.cat:hover i { transform: translateY(-1px) scale(1.08); }
     .dock-btn.download:hover:not(:disabled) {
