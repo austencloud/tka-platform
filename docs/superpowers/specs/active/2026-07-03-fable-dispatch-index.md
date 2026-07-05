@@ -16,7 +16,7 @@ Most of the difficulty across these tasks traces to two design patterns. Fix the
 |---|---|---|---|
 | 1 | [Loop-detection audit fixes](2026-07-03-fable-loop-detection-audit-fixes-design.md) | Full auto | Low — detection logic + tests, no data migration |
 | 2 | [Hand-arc-aware reversal detector](2026-07-03-fable-hand-arc-reversal-detector-design.md) | Full auto (ship-gated on #3) | Low to build; identity-affecting to *enable* |
-| 3 | [Content-hash V2 rollout](2026-07-03-fable-content-hash-v2-rollout-execution-design.md) | **Checkpoint** → then full incl. prod migration | High — irreversible, 933 docs |
+| 3 | [Content-hash V2 rollout](../shipped/2026-07-03-fable-content-hash-v2-rollout-execution-design.md) | ~~Checkpoint~~ **DONE** | **Resolved 2026-07-05: rollout had already executed 2026-06-30** (`d814ad76d3`→`4a9b8e872c`), before this spec was staged. Post-execution verification on live corpus green (38/38 tests, 936 docs, 0 would-rewrite, 0 would-fork): see [checkpoint package](2026-07-05-content-hash-v2-checkpoint-package.md). Spec 2's ship-gate is satisfied. |
 | 4 | [StepData→Step + MotionData→Motion remainder](2026-07-03-fable-stepdata-motion-migration-remainder-design.md) | **Checkpoint** | High — most regression-prone subsystem |
 
 ## Recommended sequence
