@@ -218,18 +218,21 @@
   /* ============================================================================
      SIDEBAR FOOTER - Settings button + account row
      ============================================================================ */
+  /* Both modes share identical vertical metrics (padding, gap, row heights)
+     so the footer's total height — and therefore every row's y-position —
+     is the same in rail and expanded states. The tree swap must not shift
+     content vertically (no-layout-shift). */
   .sidebar-footer {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 16px 12px;
+    padding: 12px 10px;
     border-top: 1px solid var(--theme-stroke);
   }
 
   .sidebar-footer.collapsed {
     padding: 12px 8px;
     align-items: center;
-    gap: 12px;
   }
 
   /* ============================================================================
@@ -244,10 +247,11 @@
      ============================================================================ */
   .footer-button {
     width: 100%;
+    height: var(--min-touch-target);
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
+    gap: 0;
+    padding: 0 12px 0 0;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
@@ -277,10 +281,16 @@
 
   .footer-button.collapsed {
     width: var(--min-touch-target);
-    height: var(--min-touch-target);
     padding: 0;
     justify-content: center;
     border-radius: 12px;
+  }
+
+  /* Expanded rows: 32px icon box + 6px side margins = a 44px icon column
+     whose center matches the rail's icon anchor. Vertical centering comes
+     from the flex row, keeping the 44px row height. */
+  .footer-button:not(.collapsed) .button-icon {
+    margin: 0 6px;
   }
 
   .footer-button:focus-visible {
@@ -434,6 +444,7 @@
     width: 32px;
     height: 32px;
     flex-shrink: 0;
+    align-self: center; /* same x in rail and expanded modes */
     display: flex;
     align-items: center;
     justify-content: center;

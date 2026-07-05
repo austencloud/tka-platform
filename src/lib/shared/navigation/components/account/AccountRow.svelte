@@ -80,17 +80,19 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
     title={variant === "collapsed" && !isFullAccount ? "Sign in" : undefined}
     aria-haspopup={isFullAccount ? "menu" : undefined}
   >
-    {#if isFullAccount}
-      <RobustAvatar
-        src={photoURL}
-        name={displayName}
-        customSize={avatarSize}
-      />
-    {:else}
-      <div class="avatar-guest" class:collapsed={variant === "collapsed"}>
-        <i class="fas fa-user-plus" aria-hidden="true"></i>
-      </div>
-    {/if}
+    <span class="avatar-col" class:collapsed={variant === "collapsed"}>
+      {#if isFullAccount}
+        <RobustAvatar
+          src={photoURL}
+          name={displayName}
+          customSize={avatarSize}
+        />
+      {:else}
+        <div class="avatar-guest" class:collapsed={variant === "collapsed"}>
+          <i class="fas fa-user-plus" aria-hidden="true"></i>
+        </div>
+      {/if}
+    </span>
 
     {#if variant !== "collapsed"}
       <span class="account-label">{isFullAccount ? displayName : "Sign in"}</span>
@@ -130,6 +132,29 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
   .account-row:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
     outline-offset: 2px;
+  }
+
+  /* Sidebar-expanded variant: same 44px row height as the rail's circle
+     button so the footer's total height never changes across the sidebar
+     tree swap (no vertical layout shift). The 44px avatar column centers
+     the avatar on the rail's icon anchor. Drawer variant keeps its own
+     metrics. */
+  .account-row:not(.drawer):not(.collapsed) {
+    height: var(--min-touch-target);
+    gap: 0;
+    padding: 0 12px 0 0;
+  }
+
+  .avatar-col {
+    width: 44px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .avatar-col.collapsed {
+    width: auto;
   }
 
   /* ==========================================================================
