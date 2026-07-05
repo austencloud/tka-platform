@@ -390,3 +390,7 @@ static/svg-precache-manifest.json
 
 # Data-parity guard baseline (ephemeral frozen corpus, regenerate per migration)
 scripts/migrations/fixtures/data-parity-baseline.json
+
+# Render-parity wave gate — local baseline + drift artifacts (regenerate per wave)
+tests/render-parity/.baseline/
+tests/render-parity/.artifacts/
