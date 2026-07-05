@@ -189,6 +189,14 @@ LOOP terminology, per existing section filenames already named Loops*.)
     the original PDF), not the extraction's per-line runs.
   Strip geometry from the PDF operator list: 500×100pt strips at
   (95.3,142.8)/(95.3,262.0)/(92.6,472.0)/(92.6,588.3), five 100pt boxes.
+  - **Boxes carry their real letter** (MCP: A=α→α, G=β→β, D=β→α, J=α→β; start
+    boxes letter-null like app start positions). The letter keys the
+    special-placement tier — G/H "(fl, fl)" per-color entries are what separate
+    same-path float arrows (Tog rows). SYSTEM FIX that unlocked it:
+    `transformForHandPath` was blanking orientations to undefined, killing
+    placement-key layer detection for every hand pictograph app-wide; floats
+    now keep IN. Regression test:
+    `tests/unit/arrow-adjustment/HandPathFloatSeparation.test.ts`.
   Content confirmed against MCP VTG data: α→α=SS, β→β=TS, α↔β = SO from a
   side-point start / TO from a bottom start — the original book's teaching
   matches current domain data exactly.
