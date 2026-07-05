@@ -100,6 +100,12 @@ LOOP terminology, per existing section filenames already named Loops*.)
 
 ## Decisions log
 
+- 2026-07-05: COMPARE ROUTE DELETED (`(public)/guide/level-1/compare`).
+  Scroll-fraction sync could never align two different-height documents
+  (old proof 47pp vs rebuild 39pp, different order); a page-mapping table
+  would rot as pages convert. Verify pages against the artboards/proof
+  directly (per-page recipe step 6).
+
 - 2026-06-21: Rejected embedding old artboard PNGs directly — they carry the OLD
   pictograph style. Rebuild with current renderers instead (Austen's call).
 - 2026-06-21: Each page = a `GuidePage` unit (fixes pagination structurally).
