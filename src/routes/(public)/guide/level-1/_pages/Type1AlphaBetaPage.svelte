@@ -1,298 +1,262 @@
 <script lang="ts">
   /**
    * Type 1 Dual-Shifts (Alpha, Beta) — body page 4, a faithful reproduction of
-   * the proof PDF (level-1-v05.pdf, page 10). The proof's text runs render via
-   * ProofTextPage (same data both routes use before a page is built); this
-   * component adds the four pictograph strips the proof drew as baked images,
-   * rebuilt as REAL pictographs through the current renderer.
+   * the proof PDF (level-1-v05.pdf, page 10) rebuilt in the CURRENT renderer's
+   * own language. Nothing on the pictographs is hand-drawn — every adornment is
+   * the system's:
+   *
+   *   - Hand motion   → real FLOAT motions (Level 1's base motion), so the
+   *                     arrow pipeline places the system's float arrows.
+   *   - Count numbers → StepData.stepNumber (0 renders "Start", 1–4 numerals)
+   *                     via the renderer's top-left StepNumber overlay.
+   *   - Positions     → startPosition/endPosition (getGridPositionFromLocations)
+   *                     rendered by the top-centre PositionGlyph (α→β etc.).
+   *   - Mode          → bottom-right ElementalGlyph, derived by the renderer
+   *                     from the four hand locations (deriveTnDFromPictograph).
    *
    * Strip geometry comes from the proof's own image placements (extracted from
    * the PDF operator list): 500×100pt strips of five 100pt boxes at
    * (95.3, 142.8) / (95.3, 262.0) / (92.6, 472.0) / (92.6, 588.3).
    *
-   * Each box is a canonical diamond start-position pictograph (alpha = hands at
-   * opposite points, beta = both hands at the same point — the renderer's beta
-   * offsets place the two hands side by side) selected from startPositionManager
-   * by the two hand locations, with the prop forced to HAND. Hands show the END
-   * position of each count; a straight teaching arrow per moving hand shows the
-   * path (start point → end point), with a SOLID triangular head matching the
-   * proof's marker arrows. Rows read as four-count loops:
-   *
-   *   Split-Same (α→α)  both hands clockwise, opposite points   — VTG SS
-   *   Tog-Same  (β→β)   both hands clockwise, same point        — VTG TS
-   *   Split-Opp / Tog-Opp (α↔β) hands arc opposite ways; the SAME dual-shift
-   *   is SO from a side-point start and TO from a bottom start (the proof's
-   *   "depending on start position" note — confirmed against MCP VTG data).
-   *
-   * Type styling mirrors the proof: count numerals + "Start" bold serif, mode
-   * badges (SS/TS/SO/TO) boxed bottom-right, per-box β→α / α→β headers on the
-   * Opp rows, and the α→α / β→β row labels the text extraction dropped (glyph
-   * font) restored as runs. printMode = white sheet.
+   * Text renders as GROUPED centred blocks (one box per paragraph, like the
+   * original PDF), not per-line runs; the left row labels (α→α / Split-Same …)
+   * stay individual runs at the proof's coordinates. Content confirmed against
+   * MCP VTG data: α→α = Split-Same, β→β = Tog-Same, α↔β = Split-Opp from a
+   * side-point start / Tog-Opp from a bottom start.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import ProofTextPage from "./ProofTextPage.svelte";
-  import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
+  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import {
+    MotionType,
+    MotionColor,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
+  const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 
-  const B = "#2e3192"; // blue = left hand
-  const R = "#cc2127"; // red = right hand
+  // ── Box data: real pictographs, system-derived adornments ──────────────────
+  // A hand that moves is authored as a PRO shift; because both props are HAND,
+  // PictographPreparer's hand-path mode converts it to a FLOAT ("fl", handPath
+  // derived from the locations) and the arrow pipeline renders the system float
+  // arrow along the path — the same route the app itself takes for hand
+  // pictographs. A hand that stays is STATIC (no arrow). Positions derive from
+  // the location pairs, the elemental from the motions, numbers from stepNumber.
+  const motion = (color: MotionColor, from: GridLocation, to: GridLocation) =>
+    createMotionData({
+      motionType: from === to ? MotionType.STATIC : MotionType.PRO,
+      startLocation: from,
+      endLocation: to,
+      color,
+      propType: PropType.HAND,
+      gridMode: GridMode.DIAMOND,
+    });
 
-  // ── Canonical positions, selected by hand locations ────────────────────────
-  // The manager bakes propType STAFF onto each motion; force HAND so the
-  // prepared motion carries HAND (what PropSvg's red-hand mirror reads).
-  const VARIATIONS = startPositionManager.getAllStartPositionVariations(GridMode.DIAMOND);
-  const handsAt = (blue: GridLocation, red: GridLocation) => {
-    const p = VARIATIONS.find(
-      (v) => v.motions?.blue?.endLocation === blue && v.motions?.red?.endLocation === red
-    );
-    return p
-      ? {
-          ...p,
-          motions: {
-            blue: p.motions?.blue ? { ...p.motions.blue, propType: PropType.HAND } : undefined,
-            red: p.motions?.red ? { ...p.motions.red, propType: PropType.HAND } : undefined,
-          },
-        }
-      : undefined;
-  };
+  // [blueFrom, blueTo, redFrom, redTo]; start boxes hold (from === to).
+  type Move = [GridLocation, GridLocation, GridLocation, GridLocation];
+  const box = (m: Move, stepNumber: number): StepData =>
+    ({
+      id: `t1ab-${stepNumber}-${m.join("-")}`,
+      letter: null,
+      gridMode: GridMode.DIAMOND,
+      startPosition: getGridPositionFromLocations(m[0], m[2]),
+      endPosition: getGridPositionFromLocations(m[1], m[3]),
+      motions: {
+        blue: motion(MotionColor.BLUE, m[0], m[1]),
+        red: motion(MotionColor.RED, m[2], m[3]),
+      },
+      stepNumber,
+      duration: 1,
+      blueReversal: false,
+      redReversal: false,
+      isBlank: false,
+    }) as unknown as StepData;
 
   // ── Strip geometry from the proof's image placements (pt) ──────────────────
   const BOX = 100;
-  const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
+  type Strip = { x: number; y: number; moves: Move[] };
 
-  type Arrow = { color: string; from: GridLocation; to: GridLocation };
-  type Box = { blue: GridLocation; red: GridLocation; header?: string; arrows: Arrow[] };
-  type Strip = { x: number; y: number; badge: string; boxes: Box[] };
-
-  // Each row = Start + a four-count loop; hands land where each count ends,
-  // arrows trace each moving hand's path (read straight off the proof page).
+  // Each row = Start + a four-count loop, read straight off the proof page.
   const STRIPS: Strip[] = [
     // Split-Same: α→α, both hands clockwise.
     {
       x: 95.3,
       y: 142.8,
-      badge: "SS",
-      boxes: [
-        { blue: SO_, red: N, arrows: [] },
-        { blue: W, red: E, arrows: [{ color: R, from: N, to: E }, { color: B, from: SO_, to: W }] },
-        { blue: N, red: SO_, arrows: [{ color: B, from: W, to: N }, { color: R, from: E, to: SO_ }] },
-        { blue: E, red: W, arrows: [{ color: B, from: N, to: E }, { color: R, from: SO_, to: W }] },
-        { blue: SO_, red: N, arrows: [{ color: R, from: W, to: N }, { color: B, from: E, to: SO_ }] },
+      moves: [
+        [SO_, SO_, N, N],
+        [SO_, W, N, E],
+        [W, N, E, SO_],
+        [N, E, SO_, W],
+        [E, SO_, W, N],
       ],
     },
-    // Tog-Same: β→β, both hands clockwise together (parallel arrows).
+    // Tog-Same: β→β, both hands clockwise together.
     {
       x: 95.3,
       y: 262.0,
-      badge: "TS",
-      boxes: [
-        { blue: SO_, red: SO_, arrows: [] },
-        { blue: W, red: W, arrows: [{ color: B, from: SO_, to: W }, { color: R, from: SO_, to: W }] },
-        { blue: N, red: N, arrows: [{ color: B, from: W, to: N }, { color: R, from: W, to: N }] },
-        { blue: E, red: E, arrows: [{ color: B, from: N, to: E }, { color: R, from: N, to: E }] },
-        { blue: SO_, red: SO_, arrows: [{ color: B, from: E, to: SO_ }, { color: R, from: E, to: SO_ }] },
+      moves: [
+        [SO_, SO_, SO_, SO_],
+        [SO_, W, SO_, W],
+        [W, N, W, N],
+        [N, E, N, E],
+        [E, SO_, E, SO_],
       ],
     },
     // Split-Opp: side-point start (β at W), hands arc opposite ways.
     {
       x: 92.6,
       y: 472.0,
-      badge: "SO",
-      boxes: [
-        { blue: W, red: W, arrows: [] },
-        { blue: N, red: SO_, header: "β→α", arrows: [{ color: B, from: W, to: N }, { color: R, from: W, to: SO_ }] },
-        { blue: E, red: E, header: "α→β", arrows: [{ color: B, from: N, to: E }, { color: R, from: SO_, to: E }] },
-        { blue: SO_, red: N, header: "β→α", arrows: [{ color: R, from: E, to: N }, { color: B, from: E, to: SO_ }] },
-        { blue: W, red: W, header: "α→β", arrows: [{ color: R, from: N, to: W }, { color: B, from: SO_, to: W }] },
+      moves: [
+        [W, W, W, W],
+        [W, N, W, SO_],
+        [N, E, SO_, E],
+        [E, SO_, E, N],
+        [SO_, W, N, W],
       ],
     },
     // Tog-Opp: bottom start (β at S), the same shape a quarter-turn around.
     {
       x: 92.6,
       y: 588.3,
-      badge: "TO",
-      boxes: [
-        { blue: SO_, red: SO_, arrows: [] },
-        { blue: W, red: E, header: "β→α", arrows: [{ color: B, from: SO_, to: W }, { color: R, from: SO_, to: E }] },
-        { blue: N, red: N, header: "α→β", arrows: [{ color: B, from: W, to: N }, { color: R, from: E, to: N }] },
-        { blue: E, red: W, header: "β→α", arrows: [{ color: R, from: N, to: W }, { color: B, from: N, to: E }] },
-        { blue: SO_, red: SO_, header: "α→β", arrows: [{ color: R, from: W, to: SO_ }, { color: B, from: E, to: SO_ }] },
+      moves: [
+        [SO_, SO_, SO_, SO_],
+        [SO_, W, SO_, E],
+        [W, N, E, N],
+        [N, E, N, W],
+        [E, SO_, W, SO_],
       ],
     },
   ];
 
-  // ── Teaching arrows in the grid's 950 viewBox space ─────────────────────────
-  // Outer points sit at radius 300 from center (475, 475); arrows run along the
-  // outer-point chord (like the proof's), trimmed at both ends. When both hands
-  // share a path (Tog rows) the pair splits perpendicular: blue inside (toward
-  // center), red outside.
-  const OUTER: Record<string, { x: number; y: number }> = {
-    [N]: { x: 475, y: 175 },
-    [E]: { x: 775, y: 475 },
-    [SO_]: { x: 475, y: 775 },
-    [W]: { x: 175, y: 475 },
-  };
-  const TRIM = 0.16; // fraction trimmed off each end of the chord
-  const PAIR_OFFSET = 40; // perpendicular split for shared-path pairs
-  const ARROW_W = 26;
-  const outer = (l: GridLocation) => OUTER[l] ?? { x: 475, y: 475 };
-
-  function arrowLine(
-    a: Arrow,
-    shared: boolean
-  ): { x1: number; y1: number; x2: number; y2: number } {
-    const p0 = outer(a.from);
-    const p1 = outer(a.to);
-    let x1 = p0.x + (p1.x - p0.x) * TRIM;
-    let y1 = p0.y + (p1.y - p0.y) * TRIM;
-    let x2 = p1.x + (p0.x - p1.x) * TRIM;
-    let y2 = p1.y + (p0.y - p1.y) * TRIM;
-    if (shared) {
-      // Perpendicular unit; sign chosen so BLUE lands nearer the center.
-      const dx = p1.x - p0.x;
-      const dy = p1.y - p0.y;
-      const len = Math.hypot(dx, dy) || 1;
-      let px = -dy / len;
-      let py = dx / len;
-      const mx = (x1 + x2) / 2 + px * 10;
-      const my = (y1 + y2) / 2 + py * 10;
-      const towardCenter =
-        Math.hypot(mx - 475, my - 475) < Math.hypot((x1 + x2) / 2 - 475, (y1 + y2) / 2 - 475);
-      const sign = (a.color === B) === towardCenter ? 1 : -1;
-      x1 += px * PAIR_OFFSET * sign;
-      y1 += py * PAIR_OFFSET * sign;
-      x2 += px * PAIR_OFFSET * sign;
-      y2 += py * PAIR_OFFSET * sign;
-    }
-    return { x1, y1, x2, y2 };
-  }
-
-  // Solid triangular head sized off the shaft, drawn as a path so it takes the
-  // arrow's own color (markers can't inherit stroke everywhere we print).
-  const HEAD_LEN = 78;
-  const HEAD_HALF_W = 46;
-  function headPath(l: { x1: number; y1: number; x2: number; y2: number }): string {
-    const dx = l.x2 - l.x1;
-    const dy = l.y2 - l.y1;
-    const len = Math.hypot(dx, dy) || 1;
-    const ux = dx / len;
-    const uy = dy / len;
-    const bx = l.x2 - ux * HEAD_LEN;
-    const by = l.y2 - uy * HEAD_LEN;
-    const p1x = bx + -uy * HEAD_HALF_W;
-    const p1y = by + ux * HEAD_HALF_W;
-    const p2x = bx - -uy * HEAD_HALF_W;
-    const p2y = by - ux * HEAD_HALF_W;
-    return `M ${p1x.toFixed(1)} ${p1y.toFixed(1)} L ${l.x2.toFixed(1)} ${l.y2.toFixed(1)} L ${p2x.toFixed(1)} ${p2y.toFixed(1)} Z`;
-  }
-  // Shaft stops where the head begins so the tip stays crisp.
-  function shaftEnd(l: { x1: number; y1: number; x2: number; y2: number }): { x: number; y: number } {
-    const dx = l.x2 - l.x1;
-    const dy = l.y2 - l.y1;
-    const len = Math.hypot(dx, dy) || 1;
-    return { x: l.x2 - (dx / len) * HEAD_LEN * 0.8, y: l.y2 - (dy / len) * HEAD_LEN * 0.8 };
-  }
-
-  // ── Labels (pt, editable) ───────────────────────────────────────────────────
-  // The proof's α→α / β→β row labels used a glyph font the text extraction
-  // dropped — restored here above the italic mode names (which live in
-  // proof-text.ts: Split-Same y190.2, Tog-Same y308.2, SO y511.6, TO y627.9).
-  type Label = { x: number; y: number; w: number; fs: number; t: string };
-  let GLYPH_LABELS: Label[] = $state([
-    { x: 12.7, y: 168.5, w: 70.6, fs: 16, t: "α→α" },
-    { x: 15.3, y: 286.5, w: 65.4, fs: 16, t: "β→β" },
+  // ── Text: grouped centred blocks (one draggable box per paragraph) ─────────
+  // Content = the proof's own runs, regrouped the way the original PDF set
+  // them: centred paragraphs, inline bold/italic. x is a horizontal offset from
+  // centred (0 = centred, as authored); y/fs/lh in pt (lh = the proof's 16.8pt
+  // line pitch on 14pt body).
+  type Para = { x: number; y: number; fs: number; lh: number; html: string };
+  let PARAS: Para[] = $state([
+    {
+      x: 0,
+      y: 68.5,
+      fs: 14,
+      lh: 16.8,
+      html:
+        "When both hands move to adjacent locations, it’s called a <strong>Dual-Shift</strong>.<br>" +
+        "Our first <strong>Dual-Shifts</strong> correspond to the four modes of timing/direction: SS, TS, SO, TO.<br>" +
+        "You can determine the start position by looking at the non-pointed end of the arrow.",
+    },
+    {
+      x: 0,
+      y: 383.6,
+      fs: 14,
+      lh: 16.8,
+      html:
+        "The Kinetic Alphabet puts focus on simultaneous motions between<br>" +
+        "two positions, relative to the center point.<br>" +
+        "Let’s try another type of <strong>Dual-Shift</strong>.<br>" +
+        "What happens when we move between α and β?",
+    },
+    {
+      x: 0,
+      y: 712.9,
+      fs: 14,
+      lh: 16.8,
+      html:
+        "Notice that it can be either <em>Split-Opp</em> or <em>Tog-Opp</em> depending on start position.",
+    },
+    {
+      x: 0,
+      y: 746.5,
+      fs: 14,
+      lh: 16.8,
+      html:
+        "<strong>Practice using Dual-Shifts to travel between Alpha and Beta in each mode.</strong>",
+    },
   ]);
 
-  // Count numerals + Start (top-left of each box) and mode badges (bottom-right)
-  // are derived from strip geometry, with a per-kind inset.
-  const NUM_INSET = { x: 5, y: 5.5, fs: 11 };
-  const BADGE_INSET = { x: 100 - 25, y: 100 - 17.5, fs: 10.5 };
-  const HEADER_INSET = { y: 4, fs: 11.5 };
+  // Left row labels at the proof's own coordinates: the α→α / β→β glyph lines
+  // (dropped by the text extraction — glyph font) over the italic mode names.
+  type Label = { x: number; y: number; w: number; fs: number; t: string; i?: boolean };
+  let LABELS: Label[] = $state([
+    { x: 12.7, y: 168.5, w: 70.6, fs: 18, t: "α→α" },
+    { x: 12.7, y: 190.2, w: 70.6, fs: 16, i: true, t: "Split-Same" },
+    { x: 15.3, y: 286.5, w: 65.4, fs: 18, t: "β→β" },
+    { x: 15.3, y: 308.2, w: 65.4, fs: 16, i: true, t: "Tog-Same" },
+    { x: 19.4, y: 511.6, w: 61.7, fs: 16, i: true, t: "Split-Opp" },
+    { x: 21.4, y: 627.9, w: 56.5, fs: 16, i: true, t: "Tog-Opp" },
+  ]);
 
-  // Edit mode: dump the restored label coords for CoordsPanel's Copy button.
+  // Edit mode: dump paragraph + label coords for CoordsPanel's Copy button.
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
-    registerEditSource("Type 1 α/β (p4)", () =>
-      GLYPH_LABELS.map((g) => `  ${JSON.stringify(g.t)}: x: ${r1(g.x)}, y: ${r1(g.y)}`).join("\n")
-    )
+    registerEditSource("Type 1 α/β (p4)", () => {
+      const P = PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n");
+      const L = LABELS.map((l) => `  ${JSON.stringify(l.t)}: x: ${r1(l.x)}, y: ${r1(l.y)}`).join("\n");
+      return `PARAS\n${P}\n\nLABELS\n${L}`;
+    })
   );
 </script>
 
 <div class="type1-page">
-  <!-- The proof's own text runs (intro, mid-page, notice, practice, mode names). -->
-  <ProofTextPage id="hm-type1" />
-
-  <!-- α→α / β→β row labels (restored glyph-font runs). -->
-  {#each GLYPH_LABELS as g, i (i)}
-    <span
-      class="glyph-label"
-      class:edit={guideEdit.on}
-      class:selected={guideEdit.selectedId === `t1-glyph-${i}`}
-      style="left:{g.x * S}px; top:{g.y * S}px; width:{g.w * S}px; font-size:{g.fs * S}px"
-      use:ptDrag={pt(`t1-glyph-${i}`, g.t, g)}>{g.t}</span
-    >
-  {/each}
-
-  <!-- Four strips of five real pictographs each. -->
+  <!-- Four strips of five real pictographs. All adornments (float arrows, Start/
+       count numerals, position glyphs, elementals) are renderer-owned. -->
   {#each STRIPS as strip, si (si)}
     <div
       class="strip"
       style="left:{strip.x * S}px; top:{strip.y * S}px; width:{BOX * 5 * S}px; height:{BOX * S}px"
     >
-      {#each strip.boxes as box, bi (bi)}
-        {@const data = handsAt(box.blue, box.red)}
+      {#each strip.moves as m, bi (bi)}
         <div class="cell">
-          {#if data}
-            <PictographContainer
-              pictographData={data}
-              gridMode={GridMode.DIAMOND}
-              bluePropTypeOverride={PropType.HAND}
-              redPropTypeOverride={PropType.HAND}
-              showGrid={true}
-              showTKA={false}
-              showPositions={false}
-              showReversals={false}
-              showTnD={false}
-              showElemental={false}
-              showNonRadialPoints={false}
-              showHandPoints={true}
-              darkMode={false}
-              printMode={true}
-              disableTransitions={true}
-            />
-          {/if}
-          {#if box.arrows.length}
-            {@const shared = box.arrows.length === 2 && box.arrows[0]?.from === box.arrows[1]?.from && box.arrows[0]?.to === box.arrows[1]?.to}
-            <svg class="arrows" viewBox="0 0 950 950" aria-hidden="true">
-              {#each box.arrows as a}
-                {@const l = arrowLine(a, shared)}
-                {@const se = shaftEnd(l)}
-                <line x1={l.x1} y1={l.y1} x2={se.x} y2={se.y} stroke={a.color} stroke-width={ARROW_W} stroke-linecap="round" />
-                <path d={headPath(l)} fill={a.color} />
-              {/each}
-            </svg>
-          {/if}
-          <!-- Count numeral / Start (top-left), mode badge (bottom-right). -->
-          <span class="num" style="left:{NUM_INSET.x * S}px; top:{NUM_INSET.y * S}px; font-size:{NUM_INSET.fs * S}px">
-            {bi === 0 ? "Start" : bi}
-          </span>
-          {#if bi > 0}
-            <span class="badge" style="left:{BADGE_INSET.x * S}px; top:{BADGE_INSET.y * S}px; font-size:{BADGE_INSET.fs * S}px">
-              {strip.badge}
-            </span>
-          {/if}
-          {#if box.header}
-            <span class="header" style="top:{HEADER_INSET.y * S}px; font-size:{HEADER_INSET.fs * S}px">
-              {box.header}
-            </span>
-          {/if}
+          <PictographContainer
+            pictographData={box(m, bi)}
+            gridMode={GridMode.DIAMOND}
+            bluePropTypeOverride={PropType.HAND}
+            redPropTypeOverride={PropType.HAND}
+            showGrid={true}
+            showTKA={false}
+            showPositions={bi > 0}
+            showElemental={bi > 0}
+            showReversals={false}
+            showTnD={false}
+            showNonRadialPoints={false}
+            showHandPoints={true}
+            stepNumberOverride={true}
+            darkMode={false}
+            printMode={true}
+            disableTransitions={true}
+          />
         </div>
       {/each}
     </div>
+  {/each}
+
+  <!-- Grouped centred paragraphs (one box each, like the original PDF). -->
+  {#each PARAS as p, i (i)}
+    <p
+      class="para"
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === `t1-para-${i}`}
+      style="transform: translateX({p.x * S}px); top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px"
+      use:ptDrag={pt(`t1-para-${i}`, "paragraph", p)}
+    >
+      {@html p.html}
+    </p>
+  {/each}
+
+  <!-- Left row labels (α→α / β→β + italic mode names). -->
+  {#each LABELS as l, i (i)}
+    <span
+      class="label"
+      class:i={l.i}
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === `t1-label-${i}`}
+      style="left:{l.x * S}px; top:{l.y * S}px; width:{l.w * S}px; font-size:{l.fs * S}px"
+      use:ptDrag={pt(`t1-label-${i}`, l.t, l)}>{l.t}</span
+    >
   {/each}
 </div>
 
@@ -320,45 +284,19 @@
     border-left: 1px solid #c4c4cc;
   }
 
-  /* Teaching arrows, drawn in the grid's 950 viewBox space over the pictograph. */
-  .arrows {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-  }
-
-  /* Count numerals + Start — bold serif, matching the proof. */
-  .num {
-    position: absolute;
-    font-family: "Cambria", Georgia, "Times New Roman", serif;
-    font-weight: 700;
-    line-height: 1;
-  }
-  /* Mode badge (SS/TS/SO/TO) — boxed, bottom-right, matching the proof. */
-  .badge {
-    position: absolute;
-    font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
-    font-weight: 600;
-    line-height: 1;
-    padding: 0.11em 0.22em;
-    background: #e9e9ec;
-    color: #2c2e35;
-  }
-  /* β→α / α→β box headers — bold, centred at the top of the cell. */
-  .header {
+  /* Centred paragraph blocks — full sheet width, one box per paragraph. */
+  .para {
     position: absolute;
     left: 0;
     right: 0;
+    margin: 0;
     text-align: center;
     font-family: "Cambria", Georgia, "Times New Roman", serif;
-    font-weight: 700;
-    line-height: 1;
   }
 
-  /* Restored α→α / β→β row labels — bold serif, centred over the mode names. */
-  .glyph-label {
+  /* Left row labels — bold glyph line over italic mode name, centred in their
+     own column like the proof. */
+  .label {
     position: absolute;
     font-family: "Cambria", Georgia, "Times New Roman", serif;
     font-weight: 700;
@@ -366,11 +304,19 @@
     white-space: nowrap;
     text-align: center;
   }
-  .glyph-label.edit {
+  .label.i {
+    font-weight: 400;
+    font-style: italic;
+  }
+
+  /* ── Edit mode affordances ─────────────────────────────────────────────── */
+  .para.edit,
+  .label.edit {
     outline: 1px dashed rgba(55, 48, 163, 0.4);
     cursor: move;
   }
-  .glyph-label.selected {
+  .para.selected,
+  .label.selected {
     outline: 1.5px solid #3730a3;
     outline-offset: 1px;
   }

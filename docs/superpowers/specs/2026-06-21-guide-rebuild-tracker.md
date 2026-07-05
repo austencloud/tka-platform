@@ -172,20 +172,26 @@ LOOP terminology, per existing section filenames already named Loops*.)
 - 2026-06-22: READ ME (p4) text corrected — a fabricated "In a pictograph, the
   arrow shows…" paragraph was removed and the original transcribed verbatim from
   the artboard (salutation + work-in-progress + "I can't wait to see…" closing).
-- 2026-07-05: TYPE 1 α/β PAGE (body p4, `hm-type1`) built. Composition approach:
-  the page renders `ProofTextPage` as its text layer (the proof's extracted runs,
-  unchanged) and adds the four pictograph strips the proof baked as images.
-  Strip geometry extracted from the PDF's own operator list (image transforms):
-  500×100pt strips at (95.3,142.8)/(95.3,262.0)/(92.6,472.0)/(92.6,588.3), five
-  100pt boxes each. Every box = a canonical `startPositionManager` diamond
-  position selected by (blueLoc, redLoc) with props forced to HAND (renderer owns
-  beta side-by-side offsets); straight teaching arrows (solid triangular heads,
-  matching the proof's p10 markers — NOT p9's open chevrons) drawn along the
-  outer-point chord in the grid's 950 space, paired arrows split perpendicular
-  (blue inside) on the Tog rows. α→α/β→β row labels the text extraction dropped
-  (glyph font) restored as editable runs. Content confirmed against MCP VTG data:
-  α→α=SS, β→β=TS, α↔β = SO from a side-point start / TO from a bottom start —
-  the original book's teaching matches current domain data exactly.
+- 2026-07-05: TYPE 1 α/β PAGE (body p4, `hm-type1`) built, then REDONE per
+  Austen's correction — pictograph adornments must be the SYSTEM'S, never
+  hand-rolled lookalikes. The standing rule for every remaining page:
+  - **Hand motion arrows** = real float arrows. Author movers as PRO shifts;
+    `PictographPreparer`'s hand-path mode (auto when both props are HAND)
+    converts them to FLOAT ("fl", handPath derived from locations) and the
+    arrow pipeline places the system float arrow. Never draw arrow SVGs.
+  - **Count numbers** = `StepData.stepNumber` + `stepNumberOverride` (0 renders
+    "Start", 1..n numerals) via the renderer's top-left StepNumber overlay.
+  - **Positions** = `startPosition`/`endPosition` (`getGridPositionFromLocations`)
+    + `showPositions` → top-centre PositionGlyph. Never type α→β as page text.
+  - **Mode/elemental** = `showElemental` → bottom-right ElementalGlyph, derived
+    by `deriveTnDFromPictograph` from the four hand locations. Never badge text.
+  - **Text = grouped centred blocks** (one draggable box per paragraph, like
+    the original PDF), not the extraction's per-line runs.
+  Strip geometry from the PDF operator list: 500×100pt strips at
+  (95.3,142.8)/(95.3,262.0)/(92.6,472.0)/(92.6,588.3), five 100pt boxes.
+  Content confirmed against MCP VTG data: α→α=SS, β→β=TS, α↔β = SO from a
+  side-point start / TO from a bottom start — the original book's teaching
+  matches current domain data exactly.
 - 2026-06-22: PAGE NUMBERING + AUTO-TOC system shipped (spec
   `2026-06-22-guide-page-numbering-toc-design.md`). Single source of truth =
   `_data/guide-manifest.ts` (34 body pages, 1 entry = 1 page, number = index+1).
