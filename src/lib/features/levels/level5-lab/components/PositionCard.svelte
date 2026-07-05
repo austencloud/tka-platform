@@ -253,12 +253,12 @@
   }
 
   .ori-chip:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, #fff);
   }
 
   .ori-chip.active {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
     color: var(--theme-text, #fff);
   }
 

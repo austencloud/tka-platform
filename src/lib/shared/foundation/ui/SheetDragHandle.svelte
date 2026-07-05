@@ -55,7 +55,7 @@
   /* High contrast mode */
   @media (prefers-contrast: high) {
     .sheet-drag-handle {
-      background: rgba(255, 255, 255, 0.8);
+      background: var(--theme-card-bg, rgba(255, 255, 255, 0.8));
       border: 1px solid white;
     }
   }

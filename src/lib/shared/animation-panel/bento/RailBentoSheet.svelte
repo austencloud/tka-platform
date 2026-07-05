@@ -234,7 +234,7 @@
     max-height: 85vh;
     z-index: calc(var(--z-priority) + 1);
     background: #0d1018;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 16px;
     box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6);
     display: flex;
@@ -247,7 +247,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 10px 12px 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .bento-sheet-title {
@@ -262,8 +262,8 @@
     min-width: var(--min-touch-target, 44px);
     min-height: var(--min-touch-target, 44px);
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.8);
     font-size: 14px;
     cursor: pointer;
@@ -276,7 +276,7 @@
   }
 
   .bento-sheet-close:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     color: rgba(255, 255, 255, 0.9);
   }
 

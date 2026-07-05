@@ -533,7 +533,7 @@ Wrong answers receive semantic feedback explaining WHAT they built vs. WHAT was 
   }
 
   .action-button:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
   }
 

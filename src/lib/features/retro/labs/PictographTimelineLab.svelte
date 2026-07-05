@@ -363,7 +363,7 @@
     flex: 1;
     min-height: 0;
     gap: 1px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
   }
 
   .era-column {

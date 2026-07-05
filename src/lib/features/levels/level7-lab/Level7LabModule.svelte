@@ -488,12 +488,12 @@
   }
 
   .ori-chip:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
     color: var(--theme-text, #fff);
   }
 
   .ori-chip.active {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     color: var(--theme-text, #fff);
   }
 
@@ -584,7 +584,7 @@
     letter-spacing: normal;
     padding: 0.125rem 0.5rem;
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     color: var(--theme-text-secondary, #888);
   }
 

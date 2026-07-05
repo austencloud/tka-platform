@@ -95,7 +95,7 @@
 	}
 
 	.close-btn:hover {
-		background: rgba(255, 255, 255, 0.08);
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
 		color: var(--theme-text, #ffffff);
 	}
 

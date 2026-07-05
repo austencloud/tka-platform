@@ -383,7 +383,7 @@
 	}
 
 	.direction-btn:hover {
-		background: rgba(255, 255, 255, 0.06);
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
 		color: var(--theme-text, #ffffff);
 	}
 
