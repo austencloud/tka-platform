@@ -52,6 +52,7 @@ import {
 	MIN_COLUMNS as MIN_COLUMNS_DEFAULT,
 	getMaxColumnsForWidth,
 	getDefaultColumnsForWidth,
+	clampColumnsToWidth,
 } from "$lib/shared/browse/services/grid-column-breakpoints";
 
 // ---------------------------------------------------------------------------
@@ -176,18 +177,22 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 	);
 
 	// Layout state.
-	// Has the user (or a prior session / host config) explicitly picked a column
-	// count? If not, the count auto-adapts to the measured container width so a
-	// fresh guest on a 4K monitor opens dense instead of stuck at 2 columns.
-	const hasExplicitColumns =
-		persisted?.columns !== undefined ||
-		config.initialColumns !== undefined ||
-		settingsService.settings.gridZoomLevel !== undefined;
-	let userHasChosenColumns = hasExplicitColumns;
+	// Has the user DELIBERATELY picked a column count (pinch / zoom buttons)?
+	// Only an explicit gesture counts — NOT the mere presence of a stored
+	// gridZoomLevel, because a narrow-viewport clamp (e.g. opening the F12 mobile
+	// simulator) used to write its clamped count to that setting. Trusting a
+	// stored value as a "choice" is exactly what pinned 4K monitors at 2 huge
+	// columns. `gridColumnsExplicit` is set only by setColumns, so existing
+	// corrupted users (flag absent) fall back to width auto-adaptation and heal.
+	let userHasChosenColumns =
+		settingsService.settings.gridColumnsExplicit === true ||
+		config.initialColumns !== undefined;
+	// Seed value: the last desired density if any, else the min until the first
+	// width measurement adapts it (for non-choosers).
 	let columns = $state<number>(
-		persisted?.columns ??
-			config.initialColumns ??
+		config.initialColumns ??
 			settingsService.settings.gridZoomLevel ??
+			persisted?.columns ??
 			MIN_COLUMNS_DEFAULT
 	);
 	let containerWidth = $state(0);
@@ -497,6 +502,11 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 	}
 
 	function persistColumns(cols: number): void {
+		// A write here always follows a deliberate setColumns — mark the choice so
+		// future sessions trust the stored density instead of width-adapting.
+		if (settingsService.settings.gridColumnsExplicit !== true) {
+			settingsService.updateSetting("gridColumnsExplicit", true);
+		}
 		if (cols !== settingsService.settings.gridZoomLevel) {
 			settingsService.updateSetting("gridZoomLevel", cols);
 		}
@@ -552,15 +562,17 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			return hasActiveFilters;
 		},
 
-		// Layout (flat getters)
+		// Layout (flat getters). `columns` is the DESIRED density; the render count
+		// is it clamped to the current width — desired is never mutated by width.
 		get columnCount() {
-			return Math.max(minColumns, Math.min(maxColumns, columns));
+			return clampColumnsToWidth(columns, containerWidth, minColumns);
 		},
 		get canZoomIn() {
-			return columns < maxColumns;
+			// Compare the VISIBLE count (desired may exceed the width's max).
+			return clampColumnsToWidth(columns, containerWidth, minColumns) < maxColumns;
 		},
 		get canZoomOut() {
-			return columns > minColumns;
+			return clampColumnsToWidth(columns, containerWidth, minColumns) > minColumns;
 		},
 		get isTransitioning() {
 			return isTransitioning;
@@ -763,19 +775,20 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 				return;
 			}
 
-			const max = getMaxColumnsForWidth(width);
-			if (columns > max) {
-				columns = max;
-				persistColumns(max);
-			}
+			// Explicit chooser: a narrow width does NOT rewrite their desired count.
+			// `columnCount` already clamps the render to maxColumns for this width,
+			// so on a phone their 6 shows as 2 and, back on a wide screen, expands
+			// to 6 again — the stored intent is never clobbered by a transient clamp.
 		},
 
 		zoomIn(): void {
-			engine.setColumns(columns + 1);
+			// Step from what's VISIBLE (columns clamped to this width), so the first
+			// press always changes the grid even if desired > width max.
+			engine.setColumns(engine.columnCount + 1);
 		},
 
 		zoomOut(): void {
-			engine.setColumns(columns - 1);
+			engine.setColumns(engine.columnCount - 1);
 		},
 
 		// --- Sections ---

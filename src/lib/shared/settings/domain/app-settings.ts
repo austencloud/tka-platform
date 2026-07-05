@@ -119,7 +119,8 @@ export interface AppSettings {
   preferredShowCenter?: boolean; // Last-used center toggle in assemble
 
   // Browse Grid Settings
-  gridZoomLevel?: number; // Mobile pinch-to-zoom: columns 2-6, default 2
+  gridZoomLevel?: number; // User's DESIRED column density (pinch / zoom buttons). Clamped to the width's max at render, never overwritten by a width clamp.
+  gridColumnsExplicit?: boolean; // True only once the user deliberately sets density. Gates width auto-adaptation so a narrow-viewport clamp is never mistaken for a preference.
 
   // Image Export Settings
   imageExport?: {

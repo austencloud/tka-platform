@@ -54,12 +54,14 @@ class GridZoomManager {
 		if (width <= 0 || width === this._containerWidth) return;
 		this._containerWidth = width;
 
-		// Re-clamp: if the user had 4 columns on desktop and resized
-		// down to a phone, snap to the new max immediately.
+		// Re-clamp the in-memory count for any live consumer, but NEVER persist a
+		// width-driven clamp. Writing the narrow-viewport count to the shared
+		// gridZoomLevel setting is what pinned wide monitors at 2 huge columns
+		// after the F12 mobile simulator (or opening a collection on a phone).
+		// A clamp is transient display adaptation, not a chosen preference.
 		const max = this.maxColumns;
 		if (this.columns > max) {
 			this.columns = max;
-			this.persistToSettings();
 		}
 	}
 
@@ -127,6 +129,11 @@ class GridZoomManager {
 	}
 
 	private persistToSettings() {
+		// Only reached via setColumns — a deliberate gesture. Flag the choice so
+		// the browse engine trusts the stored density instead of width-adapting.
+		if (settingsService.settings.gridColumnsExplicit !== true) {
+			settingsService.updateSetting("gridColumnsExplicit", true);
+		}
 		if (this.columns !== settingsService.settings.gridZoomLevel) {
 			settingsService.updateSetting("gridZoomLevel", this.columns);
 		}

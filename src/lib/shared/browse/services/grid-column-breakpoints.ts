@@ -34,3 +34,23 @@ export function getMaxColumnsForWidth(width: number): number {
 export function getDefaultColumnsForWidth(width: number): number {
 	return getMaxColumnsForWidth(width);
 }
+
+/**
+ * Effective render column count = the user's DESIRED density clamped to what
+ * the current width allows. Purely derived — it must NEVER be written back over
+ * `desired`. That separation is the whole fix for the "4K stuck at 2 huge
+ * columns" bug: a narrow viewport (F12 mobile simulator, a phone) clamps the
+ * VISIBLE count down without touching the stored desire, so widening the
+ * viewport re-expands to the desired count instead of pinning at the clamp.
+ *
+ * @param desired the persisted density the user wants (may exceed width max)
+ * @param width   current container/viewport width
+ * @param min     smallest allowed count (surfaces may raise the floor)
+ */
+export function clampColumnsToWidth(
+	desired: number,
+	width: number,
+	min: number = MIN_COLUMNS,
+): number {
+	return Math.max(min, Math.min(getMaxColumnsForWidth(width), desired));
+}
