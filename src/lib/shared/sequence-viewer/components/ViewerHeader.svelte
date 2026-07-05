@@ -1,21 +1,18 @@
 <!--
   ViewerHeader.svelte
 
-  One profiled header for every non-modal viewer surface. profile="full" is the
-  /sequence route header (back nav, engagement + management actions); profile="scan"
-  is the /q QR-scan header (guest funnel: Open in Composer / Download / Open TKA).
-  Both derive their ViewerOverflowMenu prop-set from buildHeaderActions so the
-  action gating lives in exactly one place (viewer-actions.ts). Center title IS
-  the menu trigger, matching the app.
+  The /sequence route header (back nav, engagement + management actions). The
+  /q scan page renders SequenceViewerShell (the app drawer's chrome) instead —
+  do NOT re-grow a scan variant here. Derives its ViewerOverflowMenu prop-set
+  from buildHeaderActions so the action gating lives in exactly one place
+  (viewer-actions.ts). Center title IS the menu trigger, matching the app.
 -->
 <script lang="ts">
   import type { OrchestratorContext } from "./SequenceViewerOrchestrator.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
-  import { captureEvent } from "$lib/shared/analytics/services/posthog";
   import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
-  import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import ViewerOverflowMenu from "./ViewerOverflowMenu.svelte";
   import { buildHeaderActions, type ViewerHeaderProfile } from "../services/viewer-actions";
 
@@ -29,10 +26,6 @@
     returnLabel?: string;
     homeHref?: string;
     onDeleteRequest?: () => void;
-    onOpenInComposer?: () => void;
-    openAppHref?: string;
-    onDownload?: () => void;
-    downloadBusy?: boolean;
   }
 
   let {
@@ -45,34 +38,13 @@
     returnLabel = "Back",
     homeHref,
     onDeleteRequest,
-    onOpenInComposer,
-    openAppHref,
-    onDownload,
-    downloadBusy = false,
   }: Props = $props();
 
   const actions = $derived(
-    buildHeaderActions(ctx, profile, {
-      onDeleteRequest,
-      onOpenInComposer,
-      openAppHref,
-      onDownload,
-      downloadBusy,
-    }),
+    buildHeaderActions(ctx, profile, { onDeleteRequest }),
   );
 
   const practiceActive = $derived(ctx.practiceActive);
-
-  // Scan account chip: signed-out scanners get a Sign in entry (opens the
-  // sheet with the plain-account reason); full accounts get their avatar as an
-  // Open TKA link. Anonymous guests count as signed-out — the chip is the
-  // account-creation funnel, and a guest identity isn't an account.
-  const isFullAccount = $derived(authState.isFullAccount);
-
-  function handleChipSignIn() {
-    captureEvent("qr_signin_from_chip", {});
-    ctx.openSignInPrompt();
-  }
 
   let copyClaudeFeedback = $state(false);
   async function handleCopyForClaude() {
@@ -93,28 +65,26 @@
   class:export-header={!!editingPane}
   data-hidden={isFullscreen}
 >
-  {#if isMobile && !editingPane && profile === "full"}
+  {#if isMobile && !editingPane}
     <div class="swipe-handle" aria-hidden="true"></div>
   {/if}
 
   <div class="header-left">
-    {#if profile === "full"}
-      <button type="button" class="back-button" onclick={ctx.onClose}
-        aria-label={editingPane ? "Close viewer" : `Back to ${returnLabel}`}>
-        <i class="fas fa-arrow-left" aria-hidden="true"></i>
-        {#if !isMobile && !editingPane}<span class="back-label">{returnLabel}</span>{/if}
+    <button type="button" class="back-button" onclick={ctx.onClose}
+      aria-label={editingPane ? "Close viewer" : `Back to ${returnLabel}`}>
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      {#if !isMobile && !editingPane}<span class="back-label">{returnLabel}</span>{/if}
+    </button>
+    {#if homeHref && !editingPane && !practiceActive}
+      <a href={homeHref} class="header-action-btn explore" aria-label="Explore TKA" title="Explore TKA">
+        <i class="fas fa-compass" aria-hidden="true"></i>
+      </a>
+    {/if}
+    {#if practiceActive}
+      <button type="button" class="header-action-btn practice-exit"
+        onclick={actions.onPracticeToggle} aria-label="Exit practice mode">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i><span>Exit Practice</span>
       </button>
-      {#if homeHref && !editingPane && !practiceActive}
-        <a href={homeHref} class="header-action-btn explore" aria-label="Explore TKA" title="Explore TKA">
-          <i class="fas fa-compass" aria-hidden="true"></i>
-        </a>
-      {/if}
-      {#if practiceActive}
-        <button type="button" class="header-action-btn practice-exit"
-          onclick={actions.onPracticeToggle} aria-label="Exit practice mode">
-          <i class="fas fa-arrow-left" aria-hidden="true"></i><span>Exit Practice</span>
-        </button>
-      {/if}
     {/if}
   </div>
 
@@ -128,7 +98,6 @@
     {:else}
       <span class="title-group">
         <span class="sequence-title">Sequence Viewer</span>
-        {#if isMobile && profile === "scan"}<span class="export-hint">Tap for options</span>{/if}
       </span>
     {/if}
     {#if hasMenu}
@@ -145,16 +114,12 @@
         dropDown
         align="center"
         variant="header"
-        sequenceId={profile === "full" ? sequence?.id : undefined}
+        sequenceId={sequence?.id}
         isFavorite={actions.isFavorite}
         onFavoriteToggle={isMobile ? actions.onFavoriteToggle : undefined}
         isSaved={actions.isSaved}
         onSave={isMobile ? actions.onSave : undefined}
         onRemix={actions.onRemix}
-        remixLabel={actions.remixLabel}
-        onDownload={actions.onDownload}
-        downloadBusy={actions.downloadBusy}
-        onOpenApp={actions.onOpenApp}
         onVideoUpload={actions.onVideoUpload}
         isPublished={actions.isPublished}
         onPublish={actions.onPublish}
@@ -165,35 +130,7 @@
   </div>
 
   <div class="header-right">
-    {#if profile === "scan"}
-      {#if !isMobile}
-        {#if onOpenInComposer}
-          <button type="button" class="cta accent" onclick={onOpenInComposer}>
-            <i class="fas fa-pen" aria-hidden="true"></i><span>Open in Composer</span>
-          </button>
-        {/if}
-        {#if openAppHref}
-          <a class="cta ghost" href={openAppHref}>
-            <i class="fas fa-compass" aria-hidden="true"></i><span>Open TKA</span>
-          </a>
-        {/if}
-      {/if}
-      {#if isFullAccount}
-        {#if openAppHref}
-          <a class="avatar-chip" href={openAppHref} aria-label="Open TKA" title="Open TKA">
-            <RobustAvatar
-              src={authState.user?.photoURL}
-              name={authState.user?.displayName || authState.user?.email}
-              size="sm"
-            />
-          </a>
-        {/if}
-      {:else}
-        <button type="button" class="cta ghost" onclick={handleChipSignIn}>
-          <i class="fas fa-user" aria-hidden="true"></i><span>Sign in</span>
-        </button>
-      {/if}
-    {:else if profile === "full" && !practiceActive}
+    {#if !practiceActive}
       {#if !isMobile && actions.onFavoriteToggle}
         <button type="button" class="header-action-btn" class:favorited={actions.isFavorite}
           onclick={actions.onFavoriteToggle}
@@ -421,13 +358,6 @@
     white-space: nowrap;
   }
 
-  .export-hint {
-    margin: 0;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
-    font-weight: 400;
-  }
-
   /* Chevron affordance beside the clickable title; rotates when the menu opens. */
   .title-caret {
     font-size: 11px;
@@ -449,57 +379,5 @@
     .back-button {
       transition: none !important;
     }
-  }
-
-  /* Scan-profile guest-funnel CTAs (appended verbatim from ScanViewerHeader). */
-  .cta {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0 16px;
-    border-radius: 8px;
-    font-weight: 600;
-    font-size: var(--font-size-min, 14px);
-    cursor: pointer;
-    text-decoration: none;
-    border: none;
-    white-space: nowrap;
-  }
-
-  .cta.accent {
-    background: var(--theme-accent, #6366f1);
-    color: #fff;
-  }
-
-  .cta.ghost {
-    background: rgba(18, 18, 28, 0.85);
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
-    color: var(--theme-text, #fff);
-  }
-
-  .cta:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
-  /* Signed-in scan chip: avatar as an Open TKA link. 44px touch target around
-     the 32px avatar so the corner tap area meets the floor. */
-  .avatar-chip {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: var(--min-touch-target, 44px);
-    min-height: var(--min-touch-target, 44px);
-    border-radius: 50%;
-    text-decoration: none;
-  }
-  .avatar-chip:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-  }
-  .avatar-chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
   }
 </style>

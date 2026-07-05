@@ -3,20 +3,20 @@
 
   QR Scan Landing Page
 
-  Plays the scanned sequence in the full sequence-viewer experience MINUS 3D:
-  2D animation, choreo card, mandala (with undulation), and side-by-side — all
-  with the redesigned ControlDock controls. Reuses SequenceViewerOrchestrator
-  (forceGuest) so there's no duplicated viewer brain; Three.js is lazy-loaded
-  out of ViewerSplitPane, so the scan page stays lightweight and chrome-free
-  (this route breaks out of the root layout via +layout@.svelte).
+  Renders the scanned sequence through SequenceViewerShell — the EXACT viewer
+  chrome (header, rail, split pane, export panels, practice) the app drawer
+  uses, so /q and the in-app viewer are identical by construction. This page
+  owns only scan concerns: short-code resolve, the word-glyph loader, scan
+  analytics, the gated download pipeline (account funnel), and the composer
+  handoff. Breaks out of the root layout via +layout@.svelte.
 
   URL format: /q/{shortCode}
 
   Flow:
   1. Resolve short code -> SequenceData
-  2. Lazy-load SequenceViewerOrchestrator + GlyphCache (parallel with step 1)
-  3. Mount orchestrator -> ViewerSplitPane (2D panes) + control drawer
-  4. Lazy-load AnimationPanel drawer for shared controls
+  2. Lazy-load SequenceViewerOrchestrator + SequenceViewerShell + GlyphCache
+     (parallel with step 1)
+  3. Mount orchestrator -> shell (full viewer chrome)
 -->
 <script lang="ts">
   import { page } from "$app/state";
@@ -46,7 +46,6 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
-  import type { ContentType } from "$lib/shared/sequence-viewer/state/viewer-state.svelte";
   import type { OrchestratorContext } from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import { setScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
   import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
@@ -54,18 +53,6 @@
   import { sequenceModalExporter } from "$lib/shared/sequence-viewer/services/sequence-modal-exporter.svelte";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
-  import ViewerContentRail from "$lib/shared/sequence-viewer/components/ViewerContentRail.svelte";
-  import ViewerModeBottomBar from "$lib/shared/sequence-viewer/components/ViewerModeBottomBar.svelte";
-  import ViewerHeader from "$lib/shared/sequence-viewer/components/ViewerHeader.svelte";
-  import { dockTrayState } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
-  import { slide, fly } from "svelte/transition";
-  import { cubicOut } from "svelte/easing";
-
-  // Reduced-motion gate for the mode-bar duck choreography (matches the app
-  // viewer's SequenceViewerDrawerHost).
-  const prefersReducedMotion =
-    typeof window !== "undefined" &&
-    !!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
   import ToastContainer from "$lib/shared/toast/components/ToastContainer.svelte";
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
   import type { ExportPhase } from "$lib/shared/video-export/components/ExportTakeover.svelte";
@@ -161,50 +148,14 @@
   let OrchestratorComponent:
     | typeof import("$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte").default
     | null = $state(null);
-  // ViewerSplitPane lazy-loads alongside the orchestrator (it pulls the 2D pane
-  // components), so the word-glyph loader paints before the viewer chunk lands.
-  let ViewerSplitPaneComponent:
-    | typeof import("$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte").default
+  // The shell (header + rail + split pane + export panels + practice — the
+  // entire drawer chrome, shared verbatim with the app viewer) lazy-loads
+  // alongside the orchestrator, so the word-glyph loader paints before the
+  // viewer chunk lands. startInSplit on the shell handles the one-shot reset
+  // of any stale persisted viewer mode.
+  let ShellComponent:
+    | typeof import("$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte").default
     | null = $state(null);
-  // View-mode routing: drive the orchestrator's REAL viewerState — the exact
-  // same enterExport/exitExport state machine SequenceViewerDrawerHost runs —
-  // instead of a parallel scan-only mode variable. This is what makes the scan
-  // page's per-mode chrome (the "Download Animation"/"Download Card" header,
-  // pane focus, panel mounting) identical to the app viewer by construction.
-  // No 3D on the scan page: webgl2Available={false} filters 'animation-3d' out
-  // of both switchers.
-  function selectScanSplit(ctx: OrchestratorContext) {
-    ctx.viewerState.exitExport();
-    ctx.viewerState.setSplitConfig({ leftPane: "animation", rightPane: "card" });
-    ctx.viewerState.setViewerMode("split");
-  }
-  function selectScanMode(ctx: OrchestratorContext, mode: ContentType) {
-    if (mode === "animation") {
-      ctx.viewerState.enterExport("animation-export", "animation");
-    } else if (mode === "card") {
-      ctx.viewerState.enterExport("image-export");
-    } else if (mode === "mandala") {
-      ctx.viewerState.exitExport();
-      ctx.viewerState.setViewerMode("mandala");
-    } else if (mode === "tunnel") {
-      ctx.viewerState.exitExport();
-      ctx.viewerState.setViewerMode("tunnel");
-    }
-  }
-
-  // viewerState persists across the whole origin (tka-viewer-mode /
-  // exportContext), so a scanner whose localStorage holds a stale app-viewer
-  // export context would land mid-export instead of on the split first
-  // impression. One-shot reset to split when the player mounts; from then on
-  // the live state machine is shared with the app viewer.
-  let viewerStateReset = false;
-  function ensureFreshViewerState(ctx: OrchestratorContext): string {
-    if (!viewerStateReset) {
-      viewerStateReset = true;
-      queueMicrotask(() => selectScanSplit(ctx));
-    }
-    return "";
-  }
 
   // ── Export state (drives the QR ExportTakeover overlay + native share) ──
   let isExporting = $state(false);
@@ -228,14 +179,11 @@
   );
 
   // ── Layout detection ──
+  // Same breakpoint as SequenceViewerDrawerHost (<768 = mobile) so the
+  // orchestrator and the shared shell agree with the app viewer exactly.
   let viewportWidth = $state(0);
-  let viewportHeight = $state(0);
 
-  const isSidebarLayout = $derived(
-    viewportWidth >= 960 ||
-    (viewportHeight > 0 && viewportWidth / viewportHeight >= 5 / 4)
-  );
-  const drawerLayout = $derived<"sidebar" | "bottom">(isSidebarLayout ? "sidebar" : "bottom");
+  const isViewerMobile = $derived(viewportWidth > 0 ? viewportWidth < 768 : true);
 
   // ── OG metadata ──
   const rawWord = $derived(
@@ -278,7 +226,11 @@
   async function handleExport(ctx: OrchestratorContext) {
     if (!resolvedSeq || !ctx.playbackController || !ctx.modalAnimationState) return;
 
-    const canvasEl = document.querySelector<HTMLCanvasElement>(".canvas-area canvas");
+    // The live 2D animation canvas inside the shared shell (AnimatorCanvas
+    // renders into CanvasSurface's .canvas-wrapper).
+    const canvasEl =
+      document.querySelector<HTMLCanvasElement>(".scan-viewer .canvas-wrapper canvas") ??
+      document.querySelector<HTMLCanvasElement>(".scan-viewer canvas");
     if (!canvasEl) return;
 
     isExporting = true;
@@ -461,7 +413,6 @@
     if (browser) {
       const checkViewport = () => {
         viewportWidth = window.innerWidth;
-        viewportHeight = window.innerHeight;
       };
       checkViewport();
       window.addEventListener("resize", checkViewport);
@@ -541,10 +492,10 @@
       // init stays awaited — a cold-scan local cell render (cloud miss) needs
       // the cache populated before the card paints — but it no longer serializes
       // in front of the chunk import, trimming the critical path by the import time.
-      const [seq_, OrchestratorModule, SplitPaneModule] = await Promise.all([
+      const [seq_, OrchestratorModule, ShellModule] = await Promise.all([
         shortCodeManager.resolveShortCode(shortCode),
         import("$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte"),
-        import("$lib/shared/sequence-viewer/components/ViewerSplitPane.svelte"),
+        import("$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte"),
         getGlyphCache().initialize(),
       ]);
 
@@ -591,7 +542,7 @@
       }
 
       OrchestratorComponent = OrchestratorModule.default;
-      ViewerSplitPaneComponent = SplitPaneModule.default;
+      ShellComponent = ShellModule.default;
 
       if (genuine) {
         const geo = data?.geo;
@@ -732,10 +683,10 @@
         </div>
       {/if}
     </div>
-  {:else if pageState.kind === "playing" && OrchestratorComponent && resolvedSeq}
+  {:else if pageState.kind === "playing" && OrchestratorComponent && ShellComponent && resolvedSeq}
     <OrchestratorComponent
       sequence={resolvedSeq}
-      isMobile={!isSidebarLayout}
+      isMobile={isViewerMobile}
       initialRenderMode="2d"
       initialBpm={BASE_BPM}
       initialActiveEffect="trails"
@@ -744,168 +695,41 @@
         pendingExportKind === "card" ? void handleCardExport(ctx) : void handleExport(ctx)}
     >
       {#snippet children(ctx)}
-        {@const _reset = ensureFreshViewerState(ctx)}
-        <div
-          class="player-layout"
-          class:sidebar-mode={isSidebarLayout}
-          class:with-panel={isSidebarLayout && (ctx.editingPane === "animation" || ctx.editingPane === "image")}
-        >
-          <ViewerHeader
-            profile="scan"
+        <div class="scan-viewer">
+          <!-- The one true viewer chrome, shared verbatim with the app drawer.
+               Scan deltas ride in as props: close exits to the gallery, Remix
+               runs the guest-friendly composer handoff, the title menu gains
+               Open TKA, and Download routes through the gated page pipeline
+               (account funnel + native share sheet). -->
+          <ShellComponent
             {ctx}
-            isMobile={!isSidebarLayout}
-            editingPane={ctx.editingPane === "video-upload" ? null : ctx.editingPane}
-            sequence={resolvedSeq}
-            onOpenInComposer={openInComposer}
+            sequence={resolvedSeq!}
+            isMobile={isViewerMobile}
+            startInSplit
+            onClose={() => goto(`/browse/gallery?from=scan&code=${shortCode}`)}
+            onRemix={openInComposer}
             openAppHref={`/browse/gallery?from=scan&code=${shortCode}`}
-            onDownload={() => requestGatedExport(ctx, "video")}
-            downloadBusy={isExporting}
+            exportOverrides={{
+              onVideoExport: () => requestGatedExport(ctx, "video"),
+              onCardExport: () => requestGatedExport(ctx, "card"),
+              videoBusy: isExporting,
+              videoProgress: exportProgress,
+              cardBusy: isCardExporting,
+              showInlineProgress: false,
+            }}
           />
-          {#if isSidebarLayout}
-            <!-- Landscape / large: vertical side rail to switch views — the same
-                 ViewerContentRail the desktop viewer uses. webgl2Available={false}
-                 drops the 3D option (no Three.js on the scan page). -->
-            <ViewerContentRail
-              activeMode={ctx.viewerState.viewerMode}
-              webgl2Available={false}
-              onSelectMode={(mode) => selectScanMode(ctx, mode)}
-              onSelectSplit={() => selectScanSplit(ctx)}
-            />
-          {/if}
-          <div class="canvas-area">
-            {#if ctx.effectiveSequence && ViewerSplitPaneComponent}
-            <ViewerSplitPaneComponent
-              sequence={ctx.effectiveSequence}
-              renderMode="2d"
-              bpm={ctx.bpmLocal}
-              onBpmChange={ctx.handleBpmChange}
-              playback={ctx.splitPanePlayback}
-              imageComposition={ctx.editingPane === "image"
-                ? {
-                    ...ctx.splitPaneImageComposition,
-                    darkMode: ctx.exportOptions.imageDarkMode,
-                    columnCount: ctx.exportOptions.imageColumnCount,
-                    forceContain: true,
-                  }
-                : ctx.splitPaneImageComposition}
-              propRendering={ctx.splitPanePropRendering}
-              layout={{
-                isFullscreen: false,
-                fullscreenStackVertical: false,
-                isMobile: !isSidebarLayout,
-                isLandscapeMobile: false,
-                // Same focus derivation as SequenceViewerDrawerHost:603 — the
-                // stale-persistence leak the old scan-only mode variable
-                // guarded against is now handled by ensureFreshViewerState's
-                // one-shot reset to split on mount.
-                focusedPane: ctx.viewerState.viewerMode !== "split"
-                  ? (ctx.viewerState.viewerMode === "card" ? "image" : "animation")
-                  : (ctx.editingPane === "video-upload" ? null : ctx.editingPane),
-                suppressCloseButton: ctx.viewerState.viewerMode !== "split",
-              }}
-              splitConfig={ctx.viewerState.viewerMode === "split"
-                ? { leftPane: "animation", rightPane: "card" }
-                : (ctx.viewerState.viewerMode === "card"
-                  ? { ...ctx.viewerState.splitConfig, rightPane: "card" }
-                  : (ctx.viewerState.viewerMode === "animation" || ctx.viewerState.viewerMode === "mandala" || ctx.viewerState.viewerMode === "tunnel"
-                    ? { ...ctx.viewerState.splitConfig, leftPane: ctx.viewerState.viewerMode }
-                    : ctx.viewerState.splitConfig))}
-              suppressProgress={ctx.viewerState.viewerMode === "split"}
-              onFocusPane={ctx.enterEditMode}
-              onUnfocusPane={ctx.exitEditMode}
-              onStepClick={ctx.handleStepClick}
-              onCanvasReady={ctx.handleCanvasReady}
-              onPlaybackToggle={ctx.handlePlaybackToggle}
-              onProgressBarSeek={ctx.handleProgressBarSeek}
-              onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
-              onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
-              playbackMode={ctx.playbackMode}
-              onPlaybackModeChange={ctx.handlePlaybackModeChange}
-            />
-            {/if}
-            <ExportTakeover
-              phase={takeoverPhase}
-              progress={exportProgress?.progress ?? 0}
-              phaseLabel={takeoverLabel}
-              error={exportProgress?.error ?? null}
-              onCancel={() => { isExporting = false; }}
-              onRetry={() => handleExport(ctx)}
-            >
-              {#snippet title()}
-                <TKAWordGlyph word={rawWord} height={28} darkMode />
-              {/snippet}
-            </ExportTakeover>
-          </div>
-
-          <!-- Matches the viewer at every breakpoint: the Effects/Props/… panel
-               appears ONLY in 2D Animation mode (where watching the animation
-               while you change props/effects is the point). Split / Card /
-               Mandala / Tunnel fill the body; their funnel actions live in the
-               floating "…" menu over the stage. Keyed off ctx.editingPane —
-               the same discriminant the app viewer's DrawerHost uses. -->
-          {#if ctx.editingPane === "animation"}
-          <div class="controls-column">
-            <div class="drawer-host">
-              {#await import("$lib/shared/animation-panel/components/AnimationPanel.svelte") then mod}
-                <mod.default
-                  exportOptions={ctx.exportOptions}
-                  {isExporting}
-                  {exportProgress}
-                  canvasReady={!!ctx.playbackController}
-                  layout={drawerLayout}
-                  singlePlayDuration={ctx.singlePlayDuration}
-                  isPlaying={ctx.isPlayingLocal}
-                  bpm={ctx.bpmLocal}
-                  renderMode="2d"
-                  showInlineExportProgress={false}
-                  playbackMode={ctx.playbackMode}
-                  selectedPropType={ctx.bluePropType}
-                  onPropChange={ctx.handlePropTypeChange}
-                  onPlaybackToggle={ctx.handlePlaybackToggle}
-                  onPlaybackModeChange={ctx.handlePlaybackModeChange}
-                  onBpmChange={ctx.handleBpmChange}
-                  onExport={() => requestGatedExport(ctx, "video")}
-                  secondaryActions={[]}
-                />
-              {/await}
-            </div>
-          </div>
-          {:else if ctx.editingPane === "image"}
-            <!-- Card mode mirrors the viewer: the choreo-card customization row
-                 (labels / pictograph / columns / theme + share). Its toggles write
-                 the shared image-composition + visibility managers, which feed
-                 ctx.splitPaneImageComposition, so the card updates live. -->
-            <div class="controls-column">
-              <div class="drawer-host">
-                {#await import("$lib/shared/sequence-viewer/components/ExportImagePanel.svelte") then mod}
-                  <mod.default
-                    exportOptions={ctx.exportOptions}
-                    isExporting={isCardExporting}
-                    layout={drawerLayout}
-                    stepCount={resolvedSeq?.steps?.length ?? 0}
-                    onExport={() => requestGatedExport(ctx, "card")}
-                  />
-                {/await}
-              </div>
-            </div>
-          {/if}
-          {#if !isSidebarLayout && dockTrayState.openCount === 0}
-            <!-- Portrait: bottom bar to switch views — the same ViewerModeBottomBar
-                 the mobile viewer uses. webgl2Available={false} drops 3D.
-                 Ducks while a ControlDock tray is open, with the same displaced-by-
-                 the-tray choreography as the app viewer: slot height eases closed
-                 while the bar glides down, both on the tray's 260ms cubicOut. -->
-            <div class="mode-bar-slot" transition:slide={{ duration: prefersReducedMotion ? 0 : 260, easing: cubicOut }}>
-              <div transition:fly={{ y: 72, duration: prefersReducedMotion ? 0 : 260, easing: cubicOut }}>
-                <ViewerModeBottomBar
-                  activeMode={ctx.viewerState.viewerMode}
-                  webgl2Available={false}
-                  onSelectMode={(mode) => selectScanMode(ctx, mode)}
-                  onSelectSplit={() => selectScanSplit(ctx)}
-                />
-              </div>
-            </div>
-          {/if}
+          <ExportTakeover
+            phase={takeoverPhase}
+            progress={exportProgress?.progress ?? 0}
+            phaseLabel={takeoverLabel}
+            error={exportProgress?.error ?? null}
+            onCancel={() => { isExporting = false; }}
+            onRetry={() => handleExport(ctx)}
+          >
+            {#snippet title()}
+              <TKAWordGlyph word={rawWord} height={28} darkMode />
+            {/snippet}
+          </ExportTakeover>
         </div>
       {/snippet}
     </OrchestratorComponent>
@@ -1051,155 +875,16 @@
     .word-loader { opacity: 0.85; }
   }
 
-  /* ── Player layout ── */
+  /* ── Player ── */
 
-  .player-layout {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  /* Full-bleed host for the shared viewer shell — no inset card, no max-width
+     cap: the scan page IS the viewer, edge to edge, exactly like the app
+     drawer. position:relative anchors the ExportTakeover overlay (absolute
+     inset:0) over the whole viewer. */
+  .scan-viewer {
+    position: relative;
     width: 100%;
     height: 100%;
-    padding: 8px;
-    gap: 6px;
     overflow: hidden;
-  }
-
-  /* Scan header: full-width row atop the player layout at every breakpoint.
-     Portrait player-layout centers its children, so opt the header out into a
-     full stretch (same trick as .mode-bar-slot). */
-  .player-layout :global(.scan-header) {
-    align-self: stretch;
-    width: 100%;
-  }
-
-  /* .player-layout centers its children (canvas-area / controls-column are
-     max-width-capped and meant to sit centered). The portrait mode bar must NOT
-     inherit that: it's a full-width row, and ViewerModeBottomBar's
-     container-type:inline-size makes its <nav> contribute ~0 intrinsic width, so
-     under align-items:center the wrapper shrink-wraps to nothing and the buttons
-     overflow to one side ("tucked right"). Opt this one child out into a full
-     stretch so width:100% resolves against the real column width. */
-  .mode-bar-slot {
-    align-self: stretch;
-    width: 100%;
-  }
-
-  .canvas-area {
-    position: relative;
-    flex: 1 1 0;
-    min-height: 0;
-    width: 100%;
-    max-width: 480px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 10px;
-    overflow: hidden;
-    background: #000;
-  }
-
-  /* ── Controls column ── */
-
-  .controls-column {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
-    max-width: 480px;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-
-  .drawer-host {
-    width: 100%;
-  }
-
-  /* ── Sidebar mode (landscape + desktop) ── */
-
-  .player-layout.sidebar-mode {
-    display: grid;
-    /* header (full width) on top; below: rail (auto) | canvas (flex). Mirrors
-       the desktop viewer: no permanent right panel — Side-by-Side / Card /
-       Mandala fill the full width. */
-    grid-template-columns: auto 1fr;
-    grid-template-rows: auto 1fr;
-    align-items: stretch;
-    padding: 8px 12px;
-    gap: 8px;
-  }
-
-  .sidebar-mode :global(.scan-header) {
-    grid-column: 1 / -1;
-    grid-row: 1;
-  }
-
-  /* 2D Animation mode opens the Effects/BPM panel as a right sidebar — the
-     viewer's animation-export sidebar behavior. */
-  .player-layout.sidebar-mode.with-panel {
-    grid-template-columns: auto 1fr 300px;
-  }
-
-  /* The view-switcher rail owns the first column at landscape/desktop widths. */
-  .sidebar-mode :global(.content-rail) {
-    grid-column: 1;
-    grid-row: 2;
-  }
-
-  .sidebar-mode .canvas-area {
-    grid-column: 2;
-    grid-row: 2;
-    max-width: none;
-    min-height: 0;
-  }
-
-  .sidebar-mode .controls-column {
-    grid-column: 3;
-    grid-row: 2;
-    max-width: none;
-    overflow: hidden;
-  }
-
-  .sidebar-mode .drawer-host {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  /* ── Wider tablets ── */
-
-  @media (min-width: 600px) and (min-height: 800px) {
-    .player-layout:not(.sidebar-mode) {
-      max-width: 600px;
-      margin: 0 auto;
-      gap: 8px;
-    }
-
-    .player-layout:not(.sidebar-mode) .canvas-area {
-      max-width: 560px;
-    }
-
-    .player-layout:not(.sidebar-mode) .controls-column {
-      max-width: 560px;
-    }
-  }
-
-  /* ── Desktop ── */
-
-  @media (min-width: 960px) {
-    .player-layout.sidebar-mode {
-      padding: 16px 24px;
-      gap: 16px;
-    }
-
-    .player-layout.sidebar-mode.with-panel {
-      grid-template-columns: auto 1fr 340px;
-    }
-
-  }
-
-  @media (min-width: 1440px) {
-    .player-layout.sidebar-mode.with-panel {
-      grid-template-columns: auto 1fr 380px;
-    }
   }
 </style>

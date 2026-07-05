@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { buildHeaderActions, type ViewerHeaderProfile } from "./viewer-actions";
+import { buildHeaderActions } from "./viewer-actions";
 
 function makeCtx(over: Partial<Record<string, unknown>> = {}) {
   return {
@@ -24,32 +24,16 @@ function makeCtx(over: Partial<Record<string, unknown>> = {}) {
 
 const wiring = {
   onDeleteRequest: () => {},
-  onDownload: () => {},
-  onOpenInComposer: () => {},
-  openAppHref: "/browse/gallery",
 };
 
 describe("buildHeaderActions", () => {
-  it("scan + guest: only funnel actions, no owner/engagement", () => {
-    const a = buildHeaderActions(makeCtx(), "scan", wiring);
-    expect(a.onRemix).toBeTypeOf("function");
-    expect(a.remixLabel).toBe("Open in Composer");
-    expect(a.onDownload).toBeTypeOf("function");
-    expect(a.onOpenApp).toBeTypeOf("function");
-    expect(a.onFavoriteToggle).toBeUndefined();
-    expect(a.onSave).toBeUndefined();
-    expect(a.onVideoUpload).toBeUndefined();
-    expect(a.onPublish).toBeUndefined();
-    expect(a.onDeleteRequest).toBeUndefined();
-    expect(a.showPractice).toBe(false);
-  });
-
-  it("full + guest: engagement offered (login-prompt), no owner management", () => {
+  it("guest: engagement offered (login-prompt via gated actions), no owner management", () => {
     const a = buildHeaderActions(makeCtx(), "full", wiring);
     expect(a.onFavoriteToggle).toBeTypeOf("function");
+    expect(a.onSave).toBeTypeOf("function");
     expect(a.onRemix).toBeTypeOf("function");
-    expect(a.remixLabel).toBeUndefined();
     expect(a.showPractice).toBe(true);
+    expect(a.onPracticeToggle).toBeTypeOf("function");
     expect(a.onPublish).toBeUndefined();
     expect(a.onUnpublish).toBeUndefined();
     expect(a.onDeleteRequest).toBeUndefined();
@@ -77,17 +61,5 @@ describe("buildHeaderActions", () => {
     expect(a.onPublish).toBeUndefined();
     expect(a.onDeleteRequest).toBeUndefined();
     expect(a.onSave).toBeTypeOf("function");
-  });
-
-  it("scan + signed-in owner: engagement + management appear on scan too", () => {
-    const a = buildHeaderActions(
-      makeCtx({ isOwned: true, isSaved: true, isLoggedIn: true }),
-      "scan",
-      wiring,
-    );
-    expect(a.onOpenApp).toBeTypeOf("function");
-    expect(a.onFavoriteToggle).toBeTypeOf("function");
-    expect(a.onPublish).toBeTypeOf("function");
-    expect(a.onDeleteRequest).toBeTypeOf("function");
   });
 });
