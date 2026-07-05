@@ -39,6 +39,14 @@ import { generatePlacementKey } from "$lib/shared/pictograph/arrow/positioning/k
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import {
+  floatClockwiseHandpathMap,
+  floatCounterClockwiseHandpathMap,
+} from "$lib/shared/pictograph/arrow/positioning/calculation/config/float-rotation-maps";
+import {
+  proClockwiseMap,
+  proCounterClockwiseMap,
+} from "$lib/shared/pictograph/arrow/positioning/calculation/config/pro-anti-rotation-maps";
 
 const STATIC_ROOT = resolve(process.cwd(), "static");
 
@@ -130,5 +138,20 @@ describe("hand-path float arrow separation (G tog-same)", () => {
     expect(blueDefault).toEqual([30, -30]);
     // Separation: red's special base ≠ blue's default base.
     expect(blueDefault).not.toEqual([80, -100]);
+  });
+});
+
+describe("float rotation map parity with PRO", () => {
+  // A float arrow is the same curved shift glyph as PRO — same SVG base
+  // orientation, same CCW mirroring — so its per-quadrant rotations must equal
+  // PRO's. The CCW map previously sat +90° off across the board, rendering
+  // every CCW-handpath float arrow visibly rotated (guide Split-Opp/Tog-Opp
+  // rows: red W→S pointed down-left instead of down-right).
+  it("CW float map equals CW pro map", () => {
+    expect(floatClockwiseHandpathMap).toEqual(proClockwiseMap);
+  });
+
+  it("CCW float map equals CCW pro map", () => {
+    expect(floatCounterClockwiseHandpathMap).toEqual(proCounterClockwiseMap);
   });
 });

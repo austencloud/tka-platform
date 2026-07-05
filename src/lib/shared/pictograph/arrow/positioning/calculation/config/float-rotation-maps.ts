@@ -71,14 +71,20 @@ export const floatClockwiseHandpathMap: Record<GridLocation, number> = {
   [GridLocation.CENTER]: 0,
 };
 
+// Mirrors proCounterClockwiseMap exactly. A float arrow is the same curved
+// shift glyph as PRO (same SVG base orientation, same CCW mirroring in
+// shouldMirrorArrow), so its per-quadrant rotations must match PRO's. The CW
+// map above already equals proClockwiseMap; this one previously sat 90° off
+// across the board, so every CCW-handpath float arrow rendered visibly
+// rotated (caught on the Level 1 guide's Split-Opp/Tog-Opp rows).
 export const floatCounterClockwiseHandpathMap: Record<GridLocation, number> = {
-  [GridLocation.NORTH]: 135,
-  [GridLocation.EAST]: 225,
-  [GridLocation.SOUTH]: 315,
-  [GridLocation.WEST]: 45,
-  [GridLocation.NORTHEAST]: 180,
-  [GridLocation.SOUTHEAST]: 270,
-  [GridLocation.SOUTHWEST]: 0,
-  [GridLocation.NORTHWEST]: 90,
+  [GridLocation.NORTH]: 45,
+  [GridLocation.EAST]: 135,
+  [GridLocation.SOUTH]: 225,
+  [GridLocation.WEST]: 315,
+  [GridLocation.NORTHEAST]: 90,
+  [GridLocation.SOUTHEAST]: 180,
+  [GridLocation.SOUTHWEST]: 270,
+  [GridLocation.NORTHWEST]: 0,
   [GridLocation.CENTER]: 0,
 };
