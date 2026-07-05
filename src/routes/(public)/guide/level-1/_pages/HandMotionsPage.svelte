@@ -1,26 +1,29 @@
 <script lang="ts">
   /**
    * Hand Motions — body page 3, a faithful reproduction of the proof PDF
-   * (level-1-v05.pdf, page 9). Text runs + the 5 motion boxes are DATA-DRIVEN
-   * from the PDF's own coordinates (110pt squares).
+   * (level-1-v05.pdf, page 9). Text runs sit at the PDF's own coordinates
+   * (top-left origin, 612×792pt sheet, ×4/3 to px); multi-line passages render
+   * as GROUPED blocks (one box per paragraph, like the original), not
+   * per-line runs.
    *
-   * The sheet is 816×1056px (8.5×11in @96dpi), 1pt = 4/3px. Root is an absolute
-   * layer over the whole GuidePage so coordinates map straight to the sheet. The
-   * page renders fullBleed (no GuidePage header) — the title is a positioned run.
+   * Every motion box is a REAL single-hand pictograph through the current
+   * renderer — nothing hand-drawn on them:
+   *   shift  → PRO W→N / W→S; PictographPreparer's hand-path mode converts to
+   *            FLOAT so the arrow pipeline places the canonical float arrows
+   *   dash   → DASH W→E; the system dash arrow
+   *   static → STATIC at W; no arrow (matching the proof)
+   * The blue hand shows the end position (visibleHand="blue").
    *
-   * Each motion box is a REAL single-hand pictograph: the canonical grid + the
-   * blue prop-hand placed at the END location via a `static` motion, rendered
-   * through PictographContainer with `visibleHand="blue"` (the renderer filters
-   * the absent red hand out entirely). The blue hand shows the end position; a
-   * straight teaching arrow — open chevron head, matching the proof's marker
-   * arrows — is overlaid in the grid's 950 viewBox space (endpoints traced off
-   * the proof). The proof uses straight directional arrows, NOT the curved
-   * pro/anti pictograph arrows, so no motion-type ambiguity arises.
+   * The flowchart is the proof's: one thick line leaves the Start box, runs
+   * straight through to the dash row (same height), with a spine splitting up
+   * to shift and down to static. Each branch passes UNDER its bold word
+   * (underlining it) and ends in a solid arrowhead pointing at the pictograph
+   * box itself.
    *
-   * Type styling mirrors the proof exactly: shift/dash/static are BOLD upright,
-   * their captions are ITALIC, and the six combination names are two-tone colored
-   * (prefix = compound-type color, base word = base-motion color) using the print
-   * guide's own type colors from _styles/guide.css. printMode = white sheet.
+   * The six combination names are two-tone colored from LETTER_TYPE_COLORS —
+   * the system's canonical letter-type color code (Type1 Dual-Shift …
+   * Type6 Static) — with hairline table dividers between the six cells,
+   * matching the original.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
@@ -30,21 +33,25 @@
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { LETTER_TYPE_COLORS } from "$lib/shared/pictograph/shared/domain/constants/pictograph-constants";
+  import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
   import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
+  const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 
-  const B = "#2e3192"; // blue = left hand + teaching arrow
-
-  // A single blue prop-hand resting (static) at one hand point. No red hand.
-  const blueHandAt = (loc: GridLocation) => ({
-    id: `hm-${loc}`,
+  // ── Motion boxes: real single-hand pictographs (blue hand only) ────────────
+  // Movers author as PRO/DASH; hand-path mode floats the shifts and the arrow
+  // pipeline renders the canonical arrows. Static shows the resting hand only.
+  const singleHand = (id: string, type: MotionType, from: GridLocation, to: GridLocation) => ({
+    id: `hm-${id}`,
+    letter: null,
     gridMode: GridMode.DIAMOND,
     motions: {
       blue: createMotionData({
-        motionType: MotionType.STATIC,
-        startLocation: loc,
-        endLocation: loc,
+        motionType: type,
+        startLocation: from,
+        endLocation: to,
         color: MotionColor.BLUE,
         propType: PropType.HAND,
         gridMode: GridMode.DIAMOND,
@@ -52,152 +59,148 @@
     },
   });
 
-  // ── Motion boxes, measured off the proof (pt). 110pt squares. ──────────────
-  // arrow = teaching-arrow key (or null for Start / static, which show no arrow).
+  // 110pt squares, measured off the proof.
   const SIZE = 110;
-  type ArrowKey = "n" | "s" | "e";
-  type Box = { x: number; y: number; loc: GridLocation; arrow: ArrowKey | null };
-  const boxes: Box[] = [
-    { x: 60.6, y: 233.1, loc: GridLocation.WEST, arrow: null }, // Start (rest at W)
-    { x: 298.5, y: 134.9, loc: GridLocation.NORTH, arrow: "n" }, // shift  W→N
-    { x: 429.8, y: 134.9, loc: GridLocation.SOUTH, arrow: "s" }, // shift  W→S
-    { x: 298.5, y: 241.1, loc: GridLocation.EAST, arrow: "e" }, // dash   W→E
-    { x: 298.5, y: 348.6, loc: GridLocation.WEST, arrow: null }, // static (stay W)
+  const boxes = [
+    { x: 60.6, y: 233.1, data: singleHand("start", MotionType.STATIC, W, W) },
+    { x: 298.5, y: 134.9, data: singleHand("shift-cw", MotionType.PRO, W, N) },
+    { x: 429.8, y: 134.9, data: singleHand("shift-ccw", MotionType.PRO, W, SO_) },
+    { x: 298.5, y: 241.1, data: singleHand("dash", MotionType.DASH, W, E) },
+    { x: 298.5, y: 348.6, data: singleHand("static", MotionType.STATIC, W, W) },
   ];
 
-  // Teaching-arrow endpoints in the 950 grid viewBox, traced off the proof: a
-  // straight shaft offset to clear the hand (shift up-left, dash low), drawn with
-  // an OPEN CHEVRON head like the proof's marker arrows.
-  const ARROWS: Record<ArrowKey, { x1: number; y1: number; x2: number; y2: number }> = {
-    n: { x1: 215, y1: 400, x2: 392, y2: 208 }, // W→N
-    s: { x1: 215, y1: 550, x2: 392, y2: 742 }, // W→S
-    e: { x1: 352, y1: 618, x2: 582, y2: 618 }, // W→E
-  };
-  const ARROW_W = 22; // shaft + chevron stroke width (950 space)
-  const HEAD_LEN = 92;
-  const HEAD_ANG = 0.52; // ~30° half-angle of the open chevron
+  // ── Flowchart (pt) — the proof's thick line + solid arrowheads ─────────────
+  // One line leaves the Start box's right edge at its centre and runs straight
+  // through to the dash pictograph (same height). A spine splits up to the
+  // shift row and down to the static row. Each branch underlines its word and
+  // ends in a solid arrowhead pointing at the pictograph box.
+  const START_RX = 60.6 + SIZE; // Start box right edge (170.6)
+  const START_CY = 233.1 + SIZE / 2; // 288.1 — also the dash branch line
+  const SPINE_X = 178;
+  const TIP_X = 295.5; // arrowhead tip, just left of the boxes at x 298.5
+  const ROWS_Y = [172, START_CY, 401.5]; // shift / dash / static branch lines
+  const LINE_W = 2.6;
+  const HEAD_L = 9; // solid arrowhead length
+  const HEAD_H = 7.4;
 
-  // Open-chevron head path ("M barb1 L tip L barb2") for an arrow x1,y1→x2,y2.
-  function chevron(a: { x1: number; y1: number; x2: number; y2: number }): string {
-    const dx = a.x2 - a.x1;
-    const dy = a.y2 - a.y1;
-    const L = Math.hypot(dx, dy) || 1;
-    const bx = -dx / L; // back direction (tip → tail)
-    const by = -dy / L;
-    const ca = Math.cos(HEAD_ANG);
-    const sa = Math.sin(HEAD_ANG);
-    const p1x = a.x2 + (bx * ca - by * sa) * HEAD_LEN;
-    const p1y = a.y2 + (bx * sa + by * ca) * HEAD_LEN;
-    const p2x = a.x2 + (bx * ca + by * sa) * HEAD_LEN;
-    const p2y = a.y2 + (-bx * sa + by * ca) * HEAD_LEN;
-    return `M ${p1x.toFixed(1)} ${p1y.toFixed(1)} L ${a.x2} ${a.y2} L ${p2x.toFixed(1)} ${p2y.toFixed(1)}`;
-  }
+  // ── Six combination names — the system's letter-type color code ────────────
+  const T1 = LETTER_TYPE_COLORS[LetterType.TYPE1]; // Dual-Shift: cyan, purple
+  const T2 = LETTER_TYPE_COLORS[LetterType.TYPE2]; // Shift: purple
+  const T3 = LETTER_TYPE_COLORS[LetterType.TYPE3]; // Cross-Shift: green, purple
+  const T4 = LETTER_TYPE_COLORS[LetterType.TYPE4]; // Dash: green
+  const T5 = LETTER_TYPE_COLORS[LetterType.TYPE5]; // Dual-Dash: blue, green
+  const T6 = LETTER_TYPE_COLORS[LetterType.TYPE6]; // Static: orange
 
-  // ── Flowchart connectors (pt) — Start box branches into the three rows, each
-  // branch ending in a right-pointing arrowhead at the label (matching proof). ─
-  const START_RX = 60.6 + SIZE; // Start box right edge
-  const START_CY = 233.1 + SIZE / 2; // Start box vertical centre
-  const SPINE_X = 188;
-  const ROWS_Y = [159, 272, 389]; // shift / dash / static label centres
-  const STUB_X = 200;
-
-  // ── Six combination names — two-tone, using the print guide's type colors
-  // (_styles/guide.css). Prefix = compound-type color, base word = base color. ─
-  const C = {
-    dualShift: "oklch(0.72 0.15 220)",
-    shift: "oklch(0.65 0.15 280)",
-    crossShift: "oklch(0.70 0.15 160)",
-    dash: "oklch(0.72 0.15 60)",
-    dualDash: "oklch(0.70 0.15 190)",
-    static: "oklch(0.60 0.02 270)",
-  };
   type Combo = { x: number; y: number; w: number; fs: number; segs: { t: string; c: string }[] };
   let COMBOS: Combo[] = $state([
-    { x: 99, y: 527.4, w: 114.2, fs: 25, segs: [{ t: "Dual-", c: C.dualShift }, { t: "Shift", c: C.shift }] },
-    { x: 417.8, y: 522.1, w: 52.9, fs: 25, segs: [{ t: "Shift", c: C.shift }] },
-    { x: 90.4, y: 611, w: 123.3, fs: 25, segs: [{ t: "Cross-", c: C.crossShift }, { t: "Shift", c: C.shift }] },
-    { x: 417, y: 608.5, w: 57.4, fs: 25, segs: [{ t: "Dash", c: C.dash }] },
-    { x: 92.8, y: 708.4, w: 119.5, fs: 25, segs: [{ t: "Dual-", c: C.dualDash }, { t: "Dash", c: C.dash }] },
-    { x: 415.8, y: 707.3, w: 64, fs: 25, segs: [{ t: "Static", c: C.static }] },
+    { x: 99, y: 527.4, w: 114.2, fs: 25, segs: [{ t: "Dual-", c: T1[0] }, { t: "Shift", c: T1[1] }] },
+    { x: 417.8, y: 522.1, w: 52.9, fs: 25, segs: [{ t: "Shift", c: T2[0] }] },
+    { x: 90.4, y: 611, w: 123.3, fs: 25, segs: [{ t: "Cross-", c: T3[0] }, { t: "Shift", c: T3[1] }] },
+    { x: 417, y: 608.5, w: 57.4, fs: 25, segs: [{ t: "Dash", c: T4[0] }] },
+    { x: 92.8, y: 708.4, w: 119.5, fs: 25, segs: [{ t: "Dual-", c: T5[0] }, { t: "Dash", c: T5[1] }] },
+    { x: 415.8, y: 707.3, w: 64, fs: 25, segs: [{ t: "Static", c: T6[0] }] },
   ]);
 
-  type Run = {
-    x: number;
+  // Table dividers between the six cells (pt), matching the proof's hairlines:
+  // a centre vertical through both columns, horizontals between the rows.
+  const DIV_X = 306;
+  const DIV_TOP = 518;
+  const DIV_BOTTOM = 762;
+  const DIV_ROWS_Y = [598.5, 695.5];
+  const DIV_MARGIN_X = 10;
+
+  // ── Text (pt) ───────────────────────────────────────────────────────────────
+  // Grouped centred/left blocks (one draggable box per passage); positioned
+  // single-word runs for the flowchart labels. Coordinates from the proof
+  // (baseline − fs = top).
+  type Para = {
+    x: number; // centred blocks: horizontal offset from centred (0 = centred)
     y: number;
-    w: number;
     fs: number;
-    txt: string;
-    t?: boolean; // page title (display serif italic)
-    b?: boolean; // bold body term (shift / dash / static)
-    i?: boolean; // italic body term (captions, "or")
+    lh: number;
+    html: string;
+    left?: boolean; // left-aligned block positioned at x (flowchart captions)
+    i?: boolean; // italic
   };
+  let PARAS: Para[] = $state([
+    {
+      x: 0,
+      y: 59.7,
+      fs: 16,
+      lh: 19.2,
+      html:
+        "There are three fundamental hand motions in the Alphabet.<br>" +
+        "The arrow shows the direction of motion.<br>" +
+        "The hand shows the end position.",
+    },
+    { x: 205.3, y: 176.6, fs: 14, lh: 16.8, left: true, i: true, html: "Move to an<br>adjacent point" },
+    { x: 206.9, y: 293.7, fs: 14, lh: 16.8, left: true, i: true, html: "Move to the<br>opposite point" },
+    { x: 204.7, y: 405.4, fs: 14, lh: 16.8, left: true, i: true, html: "Stay at the<br>current point" },
+    {
+      x: 0,
+      y: 473.7,
+      fs: 16,
+      lh: 19.2,
+      html:
+        "Using these, we can derive six combinations, named below.<br>" +
+        "We’ll explore each one individually:",
+    },
+    // Combination descriptions (centred within their cells via x offset).
+    { x: -151.7, y: 564, fs: 16, lh: 19.2, html: "Both hands travel to an adjacent point." },
+    { x: 136.5, y: 552.2, fs: 16, lh: 19.2, html: "One hand travels to an adjacent point<br>and the other hand remains static." },
+    // These two are left-aligned in the proof (both lines share the same x).
+    { x: 11.3, y: 642.6, fs: 16, lh: 19.2, left: true, html: "One hand travels to an adjacent point and<br>the other travels to the opposite point." },
+    { x: 328.9, y: 645.3, fs: 16, lh: 19.2, left: true, html: "One hand travels to the opposite point<br>and the other hand remains static" },
+    { x: -151.7, y: 738.2, fs: 16, lh: 19.2, html: "Both hands travel to the opposite point" },
+    { x: 140.7, y: 737.9, fs: 16, lh: 19.2, html: "Both hands remain static." },
+  ]);
 
+  type Run = { x: number; y: number; w: number; fs: number; txt: string; b?: boolean; i?: boolean };
   let RUNS: Run[] = $state([
-    // Intro (centred)
-    { x: 105.7, y: 59.7, w: 404.8, fs: 16, txt: "There are three fundamental hand motions in the Alphabet." },
-    { x: 167.2, y: 78.9, w: 281.7, fs: 16, txt: "The arrow shows the direction of motion." },
-    { x: 193.9, y: 98.1, w: 228.4, fs: 16, txt: "The hand shows the end position." },
-
-    // Flowchart: bold labels, italic captions
     { x: 100, y: 213.2, w: 31.1, fs: 15, txt: "Start" },
     { x: 216.9, y: 149, w: 39.2, fs: 19, b: true, txt: "shift" },
-    { x: 205.3, y: 176.6, w: 63.6, fs: 14, i: true, txt: "Move to an" },
-    { x: 205.3, y: 193.4, w: 84.1, fs: 14, i: true, txt: "adjacent point" },
     { x: 411.6, y: 178.2, w: 12.8, fs: 14, i: true, txt: "or" },
     { x: 212.6, y: 262.5, w: 41.6, fs: 19, b: true, txt: "dash" },
-    { x: 206.9, y: 293.7, w: 67.4, fs: 14, i: true, txt: "Move to the" },
-    { x: 206.9, y: 310.5, w: 82.9, fs: 14, i: true, txt: "opposite point" },
     { x: 209.2, y: 379.1, w: 47.6, fs: 19, b: true, txt: "static" },
-    { x: 204.7, y: 405.4, w: 62.1, fs: 14, i: true, txt: "Stay at the" },
-    { x: 204.7, y: 422.2, w: 77.2, fs: 14, i: true, txt: "current point" },
-
-    // Six combination descriptions (names rendered separately, two-tone)
-    { x: 23.2, y: 564, w: 262.3, fs: 16, txt: "Both hands travel to an adjacent point." },
-    { x: 314.8, y: 552.2, w: 253.4, fs: 16, txt: "One hand travels to an adjacent point" },
-    { x: 326.9, y: 571.4, w: 232.7, fs: 16, txt: "and the other hand remains static." },
-    { x: 11.3, y: 642.6, w: 282.6, fs: 16, txt: "One hand travels to an adjacent point and" },
-    { x: 11.3, y: 661.8, w: 261.1, fs: 16, txt: "the other travels to the opposite point." },
-    { x: 328.9, y: 645.3, w: 260, fs: 16, txt: "One hand travels to the opposite point" },
-    { x: 328.9, y: 664.5, w: 229.5, fs: 16, txt: "and the other hand remains static" },
-    { x: 21.7, y: 738.2, w: 265.3, fs: 16, txt: "Both hands travel to the opposite point" },
-    { x: 360, y: 737.9, w: 173.4, fs: 16, txt: "Both hands remain static." },
   ]);
 
-  // Edit mode: drag text runs + combo names; dump coords for CoordsPanel's Copy.
+  // Edit mode: dump coords for CoordsPanel's Copy button.
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
     registerEditSource("Hand Motions (p3)", () => {
-      const R = RUNS.map((r) => `  ${JSON.stringify(r.txt).slice(0, 28)}: x: ${r1(r.x)}, y: ${r1(r.y)}`).join("\n");
-      const C2 = COMBOS.map((c) => `  ${JSON.stringify(c.segs.map((s) => s.t).join("")).slice(0, 20)}: x: ${r1(c.x)}, y: ${r1(c.y)}`).join("\n");
-      return `RUNS\n${R}\n\nCOMBOS\n${C2}`;
+      const P = PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n");
+      const R = RUNS.map((r) => `  ${JSON.stringify(r.txt)}: x: ${r1(r.x)}, y: ${r1(r.y)}`).join("\n");
+      const C = COMBOS.map((c) => `  ${JSON.stringify(c.segs.map((s) => s.t).join(""))}: x: ${r1(c.x)}, y: ${r1(c.y)}`).join("\n");
+      return `PARAS\n${P}\n\nRUNS\n${R}\n\nCOMBOS\n${C}`;
     })
   );
 </script>
 
 <div class="hand-motions">
-  <!-- Flowchart connectors (drawn first, beneath the boxes + text). Each branch
-       ends in a right-pointing arrowhead at its label. -->
+  <!-- Flowchart: thick trunk + spine + three branches, each underlining its
+       word and ending in a solid arrowhead at the pictograph box. -->
   <svg class="connectors" viewBox="0 0 612 792" preserveAspectRatio="none" aria-hidden="true">
-    <defs>
-      <marker id="hmBranch" markerWidth="6" markerHeight="6" refX="4.6" refY="3" orient="auto">
-        <path d="M0,0 L5.5,3 L0,6 Z" fill="#2c2e35" />
-      </marker>
-    </defs>
-    <path class="trunk" d="M{START_RX},{START_CY} L{SPINE_X},{START_CY}" />
-    <path class="trunk" d="M{SPINE_X},{ROWS_Y[0]} L{SPINE_X},{ROWS_Y[2]}" />
+    <!-- Start box → spine (the dash branch continues straight through). -->
+    <line x1={START_RX} y1={START_CY} x2={SPINE_X} y2={START_CY} />
+    <!-- Spine: shift row down to static row. -->
+    <line x1={SPINE_X} y1={ROWS_Y[0]} x2={SPINE_X} y2={ROWS_Y[2]} />
     {#each ROWS_Y as ry}
-      <path class="branch" d="M{SPINE_X},{ry} L{STUB_X},{ry}" marker-end="url(#hmBranch)" />
+      <line x1={SPINE_X} y1={ry} x2={TIP_X - HEAD_L + 1} y2={ry} />
+      <path
+        class="head"
+        d="M {TIP_X - HEAD_L} {ry - HEAD_H / 2} L {TIP_X} {ry} L {TIP_X - HEAD_L} {ry + HEAD_H / 2} Z"
+      />
     {/each}
   </svg>
 
-  <!-- 5 single-hand motion pictographs (grid + blue hand at end) + chevron arrows. -->
-  {#each boxes as box (box.x + "-" + box.y)}
+  <!-- 5 real single-hand pictographs (canonical float / dash arrows). -->
+  {#each boxes as box (box.data.id)}
     <div
       class="mini"
       style="left:{box.x * S}px; top:{box.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px"
     >
       <PictographContainer
-        pictographData={blueHandAt(box.loc)}
+        pictographData={box.data}
         gridMode={GridMode.DIAMOND}
         bluePropTypeOverride={PropType.HAND}
         redPropTypeOverride={PropType.HAND}
@@ -214,25 +217,18 @@
         printMode={true}
         disableTransitions={true}
       />
-      {#if box.arrow}
-        {@const a = ARROWS[box.arrow]}
-        <svg class="arrow" viewBox="0 0 950 950" aria-hidden="true">
-          <line
-            x1={a.x1}
-            y1={a.y1}
-            x2={a.x2}
-            y2={a.y2}
-            stroke={B}
-            stroke-width={ARROW_W}
-            stroke-linecap="round"
-          />
-          <path d={chevron(a)} fill="none" stroke={B} stroke-width={ARROW_W} stroke-linecap="round" stroke-linejoin="round" />
-        </svg>
-      {/if}
     </div>
   {/each}
 
-  <!-- Six combination names: two-tone colored, bold. -->
+  <!-- Table dividers between the six combination cells. -->
+  <svg class="dividers" viewBox="0 0 612 792" preserveAspectRatio="none" aria-hidden="true">
+    <line x1={DIV_X} y1={DIV_TOP} x2={DIV_X} y2={DIV_BOTTOM} />
+    {#each DIV_ROWS_Y as dy}
+      <line x1={DIV_MARGIN_X} y1={dy} x2={612 - DIV_MARGIN_X} y2={dy} />
+    {/each}
+  </svg>
+
+  <!-- Six combination names: two-tone via the canonical letter-type colors. -->
   {#each COMBOS as combo, i (i)}
     <span
       class="combo"
@@ -245,10 +241,27 @@
     </span>
   {/each}
 
+  <!-- Grouped text blocks. -->
+  {#each PARAS as p, i (i)}
+    <p
+      class="para"
+      class:left={p.left}
+      class:i={p.i}
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === `hm-para-${i}`}
+      style={p.left
+        ? `left:${p.x * S}px; top:${p.y * S}px; font-size:${p.fs * S}px; line-height:${p.lh * S}px`
+        : `transform: translateX(${p.x * S}px); top:${p.y * S}px; font-size:${p.fs * S}px; line-height:${p.lh * S}px`}
+      use:ptDrag={pt(`hm-para-${i}`, "paragraph", p)}
+    >
+      {@html p.html}
+    </p>
+  {/each}
+
+  <!-- Positioned single-word runs (flowchart labels). -->
   {#each RUNS as r, i (i)}
     <span
       class="run"
-      class:t={r.t}
       class:b={r.b}
       class:i={r.i}
       class:edit={guideEdit.on}
@@ -270,7 +283,7 @@
 
   .run {
     position: absolute;
-    font-family: "Times New Roman", Times, Georgia, serif;
+    font-family: "Cambria", Georgia, "Times New Roman", serif;
     line-height: 1;
     white-space: nowrap;
     text-align: center;
@@ -281,19 +294,26 @@
   .run.i {
     font-style: italic;
   }
-  .run.edit,
-  .combo.edit {
-    outline: 1px dashed rgba(55, 48, 163, 0.4);
-    cursor: move;
-  }
-  .run.selected,
-  .combo.selected {
-    outline: 1.5px solid #3730a3;
-    outline-offset: 1px;
-  }
-  /* Page title is the shared .guide-title (guide.css) — no per-page title rule. */
 
-  /* Two-tone combination names — bold sans, color per segment (set inline). */
+  /* Grouped passages: centred blocks span the sheet; .left blocks anchor at x
+     (the flowchart captions, left-aligned like the proof). */
+  .para {
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin: 0;
+    text-align: center;
+    font-family: "Cambria", Georgia, "Times New Roman", serif;
+  }
+  .para.left {
+    right: auto;
+    text-align: left;
+  }
+  .para.i {
+    font-style: italic;
+  }
+
+  /* Two-tone combination names — bold, canonical letter-type colors inline. */
   .combo {
     position: absolute;
     font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
@@ -309,17 +329,7 @@
     box-sizing: border-box;
   }
 
-  /* Straight teaching arrow overlay, drawn in the grid's 950 viewBox space. */
-  .arrow {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    overflow: visible;
-  }
-
-  /* Flowchart connectors — full sheet, drawn in PDF (612×792) space. */
+  /* Flowchart — thick ink lines + solid arrowheads, proof style. */
   .connectors {
     position: absolute;
     inset: 0;
@@ -328,9 +338,38 @@
     pointer-events: none;
     overflow: visible;
   }
-  .connectors path {
-    fill: none;
-    stroke: #2c2e35;
-    stroke-width: 1.6;
+  .connectors line {
+    stroke: #1c1c1f;
+    stroke-width: 2.6;
+  }
+  .connectors .head {
+    fill: #1c1c1f;
+  }
+
+  /* Combination-table hairlines. */
+  .dividers {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .dividers line {
+    stroke: #9a9aa4;
+    stroke-width: 0.8;
+  }
+
+  /* ── Edit mode affordances ─────────────────────────────────────────────── */
+  .run.edit,
+  .para.edit,
+  .combo.edit {
+    outline: 1px dashed rgba(55, 48, 163, 0.4);
+    cursor: move;
+  }
+  .run.selected,
+  .para.selected,
+  .combo.selected {
+    outline: 1.5px solid #3730a3;
+    outline-offset: 1px;
   }
 </style>
