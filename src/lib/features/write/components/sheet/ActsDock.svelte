@@ -19,6 +19,7 @@
 <script lang="ts">
   import { flip } from "svelte/animate";
   import { scale } from "svelte/transition";
+  import { dockSlide } from "$lib/shared/transitions/dock-slide";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { formatTimeAgo } from "$lib/shared/i18n/i18n-formatters";
   import { getChoreoSheetRepository } from "../../services/choreo-sheet-repository";
@@ -233,7 +234,7 @@
   }}
 />
 
-<aside class="acts-dock" aria-label="Saved acts">
+<aside class="acts-dock" aria-label="Saved acts" transition:dockSlide>
   <div class="dock-head">
     <span class="dock-title">
       <i class="fa-solid fa-clapperboard" aria-hidden="true"></i>

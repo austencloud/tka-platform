@@ -35,6 +35,7 @@
   import ActPlayer from "./ActPlayer.svelte";
   import ActsDock from "./ActsDock.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { dockSlide } from "$lib/shared/transitions/dock-slide";
   import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
@@ -651,7 +652,7 @@
     {#if browseOpen}
       <!-- Inline docked picker. The page stays fully visible (preview just
            narrows) instead of being covered by an overlay. -->
-      <aside class="browse-dock" aria-label="Add sequences">
+      <aside class="browse-dock" aria-label="Add sequences" transition:dockSlide>
         <div class="browse-drawer-head">
           <span class="browse-drawer-title">Add sequences — tap a card to add a row</span>
           <button
