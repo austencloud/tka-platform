@@ -17,7 +17,7 @@
   import { page } from "$app/state";
   import GuidePage from "../_components/GuidePage.svelte";
   import GuideDocument from "../_components/GuideDocument.svelte";
-  import PageNumberToggle from "../_components/PageNumberToggle.svelte";
+  import GuideDevBar from "../_components/GuideDevBar.svelte";
   import CoordsPanel from "../_components/CoordsPanel.svelte";
   import type { GuidePageMeta } from "../_data/guide-manifest";
   import { BUILT } from "../_data/built-pages";
@@ -25,12 +25,15 @@
 
   setGuidePrintMode();
 
-  // ?theme=home → ink-cheap light cover for home printers; default = navy (foil).
-  const coverTheme = $derived(page.url.searchParams.get("theme") === "home" ? "light" : "navy");
+  // Cover edition — toggled in the GuideDevBar; ?theme=home still seeds the
+  // ink-cheap light cover for home printers (default = navy foil).
+  let coverTheme = $state<"navy" | "light">(
+    page.url.searchParams.get("theme") === "home" ? "light" : "navy"
+  );
 
-  // Edit mode (drag arrows + text) is toggled via CoordsPanel — button or the E
+  // Edit mode (drag arrows + text) is toggled in the GuideDevBar or with the E
   // key; it seeds from ?edit / localStorage. guideEdit.on drives the .editing
-  // class below.
+  // class below; the contextual coords palette appears while editing.
 </script>
 
 <svelte:head>
@@ -48,5 +51,5 @@
   <GuideDocument {coverTheme} built={BUILT} page={printPage} />
 </div>
 
-<PageNumberToggle />
+<GuideDevBar bind:coverTheme />
 <CoordsPanel />

@@ -1,8 +1,10 @@
 <script lang="ts">
   /**
-   * Edit-mode HUD. Always shows a small toggle; in edit mode expands to
-   * undo/redo, the selected item, and Copy coords. Owns init (from ?edit or the
-   * last localStorage choice) and the global hotkeys (E, Ctrl+Z/Y, arrows, Esc).
+   * Contextual edit palette — appears bottom-center ONLY while edit mode is on
+   * (undo/redo, the selected item, Copy coords). Entry into edit mode lives in
+   * the GuideDevBar toolbar (or the E hotkey); this component still owns init
+   * (from ?edit or the last localStorage choice) and the global hotkeys
+   * (E, Ctrl+Z/Y, arrows, Esc).
    */
   import { onMount } from "svelte";
   import { page } from "$app/state";
@@ -10,7 +12,6 @@
     guideEdit,
     hist,
     collectEditCoords,
-    toggleEdit,
     setEdit,
     undo,
     redo,
@@ -36,9 +37,7 @@
   }
 </script>
 
-{#if !guideEdit.on}
-  <button class="edit-fab" onclick={toggleEdit} title="Edit mode (E)">✎ Edit</button>
-{:else}
+{#if guideEdit.on}
   <div class="coords-panel">
     <span class="ttl">Edit</span>
     <button class="ico" onclick={undo} disabled={hist.undo === 0} title="Undo (Ctrl+Z)">↶</button>
@@ -52,7 +51,6 @@
 {/if}
 
 <style>
-  .edit-fab,
   .coords-panel {
     position: fixed;
     bottom: 16px;
@@ -61,17 +59,6 @@
     z-index: 9999;
     font-family: system-ui, sans-serif;
     box-shadow: 0 6px 28px rgba(0, 0, 0, 0.5);
-  }
-  .edit-fab {
-    padding: 9px 16px;
-    border-radius: 999px;
-    border: 1px solid #3a3a48;
-    background: #15151c;
-    color: #c8c8db;
-    font: 600 13px system-ui;
-    cursor: pointer;
-  }
-  .coords-panel {
     display: flex;
     align-items: center;
     gap: 8px;
