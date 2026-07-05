@@ -654,7 +654,7 @@ import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
   }
 
   .error-dismiss:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     color: var(--theme-text, #ffffff);
   }
 
@@ -680,7 +680,7 @@ import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
 
     .generate-sweep {
       animation: none;
-      background: rgba(255, 255, 255, 0.15);
+      background: var(--theme-card-bg, rgba(255, 255, 255, 0.15));
       background-size: 100% 100%;
     }
   }

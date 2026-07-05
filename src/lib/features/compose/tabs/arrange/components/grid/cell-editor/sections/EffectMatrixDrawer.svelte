@@ -325,7 +325,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .panel-title {
@@ -361,13 +361,13 @@
 
   .done-btn:hover {
     color: rgba(255, 255, 255, 0.7);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
   }
 
   /* Scope selector */
   .scope-section {
     padding: 14px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .scope-label {
@@ -382,8 +382,8 @@
 
   .scope-strip {
     display: flex;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 10px;
     overflow: hidden;
   }
@@ -402,7 +402,7 @@
     color: rgba(255, 255, 255, 0.45);
     background: transparent;
     border: none;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     transition: all 150ms ease;
   }
 
@@ -411,7 +411,7 @@
   }
 
   .scope-seg:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
     color: rgba(255, 255, 255, 0.7);
   }
 
@@ -438,8 +438,8 @@
     align-items: center;
     gap: 12px;
     padding: 12px 14px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 10px;
     margin-bottom: 8px;
     min-height: 56px;
@@ -447,7 +447,7 @@
   }
 
   .channel:hover {
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.12));
   }
 
   .channel-id {
@@ -462,7 +462,7 @@
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
   }
 
   .channel-label {
@@ -489,15 +489,15 @@
     width: 36px;
     height: 36px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     cursor: pointer;
     transition: all 120ms ease;
   }
 
   .effect-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
   }
 
   .effect-btn i {
@@ -511,8 +511,8 @@
   }
 
   .effect-btn.active.eff-none {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
   .effect-btn.active.eff-none i {
     color: rgba(255, 255, 255, 0.7);
@@ -557,8 +557,8 @@
     gap: 8px;
     margin-top: 12px;
     padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px dashed rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
+    border: 1px dashed var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 8px;
   }
 
@@ -584,15 +584,15 @@
     border-radius: 6px;
     font-size: var(--font-size-compact, 12px);
     font-weight: 500;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.5);
     cursor: pointer;
     transition: all 120ms ease;
   }
 
   .quick-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.8);
   }
 

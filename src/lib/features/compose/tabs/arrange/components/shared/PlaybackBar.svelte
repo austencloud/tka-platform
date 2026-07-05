@@ -173,7 +173,7 @@
   }
 
   .loop-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text, white);
   }
@@ -201,8 +201,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 1.5px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 50%;
     color: white;
     font-size: 0.85rem;
@@ -211,8 +211,8 @@
   }
 
   .stop-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.2));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   }
 
   .stop-btn:disabled {

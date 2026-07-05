@@ -126,15 +126,15 @@
   .chip {
     flex: 1 1 auto; min-width: 56px;
     padding: 8px 10px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.10);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 10px;
     color: rgba(255,255,255,0.72);
     font-size: 12px; font-weight: 600;
     cursor: pointer;
     transition: all 140ms cubic-bezier(0.2, 0, 0.13, 1.5);
   }
-  .chip:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.95); }
+  .chip:hover { background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08)); color: rgba(255,255,255,0.95); }
   .chip.active {
     background: color-mix(in srgb, #4a9eff 22%, transparent);
     border-color: color-mix(in srgb, #4a9eff 55%, transparent);

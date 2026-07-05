@@ -202,18 +202,18 @@ center label opens an anchored popover with all four orientations.
 
   @media (hover: hover) {
     .cycle-arrow:hover {
-      background: rgba(255, 255, 255, 0.08);
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
       opacity: 1;
     }
 
     .cycle-center:hover {
-      background: rgba(255, 255, 255, 0.06);
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
     }
   }
 
   .cycle-arrow:active,
   .cycle-center:active {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
     transition: background var(--duration-instant) ease;
   }
 

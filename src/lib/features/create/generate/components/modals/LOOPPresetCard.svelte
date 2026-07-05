@@ -69,8 +69,8 @@ LOOPPresetCard.svelte - Compact preset card for quick LOOP selection
     align-items: center;
     gap: 10px;
     padding: 8px 10px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 8px;
     cursor: pointer;
     transition: all var(--duration-fast) ease;
@@ -81,8 +81,8 @@ LOOPPresetCard.svelte - Compact preset card for quick LOOP selection
   }
 
   .preset-card:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
   }
 
   .preset-card:active {

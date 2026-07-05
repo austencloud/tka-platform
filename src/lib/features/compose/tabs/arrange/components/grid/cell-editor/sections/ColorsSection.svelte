@@ -88,8 +88,8 @@
     padding: 8px;
     min-height: 44px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.6);
     font-size: 12px;
     font-weight: 500;
@@ -101,8 +101,8 @@
   }
 
   .combo-chip:hover:not(.active) {
-    background: rgba(255, 255, 255, 0.07);
-    border-color: rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
     color: rgba(255, 255, 255, 0.9);
   }
 
@@ -123,7 +123,7 @@
     width: 12px;
     height: 12px;
     border-radius: 50%;
-    border: 1.5px solid rgba(255, 255, 255, 0.15);
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
   }
 
   .combo-label {

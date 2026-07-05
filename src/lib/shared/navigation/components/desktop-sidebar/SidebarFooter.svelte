@@ -439,7 +439,7 @@
     justify-content: center;
     border: none;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: rgba(255, 255, 255, 0.25);
     font-size: 13px;
     cursor: pointer;
@@ -447,7 +447,7 @@
   }
 
   .mic-button:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.5);
   }
 
@@ -458,12 +458,12 @@
 
   /* Inactive: dimmer, indicates voice is available but not yet activated */
   .mic-button.inactive {
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
     color: rgba(255, 255, 255, 0.15);
   }
 
   .mic-button.inactive:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
     color: rgba(255, 255, 255, 0.4);
   }
 

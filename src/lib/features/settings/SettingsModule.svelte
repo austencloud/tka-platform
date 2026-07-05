@@ -327,7 +327,7 @@
     min-height: var(--min-touch-target);
     padding: 0;
     /* Subtle glass button */
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
     color: var(--theme-text-dim, var(--theme-text-dim));

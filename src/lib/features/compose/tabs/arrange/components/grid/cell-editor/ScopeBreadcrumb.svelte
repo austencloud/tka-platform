@@ -46,7 +46,7 @@
 <style>
   .scope-breadcrumb {
     padding: 8px 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     display: flex;
     align-items: center;
     gap: 4px;
@@ -74,7 +74,7 @@
 
   .bc-link:hover {
     color: rgba(255, 255, 255, 0.9);
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.04));
   }
 
   .bc-link:focus-visible {

@@ -305,7 +305,7 @@
   .snap-chip:hover:not(:disabled) {
     background: var(--theme-card-hover-bg);
     color: var(--theme-text, var(--theme-text));
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .snap-chip.active {
@@ -410,8 +410,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 16px 20px;
-    background: rgba(255, 255, 255, 0.03);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .sheet-header h2 {
@@ -435,13 +435,13 @@
   }
 
   .close-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
     transform: scale(1.05);
   }
 
   .setting-section {
     padding: 16px 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
   }
 
   .setting-section.disabled {
@@ -465,8 +465,8 @@
     align-items: center;
     gap: 14px;
     padding: 14px 16px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
@@ -474,7 +474,7 @@
   }
 
   .master-row:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong);
   }
 
@@ -521,7 +521,7 @@
   .toggle-indicator {
     padding: 4px 10px;
     border-radius: 12px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
     font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.05em;
@@ -547,15 +547,15 @@
     align-items: center;
     gap: 8px;
     padding: 16px 12px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 12px;
     cursor: pointer;
     transition: all var(--duration-normal) ease;
   }
 
   .snap-option-card:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     border-color: var(--theme-stroke-strong);
     transform: translateY(-2px);
   }
@@ -605,7 +605,7 @@
   }
 
   .interval-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     color: var(--theme-text, var(--theme-text));
   }
 
@@ -625,7 +625,7 @@
     margin-top: auto;
     padding: 14px 20px;
     background: rgba(0, 0, 0, 0.2);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.05));
     font-size: 0.75rem;
     color: var(--theme-text-muted, var(--theme-text-dim));
     text-align: center;
@@ -635,7 +635,7 @@
     display: inline-block;
     padding: 3px 7px;
     margin-right: 6px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
     border-radius: 4px;
     font-family: monospace;
     font-size: 0.75rem;

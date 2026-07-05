@@ -258,7 +258,7 @@
 	}
 
 	.rail-mode-btn:hover:not(.active) {
-		background: rgba(255, 255, 255, 0.04);
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.04));
 		color: var(--theme-text, rgba(255, 255, 255, 0.8));
 	}
 

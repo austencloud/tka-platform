@@ -95,7 +95,7 @@
   }
 
   .pattern-item:hover:not(.disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     border-color: rgba(249, 115, 22, 0.4);
   }
 

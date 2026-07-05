@@ -208,7 +208,7 @@
   }
 
   .duration-value:hover {
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .duration-value.compact {
@@ -223,7 +223,7 @@
     width: 72px;
     text-align: center;
     font-feature-settings: "tnum";
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     border: 1px solid var(--theme-accent, rgba(255, 255, 255, 0.3));
     border-radius: 6px;
     padding: 2px 4px;
@@ -258,14 +258,14 @@
     cursor: pointer;
     font-size: 1rem;
     transition: all var(--duration-fast) ease;
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
     color: rgba(255, 255, 255, 0.7);
   }
 
   .ctrl-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
     color: rgba(255, 255, 255, 0.9);
   }
 
@@ -280,14 +280,14 @@
 
   /* Coarse buttons (±0.5) - neutral styling, no orange accent */
   .ctrl-btn.coarse {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: rgba(255, 255, 255, 0.8);
   }
 
   .ctrl-btn.coarse:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
   }
 

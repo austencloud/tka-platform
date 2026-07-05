@@ -68,7 +68,7 @@ Makes the two modes immediately browseable and self-explanatory
   }
 
   .mode-option:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
     color: var(--theme-text, white);
   }
 

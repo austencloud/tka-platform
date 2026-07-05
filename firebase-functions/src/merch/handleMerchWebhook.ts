@@ -61,7 +61,11 @@ export const handleMerchWebhook = functions.https.onRequest(
           productId: session.metadata.productId,
           productName: session.metadata.productName || "",
           quantity: 1,
-          unitPrice: session.amount_total || 0,
+          // Per-unit product price = the line-item subtotal (single quantity),
+          // BEFORE shipping + tax. amount_total includes the flat shipping rate
+          // and automatic_tax, so using it here inflated every order's recorded
+          // unitPrice. totalAmount below is correctly the grand total.
+          unitPrice: session.amount_subtotal || 0,
         }],
         totalAmount: session.amount_total || 0,
         status: "paid",

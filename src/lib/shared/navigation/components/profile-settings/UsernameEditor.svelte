@@ -470,8 +470,8 @@
   .suggestion-btn {
     padding: 4px 10px;
     font-size: var(--font-size-compact);
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 6px;
     color: var(--theme-text-dim);
     cursor: pointer;
@@ -479,8 +479,8 @@
   }
 
   .suggestion-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
     color: var(--theme-text);
   }
 

@@ -365,8 +365,8 @@
   .scope-strip {
     display: flex;
     flex: 1;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 8px;
     overflow: hidden;
   }
@@ -384,14 +384,14 @@
     color: rgba(255, 255, 255, 0.7);
     background: transparent;
     border: none;
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     transition: background 150ms ease, color 150ms ease;
   }
 
   .scope-seg:last-child { border-right: none; }
 
   .scope-seg:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
   }
 
   .scope-seg.active {
@@ -423,15 +423,15 @@
     gap: 8px;
     padding: 7px 10px;
     min-height: 44px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 8px;
     cursor: pointer;
     transition: border-color 150ms ease, background 150ms ease;
   }
 
   .ch-row:hover {
-    border-color: rgba(255, 255, 255, 0.12);
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.12));
   }
 
   .ch-row.target {
@@ -475,8 +475,8 @@
   .ch-badge i { font-size: 12px; }
 
   .ch-badge.none {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.7);
   }
 
@@ -504,8 +504,8 @@
     justify-content: center;
     min-height: 44px;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.55);
     cursor: pointer;
     transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
@@ -517,7 +517,7 @@
   }
 
   .grid-cell:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.8);
   }
 
@@ -555,8 +555,8 @@
     padding: 8px 14px;
     min-height: 44px;
     border-radius: 22px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.6);
     font-size: 13px;
     font-weight: 500;
@@ -565,7 +565,7 @@
   }
 
   .trail-chip:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     color: rgba(255, 255, 255, 0.9);
   }
 
@@ -582,8 +582,8 @@
     justify-content: space-between;
     padding: 8px 10px;
     min-height: 44px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     border-radius: 8px;
     cursor: pointer;
     width: 100%;
@@ -591,8 +591,8 @@
   }
 
   .accordion-row:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   .accordion-label {

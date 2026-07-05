@@ -751,7 +751,7 @@
     height: min(90cqw, 90cqh);
     aspect-ratio: 1;
     /* Subtle container styling */
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.02));
     border-radius: 12px;
   }
 

@@ -159,8 +159,8 @@ Uses StartPositionManager to load variations and displays actual pictographs
   }
 
   .any-button:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
   }
 
   .any-button:active {
@@ -168,7 +168,7 @@ Uses StartPositionManager to load variations and displays actual pictographs
   }
 
   .any-button.selected {
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.2));
     border-color: var(--theme-text-dim);
     color: white;
   }
@@ -196,7 +196,7 @@ Uses StartPositionManager to load variations and displays actual pictographs
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border: 2px solid transparent;
     border-radius: 8px;
     cursor: pointer;
@@ -206,8 +206,8 @@ Uses StartPositionManager to load variations and displays actual pictographs
   }
 
   .position-cell:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     transform: scale(1.02);
   }
 
@@ -216,7 +216,7 @@ Uses StartPositionManager to load variations and displays actual pictographs
   }
 
   .position-cell.selected {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
     border-color: var(--letter-border-color, rgba(100, 200, 255, 0.8));
     box-shadow: 0 0 12px rgba(100, 200, 255, 0.25);
   }

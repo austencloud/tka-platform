@@ -140,7 +140,7 @@
       rgba(239, 68, 68, 0.95) 0%,
       rgba(220, 38, 38, 0.9) 100%
     );
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     display: flex;
     align-items: center;
     justify-content: center;

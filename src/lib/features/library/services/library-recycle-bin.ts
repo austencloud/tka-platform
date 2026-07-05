@@ -108,16 +108,12 @@ export class LibraryRecycleBin {
   }
 
   async purgeSequence(sequenceId: string): Promise<void> {
-    const existing = await this.getSequence(sequenceId);
-
-    if (existing) {
-      throw new LibraryError(
-        "Cannot purge a sequence that is not in the recycle bin. Soft-delete it first.",
-        "INVALID_DATA",
-        sequenceId
-      );
-    }
-
+    // The authoritative "is this actually in the recycle bin" gate is the raw
+    // getDoc + isDeleted check below. An earlier guard here read getSequence and
+    // threw when it returned non-null — but library-repository.getSequence is a
+    // bare firestoreGet with no isDeleted filter, so it returns soft-deleted docs
+    // too, making the guard reject every recycle-bin item and break single-item
+    // purge.
     const firestore = await this.getFirestore();
     const userId = this.getUserId();
     const docRef = doc(firestore, getUserSequencePath(userId, sequenceId));

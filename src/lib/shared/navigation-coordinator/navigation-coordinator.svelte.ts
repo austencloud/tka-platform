@@ -135,9 +135,16 @@ export function moduleSections() {
 
   // Create module section filtering
   if (module === "create") {
-    // Filter sections based on user's feature access (role-based)
+    // Filter sections based on user's feature access (role-based) AND the
+    // guest-tier gate — mirroring the browse/default branches. Without the
+    // isTabAccessible() check, guests saw the Fuse tab on mobile/collapsed nav
+    // even though GUEST_MODULE_ACCESS.create excludes it and the desktop sidebar
+    // hides it.
     const availableSections = baseSections.filter((section) => {
-      return featureFlagService.canAccessTab("create", section.id);
+      return (
+        featureFlagService.canAccessTab("create", section.id) &&
+        isTabAccessible("create", section.id, accessTier)
+      );
     });
 
     if (!navigationCoordinator.canAccessEditAndExportPanels) {

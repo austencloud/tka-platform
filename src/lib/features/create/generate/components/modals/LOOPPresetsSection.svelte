@@ -108,11 +108,11 @@ Organized by tabs: Featured, All, Favorites
 
   .tab:hover {
     color: var(--theme-text, white);
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
   }
 
   .tab.active {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     color: var(--theme-text, white);
     font-weight: 600;
   }

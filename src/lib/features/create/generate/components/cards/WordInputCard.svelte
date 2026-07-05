@@ -178,7 +178,7 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
     flex: 1;
     min-width: 0;
     background: rgba(0, 0, 0, 0.2);
-    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    border: 1.5px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 10px;
     color: white;
     font-size: var(--card-text-size, clamp(14px, 2vmin, 22px));
@@ -202,12 +202,12 @@ Replaces the old GenerationModeCard (Freeform/Spell toggle).
   }
 
   .word-field:focus {
-    border-color: rgba(255, 255, 255, 0.5);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.5));
     background: rgba(0, 0, 0, 0.3);
   }
 
   .word-field:focus-visible {
-    border-color: rgba(255, 255, 255, 0.5);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.5));
     outline: 2px solid white;
     outline-offset: 1px;
   }

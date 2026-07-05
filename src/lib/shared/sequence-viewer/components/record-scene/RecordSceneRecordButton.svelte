@@ -83,7 +83,7 @@
     opacity: 0.7;
     cursor: not-allowed;
     background: linear-gradient(180deg, rgba(120, 120, 120, 0.9), rgba(90, 90, 90, 0.9));
-    border-color: rgba(255, 255, 255, 0.15);
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.15));
     box-shadow: none;
   }
 

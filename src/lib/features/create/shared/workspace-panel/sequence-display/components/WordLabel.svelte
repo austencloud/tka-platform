@@ -357,7 +357,7 @@
   }
 
   .word-label:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
     backdrop-filter: blur(4px);
     transform: scale(1.05);
   }

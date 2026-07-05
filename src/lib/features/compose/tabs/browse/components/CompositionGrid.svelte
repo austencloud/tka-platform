@@ -152,7 +152,7 @@ import { calculateCardSizes } from "$lib/features/compose/tabs/browse/services/c
 	.skeleton-line {
 		height: 12px;
 		border-radius: 4px;
-		background: rgba(255, 255, 255, 0.06);
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
 	}
 
 	.skeleton-line.wide {

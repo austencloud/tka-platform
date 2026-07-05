@@ -106,7 +106,7 @@ Uses 4x4 pictograph grid with all 16 variations
   }
 
   .position-section.disabled {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
   .section-header {
@@ -125,11 +125,11 @@ Uses 4x4 pictograph grid with all 16 variations
   }
 
   .section-header:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
   }
 
   .section-header:active:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
   }
 
   .section-header:disabled {
@@ -164,7 +164,7 @@ Uses 4x4 pictograph grid with all 16 variations
 
   .value-badge {
     padding: 6px 12px;
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.2));
     border-radius: 16px;
     font-size: var(--font-size-sm);
     font-weight: 600;
@@ -181,7 +181,7 @@ Uses 4x4 pictograph grid with all 16 variations
     justify-content: center;
     width: 32px;
     height: 32px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
     border-radius: 50%;
     color: var(--theme-text-dim);
   }

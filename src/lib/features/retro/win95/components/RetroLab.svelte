@@ -148,7 +148,7 @@
     padding: 4px 12px;
     background: rgba(0, 0, 0, 0.8);
     color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     border-radius: 4px;
     cursor: pointer;
     font-size: 12px;

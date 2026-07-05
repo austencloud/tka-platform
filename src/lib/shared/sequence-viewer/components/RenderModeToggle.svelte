@@ -48,7 +48,7 @@
     height: 56px;
     background: rgba(20, 22, 32, 0.78);
     backdrop-filter: blur(20px) saturate(140%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 14px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     color: rgba(255, 255, 255, 0.85);
@@ -61,7 +61,7 @@
   }
   .rail-chip:hover {
     color: #fff;
-    border-color: rgba(255, 255, 255, 0.22);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.22));
     background: rgba(28, 32, 44, 0.85);
   }
   .rail-chip:focus-visible {

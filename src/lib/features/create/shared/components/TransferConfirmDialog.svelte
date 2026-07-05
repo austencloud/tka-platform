@@ -107,14 +107,14 @@
   }
 
   .cancel-button {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
     color: var(--theme-text);
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .cancel-button:hover {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.15));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     transform: translateY(-1px);
   }
 
@@ -125,7 +125,7 @@
       #d97706 100%
     );
     color: white;
-    border-color: rgba(255, 255, 255, 0.2);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
   }
 
   .confirm-button:hover {
@@ -134,7 +134,7 @@
       var(--semantic-warning) 0%,
       var(--semantic-warning) 100%
     );
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
   }

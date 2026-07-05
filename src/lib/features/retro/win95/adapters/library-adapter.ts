@@ -15,6 +15,7 @@ import { convertFileName } from "../services/file-name-converter";
 
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
+import { toDate } from "$lib/shared/library/services/collection-firestore-mapper";
 
 export interface RetroFile {
 	id: string;
@@ -27,18 +28,6 @@ export interface RetroFile {
 	date: Date;
 	type: "SEQ" | "BAK";
 	sequence: LibrarySequence;
-}
-
-/**
- * Firestore timestamps come back with a .toDate() method, but after
- * hydration they might already be plain Date objects. This handles both.
- */
-function toDate(timestamp: unknown): Date {
-	if (timestamp instanceof Date) return timestamp;
-	if (timestamp && typeof (timestamp as { toDate: () => Date }).toDate === "function") {
-		return (timestamp as { toDate: () => Date }).toDate();
-	}
-	return new Date();
 }
 
 function sequenceToRetroFile(seq: LibrarySequence, dosNames: string[]): RetroFile {

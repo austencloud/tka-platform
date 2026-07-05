@@ -258,7 +258,7 @@
     width: 100%;
     margin-top: 4px;
     padding-top: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
   /* Compact mode: inline with turns row, no divider */

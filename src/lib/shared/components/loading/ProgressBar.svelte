@@ -64,7 +64,7 @@
 
   .track {
     width: 100%;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     border-radius: 9999px;
     overflow: hidden;
   }

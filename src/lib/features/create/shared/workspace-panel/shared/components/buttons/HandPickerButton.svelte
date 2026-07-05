@@ -51,7 +51,7 @@
     justify-content: center;
     width: var(--min-touch-target);
     height: var(--min-touch-target);
-    border: 2px solid rgba(255, 255, 255, 0.2);
+    border: 2px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     background: transparent;
     border-radius: 50%;
     cursor: pointer;
@@ -62,7 +62,7 @@
 
   .hand-picker-button:hover {
     transform: scale(1.05);
-    border-color: rgba(255, 255, 255, 0.35);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.35));
   }
 
   .hand-picker-button:active {

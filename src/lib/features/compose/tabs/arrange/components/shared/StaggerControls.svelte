@@ -181,8 +181,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.1));
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     border-radius: 50%;
     color: white;
     font-size: 1rem;
@@ -191,8 +191,8 @@
   }
 
   .step-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.2));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
   }
 
   .step-btn:disabled {
@@ -234,8 +234,8 @@
   .preset-btn {
     min-height: 36px;
     padding: var(--spacing-xs) var(--spacing-md);
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--border-radius-md);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     font-size: var(--font-size-compact, 12px);
@@ -244,8 +244,8 @@
   }
 
   .preset-btn:hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text, white);
   }
 
@@ -281,13 +281,13 @@
 
   .cancel-btn {
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
 
   .cancel-btn:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.05));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
     color: var(--theme-text, white);
   }
 

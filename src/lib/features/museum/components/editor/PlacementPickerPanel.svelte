@@ -184,7 +184,7 @@
 		width: 30px;
 		height: 30px;
 		border-radius: 6px;
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		background: transparent;
 		color: rgba(255, 255, 255, 0.6);
 		font-size: 13px;
@@ -196,7 +196,7 @@
 	}
 
 	.back-btn:hover {
-		background: rgba(255, 255, 255, 0.06);
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
 		color: #fff;
 	}
 
@@ -213,7 +213,7 @@
 	.exit-btn {
 		padding: 3px 8px;
 		border-radius: 4px;
-		border: 1px solid rgba(255, 255, 255, 0.1);
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
 		background: transparent;
 		color: rgba(255, 255, 255, 0.5);
 		font-size: var(--font-size-compact, 12px);
@@ -224,7 +224,7 @@
 	}
 
 	.exit-btn:hover {
-		background: rgba(255, 255, 255, 0.06);
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
 		color: #fff;
 	}
 
@@ -341,7 +341,7 @@
 		padding: 8px 12px;
 		font-size: var(--font-size-compact, 12px);
 		color: rgba(255, 255, 255, 0.5);
-		border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.05));
 		display: flex;
 		align-items: center;
 		gap: 6px;

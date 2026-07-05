@@ -14,26 +14,18 @@ import {
   DifficultyLevel, GenerationMode, } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import {
-  GridLocation,
-  GridMode,
-} from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-import {
-  MotionColor,
-  MotionType,
-  Orientation,
-  RotationDirection,
-} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 
 import { getGenerationOrchestrator } from "$lib/features/create/generate/shared/get-generation-orchestrator";
 
-import type {
-  RetroPictographData,
-  RetroHandData,
-} from "../../shared/domain/pictograph-types";
+import type { RetroPictographData } from "../../shared/domain/pictograph-types";
+import {
+  motionToRetroHand,
+  fallbackHand,
+} from "../../shared/utils/retro-motion-utils";
 
 export interface RetroGenerationOptions {
   mode: "freeform" | "spell";
@@ -86,38 +78,6 @@ function mapGridMode(mode: string): GridMode {
     default:
       return GridMode.DIAMOND;
   }
-}
-
-/**
- * Convert a single MotionData from the real engine into a RetroHandData
- * for the pixel renderer.
- */
-function motionToRetroHand(motion: MotionData): RetroHandData {
-  return {
-    color: motion.color,
-    location: motion.startLocation,
-    orientation: motion.startOrientation,
-    motionType: motion.motionType,
-    endLocation: motion.endLocation,
-    turns: typeof motion.turns === "number" ? motion.turns : 0,
-    rotationDirection: motion.rotationDirection,
-  };
-}
-
-/**
- * Fallback hand data when a motion is missing from a step.
- * Produces a static hand at north with no rotation.
- */
-function fallbackHand(color: MotionColor): RetroHandData {
-  return {
-    color,
-    location: GridLocation.NORTH,
-    orientation: Orientation.IN,
-    motionType: MotionType.STATIC,
-    endLocation: GridLocation.NORTH,
-    turns: 0,
-    rotationDirection: RotationDirection.NO_ROTATION,
-  };
 }
 
 /**

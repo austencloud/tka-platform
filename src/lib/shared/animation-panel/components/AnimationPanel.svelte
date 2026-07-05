@@ -884,7 +884,7 @@
   .panel-scroll::-webkit-scrollbar { width: 5px; }
   .panel-scroll::-webkit-scrollbar-track { background: transparent; }
   .panel-scroll::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.12));
     border-radius: 3px;
   }
 

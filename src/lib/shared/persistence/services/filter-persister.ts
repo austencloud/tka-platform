@@ -45,7 +45,10 @@ export class FilterPersister {
 
       // Validate the loaded state structure
       if (
-        typeof parsed.filterType === "string" &&
+        // filterType is BrowseFilterType | null and defaults to null (the "no
+        // active filter" state) — a string-only check discarded every saved
+        // state that had a sort but no filter type.
+        (parsed.filterType === null || typeof parsed.filterType === "string") &&
         parsed.filterValue !== undefined &&
         typeof parsed.sortMethod === "string"
       ) {

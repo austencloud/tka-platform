@@ -593,8 +593,8 @@
     position: absolute;
     inset: 5px 0;
     border-radius: 9px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     z-index: 0;
     pointer-events: none;
   }
@@ -658,8 +658,8 @@
     position: absolute;
     inset: 5px 0;
     border-radius: 9px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     z-index: -1;
     transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
   }
@@ -669,8 +669,8 @@
   }
   @media (hover: hover) {
     .dock-dense :global(.rt-chip:hover:not([aria-pressed="true"]))::before {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.18);
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+      border-color: var(--theme-stroke, rgba(255, 255, 255, 0.18));
     }
   }
   /* Focus ring hugs the visible pill (via box-shadow on ::before), not the

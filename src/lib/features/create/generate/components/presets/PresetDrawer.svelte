@@ -204,8 +204,8 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1rem;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1.5px solid rgba(255, 255, 255, 0.12);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: var(--radius-md, 8px);
     color: var(--theme-text, #fff);
     cursor: pointer;
@@ -217,7 +217,7 @@
   }
 
   .favorite-item:hover {
-    border-color: rgba(255, 255, 255, 0.25);
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
   }
 
   .favorite-item.active {

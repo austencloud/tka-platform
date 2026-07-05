@@ -404,8 +404,8 @@
   }
 
   .embla__button:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.2));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.25));
     transform: translateY(-50%) scale(1.05);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     color: rgba(255, 255, 255, 0.95);

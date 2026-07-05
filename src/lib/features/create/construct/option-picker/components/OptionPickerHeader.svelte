@@ -203,7 +203,7 @@
       rgba(255, 255, 255, 0.045) 0%,
       rgba(255, 255, 255, 0) 100%
     );
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   /* Row 1: filter left, persistent controls right. The steppers are NOT here —
@@ -301,8 +301,8 @@
     height: var(--min-touch-target, 44px);
     padding: 0 14px;
     border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     color: rgba(255, 255, 255, 0.8);
     font-size: 0.78rem;
     font-weight: 600;
@@ -312,7 +312,7 @@
 
   .turns-toggle:hover,
   .reset-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     color: white;
   }
 
