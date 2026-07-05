@@ -37,6 +37,7 @@ instead of showing a ghost.
 	import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
 	import AddSequencesSheet from "./AddSequencesSheet.svelte";
 	import ScanCardSheet from "./ScanCardSheet.svelte";
+	import { consumePendingScanIntent } from "$lib/features/browse/state/pending-scan-intent.svelte";
 
 	let {
 		collectionId,
@@ -183,8 +184,12 @@ instead of showing a ghost.
 
 	// Build-from-inside: the add-sequences browser overlay.
 	let addSheetOpen = $state(false);
-	// File physical cards: the camera scan sheet.
-	let scanSheetOpen = $state(false);
+	// File physical cards: the camera scan sheet. A phone that arrived via the
+	// desktop's handoff QR (?scan=1 deep link) has a pending intent stashed —
+	// consume it (one-shot) and open the scanner straight away. Foreign
+	// (read-only) collections never scan.
+	const pendingScan = consumePendingScanIntent();
+	let scanSheetOpen = $state(pendingScan === collectionId && !foreignOwnerId);
 
 	// ── Header options (rename / delete) ─────────────────────────────
 	let menuState: ContextMenuState = $state({ open: false });
