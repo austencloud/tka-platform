@@ -24,6 +24,8 @@ the geo dashboard).
 	import { CameraManager } from "$lib/shared/train/services/camera-manager";
 	import { createTkaQrDetector, type TkaQrDetector } from "$lib/shared/qr/services/tka-qr-detector";
 	import { extractScanCode } from "$lib/shared/qr/services/extract-scan-code";
+	import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
+	import { getAppCanonicalURL } from "../../../../../config/domains";
 	import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
 	import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 	import { addSequenceToCollection } from "$lib/shared/library/services/collection-manager";
@@ -72,12 +74,42 @@ the geo dashboard).
 	let cameraError = $state<string | null>(null);
 	let cameraReady = $state(false);
 
+	// Desktop handoff: a desktop usually has no camera worth pointing at a
+	// printed card, so the right-side placement leads with a QR that hands the
+	// scan job to the user's phone. The phone opens this same collection with
+	// the scanner running; cards it files appear in the desktop grid live
+	// (the detail view's collection subscription — nothing extra needed here).
+	let cameraChosen = $state(false);
+	const handoffMode = $derived(placement === "right" && !cameraChosen);
+	const handoffUrl = getAppCanonicalURL(
+		`browse/collections/${encodeURIComponent(collectionId)}?scan=1`,
+	);
+	let handoffQrDataUrl = $state<string | null>(null);
+	let handoffQrFailed = $state(false);
+	// Count cards the phone adds while the handoff panel is up: baseline the
+	// collection size when we first see it, then show the live delta.
+	let handoffBaseline = $state<number | null>(null);
+	const phoneAddedCount = $derived(
+		handoffBaseline === null
+			? 0
+			: Math.max(0, (target?.sequenceCount ?? handoffBaseline) - handoffBaseline),
+	);
+
 	// Session bookkeeping.
 	let addedCount = $state(0);
 	const seen = new Set<string>();
 	let processing = false; // one hit at a time; also pauses detection ticks
 	let scanTimer: ReturnType<typeof setInterval> | null = null;
 	const SCAN_INTERVAL_MS = 200;
+	// The camera starts on demand, not on mount: immediately on phones (bottom
+	// placement), only after "use this computer's camera" on desktop.
+	let cameraStartRequested = false;
+
+	function requestCameraStart() {
+		if (cameraStartRequested) return;
+		cameraStartRequested = true;
+		void startCamera();
+	}
 
 	async function startCamera() {
 		cameraError = null;
@@ -198,7 +230,6 @@ the geo dashboard).
 		browseScrollState.hideUI();
 
 		detector = createTkaQrDetector();
-		void startCamera();
 		scanTimer = setInterval(() => void tick(), SCAN_INTERVAL_MS);
 
 		requestAnimationFrame(() => {
@@ -210,6 +241,35 @@ the geo dashboard).
 			camera.stop(); // release the camera the moment the sheet goes
 			browseScrollState.showUI();
 		};
+	});
+
+	// Phones scan directly: bottom placement starts the camera immediately
+	// (also covers a desktop window resized down to the mobile layout).
+	$effect(() => {
+		if (placement === "bottom") requestCameraStart();
+	});
+
+	// Desktop handoff panel: render the QR once. If generation fails we fall
+	// back to showing the link itself, so the handoff still works.
+	$effect(() => {
+		if (!handoffMode || handoffQrDataUrl || handoffQrFailed) return;
+		getQRCodeGenerator()
+			.generateForUrl(handoffUrl, { size: 480, margin: 2 })
+			.then((result) => {
+				handoffQrDataUrl = result.dataUrl;
+			})
+			.catch((err) => {
+				console.error("[ScanCard] handoff QR generation failed:", err);
+				handoffQrFailed = true;
+			});
+	});
+
+	// Baseline the collection size the first time we see it in handoff mode,
+	// so the "added from your phone" counter starts at zero.
+	$effect(() => {
+		if (handoffMode && handoffBaseline === null && target) {
+			handoffBaseline = target.sequenceCount;
+		}
 	});
 
 	onDestroy(() => layoutUnsubscribe?.());
@@ -244,27 +304,64 @@ the geo dashboard).
 			</button>
 		</header>
 
-		<div class="viewfinder">
-			{#if cameraError}
-				<div class="camera-error" role="alert">
-					<i class="fas fa-video-slash" aria-hidden="true"></i>
-					<p>{cameraError}</p>
-					<button type="button" class="retry-btn" onclick={() => void startCamera()}>
-						<i class="fas fa-rotate-right" aria-hidden="true"></i>
-						<span>Try again</span>
-					</button>
+		{#if handoffMode}
+			<div class="handoff-panel">
+				<div class="qr-box">
+					{#if handoffQrDataUrl}
+						<img
+							class="handoff-qr"
+							src={handoffQrDataUrl}
+							alt="QR code that opens this collection's card scanner on your phone"
+						/>
+					{:else if handoffQrFailed}
+						<p class="handoff-link-fallback">
+							Open this on your phone:
+							<span class="handoff-url">{handoffUrl}</span>
+						</p>
+					{/if}
 				</div>
-			{:else}
-				<div class="video-host" bind:this={videoHost}></div>
-				{#if !cameraReady}
-					<div class="camera-starting" role="status">
-						<i class="fas fa-camera" aria-hidden="true"></i>
-						<p>Starting camera…</p>
+				<p class="handoff-copy">
+					Scan this with your phone to add cards. They'll appear here as you go.
+				</p>
+				<p class="phone-count" aria-live="polite">
+					{phoneAddedCount}
+					{phoneAddedCount === 1 ? "card" : "cards"} added from your phone
+				</p>
+				<button
+					type="button"
+					class="camera-fallback-btn"
+					onclick={() => {
+						cameraChosen = true;
+						requestCameraStart();
+					}}
+				>
+					<i class="fas fa-camera" aria-hidden="true"></i>
+					<span>Use this computer's camera</span>
+				</button>
+			</div>
+		{:else}
+			<div class="viewfinder">
+				{#if cameraError}
+					<div class="camera-error" role="alert">
+						<i class="fas fa-video-slash" aria-hidden="true"></i>
+						<p>{cameraError}</p>
+						<button type="button" class="retry-btn" onclick={() => void startCamera()}>
+							<i class="fas fa-rotate-right" aria-hidden="true"></i>
+							<span>Try again</span>
+						</button>
 					</div>
+				{:else}
+					<div class="video-host" bind:this={videoHost}></div>
+					{#if !cameraReady}
+						<div class="camera-starting" role="status">
+							<i class="fas fa-camera" aria-hidden="true"></i>
+							<p>Starting camera…</p>
+						</div>
+					{/if}
+					<p class="scan-hint">Point at a card's QR code</p>
 				{/if}
-				<p class="scan-hint">Point at a card's QR code</p>
-			{/if}
-		</div>
+			</div>
+		{/if}
 	</div>
 </Drawer>
 
@@ -424,6 +521,93 @@ the geo dashboard).
 	}
 
 	.retry-btn:focus-visible {
+		outline: 2px solid var(--theme-accent);
+		outline-offset: 2px;
+	}
+
+	/* ── Desktop handoff panel ────────────────────────────────────── */
+
+	.handoff-panel {
+		flex: 1;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 14px;
+		padding: 24px;
+		overflow-y: auto;
+	}
+
+	/* Fixed box: the QR decodes async, and the panel must not reflow when it
+	   lands (no-layout-shift). White backing keeps the QR scannable on any
+	   theme background. */
+	.qr-box {
+		width: 240px;
+		height: 240px;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 16px;
+		background: white;
+		padding: 12px;
+	}
+
+	.handoff-qr {
+		width: 100%;
+		height: 100%;
+		display: block;
+	}
+
+	.handoff-link-fallback {
+		margin: 0;
+		color: #1a1a2e;
+		font-size: var(--font-size-compact, 12px);
+		text-align: center;
+		overflow-wrap: anywhere;
+	}
+
+	.handoff-url {
+		display: block;
+		margin-top: 6px;
+		font-weight: 600;
+		user-select: all;
+	}
+
+	.handoff-copy {
+		margin: 0;
+		max-width: 320px;
+		color: var(--theme-text, white);
+		font-size: var(--font-size-sm, 14px);
+		line-height: 1.5;
+		text-align: center;
+	}
+
+	.phone-count {
+		margin: 0;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+		font-size: var(--font-size-compact, 12px);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.camera-fallback-btn {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		height: 44px;
+		padding: 0 18px;
+		margin-top: 8px;
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+		border-radius: 12px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+		color: var(--theme-text, white);
+		font-size: var(--font-size-sm, 14px);
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	.camera-fallback-btn:focus-visible {
 		outline: 2px solid var(--theme-accent);
 		outline-offset: 2px;
 	}
