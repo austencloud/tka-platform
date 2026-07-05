@@ -17,6 +17,7 @@
   import ProofTextPage from "../_pages/ProofTextPage.svelte";
   import { GUIDE_BODY_PAGES, type GuidePageMeta } from "../_data/guide-manifest";
   import { PROOF_TEXT } from "../_data/proof-text";
+  import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
 
   let {
     page,
@@ -33,6 +34,36 @@
   // reprint). Kept identical to the original print front matter.
   const SUPPORT_QR = "/guide/level-1/images/_shared/qr-support.png";
   const SUPPORT_URL = "tkaflowarts.com/support";
+
+  // ── Edit-mode offsets (pt) — every front-matter block drags/deletes ────────
+  const S = 816 / 612;
+  type Off = { x: number; y: number };
+  const zero = (): Off => ({ x: 0, y: 0 });
+  let FM = $state({
+    ripple: zero(),
+    drink: zero(),
+    supportText: zero(),
+    supportQr: zero(),
+    readme: [zero(), zero(), zero(), zero(), zero(), zero(), zero()],
+    toc: zero(),
+  });
+  const tf = (o: Off) => `transform: translate(${o.x * S}px, ${o.y * S}px)`;
+  const off = (i: number): Off => FM.readme[i] ?? { x: 0, y: 0 };
+
+  const r1 = (n: number) => Math.round(n * 10) / 10;
+  $effect(() =>
+    registerEditSource("Front matter", () => {
+      const flat: [string, Off][] = [
+        ["ripple", FM.ripple],
+        ["drink", FM.drink],
+        ["supportText", FM.supportText],
+        ["supportQr", FM.supportQr],
+        ...FM.readme.map((o, i) => [`readme[${i}]`, o] as [string, Off]),
+        ["toc", FM.toc],
+      ];
+      return flat.map(([k, o]) => `  ${k}: dx: ${r1(o.x)}, dy: ${r1(o.y)}`).join("\n");
+    })
+  );
 </script>
 
 <!-- Load the guide typefaces via a real <link> (robust) rather than relying on
@@ -53,18 +84,47 @@
 
 {#snippet drinkContent()}
   <div class="frontmatter">
-    <div class="ripple" aria-hidden="true"><span></span><span></span><span></span></div>
-    <p class="drink">drink water</p>
+    <div
+      class="ripple drag"
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === "fm-ripple"}
+      style={tf(FM.ripple)}
+      aria-hidden="true"
+      use:ptDrag={pt("fm-ripple", "Ripple rings", FM.ripple)}
+    >
+      <span></span><span></span><span></span>
+    </div>
+    <p
+      class="drink drag"
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === "fm-drink"}
+      style={tf(FM.drink)}
+      use:ptDrag={pt("fm-drink", "drink water", FM.drink)}
+    >
+      drink water
+    </p>
   </div>
 {/snippet}
 
 {#snippet supportContent()}
   <div class="frontmatter support">
-    <p>
+    <p
+      class="drag"
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === "fm-support-text"}
+      style={tf(FM.supportText)}
+      use:ptDrag={pt("fm-support-text", "Support text", FM.supportText)}
+    >
       <span class="ln">If this guide helps you, you can support its development.</span>
       <span class="ln">Any amount is genuinely appreciated.</span>
     </p>
-    <figure class="donate">
+    <figure
+      class="donate drag"
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === "fm-support-qr"}
+      style={tf(FM.supportQr)}
+      use:ptDrag={pt("fm-support-qr", "Support QR", FM.supportQr)}
+    >
       <img class="support-qr" src={SUPPORT_QR} alt="Scan to support: {SUPPORT_URL}" />
       <figcaption class="support-url">{SUPPORT_URL}</figcaption>
     </figure>
@@ -72,45 +132,61 @@
 {/snippet}
 
 {#snippet readmeContent()}
+  {#snippet rmP(i: number, cls: string, body: Snippet)}
+    <p
+      class="{cls} drag"
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === `fm-readme-${i}`}
+      style={tf(off(i))}
+      use:ptDrag={pt(`fm-readme-${i}`, `Read Me ¶${i + 1}`, off(i))}
+    >
+      {@render body()}
+    </p>
+  {/snippet}
   <div class="read-me">
-    <p class="rm-greeting">Greetings, flow arts aficionado!</p>
-    <p class="rm-lead">
-      You've come across The Kinetic Alphabet, a notation system designed to
+    {#snippet b0()}Greetings, flow arts aficionado!{/snippet}
+    {#snippet b1()}You've come across The Kinetic Alphabet, a notation system designed to
       help you craft and communicate your own unique choreography. This
       grid-based language is designed for music, using pictographs and letters
       that combine like puzzle pieces for each beat. This system has propelled
       my sequence creation to new heights, and I hope it will do the same for
-      you!
-    </p>
-    <p>
-      The Kinetic Alphabet is a fusion of elements from VTG (Vulcan Tech
+      you!{/snippet}
+    {#snippet b2()}The Kinetic Alphabet is a fusion of elements from VTG (Vulcan Tech
       Gospel), siteswap (Juggling Notation), and musical notation. Although it
       can be introduced to beginners, it's designed for intermediate learners,
       bridging the gap between improvisation and choreography. Originally built
       for double staves, it can be applied to any dual wielded static prop like
-      clubs, fans, triads, buugeng, and more.
-    </p>
-    <p>
-      Pictographs form the core of The Kinetic Alphabet. The letters are a
+      clubs, fans, triads, buugeng, and more.{/snippet}
+    {#snippet b3()}Pictographs form the core of The Kinetic Alphabet. The letters are a
       useful tool to categorize and communicate the pictographs, but they are
       secondary to the pictographs themselves. It's not necessary to memorize
-      the letters immediately to benefit from this system.
-    </p>
-    <p>
-      This is a work-in-progress and is continually growing. Whether you fully
+      the letters immediately to benefit from this system.{/snippet}
+    {#snippet b4()}This is a work-in-progress and is continually growing. Whether you fully
       embrace this system, draw inspiration from certain parts, or follow a
       different path altogether, I hope the ideas presented here contribute to
-      your creative growth.
-    </p>
-    <p>
-      I can't wait to see the unique choreography you'll create!
-    </p>
-    <p class="sign-off">With love,<br /><span class="rm-sig">Austen Cloud</span></p>
+      your creative growth.{/snippet}
+    {#snippet b5()}I can't wait to see the unique choreography you'll create!{/snippet}
+    {#snippet b6()}With love,<br /><span class="rm-sig">Austen Cloud</span>{/snippet}
+    {@render rmP(0, "rm-greeting", b0)}
+    {@render rmP(1, "rm-lead", b1)}
+    {@render rmP(2, "", b2)}
+    {@render rmP(3, "", b3)}
+    {@render rmP(4, "", b4)}
+    {@render rmP(5, "", b5)}
+    {@render rmP(6, "sign-off", b6)}
   </div>
 {/snippet}
 
 {#snippet tocContent()}
-  <GuideTOC />
+  <div
+    class="toc-wrap drag"
+    class:edit={guideEdit.on}
+    class:selected={guideEdit.selectedId === "fm-toc"}
+    style={tf(FM.toc)}
+    use:ptDrag={pt("fm-toc", "Table of Contents", FM.toc)}
+  >
+    <GuideTOC />
+  </div>
 {/snippet}
 
 <!-- Front matter (unnumbered), then the numbered body pages. ORDER IS CANONICAL. -->
@@ -265,5 +341,15 @@
     font-variation-settings: "opsz" 144, "wght" 580, "WONK" 1;
     font-size: 1.7rem;
     color: #14142b;
+  }
+
+  /* Edit-mode affordances (drag/select any front-matter block). */
+  .drag.edit {
+    outline: 1px dashed rgba(55, 48, 163, 0.4);
+    cursor: move;
+  }
+  .drag.selected {
+    outline: 1.5px solid #3730a3;
+    outline-offset: 1px;
   }
 </style>

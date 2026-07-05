@@ -17,12 +17,45 @@
    */
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import type { MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
+  import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
 
   let { theme = "navy" }: { theme?: "navy" | "light" } = $props();
 
   let w = $state(0);
   const emblemSize = $derived(w ? Math.round(w * 0.44) : 0);
   const trioSize = $derived(w ? Math.round(w * 0.185) : 0);
+
+  // ── Edit-mode offsets (pt) — every cover element is draggable/deletable ────
+  const S = 816 / 612; // pt → px at native page width
+  type Off = { x: number; y: number };
+  const zero = (): Off => ({ x: 0, y: 0 });
+  let OFF = $state({
+    title: zero(),
+    subtitle: zero(),
+    level: zero(),
+    emblem: zero(),
+    forms: [zero(), zero(), zero()],
+    byline: zero(),
+  });
+  const tf = (o: Off) => `transform: translate(${o.x * S}px, ${o.y * S}px)`;
+
+  const r1 = (n: number) => Math.round(n * 10) / 10;
+  $effect(() =>
+    registerEditSource("Cover", () =>
+      Object.entries({
+        title: OFF.title,
+        subtitle: OFF.subtitle,
+        level: OFF.level,
+        emblem: OFF.emblem,
+        "form[0]": OFF.forms[0]!,
+        "form[1]": OFF.forms[1]!,
+        "form[2]": OFF.forms[2]!,
+        byline: OFF.byline,
+      })
+        .map(([k, o]) => `  ${k}: dx: ${r1(o.x)}, dy: ${r1(o.y)}`)
+        .join("\n")
+    )
+  );
 
   function mono(s: string, f: string): MandalaPalette {
     return { blueStroke: s, blueFill: f, redStroke: s, redFill: f, purpleStroke: s, purpleFill: f };
@@ -70,12 +103,42 @@
   <div class="frame"></div>
 
   <header class="hero">
-    <h1 class="title"><span>The Kinetic</span><span>Alphabet</span></h1>
-    <p class="subtitle">Notation for Flow Arts</p>
-    <div class="lvl"><span class="lvl-word">Level</span><span class="lvl-badge">1</span></div>
+    <h1
+      class="title drag"
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === "cover-title"}
+      style={tf(OFF.title)}
+      use:ptDrag={pt("cover-title", "Cover title", OFF.title)}
+    >
+      <span>The Kinetic</span><span>Alphabet</span>
+    </h1>
+    <p
+      class="subtitle drag"
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === "cover-subtitle"}
+      style={tf(OFF.subtitle)}
+      use:ptDrag={pt("cover-subtitle", "Cover subtitle", OFF.subtitle)}
+    >
+      Notation for Flow Arts
+    </p>
+    <div
+      class="lvl drag"
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === "cover-level"}
+      style={tf(OFF.level)}
+      use:ptDrag={pt("cover-level", "Level badge", OFF.level)}
+    >
+      <span class="lvl-word">Level</span><span class="lvl-badge">1</span>
+    </div>
   </header>
 
-  <div class="emblem" style="--em:{emblemSize}px">
+  <div
+    class="emblem drag"
+    class:edit={guideEdit.on}
+    class:selected={guideEdit.selectedId === "cover-emblem"}
+    style="--em:{emblemSize}px; {tf(OFF.emblem)}"
+    use:ptDrag={pt("cover-emblem", "Emblem", OFF.emblem)}
+  >
     {#each FORMS as f}
       <div class="layer">
         {#if emblemSize}<SequenceMandala sequence={f.seq} size={emblemSize} darkMode={false} palette={f.palette} bluePropType="staff" redPropType="staff" pathShape="arc" strokeWidth={3} />{/if}
@@ -84,14 +147,30 @@
   </div>
 
   <div class="forms">
-    {#each FORMS as f}
+    {#each FORMS as f, i (i)}
       <div class="form">
-        {#if trioSize}<SequenceMandala sequence={f.seq} size={trioSize} darkMode={false} palette={f.palette} bluePropType="staff" redPropType="staff" pathShape="arc" strokeWidth={2.5} />{/if}
+        <div
+          class="drag"
+          class:edit={guideEdit.on}
+          class:selected={guideEdit.selectedId === `cover-form-${i}`}
+          style={tf(OFF.forms[i] ?? { x: 0, y: 0 })}
+          use:ptDrag={pt(`cover-form-${i}`, `Trio form ${i + 1}`, OFF.forms[i] ?? { x: 0, y: 0 })}
+        >
+          {#if trioSize}<SequenceMandala sequence={f.seq} size={trioSize} darkMode={false} palette={f.palette} bluePropType="staff" redPropType="staff" pathShape="arc" strokeWidth={2.5} />{/if}
+        </div>
       </div>
     {/each}
   </div>
 
-  <footer class="byline">Created by Austen Cloud</footer>
+  <footer
+    class="byline drag"
+    class:edit={guideEdit.on}
+    class:selected={guideEdit.selectedId === "cover-byline"}
+    style={tf(OFF.byline)}
+    use:ptDrag={pt("cover-byline", "Byline", OFF.byline)}
+  >
+    Created by Austen Cloud
+  </footer>
 </div>
 
 <style>
@@ -158,4 +237,14 @@
   .byline { position: absolute; bottom: 7.5cqw; left: 0; right: 0; text-align: center; margin: 0; font-style: italic; font-family: "Cormorant Garamond", Georgia, serif; font-size: clamp(13px, 2.8cqw, 18px); opacity: 1; }
   .cover.navy .byline { color: #ece9f6; }   /* ~14:1 on #14142b */
   .cover.light .byline { color: #2a2a2a; }   /* ~12:1 on #faf7ef */
+
+  /* Edit-mode affordances (drag/select any cover element). */
+  .drag.edit {
+    outline: 1px dashed rgba(140, 150, 255, 0.55);
+    cursor: move;
+  }
+  .drag.selected {
+    outline: 1.5px solid #6f8cff;
+    outline-offset: 1px;
+  }
 </style>

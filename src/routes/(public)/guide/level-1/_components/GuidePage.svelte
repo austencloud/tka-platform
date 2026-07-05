@@ -121,22 +121,26 @@
     pointer-events: none;
   }
 
-  /* Recto/verso page number at the bottom outer corner (within the page margin). */
+  /* Recto/verso page number at the TOP outer corner, book-style: a page on the
+     right of the open book (recto, odd) numbers top-right; a page on the left
+     (verso, even) numbers top-left. Sized to read, spaced off both edges. */
   .page-number {
     position: absolute;
-    bottom: 0.42in;
+    top: 0.42in;
     font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: 1.05rem;
-    color: #4a4658;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #3a3648;
     font-variant-numeric: tabular-nums;
+    line-height: 1;
     z-index: 2;
     pointer-events: none;
   }
   .page-number.recto {
-    right: 0.6in;
+    right: 0.55in;
   }
   .page-number.verso {
-    left: 0.6in;
+    left: 0.55in;
   }
 
   @media screen {

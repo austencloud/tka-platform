@@ -3,9 +3,10 @@
  * thing (arrow endpoints/shafts, text runs, paragraphs) as a Movable; the
  * ptDrag action wires pointer dragging, click-to-select, and per-drag undo.
  * Toggle with the on-screen button or the `E` key; Ctrl+Z / Ctrl+Shift+Z (or
- * Ctrl+Y) undo/redo; arrow keys nudge the selected item (Shift = ×10); Escape
- * deselects (or exits). The Copy button dumps all current coords to paste back.
- * Off by default → ships clean.
+ * Ctrl+Y) undo/redo; arrow keys nudge the selected item (Shift = ×10); Delete
+ * hides the selected item (undoable; the Copy dump lists deletions so they can
+ * be made permanent in source); Escape deselects (or exits). The Copy button
+ * dumps all current coords to paste back. Off by default → ships clean.
  */
 
 export type Movable = {
@@ -25,7 +26,29 @@ export const guideEdit = $state<{
 // Reactive history depth, for enabling/labelling the undo/redo buttons.
 export const hist = $state({ undo: 0, redo: 0 });
 
-const movables = new Map<string, Movable>();
+type Registered = { m: Movable; node: HTMLElement | SVGElement };
+const movables = new Map<string, Registered>();
+
+// ── delete (hide) support ────────────────────────────────────────────────────
+// Deleted items are hidden live (display:none) and listed in the Copy dump so
+// the removal can be made permanent in source. Undo restores them.
+const deletedIds = new Set<string>();
+
+function applyHidden(id: string, hidden: boolean): void {
+  if (hidden) deletedIds.add(id);
+  else deletedIds.delete(id);
+  const node = movables.get(id)?.node as HTMLElement | undefined;
+  if (node?.style) node.style.display = hidden ? "none" : "";
+}
+
+/** Hide the selected item (undoable). */
+export function deleteSelected(): void {
+  const id = guideEdit.selectedId;
+  if (!id || !movables.has(id)) return;
+  pushHistory();
+  applyHidden(id, true);
+  select(null);
+}
 
 // ── coords dump (Copy button) ───────────────────────────────────────────────
 const dumpers = new Map<string, () => string>();
@@ -35,25 +58,36 @@ export function registerEditSource(key: string, dump: () => string): () => void 
 }
 export function collectEditCoords(): string {
   if (dumpers.size === 0) return "(open a page in edit mode)";
-  return [...dumpers.entries()].map(([k, d]) => `=== ${k} ===\n${d()}`).join("\n\n");
+  const pages = [...dumpers.entries()].map(([k, d]) => `=== ${k} ===\n${d()}`).join("\n\n");
+  if (deletedIds.size === 0) return pages;
+  const del = [...deletedIds]
+    .map((id) => `  ${id} — ${movables.get(id)?.m.label ?? "?"}`)
+    .join("\n");
+  return `=== DELETED (make permanent in source) ===\n${del}\n\n${pages}`;
 }
 
 // ── selection ───────────────────────────────────────────────────────────────
 export function select(id: string | null): void {
   guideEdit.selectedId = id;
-  guideEdit.selectedLabel = id ? movables.get(id)?.label ?? null : null;
+  guideEdit.selectedLabel = id ? movables.get(id)?.m.label ?? null : null;
 }
 
 // ── undo / redo ─────────────────────────────────────────────────────────────
-let undoStack: Array<Map<string, number[]>> = [];
-let redoStack: Array<Map<string, number[]>> = [];
-function snapAll(): Map<string, number[]> {
-  const m = new Map<string, number[]>();
-  for (const [id, mv] of movables) m.set(id, mv.snapshot());
+type Snapshot = Map<string, { c: number[]; hidden: boolean }>;
+let undoStack: Snapshot[] = [];
+let redoStack: Snapshot[] = [];
+function snapAll(): Snapshot {
+  const m: Snapshot = new Map();
+  for (const [id, r] of movables) m.set(id, { c: r.m.snapshot(), hidden: deletedIds.has(id) });
   return m;
 }
-function restoreAll(s: Map<string, number[]>): void {
-  for (const [id, v] of s) movables.get(id)?.restore(v);
+function restoreAll(s: Snapshot): void {
+  for (const [id, v] of s) {
+    const r = movables.get(id);
+    if (!r) continue;
+    r.m.restore(v.c);
+    applyHidden(id, v.hidden);
+  }
 }
 function sync(): void {
   hist.undo = undoStack.length;
@@ -83,7 +117,7 @@ export function redo(): void {
 
 // ── nudge the selected item ─────────────────────────────────────────────────
 export function nudge(dx: number, dy: number): void {
-  const mv = guideEdit.selectedId ? movables.get(guideEdit.selectedId) : null;
+  const mv = guideEdit.selectedId ? movables.get(guideEdit.selectedId)?.m : null;
   if (!mv) return;
   pushHistory();
   mv.apply(dx, dy);
@@ -142,7 +176,9 @@ function ptPerPx(node: Element): { px: number; py: number } {
 
 export function ptDrag(node: HTMLElement | SVGElement, movable: Movable) {
   let m = movable;
-  movables.set(m.id, m);
+  movables.set(m.id, { m, node });
+  // A re-mounted element that was deleted this session stays hidden.
+  if (deletedIds.has(m.id)) applyHidden(m.id, true);
   let lastX = 0;
   let lastY = 0;
   let scale = { px: 1, py: 1 };
@@ -184,7 +220,7 @@ export function ptDrag(node: HTMLElement | SVGElement, movable: Movable) {
     update(next: Movable) {
       if (next.id !== m.id) movables.delete(m.id);
       m = next;
-      movables.set(m.id, m);
+      movables.set(m.id, { m, node });
     },
     destroy() {
       movables.delete(m.id);
@@ -225,6 +261,11 @@ export function installEditHotkeys(): () => void {
     if (e.key === "Escape") {
       e.preventDefault();
       guideEdit.selectedId ? select(null) : setEdit(false);
+      return;
+    }
+    if ((e.key === "Delete" || e.key === "Backspace") && guideEdit.selectedId) {
+      e.preventDefault();
+      deleteSelected();
       return;
     }
     const step = e.shiftKey ? 10 : 1;

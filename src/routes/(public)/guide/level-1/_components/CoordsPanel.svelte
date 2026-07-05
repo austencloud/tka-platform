@@ -15,6 +15,7 @@
     setEdit,
     undo,
     redo,
+    deleteSelected,
     initEdit,
     installEditHotkeys,
   } from "../_data/guide-edit.svelte";
@@ -45,6 +46,12 @@
     <span class="sel" title="Selected — arrow keys nudge (Shift ×10)">
       {guideEdit.selectedLabel ?? "click to select"}
     </span>
+    <button
+      class="ico del"
+      onclick={deleteSelected}
+      disabled={!guideEdit.selectedId}
+      title="Delete selected (Del) — undoable; Copy lists deletions">🗑</button
+    >
     <button class="primary" onclick={copy}>{copied ? "Copied ✓" : "Copy coords"}</button>
     <button class="ico exit" onclick={() => setEdit(false)} title="Exit edit (Esc)">✕</button>
   </div>
@@ -108,7 +115,8 @@
     background: #3730a3 !important;
     color: #fff !important;
   }
-  .exit {
+  .exit,
+  .del {
     color: #e08b8b;
   }
 </style>
