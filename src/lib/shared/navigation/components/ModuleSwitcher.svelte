@@ -213,14 +213,11 @@
           <button class="drawer-action inbox" onclick={handleInboxClick}>
             <div class="drawer-action-icon-wrapper">
               <i class="fas fa-inbox" aria-hidden="true"></i>
-              {#if hasUnread}
-                <span class="drawer-unread-dot" aria-hidden="true"></span>
+              {#if hasUnread && unreadCount > 0}
+                <span class="drawer-unread-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
               {/if}
             </div>
             <span>Inbox</span>
-            {#if hasUnread && unreadCount > 0}
-              <span class="drawer-inbox-count">{unreadCount > 99 ? "99+" : unreadCount}</span>
-            {/if}
           </button>
         {/if}
         <button class="drawer-action" onclick={handleAccountSettings}>
@@ -526,12 +523,15 @@
 
   .drawer-action {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 5px;
     flex: 1;
+    box-sizing: border-box; /* padding+border inside the flex share, so 4-across fits the row */
+    min-width: 0; /* allow equal narrow columns to shrink without overflow */
     min-height: var(--min-touch-target, 50px);
-    padding: 10px 12px;
+    padding: 8px 4px;
     background: var(--theme-card-bg);
     border: 1px solid var(--theme-stroke);
     border-radius: 12px;
@@ -540,6 +540,13 @@
     font-size: var(--font-size-sm, 14px);
     font-weight: 500;
     transition: all var(--duration-fast) ease;
+  }
+
+  /* Label sits under the icon — compact, single line, no overflow */
+  .drawer-action > span {
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1;
+    white-space: nowrap;
   }
 
   .drawer-action:hover {
@@ -558,7 +565,7 @@
   }
 
   .drawer-action i {
-    font-size: var(--font-size-sm, 14px);
+    font-size: var(--font-size-base, 16px);
   }
 
   /* Inbox - blue accent */
@@ -606,22 +613,26 @@
     position: relative;
   }
 
-  .drawer-unread-dot {
+  /* Unread count as a badge pinned to the icon corner — min-width keeps
+     the icon steady when the count grows from 1 to 2+ digits (no shift). */
+  .drawer-unread-badge {
     position: absolute;
-    top: -3px;
-    right: -5px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+    top: -7px;
+    right: -10px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
     background: var(--semantic-error, #ef4444);
-  }
-
-  .drawer-inbox-count {
-    margin-left: auto;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    color: var(--semantic-info, #3b82f6);
-    opacity: 0.8;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
   }
 
   @media (prefers-reduced-motion: reduce) {
