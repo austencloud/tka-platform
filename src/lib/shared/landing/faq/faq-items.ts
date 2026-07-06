@@ -17,17 +17,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "What is The Kinetic Alphabet?",
     answer:
-      "The Kinetic Alphabet (TKA) is notation for flow arts. It lets flow artists document, share, and learn prop choreography using pictographs and symbols, instead of relying on video alone.",
-  },
-  {
-    question: "What does TKA stand for?",
-    answer:
-      "TKA stands for The Kinetic Alphabet, a flow arts notation system for documenting and sharing staff, club, fan, hoop, and buugeng choreography.",
-  },
-  {
-    question: "What is flow arts notation?",
-    answer:
-      "Flow arts notation is a way to write down prop movement: staff, club, fan, and hoop choreography. The Kinetic Alphabet uses a pictograph for each beat, showing hand positions, motion type, and prop orientation.",
+      "The Kinetic Alphabet (TKA) is notation for flow arts, a way to write down prop movement instead of relying on video alone. It uses a pictograph for each beat, showing hand positions, motion type, and prop orientation, to document, share, and learn staff, club, fan, hoop, and buugeng choreography.",
   },
   {
     question: "How is this different from other notation systems?",
@@ -40,19 +30,14 @@ export const FAQ_ITEMS: FaqItem[] = [
       "No. The pictographs are readable on their own. The letter system is optional. It gives you a way to name and reference sequences once you want to go deeper.",
   },
   {
-    question: "How do you write down staff spinning moves?",
+    question: "How does TKA write down spinning moves, and which props does it support?",
     answer:
-      "Each beat becomes a pictograph that captures hand positions on a grid, the motion type (pro, anti, static, dash), direction, and number of turns. TKA is built for dual-wielded props like double staff, and the notation applies to any prop you grip directly.",
+      "Each beat becomes a pictograph that captures hand positions on a grid, the motion type (pro, anti, static, dash), direction, and number of turns. TKA is built for double staff and works with any dual-wielded prop you grip directly, like clubs, fans, hoops, mini hoops, and buugeng, each rendered with proper rotations and hand positions.",
   },
   {
-    question: "What props does TKA Composer support?",
+    question: "Is TKA Composer free?",
     answer:
-      "TKA was built for double staff, and works with any dual-wielded static prop you grip directly, like clubs, fans, hoops, mini hoops, and buugeng. Each prop renders with proper rotations and hand positions.",
-  },
-  {
-    question: "Is TKA Composer free to use?",
-    answer:
-      "Yes. The core of TKA Composer is free, and most of it will stay that way: build sequences, animate them, and browse the community library at no cost. Down the line, a few take-home extras may become premium to help sustain the project.",
+      "Yes. Building sequences, animating them, and browsing the community library are free, and the core stays free. A premium tier is planned down the line to help sustain the project, but it isn't live yet.",
   },
   {
     question: "How do I learn flow arts with The Kinetic Alphabet?",
