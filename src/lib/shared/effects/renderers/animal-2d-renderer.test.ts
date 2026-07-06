@@ -63,4 +63,41 @@ describe("Animal2DRenderer", () => {
     expect(() => r.render(ctx, params("snake"), [], 0.016, 1, false)).not.toThrow();
     r.dispose();
   });
+
+  it("still draws the creature on the loop-seam frame (no blink)", () => {
+    // Regression: the loopDetected branch used to `continue` past drawCreature,
+    // so the creature blinked out for the single seam frame. It must draw on
+    // every frame, seam included.
+    const r = new Animal2DRenderer();
+    let draws = 0;
+    const base = {
+      canvas: { width: 400, height: 400 },
+      globalAlpha: 1,
+      globalCompositeOperation: "source-over",
+      createRadialGradient: () => ({ addColorStop: () => {} }),
+      createLinearGradient: () => ({ addColorStop: () => {} }),
+      fill: () => {
+        draws++;
+      },
+      stroke: () => {
+        draws++;
+      },
+    } as unknown as Record<string, unknown>;
+    const ctx = new Proxy(base, {
+      get: (t, p) => (p in t ? t[p as string] : () => {}),
+      set: () => true,
+    }) as unknown as CanvasRenderingContext2D;
+    const tips = [{ x: 100, y: 100, end: "A" as const, propIndex: 0, tipIndex: 0, color: "#ffffff" }];
+    // Grow the chain over a few moving frames.
+    for (let i = 0; i < 5; i++) {
+      tips[0]!.x = 100 + i * 20;
+      r.render(ctx, params("dragon"), tips, 0.016, 1, false);
+    }
+    draws = 0;
+    // Loop seam: tip teleports back to the start; loopDetected = true.
+    tips[0]!.x = 100;
+    r.render(ctx, params("dragon"), tips, 0.016, 1, true);
+    expect(draws).toBeGreaterThan(0);
+    r.dispose();
+  });
 });

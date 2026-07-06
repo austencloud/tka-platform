@@ -71,7 +71,9 @@ export class Animal2DRenderer {
 
         if (loopDetected) {
           // Tip teleports at the loop seam — snap the body straight behind the
-          // head along its heading so it doesn't whip across the canvas.
+          // head along its heading so it doesn't whip across the canvas. Reset
+          // the whisker sub-chain too so it re-seeds at the new head instead of
+          // streaming across the canvas from its pre-teleport position.
           let hx = chain[0]!.x - chain[1]!.x;
           let hy = chain[0]!.y - chain[1]!.y;
           const hl = Math.hypot(hx, hy) || 1;
@@ -81,28 +83,30 @@ export class Animal2DRenderer {
             chain[i]!.x = tip.x - hx * segLen * i;
             chain[i]!.y = tip.y - hy * segLen * i;
           }
-          continue;
-        }
-
-        // Head rides the prop tip; body follows via per-node distance clamps.
-        chain[0]!.x = tip.x;
-        chain[0]!.y = tip.y;
-        for (let i = 1; i < N; i++) {
-          const prev = chain[i - 1]!;
-          const cur = chain[i]!;
-          const dx = cur.x - prev.x;
-          const dy = cur.y - prev.y;
-          const d = Math.hypot(dx, dy);
-          if (d > 0.0001) {
-            const k = segLen / d;
-            cur.x = prev.x + dx * k;
-            cur.y = prev.y + dy * k;
-          } else {
-            cur.x = prev.x;
-            cur.y = prev.y + segLen;
+          this.whiskerChains.delete(id);
+        } else {
+          // Head rides the prop tip; body follows via per-node distance clamps.
+          chain[0]!.x = tip.x;
+          chain[0]!.y = tip.y;
+          for (let i = 1; i < N; i++) {
+            const prev = chain[i - 1]!;
+            const cur = chain[i]!;
+            const dx = cur.x - prev.x;
+            const dy = cur.y - prev.y;
+            const d = Math.hypot(dx, dy);
+            if (d > 0.0001) {
+              const k = segLen / d;
+              cur.x = prev.x + dx * k;
+              cur.y = prev.y + dy * k;
+            } else {
+              cur.x = prev.x;
+              cur.y = prev.y + segLen;
+            }
           }
         }
 
+        // Draw every frame, including the loop-seam frame — the creature must
+        // never blink out at the seam.
         this.drawCreature(ctx, params, chain, scale, id);
       }
     } finally {
