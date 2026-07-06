@@ -10,6 +10,7 @@
     section,
     moduleId,
     isActive,
+    isCollapsed = false,
     onClick,
     onContextMenu,
     badgeCount = 0,
@@ -17,6 +18,7 @@
     section: Section;
     moduleId: string;
     isActive: boolean;
+    isCollapsed?: boolean;
     onClick: () => void;
     onContextMenu?: (e: MouseEvent) => void;
     badgeCount?: number;
@@ -33,6 +35,7 @@
   class="section-button"
   class:active={isActive}
   class:disabled={section.disabled}
+  class:collapsed={isCollapsed}
   onclick={onClick}
   oncontextmenu={onContextMenu}
   disabled={section.disabled}
@@ -55,22 +58,42 @@
   /* ============================================================================
      SECTION BUTTON - Refined Minimal Design
      ============================================================================ */
+  /* Skeleton mirrors ModuleButton: a fixed 44px leading icon column pins the
+     icon to a predictable x in BOTH rail and expanded states (the tree is now
+     unified — see 2026-07-06-sidebar-tree-unification spec). The rail↔expanded
+     inset is a single transitioning padding-left on the parent .sections-list,
+     which slides this whole button right; nothing here animates geometry. */
   .section-button {
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 0;
+    height: var(--min-touch-target);
     min-height: var(--min-touch-target);
-    padding: 10px 14px;
+    /* Zero left padding: the 44px icon-wrapper below is the leading column. */
+    padding: 0 14px 0 0;
     background: transparent;
     border: 1px solid transparent;
     border-radius: 10px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
+    /* Visuals + intended transform only, never layout geometry (same
+       discipline as ModuleButton) so the morph never springs the icon. */
+    transition:
+      background-color var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1),
+      border-color var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1),
+      color var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1),
+      transform var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     margin-bottom: 3px;
     overflow: hidden;
+  }
+
+  /* Rail: no right padding so the 44px icon column fills the ~44px button and
+     the icon reads centered under its module (x=32). */
+  .section-button.collapsed {
+    padding: 0;
   }
 
   .section-button:hover:not(.disabled) {
@@ -97,12 +120,15 @@
     cursor: not-allowed;
   }
 
-  /* Icon wrapper - for badge positioning */
+  /* Icon wrapper - for badge positioning. Fixed 44px leading column (matches
+     ModuleButton) so the tab icon center is deterministic across the morph. */
   .icon-wrapper {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: 44px;
+    flex-shrink: 0;
   }
 
   .section-icon {
@@ -113,7 +139,8 @@
     flex-shrink: 0;
     width: 22px;
     height: 22px;
-    transition: all var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* transform only — the spring is for the hover scale pop; geometry snaps. */
+    transition: transform var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   /* Style icons with gradient colors and glow */
@@ -156,20 +183,18 @@
     font-weight: 500;
     letter-spacing: -0.005em;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-
-    /* Delayed fade-in animation when sidebar expands (Google Calendar-style) */
-    animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
+    white-space: nowrap;
+    overflow: hidden;
+    /* The label is always mounted (needed so it can MORPH, not mount/unmount).
+       Rail collapses it to zero opacity; expand fades it back in. */
+    opacity: 1;
+    transition: opacity var(--duration-normal) ease;
   }
 
-  @keyframes label-fade-in {
-    from {
-      opacity: 0;
-      transform: translateX(-4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
+  /* Rail: the button is ~44px (icon column only), so the label has no room —
+     zero its opacity so it fades rather than clip-wipes as the sidebar grows. */
+  .section-button.collapsed .section-label {
+    opacity: 0;
   }
 
   .section-button.active .section-label {

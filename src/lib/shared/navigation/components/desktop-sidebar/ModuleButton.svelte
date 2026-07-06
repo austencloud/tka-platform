@@ -179,9 +179,14 @@
     overflow: hidden;
   }
 
+  /* Rail: keep the icon LEFT-anchored in its fixed 44px column (NOT
+     justify-content:center). The tree is unified now, so on collapse the button
+     width animates 200→44 — centering made the icon sit mid-button (near the
+     right edge) and ride the shrink in from the right. Left-anchored, the 44px
+     icon column holds the icon center at x=32 the whole time. Zero padding so
+     the column fits the ~44px rail button exactly. */
   .module-button.sidebar-collapsed {
-    justify-content: center;
-    padding: 12px 8px;
+    padding: 0;
   }
 
   /* Shimmer effect layer - subtle */
@@ -333,9 +338,9 @@
   }
 
   .module-icon {
-    /* Match the rail's CollapsedModuleButton .module-icon exactly
-       (--font-size-xl, intrinsic box) so the glyph is the same size before
-       and after the hover-expand swap — no size pop. */
+    /* --font-size-xl, intrinsic box. This button now renders in both rail and
+       expanded states (unified tree), so the glyph is the same size across the
+       hover-expand morph by construction — no size pop. */
     font-size: var(--font-size-xl);
     display: flex;
     align-items: center;

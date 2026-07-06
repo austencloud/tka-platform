@@ -17,6 +17,7 @@
     currentSection,
     moduleId,
     isActive,
+    isCollapsed = false,
     onSectionClick,
     onSectionContextMenu,
     celebrateAppearance = false,
@@ -27,6 +28,7 @@
     currentSection: string;
     moduleId: string;
     isActive: boolean;
+    isCollapsed?: boolean;
     onSectionClick: (moduleId: string, section: Section) => void;
     onSectionContextMenu?: (e: MouseEvent, moduleId: string, section: Section) => void;
     celebrateAppearance?: boolean;
@@ -34,9 +36,12 @@
   }>();
 
   // Grouping only kicks in when the module supplies groups AND at least one
-  // section is tagged. Everything else falls through to the flat list.
+  // section is tagged — AND we're expanded. In the rail (isCollapsed) the tabs
+  // flatten to a plain icon list: group headers carry labels that don't fit the
+  // 64px rail, so Lab collapses to icons like every other module.
   const useGroups = $derived(
-    !!(groups && groups.length > 0 && sections.some((s: Section) => s.groupId))
+    !isCollapsed &&
+      !!(groups && groups.length > 0 && sections.some((s: Section) => s.groupId))
   );
 
   // [{ group, items }] in group-definition order, dropping empty groups.
@@ -101,6 +106,7 @@
 <div
   class="sections-list"
   class:celebrate={celebrateAppearance}
+  class:collapsed={isCollapsed}
   transition:slide={{ duration: 200 }}
 >
   {#if useGroups}
@@ -161,6 +167,7 @@
         <SectionButton
           {section}
           {moduleId}
+          {isCollapsed}
           isActive={isSectionActive}
           onClick={() => onSectionClick(moduleId, section)}
           onContextMenu={onSectionContextMenu ? (e) => onSectionContextMenu(e, moduleId, section) : undefined}
@@ -177,7 +184,18 @@
      ============================================================================ */
   .sections-list {
     margin-top: 6px;
-    padding-left: 8px;
+    /* The rail↔expanded inset lives here — the single horizontal motion of the
+       whole tab list. Expanded insets tabs 10px right of the module icon
+       (icon center x=42 vs the module's x=32 — the hierarchy signal). Rail
+       zeroes it so tab icons sit directly under the module (x=32).
+       Transitioning padding-left slides every tab together, no snap
+       (2026-07-06-sidebar-tree-unification spec). */
+    padding-left: 10px;
+    transition: padding-left var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .sections-list.collapsed {
+    padding-left: 0;
   }
 
   /* ============================================================================

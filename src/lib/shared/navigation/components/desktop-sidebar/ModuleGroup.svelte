@@ -112,14 +112,18 @@
     onContextMenu={onModuleContextMenu ? (e) => onModuleContextMenu(e, module.id) : undefined}
   />
 
-  <!-- Module Sections/Tabs (collapsible) -->
-  {#if isExpanded && filteredSections.length > 0 && !isCollapsed}
+  <!-- Module Sections/Tabs (collapsible). Rendered in BOTH rail and expanded
+       states now (the trees are unified — 2026-07-06-sidebar-tree-unification
+       spec). SectionsList morphs its tabs on isCollapsed instead of the sidebar
+       swapping to a separate CollapsedTabButton rail. -->
+  {#if isExpanded && filteredSections.length > 0}
     <SectionsList
       sections={filteredSections}
       groups={module.groups}
       {currentSection}
       moduleId={module.id}
       {isActive}
+      {isCollapsed}
       {onSectionClick}
       {onSectionContextMenu}
       {celebrateAppearance}
@@ -133,12 +137,11 @@
      MODULE GROUP
      ============================================================================ */
   .module-group {
-    /* margin-bottom + padding match the rail's .module-context-group exactly
-       (4px margin, 4px vertical pad) so each module sits at the SAME y in
-       both trees — no vertical bounce on the tree swap. */
+    /* One unified tree now renders this in both rail and expanded states, so
+       these metrics ARE the module's y-rhythm (no cross-tree matching needed).
+       2px horizontal padding keeps the ModuleButton icon center at x=32px. */
     margin-bottom: 4px;
     border-radius: 12px;
-    /* 2px horizontal: keeps ModuleButton icon centers at x=32px (rail parity) */
     padding: 4px 2px;
     /* Visuals only. `all` here tweens the padding/background swap between the
        plain and .active.has-sections states during the expand, nudging the
@@ -148,9 +151,9 @@
       border-color var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Active module with expanded sections gets unified background.
-     margin-bottom matches the rail's active .module-context-group.has-tabs
-     (10px) so the block below the active module doesn't jump on swap. */
+  /* Active module with expanded sections gets a unified glass background
+     (replaces the old rail's .module-context-group.active.has-tabs — same
+     element in both states now). */
   .module-group.active.has-sections {
     background: color-mix(in srgb, var(--module-color) 12%, rgba(0, 0, 0, 0.3));
     border: 1px solid color-mix(in srgb, var(--module-color) 20%, transparent);

@@ -19,7 +19,6 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
   import SidebarFooter from "./desktop-sidebar/SidebarFooter.svelte";
   import ModuleGroup from "./desktop-sidebar/ModuleGroup.svelte";
   import CollapsedTabButton from "./desktop-sidebar/CollapsedTabButton.svelte";
-  import CollapsedModuleButton from "./desktop-sidebar/CollapsedModuleButton.svelte";
   import SidebarContextMenu from "./desktop-sidebar/SidebarContextMenu.svelte";
   import type { ContextMenuState } from "./desktop-sidebar/SidebarContextMenu.svelte";
   import AccountPopover from "./account/AccountPopover.svelte";
@@ -254,7 +253,7 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     // Only trigger if right-clicking on the container itself or empty space,
     // not on a module button or its children
     const target = e.target as HTMLElement;
-    if (target.closest(".module-group, .module-context-group, button, a")) return;
+    if (target.closest(".module-group, button, a")) return;
     e.preventDefault();
     contextMenuState = {
       mode: "modules",
@@ -538,99 +537,40 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
         in:slide={{ duration: 250, axis: "y" }}
         out:slide={{ duration: 200, axis: "y" }}
       >
-        {#if !visuallyExpanded}
-          <!-- VS Code-style Activity Bar: Modules with nested tabs -->
-          <div class="activity-bar">
-            {#each modules.filter((m: ModuleDefinition) => m.isMain) as module}
-              {@const isModuleActive = currentModule === module.id}
-              {@const moduleColor = module.color || "#a855f7"}
-              {@const filteredSections = getFilteredSections(module)}
-              {@const hasTabs = isModuleActive && filteredSections.length > 0}
-              {@const isCreateInTutorialCollapsed =
-                module.id === "create" &&
-                isCreateTutorialActive &&
-                !isOnTutorialChoiceStep}
-              {@const forceActiveCollapsed = isCreateInTutorialCollapsed}
-              {@const shouldShowGlassContainer =
-                (isModuleActive || forceActiveCollapsed) && hasTabs}
+        <!-- One morphing tree for BOTH rail and expanded (2026-07-06 sidebar-
+             tree-unification spec). Each ModuleGroup renders its own tabs and
+             morphs them on isCollapsed — no separate activity-bar rail, so the
+             tab inset slides instead of snapping and multi-expand heights agree
+             by construction. -->
+        {#each modules.filter((m: ModuleDefinition) => m.isMain) as module}
+          {@const isExpanded = expandedModules.has(module.id)}
+          {@const moduleColor = module.color || "#a855f7"}
+          {@const filteredSections = getFilteredSections(module)}
+          {@const isCreateOnChoiceStep =
+            module.id === "create" && isOnTutorialChoiceStep}
+          {@const shouldCelebrate =
+            isCreateOnChoiceStep && filteredSections.length > 0}
+          {@const isCreateInTutorial =
+            module.id === "create" &&
+            isCreateTutorialActive &&
+            !isOnTutorialChoiceStep}
+          {@const forceActiveStyleLocal = isCreateInTutorial}
 
-              <!-- Module Context Group: Unified visual container for module + tabs -->
-              <div
-                class="module-context-group"
-                class:active={isModuleActive || forceActiveCollapsed}
-                class:has-tabs={shouldShowGlassContainer}
-                style="--module-color: {moduleColor};"
-              >
-                <!-- Module Button -->
-                <CollapsedModuleButton
-                  {module}
-                  isActive={isModuleActive || forceActiveCollapsed}
-                  onClick={() =>
-                    handleModuleTap(module.id, module.disabled ?? false)}
-                  onContextMenu={(e) => handleModuleContextMenu(e, module.id)}
-                  {moduleColor}
-                  {hasTabs}
-                />
-
-                <!-- Nested Tabs (shown only for active module) -->
-                {#if hasTabs}
-                  <div
-                    class="nested-tabs"
-                    in:slide={{ duration: 200, axis: "y" }}
-                    out:slide={{ duration: 150, axis: "y" }}
-                  >
-                    {#each filteredSections as section, index}
-                      {@const isSectionActive = currentSection === section.id}
-
-                      <div
-                        in:fade={{ duration: 150, delay: index * 30 }}
-                        out:fade={{ duration: 100 }}
-                      >
-                        <CollapsedTabButton
-                          {section}
-                          moduleId={module.id}
-                          isActive={isSectionActive}
-                          onClick={() => handleSectionTap(module.id, section)}
-                          onContextMenu={(e) => handleTabContextMenu(e, module.id, section)}
-                        />
-                      </div>
-                    {/each}
-                  </div>
-                {/if}
-              </div>
-            {/each}
-          </div>
-        {:else}
-          <!-- Show modules with expandable sections when expanded -->
-          {#each modules.filter((m: ModuleDefinition) => m.isMain) as module}
-            {@const isExpanded = expandedModules.has(module.id)}
-            {@const moduleColor = module.color || "#a855f7"}
-            {@const filteredSections = getFilteredSections(module)}
-            {@const isCreateOnChoiceStep =
-              module.id === "create" && isOnTutorialChoiceStep}
-            {@const shouldCelebrate =
-              isCreateOnChoiceStep && filteredSections.length > 0}
-            {@const isCreateInTutorial =
-              module.id === "create" &&
-              isCreateTutorialActive &&
-              !isOnTutorialChoiceStep}
-            {@const forceActiveStyleLocal = isCreateInTutorial}
-
-            <ModuleGroup
-              module={{ ...module, sections: filteredSections }}
-              {currentModule}
-              {currentSection}
-              {isExpanded}
-              {moduleColor}
-              onModuleClick={handleModuleTap}
-              onSectionClick={handleSectionTap}
-              onModuleContextMenu={handleModuleContextMenu}
-              onSectionContextMenu={handleTabContextMenu}
-              celebrateAppearance={shouldCelebrate}
-              forceActiveStyle={forceActiveStyleLocal}
-            />
-          {/each}
-        {/if}
+          <ModuleGroup
+            module={{ ...module, sections: filteredSections }}
+            {currentModule}
+            {currentSection}
+            {isExpanded}
+            isCollapsed={!visuallyExpanded}
+            {moduleColor}
+            onModuleClick={handleModuleTap}
+            onSectionClick={handleSectionTap}
+            onModuleContextMenu={handleModuleContextMenu}
+            onSectionContextMenu={handleTabContextMenu}
+            celebrateAppearance={shouldCelebrate}
+            forceActiveStyle={forceActiveStyleLocal}
+          />
+        {/each}
       </div>
     {/if}
   </div>
@@ -720,16 +660,18 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     container-name: nav-content;
   }
 
-  /* Tabs mode - VS Code activity bar layout when sidebar is collapsed */
+  /* Rail mode. Width is NOT pinned here — the box flex-fills the nav so it
+       tracks the animating width in BOTH directions (the module/tab morph stays
+       smooth on collapse, not just expand). At rest the nav is 64px so this is
+       64px, same as before. */
   .navigation-content.tabs-mode {
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 16px 8px;
-    width: 64px;
     /* Hide the scrollbar in rail mode (wheel/keys still scroll): a visible
        bar eats 10px of the 64px rail and shifts the centered icon column
-       off the expanded tree's x=32 anchor. */
+       off the x=32 anchor. */
     scrollbar-width: none;
   }
 
@@ -930,54 +872,6 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
   .section-button:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
     outline-offset: 2px;
-  }
-
-  /* ============================================================================
-     ACTIVITY BAR (Collapsed Sidebar Mode)
-     ============================================================================ */
-  .activity-bar {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0;
-  }
-
-  /* Module Context Group - Unified container for module + tabs */
-  .module-context-group {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 4px;
-    padding: 4px;
-    border-radius: 12px;
-    position: relative;
-    transition: all var(--duration-normal, 200ms)
-      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
-  }
-
-  /* Active module with tabs gets subtle unified background */
-  .module-context-group.active.has-tabs {
-    background: color-mix(in srgb, var(--module-color) 12%, rgba(0, 0, 0, 0.3));
-    border: 1px solid color-mix(in srgb, var(--module-color) 20%, transparent);
-    padding: 8px 4px 8px 4px; /* Increased top padding to contain module button */
-    margin-bottom: 10px;
-  }
-
-  /* Nested Tabs - shown under active module. Vertical footprint (top gap 6px,
-     47px per-row pitch, 3px trailing) matches the expanded SectionsList so the
-     active-module tab block is the SAME height in both trees — modules below
-     the active one don't jump on the hover-expand swap. */
-  .nested-tabs {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    padding: 0 0 3px 0;
-    margin-top: 6px;
-    position: relative;
   }
 
   /* ============================================================================
