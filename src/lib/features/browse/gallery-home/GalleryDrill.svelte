@@ -874,7 +874,9 @@
         <div class="drill-screen">
           {@render valueHead(
             "Pick a family",
-            onToggleFamily ? "Families stack — tap several to combine them." : undefined,
+            onToggleFamily
+              ? "Timing is how far apart the hands are; direction is whether they turn the same way or opposite ways. Tap several to combine them."
+              : "Timing is how far apart the hands are; direction is whether they turn the same way or opposite ways.",
           )}
           <div class="value-list">
             {#each familyValues as v (v.value)}

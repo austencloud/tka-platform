@@ -7,10 +7,13 @@ export interface TnDElement {
   readonly iconPath: string;
   /** CIELAB-tuned opacity (0–1) for card interior tint; compensates for each color's perceptual distance from white */
   readonly cardTintOpacity: number;
-  /** One-line meaning: hand relationship + arc direction + the element's
-   * visual quality. Wording follows the canonical 6-Element Model (timing =
-   * together / split / quarter as spatial hand relationship; direction =
-   * same / opposite arcs). */
+  /** Neutral, pedagogical one-liner stating this family's two axes: TIMING
+   * (how far apart the hands are — the app's own alpha/beta/gamma language)
+   * + DIRECTION (same vs opposite turning). NO aesthetic verdict: the color
+   * coding carries feel, and the concrete look permutes with grid mode
+   * (opposite-direction families reclassify between diamond and box), so the
+   * copy names the axes, never a single fixed picture. Axes per the canonical
+   * 6-Element Model (Split→alpha, Tog→beta, Quarter→gamma). */
   readonly description: string;
 }
 
@@ -23,7 +26,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#1a3a5e",
     iconPath: "/images/elements/water-v2.png",
     cardTintOpacity: 0.25,
-    description: "Hands at opposite points, arcing the same way. Flowing.",
+    description: "Hands apart, turning the same way.",
   },
   {
     familyId: "tog-same",
@@ -33,7 +36,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#2a4a29",
     iconPath: "/images/elements/earth-v2.png",
     cardTintOpacity: 0.15,
-    description: "Hands at the same point, arcing the same way. Grounded.",
+    description: "Hands together, turning the same way.",
   },
   {
     familyId: "quarter-same",
@@ -43,7 +46,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#7a6a00",
     iconPath: "/images/elements/sun-v4.png",
     cardTintOpacity: 0.09,
-    description: "Hands a right angle apart, arcing the same way. Constant rotation.",
+    description: "Hands at a right angle, turning the same way.",
   },
   {
     familyId: "split-opp",
@@ -53,7 +56,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#6b1a0a",
     iconPath: "/images/elements/fire-v2.png",
     cardTintOpacity: 0.09,
-    description: "Hands at opposite points, arcing opposite ways. Chaotic.",
+    description: "Hands apart, turning opposite ways.",
   },
   {
     familyId: "tog-opp",
@@ -63,7 +66,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#3a6a8b",
     iconPath: "/images/elements/air-v2.png",
     cardTintOpacity: 0.16,
-    description: "Hands at the same point, arcing opposite ways. Light and open.",
+    description: "Hands together, turning opposite ways.",
   },
   {
     familyId: "quarter-opp",
@@ -73,7 +76,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#2a1540",
     iconPath: "/images/elements/moon-v2.png",
     cardTintOpacity: 0.09,
-    description: "Hands a right angle apart, arcing opposite ways. Opens and closes.",
+    description: "Hands at a right angle, turning opposite ways.",
   },
 ] as const;
 
