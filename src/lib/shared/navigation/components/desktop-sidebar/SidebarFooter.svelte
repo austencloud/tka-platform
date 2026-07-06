@@ -264,7 +264,14 @@
     border-radius: 12px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    /* Transition only VISUALS, never geometry. The rail→expanded swap flips
+       the button width (44↔200) instantly; the nav's overflow:hidden clip
+       reveals it. Animating width here would squeeze the flex icon column
+       mid-flight (the left-then-right icon jump). */
+    transition:
+      background var(--duration-normal) ease,
+      border-color var(--duration-normal) ease,
+      color var(--duration-normal) ease;
     font-size: var(--font-size-sm);
     font-weight: 500;
   }
@@ -293,13 +300,6 @@
     border-radius: 12px;
   }
 
-  /* Expanded rows: 32px icon box + 6px side margins = a 44px icon column
-     whose center matches the rail's icon anchor. Vertical centering comes
-     from the flex row, keeping the 44px row height. */
-  .footer-button:not(.collapsed) .button-icon {
-    margin: 0 6px;
-  }
-
   .footer-button:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
     outline-offset: 2px;
@@ -308,24 +308,27 @@
   /* ============================================================================
      BUTTON ICON
      ============================================================================ */
+  /* Fixed 32px glyph + 6px side margins = a rock-solid 44px icon column,
+     pinned by flex-shrink:0 so the button's width flip can't squeeze it.
+     Identical in both states → icon center stays at x=32 through the swap,
+     no left/right jump. Only the background tile fades. */
   .button-icon {
     position: relative;
     width: 32px;
     height: 32px;
+    margin: 0 6px;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: var(--font-size-base);
     border-radius: 8px;
     background: var(--theme-card-bg, var(--theme-card-bg));
-    transition: all var(--duration-normal) ease;
+    transition: background var(--duration-normal) ease;
   }
 
   .footer-button.collapsed .button-icon {
-    width: 100%;
-    height: 100%;
     background: transparent;
-    border-radius: 12px;
   }
 
   .footer-button:hover .button-icon {

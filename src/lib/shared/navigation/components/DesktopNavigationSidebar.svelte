@@ -120,6 +120,11 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
   const visuallyExpanded = $derived(!isCollapsed || hoverExpanded);
 
   const hoverIntent = createHoverIntent({
+    // Edge-anchored rail: the pointer can't overshoot past it (it's against
+    // the viewport edge), so entering is almost always intentional. Near-zero
+    // open delay makes it feel instant, like Cloudflare's; a tiny 50ms still
+    // filters a fast vertical flick clipping the edge. Close keeps its grace.
+    openDelay: 50,
     onOpen: () => {
       hoverExpanded = true;
     },
