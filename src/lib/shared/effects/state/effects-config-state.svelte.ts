@@ -25,6 +25,7 @@ import type {
   InkIntent,
   FrostIntent,
   SilkIntent,
+  MenagerieIntent,
   PulseIntent,
 } from "../domain/effects-config";
 
@@ -44,6 +45,7 @@ export interface EffectConfigMap {
   ink: InkIntent;
   frost: FrostIntent;
   silk: SilkIntent;
+  menagerie: MenagerieIntent;
   pulse: PulseIntent;
 }
 import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
@@ -62,7 +64,7 @@ const VM_STORAGE_KEY = "animation-visibility-settings";
 
 const EFFECT_IDS = [
   "trails", "fire", "led", "charcoal", "zap", "sparkles", "ghost", "bloom",
-  "goo", "bubbles", "petals", "smoke", "ink", "frost", "silk", "pulse",
+  "goo", "bubbles", "petals", "smoke", "ink", "frost", "silk", "menagerie", "pulse",
 ] as const;
 
 /** One of the 16 concrete effect ids — `EffectType` minus "none". */
@@ -537,6 +539,7 @@ export function createEffectsConfigState(
     get ink() { return config.ink; },
     get frost() { return config.frost; },
     get silk() { return config.silk; },
+    get menagerie() { return config.menagerie; },
     get pulse() { return config.pulse; },
     get activePresets() { return config.activePresets; },
     get activeEffect() { return config.activeEffect; },

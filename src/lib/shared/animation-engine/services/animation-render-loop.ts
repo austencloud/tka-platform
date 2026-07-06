@@ -680,6 +680,16 @@ export class AnimationRenderLoop {
       buildInput: (ctx) => AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "silk", ctx.params),
       render: (r, cfg, inp, dt, ctx) => r.renderFrame(cfg, inp, dt, ctx.loopDetectedThisFrame && ctx.isSeamlesslyLoopable),
     },
+    // --- Menagerie: 4-pos, dt, resetTimeOnInactive, loopDetected arg (mirrors silk) ---
+    {
+      effect: "menagerie",
+      configKey: "menagerieConfig",
+      getRenderer: (l) => (l.renderers.get("menagerie") ?? null) as EffectRenderer | null,
+      needsDt: true,
+      resetTimeOnInactive: true,
+      buildInput: (ctx) => AnimationRenderLoop.buildEmitterTips(ctx.sharedTips, ctx.tipMap, "menagerie", ctx.params),
+      render: (r, cfg, inp, dt, ctx) => r.renderFrame(cfg, inp, dt, ctx.loopDetectedThisFrame && ctx.isSeamlesslyLoopable),
+    },
     // --- Pulse: array-of-tips, dt, resetTimeOnInactive, currentStep arg ---
     {
       effect: "pulse",

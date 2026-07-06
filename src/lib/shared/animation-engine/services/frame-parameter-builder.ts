@@ -31,6 +31,7 @@ import type {
   Ink2DParams,
   Petals2DParams,
   Silk2DParams,
+  Menagerie2DParams,
   Pulse2DParams,
   Smoke2DParams,
   Sparkles2DParams,
@@ -45,6 +46,7 @@ import {
   resolveInk2D,
   resolvePetals2D,
   resolveSilk2D,
+  resolveMenagerie2D,
   resolvePulse2D,
   resolveSmoke2D,
   resolveSparkles2D,
@@ -59,6 +61,7 @@ import type {
   InkIntent,
   PetalsIntent,
   SilkIntent,
+  MenagerieIntent,
   PulseIntent,
   SmokeIntent,
   SparklesIntent,
@@ -95,6 +98,8 @@ export class FrameParameterBuilder {
   private prevFrostIntentRef: FrostIntent | null = null;
   private silkConfig: Silk2DParams = resolveSilk2D(DEFAULT_EFFECTS_CONFIG.silk);
   private prevSilkIntentRef: SilkIntent | null = null;
+  private menagerieConfig: Menagerie2DParams = resolveMenagerie2D(DEFAULT_EFFECTS_CONFIG.menagerie);
+  private prevMenagerieIntentRef: MenagerieIntent | null = null;
   private pulseConfig: Pulse2DParams = resolvePulse2D(DEFAULT_EFFECTS_CONFIG.pulse);
   private prevPulseIntentRef: PulseIntent | null = null;
   private prevZapIntentJson: string = JSON.stringify(DEFAULT_EFFECTS_CONFIG.zap);
@@ -163,6 +168,7 @@ export class FrameParameterBuilder {
     inkConfig: null,
     frostConfig: null,
     silkConfig: null,
+    menagerieConfig: null,
     pulseConfig: null,
     isSeamlesslyLoopable: false,
     sequenceContentHash: undefined,
@@ -402,6 +408,16 @@ export class FrameParameterBuilder {
       }
     }
     fp.silkConfig = erm.wasEnabled("silk") ? this.silkConfig : null;
+
+    // Menagerie overlay config - same reference-identity diff pattern.
+    if (effectsConfigState) {
+      const intent = effectsConfigState.menagerie;
+      if (intent !== this.prevMenagerieIntentRef) {
+        this.prevMenagerieIntentRef = intent;
+        this.menagerieConfig = resolveMenagerie2D(intent);
+      }
+    }
+    fp.menagerieConfig = erm.wasEnabled("menagerie") ? this.menagerieConfig : null;
 
     // Pulse overlay config - same reference-identity diff pattern.
     if (effectsConfigState) {
