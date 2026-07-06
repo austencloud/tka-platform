@@ -2,11 +2,14 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { LIBRARY_LIMITS } from "$lib/shared/library/data/firestore-paths";
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
+import type { SmartFilterSpec } from "$lib/shared/library/domain/models/collection";
 import {
 	subscribeToCollections,
 	addSequenceToCollection,
 	removeSequenceFromCollection,
 	createUserCollection,
+	createSmartUserCollection,
+	updateCollectionFilterSpec,
 	ensureSystemCollections,
 	updateCollection,
 	deleteCollection,
@@ -80,6 +83,10 @@ class CollectionsState {
 		const c = this.collections.find((col) => col.id === collectionId);
 		if (!c) return;
 
+		// Smart collections derive members from a rule — there's nothing to
+		// hand-toggle. (The picker hides them, so this is belt-and-braces.)
+		if (c.kind === "smart") return;
+
 		const isMember = c.sequenceIds.includes(sequenceId);
 		if (!isMember && c.sequenceCount >= LIBRARY_LIMITS.MAX_SEQUENCES_PER_COLLECTION) {
 			toast.error(`"${c.name}" is full (${LIBRARY_LIMITS.MAX_SEQUENCES_PER_COLLECTION} max).`);
@@ -116,6 +123,45 @@ class CollectionsState {
 			return await createUserCollection(trimmed);
 		} catch {
 			return null;
+		}
+	}
+
+	/**
+	 * Create a Smart Collection from a saved filter rule, guarding the per-user
+	 * cap (same as `create`). Returns null when blocked or on failure.
+	 */
+	async createSmart(
+		name: string,
+		filterSpec: SmartFilterSpec,
+	): Promise<LibraryCollection | null> {
+		const trimmed = name.trim();
+		if (!trimmed) return null;
+
+		const userCount = this.collections.filter((c) => !c.systemType).length;
+		if (userCount >= LIBRARY_LIMITS.MAX_COLLECTIONS_PER_USER) {
+			toast.error(`Collection limit reached (${LIBRARY_LIMITS.MAX_COLLECTIONS_PER_USER} max).`);
+			return null;
+		}
+
+		try {
+			return await createSmartUserCollection(trimmed, filterSpec);
+		} catch {
+			return null; // manager already toasted
+		}
+	}
+
+	/**
+	 * Replace a Smart Collection's rule (Edit rule). Returns false on failure.
+	 */
+	async updateFilterSpec(
+		collectionId: string,
+		filterSpec: SmartFilterSpec,
+	): Promise<boolean> {
+		try {
+			await updateCollectionFilterSpec(collectionId, filterSpec);
+			return true;
+		} catch {
+			return false; // manager already toasted
 		}
 	}
 
