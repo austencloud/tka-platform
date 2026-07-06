@@ -25,6 +25,7 @@ import { smokeEffectPlugin } from "../smoke-overlay-renderer";
 import { inkEffectPlugin } from "../ink-overlay-renderer";
 import { frostEffectPlugin } from "../frost-overlay-renderer";
 import { silkEffectPlugin } from "../silk-overlay-renderer";
+import { menagerieEffectPlugin } from "../menagerie-overlay-renderer";
 import { pulseEffectPlugin } from "../pulse-overlay-renderer";
 
 /** The single source of truth for all effects. Add a new effect by adding one line here. */
@@ -44,6 +45,7 @@ export const EFFECT_PLUGINS: readonly EffectPlugin[] = [
   inkEffectPlugin,
   frostEffectPlugin,
   silkEffectPlugin,
+  menagerieEffectPlugin,
   pulseEffectPlugin,
 ];
 
