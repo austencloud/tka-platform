@@ -875,8 +875,8 @@
           {@render valueHead(
             "Pick a family",
             onToggleFamily
-              ? "Timing is how far apart the hands are; direction is whether they turn the same way or opposite ways. Tap several to combine them."
-              : "Timing is how far apart the hands are; direction is whether they turn the same way or opposite ways.",
+              ? "Timing is how far apart the hands are; direction is whether they rotate the same way or opposite ways. Tap several to combine them."
+              : "Timing is how far apart the hands are; direction is whether they rotate the same way or opposite ways.",
           )}
           <div class="value-list">
             {#each familyValues as v (v.value)}
@@ -1404,6 +1404,10 @@
     font-size: 0.75rem;
     line-height: 1.25;
     color: var(--theme-text-muted, #9aa6b8);
+    /* Centered monument descriptions (levels, families) wrap to two lines in
+       their narrow column — balance splits them evenly instead of orphaning
+       the last word ("…the same / way."). No-op on single-line rows. */
+    text-wrap: balance;
   }
   /* On the light level gradients, descriptions read in dark ink. */
   .value-desc.on-gradient {

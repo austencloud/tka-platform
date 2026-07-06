@@ -9,7 +9,7 @@ export interface TnDElement {
   readonly cardTintOpacity: number;
   /** Neutral, pedagogical one-liner stating this family's two axes: TIMING
    * (how far apart the hands are — the app's own alpha/beta/gamma language)
-   * + DIRECTION (same vs opposite turning). NO aesthetic verdict: the color
+   * + DIRECTION (same vs opposite rotation). NO aesthetic verdict: the color
    * coding carries feel, and the concrete look permutes with grid mode
    * (opposite-direction families reclassify between diamond and box), so the
    * copy names the axes, never a single fixed picture. Axes per the canonical
@@ -26,7 +26,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#1a3a5e",
     iconPath: "/images/elements/water-v2.png",
     cardTintOpacity: 0.25,
-    description: "Hands apart, turning the same way.",
+    description: "Hands apart, rotating the same way.",
   },
   {
     familyId: "tog-same",
@@ -36,7 +36,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#2a4a29",
     iconPath: "/images/elements/earth-v2.png",
     cardTintOpacity: 0.15,
-    description: "Hands together, turning the same way.",
+    description: "Hands together, rotating the same way.",
   },
   {
     familyId: "quarter-same",
@@ -46,7 +46,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#7a6a00",
     iconPath: "/images/elements/sun-v4.png",
     cardTintOpacity: 0.09,
-    description: "Hands at a right angle, turning the same way.",
+    description: "Hands at a right angle, rotating the same way.",
   },
   {
     familyId: "split-opp",
@@ -56,7 +56,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#6b1a0a",
     iconPath: "/images/elements/fire-v2.png",
     cardTintOpacity: 0.09,
-    description: "Hands apart, turning opposite ways.",
+    description: "Hands apart, rotating opposite ways.",
   },
   {
     familyId: "tog-opp",
@@ -66,7 +66,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#3a6a8b",
     iconPath: "/images/elements/air-v2.png",
     cardTintOpacity: 0.16,
-    description: "Hands together, turning opposite ways.",
+    description: "Hands together, rotating opposite ways.",
   },
   {
     familyId: "quarter-opp",
@@ -76,7 +76,7 @@ export const TND_ELEMENTS: readonly TnDElement[] = [
     darkComplement: "#2a1540",
     iconPath: "/images/elements/moon-v2.png",
     cardTintOpacity: 0.09,
-    description: "Hands at a right angle, turning opposite ways.",
+    description: "Hands at a right angle, rotating opposite ways.",
   },
 ] as const;
 
