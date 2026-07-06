@@ -369,8 +369,12 @@
   // the 1024px static/cloud renders, so bigger boxes stay sharp.
   const PEEK_TIERS = {
     base: { fanW: 76, fanH: 92, shortW: 56, shortH: 84, longW: 118, longH: 84, collW: 44, collH: 34, levelW: 62, levelH: 56, badge: "18px" },
-    wide: { fanW: 112, fanH: 136, shortW: 82, shortH: 122, longW: 172, longH: 122, collW: 60, collH: 46, levelW: 84, levelH: 76, badge: "24px" },
-    ultra: { fanW: 132, fanH: 160, shortW: 96, shortH: 144, longW: 204, longH: 144, collW: 84, collH: 64, levelW: 104, levelH: 94, badge: "28px" },
+    // Level-screen art jumps hardest with width: on the desktop monument
+    // columns a mini card is unreadable filler — at 150/200px the word and the
+    // motions actually read, so the art argues for the level instead of
+    // decorating it.
+    wide: { fanW: 112, fanH: 136, shortW: 82, shortH: 122, longW: 172, longH: 122, collW: 60, collH: 46, levelW: 150, levelH: 140, badge: "24px" },
+    ultra: { fanW: 132, fanH: 160, shortW: 96, shortH: 144, longW: 204, longH: 144, collW: 84, collH: 64, levelW: 200, levelH: 186, badge: "28px" },
   } as const;
   let drillWidth = $state(0);
   const PEEK = $derived(
@@ -433,6 +437,10 @@
         aria-label="Back to browse options"
       >
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
+        <!-- Icon-only reads as an anonymous circle when the wide stage strands
+             it far from the title — the label makes it unmistakably a button.
+             Hidden on phones where the 44px circle sits right next to the title. -->
+        <span class="head-back-label">Back</span>
       </button>
       <h2>{title}</h2>
       {#if hint}<p>{hint}</p>{/if}
@@ -1050,11 +1058,12 @@
     font-size: 0.88rem;
     color: var(--theme-text-muted, #9aa6b8);
   }
-  /* Value-screen header: back arrow inline-left of the centered title (equal
-     right column keeps the title truly centered); hint spans the full row. */
+  /* Value-screen header: back control left of the centered title (mirrored
+     1fr columns keep the title truly centered whatever the button's width);
+     hint spans the full row. */
   .drill-head.with-back {
     display: grid;
-    grid-template-columns: 44px 1fr 44px;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
     row-gap: 0.3rem;
   }
@@ -1068,17 +1077,24 @@
   .head-back {
     grid-column: 1;
     grid-row: 1;
+    justify-self: start;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
+    gap: 0.5rem;
+    min-width: 44px;
     height: 44px;
-    background: transparent;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-border, #2a3140);
     border-radius: 999px;
     color: var(--theme-text, #e8edf6);
     font-size: 0.95rem;
     cursor: pointer;
+  }
+  /* Phone: icon-only circle (sits right next to the title, no room needed). */
+  .head-back-label {
+    display: none;
+    font-weight: 600;
   }
   .head-back:hover {
     border-color: var(--theme-accent, #6aa0ff);
@@ -1587,6 +1603,14 @@
       font-size: 0.98rem;
     }
 
+    /* Back earns its label once the wide stage strands it away from the title. */
+    .head-back {
+      padding: 0 1.1rem 0 0.95rem;
+    }
+    .head-back-label {
+      display: inline;
+    }
+
     /* Value screens: choices tile the width instead of stacking as a phone
        list. auto-fill keeps short catalogs (3 positions, 2 grid modes)
        centered-looking without stranding one giant row. */
@@ -1615,6 +1639,12 @@
       font-size: 3.6rem;
       min-width: 0;
     }
+    /* Monument order: rank numeral → showcase card → description → count.
+       (DOM keeps the phone row order; flex `order` re-stacks the column.) */
+    .level-tile .value-numeral { order: 1; }
+    .level-tile :global(.peek) { order: 2; }
+    .level-tile .value-main { order: 3; }
+    .level-tile .value-count { order: 4; }
     .level-tile .value-main {
       align-items: center;
       gap: 0.45rem;
