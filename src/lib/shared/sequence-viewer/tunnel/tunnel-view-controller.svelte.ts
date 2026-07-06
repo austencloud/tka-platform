@@ -6,14 +6,15 @@ import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/stat
 import { buildTunnelLayers } from "./tunnel-layer-builder";
 import { sampleTunnelProps } from "./tunnel-prop-sampling";
 import {
-  DEFAULT_DENSITY,
-  DEFAULT_LOOK_ID,
-  getLook,
+  DEFAULT_CONFIG,
+  MAX_IMAGES,
+  MAX_IMAGES_RM,
+  clampConfig,
+  configKey,
+  copyModulators,
   propCount,
-  REDUCED_MOTION_LOOK_ID,
-  REDUCED_MOTION_MAX_PROPS,
-  type TunnelLook,
-} from "./tunnel-looks";
+  type TunnelConfig,
+} from "./tunnel-config";
 import {
   loadTunnelViewState,
   saveTunnelViewState,
@@ -27,7 +28,7 @@ export interface TunnelControllerSources {
   getSequence: () => SequenceData | null | undefined;
 }
 
-/** Reduced-motion caps a dense look so a heavy kaleidoscope doesn't spin for
+/** Reduced motion caps a dense ring so a heavy kaleidoscope doesn't spin for
  *  users who asked for less motion. */
 function prefersReducedMotion(): boolean {
   return (
@@ -37,24 +38,29 @@ function prefersReducedMotion(): boolean {
 }
 
 export class TunnelViewController {
-  /** Prop count at/above which a look is a "large stack" (advisory frame-drop
+  /** Prop count at/above which a config is a "large stack" (advisory frame-drop
    *  warning). */
   static readonly LARGE_STACK_PROPS = 16;
 
   // Tunnel sub-mode on/off (speed + play/pause ride the pane's existing transport).
   active = $state(false);
 
-  /** Selected look id (see `tunnel-looks.ts`). Initialized from the persisted
-   *  view state so the tunnel reopens in the look the user left. */
-  lookId = $state<string>(DEFAULT_LOOK_ID);
-
-  /** Arm count for the density-tunable look (Radial). Ignored by fixed looks. */
-  density = $state<number>(DEFAULT_DENSITY);
-
-  /** Mirror toggle for a mirrorable density look (Radial) — adds the dihedral
-   *  reflection copies (rotational → Mandala-style). Off by default; an explicit,
-   *  labeled, opt-in choice (NOT the old hidden always-on multiplier). */
-  radialMirror = $state<boolean>(false);
+  // ── Primitive config (individual fields so the rebuild effect can depend on
+  //    the SPATIAL primitives only — stagger/speed tweaks never re-bake). ──
+  /** Rotational arms (cyclic order). */
+  fold = $state<number>(DEFAULT_CONFIG.fold);
+  /** Reflect across the vertical axis (dihedral). */
+  mirror = $state<boolean>(DEFAULT_CONFIG.mirror);
+  /** Reflect across the horizontal axis (N↔S). */
+  flip = $state<boolean>(DEFAULT_CONFIG.flip);
+  /** Alternate arms motion-invert (counter-rotate). */
+  counter = $state<boolean>(DEFAULT_CONFIG.counter);
+  /** Alternate arms run time-reversed. */
+  echo = $state<boolean>(DEFAULT_CONFIG.echo);
+  /** Arm k shows the sequence offset by k×this steps (0 = off). */
+  staggerSteps = $state<number>(DEFAULT_CONFIG.staggerSteps);
+  /** Alternate arms traverse at ½× / 2×. */
+  speed = $state<boolean>(DEFAULT_CONFIG.speed);
 
   /** Tunnel-specific grid visibility. The kaleidoscope owns this (the global
    *  Visual/Display toggles don't reach the self-clocked tunnel). Default off —
@@ -77,11 +83,17 @@ export class TunnelViewController {
   constructor(sources: TunnelControllerSources) {
     this.#sources = sources;
 
-    // Restore the last-left look/tuning before any effect wires up.
+    // Restore the last-left config before any effect wires up, clamped to the
+    // live budget (a persisted dense ring shrinks under reduced motion).
     const view = loadTunnelViewState();
-    this.lookId = view.lookId;
-    this.density = view.density;
-    this.radialMirror = view.radialMirror;
+    const cfg = clampConfig(view.config, this.#maxImages());
+    this.fold = cfg.fold;
+    this.mirror = cfg.mirror;
+    this.flip = cfg.flip;
+    this.counter = cfg.counter;
+    this.echo = cfg.echo;
+    this.staggerSteps = cfg.staggerSteps;
+    this.speed = cfg.speed;
     this.gridVisible = view.gridVisible;
     this.spectrum = view.spectrum;
     this.section = view.section;
@@ -89,9 +101,7 @@ export class TunnelViewController {
     // Persist the live view state on change.
     $effect(() => {
       const snapshot: TunnelViewState = {
-        lookId: this.lookId,
-        density: this.density,
-        radialMirror: this.radialMirror,
+        config: this.config,
         gridVisible: this.gridVisible,
         spectrum: this.spectrum,
         section: this.section,
@@ -99,95 +109,104 @@ export class TunnelViewController {
       saveTunnelViewState(snapshot);
     });
 
-    // Rebuild the overlaid copies when the topology (sequence / look / density)
-    // changes. Spin/phase are per-frame (a rigid rotation of the SAME copies) —
-    // they never rebuild. Transport changes never rebuild either.
+    // Re-bake the overlaid copies when the SPATIAL topology changes (sequence /
+    // fold / mirror / flip / counter / echo). Stagger + Speed are read ONLY in
+    // the sample path (copyModulators), so tweaking them never lands here and
+    // never re-runs the transforms. Transport changes never rebuild either.
     $effect(() => {
       const seq = this.#sources.getSequence();
-      const look = this.activeLook;
-      const density = this.density;
-      const mirror = this.radialMirror;
+      const spatial: TunnelConfig = {
+        fold: this.fold,
+        mirror: this.mirror,
+        flip: this.flip,
+        counter: this.counter,
+        echo: this.echo,
+        staggerSteps: 0,
+        speed: false,
+      };
       const on = this.active;
       if (!on || !seq) {
         this.#layers = [];
         return;
       }
       const token = ++this.#buildToken;
-      void buildTunnelLayers(seq, look, density, mirror).then((layers) => {
+      void buildTunnelLayers(seq, spatial).then((layers) => {
         if (token === this.#buildToken) this.#layers = layers;
       });
     });
   }
 
-  /** The resolved look (falls back to the default if a stale id is persisted). */
-  activeLook = $derived<TunnelLook>(getLook(this.lookId) ?? getLook(DEFAULT_LOOK_ID)!);
-
-  /** Whether the active look exposes the Density stepper. */
-  hasDensity = $derived(!!this.activeLook.density);
-
-  /** Whether the active look exposes the Mirror toggle. */
-  hasMirror = $derived(!!this.activeLook.density?.mirrorable);
-
-  /** Arm-count options for the active look's Density stepper, narrowed to the
-   *  mirror-safe range when Mirror is on ([] if fixed). */
-  densityOptions = $derived.by<number[]>(() => {
-    const d = this.activeLook.density;
-    if (!d) return [];
-    if (this.radialMirror && d.maxMirrorArms) {
-      return d.options.filter((o) => o <= d.maxMirrorArms!);
-    }
-    return d.options;
-  });
-
-  /** Densest arm count allowed for a mirror state, honoring the mirror ceiling
-   *  and the reduced-motion prop budget. */
-  #maxAllowedDensity(mirror: boolean): number {
-    const d = this.activeLook.density;
-    if (!d) return this.density;
-    let opts = d.options;
-    if (mirror && d.maxMirrorArms) opts = opts.filter((o) => o <= d.maxMirrorArms!);
-    if (prefersReducedMotion()) {
-      opts = opts.filter((o) => propCount(this.activeLook, o, mirror) <= REDUCED_MOTION_MAX_PROPS);
-    }
-    return opts.length ? Math.max(...opts) : Math.min(...d.options);
+  /** The live config as a plain object (for propCount / persistence / key). */
+  get config(): TunnelConfig {
+    return {
+      fold: this.fold,
+      mirror: this.mirror,
+      flip: this.flip,
+      counter: this.counter,
+      echo: this.echo,
+      staggerSteps: this.staggerSteps,
+      speed: this.speed,
+    };
   }
 
-  /** Select a look. Under reduced motion, a dense look clamps to a calm one —
-   *  the choice is stored clamped (matching the old fold cap), so the highlighted
-   *  selection and the rendered kaleidoscope always agree. */
-  setLook(id: string): void {
-    const look = getLook(id);
-    if (!look) return;
-    if (
-      prefersReducedMotion() &&
-      propCount(look, this.density, this.radialMirror) > REDUCED_MOTION_MAX_PROPS
-    ) {
-      this.lookId = REDUCED_MOTION_LOOK_ID;
-      return;
-    }
-    this.lookId = id;
+  /** On-screen prop count for the live config. */
+  propCount = $derived(propCount(this.config));
+
+  /** Stable signature (export filename suffix + build dedup). */
+  configKey = $derived(configKey(this.config));
+
+  /** Largest stagger offset that reads on the current sequence (its length − 1;
+   *  a full-length offset wraps back to 0). A getter (not a `$derived` field) so
+   *  it doesn't touch `#sources` during field initialization; still reactive when
+   *  read in a template/derived because it reads the reactive sequence. */
+  get staggerMax(): number {
+    return Math.max(0, (this.#sources.getSequence()?.steps?.length ?? 1) - 1);
   }
 
-  /** Set the Radial arm count, clamped to the mirror-safe + reduced-motion max. */
-  setDensity(arms: number): void {
-    if (!this.activeLook.density) return;
-    this.density = Math.min(arms, this.#maxAllowedDensity(this.radialMirror));
+  /** Image budget for the live dock (reduced motion tightens it). */
+  #maxImages(): number {
+    return prefersReducedMotion() ? MAX_IMAGES_RM : MAX_IMAGES;
   }
 
-  /** Toggle the dihedral Mirror on the active mirrorable look, clamping density
-   *  to the mirror-safe max (mirror doubles the copies). */
-  setRadialMirror(on: boolean): void {
-    if (!this.activeLook.density?.mirrorable) return;
-    this.radialMirror = on;
-    this.density = Math.min(this.density, this.#maxAllowedDensity(on));
+  /** Apply a generator change (fold/mirror/flip) clamped to the live budget so a
+   *  dense combo can't exceed the perf ceiling. The prop-count readout makes any
+   *  clamp visible — no silent lie. */
+  #applyGenerators(next: Partial<Pick<TunnelConfig, "fold" | "mirror" | "flip">>): void {
+    const clamped = clampConfig({ ...this.config, ...next }, this.#maxImages());
+    this.fold = clamped.fold;
+    this.mirror = clamped.mirror;
+    this.flip = clamped.flip;
   }
 
-  /** True when the active look is a large stack — advisory (the strip can warn a
-   *  heavy effect may drop frames on weaker devices); not a hard cap. */
+  setFold(fold: number): void {
+    this.#applyGenerators({ fold });
+  }
+  setMirror(on: boolean): void {
+    this.#applyGenerators({ mirror: on });
+  }
+  setFlip(on: boolean): void {
+    this.#applyGenerators({ flip: on });
+  }
+
+  // Modulators add no copies, so they never clamp.
+  setCounter(on: boolean): void {
+    this.counter = on;
+  }
+  setEcho(on: boolean): void {
+    this.echo = on;
+  }
+  setSpeed(on: boolean): void {
+    this.speed = on;
+  }
+  /** Set the canon offset, clamped to the sequence (the sampler also wraps). */
+  setStagger(steps: number): void {
+    this.staggerSteps = Math.max(0, Math.min(steps, this.staggerMax));
+  }
+
+  /** True when the live config is a large stack — advisory (a heavy effect may
+   *  drop frames on weaker devices); not a hard cap. */
   heavyLoad = $derived(
-    this.active &&
-      propCount(this.activeLook, this.density, this.radialMirror) >=
-        TunnelViewController.LARGE_STACK_PROPS,
+    this.active && propCount(this.config) >= TunnelViewController.LARGE_STACK_PROPS,
   );
 
   /** Honor the global Effort preset so the sidebar's Effort section shapes the
@@ -203,11 +222,15 @@ export class TunnelViewController {
     return sampleTunnelProps(seq, currentStep, this.#ease);
   }
 
-  /** Per-copy prop states at the live playhead. 1-indexed fractional currentStep. */
+  /** Per-copy prop states at the live playhead, each shifted by its Stagger +
+   *  Speed modulator. 1-indexed fractional currentStep. The modulators align
+   *  index-for-index with the baked layers (same generation order). */
   additionalLayersAt(currentStep: number): AdditionalLayerProps[] {
     if (!this.active) return [];
-    return this.#layers.map((seq) => {
-      const p = sampleTunnelProps(seq, currentStep, this.#ease);
+    const mods = copyModulators(this.config);
+    return this.#layers.map((seq, i) => {
+      const m = mods[i] ?? { staggerSteps: 0, speed: 1 };
+      const p = sampleTunnelProps(seq, currentStep, this.#ease, m.staggerSteps, m.speed);
       return { blueProp: p.blue, redProp: p.red };
     });
   }

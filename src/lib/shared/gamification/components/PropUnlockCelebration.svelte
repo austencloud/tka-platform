@@ -6,7 +6,7 @@
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
   import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
   import { buildTunnelLayers } from "$lib/shared/sequence-viewer/tunnel/tunnel-layer-builder";
-  import { getLook } from "$lib/shared/sequence-viewer/tunnel/tunnel-looks";
+  import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
   import { getPropDemoLoop, generateFreshDemoLoop } from "../data/prop-demo-loop";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -66,12 +66,10 @@
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
     );
   }
-  // Reveal shape: the tunable "Radial" Tunnel look at a chosen arm count (shared
-  // with Tunnel View). 4 arms (90/180/270, 8 props) is the lush default; 2 arms
-  // (a single 180° copy, 4 props) is the lighter look. Reduced-motion always
-  // uses the lighter one; remix occasionally rolls it for variety.
-  const RADIAL = getLook("radial")!;
-
+  // Reveal shape: a pure rotational (Radial) Tunnel config at a chosen fold
+  // (shared vocabulary with Tunnel View). 4 arms (90/180/270, 8 props) is the
+  // lush default; 2 arms (a single 180° copy, 4 props) is the lighter look.
+  // Reduced-motion always uses the lighter one; remix occasionally rolls it.
   function defaultArms(): number {
     return prefersReducedMotion() ? 2 : 4;
   }
@@ -88,7 +86,7 @@
     arms: number,
   ) {
     const seq = await seqPromise;
-    const copies = await buildTunnelLayers(seq, RADIAL, arms);
+    const copies = await buildTunnelLayers(seq, { ...DEFAULT_CONFIG, fold: arms, mirror: false });
     if (token !== revealToken) return;
     base = seq;
     rotated = copies;

@@ -1,16 +1,12 @@
-import { DEFAULT_DENSITY, DEFAULT_LOOK_ID, getLook } from "./tunnel-looks";
+import { DEFAULT_CONFIG, FOLD_OPTIONS, type TunnelConfig } from "./tunnel-config";
 
 /**
- * Persisted tunnel-view look + tuning (the config the user last left the
+ * Persisted tunnel-view config + chrome (the state the user last left the
  * kaleidoscope in). One localStorage key with SSR + quota guards.
  */
 export interface TunnelViewState {
-  /** Selected look id (see `tunnel-looks.ts`). */
-  lookId: string;
-  /** Radial arm count (ignored by fixed looks). */
-  density: number;
-  /** Radial dihedral Mirror toggle (ignored by non-mirrorable looks). */
-  radialMirror: boolean;
+  /** The primitive config (see `tunnel-config.ts`). */
+  config: TunnelConfig;
   gridVisible: boolean;
   /** Per-prop rainbow spectrum coloring. On = every copy fans across the
    *  spectrum; off = layers inherit the base/preset colors. */
@@ -22,43 +18,79 @@ export interface TunnelViewState {
 const STORAGE_KEY = "tka_tunnel_view_state";
 
 const DEFAULTS: TunnelViewState = {
-  lookId: DEFAULT_LOOK_ID,
-  density: DEFAULT_DENSITY,
-  radialMirror: false,
+  config: { ...DEFAULT_CONFIG },
   gridVisible: false,
   spectrum: true,
   section: "tunnel",
 };
 
-/** Resolve a persisted (lookId, density), migrating older shapes:
- *  - the split radial looks (duo/pinwheel/kaleido) → Radial + its arm count,
- *  - pre-looks fold/mirror state (fold 2|4|8, mirror bool). */
-function resolveLookAndDensity(p: Record<string, unknown>): { lookId: string; density: number } {
-  const density =
-    typeof p.density === "number" && p.density > 0 ? p.density : DEFAULTS.density;
+const bool = (v: unknown, fallback: boolean): boolean =>
+  typeof v === "boolean" ? v : fallback;
 
-  // Split radial looks → merged Radial with the matching arm count.
-  if (p.lookId === "duo") return { lookId: "radial", density: 2 };
-  if (p.lookId === "pinwheel") return { lookId: "radial", density: 4 };
-  if (p.lookId === "kaleido") return { lookId: "radial", density: 8 };
-  if (typeof p.lookId === "string" && getLook(p.lookId)) return { lookId: p.lookId, density };
+/** Named looks (2026-07-06 morning) → primitive config. */
+const LOOK_TO_CONFIG: Record<string, Partial<TunnelConfig>> = {
+  radial: {}, // fold carried from `density`
+  mandala: { fold: 4, mirror: true },
+  mirror: { fold: 1, mirror: true },
+  flip: { fold: 1, flip: true },
+  counter: { fold: 1, counter: true },
+  echo: { fold: 1, echo: true },
+  cross: { fold: 2, mirror: true },
+};
+
+/**
+ * Resolve a persisted config, migrating older shapes:
+ *  - the current `{ config }` snapshot,
+ *  - the named-look era (`lookId` + `density` + `radialMirror`),
+ *  - the pre-looks `fold` + `mirror` booleans.
+ */
+function resolveConfig(p: Record<string, unknown>): TunnelConfig {
+  // Current shape.
+  const c = p.config as Partial<TunnelConfig> | undefined;
+  if (c && typeof c === "object") {
+    const fold = FOLD_OPTIONS.includes(c.fold as number) ? (c.fold as number) : DEFAULT_CONFIG.fold;
+    return {
+      fold,
+      mirror: bool(c.mirror, DEFAULT_CONFIG.mirror),
+      flip: bool(c.flip, DEFAULT_CONFIG.flip),
+      counter: bool(c.counter, DEFAULT_CONFIG.counter),
+      echo: bool(c.echo, DEFAULT_CONFIG.echo),
+      staggerSteps:
+        typeof c.staggerSteps === "number" && c.staggerSteps > 0 ? Math.floor(c.staggerSteps) : 0,
+      speed: bool(c.speed, DEFAULT_CONFIG.speed),
+    };
+  }
+
+  const density =
+    typeof p.density === "number" && FOLD_OPTIONS.includes(p.density) ? p.density : 4;
+
+  // Named-look era.
+  if (typeof p.lookId === "string" && p.lookId in LOOK_TO_CONFIG) {
+    const base: TunnelConfig = { ...DEFAULT_CONFIG, fold: density };
+    const mapped = { ...base, ...LOOK_TO_CONFIG[p.lookId] };
+    // Radial carried an explicit dihedral toggle.
+    if (p.lookId === "radial" && p.radialMirror === true) mapped.mirror = true;
+    return mapped;
+  }
+  // The split radial looks predate the merge.
+  if (p.lookId === "duo") return { ...DEFAULT_CONFIG, fold: 2 };
+  if (p.lookId === "pinwheel") return { ...DEFAULT_CONFIG, fold: 4 };
+  if (p.lookId === "kaleido") return { ...DEFAULT_CONFIG, fold: 8 };
 
   // Pre-looks fold/mirror.
-  if (p.mirror === true) return { lookId: "mandala", density };
-  if (p.fold === 2) return { lookId: "radial", density: 2 };
-  if (p.fold === 8) return { lookId: "radial", density: 8 };
-  if (p.fold === 4) return { lookId: "radial", density: 4 };
+  if (typeof p.fold === "number" && FOLD_OPTIONS.includes(p.fold)) {
+    return { ...DEFAULT_CONFIG, fold: p.fold, mirror: p.mirror === true };
+  }
 
-  return { lookId: DEFAULTS.lookId, density: DEFAULTS.density };
+  return { ...DEFAULT_CONFIG };
 }
 
 export function loadTunnelViewState(): TunnelViewState {
-  if (typeof localStorage === "undefined") return { ...DEFAULTS };
+  if (typeof localStorage === "undefined") return { ...DEFAULTS, config: { ...DEFAULT_CONFIG } };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULTS };
+    if (!raw) return { ...DEFAULTS, config: { ...DEFAULT_CONFIG } };
     const p = JSON.parse(raw) as Record<string, unknown>;
-    const { lookId, density } = resolveLookAndDensity(p);
     const section =
       p.section === "tunnel" ||
       p.section === "effects" ||
@@ -67,15 +99,13 @@ export function loadTunnelViewState(): TunnelViewState {
         ? p.section
         : DEFAULTS.section;
     return {
-      lookId,
-      density,
-      radialMirror: typeof p.radialMirror === "boolean" ? p.radialMirror : DEFAULTS.radialMirror,
-      gridVisible: typeof p.gridVisible === "boolean" ? p.gridVisible : DEFAULTS.gridVisible,
-      spectrum: typeof p.spectrum === "boolean" ? p.spectrum : DEFAULTS.spectrum,
+      config: resolveConfig(p),
+      gridVisible: bool(p.gridVisible, DEFAULTS.gridVisible),
+      spectrum: bool(p.spectrum, DEFAULTS.spectrum),
       section,
     };
   } catch {
-    return { ...DEFAULTS };
+    return { ...DEFAULTS, config: { ...DEFAULT_CONFIG } };
   }
 }
 

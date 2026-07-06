@@ -4,11 +4,10 @@ import {
   mirrorSequence,
   flipSequence,
   invertSequence,
-  colorSwapSequence,
   rewindSequence,
 } from "$lib/shared/create/services/sequence-transforms";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
-import { lookCopies, type CopyOp, type TunnelLook } from "./tunnel-looks";
+import { generateCopyOps, type CopyOp, type TunnelConfig } from "./tunnel-config";
 
 /** Apply one transform op to a sequence, dispatching to the canonical
  *  `sequence-transforms` function. No new transform math lives here. */
@@ -22,8 +21,6 @@ async function applyOp(seq: SequenceData, op: CopyOp): Promise<SequenceData> {
       return flipSequence(seq, motionQueryHandler);
     case "invert":
       return invertSequence(seq, motionQueryHandler);
-    case "colorSwap":
-      return colorSwapSequence(seq);
     case "rewind":
       return rewindSequence(seq, motionQueryHandler);
   }
@@ -38,17 +35,16 @@ async function applyOps(base: SequenceData, ops: CopyOp[]): Promise<SequenceData
 }
 
 /**
- * Build the overlaid copies (everything beyond the always-drawn base) for a
- * look. Returns one SequenceData per copy, in overlay order. The base is NOT
- * included — the caller draws it as blueProp/redProp. `density` + `mirror`
- * select the arm count and dihedral reflection for a density-tunable look
- * (Radial); both ignored for fixed looks.
+ * Bake the overlaid copies (everything beyond the always-drawn base) for a
+ * config. Returns one SequenceData per extra copy, in overlay order — the
+ * SPATIAL result only. The per-copy Stagger + Speed modulators are applied at
+ * sample time (see {@link copyModulators} + `sampleTunnelProps`), so tweaking
+ * them never re-runs these transforms. The base is NOT included — the caller
+ * draws it as blueProp/redProp.
  */
 export async function buildTunnelLayers(
   base: SequenceData,
-  look: TunnelLook,
-  density?: number,
-  mirror = false,
+  cfg: TunnelConfig,
 ): Promise<SequenceData[]> {
-  return Promise.all(lookCopies(look, density, mirror).map((ops) => applyOps(base, ops)));
+  return Promise.all(generateCopyOps(cfg).map((ops) => applyOps(base, ops)));
 }

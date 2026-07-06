@@ -25,6 +25,7 @@
   import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import MandalaCategoryControl, {
     type MandalaCategory,
   } from "./mandala/MandalaCategoryControl.svelte";
@@ -36,7 +37,7 @@
   import type { ViewerPlaybackState } from "../domain/viewer-prop-groups";
   import type { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
   import type { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
-  import { LOOKS, propCount } from "../tunnel/tunnel-looks";
+  import { FOLD_OPTIONS } from "../tunnel/tunnel-config";
   import type {
     PlaybackMode,
     StepPlaybackStepSize,
@@ -108,11 +109,20 @@
     tunnelRail.find((p) => p.id === tunnelSection)?.label ?? "",
   );
 
-  // Density stepper options for the tuner (SegmentedControl is string-generic,
+  // Fold options for the segmented control (SegmentedControl is string-generic,
   // so map the arm counts to string values).
-  const densitySegOptions = $derived(
-    controller.densityOptions.map((a) => ({ value: String(a), label: `${a}×` })),
-  );
+  const foldSegOptions = FOLD_OPTIONS.map((a) => ({ value: String(a), label: String(a) }));
+
+  // The boolean primitives, rendered as a wrapping row of toggle chips (per
+  // chip-primitives: independent booleans → N × FilterChipBase mode="toggle").
+  // Mirror/Flip grow the copy set; Counter/Echo/Speed modulate alternate arms.
+  const toggleChips = $derived([
+    { key: "mirror", label: "Mirror", icon: "fas fa-arrows-left-right", active: controller.mirror, set: (v: boolean) => controller.setMirror(v) },
+    { key: "flip", label: "Flip", icon: "fas fa-arrows-up-down", active: controller.flip, set: (v: boolean) => controller.setFlip(v) },
+    { key: "counter", label: "Counter", icon: "fas fa-arrows-spin", active: controller.counter, set: (v: boolean) => controller.setCounter(v) },
+    { key: "echo", label: "Echo", icon: "fas fa-backward", active: controller.echo, set: (v: boolean) => controller.setEcho(v) },
+    { key: "speed", label: "Speed", icon: "fas fa-gauge-high", active: controller.speed, set: (v: boolean) => controller.setSpeed(v) },
+  ]);
 
   // ── Mandala rail (same icons + order the bottom dock uses) ──
   const mandalaRail: { id: MandalaRailId; icon?: string; label: string }[] = [
@@ -209,87 +219,81 @@
 {#snippet tunnelSectionBody(id: TunnelRailId, dense: boolean)}
   {#if id === "tunnel"}
     <div class="section-pad">
-      <!-- Look catalog: each tile is a curated kaleidoscope (base + an explicit
-           copy list, so the prop count is exactly what you see — no hidden
-           doubling). Single-select icon grid, same vocabulary as the Effects
-           picker. -->
-      <div class="look-grid">
-        {#each LOOKS as look (look.id)}
-          <button
-            class="look-tile"
-            class:active={controller.lookId === look.id}
-            type="button"
-            aria-pressed={controller.lookId === look.id}
-            onclick={() => controller.setLook(look.id)}
-            title={`${look.name} · ${propCount(look, look.density ? controller.density : undefined, look.density ? controller.radialMirror : undefined)} props`}
-          >
-            <i class={look.icon} aria-hidden="true"></i>
-            <span>{look.name}</span>
-          </button>
+      <!-- Primitive vocabulary: every mandala is a combination of these, no named
+           looks. Fold (rotational arms) + a row of boolean toggles + Stagger, all
+           top-level peers. Prop count is exactly imageCount × 2 — no hidden
+           doubling. See docs/architecture/tunnel-looks.md. -->
+
+      <!-- Fold (rotational arms) + a compact Grid icon toggle. -->
+      <div class="prim-row">
+        <span class="row-lbl">Fold</span>
+        <div class="seg-wrap">
+          <SegmentedControl
+            options={foldSegOptions}
+            value={String(controller.fold)}
+            onchange={(v) => controller.setFold(Number(v))}
+            color="accent"
+            size="sm"
+          />
+        </div>
+        <button
+          class="grid-toggle"
+          class:active={controller.gridVisible}
+          type="button"
+          aria-pressed={controller.gridVisible}
+          aria-label="Toggle grid"
+          title="Grid"
+          onclick={() => (controller.gridVisible = !controller.gridVisible)}
+        >
+          <i class="fas fa-border-all" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <!-- Boolean primitives. Mirror/Flip add reflection copies; Counter/Echo/
+           Speed modulate alternate arms (no new copies). -->
+      <div class="prim-chips">
+        {#each toggleChips as chip (chip.key)}
+          <FilterChipBase
+            mode="toggle"
+            size="sm"
+            label={chip.label}
+            icon={chip.icon}
+            active={chip.active}
+            onclick={() => chip.set(!chip.active)}
+          />
         {/each}
       </div>
 
-      <!-- Density (arm count) for the tunable Radial look, plus a compact Grid
-           icon toggle instead of a full row. -->
-      <div class="tuner">
-        {#if controller.hasDensity}
-          <div class="slider-row">
-            <span class="row-lbl">Density</span>
-            <div class="seg-wrap">
-              <SegmentedControl
-                options={densitySegOptions}
-                value={String(controller.density)}
-                onchange={(v) => controller.setDensity(Number(v))}
-                color="accent"
-                size="sm"
-              />
-            </div>
-            <button
-              class="grid-toggle"
-              class:active={controller.gridVisible}
-              type="button"
-              aria-pressed={controller.gridVisible}
-              aria-label="Toggle grid"
-              title="Grid"
-              onclick={() => (controller.gridVisible = !controller.gridVisible)}
-            >
-              <i class="fas fa-border-all" aria-hidden="true"></i>
-            </button>
-          </div>
-          {#if controller.hasMirror}
-            <!-- Explicit, opt-in dihedral reflection (rotational → Mandala-style).
-                 NOT the old hidden always-on multiplier; capped to 4 arms. -->
-            <div class="group">
-              <button
-                class:active={controller.radialMirror}
-                type="button"
-                aria-pressed={controller.radialMirror}
-                onclick={() => controller.setRadialMirror(!controller.radialMirror)}
-              >
-                <i class="fas fa-arrows-left-right" aria-hidden="true"></i> Mirror
-              </button>
-            </div>
-          {/if}
-        {:else}
-          <div class="tuner-head">
-            <span class="row-lbl">Grid</span>
-            <button
-              class="grid-toggle"
-              class:active={controller.gridVisible}
-              type="button"
-              aria-pressed={controller.gridVisible}
-              aria-label="Toggle grid"
-              title="Grid"
-              onclick={() => (controller.gridVisible = !controller.gridVisible)}
-            >
-              <i class="fas fa-border-all" aria-hidden="true"></i>
-            </button>
-          </div>
-        {/if}
+      <!-- Stagger (canon offset): arm k shows the sequence k×N steps ahead. A
+           compact stepper — 0 to (sequence length − 1); a full offset wraps. -->
+      <div class="prim-row">
+        <span class="row-lbl">Stagger</span>
+        <div class="stepper">
+          <button
+            type="button"
+            class="step-btn"
+            aria-label="Less stagger"
+            disabled={controller.staggerSteps <= 0}
+            onclick={() => controller.setStagger(controller.staggerSteps - 1)}
+          >
+            <i class="fas fa-minus" aria-hidden="true"></i>
+          </button>
+          <span class="step-val">{controller.staggerSteps}</span>
+          <button
+            type="button"
+            class="step-btn"
+            aria-label="More stagger"
+            disabled={controller.staggerSteps >= controller.staggerMax}
+            onclick={() => controller.setStagger(controller.staggerSteps + 1)}
+          >
+            <i class="fas fa-plus" aria-hidden="true"></i>
+          </button>
+        </div>
+        <span class="prim-count">{controller.propCount} props</span>
       </div>
 
       {#if controller.heavyLoad}
-        <p class="warn">Dense look (16 props): a heavy effect may drop frames on weaker devices.</p>
+        <p class="warn">Dense stack ({controller.propCount} props): a heavy effect may drop frames on weaker devices.</p>
       {/if}
     </div>
   {:else if id === "effects"}
@@ -367,7 +371,7 @@
       activeTab={openTunnelTab}
       onTabSelect={selectTunnelDock}
       trailingAction={tunnelDockExport}
-      trayMaxHeight={openTunnelTab === "effects" ? "min(72vh, 480px)" : "min(33vh, 250px)"}
+      trayMaxHeight={openTunnelTab === "effects" ? "min(54vh, 360px)" : "min(33vh, 250px)"}
     >
       {#snippet tray()}
         <div class="dock-dense">
@@ -615,42 +619,24 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
   }
 
-  /* Look catalog: single-select icon tiles (icon over name), same visual family
-     as the Effects picker. auto-fit fills the width and wraps cleanly. */
-  .look-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
-    gap: 6px;
-  }
-  .look-tile {
+  /* Primitive controls: a labeled Fold/Stagger row + a wrapping row of boolean
+     toggle chips + a compact grid icon toggle. */
+  .prim-row {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 3px;
+    gap: 8px;
     min-height: var(--min-touch-target, 44px);
-    padding: 7px 4px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: 10px;
-    color: inherit;
-    cursor: pointer;
-    transition: background 0.12s, border-color 0.12s;
   }
-  .look-tile i { font-size: 15px; opacity: 0.85; }
-  .look-tile > span { font-size: 0.7rem; white-space: nowrap; }
-  .look-tile.active {
-    background: var(--theme-accent, #8b5cf6);
-    border-color: transparent;
-    color: #fff;
+  .prim-row .row-lbl {
+    flex: 0 0 52px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
   }
-  .look-tile.active i { opacity: 1; }
+  .seg-wrap { flex: 1; min-width: 0; }
 
-  /* Tuner: the Density stepper (Radial) + a compact Grid icon toggle. */
-  .tuner { display: flex; flex-direction: column; gap: 4px; }
-  .tuner-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  /* Compact icon toggle for the grid — a small square instead of a full row,
-     keeping the 44px touch floor. */
+  .prim-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  /* Compact icon toggle for the grid — a small square, keeping the 44px floor. */
   .grid-toggle {
     display: inline-flex;
     align-items: center;
@@ -670,28 +656,42 @@
     border-color: transparent;
     color: #fff;
   }
-  .slider-row {
-    display: flex;
+
+  /* Stagger stepper: − value + . Tabular value so the row never reflows as the
+     number changes (no-layout-shift). */
+  .stepper { display: inline-flex; align-items: center; gap: 4px; }
+  .step-btn {
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+    min-width: var(--min-touch-target, 44px);
     min-height: var(--min-touch-target, 44px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 9px;
+    color: inherit;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
   }
-  .slider-row .row-lbl,
-  .tuner-head .row-lbl {
-    flex: 0 0 52px;
+  .step-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .step-val {
+    min-width: 2ch;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 600;
+  }
+  .prim-count {
+    margin-left: auto;
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    font-variant-numeric: tabular-nums;
   }
-  .seg-wrap { flex: 1; min-width: 0; }
 
   /* Tunnel View/Grid row. Label-left + button shares the full row width
      (mirrors the Playback tab's Tempo/Mode rows) — no trailing dead space. */
   .group { display: flex; align-items: center; gap: 6px; }
   .group > button { flex: 1; min-width: 0; }
-  .lbl {
-    flex: 0 0 52px;
-    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5;
-  }
   .group button {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
@@ -750,12 +750,10 @@
      so the tray stays compact floating over the art. */
   .dock-dense .section-pad { gap: 8px; padding: 2px 2px 6px; }
   .dock-dense .group { gap: 6px; }
-  /* Look grid in the dock tray: fixed 5-col so the catalog stays 2 tight rows
-     at the 44px touch floor (mirrors the 6-col Effects picker compression). */
-  .dock-dense .look-grid { grid-template-columns: repeat(5, 1fr); gap: 4px; }
-  .dock-dense .look-tile { min-height: 44px; padding: 4px 2px; gap: 1px; }
-  .dock-dense .look-tile i { font-size: 13px; }
-  .dock-dense .look-tile > span { font-size: 9px; letter-spacing: 0.01em; }
+  /* Primitive controls in the dock tray: tighter gaps; chips + steppers keep
+     their 44px touch floor. */
+  .dock-dense .prim-chips { gap: 4px; }
+  .dock-dense .prim-row { min-height: 40px; gap: 6px; }
   /* EffectsPanel lives in a child component — mirror AnimationPanel's dock-dense
      compression (:global): 6-column picker puts all 16 effects (3 rows at the
      44px touch floor) inside the capped tray with no scrolling. */
