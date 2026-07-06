@@ -60,7 +60,7 @@ Old guide = 47 pages. Mapping → our 3 chapters. Status: ⬜ todo · 🔧 in pr
 | 9 | Hand Motions (shift/dash/static, 5) | `_pages/HandMotionsPage` (body p3) | ✅ |
 | 10 | Type 1 Dual-Shifts (matrices) | `_pages/Type1AlphaBetaPage` (body p4) | 🔧 |
 | 11 | Gamma (Quarter-Opp/Same intro) | `_pages/GammaPage` (body p5) | 🔧 |
-| 12 | Type 2 Shifts | `_pages/Type2ShiftsPage` (body p6) | ⬜ |
+| 12 | Type 2 Shifts | `_pages/Type2ShiftsPage` (body p6) | 🔧 |
 | 13 | Type 3 Cross-Shifts (β→γ) | ch10/Type3CrossShifts | ⬜ |
 | 14 | Type 4/5/6 Dash/Dual-Dash/Static | ch10/Type4Dash..Type6Static | ⬜ |
 | 15 | Staff Positions (12) | ch10/StaffPositions | ⬜ |
@@ -294,3 +294,25 @@ LOOP terminology, per existing section filenames already named Loops*.)
   all, no console errors. On the original's "use the canonical glyph, don't type
   α/β/γ": already satisfied — position pictographs render the bottom-left TKA
   glyph via `showTKA`; the accessibility layer is what makes that glyph readable.
+- 2026-07-05: TERMINOLOGY beat→step in user-facing text (commit `209bcbfd21`).
+  Guide + About prose + keyboard/Village/copier labels; musical beats (Compose
+  timeline, BPM, metronome, effect triggers) and code identifiers deliberately
+  kept. Fixed the "two beta sequence" OCR typo → "two-step sequence" on the
+  proof-text (type-5/6) page. See memory `feedback_step_not_beat` carve-out.
+- 2026-07-05: TYPE 2 - SHIFTS page (body p6, `hm-type2`) built —
+  `_pages/Type2ShiftsPage.svelte`, proof p12. Same recipe as GammaPage: three
+  proof-placed strips of real PictographContainers, all adornments system-owned,
+  grouped centred paragraphs. A Shift = one hand shifts + one hand static, so
+  every box has ONE float arrow (no same-edge collision → NO letters needed,
+  unlike Gamma's antiparallel P cells). Three strips: single (L56 T118.2 500×100,
+  blue static S / red floats CCW), same-direction 8-box (L56 T308.8 500×200, all
+  shifts clockwise, anchor hand swaps at beta), opposite-direction 8-box (L56
+  T550.9 500×200, red always CCW / blue always CW, alternating shifter). All
+  three sequences decoded from the "…gamma and Type 2 copy 2" artboard (=proof
+  p12; the non-"copy 2" artboard is the Gamma page) and verified to close the
+  loop; every arrow direction cross-checked box-by-box against the artboard
+  crops. NO fitY squeeze — proof p12 already carries its own "Type 2 - Shifts"
+  title, so proof coords used directly. showElemental off (Shifts aren't a T&D,
+  proof shows no badge). Facelift: lowercase γ, purple "Shift"/"Shifts". Verified:
+  `npm run check` exit 0; DevTools 23 pictographs, layout + glyphs + arrows match
+  the proof. Awaiting Austen's eyeball pass. Registry `BUILT["hm-type2"]` added.

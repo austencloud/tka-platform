@@ -1,0 +1,295 @@
+<script lang="ts">
+  /**
+   * Type 2 — Shifts — body page 6, a faithful rebuild of the proof PDF
+   * (level-1-v05.pdf, page 12) in the CURRENT renderer's language. Same recipe
+   * as GammaPage: three proof-placed strips of real PictographContainers, every
+   * adornment system-owned (float arrows, Start/count StepNumber, per-box
+   * position glyph), grouped centred paragraphs.
+   *
+   * A Type 2 motion (a "Shift") = ONE hand shifts while the OTHER stays static.
+   * So every box has exactly one moving hand → one float arrow; the still hand
+   * is STATIC (from === to, no arrow). One arrow per box means no same-edge
+   * collision, so — unlike Gamma's antiparallel cells — NO box needs a letter;
+   * default float placement is correct everywhere.
+   *
+   *   - Hand motion   → the moving hand is a PRO shift (hand-path mode makes it a
+   *                     FLOAT); the still hand is STATIC.
+   *   - Count numbers → StepData.stepNumber (0 → "Start", 1..n) via StepNumber.
+   *   - Positions     → startPosition/endPosition → the top-centre PositionGlyph
+   *                     (β→γ, γ→α, … vary per box; all derive geometrically).
+   *   - No elemental  → the proof shows no mode badge (Shifts aren't a T&D), so
+   *                     showElemental is off.
+   *
+   * Three strips (proof image placements, pt, top-left origin, x/y used directly
+   * — the proof page already carries its own "Type 2 - Shifts" title, so unlike
+   * Gamma there is no fitY squeeze):
+   *   single  L56 T118.2 500×100  (Start + 4)   — one hand shifts, one static
+   *   same    L56 T308.8 500×200  (Start + 8)   — both handpaths same direction
+   *   opp     L56 T550.9 500×200  (Start + 8)   — handpaths opposite directions
+   * The 8-box strips lay out Start,1,2,3,4 on top and _,5,6,7,8 below (box 5
+   * under box 1), like Gamma's switch. Sequences decoded from the artboard and
+   * verified to close: single = blue static S, red floats CCW; same = every
+   * shift clockwise, the anchor hand swapping at beta; opp = red always CCW /
+   * blue always CW, alternating the shifting hand each count.
+   *
+   * Facelift convention (matches Gamma): lowercase γ where the proof used Γ; the
+   * Type-2 term "Shift"/"Shifts" tinted the Type-2 letter colour (purple).
+   */
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import {
+    MotionType,
+    MotionColor,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
+
+  const S = 816 / 612; // pt → px (4/3)
+  const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
+
+  // A hand that moves → PRO shift (hand-path mode converts to FLOAT); a hand that
+  // stays → STATIC (no arrow). Positions/numbers derive downstream.
+  const motion = (color: MotionColor, from: GridLocation, to: GridLocation) =>
+    createMotionData({
+      motionType: from === to ? MotionType.STATIC : MotionType.PRO,
+      startLocation: from,
+      endLocation: to,
+      color,
+      propType: PropType.HAND,
+      gridMode: GridMode.DIAMOND,
+    });
+
+  // [blueFrom, blueTo, redFrom, redTo]; Start boxes hold (from === to on both).
+  type Move = [GridLocation, GridLocation, GridLocation, GridLocation];
+  const box = (m: Move, step: number): StepData =>
+    ({
+      id: `type2-${step}-${m.join("-")}`,
+      letter: null,
+      gridMode: GridMode.DIAMOND,
+      startPosition: getGridPositionFromLocations(m[0], m[2]),
+      endPosition: getGridPositionFromLocations(m[1], m[3]),
+      motions: {
+        blue: motion(MotionColor.BLUE, m[0], m[1]),
+        red: motion(MotionColor.RED, m[2], m[3]),
+      },
+      stepNumber: step,
+      duration: 1,
+      blueReversal: false,
+      redReversal: false,
+      isBlank: false,
+    }) as unknown as StepData;
+
+  const BOX = 100;
+  type Cell = { m: Move; step: number } | null;
+  type Strip = { x: number; y: number; rows: Cell[][] };
+  const c = (m: Move, step: number): Cell => ({ m, step });
+
+  const STRIPS: Strip[] = [
+    // Single Shift — blue holds at S; red floats CCW one point per count.
+    {
+      x: 56,
+      y: 118.2,
+      rows: [
+        [
+          c([SO_, SO_, SO_, SO_], 0), // Start: both S (beta)
+          c([SO_, SO_, SO_, E], 1), //  β→γ  red S→E
+          c([SO_, SO_, E, N], 2), //    γ→α  red E→N
+          c([SO_, SO_, N, W], 3), //    α→γ  red N→W
+          c([SO_, SO_, W, SO_], 4), //  γ→β  red W→S
+        ],
+      ],
+    },
+    // Same direction — every shift clockwise; anchor hand swaps at beta.
+    {
+      x: 56,
+      y: 308.8,
+      rows: [
+        [
+          c([SO_, SO_, N, N], 0), // Start: blue S, red N (alpha)
+          c([SO_, SO_, N, E], 1), //  α→γ  red N→E
+          c([SO_, SO_, E, SO_], 2), // γ→β  red E→S
+          c([SO_, W, SO_, SO_], 3), // β→γ  blue S→W
+          c([W, N, SO_, SO_], 4), //  γ→α  blue W→N
+        ],
+        [
+          null,
+          c([N, E, SO_, SO_], 5), //  α→γ  blue N→E
+          c([E, SO_, SO_, SO_], 6), // γ→β  blue E→S
+          c([SO_, SO_, SO_, W], 7), // β→γ  red S→W
+          c([SO_, SO_, W, N], 8), //  γ→α  red W→N  (→ Start)
+        ],
+      ],
+    },
+    // Opposite directions — red always CCW, blue always CW; shifting hand alternates.
+    {
+      x: 56,
+      y: 550.9,
+      rows: [
+        [
+          c([SO_, SO_, E, E], 0), // Start: blue S, red E (gamma)
+          c([SO_, SO_, E, N], 1), //  γ→α  red E→N (CCW)
+          c([SO_, W, N, N], 2), //    α→γ  blue S→W (CW)
+          c([W, W, N, W], 3), //      γ→β  red N→W (CCW)
+          c([W, N, W, W], 4), //      β→γ  blue W→N (CW)
+        ],
+        [
+          null,
+          c([N, N, W, SO_], 5), //    γ→α  red W→S (CCW)
+          c([N, E, SO_, SO_], 6), //  α→γ  blue N→E (CW)
+          c([E, E, SO_, E], 7), //    γ→β  red S→E (CCW)
+          c([E, SO_, E, E], 8), //    β→γ  blue E→S (CW)  (→ Start)
+        ],
+      ],
+    },
+  ];
+
+  // ── Text: grouped centred blocks (one draggable box per paragraph) ─────────
+  // Proof coordinates used directly (page already carries its title). y = proof
+  // baseline-from-top; x offset 0 = centred on the sheet.
+  type Para = { x: number; y: number; fs: number; lh: number; html: string };
+  let PARAS: Para[] = $state([
+    {
+      x: 0,
+      y: 75.5,
+      fs: 16,
+      lh: 19.2,
+      html:
+        "To move between γ and α/β, you can shift one hand and keep the other hand static.<br>" +
+        "This combination is called a <strong class=\"pu\">Shift</strong> (with a capital “S”). Here’s a simple example:",
+    },
+    {
+      x: 0,
+      y: 240.7,
+      fs: 16,
+      lh: 19.2,
+      html:
+        "The following examples explore both same and opposite handpaths.<br>" +
+        "They alternate the shifting hand.",
+    },
+    {
+      x: 0,
+      y: 298.3,
+      fs: 16,
+      lh: 19.2,
+      html: "Here, they are shifting in the same direction:",
+    },
+    {
+      x: 0,
+      y: 534.2,
+      fs: 16,
+      lh: 19.2,
+      html: "And here, they are shifting in opposite directions.",
+    },
+    {
+      x: 0,
+      y: 760,
+      fs: 15,
+      lh: 18,
+      html:
+        "<span class=\"pu\">Shifts</span> seems mundane here, but they’re very useful " +
+        "later for constructing dynamic sequences.",
+    },
+  ]);
+
+  const r1 = (n: number) => Math.round(n * 10) / 10;
+  $effect(() =>
+    registerEditSource("Type 2 (p6)", () =>
+      PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n")
+    )
+  );
+</script>
+
+<div class="type2-page">
+  <!-- Three strips of real pictographs. All adornments (float arrow, Start/count
+       numerals, position glyphs) are renderer-owned. -->
+  {#each STRIPS as strip, si (si)}
+    {#each strip.rows as row, ri (ri)}
+      {#each row as cell, ci (ci)}
+        {#if cell}
+          <div
+            class="pbox"
+            style="left:{(strip.x + ci * BOX) * S}px; top:{(strip.y + ri * BOX) * S}px; width:{BOX *
+              S}px; height:{BOX * S}px"
+          >
+            <PictographContainer
+              pictographData={box(cell.m, cell.step)}
+              gridMode={GridMode.DIAMOND}
+              bluePropTypeOverride={PropType.HAND}
+              redPropTypeOverride={PropType.HAND}
+              showGrid={true}
+              showTKA={false}
+              showPositions={cell.step > 0}
+              showElemental={false}
+              showReversals={false}
+              showTnD={false}
+              showNonRadialPoints={false}
+              showHandPoints={true}
+              stepNumberOverride={true}
+              darkMode={false}
+              printMode={true}
+              disableTransitions={true}
+            />
+          </div>
+        {/if}
+      {/each}
+    {/each}
+  {/each}
+
+  <!-- Grouped centred paragraphs (one box each, like the original PDF). -->
+  {#each PARAS as p, i (i)}
+    <p
+      class="para"
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === `type2-para-${i}`}
+      style="transform: translateX({p.x * S}px); top:{p.y * S}px; font-size:{p.fs *
+        S}px; line-height:{p.lh * S}px"
+      use:ptDrag={pt(`type2-para-${i}`, "paragraph", p)}
+    >
+      {@html p.html}
+    </p>
+  {/each}
+</div>
+
+<style>
+  /* Absolute layer over the whole GuidePage sheet; coords map straight to pt×S. */
+  .type2-page {
+    position: absolute;
+    inset: 0;
+    color: #141414;
+  }
+
+  /* Each pictograph box carries its own hairline; adjacent boxes share the edge. */
+  .pbox {
+    position: absolute;
+    border: 1px solid #c4c4cc;
+    background: #fff;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* Centred paragraph blocks — full sheet width, one box per paragraph. */
+  .para {
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin: 0;
+    text-align: center;
+    font-family: "Cambria", Georgia, "Times New Roman", serif;
+  }
+  .para :global(.pu) {
+    color: #6f2da8;
+  }
+
+  /* ── Edit mode affordances ─────────────────────────────────────────────── */
+  .para.edit {
+    outline: 1px dashed rgba(55, 48, 163, 0.4);
+    cursor: move;
+  }
+  .para.selected {
+    outline: 1.5px solid #3730a3;
+    outline-offset: 1px;
+  }
+</style>
