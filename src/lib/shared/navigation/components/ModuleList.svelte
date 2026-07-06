@@ -605,16 +605,18 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
      Modules expand to fill space when there are fewer of them
      ============================================================================ */
 
-  /* Few modules (1-3): Large cells, vertically centered */
+  /* Few modules (1-3): Large cells, vertically centered.
+     Gap must clear each card's edge glow (.cell-background border + .cell-glow
+     radial) so adjacent cards read as separate, not overlapping. */
   .module-grid.layout-few {
     grid-template-columns: 1fr;
-    gap: 16px;
+    gap: 24px;
     align-content: center;
     justify-content: center;
   }
 
   .module-grid.layout-few .module-cell {
-    min-height: clamp(100px, 18vh, 160px);
+    min-height: clamp(88px, 14vh, 150px);
     max-width: 400px;
     margin: 0 auto;
     width: 100%;
