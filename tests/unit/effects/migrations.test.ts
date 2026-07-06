@@ -23,11 +23,11 @@ describe("migrateEffectsConfig", () => {
     expect(result.version).toBe(DEFAULT_EFFECTS_CONFIG.version);
     expect(result.zap).toEqual(DEFAULT_EFFECTS_CONFIG.zap);
     expect(result.sparkles).toEqual(DEFAULT_EFFECTS_CONFIG.sparkles);
-    expect(result.echo).toEqual(DEFAULT_EFFECTS_CONFIG.echo);
+    expect(result.ghost).toEqual(DEFAULT_EFFECTS_CONFIG.ghost);
     expect(result.bloom).toEqual(DEFAULT_EFFECTS_CONFIG.bloom);
     expect(result.activePresets.zap).toBeNull();
     expect(result.activePresets.sparkles).toBeNull();
-    expect(result.activePresets.echo).toBeNull();
+    expect(result.activePresets.ghost).toBeNull();
     expect(result.activePresets.bloom).toBeNull();
   });
 
