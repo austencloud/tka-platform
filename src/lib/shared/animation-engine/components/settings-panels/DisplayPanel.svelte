@@ -24,8 +24,7 @@
 	let propsVisible = $state(vm.getVisibility("props"));
 	let wordHeader = $state(vm.getVisibility("wordHeader"));
 	let progressBar = $state(vm.getVisibility("progressBar"));
-	let bluePathLines = $state(vm.getVisibility("bluePathLines"));
-	let redPathLines = $state(vm.getVisibility("redPathLines"));
+	let pathLines = $state(vm.getVisibility("bluePathLines") || vm.getVisibility("redPathLines"));
 
 	function handleVisibilityChange(): void {
 		gridVisible = vm.isGridVisible();
@@ -34,8 +33,18 @@
 		propsVisible = vm.getVisibility("props");
 		wordHeader = vm.getVisibility("wordHeader");
 		progressBar = vm.getVisibility("progressBar");
-		bluePathLines = vm.getVisibility("bluePathLines");
-		redPathLines = vm.getVisibility("redPathLines");
+		pathLines = vm.getVisibility("bluePathLines") || vm.getVisibility("redPathLines");
+	}
+
+	// One color-agnostic toggle for both hands' path-line overlays. Per-color
+	// Blue/Red chips used to sit here, but they split by color in an otherwise
+	// color-agnostic grid; the per-color state keys survive underneath (this
+	// chip just sets both). Which SHAPE the paths follow is behavior, not
+	// visibility — that lives in PathShapePanel.
+	function togglePathLines(): void {
+		const next = !pathLines;
+		vm.setVisibility("bluePathLines", next);
+		vm.setVisibility("redPathLines", next);
 	}
 
 	vm.registerObserver(handleVisibilityChange);
@@ -81,8 +90,7 @@
 		{ id: "stepNumbers", label: "Step #", icon: "fas fa-list-ol", active: () => stepNumbers, toggle: () => vm.toggleVisibility("stepNumbers") },
 		{ id: "wordHeader", label: "Word", icon: "fas fa-heading", active: () => wordHeader, toggle: () => vm.toggleVisibility("wordHeader") },
 		{ id: "progressBar", label: "Progress", icon: "fas fa-bars-progress", active: () => progressBar, toggle: () => vm.toggleVisibility("progressBar") },
-		{ id: "bluePathLines", label: "Blue path", icon: "fas fa-route", accent: "var(--prop-blue, #2196f3)", active: () => bluePathLines, toggle: () => vm.toggleVisibility("bluePathLines") },
-		{ id: "redPathLines", label: "Red path", icon: "fas fa-route", accent: "var(--prop-red, #f44336)", active: () => redPathLines, toggle: () => vm.toggleVisibility("redPathLines") },
+		{ id: "pathLines", label: "Paths", icon: "fas fa-route", active: () => pathLines, toggle: togglePathLines },
 	];
 
 	// Prop chips (Left/Right) lead when shown; otherwise the master Props toggle

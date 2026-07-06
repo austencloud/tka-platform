@@ -369,7 +369,7 @@
       <EffortPanel columns={layout === "sidebar" ? 2 : 4} showSubtitles={layout === "sidebar"} />
     </div>
   {:else if activePill === "playback"}
-    <div class="section-pad">
+    <div class="section-pad playback-rows">
       <div class="rt-section">
         <span class="rt-section-label">Tempo</span>
         <TempoControl
@@ -393,16 +393,17 @@
           />
         </div>
       {/if}
+      <!-- Motion paths live with Playback, not Display: the shape changes how
+           the props TRAVEL (prop-interpolator physics), a playback behavior —
+           only the "Paths" chip in Display is visibility. PathShapePanel brings
+           its own header row (label + live caption). -->
+      <PathShapePanel />
     </div>
   {:else if activePill === "display"}
-    <div class="section-pad">
+    <div class="section-pad display-rows">
       <div class="rt-section" role="region" aria-labelledby="display-visibility-label">
         <span class="rt-section-label" id="display-visibility-label">Visibility</span>
         <DisplayPanel {showMotionVisibility} />
-      </div>
-      <div class="rt-section" role="region" aria-labelledby="display-paths-label">
-        <span class="rt-section-label" id="display-paths-label">Motion paths</span>
-        <PathShapePanel />
       </div>
     </div>
   {:else if activePill === "export" && exportOptions}
@@ -556,7 +557,7 @@
         onTabSelect={(id) => handlePillSelect(id as PillId)}
         trailingAction={dockTrailing}
         {secondaryActions}
-        trayMaxHeight="min(33vh, 250px)"
+        trayMaxHeight={activePill === "effects" ? "min(54vh, 360px)" : "min(35vh, 250px)"}
       >
         {#snippet tray()}
           <div class="dock-dense">
@@ -755,6 +756,43 @@
   .dock-dense :global(.fx-picker .fx-tile) { gap: 1px; padding: 0 2px; }
   .dock-dense :global(.fx-picker .fx-tile i) { font-size: 12px; }
   .dock-dense :global(.fx-picker .fx-tile > span) { font-size: 9px; letter-spacing: 0.01em; }
+  /* Visibility: icons add no meaning at chip size and force 96px columns
+     (3 ragged rows). Label-only chips pack the 8 toggles into a clean 4×2.
+     Dock only — the sidebar keeps the roomier iconed grid. */
+  .dock-dense :global(.vis-grid) { grid-template-columns: repeat(4, 1fr); gap: 4px; }
+  .dock-dense :global(.vis-grid .rt-chip i) { display: none; }
+  .dock-dense :global(.vis-grid .rt-chip) { padding: 0 4px; }
+  /* Squeeze the last ~15px so Visibility + Motion paths land inside the capped
+     tray with NO scroll (the whole tab on one screen). */
+  .dock-dense .display-rows { gap: 5px; padding: 2px 12px 4px; }
+  .dock-dense .display-rows .rt-section { gap: 4px; }
+  /* Playback: 5 controls don't need four stacked bands. Label-left rows, and
+     the two mode buttons sit side-by-side. Dock only — the sidebar keeps the
+     descriptive vertical stack. */
+  .dock-dense .playback-rows {
+    padding-bottom: 6px;
+  }
+  .dock-dense .playback-rows .rt-section {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+  .dock-dense .playback-rows .rt-section-label {
+    flex: 0 0 52px;
+  }
+  .dock-dense .playback-rows :global(.tempo-wrapper) {
+    flex: 1;
+    min-width: 0;
+  }
+  .dock-dense .playback-rows :global(.mode-toggle) {
+    flex-direction: row;
+    flex: 1;
+    min-width: 0;
+  }
+  .dock-dense .playback-rows :global(.mode-toggle .mode-btn) {
+    flex: 1;
+    min-width: 0;
+  }
   .dock-dense :global(.slider-row) { padding: 6px 10px; gap: 8px; }
   /* BentoPropGrid */
   .dock-dense :global(.grid-scroll) { padding: 6px 12px; }
