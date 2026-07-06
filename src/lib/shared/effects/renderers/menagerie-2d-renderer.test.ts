@@ -36,7 +36,7 @@ function fakeCtx(): CanvasRenderingContext2D {
       createRadialGradient: () => ({ addColorStop: noop }),
       createLinearGradient: () => ({ addColorStop: noop }),
     } as unknown as CanvasRenderingContext2D,
-    { get: (t, p) => (p in t ? (t as Record<string, unknown>)[p as string] : noop), set: () => true },
+    { get: (t, p) => (p in t ? (t as unknown as Record<string, unknown>)[p as string] : noop), set: () => true },
   );
 }
 
@@ -45,7 +45,7 @@ describe("Menagerie2DRenderer", () => {
     it(`renders ${creature} without throwing`, () => {
       const r = new Menagerie2DRenderer();
       const ctx = fakeCtx();
-      const tips = [{ x: 100, y: 100, end: "A" as const, propIndex: 0, tipIndex: 0 }];
+      const tips = [{ x: 100, y: 100, end: "A" as const, propIndex: 0, tipIndex: 0, color: "#ffffff" }];
       // Two frames so the follow-chain advances.
       expect(() => r.render(ctx, params(creature), tips, 0.016, 1, false)).not.toThrow();
       tips[0]!.x = 140;
@@ -57,7 +57,7 @@ describe("Menagerie2DRenderer", () => {
   it("prunes chain state for emitters absent this frame", () => {
     const r = new Menagerie2DRenderer();
     const ctx = fakeCtx();
-    const tips = [{ x: 100, y: 100, end: "A" as const, propIndex: 0, tipIndex: 0 }];
+    const tips = [{ x: 100, y: 100, end: "A" as const, propIndex: 0, tipIndex: 0, color: "#ffffff" }];
     r.render(ctx, params("snake"), tips, 0.016, 1, false);
     // No emitters present → the chain for the vanished emitter is dropped, no throw.
     expect(() => r.render(ctx, params("snake"), [], 0.016, 1, false)).not.toThrow();

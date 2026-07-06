@@ -25,6 +25,7 @@ import { SMOKE_PRESET_GROUP } from "./presets/smoke-presets";
 import { INK_PRESET_GROUP } from "./presets/ink-presets";
 import { FROST_PRESET_GROUP } from "./presets/frost-presets";
 import { SILK_PRESET_GROUP } from "./presets/silk-presets";
+import { MENAGERIE_PRESET_GROUP } from "./presets/menagerie-presets";
 import { PULSE_PRESET_GROUP } from "./presets/pulse-presets";
 
 export interface EffectMeta {
@@ -67,6 +68,7 @@ export const EFFECTS: readonly EffectMeta[] = [
   { id: "ink", label: "Ink", icon: "fa-paint-brush", color: "#b8956a" },
   { id: "frost", label: "Frost", icon: "fa-snowflake", color: "#a0d8ff" },
   { id: "silk", label: "Silk", icon: "fa-wind", color: "#c0c0d0" },
+  { id: "menagerie", label: "Menagerie", icon: "fa-dragon", color: "#3aa655" },
   { id: "pulse", label: "Pulse", icon: "fa-bullseye", color: "#38bdf8" },
 ] as const;
 
@@ -117,6 +119,7 @@ const presetGroups: Record<string, EffectPresetGroup> = {
   ink: INK_PRESET_GROUP,
   frost: FROST_PRESET_GROUP,
   silk: SILK_PRESET_GROUP,
+  menagerie: MENAGERIE_PRESET_GROUP,
   pulse: PULSE_PRESET_GROUP,
 };
 
@@ -137,6 +140,7 @@ const customizeLoaders: Record<string, () => Promise<{ default: Component<any> }
   ink: resilientLazyImport(() => import("./customize/InkCustomize.svelte")),
   frost: resilientLazyImport(() => import("./customize/FrostCustomize.svelte")),
   silk: resilientLazyImport(() => import("./customize/SilkCustomize.svelte")),
+  menagerie: resilientLazyImport(() => import("./customize/MenagerieCustomize.svelte")),
   pulse: resilientLazyImport(() => import("./customize/PulseCustomize.svelte")),
 };
 

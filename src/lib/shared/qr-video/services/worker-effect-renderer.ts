@@ -15,6 +15,7 @@ import {
   resolveInk2D,
   resolveFrost2D,
   resolveSilk2D,
+  resolveMenagerie2D,
   resolvePulse2D,
 } from "$lib/shared/effects/translators/canvas2d-translator";
 
@@ -26,6 +27,7 @@ import { Ink2DRenderer } from "$lib/shared/effects/renderers/ink-2d-renderer";
 import { Petals2DRenderer } from "$lib/shared/effects/renderers/petals-2d-renderer";
 import { Pulse2DRenderer, type PulseTipInput } from "$lib/shared/effects/renderers/pulse-2d-renderer";
 import { Silk2DRenderer } from "$lib/shared/effects/renderers/silk-2d-renderer";
+import { Menagerie2DRenderer } from "$lib/shared/effects/renderers/menagerie-2d-renderer";
 import { Smoke2DRenderer } from "$lib/shared/effects/renderers/smoke-2d-renderer";
 import { Sparkles2DRenderer } from "$lib/shared/effects/renderers/sparkles-2d-renderer";
 import { Goo2DRenderer } from "$lib/shared/effects/renderers/goo-2d-renderer";
@@ -212,6 +214,7 @@ function createQuadTipEffect(
     ink: () => ({ r: new Ink2DRenderer(), p: resolveInk2D(config.ink) }),
     sparkles: () => ({ r: new Sparkles2DRenderer(), p: resolveSparkles2D(config.sparkles) }),
     silk: () => ({ r: new Silk2DRenderer(), p: resolveSilk2D(config.silk) }),
+    menagerie: () => ({ r: new Menagerie2DRenderer(), p: resolveMenagerie2D(config.menagerie) }),
     zap: () => ({ r: new Zap2DRenderer(), p: resolveZap2D(config.zap) }),
   } as const;
 
@@ -245,6 +248,9 @@ function createQuadTipEffect(
           break;
         case "silk":
           (r as Silk2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
+          break;
+        case "menagerie":
+          (r as Menagerie2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, dt, scale);
           break;
         case "zap":
           (r as Zap2DRenderer).render(ctx as unknown as CanvasRenderingContext2D, p as any, tips, scale);
@@ -586,6 +592,7 @@ export function createWorkerEffectRenderer(
     case "ink":
     case "sparkles":
     case "silk":
+    case "menagerie":
     case "zap":
       return createQuadTipEffect(effectType, canvasSize);
     default: {
