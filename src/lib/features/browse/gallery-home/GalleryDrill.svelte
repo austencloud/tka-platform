@@ -307,6 +307,7 @@
       element: el.element.charAt(0).toUpperCase() + el.element.slice(1),
       color: el.accentColor,
       icon: el.iconPath,
+      desc: el.description,
       count: getCount(BrowseFilterType.TND_FAMILY, el.familyId),
     })).filter((v) => v.count > 0 || (activeFamilyValues?.has(v.value) ?? false)),
   );
@@ -879,7 +880,7 @@
             {#each familyValues as v (v.value)}
               {@const isOn = activeFamilyValues?.has(v.value) ?? false}
               <button
-                class="length-row tall"
+                class="length-row tall family-row"
                 class:loop-active={isOn}
                 style:--row-color={v.color}
                 type="button"
@@ -888,8 +889,11 @@
               >
                 <img class="value-img family-icon" src={v.icon} alt="" width="44" height="44" loading="lazy" />
                 <span class="value-main">
-                  <span class="value-label">{v.label}</span>
-                  <span class="value-desc">{v.element}</span>
+                  <span class="value-label">
+                    {v.label}
+                    <span class="element-tag">{v.element}</span>
+                  </span>
+                  <span class="value-desc">{v.desc}</span>
                   <span class="density-bar">
                     <span
                       class="density-fill"
@@ -1421,6 +1425,28 @@
     height: 44px;
     border-radius: 0;
   }
+  /* Every family wears its element: panel tinted and edged in the canonical
+     accent, at every tier. Six identical charcoal bars undersold the most
+     color-coded system in the app. */
+  .family-row {
+    background: color-mix(
+      in srgb,
+      var(--row-color) 10%,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04))
+    );
+    border-color: color-mix(in srgb, var(--row-color) 35%, transparent);
+  }
+  .family-row:hover {
+    border-color: color-mix(in srgb, var(--row-color) 65%, transparent);
+  }
+  .element-tag {
+    margin-left: 0.45rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--row-color);
+  }
   .length-row.tall {
     min-height: 76px;
   }
@@ -1728,6 +1754,42 @@
     .letter-chip {
       min-height: 70px;
     }
+
+    /* Families join the levels as monument panels: element icon leading,
+       name + element tag, the canonical one-line meaning, density, count.
+       (.length-row.family-row: must outweigh the base .length-row.tall
+       min-height, and @container adds no specificity.) */
+    .length-row.family-row {
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 0.55rem;
+      min-height: 235px;
+      padding: 1.3rem 1.2rem;
+      border-radius: 20px;
+    }
+    .family-row .value-main {
+      align-items: center;
+      gap: 0.4rem;
+    }
+    .family-row .value-img.family-icon {
+      width: 64px;
+      height: 64px;
+    }
+    .family-row .value-label {
+      font-size: 1.05rem;
+    }
+    .family-row .value-desc {
+      font-size: 0.83rem;
+      max-width: 32ch;
+    }
+    .family-row .density-bar {
+      margin-inline: auto;
+    }
+    .family-row .value-count {
+      font-size: 1.05rem;
+    }
   }
 
   /* ── Ultra-wide (4K-class) ─────────────────────────────────────────
@@ -1817,6 +1879,20 @@
     }
     .letter-chip {
       min-height: 78px;
+    }
+    .length-row.family-row {
+      min-height: 275px;
+      padding: 1.6rem 1.5rem;
+    }
+    .family-row .value-img.family-icon {
+      width: 76px;
+      height: 76px;
+    }
+    .family-row .value-label {
+      font-size: 1.15rem;
+    }
+    .family-row .value-desc {
+      font-size: 0.9rem;
     }
   }
 </style>
