@@ -29,6 +29,7 @@
   import MandalaCategoryControl, {
     type MandalaCategory,
   } from "./mandala/MandalaCategoryControl.svelte";
+  import AppearanceSection from "./AppearanceSection.svelte";
   import ControlDock, {
     type ControlDockTab,
     type ControlDockAction,
@@ -46,7 +47,7 @@
 
   type ArtType = "mandala" | "tunnel";
   // Tunnel rail sections (own id union — not the Download panel's PillId).
-  type TunnelRailId = "tunnel" | "effects" | "effort" | "playback";
+  type TunnelRailId = "tunnel" | "appearance" | "effects" | "effort" | "playback";
   // Mandala rail sections — same ids + order as the bottom dock's category bar.
   type MandalaRailId = MandalaCategory;
 
@@ -98,6 +99,7 @@
   // ── Tunnel rail ──
   const tunnelRail: { id: TunnelRailId; icon?: string; label: string; accentColor?: string }[] = [
     { id: "tunnel", icon: "fa-fan", label: "Tunnel" },
+    { id: "appearance", icon: "fa-users", label: "Cast" },
     { id: "effects", icon: "fa-wand-magic-sparkles", label: "Effects" },
     // Effort uses an accent dot (no icon), matching the Download panel's Effort pill.
     { id: "effort", label: "Effort", accentColor: "#94a3b8" },
@@ -435,23 +437,14 @@
         <p class="warn">Dense stack ({controller.propCount} props): a heavy effect may drop frames on weaker devices.</p>
       {/if}
     </div>
+  {:else if id === "appearance"}
+    <div class="section-pad">
+      <AppearanceSection {controller} />
+    </div>
   {:else if id === "effects"}
     <div class="section-pad">
-      <div class="group">
-        <button
-          class:active={controller.spectrum}
-          aria-pressed={controller.spectrum}
-          onclick={() => (controller.spectrum = !controller.spectrum)}
-        >
-          <i class="fas fa-rainbow" aria-hidden="true"></i> Rainbow spectrum
-        </button>
-      </div>
       {#if !dense}
-        <p class="section-hint">
-          {controller.spectrum
-            ? "Every kaleidoscope copy fans across the spectrum."
-            : "Props follow the colors you choose below."}
-        </p>
+        <p class="section-hint">Performer colors live in the Cast section.</p>
       {/if}
       <EffectsPanel
         layout={dense ? "strip" : "sidebar"}
@@ -1007,19 +1000,6 @@
     font-variant-numeric: tabular-nums;
   }
 
-  /* Tunnel View/Grid row. Label-left + button shares the full row width
-     (mirrors the Playback tab's Tempo/Mode rows) — no trailing dead space. */
-  .group { display: flex; align-items: center; gap: 6px; }
-  .group > button { flex: 1; min-width: 0; }
-  .group button {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    color: inherit; padding: 6px 11px; border-radius: 9px; font-size: 0.8rem; cursor: pointer;
-    min-height: var(--min-touch-target);
-  }
-  .group button.active {
-    background: var(--theme-accent, #8b5cf6); border-color: transparent; color: #fff;
-  }
   .warn { margin: 0; font-size: 0.72rem; color: var(--semantic-warning, #fbbf24); }
 
   /* Pinned export footer. */
@@ -1068,7 +1048,6 @@
      their var(--min-touch-target) floor — only gaps and outer paddings collapse
      so the tray stays compact floating over the art. */
   .dock-dense .section-pad { gap: 8px; padding: 2px 2px 6px; }
-  .dock-dense .group { gap: 6px; }
   /* Tunnel controls in the dock tray: tighter gaps; cards + chips + steppers
      keep their 44px touch floor. */
   .dock-dense .preset-grid,
