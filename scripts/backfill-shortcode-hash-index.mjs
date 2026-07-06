@@ -29,7 +29,17 @@ for (const doc of snap.docs) {
   if (!hash) { noHash++; continue; }
   const createdAt = doc.get("createdAt") ?? "";
   const prev = canonical.get(hash);
-  if (!prev || createdAt < prev.createdAt) {
+  // Oldest wins; tie-break on smaller doc id when createdAt is equal
+  // (0ms-apart dups exist among the ≤10ms groups in real data). This mirrors
+  // the client's findExistingCodeByHash / resolveCodesForDeck exactly so the
+  // index doc this backfill writes matches what clients independently compute
+  // — contractual convergence, no cross-client divergence. prev.code holds the
+  // current canonical's doc id, so this is an id-vs-id comparison.
+  if (
+    !prev ||
+    createdAt < prev.createdAt ||
+    (createdAt === prev.createdAt && doc.id < prev.code)
+  ) {
     canonical.set(hash, { code: doc.id, createdAt });
   }
 }
