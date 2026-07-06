@@ -14,6 +14,10 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import {
+  resolveInfoCellDisplay,
+  type InfoCellChoice,
+} from "$lib/shared/sequence-viewer/services/info-cell-display";
 import type {
   ThumbnailRenderInput,
   ThumbnailVariant,
@@ -28,6 +32,13 @@ import type {
  */
 export interface GalleryCompositionSource {
   getStartPositionLayoutForStepCount(stepCount: number): "row" | "column";
+  /**
+   * Per-step-count QR/Mandala/None pick for a card with a single empty info
+   * cell. The gallery grid must honor this the same way the viewer ChoreoCard
+   * and the export path do — otherwise the grid ignores the user's per-length
+   * choice and keeps rendering the QR-preferential default.
+   */
+  getInfoCellChoiceForStepCount(stepCount: number): InfoCellChoice;
   readonly showQRCode: boolean;
   readonly showMandala: boolean;
 }
@@ -107,11 +118,36 @@ export function buildGalleryVisibility(
       : qrGated;
   }
 
-  const qr = qrAllowed && compositionManager.showQRCode;
-  const mandala = compositionManager.showMandala;
+  // Route the globals through the same one-spot info-cell resolver the viewer
+  // ChoreoCard and the export path use, so a per-length "mandala"/"none" pick on
+  // a single-info-cell card (e.g. a 4-count) suppresses the QR-preferential
+  // default. No-op on non-contended cards (multi-cell, QR already off, hidden
+  // start position), which fall straight back to the globals.
+  const resolved = resolveInfoCellDisplay({
+    stepCount,
+    // Grid cards render with the start position (the gallery default); geometry
+    // must match so the info-cell count is correct.
+    includeStartPosition: p.includeStartPosition ?? true,
+    startPositionLayout:
+      p.startPositionLayout ??
+      compositionManager.getStartPositionLayoutForStepCount(stepCount),
+    columnCount: null, // Gallery thumbnails always render the auto layout table.
+    showQRCode: qrAllowed && compositionManager.showQRCode,
+    showMandala: compositionManager.showMandala,
+    infoCellChoice: compositionManager.getInfoCellChoiceForStepCount(stepCount),
+    isAuthenticated,
+  });
+  // Cache-key guard: when QR still wins the single info cell, the renderer
+  // reserves that cell for the QR (getMandalaPlacements → EMPTY), so the image
+  // is QR-only whether or not the mandala flag is set. Keep showMandala at the
+  // global there so the key stays byte-identical to the warmer's usesDefaults
+  // `_qr` bake — flipping it false would drift the whole QR population off the
+  // shared cloud cache (the June 2026 starvation class of bug). Only when the
+  // choice suppresses QR do we honor the resolver's mandala value, which lands
+  // on the warmer's no-QR (mandala) class.
   return {
-    showQRCode: qr,
-    showMandala: mandala,
+    showQRCode: resolved.showQRCode,
+    showMandala: resolved.showQRCode ? compositionManager.showMandala : resolved.showMandala,
     ...(handPathMode && { handPathMode: true }),
     ...motionOverrides,
   };
@@ -185,6 +221,10 @@ export function buildGalleryRenderInput(
  */
 export const DEFAULT_GALLERY_COMPOSITION: GalleryCompositionSource = {
   getStartPositionLayoutForStepCount: () => "row",
+  // QR-preferential, matching the derived default when both toggles are on. The
+  // warmer passes an explicit `visibility` override so it never routes through
+  // this, but the interface requires it.
+  getInfoCellChoiceForStepCount: () => "qr",
   showQRCode: false,
   showMandala: true,
 };
