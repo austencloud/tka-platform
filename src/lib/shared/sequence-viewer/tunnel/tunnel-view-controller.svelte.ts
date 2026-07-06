@@ -1,17 +1,18 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
-import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
-import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
 import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { buildTunnelLayers } from "./tunnel-layer-builder";
-import { stepToIndexProgress, type Fold, type TunnelConfig } from "./tunnel-fold-math";
+import { sampleTunnelProps } from "./tunnel-prop-sampling";
 import {
-  loadTunnelPresets,
-  saveTunnelPresets,
-  type TunnelPreset,
-} from "./tunnel-presets";
+  DEFAULT_LOOK_ID,
+  getLook,
+  propCount,
+  REDUCED_MOTION_LOOK_ID,
+  REDUCED_MOTION_MAX_PROPS,
+  type TunnelLook,
+} from "./tunnel-looks";
 import {
   loadTunnelViewState,
   saveTunnelViewState,
@@ -25,8 +26,8 @@ export interface TunnelControllerSources {
   getSequence: () => SequenceData | null | undefined;
 }
 
-/** Reduced-motion caps the fold so a dense kaleidoscope doesn't spin for users
- *  who asked for less motion. */
+/** Reduced-motion caps a dense look so a heavy kaleidoscope doesn't spin for
+ *  users who asked for less motion. */
 function prefersReducedMotion(): boolean {
   return (
     typeof window !== "undefined" &&
@@ -35,16 +36,16 @@ function prefersReducedMotion(): boolean {
 }
 
 export class TunnelViewController {
-  /** Effects with real per-tip GPU/2D cost per layer. */
-  static readonly HEAVY_EFFECTS = new Set<string>(["fire", "charcoal", "trails"]);
+  /** Prop count at/above which a look is considered a "large stack" (advisory
+   *  frame-drop warning). Kaleidoscope + Mandala (16 props) cross it. */
+  static readonly LARGE_STACK_PROPS = 16;
 
   // Tunnel sub-mode on/off (speed + play/pause ride the pane's existing transport).
   active = $state(false);
 
-  // Config (a saved preset stores exactly this). Initialized in the constructor
-  // from the persisted view state so the tunnel reopens in the look the user left.
-  fold = $state<Fold>(4);
-  mirror = $state(false);
+  /** Selected look id (see `tunnel-looks.ts`). Initialized from the persisted
+   *  view state so the tunnel reopens in the look the user left. */
+  lookId = $state<string>(DEFAULT_LOOK_ID);
 
   /** Tunnel-specific grid visibility. The kaleidoscope owns this (the global
    *  Visual/Display toggles don't reach the self-clocked tunnel), so it has its
@@ -57,13 +58,10 @@ export class TunnelViewController {
    *  so the Effects panel's "Choose a Look" / custom trail colors drive every
    *  prop. Persisted with the view state. */
   spectrum = $state(true);
-  effect = $state<TunnelConfig["effect"]>("none");
 
   /** Active rail section in the Art settings panel, persisted with the view
    *  state so the panel reopens on the section the user last used. */
   section = $state<TunnelViewState["section"]>("tunnel");
-
-  presets = $state<TunnelPreset[]>([]);
 
   #sources: TunnelControllerSources;
   #layers = $state<SequenceData[]>([]);
@@ -71,22 +69,19 @@ export class TunnelViewController {
 
   constructor(sources: TunnelControllerSources) {
     this.#sources = sources;
-    this.presets = loadTunnelPresets();
 
-    // Restore the last-left look (fold / mirror / grid / section) before any
+    // Restore the last-left look (look / grid / spectrum / section) before any
     // effect wires up, so persistence reflects the user's prior session.
     const view = loadTunnelViewState();
-    this.fold = view.fold;
-    this.mirror = view.mirror;
+    this.lookId = view.lookId;
     this.gridVisible = view.gridVisible;
     this.spectrum = view.spectrum;
     this.section = view.section;
 
-    // Persist the live view state on change (separate from saved presets).
+    // Persist the live view state on change.
     $effect(() => {
       const snapshot: TunnelViewState = {
-        fold: this.fold,
-        mirror: this.mirror,
+        lookId: this.lookId,
         gridVisible: this.gridVisible,
         spectrum: this.spectrum,
         section: this.section,
@@ -94,107 +89,68 @@ export class TunnelViewController {
       saveTunnelViewState(snapshot);
     });
 
-    // Rebuild the overlaid layers whenever the topology (sequence/fold/mirror)
-    // changes. Effect/transport changes do NOT rebuild — they are per-frame.
+    // Rebuild the overlaid copies whenever the topology (sequence/look) changes.
+    // Transport changes do NOT rebuild — they are per-frame.
     $effect(() => {
       const seq = this.#sources.getSequence();
-      const fold = this.fold;
-      const mirror = this.mirror;
+      const look = this.activeLook;
       const on = this.active;
       if (!on || !seq) {
         this.#layers = [];
         return;
       }
       const token = ++this.#buildToken;
-      void buildTunnelLayers(seq, { fold, mirror, effect: this.effect }).then((layers) => {
+      void buildTunnelLayers(seq, look).then((layers) => {
         if (token === this.#buildToken) this.#layers = layers;
       });
     });
   }
 
-  /** Cap fold under reduced-motion (8/4 -> 2). */
-  setFold(fold: Fold): void {
-    this.fold = prefersReducedMotion() ? 2 : fold;
+  /** The resolved look (falls back to the default if a stale id is persisted). */
+  activeLook = $derived<TunnelLook>(getLook(this.lookId) ?? getLook(DEFAULT_LOOK_ID)!);
+
+  /** Select a look. Under reduced motion, a dense look clamps to a calm one —
+   *  the choice is stored clamped (matching the old fold cap), so the highlighted
+   *  selection and the rendered kaleidoscope always agree. */
+  setLook(id: string): void {
+    const look = getLook(id);
+    if (
+      look &&
+      prefersReducedMotion() &&
+      propCount(look) > REDUCED_MOTION_MAX_PROPS
+    ) {
+      this.lookId = REDUCED_MOTION_LOOK_ID;
+      return;
+    }
+    this.lookId = id;
   }
 
-  /** Uniform all-layer effect map. undefined when effect is "none". */
-  tipEffectMap = $derived<TipEffectMap | undefined>(
-    !this.active || this.effect === "none"
-      ? undefined
-      : { "*": { effect: this.effect } },
-  );
-
-  /** True when the current config is in the expensive zone (heavy effect on a
-   *  large stack). Advisory — the strip can warn; not a hard cap. */
+  /** True when the active look is a large stack — advisory (the strip can warn a
+   *  heavy effect may drop frames on weaker devices); not a hard cap. */
   heavyLoad = $derived(
-    this.active &&
-      TunnelViewController.HEAVY_EFFECTS.has(this.effect) &&
-      (this.fold === 8 || this.mirror),
+    this.active && propCount(this.activeLook) >= TunnelViewController.LARGE_STACK_PROPS,
   );
 
-  /** Base (un-rotated) sequence prop states at the playhead — the center pair
-   *  of the kaleidoscope. currentStep is 1-indexed fractional (start < 1). */
+  /** Honor the global Effort preset so the sidebar's Effort section shapes the
+   *  tunnel's motion — same easing the 2D engine applies to step progress. Base
+   *  + all layers share this, so they stay in sync. */
+  #ease = (progress: number): number =>
+    applyEffort(getAnimationVisibilityManager().getEffortPreset(), progress);
+
+  /** Base (un-transformed) sequence prop states at the playhead — the center
+   *  pair of the kaleidoscope. currentStep is 1-indexed fractional (start < 1). */
   basePropsAt(currentStep: number): { blue: PropState; red: PropState } {
     const seq = this.#sources.getSequence();
     if (!seq) return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE } };
-    return this.#propsFor(seq, currentStep);
+    return sampleTunnelProps(seq, currentStep, this.#ease);
   }
 
-  /** Per-layer prop states at the live playhead. 1-indexed fractional currentStep. */
+  /** Per-copy prop states at the live playhead. 1-indexed fractional currentStep. */
   additionalLayersAt(currentStep: number): AdditionalLayerProps[] {
     if (!this.active) return [];
     return this.#layers.map((seq) => {
-      const p = this.#propsFor(seq, currentStep);
+      const p = sampleTunnelProps(seq, currentStep, this.#ease);
       return { blueProp: p.blue, redProp: p.red };
     });
-  }
-
-  #propsFor(
-    seq: SequenceData,
-    currentStep: number,
-  ): { blue: PropState; red: PropState } {
-    const steps = seq.steps ?? [];
-    if (steps.length === 0) {
-      return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE } };
-    }
-    const { idx, progress } = stepToIndexProgress(currentStep, steps.length);
-    const step = steps[idx];
-    if (!step) return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE } };
-    // Honor the global Effort preset so the sidebar's Effort section shapes the
-    // tunnel's motion — same easing the 2D engine applies to step progress
-    // (sequence-animation-orchestrator). Base + all layers share this currentStep,
-    // so they stay in sync.
-    const easedProgress = applyEffort(
-      getAnimationVisibilityManager().getEffortPreset(),
-      progress,
-    );
-    const r = interpolatePropAngles(step, easedProgress);
-    return {
-      blue: r.isValid ? (r.blueAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
-      red: r.isValid ? (r.redAngles ?? { ...DEFAULT_PROP_STATE }) : { ...DEFAULT_PROP_STATE },
-    };
-  }
-
-  // ── Presets ──────────────────────────────────────────────────
-  saveCurrentAs(name: string): void {
-    const trimmed = name.trim() || `Look ${this.presets.length + 1}`;
-    const preset: TunnelPreset = {
-      id: `${trimmed}-${this.presets.length}-${Math.floor(performance.now())}`,
-      name: trimmed,
-      config: { fold: this.fold, mirror: this.mirror, effect: this.effect },
-    };
-    this.presets = [...this.presets, preset];
-    saveTunnelPresets(this.presets);
-  }
-
-  applyPreset(p: TunnelPreset): void {
-    this.effect = p.config.effect;
-    this.setFold(p.config.fold);
-    this.mirror = p.config.mirror;
-  }
-
-  deletePreset(id: string): void {
-    this.presets = this.presets.filter((p) => p.id !== id);
-    saveTunnelPresets(this.presets);
   }
 }

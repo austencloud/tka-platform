@@ -1,11 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { rotAmountsFor, stepToIndexProgress } from "./tunnel-fold-math";
-
-describe("rotAmountsFor", () => {
-  it("2-fold = single 180° copy", () => expect(rotAmountsFor(2)).toEqual([4]));
-  it("4-fold = 90/180/270", () => expect(rotAmountsFor(4)).toEqual([2, 4, 6]));
-  it("8-fold = every 45°", () => expect(rotAmountsFor(8)).toEqual([1, 2, 3, 4, 5, 6, 7]));
-});
+import { stepToIndexProgress } from "./tunnel-fold-math";
 
 describe("stepToIndexProgress", () => {
   it("maps 1-indexed currentStep to 0-indexed idx + fractional progress", () => {

@@ -23,6 +23,7 @@
   import EffortPanel from "$lib/shared/animation-engine/components/settings-panels/EffortPanel.svelte";
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
+  import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
   import MandalaCategoryControl, {
     type MandalaCategory,
   } from "./mandala/MandalaCategoryControl.svelte";
@@ -34,7 +35,7 @@
   import type { ViewerPlaybackState } from "../domain/viewer-prop-groups";
   import type { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
   import type { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
-  import type { Fold } from "../tunnel/tunnel-fold-math";
+  import { LOOKS, propCount } from "../tunnel/tunnel-looks";
   import type {
     PlaybackMode,
     StepPlaybackStepSize,
@@ -85,7 +86,7 @@
     onPlaybackToggle?: () => void;
     bluePropType?: string | null;
     redPropType?: string | null;
-    /** Freeze the rail while a tunnel export runs — changing fold/mirror/spectrum
+    /** Freeze the rail while a tunnel export runs — changing look/spectrum
      *  mid-export would desync the live config from the offscreen engine's
      *  pre-loaded layer textures. Cancel lives on the canvas overlay, not here. */
     exporting?: boolean;
@@ -116,8 +117,6 @@
     { id: "depth", icon: "fa-wave-square", label: "Depth" },
     { id: "download", icon: "fa-download", label: "Download" },
   ];
-  const folds: Fold[] = [2, 4, 8];
-  let newName = $state("");
 
   // Mandala shows ALL its controls stacked (each is a single compact row, so a
   // per-section rail would leave the tall panel mostly empty). The rail is kept
@@ -203,41 +202,35 @@
 {#snippet tunnelSectionBody(id: TunnelRailId, dense: boolean)}
   {#if id === "tunnel"}
     <div class="section-pad">
-      <div class="group">
-        <span class="lbl">Fold</span>
-        {#each folds as f (f)}
-          <button class:active={controller.fold === f} onclick={() => controller.setFold(f)}>{f}×</button>
+      <!-- Look catalog: each tile is a curated kaleidoscope (base + an explicit
+           copy list, so the prop count is exactly what you see — no hidden
+           doubling). Single-select icon grid, same vocabulary as the Effects
+           picker. -->
+      <div class="look-grid">
+        {#each LOOKS as look (look.id)}
+          <button
+            class="look-tile"
+            class:active={controller.lookId === look.id}
+            type="button"
+            aria-pressed={controller.lookId === look.id}
+            onclick={() => controller.setLook(look.id)}
+            title={`${look.name} · ${propCount(look)} props`}
+          >
+            <i class={look.icon} aria-hidden="true"></i>
+            <span>{look.name}</span>
+          </button>
         {/each}
       </div>
       <div class="group">
-        <button class:active={controller.mirror} onclick={() => (controller.mirror = !controller.mirror)}>
-          <i class="fas fa-arrows-left-right" aria-hidden="true"></i> Mirror
-        </button>
+        <span class="lbl">View</span>
         <button class:active={controller.gridVisible} onclick={() => (controller.gridVisible = !controller.gridVisible)}>
           <i class="fas fa-border-all" aria-hidden="true"></i> Grid
         </button>
       </div>
 
       {#if controller.heavyLoad}
-        <p class="warn">Heavy effect on a large stack: may drop frames on weaker devices.</p>
+        <p class="warn">Dense look (16 props): a heavy effect may drop frames on weaker devices.</p>
       {/if}
-
-      <div class="presets">
-        <input
-          class="name-input"
-          type="text"
-          placeholder="name this look…"
-          bind:value={newName}
-          onkeydown={(e) => { if (e.key === "Enter") { controller.saveCurrentAs(newName); newName = ""; } }}
-        />
-        <button onclick={() => { controller.saveCurrentAs(newName); newName = ""; }}>Save</button>
-        {#each controller.presets as p (p.id)}
-          <div class="chip">
-            <button class="chip-apply" onclick={() => controller.applyPreset(p)}>{p.name}</button>
-            <button class="chip-del" aria-label={`Delete ${p.name}`} onclick={() => controller.deletePreset(p.id)}>×</button>
-          </div>
-        {/each}
-      </div>
     </div>
   {:else if id === "effects"}
     <div class="section-pad">
@@ -272,7 +265,7 @@
       <EffortPanel columns={dense ? 4 : 2} showSubtitles={!dense} />
     </div>
   {:else}
-    <div class="section-pad">
+    <div class="section-pad playback-rows">
       <div class="rt-section">
         <span class="rt-section-label">Tempo</span>
         <TempoControl
@@ -294,6 +287,10 @@
           showDescriptions={!dense}
         />
       </div>
+      <!-- Motion paths are playback behavior (they change how the props
+           travel), so the tunnel gets them here too — same placement as the
+           2D animation dock. The panel brings its own header row. -->
+      <PathShapePanel />
     </div>
   {/if}
 {/snippet}
@@ -558,11 +555,46 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
   }
 
-  /* Tunnel fold/mirror row + presets (moved here from the old tunnel block). */
-  .group { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-  .lbl { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5; }
-  .group button,
-  .presets button {
+  /* Look catalog: single-select icon tiles (icon over name), same visual family
+     as the Effects picker. auto-fit fills the width and wraps cleanly. */
+  .look-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(76px, 1fr));
+    gap: 6px;
+  }
+  .look-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 7px 4px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 10px;
+    color: inherit;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .look-tile i { font-size: 15px; opacity: 0.85; }
+  .look-tile > span { font-size: 0.7rem; white-space: nowrap; }
+  .look-tile.active {
+    background: var(--theme-accent, #8b5cf6);
+    border-color: transparent;
+    color: #fff;
+  }
+  .look-tile.active i { opacity: 1; }
+
+  /* Tunnel View/Grid row. Label-left + button shares the full row width
+     (mirrors the Playback tab's Tempo/Mode rows) — no trailing dead space. */
+  .group { display: flex; align-items: center; gap: 6px; }
+  .group > button { flex: 1; min-width: 0; }
+  .lbl {
+    flex: 0 0 52px;
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.5;
+  }
+  .group button {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     color: inherit; padding: 6px 11px; border-radius: 9px; font-size: 0.8rem; cursor: pointer;
@@ -572,16 +604,6 @@
     background: var(--theme-accent, #8b5cf6); border-color: transparent; color: #fff;
   }
   .warn { margin: 0; font-size: 0.72rem; color: var(--semantic-warning, #fbbf24); }
-  .presets { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .name-input {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    color: inherit; padding: 6px 11px; border-radius: 9px; font-size: 0.8rem;
-    min-height: var(--min-touch-target); flex: 1 1 120px; min-width: 0;
-  }
-  .chip { display: inline-flex; border: 1px solid var(--theme-accent, rgba(150,120,240,0.4)); border-radius: 999px; overflow: hidden; }
-  .chip-apply { border: none; border-radius: 0; }
-  .chip-del { border: none; border-radius: 0; padding: 6px 9px; }
 
   /* Pinned export footer. */
   .panel-footer {
@@ -630,7 +652,12 @@
      so the tray stays compact floating over the art. */
   .dock-dense .section-pad { gap: 8px; padding: 2px 2px 6px; }
   .dock-dense .group { gap: 6px; }
-  .dock-dense .presets { gap: 6px; }
+  /* Look grid in the dock tray: fixed 5-col so the catalog stays 2 tight rows
+     at the 44px touch floor (mirrors the 6-col Effects picker compression). */
+  .dock-dense .look-grid { grid-template-columns: repeat(5, 1fr); gap: 4px; }
+  .dock-dense .look-tile { min-height: 44px; padding: 4px 2px; gap: 1px; }
+  .dock-dense .look-tile i { font-size: 13px; }
+  .dock-dense .look-tile > span { font-size: 9px; letter-spacing: 0.01em; }
   /* EffectsPanel lives in a child component — mirror AnimationPanel's dock-dense
      compression (:global): 6-column picker puts all 16 effects (3 rows at the
      44px touch floor) inside the capped tray with no scrolling. */
@@ -642,4 +669,31 @@
   .dock-dense :global(.fx-picker .fx-tile i) { font-size: 12px; }
   .dock-dense :global(.fx-picker .fx-tile > span) { font-size: 9px; letter-spacing: 0.01em; }
   .dock-dense :global(.slider-row) { padding: 6px 10px; gap: 8px; }
+  /* Playback: label-left rows + side-by-side mode buttons (mirrors
+     AnimationPanel). Dock only — the sidebar keeps the vertical stack. */
+  .dock-dense .playback-rows {
+    gap: 6px;
+    padding-bottom: 4px;
+  }
+  .dock-dense .playback-rows .rt-section {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+  }
+  .dock-dense .playback-rows .rt-section-label {
+    flex: 0 0 52px;
+  }
+  .dock-dense .playback-rows :global(.tempo-wrapper) {
+    flex: 1;
+    min-width: 0;
+  }
+  .dock-dense .playback-rows :global(.mode-toggle) {
+    flex-direction: row;
+    flex: 1;
+    min-width: 0;
+  }
+  .dock-dense .playback-rows :global(.mode-toggle .mode-btn) {
+    flex: 1;
+    min-width: 0;
+  }
 </style>

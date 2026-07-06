@@ -6,6 +6,7 @@
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
   import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
   import { buildTunnelLayers } from "$lib/shared/sequence-viewer/tunnel/tunnel-layer-builder";
+  import { getLook, type TunnelLook } from "$lib/shared/sequence-viewer/tunnel/tunnel-looks";
   import { getPropDemoLoop, generateFreshDemoLoop } from "../data/prop-demo-loop";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -65,29 +66,30 @@
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
     );
   }
-  // Rotation offsets for the overlaid copies. 4-fold (90/180/270) is the lush
-  // default; a 2-fold (180° only) stack is the lighter look. Reduced-motion
-  // always uses 2-fold; remix occasionally rolls a 2-fold for variety.
-  function defaultAmounts(): number[] {
-    return prefersReducedMotion() ? [4] : [2, 4, 6];
+  // Reveal shapes, expressed as curated Tunnel LOOKS (shared with Tunnel View).
+  // "pinwheel" (4-fold: 90/180/270, 8 props) is the lush default; "duo" (a
+  // single 180° copy, 4 props) is the lighter look. Reduced-motion always uses
+  // the lighter one; remix occasionally rolls it for variety.
+  const PINWHEEL = getLook("pinwheel")!;
+  const DUO = getLook("duo")!;
+
+  function defaultLook(): TunnelLook {
+    return prefersReducedMotion() ? DUO : PINWHEEL;
   }
-  function remixAmounts(): number[] {
-    if (prefersReducedMotion()) return [4];
-    return Math.random() < 0.35 ? [4] : [2, 4, 6];
+  function remixLook(): TunnelLook {
+    if (prefersReducedMotion()) return DUO;
+    return Math.random() < 0.35 ? DUO : PINWHEEL;
   }
 
-  // Shared loader: builds the rotated tunnel layers; the token guard drops a
+  // Shared loader: builds the overlaid tunnel layers; the token guard drops a
   // stale build if a newer reveal/remix started while this one was awaiting.
   async function loadReveal(
     seqPromise: Promise<SequenceData>,
     token: number,
-    amounts: number[],
+    look: TunnelLook,
   ) {
     const seq = await seqPromise;
-    // Shared with Tunnel View. amounts here are the legacy [2,4,6]/[4] reveal
-    // shapes; map them to a fold so the one builder produces the same layers.
-    const fold = amounts.length >= 3 ? 4 : 2;
-    const copies = await buildTunnelLayers(seq, { fold, mirror: false, effect: "none" });
+    const copies = await buildTunnelLayers(seq, look);
     if (token !== revealToken) return;
     base = seq;
     rotated = copies;
@@ -103,7 +105,7 @@
     currentEffect = "none"; // first look is the clean tunnel; remix adds effects
     isRemixing = false;
     revealToken += 1;
-    void loadReveal(getPropDemoLoop(), revealToken, defaultAmounts());
+    void loadReveal(getPropDemoLoop(), revealToken, defaultLook());
   }
 
   /** Remix the meet view: a fresh random sequence + a new random effect. */
@@ -114,7 +116,7 @@
     rotated = [];
     playheadBeat = 0;
     revealToken += 1;
-    void loadReveal(generateFreshDemoLoop(), revealToken, remixAmounts());
+    void loadReveal(generateFreshDemoLoop(), revealToken, remixLook());
   }
 
   onMount(() => {

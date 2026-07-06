@@ -1,14 +1,12 @@
-import type { Fold } from "./tunnel-fold-math";
+import { DEFAULT_LOOK_ID, getLook } from "./tunnel-looks";
 
 /**
- * Persisted tunnel-view look (the live config the user last left the kaleidoscope
- * in), kept separate from saved presets (`tunnel-presets.ts`). Mirrors that file's
- * load/save shape so both read/write a single localStorage key with the same
- * SSR + quota guards.
+ * Persisted tunnel-view look (the live config the user last left the
+ * kaleidoscope in). One localStorage key with SSR + quota guards.
  */
 export interface TunnelViewState {
-  fold: Fold;
-  mirror: boolean;
+  /** Selected look id (see `tunnel-looks.ts`). */
+  lookId: string;
   gridVisible: boolean;
   /** Per-prop rainbow spectrum coloring. On = every kaleidoscope copy fans
    *  across the spectrum; off = layers inherit the base/preset colors so the
@@ -21,20 +19,30 @@ export interface TunnelViewState {
 const STORAGE_KEY = "tka_tunnel_view_state";
 
 const DEFAULTS: TunnelViewState = {
-  fold: 4,
-  mirror: false,
+  lookId: DEFAULT_LOOK_ID,
   gridVisible: false,
   spectrum: true,
   section: "tunnel",
 };
+
+/** Resolve a persisted look id, migrating pre-looks state that stored
+ *  `fold` (2|4|8) + `mirror` (bool). Unknown → undefined (caller defaults). */
+function resolveLookId(p: Record<string, unknown>): string | undefined {
+  if (typeof p.lookId === "string" && getLook(p.lookId)) return p.lookId;
+  // Legacy fold/mirror → nearest curated look.
+  if (p.mirror === true) return "mandala";
+  if (p.fold === 2) return "duo";
+  if (p.fold === 8) return "kaleido";
+  if (p.fold === 4) return "pinwheel";
+  return undefined;
+}
 
 export function loadTunnelViewState(): TunnelViewState {
   if (typeof localStorage === "undefined") return { ...DEFAULTS };
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULTS };
-    const p = JSON.parse(raw) as Partial<TunnelViewState>;
-    const fold = p.fold === 2 || p.fold === 4 || p.fold === 8 ? p.fold : DEFAULTS.fold;
+    const p = JSON.parse(raw) as Record<string, unknown>;
     const section =
       p.section === "tunnel" ||
       p.section === "effects" ||
@@ -43,8 +51,7 @@ export function loadTunnelViewState(): TunnelViewState {
         ? p.section
         : DEFAULTS.section;
     return {
-      fold,
-      mirror: typeof p.mirror === "boolean" ? p.mirror : DEFAULTS.mirror,
+      lookId: resolveLookId(p) ?? DEFAULTS.lookId,
       gridVisible: typeof p.gridVisible === "boolean" ? p.gridVisible : DEFAULTS.gridVisible,
       spectrum: typeof p.spectrum === "boolean" ? p.spectrum : DEFAULTS.spectrum,
       section,

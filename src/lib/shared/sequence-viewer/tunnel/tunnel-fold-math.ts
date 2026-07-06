@@ -1,25 +1,10 @@
-import type { EffectType } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
-
-/** Rotational symmetry of the tunnel. The TKA grid is 8 points (45° steps), so
- *  rotateSequence only lands on 45° multiples — 2/4/8 are the representable folds
- *  (120°/60° i.e. 3/6-fold are not). */
-export type Fold = 2 | 4 | 8;
-
-export interface TunnelConfig {
-  fold: Fold;
-  mirror: boolean;
-  effect: EffectType;
-}
-
-/** rotateSequence amounts (1 unit = 45°) for each fold, excluding the base (0°). */
-export function rotAmountsFor(fold: Fold): number[] {
-  if (fold === 8) return [1, 2, 3, 4, 5, 6, 7];
-  if (fold === 4) return [2, 4, 6];
-  return [4];
-}
-
-/** Convert AnimationPlayer's 1-indexed fractional currentStep (where <1 is the
- *  start position) to a 0-indexed step index + fractional progress within it. */
+/**
+ * Convert AnimationPlayer's 1-indexed fractional currentStep (where <1 is the
+ * start position) to a 0-indexed step index + fractional progress within it.
+ *
+ * (The old fold/mirror config types lived here; they were replaced by the
+ * explicit look catalog in `tunnel-looks.ts`. Only this step math survives.)
+ */
 export function stepToIndexProgress(
   currentStep: number,
   length: number,

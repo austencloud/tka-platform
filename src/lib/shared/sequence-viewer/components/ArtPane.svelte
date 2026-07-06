@@ -67,8 +67,8 @@
   } = $props();
 
   // The tunnel controller is owned HERE and shared with both the rendering view
-  // (TunnelArtView) and the controls (ArtSettingsPanel), so the panel's fold /
-  // mirror / preset buttons drive the same instance the canvas reads — and the
+  // (TunnelArtView) and the controls (ArtSettingsPanel), so the panel's look /
+  // grid / spectrum controls drive the same instance the canvas reads — and the
   // export entry can derive per-beat layers from it.
   const controller = new TunnelViewController({
     getSequence: () => playback.animationState.sequenceData ?? sequence,
@@ -130,10 +130,8 @@
           ? "Done"
           : "",
   );
-  // Stamp fold/mirror so variant exports of one sequence don't collide.
-  const tunnelSuffix = $derived(
-    `-tunnel-${controller.fold}x${controller.mirror ? "-mirror" : ""}`,
-  );
+  // Stamp the look so variant exports of one sequence don't collide.
+  const tunnelSuffix = $derived(`-tunnel-${controller.activeLook.id}`);
 
   // Preview-first save: share sheet on mobile, download on desktop (the platform
   // gate lives in shareOrDownloadBlob). The blob is recovered from the preview's
