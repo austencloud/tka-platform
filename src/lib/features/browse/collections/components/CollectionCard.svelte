@@ -45,6 +45,7 @@ first and only removes the folder — the sequences inside stay in the library.
 
 	const isSystem = $derived(isSystemCollection(collection));
 	const tileColor = $derived(collection.color ?? "var(--theme-accent)");
+	const isSmart = $derived(collection.kind === "smart");
 
 	let menuState: ContextMenuState = $state({ open: false });
 	let renaming = $state(false);
@@ -201,7 +202,8 @@ first and only removes the folder — the sequences inside stay in the library.
 			<span class="tile-text">
 				<span class="tile-name">{collection.name}</span>
 				<span class="tile-count">
-					{countLabel(collection.sequenceCount)}{#if !isReadonly && collection.isPublic}
+					{countLabel(collection.sequenceCount)}{#if isSmart}
+						· <i class="fas fa-wand-magic-sparkles smart-badge" aria-hidden="true"></i> Smart{/if}{#if !isReadonly && collection.isPublic}
 						· <i class="fas fa-globe public-globe" aria-hidden="true"></i> Public{/if}
 				</span>
 				{#if ownerName}
@@ -324,6 +326,11 @@ first and only removes the folder — the sequences inside stay in the library.
 	}
 
 	.public-globe {
+		font-size: 10px;
+		color: color-mix(in srgb, var(--tile-color) 80%, white);
+	}
+
+	.smart-badge {
 		font-size: 10px;
 		color: color-mix(in srgb, var(--tile-color) 80%, white);
 	}
