@@ -31,7 +31,9 @@ the gallery's, and the source is pinned to my-library with no toggle.
 	import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
 	import { t } from "$lib/shared/i18n/i18n.svelte";
 
-	let { onBack }: { onBack: () => void } = $props();
+	// The desktop split view keeps the collection rail visible, so it passes no
+	// onBack — BrowsePanel then omits the back pill entirely.
+	let { onBack }: { onBack?: () => void } = $props();
 
 	const engine = createBrowseEngine({
 		persistKey: "tka-browse-library-all",

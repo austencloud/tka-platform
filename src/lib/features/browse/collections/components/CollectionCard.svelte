@@ -29,6 +29,7 @@ first and only removes the folder — the sequences inside stay in the library.
 		ownerName,
 		readonly: isReadonly = false,
 		onUnfollow,
+		selected = false,
 	}: {
 		collection: LibraryCollection;
 		onOpen: () => void;
@@ -38,6 +39,8 @@ first and only removes the folder — the sequences inside stay in the library.
 		readonly?: boolean;
 		/** Followed collection: the kebab offers Unfollow instead of owner actions. */
 		onUnfollow?: () => void;
+		/** Desktop rail: this card is the collection currently showing in the detail pane. */
+		selected?: boolean;
 	} = $props();
 
 	const isSystem = $derived(isSystemCollection(collection));
@@ -181,10 +184,11 @@ first and only removes the folder — the sequences inside stay in the library.
 		/>
 	</div>
 {:else}
-	<div class="collection-card" style="--tile-color: {tileColor};">
+	<div class="collection-card" class:selected style="--tile-color: {tileColor};">
 		<button
 			type="button"
 			class="card-main"
+			aria-current={selected ? "true" : undefined}
 			onclick={() => {
 				getHapticFeedback()?.trigger("selection");
 				onOpen();
@@ -254,6 +258,14 @@ first and only removes the folder — the sequences inside stay in the library.
 
 	.collection-card:active {
 		transform: scale(0.98);
+	}
+
+	/* Rail selection: the card whose collection fills the detail pane. A left
+	   accent bar + tint reads as "you are here" without stealing hover's job. */
+	.collection-card.selected {
+		border-color: color-mix(in srgb, var(--tile-color) 55%, transparent);
+		background: color-mix(in srgb, var(--tile-color) 12%, var(--theme-card-bg));
+		box-shadow: inset 3px 0 0 0 var(--tile-color);
 	}
 
 	.card-main {

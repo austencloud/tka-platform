@@ -6,19 +6,28 @@ library), Favorites, your collections, and collections you follow. Discovery
 of other people's collections lives in the gallery drill ("Collections"
 category), not here; following one from there lands it in this list.
 
+Two layouts share one nav model:
+- Phones (stacked): the classic list → detail flow, one screen at a time.
+- Desktop (side-by-side): a persistent collection rail on the left with the
+  real detail view filling the rest of the monitor — no more tiny folders
+  swimming in space, and switching collections is one click, not a
+  back-and-forth. Nothing selected shows the All shelf, so the pane is never
+  empty.
+
 List vs detail is derived straight from browseNavigationState's current
-location, so the module's back/forward buttons and the localStorage restore
-both work without any extra sync wiring: opening a collection pushes a
-"detail" location, going back re-renders the list.
+location, so the module's back/forward buttons, deep links, and the
+localStorage restore all work in both layouts without extra sync wiring.
 
 Signed out, a library has nowhere to live, so the tab explains itself
 instead of showing an empty shell.
 -->
 <script lang="ts">
+	import { onMount } from "svelte";
 	import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
 	import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
 	import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
+	import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
 	import CollectionCard from "./CollectionCard.svelte";
 	import CollectionDetailView from "./CollectionDetailView.svelte";
 	import AllLibraryView from "./AllLibraryView.svelte";
@@ -32,6 +41,16 @@ instead of showing an empty shell.
 			collectionsState.ensureStarted();
 			followedCollectionsState.ensureStarted();
 		}
+	});
+
+	// Wide screens get the rail + detail split; phones keep the stacked flow.
+	let isSideBySide = $state(false);
+	onMount(() => {
+		isSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
+		const unsubscribe = responsiveLayoutManager.onLayoutChange(() => {
+			isSideBySide = responsiveLayoutManager.shouldUseSideBySideLayout();
+		});
+		return unsubscribe;
 	});
 
 	// Favorites stays pinned (sortOrder -1000); after that, most recently
@@ -100,6 +119,17 @@ instead of showing an empty shell.
 		return { id: loc.contextId, ownerId: null, ownerName: undefined };
 	});
 
+	// Split mode never shows an empty pane: with nothing selected, the All
+	// shelf fills in. Display-only — no history entry is written until the
+	// user actually clicks something, so back/forward stay truthful.
+	const railSelection = $derived(
+		detail ?? {
+			id: "all",
+			ownerId: null as string | null,
+			ownerName: undefined as string | undefined,
+		},
+	);
+
 	function openCollection(id: string, name: string) {
 		browseNavigationState.viewCollectionDetail(id, name);
 	}
@@ -131,9 +161,14 @@ instead of showing an empty shell.
 		if (!name || creating) return;
 		creating = true;
 		try {
-			await collectionsState.create(name);
+			const created = await collectionsState.create(name);
 			newName = "";
 			showInput = false;
+			// In the split view the detail pane is right there — open the new
+			// collection immediately so the next click can be "Add" or "Scan".
+			if (created && isSideBySide) {
+				openCollection(created.id, created.name);
+			}
 		} finally {
 			creating = false;
 		}
@@ -151,7 +186,120 @@ instead of showing an empty shell.
 	}
 </script>
 
-{#if detail}
+<!-- Shared shelf markup: the phone grid and the desktop rail render the same
+     cards; only the wrapper (grid vs single column) and the selection
+     highlight differ. -->
+{#snippet ownShelves(sel: { id: string; ownerId: string | null } | null)}
+	<CollectionCard
+		collection={allShelf}
+		readonly
+		selected={!!sel && sel.id === "all" && !sel.ownerId}
+		onOpen={() => openCollection("all", "All")}
+	/>
+
+	{#each collections as c (c.id)}
+		<CollectionCard
+			collection={c}
+			selected={!!sel && sel.id === c.id && !sel.ownerId}
+			onOpen={() => openCollection(c.id, c.name)}
+		/>
+	{/each}
+
+	{#if showInput}
+		<div class="new-tile-input">
+			<!-- svelte-ignore a11y_autofocus -->
+			<input
+				type="text"
+				class="name-field"
+				placeholder="Collection name"
+				aria-label="New collection name"
+				bind:value={newName}
+				onkeydown={handleInputKeydown}
+				maxlength="60"
+				autofocus
+			/>
+			<button
+				type="button"
+				class="confirm-create"
+				onclick={handleCreate}
+				disabled={!newName.trim() || creating}
+				aria-label="Create collection"
+			>
+				<i class="fas fa-check" aria-hidden="true"></i>
+			</button>
+		</div>
+	{:else}
+		<button type="button" class="add-tile" onclick={() => (showInput = true)}>
+			<span class="add-icon">
+				<i class="fas fa-plus" aria-hidden="true"></i>
+			</span>
+			<span class="add-label">New collection</span>
+		</button>
+	{/if}
+{/snippet}
+
+{#snippet followedShelves(sel: { id: string; ownerId: string | null } | null)}
+	{#each followedCollectionsState.items as item (item.ownerId + item.collection.id)}
+		<CollectionCard
+			collection={item.collection}
+			ownerName={item.ownerName}
+			readonly
+			selected={!!sel && sel.ownerId === item.ownerId && sel.id === item.collection.id}
+			onUnfollow={() =>
+				followedCollectionsState.unfollow(item.ownerId, item.collection.id)}
+			onOpen={() =>
+				openForeignCollection(
+					item.ownerId,
+					item.collection.id,
+					item.collection.name,
+					item.ownerName,
+				)}
+		/>
+	{/each}
+{/snippet}
+
+{#if isSideBySide && signedIn}
+	<div class="library-split">
+		<aside class="rail" aria-label="Your collections">
+			<header class="list-header">
+				<h2 class="list-title">Library</h2>
+			</header>
+
+			{#if loading && collections.length === 0}
+				<div class="rail-cards" aria-hidden="true">
+					{#each Array(5) as _}
+						<span class="tile-skeleton"></span>
+					{/each}
+				</div>
+			{:else}
+				<div class="rail-cards">
+					{@render ownShelves(railSelection)}
+				</div>
+
+				{#if followedCollectionsState.items.length > 0}
+					<h3 class="following-title">Following</h3>
+					<div class="rail-cards">
+						{@render followedShelves(railSelection)}
+					</div>
+				{/if}
+			{/if}
+		</aside>
+
+		<section class="detail-pane">
+			{#if railSelection.id === "all" && !railSelection.ownerId}
+				<AllLibraryView />
+			{:else}
+				<CollectionDetailView
+					collectionId={railSelection.id}
+					foreignOwnerId={railSelection.ownerId}
+					ownerName={railSelection.ownerName}
+					onBack={backToList}
+					showBack={false}
+				/>
+			{/if}
+		</section>
+	</div>
+{:else if detail}
 	{#if detail.id === "all" && !detail.ownerId}
 		<AllLibraryView onBack={backToList} />
 	{:else}
@@ -187,71 +335,13 @@ instead of showing an empty shell.
 				</div>
 			{:else}
 				<div class="card-grid">
-					<CollectionCard
-						collection={allShelf}
-						readonly
-						onOpen={() => openCollection("all", "All")}
-					/>
-
-					{#each collections as c (c.id)}
-						<CollectionCard
-							collection={c}
-							onOpen={() => openCollection(c.id, c.name)}
-						/>
-					{/each}
-
-					{#if showInput}
-						<div class="new-tile-input">
-							<!-- svelte-ignore a11y_autofocus -->
-							<input
-								type="text"
-								class="name-field"
-								placeholder="Collection name"
-								aria-label="New collection name"
-								bind:value={newName}
-								onkeydown={handleInputKeydown}
-								maxlength="60"
-								autofocus
-							/>
-							<button
-								type="button"
-								class="confirm-create"
-								onclick={handleCreate}
-								disabled={!newName.trim() || creating}
-								aria-label="Create collection"
-							>
-								<i class="fas fa-check" aria-hidden="true"></i>
-							</button>
-						</div>
-					{:else}
-						<button type="button" class="add-tile" onclick={() => (showInput = true)}>
-							<span class="add-icon">
-								<i class="fas fa-plus" aria-hidden="true"></i>
-							</span>
-							<span class="add-label">New collection</span>
-						</button>
-					{/if}
+					{@render ownShelves(null)}
 				</div>
 
 				{#if followedCollectionsState.items.length > 0}
 					<h3 class="following-title">Following</h3>
 					<div class="card-grid">
-						{#each followedCollectionsState.items as item (item.ownerId + item.collection.id)}
-							<CollectionCard
-								collection={item.collection}
-								ownerName={item.ownerName}
-								readonly
-								onUnfollow={() =>
-									followedCollectionsState.unfollow(item.ownerId, item.collection.id)}
-								onOpen={() =>
-									openForeignCollection(
-										item.ownerId,
-										item.collection.id,
-										item.collection.name,
-										item.ownerName,
-									)}
-							/>
-						{/each}
+						{@render followedShelves(null)}
 					</div>
 				{/if}
 		{/if}
@@ -259,6 +349,41 @@ instead of showing an empty shell.
 {/if}
 
 <style>
+	/* ── Desktop split: rail + detail pane ──────────────────────────── */
+
+	.library-split {
+		display: grid;
+		grid-template-columns: clamp(300px, 24cqi, 400px) minmax(0, 1fr);
+		width: 100%;
+		height: 100%;
+		min-height: 0;
+	}
+
+	.rail {
+		display: flex;
+		flex-direction: column;
+		gap: 14px;
+		min-height: 0;
+		overflow-y: auto;
+		padding: clamp(12px, 1.8cqi, 24px);
+		border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+	}
+
+	.rail-cards {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.detail-pane {
+		min-width: 0;
+		min-height: 0;
+		height: 100%;
+		overflow: hidden;
+	}
+
+	/* ── Phone list ─────────────────────────────────────────────────── */
+
 	.collections-list {
 		display: flex;
 		flex-direction: column;
@@ -267,7 +392,7 @@ instead of showing an empty shell.
 		min-height: 0;
 		overflow-y: auto;
 		padding: clamp(12px, 3cqi, 28px);
-		/* A handful of collections on a wide desktop panel otherwise huddles in
+		/* A handful of collections on a narrow panel otherwise huddles in
 		   the top-left corner — cap the column and center it so the page reads
 		   composed at any count. */
 		width: 100%;

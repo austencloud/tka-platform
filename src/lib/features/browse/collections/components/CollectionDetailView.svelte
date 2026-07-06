@@ -44,9 +44,16 @@ instead of showing a ghost.
 		onBack,
 		foreignOwnerId = null,
 		ownerName,
+		showBack = true,
 	}: {
 		collectionId: string;
 		onBack: () => void;
+		/**
+		 * The desktop split view keeps the collection rail on screen, so a back
+		 * arrow would be a second way to do what the rail already does — hide it.
+		 * (onBack stays wired: a deleted collection still needs somewhere to go.)
+		 */
+		showBack?: boolean;
 		/**
 		 * Set when viewing someone ELSE's public collection (Community view).
 		 * Read-only: no rename/delete/remove, one-shot fetch instead of a live
@@ -264,9 +271,11 @@ instead of showing a ghost.
 
 <div class="collection-detail" style="--tile-color: {tileColor};">
 	<header class="detail-header">
-		<button type="button" class="back-btn" aria-label="Back to collections" onclick={onBack}>
-			<i class="fas fa-arrow-left" aria-hidden="true"></i>
-		</button>
+		{#if showBack}
+			<button type="button" class="back-btn" aria-label="Back to collections" onclick={onBack}>
+				<i class="fas fa-arrow-left" aria-hidden="true"></i>
+			</button>
+		{/if}
 
 		<span class="header-icon">
 			<i class={`fas ${collection?.icon ?? "fa-folder"}`} aria-hidden="true"></i>
