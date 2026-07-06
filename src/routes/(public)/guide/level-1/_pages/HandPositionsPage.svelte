@@ -114,17 +114,22 @@
     line2?: boolean;
   };
 
-  const B = "#2e3192"; // blue = left
-  const R = "#cc2127"; // red = right
+  // Intro is ONE grouped block (was three separate runs) so it moves as a unit;
+  // line 2 carries the rotate/mirror clause + the bold Red/Blue colour legend.
+  let intro = $state({
+    x: 0,
+    y: introY,
+    fs: 15,
+    lh: LINE,
+    html:
+      "There are multiple ways to combine two hand points to form a hand position.<br>" +
+      "Positions can be rotated or mirrored.<span class=\"lg\"></span>" +
+      "<strong><span class=\"cR\">Red = Right</span> and <span class=\"cB\">Blue = Left.</span></strong><br>" +
+      "In The Kinetic Alphabet, our first three positions are called Alpha, Beta, and Gamma.",
+  });
 
-  // Text runs extracted from PDF p8 (top-left origin, points). Line 2 is a single
-  // centred run (plain clause + spaced bold colour legend) — two separate runs
-  // double-centred and left an awkward gap between "mirrored." and "Red".
+  // Section subheads (Alpha/Beta/Gamma) + italic descriptions, at proof coords.
   let RUNS: Run[] = $state([
-    { x: 64.4, y: introY, w: 491.6, h: 15, t: "There are multiple ways to combine two hand points to form a hand position." },
-    { x: 64.4, y: introY + LINE, w: 491.6, h: 15, line2: true, t: "" },
-    { x: 42.5, y: introY + 2 * LINE, w: 535.4, h: 15, t: "In The Kinetic Alphabet, our first three positions are called Alpha, Beta, and Gamma." },
-
     { x: 275.0, y: aHeadY, w: 54.8, h: 22, sub: true, t: "Alpha" },
     { x: 75.9, y: aDescY, w: 454.5, h: 18, i: true, t: "In Alpha, the hands occupy the points across from each other." },
 
@@ -139,7 +144,8 @@
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
     registerEditSource("Hand Positions (p2)", () =>
-      RUNS.map((r) => `  ${JSON.stringify(r.t || "(line 2)").slice(0, 28)}: x: ${r1(r.x)}, y: ${r1(r.y)}`).join("\n")
+      `  intro: x: ${r1(intro.x)}, y: ${r1(intro.y)}\n` +
+      RUNS.map((r) => `  ${JSON.stringify(r.t).slice(0, 28)}: x: ${r1(r.x)}, y: ${r1(r.y)}`).join("\n")
     )
   );
 </script>
@@ -186,6 +192,18 @@
     <div class="rule" style="left:{64.4 * S}px; top:{dy * S}px; width:{491.6 * S}px"></div>
   {/each}
 
+  <!-- Intro as ONE movable block: plain sentence, rotate/mirror + colour legend,
+       then the Alpha/Beta/Gamma sentence (was three separate runs). -->
+  <p
+    class="para"
+    class:edit={guideEdit.on}
+    class:selected={guideEdit.selectedId === `hp-intro`}
+    style="top:{intro.y * S}px; font-size:{intro.fs * S}px; line-height:{intro.lh * S}px"
+    use:ptDrag={pt(`hp-intro`, "intro", intro)}
+  >
+    {@html intro.html}
+  </p>
+
   {#each RUNS as r, i (i)}
     <span
       class="run"
@@ -196,16 +214,8 @@
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `hp-run-${i}`}
       style="left:{r.x * S}px; top:{r.y * S}px; width:{r.w * S}px; font-size:{r.h * S}px"
-      use:ptDrag={pt(`hp-run-${i}`, r.t || "line 2", r)}
+      use:ptDrag={pt(`hp-run-${i}`, r.t, r)}>{r.t}</span
     >
-      {#if r.line2}
-        Positions can be rotated or mirrored.<span class="gap"></span><strong
-          ><span style="color:{R}">Red = Right</span> and <span style="color:{B}">Blue = Left.</span></strong
-        >
-      {:else}
-        {r.t}
-      {/if}
-    </span>
   {/each}
 </div>
 
@@ -234,6 +244,34 @@
   .run.selected {
     outline: 1.5px solid #3730a3;
     outline-offset: 1px;
+  }
+  /* Intro block — one centred, movable paragraph (like Type1/Gamma). */
+  .para {
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin: 0;
+    text-align: center;
+    color: #141414;
+    font-family: "Times New Roman", Times, Georgia, serif;
+  }
+  .para.edit {
+    outline: 1px dashed rgba(55, 48, 163, 0.4);
+    cursor: move;
+  }
+  .para.selected {
+    outline: 1.5px solid #3730a3;
+    outline-offset: 1px;
+  }
+  .para :global(.cR) {
+    color: #cc2127;
+  }
+  .para :global(.cB) {
+    color: #2e3192;
+  }
+  .para :global(.lg) {
+    display: inline-block;
+    width: 1.6em;
   }
   /* Italic descriptions use the serif. */
   .run.i {
@@ -267,9 +305,4 @@
     background: #bcbcc6;
   }
 
-  /* Gap between the rotate/mirror clause and the colour legend on line 2. */
-  .gap {
-    display: inline-block;
-    width: 1.6em;
-  }
 </style>

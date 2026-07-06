@@ -153,8 +153,8 @@
       fs: 14,
       lh: 16.8,
       html:
-        "When both hands move to adjacent locations, it’s called a <strong>Dual-Shift</strong>.<br>" +
-        "Our first <strong>Dual-Shifts</strong> correspond to the four modes of timing/direction: SS, TS, SO, TO.<br>" +
+        "When both hands move to adjacent locations, it’s called a <span class=\"cy\">Dual</span><span class=\"pu\">-Shift</span>.<br>" +
+        "Our first <span class=\"cy\">Dual</span><span class=\"pu\">-Shifts</span> correspond to the four modes of timing/direction: SS, TS, SO, TO.<br>" +
         "You can determine the start position by looking at the non-pointed end of the arrow.",
     },
     {
@@ -165,7 +165,7 @@
       html:
         "The Kinetic Alphabet puts focus on simultaneous motions between<br>" +
         "two positions, relative to the center point.<br>" +
-        "Let’s try another type of <strong>Dual-Shift</strong>.<br>" +
+        "Let’s try another type of <span class=\"cy\">Dual</span><span class=\"pu\">-Shift</span>.<br>" +
         "What happens when we move between α and β?",
     },
     {
@@ -182,7 +182,7 @@
       fs: 14,
       lh: 16.8,
       html:
-        "<strong>Practice using Dual-Shifts to travel between Alpha and Beta in each mode.</strong>",
+        "<strong>Practice using <span class=\"cy\">Dual</span><span class=\"pu\">-Shifts</span> to travel between Alpha and Beta in each mode.</strong>",
     },
   ]);
 
@@ -300,6 +300,14 @@
     margin: 0;
     text-align: center;
     font-family: "Cambria", Georgia, "Times New Roman", serif;
+  }
+  /* Two-tone Type-1 colour code for "Dual-Shift" (matches the original guide):
+     Dual = cyan, -Shift = purple (Type-1 letter colours). */
+  .para :global(.cy) {
+    color: #36c3ff;
+  }
+  .para :global(.pu) {
+    color: #6f2da8;
   }
 
   /* Left row labels — bold glyph line over italic mode name, centred in their

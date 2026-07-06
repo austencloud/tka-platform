@@ -48,17 +48,25 @@
 
   type Run = { x: number; y: number; w: number; h: number; t: string; b?: boolean; s?: boolean; title?: boolean; op?: boolean };
 
-  // Text runs extracted from PDF p7 (coords = top-left origin, points).
-  // b = bold (g_d0_f2), s = script heading (g_d0_f4), title = page title.
+  // Intro: the four proof lines merged into ONE centred block that moves as a
+  // unit. Double <br> reproduces the proof's blank-line gaps; the diamond/box
+  // line stays bold.
+  let intro = $state({
+    x: 0,
+    y: 78.2,
+    fs: 16,
+    lh: 19.2,
+    html:
+      "The Kinetic Alphabet is based on a 4-point grid.<br><br>" +
+      "There are two 4-point grids: box mode and diamond mode.<br>" +
+      "<strong>This guide is written in diamond, but everything translates to box.</strong><br><br>" +
+      "On this grid, there are three types of points:",
+  });
+
+  // RUNS = diagram callout labels, section headings, operators, footer. The intro
+  // block lives in `intro`; the left point descriptions in PARAS.
+  // b = bold, s = script heading, title = page title.
   let RUNS: Run[] = $state([
-    // Centered intro block
-    { x: 144.7, y: 78.2, w: 322.4, h: 16, t: "The Kinetic Alphabet is based on a 4-point grid." },
-    { x: 105.5, y: 116.6, w: 400.8, h: 16, t: "There are two 4-point grids: box mode and diamond mode." },
-    { x: 64.9, y: 135.8, w: 482.1, h: 16, b: true, t: "This guide is written in diamond, but everything translates to box." },
-    { x: 157.7, y: 174.2, w: 296.4, h: 16, t: "On this grid, there are three types of points:" },
-
-    // Left descriptive column lives in PARAS (single selectable blocks).
-
     // Diagram callout labels
     { x: 432.4, y: 279.9, w: 28.1, h: 13, t: "hand" },
     { x: 428.9, y: 295.5, w: 35.1, h: 13, t: "points" },
@@ -87,10 +95,19 @@
   // The three point descriptions as SINGLE selectable text blocks (bold term
   // inline, explicit line breaks) — not per-word runs that fragment + gap when
   // selected. Positioned at the proof's first-line origin; lh = proof line pitch.
+  // The three point descriptions as ONE selectable block (was three separate
+  // blocks) — a blank line separates each, bold term inline.
   let PARAS = $state([
-    { x: 30.7, y: 239.1, w: 255, lh: 20.4, html: "The <strong>center point</strong> is the hub that<br>everything revolves around." },
-    { x: 30.7, y: 331.0, w: 255, lh: 20.4, html: "The four <strong>hand points</strong> are halfway<br>between the center point and the<br>outer points." },
-    { x: 30.7, y: 440.7, w: 255, lh: 20.4, html: "The <strong>outer points</strong> depict the outer<br>edges of the grid." },
+    {
+      x: 30.7,
+      y: 239.1,
+      w: 255,
+      lh: 20.4,
+      html:
+        "The <strong>center point</strong> is the hub that<br>everything revolves around.<br><br>" +
+        "The four <strong>hand points</strong> are halfway<br>between the center point and the<br>outer points.<br><br>" +
+        "The <strong>outer points</strong> depict the outer<br>edges of the grid.",
+    },
   ]);
 
   // Callout arrows as data (tail x1,y1 → head x2,y2, pt). Rendered as paths;
@@ -109,7 +126,8 @@
     const A = ARROWS.map((a) => `  { id: "${a.id}", x1: ${r1(a.x1)}, y1: ${r1(a.y1)}, x2: ${r1(a.x2)}, y2: ${r1(a.y2)} },`).join("\n");
     const P = PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n");
     const R = RUNS.map((r) => `  ${JSON.stringify(r.t).slice(0, 30)}: x: ${r1(r.x)}, y: ${r1(r.y)}`).join("\n");
-    return `ARROWS\n${A}\n\nPARAS\n${P}\n\nRUNS\n${R}`;
+    const I = `  intro: x: ${r1(intro.x)}, y: ${r1(intro.y)}`;
+    return `INTRO\n${I}\n\nARROWS\n${A}\n\nPARAS\n${P}\n\nRUNS\n${R}`;
   }
   $effect(() => registerEditSource("The Grid (p1)", dumpCoords));
 
@@ -178,6 +196,17 @@
       {@render figure(m.type)}
     </div>
   {/each}
+
+  <!-- Intro: one centred, movable block (was four separate runs). -->
+  <p
+    class="intro"
+    class:edit={guideEdit.on}
+    class:selected={guideEdit.selectedId === `grid-intro`}
+    style="top:{intro.y * S}px; font-size:{intro.fs * S}px; line-height:{intro.lh * S}px"
+    use:ptDrag={pt(`grid-intro`, "intro", intro)}
+  >
+    {@html intro.html}
+  </p>
 
   {#each RUNS as r, i (i)}
     <span
@@ -277,14 +306,32 @@
   .run.b {
     font-weight: 700;
   }
-  /* Point descriptions: one flowing block each (selectable as a unit), same
-     serif as the runs; bold term inline, line breaks explicit. */
+  /* Point descriptions: one flowing block (selectable as a unit), same serif as
+     the runs; bold term inline, line breaks explicit. */
   .para {
     position: absolute;
     margin: 0;
     font-family: "Times New Roman", Times, Georgia, serif;
     color: #141414;
     text-align: left;
+  }
+  /* Intro: one centred, full-width movable block (was four separate runs). */
+  .intro {
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin: 0;
+    text-align: center;
+    font-family: "Times New Roman", Times, Georgia, serif;
+    color: #141414;
+  }
+  .intro.edit {
+    outline: 1px dashed rgba(55, 48, 163, 0.4);
+    cursor: move;
+  }
+  .intro.selected {
+    outline: 1.5px solid #3730a3;
+    outline-offset: 1px;
   }
   /* The + / = operators between the bottom minis — heavy, centred in their box. */
   .run.op {
