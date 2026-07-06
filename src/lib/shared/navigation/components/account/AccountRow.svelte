@@ -18,7 +18,11 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
   );
   const photoURL = $derived(user?.photoURL ?? null);
 
-  const avatarSize = $derived(variant === "collapsed" ? 32 : 28);
+  // One avatar size in both rail and expanded states. A per-variant size
+  // (32 collapsed vs 28 expanded) made the avatar visibly resize — and shift
+  // its own edges — on the sidebar tree swap. 32px also lines up with the
+  // 32px footer button icons stacked above it. No-layout-shift.
+  const avatarSize = 32;
 
   function handleClick() {
     try {
@@ -118,7 +122,16 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
     border-radius: 12px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    /* Visuals only, never geometry. The rail→expanded swap flips this button
+       between a 44px circle and a full-width row (width/padding/border-radius/
+       height all change). Animating `all` tweened that geometry, dragging the
+       avatar left-then-right mid-flight while the sidebar width animated. The
+       footer pins its width to the end state and the nav's clip reveals it, so
+       the row must SNAP to its final shape like every other footer button. */
+    transition:
+      background var(--duration-normal) ease,
+      border-color var(--duration-normal) ease,
+      color var(--duration-normal) ease;
     font-size: var(--font-size-sm);
     font-weight: 500;
   }
@@ -215,9 +228,12 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
   /* ==========================================================================
      AVATAR (guest fallback only - authenticated users use RobustAvatar)
      ========================================================================== */
+  /* Same fixed 32px in both rail and expanded states (see avatarSize note):
+     the guest fallback must not resize on the tree swap either. Drawer keeps
+     its own size below. */
   .avatar-guest {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -225,12 +241,6 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
     border-radius: 50%;
     background: color-mix(in srgb, var(--theme-accent) 20%, transparent);
     color: var(--theme-accent);
-    font-size: var(--font-size-compact, 12px);
-  }
-
-  .avatar-guest.collapsed {
-    width: 32px;
-    height: 32px;
     font-size: var(--font-size-sm, 14px);
   }
 
