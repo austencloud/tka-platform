@@ -693,7 +693,7 @@
           <div class="value-list">
             {#each lengthValues as v (v.value)}
               <button
-                class="length-row"
+                class="length-row monument"
                 type="button"
                 onclick={() => onApply(BrowseFilterType.LENGTH, v.value, v.label)}
               >
@@ -737,7 +737,7 @@
           <div class="value-list">
             {#each positionValues as v (v.value)}
               <button
-                class="length-row tall"
+                class="length-row tall monument"
                 type="button"
                 onclick={() => onApply(BrowseFilterType.STARTING_POSITION, v.value, v.label)}
               >
@@ -807,7 +807,7 @@
           <div class="value-list">
             {#each gridModeValues as v (v.value)}
               <button
-                class="length-row tall"
+                class="length-row tall monument"
                 type="button"
                 onclick={() => onApply(BrowseFilterType.GRID_MODE, v.value, v.label)}
               >
@@ -837,7 +837,7 @@
             {#each loopValues as v (v.value)}
               {@const isOn = activeLoopValues?.has(v.value) ?? false}
               <button
-                class="length-row tall"
+                class="length-row tall monument tinted"
                 class:loop-active={isOn}
                 style:--row-color={v.color}
                 type="button"
@@ -881,7 +881,7 @@
             {#each familyValues as v (v.value)}
               {@const isOn = activeFamilyValues?.has(v.value) ?? false}
               <button
-                class="length-row tall family-row"
+                class="length-row tall family-row monument tinted"
                 class:loop-active={isOn}
                 style:--row-color={v.color}
                 type="button"
@@ -932,7 +932,7 @@
             <div class="value-list">
               {#each communityCollectionsState.items as item (item.ownerId + item.collection.id)}
                 <button
-                  class="length-row tall"
+                  class="length-row tall monument tinted"
                   style:--row-color={item.collection.color ?? "#c084fc"}
                   type="button"
                   onclick={() =>
@@ -1429,10 +1429,10 @@
     height: 44px;
     border-radius: 0;
   }
-  /* Every family wears its element: panel tinted and edged in the canonical
-     accent, at every tier. Six identical charcoal bars undersold the most
-     color-coded system in the app. */
-  .family-row {
+  /* Colored value rows (families, loops, collections) wear their accent at
+     rest, not just when active — panel tinted and edged in the row's color at
+     every tier. Identical charcoal bars undersold the color-coded systems. */
+  .length-row.tinted {
     background: color-mix(
       in srgb,
       var(--row-color) 10%,
@@ -1440,7 +1440,7 @@
     );
     border-color: color-mix(in srgb, var(--row-color) 35%, transparent);
   }
-  .family-row:hover {
+  .length-row.tinted:hover {
     border-color: color-mix(in srgb, var(--row-color) 65%, transparent);
   }
   .element-tag {
@@ -1489,9 +1489,10 @@
     font-size: 1.5rem;
   }
   /* Applied structure (sheet toggles): border + tint in the component's color. */
+  /* Selected reads stronger than the resting .tinted panel. */
   .length-row.loop-active {
     border-color: color-mix(in srgb, var(--row-color) 60%, transparent);
-    background: color-mix(in srgb, var(--row-color) 10%, transparent);
+    background: color-mix(in srgb, var(--row-color) 20%, transparent);
   }
   .loop-check {
     flex: 0 0 auto;
@@ -1759,36 +1760,52 @@
       min-height: 70px;
     }
 
-    /* Families join the levels as monument panels: element icon leading,
-       name + element tag, the canonical one-line meaning, density, count.
-       (.length-row.family-row: must outweigh the base .length-row.tall
+    /* Every value screen joins the levels as monument panels: lead media on
+       top, label (+ desc / tag), density, count — centered in a tall column
+       instead of a thin horizontal bar stranded in the wide grid. Creators are
+       the deliberate exception (kept horizontal — the trailing work-fan is the
+       identity, and there are too many for tall panels).
+       (.length-row.monument: must outweigh the base .length-row.tall
        min-height, and @container adds no specificity.) */
-    .length-row.family-row {
+    .length-row.monument {
       flex-direction: column;
       align-items: center;
       justify-content: center;
       text-align: center;
       gap: 0.55rem;
-      min-height: 235px;
+      min-height: 220px;
       padding: 1.3rem 1.2rem;
       border-radius: 20px;
     }
-    .family-row .value-main {
+    .monument .value-main {
       align-items: center;
       gap: 0.4rem;
     }
-    .family-row .value-img.family-icon {
+    .monument .density-bar {
+      margin-inline: auto;
+    }
+    .monument .value-label {
+      font-size: 1.05rem;
+    }
+    .monument .value-count {
+      font-size: 1.05rem;
+    }
+    /* Lead media grows to monument scale, per screen. */
+    .monument .value-numeral.small {
+      font-size: 3rem;
+    }
+    .monument .value-img,
+    .monument .value-img.family-icon {
       width: 64px;
       height: 64px;
     }
-    .family-row .value-label {
-      font-size: 1.05rem;
+    .monument .loop-icon {
+      font-size: 2.6rem;
     }
-    .family-row .density-bar {
-      margin-inline: auto;
-    }
-    .family-row .value-count {
-      font-size: 1.05rem;
+    .monument .value-folder {
+      width: 60px;
+      height: 60px;
+      font-size: 24px;
     }
   }
 
@@ -1880,15 +1897,26 @@
     .letter-chip {
       min-height: 78px;
     }
-    .length-row.family-row {
-      min-height: 275px;
+    .length-row.monument {
+      min-height: 260px;
       padding: 1.6rem 1.5rem;
     }
-    .family-row .value-img.family-icon {
+    .monument .value-img,
+    .monument .value-img.family-icon {
       width: 76px;
       height: 76px;
     }
-    .family-row .value-label {
+    .monument .value-numeral.small {
+      font-size: 3.6rem;
+    }
+    .monument .loop-icon {
+      font-size: 3rem;
+    }
+    .monument .value-folder {
+      width: 72px;
+      height: 72px;
+    }
+    .monument .value-label {
       font-size: 1.15rem;
     }
   }
