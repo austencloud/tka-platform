@@ -55,7 +55,7 @@
 
 <script lang="ts">
   import { untrack } from "svelte";
-  import { slide, fly } from "svelte/transition";
+  import { slide, fly, fade } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import type { Snippet } from "svelte";
   import { SwipeToDismiss } from "$lib/shared/foundation/ui/drawer/swipe-to-dismiss";
@@ -187,6 +187,43 @@
     return () => ro.disconnect();
   });
 
+  // ── Persistent scroll rail ──
+  // Touch browsers use overlay scrollbars that only fade in DURING a scroll, so
+  // a capped tray gave no signal that more options exist below the fold. This
+  // custom rail is visible from the moment an overflowing tray opens (the
+  // affordance IS the point), synced to the native scroll. The native scrollbar
+  // is hidden so there aren't two thumbs.
+  let trayScrollEl = $state<HTMLDivElement>();
+  let scrollFrac = $state(0); // scrollTop / scrollHeight
+  let thumbFrac = $state(1); // clientHeight / scrollHeight
+  $effect(() => {
+    const el = trayScrollEl;
+    if (!el) return;
+    const update = () => {
+      const sh = el.scrollHeight;
+      thumbFrac = sh > 0 ? el.clientHeight / sh : 1;
+      scrollFrac = sh > 0 ? el.scrollTop / sh : 0;
+    };
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    // Re-measure when the viewport resizes OR the tray content grows/shrinks
+    // (the height-tweened .tray-anim child).
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    if (el.firstElementChild) ro.observe(el.firstElementChild);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro.disconnect();
+    };
+  });
+  // 0.99, not 0.999: sub-pixel rounding can report 1px of phantom overflow on
+  // a ~200px tray — don't show a scroll rail for content that visibly fits.
+  const trayScrollable = $derived(thumbFrac < 0.99);
+  // Clamp: a floored thumb (12% min, so it stays grabbable-looking) would
+  // otherwise poke past the track bottom at full scroll.
+  const thumbPct = $derived(Math.max(thumbFrac * 100, 12));
+  const thumbTopPct = $derived(Math.min(scrollFrac * 100, 100 - thumbPct));
+
   // Measure: own height (-> stage padding) and own width (-> label-hide).
   // Parent width drives the desktop floating layout (measuring the parent
   // avoids a feedback loop with the dock's own width changing under .wide).
@@ -256,21 +293,32 @@
       >
         <span class="grab" aria-hidden="true"></span>
       </button>
-      <div class="tray-scroll">
-        <!-- Height-animated body: .tray-measure reports the active content's
-             natural height; .tray-anim tweens to it so switching tabs or
-             revealing options resizes the tray (and the hero above) smoothly
-             instead of snapping. Content dissolve/reveal is the consumer's job
-             (Crossfade in the tray snippet). -->
-        <div
-          class="tray-anim"
-          style:height={trayBodyH == null ? "auto" : `${trayBodyH}px`}
-          style:--tray-anim-dur={`${dur(260)}ms`}
-        >
-          <div class="tray-measure" bind:this={trayMeasureEl}>
-            {@render tray()}
+      <div class="tray-body">
+        <div class="tray-scroll" bind:this={trayScrollEl}>
+          <!-- Height-animated body: .tray-measure reports the active content's
+               natural height; .tray-anim tweens to it so switching tabs or
+               revealing options resizes the tray (and the hero above) smoothly
+               instead of snapping. Content dissolve/reveal is the consumer's job
+               (Crossfade in the tray snippet). -->
+          <div
+            class="tray-anim"
+            style:height={trayBodyH == null ? "auto" : `${trayBodyH}px`}
+            style:--tray-anim-dur={`${dur(260)}ms`}
+          >
+            <div class="tray-measure" bind:this={trayMeasureEl}>
+              {@render tray()}
+            </div>
           </div>
         </div>
+        {#if trayScrollable}
+          <div class="scroll-rail" aria-hidden="true" transition:fade={{ duration: dur(150) }}>
+            <div
+              class="scroll-thumb"
+              style:height={`${thumbPct}%`}
+              style:top={`${thumbTopPct}%`}
+            ></div>
+          </div>
+        {/if}
       </div>
     </div>
   {/if}
@@ -415,17 +463,45 @@
   .tray.tray-dragging {
     transition: none;
   }
-  /* Content scrolls under the pinned handle. */
+  /* Hosts the scroller + the persistent scroll rail overlay. */
+  .tray-body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  /* Content scrolls under the pinned handle. Native scrollbar hidden — the
+     custom .scroll-rail is the one thumb (overlay scrollbars on touch only
+     appear mid-scroll, which defeats the "there's more below" affordance). */
   .tray-scroll {
     min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 0 12px 8px;
-    /* Reserve the scrollbar lane so tab switches don't shift content width. */
-    scrollbar-gutter: stable;
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.3))
-      var(--scrollbar-track, rgba(255, 255, 255, 0.06));
+    padding: 0 14px 8px;
+    scrollbar-width: none;
+  }
+  .tray-scroll::-webkit-scrollbar {
+    display: none;
+  }
+  /* Always-visible scroll rail: advertises overflow from the moment the tray
+     opens and tracks the scroll position. Purely indicative (pointer-events
+     none) — the tray itself is the touch scroller. */
+  .scroll-rail {
+    position: absolute;
+    top: 2px;
+    bottom: 10px;
+    right: 4px;
+    width: 4px;
+    border-radius: 2px;
+    background: var(--scrollbar-track, rgba(255, 255, 255, 0.1));
+    pointer-events: none;
+  }
+  .scroll-thumb {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-radius: 2px;
+    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.4));
   }
   /* Height-tween wrapper: clips while it interpolates between content states so
      the tray resizes smoothly. --tray-anim-dur collapses to 0ms under reduced
@@ -466,19 +542,6 @@
       color: var(--theme-text, #fff);
     }
   }
-  /* Classic (non-overlay) scrollbar with a visible track, so a capped tray
-     advertises "there's more below" from the moment it opens instead of only
-     while the user is already scrolling. */
-  .tray-scroll::-webkit-scrollbar { width: 8px; }
-  .tray-scroll::-webkit-scrollbar-track {
-    background: var(--scrollbar-track, rgba(255, 255, 255, 0.06));
-    border-radius: 4px;
-  }
-  .tray-scroll::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb, rgba(255, 255, 255, 0.3));
-    border-radius: 4px;
-  }
-
   .cat-bar {
     display: flex;
     align-items: center;
