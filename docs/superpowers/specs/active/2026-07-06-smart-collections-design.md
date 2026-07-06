@@ -62,21 +62,39 @@ kind?: "manual" | "smart";
 /** The saved rule. Present iff kind === "smart". */
 filterSpec?: SmartFilterSpec;
 
+/**
+ * One saved filter. An OBJECT, not the engine's `[key, ActiveFilter]` tuple —
+ * Firestore forbids arrays-of-arrays, so the localStorage tuple form cannot be
+ * persisted. `type` is the string value of BrowseFilterType; `value` mirrors
+ * BrowseFilterValue.
+ */
+interface StoredSmartFilter {
+  key: string;   // engine map key, e.g. "difficulty" | "loop_type:component:mirrored"
+  type: string;
+  value: string | number | boolean | string[] | null;
+  label: string;
+  chipColor: string;
+}
+
 interface SmartFilterSpec {
   source: "community" | "my-library";
-  /** Same shape as PersistedEngineState.activeFilters — a saved slice of engine state. */
-  activeFilters: Array<[string, ActiveFilter]>;
-  sortMethod: BrowseSortMethod;
+  /** Array of objects — never a nested array (Firestore constraint). */
+  filters: StoredSmartFilter[];
+  sortMethod: string;      // BrowseSortMethod value
   sortDirection: "asc" | "desc";
 }
 ```
 
-- `SmartFilterSpec` is a saved slice of the browse engine's persisted state
-  (`src/lib/shared/browse/engine/create-browse-engine.svelte.ts:75` —
-  `PersistedEngineState`). It reuses the exact serialization that already
-  round-trips `activeFilters` through localStorage. `ActiveFilter`
-  (`src/lib/shared/browse/engine/types.ts:41`) is fully JSON-serializable
-  (values are `string | number | boolean | string[] | null`).
+- `SmartFilterSpec` is the browse engine's active filters, serialized to a
+  **Firestore-safe** shape. The engine's own persisted state
+  (`create-browse-engine.svelte.ts:75` — `PersistedEngineState`) stores
+  `activeFilters` as `Array<[string, ActiveFilter]>` for localStorage, but that
+  tuple form is a nested array and **cannot** be written to Firestore. A tiny
+  serialization helper (`smart-filter-spec.ts`) converts between the live engine
+  and `StoredSmartFilter[]`. `ActiveFilter`
+  (`src/lib/shared/browse/engine/types.ts:41`) values are
+  `string | number | boolean | string[] | null` — all Firestore-safe as object
+  fields.
 - **Smart collections:** `sequenceIds` stays `[]` (unused). `sequenceCount` is a
   **cached snapshot** of the last live derivation, written on save and refreshed
   each time the detail view derives members. The rail card shows this number as a
