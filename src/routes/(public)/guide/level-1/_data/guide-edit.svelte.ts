@@ -179,15 +179,26 @@ export function ptDrag(node: HTMLElement | SVGElement, movable: Movable) {
   movables.set(m.id, { m, node });
   // A re-mounted element that was deleted this session stays hidden.
   if (deletedIds.has(m.id)) applyHidden(m.id, true);
-  let lastX = 0;
-  let lastY = 0;
+  let startX = 0;
+  let startY = 0;
+  let appliedX = 0; // guide-points already applied this drag
+  let appliedY = 0;
   let scale = { px: 1, py: 1 };
 
   function move(ev: Event) {
     const e = ev as PointerEvent;
-    m.apply((e.clientX - lastX) * scale.px, (e.clientY - lastY) * scale.py);
-    lastX = e.clientX;
-    lastY = e.clientY;
+    // Total wanted delta from the drag origin (guide-points), so Shift can lock
+    // to one axis and un-Shift mid-drag re-frees the other — both recompute
+    // from the origin rather than accumulating capped increments.
+    let wantX = (e.clientX - startX) * scale.px;
+    let wantY = (e.clientY - startY) * scale.py;
+    if (e.shiftKey) {
+      if (Math.abs(wantX) >= Math.abs(wantY)) wantY = 0;
+      else wantX = 0;
+    }
+    m.apply(wantX - appliedX, wantY - appliedY);
+    appliedX = wantX;
+    appliedY = wantY;
   }
   function up(ev: Event) {
     const e = ev as PointerEvent;
@@ -207,8 +218,10 @@ export function ptDrag(node: HTMLElement | SVGElement, movable: Movable) {
     select(m.id);
     pushHistory();
     (e.target as Element).setPointerCapture?.(e.pointerId);
-    lastX = e.clientX;
-    lastY = e.clientY;
+    startX = e.clientX;
+    startY = e.clientY;
+    appliedX = 0;
+    appliedY = 0;
     scale = ptPerPx(node);
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
