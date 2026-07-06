@@ -852,6 +852,24 @@ service cloud.firestore {
       }
     }
 
+    // Content-addressed shortcode index: one code per encoderHash.
+    // Written atomically with the code doc inside the allocation transaction
+    // (see 2026-07-05 shortcode-dup-mint-fix spec). Immutable after create —
+    // first writer wins; the transaction's loser adopts the winner's code.
+    match /shortcodeHashes/{hash} {
+      // Public read: resolution paths and the allocation pre-check may run
+      // before auth resolves; the mapping contains no PII.
+      allow read: if true;
+
+      allow create: if isFullUser()
+        && request.resource.data.keys().hasOnly(['code', 'createdAt'])
+        && request.resource.data.code is string
+        && request.resource.data.code.size() >= 4
+        && request.resource.data.code.size() <= 6;
+
+      allow update, delete: if isAdmin();
+    }
+
     // Scan event log — collectionGroup read-only for admin live feed.
     // Creation is only allowed under shortcodes/{code}/scanEvents (see below).
     match /{path=**}/scanEvents/{eventId} {
