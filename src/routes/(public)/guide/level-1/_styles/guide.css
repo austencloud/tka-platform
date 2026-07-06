@@ -49,6 +49,15 @@
   margin: -0.3in 0 0.4in; /* ride up to the body-page title height, then a gap */
 }
 
+/* Guide sheets are always WHITE, even though the app shell runs under :root.dark.
+   The pictograph position glyph (α/β/γ start→end indicator) is a dark SVG that
+   PositionGlyph.svelte lightens for dark backgrounds via a :root.dark invert
+   filter — which fires here and washes the glyph out to faint grey on the white
+   page. Cancel it on guide pages so the glyph keeps its native dark ink. */
+.guide-page .position-glyph {
+  filter: none !important;
+}
+
 /* ══════════════════════════════════════════
    Level 1 Guide — Bleeding Edge Design
    Dark glassmorphic, Inter Variable, OKLCH,

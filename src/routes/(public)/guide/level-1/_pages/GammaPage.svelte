@@ -15,18 +15,26 @@
    *                     TnD deriver (deriveTnD is letter-free and classifies both
    *                     gamma halves + the quarter modes), so no letter is needed.
    *
-   * Letters are left null on every box: the position + TnD derivers are purely
-   * geometric, and no gamma box has both hands on an identical from→end path
-   * (they stay 90° apart), so the default float placement separates every arrow —
-   * the special-placement tier that the α/β Tog rows needed does not apply here.
+   * Positions + elementals derive geometrically, so letters are null on most
+   * boxes. The exception is the QO strip's two "antiparallel" cells, where blue
+   * and red float along the SAME edge (W→N vs N→W, E→S vs S→E): their arrows
+   * collide, and the pipeline separates them only via the letter-gated special-
+   * placement tier — so those two carry letter "P" (both-PRO Quarter-Opp), the
+   * gamma analogue of the α/β Tog rows' G/H. Every other box stays null.
    *
    * Geometry comes from the proof's own image placements + text runs (extracted
-   * from the PDF operator list). Strips (pt, top-left origin):
+   * from the PDF operator list). Proof strips (pt, top-left origin) were
    *   QO   L90.6 T124   500×100  (Start + 4)
    *   QS   L90   T279.2 500×100  (Start + 4)
    *   swap L56.2 T512.9 500×200  (5×2 grid — Start,1..4 / _,5..8; box 5 under 1)
    * Text y = baseline − fs (the proof's convention); the row-label glyph line
    * (γ→γ, dropped by the glyph-font extraction) sits 21.7pt above the mode name.
+   * The proof page carried NO title; our facelift adds the 48pt calligraphic
+   * page title (occupies ~22–70pt). Every y below is the proof value mapped
+   * through fitY(y) = 72 + (y − 30.8)·0.92117 — a gentle ~8% squeeze of the
+   * content range [30.8, 745.1] → [72, 730] so the header clears the title and
+   * the footer still lands on the page. Values are baked (not applied live) so
+   * edit-mode drag stays 1:1.
    *
    * Sequences decoded from the artboard and cross-checked with MCP VTG data:
    *   QO = opposite-spin, 90°-apart loop; its four counts are Parallel /
@@ -44,6 +52,7 @@
   import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
@@ -63,10 +72,10 @@
 
   // [blueFrom, blueTo, redFrom, redTo]; Start boxes hold (from === to).
   type Move = [GridLocation, GridLocation, GridLocation, GridLocation];
-  const box = (m: Move, step: number): StepData =>
+  const box = (m: Move, step: number, letter: Letter | null = null): StepData =>
     ({
       id: `gamma-${step}-${m.join("-")}`,
-      letter: null,
+      letter,
       gridMode: GridMode.DIAMOND,
       startPosition: getGridPositionFromLocations(m[0], m[2]),
       endPosition: getGridPositionFromLocations(m[1], m[3]),
@@ -83,29 +92,36 @@
 
   // ── Strip geometry from the proof's image placements (pt) ──────────────────
   const BOX = 100;
-  type Cell = { m: Move; step: number } | null; // null = empty grid cell
+  // letter is null on every box EXCEPT the QO same-edge "antiparallel" cells:
+  // there blue and red float along the SAME edge (e.g. W→N vs N→W), so their
+  // arrows collide. The arrow pipeline separates them only through the special-
+  // placement tier, which is letter-gated — letter "P" (both-PRO Quarter-Opp,
+  // canonical DiamondPictographDataframe rows 187/188) unlocks P_placements.json's
+  // "(fl, fl)" red offset [70,-75] with blue falling to default [30,-30]. No other
+  // strip has a same-edge box (QS's one-point lead keeps hands off a shared edge).
+  type Cell = { m: Move; step: number; letter?: Letter | null } | null;
   type Strip = { x: number; y: number; rows: Cell[][] };
-  const c = (m: Move, step: number): Cell => ({ m, step });
+  const c = (m: Move, step: number, letter: Letter | null = null): Cell => ({ m, step, letter });
 
   const STRIPS: Strip[] = [
     // γ→γ Quarter-Opp — opposite spin, hands 90° apart the whole loop.
     {
       x: 90.6,
-      y: 124,
+      y: 157.9,
       rows: [
         [
           c([SO_, SO_, E, E], 0), // Start: blue S, red E
           c([SO_, W, E, N], 1), //  Parallel
-          c([W, N, N, W], 2), //    Antiparallel
+          c([W, N, N, W], 2, Letter.P), //    Antiparallel — same W↔N edge; P separates
           c([N, E, W, SO_], 3), //  Parallel
-          c([E, SO_, SO_, E], 4), // Antiparallel
+          c([E, SO_, SO_, E], 4, Letter.P), // Antiparallel — same E↔S edge; P separates
         ],
       ],
     },
     // γ→γ Quarter-Same — same spin, red leads blue by one point.
     {
       x: 90,
-      y: 279.2,
+      y: 300.8,
       rows: [
         [
           c([SO_, SO_, E, E], 0), // Start
@@ -120,7 +136,7 @@
     // 5×2 grid: Start,1,2,3,4 on top; _,5,6,7,8 on the bottom (box 5 under box 1).
     {
       x: 56.2,
-      y: 512.9,
+      y: 516.1,
       rows: [
         [
           c([SO_, SO_, E, E], 0), // Start
@@ -146,7 +162,7 @@
   let PARAS: Para[] = $state([
     {
       x: 0,
-      y: 30.8,
+      y: 72,
       fs: 15,
       lh: 18,
       html:
@@ -156,14 +172,14 @@
     },
     {
       x: 0,
-      y: 242.9,
+      y: 267.4,
       fs: 15,
       lh: 18,
       html: "In Quarter-Same, this doesn’t happen:",
     },
     {
       x: 0,
-      y: 408.4,
+      y: 419.8,
       fs: 16,
       lh: 19.2,
       html:
@@ -172,14 +188,14 @@
     },
     {
       x: 0,
-      y: 466,
+      y: 472.9,
       fs: 16,
       lh: 19.2,
       html: "Here’s one that switches between Quarter-Opp and Quarter-Same:",
     },
     {
       x: 0,
-      y: 745.1,
+      y: 730,
       fs: 16,
       lh: 19.2,
       html:
@@ -192,14 +208,14 @@
   // at the proof's own coordinates (glyph line 21.7pt above the mode name).
   type Label = { x: number; y: number; w: number; fs: number; t: string; i?: boolean };
   let LABELS: Label[] = $state([
-    { x: 8, y: 151.6, w: 72, fs: 18, t: "γ→γ" },
-    { x: 8, y: 173.3, w: 72, fs: 13, i: true, t: "Quarter-Opp" },
-    { x: 8, y: 306.1, w: 72, fs: 18, t: "γ→γ" },
-    { x: 8, y: 327.8, w: 72, fs: 13, i: true, t: "Quarter-Same" },
-    { x: 190.6, y: 104.1, w: 100, fs: 14, i: true, t: "Parallel" },
-    { x: 290.6, y: 104.1, w: 100, fs: 14, i: true, t: "Antiparallel" },
-    { x: 390.6, y: 104.1, w: 100, fs: 14, i: true, t: "Parallel" },
-    { x: 490.6, y: 104.1, w: 100, fs: 14, i: true, t: "Antiparallel" },
+    { x: 8, y: 183.3, w: 72, fs: 18, t: "γ→γ" },
+    { x: 8, y: 203.3, w: 72, fs: 13, i: true, t: "Quarter-Opp" },
+    { x: 8, y: 325.6, w: 72, fs: 18, t: "γ→γ" },
+    { x: 8, y: 345.6, w: 72, fs: 13, i: true, t: "Quarter-Same" },
+    { x: 190.6, y: 139.5, w: 100, fs: 14, i: true, t: "Parallel" },
+    { x: 290.6, y: 139.5, w: 100, fs: 14, i: true, t: "Antiparallel" },
+    { x: 390.6, y: 139.5, w: 100, fs: 14, i: true, t: "Parallel" },
+    { x: 490.6, y: 139.5, w: 100, fs: 14, i: true, t: "Antiparallel" },
   ]);
 
   // Edit mode: dump paragraph + label coords for CoordsPanel's Copy button.
@@ -226,7 +242,7 @@
               S}px; height:{BOX * S}px"
           >
             <PictographContainer
-              pictographData={box(cell.m, cell.step)}
+              pictographData={box(cell.m, cell.step, cell.letter)}
               gridMode={GridMode.DIAMOND}
               bluePropTypeOverride={PropType.HAND}
               redPropTypeOverride={PropType.HAND}

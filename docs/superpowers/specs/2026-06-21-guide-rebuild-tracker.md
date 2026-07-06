@@ -125,6 +125,27 @@ LOOP terminology, per existing section filenames already named Loops*.)
   Austen's eyeball pass (float-arrow directions, glyph/layout fidelity) before ✅.
   Facelift convention applied: lowercase γ→γ (proof used Γ), footer "Dual-Shifts"
   two-tone (Type-1 blue/purple).
+  - 2026-07-05 (review pass 1): Austen flagged 3 issues, all fixed +
+    screenshot-verified. (1) The facelift title overlapped the header text (proof
+    p11 had no title) — compressed the page y-range [30.8, 745.1] → [72, 730]
+    (fitY, ~8% squeeze), baked into the coords so edit-drag stays 1:1. (2) QO
+    "antiparallel" boxes (b2/b4) arrows overlapped: same-edge floats (blue W→N vs
+    red N→W; E→S vs S→E) need the letter-gated special-placement tier, which
+    letter=null skipped. Set letter P (both-PRO Quarter-Opp; canonical
+    DiamondPictographDataframe rows 187/188; P_placements.json "(fl, fl)" red
+    [70,-75], blue → default float_to_layer1_gamma [30,-30]). Only b2/b4 share an
+    edge (QS's one-point lead and all switch boxes don't). Root cause diagnosed by
+    arrow-positioning-expert: `detectLayerInfo` gates the α/β/γ placement-key
+    suffix behind a letter, so null degrades to the bare "float" key miss → (0,0)
+    for both. (3) Position glyph rendered faint — PositionGlyph flips via a
+    `:root.dark` invert(0.9) filter (the guide app shell carries `dark`) that fired
+    on the WHITE sheet; cancelled with `.guide-page .position-glyph { filter:none }`
+    in guide.css (fixes Type1's glyphs too). Step numbers were already pipeline
+    `<text>` and dark (StepNumber honours the darkMode prop) — the "plain text"
+    look was the same glyph faintness, not a hand-rolled overlay.
+    Latent follow-up (not blocking): DirectionalTupleProcessor's float branch
+    computes CW/CCW against a diagonal [NE,SE,SW,NW] order, so diamond cardinal
+    floats always `indexOf === -1` → same rotation branch. Worth a ticket.
 
 - 2026-07-05: COMPARE ROUTE DELETED (`(public)/guide/level-1/compare`).
   Scroll-fraction sync could never align two different-height documents
