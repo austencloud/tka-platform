@@ -41,7 +41,11 @@ Two modes:
 		collectionsState.ensureStarted();
 	});
 
-	const collections = $derived(collectionsState.collections);
+	// Smart collections derive members from a rule — you can't hand-file a
+	// sequence into one, so they're never valid add targets here.
+	const collections = $derived(
+		collectionsState.collections.filter((c) => c.kind !== "smart"),
+	);
 	const loading = $derived(collectionsState.loading);
 
 	let showInput = $state(false);
