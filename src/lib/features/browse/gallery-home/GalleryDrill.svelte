@@ -307,7 +307,6 @@
       element: el.element.charAt(0).toUpperCase() + el.element.slice(1),
       color: el.accentColor,
       icon: el.iconPath,
-      desc: el.description,
       count: getCount(BrowseFilterType.TND_FAMILY, el.familyId),
     })).filter((v) => v.count > 0 || (activeFamilyValues?.has(v.value) ?? false)),
   );
@@ -895,7 +894,6 @@
                     {v.label}
                     <span class="element-tag">{v.element}</span>
                   </span>
-                  <span class="value-desc">{v.desc}</span>
                   <span class="density-bar">
                     <span
                       class="density-fill"
@@ -1786,10 +1784,6 @@
     .family-row .value-label {
       font-size: 1.05rem;
     }
-    .family-row .value-desc {
-      font-size: 0.83rem;
-      max-width: 32ch;
-    }
     .family-row .density-bar {
       margin-inline: auto;
     }
@@ -1896,9 +1890,6 @@
     }
     .family-row .value-label {
       font-size: 1.15rem;
-    }
-    .family-row .value-desc {
-      font-size: 0.9rem;
     }
   }
 </style>
