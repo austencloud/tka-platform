@@ -22,6 +22,7 @@ import type {
   InkIntent,
   FrostIntent,
   SilkIntent,
+  MenagerieIntent,
   PulseIntent,
 } from "../domain/effects-config";
 import type { WaterPalette } from "../domain/water-palettes";
@@ -31,6 +32,7 @@ import type { SmokePalette } from "../domain/smoke-palettes";
 import type { InkPalette } from "$lib/shared/3d/effects/ink/ink-palettes";
 import type { FrostPalette } from "../domain/frost-palettes";
 import type { SilkPalette } from "../domain/silk-palettes";
+import type { MenageriePalette } from "../domain/menagerie-palettes";
 import type { PulsePalette } from "../domain/pulse-palettes";
 
 export interface Trails2DParams extends TrailsIntent {
@@ -303,6 +305,20 @@ export interface Silk2DParams extends SilkIntent {
   segmentCount: number;
   /** px - max lateral undulation amplitude at the tail. */
   slitherAmpPx: number;
+}
+
+export interface Menagerie2DParams extends MenagerieIntent {
+  resolvedPalette: MenageriePalette;
+  /** px - base body half-width at width=1. */
+  baseHalfWidth: number;
+  /** px - fixed total arc-length of the creature body. */
+  bodyLengthPx: number;
+  /** Number of spine chain nodes (head = node 0). */
+  segmentCount: number;
+  /** px - max lateral undulation amplitude at the tail. */
+  slitherAmpPx: number;
+  /** Canvas composite op. */
+  blendMode?: GlobalCompositeOperation;
 }
 
 export interface Pulse2DParams extends PulseIntent {

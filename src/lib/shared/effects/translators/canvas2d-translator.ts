@@ -14,6 +14,7 @@ import type {
   InkIntent,
   FrostIntent,
   SilkIntent,
+  MenagerieIntent,
   PulseIntent,
 } from "../domain/effects-config";
 import type {
@@ -32,6 +33,7 @@ import type {
   Ink2DParams,
   Frost2DParams,
   Silk2DParams,
+  Menagerie2DParams,
   Pulse2DParams,
 } from "./canvas2d-types";
 import { resolveWaterPalette } from "../domain/water-palettes";
@@ -41,6 +43,7 @@ import { resolveSmokePalette } from "../domain/smoke-palettes";
 import { resolveInkPalette } from "$lib/shared/3d/effects/ink/ink-palettes";
 import { resolveFrostPalette } from "../domain/frost-palettes";
 import { resolveSilkPalette } from "../domain/silk-palettes";
+import { resolveMenageriePalette } from "../domain/menagerie-palettes";
 import { resolvePulsePalette } from "../domain/pulse-palettes";
 import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
 
@@ -387,6 +390,22 @@ export function resolveSilk2D(
     bodyLengthPx: 120 + intent.bodyLength * 360, // 120-480px fixed spine length
     segmentCount: 40,
     slitherAmpPx: intent.slither * 42,
+  };
+  return { ...intent, ...defaults, ...override };
+}
+
+export function resolveMenagerie2D(
+  intent: MenagerieIntent,
+  override: Partial<Menagerie2DParams> = {},
+): Menagerie2DParams {
+  const palette = resolveMenageriePalette(intent);
+  const defaults: Omit<Menagerie2DParams, keyof MenagerieIntent> = {
+    resolvedPalette: palette,
+    baseHalfWidth: 5 + intent.width * 25, // 5-30px
+    bodyLengthPx: 120 + intent.bodyLength * 360, // 120-480px fixed spine length
+    segmentCount: 40,
+    slitherAmpPx: intent.slither * 42,
+    blendMode: palette.emissive ? "lighter" : "source-over",
   };
   return { ...intent, ...defaults, ...override };
 }
