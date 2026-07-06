@@ -760,7 +760,7 @@
       {:else if section === "position"}
         <div class="drill-screen">
           {@render valueHead("Pick a start position")}
-          <div class="value-list">
+          <div class="value-list centered-list">
             {#each positionValues as v (v.value)}
               <button
                 class="length-row tall monument"
@@ -840,7 +840,7 @@
       {:else if section === "gridmode"}
         <div class="drill-screen">
           {@render valueHead("Pick a grid mode")}
-          <div class="value-list">
+          <div class="value-list centered-list">
             {#each gridModeValues as v (v.value)}
               <button
                 class="length-row tall monument"
@@ -1752,6 +1752,13 @@
       grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
       gap: 0.8rem;
     }
+    /* Sparse image screens (3 positions, 2 grid modes): auto-fill left an empty
+       trailing column ("space to the right of them"), and 1fr stretched each
+       card far wider than its pictograph. Cap the card and center the group. */
+    .value-list.centered-list {
+      grid-template-columns: repeat(auto-fit, minmax(240px, 300px));
+      justify-content: center;
+    }
     /* Groups of exactly 6 (the six T&D families, a 6-tile mini-grid) square
        up as 3x2 — a 4+2 ragged break reads as an accident, not a set. */
     .value-list:has(> :nth-child(6):last-child),
@@ -1848,8 +1855,8 @@
       height: 64px;
     }
     .monument .value-pictograph {
-      width: 116px;
-      height: 116px;
+      width: 148px;
+      height: 148px;
     }
     .monument .loop-icon {
       font-size: 2.6rem;
@@ -1924,6 +1931,10 @@
       grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
       gap: 1rem;
     }
+    .value-list.centered-list {
+      grid-template-columns: repeat(auto-fit, minmax(280px, 340px));
+      justify-content: center;
+    }
     /* Exactly-6 rule again at this tier — the wider auto-fill would break
        the six families 4+2. */
     .value-list:has(> :nth-child(6):last-child),
@@ -1959,8 +1970,8 @@
       height: 76px;
     }
     .monument .value-pictograph {
-      width: 140px;
-      height: 140px;
+      width: 176px;
+      height: 176px;
     }
     .monument .value-numeral.small {
       font-size: 3.6rem;
