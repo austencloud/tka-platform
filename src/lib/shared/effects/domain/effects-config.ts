@@ -14,7 +14,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 
-export const EFFECTS_CONFIG_VERSION = 28;
+export const EFFECTS_CONFIG_VERSION = 30;
 
 export type EffectType =
   | "none"
@@ -33,6 +33,7 @@ export type EffectType =
   | "ink"
   | "frost"
   | "silk"
+  | "menagerie"
   | "pulse";
 
 export interface TrailsIntent {
@@ -392,6 +393,25 @@ export interface SilkIntent {
   slither: number;
 }
 
+export interface MenagerieIntent {
+  /** Which creature ornaments the fixed-length chain. */
+  creature: "snake" | "dragon" | "caterpillar";
+  /** Named palette (shared with silk). "custom" uses customColor. */
+  palette: "satin" | "velvet" | "ethereal" | "shadow" | "gold_leaf" | "ember" | "custom";
+  /** Hex - used only when palette === "custom". */
+  customColor: string;
+  /** 0-1. Overall opacity + width multiplier. */
+  intensity: number;
+  /** 0-1. Base body half-width. Maps to 5-30px. */
+  width: number;
+  /** 0-1. Body length. Maps to ~120-480px of fixed arc-length. */
+  bodyLength: number;
+  /** 0-1. Undulation amplitude (the wag). Ramps 0 at head → max at tail. */
+  slither: number;
+  /** Which staff end(s) the creature tracks. */
+  trackingMode: "left_end" | "right_end" | "both_ends";
+}
+
 export interface PulseIntent {
   /** 0-1. Ring peak alpha + brightness. */
   intensity: number;
@@ -451,6 +471,7 @@ export interface EffectsConfig {
   ink: InkIntent;
   frost: FrostIntent;
   silk: SilkIntent;
+  menagerie: MenagerieIntent;
   pulse: PulseIntent;
   activePresets: {
     trails: string | null;
@@ -468,6 +489,7 @@ export interface EffectsConfig {
     ink: string | null;
     frost: string | null;
     silk: string | null;
+    menagerie: string | null;
     pulse: string | null;
   };
   /** Which effect is currently active. "none" = no effect selected. */

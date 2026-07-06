@@ -192,6 +192,17 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     slither: 0.5,
   },
 
+  menagerie: {
+    creature: "snake",
+    palette: "velvet",
+    customColor: "#600018",
+    intensity: 0.85,
+    width: 0.55,
+    bodyLength: 0.55,
+    slither: 0.55,
+    trackingMode: "right_end",
+  },
+
   pulse: {
     intensity: 0.7,
     reach: 0.6,
@@ -230,6 +241,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     ink: null,
     frost: null,
     silk: null,
+    menagerie: null,
     pulse: null,
   },
 

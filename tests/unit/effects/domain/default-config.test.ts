@@ -59,9 +59,9 @@ describe("DEFAULT_EFFECTS_CONFIG", () => {
   it("has activePresets all null", () => {
     expect(DEFAULT_EFFECTS_CONFIG.activePresets).toEqual({
       trails: null, fire: null, led: null, charcoal: null,
-      zap: null, sparkles: null, echo: null, bloom: null,
+      zap: null, sparkles: null, ghost: null, bloom: null,
       goo: null, bubbles: null, petals: null, smoke: null,
-      ink: null, frost: null, silk: null, pulse: null,
+      ink: null, frost: null, silk: null, menagerie: null, pulse: null,
     });
   });
 
