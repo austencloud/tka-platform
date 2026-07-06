@@ -26,6 +26,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   import { creatorsViewState } from "../../creators/state/creators-view-state.svelte";
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import GalleryTab from "./GalleryTab.svelte";
+  import SmartCollectionSaveDialog from "$lib/features/library/components/SmartCollectionSaveDialog.svelte";
   import GalleryDrill from "$lib/features/browse/gallery-home/GalleryDrill.svelte";
   import { loadCanonicalTnDSequences } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
   import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
@@ -132,6 +133,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   // mutation (the expensive compute) a frame later, behind the skeleton. The
   // layout changes the instant you tap; cards fill in a beat afterward.
   let gridWarming = $state(false);
+  let smartSaveOpen = $state(false);
   function applyToGrid(mutate: () => void) {
     galleryView = "browse-all";
     gridWarming = true;
@@ -556,6 +558,8 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   bind:isOpen={showAnimator}
 />
 
+<SmartCollectionSaveDialog {engine} bind:show={smartSaveOpen} />
+
 <!-- Sequence Details Modal removed - BrowseEventHandler.handleViewDetail() navigates to /sequence/[id] route -->
 
 <!-- Main layout - shows immediately with skeletons while data loads -->
@@ -631,6 +635,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
                 engine.setSearch("");
                 galleryView = "start-here";
               }}
+              onSaveSmart={() => (smartSaveOpen = true)}
             />
           {/if}
         {:else if activeTab === "collections"}

@@ -31,9 +31,12 @@ Reads from / writes to a headless BrowseEngine instance.
      * shows ONLY applied filters (all dismissible) + Clear all — at every
      * container width. Zero height when nothing is applied. */
     chipsOnly?: boolean;
+    /** When provided AND filters are active, shows a "Save as Smart
+     * Collection" action beside Clear all. Omitted by picker hosts. */
+    onSaveSmart?: () => void;
   }
 
-  let { engine, chipsOnly = false }: Props = $props();
+  let { engine, chipsOnly = false, onSaveSmart }: Props = $props();
 
   const isHandsMode = $derived(engine.viewMode.subject === "hands");
 
@@ -253,6 +256,20 @@ Reads from / writes to a headless BrowseEngine instance.
         {t('browse_clear_all')}
       </button>
     {/if}
+
+    {#if onSaveSmart && engine.hasActiveFilters}
+      <button
+        class="save-smart-btn"
+        type="button"
+        onclick={(e) => {
+          e.stopPropagation();
+          onSaveSmart?.();
+        }}
+      >
+        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+        Save as Smart Collection
+      </button>
+    {/if}
   </div>
 </div>
 
@@ -391,6 +408,27 @@ Reads from / writes to a headless BrowseEngine instance.
     background: color-mix(in srgb, var(--semantic-error) 10%, transparent);
     color: var(--semantic-error);
     border-color: color-mix(in srgb, var(--semantic-error) 30%, transparent);
+  }
+
+  .save-smart-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px var(--spacing-md, 12px);
+    min-height: 28px;
+    background: color-mix(in srgb, var(--theme-accent) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    border-radius: 100px;
+    color: var(--theme-text);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .save-smart-btn:hover {
+    background: color-mix(in srgb, var(--theme-accent) 24%, transparent);
   }
 
   @container gallery (min-width: 900px) {

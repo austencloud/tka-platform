@@ -30,6 +30,8 @@
     /** Grid warm-up: show the skeleton and skip the filtered-set reads for one
      * frame so a drill pick paints the layout instantly (the compute runs after). */
     warming?: boolean;
+    /** Passthrough to the filter bar's "Save as Smart Collection" action. */
+    onSaveSmart?: () => void;
   }
 
   let {
@@ -40,6 +42,7 @@
     onSequenceAction,
     onBackToStart,
     warming = false,
+    onSaveSmart,
   }: Props = $props();
 
   // State for sub-sheets
@@ -86,6 +89,7 @@
     hideToolbarSearch
     onOpenFilters={() => (isFilterSheetOpen = true)}
     {warming}
+    {onSaveSmart}
   />
 </div>
 

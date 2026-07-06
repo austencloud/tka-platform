@@ -40,6 +40,8 @@
      * filtered-set read) for the frame a new filter is applied, so the layout
      * paints immediately and the compute lands behind the skeleton. */
     warming?: boolean;
+    /** Passthrough to the filter bar's "Save as Smart Collection" action. */
+    onSaveSmart?: () => void;
   }
 
   let {
@@ -58,6 +60,7 @@
     selectedIds,
     onOpenFilters,
     warming = false,
+    onSaveSmart,
   }: Props = $props();
 
   const showToolbar = $derived(toolbarOverride ?? (layout !== "minimal"));
@@ -237,7 +240,7 @@
   {/if}
 
   {#if showFilterBar}
-    <BrowseFilterBar {engine} chipsOnly={!!onOpenFilters} />
+    <BrowseFilterBar {engine} chipsOnly={!!onOpenFilters} {onSaveSmart} />
   {/if}
 
   <div class="panel-content" bind:this={contentEl} onscroll={handleScroll}>

@@ -15,6 +15,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 	import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
 	import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
+	import SmartCollectionSaveDialog from "$lib/features/library/components/SmartCollectionSaveDialog.svelte";
 	import GalleryFilterSheet from "$lib/features/browse/gallery-home/GalleryFilterSheet.svelte";
 	import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 	import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
@@ -58,6 +59,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
 	});
 
 	let isFilterSheetOpen = $state(false);
+	let smartSaveOpen = $state(false);
 
 	const pickerState = getVariationPickerState();
 
@@ -90,10 +92,13 @@ the gallery's, and the source is pinned to my-library with no toggle.
 		backLabel="Library"
 		hideToolbarSearch
 		onOpenFilters={() => (isFilterSheetOpen = true)}
+		onSaveSmart={() => (smartSaveOpen = true)}
 	/>
 </div>
 
 <GalleryFilterSheet {engine} bind:isOpen={isFilterSheetOpen} {isMobile} />
+
+<SmartCollectionSaveDialog {engine} bind:show={smartSaveOpen} />
 
 {#if isMobile}
 	<Drawer
