@@ -43,14 +43,14 @@
 
   // What a free account unlocks over a throwaway guest session. Concrete and
   // true: anonymous sessions are ephemeral (auto-cleaned), single-device, and
-  // capped at 8 beats. A free account is durable, syncs, doubles the cap, and
-  // is what lets you download your work (export is gated to full accounts).
+  // capped at 8 beats. A free account is durable, syncs, lifts the cap to 64,
+  // and is what lets you download your work (export is gated to full accounts).
   // No tier ladder, no premium pitch.
   const benefits = [
     { icon: "fa-download", label: "Export your animations & cards" },
     { icon: "fa-bookmark", label: "Save your work, safely" },
     { icon: "fa-cloud-arrow-up", label: "Sync across devices" },
-    { icon: "fa-wand-magic-sparkles", label: "Longer sequences, up to 16 beats" },
+    { icon: "fa-wand-magic-sparkles", label: "Longer sequences, up to 64 beats" },
   ];
 
   // SocialAuthCompact handles Google internally but delegates Facebook to the

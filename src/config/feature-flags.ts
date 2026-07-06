@@ -10,6 +10,7 @@
  *   core    — always enabled (create, browse, feedback)
  *   shipped — enabled by default, can be disabled (none yet)
  *   dev     — enabled in dev mode, disabled in production builds
+ *   off     — disabled in every build (dev + prod) until explicitly relit
  *
  * Environment overrides:
  *   BUILD_ALL=true          → enable all features
@@ -19,7 +20,7 @@
  *   Production default: only core + shipped
  */
 
-export type FeatureTier = "core" | "shipped" | "dev";
+export type FeatureTier = "core" | "shipped" | "dev" | "off";
 
 export interface FeatureDefinition {
   id: string;
@@ -70,13 +71,14 @@ export const FEATURES: FeatureDefinition[] = [
     modulePaths: ["features/learn/"],
   },
   {
-    // PRE-LAUNCH: premium is intentionally dev-tier so it is hidden from real
-    // users in production (nav module filtered out, feature module stubbed,
-    // __FEATURE_PREMIUM__ === false) while staying visible in dev for building.
-    // To LAUNCH premium: change tier back to "shipped" — single source of truth,
-    // lights up the nav module + the ProfileTab SubscriptionCard together.
+    // SHELVED: the Scribe paid tier is pulled from the app until there's a real
+    // monetization plan. `off` hides it in EVERY build (dev + prod): nav module
+    // filtered out, feature module stubbed, __FEATURE_PREMIUM__ === false. The
+    // billing services (subscription-manager) + tier plumbing stay dormant in
+    // the tree, so relighting is a one-line change: set tier back to "shipped"
+    // (nav module + ProfileTab SubscriptionCard return together).
     id: "premium",
-    tier: "dev",
+    tier: "off",
     modulePaths: ["features/premium/"],
   },
   {
@@ -261,8 +263,9 @@ const devMode = !isProduction;
  *   3. BUILD_<ID>=true → enabled (explicit opt-in, even in production)
  *   4. tier === "core" → always enabled
  *   5. tier === "shipped" → enabled (by definition the default-on set)
- *   6. dev mode (NODE_ENV !== "production") → enabled
- *   7. tier === "dev" in production without an opt-in → disabled
+ *   6. tier === "off" → disabled in every build (until relit)
+ *   7. dev mode (NODE_ENV !== "production") → enabled
+ *   8. tier === "dev" in production without an opt-in → disabled
  */
 export function isFeatureEnabled(featureId: string): boolean {
   const envKey = `BUILD_${featureId.toUpperCase().replace(/-/g, "_")}`;
@@ -278,6 +281,7 @@ export function isFeatureEnabled(featureId: string): boolean {
 
   if (feature.tier === "core") return true;
   if (feature.tier === "shipped") return true;
+  if (feature.tier === "off") return false;
 
   // dev tier: enabled when not in a production build
   return devMode;
@@ -340,7 +344,7 @@ export function getDisabledRoutePatterns(): string[] {
 }
 
 /**
- * Returns a Vite `define`-compatible map for every dev-tier feature.
+ * Returns a Vite `define`-compatible map for every dev- and off-tier feature.
  * Enabled features map to `"true"`, disabled to `"false"`.
  *
  * Example output (production build, no overrides):
@@ -352,7 +356,7 @@ export function getDisabledRoutePatterns(): string[] {
 export function getEnabledFeaturesDefineMap(): Record<string, string> {
   const map: Record<string, string> = {};
   for (const feature of FEATURES) {
-    if (feature.tier === "dev") {
+    if (feature.tier === "dev" || feature.tier === "off") {
       const key = `__FEATURE_${feature.id.toUpperCase().replace(/-/g, "_")}__`;
       map[key] = isFeatureEnabled(feature.id) ? "true" : "false";
     }

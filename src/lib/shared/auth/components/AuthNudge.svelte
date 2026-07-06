@@ -12,10 +12,7 @@
   let { trigger, onCreateAccount, onLogin, onDismiss }: Props = $props();
 
   const text = $derived(AUTH_NUDGE_TEXTS[trigger]);
-  const isScribeNudge = $derived(trigger === "beat-cap-composer");
-  const buttonText = $derived(
-    isScribeNudge ? "Become a Scribe" : "Create Account - free"
-  );
+  const buttonText = "Create Account - free";
 </script>
 
 <div class="auth-nudge" role="alert">

@@ -24,7 +24,7 @@ describe("resolveAccessTier", () => {
 
 describe("getMaxBeats", () => {
   it("guest cap is 8", () => expect(getMaxBeats("guest")).toBe(8));
-  it("user cap is 16", () => expect(getMaxBeats("user")).toBe(16));
+  it("user cap is 64", () => expect(getMaxBeats("user")).toBe(64));
   it("premium cap is 64", () => expect(getMaxBeats("premium")).toBe(64));
 });
 

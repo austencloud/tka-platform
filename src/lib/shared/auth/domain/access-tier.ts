@@ -49,8 +49,11 @@ export function getMaxBeats(tier: AccessTier): number {
   switch (tier) {
     case "guest":
       return 8;
+    // The paid Scribe tier is shelved, so a signed-in user gets the full
+    // 64-beat ceiling — no middle rung to upsell past. Guests stay at 8 with a
+    // free-account nudge. `premium` is kept at 64 as dormant plumbing.
     case "user":
-      return 16;
+      return 64;
     case "premium":
       return 64;
   }

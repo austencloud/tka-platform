@@ -147,15 +147,11 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
     resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
   );
   let showBeatCapNudge = $state(false);
-  const beatCapNudgeTrigger = $derived<AuthNudgeTrigger>(
-    accessTier === "guest" ? "beat-cap-guest" : "beat-cap-composer"
-  );
-  // Pre-launch: the composer beat-cap nudge pitches the Scribe tier, which
-  // isn't shippable yet. When premium is off, suppress the composer nudge —
-  // the cap still applies. Guests keep their free "up to 16" nudge.
-  const premiumEnabled =
-    typeof __FEATURE_PREMIUM__ !== "undefined" && __FEATURE_PREMIUM__;
-  const beatCapNudgeAllowed = $derived(accessTier === "guest" || premiumEnabled);
+  const beatCapNudgeTrigger: AuthNudgeTrigger = "beat-cap-guest";
+  // Only guests get a beat-cap nudge now — a free-account pitch for the full
+  // 64-beat cap. Logged-in users are hard-capped at 64 with no upsell, so the
+  // cap applies silently. (The paid Scribe tier is shelved until there's a plan.)
+  const beatCapNudgeAllowed = $derived(accessTier === "guest");
 
   // LOOP completion state
   let showLoopConfirm = $state(false);

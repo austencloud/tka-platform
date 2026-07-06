@@ -109,16 +109,11 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   const accessTier = $derived(
     resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
   );
-  const beatCapNudgeTrigger = $derived<AuthNudgeTrigger>(
-    accessTier === "guest" ? "beat-cap-guest" : "beat-cap-composer"
-  );
-  // Pre-launch: the composer beat-cap nudge pitches the Scribe tier, which
-  // isn't shippable yet. When premium is off, suppress the composer nudge —
-  // the stepper already hard-caps at 16. Guests keep their free "up to 16"
-  // nudge regardless.
-  const premiumEnabled =
-    typeof __FEATURE_PREMIUM__ !== "undefined" && __FEATURE_PREMIUM__;
-  const beatCapNudgeAllowed = $derived(accessTier === "guest" || premiumEnabled);
+  const beatCapNudgeTrigger: AuthNudgeTrigger = "beat-cap-guest";
+  // Only guests get a beat-cap nudge now — a free-account pitch for the full
+  // 64-beat cap. Logged-in users are hard-capped at 64 with no upsell, so the
+  // cap applies silently. (The paid Scribe tier is shelved until there's a plan.)
+  const beatCapNudgeAllowed = $derived(accessTier === "guest");
 
   // Get card colors based on current background (reactive to background changes)
   let cardColors = $derived(getCardColors(settingsService.settings.backgroundType ?? BackgroundType.WINTER));

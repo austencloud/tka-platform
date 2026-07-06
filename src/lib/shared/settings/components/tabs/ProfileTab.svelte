@@ -21,7 +21,6 @@
   import ConnectedAccountsPreview from "../../../navigation/components/profile-settings/ConnectedAccountsPreview.svelte";
   import AccountSettingsSection from "../../../navigation/components/profile-settings/AccountSettingsSection.svelte";
   import DangerZone from "../../../navigation/components/profile-settings/DangerZone.svelte";
-  import SubscriptionCard from "./profile/SubscriptionCard.svelte";
   import type { HapticFeedback } from "../../../application/services/haptic-feedback";
   import GlassCard from "./profile/GlassCard.svelte";
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
@@ -81,14 +80,6 @@
     currentSettings: _currentSettings,
     onSettingUpdate: _onSettingUpdate,
   }: Props = $props();
-
-  // PRE-LAUNCH gate: premium is hidden until launch. Driven by the same
-  // compile-time flag that filters the "Go Premium" nav module
-  // (feature-flags.ts: premium tier). dev → true, production → false.
-  // `typeof` guard keeps this safe if premium is ever moved off the dev tier
-  // (then the define is absent and the bare identifier would throw).
-  const premiumEnabled =
-    typeof __FEATURE_PREMIUM__ !== "undefined" && __FEATURE_PREMIUM__;
 
   // Services
   let hapticService = $state<HapticFeedback | null>(null);
@@ -368,20 +359,6 @@
           {/snippet}
         </GlassCard>
 
-        <!-- Subscription - hidden pre-launch via premiumEnabled flag -->
-        {#if premiumEnabled && userPreviewState.data.profile?.role === "admin"}
-          <GlassCard
-            icon="fas fa-crown"
-            iconClass="premium-icon"
-            title="Subscription"
-            subtitle="Support TKA development"
-          >
-            {#snippet children()}
-              <SubscriptionCard {hapticService} />
-            {/snippet}
-          </GlassCard>
-        {/if}
-
         <!-- Password - show if user has password provider -->
         {#if previewAuthData?.providers.some((p) => p.providerId === "password")}
           <GlassCard
@@ -429,20 +406,6 @@
       <!-- Settings Grid - Flexbox for natural fill behavior -->
       <div class="settings-grid">
         <!-- Row 1: Smaller cards -->
-        <!-- Subscription - hidden pre-launch via premiumEnabled flag -->
-        {#if premiumEnabled}
-          <GlassCard
-            icon="fas fa-crown"
-            iconClass="premium-icon"
-            title="Subscription"
-            subtitle="Support TKA development"
-          >
-            {#snippet children()}
-              <SubscriptionCard {hapticService} />
-            {/snippet}
-          </GlassCard>
-        {/if}
-
         <!-- Account Settings - Display name + password (if available) -->
         <GlassCard
           icon="fas fa-user-cog"

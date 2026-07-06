@@ -142,13 +142,13 @@ export function createGenerationActionsState(
           ...generatedSequence,
           steps: generatedSequence.steps.slice(0, maxSteps),
         };
-        // Truncation lost beats the user's word implied. Tell them it was
-        // capped and how to lift the cap. Premium is already at the ceiling,
-        // so we don't nag them. Copy matches AUTH_NUDGE_TEXTS phrasing.
+        // Truncation lost beats the user's word implied. Guests get a
+        // free-account nudge for the full 64-beat cap; signed-in users are
+        // already at the 64 ceiling, so it's a neutral note with no upsell.
         if (tier === "guest") {
-          toast.info("Capped to 8 beats. Sign up free for up to 16.", 5000);
-        } else if (tier === "user") {
-          toast.info("Capped to 16 beats. Become a Scribe for up to 64.", 5000);
+          toast.info("Capped to 8 beats. Sign up free for up to 64.", 5000);
+        } else {
+          toast.info("Capped to 64 beats.", 5000);
         }
       }
 
