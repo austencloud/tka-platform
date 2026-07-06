@@ -44,6 +44,7 @@
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { describePictograph } from "$lib/shared/pictograph/shared/domain/utils/pictograph-description";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
 
@@ -147,8 +148,8 @@
   ];
 
   // ── Text: grouped centred blocks (one draggable box per paragraph) ─────────
-  // Proof coordinates used directly (page already carries its title). y = proof
-  // baseline-from-top; x offset 0 = centred on the sheet.
+  // Proof coords, hand-seated so each block sits in a gutter between the strips
+  // (never overlapping one). y = top-from-page; x offset 0 = centred on sheet.
   type Para = { x: number; y: number; fs: number; lh: number; html: string };
   let PARAS: Para[] = $state([
     {
@@ -161,24 +162,21 @@
         "This combination is called a <strong class=\"pu\">Shift</strong> (with a capital “S”). Here’s a simple example:",
     },
     {
+      // One block (proof split it into two runs, but it reads as one thought)
+      // seated in the gap above the same-direction strip so nothing overlaps it.
       x: 0,
-      y: 240.7,
+      y: 244,
       fs: 16,
       lh: 19.2,
       html:
         "The following examples explore both same and opposite handpaths.<br>" +
-        "They alternate the shifting hand.",
+        "They alternate the shifting hand.<br>" +
+        "Here, they are shifting in the same direction:",
     },
     {
+      // Seated in the gap between the same and opposite strips (clears both).
       x: 0,
-      y: 298.3,
-      fs: 16,
-      lh: 19.2,
-      html: "Here, they are shifting in the same direction:",
-    },
-    {
-      x: 0,
-      y: 534.2,
+      y: 520,
       fs: 16,
       lh: 19.2,
       html: "And here, they are shifting in opposite directions.",
@@ -209,13 +207,15 @@
     {#each strip.rows as row, ri (ri)}
       {#each row as cell, ci (ci)}
         {#if cell}
+          {@const cellStep = box(cell.m, cell.step)}
           <div
             class="pbox"
+            title={describePictograph(cellStep)}
             style="left:{(strip.x + ci * BOX) * S}px; top:{(strip.y + ri * BOX) * S}px; width:{BOX *
               S}px; height:{BOX * S}px"
           >
             <PictographContainer
-              pictographData={box(cell.m, cell.step)}
+              pictographData={cellStep}
               gridMode={GridMode.DIAMOND}
               bluePropTypeOverride={PropType.HAND}
               redPropTypeOverride={PropType.HAND}
