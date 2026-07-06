@@ -4,7 +4,7 @@
   Renders the REAL kaleidoscope (buildTunnelLayers + copyModulators +
   AnimatorCanvas + the shared prop sampler) for a matrix of primitive configs,
   side by side on one shared playhead. This is the study rig: run any sequence
-  through the gamut and see how each primitive (fold / mirror / flip / counter /
+  through the gamut and see how each primitive (fold / mirror / flip / invert /
   echo / stagger / speed) and their combinations read at real prop density.
 
   Not feature code — a visual judge. One generated sample sequence, no persisted
@@ -33,7 +33,7 @@
     { label: "Fold 4 · Mirror", config: cfg({ fold: 4, mirror: true }) },
     { label: "Fold 4 · Flip", config: cfg({ fold: 4, flip: true }) },
     { label: "Fold 2 · Mirror · Flip", config: cfg({ fold: 2, mirror: true, flip: true }) },
-    { label: "Fold 4 · Counter", config: cfg({ fold: 4, counter: true }) },
+    { label: "Fold 4 · Invert", config: cfg({ fold: 4, invert: true }) },
     { label: "Fold 4 · Echo", config: cfg({ fold: 4, echo: true }) },
     { label: "Fold 4 · Stagger 1", config: cfg({ fold: 4, staggerSteps: 1 }) },
     { label: "Fold 4 · Stagger 2", config: cfg({ fold: 4, staggerSteps: 2 }) },

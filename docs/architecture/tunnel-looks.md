@@ -36,7 +36,7 @@ interface TunnelConfig {
   fold: 1 | 2 | 4 | 8;   // rotational arms (cyclic order)
   mirror: boolean;       // reflect across vertical axis
   flip: boolean;         // reflect across horizontal axis (N↔S)
-  counter: boolean;      // alternate arms motion-invert (PRO↔ANTI)
+  invert: boolean;       // alternate arms motion-invert (PRO↔ANTI)
   echo: boolean;         // alternate arms time-reverse
   staggerSteps: number;  // arm k shows the sequence offset by k×this (0 = off)
   speed: boolean;        // alternate arms traverse at ½× / 2×
@@ -50,11 +50,11 @@ closure. Spatial; baked once at build via `sequence-transforms.ts`. Image count 
 `fold × (mirror?2:1) × (flip?2:1)`. Grid = 8 points (45° steps), so 2/4/8-fold are
 representable; 3/6-fold are not.
 
-**Per-copy modulators** — `counter`, `echo`, `stagger`, `speed` — add NO copies;
+**Per-copy modulators** — `invert`, `echo`, `stagger`, `speed` — add NO copies;
 they make arms differ from each other (a uniform modulator is a no-op — invert the
 whole ring and it's the same ring). Distributed so adjacent arms contrast:
 
-- `counter` / `echo` are **baked** — they append `invert` / `rewind` to alternate
+- `invert` / `echo` are **baked** — they append `invert` / `rewind` to alternate
   arms (odd arm index).
 - `stagger` / `speed` are **sample-time** — a per-copy playhead shift
   (`beat' = beat × speed + offset`, wrapped) so a staggered arm shows a different
@@ -83,7 +83,7 @@ Modulators are free (no new copies); only `fold`/`mirror`/`flip` grow the count.
 
 The Tunnel section is the primitive controls, all top-level peers (no named
 looks): a **Fold** `SegmentedControl` `[1·2·4·8]`, a wrapping row of
-**Mirror / Flip / Counter / Echo / Speed** `FilterChipBase` toggle chips (per
+**Mirror / Flip / Invert / Echo / Speed** `FilterChipBase` toggle chips (per
 `chip-primitives.md`), a compact **Stagger** − N + stepper, the **Grid** icon
 toggle, and a live prop-count readout. No checkboxes; 44px touch floor.
 
@@ -91,7 +91,7 @@ toggle, and a live prop-count readout. No checkboxes; 44px touch floor.
 
 - **Prop count is legible + open.** Every mandala is a config point; the count is
   `imageCount × 2`, shown live. No hidden doubling.
-- **Fine-grained rebuild.** The controller holds `fold`/`mirror`/`flip`/`counter`/
+- **Fine-grained rebuild.** The controller holds `fold`/`mirror`/`flip`/`invert`/
   `echo` as individual `$state`, so the bake effect reads only those — Stagger and
   Speed changes recompute at sample time without re-running transforms.
 - **Persistence + migration.** `tunnel-view-state.ts` stores the config and

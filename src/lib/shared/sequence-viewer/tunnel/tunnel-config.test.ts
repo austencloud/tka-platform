@@ -40,10 +40,10 @@ describe("symmetry generators — image + prop counts", () => {
 });
 
 describe("per-copy modulators do not change the count", () => {
-  it("counter / echo / stagger / speed leave imageCount alone", () => {
+  it("invert / echo / stagger / speed leave imageCount alone", () => {
     const base = cfg({ fold: 4 });
     for (const mod of [
-      { counter: true },
+      { invert: true },
       { echo: true },
       { staggerSteps: 3 },
       { speed: true },
@@ -53,9 +53,9 @@ describe("per-copy modulators do not change the count", () => {
   });
 });
 
-describe("baked modulators — Counter / Echo on alternate arms", () => {
-  it("Counter appends invert to odd arms only", () => {
-    const ops = generateCopyOps(cfg({ fold: 4, counter: true })); // arms 1,2,3
+describe("baked modulators — Invert / Echo on alternate arms", () => {
+  it("Invert appends invert to odd arms only", () => {
+    const ops = generateCopyOps(cfg({ fold: 4, invert: true })); // arms 1,2,3
     const hasInvert = (i: number) => ops[i]!.some((o) => o.kind === "invert");
     expect(hasInvert(0)).toBe(true); // arm 1
     expect(hasInvert(1)).toBe(false); // arm 2
@@ -112,8 +112,8 @@ describe("clampConfig — budget ceiling", () => {
 });
 
 describe("mandala presets", () => {
-  it("the default config is the Radial preset", () => {
-    expect(matchPreset(DEFAULT_CONFIG)).toBe("radial");
+  it("the default config is the Duo preset", () => {
+    expect(matchPreset(DEFAULT_CONFIG)).toBe("duo");
   });
 
   it("every preset round-trips through matchPreset", () => {
@@ -137,8 +137,8 @@ describe("mandala presets", () => {
 describe("configKey", () => {
   it("encodes every active primitive, stably", () => {
     expect(configKey(cfg({ fold: 4 }))).toBe("f4");
-    expect(configKey(cfg({ fold: 8, mirror: true, flip: true, counter: true, echo: true, staggerSteps: 2, speed: true }))).toBe(
-      "f8mpces2x",
+    expect(configKey(cfg({ fold: 8, mirror: true, flip: true, invert: true, echo: true, staggerSteps: 2, speed: true }))).toBe(
+      "f8mpies2x",
     );
   });
 });

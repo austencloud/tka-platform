@@ -13,9 +13,9 @@
  *   closure. They are spatial — baked once at build via `sequence-transforms.ts`.
  *   Image count = `fold * (mirror?2:1) * (flip?2:1)`.
  *
- *   Per-copy modulators (Counter / Echo / Stagger / Speed) do NOT add copies —
+ *   Per-copy modulators (Invert / Echo / Stagger / Speed) do NOT add copies —
  *   they make arms differ from each other (a uniform modulator is a no-op).
- *   Counter/Echo are baked (they append a CopyOp to alternate arms);
+ *   Invert/Echo are baked (they append a CopyOp to alternate arms);
  *   Stagger/Speed are sample-time (a per-copy playhead offset / rate).
  *
  * The base is ALWAYS drawn, so on-screen prop count is `imageCount * 2` (blue +
@@ -42,8 +42,8 @@ export interface TunnelConfig {
   mirror: boolean;
   /** Reflect the set across the horizontal axis (N↔S). */
   flip: boolean;
-  /** Alternate arms motion-invert (PRO↔ANTI, contra-rotate). */
-  counter: boolean;
+  /** Alternate arms motion-invert (PRO↔ANTI, opposite spin). */
+  invert: boolean;
   /** Alternate arms run time-reversed. */
   echo: boolean;
   /** Arm k shows the sequence offset by k×this many steps (0 = off) — a canon. */
@@ -66,10 +66,12 @@ export const FOLD_OPTIONS = [1, 2, 4, 8];
 const SPEED_CYCLE = [1, 2, 0.5];
 
 export const DEFAULT_CONFIG: TunnelConfig = {
-  fold: 4,
+  // Duo (2-fold rotation) is the default — the most legible mandala, easiest to
+  // read the sequence in, and the prettiest entry point.
+  fold: 2,
   mirror: false,
   flip: false,
-  counter: false,
+  invert: false,
   echo: false,
   staggerSteps: 0,
   speed: false,
@@ -113,7 +115,7 @@ export function propCount(cfg: TunnelConfig): number {
 /**
  * The spatial op-chains for the extra copies (base excluded), in overlay order.
  * Depends only on the symmetry generators + baked modulators
- * (fold/mirror/flip/counter/echo) — NOT stagger/speed — so the live controller
+ * (fold/mirror/flip/invert/echo) — NOT stagger/speed — so the live controller
  * only re-bakes when the geometry changes.
  */
 export function generateCopyOps(cfg: TunnelConfig): CopyOp[][] {
@@ -129,7 +131,7 @@ export function generateCopyOps(cfg: TunnelConfig): CopyOp[][] {
     const arm = i + 1; // base is arm 0
     const alt = arm % 2 === 1; // baked modulators land on alternate arms
     const out = [...ops];
-    if (cfg.counter && alt) out.push(invertOp);
+    if (cfg.invert && alt) out.push(invertOp);
     if (cfg.echo && alt) out.push(rewindOp);
     return out;
   });
@@ -196,11 +198,13 @@ export interface TunnelPreset {
 }
 
 export const TUNNEL_PRESETS: TunnelPreset[] = [
+  // Duo (2-fold rotation) leads — the most legible mandala, the default look.
+  { id: "duo", name: "Duo", icon: "fas fa-circle-half-stroke", config: { ...DEFAULT_CONFIG, fold: 2 } },
   { id: "radial", name: "Radial", icon: "fas fa-fan", config: { ...DEFAULT_CONFIG, fold: 4 } },
   { id: "mandala", name: "Mandala", icon: "fas fa-asterisk", config: { ...DEFAULT_CONFIG, fold: 4, mirror: true } },
   { id: "pinwheel", name: "Pinwheel", icon: "fas fa-hurricane", config: { ...DEFAULT_CONFIG, fold: 8 } },
   { id: "spiral", name: "Spiral", icon: "fas fa-circle-notch", config: { ...DEFAULT_CONFIG, fold: 4, staggerSteps: 1 } },
-  { id: "contra", name: "Contra", icon: "fas fa-arrows-spin", config: { ...DEFAULT_CONFIG, fold: 4, counter: true } },
+  { id: "inverted", name: "Inverted", icon: "fas fa-arrows-spin", config: { ...DEFAULT_CONFIG, fold: 4, invert: true } },
   { id: "cross", name: "Cross", icon: "fas fa-plus", config: { ...DEFAULT_CONFIG, fold: 2, mirror: true } },
 ];
 
@@ -209,7 +213,7 @@ function eqConfig(a: TunnelConfig, b: TunnelConfig): boolean {
     a.fold === b.fold &&
     a.mirror === b.mirror &&
     a.flip === b.flip &&
-    a.counter === b.counter &&
+    a.invert === b.invert &&
     a.echo === b.echo &&
     a.staggerSteps === b.staggerSteps &&
     a.speed === b.speed
@@ -231,7 +235,7 @@ export function configKey(cfg: TunnelConfig): string {
     `f${cfg.fold}` +
     (cfg.mirror ? "m" : "") +
     (cfg.flip ? "p" : "") +
-    (cfg.counter ? "c" : "") +
+    (cfg.invert ? "i" : "") +
     (cfg.echo ? "e" : "") +
     (cfg.staggerSteps > 0 ? `s${cfg.staggerSteps}` : "") +
     (cfg.speed ? "x" : "")

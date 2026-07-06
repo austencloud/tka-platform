@@ -55,8 +55,8 @@ export class TunnelViewController {
   mirror = $state<boolean>(DEFAULT_CONFIG.mirror);
   /** Reflect across the horizontal axis (N↔S). */
   flip = $state<boolean>(DEFAULT_CONFIG.flip);
-  /** Alternate arms motion-invert (counter-rotate). */
-  counter = $state<boolean>(DEFAULT_CONFIG.counter);
+  /** Alternate arms motion-invert (opposite spin). */
+  invert = $state<boolean>(DEFAULT_CONFIG.invert);
   /** Alternate arms run time-reversed. */
   echo = $state<boolean>(DEFAULT_CONFIG.echo);
   /** Arm k shows the sequence offset by k×this steps (0 = off). */
@@ -92,7 +92,7 @@ export class TunnelViewController {
     this.fold = cfg.fold;
     this.mirror = cfg.mirror;
     this.flip = cfg.flip;
-    this.counter = cfg.counter;
+    this.invert = cfg.invert;
     this.echo = cfg.echo;
     this.staggerSteps = cfg.staggerSteps;
     this.speed = cfg.speed;
@@ -112,7 +112,7 @@ export class TunnelViewController {
     });
 
     // Re-bake the overlaid copies when the SPATIAL topology changes (sequence /
-    // fold / mirror / flip / counter / echo). Stagger + Speed are read ONLY in
+    // fold / mirror / flip / invert / echo). Stagger + Speed are read ONLY in
     // the sample path (copyModulators), so tweaking them never lands here and
     // never re-runs the transforms. Transport changes never rebuild either.
     $effect(() => {
@@ -121,7 +121,7 @@ export class TunnelViewController {
         fold: this.fold,
         mirror: this.mirror,
         flip: this.flip,
-        counter: this.counter,
+        invert: this.invert,
         echo: this.echo,
         staggerSteps: 0,
         speed: false,
@@ -144,7 +144,7 @@ export class TunnelViewController {
       fold: this.fold,
       mirror: this.mirror,
       flip: this.flip,
-      counter: this.counter,
+      invert: this.invert,
       echo: this.echo,
       staggerSteps: this.staggerSteps,
       speed: this.speed,
@@ -187,7 +187,7 @@ export class TunnelViewController {
     this.fold = c.fold;
     this.mirror = c.mirror;
     this.flip = c.flip;
-    this.counter = c.counter;
+    this.invert = c.invert;
     this.echo = c.echo;
     this.staggerSteps = c.staggerSteps;
     this.speed = c.speed;
@@ -220,8 +220,8 @@ export class TunnelViewController {
   }
 
   // Modulators add no copies, so they never clamp.
-  setCounter(on: boolean): void {
-    this.counter = on;
+  setInvert(on: boolean): void {
+    this.invert = on;
   }
   setEcho(on: boolean): void {
     this.echo = on;

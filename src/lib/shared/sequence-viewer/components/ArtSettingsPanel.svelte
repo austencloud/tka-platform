@@ -119,11 +119,11 @@
 
   // The boolean primitives, rendered as a wrapping row of toggle chips (per
   // chip-primitives: independent booleans → N × FilterChipBase mode="toggle").
-  // Mirror/Flip grow the copy set; Counter/Echo/Speed modulate alternate arms.
+  // Mirror/Flip grow the copy set; Invert/Echo/Speed modulate alternate arms.
   const toggleChips = $derived([
     { key: "mirror", label: "Mirror", icon: "fas fa-arrows-left-right", active: controller.mirror, set: (v: boolean) => controller.setMirror(v) },
     { key: "flip", label: "Flip", icon: "fas fa-arrows-up-down", active: controller.flip, set: (v: boolean) => controller.setFlip(v) },
-    { key: "counter", label: "Counter", icon: "fas fa-arrows-spin", active: controller.counter, set: (v: boolean) => controller.setCounter(v) },
+    { key: "invert", label: "Invert", icon: "fas fa-arrows-spin", active: controller.invert, set: (v: boolean) => controller.setInvert(v) },
     { key: "echo", label: "Echo", icon: "fas fa-backward", active: controller.echo, set: (v: boolean) => controller.setEcho(v) },
     { key: "speed", label: "Speed", icon: "fas fa-gauge-high", active: controller.speed, set: (v: boolean) => controller.setSpeed(v) },
   ]);
@@ -307,7 +307,7 @@
           </button>
         </div>
 
-        <!-- Boolean primitives. Mirror/Flip add reflection copies; Counter/Echo/
+        <!-- Boolean primitives. Mirror/Flip add reflection copies; Invert/Echo/
              Speed modulate alternate arms (no new copies). Full-width in a 2-col
              grid so they fill evenly (no ragged wrap). -->
         <div class="prim-chip-grid">

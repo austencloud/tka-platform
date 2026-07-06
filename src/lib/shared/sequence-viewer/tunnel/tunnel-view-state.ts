@@ -33,7 +33,7 @@ const LOOK_TO_CONFIG: Record<string, Partial<TunnelConfig>> = {
   mandala: { fold: 4, mirror: true },
   mirror: { fold: 1, mirror: true },
   flip: { fold: 1, flip: true },
-  counter: { fold: 1, counter: true },
+  counter: { fold: 1, invert: true },
   echo: { fold: 1, echo: true },
   cross: { fold: 2, mirror: true },
 };
@@ -53,7 +53,8 @@ function resolveConfig(p: Record<string, unknown>): TunnelConfig {
       fold,
       mirror: bool(c.mirror, DEFAULT_CONFIG.mirror),
       flip: bool(c.flip, DEFAULT_CONFIG.flip),
-      counter: bool(c.counter, DEFAULT_CONFIG.counter),
+      // `invert` was briefly named `counter` (2026-07-06) — read the old key too.
+      invert: bool(c.invert ?? (c as { counter?: unknown }).counter, DEFAULT_CONFIG.invert),
       echo: bool(c.echo, DEFAULT_CONFIG.echo),
       staggerSteps:
         typeof c.staggerSteps === "number" && c.staggerSteps > 0 ? Math.floor(c.staggerSteps) : 0,
