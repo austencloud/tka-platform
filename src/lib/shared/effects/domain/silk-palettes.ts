@@ -93,7 +93,18 @@ function deriveCustomPalette(hex: string): SilkPalette {
   };
 }
 
-export function resolveSilkPalette(intent: SilkIntent): SilkPalette {
+/**
+ * Shared resolver: menagerie reuses silk's exact palette registry. Takes just
+ * the palette fields structurally so both intents can call it.
+ */
+export function resolvePaletteByIntent(intent: {
+  palette: SilkIntent["palette"];
+  customColor: string;
+}): SilkPalette {
   if (intent.palette === "custom") return deriveCustomPalette(intent.customColor);
   return PALETTE_REGISTRY[intent.palette] ?? PALETTE_REGISTRY.satin!;
+}
+
+export function resolveSilkPalette(intent: SilkIntent): SilkPalette {
+  return resolvePaletteByIntent(intent);
 }
