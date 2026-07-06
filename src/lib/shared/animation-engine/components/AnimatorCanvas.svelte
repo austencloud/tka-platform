@@ -1117,6 +1117,16 @@ Last audit: 2025-12-27
     pointer-events: none;
   }
 
+  /* Header hidden but the transport still lives in-canvas (portrait viewer
+     drawer): the 8.5rem focused reserve above holds ~100px for a header that
+     isn't rendered, shrinking the square and leaving a dead band around it.
+     Reserve only the progress slot. (The triple-attr rule below still wins
+     when the transport is relocated too.) */
+  .animation-container[data-focused][data-hide-header] .content-wrapper {
+    width: min(calc(100cqw - 12px), calc(100cqh - 3rem - 12px));
+    max-width: calc(100cqh - 3rem);
+  }
+
   /* Header hidden AND transport relocated: let the square canvas claim almost
      the whole pane height. */
   .animation-container[data-focused][data-hide-header][data-no-progress] .content-wrapper {
