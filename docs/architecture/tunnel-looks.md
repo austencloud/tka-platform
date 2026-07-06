@@ -60,19 +60,44 @@ other look covers.
 
 | Look | copies | props | uniquely visualizes |
 |---|---|---|---|
+| Radial | `[rot…]` per arm count | 4 / 8 / 16 | N-fold rotation, arm count tunable (2/4/8) |
 | Mirror | `[mirror]` | 4 | reflection across the vertical axis |
 | Flip | `[flip]` | 4 | reflection N↔S |
 | Counter | `[invert]` | 4 | counter-rotating overlay (PRO↔ANTI, CW↔CCW) |
 | Echo | `[rewind]` | 4 | time-reversed copy |
-| Prism | `[colorSwap]` | 4 | blue↔red — **reads only with spectrum off** |
-| Duo | `[rot4]` | 4 | 180° rotational pair |
-| Pinwheel | `[rot2],[rot4],[rot6]` | 8 | 4-fold rotation |
-| Kaleidoscope | `[rot1]…[rot7]` | 16 | 8-fold rotation |
 | Cross | `[mirror],[flip],[rot4]` | 8 | dihedral D₂ (both reflection axes) |
 | Mandala | 4-fold rot × mirror | 16 | curated D₄ |
 
 Grid = 8 points (45° steps), so only 2/4/8-fold rotation is representable;
 3/6-fold are not.
+
+**Radial** is a density-tunable look: the old Duo (2-fold) / Pinwheel (4-fold) /
+Kaleidoscope (8-fold) collapse into one look whose arm count is a tuner stepper
+(`DensitySpec.build` generates the copy list from the count). It also carries a
+**Mirror** toggle (`DensitySpec.mirrorable`): off = pure rotation, on = the
+dihedral reflection copies (rotational → Mandala-style). Mirror is an explicit,
+opt-in, default-off control — NOT the old hidden always-on multiplier that caused
+the original prop explosion. Because reflection doubles the copies, mirror-on is
+capped to `maxMirrorArms` (4 → 16 props; 8 mirrored would be 32, visual mush).
+
+**Mandala** is kept as its own named tile even though `Radial + mirror + 4 arms`
+renders the same D₄ — the tile is the one-tap "give me the fancy one," the toggle
+is the tunable path. A small, deliberate overlap.
+
+**Prism** (`[colorSwap]`) was cut — colorSwap only recolors, applies no spatial
+transform, so the copy lands exactly on top of the base and the look reads as
+doing nothing. The `colorSwap` op stays a valid `CopyOp` kind; no shipped look
+uses it.
+
+### Rejected: a figure Spin / Phase tuner
+
+A tuner that rigidly rotated the whole figure (adding a degree offset to each
+prop's `centerPathAngle` + `staffRotationAngle`) was prototyped and removed. The
+prop's `centerPathAngle` is its angle **on the 8-point grid**; nudging it off a
+grid point teleports the prop to a wrong location instead of smoothly rotating.
+Any future "spin the whole thing" must rotate the rendered output (e.g. a CSS
+transform on the stage), never perturb per-prop grid angles. Density is the only
+per-look tuner that shipped.
 
 ## Consequences
 

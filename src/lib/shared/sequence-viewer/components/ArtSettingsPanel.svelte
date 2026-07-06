@@ -24,6 +24,7 @@
   import TempoControl from "$lib/shared/animation-panel/components/TempoControl.svelte";
   import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import MandalaCategoryControl, {
     type MandalaCategory,
   } from "./mandala/MandalaCategoryControl.svelte";
@@ -105,6 +106,12 @@
   const tunnelSection = $derived<TunnelRailId>(controller.section);
   const tunnelSectionLabel = $derived(
     tunnelRail.find((p) => p.id === tunnelSection)?.label ?? "",
+  );
+
+  // Density stepper options for the tuner (SegmentedControl is string-generic,
+  // so map the arm counts to string values).
+  const densitySegOptions = $derived(
+    controller.densityOptions.map((a) => ({ value: String(a), label: `${a}×` })),
   );
 
   // ── Mandala rail (same icons + order the bottom dock uses) ──
@@ -214,18 +221,71 @@
             type="button"
             aria-pressed={controller.lookId === look.id}
             onclick={() => controller.setLook(look.id)}
-            title={`${look.name} · ${propCount(look)} props`}
+            title={`${look.name} · ${propCount(look, look.density ? controller.density : undefined, look.density ? controller.radialMirror : undefined)} props`}
           >
             <i class={look.icon} aria-hidden="true"></i>
             <span>{look.name}</span>
           </button>
         {/each}
       </div>
-      <div class="group">
-        <span class="lbl">View</span>
-        <button class:active={controller.gridVisible} onclick={() => (controller.gridVisible = !controller.gridVisible)}>
-          <i class="fas fa-border-all" aria-hidden="true"></i> Grid
-        </button>
+
+      <!-- Density (arm count) for the tunable Radial look, plus a compact Grid
+           icon toggle instead of a full row. -->
+      <div class="tuner">
+        {#if controller.hasDensity}
+          <div class="slider-row">
+            <span class="row-lbl">Density</span>
+            <div class="seg-wrap">
+              <SegmentedControl
+                options={densitySegOptions}
+                value={String(controller.density)}
+                onchange={(v) => controller.setDensity(Number(v))}
+                color="accent"
+                size="sm"
+              />
+            </div>
+            <button
+              class="grid-toggle"
+              class:active={controller.gridVisible}
+              type="button"
+              aria-pressed={controller.gridVisible}
+              aria-label="Toggle grid"
+              title="Grid"
+              onclick={() => (controller.gridVisible = !controller.gridVisible)}
+            >
+              <i class="fas fa-border-all" aria-hidden="true"></i>
+            </button>
+          </div>
+          {#if controller.hasMirror}
+            <!-- Explicit, opt-in dihedral reflection (rotational → Mandala-style).
+                 NOT the old hidden always-on multiplier; capped to 4 arms. -->
+            <div class="group">
+              <button
+                class:active={controller.radialMirror}
+                type="button"
+                aria-pressed={controller.radialMirror}
+                onclick={() => controller.setRadialMirror(!controller.radialMirror)}
+              >
+                <i class="fas fa-arrows-left-right" aria-hidden="true"></i> Mirror
+              </button>
+            </div>
+          {/if}
+        {:else}
+          <div class="tuner-head">
+            <span class="row-lbl">Grid</span>
+            <button
+              class="grid-toggle"
+              class:active={controller.gridVisible}
+              type="button"
+              aria-pressed={controller.gridVisible}
+              aria-label="Toggle grid"
+              title="Grid"
+              onclick={() => (controller.gridVisible = !controller.gridVisible)}
+            >
+              <i class="fas fa-border-all" aria-hidden="true"></i>
+            </button>
+          </div>
+        {/if}
       </div>
 
       {#if controller.heavyLoad}
@@ -307,7 +367,7 @@
       activeTab={openTunnelTab}
       onTabSelect={selectTunnelDock}
       trailingAction={tunnelDockExport}
-      trayMaxHeight="min(33vh, 250px)"
+      trayMaxHeight={openTunnelTab === "effects" ? "min(72vh, 480px)" : "min(33vh, 250px)"}
     >
       {#snippet tray()}
         <div class="dock-dense">
@@ -585,6 +645,44 @@
     color: #fff;
   }
   .look-tile.active i { opacity: 1; }
+
+  /* Tuner: the Density stepper (Radial) + a compact Grid icon toggle. */
+  .tuner { display: flex; flex-direction: column; gap: 4px; }
+  .tuner-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  /* Compact icon toggle for the grid — a small square instead of a full row,
+     keeping the 44px touch floor. */
+  .grid-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 9px;
+    color: inherit;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .grid-toggle.active {
+    background: var(--theme-accent, #8b5cf6);
+    border-color: transparent;
+    color: #fff;
+  }
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--min-touch-target, 44px);
+  }
+  .slider-row .row-lbl,
+  .tuner-head .row-lbl {
+    flex: 0 0 52px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+  }
+  .seg-wrap { flex: 1; min-width: 0; }
 
   /* Tunnel View/Grid row. Label-left + button shares the full row width
      (mirrors the Playback tab's Tempo/Mode rows) — no trailing dead space. */

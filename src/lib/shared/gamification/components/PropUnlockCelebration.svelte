@@ -6,7 +6,7 @@
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
   import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
   import { buildTunnelLayers } from "$lib/shared/sequence-viewer/tunnel/tunnel-layer-builder";
-  import { getLook, type TunnelLook } from "$lib/shared/sequence-viewer/tunnel/tunnel-looks";
+  import { getLook } from "$lib/shared/sequence-viewer/tunnel/tunnel-looks";
   import { getPropDemoLoop, generateFreshDemoLoop } from "../data/prop-demo-loop";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -66,19 +66,18 @@
       window.matchMedia("(prefers-reduced-motion: reduce)").matches
     );
   }
-  // Reveal shapes, expressed as curated Tunnel LOOKS (shared with Tunnel View).
-  // "pinwheel" (4-fold: 90/180/270, 8 props) is the lush default; "duo" (a
-  // single 180° copy, 4 props) is the lighter look. Reduced-motion always uses
-  // the lighter one; remix occasionally rolls it for variety.
-  const PINWHEEL = getLook("pinwheel")!;
-  const DUO = getLook("duo")!;
+  // Reveal shape: the tunable "Radial" Tunnel look at a chosen arm count (shared
+  // with Tunnel View). 4 arms (90/180/270, 8 props) is the lush default; 2 arms
+  // (a single 180° copy, 4 props) is the lighter look. Reduced-motion always
+  // uses the lighter one; remix occasionally rolls it for variety.
+  const RADIAL = getLook("radial")!;
 
-  function defaultLook(): TunnelLook {
-    return prefersReducedMotion() ? DUO : PINWHEEL;
+  function defaultArms(): number {
+    return prefersReducedMotion() ? 2 : 4;
   }
-  function remixLook(): TunnelLook {
-    if (prefersReducedMotion()) return DUO;
-    return Math.random() < 0.35 ? DUO : PINWHEEL;
+  function remixArms(): number {
+    if (prefersReducedMotion()) return 2;
+    return Math.random() < 0.35 ? 2 : 4;
   }
 
   // Shared loader: builds the overlaid tunnel layers; the token guard drops a
@@ -86,10 +85,10 @@
   async function loadReveal(
     seqPromise: Promise<SequenceData>,
     token: number,
-    look: TunnelLook,
+    arms: number,
   ) {
     const seq = await seqPromise;
-    const copies = await buildTunnelLayers(seq, look);
+    const copies = await buildTunnelLayers(seq, RADIAL, arms);
     if (token !== revealToken) return;
     base = seq;
     rotated = copies;
@@ -105,7 +104,7 @@
     currentEffect = "none"; // first look is the clean tunnel; remix adds effects
     isRemixing = false;
     revealToken += 1;
-    void loadReveal(getPropDemoLoop(), revealToken, defaultLook());
+    void loadReveal(getPropDemoLoop(), revealToken, defaultArms());
   }
 
   /** Remix the meet view: a fresh random sequence + a new random effect. */
@@ -116,7 +115,7 @@
     rotated = [];
     playheadBeat = 0;
     revealToken += 1;
-    void loadReveal(generateFreshDemoLoop(), revealToken, remixLook());
+    void loadReveal(generateFreshDemoLoop(), revealToken, remixArms());
   }
 
   onMount(() => {

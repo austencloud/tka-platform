@@ -8,7 +8,7 @@ import {
   rewindSequence,
 } from "$lib/shared/create/services/sequence-transforms";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
-import type { CopyOp, TunnelLook } from "./tunnel-looks";
+import { lookCopies, type CopyOp, type TunnelLook } from "./tunnel-looks";
 
 /** Apply one transform op to a sequence, dispatching to the canonical
  *  `sequence-transforms` function. No new transform math lives here. */
@@ -39,12 +39,16 @@ async function applyOps(base: SequenceData, ops: CopyOp[]): Promise<SequenceData
 
 /**
  * Build the overlaid copies (everything beyond the always-drawn base) for a
- * look. Returns one SequenceData per `look.copies` entry, in overlay order. The
- * base is NOT included — the caller draws it as blueProp/redProp.
+ * look. Returns one SequenceData per copy, in overlay order. The base is NOT
+ * included — the caller draws it as blueProp/redProp. `density` + `mirror`
+ * select the arm count and dihedral reflection for a density-tunable look
+ * (Radial); both ignored for fixed looks.
  */
 export async function buildTunnelLayers(
   base: SequenceData,
   look: TunnelLook,
+  density?: number,
+  mirror = false,
 ): Promise<SequenceData[]> {
-  return Promise.all(look.copies.map((ops) => applyOps(base, ops)));
+  return Promise.all(lookCopies(look, density, mirror).map((ops) => applyOps(base, ops)));
 }
