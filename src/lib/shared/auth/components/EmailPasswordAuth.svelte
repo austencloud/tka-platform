@@ -198,7 +198,7 @@
         class="input"
         type="email"
         bind:value={email}
-        autocomplete="email"
+        autocomplete="username"
         required
       />
     </label>

@@ -141,7 +141,7 @@
           class="retro-input"
           bind:value={email}
           disabled={isSubmitting}
-          autocomplete="email"
+          autocomplete="username"
           placeholder=""
         />
 

@@ -52,7 +52,7 @@
         placeholder={t("form_placeholder_email")}
         required
         disabled={isSubmitting}
-        autocomplete="email"
+        autocomplete="username"
         class:has-value={email.length > 0}
       />
     </div>
