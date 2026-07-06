@@ -267,3 +267,30 @@ LOOP terminology, per existing section filenames already named Loops*.)
   (footer prints where it shows). To convert a page (p6+): build its per-page
   component, register it in `BUILT` under the manifest id — number + TOC are
   already correct.
+- 2026-07-05: TEXT-BLOCK CONSOLIDATION + COLOR-CODING (commit `5ad33718a0`).
+  Per-line extraction runs merged into single draggable centred `.para`/`.intro`
+  blocks so multi-line intros move as one unit (like the original PDF): Hand
+  Positions intro (3 lines→1, inline `Red = Right`/`Blue = Left` legend), The
+  Grid intro (4 lines→1) and its three point descriptions (center/hand/outer→1).
+  Type 1 "Dual-Shift(s)" now colour-coded `Dual` cyan (#36c3ff) + `-Shift(s)`
+  purple (#6F2DA8) — the Type-1 letter colours — matching the original;
+  HandMotions/Gamma already did. Verified: `npm run check` exit 0 + DevTools.
+- 2026-07-05: PICTOGRAPH ACCESSIBILITY / METADATA (Task D). App-wide, not
+  guide-only: `PictographRenderer` swapped its static `aria-label="Pictograph"`
+  for a generated description + a `<desc>` element, so every pictograph in the
+  app is machine-readable by screen readers, search crawlers, AI agents, and
+  anyone reading the HTML source. Generator = new pure util
+  `shared/pictograph/shared/domain/utils/pictograph-description.ts`
+  (`describePictograph`): builds "Letter G, beta (hands together), Together-Same
+  timing. Blue hand float south to west; Red hand float north to east." from the
+  data the renderer already holds (letter, start/end position groups α/β/γ with
+  a plain-language gloss, per-hand motion type + from→to locations, turns),
+  reusing the renderer's derived TnD mode. Hand pictographs correctly read
+  "float" (a hand can't spin — detected via `propType === HAND` on a PRO/ANTI
+  shift, or FLOAT/"fl"); staff pictographs elsewhere still read "pro-spin shift".
+  Guide extras: α/β/γ section glyphs (`img.glyph`) got real `alt` ("Alpha (α)"
+  …); the diamond/box/8-point Grid figures got `role="img"` + `aria-label` +
+  `<desc>`. Verified via DevTools: 61 pictographs, 0 generic labels, `<desc>` on
+  all, no console errors. On the original's "use the canonical glyph, don't type
+  α/β/γ": already satisfied — position pictographs render the bottom-left TKA
+  glyph via `showTKA`; the accessibility layer is what makes that glyph readable.

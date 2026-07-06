@@ -92,9 +92,9 @@
   // to track the old one. ar = intrinsic width/height; sized to GLYPH_H, centred
   // on CX. Source dims mirror PositionGlyph.svelte's LETTER_DIMENSIONS.
   const GLYPHS = [
-    { src: "/images/letters_trimmed/Type6/α.svg", ar: 92.22 / 100, y: aGlyphY },
-    { src: "/images/letters_trimmed/Type6/β.svg", ar: 66.05 / 100, y: bGlyphY },
-    { src: "/images/letters_trimmed/Type6/γ.svg", ar: 79 / 100.11, y: gGlyphY },
+    { src: "/images/letters_trimmed/Type6/α.svg", ar: 92.22 / 100, y: aGlyphY, name: "Alpha (α)" },
+    { src: "/images/letters_trimmed/Type6/β.svg", ar: 66.05 / 100, y: bGlyphY, name: "Beta (β)" },
+    { src: "/images/letters_trimmed/Type6/γ.svg", ar: 79 / 100.11, y: gGlyphY, name: "Gamma (γ)" },
   ];
 
   // Row for the i-th position: α (0–3), β (4–7), γ row1 (8–11), γ row2 (12–15).
@@ -182,7 +182,7 @@
     <img
       class="glyph"
       src={g.src}
-      alt=""
+      alt={g.name}
       style="left:{(CX - (GLYPH_H * g.ar) / 2) * S}px; top:{g.y * S}px; height:{GLYPH_H * S}px"
     />
   {/each}

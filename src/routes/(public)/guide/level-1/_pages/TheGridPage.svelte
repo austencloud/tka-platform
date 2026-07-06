@@ -150,7 +150,14 @@
 <!-- A square grid figure: white sheet + canonical GridSvg forced to ink (light
      mode). `hands` overlays the two prop hands on the diamond's W/E hand points. -->
 {#snippet figure(type: "diamond" | "box" | "merged")}
-  <svg class="fig" viewBox="0 0 950 950">
+  {@const gridLabel =
+    type === "diamond"
+      ? "Diamond grid — four points at north, east, south, and west"
+      : type === "box"
+        ? "Box grid — four points on the diagonals"
+        : "8-point grid — diamond and box combined"}
+  <svg class="fig" viewBox="0 0 950 950" role="img" aria-label={gridLabel}>
+    <desc>{gridLabel}</desc>
     <rect width="950" height="950" fill="#ffffff" />
     {#if type === "merged"}
       <GridSvg gridMode={GridMode.DIAMOND} darkMode={false} />

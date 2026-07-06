@@ -37,6 +37,7 @@ Usage:
   import StepNumber from "./StepNumber.svelte";
   import DurationGlyph from "./DurationGlyph.svelte";
   import PathShapeGlyph from "./PathShapeGlyph.svelte";
+  import { describePictograph } from "../domain/utils/pictograph-description";
   import { deriveGridMode } from "$lib/shared/pictograph/grid/services/grid-mode-deriver";
   import { turnsTupleGenerator } from "../../arrow/positioning/placement/services/turns-tuple-generator";
   import type { TurnsTupleGenerator } from "$lib/shared/pictograph/arrow/positioning/placement/services/turns-tuple-generator";
@@ -282,6 +283,11 @@ Usage:
     return deriveTnDFromPictograph(pictograph);
   });
 
+  // Accessible description (screen readers / search / AI / raw HTML). Built from
+  // the data the renderer already has, reusing the derived TnD mode. Replaces the
+  // static "Pictograph" label so the SVG image is machine-readable everywhere.
+  const a11yLabel = $derived(describePictograph(pictograph, { tndMode: tndInfo.tndMode }));
+
   // Turns tuple generation
   // NOTE: Fallback must be "(0, 0)" not "(s, 0, 0)" - the "s" prefix would cause
   // DirectionDot to show incorrectly on all pictographs
@@ -347,9 +353,10 @@ Usage:
     preserveAspectRatio="xMidYMid meet"
     xmlns="http://www.w3.org/2000/svg"
     role="img"
-    aria-label="Pictograph"
+    aria-label={a11yLabel}
     style="pointer-events: none;"
   >
+    <desc>{a11yLabel}</desc>
     <!-- Background - fills entire expanded viewBox -->
     <rect width={expandedWidth} height={BASE_SIZE} fill={transparentBackground ? "none" : printMode ? "#ffffff" : darkMode === true ? "#0a0a0f" : darkMode === false ? "#d8d8d2" : "var(--dm-pictograph-bg)"} pointer-events="none" />
 
