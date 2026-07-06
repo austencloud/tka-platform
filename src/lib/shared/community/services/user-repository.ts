@@ -646,29 +646,27 @@ export async function followUser(
             return;
           }
 
-          const currentUserDoc = await transaction.get(currentUserRef);
           const targetUserDoc = await transaction.get(targetUserRef);
-
-          if (!currentUserDoc.exists() || !targetUserDoc.exists()) {
+          if (!targetUserDoc.exists()) {
             throw new Error("User not found");
           }
-
-          const currentUserData = currentUserDoc.data() as FirestoreUserData;
-          const targetUserData = targetUserDoc.data() as FirestoreUserData;
 
           const followData: FollowDocument = {
             createdAt: serverTimestamp() as Timestamp,
           };
 
+          // Write ONLY the relationship docs. followerCount / followingCount are
+          // maintained server-side by the onFollowCreated / onFollowDeleted
+          // Cloud Functions — Firestore rules forbid a client writing another
+          // user's followerCount (see firestore.rules `users/{userId}` update:
+          // owner || admin), which is why the old cross-user count write here
+          // triggered a permission-denied and broke follow/unfollow entirely.
           transaction.set(followingRef, followData);
           transaction.set(followersRef, followData);
 
+          // Touching our own lastActivityDate is owner-allowed.
           transaction.update(currentUserRef, {
-            followingCount: (currentUserData.followingCount ?? 0) + 1,
             lastActivityDate: serverTimestamp(),
-          });
-          transaction.update(targetUserRef, {
-            followerCount: (targetUserData.followerCount ?? 0) + 1,
           });
         }),
       "community"
@@ -706,42 +704,21 @@ export async function unfollowUser(
             USERS_COLLECTION,
             currentUserId
           );
-          const targetUserRef = doc(
-            firestore,
-            USERS_COLLECTION,
-            targetUserId
-          );
 
           const followingDoc = await transaction.get(followingRef);
           if (!followingDoc.exists()) {
             return;
           }
 
-          const currentUserDoc = await transaction.get(currentUserRef);
-          const targetUserDoc = await transaction.get(targetUserRef);
-
-          if (!currentUserDoc.exists() || !targetUserDoc.exists()) {
-            throw new Error("User not found");
-          }
-
-          const currentUserData = currentUserDoc.data() as FirestoreUserData;
-          const targetUserData = targetUserDoc.data() as FirestoreUserData;
-
+          // Delete ONLY the relationship docs. Counts are decremented
+          // server-side by the onFollowDeleted Cloud Function (same reason as
+          // followUser — clients can't write another user's followerCount).
           transaction.delete(followingRef);
           transaction.delete(followersRef);
 
+          // Touching our own lastActivityDate is owner-allowed.
           transaction.update(currentUserRef, {
-            followingCount: Math.max(
-              0,
-              (currentUserData.followingCount ?? 0) - 1
-            ),
             lastActivityDate: serverTimestamp(),
-          });
-          transaction.update(targetUserRef, {
-            followerCount: Math.max(
-              0,
-              (targetUserData.followerCount ?? 0) - 1
-            ),
           });
         }),
       "community"
