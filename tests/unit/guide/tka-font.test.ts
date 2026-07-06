@@ -85,9 +85,7 @@ describe("TKA Letters font", () => {
     expect(has("W-")).toBe(true); // Latin base + hyphen
     expect(has("Sigma-")).toBe(true); // name + hyphen (Type 3)
     expect(has("Phi-")).toBe(true); // name + hyphen (Type 5)
-    // NOTE: `τ-` (tau-dash) has no source SVG in letters_trimmed, so it is
-    // intentionally absent until the asset is provided. See the build's [warn].
-    expect(has("tau-")).toBe(false);
+    expect(has("tau-")).toBe(true); // Type 4 dash (τ-.svg composed from τ + dash bar)
   });
 
   it("registers each shared glyph exactly once (α/β/γ, Y/Z dedupe)", () => {
