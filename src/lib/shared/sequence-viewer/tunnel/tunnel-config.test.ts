@@ -6,6 +6,7 @@ import {
   TUNNEL_PRESETS,
   clampConfig,
   configKey,
+  configsEqual,
   copyModulators,
   generateCopyOps,
   getPreset,
@@ -131,6 +132,14 @@ describe("mandala presets", () => {
   it("a custom tweak matches no preset", () => {
     expect(matchPreset(cfg({ fold: 4, flip: true, echo: true }))).toBeNull();
     expect(getPreset("mandala")?.config.mirror).toBe(true);
+  });
+});
+
+describe("configsEqual (user-preset matching)", () => {
+  it("is true only when all seven primitives match", () => {
+    expect(configsEqual(cfg({ fold: 4, invert: true }), cfg({ fold: 4, invert: true }))).toBe(true);
+    expect(configsEqual(cfg({ fold: 4, invert: true }), cfg({ fold: 4, echo: true }))).toBe(false);
+    expect(configsEqual(cfg({ fold: 4, staggerSteps: 1 }), cfg({ fold: 4, staggerSteps: 2 }))).toBe(false);
   });
 });
 

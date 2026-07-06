@@ -193,10 +193,15 @@ export class TunnelViewController {
     this.speed = c.speed;
   }
 
-  /** Select a curated mandala preset (the primary surface). */
+  /** Select a curated built-in mandala preset (the primary surface). */
   applyPreset(id: string): void {
     const p = getPreset(id);
     if (p) this.#setConfig(p.config);
+  }
+
+  /** Apply a raw config (a saved user preset). */
+  applyConfig(cfg: TunnelConfig): void {
+    this.#setConfig(cfg);
   }
 
   /** Apply a generator change (fold/mirror/flip) clamped to the live budget so a

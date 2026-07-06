@@ -37,7 +37,8 @@
   import type { ViewerPlaybackState } from "../domain/viewer-prop-groups";
   import type { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
   import type { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
-  import { FOLD_OPTIONS, TUNNEL_PRESETS } from "../tunnel/tunnel-config";
+  import { FOLD_OPTIONS, TUNNEL_PRESETS, configsEqual } from "../tunnel/tunnel-config";
+  import { tunnelUserPresets } from "../tunnel/tunnel-user-presets.svelte";
   import type {
     PlaybackMode,
     StepPlaybackStepSize,
@@ -112,6 +113,22 @@
   // Tunnel: presets are the primary surface; the primitive tuner is a secondary
   // surface behind "Customize". `tuneOpen` swaps between them.
   let tuneOpen = $state(false);
+  // Save-as-preset flow (in the tuner, when the config is a custom look).
+  let savingPreset = $state(false);
+  let presetName = $state("");
+
+  // The saved user preset matching the live config (lights its card), and whether
+  // the live config is a genuinely custom look (no built-in AND no saved match).
+  const activeUserId = $derived(
+    tunnelUserPresets.presets.find((p) => configsEqual(p.config, controller.config))?.id ?? null,
+  );
+  const isCustom = $derived(controller.activePresetId === null && activeUserId === null);
+
+  function saveCurrentPreset(): void {
+    tunnelUserPresets.add(presetName, controller.config);
+    presetName = "";
+    savingPreset = false;
+  }
 
   // Fold options for the segmented control (SegmentedControl is string-generic,
   // so map the arm counts to string values).
@@ -242,13 +259,38 @@
               <span>{p.name}</span>
             </button>
           {/each}
+          <!-- Saved user presets: your personal library, each deletable. -->
+          {#each tunnelUserPresets.presets as up (up.id)}
+            <div class="preset-card-wrap">
+              <button
+                class="preset-card user"
+                class:active={activeUserId === up.id}
+                type="button"
+                role="radio"
+                aria-checked={activeUserId === up.id}
+                onclick={() => controller.applyConfig(up.config)}
+              >
+                <i class="fas fa-star" aria-hidden="true"></i>
+                <span>{up.name}</span>
+              </button>
+              <button
+                class="preset-del"
+                type="button"
+                aria-label={`Delete preset ${up.name}`}
+                title="Delete preset"
+                onclick={() => tunnelUserPresets.remove(up.id)}
+              >
+                <i class="fas fa-xmark" aria-hidden="true"></i>
+              </button>
+            </div>
+          {/each}
           <!-- Custom card: lit when the config matches no preset; opens the tuner. -->
           <button
             class="preset-card"
-            class:active={controller.activePresetId === null}
+            class:active={isCustom}
             type="button"
             role="radio"
-            aria-checked={controller.activePresetId === null}
+            aria-checked={isCustom}
             onclick={() => (tuneOpen = true)}
           >
             <i class="fas fa-sliders" aria-hidden="true"></i>
@@ -350,6 +392,43 @@
           </div>
           <span class="prim-count">{controller.propCount} props</span>
         </div>
+
+        <!-- Save the current mix as a personal preset (only when it's a genuinely
+             custom look — matching a built-in or saved one needs no save). -->
+        {#if isCustom}
+          {#if savingPreset}
+            <div class="save-row">
+              <input
+                class="save-input"
+                type="text"
+                bind:value={presetName}
+                maxlength="40"
+                placeholder="Name this mandala"
+                aria-label="Preset name"
+              />
+              <button class="save-confirm" type="button" onclick={saveCurrentPreset}>Save</button>
+              <button
+                class="save-cancel"
+                type="button"
+                aria-label="Cancel save"
+                onclick={() => (savingPreset = false)}
+              >
+                <i class="fas fa-xmark" aria-hidden="true"></i>
+              </button>
+            </div>
+          {:else}
+            <button
+              class="save-preset-btn"
+              type="button"
+              onclick={() => {
+                savingPreset = true;
+                presetName = "";
+              }}
+            >
+              <i class="fas fa-star" aria-hidden="true"></i> Save as preset
+            </button>
+          {/if}
+        {/if}
       {/if}
 
       {#if controller.heavyLoad}
@@ -781,6 +860,100 @@
     gap: 6px;
   }
   .prim-chip-grid :global(.filter-chip) { width: 100%; justify-content: center; }
+
+  /* Saved user preset: the select card + a full-height delete column on the
+     right (44px tall touch target). */
+  .preset-card-wrap { position: relative; display: flex; }
+  .preset-card-wrap .preset-card { flex: 1; min-width: 0; padding-right: 34px; }
+  .preset-del {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 0 10px 10px 0;
+    background: transparent;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .preset-del:hover,
+  .preset-del:focus-visible {
+    background: color-mix(in srgb, var(--semantic-danger, #ef4444) 18%, transparent);
+    color: var(--semantic-danger, #ef4444);
+  }
+  .preset-del:focus-visible { outline: 2px solid var(--semantic-danger, #ef4444); outline-offset: -2px; }
+  .preset-del i { font-size: 11px; }
+
+  /* Save-as-preset: a dashed CTA that becomes a name row. */
+  .save-preset-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    padding: 8px 14px;
+    border: 1.5px dashed color-mix(in srgb, var(--theme-accent) 45%, transparent);
+    border-radius: 10px;
+    background: transparent;
+    color: var(--theme-accent);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+  .save-preset-btn:hover {
+    background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 65%, transparent);
+  }
+  .save-preset-btn:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 2px; }
+
+  .save-row { display: flex; align-items: center; gap: 6px; }
+  .save-input {
+    flex: 1;
+    min-width: 0;
+    min-height: var(--min-touch-target, 44px);
+    padding: 6px 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 9px;
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-sm, 0.875rem);
+  }
+  .save-input::placeholder { color: var(--theme-text-dim, rgba(255, 255, 255, 0.4)); }
+  .save-input:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 1px; }
+  .save-confirm {
+    flex: 0 0 auto;
+    min-height: var(--min-touch-target, 44px);
+    padding: 6px 14px;
+    border: 1.5px solid var(--theme-accent);
+    border-radius: 9px;
+    background: var(--theme-accent);
+    color: var(--theme-text-on-accent, #fff);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .save-cancel {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    border-radius: 9px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    color: inherit;
+    cursor: pointer;
+  }
+  .save-confirm:focus-visible,
+  .save-cancel:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 2px; }
 
   /* Compact icon toggle for the grid — a small square, keeping the 44px floor. */
   .grid-toggle {

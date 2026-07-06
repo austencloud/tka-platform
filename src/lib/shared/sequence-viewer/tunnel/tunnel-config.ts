@@ -208,7 +208,8 @@ export const TUNNEL_PRESETS: TunnelPreset[] = [
   { id: "cross", name: "Cross", icon: "fas fa-plus", config: { ...DEFAULT_CONFIG, fold: 2, mirror: true } },
 ];
 
-function eqConfig(a: TunnelConfig, b: TunnelConfig): boolean {
+/** Structural equality of two configs (all seven primitives). */
+export function configsEqual(a: TunnelConfig, b: TunnelConfig): boolean {
   return (
     a.fold === b.fold &&
     a.mirror === b.mirror &&
@@ -220,9 +221,9 @@ function eqConfig(a: TunnelConfig, b: TunnelConfig): boolean {
   );
 }
 
-/** The preset id whose config exactly matches `cfg`, or null (a custom tweak). */
+/** The built-in preset id whose config exactly matches `cfg`, or null. */
 export function matchPreset(cfg: TunnelConfig): string | null {
-  return TUNNEL_PRESETS.find((p) => eqConfig(p.config, cfg))?.id ?? null;
+  return TUNNEL_PRESETS.find((p) => configsEqual(p.config, cfg))?.id ?? null;
 }
 
 export function getPreset(id: string): TunnelPreset | undefined {
