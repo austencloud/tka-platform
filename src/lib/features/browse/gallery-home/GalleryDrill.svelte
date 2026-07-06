@@ -1675,6 +1675,12 @@
       grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
       gap: 0.8rem;
     }
+    /* Groups of exactly 6 (the six T&D families, a 6-tile mini-grid) square
+       up as 3x2 — a 4+2 ragged break reads as an accident, not a set. */
+    .value-list:has(> :nth-child(6):last-child),
+    .mini-grid:has(> :nth-child(6):last-child) {
+      grid-template-columns: repeat(3, 1fr);
+    }
 
     /* Levels: three monument columns — the numeral and gradient carry the
        screen the way the difficulty badges carry the cards. */
@@ -1786,6 +1792,12 @@
     .value-list {
       grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
       gap: 1rem;
+    }
+    /* Exactly-6 rule again at this tier — the wider auto-fill would break
+       the six families 4+2. */
+    .value-list:has(> :nth-child(6):last-child),
+    .mini-grid:has(> :nth-child(6):last-child) {
+      grid-template-columns: repeat(3, 1fr);
     }
     .level-tile {
       min-height: 290px;
