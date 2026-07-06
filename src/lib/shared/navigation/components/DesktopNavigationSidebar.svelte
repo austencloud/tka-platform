@@ -154,7 +154,26 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     hoverIntent.pointerEnter();
   }
 
-  function handleSidebarPointerLeave() {
+  function handleSidebarPointerLeave(e: PointerEvent) {
+    // Tab clicks navigate, and navigation runs a view transition that lifts a
+    // ::view-transition overlay over the sidebar for a few hundred ms. The
+    // sidebar is now "covered", so the browser fires a pointerleave even though
+    // the cursor never moved off it — then a pointerenter when the overlay
+    // clears. Left unguarded, that closes and instantly reopens the overlay (a
+    // visible flicker). Only treat it as a real leave if the pointer is
+    // actually outside the sidebar's box; a spurious leave reports coordinates
+    // still inside it, so ignore those and keep the overlay open until the
+    // pointer genuinely moves away.
+    const el = sidebarElement;
+    if (el) {
+      const r = el.getBoundingClientRect();
+      const stillInside =
+        e.clientX > r.left &&
+        e.clientX < r.right &&
+        e.clientY > r.top &&
+        e.clientY < r.bottom;
+      if (stillInside) return;
+    }
     pointerInside = false;
     if (!hoverExpanded) {
       hoverIntent.cancel();
