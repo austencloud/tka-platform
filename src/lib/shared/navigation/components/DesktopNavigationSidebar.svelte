@@ -213,6 +213,41 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     }
   });
 
+  // Stuck-open backstop. The element pointerleave above is deliberately
+  // swallowed while a ::view-transition overlay covers the sidebar (so a tab
+  // click doesn't flicker it shut). But if the pointer genuinely moves away
+  // DURING that transition, the covered nav never fires a second leave — the
+  // real exit was already consumed — so hoverExpanded would hang open until the
+  // next enter/leave cycle. While the overlay is open, track the pointer
+  // globally and reconcile pointerInside from its true position; the close
+  // $effect above then re-arms on its own. Heals on the very next move.
+  function reconcilePointerFromMove(e: PointerEvent) {
+    const el = sidebarElement;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    const inside =
+      e.clientX >= r.left &&
+      e.clientX <= r.right &&
+      e.clientY >= r.top &&
+      e.clientY <= r.bottom;
+    if (inside === pointerInside) return;
+    pointerInside = inside;
+    if (inside) {
+      hoverIntent.pointerEnter(); // cancel a pending close; overlay already open
+    } else if (!holdOpen && !focusInside) {
+      hoverIntent.pointerLeave(); // start the close grace
+    }
+  }
+
+  $effect(() => {
+    if (!hoverExpanded) return;
+    window.addEventListener("pointermove", reconcilePointerFromMove, {
+      passive: true,
+    });
+    return () =>
+      window.removeEventListener("pointermove", reconcilePointerFromMove);
+  });
+
   function toggleAccountPopover() {
     accountPopoverOpen = !accountPopoverOpen;
   }
