@@ -187,6 +187,9 @@ class CollectionsState {
 	 * alone. Returns false when the write fails (manager toasts).
 	 */
 	async setPublic(collectionId: string, isPublic: boolean): Promise<boolean> {
+		// Smart collections are private-only in v1 — refuse publishing them.
+		const c = this.collections.find((col) => col.id === collectionId);
+		if (c?.kind === "smart") return false;
 		try {
 			await updateCollection(collectionId, { isPublic });
 			return true;

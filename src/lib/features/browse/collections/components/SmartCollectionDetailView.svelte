@@ -8,7 +8,7 @@ the shared BrowsePanel renders the result. The rule shows as chips in the
 header; "Edit rule" reopens the builder to change it.
 -->
 <script lang="ts">
-	import { onMount } from "svelte";
+	import { onMount, untrack } from "svelte";
 	import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 	import { subscribeToCollection } from "$lib/shared/library/services/collection-manager";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
@@ -34,7 +34,6 @@ header; "Edit rule" reopens the builder to change it.
 	} = $props();
 
 	let collection = $state<LibraryCollection | null>(null);
-	let firstSnapshotSeen = $state(false);
 
 	const tileColor = $derived(collection?.color ?? "var(--theme-accent)");
 	const spec = $derived(collection?.filterSpec ?? null);
@@ -48,11 +47,9 @@ header; "Edit rule" reopens the builder to change it.
 	// reflects here. A deleted (or non-smart) doc bails to the list.
 	$effect(() => {
 		const id = collectionId;
-		firstSnapshotSeen = false;
 		collection = null;
 
 		const unsubscribe = subscribeToCollection(id, (col) => {
-			firstSnapshotSeen = true;
 			if (!col || col.kind !== "smart") {
 				onBack();
 				return;
@@ -71,21 +68,25 @@ header; "Edit rule" reopens the builder to change it.
 	});
 	$effect(() => {
 		const s = spec;
-		void specSignature; // track
+		void specSignature; // re-run when the rule content changes
 		if (!s) return;
-		if (!engine) {
-			engine = createBrowseEngine({
-				persistKey: null,
-				initialSource: s.source,
-				sources: [s.source],
-				minColumns: 2,
-			});
-			applySpecToEngine(engine, s);
-			void engine.initialize();
-		} else {
+		untrack(() => {
+			if (!engine) {
+				engine = createBrowseEngine({
+					persistKey: null,
+					initialSource: s.source,
+					minColumns: 2,
+				});
+				applySpecToEngine(engine, s);
+				void engine.initialize();
+				return;
+			}
+			if (engine.source !== s.source) {
+				void engine.setSource(s.source);
+			}
 			engine.clearUserFilters();
 			applySpecToEngine(engine, s);
-		}
+		});
 	});
 
 	// ── Options menu (rename / edit rule / delete) ──────────────────────────

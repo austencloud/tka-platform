@@ -81,21 +81,26 @@ first and only removes the folder — the sequences inside stay in the library.
 				renaming = true;
 			},
 		},
-		{
-			id: "visibility",
-			label: collection.isPublic ? "Make private" : "Make public",
-			icon: collection.isPublic ? "fa-lock" : "fa-globe",
-			async action() {
-				menuState = { open: false };
-				const ok = await collectionsState.setPublic(
-					collection.id,
-					!collection.isPublic,
-				);
-				// The Community feed caches for the session; publishing has to show
-				// up there the moment the user flips over to look.
-				if (ok) communityCollectionsState.invalidate();
-			},
-		},
+		// Smart collections are private-only in v1 — no publish action.
+		...(isSmart
+			? []
+			: [
+					{
+						id: "visibility",
+						label: collection.isPublic ? "Make private" : "Make public",
+						icon: collection.isPublic ? "fa-lock" : "fa-globe",
+						async action() {
+							menuState = { open: false };
+							const ok = await collectionsState.setPublic(
+								collection.id,
+								!collection.isPublic,
+							);
+							// The Community feed caches for the session; publishing has to show
+							// up there the moment the user flips over to look.
+							if (ok) communityCollectionsState.invalidate();
+						},
+					},
+				]),
 		{ type: "separator" } as ContextMenuEntry,
 		{
 			id: "delete",

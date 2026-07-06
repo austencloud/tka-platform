@@ -308,11 +308,13 @@ instead of showing an empty shell.
 			{#if railSelection.id === "all" && !railSelection.ownerId}
 				<AllLibraryView />
 			{:else if isOwnSmart(railSelection.id, railSelection.ownerId)}
-				<SmartCollectionDetailView
-					collectionId={railSelection.id}
-					onBack={backToList}
-					showBack={false}
-				/>
+				{#key railSelection.id}
+					<SmartCollectionDetailView
+						collectionId={railSelection.id}
+						onBack={backToList}
+						showBack={false}
+					/>
+				{/key}
 			{:else}
 				<CollectionDetailView
 					collectionId={railSelection.id}
@@ -328,7 +330,9 @@ instead of showing an empty shell.
 	{#if detail.id === "all" && !detail.ownerId}
 		<AllLibraryView onBack={backToList} />
 	{:else if isOwnSmart(detail.id, detail.ownerId)}
-		<SmartCollectionDetailView collectionId={detail.id} onBack={backToList} />
+		{#key detail.id}
+			<SmartCollectionDetailView collectionId={detail.id} onBack={backToList} />
+		{/key}
 	{:else}
 		<CollectionDetailView
 			collectionId={detail.id}
