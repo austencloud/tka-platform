@@ -1,52 +1,58 @@
 <!-- Sidebar Header Component -->
-<!-- Shows "TKA Composer" branding that doubles as pin/collapse toggle -->
+<!-- Brand wordmark doubles as a HOME link; a separate pin button locks/unlocks. -->
 <script lang="ts">
-  import Crossfade from "$lib/shared/components/Crossfade.svelte";
-  import { DURATION } from "$lib/shared/transitions/transitions";
-
   // rail: compact "TKA" mark (not hovered, not pinned)
-  // hover: overlay-expanded — clicking PINS the sidebar open
-  // pinned: classic push layout — clicking collapses back to the rail
+  // hover: overlay-expanded — the pin button PINS the sidebar open
+  // pinned: classic push layout — the pin button collapses back to the rail
   let { mode, onToggleCollapse } = $props<{
     mode: "rail" | "hover" | "pinned";
     onToggleCollapse: () => void;
   }>();
 
-  const actionLabel = $derived(
-    mode === "pinned"
-      ? "Collapse sidebar to rail"
-      : mode === "hover"
-        ? "Pin sidebar open"
-        : "Expand sidebar"
-  );
+  const expanded = $derived(mode !== "rail");
 
-  // Rail shows the compact mark, expanded the full wordmark — same typography
-  // in both (see .brand-mark) so only the letters change. The Crossfade
-  // dissolves "TKA" ↔ "TKA Composer" instead of a hard swap that also flipped
-  // font-size/weight (the finicky jump).
-  const brandLabel = $derived(mode === "rail" ? "TKA" : "TKA Composer");
+  // The pin button only acts in the expanded states (hover reveals it, pinned
+  // collapses back). Its label reflects which.
+  const pinLabel = $derived(
+    mode === "pinned" ? "Collapse sidebar to rail" : "Pin sidebar open"
+  );
 </script>
 
 <div class="sidebar-header">
+  <a class="brand-home" href="/" aria-label="TKA Composer — go to home">
+    <!-- "TKA" is solid and slides; "Composer" reveals + fades beside it. The
+         reveal is a 0fr→1fr grid column (content-width, no measured magic
+         numbers), so as it grows the centered wordmark re-balances and TKA
+         glides while Composer wipes in. TKA is never faded. -->
+    <span class="brand" class:expanded>
+      <span class="brand-tka">TKA</span><span class="brand-rest"
+        ><span class="brand-rest-text">&nbsp;Composer</span></span
+      >
+    </span>
+  </a>
+
+  <!-- Pin/lock: the only way to pin now that the brand navigates home. Always
+       mounted and absolutely placed, so revealing it never shifts the brand. -->
   <button
-    class="brand-toggle"
+    class="pin-toggle"
+    class:visible={expanded}
+    class:pinned={mode === "pinned"}
     onclick={onToggleCollapse}
-    aria-label={actionLabel}
-    title={actionLabel}
+    aria-label={pinLabel}
+    title={pinLabel}
+    tabindex={expanded ? 0 : -1}
+    aria-hidden={!expanded}
   >
-    <Crossfade key={brandLabel} duration={DURATION.emphasis}>
-      <span class="brand-mark">{brandLabel}</span>
-    </Crossfade>
-    {#if mode === "hover"}
-      <i class="fas fa-thumbtack toggle-icon pin-visible" aria-hidden="true"></i>
-    {:else if mode === "pinned"}
-      <i class="fas fa-chevron-left toggle-icon" aria-hidden="true"></i>
-    {/if}
+    <i
+      class="fas {mode === 'pinned' ? 'fa-chevron-left' : 'fa-thumbtack'}"
+      aria-hidden="true"
+    ></i>
   </button>
 </div>
 
 <style>
   .sidebar-header {
+    position: relative;
     border-bottom: 1px solid var(--theme-stroke);
     background: linear-gradient(
       135deg,
@@ -56,7 +62,6 @@
     );
     display: flex;
     flex-direction: column;
-    position: relative;
   }
 
   .sidebar-header::before {
@@ -75,49 +80,46 @@
     );
   }
 
-  .brand-toggle {
+  /* Brand = home link. Fixed 44px box so the "TKA"↔"TKA Composer" change never
+     alters the header height (border-box + varying glyphs otherwise nudged it
+     ~1px). Centered so the wordmark balances in the expanded panel AND "TKA"
+     sits on the x=32 rail anchor when collapsed — which is what lets it slide. */
+  .brand-home {
     width: 100%;
-    /* Fixed height, not min-height: the label swaps "TKA" (1.1rem) in rail for
-       "TKA Composer" (1.05rem) on expand. Under border-box the taller rail glyph
-       + 12px padding pushed the box ~1px past the 44px floor, so the header was
-       ~1px taller in rail and collapsed upward on expand (the itsy-bitsy shift).
-       A constant box removes it — the text fits well within 44px. No-layout-shift. */
     height: var(--min-touch-target);
-    min-height: var(--min-touch-target);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 12px 14px;
-    background: transparent;
-    border: none;
     color: var(--theme-text);
+    text-decoration: none;
     cursor: pointer;
-    transition: background var(--duration-normal) ease;
-    position: relative;
     overflow: hidden;
+    transition: background var(--duration-normal) ease;
   }
 
-  .brand-toggle:hover {
+  .brand-home:hover {
     background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
   }
 
-  .brand-toggle:active {
+  .brand-home:active {
     background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
   }
 
-  .brand-toggle:focus-visible {
+  .brand-home:focus-visible {
     outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
     outline-offset: -2px;
   }
 
-  /* One typographic treatment for BOTH "TKA" and "TKA Composer" (was 1.1rem/800
-     rail vs 1.05rem/700 expanded — the size+weight flip the user saw as a font
-     change). Only the letters differ now; the Crossfade dissolves between them. */
-  .brand-mark {
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    white-space: nowrap;
+    /* One typographic treatment for BOTH words — same size/weight/gradient, so
+       nothing changes font mid-transition (the old finicky swap). */
     font-size: 1.05rem;
     font-weight: 800;
     letter-spacing: 0.02em;
-    white-space: nowrap;
     background: linear-gradient(
       135deg,
       var(--theme-text) 0%,
@@ -128,34 +130,85 @@
     background-clip: text;
   }
 
-  .toggle-icon {
-    position: absolute;
-    right: 12px;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim);
+  /* "Composer" sits in a grid column that animates 0fr → 1fr: a content-width
+     reveal, no measured widths. overflow:hidden on the item wipes it; opacity
+     fades it. TKA is never faded — it just re-centers as the column grows. */
+  .brand-rest {
+    display: inline-grid;
+    grid-template-columns: 0fr;
+    transition: grid-template-columns var(--duration-emphasis)
+      var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+  }
+
+  .brand.expanded .brand-rest {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-rest-text {
+    min-width: 0;
+    overflow: hidden;
     opacity: 0;
+    transition: opacity var(--duration-normal) ease;
+  }
+
+  .brand.expanded .brand-rest-text {
+    opacity: 1;
+  }
+
+  /* Pin/lock button — absolute so it never participates in the brand's layout.
+     Hidden and untabbable in the rail; revealed in hover/pinned. */
+  .pin-toggle {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
     transition:
       opacity var(--duration-normal) ease,
-      transform var(--duration-normal) ease;
+      background var(--duration-normal) ease,
+      color var(--duration-normal) ease;
   }
 
-  .brand-toggle:hover .toggle-icon {
-    opacity: 1;
-  }
-
-  /* Pin affordance in hover-overlay mode is always visible — it is the only
-     discoverable path to pinning, so it cannot hide behind another hover. */
-  .toggle-icon.pin-visible {
+  .pin-toggle.visible {
     opacity: 0.7;
+    pointer-events: auto;
   }
 
-  .brand-toggle:hover .toggle-icon.pin-visible {
+  .pin-toggle.visible:hover {
     opacity: 1;
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+    color: var(--theme-text);
+  }
+
+  /* Pinned chevron reads as the active/locked state — full strength, accent. */
+  .pin-toggle.pinned {
+    opacity: 0.9;
+    color: var(--theme-accent);
+  }
+
+  .pin-toggle:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent) 70%, transparent);
+    outline-offset: 1px;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .brand-toggle,
-    .toggle-icon {
+    .brand-home,
+    .brand-rest,
+    .brand-rest-text,
+    .pin-toggle {
       transition: none !important;
     }
   }
