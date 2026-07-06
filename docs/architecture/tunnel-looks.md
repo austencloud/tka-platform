@@ -1,133 +1,131 @@
-# Tunnel Looks — the kaleidoscope symmetry engine
+# Tunnel Primitives — the kaleidoscope symmetry engine
 
-Status: accepted (2026-07-06). Supersedes the `fold` + `mirror` tunnel config.
+Status: accepted (2026-07-06). Supersedes the named-look catalog (same date,
+morning) and, before it, the `fold` + `mirror` config. Spec:
+`docs/superpowers/specs/2026-07-06-tunnel-primitives-design.md`.
 
 ## Context
 
 The tunnel art view overlays transformed copies of the open sequence to form a
-kaleidoscope. The original model had two knobs:
+kaleidoscope. It has been modeled three ways:
 
-- `fold: 2 | 4 | 8` — number of **rotational** copies (cyclic group Cₙ).
-- `mirror: boolean` — when on, appended a mirrored copy of the **entire**
-  rotational stack (promoting Cₙ → the dihedral group Dₙ, doubling the copies).
+1. **`fold` + `mirror`** — a rotational count plus a boolean that DOUBLED the
+   whole stack into the dihedral group. Mirror was a multiplier, not a peer, so
+   `fold 2 + mirror` silently drew 8 props when 4 were expected.
+2. **Named looks** — a curated catalog (Radial, Mirror, Flip, Counter, Echo,
+   Cross, Mandala) plus two Radial-only sub-knobs. This fixed the prop-count
+   legibility but was redundant (`Radial + mirror + 4` == Mandala; Cross ==
+   `fold 2 + reflect`) and re-introduced a hidden sub-toggle. It also ceilinged
+   the real goal.
+3. **Primitives (this ADR)** — the tunnel is a *study rig*: run any sequence
+   through the gamut, see its mandala every representative way. That wants an open
+   combination space, not a fixed list.
 
-Each copy draws 2 props (blue + red). So `fold 2 + mirror` produced 4 copies =
-**8 props**, when the natural expectation of "mirror" is a single reflected copy
-= 4 props. Mirror was a multiplier stacked on top of fold, not a peer
-permutation — the density exploded and the prop count was illegible.
-
-Austen (2026-07-06): *"we've treated mirrored as though it's a subtoggle applied
-on top of rotated instead of its own permutation and thusly ended up with too
-many props on the screen ... maybe what you need to be able to do is apply a
-specific transformation upon each individual performer."*
+Austen (2026-07-06): *"reduce all of the variables and parameters down to their
+most reasonably sized minimum primitive so that you can construct them through the
+combination of multiple without much domain knowledge."*
 
 ## Decision
 
-Model the tunnel as a **look**: the always-drawn base plus an explicit,
-hand-curated list of extra copies. Each copy is an ordered chain of transform
-ops. On-screen prop count is exactly `(copies.length + 1) * 2` — nothing
-multiplies behind the scenes.
+Model the tunnel as a **closed primitive vocabulary**. The always-drawn base plus
+a set of copies *generated* from an orthogonal `TunnelConfig`. No named looks.
 
 ```ts
-// tunnel-looks.ts
-type CopyOp =
-  | { kind: "rotate"; amount: number } // 45° units → rotateSequence
-  | { kind: "mirror" }                 // → mirrorSequence
-  | { kind: "flip" }                   // → flipSequence
-  | { kind: "invert" }                 // → invertSequence (counter-rotation)
-  | { kind: "colorSwap" }              // → colorSwapSequence
-  | { kind: "rewind" };                // → rewindSequence
-
-interface TunnelLook { id: string; name: string; icon: string; copies: CopyOp[][]; }
+// tunnel-config.ts
+interface TunnelConfig {
+  fold: 1 | 2 | 4 | 8;   // rotational arms (cyclic order)
+  mirror: boolean;       // reflect across vertical axis
+  flip: boolean;         // reflect across horizontal axis (N↔S)
+  counter: boolean;      // alternate arms motion-invert (PRO↔ANTI)
+  echo: boolean;         // alternate arms time-reverse
+  staggerSteps: number;  // arm k shows the sequence offset by k×this (0 = off)
+  speed: boolean;        // alternate arms traverse at ½× / 2×
+}
 ```
 
-`buildTunnelLayers(base, look)` folds each op chain onto the base via the
-canonical `sequence-transforms.ts` functions. **No new transform math** — the
-engine is pure composition over the transforms that already exist. Ops compose
-in order (rotate-then-mirror ≠ mirror-then-rotate).
+### Two kinds of primitive
 
-"Mirror" is now `copies: [[mirror]]` → 4 props. "Pinwheel" (the old fold 4) is
-`[[rot2],[rot4],[rot6]]` → 8 props. Every symmetry — rotation, reflection,
-motion inversion, time reversal, color swap — is a first-class peer, and dense
-mandalas are curated copy lists rather than an accidental group closure.
+**Symmetry generators** — `fold`, `mirror`, `flip` — grow the copy SET by group
+closure. Spatial; baked once at build via `sequence-transforms.ts`. Image count =
+`fold × (mirror?2:1) × (flip?2:1)`. Grid = 8 points (45° steps), so 2/4/8-fold are
+representable; 3/6-fold are not.
 
-## The catalog
+**Per-copy modulators** — `counter`, `echo`, `stagger`, `speed` — add NO copies;
+they make arms differ from each other (a uniform modulator is a no-op — invert the
+whole ring and it's the same ring). Distributed so adjacent arms contrast:
 
-Curated by eye at `/test/tunnel-looks` (a judging gallery rendering the real
-kaleidoscope for every candidate on one playhead). Per
-`effects-earn-their-slot.md`, each look must uniquely visualize a symmetry no
-other look covers.
+- `counter` / `echo` are **baked** — they append `invert` / `rewind` to alternate
+  arms (odd arm index).
+- `stagger` / `speed` are **sample-time** — a per-copy playhead shift
+  (`beat' = beat × speed + offset`, wrapped) so a staggered arm shows a different
+  moment (a canon) and a sped arm overlays a second tempo. Tweaking them never
+  re-bakes the transforms.
 
-| Look | copies | props | uniquely visualizes |
-|---|---|---|---|
-| Radial | `[rot…]` per arm count | 4 / 8 / 16 | N-fold rotation, arm count tunable (2/4/8) |
-| Mirror | `[mirror]` | 4 | reflection across the vertical axis |
-| Flip | `[flip]` | 4 | reflection N↔S |
-| Counter | `[invert]` | 4 | counter-rotating overlay (PRO↔ANTI, CW↔CCW) |
-| Echo | `[rewind]` | 4 | time-reversed copy |
-| Cross | `[mirror],[flip],[rot4]` | 8 | dihedral D₂ (both reflection axes) |
-| Mandala | 4-fold rot × mirror | 16 | curated D₄ |
+`generateCopyOps(cfg)` returns the baked op-chains (depends on the generators +
+baked modulators only). `copyModulators(cfg)` returns the sample-time
+`{ staggerSteps, speed }` per copy, aligned index-for-index. `buildTunnelLayers`
+bakes the former; the sampler (`sampleTunnelProps(seq, step, ease?, offset?,
+speed?)`) applies the latter. **No new transform math** — pure composition over
+the transforms that already exist.
 
-Grid = 8 points (45° steps), so only 2/4/8-fold rotation is representable;
-3/6-fold are not.
+## Prop-count budget
 
-**Radial** is a density-tunable look: the old Duo (2-fold) / Pinwheel (4-fold) /
-Kaleidoscope (8-fold) collapse into one look whose arm count is a tuner stepper
-(`DensitySpec.build` generates the copy list from the count). It also carries a
-**Mirror** toggle (`DensitySpec.mirrorable`): off = pure rotation, on = the
-dihedral reflection copies (rotational → Mandala-style). Mirror is an explicit,
-opt-in, default-off control — NOT the old hidden always-on multiplier that caused
-the original prop explosion. Because reflection doubles the copies, mirror-on is
-capped to `maxMirrorArms` (4 → 16 props; 8 mirrored would be 32, visual mush).
+Modulators are free (no new copies); only `fold`/`mirror`/`flip` grow the count.
 
-**Mandala** is kept as its own named tile even though `Radial + mirror + 4 arms`
-renders the same D₄ — the tile is the one-tap "give me the fancy one," the toggle
-is the tunable path. A small, deliberate overlap.
+- **Live dock:** hard ceiling `MAX_IMAGES = 16` (32 props). Enabling a generator
+  that would exceed it walks `fold` down (`clampConfig`); the live prop-count
+  readout makes the clamp visible — no silent lie. Reduced motion drops the
+  ceiling to `MAX_IMAGES_RM = 4`. `heavyLoad` warns at ≥16 props.
+- **Playground (`/test/tunnel-looks`):** NO cap — it studies the full gamut
+  (incl. 64-prop monsters). The separation is deliberate.
 
-**Prism** (`[colorSwap]`) was cut — colorSwap only recolors, applies no spatial
-transform, so the copy lands exactly on top of the base and the look reads as
-doing nothing. The `colorSwap` op stays a valid `CopyOp` kind; no shipped look
-uses it.
+## UI
 
-### Rejected: a figure Spin / Phase tuner
-
-A tuner that rigidly rotated the whole figure (adding a degree offset to each
-prop's `centerPathAngle` + `staffRotationAngle`) was prototyped and removed. The
-prop's `centerPathAngle` is its angle **on the 8-point grid**; nudging it off a
-grid point teleports the prop to a wrong location instead of smoothly rotating.
-Any future "spin the whole thing" must rotate the rendered output (e.g. a CSS
-transform on the stage), never perturb per-prop grid angles. Density is the only
-per-look tuner that shipped.
+The Tunnel section is the primitive controls, all top-level peers (no named
+looks): a **Fold** `SegmentedControl` `[1·2·4·8]`, a wrapping row of
+**Mirror / Flip / Counter / Echo / Speed** `FilterChipBase` toggle chips (per
+`chip-primitives.md`), a compact **Stagger** − N + stepper, the **Grid** icon
+toggle, and a live prop-count readout. No checkboxes; 44px touch floor.
 
 ## Consequences
 
-- **Prop count is legible and curated.** A look lists exactly the copies it
-  draws. No hidden doubling.
-- **Reduced motion** clamps a dense look (`propCount > 8`) to a calm one on
-  selection (`TunnelViewController.setLook`), so the highlighted choice and the
-  rendered kaleidoscope always agree — the same intent as the old fold cap.
-- **Persistence** stores `lookId`; `tunnel-view-state.ts` migrates legacy
-  `fold`/`mirror` snapshots to the nearest look.
-- **User-saved presets removed.** `tunnel-presets.ts` (name-a-look save) is
-  deleted — superseded by the built-in curated catalog. Its save UI was already
-  removed 2026-07-05.
-- **Prop sampling** was extracted to `tunnel-prop-sampling.ts` so the live
-  controller and the judging gallery derive props identically.
-- **Second consumer updated.** `PropUnlockCelebration.svelte` (prop-collection
-  reveal) now selects the `pinwheel` / `duo` looks instead of building a
-  fold/mirror config.
+- **Prop count is legible + open.** Every mandala is a config point; the count is
+  `imageCount × 2`, shown live. No hidden doubling.
+- **Fine-grained rebuild.** The controller holds `fold`/`mirror`/`flip`/`counter`/
+  `echo` as individual `$state`, so the bake effect reads only those — Stagger and
+  Speed changes recompute at sample time without re-running transforms.
+- **Persistence + migration.** `tunnel-view-state.ts` stores the config and
+  migrates every legacy shape (named looks, split radial looks, pre-looks
+  `fold`/`mirror`) → `TunnelConfig`.
+- **Second consumer updated.** `PropUnlockCelebration.svelte` builds a pure
+  rotational config (`{ fold, mirror: false }`) for the prop-collection reveal.
+
+## Rejected
+
+- **Named looks as presets.** Austen wants *away* from the named vocabulary; the
+  playground covers discoverability.
+- **Modulators that add copies.** Would explode the count and double-count the
+  symmetry. They transform existing arms instead.
+- **A figure Spin / Phase tuner** (earlier iteration) — it offset each prop's
+  `centerPathAngle` (its angle on the 8-point grid), teleporting props off their
+  grid points. Any "spin the whole thing" must rotate the rendered output (CSS
+  transform), never per-prop grid angles. Stagger is the sanctioned per-arm
+  temporal offset; it lives purely in the step domain.
 
 ## Files
 
-- `tunnel-looks.ts` — CopyOp, TunnelLook, the LOOKS catalog, propCount, RM caps.
-- `tunnel-layer-builder.ts` — `buildTunnelLayers(base, look)` + op dispatch.
-- `tunnel-prop-sampling.ts` — shared per-copy prop derivation.
-- `tunnel-view-controller.svelte.ts` — `lookId` state, `activeLook`, `setLook`.
+- `tunnel-config.ts` — `TunnelConfig`, `CopyOp`, `generateCopyOps`,
+  `copyModulators`, `generateCopies`, `imageCount`/`propCount`, `clampConfig`,
+  `configKey`, RM budgets.
+- `tunnel-layer-builder.ts` — `buildTunnelLayers(base, cfg)` + op dispatch.
+- `tunnel-prop-sampling.ts` — shared sampler with `offset` + `speed`.
+- `tunnel-view-controller.svelte.ts` — config `$state`, setters, clamp, `configKey`.
 - `tunnel-view-state.ts` — persistence + legacy migration.
-- `ArtSettingsPanel.svelte` — the Look grid (single-select icon tiles).
-- `routes/test/tunnel-looks/` — the judging gallery.
+- `ArtSettingsPanel.svelte` — the primitive controls.
+- `routes/test/tunnel-looks/` — the primitive sweep gallery.
 
 ## Related
 
-- `never-hand-roll.md` (reuses `sequence-transforms.ts`), `effects-earn-their-slot.md`
-- `crossfade-primitive.md`, `sequence-viewer-shell.md` (same anti-drift playbook)
+- `never-hand-roll.md` (reuses `sequence-transforms.ts`), `chip-primitives.md`,
+  `no-checkboxes.md`, `no-layout-shift.md`, `effects-earn-their-slot.md`,
+  `visualization-routing.md`, `crossfade-primitive.md`, `sequence-viewer-shell.md`.

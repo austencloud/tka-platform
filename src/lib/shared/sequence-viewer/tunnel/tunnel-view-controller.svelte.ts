@@ -155,6 +155,13 @@ export class TunnelViewController {
   /** Stable signature (export filename suffix + build dedup). */
   configKey = $derived(configKey(this.config));
 
+  /** Compat shim: ArtPane reads `activeLook.id` for the export-filename suffix.
+   *  The named-look era is gone; the config signature is the stable key now.
+   *  TODO: migrate ArtPane to `controller.configKey` and delete this. */
+  get activeLook(): { id: string } {
+    return { id: this.configKey };
+  }
+
   /** Largest stagger offset that reads on the current sequence (its length − 1;
    *  a full-length offset wraps back to 0). A getter (not a `$derived` field) so
    *  it doesn't touch `#sources` during field initialization; still reactive when

@@ -1,24 +1,47 @@
 <!--
-  Tunnel LOOKS — judging gallery.
+  Tunnel Primitives — sweep gallery.
 
-  Renders the REAL kaleidoscope (buildTunnelLayers + AnimatorCanvas + the shared
-  prop sampler) for every candidate look in `tunnel-looks.ts`, side by side on
-  one shared playhead. This is the curation surface: pick which looks ship by
-  eye, at real prop density, instead of naming symmetry combos blind.
+  Renders the REAL kaleidoscope (buildTunnelLayers + copyModulators +
+  AnimatorCanvas + the shared prop sampler) for a matrix of primitive configs,
+  side by side on one shared playhead. This is the study rig: run any sequence
+  through the gamut and see how each primitive (fold / mirror / flip / counter /
+  echo / stagger / speed) and their combinations read at real prop density.
 
   Not feature code — a visual judge. One generated sample sequence, no persisted
-  state. Per the project's visualization-routing rule: real components in a test
-  page, not a hand-rolled mockup.
+  state, NO prop-count cap (the live dock caps; the gamut here does not). Per the
+  project's visualization-routing rule: real components in a test page.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import LookCell from "./LookCell.svelte";
-  import { LOOKS } from "$lib/shared/sequence-viewer/tunnel/tunnel-looks";
+  import { DEFAULT_CONFIG, type TunnelConfig } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
   import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { DifficultyLevel } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+
+  const cfg = (over: Partial<TunnelConfig>): TunnelConfig => ({ ...DEFAULT_CONFIG, ...over });
+
+  // The sweep: one axis at a time, then a few combinations, so each primitive's
+  // contribution is legible against its neighbors.
+  const SWEEP: { label: string; config: TunnelConfig }[] = [
+    { label: "Fold 1", config: cfg({ fold: 1 }) },
+    { label: "Fold 2", config: cfg({ fold: 2 }) },
+    { label: "Fold 4", config: cfg({ fold: 4 }) },
+    { label: "Fold 8", config: cfg({ fold: 8 }) },
+    { label: "Fold 4 · Mirror", config: cfg({ fold: 4, mirror: true }) },
+    { label: "Fold 4 · Flip", config: cfg({ fold: 4, flip: true }) },
+    { label: "Fold 2 · Mirror · Flip", config: cfg({ fold: 2, mirror: true, flip: true }) },
+    { label: "Fold 4 · Counter", config: cfg({ fold: 4, counter: true }) },
+    { label: "Fold 4 · Echo", config: cfg({ fold: 4, echo: true }) },
+    { label: "Fold 4 · Stagger 1", config: cfg({ fold: 4, staggerSteps: 1 }) },
+    { label: "Fold 4 · Stagger 2", config: cfg({ fold: 4, staggerSteps: 2 }) },
+    { label: "Fold 4 · Speed", config: cfg({ fold: 4, speed: true }) },
+    { label: "Fold 8 · Mirror", config: cfg({ fold: 8, mirror: true }) },
+    { label: "Fold 4 · Mirror · Stagger 1", config: cfg({ fold: 4, mirror: true, staggerSteps: 1 }) },
+    { label: "Fold 8 · Stagger 1 · Speed", config: cfg({ fold: 8, staggerSteps: 1, speed: true }) },
+  ];
 
   let base = $state<SequenceData | null>(null);
   let status = $state("generating sample sequence…");
@@ -30,7 +53,7 @@
   let spectrum = $state(true);
   let grid = $state(false);
 
-  // Double staves are TKA's canonical prop — judge the looks on them.
+  // Double staves are TKA's canonical prop — judge the configs on them.
   const propChoices: { type: PropType; label: string }[] = [
     { type: PropType.STAFF, label: "Staff" },
     { type: PropType.SWORD, label: "Sword" },
@@ -53,7 +76,7 @@
         constraintPreset: "smooth",
       });
       base = seq;
-      status = `${LOOKS.length} looks · ${seq.steps.length}-step sample`;
+      status = `${SWEEP.length} configs · ${seq.steps.length}-step sample`;
     } catch (e) {
       errorMsg = String(e instanceof Error ? (e.stack ?? e.message) : e);
       status = "error";
@@ -79,7 +102,7 @@
 
 <div class="page">
   <header>
-    <h1>Tunnel Looks — judge</h1>
+    <h1>Tunnel Primitives — sweep</h1>
     <p class="sub">{status}</p>
   </header>
 
@@ -104,8 +127,8 @@
 
   {#if base}
     <div class="gallery">
-      {#each LOOKS as look (look.id)}
-        <LookCell {base} {look} {step} propType={propTypeStr} {spectrum} {grid} />
+      {#each SWEEP as entry (entry.label)}
+        <LookCell {base} config={entry.config} label={entry.label} {step} propType={propTypeStr} {spectrum} {grid} />
       {/each}
     </div>
   {:else if !errorMsg}

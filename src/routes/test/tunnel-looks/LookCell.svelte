@@ -4,18 +4,20 @@
   import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
   import { buildTunnelLayers } from "$lib/shared/sequence-viewer/tunnel/tunnel-layer-builder";
   import { sampleTunnelProps } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-sampling";
-  import { propCount, type TunnelLook } from "$lib/shared/sequence-viewer/tunnel/tunnel-looks";
+  import { copyModulators, propCount, type TunnelConfig } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
 
   const {
     base,
-    look,
+    config,
+    label,
     step,
     propType,
     spectrum,
     grid,
   }: {
     base: SequenceData;
-    look: TunnelLook;
+    config: TunnelConfig;
+    label: string;
     /** Shared 1-indexed fractional playhead from the page. */
     step: number;
     propType: string;
@@ -23,23 +25,26 @@
     grid: boolean;
   } = $props();
 
-  // Build this look's overlaid copies with the real engine whenever the base or
-  // look changes. Token guards a stale async resolve.
+  // Bake this config's spatial copies with the real engine whenever the base or
+  // config changes. Token guards a stale async resolve.
   let layers = $state<SequenceData[]>([]);
   let token = 0;
   $effect(() => {
     const b = base;
-    const lk = look;
+    const c = config;
     const t = ++token;
-    void buildTunnelLayers(b, lk).then((ls) => {
+    void buildTunnelLayers(b, c).then((ls) => {
       if (t === token) layers = ls;
     });
   });
 
+  // Per-copy Stagger + Speed modulators, aligned index-for-index with the layers.
+  const mods = $derived(copyModulators(config));
   const baseProps = $derived(sampleTunnelProps(base, step));
   const additionalLayers = $derived<AdditionalLayerProps[]>(
-    layers.map((seq) => {
-      const p = sampleTunnelProps(seq, step);
+    layers.map((seq, i) => {
+      const m = mods[i] ?? { staggerSteps: 0, speed: 1 };
+      const p = sampleTunnelProps(seq, step, undefined, m.staggerSteps, m.speed);
       return { blueProp: p.blue, redProp: p.red };
     }),
   );
@@ -70,8 +75,8 @@
     />
   </div>
   <div class="meta">
-    <span class="name"><i class={look.icon} aria-hidden="true"></i> {look.name}</span>
-    <span class="count">{propCount(look)} props</span>
+    <span class="name">{label}</span>
+    <span class="count">{propCount(config)} props</span>
   </div>
 </div>
 
@@ -103,19 +108,12 @@
   }
   .name {
     font-weight: 600;
-    font-size: 0.9rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-  }
-  .name i {
-    opacity: 0.8;
-    width: 1.1em;
-    text-align: center;
+    font-size: 0.82rem;
   }
   .count {
     font-size: 0.72rem;
     opacity: 0.55;
     font-variant-numeric: tabular-nums;
+    white-space: nowrap;
   }
 </style>

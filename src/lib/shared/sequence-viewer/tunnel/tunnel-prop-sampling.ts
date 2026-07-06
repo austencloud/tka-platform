@@ -12,6 +12,11 @@ const DEFAULT_PROP_STATE: PropState = { centerPathAngle: 0, staffRotationAngle: 
  * global Effort easing so every kaleidoscope copy honors the sidebar's Effort
  * preset in lockstep; the judging gallery passes none (linear).
  *
+ * `offset` (steps) and `speed` (rate) are the per-copy Stagger + Speed
+ * modulators: the effective beat is `(beat × speed) + offset`, wrapped into the
+ * sequence so a staggered/faster arm shows a different moment. Defaults (0, 1)
+ * leave the playhead untouched — identical to a plain sample.
+ *
  * Shared by {@link TunnelViewController} (live kaleidoscope) and the
  * `/test/tunnel-looks` gallery so both derive props identically.
  */
@@ -19,12 +24,23 @@ export function sampleTunnelProps(
   seq: SequenceData,
   currentStep: number,
   ease?: (progress: number) => number,
+  offset = 0,
+  speed = 1,
 ): { blue: PropState; red: PropState } {
   const steps = seq.steps ?? [];
-  if (steps.length === 0) {
+  const length = steps.length;
+  if (length === 0) {
     return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE } };
   }
-  const { idx, progress } = stepToIndexProgress(currentStep, steps.length);
+  let effStep = currentStep;
+  if (speed !== 1 || offset !== 0) {
+    // Modulate in the step domain (0-indexed beat), then wrap so the arm loops
+    // rather than clamping at the end.
+    let beat = (currentStep - 1) * speed + offset;
+    beat = ((beat % length) + length) % length;
+    effStep = beat + 1;
+  }
+  const { idx, progress } = stepToIndexProgress(effStep, length);
   const step = steps[idx];
   if (!step) return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE } };
   const eased = ease ? ease(progress) : progress;
