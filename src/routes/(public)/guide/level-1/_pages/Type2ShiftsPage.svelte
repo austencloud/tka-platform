@@ -280,8 +280,10 @@
     text-align: center;
     font-family: "Cambria", Georgia, "Times New Roman", serif;
   }
+  /* Colour-coded terms are always bold. */
   .para :global(.pu) {
     color: #6f2da8;
+    font-weight: 700;
   }
 
   /* ── Edit mode affordances ─────────────────────────────────────────────── */

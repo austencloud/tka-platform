@@ -25,12 +25,13 @@
    * side-point start / Tog-Opp from a bottom start.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import PositionGlyph from "$lib/shared/pictograph/shared/components/PositionGlyph.svelte";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
     MotionColor,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { GridMode, GridLocation, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
@@ -188,11 +189,20 @@
 
   // Left row labels at the proof's own coordinates: the α→α / β→β glyph lines
   // (dropped by the text extraction — glyph font) over the italic mode names.
-  type Label = { x: number; y: number; w: number; fs: number; t: string; i?: boolean };
+  // `pos` renders the real TKA start→end PositionGlyph instead of Greek text.
+  type Label = {
+    x: number;
+    y: number;
+    w: number;
+    fs: number;
+    t: string;
+    i?: boolean;
+    pos?: { start: GridPosition; end: GridPosition };
+  };
   let LABELS: Label[] = $state([
-    { x: 12.7, y: 168.5, w: 70.6, fs: 18, t: "α→α" },
+    { x: 12.7, y: 168.5, w: 70.6, fs: 18, t: "α→α", pos: { start: GridPosition.ALPHA1, end: GridPosition.ALPHA1 } },
     { x: 12.7, y: 190.2, w: 70.6, fs: 16, i: true, t: "Split-Same" },
-    { x: 15.3, y: 286.5, w: 65.4, fs: 18, t: "β→β" },
+    { x: 15.3, y: 286.5, w: 65.4, fs: 18, t: "β→β", pos: { start: GridPosition.BETA1, end: GridPosition.BETA1 } },
     { x: 15.3, y: 308.2, w: 65.4, fs: 16, i: true, t: "Tog-Same" },
     { x: 19.4, y: 511.6, w: 61.7, fs: 16, i: true, t: "Split-Opp" },
     { x: 21.4, y: 627.9, w: 56.5, fs: 16, i: true, t: "Tog-Opp" },
@@ -256,16 +266,24 @@
     </p>
   {/each}
 
-  <!-- Left row labels (α→α / β→β + italic mode names). -->
+  <!-- Left row labels: the α→α / β→β lines render the real TKA PositionGlyph;
+       the italic mode names stay as text. -->
   {#each LABELS as l, i (i)}
     <span
       class="label"
       class:i={l.i}
+      class:glyph={l.pos}
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `t1-label-${i}`}
       style="left:{l.x * S}px; top:{l.y * S}px; width:{l.w * S}px; font-size:{l.fs * S}px"
-      use:ptDrag={pt(`t1-label-${i}`, l.t, l)}>{l.t}</span
+      use:ptDrag={pt(`t1-label-${i}`, l.t, l)}
     >
+      {#if l.pos}
+        <svg class="pos-glyph" viewBox="360 50 230 75" role="img" aria-label={l.t} style="height:{l.fs * S}px">
+          <PositionGlyph startPosition={l.pos.start} endPosition={l.pos.end} />
+        </svg>
+      {:else}{l.t}{/if}
+    </span>
   {/each}
 </div>
 
@@ -303,12 +321,15 @@
     font-family: "Cambria", Georgia, "Times New Roman", serif;
   }
   /* Two-tone Type-1 colour code for "Dual-Shift" (matches the original guide):
-     Dual = cyan, -Shift = purple (Type-1 letter colours). */
+     Dual = cyan, -Shift = purple (Type-1 letter colours). Colour-coded terms are
+     always bold. */
   .para :global(.cy) {
     color: #36c3ff;
+    font-weight: 700;
   }
   .para :global(.pu) {
     color: #6f2da8;
+    font-weight: 700;
   }
 
   /* Left row labels — bold glyph line over italic mode name, centred in their
@@ -324,6 +345,17 @@
   .label.i {
     font-weight: 400;
     font-style: italic;
+  }
+  /* α→α / β→β render as the real TKA PositionGlyph SVG, centred in the column. */
+  .label.glyph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pos-glyph {
+    width: auto;
+    display: block;
+    overflow: visible;
   }
 
   /* ── Edit mode affordances ─────────────────────────────────────────────── */
