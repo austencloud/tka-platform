@@ -1,7 +1,10 @@
 <!-- Sidebar Header Component -->
 <!-- Shows "TKA Composer" branding that doubles as pin/collapse toggle -->
 <script lang="ts">
-  // rail: icon-only "TKA" mark (not hovered, not pinned)
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+
+  // rail: compact "TKA" mark (not hovered, not pinned)
   // hover: overlay-expanded — clicking PINS the sidebar open
   // pinned: classic push layout — clicking collapses back to the rail
   let { mode, onToggleCollapse } = $props<{
@@ -16,6 +19,12 @@
         ? "Pin sidebar open"
         : "Expand sidebar"
   );
+
+  // Rail shows the compact mark, expanded the full wordmark — same typography
+  // in both (see .brand-mark) so only the letters change. The Crossfade
+  // dissolves "TKA" ↔ "TKA Composer" instead of a hard swap that also flipped
+  // font-size/weight (the finicky jump).
+  const brandLabel = $derived(mode === "rail" ? "TKA" : "TKA Composer");
 </script>
 
 <div class="sidebar-header">
@@ -25,15 +34,13 @@
     aria-label={actionLabel}
     title={actionLabel}
   >
-    {#if mode === "rail"}
-      <span class="brand-icon">TKA</span>
-    {:else}
-      <span class="brand-text">TKA Composer</span>
-      {#if mode === "hover"}
-        <i class="fas fa-thumbtack toggle-icon pin-visible" aria-hidden="true"></i>
-      {:else}
-        <i class="fas fa-chevron-left toggle-icon" aria-hidden="true"></i>
-      {/if}
+    <Crossfade key={brandLabel} duration={DURATION.emphasis}>
+      <span class="brand-mark">{brandLabel}</span>
+    </Crossfade>
+    {#if mode === "hover"}
+      <i class="fas fa-thumbtack toggle-icon pin-visible" aria-hidden="true"></i>
+    {:else if mode === "pinned"}
+      <i class="fas fa-chevron-left toggle-icon" aria-hidden="true"></i>
     {/if}
   </button>
 </div>
@@ -103,9 +110,12 @@
     outline-offset: -2px;
   }
 
-  .brand-text {
+  /* One typographic treatment for BOTH "TKA" and "TKA Composer" (was 1.1rem/800
+     rail vs 1.05rem/700 expanded — the size+weight flip the user saw as a font
+     change). Only the letters differ now; the Crossfade dissolves between them. */
+  .brand-mark {
     font-size: 1.05rem;
-    font-weight: 700;
+    font-weight: 800;
     letter-spacing: 0.02em;
     white-space: nowrap;
     background: linear-gradient(
@@ -141,21 +151,6 @@
 
   .brand-toggle:hover .toggle-icon.pin-visible {
     opacity: 1;
-  }
-
-  .brand-icon {
-    width: 100%;
-    text-align: center;
-    font-size: 1.1rem;
-    font-weight: 800;
-    background: linear-gradient(
-      135deg,
-      var(--theme-text) 0%,
-      color-mix(in srgb, var(--theme-accent) 60%, var(--theme-text)) 100%
-    );
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
   }
 
   @media (prefers-reduced-motion: reduce) {
