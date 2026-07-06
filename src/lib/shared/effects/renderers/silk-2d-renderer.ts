@@ -1,6 +1,7 @@
 import type { Silk2DParams } from "../translators/canvas2d-types";
 import type { EmitterTip } from "./emitter-tip";
 import { emitterId } from "./emitter-tip";
+import { traceForward, traceBackward } from "./ribbon-trace";
 
 interface RibbonSample {
   x: number;
@@ -228,8 +229,8 @@ export class Silk2DRenderer {
       ctx.globalAlpha = segAlpha * 0.7 * params.intensity;
       ctx.fillStyle = bodyColor;
       ctx.beginPath();
-      this.traceForward(ctx, leftX, leftY, iStart, iEnd, n);
-      this.traceBackward(ctx, rightX, rightY, iStart, iEnd, n);
+      traceForward(ctx, leftX, leftY, iStart, iEnd, n);
+      traceBackward(ctx, rightX, rightY, iStart, iEnd, n);
       ctx.closePath();
       ctx.fill();
 
@@ -238,7 +239,7 @@ export class Silk2DRenderer {
       ctx.strokeStyle = edgeColor;
       ctx.lineWidth = 1.5 * scale;
       ctx.beginPath();
-      this.traceForward(ctx, leftX, leftY, iStart, iEnd, n);
+      traceForward(ctx, leftX, leftY, iStart, iEnd, n);
       ctx.stroke();
     }
   }
@@ -268,56 +269,6 @@ export class Silk2DRenderer {
         sy(i) - (sy(i3) - sy(i1)) / 6,
         sx(i),
         sy(i),
-      );
-    }
-  }
-
-  /** Catmull-Rom spline forward through edge array. Starts with moveTo. */
-  private traceForward(
-    ctx: CanvasRenderingContext2D,
-    x: number[],
-    y: number[],
-    start: number,
-    end: number,
-    n: number,
-  ): void {
-    ctx.moveTo(x[start]!, y[start]!);
-    for (let i = start + 1; i <= end; i++) {
-      const i0 = Math.max(0, i - 2);
-      const i1 = i - 1;
-      const i3 = Math.min(n - 1, i + 1);
-      ctx.bezierCurveTo(
-        x[i1]! + (x[i]! - x[i0]!) / 6,
-        y[i1]! + (y[i]! - y[i0]!) / 6,
-        x[i]! - (x[i3]! - x[i1]!) / 6,
-        y[i]! - (y[i3]! - y[i1]!) / 6,
-        x[i]!,
-        y[i]!,
-      );
-    }
-  }
-
-  /** Catmull-Rom spline backward through edge array. Continues current path (no moveTo). */
-  private traceBackward(
-    ctx: CanvasRenderingContext2D,
-    x: number[],
-    y: number[],
-    start: number,
-    end: number,
-    n: number,
-  ): void {
-    ctx.lineTo(x[end]!, y[end]!);
-    for (let i = end - 1; i >= start; i--) {
-      const i0 = Math.min(n - 1, i + 2);
-      const i1 = i + 1;
-      const i3 = Math.max(0, i - 1);
-      ctx.bezierCurveTo(
-        x[i1]! + (x[i]! - x[i0]!) / 6,
-        y[i1]! + (y[i]! - y[i0]!) / 6,
-        x[i]! - (x[i3]! - x[i1]!) / 6,
-        y[i]! - (y[i3]! - y[i1]!) / 6,
-        x[i]!,
-        y[i]!,
       );
     }
   }
@@ -498,7 +449,7 @@ export class Silk2DRenderer {
     ctx.strokeStyle = pal.body;
     ctx.lineWidth = baseHalf * 2.0;
     ctx.beginPath();
-    this.traceForward(ctx, cx, cy, 0, N - 1, N);
+    traceForward(ctx, cx, cy, 0, N - 1, N);
     ctx.stroke();
 
     // Layer C: body fill — closed Catmull-Rom polygon. hueShift palettes
@@ -513,8 +464,8 @@ export class Silk2DRenderer {
       ctx.fillStyle = pal.body;
     }
     ctx.beginPath();
-    this.traceForward(ctx, leftX, leftY, 0, N - 1, N);
-    this.traceBackward(ctx, rightX, rightY, 0, N - 1, N);
+    traceForward(ctx, leftX, leftY, 0, N - 1, N);
+    traceBackward(ctx, rightX, rightY, 0, N - 1, N);
     ctx.closePath();
     ctx.fill();
 
@@ -523,7 +474,7 @@ export class Silk2DRenderer {
     ctx.strokeStyle = pal.edge;
     ctx.lineWidth = 1.5 * scale;
     ctx.beginPath();
-    this.traceForward(ctx, leftX, leftY, 0, N - 1, N);
+    traceForward(ctx, leftX, leftY, 0, N - 1, N);
     ctx.stroke();
 
     if (params.creature === "dragon") {
