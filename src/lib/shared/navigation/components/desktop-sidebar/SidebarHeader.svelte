@@ -70,6 +70,12 @@
 
   .brand-toggle {
     width: 100%;
+    /* Fixed height, not min-height: the label swaps "TKA" (1.1rem) in rail for
+       "TKA Composer" (1.05rem) on expand. Under border-box the taller rail glyph
+       + 12px padding pushed the box ~1px past the 44px floor, so the header was
+       ~1px taller in rail and collapsed upward on expand (the itsy-bitsy shift).
+       A constant box removes it — the text fits well within 44px. No-layout-shift. */
+    height: var(--min-touch-target);
     min-height: var(--min-touch-target);
     display: flex;
     align-items: center;
