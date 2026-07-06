@@ -37,9 +37,11 @@
     deriveCreators,
     deriveStartingLetters,
     pickCollage,
+    pickCreatorSamples,
     pickLengthPair,
     pickLevelRepresentatives,
   } from "./pick-representatives";
+  import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
     getDrillSection,
@@ -326,6 +328,9 @@
   const maxCreatorCount = $derived(
     Math.max(1, ...creatorValues.map((v) => v.count)),
   );
+  // Each creator's row is fronted by their own work — a bare name + count on
+  // a wide screen reads as an unfinished list, not a choice.
+  const creatorSamples = $derived(pickCreatorSamples(pool, 3));
 
   // Single-value categories apply directly from the chooser (legacy behavior
   // for Favorites / Most Recent). Hidden at zero — never a dead end.
@@ -368,13 +373,13 @@
   // @container rules so art and layout switch together. Thumbnails come from
   // the 1024px static/cloud renders, so bigger boxes stay sharp.
   const PEEK_TIERS = {
-    base: { fanW: 76, fanH: 92, shortW: 56, shortH: 84, longW: 118, longH: 84, collW: 44, collH: 34, levelW: 62, levelH: 56, badge: "18px" },
+    base: { fanW: 76, fanH: 92, shortW: 56, shortH: 84, longW: 118, longH: 84, collW: 44, collH: 34, levelW: 62, levelH: 56, creatorW: 44, creatorH: 54, badge: "18px" },
     // Level-screen art jumps hardest with width: on the desktop monument
     // columns a mini card is unreadable filler — at 150/200px the word and the
     // motions actually read, so the art argues for the level instead of
     // decorating it.
-    wide: { fanW: 112, fanH: 136, shortW: 82, shortH: 122, longW: 172, longH: 122, collW: 60, collH: 46, levelW: 150, levelH: 140, badge: "24px" },
-    ultra: { fanW: 132, fanH: 160, shortW: 96, shortH: 144, longW: 204, longH: 144, collW: 84, collH: 64, levelW: 200, levelH: 186, badge: "28px" },
+    wide: { fanW: 112, fanH: 136, shortW: 82, shortH: 122, longW: 172, longH: 122, collW: 60, collH: 46, levelW: 150, levelH: 140, creatorW: 58, creatorH: 72, badge: "24px" },
+    ultra: { fanW: 132, fanH: 160, shortW: 96, shortH: 144, longW: 204, longH: 144, collW: 84, collH: 64, levelW: 200, levelH: 186, creatorW: 72, creatorH: 90, badge: "28px" },
   } as const;
   let drillWidth = $state(0);
   const PEEK = $derived(
@@ -758,10 +763,18 @@
           <div class="value-list">
             {#each creatorValues as v (v.value)}
               <button
-                class="length-row"
+                class="length-row tall creator-row"
                 type="button"
                 onclick={() => onApply(BrowseFilterType.OWNER, v.value, v.value)}
               >
+                <img
+                  class="creator-avatar"
+                  src={generateAvatarUrl(v.value, 96)}
+                  alt=""
+                  width="44"
+                  height="44"
+                  loading="lazy"
+                />
                 <span class="value-main">
                   <span class="value-label">{v.value}</span>
                   <span class="density-bar">
@@ -772,6 +785,18 @@
                   </span>
                 </span>
                 <span class="value-count">{v.count}</span>
+                <!-- The creator's own work, not stock art — same peek primitive
+                     as the chooser fans, clipped by the row's overflow. -->
+                <span class="peek-fan creator-fan" aria-hidden="true">
+                  {#each creatorSamples.get(v.value) ?? [] as seq, i (seq.id)}
+                    <SequencePeek
+                      sequence={seq}
+                      width={PEEK.creatorW}
+                      height={PEEK.creatorH}
+                      tilt={FAN_TILTS[i]}
+                    />
+                  {/each}
+                </span>
               </button>
             {/each}
           </div>
@@ -1399,6 +1424,30 @@
   .length-row.tall {
     min-height: 76px;
   }
+  /* Creator rows: monogram disc + the creator's own work as a trailing fan. */
+  .creator-row {
+    overflow: hidden;
+  }
+  .creator-avatar {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+  .peek-fan.creator-fan {
+    margin-right: -0.4rem;
+  }
+  .peek-fan.creator-fan > :global(.peek + .peek) {
+    margin-left: -0.8rem;
+  }
+  /* Tight rows (phones, the filter sheet): one sample is flavor, three is a
+     squeeze — keep the lead peek, drop the rest. */
+  @container drill (max-width: 560px) {
+    .peek-fan.creator-fan > :global(.peek:nth-child(n + 2)) {
+      display: none;
+    }
+  }
   /* Loop-structure rows lead with the component's canonical icon + color —
      the same coding as the LOOP icon strip and deck labels. */
   .loop-icon {
@@ -1609,6 +1658,13 @@
     }
     .head-back-label {
       display: inline;
+    }
+    .creator-avatar {
+      width: 56px;
+      height: 56px;
+    }
+    .creator-row {
+      min-height: 96px;
     }
 
     /* Value screens: choices tile the width instead of stacking as a phone

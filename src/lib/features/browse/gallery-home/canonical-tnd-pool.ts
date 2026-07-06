@@ -6,14 +6,18 @@
  * one card whose variation picker holds the 49 turn combos — exactly like any
  * community word with saved variations. No special container, no special modal.
  *
- * Born 2022-03-27 (when the system came to Austen); 0|0 = level 1 (no turns),
- * every turned combo = level 2 (turns, radial-only resolution).
+ * Born 2022-03-27 (when the system came to Austen). Level comes from the
+ * canonical difficulty calculator reading each combo's real steps — NOT a
+ * blanket rule. A hardcoded "turned = level 2" shipped level-3 combos (half
+ * turns end non-radial) wearing stored level 2, so the drill's Level 2 fan
+ * card was fronted by a sequence whose printed badge said 3.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
 import { resolveTnDFamilyCards } from "$lib/features/lab/vtg-lab/services/resolve-tnd-family-cards";
+import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 
 /** The day the Timing & Direction system was conceived. */
 const TND_BIRTHDAY = new Date("2022-03-27T00:00:00Z");
@@ -58,7 +62,10 @@ async function resolvePool(): Promise<readonly SequenceData[]> {
             id: `${matrix.seedId}__t_${safeTurn(pattern)}`,
             dateAdded: TND_BIRTHDAY,
             birthday: TND_BIRTHDAY,
-            level: pattern === "0|0" ? 1 : 2,
+            // Same calculator that prints the card's difficulty badge — stored
+            // level and printed badge can never disagree. Whole turns resolve
+            // radial (level 2); half turns end non-radial (level 3).
+            level: calculateDifficultyLevel([...(seq.steps ?? [])]),
           }),
         );
       }

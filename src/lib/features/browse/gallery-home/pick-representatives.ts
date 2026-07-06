@@ -90,6 +90,24 @@ export function deriveCreators(pool: readonly SequenceData[]): string[] {
   return [...creators];
 }
 
+/** Up to `n` of each creator's own sequences (kinetic-alphabet order, so the
+ * same work fronts a creator's row every visit). Keyed by ownerDisplayName —
+ * the creator screen's row art, so a name is backed by the actual work. */
+export function pickCreatorSamples(
+  pool: readonly SequenceData[],
+  n = 3,
+): Map<string, SequenceData[]> {
+  const byCreator = new Map<string, SequenceData[]>();
+  for (const seq of sortSequencesByKineticAlphabet([...pool])) {
+    const name = seq.ownerDisplayName?.trim();
+    if (!name) continue;
+    const bucket = byCreator.get(name);
+    if (!bucket) byCreator.set(name, [seq]);
+    else if (bucket.length < n) bucket.push(seq);
+  }
+  return byCreator;
+}
+
 /** Distinct base letters present in the pool (incl. dash variants like "W-"),
  * in canonical kinetic-alphabet order. These are the letter screen's values —
  * derived from real words, so no letter is ever a dead end. */
