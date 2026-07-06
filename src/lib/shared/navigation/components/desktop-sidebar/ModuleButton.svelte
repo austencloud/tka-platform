@@ -164,7 +164,17 @@
     border-radius: 12px;
     color: var(--theme-text-dim, var(--theme-text-dim));
     cursor: pointer;
-    transition: all var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
+    /* Transition visuals + intended transforms only, never layout geometry.
+       A `transition: all` here tweens the padding/width nudge from the rail→
+       expanded tree swap, and the button's spring curve overshoots it — the
+       whole icon column dips ~6px left then springs back. Scoping to these
+       properties lets geometry snap while hover/active feedback still animates. */
+    transition:
+      background-color var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1),
+      border-color var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1),
+      color var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1),
+      box-shadow var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1),
+      transform var(--duration-emphasis) cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
     overflow: hidden;
   }
@@ -331,7 +341,10 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    transition: all var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* transform ONLY — the spring curve is for the hover scale(1.08) pop.
+       With `all`, a layout nudge during the tree swap gets sprung (overshoot),
+       dipping the icon left then back. Geometry must snap, not spring. */
+    transition: transform var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   /* Profile Avatar for Dashboard */

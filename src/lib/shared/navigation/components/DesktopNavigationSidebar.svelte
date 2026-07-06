@@ -689,11 +689,12 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     overflow-x: hidden;
     padding: 16px 8px;
     position: relative;
-    /* Pin inner content to the expanded width; the nav's overflow:hidden
-       clips it while the width animates. Prevents cqw font rescaling and
-       label wrap during expansion — the 64→220 animation is a reveal, not
-       a reflow. */
-    width: 220px;
+    /* Width tracks the animating nav (no fixed-220 pin). The module icons are
+       left-anchored by their fixed 44px column, so they hold x=32 regardless
+       of content width — no pin needed. A fixed 220px here made this flex
+       child wider than the nav near the animation tail, and the flex cross-
+       axis algorithm nudged it a few px left for a frame: the whole module
+       stack sprang. Letting it track the nav keeps its left edge at 0. */
 
     /* Enable container queries for responsive sizing */
     container-type: inline-size;

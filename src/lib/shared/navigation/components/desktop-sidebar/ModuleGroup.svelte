@@ -140,7 +140,12 @@
     border-radius: 12px;
     /* 2px horizontal: keeps ModuleButton icon centers at x=32px (rail parity) */
     padding: 4px 2px;
-    transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
+    /* Visuals only. `all` here tweens the padding/background swap between the
+       plain and .active.has-sections states during the expand, nudging the
+       icon column; geometry must snap so the stack doesn't spring. */
+    transition:
+      background-color var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1),
+      border-color var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   /* Active module with expanded sections gets unified background.
