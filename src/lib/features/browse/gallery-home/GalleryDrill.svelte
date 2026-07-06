@@ -1773,8 +1773,10 @@
       justify-content: center;
       text-align: center;
       gap: 0.55rem;
-      min-height: 220px;
-      padding: 1.3rem 1.2rem;
+      /* Floor, not a fixed height — sparse screens (LOOP, family) were
+         stranding the count far below the content in an over-tall panel. */
+      min-height: 168px;
+      padding: 1.2rem 1.2rem;
       border-radius: 20px;
     }
     .monument .value-main {
@@ -1898,8 +1900,8 @@
       min-height: 78px;
     }
     .length-row.monument {
-      min-height: 260px;
-      padding: 1.6rem 1.5rem;
+      min-height: 188px;
+      padding: 1.4rem 1.5rem;
     }
     .monument .value-img,
     .monument .value-img.family-icon {
