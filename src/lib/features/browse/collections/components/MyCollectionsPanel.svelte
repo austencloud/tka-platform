@@ -30,6 +30,8 @@ instead of showing an empty shell.
 	import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
 	import CollectionCard from "./CollectionCard.svelte";
 	import CollectionDetailView from "./CollectionDetailView.svelte";
+	import SmartCollectionDetailView from "./SmartCollectionDetailView.svelte";
+	import SmartCollectionBuilderSheet from "./SmartCollectionBuilderSheet.svelte";
 	import AllLibraryView from "./AllLibraryView.svelte";
 	import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 	import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
@@ -66,6 +68,16 @@ instead of showing an empty shell.
 		),
 	);
 	const loading = $derived(collectionsState.loading);
+
+	// Own smart collections render the live-derived view; everything else uses
+	// the standard member grid. (Foreign collections are never smart in v1.)
+	function isOwnSmart(id: string, ownerId: string | null): boolean {
+		if (ownerId) return false;
+		return collectionsState.collections.find((c) => c.id === id)?.kind === "smart";
+	}
+
+	// "New smart collection" opens the builder from scratch.
+	let smartBuilderOpen = $state(false);
 
 	// ── "All" shelf ──────────────────────────────────────────────────────────
 	// The library pile itself, pinned above Favorites (it's the superset).
@@ -236,6 +248,13 @@ instead of showing an empty shell.
 			<span class="add-label">New collection</span>
 		</button>
 	{/if}
+
+	<button type="button" class="add-tile smart" onclick={() => (smartBuilderOpen = true)}>
+		<span class="add-icon">
+			<i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+		</span>
+		<span class="add-label">New smart collection</span>
+	</button>
 {/snippet}
 
 {#snippet followedShelves(sel: { id: string; ownerId: string | null } | null)}
@@ -288,6 +307,12 @@ instead of showing an empty shell.
 		<section class="detail-pane">
 			{#if railSelection.id === "all" && !railSelection.ownerId}
 				<AllLibraryView />
+			{:else if isOwnSmart(railSelection.id, railSelection.ownerId)}
+				<SmartCollectionDetailView
+					collectionId={railSelection.id}
+					onBack={backToList}
+					showBack={false}
+				/>
 			{:else}
 				<CollectionDetailView
 					collectionId={railSelection.id}
@@ -302,6 +327,8 @@ instead of showing an empty shell.
 {:else if detail}
 	{#if detail.id === "all" && !detail.ownerId}
 		<AllLibraryView onBack={backToList} />
+	{:else if isOwnSmart(detail.id, detail.ownerId)}
+		<SmartCollectionDetailView collectionId={detail.id} onBack={backToList} />
 	{:else}
 		<CollectionDetailView
 			collectionId={detail.id}
@@ -346,6 +373,10 @@ instead of showing an empty shell.
 				{/if}
 		{/if}
 	</div>
+{/if}
+
+{#if smartBuilderOpen}
+	<SmartCollectionBuilderSheet mode="create" onClose={() => (smartBuilderOpen = false)} />
 {/if}
 
 <style>
