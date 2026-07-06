@@ -2,6 +2,7 @@
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { PulseIntent } from "$lib/shared/effects/domain/effects-config";
   import OptionChipRow from "../OptionChipRow.svelte";
+  import AdvancedControls from "$lib/shared/effects/components/AdvancedControls.svelte";
 
   interface Props {
     onBack: () => void;
@@ -33,7 +34,7 @@
 
   const COLOR_MODES: { value: PulseIntent["colorMode"]; label: string }[] = [
     { value: "solid", label: "Solid" },
-    { value: "prop-matched", label: "Prop-matched" },
+    { value: "prop-matched", label: "Prop" },
     { value: "rainbow", label: "Rainbow" },
     { value: "palette", label: "Palette" },
   ];
@@ -59,14 +60,6 @@
         value={state.pulse.trigger}
         options={TRIGGERS}
         onChange={(v) => state.updateEffect("pulse", { trigger: v })}
-      />
-
-      <OptionChipRow
-        label="Style"
-        ariaLabel="Pulse style"
-        value={state.pulse.style}
-        options={STYLES}
-        onChange={(v) => state.updateEffect("pulse", { style: v })}
       />
 
       <OptionChipRow
@@ -190,6 +183,15 @@
         <span class="slider-value">{Math.round(state.pulse.reach * 100)}%</span>
       </div>
 
+      <AdvancedControls count={8}>
+        <OptionChipRow
+          label="Style"
+          ariaLabel="Pulse style"
+          value={state.pulse.style}
+          options={STYLES}
+          onChange={(v) => state.updateEffect("pulse", { style: v })}
+        />
+
       <div class="slider-row">
         <label for="pulse-lifetime">Lifetime</label>
         <input
@@ -308,6 +310,7 @@
         />
         <span class="slider-value">{Math.round(state.pulse.harmonics * 100)}%</span>
       </div>
+      </AdvancedControls>
     </div>
   {:else}
     <p class="empty">Effect state unavailable.</p>

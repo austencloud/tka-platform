@@ -2,6 +2,7 @@
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { PetalsIntent } from "$lib/shared/effects/domain/effects-config";
   import OptionChipRow from "../OptionChipRow.svelte";
+  import AdvancedControls from "$lib/shared/effects/components/AdvancedControls.svelte";
 
   interface Props {
     onBack: () => void;
@@ -122,59 +123,61 @@
         <span class="slider-value">{Math.round(state.petals.intensity * 100)}%</span>
       </div>
 
-      <!-- Carry: how much of the prop's velocity a petal inherits -->
-      <div class="slider-row">
-        <label for="petals-carry">Carry</label>
-        <input
-          id="petals-carry"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={state.petals.carry}
-          oninput={(e) =>
-            state.updateEffect("petals", {
-              carry: +(e.currentTarget as HTMLInputElement).value,
-            })}
-        />
-        <span class="slider-value">{Math.round(state.petals.carry * 100)}%</span>
-      </div>
+      <AdvancedControls count={3}>
+        <!-- Carry: how much of the prop's velocity a petal inherits -->
+        <div class="slider-row">
+          <label for="petals-carry">Carry</label>
+          <input
+            id="petals-carry"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.petals.carry}
+            oninput={(e) =>
+              state.updateEffect("petals", {
+                carry: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value">{Math.round(state.petals.carry * 100)}%</span>
+        </div>
 
-      <!-- Streak: how long the inherited motion lingers -->
-      <div class="slider-row">
-        <label for="petals-streak">Streak</label>
-        <input
-          id="petals-streak"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={state.petals.streakLength}
-          oninput={(e) =>
-            state.updateEffect("petals", {
-              streakLength: +(e.currentTarget as HTMLInputElement).value,
-            })}
-        />
-        <span class="slider-value">{Math.round(state.petals.streakLength * 100)}%</span>
-      </div>
+        <!-- Streak: how long the inherited motion lingers -->
+        <div class="slider-row">
+          <label for="petals-streak">Streak</label>
+          <input
+            id="petals-streak"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.petals.streakLength}
+            oninput={(e) =>
+              state.updateEffect("petals", {
+                streakLength: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value">{Math.round(state.petals.streakLength * 100)}%</span>
+        </div>
 
-      <!-- Fall speed -->
-      <div class="slider-row">
-        <label for="petals-fall">Fall</label>
-        <input
-          id="petals-fall"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={state.petals.fallSpeed}
-          oninput={(e) =>
-            state.updateEffect("petals", {
-              fallSpeed: +(e.currentTarget as HTMLInputElement).value,
-            })}
-        />
-        <span class="slider-value">{Math.round(state.petals.fallSpeed * 100)}%</span>
-      </div>
+        <!-- Fall speed -->
+        <div class="slider-row">
+          <label for="petals-fall">Fall</label>
+          <input
+            id="petals-fall"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.petals.fallSpeed}
+            oninput={(e) =>
+              state.updateEffect("petals", {
+                fallSpeed: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value">{Math.round(state.petals.fallSpeed * 100)}%</span>
+        </div>
+      </AdvancedControls>
     </div>
   {:else}
     <p class="empty">Effect state unavailable.</p>

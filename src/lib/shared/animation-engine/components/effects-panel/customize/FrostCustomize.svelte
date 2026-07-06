@@ -2,6 +2,7 @@
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { FrostIntent } from "$lib/shared/effects/domain/effects-config";
   import OptionChipRow from "../OptionChipRow.svelte";
+  import AdvancedControls from "$lib/shared/effects/components/AdvancedControls.svelte";
 
   interface Props {
     onBack: () => void;
@@ -120,7 +121,8 @@
         <span class="slider-value">{Math.round(state.frost.intensity * 100)}%</span>
       </div>
 
-      <div class="slider-row">
+      <AdvancedControls count={2}>
+        <div class="slider-row">
         <label for="frost-crystallinity">Snowflake Size</label>
         <input
           id="frost-crystallinity"
@@ -153,6 +155,7 @@
         />
         <span class="slider-value">{Math.round(state.frost.spreadRate * 100)}%</span>
       </div>
+      </AdvancedControls>
     </div>
   {:else}
     <p class="empty">Effect state unavailable.</p>

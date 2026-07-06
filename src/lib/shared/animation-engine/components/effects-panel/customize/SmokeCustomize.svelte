@@ -2,6 +2,7 @@
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { SmokeIntent } from "$lib/shared/effects/domain/effects-config";
   import OptionChipRow from "../OptionChipRow.svelte";
+  import AdvancedControls from "$lib/shared/effects/components/AdvancedControls.svelte";
 
   interface Props {
     onBack: () => void;
@@ -129,7 +130,8 @@
         <span class="slider-value">{Math.round(state.smoke.intensity * 100)}%</span>
       </div>
 
-      <!-- Curl strength (multiplier on palette.curlBias) -->
+      <AdvancedControls count={2}>
+        <!-- Curl strength (multiplier on palette.curlBias) -->
       <div class="slider-row">
         <label for="smoke-curl">Curl</label>
         <input
@@ -164,6 +166,7 @@
         />
         <span class="slider-value">{Math.round(state.smoke.riseSpeed * 100)}%</span>
       </div>
+      </AdvancedControls>
     </div>
   {:else}
     <p class="empty">Effect state unavailable.</p>

@@ -2,6 +2,7 @@
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { SilkIntent } from "$lib/shared/effects/domain/effects-config";
   import OptionChipRow from "../OptionChipRow.svelte";
+  import AdvancedControls from "$lib/shared/effects/components/AdvancedControls.svelte";
 
   interface Props {
     onBack: () => void;
@@ -131,60 +132,7 @@
         <span class="slider-value">{Math.round(state.silk.width * 100)}%</span>
       </div>
 
-      {#if state.silk.form === "serpent"}
-        <div class="slider-row">
-          <label for="silk-length">Length</label>
-          <input
-            id="silk-length"
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={state.silk.bodyLength}
-            oninput={(e) =>
-              state.updateEffect("silk", {
-                bodyLength: +(e.currentTarget as HTMLInputElement).value,
-              })}
-          />
-          <span class="slider-value">{Math.round(state.silk.bodyLength * 100)}%</span>
-        </div>
-
-        <div class="slider-row">
-          <label for="silk-slither">Slither</label>
-          <input
-            id="silk-slither"
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={state.silk.slither}
-            oninput={(e) =>
-              state.updateEffect("silk", {
-                slither: +(e.currentTarget as HTMLInputElement).value,
-              })}
-          />
-          <span class="slider-value">{Math.round(state.silk.slither * 100)}%</span>
-        </div>
-      {/if}
-
       {#if state.silk.form !== "serpent"}
-      <div class="slider-row">
-        <label for="silk-duration">Duration</label>
-        <input
-          id="silk-duration"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={state.silk.duration}
-          oninput={(e) =>
-            state.updateEffect("silk", {
-              duration: +(e.currentTarget as HTMLInputElement).value,
-            })}
-        />
-        <span class="slider-value">{Math.round(state.silk.duration * 100)}%</span>
-      </div>
-
       <div class="slider-row">
         <label for="silk-flutter">Flutter</label>
         <input
@@ -201,24 +149,81 @@
         />
         <span class="slider-value">{Math.round(state.silk.flutter * 100)}%</span>
       </div>
-
-      <div class="slider-row">
-        <label for="silk-tautness">Tautness</label>
-        <input
-          id="silk-tautness"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={state.silk.tautness}
-          oninput={(e) =>
-            state.updateEffect("silk", {
-              tautness: +(e.currentTarget as HTMLInputElement).value,
-            })}
-        />
-        <span class="slider-value">{Math.round(state.silk.tautness * 100)}%</span>
-      </div>
       {/if}
+
+      <AdvancedControls count={4}>
+        {#if state.silk.form === "serpent"}
+          <div class="slider-row">
+            <label for="silk-length">Length</label>
+            <input
+              id="silk-length"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={state.silk.bodyLength}
+              oninput={(e) =>
+                state.updateEffect("silk", {
+                  bodyLength: +(e.currentTarget as HTMLInputElement).value,
+                })}
+            />
+            <span class="slider-value">{Math.round(state.silk.bodyLength * 100)}%</span>
+          </div>
+
+          <div class="slider-row">
+            <label for="silk-slither">Slither</label>
+            <input
+              id="silk-slither"
+              type="range"
+              min="0"
+              max="1"
+              step="0.05"
+              value={state.silk.slither}
+              oninput={(e) =>
+                state.updateEffect("silk", {
+                  slither: +(e.currentTarget as HTMLInputElement).value,
+                })}
+            />
+            <span class="slider-value">{Math.round(state.silk.slither * 100)}%</span>
+          </div>
+        {/if}
+
+        {#if state.silk.form !== "serpent"}
+        <div class="slider-row">
+          <label for="silk-duration">Duration</label>
+          <input
+            id="silk-duration"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.silk.duration}
+            oninput={(e) =>
+              state.updateEffect("silk", {
+                duration: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value">{Math.round(state.silk.duration * 100)}%</span>
+        </div>
+
+        <div class="slider-row">
+          <label for="silk-tautness">Tautness</label>
+          <input
+            id="silk-tautness"
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={state.silk.tautness}
+            oninput={(e) =>
+              state.updateEffect("silk", {
+                tautness: +(e.currentTarget as HTMLInputElement).value,
+              })}
+          />
+          <span class="slider-value">{Math.round(state.silk.tautness * 100)}%</span>
+        </div>
+        {/if}
+      </AdvancedControls>
     </div>
   {:else}
     <p class="empty">Effect state unavailable.</p>

@@ -2,6 +2,7 @@
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { BubblesIntent } from "$lib/shared/effects/domain/effects-config";
   import OptionChipRow from "../OptionChipRow.svelte";
+  import AdvancedControls from "$lib/shared/effects/components/AdvancedControls.svelte";
 
   interface Props {
     onBack: () => void;
@@ -124,7 +125,8 @@
         <span class="slider-value">{Math.round(state.bubbles.intensity * 100)}%</span>
       </div>
 
-      <!-- Size jitter -->
+      <AdvancedControls count={2}>
+        <!-- Size jitter -->
       <div class="slider-row">
         <label for="bubbles-jitter">Jitter</label>
         <input
@@ -159,6 +161,7 @@
         />
         <span class="slider-value">{Math.round(state.bubbles.buoyancy * 100)}%</span>
       </div>
+      </AdvancedControls>
     </div>
   {:else}
     <p class="empty">Effect state unavailable.</p>

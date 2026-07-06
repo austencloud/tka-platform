@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import OptionChipRow from "../OptionChipRow.svelte";
+  import AdvancedControls from "$lib/shared/effects/components/AdvancedControls.svelte";
   import type { SparklesIntent } from "$lib/shared/effects/domain/effects-config";
 
   const MODES: { value: SparklesIntent["mode"]; label: string; icon: string }[] = [
@@ -114,41 +115,43 @@
         <span class="slider-value">{Math.round(state.sparkles.size * 100)}%</span>
       </div>
 
-      <!-- Lifetime -->
-      <div class="slider-row">
-        <label for="sparkles-lifetime">Lifetime</label>
-        <input
-          id="sparkles-lifetime"
-          type="range" min="0.1" max="3" step="0.1"
-          value={state.sparkles.lifetime}
-          oninput={(e) => state.updateEffect("sparkles", { lifetime: +(e.currentTarget as HTMLInputElement).value })}
-        />
-        <span class="slider-value">{state.sparkles.lifetime.toFixed(1)}s</span>
-      </div>
+      <AdvancedControls count={3}>
+        <!-- Lifetime -->
+        <div class="slider-row">
+          <label for="sparkles-lifetime">Lifetime</label>
+          <input
+            id="sparkles-lifetime"
+            type="range" min="0.1" max="3" step="0.1"
+            value={state.sparkles.lifetime}
+            oninput={(e) => state.updateEffect("sparkles", { lifetime: +(e.currentTarget as HTMLInputElement).value })}
+          />
+          <span class="slider-value">{state.sparkles.lifetime.toFixed(1)}s</span>
+        </div>
 
-      <!-- Spread -->
-      <div class="slider-row">
-        <label for="sparkles-spread">Spread</label>
-        <input
-          id="sparkles-spread"
-          type="range" min="0" max="30" step="1"
-          value={state.sparkles.spread}
-          oninput={(e) => state.updateEffect("sparkles", { spread: +(e.currentTarget as HTMLInputElement).value })}
-        />
-        <span class="slider-value">{state.sparkles.spread}px</span>
-      </div>
+        <!-- Spread -->
+        <div class="slider-row">
+          <label for="sparkles-spread">Spread</label>
+          <input
+            id="sparkles-spread"
+            type="range" min="0" max="30" step="1"
+            value={state.sparkles.spread}
+            oninput={(e) => state.updateEffect("sparkles", { spread: +(e.currentTarget as HTMLInputElement).value })}
+          />
+          <span class="slider-value">{state.sparkles.spread}px</span>
+        </div>
 
-      <!-- Gravity -->
-      <div class="slider-row">
-        <label for="sparkles-gravity">Gravity</label>
-        <input
-          id="sparkles-gravity"
-          type="range" min="0" max="1" step="0.05"
-          value={state.sparkles.gravity}
-          oninput={(e) => state.updateEffect("sparkles", { gravity: +(e.currentTarget as HTMLInputElement).value })}
-        />
-        <span class="slider-value">{Math.round(state.sparkles.gravity * 100)}%</span>
-      </div>
+        <!-- Gravity -->
+        <div class="slider-row">
+          <label for="sparkles-gravity">Gravity</label>
+          <input
+            id="sparkles-gravity"
+            type="range" min="0" max="1" step="0.05"
+            value={state.sparkles.gravity}
+            oninput={(e) => state.updateEffect("sparkles", { gravity: +(e.currentTarget as HTMLInputElement).value })}
+          />
+          <span class="slider-value">{Math.round(state.sparkles.gravity * 100)}%</span>
+        </div>
+      </AdvancedControls>
     </div>
   {:else}
     <p class="empty">Effect state unavailable.</p>

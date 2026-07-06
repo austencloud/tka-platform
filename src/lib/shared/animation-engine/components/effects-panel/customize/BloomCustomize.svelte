@@ -2,6 +2,7 @@
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import type { BloomIntent } from "$lib/shared/effects/domain/effects-config";
   import OptionChipRow from "../OptionChipRow.svelte";
+  import AdvancedControls from "$lib/shared/effects/components/AdvancedControls.svelte";
 
   interface Props {
     onBack: () => void;
@@ -12,7 +13,7 @@
 
   const COLOR_MODES: { value: BloomIntent["colorMode"]; label: string }[] = [
     { value: "solid", label: "Solid" },
-    { value: "prop-matched", label: "Prop-Matched" },
+    { value: "prop-matched", label: "Prop" },
     { value: "rainbow", label: "Rainbow" },
     { value: "palette", label: "Palette" },
   ];
@@ -124,6 +125,7 @@
         <span class="slider-value">{state.bloom.radius}px</span>
       </div>
 
+      <AdvancedControls count={6}>
       <!-- Pulse -->
       <div class="slider-row">
         <label for="bloom-pulse">Pulse</label>
@@ -219,6 +221,7 @@
         />
         <span class="slider-value">{Math.round(state.bloom.afterglow * 100)}%</span>
       </div>
+      </AdvancedControls>
     </div>
   {:else}
     <p class="empty">Effect state unavailable.</p>
