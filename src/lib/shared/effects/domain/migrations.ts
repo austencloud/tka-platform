@@ -27,6 +27,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     ink?: LegacyRecord;
     frost?: LegacyRecord;
     silk?: LegacyRecord;
+    menagerie?: LegacyRecord;
   };
   const version = input.version ?? 1;
 
@@ -330,6 +331,70 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     if (anyInput.activeEffect === "echo") anyInput.activeEffect = "ghost";
   }
 
+  // v29 → v30: split silk's serpent form into a standalone "menagerie" effect
+  // (snake/dragon/caterpillar), and retire "frost" from the roster. Mirrors the
+  // motion→echo / water→goo / echo→ghost moves.
+  if (version < 30) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anyInput = input as any;
+
+    // 1. Silk serpent → menagerie. silk.form is global, so a serpent form means
+    //    every silk-assigned tip was rendering the creature.
+    const silk = anyInput.silk as Record<string, any> | undefined;
+    const wasSerpent = silk?.form === "serpent";
+    if (wasSerpent) {
+      anyInput.menagerie ??= {
+        creature: silk!.creature ?? "snake",
+        palette: silk!.palette ?? "velvet",
+        customColor: silk!.customColor ?? "#600018",
+        intensity: typeof silk!.intensity === "number" ? silk!.intensity : 0.85,
+        width: typeof silk!.width === "number" ? silk!.width : 0.55,
+        bodyLength: typeof silk!.bodyLength === "number" ? silk!.bodyLength : 0.55,
+        slither: typeof silk!.slither === "number" ? silk!.slither : 0.55,
+        trackingMode: silk!.trackingMode ?? "right_end",
+      };
+      // Reset silk to ribbon — drop the serpent-only fields (SilkIntent no longer
+      // has them, so the merge reseeds silk's own defaults).
+      delete silk!.form;
+      delete silk!.creature;
+      delete silk!.bodyLength;
+      delete silk!.slither;
+    }
+    if (input.tipEffectMap) {
+      for (const key of Object.keys(input.tipEffectMap)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const entry = (input.tipEffectMap as any)[key] as Record<string, any> | undefined;
+        if (wasSerpent && entry?.effect === "silk") entry.effect = "menagerie";
+      }
+    }
+    if (anyInput.activePresets) {
+      const presets = anyInput.activePresets as Record<string, any>;
+      if (wasSerpent && typeof presets.silk === "string" && presets.silk.startsWith("silk-")) {
+        // silk-serpent → menagerie-serpent, silk-dragon → menagerie-dragon.
+        const suffix = presets.silk.slice("silk-".length);
+        if (suffix === "serpent" || suffix === "dragon") {
+          presets.menagerie = "menagerie-" + suffix;
+          delete presets.silk;
+        }
+      }
+    }
+    if (wasSerpent && anyInput.activeEffect === "silk") anyInput.activeEffect = "menagerie";
+
+    // 2. Retire frost — neutralize persisted usage so nothing points at a dead
+    //    effect. Frost config block + default stay dormant (deletion deferred).
+    if (input.tipEffectMap) {
+      for (const key of Object.keys(input.tipEffectMap)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const entry = (input.tipEffectMap as any)[key] as Record<string, any> | undefined;
+        if (entry?.effect === "frost") delete (input.tipEffectMap as any)[key];
+      }
+    }
+    if (anyInput.activePresets && "frost" in anyInput.activePresets) {
+      delete (anyInput.activePresets as Record<string, any>).frost;
+    }
+    if (anyInput.activeEffect === "frost") anyInput.activeEffect = "none";
+  }
+
   const out: EffectsConfig = {
     ...DEFAULT_EFFECTS_CONFIG,
     ...input,
@@ -348,6 +413,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     ink: { ...DEFAULT_EFFECTS_CONFIG.ink, ...(input.ink ?? {}) },
     frost: { ...DEFAULT_EFFECTS_CONFIG.frost, ...(input.frost ?? {}) },
     silk: { ...DEFAULT_EFFECTS_CONFIG.silk, ...(input.silk ?? {}) },
+    menagerie: { ...DEFAULT_EFFECTS_CONFIG.menagerie, ...(input.menagerie ?? {}) },
     pulse: { ...DEFAULT_EFFECTS_CONFIG.pulse, ...(input.pulse ?? {}) },
     activePresets: {
       ...DEFAULT_EFFECTS_CONFIG.activePresets,
