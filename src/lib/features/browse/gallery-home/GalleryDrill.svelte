@@ -42,6 +42,12 @@
     pickLevelRepresentatives,
   } from "./pick-representatives";
   import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { Letter } from "$lib/shared/foundation/domain/models/letter";
+  import { browser } from "$app/environment";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import {
     getDrillSection,
@@ -271,6 +277,26 @@
   const maxPositionCount = $derived(
     Math.max(1, ...positionValues.map((v) => v.count)),
   );
+
+  // Real start-position pictographs (alpha/beta/gamma) keyed by position value —
+  // the same canonical PictographData the Create start-position picker renders,
+  // shown at reasonable size in the user's live theme instead of the tiny legacy
+  // PNG on a forced white plate. Pure data build; gated to the browser so it
+  // stays out of SSR (PictographContainer hydrates client-side regardless).
+  const LETTER_TO_POSITION: Record<string, string> = {
+    [Letter.ALPHA]: "alpha",
+    [Letter.BETA]: "beta",
+    [Letter.GAMMA]: "gamma",
+  };
+  const startPosPictographs = $derived.by(() => {
+    const map = new Map<string, PictographData>();
+    if (!browser) return map;
+    for (const pd of startPositionManager.getDefaultStartPositions(GridMode.DIAMOND)) {
+      const key = LETTER_TO_POSITION[pd.letter as string];
+      if (key) map.set(key, pd);
+    }
+    return map;
+  });
 
   const gridModeValues = $derived(
     GRID_MODES.map((g) => ({
@@ -741,7 +767,17 @@
                 type="button"
                 onclick={() => onApply(BrowseFilterType.STARTING_POSITION, v.value, v.label)}
               >
-                <img class="value-img" src={v.img} alt="" width="56" height="56" loading="lazy" />
+                <span class="value-pictograph" aria-hidden="true">
+                  {#if startPosPictographs.get(v.value)}
+                    <PictographContainer
+                      pictographData={startPosPictographs.get(v.value)}
+                      showTKA={false}
+                      showPositions={false}
+                      showTnD={false}
+                      showElemental={false}
+                    />
+                  {/if}
+                </span>
                 <span class="value-main">
                   <span class="value-label">{v.label}</span>
                   <span class="value-desc">{v.desc}</span>
@@ -1422,6 +1458,16 @@
     background: #fff;
     padding: 4px;
   }
+  /* Real start-position pictograph, rendered by PictographContainer in the
+     user's live theme (grid + props adapt to light/dark). Square box the
+     container fills; scales up on the desktop monument. */
+  .value-pictograph {
+    flex: 0 0 auto;
+    width: 76px;
+    height: 76px;
+    border-radius: 12px;
+    overflow: hidden;
+  }
   /* Family rows lead with the element PNG at the loop-icon footprint so the
      two stacking screens (LOOPs / families) share one row rhythm. */
   .value-img.family-icon {
@@ -1801,6 +1847,10 @@
       width: 64px;
       height: 64px;
     }
+    .monument .value-pictograph {
+      width: 116px;
+      height: 116px;
+    }
     .monument .loop-icon {
       font-size: 2.6rem;
     }
@@ -1907,6 +1957,10 @@
     .monument .value-img.family-icon {
       width: 76px;
       height: 76px;
+    }
+    .monument .value-pictograph {
+      width: 140px;
+      height: 140px;
     }
     .monument .value-numeral.small {
       font-size: 3.6rem;
