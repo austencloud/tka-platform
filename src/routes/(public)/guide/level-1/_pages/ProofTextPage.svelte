@@ -13,7 +13,7 @@
    * matches the extracted x-coordinates, with Georgia/Times fallback off-Windows.
    */
   import { PROOF_TEXT, type ProofRun } from "../_data/proof-text";
-  import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
+  import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
 
   let { id }: { id: string } = $props();
 
@@ -37,6 +37,7 @@
       class:selected={guideEdit.selectedId === `proof-${id}-run-${i}`}
       style="left:{r.x * S}px; top:{r.y * S}px; width:{r.w * S}px; font-size:{r.fs * S}px"
       use:ptDrag={pt(`proof-${id}-run-${i}`, r.t, r)}
+      use:editText={{ id: `proof-${id}-run-${i}`, label: r.t, get: () => r.t, set: (v) => (r.t = v), plain: true }}
       >{r.t}</span
     >
   {/each}

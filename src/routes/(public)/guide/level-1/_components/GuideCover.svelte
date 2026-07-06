@@ -17,7 +17,7 @@
    */
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import type { MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
-  import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
+  import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
 
   let { theme = "navy" }: { theme?: "navy" | "light" } = $props();
 
@@ -38,6 +38,14 @@
     byline: zero(),
   });
   const tf = (o: Off) => `transform: translate(${o.x * S}px, ${o.y * S}px)`;
+
+  // Editable cover TEXT (separate from OFF positions). Title is html (two stacked
+  // spans); subtitle + byline are plain runs. Edited via the editText action.
+  let TX = $state({
+    title: "<span>The Kinetic</span><span>Alphabet</span>",
+    subtitle: "Notation for Flow Arts",
+    byline: "Created by Austen Cloud",
+  });
 
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
@@ -109,18 +117,16 @@
       class:selected={guideEdit.selectedId === "cover-title"}
       style={tf(OFF.title)}
       use:ptDrag={pt("cover-title", "Cover title", OFF.title)}
-    >
-      <span>The Kinetic</span><span>Alphabet</span>
-    </h1>
+      use:editText={{ id: "cover-title", label: "Cover title", get: () => TX.title, set: (h) => (TX.title = h) }}
+    >{@html TX.title}</h1>
     <p
       class="subtitle drag"
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === "cover-subtitle"}
       style={tf(OFF.subtitle)}
       use:ptDrag={pt("cover-subtitle", "Cover subtitle", OFF.subtitle)}
-    >
-      Notation for Flow Arts
-    </p>
+      use:editText={{ id: "cover-subtitle", label: "Cover subtitle", get: () => TX.subtitle, set: (v) => (TX.subtitle = v), plain: true }}
+    >{TX.subtitle}</p>
     <div
       class="lvl drag"
       class:edit={guideEdit.on}
@@ -168,9 +174,8 @@
     class:selected={guideEdit.selectedId === "cover-byline"}
     style={tf(OFF.byline)}
     use:ptDrag={pt("cover-byline", "Byline", OFF.byline)}
-  >
-    Created by Austen Cloud
-  </footer>
+    use:editText={{ id: "cover-byline", label: "Byline", get: () => TX.byline, set: (v) => (TX.byline = v), plain: true }}
+  >{TX.byline}</footer>
 </div>
 
 <style>

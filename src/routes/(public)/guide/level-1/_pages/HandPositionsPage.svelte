@@ -21,7 +21,7 @@
   import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
+  import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
 
@@ -200,6 +200,7 @@
     class:selected={guideEdit.selectedId === `hp-intro`}
     style="top:{intro.y * S}px; font-size:{intro.fs * S}px; line-height:{intro.lh * S}px"
     use:ptDrag={pt(`hp-intro`, "intro", intro)}
+    use:editText={{ id: `hp-intro`, label: "intro", get: () => intro.html, set: (h) => (intro.html = h) }}
   >
     {@html intro.html}
   </p>
@@ -214,7 +215,8 @@
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `hp-run-${i}`}
       style="left:{r.x * S}px; top:{r.y * S}px; width:{r.w * S}px; font-size:{r.h * S}px"
-      use:ptDrag={pt(`hp-run-${i}`, r.t, r)}>{r.t}</span
+      use:ptDrag={pt(`hp-run-${i}`, r.t, r)}
+      use:editText={{ id: `hp-run-${i}`, label: r.t, get: () => r.t, set: (v) => (r.t = v), plain: true }}>{r.t}</span
     >
   {/each}
 </div>

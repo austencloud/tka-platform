@@ -17,7 +17,7 @@
   import ProofTextPage from "../_pages/ProofTextPage.svelte";
   import { GUIDE_BODY_PAGES, type GuidePageMeta } from "../_data/guide-manifest";
   import { PROOF_TEXT } from "../_data/proof-text";
-  import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
+  import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
 
   let {
     page,
@@ -49,6 +49,24 @@
   });
   const tf = (o: Off) => `transform: translate(${o.x * S}px, ${o.y * S}px)`;
   const off = (i: number): Off => FM.readme[i] ?? { x: 0, y: 0 };
+
+  // Editable front-matter TEXT (separate from FM positions). html strings so the
+  // support legend + sign-off keep their spans; edited via the editText action.
+  let TX = $state({
+    drink: "drink water",
+    support:
+      "<span class=\"ln\">If this guide helps you, you can support its development.</span>" +
+      "<span class=\"ln\">Any amount is genuinely appreciated.</span>",
+    readme: [
+      "Greetings, flow arts aficionado!",
+      "You've come across The Kinetic Alphabet, a notation system designed to help you craft and communicate your own unique choreography. This grid-based language is designed for music, using pictographs and letters that combine like puzzle pieces for each step. This system has propelled my sequence creation to new heights, and I hope it will do the same for you!",
+      "The Kinetic Alphabet is a fusion of elements from VTG (Vulcan Tech Gospel), siteswap (Juggling Notation), and musical notation. Although it can be introduced to beginners, it's designed for intermediate learners, bridging the gap between improvisation and choreography. Originally built for double staves, it can be applied to any dual wielded static prop like clubs, fans, triads, buugeng, and more.",
+      "Pictographs form the core of The Kinetic Alphabet. The letters are a useful tool to categorize and communicate the pictographs, but they are secondary to the pictographs themselves. It's not necessary to memorize the letters immediately to benefit from this system.",
+      "This is a work-in-progress and is continually growing. Whether you fully embrace this system, draw inspiration from certain parts, or follow a different path altogether, I hope the ideas presented here contribute to your creative growth.",
+      "I can't wait to see the unique choreography you'll create!",
+      "With love,<br /><span class=\"rm-sig\">Austen Cloud</span>",
+    ],
+  });
 
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
@@ -100,9 +118,8 @@
       class:selected={guideEdit.selectedId === "fm-drink"}
       style={tf(FM.drink)}
       use:ptDrag={pt("fm-drink", "drink water", FM.drink)}
-    >
-      drink water
-    </p>
+      use:editText={{ id: "fm-drink", label: "drink water", get: () => TX.drink, set: (v) => (TX.drink = v), plain: true }}
+    >{TX.drink}</p>
   </div>
 {/snippet}
 
@@ -114,10 +131,8 @@
       class:selected={guideEdit.selectedId === "fm-support-text"}
       style={tf(FM.supportText)}
       use:ptDrag={pt("fm-support-text", "Support text", FM.supportText)}
-    >
-      <span class="ln">If this guide helps you, you can support its development.</span>
-      <span class="ln">Any amount is genuinely appreciated.</span>
-    </p>
+      use:editText={{ id: "fm-support-text", label: "Support text", get: () => TX.support, set: (h) => (TX.support = h) }}
+    >{@html TX.support}</p>
     <figure
       class="donate drag"
       class:edit={guideEdit.on}
@@ -132,48 +147,24 @@
 {/snippet}
 
 {#snippet readmeContent()}
-  {#snippet rmP(i: number, cls: string, body: Snippet)}
+  {#snippet rmP(i: number, cls: string)}
     <p
       class="{cls} drag"
       class:edit={guideEdit.on}
       class:selected={guideEdit.selectedId === `fm-readme-${i}`}
       style={tf(off(i))}
       use:ptDrag={pt(`fm-readme-${i}`, `Read Me ¶${i + 1}`, off(i))}
-    >
-      {@render body()}
-    </p>
+      use:editText={{ id: `fm-readme-${i}`, label: `Read Me ¶${i + 1}`, get: () => TX.readme[i] ?? "", set: (h) => (TX.readme[i] = h) }}
+    >{@html TX.readme[i] ?? ""}</p>
   {/snippet}
   <div class="read-me">
-    {#snippet b0()}Greetings, flow arts aficionado!{/snippet}
-    {#snippet b1()}You've come across The Kinetic Alphabet, a notation system designed to
-      help you craft and communicate your own unique choreography. This
-      grid-based language is designed for music, using pictographs and letters
-      that combine like puzzle pieces for each step. This system has propelled
-      my sequence creation to new heights, and I hope it will do the same for
-      you!{/snippet}
-    {#snippet b2()}The Kinetic Alphabet is a fusion of elements from VTG (Vulcan Tech
-      Gospel), siteswap (Juggling Notation), and musical notation. Although it
-      can be introduced to beginners, it's designed for intermediate learners,
-      bridging the gap between improvisation and choreography. Originally built
-      for double staves, it can be applied to any dual wielded static prop like
-      clubs, fans, triads, buugeng, and more.{/snippet}
-    {#snippet b3()}Pictographs form the core of The Kinetic Alphabet. The letters are a
-      useful tool to categorize and communicate the pictographs, but they are
-      secondary to the pictographs themselves. It's not necessary to memorize
-      the letters immediately to benefit from this system.{/snippet}
-    {#snippet b4()}This is a work-in-progress and is continually growing. Whether you fully
-      embrace this system, draw inspiration from certain parts, or follow a
-      different path altogether, I hope the ideas presented here contribute to
-      your creative growth.{/snippet}
-    {#snippet b5()}I can't wait to see the unique choreography you'll create!{/snippet}
-    {#snippet b6()}With love,<br /><span class="rm-sig">Austen Cloud</span>{/snippet}
-    {@render rmP(0, "rm-greeting", b0)}
-    {@render rmP(1, "rm-lead", b1)}
-    {@render rmP(2, "", b2)}
-    {@render rmP(3, "", b3)}
-    {@render rmP(4, "", b4)}
-    {@render rmP(5, "", b5)}
-    {@render rmP(6, "sign-off", b6)}
+    {@render rmP(0, "rm-greeting")}
+    {@render rmP(1, "rm-lead")}
+    {@render rmP(2, "")}
+    {@render rmP(3, "")}
+    {@render rmP(4, "")}
+    {@render rmP(5, "")}
+    {@render rmP(6, "sign-off")}
   </div>
 {/snippet}
 
@@ -292,8 +283,9 @@
     letter-spacing: 0.01em;
     color: #2a2a2a;
   }
-  /* Support page: centred sentence-per-line. */
-  .support .ln {
+  /* Support page: centred sentence-per-line. :global — the .ln spans now live in
+     an {@html} string, which Svelte's scoped CSS does not reach. */
+  .support :global(.ln) {
     display: block;
   }
 
@@ -335,7 +327,8 @@
     margin-top: 0.3in !important;
     line-height: 1.4;
   }
-  .rm-sig {
+  /* :global — the sign-off .rm-sig span lives in an {@html} string (unscoped). */
+  .read-me :global(.rm-sig) {
     font-family: "Fraunces", Georgia, serif;
     font-style: italic;
     font-variation-settings: "opsz" 144, "wght" 580, "WONK" 1;

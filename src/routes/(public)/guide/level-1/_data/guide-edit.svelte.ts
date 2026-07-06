@@ -38,7 +38,9 @@ export type Editable = {
   id: string;
   label: string;
   get: () => string;
-  set: (html: string) => void;
+  set: (value: string) => void;
+  /** Plain-text run (reads/writes textContent) vs rich html (innerHTML). */
+  plain?: boolean;
 };
 type RegisteredText = { e: Editable; node: HTMLElement; begin: () => void };
 const editables = new Map<string, RegisteredText>();
@@ -300,8 +302,13 @@ export function ptDrag(node: HTMLElement | SVGElement, movable: Movable) {
 // are listed in the Copy dump so they can be made permanent in source.
 export function editText(node: HTMLElement, editable: Editable) {
   let e = editable;
-  let original = ""; // raw innerHTML at edit start
+  let original = ""; // raw content at edit start
   let cancelled = false;
+  let editing = false;
+
+  // Plain runs read/write textContent (so `{r.t}` doesn't double-escape); rich
+  // paragraphs read/write innerHTML (keeps <br>/<strong>).
+  const read = () => (e.plain ? node.textContent ?? "" : node.innerHTML);
 
   function teardown() {
     node.removeEventListener("keydown", key);
@@ -309,7 +316,8 @@ export function editText(node: HTMLElement, editable: Editable) {
     window.removeEventListener("pointerdown", outside, true);
   }
   async function commit() {
-    if (node.getAttribute("contenteditable") !== "true") return;
+    if (!editing) return;
+    editing = false;
     node.setAttribute("contenteditable", "false");
     node.classList.remove("guide-text-editing");
     teardown();
@@ -317,16 +325,16 @@ export function editText(node: HTMLElement, editable: Editable) {
       // Discard: the source value never changed while typing, so re-assigning it
       // is a no-op that won't re-render the contenteditable DOM. Flip through a
       // blank via tick() to force Svelte to re-render the original (this keeps
-      // Svelte's {@html} anchors intact — clobbering innerHTML directly would not).
+      // Svelte's text / {@html} anchors intact — clobbering the DOM would not).
       e.set("");
       await tick();
       e.set(original);
       return;
     }
-    const html = node.innerHTML.trim();
-    if (html !== original.trim()) {
+    const val = read().trim();
+    if (val !== original.trim()) {
       pushHistory();
-      e.set(html);
+      e.set(val);
       editedTextIds.add(e.id);
     }
   }
@@ -344,11 +352,14 @@ export function editText(node: HTMLElement, editable: Editable) {
     if (ev.target !== node && !node.contains(ev.target as Node)) node.blur();
   }
   function begin() {
-    if (!guideEdit.on) return;
+    if (!guideEdit.on || editing) return;
+    editing = true;
     select(e.id);
-    original = node.innerHTML;
+    original = read();
     cancelled = false;
-    node.setAttribute("contenteditable", "true");
+    // plaintext-only stops single-line runs eating pasted markup; where a
+    // browser lacks it, it falls back to a normal editable.
+    node.setAttribute("contenteditable", e.plain ? "plaintext-only" : "true");
     node.classList.add("guide-text-editing");
     node.focus();
     const range = document.createRange();
