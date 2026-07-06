@@ -41,6 +41,8 @@ export type Editable = {
   set: (value: string) => void;
   /** Plain-text run (reads/writes textContent) vs rich html (innerHTML). */
   plain?: boolean;
+  /** Fired when an edit session ends; `changed` = the text was actually altered. */
+  onCommit?: (changed: boolean) => void;
 };
 type RegisteredText = { e: Editable; node: HTMLElement; begin: () => void };
 const editables = new Map<string, RegisteredText>();
@@ -329,14 +331,17 @@ export function editText(node: HTMLElement, editable: Editable) {
       e.set("");
       await tick();
       e.set(original);
+      e.onCommit?.(false);
       return;
     }
     const val = read().trim();
-    if (val !== original.trim()) {
+    const changed = val !== original.trim();
+    if (changed) {
       pushHistory();
       e.set(val);
       editedTextIds.add(e.id);
     }
+    e.onCommit?.(changed);
   }
   function key(ev: KeyboardEvent) {
     if (ev.key === "Escape") {
