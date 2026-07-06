@@ -133,19 +133,24 @@
      MODULE GROUP
      ============================================================================ */
   .module-group {
-    margin-bottom: 8px;
+    /* margin-bottom + padding match the rail's .module-context-group exactly
+       (4px margin, 4px vertical pad) so each module sits at the SAME y in
+       both trees — no vertical bounce on the tree swap. */
+    margin-bottom: 4px;
     border-radius: 12px;
     /* 2px horizontal: keeps ModuleButton icon centers at x=32px (rail parity) */
     padding: 4px 2px;
     transition: all var(--duration-normal) cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  /* Active module with expanded sections gets unified background */
+  /* Active module with expanded sections gets unified background.
+     margin-bottom matches the rail's active .module-context-group.has-tabs
+     (10px) so the block below the active module doesn't jump on swap. */
   .module-group.active.has-sections {
     background: color-mix(in srgb, var(--module-color) 12%, rgba(0, 0, 0, 0.3));
     border: 1px solid color-mix(in srgb, var(--module-color) 20%, transparent);
     padding: 8px 2px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .module-group:last-child {

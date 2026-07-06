@@ -149,11 +149,16 @@
     display: flex;
     align-items: center;
     gap: 0;
+    /* Fixed 44px height (not min-height + vertical padding) so the expanded
+       row is the SAME height as the rail's 44px icon button — otherwise the
+       two trees have different per-module pitch and modules jump vertically
+       on the swap. Icon is centered by align-items, not padding. */
+    height: var(--min-touch-target);
     min-height: var(--min-touch-target);
     /* Zero left padding: the fixed 44px icon column below centers the icon
        at x=32px from the sidebar edge — the same center as the rail's icons,
        so the rail↔expanded tree swap doesn't move icons. */
-    padding: 12px 14px 12px 0;
+    padding: 0 14px 0 0;
     background: transparent;
     border: 1px solid transparent;
     border-radius: 12px;

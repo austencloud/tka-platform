@@ -940,14 +940,18 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     margin-bottom: 10px;
   }
 
-  /* Nested Tabs - shown under active module */
+  /* Nested Tabs - shown under active module. Vertical footprint (top gap 6px,
+     47px per-row pitch, 3px trailing) matches the expanded SectionsList so the
+     active-module tab block is the SAME height in both trees — modules below
+     the active one don't jump on the hover-expand swap. */
   .nested-tabs {
     width: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 6px 0 0 0;
-    margin-top: 4px;
+    gap: 3px;
+    padding: 0 0 3px 0;
+    margin-top: 6px;
     position: relative;
   }
 

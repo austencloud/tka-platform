@@ -228,11 +228,18 @@
     gap: 8px;
     padding: 12px 10px;
     border-top: 1px solid var(--theme-stroke);
+    /* Pin footer content to the expanded width (like .navigation-content).
+       The nav's overflow:hidden clips it while the width animates, so footer
+       icons stay left-anchored at x=32 instead of drifting as the box grows. */
+    width: 220px;
   }
 
   .sidebar-footer.collapsed {
     padding: 12px 8px;
     align-items: center;
+    /* Pin to the rail width so centered buttons stay at x=32 during the
+       collapse animation instead of flying to the center of the wide box. */
+    width: 64px;
   }
 
   /* ============================================================================
