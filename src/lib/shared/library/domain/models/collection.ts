@@ -31,6 +31,34 @@ export interface DeckMetadata {
  */
 export type SystemCollectionType = "favorites";
 
+/** A Smart Collection's rule targets one of these pools. */
+export type SmartCollectionSource = "community" | "my-library";
+
+/**
+ * One saved filter, Firestore-safe. This is an OBJECT (not the engine's
+ * `[key, ActiveFilter]` tuple) because Firestore forbids arrays-of-arrays.
+ * `type` is the string value of BrowseFilterType; `value` mirrors
+ * BrowseFilterValue (`string | number | boolean | string[] | null`).
+ */
+export interface StoredSmartFilter {
+  /** Engine map key, e.g. "difficulty" or "loop_type:component:mirrored". */
+  key: string;
+  type: string;
+  value: string | number | boolean | string[] | null;
+  label: string;
+  chipColor: string;
+}
+
+/** The saved rule that defines a Smart Collection's live membership. */
+export interface SmartFilterSpec {
+  source: SmartCollectionSource;
+  /** Array of objects — never a nested array (Firestore constraint). */
+  filters: StoredSmartFilter[];
+  /** String value of BrowseSortMethod. */
+  sortMethod: string;
+  sortDirection: "asc" | "desc";
+}
+
 /**
  * Well-known system collection IDs
  * Using deterministic IDs so we can reference them without querying
@@ -107,6 +135,16 @@ export interface LibraryCollection {
   /** Deck promotion metadata - present when this collection has been promoted to a deck */
   readonly deckMetadata?: DeckMetadata;
 
+  /**
+   * Membership model. Absent or "manual" = hand-picked `sequenceIds` list
+   * (every collection before Smart Collections existed). "smart" = members
+   * derive live from `filterSpec`; `sequenceIds` is unused.
+   */
+  readonly kind?: "manual" | "smart";
+
+  /** The saved filter rule. Present iff kind === "smart". */
+  readonly filterSpec?: SmartFilterSpec;
+
   /** When created */
   readonly createdAt: Date;
 
@@ -126,6 +164,13 @@ export function isSystemCollection(collection: LibraryCollection): boolean {
  */
 export function isFavoritesCollection(collection: LibraryCollection): boolean {
   return collection.systemType === "favorites";
+}
+
+/**
+ * Check if a collection is a Smart Collection (rule-defined membership).
+ */
+export function isSmartCollection(collection: LibraryCollection): boolean {
+  return collection.kind === "smart";
 }
 
 /**
@@ -161,6 +206,37 @@ export function createCollection(
     icon: options.icon ?? "fa-folder",
     isPublic: options.isPublic ?? false,
     sortOrder: options.sortOrder ?? 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/**
+ * Create a Smart Collection model (rule-defined membership). Members derive
+ * live from `filterSpec`, so `sequenceIds`/`sequenceCount` start empty.
+ * Defaults to the wand icon so it reads as auto-maintained in the rail.
+ */
+export function createSmartCollectionModel(
+  name: string,
+  ownerId: string,
+  filterSpec: SmartFilterSpec,
+  options: CreateCollectionOptions = {}
+): Omit<LibraryCollection, "id"> {
+  const now = new Date();
+
+  return {
+    name,
+    ownerId,
+    description: options.description,
+    sequenceIds: [],
+    sequenceCount: 0,
+    coverImageUrl: options.coverImageUrl,
+    color: options.color,
+    icon: options.icon ?? "fa-wand-magic-sparkles",
+    isPublic: options.isPublic ?? false,
+    sortOrder: options.sortOrder ?? 0,
+    kind: "smart",
+    filterSpec,
     createdAt: now,
     updatedAt: now,
   };
