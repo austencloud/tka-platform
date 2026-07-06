@@ -727,7 +727,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 326.8,
       "fs": 15,
       "s": "regular",
-      "t": "With alpha→beta, this creates a two beta sequence:"
+      "t": "With alpha→beta, this creates a two-step sequence:"
     },
     {
       "x": 128.4,

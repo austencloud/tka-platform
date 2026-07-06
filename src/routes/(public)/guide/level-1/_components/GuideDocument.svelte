@@ -148,7 +148,7 @@
     {#snippet b1()}You've come across The Kinetic Alphabet, a notation system designed to
       help you craft and communicate your own unique choreography. This
       grid-based language is designed for music, using pictographs and letters
-      that combine like puzzle pieces for each beat. This system has propelled
+      that combine like puzzle pieces for each step. This system has propelled
       my sequence creation to new heights, and I hope it will do the same for
       you!{/snippet}
     {#snippet b2()}The Kinetic Alphabet is a fusion of elements from VTG (Vulcan Tech

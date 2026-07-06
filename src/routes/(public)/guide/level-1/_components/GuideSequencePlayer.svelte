@@ -93,7 +93,7 @@
           onclick={() => jumpTo(i)}
           onkeydown={(e) => e.key === "Enter" && jumpTo(i)}
         >
-          <GuidePictograph data={beat} size={beatSize} label="Beat {i + 1}" bordered />
+          <GuidePictograph data={beat} size={beatSize} label="Step {i + 1}" bordered />
         </div>
       {/if}
     {/each}
@@ -119,7 +119,7 @@
           class="beat-dot"
           class:active={activeStep === i}
           onclick={() => jumpTo(i)}
-          aria-label="Beat {i + 1}"
+          aria-label="Step {i + 1}"
         ></button>
       {/each}
     </div>

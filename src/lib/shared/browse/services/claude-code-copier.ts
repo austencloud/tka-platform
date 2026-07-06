@@ -69,9 +69,9 @@ export class ClaudeCodeCopier {
     lines.push("rot = cw/ccw/no (rotation direction)");
     lines.push("rev = reversal indicator (B=blue, R=red)");
 
-    // Beats
+    // Steps
     lines.push("");
-    lines.push("## Beats");
+    lines.push("## Steps");
 
     if (fullSequence.steps?.length) {
       for (let i = 0; i < fullSequence.steps.length; i++) {

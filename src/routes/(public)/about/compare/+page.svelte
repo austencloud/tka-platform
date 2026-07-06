@@ -45,8 +45,8 @@
           icon: "fa-diagram-project",
           hasPositionGrid: true,
           paragraphs: [
-            "Every beat of movement becomes a pictograph showing where your hands are and how they move on a grid. The visual approach means you can read a sequence immediately without memorizing terminology. Positions describe where your hands are relative to each other: across from each other, at the same point, forming a right angle.",
-            "Pictographs also capture motion types, direction, and rotation. The letter system is optional, but useful when you need to reference a single beat in a specific sequence during choreography and rehearsal.",
+            "Every step of movement becomes a pictograph showing where your hands are and how they move on a grid. The visual approach means you can read a sequence immediately without memorizing terminology. Positions describe where your hands are relative to each other: across from each other, at the same point, forming a right angle.",
+            "Pictographs also capture motion types, direction, and rotation. The letter system is optional, but useful when you need to reference a single step in a specific sequence during choreography and rehearsal.",
           ],
         },
         {
@@ -101,8 +101,8 @@
           icon: "fa-diagram-project",
           hasPositionGrid: true,
           paragraphs: [
-            "Each beat of movement gets a pictograph. It shows where your hands are and how they move on a grid. You can read it without memorizing terminology. Positions are simple: hands across from each other, at the same point, or at a right angle.",
-            "Pictographs also capture motion type, direction, and rotation. Letters are optional but handy when you need to talk about a specific beat during rehearsal.",
+            "Each step of movement gets a pictograph. It shows where your hands are and how they move on a grid. You can read it without memorizing terminology. Positions are simple: hands across from each other, at the same point, or at a right angle.",
+            "Pictographs also capture motion type, direction, and rotation. Letters are optional but handy when you need to talk about a specific step during rehearsal.",
           ],
         },
         {
@@ -158,9 +158,9 @@
           icon: "fa-seedling",
           hasPositionGrid: true,
           paragraphs: [
-            "The Kinetic Alphabet (TKA) is a notation system that encodes prop movement as pictographs and letters. Each beat of a performance is represented as a pictograph: a grid-based diagram showing hand positions, prop orientations, motion types, direction, and rotation. Sequences of pictographs form words, and words spell out choreography that can be read, written, spoken, and reproduced.",
+            "The Kinetic Alphabet (TKA) is a notation system that encodes prop movement as pictographs and letters. Each step of a performance is represented as a pictograph: a grid-based diagram showing hand positions, prop orientations, motion types, direction, and rotation. Sequences of pictographs form words, and words spell out choreography that can be read, written, spoken, and reproduced.",
             'The system is visual-first. A pictograph can be read without terminology training. Positions are geometric: hands at opposite points (alpha), the same point (beta), or at a right angle (gamma).',
-            '"CAKE" is not a metaphor. It is four specific beats of movement, each unambiguous, each reproducible. The notation does not depend on English or any natural language.',
+            '"CAKE" is not a metaphor. It is four specific steps of movement, each unambiguous, each reproducible. The notation does not depend on English or any natural language.',
           ],
         },
         {

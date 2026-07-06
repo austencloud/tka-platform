@@ -214,8 +214,8 @@ export function registerCreateShortcuts(
   // Arrow Left - Navigate to previous beat (when edit panel is open)
   service.register({
     id: "create.edit-nav-left",
-    label: "Previous Beat",
-    description: "Navigate to previous beat in edit panel",
+    label: "Previous Step",
+    description: "Navigate to previous step in edit panel",
     key: "ArrowLeft",
     modifiers: [],
     context: ["create", "edit-panel"],
@@ -236,8 +236,8 @@ export function registerCreateShortcuts(
   // Arrow Right - Navigate to next beat (when edit panel is open)
   service.register({
     id: "create.edit-nav-right",
-    label: "Next Beat",
-    description: "Navigate to next beat in edit panel",
+    label: "Next Step",
+    description: "Navigate to next step in edit panel",
     key: "ArrowRight",
     modifiers: [],
     context: ["create", "edit-panel"],

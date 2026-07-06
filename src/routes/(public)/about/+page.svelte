@@ -21,8 +21,8 @@
       title: "How It Works",
       color: "#14b8a6",
       content: [
-        "Each beat of movement gets a pictograph. It shows where your hands are and how they move on a grid. You can read it without memorizing terminology. Positions are simple: hands across from each other, at the same point, or at a right angle.",
-        "Pictographs also capture motion type, direction, and rotation. Letters are optional but handy when you need to talk about a specific beat during rehearsal.",
+        "Each step of movement gets a pictograph. It shows where your hands are and how they move on a grid. You can read it without memorizing terminology. Positions are simple: hands across from each other, at the same point, or at a right angle.",
+        "Pictographs also capture motion type, direction, and rotation. Letters are optional but handy when you need to talk about a specific step during rehearsal.",
       ],
     },
     {

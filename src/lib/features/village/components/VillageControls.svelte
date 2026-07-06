@@ -130,7 +130,7 @@
 			{#if selectedEntity.prop.heldProp}
 				<div class="stat">Prop: {selectedEntity.prop.heldProp.propType}</div>
 				<div class="stat">Wear: {(selectedEntity.prop.heldProp.wear * 100).toFixed(0)}%</div>
-				<div class="stat">Beats: {selectedEntity.prop.heldProp.totalStepsPerformed}</div>
+				<div class="stat">Steps: {selectedEntity.prop.heldProp.totalStepsPerformed}</div>
 				<div class="stat">Owners: {selectedEntity.prop.heldProp.ownershipChain.length}</div>
 			{:else}
 				<div class="stat">Prop: none (seeking maker)</div>
