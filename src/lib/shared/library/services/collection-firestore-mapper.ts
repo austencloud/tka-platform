@@ -83,6 +83,8 @@ export function mapDocToCollection(
     isPublic: data["isPublic"] ?? false,
     sortOrder: data["sortOrder"] ?? 0,
     systemType: data["systemType"],
+    kind: data["kind"] ?? "manual",
+    filterSpec: data["filterSpec"],
     createdAt: toDate(data["createdAt"]),
     updatedAt: toDate(data["updatedAt"]),
   };
