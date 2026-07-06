@@ -296,8 +296,14 @@
   .footer-button.collapsed {
     width: var(--min-touch-target);
     padding: 0;
-    justify-content: center;
     border-radius: 12px;
+    /* No justify-content:center. The 44px icon column is wider than this
+       button's 42px content box (44 border-box − 2px borders), so centering
+       pulled the column 1px LEFT (icon center x=32) while the expanded button
+       left-anchors it at x=33 — a 1px rightward jump on expand. Left-anchoring
+       both (flex-start) lands the icon at x=33 in both states: no shift. The
+       footer's 8px collapsed pad + 2px centering already equals the expanded
+       10px pad, so the button's left edge matches too. */
   }
 
   .footer-button:focus-visible {
