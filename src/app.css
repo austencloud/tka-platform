@@ -21,6 +21,9 @@
 /* Centralized Keyframe Animations - common animations with reduced-motion support */
 @import "./lib/shared/transitions/keyframes.css";
 
+/* TKA Letters webfont — @font-face + .tka-font (typeable Kinetic Alphabet) */
+@import "./styles/tka-font.css";
+
 /* CSS Reset and Base Styles */
 *,
 *::before,
