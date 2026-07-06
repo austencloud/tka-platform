@@ -18,8 +18,11 @@
 
 import { browser } from "$app/environment";
 
-/** Bump to invalidate every cached code (e.g. if the URL scheme changes). */
-export const SHORT_CODE_CACHE_SCHEMA = "v1";
+/** Bump to invalidate every cached code (e.g. if the URL scheme changes).
+ *  v2 (2026-07-05): values became code-only — URLs are derived per caller
+ *  from their own options, and keys dropped the bp/rp/vm discriminants.
+ *  The bump also flushes codes that diverged during the dup-mint-race era. */
+export const SHORT_CODE_CACHE_SCHEMA = "v2";
 
 const DB_NAME = "short-code-cache";
 const STORE_NAME = "codes";
@@ -30,7 +33,6 @@ const DEFAULT_MAX_ENTRIES = 5000;
 
 export interface ShortCodeCacheValue {
   code: string;
-  url: string;
 }
 
 interface CachedCodeEntry extends ShortCodeCacheValue {
@@ -82,7 +84,7 @@ export class ShortCodeCache {
         }
       );
       if (!entry) return null;
-      const value: ShortCodeCacheValue = { code: entry.code, url: entry.url };
+      const value: ShortCodeCacheValue = { code: entry.code };
       this.memory.set(key, value);
       return value;
     } catch (error) {
@@ -116,10 +118,7 @@ export class ShortCodeCache {
               req.onsuccess = () => {
                 const entry = req.result as CachedCodeEntry | undefined;
                 if (entry) {
-                  const value: ShortCodeCacheValue = {
-                    code: entry.code,
-                    url: entry.url,
-                  };
+                  const value: ShortCodeCacheValue = { code: entry.code };
                   this.memory.set(key, value);
                   found.set(key, value);
                 }
@@ -148,7 +147,6 @@ export class ShortCodeCache {
       const entry: CachedCodeEntry = {
         key,
         code: value.code,
-        url: value.url,
         timestamp: Date.now(),
       };
       await new Promise<void>((resolve, reject) => {

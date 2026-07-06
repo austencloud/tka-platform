@@ -15,6 +15,7 @@ import {
   collection,
   doc,
   getDoc,
+  setDoc,
   query,
   where,
   getDocs,
@@ -39,6 +40,10 @@ import type { ShortCodeRecord, CreateShortCodeResult, ShortCodeURLOptions, Impor
 import { ShortCodeCache, SHORT_CODE_CACHE_SCHEMA } from "./short-code-cache";
 
 const SHORTCODES_COLLECTION = "shortcodes";
+/** Content-addressed index: shortcodeHashes/{encoderHash} → { code }.
+ *  Written atomically with each new code doc; makes one-code-per-hash a
+ *  transactional invariant instead of a best-effort pre-check query. */
+const HASH_INDEX_COLLECTION = "shortcodeHashes";
 const MIN_CODE_LENGTH = 4;
 
 /** Firestore `in` query operand cap. Batch reads chunk to this. */
@@ -81,15 +86,17 @@ function importedWord(data: ShortCodeData): string {
 export class ShortCodeManager {
   private firestore: Firestore | null = null;
   private staticSnapshotCache: Map<string, ShortCodeData> | null = null;
-  /** In-flight single-flight cache keyed by encoderHash (or fallback id when
-   *  a sequence has no steps). Prevents simultaneous calls for the same
-   *  sequence - e.g. QRCodeGenerator and SequenceViewerOverlayState both
-   *  requesting a shortcode for the current sequence at the same time -
-   *  from racing past the `findExistingCodeByHash` check and writing two
-   *  docs with identical encoderHash. Observed live 2026-04-19: same hash,
-   *  1ms apart, two codes. The cache reduces Firestore pressure even when
-   *  no race is present (second caller just returns the first's promise). */
-  private readonly inflightByKey = new Map<string, Promise<CreateShortCodeResult>>();
+  /** In-flight single-flight cache keyed by BARE encoderHash (or `w:{id}`
+   *  fallback). Every concurrent caller for the same sequence shares ONE
+   *  allocation regardless of options/embed flags — the shared result is the
+   *  CODE; each caller derives its own URL from its own options. (The old key
+   *  included embedScope, which put the two page-load callers — overlay state
+   *  and QR generator — in different scopes and let them race straight past
+   *  each other: 1,044 duplicate docs by 2026-07-05.) */
+  private readonly inflightByKey = new Map<
+    string,
+    Promise<{ code: string; isNew: boolean }>
+  >();
 
   constructor(
     private readonly browseLoader: PublicSequencesLoader,
@@ -98,23 +105,13 @@ export class ShortCodeManager {
   ) {}
 
   /**
-   * Cache key for a sequence's resolved code/URL. Keyed by the same inputs the
-   * code + URL vary on: the content hash (or word fallback) plus the URL-option
-   * discriminants (`bp`/`rp`/`vm`). `deckId`/`deckName` are NOT included — they
-   * only affect the stored record, never the code or URL (an existing code is
-   * reused regardless of deck).
+   * Cache key for a sequence's resolved code. Keyed by content hash (or word
+   * fallback) ONLY — the code never varies with URL options, and URLs are
+   * derived per caller. deckId/deckName/bp/rp/vm affect the stored record or
+   * the URL, never the code.
    */
-  private buildCacheKey(
-    hashOrWord: string,
-    options?: ShortCodeURLOptions
-  ): string {
-    return [
-      SHORT_CODE_CACHE_SCHEMA,
-      hashOrWord,
-      options?.bluePropType ?? "",
-      options?.redPropType ?? "",
-      options?.viewMode ?? "",
-    ].join(":");
+  private buildCacheKey(hashOrWord: string): string {
+    return `${SHORT_CODE_CACHE_SCHEMA}:${hashOrWord}`;
   }
 
   /**
@@ -216,43 +213,41 @@ export class ShortCodeManager {
       throw new Error("Sequence must have steps, word, name, or id for short code generation");
     }
 
+    const allocKey = encoderHash ?? `w:${fallbackId}`;
+
     // Persistent-cache short-circuit. A sequence's code is global + content-
     // addressed, so once resolved it never changes — read it locally and skip
     // the Firestore round-trip entirely. This is the cold-deck speed fix:
     // ~380ms/card network query → memory/IDB read.
-    const cacheKey = this.buildCacheKey(encoderHash ?? `w:${fallbackId}`, options);
+    const cacheKey = this.buildCacheKey(allocKey);
     const cached = await this.codeCache.get(cacheKey);
     if (cached) {
-      return { code: cached.code, url: cached.url, isNew: false };
+      return {
+        code: cached.code,
+        url: this.buildUrlWithOptions(this.getBaseUrl(), cached.code, options),
+        isNew: false,
+      };
     }
 
-    // Single-flight dedup key. Two concurrent calls in the same tab for the
-    // same sequence will share one Firestore round-trip and one promise.
-    // Scope: options?.embedSequenceData affects the doc shape, so calls
-    // with different embed flags MUST NOT share a promise (otherwise one
-    // caller gets a doc shaped for the other's use case).
-    const embedScope = options?.embedSequenceData ? "embed" : "lean";
-    const dedupKey = `${embedScope}:${encoderHash ?? `w:${fallbackId}`}`;
-
-    const inflight = this.inflightByKey.get(dedupKey);
-    if (inflight) return inflight;
-
-    const promise = this.createShortCodeInternal(
-      sequence,
-      options,
-      encoderHash,
-      fallbackId
-    );
-    this.inflightByKey.set(dedupKey, promise);
-    try {
-      const result = await promise;
-      // Write through the persistent cache so the next render (this session or
-      // future) skips Firestore.
-      void this.codeCache.set(cacheKey, { code: result.code, url: result.url });
-      return result;
-    } finally {
-      this.inflightByKey.delete(dedupKey);
+    let inflight = this.inflightByKey.get(allocKey);
+    if (!inflight) {
+      inflight = this.allocateCode(sequence, options, encoderHash, fallbackId)
+        .then((result) => {
+          // Write through the persistent cache so the next render (this
+          // session or future) skips Firestore.
+          void this.codeCache.set(cacheKey, { code: result.code });
+          return result;
+        })
+        .finally(() => this.inflightByKey.delete(allocKey));
+      this.inflightByKey.set(allocKey, inflight);
     }
+
+    const { code, isNew } = await inflight;
+    return {
+      code,
+      url: this.buildUrlWithOptions(this.getBaseUrl(), code, options),
+      isNew,
+    };
   }
 
   /**
@@ -281,7 +276,7 @@ export class ShortCodeManager {
           const hashOrWord = hash ?? `w:${fallbackId ?? ""}`;
           return {
             hash,
-            cacheKey: this.buildCacheKey(hashOrWord, options),
+            cacheKey: this.buildCacheKey(hashOrWord),
           };
         })
       );
@@ -299,7 +294,7 @@ export class ShortCodeManager {
 
       onProgress?.(0, missHashes.length);
       const firestore = await this.ensureFirestore();
-      const hashToCode = new Map<string, string>();
+      const hashToCode = new Map<string, { code: string; createdAt: string }>();
 
       // 4. Chunked `in` queries (Firestore caps the `in` list at 30).
       for (let i = 0; i < missHashes.length; i += FIRESTORE_IN_LIMIT) {
@@ -311,9 +306,15 @@ export class ShortCodeManager {
           )
         );
         for (const docSnap of snap.docs) {
-          const hash = (docSnap.data() as ShortCodeData).encoderHash;
-          // First write wins; a hash should map to one code, but guard anyway.
-          if (hash && !hashToCode.has(hash)) hashToCode.set(hash, docSnap.id);
+          const data = docSnap.data() as ShortCodeData;
+          const hash = data.encoderHash;
+          if (!hash) continue;
+          const prev = hashToCode.get(hash);
+          // Legacy duplicate groups: keep the OLDEST doc per hash so batch
+          // resolution converges on the same canonical code as single lookups.
+          if (!prev || (data.createdAt ?? "") < prev.createdAt) {
+            hashToCode.set(hash, { code: docSnap.id, createdAt: data.createdAt ?? "" });
+          }
         }
         onProgress?.(Math.min(i + FIRESTORE_IN_LIMIT, missHashes.length), missHashes.length);
       }
@@ -322,10 +323,9 @@ export class ShortCodeManager {
       await Promise.all(
         misses.map((item) => {
           if (!item.hash) return Promise.resolve();
-          const code = hashToCode.get(item.hash);
-          if (!code) return Promise.resolve(); // genuinely new — created at render
-          const url = this.buildUrlWithOptions(this.getBaseUrl(), code, options);
-          return this.codeCache.set(item.cacheKey, { code, url });
+          const winner = hashToCode.get(item.hash);
+          if (!winner) return Promise.resolve(); // genuinely new — created at render
+          return this.codeCache.set(item.cacheKey, { code: winner.code });
         })
       );
     } catch (error) {
@@ -334,17 +334,17 @@ export class ShortCodeManager {
     }
   }
 
-  private async createShortCodeInternal(
+  private async allocateCode(
     sequence: SequenceData,
     options: ShortCodeURLOptions | undefined,
     encoderHash: string | undefined,
     fallbackId: string | undefined
-  ): Promise<CreateShortCodeResult> {
+  ): Promise<{ code: string; isNew: boolean }> {
     const firestore = await this.ensureFirestore();
 
     // Check if this sequence already has a short code (by hash or word).
-    // This is the legacy-dedup path - it catches codes created before the
-    // single-flight cache existed, and codes written by OTHER tabs/devices.
+    // Catches codes created before the hash index existed and codes written
+    // by other tabs/devices whose index doc hasn't been healed yet.
     const existingCode = encoderHash
       ? await this.findExistingCodeByHash(encoderHash)
       : await this.findExistingCode(fallbackId!);
@@ -373,11 +373,7 @@ export class ShortCodeManager {
           }
         }
       }
-      return {
-        code: existingCode,
-        url: this.buildUrlWithOptions(this.getBaseUrl(), existingCode, options),
-        isNew: false,
-      };
+      return { code: existingCode, isNew: false };
     }
 
     // Build the full record once. Encoding is expensive - don't redo it per
@@ -421,33 +417,42 @@ export class ShortCodeManager {
       );
     }
 
-    // Allocate a unique code. The `getDoc → setDoc` sequence used to race:
-    // two tabs could both observe "doc doesn't exist" for the SAME random
-    // code (astronomically rare) OR, more importantly, both observe "hash
-    // doesn't exist" and each write their own code. runTransaction
-    // serializes the check-and-write so at most one writer wins per doc
-    // path. Cross-tab hash races are still theoretically possible but the
-    // loser reads their code back on next createShortCode via the legacy
-    // findExistingCodeByHash path above.
+    // Allocate a unique code. The transaction enforces BOTH invariants
+    // atomically: the code doc path is unclaimed (collision retry), and no
+    // other writer has claimed this hash (index doc). Two clients racing:
+    // both read a nonexistent index doc, both try to write it — Firestore's
+    // serializable transactions force the loser to retry, whose re-read then
+    // sees the winner and adopts its code instead of minting a duplicate.
     const maxAttemptsPerLength = 10;
     const maxCodeLength = MIN_CODE_LENGTH + 2;
-
-    // Per-call escalating length. Starts at the minimum every call so a bump
-    // triggered by this sequence's collisions never leaks into other calls.
     let codeLength = MIN_CODE_LENGTH;
+    const indexRef = encoderHash
+      ? doc(firestore, HASH_INDEX_COLLECTION, encoderHash)
+      : null;
 
     while (codeLength <= maxCodeLength) {
       for (let attempts = 0; attempts < maxAttemptsPerLength; attempts++) {
         const code = this.generateCode(codeLength);
         const docRef = doc(firestore, SHORTCODES_COLLECTION, code);
 
+        let adoptedCode: string | null = null;
         try {
           await runTransaction(firestore, async (tx) => {
+            if (indexRef) {
+              const indexSnap = await tx.get(indexRef);
+              if (indexSnap.exists()) {
+                adoptedCode = (indexSnap.data() as { code: string }).code;
+                return;
+              }
+            }
             const snap = await tx.get(docRef);
             if (snap.exists()) {
               throw new Error("__CODE_COLLISION__");
             }
             tx.set(docRef, record);
+            if (indexRef) {
+              tx.set(indexRef, { code, createdAt: record.createdAt });
+            }
           });
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
@@ -455,18 +460,19 @@ export class ShortCodeManager {
           throw err;
         }
 
-        return {
-          code,
-          url: this.buildUrlWithOptions(this.getBaseUrl(), code, options),
-          isNew: true,
-        };
+        if (adoptedCode) return { code: adoptedCode, isNew: false };
+        return { code, isNew: true };
       }
 
       codeLength++;
-      console.warn(`[ShortCode] Exhausted ${maxAttemptsPerLength} attempts at length ${codeLength - 1}, bumping to ${codeLength}`);
+      console.warn(
+        `[ShortCode] Exhausted ${maxAttemptsPerLength} attempts at length ${codeLength - 1}, bumping to ${codeLength}`
+      );
     }
 
-    throw new Error("Failed to generate unique short code after exhausting all length tiers");
+    throw new Error(
+      "Failed to generate unique short code after exhausting all length tiers"
+    );
   }
 
   /**
@@ -488,7 +494,12 @@ export class ShortCodeManager {
   }
 
   /**
-   * Find an existing short code by encoderHash (content-addressed)
+   * Find an existing short code by encoderHash (content-addressed).
+   *
+   * Legacy data contains duplicate groups (pre-2026-07-05 mint race), so the
+   * query can return several docs. Pick the OLDEST so every client converges
+   * on the same code — `docs[0]` order is arbitrary and made two browsers
+   * show different codes for the same sequence.
    */
   private async findExistingCodeByHash(hash: string): Promise<string | null> {
     const firestore = await this.ensureFirestore();
@@ -498,11 +509,40 @@ export class ShortCodeManager {
     );
 
     const snapshot = await getDocs(q);
-    if (!snapshot.empty) {
-      return snapshot.docs[0]!.id;
+    if (snapshot.empty) return null;
+
+    let best = snapshot.docs[0]!;
+    let bestCreated = (best.data() as ShortCodeData).createdAt ?? "";
+    for (const d of snapshot.docs.slice(1)) {
+      const created = (d.data() as ShortCodeData).createdAt ?? "";
+      if (created < bestCreated) {
+        best = d;
+        bestCreated = created;
+      }
     }
 
-    return null;
+    // Lazy heal: point the hash index at the canonical code so future
+    // allocations hit the transaction path directly. Fire-and-forget —
+    // resolution must never block on it.
+    void this.healHashIndex(hash, best.id);
+
+    return best.id;
+  }
+
+  /** Best-effort create of the hash-index doc. The index is immutable after
+   *  create (rules), so a lost race here just means another client healed it
+   *  first — the warn is noise, not damage. */
+  private async healHashIndex(hash: string, code: string): Promise<void> {
+    try {
+      const firestore = await this.ensureFirestore();
+      const ref = doc(firestore, HASH_INDEX_COLLECTION, hash);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        await setDoc(ref, { code, createdAt: new Date().toISOString() });
+      }
+    } catch (error) {
+      console.warn(`[ShortCode] hash-index heal failed for ${hash}:`, error);
+    }
   }
 
   async resolveShortCode(code: string): Promise<SequenceData | null> {

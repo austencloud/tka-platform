@@ -14,22 +14,19 @@ describe("ShortCodeCache (memory layer)", () => {
 
   it("round-trips a set value", async () => {
     const cache = new ShortCodeCache();
-    await cache.set("k1", { code: "AB12", url: "HTTPS://TKA.RUN/AB12" });
-    expect(await cache.get("k1")).toEqual({
-      code: "AB12",
-      url: "HTTPS://TKA.RUN/AB12",
-    });
+    await cache.set("k1", { code: "AB12" });
+    expect(await cache.get("k1")).toEqual({ code: "AB12" });
   });
 
   it("getMany returns only the keys that hit", async () => {
     const cache = new ShortCodeCache();
-    await cache.set("hit-a", { code: "AAAA", url: "u-a" });
-    await cache.set("hit-b", { code: "BBBB", url: "u-b" });
+    await cache.set("hit-a", { code: "AAAA" });
+    await cache.set("hit-b", { code: "BBBB" });
 
     const found = await cache.getMany(["hit-a", "miss", "hit-b"]);
     expect(found.size).toBe(2);
-    expect(found.get("hit-a")).toEqual({ code: "AAAA", url: "u-a" });
-    expect(found.get("hit-b")).toEqual({ code: "BBBB", url: "u-b" });
+    expect(found.get("hit-a")).toEqual({ code: "AAAA" });
+    expect(found.get("hit-b")).toEqual({ code: "BBBB" });
     expect(found.has("miss")).toBe(false);
   });
 
@@ -41,7 +38,7 @@ describe("ShortCodeCache (memory layer)", () => {
 
   it("clear drops memory entries", async () => {
     const cache = new ShortCodeCache();
-    await cache.set("k", { code: "C", url: "u" });
+    await cache.set("k", { code: "C" });
     await cache.clear();
     expect(await cache.get("k")).toBeNull();
   });
