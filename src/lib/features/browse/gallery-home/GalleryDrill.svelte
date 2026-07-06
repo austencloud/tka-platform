@@ -758,9 +758,9 @@
           </div>
         </div>
       {:else if section === "position"}
-        <div class="drill-screen">
+        <div class="drill-screen screen-positions">
           {@render valueHead("Pick a start position")}
-          <div class="value-list centered-list">
+          <div class="value-list">
             {#each positionValues as v (v.value)}
               <button
                 class="length-row tall monument"
@@ -794,7 +794,7 @@
           </div>
         </div>
       {:else if section === "author"}
-        <div class="drill-screen">
+        <div class="drill-screen screen-creator">
           {@render valueHead("Pick a creator")}
           <div class="value-list creator-list">
             {#each creatorValues as v (v.value)}
@@ -838,9 +838,9 @@
           </div>
         </div>
       {:else if section === "gridmode"}
-        <div class="drill-screen">
+        <div class="drill-screen screen-gridmode">
           {@render valueHead("Pick a grid mode")}
-          <div class="value-list centered-list">
+          <div class="value-list">
             {#each gridModeValues as v (v.value)}
               <button
                 class="length-row tall monument"
@@ -1752,12 +1752,36 @@
       grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
       gap: 0.8rem;
     }
-    /* Sparse image screens (3 positions, 2 grid modes): auto-fill left an empty
-       trailing column ("space to the right of them"), and 1fr stretched each
-       card far wider than its pictograph. Cap the card and center the group. */
-    .value-list.centered-list {
-      grid-template-columns: repeat(auto-fit, minmax(240px, 300px));
-      justify-content: center;
+    /* Centered screens (positions, grid mode, creators): cap the header AND the
+       list to one shared band and center it, so Back sits at the content's left
+       edge — matching the full-width screens — instead of floating far left. The
+       cards fill the band (no sub-centering slack) so alignment is exact. */
+    .screen-positions > .drill-head.with-back,
+    .screen-positions > .value-list,
+    .screen-gridmode > .drill-head.with-back,
+    .screen-gridmode > .value-list,
+    .screen-creator > .drill-head.with-back,
+    .screen-creator > .value-list {
+      align-self: center;
+      width: 100%;
+    }
+    .screen-positions > .drill-head.with-back,
+    .screen-positions > .value-list {
+      max-width: 840px;
+    }
+    .screen-gridmode > .drill-head.with-back,
+    .screen-gridmode > .value-list {
+      max-width: 560px;
+    }
+    .screen-creator > .drill-head.with-back,
+    .screen-creator > .value-list {
+      max-width: 720px;
+    }
+    .screen-positions > .value-list {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .screen-gridmode > .value-list {
+      grid-template-columns: repeat(2, 1fr);
     }
     /* Creators are rich horizontal rows (avatar + name + count + work-fan), so
        a multi-column grid strands the last creator (5 → ragged 4+1). Keep them
@@ -1939,9 +1963,17 @@
       grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
       gap: 1rem;
     }
-    .value-list.centered-list {
-      grid-template-columns: repeat(auto-fit, minmax(280px, 340px));
-      justify-content: center;
+    .screen-positions > .drill-head.with-back,
+    .screen-positions > .value-list {
+      max-width: 960px;
+    }
+    .screen-gridmode > .drill-head.with-back,
+    .screen-gridmode > .value-list {
+      max-width: 620px;
+    }
+    .screen-creator > .drill-head.with-back,
+    .screen-creator > .value-list {
+      max-width: 820px;
     }
     .value-list.creator-list {
       grid-template-columns: minmax(0, 820px);
