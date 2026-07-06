@@ -310,10 +310,18 @@ export class ShortCodeManager {
           const hash = data.encoderHash;
           if (!hash) continue;
           const prev = hashToCode.get(hash);
+          const created = data.createdAt ?? "";
           // Legacy duplicate groups: keep the OLDEST doc per hash so batch
           // resolution converges on the same canonical code as single lookups.
-          if (!prev || (data.createdAt ?? "") < prev.createdAt) {
-            hashToCode.set(hash, { code: docSnap.id, createdAt: data.createdAt ?? "" });
+          // Tie-break on smaller doc id when createdAt is equal (0ms-apart
+          // dups exist in real data) so a deck-prewarmed client and a
+          // viewer-only client provably pick the SAME code.
+          if (
+            !prev ||
+            created < prev.createdAt ||
+            (created === prev.createdAt && docSnap.id < prev.code)
+          ) {
+            hashToCode.set(hash, { code: docSnap.id, createdAt: created });
           }
         }
         onProgress?.(Math.min(i + FIRESTORE_IN_LIMIT, missHashes.length), missHashes.length);
@@ -438,6 +446,11 @@ export class ShortCodeManager {
         let adoptedCode: string | null = null;
         try {
           await runTransaction(firestore, async (tx) => {
+            // Reset on every (re-)run: Firestore re-invokes this callback on
+            // write-write contention, and a stale value from a prior run must
+            // not leak. Also documents the immutable-index invariant — hardens
+            // against a future rules change allowing index deletes.
+            adoptedCode = null;
             if (indexRef) {
               const indexSnap = await tx.get(indexRef);
               if (indexSnap.exists()) {
@@ -515,7 +528,10 @@ export class ShortCodeManager {
     let bestCreated = (best.data() as ShortCodeData).createdAt ?? "";
     for (const d of snapshot.docs.slice(1)) {
       const created = (d.data() as ShortCodeData).createdAt ?? "";
-      if (created < bestCreated) {
+      // Oldest wins; tie-break on smaller doc id when createdAt is equal
+      // (0ms-apart dups exist in real data) so every client — single-lookup
+      // or deck-prewarmed batch — provably converges on the SAME code.
+      if (created < bestCreated || (created === bestCreated && d.id < best.id)) {
         best = d;
         bestCreated = created;
       }
@@ -523,22 +539,29 @@ export class ShortCodeManager {
 
     // Lazy heal: point the hash index at the canonical code so future
     // allocations hit the transaction path directly. Fire-and-forget —
-    // resolution must never block on it.
-    void this.healHashIndex(hash, best.id);
+    // resolution must never block on it. Thread the canonical doc's own
+    // createdAt so the healed index matches the transaction path + backfill.
+    void this.healHashIndex(hash, best.id, bestCreated);
 
     return best.id;
   }
 
   /** Best-effort create of the hash-index doc. The index is immutable after
    *  create (rules), so a lost race here just means another client healed it
-   *  first — the warn is noise, not damage. */
-  private async healHashIndex(hash: string, code: string): Promise<void> {
+   *  first — the warn is noise, not damage. `createdAt` is the canonical
+   *  code's own timestamp (not heal time) so it matches the transaction path
+   *  and the backfill script. */
+  private async healHashIndex(
+    hash: string,
+    code: string,
+    createdAt: string
+  ): Promise<void> {
     try {
       const firestore = await this.ensureFirestore();
       const ref = doc(firestore, HASH_INDEX_COLLECTION, hash);
       const snap = await getDoc(ref);
       if (!snap.exists()) {
-        await setDoc(ref, { code, createdAt: new Date().toISOString() });
+        await setDoc(ref, { code, createdAt });
       }
     } catch (error) {
       console.warn(`[ShortCode] hash-index heal failed for ${hash}:`, error);

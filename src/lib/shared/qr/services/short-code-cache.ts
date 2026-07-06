@@ -1,10 +1,12 @@
 /**
  * Short Code Cache
  *
- * Persistent cache mapping a sequence's content key (content hash + URL-option
- * discriminants) to its resolved short code + URL. A sequence's code is global
- * and content-addressed in Firestore, so the resolution cost is a network query,
- * not creation — perfectly cacheable.
+ * Persistent cache mapping a sequence's content key (its content hash, or a
+ * word fallback — hash-only, no URL-option discriminants) to its resolved
+ * short CODE. Post-v2 the value is code-only: a sequence's code is global and
+ * content-addressed in Firestore and never varies with URL options, so each
+ * caller derives its own URL from the cached code. Resolution cost is a
+ * network query, not creation — perfectly cacheable.
  *
  * Two layers, mirroring `pictograph-blob-cache`:
  *   - memory Map: session-fast, codes are tiny strings.

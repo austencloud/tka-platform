@@ -5,6 +5,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const store = new Map<string, Record<string, unknown>>();
 let transactionRuns = 0;
 let queryResults: Array<{ id: string; data: Record<string, unknown> }> = [];
+// One-shot OCC-contention injector. Simulates a competing DEVICE that commits
+// its own allocation (both the code doc AND the index doc) in the window
+// between our transaction reading the index as empty and committing. Firestore
+// then forces our transaction to retry; the re-run sees the claimed index and
+// adopts the competitor's code. This is the only way to exercise the
+// cross-device write-write invariant in-process.
+let occInjection:
+  | { indexPath: string; competitorDocs: Array<[string, Record<string, unknown>]> }
+  | null = null;
 
 vi.mock("firebase/firestore", () => ({
   addDoc: vi.fn(),
@@ -37,19 +46,46 @@ vi.mock("firebase/firestore", () => ({
         set: (ref: { path: string }, data: Record<string, unknown>) => void;
       }) => Promise<unknown>
     ) => {
+      // Run the callback once, tracking the paths it read + its staged writes.
+      const runCallback = async () => {
+        const readPaths = new Set<string>();
+        const staged = new Map<string, Record<string, unknown>>();
+        const result = await fn({
+          get: async (ref) => {
+            readPaths.add(ref.path);
+            const data = staged.get(ref.path) ?? store.get(ref.path);
+            return data
+              ? { exists: () => true, data: () => data }
+              : { exists: () => false };
+          },
+          set: (ref, data) => staged.set(ref.path, data),
+        });
+        return { readPaths, staged, result };
+      };
+
       transactionRuns++;
-      const staged = new Map<string, Record<string, unknown>>();
-      const result = await fn({
-        get: async (ref) => {
-          const data = staged.get(ref.path) ?? store.get(ref.path);
-          return data
-            ? { exists: () => true, data: () => data }
-            : { exists: () => false };
-        },
-        set: (ref, data) => staged.set(ref.path, data),
-      });
-      for (const [path, data] of staged) store.set(path, data);
-      return result;
+      let run = await runCallback();
+
+      // OCC contention: a competing writer claimed a doc this callback read as
+      // empty, between read and commit. Apply the competitor's writes and
+      // re-run the callback ONCE (Firestore's serializable retry). The re-read
+      // now sees the conflict and the manager takes its adopt branch. The
+      // first attempt's staged writes are DISCARDED — matching a real abort.
+      if (
+        occInjection &&
+        run.readPaths.has(occInjection.indexPath) &&
+        !store.has(occInjection.indexPath)
+      ) {
+        for (const [path, data] of occInjection.competitorDocs) {
+          store.set(path, data);
+        }
+        occInjection = null; // one-shot
+        transactionRuns++;
+        run = await runCallback();
+      }
+
+      for (const [path, data] of run.staged) store.set(path, data);
+      return run.result;
     }
   ),
 }));
@@ -89,6 +125,7 @@ beforeEach(() => {
   store.clear();
   transactionRuns = 0;
   queryResults = [];
+  occInjection = null;
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false, status: 404 })));
 });
 
@@ -149,5 +186,61 @@ describe("ShortCodeManager allocation", () => {
     expect(second.code).toBe(first.code);
     expect(transactionRuns).toBe(runsAfterFirst);
     expect(second.url).toContain("bp=F");
+  });
+
+  it("loser in a cross-device write-write race retries and adopts the winner's code (OCC)", async () => {
+    // COVERED here: the serializable-transaction RETRY path — the load-bearing
+    // cross-device invariant of the whole fix. Our allocation reads
+    // shortcodeHashes/HASH_A as empty; a competing DEVICE commits its own code
+    // doc + index doc in the gap; Firestore re-invokes our callback; the
+    // re-read sees the claimed index and adopts "COMP1" instead of minting a
+    // duplicate. (Same-tab races are already covered by single-flight above.)
+    // NOT covered here — only the manual Task-7 live check can: real Firestore
+    // OCC version-conflict detection and genuine multi-client timing. The mock
+    // forces the retry deterministically rather than proving Firestore aborts.
+    occInjection = {
+      indexPath: "shortcodeHashes/HASH_A",
+      competitorDocs: [
+        [
+          "shortcodes/COMP1",
+          { encoderHash: "HASH_A", createdAt: "2026-07-05T00:00:00.000Z" },
+        ],
+        [
+          "shortcodeHashes/HASH_A",
+          { code: "COMP1", createdAt: "2026-07-05T00:00:00.000Z" },
+        ],
+      ],
+    };
+    const manager = makeManager();
+
+    const [a, b] = await Promise.all([
+      manager.createShortCode(SEQUENCE, { embedSequenceData: true }),
+      manager.createShortCode(SEQUENCE, { bluePropType: "C" }),
+    ]);
+
+    expect(a.code).toBe("COMP1");
+    expect(b.code).toBe("COMP1");
+    expect(a.isNew).toBe(false);
+    // Exactly one code doc (the competitor's) + one index doc: our aborted
+    // attempt's staged writes were discarded, so NO duplicate was minted.
+    expect(docsIn("shortcodes")).toEqual(["shortcodes/COMP1"]);
+    expect(docsIn("shortcodeHashes")).toEqual(["shortcodeHashes/HASH_A"]);
+    expect(transactionRuns).toBe(2); // initial run + one OCC retry
+  });
+
+  it("tie-breaks on smaller doc id when legacy duplicates share a createdAt", async () => {
+    // 0ms-apart dups exist in real data; without a deterministic tie-break two
+    // clients could converge on different codes for the same hash. Smaller id
+    // wins — regardless of the arbitrary query order.
+    queryResults = [
+      { id: "ZZ99", data: { createdAt: "2026-05-01T00:00:00.000Z" } },
+      { id: "AA11", data: { createdAt: "2026-05-01T00:00:00.000Z" } },
+    ];
+    const manager = makeManager();
+
+    const result = await manager.createShortCode(SEQUENCE, {});
+
+    expect(result.code).toBe("AA11");
+    expect(result.isNew).toBe(false);
   });
 });
