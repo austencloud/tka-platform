@@ -84,7 +84,7 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
     title={variant === "collapsed" && !isFullAccount ? "Sign in" : undefined}
     aria-haspopup={isFullAccount ? "menu" : undefined}
   >
-    <span class="avatar-col" class:collapsed={variant === "collapsed"}>
+    <span class="avatar-col">
       {#if isFullAccount}
         <RobustAvatar
           src={photoURL}
@@ -122,16 +122,17 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
     border-radius: 12px;
     color: var(--theme-text-dim);
     cursor: pointer;
-    /* Visuals only, never geometry. The rail→expanded swap flips this button
-       between a 44px circle and a full-width row (width/padding/border-radius/
-       height all change). Animating `all` tweened that geometry, dragging the
-       avatar left-then-right mid-flight while the sidebar width animated. The
-       footer pins its width to the end state and the nav's clip reveals it, so
-       the row must SNAP to its final shape like every other footer button. */
+    /* Visuals morph, layout geometry snaps. The rail→expanded swap flips this
+       button between a 44px circle and a full-width row. Width/padding/height
+       SNAP (the footer pins its end-state width and the nav's clip reveals it —
+       animating them dragged the avatar left-then-right mid-flight). But
+       border-radius is paint-only, so it IS morphed: the corner rounding eases
+       22px↔12px so the circle↔rounded-rect change animates instead of snapping. */
     transition:
       background var(--duration-normal) ease,
       border-color var(--duration-normal) ease,
-      color var(--duration-normal) ease;
+      color var(--duration-normal) ease,
+      border-radius var(--duration-emphasis) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
     font-size: var(--font-size-sm);
     font-weight: 500;
   }
@@ -158,16 +159,15 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
     padding: 0 12px 0 0;
   }
 
+  /* 44px leading column in BOTH states pins the avatar's center on the rail's
+     icon anchor. Collapsed used to collapse this to auto + center the row, which
+     landed the avatar 1px off the expanded position — the on/off-hover jiggle. */
   .avatar-col {
     width: 44px;
     flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  .avatar-col.collapsed {
-    width: auto;
   }
 
   /* ==========================================================================
@@ -177,8 +177,12 @@ import type { HapticFeedback } from "../../../application/services/haptic-feedba
     width: var(--min-touch-target, 50px);
     height: var(--min-touch-target, 50px);
     padding: 0;
-    justify-content: center;
-    border-radius: 50%;
+    /* Half-height radius = a perfect circle at 44×44, but in px so it
+       interpolates cleanly to the expanded 12px (a % start would blend as a
+       stadium against the snapped 200px width). No justify-content:center — the
+       44px avatar-col left-anchors the avatar at x=33 in BOTH states, matching
+       the expanded row exactly. Centering pulled it 1px left: the hover jiggle. */
+    border-radius: calc(var(--min-touch-target, 50px) / 2);
   }
 
   /* ==========================================================================
