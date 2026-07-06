@@ -12,6 +12,8 @@ import {
   clampConfig,
   configKey,
   copyModulators,
+  getPreset,
+  matchPreset,
   propCount,
   type TunnelConfig,
 } from "./tunnel-config";
@@ -173,6 +175,28 @@ export class TunnelViewController {
   /** Image budget for the live dock (reduced motion tightens it). */
   #maxImages(): number {
     return prefersReducedMotion() ? MAX_IMAGES_RM : MAX_IMAGES;
+  }
+
+  /** The selected mandala preset id, or null when the config is a custom tweak
+   *  (drives the Presets surface highlight + the "Custom" card). */
+  activePresetId = $derived(matchPreset(this.config));
+
+  /** Set the whole config (clamped to the live budget). */
+  #setConfig(cfg: TunnelConfig): void {
+    const c = clampConfig(cfg, this.#maxImages());
+    this.fold = c.fold;
+    this.mirror = c.mirror;
+    this.flip = c.flip;
+    this.counter = c.counter;
+    this.echo = c.echo;
+    this.staggerSteps = c.staggerSteps;
+    this.speed = c.speed;
+  }
+
+  /** Select a curated mandala preset (the primary surface). */
+  applyPreset(id: string): void {
+    const p = getPreset(id);
+    if (p) this.#setConfig(p.config);
   }
 
   /** Apply a generator change (fold/mirror/flip) clamped to the live budget so a

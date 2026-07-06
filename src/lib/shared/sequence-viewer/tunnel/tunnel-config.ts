@@ -181,6 +181,50 @@ export function clampConfig(cfg: TunnelConfig, maxImages: number): TunnelConfig 
   return out;
 }
 
+/**
+ * Curated mandala presets — the primary surface. A preset is just a named point
+ * in the config space; selecting one sets the primitives. An "anxiety-free" few,
+ * each a visually distinct mandala (≤16 props). The tuner (all the primitives) is
+ * the secondary surface for anyone who wants to go past these.
+ */
+export interface TunnelPreset {
+  id: string;
+  name: string;
+  /** FontAwesome class for the card glyph. */
+  icon: string;
+  config: TunnelConfig;
+}
+
+export const TUNNEL_PRESETS: TunnelPreset[] = [
+  { id: "radial", name: "Radial", icon: "fas fa-fan", config: { ...DEFAULT_CONFIG, fold: 4 } },
+  { id: "mandala", name: "Mandala", icon: "fas fa-asterisk", config: { ...DEFAULT_CONFIG, fold: 4, mirror: true } },
+  { id: "pinwheel", name: "Pinwheel", icon: "fas fa-hurricane", config: { ...DEFAULT_CONFIG, fold: 8 } },
+  { id: "spiral", name: "Spiral", icon: "fas fa-circle-notch", config: { ...DEFAULT_CONFIG, fold: 4, staggerSteps: 1 } },
+  { id: "contra", name: "Contra", icon: "fas fa-arrows-spin", config: { ...DEFAULT_CONFIG, fold: 4, counter: true } },
+  { id: "cross", name: "Cross", icon: "fas fa-plus", config: { ...DEFAULT_CONFIG, fold: 2, mirror: true } },
+];
+
+function eqConfig(a: TunnelConfig, b: TunnelConfig): boolean {
+  return (
+    a.fold === b.fold &&
+    a.mirror === b.mirror &&
+    a.flip === b.flip &&
+    a.counter === b.counter &&
+    a.echo === b.echo &&
+    a.staggerSteps === b.staggerSteps &&
+    a.speed === b.speed
+  );
+}
+
+/** The preset id whose config exactly matches `cfg`, or null (a custom tweak). */
+export function matchPreset(cfg: TunnelConfig): string | null {
+  return TUNNEL_PRESETS.find((p) => eqConfig(p.config, cfg))?.id ?? null;
+}
+
+export function getPreset(id: string): TunnelPreset | undefined {
+  return TUNNEL_PRESETS.find((p) => p.id === id);
+}
+
 /** Stable short signature of a config (export filename suffix + build keying). */
 export function configKey(cfg: TunnelConfig): string {
   return (

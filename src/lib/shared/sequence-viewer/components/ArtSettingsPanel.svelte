@@ -37,7 +37,7 @@
   import type { ViewerPlaybackState } from "../domain/viewer-prop-groups";
   import type { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
   import type { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
-  import { FOLD_OPTIONS } from "../tunnel/tunnel-config";
+  import { FOLD_OPTIONS, TUNNEL_PRESETS } from "../tunnel/tunnel-config";
   import type {
     PlaybackMode,
     StepPlaybackStepSize,
@@ -108,6 +108,10 @@
   const tunnelSectionLabel = $derived(
     tunnelRail.find((p) => p.id === tunnelSection)?.label ?? "",
   );
+
+  // Tunnel: presets are the primary surface; the primitive tuner is a secondary
+  // surface behind "Customize". `tuneOpen` swaps between them.
+  let tuneOpen = $state(false);
 
   // Fold options for the segmented control (SegmentedControl is string-generic,
   // so map the arm counts to string values).
@@ -219,78 +223,134 @@
 {#snippet tunnelSectionBody(id: TunnelRailId, dense: boolean)}
   {#if id === "tunnel"}
     <div class="section-pad">
-      <!-- Primitive vocabulary: every mandala is a combination of these, no named
-           looks. Fold (rotational arms) + a row of boolean toggles + Stagger, all
-           top-level peers. Prop count is exactly imageCount × 2 — no hidden
-           doubling. See docs/architecture/tunnel-looks.md. -->
-
-      <!-- Fold (rotational arms) + a compact Grid icon toggle. -->
-      <div class="prim-row">
-        <span class="row-lbl">Fold</span>
-        <div class="seg-wrap">
-          <SegmentedControl
-            options={foldSegOptions}
-            value={String(controller.fold)}
-            onchange={(v) => controller.setFold(Number(v))}
-            color="accent"
-            size="sm"
-          />
+      {#if !tuneOpen}
+        <!-- PRIMARY: curated mandala presets. A preset is a named point in the
+             primitive config space; the tuner (Customize) is the secondary
+             surface. Even 2-col card grid — no ragged wrap on mobile. -->
+        {#if !dense}<span class="rt-section-label">Choose a mandala</span>{/if}
+        <div class="preset-grid" role="radiogroup" aria-label="Mandala preset">
+          {#each TUNNEL_PRESETS as p (p.id)}
+            <button
+              class="preset-card"
+              class:active={controller.activePresetId === p.id}
+              type="button"
+              role="radio"
+              aria-checked={controller.activePresetId === p.id}
+              onclick={() => controller.applyPreset(p.id)}
+            >
+              <i class={p.icon} aria-hidden="true"></i>
+              <span>{p.name}</span>
+            </button>
+          {/each}
+          <!-- Custom card: lit when the config matches no preset; opens the tuner. -->
+          <button
+            class="preset-card"
+            class:active={controller.activePresetId === null}
+            type="button"
+            role="radio"
+            aria-checked={controller.activePresetId === null}
+            onclick={() => (tuneOpen = true)}
+          >
+            <i class="fas fa-sliders" aria-hidden="true"></i>
+            <span>Custom</span>
+          </button>
         </div>
-        <button
-          class="grid-toggle"
-          class:active={controller.gridVisible}
-          type="button"
-          aria-pressed={controller.gridVisible}
-          aria-label="Toggle grid"
-          title="Grid"
-          onclick={() => (controller.gridVisible = !controller.gridVisible)}
-        >
-          <i class="fas fa-border-all" aria-hidden="true"></i>
+
+        <div class="prim-row">
+          <span class="row-lbl">Grid</span>
+          <button
+            class="grid-toggle"
+            class:active={controller.gridVisible}
+            type="button"
+            aria-pressed={controller.gridVisible}
+            aria-label="Toggle grid"
+            title="Grid"
+            onclick={() => (controller.gridVisible = !controller.gridVisible)}
+          >
+            <i class="fas fa-border-all" aria-hidden="true"></i>
+          </button>
+          <span class="prim-count">{controller.propCount} props</span>
+        </div>
+
+        <button class="customize-btn" type="button" onclick={() => (tuneOpen = true)}>
+          <i class="fas fa-sliders" aria-hidden="true"></i> Customize
         </button>
-      </div>
+      {:else}
+        <!-- SECONDARY: the primitive tuner. Every mandala is a combination of
+             these. Even card grid for the toggles — no ragged wrap. -->
+        <button class="back-btn" type="button" onclick={() => (tuneOpen = false)}>
+          <i class="fas fa-chevron-left" aria-hidden="true"></i> Presets
+        </button>
 
-      <!-- Boolean primitives. Mirror/Flip add reflection copies; Counter/Echo/
-           Speed modulate alternate arms (no new copies). -->
-      <div class="prim-chips">
-        {#each toggleChips as chip (chip.key)}
-          <FilterChipBase
-            mode="toggle"
-            size="sm"
-            label={chip.label}
-            icon={chip.icon}
-            active={chip.active}
-            onclick={() => chip.set(!chip.active)}
-          />
-        {/each}
-      </div>
-
-      <!-- Stagger (canon offset): arm k shows the sequence k×N steps ahead. A
-           compact stepper — 0 to (sequence length − 1); a full offset wraps. -->
-      <div class="prim-row">
-        <span class="row-lbl">Stagger</span>
-        <div class="stepper">
+        <!-- Fold (rotational arms) + a compact Grid icon toggle. -->
+        <div class="prim-row">
+          <span class="row-lbl">Fold</span>
+          <div class="seg-wrap">
+            <SegmentedControl
+              options={foldSegOptions}
+              value={String(controller.fold)}
+              onchange={(v) => controller.setFold(Number(v))}
+              color="accent"
+              size="sm"
+            />
+          </div>
           <button
+            class="grid-toggle"
+            class:active={controller.gridVisible}
             type="button"
-            class="step-btn"
-            aria-label="Less stagger"
-            disabled={controller.staggerSteps <= 0}
-            onclick={() => controller.setStagger(controller.staggerSteps - 1)}
+            aria-pressed={controller.gridVisible}
+            aria-label="Toggle grid"
+            title="Grid"
+            onclick={() => (controller.gridVisible = !controller.gridVisible)}
           >
-            <i class="fas fa-minus" aria-hidden="true"></i>
-          </button>
-          <span class="step-val">{controller.staggerSteps}</span>
-          <button
-            type="button"
-            class="step-btn"
-            aria-label="More stagger"
-            disabled={controller.staggerSteps >= controller.staggerMax}
-            onclick={() => controller.setStagger(controller.staggerSteps + 1)}
-          >
-            <i class="fas fa-plus" aria-hidden="true"></i>
+            <i class="fas fa-border-all" aria-hidden="true"></i>
           </button>
         </div>
-        <span class="prim-count">{controller.propCount} props</span>
-      </div>
+
+        <!-- Boolean primitives. Mirror/Flip add reflection copies; Counter/Echo/
+             Speed modulate alternate arms (no new copies). Full-width in a 2-col
+             grid so they fill evenly (no ragged wrap). -->
+        <div class="prim-chip-grid">
+          {#each toggleChips as chip (chip.key)}
+            <FilterChipBase
+              mode="toggle"
+              size="sm"
+              label={chip.label}
+              icon={chip.icon}
+              active={chip.active}
+              onclick={() => chip.set(!chip.active)}
+            />
+          {/each}
+        </div>
+
+        <!-- Stagger (canon offset): arm k shows the sequence k×N steps ahead. A
+             compact stepper — 0 to (sequence length − 1); a full offset wraps. -->
+        <div class="prim-row">
+          <span class="row-lbl">Stagger</span>
+          <div class="stepper">
+            <button
+              type="button"
+              class="step-btn"
+              aria-label="Less stagger"
+              disabled={controller.staggerSteps <= 0}
+              onclick={() => controller.setStagger(controller.staggerSteps - 1)}
+            >
+              <i class="fas fa-minus" aria-hidden="true"></i>
+            </button>
+            <span class="step-val">{controller.staggerSteps}</span>
+            <button
+              type="button"
+              class="step-btn"
+              aria-label="More stagger"
+              disabled={controller.staggerSteps >= controller.staggerMax}
+              onclick={() => controller.setStagger(controller.staggerSteps + 1)}
+            >
+              <i class="fas fa-plus" aria-hidden="true"></i>
+            </button>
+          </div>
+          <span class="prim-count">{controller.propCount} props</span>
+        </div>
+      {/if}
 
       {#if controller.heavyLoad}
         <p class="warn">Dense stack ({controller.propCount} props): a heavy effect may drop frames on weaker devices.</p>
@@ -634,7 +694,93 @@
   }
   .seg-wrap { flex: 1; min-width: 0; }
 
-  .prim-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  /* Preset cards (primary surface) + tuner toggle grid (secondary). Both use
+     auto-fit + 1fr so a short last row STRETCHES to fill the width — no ragged
+     empty space on mobile. */
+  .preset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+    gap: 6px;
+  }
+  .preset-card {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 8px 12px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    cursor: pointer;
+    transition: border-color 0.12s ease, background 0.12s ease;
+  }
+  .preset-card i { font-size: 14px; width: 1.1em; text-align: center; flex-shrink: 0; }
+  .preset-card > span {
+    font-size: var(--font-size-compact, 12px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .preset-card.active {
+    border-color: var(--theme-accent, #8b5cf6);
+    background: color-mix(in srgb, var(--theme-accent) 12%, transparent);
+    color: var(--theme-text, #fff);
+  }
+  .preset-card:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b5cf6);
+    outline-offset: 2px;
+  }
+
+  .customize-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    padding: 10px 16px;
+    border: 1.5px solid color-mix(in srgb, var(--theme-accent) 40%, transparent);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+    color: var(--theme-accent);
+    font-size: var(--font-size-sm, 0.875rem);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease;
+  }
+  .customize-btn:hover {
+    background: color-mix(in srgb, var(--theme-accent) 14%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent) 60%, transparent);
+  }
+  .customize-btn:focus-visible { outline: 2px solid var(--theme-accent); outline-offset: 2px; }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    align-self: flex-start;
+    min-height: var(--min-touch-target, 44px);
+    padding: 6px 8px;
+    background: none;
+    border: none;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+  }
+  .back-btn:hover { color: var(--theme-text, #fff); }
+  .back-btn:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  .prim-chip-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+    gap: 6px;
+  }
+  .prim-chip-grid :global(.filter-chip) { width: 100%; justify-content: center; }
 
   /* Compact icon toggle for the grid — a small square, keeping the 44px floor. */
   .grid-toggle {
@@ -750,9 +896,10 @@
      so the tray stays compact floating over the art. */
   .dock-dense .section-pad { gap: 8px; padding: 2px 2px 6px; }
   .dock-dense .group { gap: 6px; }
-  /* Primitive controls in the dock tray: tighter gaps; chips + steppers keep
-     their 44px touch floor. */
-  .dock-dense .prim-chips { gap: 4px; }
+  /* Tunnel controls in the dock tray: tighter gaps; cards + chips + steppers
+     keep their 44px touch floor. */
+  .dock-dense .preset-grid,
+  .dock-dense .prim-chip-grid { gap: 4px; }
   .dock-dense .prim-row { min-height: 40px; gap: 6px; }
   /* EffectsPanel lives in a child component — mirror AnimationPanel's dock-dense
      compression (:global): 6-column picker puts all 16 effects (3 rows at the

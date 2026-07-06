@@ -3,11 +3,14 @@ import {
   DEFAULT_CONFIG,
   MAX_IMAGES,
   MAX_IMAGES_RM,
+  TUNNEL_PRESETS,
   clampConfig,
   configKey,
   copyModulators,
   generateCopyOps,
+  getPreset,
   imageCount,
+  matchPreset,
   propCount,
   type TunnelConfig,
 } from "./tunnel-config";
@@ -105,6 +108,29 @@ describe("clampConfig — budget ceiling", () => {
   it("leaves an already-small config untouched", () => {
     const c = cfg({ fold: 2, mirror: true });
     expect(clampConfig(c, MAX_IMAGES)).toEqual(c);
+  });
+});
+
+describe("mandala presets", () => {
+  it("the default config is the Radial preset", () => {
+    expect(matchPreset(DEFAULT_CONFIG)).toBe("radial");
+  });
+
+  it("every preset round-trips through matchPreset", () => {
+    for (const p of TUNNEL_PRESETS) {
+      expect(matchPreset(p.config)).toBe(p.id);
+    }
+  });
+
+  it("every preset stays within the live budget", () => {
+    for (const p of TUNNEL_PRESETS) {
+      expect(imageCount(p.config)).toBeLessThanOrEqual(MAX_IMAGES);
+    }
+  });
+
+  it("a custom tweak matches no preset", () => {
+    expect(matchPreset(cfg({ fold: 4, flip: true, echo: true }))).toBeNull();
+    expect(getPreset("mandala")?.config.mirror).toBe(true);
   });
 });
 
