@@ -87,6 +87,18 @@ describe("effect preset data", () => {
     }
   });
 
+  it("every silk preset pins the `form` mode axis", () => {
+    // `form` (ribbon vs serpent) is a mode discriminator: it decides which other
+    // fields even render. applyPreset shallow-merges, so a preset that omits
+    // `form` inherits the previously-selected form — pick Dragon, then a ribbon
+    // preset, and the ribbon palette renders as the serpent creature. Every silk
+    // preset must therefore declare its form. Regression guard for that leak.
+    const missing = SILK_PRESET_GROUP.presets
+      .filter((p) => p.patch && !("form" in (p.patch as Record<string, unknown>)))
+      .map((p) => p.id);
+    expect(missing, `silk presets missing \`form\`: ${missing.join(", ")}`).toEqual([]);
+  });
+
   it("every preset uses a static patch (no dynamic resolvePatch remains)", () => {
     // The trail/fire colour-picker "Custom" presets were retired — custom colours
     // now live in the Customize panels, and trail's default IS the colour-matched

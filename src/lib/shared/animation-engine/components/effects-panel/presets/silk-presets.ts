@@ -6,6 +6,7 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     name: "Classic",
     previewColor: "#c0c0d0",
     patch: {
+      form: "ribbon",
       palette: "satin",
       intensity: 0.7,
       width: 0.5,
@@ -20,6 +21,7 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     name: "Streamer",
     previewColor: "#c080ff",
     patch: {
+      form: "ribbon",
       palette: "ethereal",
       intensity: 0.6,
       width: 0.7,
@@ -34,6 +36,7 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     name: "Whip",
     previewColor: "#202830",
     patch: {
+      form: "ribbon",
       palette: "shadow",
       intensity: 0.8,
       width: 0.4,
@@ -48,6 +51,7 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     name: "Royal",
     previewColor: "#ffd700",
     patch: {
+      form: "ribbon",
       palette: "gold_leaf",
       intensity: 0.8,
       width: 0.7,
@@ -62,6 +66,7 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     name: "Inferno",
     previewColor: "#ff6000",
     patch: {
+      form: "ribbon",
       palette: "ember",
       intensity: 0.9,
       width: 0.5,
@@ -76,6 +81,7 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     name: "Phantom",
     previewColor: "#101020",
     patch: {
+      form: "ribbon",
       palette: "shadow",
       intensity: 0.3,
       width: 0.6,
