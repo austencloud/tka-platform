@@ -22,7 +22,7 @@ import type {
   InkIntent,
   FrostIntent,
   SilkIntent,
-  MenagerieIntent,
+  AnimalIntent,
   PulseIntent,
 } from "../domain/effects-config";
 import type { WaterPalette } from "../domain/water-palettes";
@@ -32,7 +32,7 @@ import type { SmokePalette } from "../domain/smoke-palettes";
 import type { InkPalette } from "$lib/shared/3d/effects/ink/ink-palettes";
 import type { FrostPalette } from "../domain/frost-palettes";
 import type { SilkPalette } from "../domain/silk-palettes";
-import type { MenageriePalette } from "../domain/menagerie-palettes";
+import type { AnimalPalette } from "../domain/animal-palettes";
 import type { PulsePalette } from "../domain/pulse-palettes";
 
 export interface Trails2DParams extends TrailsIntent {
@@ -300,8 +300,8 @@ export interface Silk2DParams extends SilkIntent {
   blendMode?: GlobalCompositeOperation;
 }
 
-export interface Menagerie2DParams extends MenagerieIntent {
-  resolvedPalette: MenageriePalette;
+export interface Animal2DParams extends AnimalIntent {
+  resolvedPalette: AnimalPalette;
   /** px - base body half-width at width=1. */
   baseHalfWidth: number;
   /** px - fixed total arc-length of the creature body. */

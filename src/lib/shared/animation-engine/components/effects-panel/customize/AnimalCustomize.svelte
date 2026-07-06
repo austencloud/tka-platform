@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import type { MenagerieIntent } from "$lib/shared/effects/domain/effects-config";
+  import type { AnimalIntent } from "$lib/shared/effects/domain/effects-config";
   import OptionChipRow from "../OptionChipRow.svelte";
   import AdvancedControls from "$lib/shared/effects/components/AdvancedControls.svelte";
 
@@ -11,7 +11,7 @@
   const { onBack }: Props = $props();
   const state = getEffectsConfigContext();
 
-  const PALETTES: { value: MenagerieIntent["palette"]; label: string; swatch: string }[] = [
+  const PALETTES: { value: AnimalIntent["palette"]; label: string; swatch: string }[] = [
     { value: "satin", label: "Satin", swatch: "#c0c0d0" },
     { value: "velvet", label: "Velvet", swatch: "#600018" },
     { value: "ethereal", label: "Ethereal", swatch: "#c080ff" },
@@ -21,13 +21,13 @@
     { value: "custom", label: "Custom", swatch: "#ffffff" },
   ];
 
-  const CREATURES: { value: MenagerieIntent["creature"]; label: string }[] = [
+  const CREATURES: { value: AnimalIntent["creature"]; label: string }[] = [
     { value: "snake", label: "Snake" },
     { value: "dragon", label: "Dragon" },
     { value: "caterpillar", label: "Caterpillar" },
   ];
 
-  const TRACKING: { value: MenagerieIntent["trackingMode"]; label: string }[] = [
+  const TRACKING: { value: AnimalIntent["trackingMode"]; label: string }[] = [
     { value: "left_end", label: "Left" },
     { value: "right_end", label: "Right" },
     { value: "both_ends", label: "Both" },
@@ -41,33 +41,33 @@
   </button>
 
   {#if state}
-    <div class="menagerie-controls">
+    <div class="animal-controls">
       <OptionChipRow
         label="Creature"
         ariaLabel="Animal creature"
-        value={state.menagerie.creature}
+        value={state.animal.creature}
         options={CREATURES}
-        onChange={(v) => state.updateEffect("menagerie", { creature: v })}
+        onChange={(v) => state.updateEffect("animal", { creature: v })}
       />
 
       <OptionChipRow
         label="Palette"
         ariaLabel="Animal palette"
-        value={state.menagerie.palette}
+        value={state.animal.palette}
         options={PALETTES}
-        onChange={(v) => state.updateEffect("menagerie", { palette: v })}
+        onChange={(v) => state.updateEffect("animal", { palette: v })}
       />
 
-      {#if state.menagerie.palette === "custom"}
+      {#if state.animal.palette === "custom"}
         <div class="color-row">
           <span class="color-label">Tint</span>
           <div class="color-pickers">
             <label class="color-picker">
               <input
                 type="color"
-                value={state.menagerie.customColor}
+                value={state.animal.customColor}
                 oninput={(e) =>
-                  state.updateEffect("menagerie", {
+                  state.updateEffect("animal", {
                     customColor: (e.currentTarget as HTMLInputElement).value,
                   })}
               />
@@ -79,78 +79,78 @@
       <OptionChipRow
         label="Tracking"
         ariaLabel="Animal tracking mode"
-        value={state.menagerie.trackingMode}
+        value={state.animal.trackingMode}
         options={TRACKING}
-        onChange={(v) => state.updateEffect("menagerie", { trackingMode: v })}
+        onChange={(v) => state.updateEffect("animal", { trackingMode: v })}
       />
 
       <div class="slider-row">
-        <label for="menagerie-intensity">Intensity</label>
+        <label for="animal-intensity">Intensity</label>
         <input
-          id="menagerie-intensity"
+          id="animal-intensity"
           type="range"
           min="0"
           max="1"
           step="0.05"
-          value={state.menagerie.intensity}
+          value={state.animal.intensity}
           oninput={(e) =>
-            state.updateEffect("menagerie", {
+            state.updateEffect("animal", {
               intensity: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
-        <span class="slider-value">{Math.round(state.menagerie.intensity * 100)}%</span>
+        <span class="slider-value">{Math.round(state.animal.intensity * 100)}%</span>
       </div>
 
       <div class="slider-row">
-        <label for="menagerie-width">Width</label>
+        <label for="animal-width">Width</label>
         <input
-          id="menagerie-width"
+          id="animal-width"
           type="range"
           min="0"
           max="1"
           step="0.05"
-          value={state.menagerie.width}
+          value={state.animal.width}
           oninput={(e) =>
-            state.updateEffect("menagerie", {
+            state.updateEffect("animal", {
               width: +(e.currentTarget as HTMLInputElement).value,
             })}
         />
-        <span class="slider-value">{Math.round(state.menagerie.width * 100)}%</span>
+        <span class="slider-value">{Math.round(state.animal.width * 100)}%</span>
       </div>
 
       <AdvancedControls count={2}>
         <div class="slider-row">
-          <label for="menagerie-length">Length</label>
+          <label for="animal-length">Length</label>
           <input
-            id="menagerie-length"
+            id="animal-length"
             type="range"
             min="0"
             max="1"
             step="0.05"
-            value={state.menagerie.bodyLength}
+            value={state.animal.bodyLength}
             oninput={(e) =>
-              state.updateEffect("menagerie", {
+              state.updateEffect("animal", {
                 bodyLength: +(e.currentTarget as HTMLInputElement).value,
               })}
           />
-          <span class="slider-value">{Math.round(state.menagerie.bodyLength * 100)}%</span>
+          <span class="slider-value">{Math.round(state.animal.bodyLength * 100)}%</span>
         </div>
 
         <div class="slider-row">
-          <label for="menagerie-slither">Slither</label>
+          <label for="animal-slither">Slither</label>
           <input
-            id="menagerie-slither"
+            id="animal-slither"
             type="range"
             min="0"
             max="1"
             step="0.05"
-            value={state.menagerie.slither}
+            value={state.animal.slither}
             oninput={(e) =>
-              state.updateEffect("menagerie", {
+              state.updateEffect("animal", {
                 slither: +(e.currentTarget as HTMLInputElement).value,
               })}
           />
-          <span class="slider-value">{Math.round(state.menagerie.slither * 100)}%</span>
+          <span class="slider-value">{Math.round(state.animal.slither * 100)}%</span>
         </div>
       </AdvancedControls>
     </div>
@@ -203,7 +203,7 @@
     }
   }
 
-  .menagerie-controls {
+  .animal-controls {
     display: flex;
     flex-direction: column;
     gap: 8px;

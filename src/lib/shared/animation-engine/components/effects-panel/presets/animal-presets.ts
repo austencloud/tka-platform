@@ -1,8 +1,8 @@
 import type { EffectPreset, EffectPresetGroup } from "./types";
 
-export const MENAGERIE_PRESETS: EffectPreset<"menagerie">[] = [
+export const ANIMAL_PRESETS: EffectPreset<"animal">[] = [
   {
-    id: "menagerie-serpent",
+    id: "animal-serpent",
     name: "Serpent",
     previewColor: "#3aa655",
     patch: {
@@ -16,7 +16,7 @@ export const MENAGERIE_PRESETS: EffectPreset<"menagerie">[] = [
     },
   },
   {
-    id: "menagerie-dragon",
+    id: "animal-dragon",
     name: "Dragon",
     previewColor: "#ff6000",
     previewColor2: "#ffcc00",
@@ -31,7 +31,7 @@ export const MENAGERIE_PRESETS: EffectPreset<"menagerie">[] = [
     },
   },
   {
-    id: "menagerie-caterpillar",
+    id: "animal-caterpillar",
     name: "Caterpillar",
     previewColor: "#9acd32",
     patch: {
@@ -45,7 +45,7 @@ export const MENAGERIE_PRESETS: EffectPreset<"menagerie">[] = [
     },
   },
   {
-    id: "menagerie-basilisk",
+    id: "animal-basilisk",
     name: "Basilisk",
     previewColor: "#101020",
     patch: {
@@ -59,7 +59,7 @@ export const MENAGERIE_PRESETS: EffectPreset<"menagerie">[] = [
     },
   },
   {
-    id: "menagerie-wyrm",
+    id: "animal-wyrm",
     name: "Wyrm",
     previewColor: "#ffd700",
     patch: {
@@ -74,11 +74,11 @@ export const MENAGERIE_PRESETS: EffectPreset<"menagerie">[] = [
   },
 ];
 
-export const MENAGERIE_PRESET_GROUP: EffectPresetGroup = {
-  effectType: "menagerie",
-  presets: MENAGERIE_PRESETS,
+export const ANIMAL_PRESET_GROUP: EffectPresetGroup = {
+  effectType: "animal",
+  presets: ANIMAL_PRESETS,
   getSummary: (state) => {
-    const s = state.menagerie;
+    const s = state.animal;
     return `${s.creature} · ${s.palette} · length ${Math.round(s.bodyLength * 100)}% · slither ${Math.round(s.slither * 100)}%`;
   },
 };

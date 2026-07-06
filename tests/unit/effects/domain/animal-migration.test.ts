@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { migrateEffectsConfig } from "$lib/shared/effects/domain/migrations";
 import { EFFECTS_CONFIG_VERSION } from "$lib/shared/effects/domain/effects-config";
 
-describe("menagerie migration (v30)", () => {
-  it("moves a serpent silk config into menagerie and resets silk to ribbon", () => {
+describe("animal migration (v30 serpent-split + v31 id rename)", () => {
+  it("moves a serpent silk config into animal and resets silk to ribbon", () => {
     const raw = {
       version: 29,
       silk: {
@@ -26,16 +26,16 @@ describe("menagerie migration (v30)", () => {
     };
     const out = migrateEffectsConfig(raw);
     expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
-    // Menagerie received the creature fields.
-    expect(out.menagerie.creature).toBe("dragon");
-    expect(out.menagerie.palette).toBe("ember");
-    expect(out.menagerie.bodyLength).toBeCloseTo(0.7);
+    // Animal received the creature fields.
+    expect(out.animal.creature).toBe("dragon");
+    expect(out.animal.palette).toBe("ember");
+    expect(out.animal.bodyLength).toBeCloseTo(0.7);
     // Silk is back to ribbon (no serpent fields survive).
     expect((out.silk as Record<string, unknown>).form).toBeUndefined();
-    // Tip + active state re-pointed at menagerie.
-    expect(out.tipEffectMap["0:0"]!.effect).toBe("menagerie");
-    expect(out.activePresets.menagerie).toBe("menagerie-dragon");
-    expect(out.activeEffect).toBe("menagerie");
+    // Tip + active state re-pointed at animal.
+    expect(out.tipEffectMap["0:0"]!.effect).toBe("animal");
+    expect(out.activePresets.animal).toBe("animal-dragon");
+    expect(out.activeEffect).toBe("animal");
   });
 
   it("leaves a ribbon silk config as silk", () => {
@@ -66,6 +66,25 @@ describe("menagerie migration (v30)", () => {
     // resolves back to its default (null), not the stale preset id.
     expect((out.activePresets as Record<string, unknown>).frost).toBeNull();
     expect(out.activeEffect).toBe("none");
+  });
+
+  it("renames a legacy interim 'menagerie' id to 'animal' (v31)", () => {
+    // Interim dev builds stamped v30 with the effect under id "menagerie".
+    const raw = {
+      version: 30,
+      menagerie: { creature: "caterpillar", palette: "velvet", intensity: 0.8 },
+      tipEffectMap: { "0:0": { effect: "menagerie" } },
+      activePresets: { menagerie: "menagerie-caterpillar" },
+      activeEffect: "menagerie",
+    } as Record<string, unknown>;
+    const out = migrateEffectsConfig(raw);
+    expect(out.version).toBe(EFFECTS_CONFIG_VERSION);
+    expect(out.animal.creature).toBe("caterpillar");
+    expect((out as Record<string, unknown>).menagerie).toBeUndefined();
+    expect(out.tipEffectMap["0:0"]!.effect).toBe("animal");
+    expect(out.activePresets.animal).toBe("animal-caterpillar");
+    expect((out.activePresets as Record<string, unknown>).menagerie).toBeUndefined();
+    expect(out.activeEffect).toBe("animal");
   });
 
   it("passes a current-version config through unchanged", () => {

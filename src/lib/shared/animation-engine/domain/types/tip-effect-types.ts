@@ -30,7 +30,7 @@ export type EffectType =
   | "ink"
   | "frost"
   | "silk"
-  | "menagerie"
+  | "animal"
   | "pulse";
 
 export interface TipEffectAssignment {

@@ -1,4 +1,4 @@
-import type { Menagerie2DParams } from "../translators/canvas2d-types";
+import type { Animal2DParams } from "../translators/canvas2d-types";
 import type { EmitterTip } from "./emitter-tip";
 import { emitterId } from "./emitter-tip";
 import { traceForward, traceBackward } from "./ribbon-trace";
@@ -22,14 +22,14 @@ const WHISKER_NODES = 6;
  * to the prop. Creature ornaments (snake tongue, dragon crest/horns/whiskers,
  * caterpillar bands/legs/antennae) layer on top of the shared body.
  */
-export class Menagerie2DRenderer {
+export class Animal2DRenderer {
   private time = 0;
   private chains = new Map<string, Vec2[]>();
   private whiskerChains = new Map<string, [Vec2[], Vec2[]]>();
 
   render(
     ctx: CanvasRenderingContext2D,
-    params: Menagerie2DParams,
+    params: Animal2DParams,
     emitters: EmitterTip[],
     dt: number,
     scale: number = 1,
@@ -113,7 +113,7 @@ export class Menagerie2DRenderer {
 
   private drawCreature(
     ctx: CanvasRenderingContext2D,
-    params: Menagerie2DParams,
+    params: Animal2DParams,
     chain: Vec2[],
     scale: number,
     id: string,
@@ -248,7 +248,7 @@ export class Menagerie2DRenderer {
   /** Dragon dorsal crest — sawtooth spikes along the back ("+normal") side. */
   private drawDorsalCrest(
     ctx: CanvasRenderingContext2D,
-    params: Menagerie2DParams,
+    params: Animal2DParams,
     cx: number[],
     cy: number[],
     nx: number[],
@@ -282,7 +282,7 @@ export class Menagerie2DRenderer {
   /** Caterpillar walking legs — short alternating nubs below each body segment. */
   private drawCaterpillarLegs(
     ctx: CanvasRenderingContext2D,
-    params: Menagerie2DParams,
+    params: Animal2DParams,
     cx: number[],
     cy: number[],
     nx: number[],
@@ -322,7 +322,7 @@ export class Menagerie2DRenderer {
   /** Caterpillar segment banding — cross-body rings that read as body segments. */
   private drawCaterpillarBands(
     ctx: CanvasRenderingContext2D,
-    params: Menagerie2DParams,
+    params: Animal2DParams,
     cx: number[],
     cy: number[],
     nx: number[],
@@ -349,7 +349,7 @@ export class Menagerie2DRenderer {
   /** Dragon whiskers — two thin lag sub-chains streaming from the snout. */
   private drawWhiskers(
     ctx: CanvasRenderingContext2D,
-    params: Menagerie2DParams,
+    params: Animal2DParams,
     chain: Vec2[],
     baseHalf: number,
     scale: number,
@@ -410,7 +410,7 @@ export class Menagerie2DRenderer {
   /** Head cap + eyes, plus snake tongue / dragon horns / caterpillar antennae. */
   private drawCreatureHead(
     ctx: CanvasRenderingContext2D,
-    params: Menagerie2DParams,
+    params: Animal2DParams,
     cx: number[],
     cy: number[],
     baseHalf: number,
@@ -547,7 +547,7 @@ export class Menagerie2DRenderer {
     ctx.globalAlpha = 1;
   }
 
-  private isEndEnabled(end: "A" | "B", params: Menagerie2DParams): boolean {
+  private isEndEnabled(end: "A" | "B", params: Animal2DParams): boolean {
     if (params.trackingMode === "both_ends") return true;
     return params.trackingMode === "left_end" ? end === "A" : end === "B";
   }

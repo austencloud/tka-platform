@@ -94,7 +94,7 @@ function deriveCustomPalette(hex: string): SilkPalette {
 }
 
 /**
- * Shared resolver: menagerie reuses silk's exact palette registry. Takes just
+ * Shared resolver: animal reuses silk's exact palette registry. Takes just
  * the palette fields structurally so both intents can call it.
  */
 export function resolvePaletteByIntent(intent: {

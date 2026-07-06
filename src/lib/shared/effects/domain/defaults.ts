@@ -187,7 +187,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     trackingMode: "both_ends",
   },
 
-  menagerie: {
+  animal: {
     creature: "snake",
     palette: "velvet",
     customColor: "#600018",
@@ -236,7 +236,7 @@ export const DEFAULT_EFFECTS_CONFIG: EffectsConfig = {
     ink: null,
     frost: null,
     silk: null,
-    menagerie: null,
+    animal: null,
     pulse: null,
   },
 

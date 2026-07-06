@@ -61,7 +61,7 @@ describe("DEFAULT_EFFECTS_CONFIG", () => {
       trails: null, fire: null, led: null, charcoal: null,
       zap: null, sparkles: null, ghost: null, bloom: null,
       goo: null, bubbles: null, petals: null, smoke: null,
-      ink: null, frost: null, silk: null, menagerie: null, pulse: null,
+      ink: null, frost: null, silk: null, animal: null, pulse: null,
     });
   });
 

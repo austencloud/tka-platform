@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { Menagerie2DRenderer } from "./menagerie-2d-renderer";
-import type { Menagerie2DParams } from "../translators/canvas2d-types";
-import { resolveMenageriePalette } from "../domain/menagerie-palettes";
+import { Animal2DRenderer } from "./animal-2d-renderer";
+import type { Animal2DParams } from "../translators/canvas2d-types";
+import { resolveAnimalPalette } from "../domain/animal-palettes";
 
-function params(creature: Menagerie2DParams["creature"]): Menagerie2DParams {
+function params(creature: Animal2DParams["creature"]): Animal2DParams {
   const intent = {
     creature,
     palette: "velvet" as const,
@@ -16,7 +16,7 @@ function params(creature: Menagerie2DParams["creature"]): Menagerie2DParams {
   };
   return {
     ...intent,
-    resolvedPalette: resolveMenageriePalette(intent),
+    resolvedPalette: resolveAnimalPalette(intent),
     baseHalfWidth: 18,
     bodyLengthPx: 300,
     segmentCount: 40,
@@ -40,10 +40,10 @@ function fakeCtx(): CanvasRenderingContext2D {
   );
 }
 
-describe("Menagerie2DRenderer", () => {
+describe("Animal2DRenderer", () => {
   for (const creature of ["snake", "dragon", "caterpillar"] as const) {
     it(`renders ${creature} without throwing`, () => {
-      const r = new Menagerie2DRenderer();
+      const r = new Animal2DRenderer();
       const ctx = fakeCtx();
       const tips = [{ x: 100, y: 100, end: "A" as const, propIndex: 0, tipIndex: 0, color: "#ffffff" }];
       // Two frames so the follow-chain advances.
@@ -55,7 +55,7 @@ describe("Menagerie2DRenderer", () => {
   }
 
   it("prunes chain state for emitters absent this frame", () => {
-    const r = new Menagerie2DRenderer();
+    const r = new Animal2DRenderer();
     const ctx = fakeCtx();
     const tips = [{ x: 100, y: 100, end: "A" as const, propIndex: 0, tipIndex: 0, color: "#ffffff" }];
     r.render(ctx, params("snake"), tips, 0.016, 1, false);

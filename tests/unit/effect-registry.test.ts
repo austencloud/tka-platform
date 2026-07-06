@@ -24,7 +24,7 @@ describe("effect-registry", () => {
       "smoke",
       "ink",
       "silk",
-      "menagerie",
+      "animal",
       "pulse",
     ]);
   });

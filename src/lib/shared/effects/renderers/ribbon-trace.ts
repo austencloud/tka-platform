@@ -1,5 +1,5 @@
 /**
- * Catmull-Rom spline tracers shared by the silk ribbon and the menagerie
+ * Catmull-Rom spline tracers shared by the silk ribbon and the animal
  * creature renderers. Moved out of silk-2d-renderer so both consume one copy.
  */
 

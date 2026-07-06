@@ -27,7 +27,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     ink?: LegacyRecord;
     frost?: LegacyRecord;
     silk?: LegacyRecord;
-    menagerie?: LegacyRecord;
+    animal?: LegacyRecord;
   };
   const version = input.version ?? 1;
 
@@ -331,19 +331,19 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     if (anyInput.activeEffect === "echo") anyInput.activeEffect = "ghost";
   }
 
-  // v29 → v30: split silk's serpent form into a standalone "menagerie" effect
+  // v29 → v30: split silk's serpent form into a standalone "animal" effect
   // (snake/dragon/caterpillar), and retire "frost" from the roster. Mirrors the
   // motion→echo / water→goo / echo→ghost moves.
   if (version < 30) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const anyInput = input as any;
 
-    // 1. Silk serpent → menagerie. silk.form is global, so a serpent form means
+    // 1. Silk serpent → animal. silk.form is global, so a serpent form means
     //    every silk-assigned tip was rendering the creature.
     const silk = anyInput.silk as Record<string, any> | undefined;
     const wasSerpent = silk?.form === "serpent";
     if (wasSerpent) {
-      anyInput.menagerie ??= {
+      anyInput.animal ??= {
         creature: silk!.creature ?? "snake",
         palette: silk!.palette ?? "velvet",
         customColor: silk!.customColor ?? "#600018",
@@ -364,21 +364,21 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
       for (const key of Object.keys(input.tipEffectMap)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const entry = (input.tipEffectMap as any)[key] as Record<string, any> | undefined;
-        if (wasSerpent && entry?.effect === "silk") entry.effect = "menagerie";
+        if (wasSerpent && entry?.effect === "silk") entry.effect = "animal";
       }
     }
     if (anyInput.activePresets) {
       const presets = anyInput.activePresets as Record<string, any>;
       if (wasSerpent && typeof presets.silk === "string" && presets.silk.startsWith("silk-")) {
-        // silk-serpent → menagerie-serpent, silk-dragon → menagerie-dragon.
+        // silk-serpent → animal-serpent, silk-dragon → animal-dragon.
         const suffix = presets.silk.slice("silk-".length);
         if (suffix === "serpent" || suffix === "dragon") {
-          presets.menagerie = "menagerie-" + suffix;
+          presets.animal = "animal-" + suffix;
           delete presets.silk;
         }
       }
     }
-    if (wasSerpent && anyInput.activeEffect === "silk") anyInput.activeEffect = "menagerie";
+    if (wasSerpent && anyInput.activeEffect === "silk") anyInput.activeEffect = "animal";
 
     // 2. Retire frost — neutralize persisted usage so nothing points at a dead
     //    effect. Frost config block + default stay dormant (deletion deferred).
@@ -393,6 +393,32 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
       delete (anyInput.activePresets as Record<string, any>).frost;
     }
     if (anyInput.activeEffect === "frost") anyInput.activeEffect = "none";
+  }
+
+  // v30 → v31: the animal effect briefly shipped (interim dev builds only) under
+  // the id "menagerie" before being renamed to "animal". Self-heal any persisted
+  // "menagerie" so it doesn't point at a dead effect. No-op for configs that
+  // never saw the interim id.
+  if (version < 31) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anyInput = input as any;
+    if (anyInput.menagerie && !anyInput.animal) anyInput.animal = anyInput.menagerie;
+    delete anyInput.menagerie;
+    if (input.tipEffectMap) {
+      for (const key of Object.keys(input.tipEffectMap)) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const entry = (input.tipEffectMap as any)[key] as Record<string, any> | undefined;
+        if (entry?.effect === "menagerie") entry.effect = "animal";
+      }
+    }
+    if (anyInput.activePresets) {
+      const presets = anyInput.activePresets as Record<string, any>;
+      if (typeof presets.menagerie === "string") {
+        presets.animal = presets.menagerie.replace(/^menagerie-/, "animal-");
+      }
+      delete presets.menagerie;
+    }
+    if (anyInput.activeEffect === "menagerie") anyInput.activeEffect = "animal";
   }
 
   const out: EffectsConfig = {
@@ -413,7 +439,7 @@ export function migrateEffectsConfig(raw: unknown): EffectsConfig {
     ink: { ...DEFAULT_EFFECTS_CONFIG.ink, ...(input.ink ?? {}) },
     frost: { ...DEFAULT_EFFECTS_CONFIG.frost, ...(input.frost ?? {}) },
     silk: { ...DEFAULT_EFFECTS_CONFIG.silk, ...(input.silk ?? {}) },
-    menagerie: { ...DEFAULT_EFFECTS_CONFIG.menagerie, ...(input.menagerie ?? {}) },
+    animal: { ...DEFAULT_EFFECTS_CONFIG.animal, ...(input.animal ?? {}) },
     pulse: { ...DEFAULT_EFFECTS_CONFIG.pulse, ...(input.pulse ?? {}) },
     activePresets: {
       ...DEFAULT_EFFECTS_CONFIG.activePresets,

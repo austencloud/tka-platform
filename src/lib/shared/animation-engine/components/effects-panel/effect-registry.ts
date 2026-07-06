@@ -25,7 +25,7 @@ import { SMOKE_PRESET_GROUP } from "./presets/smoke-presets";
 import { INK_PRESET_GROUP } from "./presets/ink-presets";
 import { FROST_PRESET_GROUP } from "./presets/frost-presets";
 import { SILK_PRESET_GROUP } from "./presets/silk-presets";
-import { MENAGERIE_PRESET_GROUP } from "./presets/menagerie-presets";
+import { ANIMAL_PRESET_GROUP } from "./presets/animal-presets";
 import { PULSE_PRESET_GROUP } from "./presets/pulse-presets";
 
 export interface EffectMeta {
@@ -66,12 +66,12 @@ export const EFFECTS: readonly EffectMeta[] = [
   { id: "petals", label: "Petals", icon: "fa-leaf", color: "#ffc0d8" },
   { id: "smoke", label: "Smoke", icon: "fa-smog", color: "#c0c0c8" },
   { id: "ink", label: "Ink", icon: "fa-paint-brush", color: "#b8956a" },
-  // frost: retired from the roster (Menagerie took its slot). Its config,
+  // frost: retired from the roster (Animal took its slot). Its config,
   // renderer, and preset/customize map entries stay dormant — deletion tracked
   // in a follow-up spec. Registration loops over EFFECTS, so dropping it here
   // unregisters the chip without touching the dormant code.
   { id: "silk", label: "Silk", icon: "fa-wind", color: "#c0c0d0" },
-  { id: "menagerie", label: "Animal", icon: "fa-dragon", color: "#3aa655" },
+  { id: "animal", label: "Animal", icon: "fa-dragon", color: "#3aa655" },
   { id: "pulse", label: "Pulse", icon: "fa-bullseye", color: "#38bdf8" },
 ] as const;
 
@@ -122,7 +122,7 @@ const presetGroups: Record<string, EffectPresetGroup> = {
   ink: INK_PRESET_GROUP,
   frost: FROST_PRESET_GROUP,
   silk: SILK_PRESET_GROUP,
-  menagerie: MENAGERIE_PRESET_GROUP,
+  animal: ANIMAL_PRESET_GROUP,
   pulse: PULSE_PRESET_GROUP,
 };
 
@@ -143,7 +143,7 @@ const customizeLoaders: Record<string, () => Promise<{ default: Component<any> }
   ink: resilientLazyImport(() => import("./customize/InkCustomize.svelte")),
   frost: resilientLazyImport(() => import("./customize/FrostCustomize.svelte")),
   silk: resilientLazyImport(() => import("./customize/SilkCustomize.svelte")),
-  menagerie: resilientLazyImport(() => import("./customize/MenagerieCustomize.svelte")),
+  animal: resilientLazyImport(() => import("./customize/AnimalCustomize.svelte")),
   pulse: resilientLazyImport(() => import("./customize/PulseCustomize.svelte")),
 };
 

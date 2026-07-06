@@ -14,7 +14,7 @@ import type {
   PropFlameColor,
 } from "$lib/shared/animation-engine/domain/types/fire-types";
 
-export const EFFECTS_CONFIG_VERSION = 30;
+export const EFFECTS_CONFIG_VERSION = 31;
 
 export type EffectType =
   | "none"
@@ -33,7 +33,7 @@ export type EffectType =
   | "ink"
   | "frost"
   | "silk"
-  | "menagerie"
+  | "animal"
   | "pulse";
 
 export interface TrailsIntent {
@@ -377,7 +377,7 @@ export interface SilkIntent {
   trackingMode: "left_end" | "right_end" | "both_ends";
 }
 
-export interface MenagerieIntent {
+export interface AnimalIntent {
   /** Which creature ornaments the fixed-length chain. */
   creature: "snake" | "dragon" | "caterpillar";
   /** Named palette (shared with silk). "custom" uses customColor. */
@@ -455,7 +455,7 @@ export interface EffectsConfig {
   ink: InkIntent;
   frost: FrostIntent;
   silk: SilkIntent;
-  menagerie: MenagerieIntent;
+  animal: AnimalIntent;
   pulse: PulseIntent;
   activePresets: {
     trails: string | null;
@@ -473,7 +473,7 @@ export interface EffectsConfig {
     ink: string | null;
     frost: string | null;
     silk: string | null;
-    menagerie: string | null;
+    animal: string | null;
     pulse: string | null;
   };
   /** Which effect is currently active. "none" = no effect selected. */

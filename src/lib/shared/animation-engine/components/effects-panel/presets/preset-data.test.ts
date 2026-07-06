@@ -33,7 +33,7 @@ import { PETALS_PRESET_GROUP } from "./petals-presets";
 import { SMOKE_PRESET_GROUP } from "./smoke-presets";
 import { INK_PRESET_GROUP } from "./ink-presets";
 import { SILK_PRESET_GROUP } from "./silk-presets";
-import { MENAGERIE_PRESET_GROUP } from "./menagerie-presets";
+import { ANIMAL_PRESET_GROUP } from "./animal-presets";
 import { PULSE_PRESET_GROUP } from "./pulse-presets";
 
 const GROUPS: EffectPresetGroup[] = [
@@ -51,7 +51,7 @@ const GROUPS: EffectPresetGroup[] = [
   SMOKE_PRESET_GROUP,
   INK_PRESET_GROUP,
   SILK_PRESET_GROUP,
-  MENAGERIE_PRESET_GROUP,
+  ANIMAL_PRESET_GROUP,
   PULSE_PRESET_GROUP,
 ];
 
@@ -87,16 +87,16 @@ describe("effect preset data", () => {
     }
   });
 
-  it("every menagerie preset pins the `creature` mode axis", () => {
+  it("every animal preset pins the `creature` mode axis", () => {
     // `creature` decides which ornament renders. applyPreset shallow-merges, so
     // a preset omitting `creature` would inherit the previously-selected one.
     // This is the descendant of the original silk `form`-leak guard: when the
-    // creature mode split out of Silk into Menagerie, the discriminator moved
+    // creature mode split out of Silk into Animal, the discriminator moved
     // with it (Silk is now a single-purpose ribbon with no mode axis).
-    const missing = MENAGERIE_PRESET_GROUP.presets
+    const missing = ANIMAL_PRESET_GROUP.presets
       .filter((p) => p.patch && !("creature" in (p.patch as Record<string, unknown>)))
       .map((p) => p.id);
-    expect(missing, `menagerie presets missing \`creature\`: ${missing.join(", ")}`).toEqual([]);
+    expect(missing, `animal presets missing \`creature\`: ${missing.join(", ")}`).toEqual([]);
   });
 
   it("every preset uses a static patch (no dynamic resolvePatch remains)", () => {
