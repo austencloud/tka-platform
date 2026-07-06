@@ -16,15 +16,15 @@ describe("effect-registry", () => {
       "charcoal",
       "zap",
       "sparkles",
-      "echo",
+      "ghost",
       "bloom",
-      "water",
+      "goo",
       "bubbles",
       "petals",
       "smoke",
       "ink",
-      "frost",
       "silk",
+      "menagerie",
       "pulse",
     ]);
   });

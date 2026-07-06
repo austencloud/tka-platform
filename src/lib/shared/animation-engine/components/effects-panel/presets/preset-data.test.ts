@@ -32,8 +32,8 @@ import { BUBBLES_PRESET_GROUP } from "./bubbles-presets";
 import { PETALS_PRESET_GROUP } from "./petals-presets";
 import { SMOKE_PRESET_GROUP } from "./smoke-presets";
 import { INK_PRESET_GROUP } from "./ink-presets";
-import { FROST_PRESET_GROUP } from "./frost-presets";
 import { SILK_PRESET_GROUP } from "./silk-presets";
+import { MENAGERIE_PRESET_GROUP } from "./menagerie-presets";
 import { PULSE_PRESET_GROUP } from "./pulse-presets";
 
 const GROUPS: EffectPresetGroup[] = [
@@ -50,8 +50,8 @@ const GROUPS: EffectPresetGroup[] = [
   PETALS_PRESET_GROUP,
   SMOKE_PRESET_GROUP,
   INK_PRESET_GROUP,
-  FROST_PRESET_GROUP,
   SILK_PRESET_GROUP,
+  MENAGERIE_PRESET_GROUP,
   PULSE_PRESET_GROUP,
 ];
 
@@ -87,16 +87,16 @@ describe("effect preset data", () => {
     }
   });
 
-  it("every silk preset pins the `form` mode axis", () => {
-    // `form` (ribbon vs serpent) is a mode discriminator: it decides which other
-    // fields even render. applyPreset shallow-merges, so a preset that omits
-    // `form` inherits the previously-selected form — pick Dragon, then a ribbon
-    // preset, and the ribbon palette renders as the serpent creature. Every silk
-    // preset must therefore declare its form. Regression guard for that leak.
-    const missing = SILK_PRESET_GROUP.presets
-      .filter((p) => p.patch && !("form" in (p.patch as Record<string, unknown>)))
+  it("every menagerie preset pins the `creature` mode axis", () => {
+    // `creature` decides which ornament renders. applyPreset shallow-merges, so
+    // a preset omitting `creature` would inherit the previously-selected one.
+    // This is the descendant of the original silk `form`-leak guard: when the
+    // creature mode split out of Silk into Menagerie, the discriminator moved
+    // with it (Silk is now a single-purpose ribbon with no mode axis).
+    const missing = MENAGERIE_PRESET_GROUP.presets
+      .filter((p) => p.patch && !("creature" in (p.patch as Record<string, unknown>)))
       .map((p) => p.id);
-    expect(missing, `silk presets missing \`form\`: ${missing.join(", ")}`).toEqual([]);
+    expect(missing, `menagerie presets missing \`creature\`: ${missing.join(", ")}`).toEqual([]);
   });
 
   it("every preset uses a static patch (no dynamic resolvePatch remains)", () => {

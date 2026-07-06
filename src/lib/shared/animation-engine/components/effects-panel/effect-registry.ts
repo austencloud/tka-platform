@@ -66,7 +66,10 @@ export const EFFECTS: readonly EffectMeta[] = [
   { id: "petals", label: "Petals", icon: "fa-leaf", color: "#ffc0d8" },
   { id: "smoke", label: "Smoke", icon: "fa-smog", color: "#c0c0c8" },
   { id: "ink", label: "Ink", icon: "fa-paint-brush", color: "#b8956a" },
-  { id: "frost", label: "Frost", icon: "fa-snowflake", color: "#a0d8ff" },
+  // frost: retired from the roster (Menagerie took its slot). Its config,
+  // renderer, and preset/customize map entries stay dormant — deletion tracked
+  // in a follow-up spec. Registration loops over EFFECTS, so dropping it here
+  // unregisters the chip without touching the dormant code.
   { id: "silk", label: "Silk", icon: "fa-wind", color: "#c0c0d0" },
   { id: "menagerie", label: "Menagerie", icon: "fa-dragon", color: "#3aa655" },
   { id: "pulse", label: "Pulse", icon: "fa-bullseye", color: "#38bdf8" },
