@@ -144,6 +144,12 @@ export class AnimationRenderLoop {
   // virtualTime is exactly 0 (the first export frame: i/fps * 1000 = 0).
   private lastStampedTrailTime: number | null = null;
   private rafId: number | null = null;
+  // When true, the free-running rAF loop is disabled (offscreen export). The
+  // deterministic renderSync() path still renders; start()/triggerRender() and
+  // the self-reschedule bail so effect keep-warm/prewarm can't restart the loop
+  // and race the export driver (which pinned prop fade alpha to 0 → props
+  // dropped from fire/charcoal/LED exports).
+  private externallyDriven = false;
   private needsRender: boolean = false;
   private getFrameParamsCallback: (() => RenderFrameParams) | null = null;
   private isDisposed: boolean = false; // Prevent RAF from continuing after disposal
@@ -275,11 +281,20 @@ export class AnimationRenderLoop {
   }
 
   start(getFrameParams: () => RenderFrameParams): void {
+    if (this.externallyDriven) return;
     this.getFrameParamsCallback = getFrameParams;
     this.framesRenderedSinceStart = 0;
     if (this.rafId === null && this.renderer) {
       this.rafId = requestAnimationFrame(this.renderLoop);
     }
+  }
+
+  /** See IAnimationRenderLoop.setExternallyDriven. Disables the rAF loop for
+   *  the offscreen export engine so effect keep-warm/prewarm triggerRender()
+   *  calls can't restart it and race the deterministic renderSync() driver. */
+  setExternallyDriven(value: boolean): void {
+    this.externallyDriven = value;
+    if (value) this.stop();
   }
 
   stop(): void {
@@ -313,6 +328,7 @@ export class AnimationRenderLoop {
   }
 
   triggerRender(getFrameParams: () => RenderFrameParams): void {
+    if (this.externallyDriven) return;
     this.needsRender = true;
     this.consecutiveIdleFrames = 0; // Reset idle counter - new work incoming
     this.getFrameParamsCallback = getFrameParams;
@@ -838,8 +854,9 @@ export class AnimationRenderLoop {
     if (shouldContinueLoop) {
       this.render(params, effectiveTime);
       this.needsRender = false;
-      // Only schedule next frame if not disposed
-      if (!this.isDisposed) {
+      // Only schedule next frame if not disposed AND not externally driven
+      // (the offscreen export engine renders via renderSync only).
+      if (!this.isDisposed && !this.externallyDriven) {
         this.rafId = requestAnimationFrame(this.renderLoop);
       } else {
         this.rafId = null;

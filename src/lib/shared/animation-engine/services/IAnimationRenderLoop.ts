@@ -194,6 +194,16 @@ export interface IAnimationRenderLoop {
    */
   triggerRender(getFrameParams: () => RenderFrameParams): void;
 
+  /**
+   * Put the loop under external (deterministic) control. When true, the
+   * free-running rAF loop is disabled: start()/triggerRender() and the
+   * self-reschedule become no-ops, so effect keep-warm/prewarm paths can't
+   * restart it. renderSync() still renders (it bypasses rAF). Used by the
+   * offscreen export engine so the loop never races the deterministic driver.
+   * @param value - true to disable the rAF loop, false to re-enable
+   */
+  setExternallyDriven(value: boolean): void;
+
   /** Render ONE frame synchronously, now, with an explicit sim dt (seconds).
    *  Bypasses rAF/needsRender scheduling — used by the offscreen export path so
    *  rendering is deterministic. The free-running loop is never started. */

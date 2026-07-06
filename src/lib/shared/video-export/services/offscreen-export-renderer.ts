@@ -103,18 +103,25 @@ export class OffscreenExportRenderer {
       { visibilityManager: vm, effectsConfigState: vm.effectsConfigState },
     );
 
-    // Stop the engine's free-running rAF loop. The export drives every frame
-    // deterministically through renderFrame() → renderSync(). If the loop keeps
-    // running, it repaints the canvas from the engine's OWN internal state — which
-    // never receives per-frame prop positions (those arrive only as renderFrame
-    // args) — so its bluePropState/redPropState stay at the boot default. During
-    // the orchestrator's `await waitForAnimationFrame()` between renderFrame() and
-    // the canvas capture, one of those rAF renders fires and overwrites the correct
-    // frame with a propless one. The grid (static texture) and the WebGL trail
-    // overlay (separate canvas) survive; the canvas2D props do not — exactly the
-    // "grid + trails but no props" export bug. Mirrors the deterministic-pass
-    // pattern in the trail-export-parity harness (renderLoop.stop()).
-    this.handle.context.renderLoop.stop();
+    // Put the engine's rAF loop under external (deterministic) control. The
+    // export drives every frame through renderFrame() → renderSync(). If the loop
+    // runs, it repaints from the engine's OWN internal state — which never
+    // receives per-frame prop positions (those arrive only as renderFrame args) —
+    // so its bluePropState/redPropState stay at the boot default. During the
+    // orchestrator's `await waitForAnimationFrame()` between renderFrame() and the
+    // canvas capture, an rAF render fires and (a) overwrites the frame with a
+    // propless one AND (b) drives the prop fade managers with a wall clock +
+    // null-prop setVisible(false), racing the export's virtual-clock
+    // setVisible(true) so prop alpha is pinned at 0 in every captured frame.
+    //
+    // A one-time stop() is NOT enough: the fire/charcoal/LED keep-warm + prewarm
+    // paths (effect-renderer-manager) call renderLoop.triggerRender(), which
+    // RESTARTS the loop, and an active fluid sim self-perpetuates it — so props
+    // vanished from every fire/charcoal/LED export. setExternallyDriven(true)
+    // disables the rAF loop permanently (start()/triggerRender()/self-reschedule
+    // all bail); renderSync() is unaffected. Trails, with no keep-warm restart,
+    // never hit this — hence the effect-specific symptom.
+    this.handle.context.renderLoop.setExternallyDriven(true);
 
     // Prime the capturer config so the FIRST sub-step capture lands at the right
     // resolution + prop geometry. (The WebGL2 overlay keeps its own ring; this
