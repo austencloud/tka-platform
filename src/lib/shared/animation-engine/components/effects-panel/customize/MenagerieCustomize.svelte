@@ -44,7 +44,7 @@
     <div class="menagerie-controls">
       <OptionChipRow
         label="Creature"
-        ariaLabel="Menagerie creature"
+        ariaLabel="Animal creature"
         value={state.menagerie.creature}
         options={CREATURES}
         onChange={(v) => state.updateEffect("menagerie", { creature: v })}
@@ -52,7 +52,7 @@
 
       <OptionChipRow
         label="Palette"
-        ariaLabel="Menagerie palette"
+        ariaLabel="Animal palette"
         value={state.menagerie.palette}
         options={PALETTES}
         onChange={(v) => state.updateEffect("menagerie", { palette: v })}
@@ -78,7 +78,7 @@
 
       <OptionChipRow
         label="Tracking"
-        ariaLabel="Menagerie tracking mode"
+        ariaLabel="Animal tracking mode"
         value={state.menagerie.trackingMode}
         options={TRACKING}
         onChange={(v) => state.updateEffect("menagerie", { trackingMode: v })}
