@@ -12,9 +12,20 @@ import { BarcodeDetector, prepareZXingModule } from "barcode-detector/ponyfill";
 
 let prepared = false;
 
+export interface TkaQrDetection {
+	/** Raw string contents of the QR. */
+	rawValue: string;
+	/**
+	 * Where the QR sits in the frame, in FRAME pixels (the ImageData handed to
+	 * detect). The scan sheet uses this to lift the actual QR pixels out of the
+	 * frame for the capture animation.
+	 */
+	boundingBox: { x: number; y: number; width: number; height: number };
+}
+
 export interface TkaQrDetector {
-	/** Raw string contents of every QR found in the frame. */
-	detect(frame: ImageData): Promise<string[]>;
+	/** Every QR found in the frame, with its location. */
+	detect(frame: ImageData): Promise<TkaQrDetection[]>;
 }
 
 export function createTkaQrDetector(): TkaQrDetector {
@@ -31,9 +42,17 @@ export function createTkaQrDetector(): TkaQrDetector {
 	const detector = new BarcodeDetector({ formats: ["qr_code"] });
 
 	return {
-		async detect(frame: ImageData): Promise<string[]> {
+		async detect(frame: ImageData): Promise<TkaQrDetection[]> {
 			const results = await detector.detect(frame);
-			return results.map((r) => r.rawValue);
+			return results.map((r) => ({
+				rawValue: r.rawValue,
+				boundingBox: {
+					x: r.boundingBox.x,
+					y: r.boundingBox.y,
+					width: r.boundingBox.width,
+					height: r.boundingBox.height,
+				},
+			}));
 		},
 	};
 }

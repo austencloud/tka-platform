@@ -20,15 +20,24 @@ the geo dashboard).
 -->
 <script lang="ts">
 	import { onMount, onDestroy } from "svelte";
+	import { fly } from "svelte/transition";
 	import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 	import { CameraManager } from "$lib/shared/train/services/camera-manager";
 	import { createTkaQrDetector, type TkaQrDetector } from "$lib/shared/qr/services/tka-qr-detector";
 	import { extractScanCode } from "$lib/shared/qr/services/extract-scan-code";
+	import {
+		padQrBox,
+		frameBoxToScreenRect,
+		type FrameBox,
+	} from "$lib/shared/qr/services/scan-capture-geometry";
 	import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
 	import { getAppCanonicalURL } from "../../../../../config/domains";
 	import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
 	import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
-	import { addSequenceToCollection } from "$lib/shared/library/services/collection-manager";
+	import {
+		addSequenceToCollection,
+		removeSequenceFromCollection,
+	} from "$lib/shared/library/services/collection-manager";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
 	import { LIBRARY_LIMITS } from "$lib/shared/library/data/firestore-paths";
 	import { LibraryError } from "$lib/shared/library/domain/library-error";
@@ -61,8 +70,14 @@ the geo dashboard).
 	const placement = $derived(isSideBySide ? "right" : "bottom");
 
 	const CLOSE_ANIMATION_MS = 300;
+	// A dedicated flag rather than checking drawerOpen: if the drawer reports
+	// closed before the opening rAF has even flipped drawerOpen true (rapid
+	// open/close), a drawerOpen check would skip onClose and strand the sheet
+	// mounted-but-invisible — the Scan button would go dead until remount.
+	let closing = false;
 	function requestClose() {
-		if (!drawerOpen) return;
+		if (closing) return;
+		closing = true;
 		drawerOpen = false;
 		setTimeout(onClose, CLOSE_ANIMATION_MS);
 	}
@@ -137,11 +152,11 @@ the geo dashboard).
 		if (!frame) return;
 		processing = true;
 		try {
-			const rawValues = await detector.detect(frame);
-			for (const raw of rawValues) {
-				const code = extractScanCode(raw);
+			const detections = await detector.detect(frame);
+			for (const detection of detections) {
+				const code = extractScanCode(detection.rawValue);
 				if (code) {
-					await handleHit(code);
+					await handleHit(code, frame, detection.boundingBox);
 					break; // one card per frame
 				}
 			}
@@ -152,7 +167,7 @@ the geo dashboard).
 		}
 	}
 
-	async function handleHit(code: string) {
+	async function handleHit(code: string, frame: ImageData, box: FrameBox) {
 		if (seen.has(code)) return;
 		seen.add(code);
 
@@ -170,6 +185,7 @@ the geo dashboard).
 			const word =
 				resolution.sequence.word || resolution.sequence.name || "Sequence";
 			let targetId = resolution.sequence.id;
+			let createdLibraryId: string | null = null;
 
 			if (!resolution.docBacked) {
 				// No referenceable doc behind this card (printed deck cards):
@@ -181,6 +197,7 @@ the geo dashboard).
 						{ visibility: "private" },
 					);
 					targetId = saved.id;
+					createdLibraryId = saved.id;
 				} catch (err) {
 					if (err instanceof LibraryError && err.code === "ALREADY_EXISTS") {
 						// Identical content already lives in the library under another
@@ -212,11 +229,170 @@ the geo dashboard).
 			await addSequenceToCollection(collectionId, targetId);
 			addedCount += 1;
 			getHapticFeedback()?.trigger("selection");
-			toast.success(`"${word}" added ✓`);
+			// The capture celebration + undo tray ARE the confirmation — a
+			// success toast on top would be double-speak.
+			celebrate(frame, box, { code, word, sequenceId: targetId, createdLibraryId });
 		} catch (err) {
 			seen.delete(code);
 			console.error("[ScanCard] add failed:", err);
 			toast.error("Couldn't add that card — try again.");
+		}
+	}
+
+	// ── Capture celebration ──────────────────────────────────────────
+	// The recognized QR's own pixels lift out of the viewfinder and fly into
+	// the "N cards added" counter, which pops to catch them. The chip is a
+	// throwaway body-level element (WAAPI, removed on finish) so the drawer's
+	// transform/overflow can't clip or misplace it.
+	let counterEl = $state<HTMLElement | null>(null);
+	const reducedMotion =
+		typeof window !== "undefined" &&
+		!!window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+	function cropChip(frame: ImageData, box: FrameBox): string | null {
+		const padded = padQrBox(box, frame.width, frame.height);
+		if (!padded) return null;
+		try {
+			const canvas = document.createElement("canvas");
+			canvas.width = padded.width;
+			canvas.height = padded.height;
+			const ctx = canvas.getContext("2d");
+			if (!ctx) return null;
+			// Negative offsets shift the frame so only the padded QR region
+			// lands on the canvas.
+			ctx.putImageData(frame, -padded.x, -padded.y);
+			return canvas.toDataURL("image/png");
+		} catch {
+			return null;
+		}
+	}
+
+	function launchChip(src: string, frame: ImageData, box: FrameBox) {
+		if (reducedMotion || !videoHost || !counterEl) return;
+		const padded = padQrBox(box, frame.width, frame.height) ?? box;
+		const hostRect = videoHost.getBoundingClientRect();
+		const from = frameBoxToScreenRect(padded, frame.width, frame.height, {
+			left: hostRect.left,
+			top: hostRect.top,
+			width: hostRect.width,
+			height: hostRect.height,
+		});
+		if (!from) return;
+		const targetRect = counterEl.getBoundingClientRect();
+
+		const img = document.createElement("img");
+		img.src = src;
+		img.alt = "";
+		img.setAttribute("aria-hidden", "true");
+		img.style.cssText =
+			`position:fixed; left:${from.left}px; top:${from.top}px; ` +
+			`width:${from.width}px; height:${from.height}px; z-index:1000; ` +
+			`border-radius:12px; pointer-events:none; will-change:transform,opacity;`;
+		document.body.appendChild(img);
+
+		const dx = targetRect.left + targetRect.width / 2 - (from.left + from.width / 2);
+		const dy = targetRect.top + targetRect.height / 2 - (from.top + from.height / 2);
+		const endScale = Math.max(0.05, 30 / Math.max(from.width, 1));
+		const glow = "0 0 0 3px rgba(255,255,255,0.9), 0 8px 32px rgba(0,0,0,0.5)";
+
+		const animation = img.animate(
+			[
+				// Pop: the chip "snaps" out of the frame with a flash ring…
+				{ transform: "scale(0.85)", opacity: 0, boxShadow: "none", offset: 0 },
+				{ transform: "scale(1.1)", opacity: 1, boxShadow: glow, offset: 0.2 },
+				{ transform: "scale(1)", opacity: 1, boxShadow: glow, offset: 0.36 },
+				// …then arcs up into the counter, shrinking as it files itself.
+				{
+					transform: `translate(${dx * 0.25}px, ${dy * 0.6}px) scale(${(1 + endScale) / 2})`,
+					opacity: 0.9,
+					boxShadow: "0 4px 16px rgba(0,0,0,0.35)",
+					offset: 0.7,
+				},
+				{
+					transform: `translate(${dx}px, ${dy}px) scale(${endScale})`,
+					opacity: 0,
+					boxShadow: "none",
+					offset: 1,
+				},
+			],
+			{ duration: 950, easing: "cubic-bezier(0.3, 0.7, 0.25, 1)", fill: "forwards" },
+		);
+		const cleanup = () => img.remove();
+		animation.onfinish = cleanup;
+		animation.oncancel = cleanup;
+
+		// The counter pops to "catch" the chip, timed to its arrival.
+		counterEl.animate(
+			[
+				{ transform: "scale(1)", offset: 0 },
+				{ transform: "scale(1)", offset: 0.75 },
+				{ transform: "scale(1.25)", offset: 0.85 },
+				{ transform: "scale(1)", offset: 1 },
+			],
+			{ duration: 1050, easing: "cubic-bezier(0.34, 1.56, 0.64, 1)" },
+		);
+	}
+
+	// ── Undo tray ────────────────────────────────────────────────────
+	// Continuous filing must stay hands-free, so there's no confirm step —
+	// instead the last scan lingers in a tray with a remove button. Undo
+	// takes the card back out of the collection AND deletes the private
+	// library copy the scan created (when it created one), so it's a true
+	// takeback, not a half-undo.
+	interface LastScan {
+		id: number;
+		code: string;
+		word: string;
+		chipSrc: string | null;
+		sequenceId: string;
+		createdLibraryId: string | null;
+	}
+
+	let lastScan = $state<LastScan | null>(null);
+	let undoBusy = $state(false);
+	let trayTimer: ReturnType<typeof setTimeout> | null = null;
+	let scanSeq = 0;
+	const TRAY_DISMISS_MS = 6000;
+
+	function celebrate(
+		frame: ImageData,
+		box: FrameBox,
+		scan: { code: string; word: string; sequenceId: string; createdLibraryId: string | null },
+	) {
+		const chipSrc = cropChip(frame, box);
+		if (chipSrc) launchChip(chipSrc, frame, box);
+
+		if (trayTimer) clearTimeout(trayTimer);
+		lastScan = { id: ++scanSeq, chipSrc, ...scan };
+		trayTimer = setTimeout(() => {
+			lastScan = null;
+			trayTimer = null;
+		}, TRAY_DISMISS_MS);
+	}
+
+	async function undoLastScan() {
+		const scan = lastScan;
+		if (!scan || undoBusy) return;
+		undoBusy = true;
+		try {
+			await removeSequenceFromCollection(collectionId, scan.sequenceId);
+			if (scan.createdLibraryId) {
+				await getLibraryRepository().deleteSequence(scan.createdLibraryId);
+			}
+			// Let the same card scan again — the undo was deliberate, but so is
+			// holding the card back up.
+			seen.delete(scan.code);
+			addedCount = Math.max(0, addedCount - 1);
+			if (trayTimer) clearTimeout(trayTimer);
+			trayTimer = null;
+			lastScan = null;
+			getHapticFeedback()?.trigger("selection");
+			toast.info(`"${scan.word}" removed.`);
+		} catch (err) {
+			console.error("[ScanCard] undo failed:", err);
+			toast.error("Couldn't remove that card — it's still in the collection.");
+		} finally {
+			undoBusy = false;
 		}
 	}
 
@@ -238,6 +414,7 @@ the geo dashboard).
 
 		return () => {
 			if (scanTimer) clearInterval(scanTimer);
+			if (trayTimer) clearTimeout(trayTimer);
 			camera.stop(); // release the camera the moment the sheet goes
 			browseScrollState.showUI();
 		};
@@ -296,7 +473,7 @@ the geo dashboard).
 		<header class="panel-header">
 			<div class="header-text">
 				<h2 class="panel-title">Scan into {target?.name ?? "collection"}</h2>
-				<span class="panel-count">{countLabel(addedCount)}</span>
+				<span class="panel-count" bind:this={counterEl}>{countLabel(addedCount)}</span>
 			</div>
 			<button type="button" class="done-btn" onclick={requestClose}>
 				<i class="fas fa-check" aria-hidden="true"></i>
@@ -358,7 +535,30 @@ the geo dashboard).
 							<p>Starting camera…</p>
 						</div>
 					{/if}
-					<p class="scan-hint">Point at a card's QR code</p>
+					{#if lastScan}
+						<!-- Both the tray and the hint are absolute overlays in the same
+						     slot, so swapping them moves nothing else. -->
+						<div
+							class="undo-tray"
+							transition:fly={{ y: 14, duration: reducedMotion ? 0 : 220 }}
+						>
+							{#if lastScan.chipSrc}
+								<img class="tray-chip" src={lastScan.chipSrc} alt="" />
+							{/if}
+							<span class="tray-text">“{lastScan.word}” added</span>
+							<button
+								type="button"
+								class="tray-undo"
+								onclick={() => void undoLastScan()}
+								disabled={undoBusy}
+								aria-label={`Remove "${lastScan.word}" from this collection`}
+							>
+								<i class="fas fa-xmark" aria-hidden="true"></i>
+							</button>
+						</div>
+					{:else}
+						<p class="scan-hint">Point at a card's QR code</p>
+					{/if}
 				{/if}
 			</div>
 		{/if}
@@ -414,6 +614,11 @@ the geo dashboard).
 		font-size: var(--font-size-compact, 12px);
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
 		font-variant-numeric: tabular-nums;
+		/* The catch-pop scales this element; grow from the text's left edge so
+		   the pulse never nudges neighbors. */
+		display: inline-block;
+		transform-origin: left center;
+		width: fit-content;
 	}
 
 	.done-btn {
@@ -477,6 +682,74 @@ the geo dashboard).
 		font-size: var(--font-size-sm, 14px);
 		white-space: nowrap;
 		pointer-events: none;
+	}
+
+	/* ── Undo tray: the last scan lingers here with a takeback ─────── */
+
+	.undo-tray {
+		position: absolute;
+		bottom: 12px;
+		left: 50%;
+		transform: translateX(-50%);
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		max-width: calc(100% - 24px);
+		padding: 6px 6px 6px 8px;
+		border-radius: 999px;
+		background: rgba(0, 0, 0, 0.72);
+		backdrop-filter: blur(8px);
+		border: 1px solid rgba(255, 255, 255, 0.14);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+	}
+
+	.tray-chip {
+		width: 40px;
+		height: 40px;
+		flex-shrink: 0;
+		border-radius: 10px;
+		object-fit: cover;
+		background: white;
+	}
+
+	.tray-text {
+		color: white;
+		font-size: var(--font-size-sm, 14px);
+		font-weight: 600;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		min-width: 0;
+	}
+
+	.tray-undo {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 44px;
+		height: 44px;
+		flex-shrink: 0;
+		border: none;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.12);
+		color: white;
+		font-size: 16px;
+		cursor: pointer;
+		transition: background var(--duration-fast, 150ms) ease;
+	}
+
+	.tray-undo:hover:not(:disabled) {
+		background: rgba(255, 255, 255, 0.22);
+	}
+
+	.tray-undo:disabled {
+		opacity: 0.5;
+		cursor: wait;
+	}
+
+	.tray-undo:focus-visible {
+		outline: 2px solid var(--theme-accent);
+		outline-offset: 2px;
 	}
 
 	.camera-starting,
