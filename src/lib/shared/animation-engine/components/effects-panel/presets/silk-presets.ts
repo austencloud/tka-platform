@@ -6,7 +6,6 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     name: "Classic",
     previewColor: "#c0c0d0",
     patch: {
-      form: "ribbon",
       palette: "satin",
       intensity: 0.7,
       width: 0.5,
@@ -21,7 +20,6 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     name: "Streamer",
     previewColor: "#c080ff",
     patch: {
-      form: "ribbon",
       palette: "ethereal",
       intensity: 0.6,
       width: 0.7,
@@ -36,7 +34,6 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     name: "Whip",
     previewColor: "#202830",
     patch: {
-      form: "ribbon",
       palette: "shadow",
       intensity: 0.8,
       width: 0.4,
@@ -51,7 +48,6 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     name: "Royal",
     previewColor: "#ffd700",
     patch: {
-      form: "ribbon",
       palette: "gold_leaf",
       intensity: 0.8,
       width: 0.7,
@@ -66,7 +62,6 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     name: "Inferno",
     previewColor: "#ff6000",
     patch: {
-      form: "ribbon",
       palette: "ember",
       intensity: 0.9,
       width: 0.5,
@@ -81,7 +76,6 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
     name: "Phantom",
     previewColor: "#101020",
     patch: {
-      form: "ribbon",
       palette: "shadow",
       intensity: 0.3,
       width: 0.6,
@@ -91,37 +85,6 @@ export const SILK_PRESETS: EffectPreset<"silk">[] = [
       trackingMode: "both_ends",
     },
   },
-  {
-    id: "silk-serpent",
-    name: "Serpent",
-    previewColor: "#3aa655",
-    patch: {
-      form: "serpent",
-      creature: "snake",
-      palette: "velvet",
-      intensity: 0.85,
-      width: 0.55,
-      bodyLength: 0.55,
-      slither: 0.55,
-      trackingMode: "right_end",
-    },
-  },
-  {
-    id: "silk-dragon",
-    name: "Dragon",
-    previewColor: "#ff6000",
-    previewColor2: "#ffcc00",
-    patch: {
-      form: "serpent",
-      creature: "dragon",
-      palette: "ember",
-      intensity: 0.9,
-      width: 0.6,
-      bodyLength: 0.7,
-      slither: 0.45,
-      trackingMode: "right_end",
-    },
-  },
 ];
 
 export const SILK_PRESET_GROUP: EffectPresetGroup = {
@@ -129,9 +92,6 @@ export const SILK_PRESET_GROUP: EffectPresetGroup = {
   presets: SILK_PRESETS,
   getSummary: (state) => {
     const s = state.silk;
-    if (s.form === "serpent") {
-      return `${s.creature} · ${s.palette} · length ${Math.round(s.bodyLength * 100)}% · slither ${Math.round(s.slither * 100)}%`;
-    }
     return `${s.palette} · width ${Math.round(s.width * 100)}% · taut ${Math.round(s.tautness * 100)}%`;
   },
 };
