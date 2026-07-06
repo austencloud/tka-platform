@@ -4,6 +4,8 @@
   import TunnelArtView from "../tunnel/TunnelArtView.svelte";
   import ArtSettingsPanel from "./ArtSettingsPanel.svelte";
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
+  import { toExportTakeoverPhase } from "$lib/shared/video-export/services/export-takeover-phase";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import VideoPreviewPanel from "./VideoPreviewPanel.svelte";
   import { sequenceModalExporter } from "../services/sequence-modal-exporter.svelte";
   import { exportVideoFilename } from "../services/export-video-filename";
@@ -107,31 +109,17 @@
   const exportState = $derived(sequenceModalExporter.state);
   const effectiveSeq = $derived(playback.animationState.sequenceData ?? sequence);
 
-  // Map the shared exporter state onto ExportTakeover's phase — the same premium
-  // ring overlay the mandala export uses (conic blue→red sweep), replacing the
-  // plain progress bar. "idle" hides it; tunnel-only (mandala has its own takeover).
-  const tunnelExportPhase = $derived<
-    "idle" | "capturing" | "encoding" | "complete" | "error"
-  >(
-    artType !== "tunnel"
-      ? "idle"
-      : exportState.error
-        ? "error"
-        : exportState.isExporting
-          ? (exportState.progress?.stage ?? "capturing")
-          : "idle",
-  );
-  const tunnelPhaseLabel = $derived(
-    tunnelExportPhase === "capturing"
-      ? "Rendering"
-      : tunnelExportPhase === "encoding"
-        ? "Encoding…"
-        : tunnelExportPhase === "complete"
-          ? "Done"
-          : "",
+  // Map the shared exporter state onto ExportTakeover's phase via the shared
+  // mapper — same premium blue→red ring as the mandala + animation exports.
+  // tunnel-only (mandala has its own takeover).
+  const takeover = $derived(
+    toExportTakeoverPhase(exportState.progress, exportState.isExporting, {
+      active: artType === "tunnel",
+      error: exportState.error,
+    }),
   );
   // Stamp the look so variant exports of one sequence don't collide.
-  const tunnelSuffix = $derived(`-tunnel-${controller.activeLook.id}`);
+  const tunnelSuffix = $derived(`-tunnel-${controller.configKey}`);
 
   // Preview-first save: share sheet on mobile, download on desktop (the platform
   // gate lives in shareOrDownloadBlob). The blob is recovered from the preview's
@@ -174,13 +162,13 @@
           onDismiss={() => sequenceModalExporter.dismissPreview()}
         />
       </div>
-    {:else if tunnelExportPhase !== "idle"}
+    {:else if takeover.phase !== "idle"}
       <!-- The shared premium ring overlay (same as the mandala export). The live
            kaleidoscope keeps playing, dimmed + blurred, behind the ring. -->
       <ExportTakeover
-        phase={tunnelExportPhase}
+        phase={takeover.phase}
         progress={exportState.progress?.progress ?? 0}
-        phaseLabel={tunnelPhaseLabel}
+        phaseLabel={takeover.labelKey ? t(takeover.labelKey) : ""}
         error={exportState.error}
         onCancel={() => {
           sequenceModalExporter.cancel();

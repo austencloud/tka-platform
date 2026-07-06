@@ -12,7 +12,7 @@
   - AnimatorCanvas (rendering)
   - HorizontalSidebar / HorizontalTransportRow (horizontal layout)
   - VerticalModeControls (vertical layout)
-  - ExportProgressOverlay (export progress)
+  - ExportTakeover (export progress ring)
 -->
 <script lang="ts">
 
@@ -32,7 +32,11 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 	import type { ControlsLevel } from "../domain/types";
 
 	// Extracted components
-	import ExportProgressOverlay from "./ExportProgressOverlay.svelte";
+	import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
+	import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+	import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+	import { toExportTakeoverPhase } from "$lib/shared/video-export/services/export-takeover-phase";
+	import { t } from "$lib/shared/i18n/i18n.svelte.js";
 	import HorizontalSidebar from "./HorizontalSidebar.svelte";
 	import HorizontalTransportRow from "./HorizontalTransportRow.svelte";
 	import VerticalModeControls from "./VerticalModeControls.svelte";
@@ -108,6 +112,10 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 	const stepSize = $derived(useContext ? ctx?.state?.stepPlaybackStepSize ?? 1 : animState?.stepPlaybackStepSize ?? 1);
 	const isExporting = $derived(useContext ? ctx?.state?.isExporting ?? false : false);
 	const exportProgress = $derived(useContext ? ctx?.state?.exportProgress ?? null : null);
+	// Drives the shared ExportTakeover ring (same premium overlay as /q + Art +
+	// mandala). One mapper → phase + label key, no per-host duplication.
+	const takeover = $derived(toExportTakeoverPhase(exportProgress, isExporting));
+	const titleWord = $derived(simplifyRepeatedWord(sequenceData?.word ?? sequence?.word ?? ""));
 	// Deterministic export time. The video orchestrator freezes panelState's
 	// virtualTime per captured frame; the engine's render loop must read it so the
 	// trail's duplicate-stamp guard fires (one stamp per frozen frame). Undefined
@@ -194,7 +202,9 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 
 	onDestroy(() => {
 		if (!useContext) {
-			controller?.dispose();
+			// Owner-scoped release so a stale teardown can't clobber a newer host
+			// that already re-claimed the shared singleton (HMR remount overlap).
+			controller?.dispose(animState);
 			animState?.dispose();
 		}
 	});
@@ -312,8 +322,18 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 						{tapToToggle}
 					/>
 
-					{#if isExporting && exportProgress}
-						<ExportProgressOverlay progress={exportProgress} onCancel={cancelExport} />
+					{#if takeover.phase !== "idle"}
+						<ExportTakeover
+							phase={takeover.phase}
+							progress={exportProgress?.progress ?? 0}
+							phaseLabel={takeover.labelKey ? t(takeover.labelKey) : ""}
+							error={exportProgress?.error ?? null}
+							onCancel={cancelExport}
+						>
+							{#snippet title()}
+								<TKAWordGlyph word={titleWord} height={28} darkMode />
+							{/snippet}
+						</ExportTakeover>
 					{/if}
 				</div>
 
@@ -366,8 +386,18 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 					{tapToToggle}
 				/>
 
-				{#if isExporting && exportProgress}
-					<ExportProgressOverlay progress={exportProgress} onCancel={cancelExport} />
+				{#if takeover.phase !== "idle"}
+					<ExportTakeover
+						phase={takeover.phase}
+						progress={exportProgress?.progress ?? 0}
+						phaseLabel={takeover.labelKey ? t(takeover.labelKey) : ""}
+						error={exportProgress?.error ?? null}
+						onCancel={cancelExport}
+					>
+						{#snippet title()}
+							<TKAWordGlyph word={titleWord} height={28} darkMode />
+						{/snippet}
+					</ExportTakeover>
 				{/if}
 			</div>
 

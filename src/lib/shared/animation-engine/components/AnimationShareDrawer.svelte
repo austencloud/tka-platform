@@ -21,7 +21,8 @@
   import AnimationControlsPanel from "$lib/shared/animation-engine/components/canvas/AnimationControlsPanel.svelte";
   import AnimationViewerHelpSheet from "./AnimationViewerHelpSheet.svelte";
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
-  import type { ExportPhase } from "$lib/shared/video-export/components/ExportTakeover.svelte";
+  import { toExportTakeoverPhase } from "$lib/shared/video-export/services/export-takeover-phase";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
 
   // Lazy-loaded to avoid shared/ → features/ static import
   let CreatePanelDrawer = $state<typeof import("$lib/features/create/shared/components/CreatePanelDrawer.svelte").default | null>(null);
@@ -323,18 +324,7 @@
   let trailSettings = $derived(animationSettings.settings.trail);
 
   // ── Export takeover overlay (dim scrim + progress ring over the live canvas) ──
-  const takeoverPhase = $derived<ExportPhase>(
-    !isExporting ? "idle"
-    : exportProgress?.stage === "error" ? "error"
-    : exportProgress?.stage === "encoding" ? "encoding"
-    : exportProgress?.stage === "complete" ? "complete"
-    : "capturing",
-  );
-  const takeoverLabel = $derived(
-    takeoverPhase === "encoding" ? "Encoding…"
-    : takeoverPhase === "complete" ? "Done"
-    : "Rendering",
-  );
+  const takeover = $derived(toExportTakeoverPhase(exportProgress, isExporting));
 
   // ============================================================================
   // EVENT HANDLERS
@@ -410,9 +400,9 @@
               {trailSettings}
             />
             <ExportTakeover
-              phase={takeoverPhase}
+              phase={takeover.phase}
               progress={exportProgress?.progress ?? 0}
-              phaseLabel={takeoverLabel}
+              phaseLabel={takeover.labelKey ? t(takeover.labelKey) : ""}
               error={exportProgress?.error ?? null}
               onCancel={onCancelExport}
               onRetry={onExportVideo}

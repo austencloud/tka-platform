@@ -1,6 +1,8 @@
 <script lang="ts">
   import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
+  import { exportPhaseLabelKey } from "$lib/shared/video-export/services/export-takeover-phase";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import type { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
 
   interface Props {
@@ -12,12 +14,10 @@
   }
   let { ctrl, sequence, bluePropType, redPropType, size }: Props = $props();
 
-  const phaseLabel = $derived(
-    ctrl.exportPhase === "capturing" ? "Rendering"
-    : ctrl.exportPhase === "encoding" ? "Encoding…"
-    : ctrl.exportPhase === "complete" ? "Done"
-    : "",
-  );
+  const phaseLabel = $derived.by(() => {
+    const key = exportPhaseLabelKey(ctrl.exportPhase);
+    return key ? t(key) : "";
+  });
 </script>
 
 <ExportTakeover
