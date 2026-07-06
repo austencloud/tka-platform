@@ -31,10 +31,12 @@ import type {
 } from "$lib/shared/library/domain/models/collection";
 import {
   createCollection,
+  createSmartCollectionModel,
   createSystemCollection,
   isSystemCollection,
   SYSTEM_COLLECTION_IDS,
 } from "$lib/shared/library/domain/models/collection";
+import type { SmartFilterSpec } from "$lib/shared/library/domain/models/collection";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import {
   getUserCollectionsPath,
@@ -157,6 +159,75 @@ export async function createUserCollection(
     ...newCollection,
     id: collectionId,
   };
+}
+
+/**
+ * Create a Smart Collection (rule-defined membership). Mirrors
+ * createUserCollection but stamps kind + filterSpec and no members. The
+ * per-user cap is enforced by collections-state before this is called.
+ */
+export async function createSmartUserCollection(
+  name: string,
+  filterSpec: SmartFilterSpec
+): Promise<LibraryCollection> {
+  const firestore = await getFirestoreInstance();
+  const userId = getAuthenticatedUserId();
+  const collectionId = crypto.randomUUID();
+
+  const newCollection = createSmartCollectionModel(name, userId, filterSpec, {
+    sortOrder: Date.now(),
+  });
+
+  const docRef = doc(firestore, getUserCollectionPath(userId, collectionId));
+  // Same undefined-stripping as createUserCollection (Firestore rejects
+  // undefined field values). filterSpec is always defined here.
+  const docData = Object.fromEntries(
+    Object.entries({
+      ...newCollection,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }).filter(([, value]) => value !== undefined)
+  );
+  try {
+    await setDoc(docRef, docData);
+
+    const userDocRef = doc(firestore, `users/${userId}`);
+    await updateDoc(userDocRef, { lastActivityDate: serverTimestamp() });
+  } catch (error) {
+    console.error("[CollectionManager] Failed to create smart collection:", error);
+    toast.error("Failed to create smart collection. Please try again.");
+    throw new CollectionError(
+      "Failed to create smart collection",
+      "NETWORK",
+      collectionId
+    );
+  }
+
+  return { ...newCollection, id: collectionId };
+}
+
+/**
+ * Replace a Smart Collection's saved rule (Edit rule). Only the filterSpec
+ * and updatedAt change; membership re-derives on the next view.
+ */
+export async function updateCollectionFilterSpec(
+  collectionId: string,
+  filterSpec: SmartFilterSpec
+): Promise<void> {
+  const firestore = await getFirestoreInstance();
+  const userId = getAuthenticatedUserId();
+  const docRef = doc(firestore, getUserCollectionPath(userId, collectionId));
+  try {
+    await updateDoc(docRef, { filterSpec, updatedAt: serverTimestamp() });
+  } catch (error) {
+    console.error("[CollectionManager] Failed to update filter rule:", error);
+    toast.error("Failed to update the rule. Please try again.");
+    throw new CollectionError(
+      "Failed to update filter rule",
+      "NETWORK",
+      collectionId
+    );
+  }
 }
 
 export async function getCollection(collectionId: string): Promise<LibraryCollection | null> {
@@ -361,6 +432,16 @@ export async function removeSequenceFromCollection(
 
   if (!existing) {
     return;
+  }
+
+  if (existing.kind === "smart") {
+    // Smart collections derive members from a rule; there is nothing to
+    // hand-remove. The UI hides remove affordances — this is defense in depth.
+    throw new CollectionError(
+      "Cannot modify members of a smart collection",
+      "INVALID_OPERATION",
+      collectionId
+    );
   }
 
   const collectionRef = doc(
