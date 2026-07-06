@@ -46,7 +46,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { describePictograph } from "$lib/shared/pictograph/shared/domain/utils/pictograph-description";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
+  import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -247,6 +247,7 @@
       style="transform: translateX({p.x * S}px); top:{p.y * S}px; font-size:{p.fs *
         S}px; line-height:{p.lh * S}px"
       use:ptDrag={pt(`type2-para-${i}`, "paragraph", p)}
+      use:editText={{ id: `type2-para-${i}`, label: "paragraph", get: () => p.html, set: (h) => (p.html = h) }}
     >
       {@html p.html}
     </p>

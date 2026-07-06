@@ -9,6 +9,8 @@
  * dumps all current coords to paste back. Off by default → ships clean.
  */
 
+import { tick } from "svelte";
+
 export type Movable = {
   id: string;
   label: string;
@@ -28,6 +30,28 @@ export const hist = $state({ undo: 0, redo: 0 });
 
 type Registered = { m: Movable; node: HTMLElement | SVGElement };
 const movables = new Map<string, Registered>();
+
+// ── inline text editing (double-click a paragraph to retype it) ──────────────
+// A text node registers a getter/setter for its HTML; the editText action wires
+// double-click-to-edit. Commits join the shared undo stack and the Copy dump.
+export type Editable = {
+  id: string;
+  label: string;
+  get: () => string;
+  set: (html: string) => void;
+};
+type RegisteredText = { e: Editable; node: HTMLElement; begin: () => void };
+const editables = new Map<string, RegisteredText>();
+const editedTextIds = new Set<string>();
+
+/** True when the id maps to an editable text node (drives the panel affordance). */
+export function isEditable(id: string | null): boolean {
+  return !!id && editables.has(id);
+}
+/** Programmatically enter text-edit on an id (defaults to the current selection). */
+export function beginTextEdit(id: string | null = guideEdit.selectedId): void {
+  (id ? editables.get(id) : null)?.begin();
+}
 
 // ── delete (hide) support ────────────────────────────────────────────────────
 // Deleted items are hidden live (display:none) and listed in the Copy dump so
@@ -59,11 +83,23 @@ export function registerEditSource(key: string, dump: () => string): () => void 
 export function collectEditCoords(): string {
   if (dumpers.size === 0) return "(open a page in edit mode)";
   const pages = [...dumpers.entries()].map(([k, d]) => `=== ${k} ===\n${d()}`).join("\n\n");
-  if (deletedIds.size === 0) return pages;
-  const del = [...deletedIds]
-    .map((id) => `  ${id} — ${movables.get(id)?.m.label ?? "?"}`)
-    .join("\n");
-  return `=== DELETED (make permanent in source) ===\n${del}\n\n${pages}`;
+  const prefix: string[] = [];
+  if (editedTextIds.size > 0) {
+    const txt = [...editedTextIds]
+      .map((id) => {
+        const e = editables.get(id)?.e;
+        return `  ${id} — ${e?.label ?? "?"}\n    ${JSON.stringify(e?.get() ?? "")}`;
+      })
+      .join("\n");
+    prefix.push(`=== EDITED TEXT (make permanent in source) ===\n${txt}`);
+  }
+  if (deletedIds.size > 0) {
+    const del = [...deletedIds]
+      .map((id) => `  ${id} — ${movables.get(id)?.m.label ?? "?"}`)
+      .join("\n");
+    prefix.push(`=== DELETED (make permanent in source) ===\n${del}`);
+  }
+  return [...prefix, pages].join("\n\n");
 }
 
 // ── selection ───────────────────────────────────────────────────────────────
@@ -72,22 +108,35 @@ export function select(id: string | null): void {
   guideEdit.selectedLabel = id ? movables.get(id)?.m.label ?? null : null;
 }
 
+/** Live coords of the selected movable — reactive (reads the page $state). */
+export function selectedSnapshot(): number[] | null {
+  const id = guideEdit.selectedId;
+  if (!id) return null;
+  return movables.get(id)?.m.snapshot() ?? null;
+}
+
 // ── undo / redo ─────────────────────────────────────────────────────────────
-type Snapshot = Map<string, { c: number[]; hidden: boolean }>;
+type Snapshot = {
+  mv: Map<string, { c: number[]; hidden: boolean }>;
+  tx: Map<string, string>;
+};
 let undoStack: Snapshot[] = [];
 let redoStack: Snapshot[] = [];
 function snapAll(): Snapshot {
-  const m: Snapshot = new Map();
-  for (const [id, r] of movables) m.set(id, { c: r.m.snapshot(), hidden: deletedIds.has(id) });
-  return m;
+  const mv = new Map<string, { c: number[]; hidden: boolean }>();
+  for (const [id, r] of movables) mv.set(id, { c: r.m.snapshot(), hidden: deletedIds.has(id) });
+  const tx = new Map<string, string>();
+  for (const [id, r] of editables) tx.set(id, r.e.get());
+  return { mv, tx };
 }
 function restoreAll(s: Snapshot): void {
-  for (const [id, v] of s) {
+  for (const [id, v] of s.mv) {
     const r = movables.get(id);
     if (!r) continue;
     r.m.restore(v.c);
     applyHidden(id, v.hidden);
   }
+  for (const [id, html] of s.tx) editables.get(id)?.e.set(html);
 }
 function sync(): void {
   hist.undo = undoStack.length;
@@ -212,6 +261,8 @@ export function ptDrag(node: HTMLElement | SVGElement, movable: Movable) {
   }
   function down(ev: Event) {
     if (!guideEdit.on) return;
+    // While a text box is being edited, the pointer belongs to text selection.
+    if ((node as HTMLElement).isContentEditable) return;
     const e = ev as PointerEvent;
     e.preventDefault();
     e.stopPropagation();
@@ -239,6 +290,96 @@ export function ptDrag(node: HTMLElement | SVGElement, movable: Movable) {
       movables.delete(m.id);
       if (guideEdit.selectedId === m.id) select(null);
       el.removeEventListener("pointerdown", down);
+    },
+  };
+}
+
+// ── inline text edit action ──────────────────────────────────────────────────
+// Double-click a registered text node (edit mode on) to retype it. Enter or a
+// click outside commits; Escape reverts. Commits join the shared undo stack and
+// are listed in the Copy dump so they can be made permanent in source.
+export function editText(node: HTMLElement, editable: Editable) {
+  let e = editable;
+  let original = ""; // raw innerHTML at edit start
+  let cancelled = false;
+
+  function teardown() {
+    node.removeEventListener("keydown", key);
+    node.removeEventListener("blur", commit);
+    window.removeEventListener("pointerdown", outside, true);
+  }
+  async function commit() {
+    if (node.getAttribute("contenteditable") !== "true") return;
+    node.setAttribute("contenteditable", "false");
+    node.classList.remove("guide-text-editing");
+    teardown();
+    if (cancelled) {
+      // Discard: the source value never changed while typing, so re-assigning it
+      // is a no-op that won't re-render the contenteditable DOM. Flip through a
+      // blank via tick() to force Svelte to re-render the original (this keeps
+      // Svelte's {@html} anchors intact — clobbering innerHTML directly would not).
+      e.set("");
+      await tick();
+      e.set(original);
+      return;
+    }
+    const html = node.innerHTML.trim();
+    if (html !== original.trim()) {
+      pushHistory();
+      e.set(html);
+      editedTextIds.add(e.id);
+    }
+  }
+  function key(ev: KeyboardEvent) {
+    if (ev.key === "Escape") {
+      ev.preventDefault();
+      cancelled = true;
+      node.blur();
+    } else if (ev.key === "Enter" && !ev.shiftKey) {
+      ev.preventDefault(); // Enter commits; Shift+Enter inserts a line break
+      node.blur();
+    }
+  }
+  function outside(ev: PointerEvent) {
+    if (ev.target !== node && !node.contains(ev.target as Node)) node.blur();
+  }
+  function begin() {
+    if (!guideEdit.on) return;
+    select(e.id);
+    original = node.innerHTML;
+    cancelled = false;
+    node.setAttribute("contenteditable", "true");
+    node.classList.add("guide-text-editing");
+    node.focus();
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    node.addEventListener("keydown", key);
+    node.addEventListener("blur", commit);
+    // Capture-phase so a click anywhere else commits before it does its own thing.
+    window.addEventListener("pointerdown", outside, true);
+  }
+  function dbl(ev: Event) {
+    if (!guideEdit.on) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    begin();
+  }
+
+  editables.set(e.id, { e, node, begin });
+  node.addEventListener("dblclick", dbl);
+  return {
+    update(next: Editable) {
+      if (next.id !== e.id) editables.delete(e.id);
+      e = next;
+      editables.set(e.id, { e, node, begin });
+    },
+    destroy() {
+      editables.delete(e.id);
+      node.removeEventListener("dblclick", dbl);
+      teardown();
     },
   };
 }

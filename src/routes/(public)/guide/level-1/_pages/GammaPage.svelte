@@ -53,7 +53,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
-  import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
+  import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -274,6 +274,7 @@
       style="transform: translateX({p.x * S}px); top:{p.y * S}px; font-size:{p.fs *
         S}px; line-height:{p.lh * S}px"
       use:ptDrag={pt(`gamma-para-${i}`, "paragraph", p)}
+      use:editText={{ id: `gamma-para-${i}`, label: "paragraph", get: () => p.html, set: (h) => (p.html = h) }}
     >
       {@html p.html}
     </p>

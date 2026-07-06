@@ -151,6 +151,17 @@
     }
   }
 
+  /* Text box in active edit (contenteditable). Global: the class is added by the
+     editText action, so scoped selectors wouldn't reach it. Wins over the
+     .para.selected outline while typing. */
+  :global(.guide-text-editing) {
+    outline: 2px solid #3730a3 !important;
+    outline-offset: 2px;
+    background: rgba(199, 210, 254, 0.4);
+    border-radius: 3px;
+    cursor: text;
+  }
+
   @media print {
     /* Keep the sheet a true 8.5×11 so the absolutely-positioned footer lands in
        the same spot on paper as on screen. @page margin:0 (guide-print.css)

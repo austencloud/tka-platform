@@ -19,7 +19,7 @@
   import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
   import { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { guideEdit, ptDrag, pt, registerEditSource } from "../_data/guide-edit.svelte";
+  import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
 
@@ -238,6 +238,7 @@
       class:selected={guideEdit.selectedId === `grid-para-${i}`}
       style="left:{p.x * S}px; top:{p.y * S}px; width:{p.w * S}px; font-size:{17 * S}px; line-height:{p.lh * S}px"
       use:ptDrag={pt(`grid-para-${i}`, "paragraph", p)}
+      use:editText={{ id: `grid-para-${i}`, label: "paragraph", get: () => p.html, set: (h) => (p.html = h) }}
     >
       {@html p.html}
     </p>
