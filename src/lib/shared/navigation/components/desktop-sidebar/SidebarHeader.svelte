@@ -19,7 +19,7 @@
 </script>
 
 <div class="sidebar-header">
-  <a class="brand-home" href="/" aria-label="TKA Composer — go to home">
+  <a class="brand-home" class:expanded href="/" aria-label="TKA Composer — go to home">
     <!-- "TKA" is solid and slides; "Composer" reveals + fades beside it. The
          reveal is a 0fr→1fr grid column (content-width, no measured magic
          numbers), so as it grows the centered wordmark re-balances and TKA
@@ -95,7 +95,17 @@
     text-decoration: none;
     cursor: pointer;
     overflow: hidden;
-    transition: background var(--duration-normal) ease;
+    transition:
+      background var(--duration-normal) ease,
+      padding var(--duration-emphasis)
+        var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+  }
+
+  /* Expanded reserves a right gutter so the centered wordmark can't slide under
+     the absolute pin button (right:12 + 28px wide). Animates in lockstep with
+     the reveal, so the wordmark eases left as Composer wipes in. */
+  .brand-home.expanded {
+    padding-right: 48px;
   }
 
   .brand-home:hover {
