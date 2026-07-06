@@ -4,6 +4,9 @@ import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 export interface AdditionalLayerProps {
   blueProp: PropState | null;
   redProp: PropState | null;
+  /** Per-performer prop type (Performer Set). Absent → the global prop (today). */
+  bluePropType?: string;
+  redPropType?: string;
 }
 
 export interface TrailCapturePropStates {

@@ -983,6 +983,8 @@ export class AnimationRenderLoop {
         hasRed: !!layer.redProp && effectiveRedMotionVisible,
         blueColor: colors?.blue ?? "#8b5cf6",
         redColor: colors?.red ?? "#f97316",
+        bluePropType: layer.bluePropType,
+        redPropType: layer.redPropType,
       };
     });
 

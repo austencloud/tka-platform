@@ -74,15 +74,19 @@ export interface IAnimationRenderer {
   ): Promise<void>;
 
   /**
-   * Load prop images for an additional tunnel layer with custom colors
+   * Load prop images for an additional tunnel layer with per-hand prop types +
+   * custom colors. Blue and red carry independent prop types so each performer
+   * (Performer Set) can wear a different prop per hand.
    * @param layerIndex - Additional layer index (0 = first additional layer)
-   * @param propType - Type of prop
+   * @param bluePropType - Type of the blue-hand prop
+   * @param redPropType - Type of the red-hand prop
    * @param blueColor - Hex color for the blue prop
    * @param redColor - Hex color for the red prop
    */
   loadAdditionalLayerPropTextures(
     layerIndex: number,
-    propType: string,
+    bluePropType: string,
+    redPropType: string,
     blueColor: string,
     redColor: string
   ): Promise<void>;

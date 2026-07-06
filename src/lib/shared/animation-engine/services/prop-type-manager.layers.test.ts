@@ -9,11 +9,17 @@ vi.mock("./svg-generator", () => ({
 import { PropTypeManager } from "./prop-type-manager";
 
 function makeManager() {
-  const calls: Array<{ i: number; propType: string; blue: string; red: string }> = [];
+  const calls: Array<{
+    i: number;
+    bluePropType: string;
+    redPropType: string;
+    blue: string;
+    red: string;
+  }> = [];
   const renderer = {
     loadAdditionalLayerPropTextures: vi.fn(
-      (i: number, propType: string, blue: string, red: string) => {
-        calls.push({ i, propType, blue, red });
+      (i: number, bluePropType: string, redPropType: string, blue: string, red: string) => {
+        calls.push({ i, bluePropType, redPropType, blue, red });
         return Promise.resolve();
       },
     ),
@@ -28,12 +34,22 @@ function makeManager() {
 // offscreen engine bypasses PlaybackSync.update (the live path that loads the
 // per-layer prop textures), so the export must pre-load them itself.
 describe("PropTypeManager.preloadAdditionalLayerTextures (tunnel export)", () => {
-  it("loads one texture per layer, forwarding the export's prop type", async () => {
+  it("loads one texture per layer, forwarding the export's prop type to both hands", async () => {
     const { ptm, renderer, calls } = makeManager();
     await ptm.preloadAdditionalLayerTextures(3, true, "club");
     expect(renderer.loadAdditionalLayerPropTextures).toHaveBeenCalledTimes(3);
     expect(calls.map((c) => c.i)).toEqual([0, 1, 2]);
-    expect(calls.every((c) => c.propType === "club")).toBe(true);
+    expect(calls.every((c) => c.bluePropType === "club" && c.redPropType === "club")).toBe(true);
+  });
+
+  it("forwards per-layer prop types (Performer Set export) when supplied", async () => {
+    const { ptm, calls } = makeManager();
+    await ptm.preloadAdditionalLayerTextures(2, true, "staff", [
+      { blue: "sword", red: "club" },
+      { blue: "fan", red: "fan" },
+    ]);
+    expect(calls[0]).toMatchObject({ i: 0, bluePropType: "sword", redPropType: "club" });
+    expect(calls[1]).toMatchObject({ i: 1, bluePropType: "fan", redPropType: "fan" });
   });
 
   it("spectrum on → each layer fans to a distinct color", async () => {

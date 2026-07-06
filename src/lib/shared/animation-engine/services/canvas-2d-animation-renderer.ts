@@ -249,13 +249,15 @@ export class Canvas2DAnimationRenderer {
 
   async loadAdditionalLayerPropTextures(
     layerIndex: number,
-    propType: string,
+    bluePropType: string,
+    redPropType: string,
     blueColor: string,
     redColor: string
   ): Promise<void> {
     await this.imageLoader.loadAdditionalLayerPropImages(
       layerIndex,
-      propType,
+      bluePropType,
+      redPropType,
       blueColor,
       redColor
     );
@@ -420,7 +422,10 @@ export class Canvas2DAnimationRenderer {
       }
 
       // Additional tunnel layer blue props — tinted to their spectrum color so
-      // each kaleidoscope copy is distinct (blue family fans blue→green).
+      // each kaleidoscope copy is distinct (blue family fans blue→green). Each
+      // layer draws at its OWN intrinsic dimensions (a performer's per-hand prop
+      // may be a different shape than the base pair), falling back to the base
+      // dimensions before its texture has loaded.
       if (params.additionalLayers) {
         const layerCount = params.additionalLayers.length;
         for (let i = 0; i < layerCount; i++) {
@@ -428,14 +433,15 @@ export class Canvas2DAnimationRenderer {
           if (layer.blueProp && layer.hasBlue) {
             const layerImages = this.imageLoader.getAdditionalLayerImages(i);
             if (layerImages.blue) {
+              const dims = this.imageLoader.getAdditionalLayerDimensions(i);
               this.renderProp(
                 ctx,
                 layer.blueProp,
                 layerImages.blue,
-                params.bluePropDimensions,
+                dims?.blue ?? params.bluePropDimensions,
                 canvasSize,
                 params.bluePropFlipped ?? false,
-                params.bluePropType
+                layer.bluePropType ?? params.bluePropType
               );
             }
           }
@@ -478,7 +484,8 @@ export class Canvas2DAnimationRenderer {
       }
 
       // Additional tunnel layer red props — tinted to their spectrum color so
-      // each kaleidoscope copy is distinct (red family fans red→magenta).
+      // each kaleidoscope copy is distinct (red family fans red→magenta). Own
+      // intrinsic dimensions per performer, base fallback before texture load.
       if (params.additionalLayers) {
         const layerCount = params.additionalLayers.length;
         for (let i = 0; i < layerCount; i++) {
@@ -486,14 +493,15 @@ export class Canvas2DAnimationRenderer {
           if (layer.redProp && layer.hasRed) {
             const layerImages = this.imageLoader.getAdditionalLayerImages(i);
             if (layerImages.red) {
+              const dims = this.imageLoader.getAdditionalLayerDimensions(i);
               this.renderProp(
                 ctx,
                 layer.redProp,
                 layerImages.red,
-                params.redPropDimensions,
+                dims?.red ?? params.redPropDimensions,
                 canvasSize,
                 params.redPropFlipped ?? false,
-                params.redPropType
+                layer.redPropType ?? params.redPropType
               );
             }
           }

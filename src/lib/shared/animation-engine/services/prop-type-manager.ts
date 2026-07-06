@@ -39,6 +39,9 @@ export class PropTypeManager {
   // a sprite regenerate (see handleAdditionalLayers).
   private lastLayerCount = 0;
   private lastSpectrum = true;
+  // Per-layer prop-type signature. A performer-set change (a copy swapping its
+  // prop) must regenerate that layer's sprite even when count + spectrum hold.
+  private lastLayerPropSig = "";
 
   // ── Dependencies (injected) ─────────────────────────────────────────
   private settingsService: SettingsState | null = null;
@@ -231,13 +234,24 @@ export class PropTypeManager {
     const additionalLayers = props.additionalLayers ?? [];
     const layerCount = additionalLayers.length;
     const spectrum = props.tunnelSpectrum ?? true;
+    // Signature of every layer's per-hand prop type. Empty entries fall back to
+    // the global prop, so an all-default set yields "|"-joined blanks — a
+    // performer swapping a prop changes the signature and re-generates sprites.
+    const propSig = additionalLayers
+      .map((l) => `${l.bluePropType ?? ""}:${l.redPropType ?? ""}`)
+      .join("|");
 
     // Spectrum colors fan across the active stack, so they depend on layerCount
-    // AND the spectrum toggle. When the fold count or the toggle changes, every
-    // layer's color shifts — drop the cached sprites so they regenerate.
-    if (layerCount !== this.lastLayerCount || spectrum !== this.lastSpectrum) {
+    // AND the spectrum toggle. Per-performer props depend on propSig. When any
+    // change, every affected layer's sprite must regenerate — drop the cache.
+    if (
+      layerCount !== this.lastLayerCount ||
+      spectrum !== this.lastSpectrum ||
+      propSig !== this.lastLayerPropSig
+    ) {
       this.lastLayerCount = layerCount;
       this.lastSpectrum = spectrum;
+      this.lastLayerPropSig = propSig;
       this.additionalLayerTexturesLoaded = [];
       this.additionalLayerTexturesLoading = [];
     }
@@ -256,11 +270,16 @@ export class PropTypeManager {
 
           const { blue: blueColor, red: redColor } =
             this.additionalLayerColors(i, layerCount, spectrum);
+          // Each performer's per-hand prop; falls back to the global prop when a
+          // layer carries no explicit type (default 1-skin appearance = today).
+          const bluePropType = layer.bluePropType ?? state.currentBluePropType;
+          const redPropType = layer.redPropType ?? state.currentRedPropType;
 
           this.animationRenderer
             .loadAdditionalLayerPropTextures(
               i,
-              state.currentBluePropType,
+              bluePropType,
+              redPropType,
               blueColor,
               redColor
             )
@@ -319,17 +338,26 @@ export class PropTypeManager {
     layerCount: number,
     spectrum: boolean,
     propType: string,
+    perLayerTypes?: ReadonlyArray<{ blue: string; red: string }>,
   ): Promise<void> {
     if (layerCount <= 0 || !this.animationRenderer) return;
     this.lastLayerCount = layerCount;
     this.lastSpectrum = spectrum;
+    // Reset the prop-type signature so the next live handleAdditionalLayers pass
+    // re-evaluates against the freshly-preloaded sprites.
+    this.lastLayerPropSig = "";
     this.additionalLayerTexturesLoaded = [];
     this.additionalLayerTexturesLoading = [];
     await Promise.all(
       Array.from({ length: layerCount }, (_, i) => {
         const { blue, red } = this.additionalLayerColors(i, layerCount, spectrum);
+        // Per-performer prop types when supplied (Performer Set export); else the
+        // single global prop for both hands — today's export behavior, unchanged.
+        const t = perLayerTypes?.[i];
+        const blueType = t?.blue ?? propType;
+        const redType = t?.red ?? propType;
         return this.animationRenderer!
-          .loadAdditionalLayerPropTextures(i, propType, blue, red)
+          .loadAdditionalLayerPropTextures(i, blueType, redType, blue, red)
           .then(() => {
             this.additionalLayerTexturesLoaded[i] = true;
           });

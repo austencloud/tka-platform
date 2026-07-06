@@ -33,6 +33,15 @@ export class Canvas2DImageLoader {
     red: HTMLImageElement | null;
   }> = [];
 
+  // Per-layer intrinsic prop dimensions (from each layer's SVG viewBox). A
+  // performer wearing a different-shaped prop (sword vs staff) must draw at its
+  // OWN dimensions, not the base pair's, or the sprite stretches. Index-aligned
+  // with additionalLayerImages.
+  private additionalLayerDimensions: Array<{
+    blue: { width: number; height: number };
+    red: { width: number; height: number };
+  }> = [];
+
   // Track prop dimensions (from SVG viewBox)
   private bluePropDimensions: { width: number; height: number } = {
     width: 0,
@@ -151,7 +160,8 @@ export class Canvas2DImageLoader {
 
   async loadAdditionalLayerPropImages(
     layerIndex: number,
-    propType: string,
+    bluePropType: string,
+    redPropType: string,
     blueColor: string,
     redColor: string
   ): Promise<{
@@ -159,10 +169,11 @@ export class Canvas2DImageLoader {
     red: HTMLImageElement;
   }> {
     try {
-      // Generate prop SVGs with custom colors for this layer
+      // Generate per-hand prop SVGs with custom colors for this layer. Blue and
+      // red can be different prop types (each performer's per-hand prop).
       const [bluePropData, redPropData] = await Promise.all([
-        generatePropSvg(propType, blueColor),
-        generatePropSvg(propType, redColor),
+        generatePropSvg(bluePropType, blueColor),
+        generatePropSvg(redPropType, redColor),
       ]);
 
       // Create new images
@@ -179,15 +190,25 @@ export class Canvas2DImageLoader {
         ),
       ]);
 
-      // Ensure array is large enough
+      // Ensure arrays are large enough (images + dimensions stay index-aligned)
       while (this.additionalLayerImages.length <= layerIndex) {
         this.additionalLayerImages.push({ blue: null, red: null });
+      }
+      while (this.additionalLayerDimensions.length <= layerIndex) {
+        this.additionalLayerDimensions.push({
+          blue: { width: 0, height: 0 },
+          red: { width: 0, height: 0 },
+        });
       }
 
       // Swap references
       this.additionalLayerImages[layerIndex] = {
         blue: newBlueImage,
         red: newRedImage,
+      };
+      this.additionalLayerDimensions[layerIndex] = {
+        blue: { width: bluePropData.width, height: bluePropData.height },
+        red: { width: redPropData.width, height: redPropData.height },
       };
 
       return { blue: newBlueImage, red: newRedImage };
@@ -330,6 +351,15 @@ export class Canvas2DImageLoader {
     return { blue: null, red: null };
   }
 
+  /** Intrinsic per-hand dimensions of an additional layer's props, or null when
+   *  that layer hasn't loaded yet (caller falls back to the base dimensions). */
+  getAdditionalLayerDimensions(layerIndex: number): {
+    blue: { width: number; height: number };
+    red: { width: number; height: number };
+  } | null {
+    return this.additionalLayerDimensions[layerIndex] ?? null;
+  }
+
   getGridImage(): HTMLImageElement | null {
     return this.gridImage;
   }
@@ -359,6 +389,7 @@ export class Canvas2DImageLoader {
     this.bluePropImage = null;
     this.redPropImage = null;
     this.additionalLayerImages.length = 0;
+    this.additionalLayerDimensions.length = 0;
     this.gridImage = null;
     this.glyphImage = null;
     this.previousGlyphImage = null;

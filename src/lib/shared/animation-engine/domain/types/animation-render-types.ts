@@ -11,6 +11,10 @@ export interface AdditionalLayerRenderData {
   hasRed: boolean;
   blueColor: string;
   redColor: string;
+  /** Per-performer prop type (Performer Set); drives the hand-never-rotates rule
+   *  for this copy. Absent → the global prop type. */
+  bluePropType?: string;
+  redPropType?: string;
 }
 
 export interface AnimationVisibilitySettings {
