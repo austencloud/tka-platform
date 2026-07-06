@@ -9,10 +9,12 @@ import TheGridPage from "../_pages/TheGridPage.svelte";
 import HandPositionsPage from "../_pages/HandPositionsPage.svelte";
 import HandMotionsPage from "../_pages/HandMotionsPage.svelte";
 import Type1AlphaBetaPage from "../_pages/Type1AlphaBetaPage.svelte";
+import GammaPage from "../_pages/GammaPage.svelte";
 
 export const BUILT: Record<string, Component> = {
   "the-grid": TheGridPage,
   "hand-positions": HandPositionsPage,
   "hand-motions": HandMotionsPage,
   "hm-type1": Type1AlphaBetaPage,
+  "hm-gamma": GammaPage,
 };

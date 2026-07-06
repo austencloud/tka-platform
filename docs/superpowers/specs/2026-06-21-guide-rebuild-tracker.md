@@ -59,8 +59,8 @@ Old guide = 47 pages. Mapping → our 3 chapters. Status: ⬜ todo · 🔧 in pr
 | 8 | Hand Positions (α/β/Γ, 16 picto) | `_pages/HandPositionsPage` (body p2) | ✅ |
 | 9 | Hand Motions (shift/dash/static, 5) | `_pages/HandMotionsPage` (body p3) | ✅ |
 | 10 | Type 1 Dual-Shifts (matrices) | `_pages/Type1AlphaBetaPage` (body p4) | 🔧 |
-| 11 | Gamma (Quarter-Opp/Same intro) | ch10/Type1Gamma | ⬜ |
-| 12 | Type 2 Shifts | ch10/Type2Shifts | ⬜ |
+| 11 | Gamma (Quarter-Opp/Same intro) | `_pages/GammaPage` (body p5) | 🔧 |
+| 12 | Type 2 Shifts | `_pages/Type2ShiftsPage` (body p6) | ⬜ |
 | 13 | Type 3 Cross-Shifts (β→γ) | ch10/Type3CrossShifts | ⬜ |
 | 14 | Type 4/5/6 Dash/Dual-Dash/Static | ch10/Type4Dash..Type6Static | ⬜ |
 | 15 | Staff Positions (12) | ch10/StaffPositions | ⬜ |
@@ -99,6 +99,32 @@ LOOP terminology, per existing section filenames already named Loops*.)
 - "CAPs" (old) → "LOOPs" (current app term).
 
 ## Decisions log
+
+- 2026-07-05: GAMMA/TYPE-2 PAGE SPLIT + GAMMA (body p5, `hm-gamma`) built.
+  The manifest merged `hm-gamma-type2` as one entry, but the proof has TWO full,
+  dense pages — p11 Gamma (γ→γ Quarter-Opp/Quarter-Same + an 8-box QO↔QS
+  switching sequence) and p12 Type 2 - Shifts (single shift + same-dir 8-box +
+  opp-dir 8-box). Cramming both onto one physical page = illegible, so the entry
+  was split into `hm-gamma` + `hm-type2` (numbers re-derive; staff-positions and
+  everything after shift +1). `_pages/GammaPage.svelte` follows the Type1 recipe
+  exactly: three proof-placed strips of real PictographContainers, all adornments
+  system-owned (float arrows, Start/count StepNumber, γ→γ PositionGlyph, geometric
+  ElementalGlyph), grouped centred paragraphs, left row-label glyph + italic mode
+  name, QO Parallel/Antiparallel column headers. Geometry from the proof operator
+  list (QO L90.6/T124, QS L90/T279.2, swap L56.2/T512.9 5×2 grid, box 5 under 1);
+  text y = baseline − fs, glyph line 21.7pt above the mode name (calibrated
+  against proof p10 vs the shipped Type1 values — exact match). Sequences decoded
+  from the artboard and cross-checked with MCP: QO = opposite-spin 90°-apart loop
+  (its counts ARE the Parallel/Antiparallel columns), QS = same-spin 90°-out-of-
+  phase loop (red leads blue by one point), swap alternates QO/QS and closes back
+  to Start — all three verified to close. Letters left null: `deriveTnD` and the
+  position deriver are purely geometric, and no gamma box has both hands on an
+  identical from→end path, so default float placement separates every arrow (the
+  α/β Tog special-placement tier does not apply). Verified: `npm run check` exit
+  0; SSR HTTP 200 with 19 boxes + 8 labels + 5 paragraphs + float arrows. Awaiting
+  Austen's eyeball pass (float-arrow directions, glyph/layout fidelity) before ✅.
+  Facelift convention applied: lowercase γ→γ (proof used Γ), footer "Dual-Shifts"
+  two-tone (Type-1 blue/purple).
 
 - 2026-07-05: COMPARE ROUTE DELETED (`(public)/guide/level-1/compare`).
   Scroll-fraction sync could never align two different-height documents
