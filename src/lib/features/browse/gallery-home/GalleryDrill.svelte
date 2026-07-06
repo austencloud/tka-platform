@@ -796,7 +796,7 @@
       {:else if section === "author"}
         <div class="drill-screen">
           {@render valueHead("Pick a creator")}
-          <div class="value-list">
+          <div class="value-list creator-list">
             {#each creatorValues as v (v.value)}
               <button
                 class="length-row tall creator-row"
@@ -1759,6 +1759,14 @@
       grid-template-columns: repeat(auto-fit, minmax(240px, 300px));
       justify-content: center;
     }
+    /* Creators are rich horizontal rows (avatar + name + count + work-fan), so
+       a multi-column grid strands the last creator (5 → ragged 4+1). Keep them
+       a single centered column — a most-prolific-first leaderboard that reads
+       the same for 5 creators or 50. */
+    .value-list.creator-list {
+      grid-template-columns: minmax(0, 720px);
+      justify-content: center;
+    }
     /* Groups of exactly 6 (the six T&D families, a 6-tile mini-grid) square
        up as 3x2 — a 4+2 ragged break reads as an accident, not a set. */
     .value-list:has(> :nth-child(6):last-child),
@@ -1934,6 +1942,9 @@
     .value-list.centered-list {
       grid-template-columns: repeat(auto-fit, minmax(280px, 340px));
       justify-content: center;
+    }
+    .value-list.creator-list {
+      grid-template-columns: minmax(0, 820px);
     }
     /* Exactly-6 rule again at this tier — the wider auto-fill would break
        the six families 4+2. */
