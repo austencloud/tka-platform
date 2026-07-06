@@ -323,13 +323,14 @@
   }
 
   .module-icon {
-    font-size: var(--font-size-lg);
+    /* Match the rail's CollapsedModuleButton .module-icon exactly
+       (--font-size-xl, intrinsic box) so the glyph is the same size before
+       and after the hover-expand swap — no size pop. */
+    font-size: var(--font-size-xl);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    width: 22px;
-    height: 22px;
     transition: all var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
