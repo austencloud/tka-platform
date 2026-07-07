@@ -220,6 +220,9 @@ export interface BrowseEngine {
 
 	/** Distinct sequence lengths present in allSequences. */
 	readonly availableLengths: readonly number[];
+	/** Distinct turn-intensity CEILINGS present in allSequences (each > 0),
+	 * ascending — the pool-derived options for the Max Turn Intensity filter. */
+	readonly availableMaxTurnIntensities: readonly number[];
 	/** LOOP type counts: { loopType: count, _total, _circular, _non_circular }. */
 	readonly loopTypeCounts: Readonly<Record<string, number>>;
 

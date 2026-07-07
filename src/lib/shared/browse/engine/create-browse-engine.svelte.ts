@@ -31,7 +31,10 @@ import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/c
 import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
 import { detectRotationPeriod } from "$lib/shared/create/domain/detect-rotation-period";
 import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
-import { applyFilter as applyBrowseFilter } from "$lib/shared/browse/services/browse-filter";
+import {
+	applyFilter as applyBrowseFilter,
+	getSequenceMaxTurn,
+} from "$lib/shared/browse/services/browse-filter";
 import {
 	applyFilters as applyMultiFilters,
 	getFilteredCount as getMultiFilteredCount,
@@ -287,6 +290,15 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			if (len > 0) lengths.add(len);
 		}
 		return Array.from(lengths).sort((a, b) => a - b);
+	});
+
+	const availableMaxTurnIntensities = $derived.by(() => {
+		const ceilings = new Set<number>();
+		for (const seq of allSequences) {
+			const m = getSequenceMaxTurn(seq);
+			if (m > 0) ceilings.add(m);
+		}
+		return Array.from(ceilings).sort((a, b) => a - b);
 	});
 
 	const loopTypeCounts = $derived.by(() => {
@@ -595,6 +607,9 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
 		get availableLengths() {
 			return availableLengths;
+		},
+		get availableMaxTurnIntensities() {
+			return availableMaxTurnIntensities;
 		},
 		get loopTypeCounts() {
 			return loopTypeCounts;
