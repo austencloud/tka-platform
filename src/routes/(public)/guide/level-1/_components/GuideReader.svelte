@@ -35,7 +35,7 @@
   const PAGE_W = 816; // 8.5in @96dpi
   const PAGE_H = 1056; // 11in
 
-  let activeIndex = $state(5); // open on The Grid (first body page)
+  let activeIndex = $state(0); // highlighted page — driven by scroll position
   let scale = $state(0.5);
   let stageEl = $state<HTMLDivElement>();
   let docWrap = $state<HTMLDivElement>();
@@ -43,7 +43,39 @@
   let clicked = $state<SequenceData | null>(null);
   let companionOpen = $state(false);
 
-  const go = (n: number) => (activeIndex = Math.max(0, Math.min(READER_PAGE_COUNT - 1, n)));
+  // Scroll a page into view; the scroll handler keeps activeIndex (the nav
+  // highlight) in sync as you scroll freely between the stacked pages.
+  function go(n: number) {
+    const i = Math.max(0, Math.min(READER_PAGE_COUNT - 1, n));
+    activeIndex = i;
+    docWrap?.querySelectorAll<HTMLElement>(".reader-page")[i]?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }
+
+  // Nearest-to-viewport-centre page becomes the active (highlighted) one.
+  let scrollRaf = 0;
+  function onScroll() {
+    if (scrollRaf) return;
+    scrollRaf = requestAnimationFrame(() => {
+      scrollRaf = 0;
+      if (!docWrap) return;
+      const cont = docWrap.getBoundingClientRect();
+      const mid = cont.top + cont.height / 2;
+      let best = 0;
+      let bestDist = Infinity;
+      docWrap.querySelectorAll<HTMLElement>(".reader-page").forEach((p, i) => {
+        const r = p.getBoundingClientRect();
+        const d = Math.abs(r.top + r.height / 2 - mid);
+        if (d < bestDist) {
+          bestDist = d;
+          best = i;
+        }
+      });
+      if (best !== activeIndex) activeIndex = best;
+    });
+  }
 
   async function handleSequenceClick(payload: GuideSequenceClick) {
     const seq = stripToSequence(payload.strip, { word: payload.word });
@@ -52,46 +84,23 @@
   }
   setGuideSequenceClick(handleSequenceClick);
 
-  // Fit to WIDTH so the page is readable; taller-than-pane pages scroll
-  // vertically (the natural document feel). Capped so an ultrawide pane doesn't
-  // blow the sheet up past ~1.4× its native 816pt width.
+  // Fit each page FULLY inside the pane (whole page visible — no per-page
+  // scrolling); the pages then stack and you scroll between them, like a PDF
+  // reader's continuous view. 40/32 = the reader-doc padding (20px / 16px).
   function fit() {
     if (!stageEl) return;
-    const w = stageEl.clientWidth - 32; // horizontal breathing room
-    scale = Math.max(0.1, Math.min(1.4, w / PAGE_W));
-  }
-
-  // Show only the active page (GuideDocument mounts them all, like /book), and
-  // reset the scroll to the top of the newly shown page.
-  $effect(() => {
-    const w = docWrap;
-    if (!w) return;
-    const i = activeIndex;
-    w.querySelectorAll<HTMLElement>(".reader-page").forEach((p, k) => {
-      p.style.display = k === i ? "block" : "none";
-    });
-    w.scrollTop = 0;
-  });
-
-  // Close the companion when navigating to another page.
-  $effect(() => {
-    activeIndex;
-    companionOpen = false;
-  });
-
-  function onKey(e: KeyboardEvent) {
-    if (e.key === "ArrowRight") go(activeIndex + 1);
-    else if (e.key === "ArrowLeft") go(activeIndex - 1);
+    const w = stageEl.clientWidth - 32;
+    const h = stageEl.clientHeight - 40;
+    scale = Math.max(0.1, Math.min(w / PAGE_W, h / PAGE_H));
   }
 
   onMount(() => {
     fit();
     const ro = new ResizeObserver(fit);
     if (stageEl) ro.observe(stageEl);
-    window.addEventListener("keydown", onKey);
     return () => {
       ro.disconnect();
-      window.removeEventListener("keydown", onKey);
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
     };
   });
 </script>
@@ -115,14 +124,10 @@
     <div
       class="reader-doc"
       bind:this={docWrap}
+      onscroll={onScroll}
       style="--w:{PAGE_W * scale}px; --h:{PAGE_H * scale}px"
     >
       <GuideDocument built={BUILT} page={sheetFrame} />
-    </div>
-    <div class="transport">
-      <button onclick={() => go(activeIndex - 1)} disabled={activeIndex <= 0} aria-label="Previous page">‹ Prev</button>
-      <span class="pos">{activeIndex + 1} / {READER_PAGE_COUNT}</span>
-      <button onclick={() => go(activeIndex + 1)} disabled={activeIndex >= READER_PAGE_COUNT - 1} aria-label="Next page">Next ›</button>
     </div>
   </div>
 
@@ -156,24 +161,29 @@
     display: flex;
     flex-direction: column;
   }
+  /* Continuous scroller: pages stack vertically, each fit fully to the pane, and
+     you scroll between them. */
   .reader-doc {
     flex: 1;
     min-height: 0;
     display: flex;
-    align-items: flex-start; /* top-align so tall pages scroll from the top */
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: 16px;
+    padding: 20px 16px;
+    scroll-behavior: smooth;
   }
-  /* Each page shows scaled; the fixed 816x1056 sheet is scaled into a footprint
-     box so it centres cleanly (transform alone doesn't shrink layout size). */
+  /* Each page is a scaled footprint box (the fixed 816×1056 sheet is transformed
+     down; transform alone doesn't shrink layout size, so the box carries --w/--h).
+     flex:0 0 auto keeps its height so the stack scrolls page-by-page. */
   .reader-doc :global(.reader-page) {
-    display: none;
+    flex: 0 0 auto;
     width: var(--w);
     height: var(--h);
     overflow: hidden;
-    box-shadow: 0 6px 28px rgba(40, 30, 70, 0.28);
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.4);
     border-radius: 2px;
   }
   .reader-doc :global(.reader-page .page-fixed) {
@@ -185,47 +195,6 @@
   .reader-doc :global(.reader-page .guide-page) {
     margin: 0;
     box-shadow: none;
-  }
-  .transport {
-    flex: 0 0 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    padding: 0.75rem;
-  }
-  .transport button {
-    font: 600 0.85rem system-ui, sans-serif;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0.5rem 1.15rem;
-    border-radius: 999px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
-    color: var(--theme-text, #e8e6f0);
-    cursor: pointer;
-    transition: all var(--duration-fast, 150ms) ease;
-    -webkit-tap-highlight-color: transparent;
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .transport button:hover:not(:disabled) {
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
-      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.22));
-    }
-  }
-  .transport button:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent, #8b5cf6) 70%, transparent);
-    outline-offset: 2px;
-  }
-  .transport button:disabled {
-    opacity: 0.35;
-    cursor: default;
-  }
-  .transport .pos {
-    font: 600 0.8rem system-ui, sans-serif;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-variant-numeric: tabular-nums;
-    min-width: 72px;
-    text-align: center;
   }
   /* Companion slides open from the right (reduced-motion collapses the slide). */
   .reader-companion {
@@ -245,6 +214,9 @@
   @media (prefers-reduced-motion: reduce) {
     .reader-companion {
       transition: none;
+    }
+    .reader-doc {
+      scroll-behavior: auto;
     }
   }
 
