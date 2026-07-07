@@ -44,6 +44,26 @@ export function skinForArm(skins: TunnelAppearance, armIndex: number): Performer
   return skins[i]!;
 }
 
+/**
+ * The per-hand prop TYPE a copy (arm `armIndex`) carries into its render layer,
+ * or `null` when it should inherit the viewer's global prop.
+ *
+ * While the cast is UNCUSTOMIZED, every copy inherits the global prop (null →
+ * the render layer omits an explicit type and the engine falls back to the
+ * current global prop) — exactly the center pair's rule. This keeps the copies
+ * and the center consistent the instant a reset flips `customized` false, with
+ * no dependency on the skin list being re-synced to the global prop first (the
+ * reset-leaves-stale-copies bug). Once the user OWNS the cast, each copy wears
+ * its performer skin.
+ */
+export function copyPropTypes(
+  customized: boolean,
+  skins: TunnelAppearance,
+  armIndex: number,
+): PerformerSkin | null {
+  return customized ? skinForArm(skins, armIndex) : null;
+}
+
 /** Harden persisted / preset data into a valid non-empty skin list. */
 export function coerceSkins(raw: unknown): TunnelAppearance {
   if (!Array.isArray(raw)) return [{ ...DEFAULT_SKIN }];

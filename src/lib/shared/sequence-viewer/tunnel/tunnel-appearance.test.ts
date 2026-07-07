@@ -4,6 +4,7 @@ import {
   APPEARANCE_PRESETS,
   MAX_SKINS,
   skinForArm,
+  copyPropTypes,
   coerceSkins,
   skinsEqual,
   type PerformerSkin,
@@ -30,6 +31,32 @@ describe("skinForArm — cycling", () => {
 
   it("empty list falls back to the default skin", () => {
     expect(skinForArm([], 0)).toEqual(DEFAULT_SKIN);
+  });
+});
+
+describe("copyPropTypes — uncustomized copies inherit the global prop", () => {
+  const cast: PerformerSkin[] = [
+    { blueProp: "staff", redProp: "staff" },
+    { blueProp: "sword", redProp: "sword" },
+  ];
+
+  it("returns null for every arm while uncustomized (copy omits an explicit type → engine falls back to the global prop)", () => {
+    for (const arm of [1, 2, 3, 7]) {
+      expect(copyPropTypes(false, cast, arm)).toBeNull();
+    }
+  });
+
+  it("returns the cycled performer skin once customized", () => {
+    expect(copyPropTypes(true, cast, 1)).toBe(cast[1]);
+    expect(copyPropTypes(true, cast, 2)).toBe(cast[0]);
+    expect(copyPropTypes(true, cast, 3)).toBe(cast[1]);
+  });
+
+  it("regression: a reset (customized → false) drops per-copy types so no copy keeps the old prop", () => {
+    // Customized: copies carry a real (possibly non-global) type.
+    expect(copyPropTypes(true, cast, 1)).not.toBeNull();
+    // Reset flips the flag; the SAME stale skin list must no longer be read.
+    expect(copyPropTypes(false, cast, 1)).toBeNull();
   });
 });
 
