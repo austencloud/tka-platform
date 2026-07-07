@@ -53,8 +53,8 @@ importers:
         specifier: ^0.1.3
         version: 0.1.3(@threlte/core@8.3.1(svelte@5.49.2)(three@0.182.0))(@threlte/extras@9.7.1(@types/three@0.182.0)(svelte@5.49.2)(three@0.182.0))(svelte@5.49.2)(three@0.182.0)
       '@austencloud/sidebar':
-        specifier: file:../shared-packages/packages/sidebar
-        version: file:../shared-packages/packages/sidebar(svelte@5.49.2)
+        specifier: ^1.0.0
+        version: 1.0.0(svelte@5.49.2)
       '@austencloud/theme':
         specifier: ^0.1.0
         version: 0.1.0(svelte@5.49.2)
@@ -791,8 +791,8 @@ packages:
       svelte: '>=5.0.0'
       three: '>=0.170.0'
 
-  '@austencloud/sidebar@file:../shared-packages/packages/sidebar':
-    resolution: {directory: ../shared-packages/packages/sidebar, type: directory}
+  '@austencloud/sidebar@1.0.0':
+    resolution: {integrity: sha512-IMhfBOv0/9R6R81jLF+cwCL+7YiyMgzqA5R6OD3iXA9uaV+4IeXZu3qF6Ow4g868t8GYgqYOzAKEU2/GuVPN6Q==}
     peerDependencies:
       svelte: ^5.0.0
 
@@ -7375,7 +7375,7 @@ snapshots:
       svelte: 5.49.2
       three: 0.182.0
 
-  '@austencloud/sidebar@file:../shared-packages/packages/sidebar(svelte@5.49.2)':
+  '@austencloud/sidebar@1.0.0(svelte@5.49.2)':
     dependencies:
       svelte: 5.49.2
 
