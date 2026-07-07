@@ -78,6 +78,7 @@
     bluePropType = null,
     redPropType = null,
     externalBpm = null,
+    chrome = "full",
   }: {
     sequence: SequenceData;
     autoPlay?: boolean;
@@ -86,7 +87,17 @@
     redPropType?: string | null;
     /** When provided, overrides internal BPM and controls playback speed externally */
     externalBpm?: number | null;
+    /**
+     * "full" (default) = external play button + BpmChips grid + the in-canvas
+     * UnifiedTimeline scrubber (gallery detail, Arena).
+     * "minimal" = tap-to-play canvas + the thin export-style progress line +
+     * a mouse hover badge, no transport chrome — the embedded/showcase idiom
+     * (feedback_minimal_player_chrome). Drive tempo externally via `externalBpm`.
+     */
+    chrome?: "full" | "minimal";
   } = $props();
+
+  const minimal = $derived(chrome === "minimal");
 
   // Services - per-instance to allow multiple simultaneous players (e.g., Arena)
   let sequenceService: SequenceRepository | null = null;
@@ -332,11 +343,14 @@
         trailSettings={animationSettings.trail}
         {bluePropType}
         {redPropType}
+        tapToToggle={minimal}
+        progressLine={minimal}
+        hoverHint={minimal ? "badge" : "none"}
       />
     </div>
 
-    <!-- Controls (optional) -->
-    {#if showControls}
+    <!-- Controls (full chrome only — minimal uses tap-to-play + progress line) -->
+    {#if showControls && !minimal}
       <div class="controls">
         <button
           class="control-btn play-btn"

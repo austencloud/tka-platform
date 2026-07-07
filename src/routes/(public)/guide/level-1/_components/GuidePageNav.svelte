@@ -56,7 +56,7 @@
     font: 700 0.72rem/1 system-ui, sans-serif;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: #9a93ad;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
     padding: 0.9rem 0.75rem 0.35rem;
   }
   .row {
@@ -66,31 +66,38 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.5rem;
-    min-height: 40px;
+    min-height: var(--min-touch-target, 44px);
     padding: 0.35rem 0.75rem;
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
-    color: #2a2440;
+    color: var(--theme-text, #e8e6f0);
     font: 500 0.9rem/1.2 system-ui, sans-serif;
+    transition: background var(--duration-fast, 150ms) ease;
   }
-  .row:hover {
-    background: rgba(120, 90, 200, 0.08);
+  @media (hover: hover) and (pointer: fine) {
+    .row:hover {
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.06));
+    }
+  }
+  .row:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent, #8b5cf6) 70%, transparent);
+    outline-offset: -2px;
   }
   .row.active {
-    background: rgba(120, 90, 200, 0.16);
-    color: #4a2f8a;
+    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 22%, transparent);
+    color: color-mix(in srgb, var(--theme-accent, #c4b5fd) 85%, white);
     font-weight: 700;
   }
   .row.front {
     font-style: italic;
-    color: #4a4460;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
   .row.sub {
     padding-left: 1.35rem;
     font-size: 0.85rem;
   }
   .row.soon {
-    color: #a49db4;
+    color: color-mix(in srgb, var(--theme-text-dim, #9a93ad) 65%, transparent);
   }
   .row .t {
     overflow: hidden;
@@ -99,12 +106,13 @@
   }
   .tag {
     flex: 0 0 auto;
-    font: 600 0.62rem/1 system-ui, sans-serif;
+    font: 700 0.6rem/1 system-ui, sans-serif;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    color: #b0366a;
-    background: rgba(200, 60, 120, 0.1);
-    padding: 2px 6px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    padding: 2px 7px;
     border-radius: 999px;
   }
 </style>

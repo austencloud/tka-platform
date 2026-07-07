@@ -131,19 +131,20 @@
 
 <style>
   .reader {
+    position: relative;
     display: flex;
     height: 100%;
     width: 100%;
     overflow: hidden;
-    background: #efeaf4;
-    color: #1a1a1a;
+    background: var(--theme-bg, oklch(0.13 0.015 270));
+    color: var(--theme-text, #e8e6f0);
   }
   .reader-aside {
     width: 240px;
     min-width: 240px;
     height: 100%;
-    background: #fff;
-    border-right: 1px solid #e2dcec;
+    background: var(--theme-panel-bg, oklch(0.15 0.02 270 / 0.6));
+    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
   .reader-stage {
     flex: 1;
@@ -188,37 +189,51 @@
     padding: 0.75rem;
   }
   .transport button {
-    font: 500 0.85rem system-ui, sans-serif;
-    padding: 0.5rem 1rem;
+    font: 600 0.85rem system-ui, sans-serif;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.5rem 1.15rem;
     border-radius: 999px;
-    border: 1px solid #cfc6df;
-    background: #fff;
-    color: #4a2f8a;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    color: var(--theme-text, #e8e6f0);
     cursor: pointer;
+    transition: all var(--duration-fast, 150ms) ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .transport button:hover:not(:disabled) {
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.22));
+    }
+  }
+  .transport button:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--theme-accent, #8b5cf6) 70%, transparent);
+    outline-offset: 2px;
   }
   .transport button:disabled {
-    opacity: 0.4;
+    opacity: 0.35;
     cursor: default;
   }
   .transport .pos {
-    font: 500 0.8rem system-ui, sans-serif;
-    color: #6b6386;
+    font: 600 0.8rem system-ui, sans-serif;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-variant-numeric: tabular-nums;
-    min-width: 64px;
+    min-width: 72px;
     text-align: center;
   }
   /* Companion slides open from the right (reduced-motion collapses the slide). */
   .reader-companion {
+    flex: 0 0 auto;
     width: 0;
     min-width: 0;
     overflow: hidden;
-    background: #fff;
-    border-left: 0 solid #e2dcec;
+    background: var(--theme-panel-bg, oklch(0.15 0.02 270 / 0.6));
+    border-left: 0 solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     transition: width 240ms ease, min-width 240ms ease;
   }
   .reader-companion.open {
-    width: 340px;
-    min-width: 340px;
+    width: clamp(360px, 40vw, 560px);
+    min-width: 360px;
     border-left-width: 1px;
   }
   @media (prefers-reduced-motion: reduce) {
@@ -227,10 +242,25 @@
     }
   }
 
-  /* Mobile: nav collapses when the host establishes an inline-size container. */
+  /* Mobile: nav collapses and the companion becomes a full-panel overlay that
+     slides up over the sheet (a 360px push would swallow a phone). */
   @container (max-width: 720px) {
     .reader-aside {
       display: none;
+    }
+    .reader-companion {
+      position: absolute;
+      inset: 0;
+      width: auto;
+      min-width: 0;
+      border-left: 0;
+      transform: translateY(100%);
+      transition: transform 240ms ease;
+    }
+    .reader-companion.open {
+      width: auto;
+      min-width: 0;
+      transform: translateY(0);
     }
   }
 </style>
