@@ -6,6 +6,7 @@ Shows available turn-intensity ceilings with contextual counts.
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import FilterChipBase from "./FilterChipBase.svelte";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
+  import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { BrowseFilterValue } from "$lib/shared/persistence/domain/types/filtering-types";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount } from "svelte";
@@ -30,13 +31,7 @@ Shows available turn-intensity ceilings with contextual counts.
   // Turn ceilings can be halves (1.5), so render "≤N" verbatim — never coerce to an integer.
   const fmt = (n: number) => `≤${n}`;
 
-  // NOTE: LengthFilterChip uses t(...) i18n keys, but "Max turns" / "Any turn
-  // intensity" aren't in messages/en.json yet (added later, alongside the
-  // engine/bar/drill wiring) — t() is strictly typed against that schema, so
-  // referencing unregistered keys here fails typecheck. Inline literals for
-  // now; swap to t('browse_chip_max_turns') / t('browse_all_turn_intensities')
-  // once those keys exist.
-  const label = $derived(activeIntensity !== null ? fmt(activeIntensity) : "Max turns");
+  const label = $derived(activeIntensity !== null ? fmt(activeIntensity) : t('browse_chip_max_turns'));
   const isActive = $derived(activeIntensity !== null);
 
   // Compute counts lazily when dropdown is open
@@ -94,7 +89,7 @@ Shows available turn-intensity ceilings with contextual counts.
           aria-selected={activeIntensity === null}
           onclick={() => handleSelect(null)}
         >
-          <span>Any turn intensity</span>
+          <span>{t('browse_all_turn_intensities')}</span>
           {#if activeIntensity === null}
             <i class="fas fa-check" aria-hidden="true"></i>
           {/if}
