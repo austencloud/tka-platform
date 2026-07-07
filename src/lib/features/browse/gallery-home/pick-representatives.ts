@@ -90,6 +90,29 @@ export function deriveCreators(pool: readonly SequenceData[]): string[] {
   return [...creators];
 }
 
+/** Each creator's real avatar + owner id, keyed by `ownerDisplayName`. Takes
+ * the first non-empty `ownerAvatarUrl`/`ownerId` seen for that creator so the
+ * drill row can front a real profile photo (RobustAvatar falls back to a
+ * monogram when neither is present). */
+export function pickCreatorAvatars(
+  pool: readonly SequenceData[],
+): Map<string, { avatarUrl?: string; ownerId?: string }> {
+  const byCreator = new Map<string, { avatarUrl?: string; ownerId?: string }>();
+  for (const seq of pool) {
+    const name = seq.ownerDisplayName?.trim();
+    if (!name) continue;
+    const entry = byCreator.get(name) ?? {};
+    if (!entry.avatarUrl && seq.ownerAvatarUrl?.trim()) {
+      entry.avatarUrl = seq.ownerAvatarUrl.trim();
+    }
+    if (!entry.ownerId && seq.ownerId?.trim()) {
+      entry.ownerId = seq.ownerId.trim();
+    }
+    byCreator.set(name, entry);
+  }
+  return byCreator;
+}
+
 /** Up to `n` of each creator's own sequences (kinetic-alphabet order, so the
  * same work fronts a creator's row every visit). Keyed by ownerDisplayName —
  * the creator screen's row art, so a name is backed by the actual work. */

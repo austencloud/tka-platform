@@ -37,11 +37,12 @@
     deriveCreators,
     deriveStartingLetters,
     pickCollage,
+    pickCreatorAvatars,
     pickCreatorSamples,
     pickLengthPair,
     pickLevelRepresentatives,
   } from "./pick-representatives";
-  import { generateAvatarUrl } from "$lib/shared/foundation/utils/avatar-generator";
+  import RobustAvatar from "$lib/shared/components/avatar/RobustAvatar.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -357,6 +358,9 @@
   // Each creator's row is fronted by their own work — a bare name + count on
   // a wide screen reads as an unfinished list, not a choice.
   const creatorSamples = $derived(pickCreatorSamples(pool, 3));
+  // Real profile photo per creator; RobustAvatar degrades to a monogram when a
+  // creator has no photo, so the row is never a dead face.
+  const creatorAvatars = $derived(pickCreatorAvatars(pool));
 
   // Single-value categories apply directly from the chooser (legacy behavior
   // for Favorites / Most Recent). Hidden at zero — never a dead end.
@@ -803,13 +807,13 @@
                 type="button"
                 onclick={() => onApply(BrowseFilterType.OWNER, v.value, v.value)}
               >
-                <img
+                <RobustAvatar
                   class="creator-avatar"
-                  src={generateAvatarUrl(v.value, 96)}
+                  src={creatorAvatars.get(v.value)?.avatarUrl}
+                  googleId={creatorAvatars.get(v.value)?.ownerId}
+                  name={v.value}
                   alt=""
-                  width="44"
-                  height="44"
-                  loading="lazy"
+                  customSize={44}
                 />
                 <span class="value-main">
                   <span class="value-label">{v.value}</span>
@@ -1504,11 +1508,10 @@
   .creator-row {
     overflow: hidden;
   }
-  .creator-avatar {
+  /* RobustAvatar owns its size (customSize) + circular clip; the row only adds
+     the stroke ring and pins it against the flex layout. */
+  :global(.creator-avatar.robust-avatar) {
     flex: 0 0 auto;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
   .peek-fan.creator-fan {
