@@ -15,9 +15,32 @@ export class DefaultArrowPlacementRepository {
   private readonly state: DefaultArrowPlacementState;
   private unsubscribe: (() => void) | null = null;
   private initializePromise: Promise<void> | null = null;
+  private versionBumpQueued = false;
 
   constructor(private readonly persister: DefaultArrowPlacementPersister) {
     this.state = createDefaultArrowPlacementState();
+  }
+
+  /**
+   * Bump the global adjustment version at most once per microtask.
+   *
+   * A Firestore snapshot delivers each doc as its own `docChange`, so the
+   * `subscribe` callback fires once per doc — the initial snapshot alone is N
+   * synchronous calls. `globalAdjustmentVersion` is read by every mounted
+   * PictographContainer's prepare key, so an unbatched per-doc bump turns one
+   * snapshot into N synchronous re-prepare passes. With many pictographs on
+   * screen at once (the guide reader stacks 100+), that trips Svelte's
+   * `effect_update_depth_exceeded` guard and freezes the tab. Coalescing to a
+   * single deferred bump means one snapshot → one re-prepare, and moves the
+   * bump out of the current flush so it can't re-enter synchronously.
+   */
+  private queueVersionBump(): void {
+    if (this.versionBumpQueued) return;
+    this.versionBumpQueued = true;
+    queueMicrotask(() => {
+      this.versionBumpQueued = false;
+      globalAdjustmentVersion.increment();
+    });
   }
 
   get isInitialized(): boolean {
@@ -45,7 +68,7 @@ export class DefaultArrowPlacementRepository {
 
       this.unsubscribe = this.persister.subscribe((doc) => {
         this.state.setDoc(doc);
-        globalAdjustmentVersion.increment();
+        this.queueVersionBump();
         logger.info(`Real-time update: ${doc.id}`);
       });
 
