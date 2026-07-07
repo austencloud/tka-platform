@@ -34,4 +34,7 @@ export enum BrowseFilterType {
    * collections-state (browse-filter stays pure of feature imports).
    * One-per-type: picking a collection replaces the previous pick. */
   COLLECTION = "collection",
+  /** Filter by a turn-intensity CEILING: a sequence matches "≤ N turns" when no
+   * motion's numeric turns exceed N. "fl" (float) always passes. One-per-type. */
+  MAX_TURN_INTENSITY = "max_turn_intensity",
 }

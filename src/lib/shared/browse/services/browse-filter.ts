@@ -97,6 +97,8 @@ export function applyFilter(
       return filterByTnDFamily(sequences, filterValue);
     case BrowseFilterType.COLLECTION:
       return filterByCollection(sequences, filterValue);
+    case BrowseFilterType.MAX_TURN_INTENSITY:
+      return filterByMaxTurnIntensity(sequences, filterValue);
     default:
       return sequences;
   }
@@ -594,6 +596,47 @@ function filterByTnDFamily(
     return sequences;
   }
   return sequences.filter((seq) => getSequenceTnDFamilies(seq).has(filterValue));
+}
+
+// ============================================================================
+// Max turn intensity filtering (ceiling)
+// ============================================================================
+
+// Max numeric turn is pure over immutable steps — memoize per sequence object,
+// same rationale as the TnD-family cache (counts recompute far more often than
+// the pool reloads).
+const maxTurnCache = new WeakMap<SequenceData, number>();
+
+/**
+ * The largest NUMERIC turn on any motion of any non-blank step (both hands).
+ * "fl" (float) has no numeric turn count and is ignored; a sequence with no
+ * numeric turns returns 0. This is the value a "≤ N" ceiling filter compares.
+ */
+export function getSequenceMaxTurn(seq: SequenceData): number {
+  const cached = maxTurnCache.get(seq);
+  if (cached !== undefined) return cached;
+
+  let max = 0;
+  for (const step of seq.steps ?? []) {
+    if (step.isBlank) continue;
+    for (const motion of [step.motions?.blue, step.motions?.red]) {
+      const t = motion?.turns;
+      if (typeof t === "number" && t > max) max = t;
+    }
+  }
+  maxTurnCache.set(seq, max);
+  return max;
+}
+
+/** Ceiling filter: keep sequences whose heaviest numeric turn is ≤ the value. */
+function filterByMaxTurnIntensity(
+  sequences: SequenceData[],
+  filterValue: BrowseFilterValue
+): SequenceData[] {
+  const ceiling =
+    typeof filterValue === "number" ? filterValue : parseFloat(String(filterValue));
+  if (isNaN(ceiling)) return sequences;
+  return sequences.filter((seq) => getSequenceMaxTurn(seq) <= ceiling);
 }
 
 // ============================================================================
