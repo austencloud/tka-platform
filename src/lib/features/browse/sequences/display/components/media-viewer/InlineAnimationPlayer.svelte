@@ -209,12 +209,22 @@
     animationState.dispose();
   });
 
-  // Sync external BPM to playback speed when provided
+  // Sync external BPM to playback speed when provided.
+  //
+  // untrack() the imperative push: setSpeed() reads reactive playback state and
+  // fans its change out to every registered visibility-manager observer. Left
+  // tracked, those reads become dependencies of THIS effect, so its own side
+  // effect re-triggers it — an unbounded loop that trips
+  // effect_update_depth_exceeded on hosts with many pictograph observers mounted
+  // (the guide reader stacks 100+). The effect must react to externalBpm ALONE.
   $effect(() => {
     if (externalBpm !== null && playbackController) {
       const speed = externalBpm / DEFAULT_BPM;
-      playbackController.setSpeed(speed);
-      bpm = externalBpm;
+      const pc = playbackController;
+      untrack(() => {
+        pc.setSpeed(speed);
+        bpm = externalBpm;
+      });
     }
   });
 
