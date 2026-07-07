@@ -35,6 +35,11 @@
   const PAGE_W = 816; // 8.5in @96dpi
   const PAGE_H = 1056; // 11in
 
+  // Persist scroll position so it survives HMR remounts, full reloads, and
+  // navigating away and back — sessionStorage, restored after the first fit()
+  // lays the pages out. Keyed per-reader (one reader today; keep it explicit).
+  const SCROLL_KEY = "guide-reader-scroll";
+
   let activeIndex = $state(0); // highlighted page — driven by scroll position
   let scale = $state(0.5);
   let stageEl = $state<HTMLDivElement>();
@@ -54,7 +59,8 @@
     });
   }
 
-  // Nearest-to-viewport-centre page becomes the active (highlighted) one.
+  // Nearest-to-viewport-centre page becomes the active (highlighted) one, and
+  // the raw scrollTop is persisted so a remount/reload can restore it.
   let scrollRaf = 0;
   function onScroll() {
     if (scrollRaf) return;
@@ -74,6 +80,12 @@
         }
       });
       if (best !== activeIndex) activeIndex = best;
+      try {
+        sessionStorage.setItem(SCROLL_KEY, String(docWrap.scrollTop));
+      } catch {
+        // sessionStorage unavailable (private mode / disabled) — scroll just
+        // won't persist; not worth surfacing.
+      }
     });
   }
 
@@ -94,8 +106,26 @@
     scale = Math.max(0.1, Math.min(w / PAGE_W, h / PAGE_H));
   }
 
+  function restoreScroll() {
+    if (!docWrap) return;
+    let saved = 0;
+    try {
+      saved = Number(sessionStorage.getItem(SCROLL_KEY) ?? 0);
+    } catch {
+      return;
+    }
+    if (Number.isFinite(saved) && saved > 0) {
+      // Instant (not smooth) so a remount lands exactly where it left off; the
+      // scroll handler then re-derives activeIndex from the restored position.
+      docWrap.scrollTo({ top: saved, behavior: "auto" });
+    }
+  }
+
   onMount(() => {
     fit();
+    // Restore after fit()'s scale change flushes and the pages take their real
+    // heights — otherwise scrollTop clamps to a shorter, pre-layout scrollHeight.
+    requestAnimationFrame(restoreScroll);
     const ro = new ResizeObserver(fit);
     if (stageEl) ro.observe(stageEl);
     return () => {
