@@ -33,6 +33,11 @@ instead of showing an empty shell.
 	import SmartCollectionDetailView from "./SmartCollectionDetailView.svelte";
 	import SmartCollectionBuilderSheet from "./SmartCollectionBuilderSheet.svelte";
 	import AllLibraryView from "./AllLibraryView.svelte";
+	import {
+		FOUNDING_SMART_COLLECTIONS,
+		toSyntheticCollection,
+		isFoundingId,
+	} from "$lib/features/browse/collections/config/founding-collections";
 	import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 	import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
 
@@ -68,6 +73,9 @@ instead of showing an empty shell.
 		),
 	);
 	const loading = $derived(collectionsState.loading);
+
+	// Founding decks (TKA 1/2/3) — read-only, config-defined, shown to everyone.
+	const foundingCards = FOUNDING_SMART_COLLECTIONS.map(toSyntheticCollection);
 
 	// Own smart collections render the live-derived view; everything else uses
 	// the standard member grid. (Foreign collections are never smart in v1.)
@@ -209,6 +217,15 @@ instead of showing an empty shell.
 		onOpen={() => openCollection("all", "All")}
 	/>
 
+	{#each foundingCards as f (f.id)}
+		<CollectionCard
+			collection={f}
+			readonly
+			selected={!!sel && sel.id === f.id && !sel.ownerId}
+			onOpen={() => openCollection(f.id, f.name)}
+		/>
+	{/each}
+
 	{#each collections as c (c.id)}
 		<CollectionCard
 			collection={c}
@@ -307,7 +324,7 @@ instead of showing an empty shell.
 		<section class="detail-pane">
 			{#if railSelection.id === "all" && !railSelection.ownerId}
 				<AllLibraryView />
-			{:else if isOwnSmart(railSelection.id, railSelection.ownerId)}
+			{:else if isOwnSmart(railSelection.id, railSelection.ownerId) || isFoundingId(railSelection.id)}
 				{#key railSelection.id}
 					<SmartCollectionDetailView
 						collectionId={railSelection.id}
@@ -329,7 +346,7 @@ instead of showing an empty shell.
 {:else if detail}
 	{#if detail.id === "all" && !detail.ownerId}
 		<AllLibraryView onBack={backToList} />
-	{:else if isOwnSmart(detail.id, detail.ownerId)}
+	{:else if isOwnSmart(detail.id, detail.ownerId) || isFoundingId(detail.id)}
 		{#key detail.id}
 			<SmartCollectionDetailView collectionId={detail.id} onBack={backToList} />
 		{/key}
