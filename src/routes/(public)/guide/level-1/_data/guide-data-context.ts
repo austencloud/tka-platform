@@ -1,10 +1,12 @@
 import { getContext, setContext } from "svelte";
 import type { GuideChapterData } from "./guide-types";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 const GUIDE_DATA_KEY = Symbol("guide-data");
 const ACTIVE_SECTION_KEY = Symbol("active-section");
 const PRINT_MODE_KEY = Symbol("guide-print-mode");
+const SEQUENCE_CLICK_KEY = Symbol("guide-sequence-click");
 
 export function setGuideData(data: GuideChapterData): void {
   setContext(GUIDE_DATA_KEY, data);
@@ -44,4 +46,20 @@ export function setGuidePrintMode(): void {
 
 export function getGuidePrintMode(): boolean {
   return getContext<boolean>(PRINT_MODE_KEY) ?? false;
+}
+
+/** Payload a page hands up when the user clicks one of its sequences. */
+export type GuideSequenceClick = { strip: StepData[]; word?: string };
+
+/** The reader registers a handler; pages call it to open the animation companion. */
+export function setGuideSequenceClick(
+  handler: (payload: GuideSequenceClick) => void
+): void {
+  setContext(SEQUENCE_CLICK_KEY, handler);
+}
+
+export function getGuideSequenceClick(): ((payload: GuideSequenceClick) => void) | null {
+  return (
+    getContext<((payload: GuideSequenceClick) => void) | null>(SEQUENCE_CLICK_KEY) ?? null
+  );
 }
