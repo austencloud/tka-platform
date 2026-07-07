@@ -7,6 +7,11 @@
  */
 
 import { calculateLayout } from "$lib/shared/render/services/layout-calculator";
+import {
+  pickBestFitLayout,
+  pickScrollColumns,
+  type FitLayout,
+} from "$lib/shared/render/services/container-aware-layout";
 import { getMandalaPlacements } from "$lib/shared/sequence-viewer/services/get-mandala-placements";
 import { simplifyAndTruncate } from "$lib/shared/foundation/utils/word-simplifier";
 import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
@@ -50,6 +55,10 @@ export interface ChoreoCardLayoutDeps {
   readonly hasMixedDurations: boolean;
   /** Max duration units in any single row */
   readonly durationColCount: number;
+  /** Raw container width (px) for container-aware Auto layout. 0 = not measured. */
+  readonly containerWidth: number;
+  /** Raw container height (px) for container-aware Auto layout. 0 = not measured. */
+  readonly containerHeight: number;
 }
 
 export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps) {
@@ -61,10 +70,50 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
   const isLongSequence = $derived((getDeps().sequence?.steps?.length ?? 0) > SCROLL_THRESHOLD);
   const needsScroll = $derived(!getDeps().forceContain && isLongSequence);
 
-  // Start-position layout - "row" puts start in a top row spanning all columns,
-  // "column" puts start in a left column.
-  const startPositionLayout = $derived.by<"row" | "column">(() => {
+  // Container-aware "Auto" layout. When the card is on Auto (no manual/composition
+  // column override), is a uniform grid, isn't a long scroll sequence, and the
+  // live container has been measured, pick the columns×rows + start placement that
+  // renders the card largest in that container. Returns null in every other case,
+  // so the derivations below fall back to the static table. This is the ONLY seam
+  // that consults the container — export/print/thumbnail have no container, get
+  // null here, and stay on the deterministic table.
+  const autoFit = $derived.by<FitLayout | null>(() => {
     const deps = getDeps();
+    void deps.compositionVersion;
+    const stepCount = deps.sequence?.steps?.length ?? 0;
+    if (stepCount < 1) return null;
+    // Export / print previews (forceContain) keep the deterministic table so the
+    // on-screen preview matches the compositor-rendered PNG, which uses the table.
+    if (deps.forceContain) return null;
+    if (deps.hasMixedDurations) return null; // uniform grids only
+    if (deps.columnCount !== null && deps.columnCount > 0) return null; // manual override
+    if (stepCount >= 4 && compositionManager.getColumnCountForStepCount(stepCount) !== null) {
+      return null; // per-length composition override
+    }
+    if (isLongSequence) return null; // scroll path handled below
+    const cw = deps.containerWidth;
+    const ch = deps.containerHeight;
+    if (!(cw > 0) || !(ch > 0)) return null; // not measured yet → table fallback
+    return pickBestFitLayout({
+      stepCount,
+      includeStartPosition: deps.includeStartPosition,
+      containerWidth: cw,
+      containerHeight: ch,
+      showHeader: deps.showHeader,
+      showFooter: deps.showFooter,
+      showQRCode: deps.showQRCode,
+    });
+  });
+
+  // Start-position layout - "row" puts start in a top row spanning all columns,
+  // "column" puts start in a left column. On Auto the best-fit picker chooses
+  // placement for the container; otherwise the composition setting applies.
+  const startPositionLayout = $derived.by<"row" | "column">(() => {
+    const af = autoFit;
+    const deps = getDeps();
+    if (af && deps.includeStartPosition && af.startPlacement !== "none") {
+      return af.startPlacement;
+    }
     void deps.compositionVersion;
     if (deps.startPositionLayoutOverride) return deps.startPositionLayoutOverride;
     const stepCount = deps.sequence?.steps?.length ?? 0;
@@ -72,8 +121,10 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
     return compositionManager.getStartPositionLayoutForStepCount(stepCount);
   });
 
-  // Effective columns - synchronously computed from layout tables
+  // Effective columns - synchronously computed from best-fit or the layout tables
   const baseColumns = $derived.by(() => {
+    const af = autoFit;
+    if (af) return af.cols;
     const deps = getDeps();
     void deps.compositionVersion;
     const seq = deps.sequence;
@@ -91,8 +142,10 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
         return deps.includeStartPosition && spl === "column" ? compositionCols + 1 : compositionCols;
       }
     }
-    // Long sequences use fixed 5 columns
+    // Long sequences: width-adaptive columns while scrolling; fixed 5 for the
+    // export/forceContain (deterministic) path and the pre-measure frame.
     if (isLongSequence) {
+      if (needsScroll && deps.containerWidth > 0) return pickScrollColumns(deps.containerWidth);
       return 5;
     }
     const [cols] = calculateLayout(stepCount, deps.includeStartPosition, spl);
@@ -101,6 +154,8 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
 
   // Effective rows
   const baseRows = $derived.by(() => {
+    const af = autoFit;
+    if (af) return af.rows;
     const deps = getDeps();
     void deps.compositionVersion;
     const seq = deps.sequence;

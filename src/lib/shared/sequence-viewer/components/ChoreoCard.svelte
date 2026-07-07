@@ -18,7 +18,6 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PreviewCellRenderOptions } from "../services/preview-cell-renderer";
   import { onMount, onDestroy, untrack } from "svelte";
-  import { calculateLayout } from "$lib/shared/render/services/layout-calculator";
   import { calculateDifficultyLevel as calculateSequenceDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -223,6 +222,12 @@
   let containerElement: HTMLDivElement | undefined = $state();
   let containedWidth = $state<number | null>(null);
   let containedHeight = $state<number | null>(null);
+  // Raw container size (px) fed to the layout state for container-aware Auto
+  // layout. Distinct from contained*: those are the aspect-fitted box (which
+  // depends on the chosen columns); these are the parent-driven container size
+  // (independent of the grid), so feeding them back can't create a cycle.
+  let containerRawWidth = $state(0);
+  let containerRawHeight = $state(0);
 
   let gridScrollRef: HTMLDivElement | undefined = $state();
 
@@ -510,11 +515,12 @@
     cellWidth,
     hasMixedDurations,
     durationColCount,
+    containerWidth: containerRawWidth,
+    containerHeight: containerRawHeight,
   }));
 
   // Reactive aliases for values that move to the layout state factory.
   // Keeps downstream code and the template unchanged.
-  const isLongSequence = $derived(layoutState.isLongSequence);
   const needsScroll = $derived(layoutState.needsScroll);
   const startPositionLayout = $derived(layoutState.startPositionLayout);
   const effectiveColumns = $derived(layoutState.effectiveColumns);
@@ -693,47 +699,22 @@
     try {
       // Calculate layout
       const stepCount = sequence.steps.length;
-      let cols: number;
-      let rws: number;
 
-      // Detect mixed durations - determines uniform grid vs timeline rows
+      // Detect mixed durations - determines uniform grid vs timeline rows.
+      // Set BEFORE reading effectiveColumns/Rows below: the layout state factory
+      // resolves its uniform-vs-timeline branch (and container-aware Auto) from
+      // this flag, so it must be current when we read the resolved dims.
       const mixed = detectMixedDurations(sequence.steps);
       hasMixedDurations = mixed;
 
-      // Resolve column count: explicit prop > composition setting (4+ steps) > layout table
-      const resolvedColumnCount = columnCount
-        ?? (stepCount >= 4 ? compositionManager.getColumnCountForStepCount(stepCount) : null);
-
       const spl = startPositionLayout;
 
-      if (resolvedColumnCount !== null && resolvedColumnCount > 0) {
-        // Manual or composition column override.
-        // resolvedColumnCount is the number of *step* columns.
-        // Row layout: start sits in the top row, no extra column added.
-        // Column layout: start occupies its own column, so cols = steps + 1.
-        cols = includeStartPosition && spl === "column" ? resolvedColumnCount + 1 : resolvedColumnCount;
-        if (includeStartPosition && spl === "row") {
-          rws = 1 + Math.ceil(stepCount / cols);
-        } else {
-          const stepsPerRow = includeStartPosition ? cols - 1 : cols;
-          const firstRowSteps = Math.min(stepsPerRow, stepCount);
-          const remainingSteps = stepCount - firstRowSteps;
-          rws = 1 + Math.ceil(remainingSteps / stepsPerRow);
-        }
-      } else if (isLongSequence) {
-        // Long sequences: fixed 5 columns (both scroll mode and export/forceContain)
-        cols = 5;
-        if (includeStartPosition && spl === "row") {
-          rws = 1 + Math.ceil(stepCount / cols);
-        } else {
-          const stepsPerRow = includeStartPosition ? cols - 1 : cols;
-          const firstRowSteps = Math.min(stepsPerRow, stepCount);
-          const remainingSteps = stepCount - firstRowSteps;
-          rws = 1 + Math.ceil(remainingSteps / stepsPerRow);
-        }
-      } else {
-        [cols, rws] = calculateLayout(stepCount, includeStartPosition, spl);
-      }
+      // Single source of truth: the layout state factory resolves cols/rows from
+      // best-fit / manual override / composition / long-scroll / table — the SAME
+      // values relayoutCells and the grid template already use. Reading them here
+      // (instead of re-deriving) removes the drift hazard of two parallel copies.
+      let cols = effectiveColumns;
+      let rws = effectiveRows;
 
       columns = cols;
 
@@ -1203,6 +1184,19 @@
   // parent-sized (width/height: 100%) and unaffected by cell content swaps.
   // The ResizeObserver on containerElement is the sole trigger.
   let _containerWasZero = false;
+
+  // Capture the raw container size (before the aspect-fit math) so the layout
+  // state can pick the container-aware Auto layout. The root has no padding, so
+  // clientWidth/Height are the usable dims. Thresholded to avoid churn on
+  // sub-pixel jitter.
+  function captureContainerDims() {
+    if (!containerElement) return;
+    const w = containerElement.clientWidth;
+    const h = containerElement.clientHeight;
+    if (w > 0 && Math.abs(w - containerRawWidth) > 0.5) containerRawWidth = w;
+    if (h > 0 && Math.abs(h - containerRawHeight) > 0.5) containerRawHeight = h;
+  }
+
   function updateContainedDimensions() {
     if (!containerElement || !previewAspectRatio || !Number.isFinite(previewAspectRatio)) {
       return;
@@ -1432,11 +1426,13 @@
 
       // Create new observer
       containerObserver = new ResizeObserver(() => {
+        captureContainerDims();
         updateContainedDimensions();
       });
       containerObserver.observe(containerElement);
 
       // Initial measurement
+      captureContainerDims();
       updateContainedDimensions();
     }
 
@@ -1521,6 +1517,11 @@
   });
 
   onMount(() => {
+    // Measure the container synchronously before the cache probe so the
+    // container-aware Auto layout is active on the very first paint (avoids a
+    // table→best-fit relayout one frame later).
+    captureContainerDims();
+
     // Backstop: close the no-flash settle window shortly after mount. The window
     // is normally consumed by the first post-mount re-render (the async settle);
     // this timer covers the warm case where settings are already loaded and no

@@ -1,0 +1,135 @@
+import { describe, it, expect } from "vitest";
+import {
+  pickBestFitLayout,
+  pickScrollColumns,
+  cardHeightInCells,
+  type BestFitInput,
+} from "../../src/lib/shared/render/services/container-aware-layout";
+
+/** Step columns implied by a result: row/none use all cols; column reserves col 1. */
+function stepCols(r: { cols: number; startPlacement: string }): number {
+  return r.startPlacement === "column" ? r.cols - 1 : r.cols;
+}
+
+const base = (over: Partial<BestFitInput>): BestFitInput => ({
+  stepCount: 4,
+  includeStartPosition: true,
+  containerWidth: 500,
+  containerHeight: 500,
+  showHeader: true,
+  showFooter: true,
+  showQRCode: false,
+  ...over,
+});
+
+describe("pickBestFitLayout", () => {
+  it("4-count in a tall/narrow container → 2 step columns, not a strip", () => {
+    const r = pickBestFitLayout(base({ containerWidth: 400, containerHeight: 800 }))!;
+    expect(r).not.toBeNull();
+    expect(stepCols(r)).toBe(2);
+    expect(r.startPlacement).toBe("row"); // 2 wide × 3 tall (start row on top)
+    expect(r.cols).toBe(2);
+    expect(r.rows).toBe(3);
+  });
+
+  it("4-count in a very wide/short container → wide grid (max cell edge)", () => {
+    const r = pickBestFitLayout(base({ containerWidth: 900, containerHeight: 260 }))!;
+    // A very wide-short pane genuinely fits a single wide row largest.
+    expect(stepCols(r)).toBe(4);
+    expect(r.rows).toBe(1);
+  });
+
+  it("4-count in a square container → balanced (2 step columns, never a strip/tower)", () => {
+    const r = pickBestFitLayout(base({ containerWidth: 500, containerHeight: 500 }))!;
+    expect(stepCols(r)).toBe(2);
+    expect(r.cols).toBeLessThanOrEqual(3);
+    expect(r.rows).toBeLessThanOrEqual(3);
+  });
+
+  it("step columns are monotonically non-decreasing as the container widens", () => {
+    const widths = [220, 350, 500, 700, 1000, 1500];
+    const cols = widths.map(
+      (w) => stepCols(pickBestFitLayout(base({ containerWidth: w, containerHeight: 600 }))!),
+    );
+    for (let i = 1; i < cols.length; i++) {
+      expect(cols[i]).toBeGreaterThanOrEqual(cols[i - 1]!);
+    }
+    // Sanity: the sweep actually moves from narrow to wide layouts.
+    expect(cols[0]).toBeLessThan(cols[cols.length - 1]!);
+  });
+
+  it("with QR on, never returns a layout lacking a QR slot", () => {
+    for (const [w, h] of [[400, 800], [800, 300], [500, 500], [300, 900], [1200, 250]]) {
+      const r = pickBestFitLayout(base({ showQRCode: true, containerWidth: w, containerHeight: h }))!;
+      expect(r).not.toBeNull();
+      if (r.startPlacement === "row") expect(r.cols).toBeGreaterThanOrEqual(2);
+      if (r.startPlacement === "column") expect(r.rows).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it("without a start position, uses the no-start shape formula", () => {
+    const r = pickBestFitLayout(
+      base({ includeStartPosition: false, containerWidth: 400, containerHeight: 800 }),
+    )!;
+    expect(r.startPlacement).toBe("none");
+    expect(stepCols(r)).toBe(2);
+    expect(r.cols).toBe(2);
+    expect(r.rows).toBe(2); // 4 steps / 2 cols, no extra start row
+  });
+
+  it("returns cols/rows that match the render grid-shape convention", () => {
+    // row placement: cols = sc, rows = 1 + ceil(steps/sc)
+    const tall = pickBestFitLayout(base({ stepCount: 6, containerWidth: 300, containerHeight: 900 }))!;
+    expect(tall.rows).toBe(1 + Math.ceil(6 / tall.cols));
+    // column placement: cols = sc + 1
+    const wide = pickBestFitLayout(base({ stepCount: 6, containerWidth: 1200, containerHeight: 250 }))!;
+    if (wide.startPlacement === "column") {
+      const sc = wide.cols - 1;
+      const firstRow = Math.min(sc, 6);
+      expect(wide.rows).toBe(1 + Math.ceil((6 - firstRow) / sc));
+    }
+  });
+
+  it("returns null for degenerate input", () => {
+    expect(pickBestFitLayout(base({ stepCount: 0 }))).toBeNull();
+    expect(pickBestFitLayout(base({ containerWidth: 0 }))).toBeNull();
+    expect(pickBestFitLayout(base({ containerHeight: -5 }))).toBeNull();
+  });
+
+  it("larger container yields a larger-or-equal cell edge for the same aspect", () => {
+    // Same 2:1 aspect, doubled size → cells at least as large (scale invariance).
+    const small = pickBestFitLayout(base({ containerWidth: 400, containerHeight: 200 }))!;
+    const big = pickBestFitLayout(base({ containerWidth: 800, containerHeight: 400 }))!;
+    expect(stepCols(big)).toBe(stepCols(small)); // same aspect → same layout
+  });
+});
+
+describe("cardHeightInCells", () => {
+  it("adds header (1/3) and footer (1/7) fractions at cols>=3", () => {
+    expect(cardHeightInCells(4, 2, true, true)).toBeCloseTo(2 + 1 / 3 + 1 / 7, 5);
+  });
+  it("scales the fractions down for narrow grids (cols<3)", () => {
+    expect(cardHeightInCells(2, 3, true, true)).toBeCloseTo(3 + (1 / 3) * (2 / 3) + (1 / 7) * (2 / 3), 5);
+  });
+  it("omits header/footer when hidden", () => {
+    expect(cardHeightInCells(4, 3, false, false)).toBe(3);
+  });
+});
+
+describe("pickScrollColumns", () => {
+  it("returns the legacy default of 5 when width is unknown", () => {
+    expect(pickScrollColumns(0)).toBe(5);
+    expect(pickScrollColumns(-100)).toBe(5);
+  });
+  it("scales the column count with container width", () => {
+    expect(pickScrollColumns(650)).toBe(5); // 650/130 = 5
+    expect(pickScrollColumns(780)).toBe(6); // 780/130 = 6
+  });
+  it("clamps to [min, max]", () => {
+    expect(pickScrollColumns(300)).toBe(4); // 300/130 ≈ 2.3 → clamp 4
+    expect(pickScrollColumns(2000)).toBe(7); // 2000/130 ≈ 15 → clamp 7
+  });
+  it("honors custom bounds and target", () => {
+    expect(pickScrollColumns(600, { min: 2, max: 10, targetCellPx: 100 })).toBe(6);
+  });
+});
