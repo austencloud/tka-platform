@@ -42,10 +42,6 @@
     warming?: boolean;
     /** Passthrough to the filter bar's "Save as Smart Collection" action. */
     onSaveSmart?: () => void;
-    /** Which edge the section rail sits on. "right" also hides the native
-     * scrollbar (≥768px, where the rail shows) so the rail does double duty as
-     * the scroll affordance. Default "left" — the gallery's existing layout. */
-    sidebarSide?: "left" | "right";
   }
 
   let {
@@ -65,7 +61,6 @@
     onOpenFilters,
     warming = false,
     onSaveSmart,
-    sidebarSide = "left",
   }: Props = $props();
 
   const showToolbar = $derived(toolbarOverride ?? (layout !== "minimal"));
@@ -248,12 +243,7 @@
     <BrowseFilterBar {engine} chipsOnly={!!onOpenFilters} {onSaveSmart} />
   {/if}
 
-  <div
-    class="panel-content"
-    class:no-native-scrollbar={sidebarSide === "right"}
-    bind:this={contentEl}
-    onscroll={handleScroll}
-  >
+  <div class="panel-content" bind:this={contentEl} onscroll={handleScroll}>
     {#if engine.error}
       <div class="error-state" role="alert">
         <p>{engine.error}</p>
@@ -277,9 +267,9 @@
         {/if}
       </div>
     {:else}
-      <div class="grid-with-sidebar" class:sidebar-right={sidebarSide === "right"}>
+      <div class="grid-with-sidebar">
         {#if showSidebar}
-          <BrowseSidebar {engine} {activeSection} onScrollToSection={scrollToSection} side={sidebarSide} />
+          <BrowseSidebar {engine} {activeSection} onScrollToSection={scrollToSection} />
         {/if}
         {#if hasSequences}
           <div class="grid-area">
@@ -345,29 +335,6 @@
     display: flex;
     align-items: flex-start;
     gap: 0;
-  }
-
-  /* Rail on the right edge: flip the flex order (grid first, rail last) so the
-     rail lands where the scrollbar was. The rail (SectionIndexSidebar) already
-     flips its own border + accent bar via its `side` prop. */
-  .grid-with-sidebar.sidebar-right :global(.section-sidebar) {
-    order: 2;
-  }
-  .grid-with-sidebar.sidebar-right .grid-area {
-    order: 1;
-  }
-
-  /* Rail-as-scrollbar: drop the native scrollbar, but only where the rail is
-     actually visible (≥768px). Below that the rail is hidden, so the native
-     scrollbar must stay. */
-  @media (min-width: 768px) {
-    .panel-content.no-native-scrollbar {
-      scrollbar-width: none;
-    }
-    .panel-content.no-native-scrollbar::-webkit-scrollbar {
-      width: 0;
-      display: none;
-    }
   }
 
   .grid-area {

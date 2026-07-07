@@ -9,12 +9,9 @@
     sections: SequenceSection[];
     onScrollToSection: (sectionTitle: string) => void;
     activeSection?: string;
-    /** Which edge the rail sits on. "right" flips the border to the left side
-     * and the active-marker accent bar to face content on the left. */
-    side?: "left" | "right";
   }
 
-  const { sections, onScrollToSection, activeSection, side = "left" }: Props = $props();
+  const { sections, onScrollToSection, activeSection }: Props = $props();
 
   const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -216,7 +213,7 @@
   });
 </script>
 
-<nav class="section-sidebar" class:side-right={side === "right"} aria-label="Section navigation">
+<nav class="section-sidebar" aria-label="Section navigation">
   <div class="track" bind:this={trackEl}>
     {#if isLevelSorted}
       <!-- Level-sorted: colored level badge headers with letter markers below -->
@@ -304,21 +301,6 @@
     border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     background: var(--theme-panel-bg, #12121c);
     isolation: isolate;
-  }
-
-  /* Right-edge variant: border moves to the left, accent bars flip to face
-     content on the rail's left (see the ::before overrides below). */
-  .section-sidebar.side-right {
-    border-right: none;
-    border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-  }
-
-  .section-sidebar.side-right .marker.active::before,
-  .section-sidebar.side-right .letter-marker.active::before,
-  .section-sidebar.side-right .month-btn.active::before {
-    right: auto;
-    left: 0;
-    border-radius: 0 3px 3px 0;
   }
 
   @media (min-width: 768px) {

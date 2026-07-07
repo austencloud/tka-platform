@@ -253,7 +253,6 @@ header; "Edit rule" reopens the builder to change it.
 				showToolbar={false}
 				showFilterBar={false}
 				showSidebar={true}
-				sidebarSide="right"
 				onSelect={handleSelect}
 			/>
 		{/if}
