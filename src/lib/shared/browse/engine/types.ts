@@ -60,6 +60,7 @@ export type SectionGroupBy =
 	| "length"
 	| "difficulty"
 	| "date"
+	| "tnd-family"
 	| "none";
 
 // ---------------------------------------------------------------------------

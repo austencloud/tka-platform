@@ -112,6 +112,11 @@ header; "Edit rule" reopens the builder to change it.
 					// rule — e.g. a founding deck filtering AUTHOR "T&D Alphabet" —
 					// sees only user sequences and matches nothing.
 					extraCommunitySequences: loadCanonicalTnDSequences,
+					// Founding decks (TKA 1/2/3) are the T&D alphabet — group the grid
+					// by canonical TnD family (Split-Same · Water, …) in groups of 3–4
+					// rather than one section per letter. Other smart collections keep
+					// their sort-driven grouping.
+					defaultSectionGroupBy: isFoundingId(collectionId) ? "tnd-family" : undefined,
 				});
 				applySpecToEngine(engine, s);
 				void engine.initialize();

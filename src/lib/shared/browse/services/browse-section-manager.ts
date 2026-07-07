@@ -26,6 +26,31 @@ function resolveLevel(sequence: SequenceData): number {
 
 const TYPE6_LETTERS = ["α", "β", "γ", "ζ", "η", "τ", "⊕"];
 
+// Canonical T&D family order + element label. Kept local (mirrors TND_ELEMENTS)
+// to avoid a shared→features dependency; used only by the "tnd-family" group,
+// which the founding-deck views opt into via defaultSectionGroupBy.
+const TND_FAMILY_ORDER = [
+  "split-same",
+  "tog-same",
+  "quarter-same",
+  "split-opp",
+  "tog-opp",
+  "quarter-opp",
+] as const;
+const TND_FAMILY_LABEL: Readonly<Record<string, { name: string; element: string }>> = {
+  "split-same": { name: "Split-Same", element: "Water" },
+  "tog-same": { name: "Tog-Same", element: "Earth" },
+  "quarter-same": { name: "Quarter-Same", element: "Sun" },
+  "split-opp": { name: "Split-Opp", element: "Fire" },
+  "tog-opp": { name: "Tog-Opp", element: "Air" },
+  "quarter-opp": { name: "Quarter-Opp", element: "Moon" },
+};
+
+/** The T&D family a canonical pool sequence belongs to, read from its tags. */
+function tndFamilyOf(sequence: SequenceData): string {
+  return sequence.tags?.find((t) => t in TND_FAMILY_LABEL) ?? "unknown";
+}
+
 /** First-letter label in the kinetic alphabet ("A", "W-", "α"…). */
 function deriveLetter(sequence: SequenceData): string {
   const word = deriveWord(sequence);
@@ -169,6 +194,9 @@ function getGroupKey(
     case "author":
       return sequence.author ?? "Unknown Author";
 
+    case "tnd-family":
+      return tndFamilyOf(sequence);
+
     case "date": {
       // Canonical fallback: birthday (original creation) → createdAt → dateAdded
       const rawDate = sequence.birthday ?? sequence.createdAt ?? sequence.dateAdded;
@@ -254,6 +282,12 @@ function createSectionTitle(
 
     case "author":
       return `👤 ${key} (${countText})`;
+
+    case "tnd-family": {
+      const meta = TND_FAMILY_LABEL[key];
+      const label = meta ? `${meta.name} · ${meta.element}` : "Other";
+      return `${label} (${countText})`;
+    }
 
     case "date":
       return `📅 ${formatDateForSection(key)} (${countText})`;
@@ -450,6 +484,11 @@ function getSectionSortOrder(
     case "author":
       // Alphabetical by author
       return 0; // Will be sorted by title comparison
+
+    case "tnd-family": {
+      const idx = TND_FAMILY_ORDER.indexOf(key as (typeof TND_FAMILY_ORDER)[number]);
+      return idx === -1 ? 999 : idx;
+    }
 
     case "date": {
       // Most recent first

@@ -25,6 +25,7 @@ export interface SectionConfig {
     | "length"
     | "difficulty"
     | "date"
+    | "tnd-family"
     | "none";
   sortMethod: BrowseSortMethod;
   showEmptySections: boolean;
