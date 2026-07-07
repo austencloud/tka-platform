@@ -40,7 +40,14 @@
   <div class="body">
     {#if sequence}
       {#key sequence.id}
-        <InlineAnimationPlayer {sequence} autoPlay={true} chrome="minimal" externalBpm={bpm} />
+        <InlineAnimationPlayer
+          {sequence}
+          autoPlay={true}
+          chrome="minimal"
+          externalBpm={bpm}
+          bluePropType="hand"
+          redPropType="hand"
+        />
       {/key}
     {:else}
       <p class="hint">Click a sequence on the page to animate it.</p>

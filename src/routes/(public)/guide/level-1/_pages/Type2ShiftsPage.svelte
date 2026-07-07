@@ -47,6 +47,7 @@
   import { describePictograph } from "$lib/shared/pictograph/shared/domain/utils/pictograph-description";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
+  import { getGuideSequenceClick } from "../_data/guide-data-context";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -192,6 +193,16 @@
     },
   ]);
 
+  // Reader companion handoff: present ONLY inside GuideReader (null on /print,
+  // /book), so the printable pages stay pristine and gain no click affordance.
+  const emitSequence = getGuideSequenceClick();
+  const SEQ_WORDS = ["Single Shift", "Same-Direction Shifts", "Opposite Shifts"];
+  const stripSteps = (strip: Strip): StepData[] =>
+    strip.rows
+      .flat()
+      .filter((cell): cell is { m: Move; step: number } => cell !== null)
+      .map((cell) => box(cell.m, cell.step));
+
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
     registerEditSource("Type 2 (p6)", () =>
@@ -238,6 +249,19 @@
     {/each}
   {/each}
 
+  <!-- Reader-only: one transparent hit target per sequence → animate it. Absent
+       on /print + /book (emitSequence is null there), so print pages stay pristine. -->
+  {#if emitSequence}
+    {#each STRIPS as strip, si (si)}
+      <button
+        class="seq-hit"
+        style="left:{strip.x * S}px; top:{strip.y * S}px; width:{BOX * 5 * S}px; height:{strip.rows.length * BOX * S}px"
+        onclick={() => emitSequence?.({ strip: stripSteps(strip), word: SEQ_WORDS[si] })}
+        aria-label={`Animate the ${SEQ_WORDS[si]} sequence`}
+      ></button>
+    {/each}
+  {/if}
+
   <!-- Grouped centred paragraphs (one box each, like the original PDF). -->
   {#each PARAS as p, i (i)}
     <p
@@ -269,6 +293,26 @@
     background: #fff;
     box-sizing: border-box;
     overflow: hidden;
+  }
+
+  /* Reader-only transparent hit target over each sequence → animate on click. */
+  .seq-hit {
+    position: absolute;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    border-radius: 6px;
+    z-index: 3;
+  }
+  .seq-hit:hover {
+    outline: 2px solid rgba(120, 90, 200, 0.4);
+    outline-offset: 4px;
+    background: rgba(120, 90, 200, 0.06);
+  }
+  .seq-hit:focus-visible {
+    outline: 2px solid #6f2da8;
+    outline-offset: 4px;
   }
 
   /* Centred paragraph blocks — full sheet width, one box per paragraph. */

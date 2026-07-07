@@ -52,14 +52,17 @@
   }
   setGuideSequenceClick(handleSequenceClick);
 
+  // Fit to WIDTH so the page is readable; taller-than-pane pages scroll
+  // vertically (the natural document feel). Capped so an ultrawide pane doesn't
+  // blow the sheet up past ~1.4× its native 816pt width.
   function fit() {
     if (!stageEl) return;
-    const w = stageEl.clientWidth - 32;
-    const h = stageEl.clientHeight - 56; // minus transport row
-    scale = Math.max(0.1, Math.min(w / PAGE_W, h / PAGE_H));
+    const w = stageEl.clientWidth - 32; // horizontal breathing room
+    scale = Math.max(0.1, Math.min(1.4, w / PAGE_W));
   }
 
-  // Show only the active page (GuideDocument mounts them all, like /book).
+  // Show only the active page (GuideDocument mounts them all, like /book), and
+  // reset the scroll to the top of the newly shown page.
   $effect(() => {
     const w = docWrap;
     if (!w) return;
@@ -67,6 +70,7 @@
     w.querySelectorAll<HTMLElement>(".reader-page").forEach((p, k) => {
       p.style.display = k === i ? "block" : "none";
     });
+    w.scrollTop = 0;
   });
 
   // Close the companion when navigating to another page.
@@ -156,9 +160,11 @@
     flex: 1;
     min-height: 0;
     display: flex;
-    align-items: center;
+    align-items: flex-start; /* top-align so tall pages scroll from the top */
     justify-content: center;
-    overflow: hidden;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px;
   }
   /* Each page shows scaled; the fixed 816x1056 sheet is scaled into a footprint
      box so it centres cleanly (transform alone doesn't shrink layout size). */
