@@ -33,6 +33,7 @@
   import { LOOP_COMPONENT_MAP } from "$lib/shared/browse/domain/constants/loop-constants";
   import { BrowseFilterType } from "$lib/shared/persistence/domain/enums/filtering-enums";
   import { resolveStepCount } from "$lib/shared/browse/services/browse-sorter";
+  import { getSequenceMaxTurn } from "$lib/shared/browse/services/browse-filter";
   import {
     deriveCreators,
     deriveStartingLetters,
@@ -126,6 +127,7 @@
     | "author"
     | "loop"
     | "family"
+    | "max_turn_intensity"
     | "collections";
   const SECTIONS: readonly Section[] = [
     "chooser",
@@ -137,6 +139,7 @@
     "author",
     "loop",
     "family",
+    "max_turn_intensity",
     "collections",
   ];
   /** Page variant restores its sub-screen across reload/HMR (sessionStorage);
@@ -258,6 +261,25 @@
   });
   const maxLengthCount = $derived(
     Math.max(1, ...lengthValues.map((v) => v.count)),
+  );
+
+  const maxTurnIntensityValues = $derived.by(() => {
+    const ceilings = new Set<number>();
+    for (const seq of pool) {
+      const m = getSequenceMaxTurn(seq);
+      if (m > 0) ceilings.add(m);
+    }
+    return [...ceilings]
+      .sort((a, b) => a - b)
+      .map((n) => ({
+        value: n,
+        label: `≤${n} turns`,
+        count: getCount(BrowseFilterType.MAX_TURN_INTENSITY, n),
+      }))
+      .filter((v) => v.count > 0);
+  });
+  const maxTurnIntensityCount = $derived(
+    Math.max(1, ...maxTurnIntensityValues.map((v) => v.count)),
   );
 
   const letterValues = $derived(
@@ -670,6 +692,21 @@
                   </span>
                 </button>
               {/if}
+              {#if maxTurnIntensityValues.length > 1}
+                <button
+                  class="mini-tile"
+                  type="button"
+                  onclick={() => (section = "max_turn_intensity")}
+                >
+                  <span class="mini-art" aria-hidden="true">
+                    <i class="fas fa-arrows-spin"></i>
+                  </span>
+                  <span class="mini-main">
+                    <span class="mini-title">Max turn intensity</span>
+                    <span class="mini-sub">{maxTurnIntensityValues.length} levels</span>
+                  </span>
+                </button>
+              {/if}
               <!-- Discovery, not a filter: tapping a collection navigates to
                    its detail view — so only hosts that wire onOpenCollection
                    (the page front door) show it. -->
@@ -734,6 +771,31 @@
                     <span
                       class="density-fill"
                       style:width="{(v.count / maxLengthCount) * 100}%"
+                    ></span>
+                  </span>
+                </span>
+                <span class="value-count">{v.count}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      {:else if section === "max_turn_intensity"}
+        <div class="drill-screen">
+          {@render valueHead("Pick a max turn intensity")}
+          <div class="value-list">
+            {#each maxTurnIntensityValues as v (v.value)}
+              <button
+                class="length-row monument"
+                type="button"
+                onclick={() => onApply(BrowseFilterType.MAX_TURN_INTENSITY, v.value, v.label)}
+              >
+                <span class="value-numeral small">≤{v.value}</span>
+                <span class="value-main">
+                  <span class="value-label muted">max turns</span>
+                  <span class="density-bar">
+                    <span
+                      class="density-fill"
+                      style:width="{(v.count / maxTurnIntensityCount) * 100}%"
                     ></span>
                   </span>
                 </span>
