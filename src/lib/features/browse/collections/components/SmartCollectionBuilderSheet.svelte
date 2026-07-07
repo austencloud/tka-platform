@@ -10,6 +10,7 @@ browse engine so every filter the gallery offers is available here for free.
 	import { onMount, onDestroy } from "svelte";
 	import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 	import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
+	import { loadCanonicalTnDSequences } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
 	import BrowsePanel from "$lib/shared/browse/components/BrowsePanel.svelte";
 	import GalleryDrill from "$lib/features/browse/gallery-home/GalleryDrill.svelte";
 	import GalleryFilterSheet from "$lib/features/browse/gallery-home/GalleryFilterSheet.svelte";
@@ -38,11 +39,14 @@ browse engine so every filter the gallery offers is available here for free.
 	} = $props();
 
 	// Ephemeral engine — both sources available so the builder can target the
-	// community pool or the user's own library.
+	// community pool or the user's own library. Inject the canonical T&D alphabet
+	// into the community pool (same as the main gallery / BrowseModule) so a rule
+	// built against it previews the real matches instead of an empty grid.
 	const engine = createBrowseEngine({
 		persistKey: null,
 		initialSource: initialSpec?.source ?? "community",
 		minColumns: 2,
+		extraCommunitySequences: loadCanonicalTnDSequences,
 	});
 
 	let drawerOpen = $state(false);

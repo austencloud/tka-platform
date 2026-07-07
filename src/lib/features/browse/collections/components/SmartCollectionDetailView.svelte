@@ -31,6 +31,7 @@ header; "Edit rule" reopens the builder to change it.
 	} from "../../shared/state/variation-picker-state.svelte";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
 	import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
+	import { loadCanonicalTnDSequences } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
 	import {
 		isFoundingId,
 		getFoundingCollection,
@@ -106,6 +107,11 @@ header; "Edit rule" reopens the builder to change it.
 					// sort) so the section-index rail populates and the grid renders
 					// its headers — the read-only nav the rule view keeps.
 					sections: true,
+					// Inject the canonical T&D alphabet into the community pool, same
+					// as the main gallery (BrowseModule). Without this a community
+					// rule — e.g. a founding deck filtering AUTHOR "T&D Alphabet" —
+					// sees only user sequences and matches nothing.
+					extraCommunitySequences: loadCanonicalTnDSequences,
 				});
 				applySpecToEngine(engine, s);
 				void engine.initialize();
