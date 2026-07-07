@@ -6,9 +6,10 @@
     engine: BrowseEngine;
     activeSection?: string;
     onScrollToSection: (title: string) => void;
+    side?: "left" | "right";
   }
 
-  const { engine, activeSection, onScrollToSection }: Props = $props();
+  const { engine, activeSection, onScrollToSection, side = "left" }: Props = $props();
 </script>
 
 {#if engine.sections.length > 1}
@@ -16,5 +17,6 @@
     sections={engine.sections as import("$lib/shared/browse/domain/models/browse-models").SequenceSection[]}
     {onScrollToSection}
     {activeSection}
+    {side}
   />
 {/if}
