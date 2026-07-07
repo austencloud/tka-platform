@@ -13,6 +13,7 @@ import {
   configKey,
   copyModulators,
   getPreset,
+  imageCount,
   matchPreset,
   propCount,
   type TunnelConfig,
@@ -185,6 +186,10 @@ export class TunnelViewController {
 
   /** On-screen prop count for the live config. */
   propCount = $derived(propCount(this.config));
+
+  /** Number of performers (rendered copies) for the live config. Each performer
+   *  has two hands, so `propCount === performerCount * 2`. */
+  performerCount = $derived(imageCount(this.config));
 
   /** Stable signature (export filename suffix + build dedup). */
   configKey = $derived(configKey(this.config));

@@ -1,8 +1,17 @@
 # Tunnel Tuner Clarity — Design
 
 **Date:** 2026-07-07
-**Status:** Design (awaiting review → plan)
+**Status:** Shipped 2026-07-07 (design validated live via `/test/tunnel-tuner`)
 **Area:** `src/lib/shared/sequence-viewer/tunnel/*`, `ArtSettingsPanel.svelte`
+
+> **Refinements from the interactive prototype** (all folded into the sections
+> below): the fold control is **"Copies ×N"** (a ×multiplier), NOT "Performers" —
+> a slider labeled "Performers: 1" contradicted a "2 performers" readout the
+> instant Mirror was on. Reframed so ONE base performer ("you", haloed in the
+> ring) is multiplied by every count-builder. Each performer draws as a **little
+> staff** (bar + blue/red ends), so you count staves = performers, ends = props
+> (the loose dot-pairs read as ambiguous "stamps"). The count is a **big plain
+> result** with the multiplication demoted to a faint sub-line.
 
 ## Problem
 
@@ -45,17 +54,20 @@ by hiding depth.
 
 ### The mental model the UI teaches
 
-- **The unit is a performer** — one dancer standing at a point around the ring,
-  spinning the sequence. A performer has **two hands** (blue + red), so one
-  performer = two props.
+- **Start from one base performer ("you")** — a single dancer, drawn as a staff.
+  Everything else *multiplies* that one. A performer has **two hands** (blue +
+  red), so one performer = two props.
 - **Two kinds of control:**
 
   | Family | Controls | Effect on count |
   |---|---|---|
-  | **Performers** (count-builders) | Fold→**Performers**, Mirror, Flip | Change *how many* performers. Mirror/Flip each add a reflected twin of every performer → **×2**. |
+  | **Count-builders** | **Copies ×N** (fold), Mirror, Flip | Multiply the cast. Copies is ×1/×2/×4/×8; Mirror/Flip each add a reflected twin of every performer → **×2**. |
   | **Motion** (variation) | Invert, Echo, Stagger, Speed | Change *how* performers move. **Never** change the count. |
 
-- **The count is always** `performers × 2 hands = props`.
+- **The count is always** `performers × 2 hands = props`, and `performers` is the
+  product of the active ×multipliers off the base 1 (`1 × copies × mirror × flip`).
+  The fold control shows **×N** (not a bare count) precisely so its value never
+  reads as the total — `×1` selected + `Mirror ×2` obviously = 2 performers.
 
 This maps `imageCount` → "performers" and `propCount` → "props" with no math
 change: `performerCount === imageCount`, `propCount === performerCount × 2`.
@@ -72,18 +84,19 @@ be counted by eye).
 
 **Geometry (schematic, count-faithful — not a pixel map of prop positions):**
 
-- Base ring: `fold` performers spaced evenly around the circle, placed at the
-  shared compass angles (`n/ne/e/se/s/sw/w/nw`) the real grid uses. Fold divides
-  8 evenly (1/2/4/8), so placement is clean.
-- Each active reflection **spawns a twin** of every existing performer, drawn as
-  a paired satellite dot offset from its source with a dimmed/reflect treatment.
-  Mirror adds one twin per performer; Flip adds another. Twins are drawn as
-  distinct dots **even when a mirror-twin's location coincides with a fold
-  position** — because it is a distinct reflected copy (this is exactly why
-  Fold 4 + Mirror = 8 images at 4 locations). The diagram therefore always shows
-  `performerCount` (= `imageCount`) countable dot-pairs.
-- Each performer dot-pair reuses the existing blue `#2E86DE` / red `#E74C3C`
-  hand convention from `StartPositionMiniGrid.svelte`.
+- Each performer draws as a **little staff**: a short bar with a blue end and a
+  red end (hand colors `#2E86DE` / `#E74C3C` from `StartPositionMiniGrid.svelte`),
+  laid tangent to the ring. Count staves = performers; count ends = props. The
+  base performer ("you", id `f0`) wears an accent halo — the seed everything
+  multiplies from.
+- Base ring: `fold` performers spaced evenly around the circle at the shared
+  compass angles (`n/ne/e/se/s/sw/w/nw`). Fold divides 8 evenly (1/2/4/8).
+- Each active reflection **spawns a twin** of every existing performer, seated on
+  a tighter concentric ring (`depthRadiusFraction` shrinks with reflection depth)
+  so twins stay countable **even when a mirror-twin's location coincides with a
+  fold position** — it is a distinct reflected copy (why Fold 4 + Mirror = 8
+  copies at 4 locations). The diagram always shows `performerCount`
+  (= `imageCount`) countable staves.
 
 **Animation ("watch it multiply"):**
 
@@ -114,42 +127,49 @@ direct sibling of `StartPositionMiniGrid.svelte` and reuses the shared grid
 
 ### 2. Count readout
 
-Under the ring, one line replaces the bare `{propCount} props`:
+Under the ring, a **big plain result** replaces the bare `{propCount} props`:
 
 ```
-4 performers × 2 hands = 8 props
+4 performers · 8 props
+```
+
+Below it, a **faint sub-line** shows the build-up for anyone who wants the
+mechanism (only active >×1 factors appear; nothing when it's just you):
+
+```
+1 × 2 copies × 2 mirror
 ```
 
 - `font-variant-numeric: tabular-nums` on every number.
-- Width reserved for the maximum ("16 performers × 2 hands = 32 props") via the
-  ghost-sizer technique (`no-layout-shift.md`) so the line never reflows its
-  neighbors as the count changes.
-- It is the same number as today, expressed as the multiplication so the
-  doubling is legible in place.
+- The headline is the low-load result; the multiplication is demoted so it
+  informs without forcing arithmetic. The ring is the primary explanation.
+- When no multiplier is active the sub-line reads `just you` and the result is
+  `1 performer · 2 props`.
 
 ### 3. Controls, regrouped (all still reachable)
 
-The tuner body (`ArtSettingsPanel.svelte`, `{:else}` tuner branch, lines
-~322-433) restructures into three labeled zones. Same primitives, grouped:
+The tuner body (`ArtSettingsPanel.svelte`, `{:else}` tuner branch) restructures
+into the hero + three labeled zones. Same primitives, grouped:
 
-- **Performers** — the existing `SegmentedControl [1][2][4][8]` (today's Fold
-  control), relabeled "Performers". Keeps the compact Grid toggle.
+- **Copies** — the existing `SegmentedControl` (today's Fold control), values
+  shown as **×1 / ×2 / ×4 / ×8** (a multiplier, not a count). Keeps the compact
+  Grid toggle.
 - **Add twins — each doubles** — group header over Mirror + Flip. Each stays a
-  `FilterChipBase mode="toggle"` and gains a small **`×2`** affix + its reflect
-  glyph (Mirror `fas fa-arrows-left-right`, Flip `fas fa-arrows-up-down`, as
-  today).
+  `FilterChipBase mode="toggle"` with a `×2` in its label + its reflect glyph
+  (Mirror `fas fa-arrows-left-right`, Flip `fas fa-arrows-up-down`).
 - **Motion — same count** — group header over Invert, Echo, Speed (chips) + the
-  Stagger stepper (moved under this header from its current standalone row).
+  Stagger stepper (moved under this header from its former standalone row).
 
-No control is removed or hidden. Customizability is preserved; the change is
-grouping + two labels + a `×2` affix.
+No control is removed or hidden. Customizability is preserved; the change is the
+hero + grouping + relabels.
 
 ### 4. Presets view (companion win)
 
 Each preset card (Duo/Radial/Mandala/Pinwheel/Spiral/Inverted/Cross,
-`TUNNEL_PRESETS`) gains a small static `PerformerRing` (`animate={false}`,
-`size≈28`) + its `N props`, so the count previews *before* selection. Same
-component, small size, no animation.
+`TUNNEL_PRESETS`) and each saved user preset swaps its generic FontAwesome glyph
+for a small static `PerformerRing` (`animate={false}`, `size≈30`), so the cast
+shape + density previews *before* selection. No numeric count on the card — the
+ring encodes it and a "N props" string would crowd the 96px card row.
 
 ## Reuse Ledger (never-hand-roll)
 

@@ -30,6 +30,7 @@
     type MandalaCategory,
   } from "./mandala/MandalaCategoryControl.svelte";
   import AppearanceSection from "./AppearanceSection.svelte";
+  import PerformerRing from "../tunnel/PerformerRing.svelte";
   import ControlDock, {
     type ControlDockTab,
     type ControlDockAction,
@@ -132,20 +133,33 @@
     savingPreset = false;
   }
 
-  // Fold options for the segmented control (SegmentedControl is string-generic,
-  // so map the arm counts to string values).
-  const foldSegOptions = FOLD_OPTIONS.map((a) => ({ value: String(a), label: String(a) }));
+  // Copies (fold) shown as a ×multiplier, not a count — so the segmented value
+  // never collides with the "performers" total (×1 selected + Mirror ×2 = 2
+  // performers, not "1 performer"). One base performer, everything multiplies it.
+  const foldSegOptions = FOLD_OPTIONS.map((a) => ({ value: String(a), label: `×${a}` }));
 
-  // The boolean primitives, rendered as a wrapping row of toggle chips (per
-  // chip-primitives: independent booleans → N × FilterChipBase mode="toggle").
-  // Mirror/Flip grow the copy set; Invert/Echo/Speed modulate alternate arms.
-  const toggleChips = $derived([
-    { key: "mirror", label: "Mirror", icon: "fas fa-arrows-left-right", active: controller.mirror, set: (v: boolean) => controller.setMirror(v) },
-    { key: "flip", label: "Flip", icon: "fas fa-arrows-up-down", active: controller.flip, set: (v: boolean) => controller.setFlip(v) },
+  // Two families (per chip-primitives: independent booleans → N × FilterChipBase).
+  // Twins GROW the cast: Mirror/Flip each add a reflected copy of every performer
+  // (×2). Motion modulators change how copies move but add NONE (the count holds).
+  const twinChips = $derived([
+    { key: "mirror", label: "Mirror ×2", icon: "fas fa-arrows-left-right", active: controller.mirror, set: (v: boolean) => controller.setMirror(v) },
+    { key: "flip", label: "Flip ×2", icon: "fas fa-arrows-up-down", active: controller.flip, set: (v: boolean) => controller.setFlip(v) },
+  ]);
+  const motionChips = $derived([
     { key: "invert", label: "Invert", icon: "fas fa-arrows-spin", active: controller.invert, set: (v: boolean) => controller.setInvert(v) },
     { key: "echo", label: "Echo", icon: "fas fa-backward", active: controller.echo, set: (v: boolean) => controller.setEcho(v) },
     { key: "speed", label: "Speed", icon: "fas fa-gauge-high", active: controller.speed, set: (v: boolean) => controller.setSpeed(v) },
   ]);
+
+  // Faint build-up under the big result: one base performer × each active
+  // count-multiplier. Only factors >×1 show, so it reads "1 × 2 copies × 2 mirror".
+  const tunnelFactors = $derived(
+    [
+      controller.fold > 1 ? { x: controller.fold, label: "copies" } : null,
+      controller.mirror ? { x: 2, label: "mirror" } : null,
+      controller.flip ? { x: 2, label: "flip" } : null,
+    ].filter((f): f is { x: number; label: string } => f !== null),
+  );
 
   // ── Mandala rail (same icons + order the bottom dock uses) ──
   const mandalaRail: { id: MandalaRailId; icon?: string; label: string }[] = [
@@ -257,7 +271,7 @@
               aria-checked={controller.activePresetId === p.id}
               onclick={() => controller.applyPreset(p.id)}
             >
-              <i class={p.icon} aria-hidden="true"></i>
+              <PerformerRing config={p.config} size={30} animate={false} />
               <span>{p.name}</span>
             </button>
           {/each}
@@ -272,7 +286,7 @@
                 aria-checked={activeUserId === up.id}
                 onclick={() => controller.applyConfig(up.config)}
               >
-                <i class="fas fa-star" aria-hidden="true"></i>
+                <PerformerRing config={up.config} size={30} animate={false} />
                 <span>{up.name}</span>
               </button>
               <button
@@ -326,9 +340,32 @@
           <i class="fas fa-chevron-left" aria-hidden="true"></i> Presets
         </button>
 
-        <!-- Fold (rotational arms) + a compact Grid icon toggle. -->
+        <!-- Hero: the countable Performer Ring + the big result. One base
+             performer ("you", haloed); every count-builder multiplies it. The
+             faint line under it shows the build-up (1 × 2 copies × 2 mirror). -->
+        <div class="tuner-hero">
+          <PerformerRing config={controller.config} size={104} />
+          <p class="tuner-result">
+            <span class="tr-n">{controller.performerCount}</span>
+            {controller.performerCount === 1 ? "performer" : "performers"}
+            <span class="tr-mid">·</span>
+            <span class="tr-n">{controller.propCount}</span> props
+          </p>
+          {#if tunnelFactors.length}
+            <p class="tuner-build">
+              <span class="tb-seed">1</span>
+              {#each tunnelFactors as f (f.label)}
+                <span class="tb-x">×</span> {f.x} {f.label}
+              {/each}
+            </p>
+          {:else}
+            <p class="tuner-build">just you</p>
+          {/if}
+        </div>
+
+        <!-- Copies (fold) as a ×multiplier of the base performer + Grid toggle. -->
         <div class="prim-row">
-          <span class="row-lbl">Fold</span>
+          <span class="row-lbl">Copies</span>
           <div class="seg-wrap">
             <SegmentedControl
               options={foldSegOptions}
@@ -351,48 +388,63 @@
           </button>
         </div>
 
-        <!-- Boolean primitives. Mirror/Flip add reflection copies; Invert/Echo/
-             Speed modulate alternate arms (no new copies). Full-width in a 2-col
-             grid so they fill evenly (no ragged wrap). -->
-        <div class="prim-chip-grid">
-          {#each toggleChips as chip (chip.key)}
-            <FilterChipBase
-              mode="toggle"
-              size="sm"
-              label={chip.label}
-              icon={chip.icon}
-              active={chip.active}
-              onclick={() => chip.set(!chip.active)}
-            />
-          {/each}
+        <!-- Add twins — each doubles the cast (a reflected copy of every performer). -->
+        <div class="prim-group">
+          <span class="group-lbl">Add twins <span class="group-hint">— each doubles</span></span>
+          <div class="prim-chip-grid">
+            {#each twinChips as chip (chip.key)}
+              <FilterChipBase
+                mode="toggle"
+                size="sm"
+                label={chip.label}
+                icon={chip.icon}
+                active={chip.active}
+                onclick={() => chip.set(!chip.active)}
+              />
+            {/each}
+          </div>
         </div>
 
-        <!-- Stagger (canon offset): arm k shows the sequence k×N steps ahead. A
-             compact stepper — 0 to (sequence length − 1); a full offset wraps. -->
-        <div class="prim-row">
-          <span class="row-lbl">Stagger</span>
-          <div class="stepper">
-            <button
-              type="button"
-              class="step-btn"
-              aria-label="Less stagger"
-              disabled={controller.staggerSteps <= 0}
-              onclick={() => controller.setStagger(controller.staggerSteps - 1)}
-            >
-              <i class="fas fa-minus" aria-hidden="true"></i>
-            </button>
-            <span class="step-val">{controller.staggerSteps}</span>
-            <button
-              type="button"
-              class="step-btn"
-              aria-label="More stagger"
-              disabled={controller.staggerSteps >= controller.staggerMax}
-              onclick={() => controller.setStagger(controller.staggerSteps + 1)}
-            >
-              <i class="fas fa-plus" aria-hidden="true"></i>
-            </button>
+        <!-- Motion — changes how copies move; the count never changes. Stagger
+             (canon offset) lives here: arm k shows the sequence k×N steps ahead. -->
+        <div class="prim-group">
+          <span class="group-lbl">Motion <span class="group-hint">— same count</span></span>
+          <div class="prim-chip-grid">
+            {#each motionChips as chip (chip.key)}
+              <FilterChipBase
+                mode="toggle"
+                size="sm"
+                label={chip.label}
+                icon={chip.icon}
+                active={chip.active}
+                onclick={() => chip.set(!chip.active)}
+              />
+            {/each}
           </div>
-          <span class="prim-count">{controller.propCount} props</span>
+          <div class="prim-row">
+            <span class="row-lbl">Stagger</span>
+            <div class="stepper">
+              <button
+                type="button"
+                class="step-btn"
+                aria-label="Less stagger"
+                disabled={controller.staggerSteps <= 0}
+                onclick={() => controller.setStagger(controller.staggerSteps - 1)}
+              >
+                <i class="fas fa-minus" aria-hidden="true"></i>
+              </button>
+              <span class="step-val">{controller.staggerSteps}</span>
+              <button
+                type="button"
+                class="step-btn"
+                aria-label="More stagger"
+                disabled={controller.staggerSteps >= controller.staggerMax}
+                onclick={() => controller.setStagger(controller.staggerSteps + 1)}
+              >
+                <i class="fas fa-plus" aria-hidden="true"></i>
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Save the current mix as a personal preset (only when it's a genuinely
@@ -803,6 +855,44 @@
     outline: 2px solid var(--theme-accent, #8b5cf6);
     outline-offset: 2px;
   }
+  /* Preset-card mini performer-ring keeps its intrinsic size in the flex row. */
+  .preset-card :global(svg) { flex-shrink: 0; }
+
+  /* Tuner hero: countable performer ring + big result + a faint build-up line
+     (one base performer × each active count-multiplier). */
+  .tuner-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0 8px;
+  }
+  .tuner-result {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+    font-variant-numeric: tabular-nums;
+  }
+  .tuner-result .tr-n { font-weight: 700; color: var(--theme-text, #fff); }
+  .tuner-result .tr-mid { opacity: 0.4; margin: 0 5px; }
+  .tuner-build {
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    font-variant-numeric: tabular-nums;
+  }
+  .tuner-build .tb-seed { color: var(--theme-accent, #c79bff); font-weight: 700; }
+  .tuner-build .tb-x { opacity: 0.5; margin: 0 1px; }
+
+  /* A labeled group of related controls (Add twins / Motion). */
+  .prim-group { display: flex; flex-direction: column; gap: 8px; }
+  .group-lbl {
+    font-size: var(--font-size-compact, 12px);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+  }
+  .group-hint { text-transform: none; letter-spacing: 0; opacity: 0.75; }
 
   .customize-btn {
     display: flex;
