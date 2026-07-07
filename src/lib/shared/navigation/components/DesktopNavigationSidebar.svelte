@@ -1,23 +1,24 @@
 <!-- Desktop Navigation Sidebar -->
-<!-- Modern 2026-style sidebar navigation for desktop in side-by-side layout -->
+<!-- Thin wrapper over @austencloud/sidebar. The package owns the hover-expand
+     overlay shell, the morphing module/section tree, the brand slide-reveal +
+     pin, and the reserved-width behaviour. This wrapper supplies TKA's data and
+     bridges TKA services (i18n, haptics, auth, feature flags, inbox) to the
+     package's DI seam, and reparents TKA's footer + settings + account popover +
+     admin context menu into the package's slots/callbacks. -->
 <script lang="ts">
-  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-import type { HapticFeedback } from "../../application/services/haptic-feedback";
   import { onMount } from "svelte";
-  import { slide, fade } from "svelte/transition";
-  import { openDebugPanel } from "../../application/state/ui/ui-state.svelte";
+  import { fade } from "svelte/transition";
+  import { Sidebar } from "@austencloud/sidebar";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import type { HapticFeedback } from "../../application/services/haptic-feedback";
   import type { ModuleDefinition, Section, ModuleId } from "../domain/types";
   import {
     desktopSidebarState,
-    toggleDesktopSidebarCollapsed,
+    setDesktopSidebarCollapsed,
     initializeDesktopSidebarCollapsedState,
     saveDesktopSidebarCollapsedState,
   } from "../../layout/desktop-sidebar-state.svelte";
-  import { createHoverIntent } from "../services/hover-intent";
-  import { hasOpenDrawers } from "../../foundation/ui/drawer/drawer-stack";
-  import SidebarHeader from "./desktop-sidebar/SidebarHeader.svelte";
   import SidebarFooter from "./desktop-sidebar/SidebarFooter.svelte";
-  import ModuleGroup from "./desktop-sidebar/ModuleGroup.svelte";
   import CollapsedTabButton from "./desktop-sidebar/CollapsedTabButton.svelte";
   import SidebarContextMenu from "./desktop-sidebar/SidebarContextMenu.svelte";
   import type { ContextMenuState } from "./desktop-sidebar/SidebarContextMenu.svelte";
@@ -31,6 +32,8 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
   import { resolveAccessTier } from "../../auth/domain/access-tier";
   import { isTabAccessible } from "../../auth/domain/guest-access-config";
   import { isPremiumOrAbove } from "../../auth/domain/models/user-role";
+  import { inboxState } from "../../inbox/state/inbox-state.svelte";
+  import { prefetchOnIntent } from "../utils/module-prefetch";
   import { t } from "../../i18n/i18n.svelte";
   import { getReactiveLocale } from "../../i18n/locale-state.svelte";
 
@@ -55,243 +58,104 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     isEntryAnimating?: boolean;
   }>();
 
-  // Services
-  let hapticService: HapticFeedback;
+  let hapticService: HapticFeedback | undefined;
 
-  // Reactive locale for re-rendering translations
-  const locale = $derived(getReactiveLocale());
-
-  // Ref to sidebar element
-  let sidebarElement = $state<HTMLElement | null>(null);
-
-  // Track which modules are expanded - initialized empty, synced from currentModule via $effect below
-  let expandedModules = $state<Set<string>>(new Set());
-
-  // Keep expandedModules in sync with currentModule when it changes
-  // This ensures the correct module is expanded after page restoration or external navigation
+  // Pin state is the package's model (rail vs pinned). It is kept in lockstep
+  // with the legacy desktopSidebarState so MainInterface's reserved-width var
+  // (--desktop-sidebar-width = desktopSidebarState.width) keeps working
+  // unchanged. Seeded from storage on mount; persisted on change.
+  let sidebarPinned = $state(false);
   $effect(() => {
-    // When module changes from external source (Dashboard, deep link, etc.),
-    // collapse others and expand only the current module
-    if (currentModule) {
-      expandedModules = new Set([currentModule]);
-    }
+    setDesktopSidebarCollapsed(!sidebarPinned);
+    saveDesktopSidebarCollapsedState(!sidebarPinned);
   });
 
-  // Get collapsed state reactively
-  const isCollapsed = $derived(desktopSidebarState.isCollapsed);
-
-  // Check if we're in settings mode (hides main modules)
   const isInSettings = $derived(navigationState.currentModule === "settings");
 
-  // Check if Create module tutorial is active (hides Create tabs until choice step)
-  // NOTE: The "tka-create-method-selected" key was never set anywhere in the codebase,
-  // causing tabs to be permanently hidden. Since there's no functional tutorial flow,
-  // we now always return true to show tabs. If a Create tutorial is implemented later,
-  // this should use the standard pattern: tka-create-onboarding-completed
-  const hasCompletedCreateTutorial = $derived(() => {
-    return true; // No tutorial implemented - always show tabs
-  });
-
-  // Tutorial is active when in Create module AND tutorial not completed yet
-  // This prevents the flash of tabs on initial load
-  const isCreateTutorialActive = $derived(
-    navigationState.currentModule === "create" && !hasCompletedCreateTutorial()
-  );
-  // No Create tutorial implemented - always show tabs
-  const isOnTutorialChoiceStep = $derived(false);
-
-  // Get filtered settings sections using feature flag service
-  const filteredSettingsSections = $derived(
-    SETTINGS_TABS.filter((section) => {
-      return featureFlagService.canAccessTab("settings", section.id);
-    })
+  const accessTier = $derived(
+    resolveAccessTier(
+      authState.isAuthenticated,
+      authState.isAnonymous,
+      isPremiumOrAbove(authState.role)
+    )
   );
 
-  // --- Hover-expand overlay state (rail mode only) -------------------------
-  // hoverExpanded is a purely VISUAL flag: it widens the sidebar above the
-  // content without touching desktopSidebarState.width (the reserved width).
-  let hoverExpanded = $state(false);
-  let pointerInside = $state(false);
-  let focusInside = $state(false);
-  let hoverCapable = $state(false);
+  // --- Adapters bridging TKA services to the package seam -------------------
+  function onHaptic() {
+    hapticService?.trigger("selection");
+  }
 
-  // What the user SEES (and therefore how the sidebar behaves)
-  const visuallyExpanded = $derived(!isCollapsed || hoverExpanded);
+  function translateLabel(id: string): string {
+    getReactiveLocale(); // re-run on locale change
+    const m = modules.find((x: ModuleDefinition) => x.id === id);
+    return m ? t(m.labelKey) : id;
+  }
 
-  const hoverIntent = createHoverIntent({
-    // Edge-anchored rail: the pointer can't overshoot past it (it's against
-    // the viewport edge), so entering is almost always intentional. Near-zero
-    // open delay makes it feel instant, like Cloudflare's; a tiny 50ms still
-    // filters a fast vertical flick clipping the edge. Close keeps its grace.
-    openDelay: 50,
-    onOpen: () => {
-      hoverExpanded = true;
-    },
-    onClose: () => {
-      hoverExpanded = false;
-    },
-  });
+  function translateSectionLabel(
+    moduleId: string,
+    sectionId: string,
+    fallback: string
+  ): string {
+    getReactiveLocale();
+    const m = modules.find((x: ModuleDefinition) => x.id === moduleId);
+    const s = m?.sections.find((x: Section) => x.id === sectionId);
+    return s ? t(s.labelKey) : fallback;
+  }
 
-  // Context menu state
+  // Role-based access + guest-tier gating (mirrors the old getFilteredSections).
+  function filterSection(moduleId: string, sectionId: string): boolean {
+    return (
+      featureFlagService.canAccessTab(moduleId as ModuleId, sectionId) &&
+      isTabAccessible(moduleId as ModuleId, sectionId, accessTier)
+    );
+  }
+
+  function getBadgeCount(moduleId: string, sectionId?: string): number {
+    if (moduleId === "inbox") {
+      return sectionId ? 0 : inboxState.totalUnreadCount;
+    }
+    if (moduleId === "dashboard" && !sectionId) {
+      return inboxState.unreadNotificationCount;
+    }
+    return 0;
+  }
+
+  function onModuleHover(id: string) {
+    prefetchOnIntent(id);
+  }
+
+  // Package calls with plain strings; TKA's onModuleChange wants ModuleId.
+  function handleModuleChange(moduleId: string, targetSection?: string) {
+    return onModuleChange?.(moduleId as ModuleId, targetSection);
+  }
+
+  // --- Admin context menu (host-rendered) -----------------------------------
   let contextMenuState = $state<ContextMenuState>({ mode: "closed" });
 
-  // Account popover state (rendered outside nav to avoid overflow clipping)
-  let accountPopoverOpen = $state(false);
-  let accountSectionEl = $state<HTMLElement | null>(null);
-
-  // Floating UI anchored to sidebar elements must hold the overlay open —
-  // collapsing under an open menu/popover would orphan its anchor.
-  const holdOpen = $derived(
-    contextMenuState.mode !== "closed" || accountPopoverOpen
-  );
-
-  function handleSidebarPointerEnter() {
-    pointerInside = true;
-    // Drawers (z 400) sit above the sidebar (z 200) anchored at the reserved
-    // edge — expanding underneath one looks broken, so suppress.
-    if (!hoverCapable || !isCollapsed || hasOpenDrawers()) return;
-    hoverIntent.pointerEnter();
-  }
-
-  function handleSidebarPointerLeave(e: PointerEvent) {
-    // Tab clicks navigate, and navigation runs a view transition that lifts a
-    // ::view-transition overlay over the sidebar for a few hundred ms. The
-    // sidebar is now "covered", so the browser fires a pointerleave even though
-    // the cursor never moved off it — then a pointerenter when the overlay
-    // clears. Left unguarded, that closes and instantly reopens the overlay (a
-    // visible flicker). Only treat it as a real leave if the pointer is
-    // actually outside the sidebar's box; a spurious leave reports coordinates
-    // still inside it, so ignore those and keep the overlay open until the
-    // pointer genuinely moves away.
-    const el = sidebarElement;
-    if (el) {
-      const r = el.getBoundingClientRect();
-      const stillInside =
-        e.clientX > r.left &&
-        e.clientX < r.right &&
-        e.clientY > r.top &&
-        e.clientY < r.bottom;
-      if (stillInside) return;
-    }
-    pointerInside = false;
-    if (!hoverExpanded) {
-      hoverIntent.cancel();
-      return;
-    }
-    if (holdOpen) return; // the $effect below re-arms close when guard clears
-    hoverIntent.pointerLeave();
-  }
-
-  function handleSidebarFocusIn() {
-    focusInside = true;
-    if (!isCollapsed) return;
-    // Keyboard users get no intent delay
-    hoverIntent.openNow();
-  }
-
-  function handleSidebarFocusOut(e: FocusEvent) {
-    const next = e.relatedTarget as Node | null;
-    if (next && sidebarElement?.contains(next)) return;
-    focusInside = false;
-    if (pointerInside || holdOpen) return;
-    hoverIntent.closeNow();
-  }
-
-  function handleSidebarKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape" && hoverExpanded) {
-      hoverIntent.closeNow();
-    }
-  }
-
-  // When a hold-open guard clears and both pointer and focus are already
-  // gone, start the close grace so the overlay doesn't hang open forever.
-  // focusInside matters: a keyboard-focus expansion has no pointer inside,
-  // and must not self-close while the user is still tabbing through it.
-  $effect(() => {
-    if (!holdOpen && !pointerInside && !focusInside && hoverExpanded) {
-      hoverIntent.pointerLeave();
-    }
-  });
-
-  // Stuck-open backstop. The element pointerleave above is deliberately
-  // swallowed while a ::view-transition overlay covers the sidebar (so a tab
-  // click doesn't flicker it shut). But if the pointer genuinely moves away
-  // DURING that transition, the covered nav never fires a second leave — the
-  // real exit was already consumed — so hoverExpanded would hang open until the
-  // next enter/leave cycle. While the overlay is open, track the pointer
-  // globally and reconcile pointerInside from its true position; the close
-  // $effect above then re-arms on its own. Heals on the very next move.
-  function reconcilePointerFromMove(e: PointerEvent) {
-    const el = sidebarElement;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const inside =
-      e.clientX >= r.left &&
-      e.clientX <= r.right &&
-      e.clientY >= r.top &&
-      e.clientY <= r.bottom;
-    if (inside === pointerInside) return;
-    pointerInside = inside;
-    if (inside) {
-      hoverIntent.pointerEnter(); // cancel a pending close; overlay already open
-    } else if (!holdOpen && !focusInside) {
-      hoverIntent.pointerLeave(); // start the close grace
-    }
-  }
-
-  $effect(() => {
-    if (!hoverExpanded) return;
-    window.addEventListener("pointermove", reconcilePointerFromMove, {
-      passive: true,
-    });
-    return () =>
-      window.removeEventListener("pointermove", reconcilePointerFromMove);
-  });
-
-  function toggleAccountPopover() {
-    accountPopoverOpen = !accountPopoverOpen;
-  }
-
-  function closeAccountPopover() {
-    accountPopoverOpen = false;
-  }
-
-  function handleModuleContextMenu(e: MouseEvent, moduleId: string) {
-    if (!featureFlagService.isAdmin) return; // Admin-only feature
-    e.preventDefault();
-    const moduleDef = modules.find((m: ModuleDefinition) => m.id === moduleId);
-    if (!moduleDef || !moduleDef.sections.length) return; // No tabs to toggle
+  function openModuleContextMenu(moduleId: string, e: MouseEvent) {
+    const m = modules.find((x: ModuleDefinition) => x.id === moduleId);
+    if (!m || !m.sections.length) return;
     contextMenuState = {
       mode: "module",
       moduleId: moduleId as ModuleId,
-      moduleLabel: moduleDef.label,
+      moduleLabel: m.label,
       x: e.clientX,
       y: e.clientY,
     };
   }
 
-  function handleTabContextMenu(e: MouseEvent, moduleId: string, section: Section) {
-    if (!featureFlagService.isAdmin) return; // Admin-only feature
-    e.preventDefault();
+  function openSectionContextMenu(
+    moduleId: string,
+    sectionId: string,
+    e: MouseEvent
+  ) {
+    const m = modules.find((x: ModuleDefinition) => x.id === moduleId);
+    const s = m?.sections.find((x: Section) => x.id === sectionId);
     contextMenuState = {
       mode: "tab",
       moduleId: moduleId as ModuleId,
-      tabId: section.id,
-      tabLabel: section.label,
-      x: e.clientX,
-      y: e.clientY,
-    };
-  }
-
-  function handleEmptySpaceContextMenu(e: MouseEvent) {
-    if (!featureFlagService.isAdmin) return;
-    // Only trigger if right-clicking on the container itself or empty space,
-    // not on a module button or its children
-    const target = e.target as HTMLElement;
-    if (target.closest(".module-group, button, a")) return;
-    e.preventDefault();
-    contextMenuState = {
-      mode: "modules",
+      tabId: sectionId,
+      tabLabel: s?.label ?? sectionId,
       x: e.clientX,
       y: e.clientY,
     };
@@ -301,72 +165,32 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     contextMenuState = { mode: "closed" };
   }
 
-  function toggleModuleExpansion(moduleId: string) {
-    const newExpanded = new Set(expandedModules);
-    if (newExpanded.has(moduleId)) {
-      newExpanded.delete(moduleId);
-    } else {
-      newExpanded.add(moduleId);
-    }
-    expandedModules = newExpanded;
+  // --- Account popover (rendered outside nav to avoid overflow clipping) -----
+  let accountPopoverOpen = $state(false);
+  let accountSectionEl = $state<HTMLElement | null>(null);
+
+  function toggleAccountPopover() {
+    accountPopoverOpen = !accountPopoverOpen;
   }
 
-  function handleModuleTap(moduleId: string, isDisabled: boolean = false) {
-    // Don't trigger haptic or allow interaction for disabled modules
-    if (isDisabled) {
-      return;
-    }
-
-    hapticService?.trigger("selection");
-
-    // Find the module definition to check if it has sections
-    const moduleDefinition = modules.find(
-      (m: ModuleDefinition) => m.id === moduleId
-    );
-    const hasNoSections = !moduleDefinition?.sections?.length;
-    const isCurrentModule = moduleId === currentModule;
-
-    // If sidebar reads as a rail OR module has no sections, switch directly.
-    // Keyed off VISUAL state: a hover-expanded rail behaves like the
-    // expanded sidebar because that is what the user is looking at.
-    if (!visuallyExpanded || hasNoSections) {
-      // Switch to the clicked module
-      onModuleChange?.(moduleId as ModuleId);
-      // Also expand/collapse the module group
-      if (visuallyExpanded) {
-        toggleModuleExpansion(moduleId);
-      }
-    } else {
-      // Peek, don't navigate: module headers toggle their tab list so the
-      // expanded sidebar is a discovery surface. Navigating here would fire
-      // a view transition that yanks the hover overlay shut mid-browse and
-      // bounce the user to the module's last tab. Tabs are the navigators.
-      toggleModuleExpansion(moduleId);
-    }
+  function closeAccountPopover() {
+    accountPopoverOpen = false;
   }
 
-  async function handleSectionTap(moduleId: string, section: Section) {
-    if (!section.disabled) {
-      hapticService?.trigger("selection");
+  // Keep the hover overlay open while an anchored popover/menu is showing.
+  const heldOpen = $derived(
+    contextMenuState.mode !== "closed" || accountPopoverOpen
+  );
 
-      // Switch to the section's module if we're not already on it
-      // Pass the target section so the correct tab is set immediately
-      if (moduleId !== currentModule) {
-        await onModuleChange?.(moduleId as ModuleId, section.id);
-      } else {
-        // Already in this module, just switch the section
-        onSectionChange?.(section.id);
-      }
-
-      // Ensure the module is expanded after navigation
-      expandedModules = new Set([...expandedModules, moduleId]);
-    }
-  }
+  // --- Settings sub-nav (rendered in the beforeTree slot) -------------------
+  const filteredSettingsSections = $derived(
+    SETTINGS_TABS.filter((section) =>
+      featureFlagService.canAccessTab("settings", section.id)
+    )
+  );
 
   async function handleSettingsTap() {
     hapticService?.trigger("selection");
-
-    // Toggle behavior: if in settings, go back to previous module
     if (navigationState.currentModule === "settings") {
       const previousModule = navigationState.previousModule || "create";
       await onModuleChange?.(previousModule as ModuleId);
@@ -375,166 +199,75 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     }
   }
 
-  function handleToggleCollapse() {
-    hapticService?.trigger("selection");
-    const pinning = desktopSidebarState.isCollapsed; // rail → pinned
-    toggleDesktopSidebarCollapsed();
-    saveDesktopSidebarCollapsedState(desktopSidebarState.isCollapsed);
-    hoverIntent.cancel();
-    // Pinning: visual expansion now comes from !isCollapsed. Unpinning under
-    // the cursor: stay visually open until the pointer leaves (no snap-shut).
-    hoverExpanded = pinning ? false : pointerInside;
-  }
-
-  function handleDebugTap() {
-    hapticService?.trigger("selection");
-    openDebugPanel();
-  }
-
   function handleSettingsSectionTap(section: Section) {
     hapticService?.trigger("selection");
-    // Use onSectionChange to go through navigation coordinator for URL updates
     onSectionChange?.(section.id);
   }
 
-  // Guest tab gating: mirror the expanded sidebar (ModuleGroup.svelte). Role-based
-  // canAccessTab() passes for the guest's implicit "user" role, so without the
-  // guest-config check the collapsed sidebar leaks gated tabs (collections,
-  // creators, hall-of-shame) to guests.
-  const accessTier = $derived(
-    resolveAccessTier(
-      authState.isAuthenticated,
-      authState.isAnonymous,
-      isPremiumOrAbove(authState.role)
-    )
+  // In settings mode the module tree is empty; the settings nav renders in
+  // beforeTree instead.
+  const hostModules = $derived<ModuleDefinition[]>(
+    isInSettings ? [] : modules
   );
 
-  // Filter sections based on module-specific rules (e.g., admin-only tabs)
-  // Uses featureFlagService.canAccessTab() for role-based access control,
-  // plus isTabAccessible() for guest-tier gating (only subtracts for guests).
-  function getFilteredSections(module: ModuleDefinition): Section[] {
-    // Hide Create module tabs during tutorial (until choice step)
-    if (
-      module.id === "create" &&
-      isCreateTutorialActive &&
-      !isOnTutorialChoiceStep
-    ) {
-      return [];
-    }
-
-    return module.sections.filter((section) => {
-      return (
-        featureFlagService.canAccessTab(module.id, section.id) &&
-        isTabAccessible(module.id, section.id, accessTier)
-      );
-    });
-  }
-
   onMount(() => {
-    // Initialize collapsed state from localStorage
-    initializeDesktopSidebarCollapsedState();
-
-    // Initialize services
     hapticService = getHapticFeedback();
-
-    // Hover-expand only for real pointers; convertibles can flip mid-session
-    const hoverMq = window.matchMedia("(hover: hover) and (pointer: fine)");
-    hoverCapable = hoverMq.matches;
-    const onHoverMqChange = (ev: MediaQueryListEvent) => {
-      hoverCapable = ev.matches;
-      if (!ev.matches) hoverIntent.closeNow();
-    };
-    hoverMq.addEventListener("change", onHoverMqChange);
-
-    // Set up ResizeObserver to measure and report sidebar height
-    let resizeObserver: ResizeObserver | null = null;
-    if (sidebarElement) {
-      resizeObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          const height =
-            entry.borderBoxSize?.[0]?.blockSize ?? entry.contentRect.height;
-          onHeightChange?.(height);
-        }
-      });
-      resizeObserver.observe(sidebarElement);
-
-      // Report initial height
-      const initialHeight = sidebarElement.getBoundingClientRect().height;
-      if (initialHeight > 0) {
-        onHeightChange?.(initialHeight);
-      }
-    }
-
-    // Return cleanup function
-    return () => {
-      resizeObserver?.disconnect();
-      hoverMq.removeEventListener("change", onHoverMqChange);
-      hoverIntent.cancel();
-    };
+    initializeDesktopSidebarCollapsedState();
+    sidebarPinned = !desktopSidebarState.isCollapsed;
   });
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-<nav
-  class="desktop-navigation-sidebar"
-  class:collapsed={!visuallyExpanded}
-  class:hover-expanded={hoverExpanded && isCollapsed}
-  class:entry-animating={isEntryAnimating}
-  bind:this={sidebarElement}
-  style="view-transition-name: sidebar"
-  aria-label="Main navigation"
-  onpointerenter={handleSidebarPointerEnter}
-  onpointerleave={handleSidebarPointerLeave}
-  onfocusin={handleSidebarFocusIn}
-  onfocusout={handleSidebarFocusOut}
-  onkeydown={handleSidebarKeydown}
+<Sidebar
+  modules={hostModules}
+  {currentModule}
+  {currentSection}
+  bind:pinned={sidebarPinned}
+  railWidth={desktopSidebarState.collapsedWidth}
+  expandedWidth={desktopSidebarState.expandedWidth}
+  homeHref="/"
+  brandLead="TKA"
+  brandRest=" Composer"
+  onModuleChange={handleModuleChange}
+  {onSectionChange}
+  onModuleContextMenu={featureFlagService.isAdmin ? openModuleContextMenu : undefined}
+  onSectionContextMenu={featureFlagService.isAdmin ? openSectionContextMenu : undefined}
+  {onModuleHover}
+  {onHaptic}
+  {translateLabel}
+  {translateSectionLabel}
+  {filterSection}
+  {getBadgeCount}
+  holdOpen={heldOpen}
+  class={isEntryAnimating ? "tka-sidebar-entry" : ""}
 >
-  <!-- Sidebar Header/Branding -->
-  <SidebarHeader
-    mode={!visuallyExpanded ? "rail" : isCollapsed ? "hover" : "pinned"}
-    onToggleCollapse={handleToggleCollapse}
-  />
-
-  <!-- Unified Navigation Content Container -->
-  <!-- Single container holds both modules and settings tabs - no flexbox recalculation -->
-  <!-- svelte-ignore a11y_no_static_element_interactions -->
-  <div class="navigation-content themed-scrollbar" class:tabs-mode={!visuallyExpanded} onscroll={closeContextMenu} oncontextmenu={handleEmptySpaceContextMenu}>
+  {#snippet beforeTree(expanded)}
     {#if isInSettings}
-      <!-- Settings Content with Back Button Header -->
-      <div
-        class="sidebar-settings-nav"
-        in:slide={{ duration: 250, axis: "y" }}
-        out:slide={{ duration: 200, axis: "y" }}
-      >
-        <!-- Settings Header (expanded only) -->
-        {#if visuallyExpanded}
+      <div class="sidebar-settings-nav">
+        {#if expanded}
           <div class="settings-header">
             <i class="fas fa-cog settings-header-icon" aria-hidden="true"></i>
             <span class="settings-header-text">Settings</span>
           </div>
         {/if}
 
-        <!-- Back Button Header -->
         <button
           class="settings-back-button"
-          class:collapsed={!visuallyExpanded}
+          class:collapsed={!expanded}
           onclick={handleSettingsTap}
           aria-label="Back to modules"
         >
           <div class="back-icon">
             <i class="fas fa-arrow-left" aria-hidden="true"></i>
           </div>
-          {#if visuallyExpanded}
+          {#if expanded}
             <span class="back-label">Back</span>
           {/if}
         </button>
 
-        {#if !visuallyExpanded}
-          <!-- Collapsed Settings Tabs -->
+        {#if !expanded}
           <div class="collapsed-settings-tabs">
             {#each filteredSettingsSections as section, index}
-              {@const isSectionActive =
-                navigationState.activeTab === section.id}
+              {@const isSectionActive = navigationState.activeTab === section.id}
               <div in:fade={{ duration: 150, delay: index * 25 }}>
                 <CollapsedTabButton
                   {section}
@@ -546,11 +279,9 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
             {/each}
           </div>
         {:else}
-          <!-- Expanded Settings Tabs -->
           <div class="settings-sections">
             {#each filteredSettingsSections as section, index}
-              {@const isSectionActive =
-                navigationState.activeTab === section.id}
+              {@const isSectionActive = navigationState.activeTab === section.id}
               <button
                 class="section-button"
                 class:active={isSectionActive}
@@ -565,66 +296,22 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
           </div>
         {/if}
       </div>
-    {:else}
-      <!-- Modules List -->
-      <div
-        class="modules-content"
-        in:slide={{ duration: 250, axis: "y" }}
-        out:slide={{ duration: 200, axis: "y" }}
-      >
-        <!-- One morphing tree for BOTH rail and expanded (2026-07-06 sidebar-
-             tree-unification spec). Each ModuleGroup renders its own tabs and
-             morphs them on isCollapsed — no separate activity-bar rail, so the
-             tab inset slides instead of snapping and multi-expand heights agree
-             by construction. -->
-        {#each modules.filter((m: ModuleDefinition) => m.isMain) as module}
-          {@const isExpanded = expandedModules.has(module.id)}
-          {@const moduleColor = module.color || "#a855f7"}
-          {@const filteredSections = getFilteredSections(module)}
-          {@const isCreateOnChoiceStep =
-            module.id === "create" && isOnTutorialChoiceStep}
-          {@const shouldCelebrate =
-            isCreateOnChoiceStep && filteredSections.length > 0}
-          {@const isCreateInTutorial =
-            module.id === "create" &&
-            isCreateTutorialActive &&
-            !isOnTutorialChoiceStep}
-          {@const forceActiveStyleLocal = isCreateInTutorial}
-
-          <ModuleGroup
-            module={{ ...module, sections: filteredSections }}
-            {currentModule}
-            {currentSection}
-            {isExpanded}
-            isCollapsed={!visuallyExpanded}
-            {moduleColor}
-            onModuleClick={handleModuleTap}
-            onSectionClick={handleSectionTap}
-            onModuleContextMenu={handleModuleContextMenu}
-            onSectionContextMenu={handleTabContextMenu}
-            celebrateAppearance={shouldCelebrate}
-            forceActiveStyle={forceActiveStyleLocal}
-          />
-        {/each}
-      </div>
     {/if}
-  </div>
+  {/snippet}
 
-  <!-- Sidebar Footer - settings, inbox, version -->
-  <SidebarFooter
-    isCollapsed={!visuallyExpanded}
-    {isInSettings}
-    onSettingsClick={handleSettingsTap}
-    onAccountClick={toggleAccountPopover}
-    bind:accountSectionElement={accountSectionEl}
-  />
+  {#snippet footer(expanded)}
+    <SidebarFooter
+      isCollapsed={!expanded}
+      {isInSettings}
+      onSettingsClick={handleSettingsTap}
+      onAccountClick={toggleAccountPopover}
+      bind:accountSectionElement={accountSectionEl}
+    />
+  {/snippet}
+</Sidebar>
 
-</nav>
-
-<!-- Context menu rendered outside nav to avoid overflow: hidden clipping -->
+<!-- Context menu + account popover rendered outside the nav (overflow clipping) -->
 <SidebarContextMenu menuState={contextMenuState} onClose={closeContextMenu} />
-
-<!-- Account popover rendered outside nav to avoid overflow: hidden clipping -->
 <AccountPopover
   isOpen={accountPopoverOpen}
   onClose={closeAccountPopover}
@@ -633,96 +320,12 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
 
 <style>
   /* ============================================================================
-     DESKTOP NAVIGATION SIDEBAR - 2026 MODERN DESIGN
+     SETTINGS SUB-NAV (rendered via the package's beforeTree slot)
      ============================================================================ */
-  .desktop-navigation-sidebar {
-    position: fixed;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 220px;
-    display: flex;
-    flex-direction: column;
-    background: var(--theme-panel-bg);
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
-    border-right: 1px solid var(--theme-stroke);
-    z-index: var(--z-sidebar);
-    overflow: hidden;
-    transition:
-      width var(--duration-emphasis, 280ms)
-        var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
-      box-shadow var(--duration-emphasis, 280ms)
-        var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
-      top 0.2s ease;
-
-    /* Completely exclude from view transitions */
-    view-transition-name: none;
-
-    /* Safe area support */
-    padding-left: env(safe-area-inset-left);
-  }
-
-  .desktop-navigation-sidebar.collapsed {
-    width: 64px;
-  }
-
-  /* Hover-expanded overlay (rail mode): floats above content, so it gets
-     elevation. Width comes from the base rule (collapsed class is absent). */
-  .desktop-navigation-sidebar.hover-expanded {
-    box-shadow: 24px 0 48px -12px rgba(0, 0, 0, 0.45);
-    border-right-color: var(--theme-stroke-strong, var(--theme-stroke));
-  }
-
-  /* ============================================================================
-     UNIFIED NAVIGATION CONTENT CONTAINER
-     ============================================================================ */
-  .navigation-content {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding: 16px 8px;
-    position: relative;
-    /* Width tracks the animating nav (no fixed-220 pin). The module icons are
-       left-anchored by their fixed 44px column, so they hold x=32 regardless
-       of content width — no pin needed. A fixed 220px here made this flex
-       child wider than the nav near the animation tail, and the flex cross-
-       axis algorithm nudged it a few px left for a frame: the whole module
-       stack sprang. Letting it track the nav keeps its left edge at 0. */
-
-    /* Enable container queries for responsive sizing */
-    container-type: inline-size;
-    container-name: nav-content;
-  }
-
-  /* Rail mode. Width is NOT pinned here — the box flex-fills the nav so it
-       tracks the animating width in BOTH directions (the module/tab morph stays
-       smooth on collapse, not just expand). At rest the nav is 64px so this is
-       64px, same as before. */
-  .navigation-content.tabs-mode {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 16px 8px;
-    /* Hide the scrollbar in rail mode (wheel/keys still scroll): a visible
-       bar eats 10px of the 64px rail and shifts the centered icon column
-       off the x=32 anchor. */
-    scrollbar-width: none;
-  }
-
-  .navigation-content.tabs-mode::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Inner content wrappers for transition targeting */
-  .modules-content,
   .sidebar-settings-nav {
     width: 100%;
   }
 
-  /* ============================================================================
-     SETTINGS BACK BUTTON (at top of settings content)
-     ============================================================================ */
   .settings-back-button {
     width: 100%;
     display: flex;
@@ -789,9 +392,6 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     outline-offset: 2px;
   }
 
-  /* ============================================================================
-     SETTINGS HEADER
-     ============================================================================ */
   .settings-header {
     display: flex;
     align-items: center;
@@ -813,9 +413,6 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     flex: 1;
   }
 
-  /* ============================================================================
-     SETTINGS SECTIONS (within unified container)
-     ============================================================================ */
   .settings-sections {
     display: flex;
     flex-direction: column;
@@ -824,7 +421,7 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
 
   .section-button {
     width: 100%;
-    min-height: var(--min-touch-target); /* WCAG touch target minimum */
+    min-height: var(--min-touch-target);
     display: flex;
     align-items: center;
     gap: clamp(10px, 6cqw, 14px);
@@ -879,23 +476,9 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
 
   .section-label {
     flex: 1;
-
-    /* Delayed fade-in animation when sidebar expands (Google Calendar-style) */
     animation: label-fade-in var(--duration-normal) ease-out var(--duration-fast) both;
   }
 
-  @keyframes label-fade-in {
-    from {
-      opacity: 0;
-      transform: translateX(-4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
-  }
-
-  /* Collapsed settings tabs */
   .collapsed-settings-tabs {
     width: 100%;
     display: flex;
@@ -909,17 +492,10 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     outline-offset: 2px;
   }
 
-  /* ============================================================================
-     ENTRY ANIMATION - Choreographed slide-in after first-run wizard
-     ============================================================================ */
-  .desktop-navigation-sidebar.entry-animating {
-    animation: sidebar-slide-in 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-
-  @keyframes sidebar-slide-in {
+  @keyframes label-fade-in {
     from {
       opacity: 0;
-      transform: translateX(-220px);
+      transform: translateX(-4px);
     }
     to {
       opacity: 1;
@@ -927,27 +503,16 @@ import type { HapticFeedback } from "../../application/services/haptic-feedback"
     }
   }
 
-  /* ============================================================================
-     ANIMATIONS & TRANSITIONS
-     ============================================================================ */
   @media (prefers-reduced-motion: reduce) {
-    .desktop-navigation-sidebar * {
+    .settings-back-button,
+    .back-icon,
+    .section-button,
+    .section-icon {
       transition: none !important;
-      animation: none !important;
     }
-
-    .desktop-navigation-sidebar.entry-animating {
+    .back-label,
+    .section-label {
       animation: none;
-    }
-  }
-
-  /* ============================================================================
-     ACCESSIBILITY
-     ============================================================================ */
-  @media (prefers-contrast: high) {
-    .desktop-navigation-sidebar {
-      background: rgba(0, 0, 0, 0.95);
-      border-right: 2px solid white;
     }
   }
 </style>

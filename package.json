@@ -254,6 +254,7 @@
     "@austencloud/backgrounds": "^0.6.5",
     "@austencloud/camera-3d": "workspace:*",
     "@austencloud/chip-toggle": "^0.1.0",
+    "@austencloud/sidebar": "file:../shared-packages/packages/sidebar",
     "@austencloud/media-spotlight": "^1.0.2",
     "@austencloud/media-tagging-firebase": "^0.1.0",
     "@austencloud/media-tagging-types": "^0.1.0",
