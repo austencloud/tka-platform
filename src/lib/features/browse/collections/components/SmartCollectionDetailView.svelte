@@ -208,7 +208,11 @@ header; "Edit rule" reopens the builder to change it.
 
 	<div class="detail-body">
 		{#if engine}
-			<BrowsePanel {engine} layout="compact" />
+			<!-- Read-only: the rule is shown as chips in the header and edited via
+			     "Edit rule". Hiding BrowsePanel's toolbar + filter bar stops the
+			     rule from being mutated in place (which would silently diverge from
+			     the saved rule) and drops the duplicate filter chips. -->
+			<BrowsePanel {engine} layout="compact" showToolbar={false} showFilterBar={false} />
 		{/if}
 	</div>
 </div>
