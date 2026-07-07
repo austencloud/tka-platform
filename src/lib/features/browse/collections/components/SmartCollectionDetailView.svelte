@@ -76,6 +76,10 @@ header; "Edit rule" reopens the builder to change it.
 					persistKey: null,
 					initialSource: s.source,
 					minColumns: 2,
+					// Group into sections (letters / dates / levels per the rule's
+					// sort) so the section-index rail populates and the grid renders
+					// its headers — the read-only nav the rule view keeps.
+					sections: true,
 				});
 				applySpecToEngine(engine, s);
 				void engine.initialize();
@@ -211,8 +215,16 @@ header; "Edit rule" reopens the builder to change it.
 			<!-- Read-only: the rule is shown as chips in the header and edited via
 			     "Edit rule". Hiding BrowsePanel's toolbar + filter bar stops the
 			     rule from being mutated in place (which would silently diverge from
-			     the saved rule) and drops the duplicate filter chips. -->
-			<BrowsePanel {engine} layout="compact" showToolbar={false} showFilterBar={false} />
+			     the saved rule) and drops the duplicate filter chips. The section
+			     rail stays on — it's read-only navigation (jump to letter / date /
+			     level), not rule mutation. -->
+			<BrowsePanel
+				{engine}
+				layout="compact"
+				showToolbar={false}
+				showFilterBar={false}
+				showSidebar={true}
+			/>
 		{/if}
 	</div>
 </div>
