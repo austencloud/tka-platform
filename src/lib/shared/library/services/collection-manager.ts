@@ -168,7 +168,8 @@ export async function createUserCollection(
  */
 export async function createSmartUserCollection(
   name: string,
-  filterSpec: SmartFilterSpec
+  filterSpec: SmartFilterSpec,
+  initialCount = 0
 ): Promise<LibraryCollection> {
   const firestore = await getFirestoreInstance();
   const userId = getAuthenticatedUserId();
@@ -176,6 +177,7 @@ export async function createSmartUserCollection(
 
   const newCollection = createSmartCollectionModel(name, userId, filterSpec, {
     sortOrder: Date.now(),
+    sequenceCount: initialCount,
   });
 
   const docRef = doc(firestore, getUserCollectionPath(userId, collectionId));
@@ -212,13 +214,21 @@ export async function createSmartUserCollection(
  */
 export async function updateCollectionFilterSpec(
   collectionId: string,
-  filterSpec: SmartFilterSpec
+  filterSpec: SmartFilterSpec,
+  matchCount?: number
 ): Promise<void> {
   const firestore = await getFirestoreInstance();
   const userId = getAuthenticatedUserId();
   const docRef = doc(firestore, getUserCollectionPath(userId, collectionId));
   try {
-    await updateDoc(docRef, { filterSpec, updatedAt: serverTimestamp() });
+    const patch: Record<string, unknown> = {
+      filterSpec,
+      updatedAt: serverTimestamp(),
+    };
+    // Restamp the cached count when the caller knows the new rule's live match
+    // count (the builder does). Keeps the rail card honest right after an edit.
+    if (typeof matchCount === "number") patch["sequenceCount"] = matchCount;
+    await updateDoc(docRef, patch);
   } catch (error) {
     console.error("[CollectionManager] Failed to update filter rule:", error);
     toast.error("Failed to update the rule. Please try again.");
@@ -226,6 +236,31 @@ export async function updateCollectionFilterSpec(
       "Failed to update filter rule",
       "NETWORK",
       collectionId
+    );
+  }
+}
+
+/**
+ * Restamp a Smart Collection's cached `sequenceCount` to a freshly-derived live
+ * match count. Best-effort self-heal for the rail preview: the detail view
+ * calls this once its ephemeral engine finishes loading, so counts stamped
+ * stale (e.g. legacy smart docs created at 0, or drift as the community pool
+ * grows) correct themselves the next time the collection is opened. Silent on
+ * failure — a preview count is not worth a toast.
+ */
+export async function syncSmartCollectionCount(
+  collectionId: string,
+  matchCount: number
+): Promise<void> {
+  try {
+    const firestore = await getFirestoreInstance();
+    const userId = getAuthenticatedUserId();
+    const docRef = doc(firestore, getUserCollectionPath(userId, collectionId));
+    await updateDoc(docRef, { sequenceCount: matchCount });
+  } catch (error) {
+    console.warn(
+      "[CollectionManager] Failed to sync smart collection count:",
+      error
     );
   }
 }

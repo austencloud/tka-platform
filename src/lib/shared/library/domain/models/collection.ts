@@ -183,6 +183,12 @@ export interface CreateCollectionOptions {
   icon?: string;
   isPublic?: boolean;
   sortOrder?: number;
+  /**
+   * Cached member count. Manual collections start at 0 (members added later);
+   * a Smart Collection stamps its live match count at creation so the rail
+   * card reads correctly before the detail view is ever opened.
+   */
+  sequenceCount?: number;
 }
 
 /**
@@ -229,7 +235,7 @@ export function createSmartCollectionModel(
     ownerId,
     description: options.description,
     sequenceIds: [],
-    sequenceCount: 0,
+    sequenceCount: options.sequenceCount ?? 0,
     coverImageUrl: options.coverImageUrl,
     color: options.color,
     icon: options.icon ?? "fa-wand-magic-sparkles",

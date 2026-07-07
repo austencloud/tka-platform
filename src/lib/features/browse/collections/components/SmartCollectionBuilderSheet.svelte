@@ -103,11 +103,12 @@ browse engine so every filter the gallery offers is available here for free.
 		if (saving) return;
 		saving = true;
 		const spec = buildFilterSpecFromEngine(engine);
+		const matchCount = engine.resultCount;
 		let ok = false;
 		if (mode === "edit" && editCollectionId) {
-			ok = await collectionsState.updateFilterSpec(editCollectionId, spec);
+			ok = await collectionsState.updateFilterSpec(editCollectionId, spec, matchCount);
 		} else {
-			ok = !!(await collectionsState.createSmart(trimmed, spec));
+			ok = !!(await collectionsState.createSmart(trimmed, spec, matchCount));
 		}
 		saving = false;
 		if (ok) {

@@ -10,6 +10,7 @@ import {
 	createUserCollection,
 	createSmartUserCollection,
 	updateCollectionFilterSpec,
+	syncSmartCollectionCount,
 	ensureSystemCollections,
 	updateCollection,
 	deleteCollection,
@@ -133,6 +134,7 @@ class CollectionsState {
 	async createSmart(
 		name: string,
 		filterSpec: SmartFilterSpec,
+		initialCount = 0,
 	): Promise<LibraryCollection | null> {
 		const trimmed = name.trim();
 		if (!trimmed) return null;
@@ -144,25 +146,36 @@ class CollectionsState {
 		}
 
 		try {
-			return await createSmartUserCollection(trimmed, filterSpec);
+			return await createSmartUserCollection(trimmed, filterSpec, initialCount);
 		} catch {
 			return null; // manager already toasted
 		}
 	}
 
 	/**
-	 * Replace a Smart Collection's rule (Edit rule). Returns false on failure.
+	 * Replace a Smart Collection's rule (Edit rule). Pass the new rule's live
+	 * match count so the cached preview restamps. Returns false on failure.
 	 */
 	async updateFilterSpec(
 		collectionId: string,
 		filterSpec: SmartFilterSpec,
+		matchCount?: number,
 	): Promise<boolean> {
 		try {
-			await updateCollectionFilterSpec(collectionId, filterSpec);
+			await updateCollectionFilterSpec(collectionId, filterSpec, matchCount);
 			return true;
 		} catch {
 			return false; // manager already toasted
 		}
+	}
+
+	/**
+	 * Best-effort restamp of a Smart Collection's cached count from a freshly
+	 * derived live count (the detail view calls this once its engine loads).
+	 * Silent on failure.
+	 */
+	async syncSmartCount(collectionId: string, matchCount: number): Promise<void> {
+		await syncSmartCollectionCount(collectionId, matchCount);
 	}
 
 	/**

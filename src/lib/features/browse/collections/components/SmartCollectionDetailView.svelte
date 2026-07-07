@@ -102,6 +102,22 @@ header; "Edit rule" reopens the builder to change it.
 		});
 	});
 
+	// Self-heal the rail's cached count: once the engine finishes loading, the
+	// live match count is authoritative. If the cached `sequenceCount` differs
+	// (legacy smart docs stamped 0, or drift as the community pool grows), write
+	// the fresh count back so the collection card reads correctly next time.
+	// Best-effort; the subscribe above delivers the corrected doc, so the guard
+	// prevents a re-write loop.
+	$effect(() => {
+		const eng = engine;
+		const col = collection;
+		if (!eng || !col || eng.isLoading) return;
+		const live = eng.resultCount;
+		if (live !== col.sequenceCount) {
+			void collectionsState.syncSmartCount(col.id, live);
+		}
+	});
+
 	// ── Open a sequence in the viewer (same path as AllLibraryView) ─────────
 	const pickerState = getVariationPickerState();
 
