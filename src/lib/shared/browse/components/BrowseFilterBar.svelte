@@ -11,6 +11,7 @@ Reads from / writes to a headless BrowseEngine instance.
   import LevelFilterChip from "$lib/shared/browse/components/filter-chips/LevelFilterChip.svelte";
   import FavoritesFilterChip from "$lib/shared/browse/components/filter-chips/FavoritesFilterChip.svelte";
   import LengthFilterChip from "$lib/shared/browse/components/filter-chips/LengthFilterChip.svelte";
+  import MaxTurnIntensityFilterChip from "$lib/shared/browse/components/filter-chips/MaxTurnIntensityFilterChip.svelte";
   import LOOPFilterChip from "$lib/shared/browse/components/filter-chips/LOOPFilterChip.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { BrowseEngine } from "../engine/types";
@@ -67,6 +68,11 @@ Reads from / writes to a headless BrowseEngine instance.
     return f?.locked ?? false;
   });
 
+  const activeMaxTurnIntensity = $derived.by(() => {
+    const f = engine.activeFilters.get("max_turn_intensity");
+    return f && !f.locked ? (f.value as number) : null;
+  });
+
   // Loop filters live under composite keys ("cap_type:<value>") so several can
   // stack — find by type, not by key. The dropdown shows the first (its
   // single-select semantics replace all loop filters on change).
@@ -97,6 +103,18 @@ Reads from / writes to a headless BrowseEngine instance.
     hapticService?.trigger("selection");
     if (length == null) engine.removeFilter("length");
     else engine.addFilter(BrowseFilterType.LENGTH, length, `${length} beats`, "#f59e0b");
+  }
+
+  function handleMaxTurnIntensitySelect(intensity: number | null) {
+    hapticService?.trigger("selection");
+    if (intensity == null) engine.removeFilter("max_turn_intensity");
+    else
+      engine.addFilter(
+        BrowseFilterType.MAX_TURN_INTENSITY,
+        intensity,
+        `≤${intensity} turns`,
+        "var(--semantic-success)"
+      );
   }
 
   function handleLoopSelect(value: string | null) {
@@ -190,6 +208,15 @@ Reads from / writes to a headless BrowseEngine instance.
           activeLength={activeLength}
           availableLengths={engine.availableLengths as number[]}
           onSelect={handleLengthSelect}
+          getFilteredCount={engine.getFilteredCount.bind(engine)}
+        />
+      {/if}
+
+      {#if !isHandsMode}
+        <MaxTurnIntensityFilterChip
+          activeIntensity={activeMaxTurnIntensity}
+          availableIntensities={engine.availableMaxTurnIntensities as number[]}
+          onSelect={handleMaxTurnIntensitySelect}
           getFilteredCount={engine.getFilteredCount.bind(engine)}
         />
       {/if}
