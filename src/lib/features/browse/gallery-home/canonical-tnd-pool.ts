@@ -19,6 +19,10 @@ import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
 import { resolveTnDFamilyCards } from "$lib/features/lab/vtg-lab/services/resolve-tnd-family-cards";
 import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 
+/** Reserved author for the defined T&D alphabet, so it is filterable and
+ *  isolatable from user-submitted community sequences. */
+export const CANONICAL_TND_AUTHOR = "T&D Alphabet";
+
 /** The day the Timing & Direction system was conceived. */
 const TND_BIRTHDAY = new Date("2022-03-27T00:00:00Z");
 
@@ -60,6 +64,7 @@ async function resolvePool(): Promise<readonly SequenceData[]> {
             // byTurn variants share the seed's id — tag per combo so engine
             // dedupe and the (word, id)-keyed thumbnail cache see 49 sequences.
             id: `${matrix.seedId}__t_${safeTurn(pattern)}`,
+            author: CANONICAL_TND_AUTHOR,
             dateAdded: TND_BIRTHDAY,
             birthday: TND_BIRTHDAY,
             // Same calculator that prints the card's difficulty badge — stored
