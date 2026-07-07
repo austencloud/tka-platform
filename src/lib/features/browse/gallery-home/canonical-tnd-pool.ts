@@ -18,6 +18,7 @@ import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequenc
 import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
 import { resolveTnDFamilyCards } from "$lib/features/lab/vtg-lab/services/resolve-tnd-family-cards";
 import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
+import { processReversals } from "$lib/shared/create/services/reversal-detector";
 
 /** Reserved author for the defined T&D alphabet, so it is filterable and
  *  isolatable from user-submitted community sequences. */
@@ -59,20 +60,25 @@ async function resolvePool(): Promise<readonly SequenceData[]> {
     const matrices = await resolveTnDFamilyCards(element.familyId);
     for (const matrix of matrices) {
       for (const [pattern, seq] of matrix.byTurn) {
-        out.push(
-          updateSequenceData(seq, {
-            // byTurn variants share the seed's id — tag per combo so engine
-            // dedupe and the (word, id)-keyed thumbnail cache see 49 sequences.
-            id: `${matrix.seedId}__t_${safeTurn(pattern)}`,
-            author: CANONICAL_TND_AUTHOR,
-            dateAdded: TND_BIRTHDAY,
-            birthday: TND_BIRTHDAY,
-            // Same calculator that prints the card's difficulty badge — stored
-            // level and printed badge can never disagree. Whole turns resolve
-            // radial (level 2); half turns end non-radial (level 3).
-            level: calculateDifficultyLevel([...(seq.steps ?? [])]),
-          }),
-        );
+        const tagged = updateSequenceData(seq, {
+          // byTurn variants share the seed's id — tag per combo so engine
+          // dedupe and the (word, id)-keyed thumbnail cache see 49 sequences.
+          id: `${matrix.seedId}__t_${safeTurn(pattern)}`,
+          author: CANONICAL_TND_AUTHOR,
+          dateAdded: TND_BIRTHDAY,
+          birthday: TND_BIRTHDAY,
+          // Same calculator that prints the card's difficulty badge — stored
+          // level and printed badge can never disagree. Whole turns resolve
+          // radial (level 2); half turns end non-radial (level 3).
+          level: calculateDifficultyLevel([...(seq.steps ?? [])]),
+        });
+        // Re-derive reversal dots from the turn-applied motions. The canonical
+        // display policy re-derives reversal flags on every hydrate, but these
+        // pool sequences bypass the hydrate pipeline and the viewer trusts baked
+        // flags (getStepData returns steps verbatim). Without this a continuous
+        // card (all pro cw, zero reversals) renders spurious dots from stale
+        // seed flags.
+        out.push(processReversals(tagged));
       }
     }
   }
