@@ -29,7 +29,15 @@ export interface DeckMetadata {
 /**
  * System collection types - auto-created, cannot be deleted
  */
-export type SystemCollectionType = "favorites";
+/** System collection types that are AUTO-SEEDED as singleton docs (Favorites).
+ *  These are the keys of SYSTEM_COLLECTION_IDS / SYSTEM_COLLECTION_CONFIG. */
+export type SeededSystemCollectionType = "favorites";
+
+/** All system-collection markers carried on `LibraryCollection.systemType`.
+ *  "founding" marks config-defined founding collections (TKA 1/2/3) for
+ *  display/gating; it is NOT seeded, so it is intentionally excluded from the
+ *  seeded Records below. */
+export type SystemCollectionType = SeededSystemCollectionType | "founding";
 
 /** A Smart Collection's rule targets one of these pools. */
 export type SmartCollectionSource = "community" | "my-library";
@@ -71,7 +79,7 @@ export const SYSTEM_COLLECTION_IDS = {
  * System collection configurations
  */
 export const SYSTEM_COLLECTION_CONFIG: Record<
-  SystemCollectionType,
+  SeededSystemCollectionType,
   {
     name: string;
     icon: string;
@@ -301,7 +309,7 @@ export function removeSequenceFromCollection(
  * Uses deterministic ID and pre-configured settings
  */
 export function createSystemCollection(
-  type: SystemCollectionType,
+  type: SeededSystemCollectionType,
   ownerId: string
 ): LibraryCollection {
   const config = SYSTEM_COLLECTION_CONFIG[type];

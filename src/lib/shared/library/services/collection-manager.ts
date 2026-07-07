@@ -28,6 +28,7 @@ import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type {
   LibraryCollection,
   SystemCollectionType,
+  SeededSystemCollectionType,
 } from "$lib/shared/library/domain/models/collection";
 import {
   createCollection,
@@ -62,7 +63,7 @@ export async function ensureSystemCollections(): Promise<void> {
   const firestore = await getFirestoreInstance();
   const userId = getAuthenticatedUserId();
 
-  const systemTypes: SystemCollectionType[] = ["favorites"];
+  const systemTypes: SeededSystemCollectionType[] = ["favorites"];
 
   for (const type of systemTypes) {
     const collectionId = SYSTEM_COLLECTION_IDS[type];
@@ -84,7 +85,7 @@ export async function ensureSystemCollections(): Promise<void> {
 }
 
 export async function getSystemCollection(
-  type: SystemCollectionType
+  type: SeededSystemCollectionType
 ): Promise<LibraryCollection> {
   const firestore = await getFirestoreInstance();
   const userId = getAuthenticatedUserId();
