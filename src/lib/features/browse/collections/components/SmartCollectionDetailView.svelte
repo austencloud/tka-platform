@@ -31,6 +31,11 @@ header; "Edit rule" reopens the builder to change it.
 	} from "../../shared/state/variation-picker-state.svelte";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
 	import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
+	import {
+		isFoundingId,
+		getFoundingCollection,
+		toSyntheticCollection,
+	} from "$lib/features/browse/collections/config/founding-collections";
 
 	let {
 		collectionId,
@@ -44,6 +49,7 @@ header; "Edit rule" reopens the builder to change it.
 
 	let collection = $state<LibraryCollection | null>(null);
 
+	const isFounding = $derived(!!collection && isFoundingId(collection.id));
 	const tileColor = $derived(collection?.color ?? "var(--theme-accent)");
 	const spec = $derived(collection?.filterSpec ?? null);
 	const sourceLabel = $derived(spec?.source === "my-library" ? "My Library" : "Community");
@@ -57,6 +63,17 @@ header; "Edit rule" reopens the builder to change it.
 	$effect(() => {
 		const id = collectionId;
 		collection = null;
+
+		// Founding collections are config-defined, not Firestore docs.
+		if (isFoundingId(id)) {
+			const founding = getFoundingCollection(id);
+			if (!founding) {
+				onBack();
+				return;
+			}
+			collection = toSyntheticCollection(founding);
+			return; // no subscription to tear down
+		}
 
 		const unsubscribe = subscribeToCollection(id, (col) => {
 			if (!col || col.kind !== "smart") {
@@ -112,6 +129,7 @@ header; "Edit rule" reopens the builder to change it.
 		const eng = engine;
 		const col = collection;
 		if (!eng || !col || eng.isLoading) return;
+		if (isFoundingId(col.id)) return; // config-defined, nothing to write
 		const live = eng.resultCount;
 		if (live !== col.sequenceCount) {
 			void collectionsState.syncSmartCount(col.id, live);
@@ -231,7 +249,7 @@ header; "Edit rule" reopens the builder to change it.
 			</div>
 		{/if}
 
-		{#if collection && !renaming}
+		{#if collection && !renaming && !isFounding}
 			<button type="button" class="edit-btn" onclick={() => (editOpen = true)}>
 				<i class="fas fa-sliders" aria-hidden="true"></i>
 				<span>Edit rule</span>
