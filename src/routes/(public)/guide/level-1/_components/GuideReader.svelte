@@ -62,6 +62,11 @@
   // Nearest-to-viewport-centre page becomes the active (highlighted) one, and
   // the raw scrollTop is persisted so a remount/reload can restore it.
   let scrollRaf = 0;
+  // True while restoreScroll() is re-applying the saved position across frames.
+  // The programmatic scroll fires onScroll, so persisting during restore would
+  // overwrite the saved target with an intermediate (clamped) value before the
+  // layout finishes settling — the exact bug that made restore land short.
+  let restoring = false;
   function onScroll() {
     if (scrollRaf) return;
     scrollRaf = requestAnimationFrame(() => {
@@ -80,6 +85,7 @@
         }
       });
       if (best !== activeIndex) activeIndex = best;
+      if (restoring) return; // don't clobber the saved target mid-restore
       try {
         sessionStorage.setItem(SCROLL_KEY, String(docWrap.scrollTop));
       } catch {
@@ -106,19 +112,57 @@
     scale = Math.max(0.1, Math.min(w / PAGE_W, h / PAGE_H));
   }
 
+  // Restore the saved scroll position. fit()'s scale (and the ResizeObserver's
+  // later correction) set the page heights, so the scrollable height keeps
+  // growing for a few frames after mount; a one-shot scrollTo clamps to the
+  // pre-layout height and lands short. Re-apply the target each frame until it
+  // sticks (or the content is genuinely shorter than the saved offset), holding
+  // `restoring` so onScroll doesn't persist an intermediate value over it.
   function restoreScroll() {
     if (!docWrap) return;
-    let saved = 0;
+    let target = 0;
     try {
-      saved = Number(sessionStorage.getItem(SCROLL_KEY) ?? 0);
+      target = Number(sessionStorage.getItem(SCROLL_KEY) ?? 0);
     } catch {
       return;
     }
-    if (Number.isFinite(saved) && saved > 0) {
-      // Instant (not smooth) so a remount lands exactly where it left off; the
-      // scroll handler then re-derives activeIndex from the restored position.
-      docWrap.scrollTo({ top: saved, behavior: "auto" });
-    }
+    if (!(Number.isFinite(target) && target > 0)) return;
+
+    restoring = true;
+    let attempts = 0;
+    let lastHeight = -1;
+    let stableFrames = 0;
+    const apply = () => {
+      if (!docWrap) {
+        restoring = false;
+        return;
+      }
+      const scrollHeight = docWrap.scrollHeight;
+      docWrap.scrollTo({ top: target, behavior: "auto" });
+      attempts += 1;
+
+      // Reached the saved offset exactly — done.
+      if (Math.abs(docWrap.scrollTop - target) <= 2) {
+        restoring = false;
+        return;
+      }
+      // Track whether the document height has stopped growing. Early frames
+      // clamp scrollTop to a shorter, still-laying-out height; only once the
+      // height holds steady across a few frames AND still can't reach the
+      // target do we accept the clamp (the content is genuinely shorter now).
+      if (scrollHeight === lastHeight) stableFrames += 1;
+      else {
+        stableFrames = 0;
+        lastHeight = scrollHeight;
+      }
+      const maxScroll = scrollHeight - docWrap.clientHeight;
+      if ((stableFrames >= 3 && maxScroll < target) || attempts >= 90) {
+        restoring = false;
+        return;
+      }
+      requestAnimationFrame(apply);
+    };
+    requestAnimationFrame(apply);
   }
 
   onMount(() => {
