@@ -139,6 +139,59 @@
     min-height: 0;
   }
 
+  /* ============================================================
+     MOBILE (< 768px = below the side-by-side breakpoint).
+     The JS placement can get stuck on "right" (stale layout read at mount),
+     leaving a narrow right-anchored drawer with a vertical side handle and a
+     right-only backdrop. Below the breakpoint the panel MUST be a full-width
+     bottom sheet — viewport width is the reliable signal — so pin that geometry
+     here regardless of the (possibly wrong) data-placement.
+     ============================================================ */
+  @media (max-width: 767px) {
+    :global(.drawer-content.loop-drawer-sheet) {
+      inset: auto 0 0 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      height: auto !important;
+      max-height: 85dvh !important;
+      border-radius: 20px 20px 0 0 !important;
+      border-left: none !important;
+    }
+
+    :global(.drawer-content.loop-drawer-sheet[data-state="closed"]) {
+      transform: translate3d(0, 100%, 0) !important;
+    }
+
+    :global(.drawer-content.loop-drawer-sheet[data-state="open"]) {
+      transform: translate3d(0, 0, 0) !important;
+    }
+
+    /* Horizontal grabber at the top, not the vertical side bar */
+    :global(.drawer-content.loop-drawer-sheet .drawer-handle) {
+      position: relative !important;
+      inset: auto !important;
+      width: var(--min-touch-target) !important;
+      height: 5px !important;
+      margin: 10px auto 8px !important;
+      transform: none !important;
+    }
+
+    /* Top-handle sheet needs no side gutter */
+    :global(.drawer-content.loop-drawer-sheet) > :global(.drawer-inner) {
+      padding-left: 0 !important;
+    }
+
+    /* Backdrop covers the whole screen, not just a right region */
+    :global(.drawer-overlay.loop-backdrop) {
+      inset: 0 !important;
+    }
+
+    /* Content hugs; rows take natural height and the sheet scrolls if tall */
+    .loop-drawer-content {
+      height: auto !important;
+    }
+  }
+
   /* Accessibility: Respect user's motion preferences */
   @media (prefers-reduced-motion: reduce) {
     .loop-drawer-content {
