@@ -225,8 +225,6 @@
   railWidth={desktopSidebarState.collapsedWidth}
   expandedWidth={desktopSidebarState.expandedWidth}
   homeHref="/"
-  brandLead="TKA"
-  brandRest=" Composer"
   onModuleChange={handleModuleChange}
   {onSectionChange}
   onModuleContextMenu={featureFlagService.isAdmin ? openModuleContextMenu : undefined}
@@ -240,6 +238,12 @@
   holdOpen={heldOpen}
   class={isEntryAnimating ? "tka-sidebar-entry" : ""}
 >
+  <!-- Wordmark in the brand hero face (Fraunces italic 700), matching the
+       landing SiteHeader .logo-text so both "TKA"s read as one brand. Both
+       words share the treatment to preserve the package's slide-reveal morph. -->
+  {#snippet brandLead()}<span class="brand-wordmark">TKA</span>{/snippet}
+  {#snippet brandRest()}<span class="brand-wordmark">{" Composer"}</span>{/snippet}
+
   {#snippet beforeTree(expanded)}
     {#if isInSettings}
       <div class="sidebar-settings-nav">
@@ -319,6 +323,19 @@
 />
 
 <style>
+  /* Brand wordmark face — same as the landing SiteHeader .logo-text. The
+     @austencloud/sidebar package leaves the brand font-family unset (inherits
+     the app sans); these snippets override it to the Fraunces italic voice so
+     the desktop-nav "TKA" matches the landing "TKA". Size + gradient stay owned
+     by the package's .brand. Authored here, so this scoped rule reaches the
+     span even though it renders inside the package. */
+  .brand-wordmark {
+    font-family: "Fraunces", Georgia, serif;
+    font-style: italic;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
   /* ============================================================================
      SETTINGS SUB-NAV (rendered via the package's beforeTree slot)
      ============================================================================ */
