@@ -259,11 +259,11 @@ export class TunnelViewController {
   applySpeedFill(kind: SpeedFill): void {
     this.speedOverrides = speedFill(kind, imageCount(this.config));
   }
-  /** Pin one performer's speed (arm 1..n). Setting 1× clears the override so the
-   *  map stays minimal. Immutable update so `$derived` consumers re-run; the base
-   *  ("you", arm 0) is never overridable. */
+  /** Pin one performer's speed (arm 0 = base "you", 1..n = copies). Setting 1×
+   *  clears the override so the map stays minimal. Immutable update so `$derived`
+   *  consumers re-run. */
   setPerformerSpeed(arm: number, rate: number): void {
-    if (arm < 1) return;
+    if (arm < 0) return;
     const next = { ...this.speedOverrides };
     if (rate === 1) delete next[arm];
     else next[arm] = rate;
@@ -291,7 +291,7 @@ export class TunnelViewController {
     return performerRing(cfg).map((_p, i) => ({
       arm: i,
       label: i === 0 ? "You" : `Copy ${i}`,
-      rate: i === 0 ? 1 : effectiveSpeed(cfg, i),
+      rate: effectiveSpeed(cfg, i),
       blueHex: tunnelPropColor(i * 2, layerCount).hex,
       redHex: tunnelPropColor(i * 2 + 1, layerCount).hex,
     }));
@@ -317,7 +317,10 @@ export class TunnelViewController {
   basePropsAt(currentStep: number): { blue: PropState; red: PropState } {
     const seq = this.#sources.getSequence();
     if (!seq) return { blue: { ...DEFAULT_PROP_STATE }, red: { ...DEFAULT_PROP_STATE } };
-    return sampleTunnelProps(seq, currentStep, this.#ease);
+    // The base ("you", arm 0) honors its own speed override so the whole mandala
+    // can be speed-symmetric — no pair stuck at 1×.
+    const baseSpeed = this.speedOverrides[0] ?? 1;
+    return sampleTunnelProps(seq, currentStep, this.#ease, 0, baseSpeed);
   }
 
   /** Per-copy prop states at the live playhead, each shifted by its Stagger +

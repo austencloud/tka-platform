@@ -563,19 +563,15 @@
                 </span>
                 <span class="perf-lbl">{perf.label}</span>
               </button>
-              {#if perf.arm === 0}
-                <span class="perf-fixed">1×</span>
-              {:else}
-                <div class="seg-wrap">
-                  <SegmentedControl
-                    options={speedLadderOptions}
-                    value={String(perf.rate)}
-                    onchange={(v) => controller.setPerformerSpeed(perf.arm, Number(v))}
-                    color="accent"
-                    size="sm"
-                  />
-                </div>
-              {/if}
+              <div class="seg-wrap">
+                <SegmentedControl
+                  options={speedLadderOptions}
+                  value={String(perf.rate)}
+                  onchange={(v) => controller.setPerformerSpeed(perf.arm, Number(v))}
+                  color="accent"
+                  size="sm"
+                />
+              </div>
             </div>
           {/each}
         </div>
@@ -993,15 +989,6 @@
   .perf-lbl {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
-  }
-  /* Reserved-width fixed marker so the base row doesn't shift the layout. */
-  .perf-fixed {
-    flex: 1;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
-    font-variant-numeric: tabular-nums;
-    text-align: right;
-    padding-right: 8px;
   }
 
   /* Preset cards (primary surface) + tuner toggle grid (secondary). Both use

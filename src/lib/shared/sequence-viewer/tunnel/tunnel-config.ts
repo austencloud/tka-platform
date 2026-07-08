@@ -286,14 +286,14 @@ export function configsEqual(a: TunnelConfig, b: TunnelConfig): boolean {
   );
 }
 
-/** Coerce a persisted value into a valid per-arm override map (positive integer
- *  arms → ladder rates only). Always returns a fresh object. */
+/** Coerce a persisted value into a valid per-arm override map (arm 0 = base "you",
+ *  1..n = copies → ladder rates only). Always returns a fresh object. */
 export function coerceSpeedOverrides(v: unknown): Record<number, number> {
   if (!v || typeof v !== "object") return {};
   const out: Record<number, number> = {};
   for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
     const arm = Number(k);
-    if (Number.isInteger(arm) && arm > 0 && typeof val === "number" && SPEED_LADDER.includes(val)) {
+    if (Number.isInteger(arm) && arm >= 0 && typeof val === "number" && SPEED_LADDER.includes(val)) {
       out[arm] = val;
     }
   }
@@ -335,7 +335,7 @@ export function getPreset(id: string): TunnelPreset | undefined {
 function speedKey(cfg: TunnelConfig): string {
   return Object.keys(cfg.speedOverrides ?? {})
     .map(Number)
-    .filter((a) => Number.isInteger(a) && a > 0)
+    .filter((a) => Number.isInteger(a) && a >= 0)
     .sort((a, b) => a - b)
     .map((a) => `t${a}-${SPEED_LADDER.indexOf(cfg.speedOverrides[a] ?? 1)}`)
     .join("");

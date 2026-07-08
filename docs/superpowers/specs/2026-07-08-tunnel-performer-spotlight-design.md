@@ -78,10 +78,15 @@ independent color sites (no single choke point):
 
 ## Deferred
 
-LED tip dimming (niche) · variable base ("you") tempo · per-performer speed +
-spotlight in the video export (export path unaffected, as before). This
-per-performer identity is the data
-[[project_tunnel_choreo_reconstruction]] will consume.
+LED tip dimming (niche) · per-performer speed + spotlight in the video export
+(export path unaffected, as before). This per-performer identity is the data
+`project_tunnel_choreo_reconstruction` will consume.
+
+**Update (same day):** the base ("you", arm 0) is now speed-editable too — the
+`arm < 1` guard was lifted so `speedOverrides[0]` applies in `basePropsAt`, and
+`coerceSpeedOverrides`/`speedKey` accept arm 0. Every pair can be tuned, so the
+mandala can be speed-symmetric with no pair stuck at 1×. The drawer's base row is
+a full ×-ladder like the copies (no locked "1×").
 
 ## Tests / verify
 

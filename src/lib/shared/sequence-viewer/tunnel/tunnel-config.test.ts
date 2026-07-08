@@ -97,6 +97,15 @@ describe("sample-time modulators — Stagger / Speed", () => {
     expect(effectiveSpeed(c, 2)).toBe(4);
     expect(effectiveSpeed(c, 1)).toBe(1);
   });
+
+  it("the base (arm 0, 'you') can carry its own speed override", () => {
+    const c = cfg({ fold: 4, speedOverrides: { 0: 2 } });
+    expect(effectiveSpeed(c, 0)).toBe(2);
+    // copyModulators covers only the copies (arms 1..n) — the base is sampled
+    // separately (basePropsAt applies arm 0), so the copies stay at 1×.
+    expect(copyModulators(c).every((m) => m.speed === 1)).toBe(true);
+    expect(configKey(c)).toBe("f4t0-3");
+  });
 });
 
 describe("speed fills", () => {
@@ -207,10 +216,10 @@ describe("speed migration + coercion", () => {
     expect(resolveSpeedOverrides({}, 4)).toEqual({});
   });
 
-  it("coerceSpeedOverrides keeps only positive-arm ladder rates", () => {
-    expect(coerceSpeedOverrides({ 1: 2, 3: 0.5 })).toEqual({ 1: 2, 3: 0.5 });
-    // Off-ladder rate, zero/negative arm, and non-numeric values are dropped.
-    expect(coerceSpeedOverrides({ 1: 1.7, 0: 2, "-1": 2, 2: "fast" })).toEqual({});
+  it("coerceSpeedOverrides keeps arm-0+ ladder rates, drops the rest", () => {
+    expect(coerceSpeedOverrides({ 0: 2, 1: 2, 3: 0.5 })).toEqual({ 0: 2, 1: 2, 3: 0.5 });
+    // Off-ladder rate, negative arm, and non-numeric values dropped; arm 0 kept.
+    expect(coerceSpeedOverrides({ 1: 1.7, 0: 2, "-1": 2, 2: "fast" })).toEqual({ 0: 2 });
     expect(coerceSpeedOverrides(null)).toEqual({});
     expect(coerceSpeedOverrides("nope")).toEqual({});
   });
