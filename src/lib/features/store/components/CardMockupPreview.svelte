@@ -6,6 +6,7 @@
     unregisterCover,
     startMorphInto,
   } from "../transitions/shop-morph";
+  import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
 
   interface Props {
     coverImageUrl?: string;
@@ -13,11 +14,16 @@
     /** Product id. When set, this cover joins the shared-element morph (grid card
         <-> detail hero). Omitted for the morph ghost's own copy. */
     morphId?: string;
+    /** Representative deck sequence. When set (and no cover image), the card shows
+        its tip-path mandala as a content-derived cover instead of a bare icon. */
+    coverSequence?: { steps: unknown[] };
   }
 
-  let { coverImageUrl, productName, morphId }: Props = $props();
+  let { coverImageUrl, productName, morphId, coverSequence }: Props = $props();
 
   let containerEl: HTMLDivElement | undefined = $state();
+  // Drives the mandala's render size so it fills the card width responsively.
+  let boxW = $state(0);
 
   onMount(() => {
     if (!morphId || !containerEl) return;
@@ -30,7 +36,7 @@
   });
 </script>
 
-<div class="mockup-container" bind:this={containerEl}>
+<div class="mockup-container" bind:this={containerEl} bind:clientWidth={boxW}>
   {#if coverImageUrl}
     <img
       src={coverImageUrl}
@@ -38,6 +44,16 @@
       class="cover-image"
       loading="lazy"
     />
+  {:else if coverSequence}
+    <div class="mandala-cover" aria-label="{productName} tip-path mandala">
+      <SequenceMandala
+        sequence={coverSequence}
+        size={boxW || 280}
+        show="both"
+        style="stroke"
+        darkMode={true}
+      />
+    </div>
   {:else}
     <div class="placeholder" aria-label="{productName} preview coming soon">
       <i class="fas fa-cards" aria-hidden="true"></i>
@@ -66,6 +82,21 @@
     transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
+  /* Content-derived cover: the deck's signature tip-path mandala, centered on a
+     soft radial wash so it reads as framed card art. */
+  .mandala-cover {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(
+      circle at 50% 42%,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.015)
+    );
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
   .placeholder {
     width: 100%;
     height: 100%;
@@ -77,33 +108,29 @@
       rgba(255, 255, 255, 0.06),
       rgba(255, 255, 255, 0.02)
     );
-    /* Query container for the glyph's cqw sizing. Kept on this child, not on the
-       view-transition-named parent. Same width as the box (width:100%), so the
-       glyph still scales as a fraction of the cover and the morph stays seamless. */
+    /* Query container for the glyph's cqw sizing. */
     container-type: inline-size;
   }
 
   .placeholder i {
-    /* Fraction of the box, not a fixed px, so the cross-route morph is seamless. */
     font-size: 26cqw;
   }
 
-  .placeholder {
-    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
   .mockup-container:hover .cover-image,
-  .mockup-container:hover .placeholder {
+  .mockup-container:hover .placeholder,
+  .mockup-container:hover .mandala-cover {
     transform: scale(1.05);
   }
 
   @media (prefers-reduced-motion: reduce) {
     .cover-image,
-    .placeholder {
+    .placeholder,
+    .mandala-cover {
       transition: none;
     }
     .mockup-container:hover .cover-image,
-    .mockup-container:hover .placeholder {
+    .mockup-container:hover .placeholder,
+    .mockup-container:hover .mandala-cover {
       transform: none;
     }
   }

@@ -27,6 +27,7 @@
     coverImageUrl={product.coverImageUrl}
     productName={product.name}
     morphId={product.id}
+    coverSequence={product.coverSequence}
   />
   <div class="card-info">
     <h3 class="card-name">{product.name}</h3>
