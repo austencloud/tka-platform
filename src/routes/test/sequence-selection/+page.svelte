@@ -47,11 +47,11 @@
     min-height: 100vh;
     box-sizing: border-box;
     padding: 48px 32px 80px;
-    color: #e7e7ee;
+    color: #1a1a22;
     background:
-      radial-gradient(1100px 520px at 78% -8%, rgba(99, 102, 241, 0.18), transparent 60%),
-      radial-gradient(900px 500px at 8% 4%, rgba(139, 92, 246, 0.12), transparent 55%),
-      #0c0c11;
+      radial-gradient(1100px 520px at 78% -8%, rgba(99, 102, 241, 0.1), transparent 60%),
+      radial-gradient(900px 500px at 8% 4%, rgba(139, 92, 246, 0.07), transparent 55%),
+      #eef0f4;
     font-family:
       ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
@@ -65,7 +65,7 @@
     font-size: clamp(28px, 4vw, 44px);
     font-weight: 800;
     letter-spacing: -0.025em;
-    background: linear-gradient(180deg, #ffffff, #b9b9c8);
+    background: linear-gradient(180deg, #1a1a22, #55556a);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -75,7 +75,7 @@
     max-width: 620px;
     font-size: 15px;
     line-height: 1.6;
-    color: #9a9aa8;
+    color: #5a5a68;
   }
   .gallery {
     display: grid;

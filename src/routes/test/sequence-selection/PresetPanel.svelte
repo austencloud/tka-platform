@@ -151,11 +151,11 @@
 
 <style>
   .card {
-    background: #15151c;
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: 16px;
     padding: 20px 20px 24px;
-    box-shadow: 0 10px 34px rgba(0, 0, 0, 0.34);
+    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.08);
   }
   header {
     margin-bottom: 16px;
@@ -165,19 +165,20 @@
     font-size: 16px;
     font-weight: 700;
     letter-spacing: -0.01em;
-    color: #f2f2f7;
+    color: #1a1a22;
   }
   header p {
     margin: 4px 0 0;
     font-size: 13px;
     line-height: 1.4;
-    color: #9a9aa8;
+    color: #6a6a78;
   }
   .sheet {
     display: flex;
     flex-direction: column;
     gap: 22px;
-    background: #fff;
+    background: #fbfbfd;
+    border: 1px solid rgba(0, 0, 0, 0.05);
     border-radius: 12px;
     padding: 20px 18px;
   }
@@ -188,7 +189,7 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #9a9aa8;
+    color: #8a8a96;
   }
   .strip {
     display: grid;
