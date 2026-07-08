@@ -7,6 +7,14 @@ Choreo-card iconography — faithful to the original guide's intent and layout, 
 a real facelift. Slow, one page at a time, each verified against the old artboard
 before moving on.
 
+**Endgame decided 2026-07-07** (ADR `docs/architecture/guide-single-source.md`):
+these faithful `_pages/*` are THE guide — print AND online. The animated
+`_sections/ch*` web version is legacy, retired only once this rebuild reaches
+parity (do NOT delete it before then — it's the live web guide). Online
+animations later layer onto these faithful pages. Keep each page's content in
+structured data (see `Type3CrossShiftsPage`) so the online reflowable view can
+consume it.
+
 ## Source-of-truth stack (per page)
 
 1. **Old artboard** — `D:\_THE KINETIC ALPHABET\_GUIDE\artboard-exports\*.png`
@@ -61,8 +69,8 @@ Old guide = 47 pages. Mapping → our 3 chapters. Status: ⬜ todo · 🔧 in pr
 | 10 | Type 1 Dual-Shifts (matrices) | `_pages/Type1AlphaBetaPage` (body p4) | 🔧 |
 | 11 | Gamma (Quarter-Opp/Same intro) | `_pages/GammaPage` (body p5) | 🔧 |
 | 12 | Type 2 Shifts | `_pages/Type2ShiftsPage` (body p6) | 🔧 |
-| 13 | Type 3 Cross-Shifts (β→γ) | ch10/Type3CrossShifts | ⬜ |
-| 14 | Type 4/5/6 Dash/Dual-Dash/Static | ch10/Type4Dash..Type6Static | ⬜ |
+| 13 | Type 3 Cross-Shifts (β→γ) | `_pages/Type3CrossShiftsPage` (`hm-type34`) | 🔧 |
+| 14 | Type 4/5/6 Dash/Dual-Dash/Static | `_pages/Type456Page` (`hm-type56`) | 🔧 |
 | 15 | Staff Positions (12) | ch10/StaffPositions | ⬜ |
 | 16 | Staff Motions | ch10/StaffMotions | ⬜ |
 | 17 | Negative Space / Body Turns | ch10/NegativeSpace | ⬜ |
@@ -90,6 +98,42 @@ Old guide = 47 pages. Mapping → our 3 chapters. Status: ⬜ todo · 🔧 in pr
 
 (Naming note: original used "CAPs"; current app uses "LOOPs" — facelift adopts
 LOOP terminology, per existing section filenames already named Loops*.)
+
+- 2026-07-08: TYPE 4/5/6 page (body p8, `hm-type56`) built —
+  `_pages/Type456Page.svelte` (commit `fc7fa242a4`), proof "1.0 - Type 5 and 6"
+  artboard (which actually leads with Type 4 - Dash). ONE physical page, THREE
+  calligraphic titled sections + two full-width divider rules, so the manifest
+  entry gained a **`selfTitled`** flag: GuidePage suppresses its single header
+  and the page paints all three (`Type 4 - Dash` / `Type 5 - Dual-Dash` /
+  `Type 6 - Static` via the shared `.guide-title` at proof y 22 / 340 / 592;
+  rules y 336 / 587). TOC still reads the manifest title
+  "Type 4/5/6 - Dash, Dual-Dash, Static". Box grid measured off the artboard
+  border lines (4px/pt): Type 4 = 100pt boxes, Type 5/6 = 95pt. Sections:
+  - **Type 4 (Dash)** — α→β 3-box (blue static S, red dashes S↔N) + γ→γ 5-box
+    (hands alternate dashing, stays gamma). One dash + one static per box → NO
+    arrow collision → `letter:null`; the DEFAULT zero-turn dash map already
+    matches the artboard (S→N=W, N→S=E, E→W=S, W→E=N).
+  - **Type 5 (Dual-Dash)** — α→α / β→β / γ→γ pairs. Both hands dash, so two
+    dash arrows can COINCIDE (α→α, β→β sit on the same N–S line). `letter:null`
+    puts both at the same location (overlap). Real letters route the separation
+    via `dash-location-calculator.ts`: **Ψ-/Φ-** hit `PHI_DASH_PSI_DASH_MAP`
+    (blue side WEST, red side EAST); **Λ-** hits `LAMBDA_DASH_ZERO_TURNS_MAP`
+    (γ→γ: blue S→N→EAST, red E→W→SOUTH — `letter:null` would wrongly place blue
+    WEST). Verified box-by-box vs the maps + artboard crops. The position glyph
+    derives from `startPosition/endPosition` (NOT the letter), so a pedagogical
+    α→α tagged Ψ- still shows the correct α→α glyph.
+  - **Type 6 (Static)** — α/β/γ, both hands static, NO arrows. Uses
+    `showTKA` (the bottom-left TKA letter glyph) instead of a position glyph, to
+    match the artboard's single letter label. Facelift lowercase γ.
+  Golden step ring + click-to-animate (`getGuideActiveStep` / `getGuideSequenceClick`,
+  per-strip `key` `t56-4a/4b/5a/5b/5c`) wired on the five multi-step strips;
+  Type 6 static is display-only (nothing animates). Facelift keyword tints:
+  Dash/Cross green #2f9e44, Dual cyan #36c3ff, Shift purple #6f2da8, Static
+  orange #f08c00; "two beta / 4-beat" proof OCR corrected to "two-step /
+  4-step". Domain verified via MCP (`list_letters_by_type` 4/5/6 + motion-types
+  topic). Verified: `npm run check` 0 errors/0 warnings; SSR `/print` HTTP 200
+  with all three titles + corrected copy. Awaiting Austen's eyeball pass
+  (arrow rendering, Type-6 glyph, title/rule/spacing fidelity) before ✅.
 
 ## Conventions (facelift — supersede the old guide)
 
