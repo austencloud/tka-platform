@@ -156,6 +156,11 @@
       max-height: 85dvh !important;
       border-radius: 20px 20px 0 0 !important;
       border-left: none !important;
+      /* data-placement is still "right", whose base rule sets
+         touch-action: pan-x and blocks vertical scrolling — re-enable pan-y so
+         the list can actually scroll. */
+      touch-action: pan-y !important;
+      overscroll-behavior-y: contain !important;
     }
 
     :global(.drawer-content.loop-drawer-sheet[data-state="closed"]) {
@@ -189,6 +194,18 @@
     /* Content hugs; rows take natural height and the sheet scrolls if tall */
     .loop-drawer-content {
       height: auto !important;
+    }
+
+    /* One scroller only (drawer-inner). Content flows naturally: the grid takes
+       natural height and its rows stop stretching so nothing gets clipped. */
+    .loop-drawer-content :global(.grid-container) {
+      flex: 0 0 auto !important;
+      overflow: visible !important;
+    }
+
+    .loop-drawer-content :global(.loop-component-grid.list) {
+      height: auto !important;
+      grid-auto-rows: minmax(64px, auto) !important;
     }
   }
 
