@@ -147,6 +147,10 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handleCancelExport: () => void;
     handleRetryExport: () => void;
     dismissPreview: () => void;
+    /** Save/share the finished export video on a fresh user gesture (download on
+     *  desktop, share sheet on mobile). Backs the preview's Save button + the
+     *  "Video ready" toast action. */
+    saveExportedVideo: () => Promise<void>;
 
     /** The live playback controller (null until animation services load).
      *  Exposed so lightweight hosts (QR landing page) can drive their own
@@ -1145,6 +1149,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handleCancelExport: exportCoord.handleCancelExport,
     handleRetryExport: () => exportCoord.handleRetryExport(handleExport),
     dismissPreview: exportCoord.dismissPreview,
+    saveExportedVideo: () => exportCoord.saveExportedVideo(effectiveSequence),
 
     playbackController: playbackControllerRef,
     handleArtExport,

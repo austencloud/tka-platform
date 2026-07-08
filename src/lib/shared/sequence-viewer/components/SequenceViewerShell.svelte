@@ -37,6 +37,10 @@
   import PracticeBar from "./PracticeBar.svelte";
   import PracticeSetupBar from "./PracticeSetupBar.svelte";
   import Recording3DOverlay from "./Recording3DOverlay.svelte";
+  import ExportTakeover from "$lib/shared/video-export/components/ExportTakeover.svelte";
+  import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
+  import { toExportTakeoverPhase } from "$lib/shared/video-export/services/export-takeover-phase";
+  import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -47,6 +51,7 @@
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import DeleteConfirmDialog from "./DeleteConfirmDialog.svelte";
   import VideoPanel from "./video-panel/VideoPanel.svelte";
+  import { VIDEO_UPLOAD_ENABLED } from "../config/viewer-feature-flags";
   import ChoreoCardContextMenuHost from "./choreo-card-context-menu/ChoreoCardContextMenuHost.svelte";
   import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
   import {
@@ -55,7 +60,6 @@
     buildThumbnailUrl,
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
-  import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { sendToStickerLab } from "$lib/shared/sequence-viewer/services/send-to-sticker-lab";
 
@@ -272,6 +276,16 @@
   const videoProgress = $derived(exportOverrides?.videoProgress ?? ctx.exportProgress);
   const cardBusy = $derived(exportOverrides?.cardBusy ?? ctx.isExporting);
   const showInlineProgress = $derived(exportOverrides?.showInlineProgress ?? true);
+  // The premium export ring over the whole viewer body — the "lovely export
+  // screen" for the standard Download Animation. A host that suppresses the
+  // inline bar (showInlineProgress=false) does so because it renders its OWN
+  // takeover (the scan page), so the shell renders one only when it hasn't.
+  // 2D only — 3D export progress lives in Recording3DOverlay.
+  const shellRendersTakeover = $derived(showInlineProgress);
+  const animTakeover = $derived(toExportTakeoverPhase(videoProgress, videoBusy));
+  const takeoverWord = $derived(
+    simplifyRepeatedWord(ctx.effectiveSequence?.word ?? ctx.effectiveSequence?.displayName ?? ""),
+  );
   function handleVideoExport() {
     if (exportOverrides) exportOverrides.onVideoExport();
     else ctx.handleExport();
@@ -496,7 +510,7 @@
               {sequence}
               isOwned={ctx.isOwned}
               isLoggedIn={ctx.isLoggedIn}
-              onUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
+              onUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED ? () => ctx.handleVideoUpload() : undefined}
             />
           {:else}
             <ViewerSplitPane
@@ -545,7 +559,7 @@
                   ? { ...ctx.viewerState.splitConfig, leftPane: ctx.viewerState.viewerMode }
                   : ctx.viewerState.splitConfig))}
               isLoggedIn={ctx.isLoggedIn}
-              onVideoUpload={ctx.isLoggedIn ? () => ctx.handleVideoUpload() : undefined}
+              onVideoUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED ? () => ctx.handleVideoUpload() : undefined}
               onArtExport={ctx.handleArtExport}
               practiceActive={ctx.practiceActive}
               practiceRunning={ctx.practiceRunning}
@@ -565,6 +579,20 @@
               isExporting={ctx.isExporting}
               onCancelExport={ctx.handleCancelExport}
             />
+          {/if}
+          {#if ctx.renderMode !== '3d' && shellRendersTakeover && animTakeover.phase !== 'idle'}
+            <ExportTakeover
+              phase={animTakeover.phase}
+              progress={videoProgress?.progress ?? 0}
+              phaseLabel={animTakeover.labelKey ? t(animTakeover.labelKey) : ''}
+              error={videoProgress?.error ?? null}
+              onCancel={ctx.handleCancelExport}
+              onRetry={handleVideoExport}
+            >
+              {#snippet title()}
+                <TKAWordGlyph word={takeoverWord} height={28} darkMode />
+              {/snippet}
+            </ExportTakeover>
           {/if}
           <ChoreoCardContextMenuHost
             bind:this={choreoCardMenuHost}
@@ -589,24 +617,9 @@
                 {#if ctx.previewBlobUrl}
                   <VideoPreviewPanel
                     blobUrl={ctx.previewBlobUrl}
+                    saveLabel="Save"
                     onDismiss={ctx.dismissPreview}
-                    onRedownload={() => {
-                      const seq = ctx.effectiveSequence;
-                      const rawName =
-                        seq?.displayName ||
-                        seq?.intendedWord ||
-                        seq?.word ||
-                        "sequence";
-                      const simplified =
-                        simplifyRepeatedWord(rawName);
-                      const safeName =
-                        sanitizeFilename(simplified) ||
-                        "sequence";
-                      const a = document.createElement("a");
-                      a.href = ctx.previewBlobUrl!;
-                      a.download = `${safeName}.mp4`;
-                      a.click();
-                    }}
+                    onRedownload={() => void ctx.saveExportedVideo()}
                   />
                 {:else}
                   <ExportVideoDrawer
@@ -621,7 +634,7 @@
                     renderMode={ctx.renderMode}
                     playbackMode={ctx.playbackMode}
                     selectedPropType={ctx.bluePropType}
-                    showInlineExportProgress={showInlineProgress}
+                    showInlineExportProgress={false}
                     onPropChange={ctx.handlePropTypeChange}
                     onPlaybackToggle={ctx.handlePlaybackToggle}
                     onPlaybackModeChange={ctx.handlePlaybackModeChange}

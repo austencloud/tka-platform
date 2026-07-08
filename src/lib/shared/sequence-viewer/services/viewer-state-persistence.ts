@@ -1,3 +1,5 @@
+import { VIDEO_UPLOAD_ENABLED } from '../config/viewer-feature-flags';
+
 export type ContentType = 'animation' | 'animation-3d' | 'card' | 'videos' | 'mandala' | 'tunnel';
 export type ViewerMode = 'split' | ContentType;
 export type ExportContext = 'animation-export' | 'image-export' | null;
@@ -68,6 +70,9 @@ export function loadViewerMode(): ViewerMode {
 
 	try {
 		const raw = localStorage.getItem(VIEWER_MODE_KEY);
+		// 'videos' is gated off (VIDEO_UPLOAD_ENABLED) — never restore into the
+		// upload surface from a stale localStorage value; fall back to split.
+		if (raw === 'videos' && !VIDEO_UPLOAD_ENABLED) return 'split';
 		if (raw === 'animation' || raw === 'animation-3d' || raw === 'card' || raw === 'videos' || raw === 'mandala' || raw === 'tunnel' || raw === 'split') {
 			return raw;
 		}

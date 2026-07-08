@@ -22,7 +22,9 @@ import { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-key
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { ensureFullAccountForExport } from "$lib/shared/auth/domain/export-gate";
 import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-options";
-import { exportVideoFilename } from "$lib/shared/sequence-viewer/services/export-video-filename";
+import { sanitizeFilename, shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
 import type { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 import type { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/modal-accessibility-helper.svelte";
 type ExportType = "animation" | "image" | "both";
@@ -64,25 +66,78 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     handleExportFn();
   }
 
-  function autoDownloadVideo(
-    effectiveSequence: SequenceData | null,
-    // Appended before ".mp4" to distinguish variant exports of the same
-    // sequence (e.g. the tunnel's "-tunnel-4x"). Already a sanitized literal.
-    nameSuffix = "",
-  ) {
-    const url = sequenceModalExporter.state.previewBlobUrl;
-    if (!url) return;
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = exportVideoFilename(effectiveSequence, nameSuffix);
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  }
-
   function dismissPreview() {
     sequenceModalExporter.dismissPreview();
     accessibilityHelper.announce("Ready to export again");
+  }
+
+  /**
+   * Deliver the finished export video on a FRESH user gesture — share sheet on
+   * mobile, download straight to disk on desktop. Reads the preview blob URL
+   * lazily, so the same function serves the "Video ready" toast's Download
+   * action, the inline VideoPreviewPanel Save button, and any re-save.
+   */
+  async function saveExportedVideo(effectiveSequence: SequenceData | null) {
+    const url = sequenceModalExporter.state.previewBlobUrl;
+    if (!url) return;
+    const rawName =
+      effectiveSequence?.displayName ||
+      effectiveSequence?.intendedWord ||
+      effectiveSequence?.word ||
+      "sequence";
+    const safeName = sanitizeFilename(simplifyRepeatedWord(rawName)) || "sequence";
+    const blob = await (await fetch(url)).blob();
+    await shareOrDownloadBlob(blob, `${safeName}.mp4`, { title: "TKA Sequence" });
+  }
+
+  /**
+   * Preview-first completion signal. Once the video blob exists, surface an
+   * ACTIONABLE toast whose button IS the save gesture. Chrome 125+ enforces
+   * transient user activation on downloads, so a programmatic download fired at
+   * export-completion (seconds after the trigger click, activation long expired)
+   * is silently dropped — even in a focused, foreground tab. A toast-button
+   * click is a fresh gesture, so the download fires reliably. The inline
+   * VideoPreviewPanel Save button is the same action, as a durable fallback.
+   * Deliberately NOT a "Video exported!" toast: nothing has hit disk yet.
+   */
+  function notifyVideoReady(effectiveSequence: SequenceData | null) {
+    if (!sequenceModalExporter.state.previewBlobUrl || sequenceModalExporter.state.error) {
+      return;
+    }
+    const saveLabel = detectPlatform() === "desktop" ? "Download" : "Save";
+    showToast({
+      message: "Video ready",
+      type: "success",
+      duration: 12000,
+      action: {
+        label: saveLabel,
+        onClick: () => void saveExportedVideo(effectiveSequence),
+      },
+    });
+    accessibilityHelper.announce(`Video ready. Activate ${saveLabel} to keep it.`, "assertive");
+  }
+
+  /**
+   * Completion delivery. Auto-downloads the moment the render finishes — the
+   * zero-click path — then keeps the toast + inline preview Save as the
+   * guaranteed fallback.
+   *
+   * The auto-download is best-effort by browser rule: a programmatic download
+   * fires reliably only from a FOCUSED tab (the common case — the user just
+   * watched it render). Browsers defer/block downloads initiated from a hidden
+   * tab, and drop any download once the trigger's transient activation has
+   * expired (~5s). So if the user tabbed away mid-render, the auto-download is
+   * suppressed and the actionable toast (its button IS a fresh gesture) + the
+   * preview Save become the delivery. Both read the same blob, so no double file
+   * unless the user also clicks after a successful auto-download.
+   */
+  function autoDeliverExportedVideo(effectiveSequence: SequenceData | null) {
+    if (!sequenceModalExporter.state.previewBlobUrl || sequenceModalExporter.state.error) {
+      return;
+    }
+    const tabFocused = typeof document === "undefined" || !document.hidden;
+    if (tabFocused) void saveExportedVideo(effectiveSequence);
+    notifyVideoReady(effectiveSequence);
   }
 
   // The tunnel (Art mode) export drives the shared offscreen engine with a
@@ -223,6 +278,24 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       },
     };
 
+    // Video (animation) export is preview-first: the completion signal is the
+    // actionable "Video ready" toast fired by notifyVideoReady AFTER the blob
+    // URL exists — NOT a "saved!" toast here, because nothing is on disk until
+    // the user's fresh save gesture. Errors still toast (a failed export must
+    // not look like nothing happened).
+    const videoCallbacks = {
+      onSuccess: (_message: string) => {
+        // Intentionally silent — notifyVideoReady owns the completion signal.
+      },
+      onError: (message: string) => {
+        showToast(message, "error");
+        accessibilityHelper.announce(`Export failed: ${message}`, "assertive");
+      },
+      onHaptic: (type: "success" | "error" | "selection") => {
+        hapticService?.trigger(type);
+      },
+    };
+
     // 3D mode: real-time capture from WebGL canvas
     const is3DMode = viewer3DState.renderMode === '3d';
     const webglCanvas = viewer3DState.webglCanvas;
@@ -340,7 +413,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
             setExporting: (value: boolean) => { viewer3DState.isExporting = value; },
             setExportCurrentStep: (step: number | null) => { viewer3DState.exportCurrentStep = step; },
           },
-          callbacks
+          videoCallbacks
         );
         exported3DOk = true;
       } finally {
@@ -348,7 +421,8 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
         recordingElapsed = 0;
         if (recordingTimer) { clearInterval(recordingTimer); recordingTimer = null; }
       }
-      if (exported3DOk) autoDownloadVideo(effectiveSequence);
+      // Auto-download on finish (focused tab) + toast/preview fallback.
+      if (exported3DOk) autoDeliverExportedVideo(effectiveSequence);
       return;
     }
 
@@ -364,11 +438,10 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
           includeEndHold: opts.includeEndHold,
         },
         { canvas: animationCanvas, playbackController, panelState: modalAnimationState },
-        callbacks
+        videoCallbacks
       );
-      if (sequenceModalExporter.state.previewBlobUrl && !sequenceModalExporter.state.error) {
-        autoDownloadVideo(effectiveSequence);
-      }
+      // Auto-download on finish (focused tab) + toast/preview fallback.
+      autoDeliverExportedVideo(effectiveSequence);
     } else if (exportType === "animation" && (!playbackController || !animationCanvas)) {
       showToast("Animation not ready yet. Wait a moment and try again.", "error");
       return;
@@ -417,6 +490,7 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
     exportTunnel,
     handleStopRecording,
     dismissPreview,
+    saveExportedVideo,
     dispose,
   };
 }

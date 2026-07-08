@@ -212,9 +212,10 @@ export class SequenceModalExporter {
         },
         {
           compositeMode: "none",
-          // The viewer runs its own download (export-coordinator.autoDownloadVideo)
-          // after this resolves, plus shows the preview panel. Suppress the
-          // orchestrator's side-effect download or the file lands twice.
+          // The viewer is preview-first: it surfaces previewBlobUrl in
+          // VideoPreviewPanel and saves on a user gesture (share on mobile /
+          // download on desktop). Suppress the orchestrator's side-effect
+          // download so nothing hits disk without the user's tap.
           autoDownload: false,
           fps: options.fps,
           loopCount: options.loopCount,

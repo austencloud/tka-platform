@@ -1,4 +1,5 @@
 import type { OrchestratorContext } from "../components/SequenceViewerOrchestrator.svelte";
+import { VIDEO_UPLOAD_ENABLED } from "../config/viewer-feature-flags";
 
 // One profile since the /q scan page adopted SequenceViewerShell (the drawer's
 // chrome verbatim) — the hand-rolled "scan" funnel profile is gone. The param
@@ -65,7 +66,8 @@ export function buildHeaderActions(
   a.onPracticeToggle = () =>
     ctx.practiceActive ? ctx.exitPracticeMode() : ctx.enterPracticeMode();
 
-  if (ctx.isLoggedIn) a.onVideoUpload = () => ctx.handleVideoUpload();
+  if (ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED)
+    a.onVideoUpload = () => ctx.handleVideoUpload();
   if (ownerCanManage) {
     a.onPublish = () =>
       ctx.invokeGatedAction("publish", ctx.handlePublishAction);

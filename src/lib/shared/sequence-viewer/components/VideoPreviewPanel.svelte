@@ -111,7 +111,7 @@
     </button>
     <button
       type="button"
-      class="action-btn secondary"
+      class="action-btn primary"
       onclick={onRedownload}
       aria-label={saveLabel}
     >
@@ -120,7 +120,7 @@
     </button>
     <button
       type="button"
-      class="action-btn primary"
+      class="action-btn secondary"
       onclick={onDismiss}
       aria-label="Done, return to viewer"
     >

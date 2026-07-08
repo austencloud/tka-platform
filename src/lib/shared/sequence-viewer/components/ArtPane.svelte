@@ -119,7 +119,7 @@
     }),
   );
   // Stamp the look so variant exports of one sequence don't collide.
-  const tunnelSuffix = $derived(`-tunnel-${controller.configKey}`);
+  const tunnelSuffix = $derived(`-tunnel-${controller.activeLook.id}`);
 
   // Preview-first save: share sheet on mobile, download on desktop (the platform
   // gate lives in shareOrDownloadBlob). The blob is recovered from the preview's
