@@ -13,11 +13,32 @@ import {
 } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
 /** A box is the start pose when it has no beat number (0 or null/undefined). */
 const isStartBox = (b: StepData): boolean =>
   b.stepNumber === 0 || b.stepNumber === null || b.stepNumber === undefined;
+
+/**
+ * Force a linear path archetype on every hand motion of a box (clones — never
+ * mutates the page's source StepData). The Level 1 guide teaches the grid points
+ * themselves, so a companion animation should trace a straight point-to-point
+ * hand path; a curved shift arc reads as extra information the lesson hasn't
+ * introduced yet. This is the one seam every page's example strip flows through,
+ * so hardcoding it here keeps all guide animations linear (matching the baked
+ * demos in guide-motion-configs.ts). resolvePathType honours a per-motion
+ * pathShape above any motion-aware/global/user path-shape setting.
+ */
+function withLinearPaths<T extends Record<string, unknown>>(box: T): T {
+  const motions = box.motions as Record<string, MotionData | undefined> | undefined;
+  if (!motions) return box;
+  const linear: Record<string, MotionData | undefined> = {};
+  for (const [color, m] of Object.entries(motions)) {
+    linear[color] = m ? { ...m, pathShape: "linear" as const } : m;
+  }
+  return { ...box, motions: linear };
+}
 
 export function stripToSequence(
   strip: StepData[],
@@ -26,14 +47,16 @@ export function stripToSequence(
   const startBox = strip.find(isStartBox);
   const stepBoxes = strip.filter((b) => !isStartBox(b));
 
-  const steps = stepBoxes.map((b, i) => ({ ...b, stepNumber: i + 1 })) as unknown as StepData[];
+  const steps = stepBoxes.map((b, i) =>
+    withLinearPaths({ ...b, stepNumber: i + 1 })
+  ) as unknown as StepData[];
 
   const startPosition = startBox
-    ? ({
+    ? (withLinearPaths({
         ...(startBox as object),
         isStartPosition: true,
         id: startBox.id ?? "start",
-      } as unknown as StartPositionData)
+      }) as unknown as StartPositionData)
     : undefined;
 
   const gridMode = (strip[0]?.gridMode as GridMode | undefined) ?? GridMode.DIAMOND;
