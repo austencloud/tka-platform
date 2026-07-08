@@ -25,6 +25,8 @@
    * side-point start / Tog-Opp from a bottom start.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
+  import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
   import PositionGlyph from "$lib/shared/pictograph/shared/components/PositionGlyph.svelte";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
@@ -46,6 +48,7 @@
   // Golden step ring: which strip cell the companion is currently animating
   // (null outside the reader — /print + /book render no ring).
   const activeStep = getGuideActiveStep();
+  const selection = getSequenceSelection();
 
   // ── Box data: real pictographs, system-derived adornments ──────────────────
   // A hand that moves is authored as a PRO shift; because both props are HAND,
@@ -237,7 +240,9 @@
        count numerals, position glyphs, elementals) are renderer-owned. -->
   {#each STRIPS as strip, si (si)}
     <div
-      class="strip"
+      class="strip tka-seq-cell"
+      class:is-hovered={selection?.isHovered(`t1-${si}`)}
+      class:is-selected={selection?.isSelected(`t1-${si}`)}
       style="left:{strip.x * S}px; top:{strip.y * S}px; width:{BOX * 5 * S}px; height:{BOX * S}px"
     >
       {#each strip.moves as m, bi (bi)}
@@ -262,21 +267,14 @@
           />
         </div>
       {/each}
+      <SelectionHit
+        groupId={`t1-${si}`}
+        isGroupStart
+        label={`Animate the ${SEQ_WORDS[si]} sequence`}
+        onselect={() => emitSequence?.({ strip: stripSteps(strip), word: SEQ_WORDS[si], key: `t1-${si}` })}
+      />
     </div>
   {/each}
-
-  <!-- Reader-only: one transparent hit target per sequence → animate it. Absent
-       on /print + /book (emitSequence is null there), so print pages stay pristine. -->
-  {#if emitSequence}
-    {#each STRIPS as strip, si (si)}
-      <button
-        class="seq-hit"
-        style="left:{strip.x * S}px; top:{strip.y * S}px; width:{BOX * 5 * S}px; height:{BOX * S}px"
-        onclick={() => emitSequence?.({ strip: stripSteps(strip), word: SEQ_WORDS[si], key: `t1-${si}` })}
-        aria-label={`Animate the ${SEQ_WORDS[si]} sequence`}
-      ></button>
-    {/each}
-  {/if}
 
   <!-- Grouped centred paragraphs (one box each, like the original PDF). -->
   {#each PARAS as p, i (i)}
@@ -335,26 +333,6 @@
   }
   .cell + .cell {
     border-left: 1px solid #c4c4cc;
-  }
-
-  /* Reader-only transparent hit target over each sequence → animate on click. */
-  .seq-hit {
-    position: absolute;
-    background: transparent;
-    border: 0;
-    padding: 0;
-    cursor: pointer;
-    border-radius: 6px;
-    z-index: 3;
-  }
-  .seq-hit:hover {
-    outline: 2px solid rgba(120, 90, 200, 0.4);
-    outline-offset: 4px;
-    background: rgba(120, 90, 200, 0.06);
-  }
-  .seq-hit:focus-visible {
-    outline: 2px solid #6f2da8;
-    outline-offset: 4px;
   }
 
   /* Centred paragraph blocks — full sheet width, one box per paragraph. */

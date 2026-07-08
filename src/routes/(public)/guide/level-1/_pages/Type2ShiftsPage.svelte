@@ -36,6 +36,8 @@
    * Type-2 term "Shift"/"Shifts" tinted the Type-2 letter colour (purple).
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
+  import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
@@ -56,6 +58,7 @@
   // Golden step ring: which strip cell the companion is currently animating
   // (null outside the reader — /print + /book render no ring).
   const activeStep = getGuideActiveStep();
+  const selection = getSequenceSelection();
 
   // A hand that moves → PRO shift (hand-path mode converts to FLOAT); a hand that
   // stays → STATIC (no arrow). Positions/numbers derive downstream.
@@ -220,53 +223,52 @@
   <!-- Three strips of real pictographs. All adornments (float arrow, Start/count
        numerals, position glyphs) are renderer-owned. -->
   {#each STRIPS as strip, si (si)}
-    {#each strip.rows as row, ri (ri)}
-      {#each row as cell, ci (ci)}
-        {#if cell}
-          {@const cellStep = box(cell.m, cell.step)}
-          <div
-            class="pbox"
-            class:guide-step-active={activeStep?.key === `t2-${si}` && activeStep.ringStep === cell.step}
-            title={describePictograph(cellStep)}
-            style="left:{(strip.x + ci * BOX) * S}px; top:{(strip.y + ri * BOX) * S}px; width:{BOX *
-              S}px; height:{BOX * S}px"
-          >
-            <PictographContainer
-              pictographData={cellStep}
-              gridMode={GridMode.DIAMOND}
-              bluePropTypeOverride={PropType.HAND}
-              redPropTypeOverride={PropType.HAND}
-              showGrid={true}
-              showTKA={false}
-              showPositions={cell.step > 0}
-              showElemental={false}
-              showReversals={false}
-              showTnD={false}
-              showNonRadialPoints={false}
-              showHandPoints={true}
-              stepNumberOverride={true}
-              darkMode={false}
-              printMode={true}
-              disableTransitions={true}
-            />
-          </div>
-        {/if}
+    <div
+      class="strip-wrap tka-seq-cell"
+      class:is-hovered={selection?.isHovered(`t2-${si}`)}
+      class:is-selected={selection?.isSelected(`t2-${si}`)}
+      style="left:{strip.x * S}px; top:{strip.y * S}px; width:{BOX * 5 * S}px; height:{strip.rows.length * BOX * S}px"
+    >
+      {#each strip.rows as row, ri (ri)}
+        {#each row as cell, ci (ci)}
+          {#if cell}
+            {@const cellStep = box(cell.m, cell.step)}
+            <div
+              class="pbox"
+              class:guide-step-active={activeStep?.key === `t2-${si}` && activeStep.ringStep === cell.step}
+              title={describePictograph(cellStep)}
+              style="left:{ci * BOX * S}px; top:{ri * BOX * S}px; width:{BOX * S}px; height:{BOX * S}px"
+            >
+              <PictographContainer
+                pictographData={cellStep}
+                gridMode={GridMode.DIAMOND}
+                bluePropTypeOverride={PropType.HAND}
+                redPropTypeOverride={PropType.HAND}
+                showGrid={true}
+                showTKA={false}
+                showPositions={cell.step > 0}
+                showElemental={false}
+                showReversals={false}
+                showTnD={false}
+                showNonRadialPoints={false}
+                showHandPoints={true}
+                stepNumberOverride={true}
+                darkMode={false}
+                printMode={true}
+                disableTransitions={true}
+              />
+            </div>
+          {/if}
+        {/each}
       {/each}
-    {/each}
+      <SelectionHit
+        groupId={`t2-${si}`}
+        isGroupStart
+        label={`Animate the ${SEQ_WORDS[si]} sequence`}
+        onselect={() => emitSequence?.({ strip: stripSteps(strip), word: SEQ_WORDS[si], key: `t2-${si}` })}
+      />
+    </div>
   {/each}
-
-  <!-- Reader-only: one transparent hit target per sequence → animate it. Absent
-       on /print + /book (emitSequence is null there), so print pages stay pristine. -->
-  {#if emitSequence}
-    {#each STRIPS as strip, si (si)}
-      <button
-        class="seq-hit"
-        style="left:{strip.x * S}px; top:{strip.y * S}px; width:{BOX * 5 * S}px; height:{strip.rows.length * BOX * S}px"
-        onclick={() => emitSequence?.({ strip: stripSteps(strip), word: SEQ_WORDS[si], key: `t2-${si}` })}
-        aria-label={`Animate the ${SEQ_WORDS[si]} sequence`}
-      ></button>
-    {/each}
-  {/if}
 
   <!-- Grouped centred paragraphs (one box each, like the original PDF). -->
   {#each PARAS as p, i (i)}
@@ -301,24 +303,9 @@
     overflow: hidden;
   }
 
-  /* Reader-only transparent hit target over each sequence → animate on click. */
-  .seq-hit {
+  /* Per-sequence wrapper — carries the shared selection ring (.tka-seq-cell). */
+  .strip-wrap {
     position: absolute;
-    background: transparent;
-    border: 0;
-    padding: 0;
-    cursor: pointer;
-    border-radius: 6px;
-    z-index: 3;
-  }
-  .seq-hit:hover {
-    outline: 2px solid rgba(120, 90, 200, 0.4);
-    outline-offset: 4px;
-    background: rgba(120, 90, 200, 0.06);
-  }
-  .seq-hit:focus-visible {
-    outline: 2px solid #6f2da8;
-    outline-offset: 4px;
   }
 
   /* Centred paragraph blocks — full sheet width, one box per paragraph. */

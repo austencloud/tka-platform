@@ -36,6 +36,8 @@
    * clear the calligraphic title). Edit mode (press E) can still nudge + Copy.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
+  import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -53,6 +55,7 @@
   // Golden step ring: which strip cell the companion is currently animating
   // (null outside the reader — /print + /book render no ring).
   const activeStep = getGuideActiveStep();
+  const selection = getSequenceSelection();
   const OPP: Partial<Record<GridLocation, GridLocation>> = { [N]: SO_, [SO_]: N, [E]: W, [W]: E };
 
   // Motion type from the location pair: same → STATIC, opposite cardinals → DASH,
@@ -274,52 +277,51 @@
 
   <!-- Two sequences of real Cross-Shift pictographs -->
   {#each [SEQ1, SEQ2] as strip, si (si)}
-    {#each strip.rows as row, ri (ri)}
-      {#each row as cell, ci (ci)}
-        {#if cell}
-          <div
-            class="cell"
-            class:guide-step-active={activeStep?.key === `t3-${si}` && activeStep.ringStep === cell.step}
-            style="left:{(strip.x + ci * BOX) * S}px; top:{(ri === 0 ? strip.y1 : strip.y2) * S}px; width:{BOX * S}px; height:{BOX * S}px"
-            title={describePictograph(boxData(cell.m, cell.step, `${si}-${ri}-${ci}`))}
-          >
-            <PictographContainer
-              pictographData={boxData(cell.m, cell.step, `${si}-${ri}-${ci}`)}
-              gridMode={GridMode.DIAMOND}
-              bluePropTypeOverride={PropType.HAND}
-              redPropTypeOverride={PropType.HAND}
-              showGrid={true}
-              showTKA={false}
-              showPositions={cell.step > 0}
-              showElemental={false}
-              showReversals={false}
-              showTnD={false}
-              showNonRadialPoints={false}
-              showHandPoints={true}
-              stepNumberOverride={true}
-              darkMode={false}
-              printMode={true}
-              disableTransitions={true}
-            />
-          </div>
-        {/if}
+    <div
+      class="strip-wrap tka-seq-cell"
+      class:is-hovered={selection?.isHovered(`t3-${si}`)}
+      class:is-selected={selection?.isSelected(`t3-${si}`)}
+      style="left:{strip.x * S}px; top:{strip.y1 * S}px; width:{5 * BOX * S}px; height:{(strip.y2 - strip.y1 + BOX) * S}px"
+    >
+      {#each strip.rows as row, ri (ri)}
+        {#each row as cell, ci (ci)}
+          {#if cell}
+            <div
+              class="cell"
+              class:guide-step-active={activeStep?.key === `t3-${si}` && activeStep.ringStep === cell.step}
+              style="left:{ci * BOX * S}px; top:{(ri === 0 ? 0 : strip.y2 - strip.y1) * S}px; width:{BOX * S}px; height:{BOX * S}px"
+              title={describePictograph(boxData(cell.m, cell.step, `${si}-${ri}-${ci}`))}
+            >
+              <PictographContainer
+                pictographData={boxData(cell.m, cell.step, `${si}-${ri}-${ci}`)}
+                gridMode={GridMode.DIAMOND}
+                bluePropTypeOverride={PropType.HAND}
+                redPropTypeOverride={PropType.HAND}
+                showGrid={true}
+                showTKA={false}
+                showPositions={cell.step > 0}
+                showElemental={false}
+                showReversals={false}
+                showTnD={false}
+                showNonRadialPoints={false}
+                showHandPoints={true}
+                stepNumberOverride={true}
+                darkMode={false}
+                printMode={true}
+                disableTransitions={true}
+              />
+            </div>
+          {/if}
+        {/each}
       {/each}
-    {/each}
+      <SelectionHit
+        groupId={`t3-${si}`}
+        isGroupStart
+        label={`Animate the ${SEQ_WORDS[si]} sequence`}
+        onselect={() => emitSequence?.({ strip: stripSteps(strip), word: SEQ_WORDS[si], key: `t3-${si}` })}
+      />
+    </div>
   {/each}
-
-  <!-- Reader-only: one transparent hit target per sequence → animate it. Absent
-       on /print + /book (emitSequence is null there), so the print pages are
-       untouched and gain no affordance. -->
-  {#if emitSequence}
-    {#each [SEQ1, SEQ2] as strip, si (si)}
-      <button
-        class="seq-hit"
-        style="left:{strip.x * S}px; top:{strip.y1 * S}px; width:{5 * BOX * S}px; height:{(strip.y2 - strip.y1 + BOX) * S}px"
-        onclick={() => emitSequence?.({ strip: stripSteps(strip), word: SEQ_WORDS[si], key: `t3-${si}` })}
-        aria-label={`Animate the ${SEQ_WORDS[si]} sequence`}
-      ></button>
-    {/each}
-  {/if}
 
   <!-- Breakdown pose labels -->
   {#each LABELS as l, i (i)}
@@ -373,24 +375,9 @@
     line-height: 1;
   }
 
-  /* Reader-only transparent hit target over each sequence → animate on click. */
-  .seq-hit {
+  /* Per-sequence wrapper — carries the shared selection ring (.tka-seq-cell). */
+  .strip-wrap {
     position: absolute;
-    background: transparent;
-    border: 0;
-    padding: 0;
-    cursor: pointer;
-    border-radius: 6px;
-    z-index: 3;
-  }
-  .seq-hit:hover {
-    outline: 2px solid rgba(120, 90, 200, 0.4);
-    outline-offset: 4px;
-    background: rgba(120, 90, 200, 0.06);
-  }
-  .seq-hit:focus-visible {
-    outline: 2px solid #6f2da8;
-    outline-offset: 4px;
   }
 
   /* Centred paragraph blocks — full sheet width, one box per paragraph. */
