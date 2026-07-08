@@ -10,7 +10,7 @@
    * is the swappable-frame seam: a future reflow frame drops in here without
    * touching nav or companion (see docs/superpowers/specs/2026-07-07-guide-reader-design.md).
    */
-  import { onMount } from "svelte";
+  import { onMount, flushSync } from "svelte";
   import "../_styles/guide.css";
   import "../_styles/guide-print.css";
   import {
@@ -62,11 +62,16 @@
   // Nearest-to-viewport-centre page becomes the active (highlighted) one, and
   // the raw scrollTop is persisted so a remount/reload can restore it.
   let scrollRaf = 0;
-  // True while restoreScroll() is re-applying the saved position across frames.
-  // The programmatic scroll fires onScroll, so persisting during restore would
-  // overwrite the saved target with an intermediate (clamped) value before the
-  // layout finishes settling — the exact bug that made restore land short.
-  let restoring = false;
+  // True while we're parking at the saved offset. It (a) drives the `restoring`
+  // class that hides the doc until it's landed — so the reader APPEARS already
+  // scrolled there rather than jumping from the top — and (b) blocks onScroll
+  // from persisting an intermediate clamped value over the saved target. It must
+  // be Svelte-owned (a class, not an imperative inline style): `.reader-doc`
+  // carries a reactive `style` for --w/--h, and any scale change re-renders that
+  // attribute, which would wipe an imperative visibility we set on the element.
+  // Initialized hidden when there's an offset to restore so the FIRST paint is
+  // already blanked (SSR-safe: savedScrollTarget() catches missing sessionStorage).
+  let restoring = $state(savedScrollTarget() > 0);
   function onScroll() {
     if (scrollRaf) return;
     scrollRaf = requestAnimationFrame(() => {
@@ -112,64 +117,64 @@
     scale = Math.max(0.1, Math.min(w / PAGE_W, h / PAGE_H));
   }
 
-  // Restore the saved scroll position. fit()'s scale (and the ResizeObserver's
-  // later correction) set the page heights, so the scrollable height keeps
-  // growing for a few frames after mount; a one-shot scrollTo clamps to the
-  // pre-layout height and lands short. Re-apply the target each frame until it
-  // sticks (or the content is genuinely shorter than the saved offset), holding
-  // `restoring` so onScroll doesn't persist an intermediate value over it.
-  function restoreScroll() {
-    if (!docWrap) return;
-    let target = 0;
+  // The persisted offset to restore (0 = nothing to restore).
+  function savedScrollTarget(): number {
     try {
-      target = Number(sessionStorage.getItem(SCROLL_KEY) ?? 0);
+      const v = Number(sessionStorage.getItem(SCROLL_KEY) ?? 0);
+      return Number.isFinite(v) && v > 0 ? v : 0;
     } catch {
-      return;
+      return 0;
     }
-    if (!(Number.isFinite(target) && target > 0)) return;
-
-    restoring = true;
-    let attempts = 0;
-    let lastHeight = -1;
-    let stableFrames = 0;
-    const apply = () => {
-      if (!docWrap) {
-        restoring = false;
-        return;
-      }
-      const scrollHeight = docWrap.scrollHeight;
-      docWrap.scrollTo({ top: target, behavior: "auto" });
-      attempts += 1;
-
-      // Reached the saved offset exactly — done.
-      if (Math.abs(docWrap.scrollTop - target) <= 2) {
-        restoring = false;
-        return;
-      }
-      // Track whether the document height has stopped growing. Early frames
-      // clamp scrollTop to a shorter, still-laying-out height; only once the
-      // height holds steady across a few frames AND still can't reach the
-      // target do we accept the clamp (the content is genuinely shorter now).
-      if (scrollHeight === lastHeight) stableFrames += 1;
-      else {
-        stableFrames = 0;
-        lastHeight = scrollHeight;
-      }
-      const maxScroll = scrollHeight - docWrap.clientHeight;
-      if ((stableFrames >= 3 && maxScroll < target) || attempts >= 90) {
-        restoring = false;
-        return;
-      }
-      requestAnimationFrame(apply);
-    };
-    requestAnimationFrame(apply);
   }
 
   onMount(() => {
+    const target = savedScrollTarget();
+
+    // Apply the fitted scale, then flush it to the DOM synchronously so the
+    // pages take their real heights before we measure/scroll — the doc is then
+    // tall enough that the very first park lands at the saved offset, in this
+    // same (pre-paint) tick. `restoring` keeps the doc hidden until we land.
     fit();
-    // Restore after fit()'s scale change flushes and the pages take their real
-    // heights — otherwise scrollTop clamps to a shorter, pre-layout scrollHeight.
-    requestAnimationFrame(restoreScroll);
+    flushSync();
+
+    const reveal = () => {
+      restoring = false;
+    };
+
+    if (target > 0 && docWrap) {
+      let attempts = 0;
+      let lastHeight = -1;
+      let stableFrames = 0;
+      const park = (): void => {
+        if (!docWrap) return reveal();
+        const scrollHeight = docWrap.scrollHeight;
+        // behavior:"instant" — NOT "auto". "auto" defers to the doc's CSS
+        // scroll-behavior:smooth, which animates every scrollTo and is exactly
+        // the visible crawl-to-position we're eliminating. "instant" jumps.
+        docWrap.scrollTo({ top: target, behavior: "instant" });
+        attempts += 1;
+
+        // Landed on the saved offset — reveal.
+        if (Math.abs(docWrap.scrollTop - target) <= 2) return reveal();
+
+        // If the scale is still settling the height keeps growing; retry until
+        // we reach the target. Only once the height holds steady across a few
+        // frames AND still can't reach the target do we accept the clamp
+        // (content is genuinely shorter than the saved offset now).
+        if (scrollHeight === lastHeight) stableFrames += 1;
+        else {
+          stableFrames = 0;
+          lastHeight = scrollHeight;
+        }
+        const maxScroll = scrollHeight - docWrap.clientHeight;
+        if ((stableFrames >= 3 && maxScroll < target) || attempts >= 90) return reveal();
+        requestAnimationFrame(park);
+      };
+      park(); // first attempt synchronously (pre-paint); retries via rAF if needed
+    } else {
+      reveal();
+    }
+
     const ro = new ResizeObserver(fit);
     if (stageEl) ro.observe(stageEl);
     return () => {
@@ -197,6 +202,7 @@
   <div class="reader-stage" bind:this={stageEl}>
     <div
       class="reader-doc"
+      class:restoring
       bind:this={docWrap}
       onscroll={onScroll}
       style="--w:{PAGE_W * scale}px; --h:{PAGE_H * scale}px"
@@ -248,6 +254,12 @@
     overflow-x: hidden;
     padding: 20px 16px;
     scroll-behavior: smooth;
+  }
+  /* Hidden (but still laid out, so scrollHeight is valid and scrollTo works)
+     while restoring the saved scroll offset — the doc reveals already parked
+     there instead of visibly jumping from the top. */
+  .reader-doc.restoring {
+    visibility: hidden;
   }
   /* Each page is a scaled footprint box (the fixed 816×1056 sheet is transformed
      down; transform alone doesn't shrink layout size, so the box carries --w/--h).
