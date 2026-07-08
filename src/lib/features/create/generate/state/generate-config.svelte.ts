@@ -173,15 +173,19 @@ function clearConfig(): void {
 }
 
 // ===== Default Config =====
+// Opinionated starting state for anyone with no saved config: a rotated LOOP
+// with a quartered slice at length 8, so a first-run Generate tab produces a
+// LOOP out of the box instead of a loop-off freeform prompt. Overridden by any
+// saved config.
 const DEFAULT_CONFIG: UIGenerationConfig = {
   mode: GenerationMode.FREEFORM,
-  loopEnabled: false,
-  length: 16,
+  loopEnabled: true,
+  length: 8,
   level: 2,
   turnIntensity: 1.0,
   gridMode: GridMode.DIAMOND,
   propContinuity: PropContinuity.CONTINUOUS,
-  period: Period.HALVED,
+  period: Period.QUARTERED,
   loopType: LOOPType.ROTATED,
   constraintPreset: "smooth",
   handPathMode: "mixed",
@@ -190,14 +194,10 @@ const DEFAULT_CONFIG: UIGenerationConfig = {
   spellTargetLength: null,
 };
 
-// Baseline for signed-out visitors so the Generate tab has an opinionated
-// starting state (rotated loop, quartered slice, level 1) instead of the
-// Intermediate freeform default. Overridden by any saved config.
+// Signed-out visitors additionally start at level 1 (beginner). The loop
+// settings now come from DEFAULT_CONFIG, so only the level delta lives here.
 const GUEST_DEFAULT_OVERRIDES: Partial<UIGenerationConfig> = {
   level: 1,
-  loopEnabled: true,
-  loopType: LOOPType.ROTATED,
-  period: Period.QUARTERED,
 };
 
 // ===== Simple State Creator =====
