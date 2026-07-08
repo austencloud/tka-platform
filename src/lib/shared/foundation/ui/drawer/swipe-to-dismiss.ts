@@ -383,7 +383,12 @@ export class SwipeToDismiss {
     this.startedAtScrollBoundary =
       !!this.scrollableContainer && this.scrollAtBoundary;
 
-    if (event instanceof TouchEvent) {
+    // Desktop Safari does not define the `TouchEvent` global, so a bare
+    // `event instanceof TouchEvent` throws ReferenceError on every mouse
+    // interaction here (this handler is bound to both mousedown and
+    // touchstart). Feature-detect via the `touches` property instead — it
+    // narrows the union without referencing a possibly-undefined global.
+    if ("touches" in event) {
       const touch = event.touches[0]!;
       this.startY = touch.clientY;
       this.startX = touch.clientX;
@@ -398,7 +403,7 @@ export class SwipeToDismiss {
     this.startTime = Date.now();
     this.hasMoved = false;
 
-    if (event instanceof TouchEvent) {
+    if ("touches" in event) {
       // Touch: start drag immediately for responsive mobile UX
       this.isDragging = true;
       this.pendingMouseDrag = false;
@@ -433,7 +438,7 @@ export class SwipeToDismiss {
 
     if (!this.isDragging) return;
 
-    if (event instanceof TouchEvent) {
+    if ("touches" in event) {
       const touch = event.touches[0]!;
       this.currentY = touch.clientY;
       this.currentX = touch.clientX;

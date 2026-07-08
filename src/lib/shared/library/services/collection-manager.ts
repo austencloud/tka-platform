@@ -25,6 +25,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { captureEvent } from "$lib/shared/analytics/services/posthog";
 import type {
   LibraryCollection,
   SystemCollectionType,
@@ -156,6 +157,13 @@ export async function createUserCollection(
     );
   }
 
+  captureEvent("collection_create", {
+    collection_id: collectionId,
+    kind: "manual",
+    is_public: newCollection.isPublic,
+    sequence_count: newCollection.sequenceCount,
+  });
+
   return {
     ...newCollection,
     id: collectionId,
@@ -205,6 +213,13 @@ export async function createSmartUserCollection(
       collectionId
     );
   }
+
+  captureEvent("collection_create", {
+    collection_id: collectionId,
+    kind: "smart",
+    is_public: newCollection.isPublic,
+    sequence_count: newCollection.sequenceCount,
+  });
 
   return { ...newCollection, id: collectionId };
 }
