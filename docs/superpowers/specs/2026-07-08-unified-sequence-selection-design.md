@@ -43,16 +43,51 @@ UI primitive, only unrelated matches).
    `--theme-accent-strong`, fallback `#4f46e5`, for emphasis). Token-driven so it
    matches app-wide selection language and re-themes automatically.
 
-## Why per-cell ring (not one bounding box)
+## The selectable unit (why the ring count differs per surface)
 
-The guide strip is 5 contiguous cells on one row; a single rectangle fits it. Choreo
-cells **wrap** across rows, so a sequence's bounding box is an L-shape — one
-rectangle can't express it. Therefore the selection ring is drawn **per member
-cell**: every cell belonging to the active group renders the same ring. This is
-exactly how the guide's existing golden step ring works (a per-cell class toggled by
-a context signal — `guide-active-step.svelte.ts` + `.guide-step-active` in
-`guide.css`); we generalize that proven pattern into a reusable primitive. Both
-surfaces then look identical by construction, and wrapping is free.
+The primitive rings a **selectable unit** — whatever content a consumer wraps in one
+`SelectableSequenceCell`. How many units make up a sequence is the layout's call:
+
+- **Guide:** the strip is one bordered `.strip` grid of 5 *abutting* cells (shared
+  hairline dividers, no gaps). Per-cell rings there would draw 5 rings inside one
+  bordered box — busy and wrong. So the guide wraps the **whole strip as one unit** →
+  a single clean ring around the strip. (The strip is contiguous on one row, so one
+  rectangle fits perfectly.)
+- **Choreo:** cells live in a CSS grid and **wrap across rows**, so a sequence's
+  bounding box is an L-shape a single rectangle can't express. So choreo wraps **each
+  cell as its own unit**, all sharing one `groupId` → per-cell rings that light and
+  select together and survive wrapping.
+
+Same classes, same scope, same CSS in both. Hover/select is keyed by `groupId`, so
+whether a group is 1 unit or N, hovering or selecting any unit lights the whole group.
+This generalizes the guide's existing golden step ring (a class on the *existing*
+element toggled by a context signal — `guide-active-step.svelte.ts` + `.guide-step-active`
+in `guide.css`) into a reusable, layout-agnostic primitive. The two surfaces are
+cohesive (identical accent language, states, a11y) without being forced to identical
+ring counts their layouts can't support.
+
+### Why a class + child hit, not a wrapper component
+
+The selection visual is applied by putting a `.tka-seq-cell` class (plus reactive
+`is-hovered` / `is-selected`) on the host's *own* element — the guide `.strip`, the
+choreo `.cell` — exactly like `.guide-step-active` sits on the existing `.cell`. Two
+reasons a wrapper component fails here:
+
+1. **Scoped styles don't cross the boundary.** A wrapper whose root carried
+   `class="cell"`/`"strip"` would NOT pick up the host's scoped `.cell`/`.strip` rules
+   (Svelte scopes those to the host's own template; a `class` string handed to a child
+   does not inherit the parent's scope hash). The border/aspect-ratio/grid would be
+   lost.
+2. **`overflow: hidden` clips a nested `::after`.** Choreo's `.cell` sets
+   `overflow: hidden` (to clip the pictograph). A ring drawn as an `::after` on a child
+   nested inside it is a descendant and gets clipped. A `box-shadow` on the element
+   *itself* is not clipped by that same element's overflow — which is precisely why
+   `.guide-step-active` draws its ring as a `box-shadow` on the `.cell`.
+
+So the ring is a `box-shadow`/`outline` on the `.tka-seq-cell` element itself (never a
+nested pseudo for the outward ring; a pseudo is used only for the inner tint, where
+clipping is harmless). The interaction + a11y live in a tiny `SelectionHit` child the
+host drops inside the element; the host binds the `is-*` classes from the scope.
 
 ## Architecture
 
@@ -62,8 +97,12 @@ route and the write/choreo feature).
 | File | Responsibility |
 |---|---|
 | `sequence-selection.svelte.ts` | Reactive state factory + Svelte context. Owns hover + single-select state, keyed by group id. Mirrors the `GuideActiveStep` class shape. |
-| `SelectableSequenceCell.svelte` | Wraps one cell. Renders the transparent hit `<button>`, wires pointer + keyboard + ARIA, and applies the ring classes when its group is the hovered/selected one. |
-| `selection.css` | The canonical visual layer as `:global` classes, all values from `--theme-accent*`. Hover / selected / focus-visible / reduced-motion defined once. Imported by the two host surfaces. |
+| `SelectionHit.svelte` | The transparent hit `<button>` a host drops inside its `.tka-seq-cell` element. Wires pointer + keyboard + ARIA from the scope. Renders nothing when no scope is present. |
+| `selection.css` | The canonical visual layer as `:global` classes (`.tka-seq-cell`, `.is-hovered`, `.is-selected`, `.tka-seq-hit`), all values from `--theme-accent*`. Outward ring is a `box-shadow`/`outline` on the element (unclipped); tint is a pseudo. Hover / selected / focus-visible / reduced-motion defined once. Imported by the two host surfaces. |
+
+The host applies `.tka-seq-cell` + `class:is-hovered`/`class:is-selected` (bound to the
+scope, keyed by `groupId`) to its own element, and drops a `<SelectionHit groupId … />`
+inside — the same shape as today's `class:guide-step-active` + a context signal.
 
 ### State factory — `sequence-selection.svelte.ts`
 
@@ -116,33 +155,65 @@ adapts: it provides a `SequenceSelection` whose `selectedId` mirrors
 the builder stays the behavioral owner. The guide has no prior owner, so the scope
 IS the owner there, and `select()` additionally emits the sequence to the companion.
 
-### Cell wrapper — `SelectableSequenceCell.svelte`
+### Hit + a11y — `SelectionHit.svelte`
+
+A tiny child the host drops inside its `.tka-seq-cell` element. It renders only when a
+scope is present (so print/book emit no button). It owns interaction + ARIA; the host
+owns the element and its `is-*` classes.
 
 ```
 Props:
-  groupId: string            // sequence identity; cells sharing it react together
-  isGroupStart?: boolean      // the one focusable/labeled cell (default false)
-  label: string               // aria-label for the focusable cell ("Select the CAKE sequence")
+  groupId: string             // sequence identity; units sharing it react together
+  isGroupStart?: boolean       // the one focusable/labeled unit per group (default false)
+  label?: string               // aria-label for the focusable unit ("Select the CAKE sequence")
   onselect?: (groupId) => void // surface consequence (guide: emit+animate; choreo: toggle+remove-affordance)
-  disabled?: boolean
-Children: the cell content (a PictographContainer, etc.)
 ```
 
-Renders a relatively-positioned wrapper with:
-- The cell content (slotted).
-- A transparent absolute hit `<button>`:
-  - `onpointerenter` → `scope.hover(groupId)`, `onpointerleave` → `scope.hover(null)`.
-  - `onclick` → `onselect?.(groupId)` (the host decides select vs toggle).
-  - `isGroupStart` cell: in tab order, `aria-label={label}`, `aria-pressed={scope.isSelected(groupId)}`.
-  - Non-start cells: `tabindex="-1"`, `aria-hidden="true"` — pointer + hover only, no
-    extra tab stop (fixes choreo's 5-identical-buttons redundancy).
-  - `min-height`/`min-width`: `var(--min-touch-target, 44px)` via the shared class.
-- Ring classes bound to scope: `class:is-hovered={scope?.isHovered(groupId)}`,
-  `class:is-selected={scope?.isSelected(groupId)}`. When `scope` is null the wrapper
-  renders inert (no button, no ring) so print/book are untouched.
+Renders (only when `getSequenceSelection()` is non-null):
 
-Keyboard: the focusable button is a native `<button>`, so Enter/Space activate it for
-free. Escape-to-clear stays a host concern (choreo already binds it; guide can add it).
+```svelte
+<button
+  type="button"
+  class="tka-seq-hit"
+  aria-label={isGroupStart ? label : undefined}
+  aria-hidden={isGroupStart ? undefined : "true"}
+  aria-pressed={isGroupStart ? scope.isSelected(groupId) : undefined}
+  tabindex={isGroupStart ? undefined : -1}
+  onpointerenter={() => scope.hover(groupId)}
+  onpointerleave={() => scope.hover(null)}
+  onclick={() => onselect?.(groupId)}
+></button>
+```
+
+- `isGroupStart`: in tab order, labelled, `aria-pressed` reflects selection.
+- Non-start units: `tabindex="-1"` + `aria-hidden="true"` — pointer + hover only, no
+  extra tab stop (fixes choreo's N-identical-buttons redundancy; the guide is one unit
+  per sequence, so it is naturally single-entry).
+- `min-height`/`min-width`: `var(--min-touch-target, 44px)` via `.tka-seq-hit`.
+- Native `<button>` → Enter/Space activate for free. Escape-to-clear stays host-owned
+  (choreo already binds it; guide clears on companion close).
+
+### Host integration
+
+The host puts the classes on its own element and drops the hit inside:
+
+```svelte
+<div
+  class="strip tka-seq-cell"
+  class:is-hovered={selection?.isHovered(key)}
+  class:is-selected={selection?.isSelected(key)}
+  style="…coords…"
+>
+  <!-- existing content (the 5 pictograph cells, keeping class:guide-step-active) -->
+  <SelectionHit groupId={key} isGroupStart label={`Select the ${word} sequence`}
+    onselect={() => emitSequence?.({ strip, word, key })} />
+</div>
+```
+
+`.tka-seq-cell` only adds `position: relative` (harmless where the host already sets
+`position`, and the host's scoped rule wins anyway). No wrapper div, no scope-hash
+crossing, and the ring is a `box-shadow`/`outline` on this element so choreo's
+`overflow: hidden` can't clip it.
 
 ### Visual layer — `selection.css` (STARTING VALUES — tunable)
 
@@ -152,53 +223,68 @@ technique proven by `.guide-step-active` (outward `box-shadow` is not clipped by
 cell's own `overflow: hidden`; z-index lifts the active cell so the ring shows on
 every edge; the lifted layer is `pointer-events: none` so it never steals the click).
 
+The outward ring is a `box-shadow`/`outline` on the `.tka-seq-cell` element itself
+(never a nested pseudo), so choreo's `overflow: hidden` on `.cell` cannot clip it —
+the same reason `.guide-step-active` uses a `box-shadow` on the `.cell`. A pseudo is
+used only for the inner tint, where clipping is harmless. `z-index` lifts the active
+element so the ring shows on every edge over neighbours.
+
 ```css
 .tka-seq-cell { position: relative; }
 
 .tka-seq-hit {
   position: absolute; inset: 0; z-index: 3;
   background: transparent; border: 0; padding: 0; margin: 0; cursor: pointer;
-  border-radius: 6px;
+  border-radius: var(--tka-seq-radius, 6px);
   min-height: var(--min-touch-target, 44px);
   min-width: var(--min-touch-target, 44px);
 }
-
-/* Hover — subtle accent preview on every cell of the group. */
-.tka-seq-cell.is-hovered::after {
-  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
-  border-radius: 6px;
-  outline: 2px solid color-mix(in srgb, var(--theme-accent, #6366f1) 45%, transparent);
-  outline-offset: 3px;
-  background: color-mix(in srgb, var(--theme-accent, #6366f1) 6%, transparent);
-}
-
-/* Selected — solid accent ring + tint + glow, lifted above neighbours. */
-.tka-seq-cell.is-selected {
-  z-index: 10;
-}
-.tka-seq-cell.is-selected::after {
-  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
-  border-radius: 4px;
-  box-shadow:
-    0 0 0 2px color-mix(in srgb, var(--theme-accent, #6366f1) 90%, transparent),
-    0 0 10px color-mix(in srgb, var(--theme-accent, #6366f1) 45%, transparent);
-  background: color-mix(in srgb, var(--theme-accent, #6366f1) 12%, transparent);
-}
-
-/* Focus-visible on the group-start hit. */
 .tka-seq-hit:focus-visible {
   outline: 2px solid var(--theme-accent-strong, #4f46e5);
   outline-offset: 4px;
 }
 
+/* Hover — outline on the element itself (unclipped), lifted above neighbours. */
+.tka-seq-cell.is-hovered {
+  z-index: 4;
+  outline: var(--tka-seq-hover-width, 2px) solid
+    color-mix(in srgb, var(--theme-accent, #6366f1) 45%, transparent);
+  outline-offset: var(--tka-seq-hover-offset, 3px);
+  border-radius: var(--tka-seq-radius, 6px);
+}
+/* Inner tint via pseudo (clipping harmless — it fills the box). */
+.tka-seq-cell.is-hovered::after {
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: color-mix(in srgb, var(--theme-accent, #6366f1) var(--tka-seq-hover-tint, 6%), transparent);
+}
+
+/* Selected — solid accent ring + glow as box-shadow ON the element (unclipped). */
+.tka-seq-cell.is-selected {
+  z-index: 10;
+  border-radius: var(--tka-seq-radius, 6px);
+  box-shadow:
+    0 0 0 var(--tka-seq-sel-width, 2px)
+      color-mix(in srgb, var(--theme-accent, #6366f1) 90%, transparent),
+    0 0 var(--tka-seq-sel-glow, 10px)
+      color-mix(in srgb, var(--theme-accent, #6366f1) 45%, transparent);
+}
+.tka-seq-cell.is-selected::after {
+  content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: color-mix(in srgb, var(--theme-accent, #6366f1) var(--tka-seq-sel-tint, 12%), transparent);
+}
+/* When both true (hovering the selected unit) the selected ring wins. */
+.tka-seq-cell.is-selected.is-hovered { outline: none; }
+
 @media (prefers-reduced-motion: reduce) {
-  .tka-seq-cell.is-selected::after { box-shadow: 0 0 0 2px var(--theme-accent, #6366f1); }
+  .tka-seq-cell.is-selected {
+    box-shadow: 0 0 0 var(--tka-seq-sel-width, 2px) var(--theme-accent, #6366f1);
+  }
 }
 ```
 
-Interactive-tuning knobs exposed on the test page (see below): ring width, offset,
-radius, hover-vs-selected tint %, glow radius, and whether hover uses `outline` vs an
-inset ring. These are the specifics Austen locks by feel.
+Interactive-tuning knobs exposed on the test page (see below), all `--tka-seq-*`
+custom properties: ring width, offset, radius, hover-vs-selected tint %, glow radius.
+These are the specifics Austen locks by feel.
 
 ## Data flow per surface
 
@@ -207,25 +293,33 @@ inset ring. These are the specifics Austen locks by feel.
 1. `GuideReader` (the interactive host) creates a `SequenceSelection`, calls
    `setSequenceSelection(scope)`. `/print` and `/book` do NOT — no scope, nothing
    selectable, sheets stay pristine.
-2. Each pictograph cell of a sequence strip wraps in `SelectableSequenceCell` with
-   `groupId` = the strip key (`t1-0` — same value the click payload already uses),
-   `isGroupStart` on cell 0, `label` = `Select the ${word} sequence`.
-3. `onselect(groupId)` → `scope.select(groupId)` AND the existing
-   `getGuideSequenceClick()` emit (animate in the companion). Selection persists →
-   the accent group-ring stays on while it plays; the amber **step** ring
-   (`.guide-step-active`, unchanged) hops cell-to-cell inside it. Two distinct
-   colors, complementary — accent = "this sequence", amber = "this step".
-4. The old single `.seq-hit` overlay + its per-page `<style>` block are removed.
+2. Each sequence **strip** (the whole `.strip`, one unit) gets `class="strip
+   tka-seq-cell"` + `class:is-hovered`/`class:is-selected` bound to the scope (keyed by
+   the strip key `t1-0` — the same value the click payload already uses), and a
+   `<SelectionHit groupId={key} isGroupStart label={`Select the ${word} sequence`} …/>`
+   dropped inside it. The 5 pictograph `.cell`s keep their `class:guide-step-active`.
+   One ring around the whole strip.
+3. `SelectionHit`'s `onselect(groupId)` fires the existing `getGuideSequenceClick()`
+   emit (animate in the companion); `GuideReader.handleSequenceClick` also calls
+   `selection.select(payload.key)`, so selection persists → the accent group-ring
+   stays on while it plays; the amber **step** ring (`.guide-step-active`, unchanged)
+   hops cell-to-cell inside it. Two distinct colors, complementary — accent = "this
+   sequence", amber = "this step".
+4. The separate `.seq-hit` overlay `{#each}` block + its per-page `<style>` rules are
+   removed (5 pages). The strip's own `.strip` visual/layout CSS stays.
 
 **Choreo** (`SheetPreviewPages` + its host `ChoreoSheetView`):
-1. Host provides a `SequenceSelection` mirroring `builder.selectedSequenceId`;
-   `select/toggle` delegate to `builder.toggleSequenceSelection`.
-2. Each `.cell` with a `sequenceId` wraps in `SelectableSequenceCell` with
-   `groupId = cell.sequenceId`, `isGroupStart = cell.isSequenceStart`, and
-   `onselect` → `builder.toggleSequenceSelection` (click-to-toggle preserved).
+1. Host provides a `SequenceSelection` and keeps its `selectedId` mirrored to
+   `builder.selectedSequenceId` via an `$effect`. The builder stays the behavioral
+   owner (Remove/persistence/Escape).
+2. Each `.cell` with a `sequenceId` gets `tka-seq-cell` + `class:is-hovered`/
+   `class:is-selected` (keyed by `cell.sequenceId`) and a `<SelectionHit
+   groupId={cell.sequenceId} isGroupStart={cell.isSequenceStart} …/>` whose `onselect`
+   → `onSelectSequence(id)` → `builder.toggleSequenceSelection(id)` (click-to-toggle
+   preserved).
 3. The Remove button stays exactly as is (choreo-only consequence), still gated on
    `isSequenceStart && isSelected`.
-4. The old `.cell-select` button + `.cell.selected::after` ring are removed; the new
+4. The old `.cell-select` button + `.cell.selected::after` ring are removed; the shared
    `.tka-seq-*` classes replace them. Choreo gains group hover for free.
 
 ## Accessibility
@@ -243,10 +337,11 @@ inset ring. These are the specifics Austen locks by feel.
 
 ## Interactive-only / print safety
 
-Rings and hit buttons render only when a `SequenceSelection` scope is present in
-context. `/print` and `/book` never set one, so `getSequenceSelection()` is null and
-`SelectableSequenceCell` renders inert content with no button and no ring — same
-guarantee `.seq-hit` and `.guide-step-active` give today. A contract test asserts it.
+Hit buttons render only when a `SequenceSelection` scope is present in context.
+`/print` and `/book` never set one, so `getSequenceSelection()` is null, `SelectionHit`
+renders nothing, and the host binds `is-hovered`/`is-selected` to a null scope
+(`selection?.isSelected(...)` → falsy) so no ring paints — same guarantee `.seq-hit`
+and `.guide-step-active` give today. A contract test asserts it.
 
 ## Test page (the interactive tuning ground)
 
@@ -257,10 +352,12 @@ real primitives, not a hand-rolled mockup). It renders:
 - A **wrapping group** (choreo-style: real cells in a grid narrow enough to wrap the
   sequence across 2 rows).
 - Both wired to one `SequenceSelection` scope so hover/select/focus behave live.
-- A control panel (existing `SegmentedControl` / `FilterChipBase` primitives, not
-  hand-rolled) exposing the tunable knobs: ring width, offset, radius, hover tint %,
-  selected tint %, glow radius, hover style (outline vs inset). Knobs write CSS
-  custom properties on a wrapper so changes are live and copy-outable.
+- A control panel of range sliders (continuous px/% values — a dev-only tuning
+  surface, so native `range` inputs are the right control; no-checkboxes does not
+  apply to sliders) exposing the tunable knobs: ring width, offset, radius, hover
+  tint %, selected tint %, glow radius. Each slider writes a `--tka-seq-*` custom
+  property on the stage wrapper so changes are live and copy-outable straight into
+  `selection.css`.
 
 This page is where "I need to get my opinion through actual interaction with real
 components" happens. Final values from this session get baked into `selection.css`.
