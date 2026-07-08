@@ -682,6 +682,13 @@ export class Medusae {
       }),
     );
     bulb.scale.multiplyScalar(0.95);
+    // Sole click/hover pick target: only the solid bell dome rings a jelly. The
+    // faint additive glow halo (bulbFaint, 1.05× scale), the wispy DoubleSide
+    // tail, and the long sprawling mouth arms are all excluded — otherwise their
+    // near-invisible geometry projects a pick area far larger than the visible
+    // bell, so clicks that only graze the halo/tentacles (or land in empty water
+    // over a tentacle behind a panel) fire a false Ding.
+    bulb.userData.jellyfishPickTarget = true;
     this.item.add(bulb);
 
     const bulbFaint = new Mesh(

@@ -33,7 +33,10 @@
   const DART_UP_BIAS = 0.5;
   // Hover affordance: world-space radius around each bell for the cheap
   // ray-vs-sphere test that drives the pointer cursor (no triangle raycast).
-  const HOVER_RADIUS = 0.7;
+  // Sized to the visible bell (item scale 0.012 × ~20 local radius ≈ 0.24 world)
+  // so the pointer cursor tracks what actually rings — the solid dome — instead
+  // of the old wide sprawl that also covered the now-excluded glow/tentacles.
+  const HOVER_RADIUS = 0.3;
 
   // ── Spawn position generation ──────────────────────────────────────────
 
@@ -114,10 +117,15 @@
     };
     instances.push(inst);
 
+    // Pick only the solid bell dome (tagged in geometry). The faint glow halo and
+    // wispy DoubleSide tail/mouth arms are NOT pick targets — their near-invisible
+    // geometry otherwise balloons the hit area far past the visible bell, ringing
+    // on near-misses and on clicks that land over a tentacle behind overlay UI.
     medusae.item.traverse((child) => {
-      if ((child as Mesh).isMesh) {
-        pickMeshes.push(child as Mesh);
-        meshToInstance.set(child as Mesh, inst);
+      const mesh = child as Mesh;
+      if (mesh.isMesh && mesh.userData.jellyfishPickTarget) {
+        pickMeshes.push(mesh);
+        meshToInstance.set(mesh, inst);
       }
     });
   }
