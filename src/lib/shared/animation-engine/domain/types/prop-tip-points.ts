@@ -51,12 +51,20 @@ const BIGSTAFF_TIP_POINTS: PropTipConfig = {
 
 // ─── Club Family ──────────────────────────────────────────────────────────────
 
+// Regular (small) club is single-ended — one weighted tip at the outer end,
+// matching the club/sword single-tip convention.
 const CLUB_TIP_POINTS: PropTipConfig = {
   points: [{ dx: 130, dy: 0 }],
 };
 
+// Big club is bilateral — two mirror-symmetric ends (Knob / Bulb). Prop width is
+// 300.5 (PROP_DIMENSIONS), so each end sits ~150 from center. Matches the
+// bigchicken pattern and the TWO_ENDED_PROPS set in prop-tip-ends.ts.
 const BIGCLUB_TIP_POINTS: PropTipConfig = {
-  points: [{ dx: 130, dy: 0 }],
+  points: [
+    { dx: -150, dy: 0 },
+    { dx: 150, dy: 0 },
+  ],
 };
 
 // ─── Fan Family ───────────────────────────────────────────────────────────────
