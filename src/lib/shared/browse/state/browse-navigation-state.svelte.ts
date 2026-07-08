@@ -16,7 +16,7 @@ import {
 } from "$app/navigation";
 
 // Tab types matching the Browse module structure
-export type BrowseTab = "gallery" | "collections" | "creators";
+export type BrowseTab = "gallery" | "collections" | "creators" | "discover";
 export type BrowseView = "list" | "detail" | "profile";
 
 /**

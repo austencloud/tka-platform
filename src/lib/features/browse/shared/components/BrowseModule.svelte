@@ -21,6 +21,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
 
   import type { BrowseEventHandler } from "../services/browse-event-handler";
   import MyCollectionsPanel from "../../collections/components/MyCollectionsPanel.svelte";
+  import CommunityCollectionsPanel from "../../collections/components/CommunityCollectionsPanel.svelte";
   import CreatorsPanel from "../../creators/components/CreatorsPanel.svelte";
   import UserProfilePanel from "../../creators/components/UserProfilePanel.svelte";
   import { creatorsViewState } from "../../creators/state/creators-view-state.svelte";
@@ -51,11 +52,12 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   } from "../services/gallery-view-persister";
 
   // "collections" is the Library tab (label renamed 2026-07-02; id frozen —
-  // routes and persisted nav state reference it).
-  type BrowseModuleType = "gallery" | "collections" | "creators" | "hall-of-shame";
+  // routes and persisted nav state reference it). "discover" is the community
+  // Collections discovery tab (id "discover" because "collections" is taken).
+  type BrowseModuleType = "gallery" | "collections" | "discover" | "creators" | "hall-of-shame";
 
   // Tab order for determining slide direction (left-to-right in bottom nav)
-  const TAB_ORDER: BrowseModuleType[] = ["gallery", "collections", "creators", "hall-of-shame"];
+  const TAB_ORDER: BrowseModuleType[] = ["gallery", "collections", "discover", "creators", "hall-of-shame"];
 
   // Transition configuration
   const SLIDE_DISTANCE = 30; // pixels
@@ -204,6 +206,8 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       newTab = "gallery";
     } else if (navTab === "collections") {
       newTab = "collections";
+    } else if (navTab === "discover") {
+      newTab = "discover";
     } else if (navTab === "creators") {
       newTab = "creators";
     } else if (navTab === "hall-of-shame") {
@@ -216,7 +220,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       const browseTab =
         newTab === "gallery"
           ? "gallery"
-          : (newTab as "collections" | "creators");
+          : (newTab as "collections" | "discover" | "creators");
       browseNavigationState.navigateTo({ tab: browseTab, view: "list" });
     }
 
@@ -601,21 +605,6 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
                   engine.clearUserFilters();
                   engine.setSearch(q);
                 })}
-              onOpenCollection={(ownerId, collectionId, name, ownerName) => {
-                // Discovery hand-off: a community collection opens in the
-                // Library tab's detail view (the location effect flips the
-                // tab). Same contextId encoding MyCollectionsPanel uses.
-                browseNavigationState.navigateTo({
-                  tab: "collections",
-                  view: "detail",
-                  contextId: `${ownerId}:${collectionId}`,
-                  filter: {
-                    type: "collectionName",
-                    value: name,
-                    displayName: ownerName,
-                  },
-                });
-              }}
             />
           {:else}
             <GalleryTab
@@ -640,6 +629,8 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
           {/if}
         {:else if activeTab === "collections"}
           <MyCollectionsPanel />
+        {:else if activeTab === "discover"}
+          <CommunityCollectionsPanel />
         {:else if activeTab === "creators"}
           {#if creatorsViewState.currentView === "user-profile" && creatorsViewState.viewingUserId}
             <UserProfilePanel userId={creatorsViewState.viewingUserId} />

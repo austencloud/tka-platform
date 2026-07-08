@@ -135,6 +135,16 @@ export const BROWSE_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #d8b4fe 0%, #c084fc 100%)",
   },
   {
+    id: "discover",
+    labelKey: "tab_browse_discover",
+    descKey: "tab_desc_browse_discover",
+    label: "Collections",
+    icon: '<i class="fas fa-folder-open" aria-hidden="true"></i>',
+    description: "Browse collections shared by the community",
+    color: "#f59e0b",
+    gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
+  },
+  {
     id: "creators",
     labelKey: "tab_browse_creators",
     descKey: "tab_desc_browse_creators",
