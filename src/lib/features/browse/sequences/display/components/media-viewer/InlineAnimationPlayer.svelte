@@ -139,7 +139,16 @@
   });
 
   // Derived state for canvas
+  // Letters are a PROP-only glyph — a hand pictograph never shows one (a hand has
+  // no thumb/pinky reference to letter). When this player renders hands, suppress
+  // the letter overlay entirely (start-position Greek letter + per-step letter).
+  // Prop/staff renders (gallery, Arena) pass a non-hand type → unchanged.
+  const isHandRender = $derived(
+    (bluePropType ?? "").toLowerCase() === "hand" || (redPropType ?? "").toLowerCase() === "hand"
+  );
+
   let currentLetter = $derived.by(() => {
+    if (isHandRender) return null;
     if (!animationState.sequenceData) return null;
     const currentStep = animationState.currentStep;
 

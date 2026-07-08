@@ -24,9 +24,11 @@
    * keys arrow placement off the letter (dash-location-calculator.ts):
    *   - Type 4 (one dash + one static) never collides → letter null; the DEFAULT
    *     zero-turn dash map already matches the artboard (S→N=W, N→S=E, E→W=S, W→E=N).
-   *   - Type 5 α→α / β→β put TWO dashes on the SAME vertical line. letter null gives
-   *     both the same location (overlap). Ψ-/Φ- route through PHI_DASH_PSI_DASH_MAP
-   *     → blue side WEST, red side EAST (the artboard's side-by-side arrows).
+   *   - Type 5 α→α (Φ-) / β→β (Ψ-) put TWO dashes on the SAME vertical line. letter
+   *     null gives both the same location (overlap). Φ-/Ψ- both route through
+   *     PHI_DASH_PSI_DASH_MAP → blue side WEST, red side EAST (the artboard's
+   *     side-by-side arrows). Letters MCP-verified: Φ-=α→α, Ψ-=β→β. The letter is a
+   *     prop-only glyph, never shown for hands (page showTKA off; companion gates it).
    *   - Type 5 γ→γ needs Λ- (LAMBDA_DASH_ZERO_TURNS_MAP): blue S→N→EAST, red E→W→SOUTH
    *     (letter null would wrongly place blue WEST). Verified box-by-box vs the map.
    *   - Type 6 α/β/γ → the canonical Type-6 static letters (showTKA glyph).
@@ -120,7 +122,7 @@
     {
       key: "t56-4a",
       x: 156.5,
-      y: 98.5,
+      y: 107,
       box: 100,
       tka: false,
       animate: true,
@@ -158,7 +160,7 @@
       word: "α → α",
       cells: [
         { m: [SO_, SO_, N, N], step: 0 }, // Start: blue S, red N (alpha)
-        { m: [SO_, N, N, SO_], step: 1, letter: Letter.PSI_DASH }, // both dash, blue W / red E
+        { m: [SO_, N, N, SO_], step: 1, letter: Letter.PHI_DASH }, // α→α = Φ- (MCP); dash arrows blue W / red E
       ],
     },
     {
@@ -171,7 +173,7 @@
       word: "β → β",
       cells: [
         { m: [SO_, SO_, SO_, SO_], step: 0 }, // Start: both S (beta)
-        { m: [SO_, N, SO_, N], step: 1, letter: Letter.PHI_DASH }, // both dash S→N, blue W / red E
+        { m: [SO_, N, SO_, N], step: 1, letter: Letter.PSI_DASH }, // β→β = Ψ- (MCP); dash arrows blue W / red E
       ],
     },
     {
@@ -252,16 +254,17 @@
   const STATIC = (s: string) => `<span class="k-static">${s}</span>`;
   let PARAS: Para[] = $state([
     {
-      // Proof y=53.3/71.3, shifted down to clear the 48pt calligraphic title above.
+      // Proof y=53.3/71.3, shifted down to clear the 48pt calligraphic title above
+      // (whose descenders reach ~68pt); the α→β strip drops in step (98.5 → 107).
       x: 0,
-      y: 55,
-      fs: 13.5,
-      lh: 16.5,
+      y: 72,
+      fs: 13,
+      lh: 15.5,
       html:
         `With a ${DASH("Dash")}, one hand executes a dash while the other hand remains static.<br>` +
         "With alpha → beta, this creates a two-step sequence:",
     },
-    { x: 0, y: 201, fs: 14, lh: 17, html: "And with gamma → gamma, it creates a 4-step sequence:" },
+    { x: 0, y: 210, fs: 14, lh: 17, html: "And with gamma → gamma, it creates a 4-step sequence:" },
     {
       x: 0,
       y: 395,
