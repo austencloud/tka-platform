@@ -281,6 +281,34 @@ describe("SequenceBuilder LOOP extension", () => {
     }
   });
 
+  it("Rewound derives each appended beat's letter from its reversed motions (not copied from source)", () => {
+    // In this mock A and B are temporal inverses of each other:
+    //   A: blue n→e, red s→w   (alpha1→beta3)
+    //   B: blue e→n, red w→s   (beta3→alpha1)
+    // Rewinding B (swap locations, flip rotation) yields A's motion signature,
+    // and rewinding A yields B's. So the correct derived word is "AB" — the
+    // letter of each appended beat re-derived from its OWN reversed motions.
+    //
+    // The bug: RewoundExecutor spreads `...sourceStep`, copying the SOURCE
+    // beat's letter onto the reversed beat, producing the derived word "BA"
+    // (rev(B) mislabeled "B", rev(A) mislabeled "A"). This is the "beat 12
+    // labeled with beat 5's letter" defect reported for the generator.
+    const result = builder.build({
+      word: "AB",
+      gridMode: "diamond",
+      level: 1,
+      loop: {
+        type: LOOPType.REWOUND,
+        period: Period.HALVED,
+      },
+    });
+
+    // Steps: [start, A, B, rev(B), rev(A)]
+    expect(result.sequence[3]!.letter).toBe("A"); // rev(B) → A's motion signature
+    expect(result.sequence[4]!.letter).toBe("B"); // rev(A) → B's motion signature
+    expect(result.loop!.derivedWord).toBe("AB"); // not the copied "BA"
+  });
+
   it("result without loop options has no loop metadata", () => {
     const result = builder.build({
       word: "AB",

@@ -50,6 +50,7 @@ import {
 } from "../../loop/loop-types.js";
 import type { LOOPSpec } from "../../loop/loop-spec.js";
 import { loopExecutorSelector } from "../../loop/execution/LOOPExecutorSelector.js";
+import { findLetterByMotions } from "../../loop/LetterLookup.js";
 import { loopEndPositionSelector } from "../../loop/targeting/LOOPEndPositionSelector.js";
 import {
   QUARTER_POSITION_MAP_CW,
@@ -356,7 +357,7 @@ export class SequenceBuilder {
 
     // Stage 6: LOOP extension (if requested)
     if (options.loop) {
-      return this.extendWithLOOP(result, options.loop);
+      return this.extendWithLOOP(result, options.loop, options.gridMode);
     }
 
     return result;
@@ -635,7 +636,7 @@ export class SequenceBuilder {
 
     // Stage 6: LOOP extension (if requested)
     if (options.loop) {
-      return this.extendWithLOOP(result, options.loop);
+      return this.extendWithLOOP(result, options.loop, options.gridMode);
     }
 
     return result;
@@ -879,7 +880,11 @@ export class SequenceBuilder {
    * The executors mutate the input array (shift/unshift the start position),
    * so we pass a copy to keep the original result intact if needed.
    */
-  private extendWithLOOP(result: BuildResult, loopOptions: LoopOptions): BuildResult {
+  private extendWithLOOP(
+    result: BuildResult,
+    loopOptions: LoopOptions,
+    gridMode: string,
+  ): BuildResult {
     const executor = loopExecutorSelector.getExecutor(loopOptions.type);
 
     // Build the seed word from non-start-position, non-bridge letters
@@ -895,6 +900,30 @@ export class SequenceBuilder {
     // Execute the LOOP transformation. The executor returns the complete
     // circular sequence (start position + seed beats + derived beats).
     const extendedSteps = executor.executeLOOP(inputSteps, loopOptions.period);
+
+    // The executors carry the SOURCE beat's letter onto each derived beat
+    // (they spread `...sourceStep`). For rewound — and any executor whose
+    // transform changes the motion configuration — the reversed motions map to
+    // a DIFFERENT letter (e.g. reversing E's motions yields K), so the copied
+    // letter is wrong. Re-derive each derived beat's letter from its own
+    // resulting motions against the pictograph data. This mirrors the app-side
+    // SequenceExtender, which already re-derives letters after LOOP execution.
+    const seedStepCountForLetters = result.sequence.length;
+    const allPictographs = this.variationProvider.getAllVariations(gridMode);
+    for (let i = seedStepCountForLetters; i < extendedSteps.length; i++) {
+      const step = extendedSteps[i]!;
+      const derivedLetter = findLetterByMotions(
+        step.motions.blue,
+        step.motions.red,
+        allPictographs,
+      );
+      if (derivedLetter && derivedLetter !== step.letter) {
+        extendedSteps[i] = {
+          ...step,
+          letter: derivedLetter as SequenceStep["letter"],
+        };
+      }
+    }
 
     // Figure out which beats are derived (everything after the original seed).
     // The original sequence had result.sequence.length steps (including start position).
