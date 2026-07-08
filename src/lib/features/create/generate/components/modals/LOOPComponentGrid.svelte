@@ -1,6 +1,7 @@
 <!--
-LOOPComponentGrid.svelte - Grid layout for LOOP component selection buttons
-Compact 3x2 grid (icon + label) so all 6 items fit on mobile without scrolling
+LOOPComponentGrid.svelte - Layout for LOOP component selection buttons
+- layout="grid" (default): compact 3x2 grid (icon + label), unchanged behavior.
+- layout="list": single vertical column with descriptions (used by the drawer).
 -->
 <script lang="ts">
   import {
@@ -12,19 +13,24 @@ Compact 3x2 grid (icon + label) so all 6 items fit on mobile without scrolling
   let {
     selectedComponents,
     isMultiSelectMode = false,
+    layout = "grid",
     onToggleComponent,
   } = $props<{
     selectedComponents: Set<LOOPComponent>;
     isMultiSelectMode?: boolean;
+    layout?: "grid" | "list";
     onToggleComponent: (component: LOOPComponent) => void;
   }>();
 
-  // Compact grid in both modes - descriptions removed to fit all 6 items
-  // on small mobile screens (e.g. Z Fold 6 portrait in browser)
-  const showDescriptions = false;
+  // List layout shows descriptions per row; grid stays compact (icon + label).
+  const showDescriptions = $derived(layout === "list");
 </script>
 
-<div class="loop-component-grid" class:with-descriptions={showDescriptions}>
+<div
+  class="loop-component-grid"
+  class:list={layout === "list"}
+  class:with-descriptions={showDescriptions}
+>
   {#each LOOP_COMPONENTS as componentInfo}
     <LOOPComponentButton
       {componentInfo}
@@ -46,5 +52,11 @@ Compact 3x2 grid (icon + label) so all 6 items fit on mobile without scrolling
     /* 3 columns x 2 rows - fits all 6 items on small mobile screens */
     grid-template-columns: repeat(3, 1fr);
     grid-auto-rows: minmax(64px, auto);
+  }
+
+  /* List layout: single vertical column, rows size to their content */
+  .loop-component-grid.list {
+    grid-template-columns: 1fr;
+    grid-auto-rows: auto;
   }
 </style>
