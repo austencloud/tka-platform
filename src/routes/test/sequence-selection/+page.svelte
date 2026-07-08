@@ -208,7 +208,6 @@
     transform: scale(1.03);
     box-shadow:
       0 0 0 2px var(--theme-accent, #6366f1),
-      0 8px 22px color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent),
       0 6px 18px rgba(0, 0, 0, 0.22);
   }
   :global(.sel-preset-lift .tka-seq-cell.is-selected::after) {

@@ -3,70 +3,58 @@
  * Consumed by the guide sequence strips and the choreo sheet: a host applies
  * `.tka-seq-cell` + `is-hovered`/`is-selected` to its own element and drops a
  * <SelectionHit> inside. All colour from --theme-accent so it re-themes with the app.
- * The outward ring is a box-shadow/outline on the ELEMENT (never a nested pseudo) so
- * an ancestor overflow:hidden can't clip it — same trick as .guide-step-active.
- * NOTE: values below are STARTING POINTS pending interactive tuning on
- * /test/sequence-selection. */
-
-:root {
-  --tka-seq-radius: 6px;
-  --tka-seq-hover-width: 2px;
-  --tka-seq-hover-offset: 3px;
-  --tka-seq-hover-tint: 6%;
-  --tka-seq-sel-width: 2px;
-  --tka-seq-sel-tint: 12%;
-  --tka-seq-sel-glow: 10px;
-}
+ *
+ * Look: "Lift & Glow" (chosen 2026-07-08). The selected sequence pops toward you —
+ * a small scale-up + a neutral elevation shadow + a crisp accent ring. No accent
+ * underglow (deliberately dropped per feedback). The ring is a box-shadow ON the
+ * element (never a nested pseudo) so an ancestor overflow:hidden can't clip it —
+ * same trick as .guide-step-active. A pseudo carries only the faint inner tint. */
 
 .tka-seq-cell {
   position: relative;
+  transition:
+    box-shadow 0.16s ease,
+    outline-color 0.16s ease,
+    transform 0.16s ease;
 }
 
 /* Transparent hit target laid over the unit. */
 .tka-seq-hit {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 5;
   margin: 0;
   padding: 0;
   border: 0;
   background: transparent;
   cursor: pointer;
-  border-radius: var(--tka-seq-radius);
+  border-radius: 8px;
   min-height: var(--min-touch-target, 44px);
   min-width: var(--min-touch-target, 44px);
 }
 .tka-seq-hit:focus-visible {
   outline: 2px solid var(--theme-accent-strong, #4f46e5);
-  outline-offset: 4px;
+  outline-offset: 3px;
 }
 
-/* Hover — outline on the element itself (unclipped), lifted above neighbours. */
+/* Hover — a subtle lift + a faint accent ring. */
 .tka-seq-cell.is-hovered {
   z-index: 4;
-  border-radius: var(--tka-seq-radius);
-  outline: var(--tka-seq-hover-width) solid
-    color-mix(in srgb, var(--theme-accent, #6366f1) 45%, transparent);
-  outline-offset: var(--tka-seq-hover-offset);
-}
-.tka-seq-cell.is-hovered::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  background: color-mix(in srgb, var(--theme-accent, #6366f1) var(--tka-seq-hover-tint), transparent);
+  border-radius: 8px;
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.18),
+    0 0 0 1.5px color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
 }
 
-/* Selected — solid accent ring + glow as box-shadow ON the element (unclipped). */
+/* Selected — pops toward you: scale + neutral elevation shadow + crisp accent ring. */
 .tka-seq-cell.is-selected {
   z-index: 10;
-  border-radius: var(--tka-seq-radius);
+  border-radius: 8px;
+  transform: scale(1.03);
   box-shadow:
-    0 0 0 var(--tka-seq-sel-width)
-      color-mix(in srgb, var(--theme-accent, #6366f1) 90%, transparent),
-    0 0 var(--tka-seq-sel-glow)
-      color-mix(in srgb, var(--theme-accent, #6366f1) 45%, transparent);
+    0 0 0 2px var(--theme-accent, #6366f1),
+    0 6px 18px rgba(0, 0, 0, 0.22);
 }
 .tka-seq-cell.is-selected::after {
   content: "";
@@ -74,16 +62,12 @@
   inset: 0;
   z-index: 2;
   pointer-events: none;
-  background: color-mix(in srgb, var(--theme-accent, #6366f1) var(--tka-seq-sel-tint), transparent);
-}
-
-/* Selected wins over hover when both are true (hovering the selected unit). */
-.tka-seq-cell.is-selected.is-hovered {
-  outline: none;
+  background: color-mix(in srgb, var(--theme-accent, #6366f1) 6%, transparent);
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .tka-seq-cell.is-hovered,
   .tka-seq-cell.is-selected {
-    box-shadow: 0 0 0 var(--tka-seq-sel-width) var(--theme-accent, #6366f1);
+    transform: none;
   }
 }
