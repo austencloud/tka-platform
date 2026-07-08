@@ -50,7 +50,7 @@ import {
   createTailState,
   type TailState,
 } from "$lib/shared/animation-engine/domain/tail-recession";
-import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
+import { spotlightFactor, tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 
 /**
  * Minimum ring capacity. Actual capacity is `max(RING_BUFFER_MIN, tailLength + RING_BUFFER_HEADROOM)`
@@ -497,10 +497,15 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       });
     };
 
-    pushTip(`blue-left${blueSuffix}`, this.blueLeftRing, [bR, bG, bB], this.blueLeftTail, blueAlpha);
-    pushTip(`blue-right${blueSuffix}`, this.blueRightRing, [bR, bG, bB], this.blueRightTail, blueAlpha);
-    pushTip(`red-left${redSuffix}`, this.redLeftRing, [rR, rG, rB], this.redLeftTail, redAlpha);
-    pushTip(`red-right${redSuffix}`, this.redRightRing, [rR, rG, rB], this.redRightTail, redAlpha);
+    // Performer spotlight: when a copy is selected, dim every other family's
+    // trail (family 0 = base "you", family k = layer k-1). Scaling the tip's
+    // envelope fades its whole trail toward the black stage.
+    const selected = params.tunnelSelectedLayer ?? null;
+    const baseF = spotlightFactor(selected, 0);
+    pushTip(`blue-left${blueSuffix}`, this.blueLeftRing, [bR, bG, bB], this.blueLeftTail, blueAlpha * baseF);
+    pushTip(`blue-right${blueSuffix}`, this.blueRightRing, [bR, bG, bB], this.blueRightTail, blueAlpha * baseF);
+    pushTip(`red-left${redSuffix}`, this.redLeftRing, [rR, rG, rB], this.redLeftTail, redAlpha * baseF);
+    pushTip(`red-right${redSuffix}`, this.redRightRing, [rR, rG, rB], this.redRightTail, redAlpha * baseF);
 
     // Overlaid tunnel-layer tips. Each layer's blue/red rings get a distinct
     // spectrum color (tunnelPropColor, parsed via the same hexToRgb) so every
@@ -521,10 +526,12 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       const redLayerRgb = spectrum
         ? hexToRgb(tunnelPropColor(3 + i * 2, layerCount).hex)
         : ([rR, rG, rB] as [number, number, number]);
-      pushTip(`L${i}-blue-left${blueSuffix}`, rings.blueLeft, blueLayerRgb, tails.blueLeft, blueAlpha);
-      pushTip(`L${i}-blue-right${blueSuffix}`, rings.blueRight, blueLayerRgb, tails.blueRight, blueAlpha);
-      pushTip(`L${i}-red-left${redSuffix}`, rings.redLeft, redLayerRgb, tails.redLeft, redAlpha);
-      pushTip(`L${i}-red-right${redSuffix}`, rings.redRight, redLayerRgb, tails.redRight, redAlpha);
+      // Layer i is copy arm i+1 — dim it when another performer is spotlit.
+      const f = spotlightFactor(selected, i + 1);
+      pushTip(`L${i}-blue-left${blueSuffix}`, rings.blueLeft, blueLayerRgb, tails.blueLeft, blueAlpha * f);
+      pushTip(`L${i}-blue-right${blueSuffix}`, rings.blueRight, blueLayerRgb, tails.blueRight, blueAlpha * f);
+      pushTip(`L${i}-red-left${redSuffix}`, rings.redLeft, redLayerRgb, tails.redLeft, redAlpha * f);
+      pushTip(`L${i}-red-right${redSuffix}`, rings.redRight, redLayerRgb, tails.redRight, redAlpha * f);
     }
 
     const payload: TrailPassPayload = { tips };

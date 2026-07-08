@@ -7,7 +7,6 @@ import {
   TUNNEL_PRESETS,
   clampConfig,
   coerceSpeedOverrides,
-  coerceSpeedPattern,
   configKey,
   configsEqual,
   copyModulators,
@@ -17,6 +16,8 @@ import {
   imageCount,
   matchPreset,
   propCount,
+  resolveSpeedOverrides,
+  speedFill,
   type TunnelConfig,
 } from "./tunnel-config";
 
@@ -51,7 +52,7 @@ describe("per-copy modulators do not change the count", () => {
       { invert: true },
       { echo: true },
       { staggerSteps: 3 },
-      { speedPattern: "alternating" },
+      { speedOverrides: { 1: 2 } },
     ] satisfies Partial<TunnelConfig>[]) {
       expect(imageCount(cfg({ fold: 4, ...mod }))).toBe(imageCount(base));
     }
@@ -85,32 +86,35 @@ describe("sample-time modulators — Stagger / Speed", () => {
     expect(mods.every((m) => m.staggerSteps === 0)).toBe(true);
   });
 
-  it("alternating cycles arms through 2× / ½× / 1× (the legacy Speed behavior)", () => {
-    const mods = copyModulators(cfg({ fold: 8, speedPattern: "alternating" })); // arms 1..7
-    expect(mods.slice(0, 3).map((m) => m.speed)).toEqual([2, 0.5, 1]);
-  });
-
-  it("off = every arm at 1×", () => {
-    const mods = copyModulators(cfg({ fold: 4, speedPattern: "off" }));
+  it("no overrides = every arm at 1×", () => {
+    const mods = copyModulators(cfg({ fold: 4 }));
     expect(mods.every((m) => m.speed === 1)).toBe(true);
   });
 
-  it("accelerando sweeps first copy slow → last copy fast", () => {
-    const mods = copyModulators(cfg({ fold: 4, speedPattern: "accelerando" })); // 3 copies
-    const rates = mods.map((m) => m.speed);
-    expect(rates[0]).toBe(0.5); // first copy slowest
-    expect(rates[rates.length - 1]).toBe(2); // last copy fastest
-    expect(rates[0]!).toBeLessThanOrEqual(rates[1]!);
-    expect(rates[1]!).toBeLessThanOrEqual(rates[2]!);
+  it("per-performer overrides drive each arm's rate", () => {
+    const c = cfg({ fold: 4, speedOverrides: { 2: 4 } }); // arms 1,2,3
+    expect(copyModulators(c).map((m) => m.speed)).toEqual([1, 4, 1]);
+    expect(effectiveSpeed(c, 2)).toBe(4);
+    expect(effectiveSpeed(c, 1)).toBe(1);
+  });
+});
+
+describe("speed fills", () => {
+  it("alternating fill matches the legacy [2, ½, 1] cycle (1× arms omitted)", () => {
+    // arms 1..7: 2, 0.5, 1, 2, 0.5, 1, 2 → the 1× arms (3, 6) are dropped.
+    expect(speedFill("alternating", 8)).toEqual({ 1: 2, 2: 0.5, 4: 2, 5: 0.5, 7: 2 });
   });
 
-  it("a per-performer override wins over the pattern (only that arm)", () => {
-    const c = cfg({ fold: 4, speedPattern: "off", speedOverrides: { 2: 4 } });
-    const mods = copyModulators(c); // arms 1,2,3
-    expect(mods.map((m) => m.speed)).toEqual([1, 4, 1]);
-    // effectiveSpeed agrees for the pinned arm and the pattern arms.
-    expect(effectiveSpeed(c, 2, imageCount(c))).toBe(4);
-    expect(effectiveSpeed(c, 1, imageCount(c))).toBe(1);
+  it("accelerando fill sweeps slow → fast across the copies (1× arms omitted)", () => {
+    // 3 copies: arm1 = 0.5, arm2 = 1 (dropped), arm3 = 2.
+    expect(speedFill("accelerando", 4)).toEqual({ 1: 0.5, 3: 2 });
+  });
+
+  it("a fill applied through copyModulators reflects the sweep", () => {
+    const c = cfg({ fold: 4, speedOverrides: speedFill("accelerando", 4) });
+    const rates = copyModulators(c).map((m) => m.speed);
+    expect(rates[0]).toBe(0.5);
+    expect(rates[rates.length - 1]).toBe(2);
   });
 });
 
@@ -164,10 +168,7 @@ describe("configsEqual (user-preset matching)", () => {
     expect(configsEqual(cfg({ fold: 4, staggerSteps: 1 }), cfg({ fold: 4, staggerSteps: 2 }))).toBe(false);
   });
 
-  it("distinguishes speed pattern and per-performer overrides", () => {
-    expect(
-      configsEqual(cfg({ fold: 4, speedPattern: "alternating" }), cfg({ fold: 4, speedPattern: "accelerando" })),
-    ).toBe(false);
+  it("distinguishes per-performer speed overrides", () => {
     expect(
       configsEqual(cfg({ fold: 4, speedOverrides: { 1: 2 } }), cfg({ fold: 4, speedOverrides: { 1: 2 } })),
     ).toBe(true);
@@ -181,29 +182,29 @@ describe("configsEqual (user-preset matching)", () => {
 describe("configKey", () => {
   it("encodes every active primitive, stably", () => {
     expect(configKey(cfg({ fold: 4 }))).toBe("f4");
-    // alternating keeps the legacy "x" glyph so pre-existing keys stay stable.
+    // arm 1 pinned to 2× → SPEED_LADDER index of 2 is 3 → "t1-3".
     expect(
-      configKey(cfg({ fold: 8, mirror: true, flip: true, invert: true, echo: true, staggerSteps: 2, speedPattern: "alternating" })),
-    ).toBe("f8mpies2x");
+      configKey(cfg({ fold: 8, mirror: true, flip: true, invert: true, echo: true, staggerSteps: 2, speedOverrides: { 1: 2 } })),
+    ).toBe("f8mpies2t1-3");
   });
 
-  it("encodes accelerando and per-performer overrides distinctly", () => {
-    expect(configKey(cfg({ fold: 4, speedPattern: "accelerando" }))).toBe("f4xz");
-    // arm 2 pinned to 4× → SPEED_LADDER index of 4 is 4 → "t2-4".
+  it("encodes per-performer overrides distinctly, sorted by arm", () => {
     expect(configKey(cfg({ fold: 4, speedOverrides: { 2: 4 } }))).toBe("f4t2-4");
+    expect(configKey(cfg({ fold: 4, speedOverrides: { 3: 0.5, 1: 2 } }))).toBe("f4t1-3t3-1");
     expect(SPEED_LADDER.indexOf(4)).toBe(4);
   });
 });
 
 describe("speed migration + coercion", () => {
-  it("coerceSpeedPattern accepts valid patterns and migrates the legacy boolean", () => {
-    expect(coerceSpeedPattern("accelerando")).toBe("accelerando");
-    expect(coerceSpeedPattern("alternating")).toBe("alternating");
-    expect(coerceSpeedPattern("off")).toBe("off");
-    // Legacy `speed: true` → alternating; anything else → off.
-    expect(coerceSpeedPattern(undefined, true)).toBe("alternating");
-    expect(coerceSpeedPattern(undefined, false)).toBe("off");
-    expect(coerceSpeedPattern("garbage")).toBe("off");
+  it("resolveSpeedOverrides migrates legacy shapes into overrides", () => {
+    // Current shape: kept as-is.
+    expect(resolveSpeedOverrides({ speedOverrides: { 2: 4 } }, 4)).toEqual({ 2: 4 });
+    // Short-lived pattern mode → its fill.
+    expect(resolveSpeedOverrides({ speedPattern: "accelerando" }, 4)).toEqual({ 1: 0.5, 3: 2 });
+    // Legacy boolean → alternating fill.
+    expect(resolveSpeedOverrides({ speed: true }, 4)).toEqual(speedFill("alternating", 4));
+    // Nothing set → empty.
+    expect(resolveSpeedOverrides({}, 4)).toEqual({});
   });
 
   it("coerceSpeedOverrides keeps only positive-arm ladder rates", () => {

@@ -38,6 +38,7 @@ export type {
   AnimationVisibilitySettings,
   RenderSceneParams,
 } from "$lib/shared/animation-engine/domain/types/animation-render-types";
+import { spotlightFactor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import { Canvas2DApplicationManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-application-manager";
 import { Canvas2DImageLoader } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-image-loader";
 import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-trail-renderer";
@@ -391,9 +392,12 @@ export class Canvas2DAnimationRenderer {
 
     // Blue props: render if either fade has alpha > 0
     const blueAlpha = propsFadeState.alpha * blueFadeState.alpha;
+    // Performer spotlight: base = family 0, layer i = family i+1. Dims the prop
+    // glyph of every non-selected copy so the chosen performer stands out.
+    const selectedLayer = params.tunnelSelectedLayer ?? null;
     if (blueAlpha > 0 && params.blueProp) {
       ctx.save();
-      ctx.globalAlpha = blueAlpha;
+      ctx.globalAlpha = blueAlpha * spotlightFactor(selectedLayer, 0);
 
       // Primary blue prop
       const bluePropImage = this.imageLoader.getBluePropImage();
@@ -434,6 +438,7 @@ export class Canvas2DAnimationRenderer {
             const layerImages = this.imageLoader.getAdditionalLayerImages(i);
             if (layerImages.blue) {
               const dims = this.imageLoader.getAdditionalLayerDimensions(i);
+              ctx.globalAlpha = blueAlpha * spotlightFactor(selectedLayer, i + 1);
               this.renderProp(
                 ctx,
                 layer.blueProp,
@@ -455,7 +460,7 @@ export class Canvas2DAnimationRenderer {
     const redAlpha = propsFadeState.alpha * redFadeState.alpha;
     if (redAlpha > 0 && params.redProp) {
       ctx.save();
-      ctx.globalAlpha = redAlpha;
+      ctx.globalAlpha = redAlpha * spotlightFactor(selectedLayer, 0);
 
       // Primary red prop
       const redPropImage = this.imageLoader.getRedPropImage();
@@ -494,6 +499,7 @@ export class Canvas2DAnimationRenderer {
             const layerImages = this.imageLoader.getAdditionalLayerImages(i);
             if (layerImages.red) {
               const dims = this.imageLoader.getAdditionalLayerDimensions(i);
+              ctx.globalAlpha = redAlpha * spotlightFactor(selectedLayer, i + 1);
               this.renderProp(
                 ctx,
                 layer.redProp,

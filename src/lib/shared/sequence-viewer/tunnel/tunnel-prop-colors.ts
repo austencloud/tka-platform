@@ -83,3 +83,37 @@ export function tunnelPropColor(propIndex: number, layerCount: number): TunnelCo
   const hex = `#${toHex2(rgb255.r)}${toHex2(rgb255.g)}${toHex2(rgb255.b)}`;
   return { hex, rgb01, rgb255 };
 }
+
+// ── Performer spotlight ────────────────────────────────────────────────────
+// When a performer is selected in the Speed drawer, every OTHER copy dims so the
+// chosen one is unmistakable. A prop's "family" mirrors the color convention
+// above: family 0 = base "you", family k = copy arm k (propIndex 2k / 2k+1).
+
+/** Dim multiplier for a non-selected performer under the spotlight (0 = gone,
+ *  1 = full). Low enough that the selected performer clearly dominates a dense
+ *  kaleidoscope, high enough that the others stay faintly legible. */
+export const SPOTLIGHT_DIM = 0.12;
+
+/**
+ * Brightness multiplier for a prop family under the spotlight. `selectedArm` is
+ * the selected performer (0 = base "you", k = copy arm k), or null when none is
+ * selected. `familyIndex` is `Math.floor(propIndex / 2)`. Returns 1 for the
+ * selected family (or when nothing is selected), else {@link SPOTLIGHT_DIM}.
+ */
+export function spotlightFactor(
+  selectedArm: number | null | undefined,
+  familyIndex: number,
+): number {
+  if (selectedArm == null) return 1;
+  return familyIndex === selectedArm ? 1 : SPOTLIGHT_DIM;
+}
+
+/** Scale a "#rrggbb" toward black by `factor` (1 = unchanged) — for dimming the
+ *  per-tip effect colors, whose only brightness lever is the color itself. */
+export function dimHex(hex: string, factor: number): string {
+  if (factor >= 1) return hex;
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const n = parseInt(m[1]!, 16);
+  return `#${toHex2(((n >> 16) & 255) * factor)}${toHex2(((n >> 8) & 255) * factor)}${toHex2((n & 255) * factor)}`;
+}

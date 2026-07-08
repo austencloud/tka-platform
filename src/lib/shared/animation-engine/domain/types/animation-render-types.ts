@@ -46,4 +46,7 @@ export interface RenderSceneParams {
   redPropType?: string;
   qualityHints?: QualityHints;
   skipTrailRendering?: boolean;
+  /** Performer spotlight: selected performer (0 = base, k = copy arm k) or null.
+   *  When set, non-selected copies' props dim. Default null. */
+  tunnelSelectedLayer?: number | null;
 }

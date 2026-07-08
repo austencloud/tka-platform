@@ -89,6 +89,9 @@ export interface AnimationEngineProps {
    *  takes its own spectrum color; when false layers inherit the base/preset
    *  colors. Only meaningful when additionalLayers is non-empty. */
   tunnelSpectrum?: boolean;
+  /** Tunnel performer spotlight: the selected performer (0 = base, k = copy arm
+   *  k), or null. When set, every other copy dims in the render. Default null. */
+  tunnelSelectedLayer?: number | null;
 }
 
 /**

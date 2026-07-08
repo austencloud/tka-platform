@@ -1,8 +1,8 @@
 import {
   DEFAULT_CONFIG,
   FOLD_OPTIONS,
-  coerceSpeedOverrides,
-  coerceSpeedPattern,
+  imageCount,
+  resolveSpeedOverrides,
   type TunnelConfig,
 } from "./tunnel-config";
 
@@ -55,18 +55,23 @@ function resolveConfig(p: Record<string, unknown>): TunnelConfig {
   const c = p.config as Partial<TunnelConfig> | undefined;
   if (c && typeof c === "object") {
     const fold = FOLD_OPTIONS.includes(c.fold as number) ? (c.fold as number) : DEFAULT_CONFIG.fold;
+    const mirror = bool(c.mirror, DEFAULT_CONFIG.mirror);
+    const flip = bool(c.flip, DEFAULT_CONFIG.flip);
     return {
       fold,
-      mirror: bool(c.mirror, DEFAULT_CONFIG.mirror),
-      flip: bool(c.flip, DEFAULT_CONFIG.flip),
+      mirror,
+      flip,
       // `invert` was briefly named `counter` (2026-07-06) — read the old key too.
       invert: bool(c.invert ?? (c as { counter?: unknown }).counter, DEFAULT_CONFIG.invert),
       echo: bool(c.echo, DEFAULT_CONFIG.echo),
       staggerSteps:
         typeof c.staggerSteps === "number" && c.staggerSteps > 0 ? Math.floor(c.staggerSteps) : 0,
-      // Migrate the legacy boolean `speed` (true → "alternating").
-      speedPattern: coerceSpeedPattern(c.speedPattern, (c as { speed?: unknown }).speed),
-      speedOverrides: coerceSpeedOverrides(c.speedOverrides),
+      // Migrate the short-lived `speedPattern` mode + legacy boolean `speed` into
+      // the override-only model (fills spread across this config's copies).
+      speedOverrides: resolveSpeedOverrides(
+        c as Record<string, unknown>,
+        imageCount({ ...DEFAULT_CONFIG, fold, mirror, flip }),
+      ),
     };
   }
 

@@ -1,8 +1,8 @@
 import {
   DEFAULT_CONFIG,
   FOLD_OPTIONS,
-  coerceSpeedOverrides,
-  coerceSpeedPattern,
+  imageCount,
+  resolveSpeedOverrides,
   type TunnelConfig,
 } from "./tunnel-config";
 
@@ -28,16 +28,20 @@ const bool = (v: unknown, f: boolean): boolean => (typeof v === "boolean" ? v : 
 function coerceConfig(c: Partial<TunnelConfig> | undefined): TunnelConfig {
   if (!c || typeof c !== "object") return { ...DEFAULT_CONFIG };
   const fold = FOLD_OPTIONS.includes(c.fold as number) ? (c.fold as number) : DEFAULT_CONFIG.fold;
+  const mirror = bool(c.mirror, false);
+  const flip = bool(c.flip, false);
   return {
     fold,
-    mirror: bool(c.mirror, false),
-    flip: bool(c.flip, false),
+    mirror,
+    flip,
     invert: bool(c.invert, false),
     echo: bool(c.echo, false),
     staggerSteps:
       typeof c.staggerSteps === "number" && c.staggerSteps > 0 ? Math.floor(c.staggerSteps) : 0,
-    speedPattern: coerceSpeedPattern(c.speedPattern, (c as { speed?: unknown }).speed),
-    speedOverrides: coerceSpeedOverrides(c.speedOverrides),
+    speedOverrides: resolveSpeedOverrides(
+      c as Record<string, unknown>,
+      imageCount({ ...DEFAULT_CONFIG, fold, mirror, flip }),
+    ),
   };
 }
 

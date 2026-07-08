@@ -79,6 +79,9 @@ export interface RenderPropsState {
   /** Tunnel rainbow spectrum. When false, overlaid layers inherit the base
    *  blue/red colors instead of a per-layer spectrum hue. Default true. */
   tunnelSpectrum: boolean;
+  /** Spotlight: the selected performer (0 = base "you", k = copy arm k), or null.
+   *  When set, every other family dims. Default null (no spotlight). */
+  tunnelSelectedLayer?: number | null;
 }
 
 /**

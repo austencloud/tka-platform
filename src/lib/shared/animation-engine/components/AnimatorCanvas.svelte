@@ -56,6 +56,7 @@ Last audit: 2025-12-27
     redProp,
     additionalLayers = [],
     tunnelSpectrum = true,
+    tunnelSelectedLayer = null,
     gridVisible = true,
     gridMode = GridMode.DIAMOND,
     backgroundAlpha = 1,
@@ -110,6 +111,7 @@ Last audit: 2025-12-27
     redProp: PropState | null;
     additionalLayers?: AdditionalLayerProps[];
     tunnelSpectrum?: boolean;
+    tunnelSelectedLayer?: number | null;
     gridVisible?: boolean;
     gridMode?: GridMode | null;
     backgroundAlpha?: number;
@@ -532,6 +534,7 @@ Last audit: 2025-12-27
       {redProp}
       {additionalLayers}
       {tunnelSpectrum}
+      {tunnelSelectedLayer}
       {gridVisible}
       {gridMode}
       {backgroundAlpha}

@@ -35,14 +35,14 @@ export type CopyOp =
   | { kind: "rewind" }; //                time-reversed copy → rewindSequence
 
 /**
- * How per-copy speed is distributed across the arms (the "Speed" preset). The
- * base ("you") is always 1×; only the copies vary.
- *   - `off`         — every copy at 1× (no variation).
- *   - `alternating` — copies cycle fast/slow ({@link ALTERNATING_CYCLE}); the
- *                     historical boolean-Speed behavior.
+ * A one-tap speed FILL: writes concrete per-performer overrides across the
+ * current copies. NOT a stored mode — the resulting `speedOverrides` map is the
+ * single source of truth, so the drawer always shows exactly what each performer
+ * got and can be edited from there.
+ *   - `alternating` — copies cycle fast/slow ({@link ALTERNATING_CYCLE}).
  *   - `accelerando` — copies sweep monotonically slow→fast across the arms.
  */
-export type SpeedPattern = "off" | "alternating" | "accelerando";
+export type SpeedFill = "alternating" | "accelerando";
 
 /** The orthogonal primitive set. Every tunnel is one of these. */
 export interface TunnelConfig {
@@ -58,10 +58,9 @@ export interface TunnelConfig {
   echo: boolean;
   /** Arm k shows the sequence offset by k×this many steps (0 = off) — a canon. */
   staggerSteps: number;
-  /** Preset speed distribution across the copies (see {@link patternSpeed}). */
-  speedPattern: SpeedPattern;
-  /** Per-performer speed overrides: arm index (1-based, matching the copy arm) →
-   *  multiplier. Wins over the pattern. The base ("you", arm 0) is always 1×. */
+  /** Per-performer speed multipliers: arm index (1-based, matching the copy arm)
+   *  → multiplier. Absent arm = 1×. The base ("you", arm 0) is always 1×. The
+   *  single source of truth for speed; {@link speedFill} populates it. */
   speedOverrides: Record<number, number>;
 }
 
@@ -86,8 +85,8 @@ const ACCELERANDO_LADDER = [0.5, 1, 2];
  *  of legal override values. Ordered ascending. */
 export const SPEED_LADDER = [0.25, 0.5, 1, 2, 4];
 
-/** The speed presets, in rail/segmented order. */
-export const SPEED_PATTERNS: SpeedPattern[] = ["off", "alternating", "accelerando"];
+/** The one-tap fills, in button order. */
+export const SPEED_FILLS: SpeedFill[] = ["alternating", "accelerando"];
 
 export const DEFAULT_CONFIG: TunnelConfig = {
   // Duo (2-fold rotation) is the default — the most legible mandala, easiest to
@@ -98,7 +97,6 @@ export const DEFAULT_CONFIG: TunnelConfig = {
   invert: false,
   echo: false,
   staggerSteps: 0,
-  speedPattern: "off",
   speedOverrides: {},
 };
 
@@ -162,45 +160,53 @@ export function generateCopyOps(cfg: TunnelConfig): CopyOp[][] {
   });
 }
 
-/**
- * The speed multiplier a {@link SpeedPattern} assigns to arm `k` (1-based) of a
- * tunnel with `count` images. `count` only matters for `accelerando` (it spreads
- * across however many copies exist). The base (arm 0) is never passed here.
- */
-export function patternSpeed(pattern: SpeedPattern, arm: number, count: number): number {
-  if (pattern === "alternating") return ALTERNATING_CYCLE[arm % ALTERNATING_CYCLE.length] ?? 1;
-  if (pattern === "accelerando") {
-    const copies = Math.max(1, count - 1); // extra copies (base excluded)
-    if (copies <= 1) return ACCELERANDO_LADDER[ACCELERANDO_LADDER.length - 1] ?? 1;
-    const t = (arm - 1) / (copies - 1); // 0 (first copy) .. 1 (last copy)
-    return ACCELERANDO_LADDER[Math.round(t * (ACCELERANDO_LADDER.length - 1))] ?? 1;
-  }
-  return 1;
+/** The `accelerando` rate for arm `k` (1-based) given the total image `count` —
+ *  a monotonic slow→fast sweep across the copies (base excluded). */
+function accelerandoRate(arm: number, count: number): number {
+  const copies = Math.max(1, count - 1); // extra copies (base excluded)
+  if (copies <= 1) return ACCELERANDO_LADDER[ACCELERANDO_LADDER.length - 1] ?? 1;
+  const t = (arm - 1) / (copies - 1); // 0 (first copy) .. 1 (last copy)
+  return ACCELERANDO_LADDER[Math.round(t * (ACCELERANDO_LADDER.length - 1))] ?? 1;
 }
 
 /**
- * The effective speed of arm `k`: a per-performer override wins over the pattern
- * so the drawer can pin any single copy. Overrides are keyed 1-based by arm.
+ * The concrete per-arm override map a fill produces for a tunnel of `count`
+ * images (arms 1..count-1). Only non-1× arms are stored, so the map stays
+ * minimal and `configKey` stays stable.
  */
-export function effectiveSpeed(cfg: TunnelConfig, arm: number, count: number): number {
+export function speedFill(kind: SpeedFill, count: number): Record<number, number> {
+  const out: Record<number, number> = {};
+  const copies = Math.max(0, count - 1);
+  for (let arm = 1; arm <= copies; arm++) {
+    const rate =
+      kind === "alternating"
+        ? (ALTERNATING_CYCLE[arm % ALTERNATING_CYCLE.length] ?? 1)
+        : accelerandoRate(arm, count);
+    if (rate !== 1) out[arm] = rate;
+  }
+  return out;
+}
+
+/** The effective speed of arm `k`: its per-performer override, or 1× (the base
+ *  rate) when none is set. */
+export function effectiveSpeed(cfg: TunnelConfig, arm: number): number {
   const o = cfg.speedOverrides?.[arm];
-  return typeof o === "number" ? o : patternSpeed(cfg.speedPattern, arm, count);
+  return typeof o === "number" ? o : 1;
 }
 
 /**
  * Sample-time modulators per extra copy, aligned index-for-index with
  * {@link generateCopyOps}. Stagger accumulates by arm; speed is the arm's
- * {@link effectiveSpeed} (pattern, or a per-performer override).
+ * {@link effectiveSpeed} (its per-performer override, or 1×).
  */
 export function copyModulators(cfg: TunnelConfig): { staggerSteps: number; speed: number }[] {
-  const count = imageCount(cfg);
-  const n = count - 1;
+  const n = imageCount(cfg) - 1;
   const out: { staggerSteps: number; speed: number }[] = [];
   for (let i = 0; i < n; i++) {
     const arm = i + 1;
     out.push({
       staggerSteps: cfg.staggerSteps > 0 ? arm * cfg.staggerSteps : 0,
-      speed: effectiveSpeed(cfg, arm, count),
+      speed: effectiveSpeed(cfg, arm),
     });
   }
   return out;
@@ -276,19 +282,8 @@ export function configsEqual(a: TunnelConfig, b: TunnelConfig): boolean {
     a.invert === b.invert &&
     a.echo === b.echo &&
     a.staggerSteps === b.staggerSteps &&
-    a.speedPattern === b.speedPattern &&
     overridesEqual(a.speedOverrides, b.speedOverrides)
   );
-}
-
-/**
- * Coerce a persisted value into a valid {@link SpeedPattern}. Falls back to the
- * legacy boolean `speed` (true → "alternating") so older saves migrate, then
- * "off".
- */
-export function coerceSpeedPattern(v: unknown, legacySpeed?: unknown): SpeedPattern {
-  if (v === "off" || v === "alternating" || v === "accelerando") return v;
-  return legacySpeed === true ? "alternating" : "off";
 }
 
 /** Coerce a persisted value into a valid per-arm override map (positive integer
@@ -305,6 +300,26 @@ export function coerceSpeedOverrides(v: unknown): Record<number, number> {
   return out;
 }
 
+/**
+ * Resolve a persisted config's speed into the current override-only model,
+ * migrating older shapes:
+ *  - the current `speedOverrides` map,
+ *  - the short-lived `speedPattern` mode (2026-07-08 AM) → its fill,
+ *  - the legacy boolean `speed` (true → alternating fill).
+ * `count` is the persisted config's image count (fills spread across the copies).
+ */
+export function resolveSpeedOverrides(
+  raw: { speedOverrides?: unknown; speedPattern?: unknown; speed?: unknown },
+  count: number,
+): Record<number, number> {
+  const direct = coerceSpeedOverrides(raw.speedOverrides);
+  if (Object.keys(direct).length > 0) return direct;
+  const pat = raw.speedPattern;
+  if (pat === "alternating" || pat === "accelerando") return speedFill(pat, count);
+  if (raw.speed === true) return speedFill("alternating", count);
+  return {};
+}
+
 /** The built-in preset id whose config exactly matches `cfg`, or null. */
 export function matchPreset(cfg: TunnelConfig): string | null {
   return TUNNEL_PRESETS.find((p) => configsEqual(p.config, cfg))?.id ?? null;
@@ -314,18 +329,16 @@ export function getPreset(id: string): TunnelPreset | undefined {
   return TUNNEL_PRESETS.find((p) => p.id === id);
 }
 
-/** Speed segment of {@link configKey}: pattern glyph + sorted per-arm overrides.
- *  `alternating` keeps the legacy "x" so pre-existing keys/filenames stay stable. */
+/** Speed segment of {@link configKey}: sorted per-arm overrides encoded as
+ *  `t{arm}-{ladderIndex}`, so two different speed mixes never collide in the
+ *  export filename / render cache key. */
 function speedKey(cfg: TunnelConfig): string {
-  const pat =
-    cfg.speedPattern === "alternating" ? "x" : cfg.speedPattern === "accelerando" ? "xz" : "";
-  const overrides = Object.keys(cfg.speedOverrides ?? {})
+  return Object.keys(cfg.speedOverrides ?? {})
     .map(Number)
     .filter((a) => Number.isInteger(a) && a > 0)
     .sort((a, b) => a - b)
     .map((a) => `t${a}-${SPEED_LADDER.indexOf(cfg.speedOverrides[a] ?? 1)}`)
     .join("");
-  return pat + overrides;
 }
 
 /** Stable short signature of a config (export filename suffix + build keying). */

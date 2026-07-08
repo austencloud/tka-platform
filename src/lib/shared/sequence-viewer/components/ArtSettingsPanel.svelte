@@ -40,10 +40,11 @@
   import type { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
   import {
     FOLD_OPTIONS,
+    SPEED_FILLS,
     SPEED_LADDER,
     TUNNEL_PRESETS,
     configsEqual,
-    type SpeedPattern,
+    type SpeedFill,
   } from "../tunnel/tunnel-config";
   import { tunnelUserPresets } from "../tunnel/tunnel-user-presets.svelte";
   import type {
@@ -155,25 +156,19 @@
     { key: "echo", label: "Echo", icon: "fas fa-backward", active: controller.echo, set: (v: boolean) => controller.setEcho(v) },
   ]);
 
-  // Speed section (own rail destination): a preset distribution across copies,
-  // plus a per-performer override drawer. "Speed" (not "Tempo") — Playback › Tempo
-  // already owns BPM and Effort owns per-beat dynamics; this is per-copy rate.
-  const speedPatternOptions: { value: SpeedPattern; label: string }[] = [
-    { value: "off", label: "Off" },
-    { value: "alternating", label: "Alternating" },
-    { value: "accelerando", label: "Accelerando" },
-  ];
+  // Speed section (own rail destination): per-performer playback rate. "Speed"
+  // (not "Tempo") — Playback › Tempo already owns BPM and Effort owns per-beat
+  // dynamics; this is each copy's rate. Fills are one-tap shortcuts that write the
+  // per-performer rows (the single source of truth); selecting a row spotlights
+  // that performer in the tunnel.
   const speedLabel = (r: number): string =>
     r === 0.25 ? "¼×" : r === 0.5 ? "½×" : `${r}×`;
   const speedLadderOptions = SPEED_LADDER.map((r) => ({ value: String(r), label: speedLabel(r) }));
-  const speedPatternHint = $derived(
-    controller.speedPattern === "alternating"
-      ? "Copies alternate fast and slow."
-      : controller.speedPattern === "accelerando"
-        ? "Copies sweep from slow to fast."
-        : "Every copy plays at the same speed.",
-  );
-  let speedDrawerOpen = $state(false);
+  const SPEED_FILL_META: Record<SpeedFill, { label: string; icon: string }> = {
+    alternating: { label: "Alternating", icon: "fas fa-shuffle" },
+    accelerando: { label: "Accelerando", icon: "fas fa-forward" },
+  };
+  const speedFillButtons = SPEED_FILLS.map((kind) => ({ kind, ...SPEED_FILL_META[kind] }));
 
   // Faint build-up under the big result: one base performer × each active
   // count-multiplier. Only factors >×1 show, so it reads "1 × 2 copies × 2 mirror".
@@ -525,55 +520,72 @@
     </div>
   {:else if id === "speed"}
     <div class="section-pad">
-      <!-- PRIMARY: a speed preset distributed across the copies. -->
-      {#if !dense}<span class="rt-section-label">Choose a speed</span>{/if}
-      <div class="seg-wrap">
-        <SegmentedControl
-          options={speedPatternOptions}
-          value={controller.speedPattern}
-          onchange={(v) => controller.setSpeedPattern(v as SpeedPattern)}
-          color="accent"
-          size="sm"
-        />
-      </div>
-      {#if !dense}<p class="section-hint">{speedPatternHint}</p>{/if}
-
       {#if controller.performerCount > 1}
-        <!-- SECONDARY: pin any single performer's rate. "You" (the base) is the
-             fixed 1× reference; each copy (arm 1..n) gets the ×-ladder. -->
-        <button
-          class="drawer-toggle"
-          type="button"
-          aria-expanded={speedDrawerOpen}
-          onclick={() => (speedDrawerOpen = !speedDrawerOpen)}
-        >
-          <i class="fas fa-chevron-right drawer-caret" class:open={speedDrawerOpen} aria-hidden="true"></i>
-          Per performer
-        </button>
-        {#if speedDrawerOpen}
-          <div class="perf-list">
-            {#each controller.speedPerformers as perf (perf.arm)}
-              <div class="perf-row">
+        <!-- One-tap fills write the rows below; Reset clears. Rows are the truth. -->
+        <div class="fill-row">
+          {#if !dense}<span class="fill-lbl">Fill</span>{/if}
+          {#each speedFillButtons as f (f.kind)}
+            <FilterChipBase
+              mode="action"
+              size="sm"
+              label={f.label}
+              icon={f.icon}
+              onclick={() => controller.applySpeedFill(f.kind)}
+            />
+          {/each}
+          <FilterChipBase
+            mode="action"
+            size="sm"
+            label="Reset"
+            icon="fas fa-rotate-left"
+            disabled={!controller.hasSpeedOverrides}
+            onclick={() => controller.resetSpeed()}
+          />
+        </div>
+
+        <!-- Per performer: two-tone swatch identity + rate. Click a row to
+             spotlight that performer in the tunnel (others dim). "You" (the base)
+             is the fixed 1× reference. -->
+        <div class="perf-list" role="listbox" aria-label="Performers">
+          {#each controller.speedPerformers as perf (perf.arm)}
+            <div class="perf-row" class:selected={controller.selectedArm === perf.arm}>
+              <button
+                type="button"
+                class="perf-pick"
+                role="option"
+                aria-selected={controller.selectedArm === perf.arm}
+                aria-label={`Spotlight ${perf.label}`}
+                onclick={() => controller.selectPerformer(perf.arm)}
+              >
+                <span class="perf-swatch">
+                  <span style="background:{perf.blueHex}"></span>
+                  <span style="background:{perf.redHex}"></span>
+                </span>
                 <span class="perf-lbl">{perf.label}</span>
-                {#if perf.arm === 0}
-                  <span class="perf-fixed">1×</span>
-                {:else}
-                  <div class="seg-wrap">
-                    <SegmentedControl
-                      options={speedLadderOptions}
-                      value={String(perf.rate)}
-                      onchange={(v) => controller.setPerformerSpeed(perf.arm, Number(v))}
-                      color="accent"
-                      size="sm"
-                    />
-                  </div>
-                {/if}
-              </div>
-            {/each}
-          </div>
+              </button>
+              {#if perf.arm === 0}
+                <span class="perf-fixed">1×</span>
+              {:else}
+                <div class="seg-wrap">
+                  <SegmentedControl
+                    options={speedLadderOptions}
+                    value={String(perf.rate)}
+                    onchange={(v) => controller.setPerformerSpeed(perf.arm, Number(v))}
+                    color="accent"
+                    size="sm"
+                  />
+                </div>
+              {/if}
+            </div>
+          {/each}
+        </div>
+        {#if !dense && controller.selectedArm !== null}
+          <p class="section-hint">
+            Spotlighting {controller.speedPerformers[controller.selectedArm]?.label ?? "a performer"} — tap again to clear.
+          </p>
         {/if}
       {:else if !dense}
-        <p class="section-hint">Add copies (Copies ×N, Mirror, Flip) to vary speed per performer.</p>
+        <p class="section-hint">Add copies (Copies ×N, Mirror, Flip) to set speed per performer.</p>
       {/if}
     </div>
   {:else if id === "effects"}
@@ -917,45 +929,70 @@
   }
   .seg-wrap { flex: 1; min-width: 0; }
 
-  /* Speed section: a collapsible per-performer override drawer under the preset. */
-  .drawer-toggle {
+  /* Speed section: one-tap fills + a per-performer list (swatch identity + rate).
+     Clicking a row spotlights that performer in the tunnel. */
+  .fill-row {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
-    width: 100%;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0 4px;
-    background: none;
-    border: none;
-    color: var(--theme-text, rgba(255, 255, 255, 0.85));
+    gap: 6px;
+  }
+  .fill-lbl {
     font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    cursor: pointer;
-    text-align: left;
-  }
-  .drawer-caret {
-    font-size: 10px;
-    opacity: 0.6;
-    transition: transform var(--duration-fast, 150ms) ease;
-  }
-  .drawer-caret.open {
-    transform: rotate(90deg);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    margin-right: 2px;
   }
   .perf-list {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
   .perf-row {
     display: flex;
     align-items: center;
     gap: 8px;
     min-height: var(--min-touch-target, 44px);
+    padding: 2px 4px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+  }
+  .perf-row.selected {
+    background: color-mix(in srgb, var(--theme-accent, #c79bff) 14%, transparent);
+    border-color: color-mix(in srgb, var(--theme-accent, #c79bff) 45%, transparent);
+  }
+  .perf-pick {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+    min-width: 96px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 4px;
+    background: none;
+    border: none;
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    text-align: left;
+  }
+  /* Two-tone identity chip: the performer's blue + red end colors. */
+  .perf-swatch {
+    display: inline-flex;
+    width: 22px;
+    height: 14px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
+    flex: 0 0 auto;
+  }
+  .perf-swatch span {
+    display: block;
+    width: 50%;
+    height: 100%;
   }
   .perf-lbl {
-    flex: 0 0 64px;
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
   /* Reserved-width fixed marker so the base row doesn't shift the layout. */
   .perf-fixed {
@@ -963,6 +1000,8 @@
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
     font-variant-numeric: tabular-nums;
+    text-align: right;
+    padding-right: 8px;
   }
 
   /* Preset cards (primary surface) + tuner toggle grid (secondary). Both use

@@ -33,7 +33,7 @@ import { QualityTier } from "../domain/types/quality-types";
 import { effectErrorSignal } from "../state/effect-error-signal.svelte";
 import { resolveEffect } from "../domain/types/tip-effect-types";
 import type { EffectType, TipEffectMap } from "../domain/types/tip-effect-types";
-import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
+import { dimHex, spotlightFactor, tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import type { EmitterTip } from "$lib/shared/effects/renderers/emitter-tip";
 import type { FireTipUpdateResult } from './fire-tip-tracker';
 import type { FireFrameInput } from '../domain/types/fire-types';
@@ -438,7 +438,14 @@ export class AnimationRenderLoop {
         propIndex: t.propIndex,
         tipIndex: t.tipIndex,
         end: t.tipIndex === 0 ? "A" : "B",
-        color: AnimationRenderLoop.resolveTipColor(t.propIndex, layerCount, spectrum, baseBlue, baseRed),
+        color: AnimationRenderLoop.resolveTipColor(
+          t.propIndex,
+          layerCount,
+          spectrum,
+          baseBlue,
+          baseRed,
+          params.props.tunnelSelectedLayer ?? null,
+        ),
       });
     }
     return out;
@@ -461,11 +468,22 @@ export class AnimationRenderLoop {
     layerCount: number,
     spectrum: boolean,
     baseBlue: string,
-    baseRed: string
+    baseRed: string,
+    selectedLayer: number | null = null
   ): string {
     const isBlue = propIndex % 2 === 0;
-    if (propIndex <= 1) return isBlue ? baseBlue : baseRed;
-    return spectrum ? tunnelPropColor(propIndex, layerCount).hex : isBlue ? baseBlue : baseRed;
+    const raw =
+      propIndex <= 1
+        ? isBlue
+          ? baseBlue
+          : baseRed
+        : spectrum
+          ? tunnelPropColor(propIndex, layerCount).hex
+          : isBlue
+            ? baseBlue
+            : baseRed;
+    // Spotlight: dim the tip's color when another performer is selected.
+    return dimHex(raw, spotlightFactor(selectedLayer, Math.floor(propIndex / 2)));
   }
 
   private static buildArrayTips(
@@ -488,7 +506,14 @@ export class AnimationRenderLoop {
         y: t.y,
         propIndex: t.propIndex,
         tipIndex: globalTipIndex++,
-        color: AnimationRenderLoop.resolveTipColor(t.propIndex, layerCount, spectrum, baseBlue, baseRed),
+        color: AnimationRenderLoop.resolveTipColor(
+          t.propIndex,
+          layerCount,
+          spectrum,
+          baseBlue,
+          baseRed,
+          params.props.tunnelSelectedLayer ?? null,
+        ),
       });
     }
     // Center fallback for props with no tip-tracker output (base pair only).
@@ -1060,6 +1085,7 @@ export class AnimationRenderLoop {
         hasRed: !!params.props.redProp && effectiveRedMotionVisible,
         additionalLayers: additionalLayerRenderData.length > 0 ? additionalLayerRenderData : undefined,
         tunnelSpectrum: props.tunnelSpectrum,
+        tunnelSelectedLayer: props.tunnelSelectedLayer ?? null,
         blueProp: params.props.blueProp,
         redProp: params.props.redProp,
         bluePropType: params.bluePropType,
@@ -1117,6 +1143,7 @@ export class AnimationRenderLoop {
       bluePropType: params.bluePropType,
       redPropType: params.redPropType,
       qualityHints: this.frameBudgetMonitor?.getQualityHints(),
+      tunnelSelectedLayer: props.tunnelSelectedLayer ?? null,
     });
 
     // Read prop transforms from Canvas2D renderer for fire coherence

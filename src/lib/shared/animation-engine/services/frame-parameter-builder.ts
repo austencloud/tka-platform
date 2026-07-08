@@ -17,7 +17,7 @@ import { TrackingMode } from "../domain/types/trail-types";
 import { DEFAULT_PROP_DIMENSIONS } from "./IPropTextureLoader";
 import { DEFAULT_PROP_FLAME_COLORS } from "../domain/types/fire-types";
 import type { PropFlameColor } from "../domain/types/fire-types";
-import { tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
+import { spotlightFactor, tunnelPropColor } from "$lib/shared/sequence-viewer/tunnel/tunnel-prop-colors";
 import type { AnimationVisibilityStateManager } from "../state/animation-visibility-state.svelte";
 import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
 import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
@@ -124,6 +124,7 @@ export class FrameParameterBuilder {
   private extendedPropColorsLayerCount = -1;
   private extendedPropColorsBaseRef: PropFlameColor[] | null = null;
   private extendedPropColorsSpectrum = true;
+  private extendedPropColorsSelected: number | null = null;
 
   // Reusable frame params object to avoid GC pressure (created once, mutated each frame)
   private readonly frameParams: RenderFrameParams = {
@@ -140,6 +141,7 @@ export class FrameParameterBuilder {
       bluePropDimensions: DEFAULT_PROP_DIMENSIONS,
       redPropDimensions: DEFAULT_PROP_DIMENSIONS,
       tunnelSpectrum: true,
+      tunnelSelectedLayer: null,
     },
     visibility: {
       gridVisible: true,
@@ -228,6 +230,7 @@ export class FrameParameterBuilder {
     fp.props.bluePropDimensions = state.bluePropDimensions;
     fp.props.redPropDimensions = state.redPropDimensions;
     fp.props.tunnelSpectrum = props.tunnelSpectrum ?? true;
+    fp.props.tunnelSelectedLayer = props.tunnelSelectedLayer ?? null;
 
     // Mutate nested visibility object
     fp.visibility.gridVisible = state.visibilityState.grid;
@@ -280,6 +283,7 @@ export class FrameParameterBuilder {
         basePropColors,
         layerCount,
         fp.props.tunnelSpectrum ?? true,
+        fp.props.tunnelSelectedLayer ?? null,
       );
     } else {
       fp.propColors = basePropColors;
@@ -584,29 +588,42 @@ export class FrameParameterBuilder {
   private getExtendedPropColors(
     base: PropFlameColor[],
     layerCount: number,
-    spectrum: boolean
+    spectrum: boolean,
+    selectedLayer: number | null
   ): PropFlameColor[] {
     if (
       this.extendedPropColors &&
       this.extendedPropColorsLayerCount === layerCount &&
       this.extendedPropColorsBaseRef === base &&
-      this.extendedPropColorsSpectrum === spectrum
+      this.extendedPropColorsSpectrum === spectrum &&
+      this.extendedPropColorsSelected === selectedLayer
     ) {
       return this.extendedPropColors;
     }
 
+    // Spotlight: when a performer is selected, every other family's flame dims
+    // toward black so the chosen copy's fire dominates (family 0 = base).
+    const dim = (c: PropFlameColor, family: number): PropFlameColor => {
+      const f = spotlightFactor(selectedLayer, family);
+      return f >= 1 ? c : { r: c.r * f, g: c.g * f, b: c.b * f };
+    };
+
     // Spectrum off: every layer inherits the base blue/red flame color so the
     // kaleidoscope reads as one look the Effects panel drives, not a rainbow.
-    const out: PropFlameColor[] = [base[0]!, base[1]!];
+    const out: PropFlameColor[] = [dim(base[0]!, 0), dim(base[1]!, 0)];
     for (let li = 0; li < layerCount; li++) {
-      out[2 + li * 2] = spectrum ? tunnelPropColor(2 + li * 2, layerCount).rgb01 : base[0]!;
-      out[3 + li * 2] = spectrum ? tunnelPropColor(3 + li * 2, layerCount).rgb01 : base[1]!;
+      const family = li + 1;
+      const blue = spectrum ? tunnelPropColor(2 + li * 2, layerCount).rgb01 : base[0]!;
+      const red = spectrum ? tunnelPropColor(3 + li * 2, layerCount).rgb01 : base[1]!;
+      out[2 + li * 2] = dim(blue, family);
+      out[3 + li * 2] = dim(red, family);
     }
 
     this.extendedPropColors = out;
     this.extendedPropColorsLayerCount = layerCount;
     this.extendedPropColorsBaseRef = base;
     this.extendedPropColorsSpectrum = spectrum;
+    this.extendedPropColorsSelected = selectedLayer;
     return out;
   }
 

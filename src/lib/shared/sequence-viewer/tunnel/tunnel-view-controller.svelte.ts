@@ -17,10 +17,12 @@ import {
   imageCount,
   matchPreset,
   propCount,
-  type SpeedPattern,
+  speedFill,
+  type SpeedFill,
   type TunnelConfig,
 } from "./tunnel-config";
 import { performerRing } from "./performer-ring-model";
+import { tunnelPropColor } from "./tunnel-prop-colors";
 import {
   loadTunnelViewState,
   saveTunnelViewState,
@@ -65,10 +67,13 @@ export class TunnelViewController {
   echo = $state<boolean>(DEFAULT_CONFIG.echo);
   /** Arm k shows the sequence offset by k×this steps (0 = off). */
   staggerSteps = $state<number>(DEFAULT_CONFIG.staggerSteps);
-  /** Preset speed distribution across copies (off / alternating / accelerando). */
-  speedPattern = $state<SpeedPattern>(DEFAULT_CONFIG.speedPattern);
-  /** Per-performer speed overrides (arm 1..n → multiplier); wins over the pattern. */
+  /** Per-performer speed overrides (arm 1..n → multiplier); absent arm = 1×. The
+   *  single source of truth for speed (fills just populate it). */
   speedOverrides = $state<Record<number, number>>({ ...DEFAULT_CONFIG.speedOverrides });
+  /** The performer selected in the Speed drawer (0 = you, 1..n = copies), or null.
+   *  Transient UI focus — NOT part of the config/persistence; drives the sidebar
+   *  highlight + the render spotlight-dim. */
+  selectedArm = $state<number | null>(null);
 
   /** Tunnel-specific grid visibility. The kaleidoscope owns this (the global
    *  Visual/Display toggles don't reach the self-clocked tunnel). Default off —
@@ -101,7 +106,6 @@ export class TunnelViewController {
     this.invert = cfg.invert;
     this.echo = cfg.echo;
     this.staggerSteps = cfg.staggerSteps;
-    this.speedPattern = cfg.speedPattern;
     this.speedOverrides = { ...cfg.speedOverrides };
     this.gridVisible = view.gridVisible;
     this.spectrum = view.spectrum;
@@ -118,6 +122,14 @@ export class TunnelViewController {
       saveTunnelViewState(snapshot);
     });
 
+    // Drop a stale spotlight when the cast shrinks (e.g. fold 8 → 2) so a
+    // dangling selectedArm can't dim every performer at once.
+    $effect(() => {
+      if (this.selectedArm != null && this.selectedArm >= this.performerCount) {
+        this.selectedArm = null;
+      }
+    });
+
     // Re-bake the overlaid copies when the SPATIAL topology changes (sequence /
     // fold / mirror / flip / invert / echo). Stagger + Speed are read ONLY in
     // the sample path (copyModulators), so tweaking them never lands here and
@@ -131,7 +143,6 @@ export class TunnelViewController {
         invert: this.invert,
         echo: this.echo,
         staggerSteps: 0,
-        speedPattern: "off",
         speedOverrides: {},
       };
       const on = this.active;
@@ -155,7 +166,6 @@ export class TunnelViewController {
       invert: this.invert,
       echo: this.echo,
       staggerSteps: this.staggerSteps,
-      speedPattern: this.speedPattern,
       speedOverrides: { ...this.speedOverrides },
     };
   }
@@ -203,7 +213,6 @@ export class TunnelViewController {
     this.invert = c.invert;
     this.echo = c.echo;
     this.staggerSteps = c.staggerSteps;
-    this.speedPattern = c.speedPattern;
     this.speedOverrides = { ...c.speedOverrides };
   }
 
@@ -245,33 +254,46 @@ export class TunnelViewController {
   setEcho(on: boolean): void {
     this.echo = on;
   }
-  /** Choose a speed preset. Selecting one is a clean slate — it drops any
-   *  per-performer overrides so the pattern reads exactly as named. */
-  setSpeedPattern(pattern: SpeedPattern): void {
-    this.speedPattern = pattern;
-    this.speedOverrides = {};
+  /** Apply a one-tap speed fill — writes concrete per-performer overrides across
+   *  the current copies (the drawer then shows + edits them). */
+  applySpeedFill(kind: SpeedFill): void {
+    this.speedOverrides = speedFill(kind, imageCount(this.config));
   }
-  /** Pin one performer's speed (arm 1..n). Immutable update so `$derived`
-   *  consumers re-run; the base ("you", arm 0) is never overridable. */
+  /** Pin one performer's speed (arm 1..n). Setting 1× clears the override so the
+   *  map stays minimal. Immutable update so `$derived` consumers re-run; the base
+   *  ("you", arm 0) is never overridable. */
   setPerformerSpeed(arm: number, rate: number): void {
     if (arm < 1) return;
-    this.speedOverrides = { ...this.speedOverrides, [arm]: rate };
+    const next = { ...this.speedOverrides };
+    if (rate === 1) delete next[arm];
+    else next[arm] = rate;
+    this.speedOverrides = next;
   }
-  /** Back to every copy at 1× (off pattern, no overrides). */
+  /** Back to every copy at 1× and clear the selection. */
   resetSpeed(): void {
-    this.speedPattern = "off";
     this.speedOverrides = {};
+    this.selectedArm = null;
+  }
+  /** True when any performer runs at a non-1× rate (drives the Reset affordance). */
+  hasSpeedOverrides = $derived(Object.keys(this.speedOverrides).length > 0);
+  /** Toggle the spotlight selection for a performer (click again to clear). */
+  selectPerformer(arm: number): void {
+    this.selectedArm = this.selectedArm === arm ? null : arm;
   }
   /** Per-performer speed rows for the Speed drawer, in the same overlay order as
    *  the Performer Ring: index 0 = the base "you" (locked 1×), 1..n = the copies
-   *  (arm k). `rate` is the arm's effective multiplier (override or pattern). */
+   *  (arm k). Carries the arm's effective rate + its two identity colors (the
+   *  spectrum hues the render fans; in Uniform mode the render collapses to base
+   *  blue/red, but the swatch stays a stable per-performer identity tag). */
   speedPerformers = $derived.by(() => {
     const cfg = this.config;
-    const count = imageCount(cfg);
+    const layerCount = Math.max(0, imageCount(cfg) - 1);
     return performerRing(cfg).map((_p, i) => ({
       arm: i,
       label: i === 0 ? "You" : `Copy ${i}`,
-      rate: i === 0 ? 1 : effectiveSpeed(cfg, i, count),
+      rate: i === 0 ? 1 : effectiveSpeed(cfg, i),
+      blueHex: tunnelPropColor(i * 2, layerCount).hex,
+      redHex: tunnelPropColor(i * 2 + 1, layerCount).hex,
     }));
   });
   /** Set the canon offset, clamped to the sequence (the sampler also wraps). */

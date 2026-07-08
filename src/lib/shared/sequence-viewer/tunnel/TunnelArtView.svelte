@@ -89,6 +89,7 @@
         redProp={base.red}
         {additionalLayers}
         tunnelSpectrum={controller.spectrum}
+        tunnelSelectedLayer={controller.selectedArm}
         {bluePropType}
         {redPropType}
         sequenceData={seq}

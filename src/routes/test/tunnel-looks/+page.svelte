@@ -14,7 +14,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import LookCell from "./LookCell.svelte";
-  import { DEFAULT_CONFIG, type TunnelConfig } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
+  import { DEFAULT_CONFIG, speedFill, type TunnelConfig } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
   import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -37,11 +37,11 @@
     { label: "Fold 4 · Echo", config: cfg({ fold: 4, echo: true }) },
     { label: "Fold 4 · Stagger 1", config: cfg({ fold: 4, staggerSteps: 1 }) },
     { label: "Fold 4 · Stagger 2", config: cfg({ fold: 4, staggerSteps: 2 }) },
-    { label: "Fold 4 · Alternating", config: cfg({ fold: 4, speedPattern: "alternating" }) },
-    { label: "Fold 4 · Accelerando", config: cfg({ fold: 4, speedPattern: "accelerando" }) },
+    { label: "Fold 4 · Alternating", config: cfg({ fold: 4, speedOverrides: speedFill("alternating", 4) }) },
+    { label: "Fold 4 · Accelerando", config: cfg({ fold: 4, speedOverrides: speedFill("accelerando", 4) }) },
     { label: "Fold 8 · Mirror", config: cfg({ fold: 8, mirror: true }) },
     { label: "Fold 4 · Mirror · Stagger 1", config: cfg({ fold: 4, mirror: true, staggerSteps: 1 }) },
-    { label: "Fold 8 · Stagger 1 · Alternating", config: cfg({ fold: 8, staggerSteps: 1, speedPattern: "alternating" }) },
+    { label: "Fold 8 · Stagger 1 · Alternating", config: cfg({ fold: 8, staggerSteps: 1, speedOverrides: speedFill("alternating", 8) }) },
   ];
 
   let base = $state<SequenceData | null>(null);

@@ -15,6 +15,9 @@ export interface TrailOverlayRenderParams {
   /** Tunnel rainbow spectrum. When false, overlaid layer trails inherit the base
    *  blue/red trail color instead of a per-layer spectrum hue. Default true. */
   tunnelSpectrum?: boolean;
+  /** Spotlight: the selected performer (0 = base "you", k = copy arm k), or null.
+   *  When set, every other layer's trail dims. Default null (no spotlight). */
+  tunnelSelectedLayer?: number | null;
   /** Raw prop states - overlay reads positions directly (fire-renderer pattern) */
   blueProp?: PropState | null;
   redProp?: PropState | null;
