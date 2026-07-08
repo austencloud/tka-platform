@@ -36,6 +36,7 @@ with pre-prepared data for better performance.
   import type { PreparedPictographData } from "../domain/models/prepared-pictograph-data";
   import type { PictographData } from "../domain/models/pictograph-data";
   import { isVisibleMotion } from "../domain/models/motion-data";
+  import { describePictograph } from "../domain/utils/pictograph-description";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { PropType } from "../../prop/domain/enums/prop-type";
   import { GridMode, GridLocation } from "../../grid/domain/enums/grid-enums";
@@ -454,6 +455,16 @@ with pre-prepared data for better performance.
     return pictographData.id || "no-id";
   });
 
+  // Machine-readable notation on the WRAPPER (not just the inner SVG): the inner
+  // PictographRenderer's aria-label renders client-side only (gated behind async
+  // prepare), so raw crawlable/SSR HTML would otherwise carry no description.
+  // describePictograph works on raw data (no prepare needed), so this wrapper
+  // label is present server-side, everywhere a pictograph renders. Blank/empty
+  // pictographs stay decorative (no role/label). Wraps the whole node as role=img,
+  // which AT treats as a leaf — so the inner glyph labels aren't double-announced.
+  const a11yLabel = $derived(pictographData ? describePictograph(pictographData) : "");
+  const hasA11yLabel = $derived(!!a11yLabel && a11yLabel !== "Pictograph (empty)");
+
   // Deterministic readiness signal for offscreen/export rendering.
   // This effect runs after the DOM is updated, so once preparedData is committed
   // PictographRenderer (and its synchronous arrows/props) are in the DOM. The grid,
@@ -471,7 +482,12 @@ with pre-prepared data for better performance.
   });
 </script>
 
-<div class="pictograph-container" class:loading={isLoading}>
+<div
+  class="pictograph-container"
+  class:loading={isLoading}
+  role={hasA11yLabel ? "img" : undefined}
+  aria-label={hasA11yLabel ? a11yLabel : undefined}
+>
   {#if preparedData}
     {#if disableTransitions}
       <PictographRenderer

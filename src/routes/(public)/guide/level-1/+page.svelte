@@ -1,13 +1,18 @@
 <script lang="ts">
+  import GuideSeo from "./_components/GuideSeo.svelte";
 </script>
 
-<svelte:head>
-  <title>Level 1 Guide: The Kinetic Alphabet</title>
-  <meta name="description" content="The Kinetic Alphabet Level 1 guide: positions, motions, letters, words, and LOOPs for double staves." />
-  <meta property="og:title" content="Level 1 Guide: The Kinetic Alphabet" />
-  <meta property="og:description" content="A grid-based notation system for object manipulation choreography. Positions, motions, letters, words, and LOOPs." />
-  <meta property="og:image" content="/guide/level-1/images/_shared/level-1-front-cover.png" />
-</svelte:head>
+<GuideSeo
+  kind="Course"
+  title="Level 1 Guide: The Kinetic Alphabet"
+  description="The Kinetic Alphabet Level 1 guide: positions, motions, letters, words, and LOOPs — a grid-based notation system for double staves and dual-wielded props."
+  path="/guide/level-1"
+  breadcrumbs={[
+    { name: "Home", path: "/" },
+    { name: "Guide", path: "/guide" },
+    { name: "Level 1", path: "/guide/level-1" },
+  ]}
+/>
 
 <div class="landing">
   <div class="cover-art">

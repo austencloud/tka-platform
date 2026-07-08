@@ -18,16 +18,23 @@
   import PropReversalLoops from "../_sections/ch12/PropReversalCaps.svelte";
   import FullReversalLoops from "../_sections/ch12/FullReversalCaps.svelte";
 
+  import GuideSeo from "../_components/GuideSeo.svelte";
+
   setGuideData(chapterData as unknown as GuideChapterData);
 </script>
 
-<svelte:head>
-  <title>1.2 Words & LOOPs · Level 1 Guide · The Kinetic Alphabet</title>
-  <meta name="description" content="Level 1 words, LOOPs, and reversals for The Kinetic Alphabet. AABB patterns, body turns, 16-count sequences, and 8-letter words." />
-  <meta property="og:title" content="1.2 Words & LOOPs: Level 1 Guide" />
-  <meta property="og:description" content="Words, LOOPs, reversals, and multi-step sequences for double staves." />
-  <meta property="og:image" content="/guide/level-1/images/_shared/level-1-front-cover.png" />
-</svelte:head>
+<GuideSeo
+  title="1.2 Words & LOOPs · Level 1 Guide · The Kinetic Alphabet"
+  description="Level 1 words, LOOPs, and reversals for The Kinetic Alphabet: AABB patterns, body turns, 16-count sequences, and 8-letter words for double staves."
+  path="/guide/level-1/words"
+  partOf={{ name: "Level 1 Guide: The Kinetic Alphabet", path: "/guide/level-1" }}
+  breadcrumbs={[
+    { name: "Home", path: "/" },
+    { name: "Guide", path: "/guide" },
+    { name: "Level 1", path: "/guide/level-1" },
+    { name: "Words & LOOPs", path: "/guide/level-1/words" },
+  ]}
+/>
 
 <h1>Words, LOOPs & Reversals</h1>
 

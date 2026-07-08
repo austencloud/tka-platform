@@ -4,6 +4,7 @@
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { PreparedPictographData } from "$lib/shared/pictograph/shared/domain/models/prepared-pictograph-data";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { describePictograph } from "$lib/shared/pictograph/shared/domain/utils/pictograph-description";
   import { getGuidePrintMode } from "../_data/guide-data-context";
 
   let {
@@ -43,6 +44,13 @@
   const guidePrint = getGuidePrintMode();
   const eagerEffective = eager || guidePrint;
   const printModeEffective = printMode || guidePrint;
+
+  // Machine-readable notation for crawlers/AT — computed synchronously from raw
+  // `data`, so it lands in the SSR/prerendered HTML even though the visual SVG
+  // renders client-side (async prepare + IntersectionObserver). Without this the
+  // 30+ pictographs on each indexable chapter page are empty, undescribed divs.
+  const a11yLabel = $derived(data ? describePictograph(data) : (label ?? ""));
+  const hasA11yLabel = $derived(!!a11yLabel && a11yLabel !== "Pictograph (empty)");
 
   $effect(() => {
     // Eager mode (print/poster): skip the IntersectionObserver and render immediately.
@@ -106,7 +114,13 @@
   });
 </script>
 
-<div bind:this={wrapperEl} class="guide-pictograph size-{size}" class:bordered>
+<div
+  bind:this={wrapperEl}
+  class="guide-pictograph size-{size}"
+  class:bordered
+  role={hasA11yLabel ? "img" : undefined}
+  aria-label={hasA11yLabel ? a11yLabel : undefined}
+>
   <div class="pictograph-wrapper">
     {#if prepared}
       <PictographRenderer

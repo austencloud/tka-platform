@@ -9,6 +9,13 @@ const pages = [
   // Public pages
   { url: "profile", priority: "0.5", changefreq: "monthly" },
   { url: "landing", priority: "0.8", changefreq: "weekly" },
+  // Guide — the indexable, reflowable article routes (the /print + /book
+  // replicas are noindex; the canonical is the article, so only these are listed)
+  { url: "guide", priority: "0.7", changefreq: "monthly" },
+  { url: "guide/level-1", priority: "0.8", changefreq: "monthly" },
+  { url: "guide/level-1/positions-motions", priority: "0.7", changefreq: "monthly" },
+  { url: "guide/level-1/letters", priority: "0.7", changefreq: "monthly" },
+  { url: "guide/level-1/words", priority: "0.7", changefreq: "monthly" },
 ];
 
 export const GET: RequestHandler = async () => {
