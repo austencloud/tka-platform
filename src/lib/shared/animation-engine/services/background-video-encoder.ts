@@ -57,8 +57,18 @@ export class BackgroundVideoEncoder {
 
   /** Max wait for the worker to report "ready". A stalled VideoEncoder.configure()
    *  posts neither "ready" nor an error, so without this the init promise hangs
-   *  forever and the export UI freezes at 0%. */
-  private static readonly READY_TIMEOUT_MS = 15_000;
+   *  forever and the export UI freezes at 0%.
+   *
+   *  Sized for the *slow-but-not-hung* case, not just the hung one: spawning the
+   *  worker cold-loads the large mediabunny module and then configures WebCodecs.
+   *  On a contended main thread / slow hardware / cold module cache that init can
+   *  legitimately take >15s (measured ~14s under a 20x CPU throttle even with the
+   *  scene idle). The old 15s ceiling clipped those healthy-but-slow inits and
+   *  surfaced them as "Encoder initialization timed out". 30s clears the slow
+   *  path while still bounding a genuine hang. (The primary fix for the common
+   *  case lives in Offline3DExporter: it now pauses the live render loop before
+   *  this init so the worker isn't fighting the 3D scene for CPU.) */
+  private static readonly READY_TIMEOUT_MS = 30_000;
 
   private initTimer: ReturnType<typeof setTimeout> | null = null;
 

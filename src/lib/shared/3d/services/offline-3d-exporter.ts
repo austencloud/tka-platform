@@ -166,14 +166,6 @@ export class Offline3DExporter {
       );
     }
 
-    await this.backgroundEncoder.initialize({
-      width,
-      height,
-      fps,
-      bitrate,
-      totalFrames,
-    });
-
     this.backgroundEncoder.onProgress = (frameIndex, total) => {
       onProgress({
         progress: frameIndex / total,
@@ -227,13 +219,27 @@ export class Offline3DExporter {
       deps.renderer.setSize(width * ssaa, height * ssaa, false);
     }
 
-    deps.setExporting(true);
-    // Stop the native rAF loop so our manual runFrame calls aren't
-    // racing with automatic renders. This gives us CPU-speed export
-    // and tab-switch immunity.
-    deps.pauseAutoLoop();
-
     try {
+      deps.setExporting(true);
+      // Stop the native rAF loop BEFORE the heavy encoder init, not just before
+      // the capture loop. Spawning the export worker loads the (large) mediabunny
+      // module and configures WebCodecs; doing that while the live 3D scene is
+      // still rendering starves the worker of CPU and inflated init past the
+      // ready-timeout on heavier scenes / slower hardware — the "Encoder
+      // initialization timed out" export failure. Quiescing the scene first lets
+      // init run at CPU speed. It also keeps the manual runFrame calls from racing
+      // automatic renders during capture, and gives tab-switch immunity.
+      deps.pauseAutoLoop();
+
+      // Spawn + configure the encoder worker now that the scene is quiesced.
+      await this.backgroundEncoder.initialize({
+        width,
+        height,
+        fps,
+        bitrate,
+        totalFrames,
+      });
+
       for (let frameIndex = 0; frameIndex < totalFrames; frameIndex++) {
         if (this.shouldCancel) {
           throw new Error("Export cancelled");
