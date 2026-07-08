@@ -35,6 +35,7 @@
     closeOnBackdrop={true}
     ariaLabel="Select LOOP Type"
     class="loop-drawer-sheet"
+    backdropClass="loop-backdrop"
     onclose={onClose}
   >
     <div class="loop-drawer-content">
@@ -45,6 +46,7 @@
           {onChange}
           {onClose}
           {onLoopDisable}
+          layout="list"
         />
       {/if}
     </div>
@@ -68,6 +70,23 @@
     max-height: none;
   }
 
+  /* Outside-click-to-close: span backdrop from sidebar edge to the right so a
+     workspace click dismisses (mirrors customize-backdrop). */
+  :global(.drawer-overlay.loop-backdrop.side-by-side-layout) {
+    left: var(--desktop-sidebar-width, 0);
+    right: 0;
+    top: var(--create-panel-top, 0);
+    bottom: 0;
+  }
+
+  /* Thin right column (single-column list needs ~400px, not half the viewport) */
+  :global(
+    .drawer-content.loop-drawer-sheet.side-by-side-layout[data-placement="right"]
+  ) {
+    width: min(var(--create-panel-width, 400px), 400px);
+    max-width: 100%;
+  }
+
   /* drawer-inner default flex: 1 1 0% makes dialog unable to auto-size
      beyond min-height. flex-basis: auto lets content determine dialog height. */
   :global(.drawer-content.loop-drawer-sheet) > :global(.drawer-inner) {
@@ -77,6 +96,7 @@
   .loop-drawer-content {
     display: flex;
     flex-direction: column;
+    height: 100%;
     padding-bottom: calc(var(--nav-min-height, 64px) + env(safe-area-inset-bottom, 0px));
     background: linear-gradient(
       135deg,
@@ -96,19 +116,22 @@
   }
 
 
-  /* Override LOOPExpandedOverlay's absolute positioning when inside drawer */
+  /* Override LOOPExpandedOverlay's absolute positioning when inside drawer;
+     fill the full drawer height like CustomizeDrawer does. */
   .loop-drawer-content > :global(.loop-expanded-overlay) {
     position: static;
+    flex: 1;
+    min-height: 0;
     border-radius: 0;
     border: none;
     box-shadow: none;
     background: transparent;
   }
 
-  /* Grid takes natural height inside drawer (flex: 1 1 0% collapses
-     to 0px in an auto-height flex parent) */
+  /* Grid fills remaining height and scrolls (overlay now fills the drawer) */
   .loop-drawer-content :global(.grid-container) {
-    flex: 0 0 auto;
+    flex: 1 1 auto;
+    min-height: 0;
   }
 
   /* Accessibility: Respect user's motion preferences */
