@@ -48,8 +48,10 @@ export function getGuidePrintMode(): boolean {
   return getContext<boolean>(PRINT_MODE_KEY) ?? false;
 }
 
-/** Payload a page hands up when the user clicks one of its sequences. */
-export type GuideSequenceClick = { strip: StepData[]; word?: string };
+/** Payload a page hands up when the user clicks one of its sequences. `key`
+ *  uniquely identifies the strip (`"<page>-<stripIndex>"`) so the reader can
+ *  scope the golden step ring to exactly the strip that's animating. */
+export type GuideSequenceClick = { strip: StepData[]; word?: string; key?: string };
 
 /** The reader registers a handler; pages call it to open the animation companion. */
 export function setGuideSequenceClick(

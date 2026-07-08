@@ -45,9 +45,14 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
+  import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W, SOUTHEAST: SE, CENTER: C } = GridLocation;
+
+  // Golden step ring: which strip cell the companion is currently animating
+  // (null outside the reader — /print + /book render no ring).
+  const activeStep = getGuideActiveStep();
   const OPP: Partial<Record<GridLocation, GridLocation>> = { [N]: SO_, [SO_]: N, [E]: W, [W]: E };
 
   // Motion type from the location pair: same → STATIC, opposite cardinals → DASH,
@@ -274,6 +279,7 @@
         {#if cell}
           <div
             class="cell"
+            class:guide-step-active={activeStep?.key === `t3-${si}` && activeStep.ringStep === cell.step}
             style="left:{(strip.x + ci * BOX) * S}px; top:{(ri === 0 ? strip.y1 : strip.y2) * S}px; width:{BOX * S}px; height:{BOX * S}px"
             title={describePictograph(boxData(cell.m, cell.step, `${si}-${ri}-${ci}`))}
           >
@@ -309,7 +315,7 @@
       <button
         class="seq-hit"
         style="left:{strip.x * S}px; top:{strip.y1 * S}px; width:{5 * BOX * S}px; height:{(strip.y2 - strip.y1 + BOX) * S}px"
-        onclick={() => emitSequence?.({ strip: stripSteps(strip), word: SEQ_WORDS[si] })}
+        onclick={() => emitSequence?.({ strip: stripSteps(strip), word: SEQ_WORDS[si], key: `t3-${si}` })}
         aria-label={`Animate the ${SEQ_WORDS[si]} sequence`}
       ></button>
     {/each}

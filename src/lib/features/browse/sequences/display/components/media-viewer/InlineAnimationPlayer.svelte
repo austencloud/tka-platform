@@ -79,6 +79,7 @@
     redPropType = null,
     externalBpm = null,
     chrome = "full",
+    onStepChange = undefined,
   }: {
     sequence: SequenceData;
     autoPlay?: boolean;
@@ -87,6 +88,13 @@
     redPropType?: string | null;
     /** When provided, overrides internal BPM and controls playback speed externally */
     externalBpm?: number | null;
+    /**
+     * Reports the live 1-based fractional playback step (`currentStep`) to an
+     * external consumer on every frame it changes. Used by the guide reader to
+     * ring the matching on-screen strip cell in time with the animation; other
+     * hosts (gallery, Arena) omit it and pay no per-frame cost.
+     */
+    onStepChange?: (currentStep: number) => void;
     /**
      * "full" (default) = external play button + BpmChips grid + the in-canvas
      * UnifiedTimeline scrubber (gallery detail, Arena).
@@ -226,6 +234,19 @@
         bpm = externalBpm;
       });
     }
+  });
+
+  // Report the live playback step to an external consumer (the guide reader
+  // rings the matching on-screen strip cell in sync). Read `onStepChange` first
+  // so hosts that omit it never take a dependency on currentStep — no per-frame
+  // effect for gallery/Arena. untrack the callback so a consumer that writes
+  // state (the reader mutates its active-step signal) can't feed back into and
+  // re-trigger this effect (the same footgun the externalBpm effect avoids).
+  $effect(() => {
+    const cb = onStepChange;
+    if (!cb) return;
+    const step = animationState.currentStep;
+    untrack(() => cb(step));
   });
 
   // Watch for sequence changes and reload animation

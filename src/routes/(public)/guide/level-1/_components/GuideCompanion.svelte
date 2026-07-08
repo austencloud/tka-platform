@@ -17,9 +17,13 @@
   let {
     sequence,
     onClose,
+    onStep,
   }: {
     sequence: SequenceData | null;
     onClose: () => void;
+    /** Live playback step from the player, forwarded so the reader can ring the
+     *  matching on-screen strip cell (see GuideActiveStep). */
+    onStep?: (currentStep: number) => void;
   } = $props();
 
   let bpm = $state(60);
@@ -47,6 +51,7 @@
           externalBpm={bpm}
           bluePropType="hand"
           redPropType="hand"
+          onStepChange={onStep}
         />
       {/key}
     {:else}

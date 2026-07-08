@@ -48,9 +48,14 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
+  import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
+
+  // Golden step ring: which strip cell the companion is currently animating
+  // (null outside the reader — /print + /book render no ring).
+  const activeStep = getGuideActiveStep();
 
   // A hand that moves → PRO shift (hand-path mode converts to FLOAT); a hand that
   // stays → STATIC (no arrow). Positions/numbers derive downstream.
@@ -221,6 +226,7 @@
           {@const cellStep = box(cell.m, cell.step)}
           <div
             class="pbox"
+            class:guide-step-active={activeStep?.key === `t2-${si}` && activeStep.ringStep === cell.step}
             title={describePictograph(cellStep)}
             style="left:{(strip.x + ci * BOX) * S}px; top:{(strip.y + ri * BOX) * S}px; width:{BOX *
               S}px; height:{BOX * S}px"
@@ -256,7 +262,7 @@
       <button
         class="seq-hit"
         style="left:{strip.x * S}px; top:{strip.y * S}px; width:{BOX * 5 * S}px; height:{strip.rows.length * BOX * S}px"
-        onclick={() => emitSequence?.({ strip: stripSteps(strip), word: SEQ_WORDS[si] })}
+        onclick={() => emitSequence?.({ strip: stripSteps(strip), word: SEQ_WORDS[si], key: `t2-${si}` })}
         aria-label={`Animate the ${SEQ_WORDS[si]} sequence`}
       ></button>
     {/each}

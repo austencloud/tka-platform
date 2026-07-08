@@ -22,6 +22,7 @@
   import GuideDocument from "./GuideDocument.svelte";
   import GuidePageNav from "./GuidePageNav.svelte";
   import GuideCompanion from "./GuideCompanion.svelte";
+  import { GuideActiveStep, setGuideActiveStep } from "../_data/guide-active-step.svelte";
   import { stripToSequence } from "../_data/guide-sequence-adapter";
   import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
   import type { GuidePageMeta } from "../_data/guide-manifest";
@@ -47,6 +48,13 @@
 
   let clicked = $state<SequenceData | null>(null);
   let companionOpen = $state(false);
+
+  // Golden step ring: the companion animates a clicked strip while THIS signal
+  // rings the matching cell on the page's on-screen strip, in sync — the same
+  // dual-view coupling the Sequence Viewer has. Provided down to the pages via
+  // context (getGuideActiveStep); the companion reports its live step in.
+  const activeStep = new GuideActiveStep();
+  setGuideActiveStep(activeStep);
 
   // Scroll a page into view; the scroll handler keeps activeIndex (the nav
   // highlight) in sync as you scroll freely between the stacked pages.
@@ -101,6 +109,9 @@
   }
 
   async function handleSequenceClick(payload: GuideSequenceClick) {
+    // Ring the clicked strip's Start box immediately (before motion data even
+    // resolves), then the player's live step drives it from there.
+    activeStep.begin(payload.key ?? "");
     const seq = stripToSequence(payload.strip, { word: payload.word });
     clicked = (await ensureMotionData(seq)) ?? seq;
     companionOpen = true;
@@ -213,7 +224,14 @@
 
   <aside class="reader-companion" class:open={companionOpen} aria-hidden={!companionOpen}>
     {#if companionOpen}
-      <GuideCompanion sequence={clicked} onClose={() => (companionOpen = false)} />
+      <GuideCompanion
+        sequence={clicked}
+        onStep={(s) => activeStep.report(s)}
+        onClose={() => {
+          companionOpen = false;
+          activeStep.clear();
+        }}
+      />
     {/if}
   </aside>
 </div>

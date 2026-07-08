@@ -520,6 +520,53 @@
   object-fit: contain;
 }
 
+/* ══════════════════════════════════════════
+   Reader companion → page strip: golden step ring
+   While the animation companion plays a clicked sequence, the page's on-screen
+   strip rings the CURRENT step in time with the animation — the same amber
+   highlight the Sequence Viewer dual view puts on the active step
+   (PictographCell.current). Toggled by the pages via a global class
+   (class:guide-step-active) so all four wired pages (Type 1/2/3, Gamma) share
+   ONE definition. Only ever set inside the reader — never on /print or /book
+   (getGuideActiveStep is null there, so the printable pages stay pristine).
+   The box-shadow ring is NOT clipped by a cell's own overflow:hidden (overflow
+   clips descendants, not the element's outward shadow); z-index lifts the active
+   cell above its neighbours so the ring shows on every edge; pointer-events:none
+   keeps the lifted cell from stealing clicks from the .seq-hit target beneath.
+   ══════════════════════════════════════════ */
+.guide-step-active {
+  z-index: 10;
+  transform: scale(1.06);
+  box-shadow:
+    0 0 12px rgba(251, 191, 36, 0.6),
+    0 0 0 3px rgba(251, 191, 36, 0.9);
+  pointer-events: none;
+  animation: guideStepRingIn 0.4s ease-out forwards;
+}
+@keyframes guideStepRingIn {
+  0% {
+    box-shadow:
+      0 0 0 rgba(251, 191, 36, 0),
+      0 0 0 0 rgba(251, 191, 36, 0);
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.08);
+  }
+  100% {
+    box-shadow:
+      0 0 12px rgba(251, 191, 36, 0.6),
+      0 0 0 3px rgba(251, 191, 36, 0.9);
+    transform: scale(1.06);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .guide-step-active {
+    animation: none;
+    transform: none;
+  }
+}
+
 /* === Mobile: collapse sidebar === */
 @media (max-width: 768px) {
   .guide-sidebar {
