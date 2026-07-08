@@ -44,7 +44,7 @@ function fakeDeps(): SnapshotDeps {
     } as unknown as SnapshotDeps["controller"],
     effects: { config: { activeEffect: "fire", tag: "E" }, replace() {} } as unknown as SnapshotDeps["effects"],
     visibility: {
-      getEffortPreset: () => "sharp",
+      getEffortPreset: () => "punch",
       getPathShape: () => "concave",
       getMotionAwarePaths: () => true,
       getVisibility: (k: string) => k === "bluePathLines",
@@ -62,8 +62,13 @@ describe("captureTunnelSnapshot", () => {
   it("reads every store into the flat blob", () => {
     const snap = captureTunnelSnapshot(fakeDeps());
     expect(snap.version).toBe(SNAPSHOT_VERSION);
+    // Coverage guard (spec §7): every enumerated top-level field is present, so a
+    // future store added to the app can't be silently dropped from the snapshot.
+    expect(Object.keys(snap).sort()).toEqual(
+      ["effects", "effort", "paths", "playback", "props", "trailRender", "tunnel", "version"],
+    );
     expect(snap.tunnel).toEqual({ config: { ...DEFAULT_CONFIG, fold: 4 }, gridVisible: true, spectrum: false, section: "effects" });
-    expect(snap.effort).toBe("sharp");
+    expect(snap.effort).toBe("punch");
     expect(snap.paths).toEqual({ pathShape: "concave", motionAwarePaths: true, bluePathLines: true, redPathLines: false });
     expect(snap.playback).toEqual({ bpm: 144, playbackMode: "step" });
     expect(snap.props).toEqual({ bluePropType: "fan", redPropType: "club" });
