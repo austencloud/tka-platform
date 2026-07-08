@@ -13,7 +13,9 @@ Animates forward in z-axis and expands to fill the container space
   import { generateExplanationText } from "$lib/features/create/generate/shared/services/loop-explanation-text-generator";
   import { LOOPType } from "../../circular/domain/models/circular-models";
   import LOOPComponentGrid from "../modals/LOOPComponentGrid.svelte";
-  import LOOPModeSelector from "../modals/LOOPModeSelector.svelte";
+  import LOOPQuickCombosStrip from "../modals/LOOPQuickCombosStrip.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import type { LOOPPreset } from "../../shared/domain/constants/loop-presets";
 
   let {
     currentType,
@@ -21,12 +23,14 @@ Animates forward in z-axis and expands to fill the container space
     onChange,
     onClose,
     onLoopDisable,
+    layout = "grid",
   } = $props<{
     currentType: LOOPType;
     selectedComponents: Set<LOOPComponent>;
     onChange: (loopType: LOOPType) => void;
     onClose: () => void;
     onLoopDisable?: () => void;
+    layout?: "grid" | "list";
   }>();
 
   let hapticService: HapticFeedback | null = null;
@@ -104,6 +108,13 @@ Animates forward in z-axis and expands to fill the container space
     applyAndClose();
   }
 
+  function applyPreset(preset: LOOPPreset) {
+    hapticService?.trigger("selection");
+    const newLoopType = generateLOOPType(new Set(preset.components));
+    onChange(newLoopType);
+    onClose();
+  }
+
   function handleClose() {
     hapticService?.trigger("selection");
     onClose();
@@ -149,17 +160,28 @@ Animates forward in z-axis and expands to fill the container space
     </div>
   </div>
 
-  <!-- Mode selector -->
-  <LOOPModeSelector
-    {isMultiSelectMode}
-    onModeChange={handleModeChange}
+  <!-- Mode selector (shared SegmentedControl per chip-primitives rule) -->
+  <SegmentedControl
+    options={[
+      { value: "single", label: "Single" },
+      { value: "combo", label: "Combo" },
+    ]}
+    value={isMultiSelectMode ? "combo" : "single"}
+    onchange={(v) => handleModeChange(v === "combo")}
+    size="sm"
+    color="accent"
   />
+
+  {#if layout === "list"}
+    <LOOPQuickCombosStrip onApply={applyPreset} />
+  {/if}
 
   <!-- Component grid -->
   <div class="grid-container">
     <LOOPComponentGrid
       selectedComponents={localSelectedComponents}
       {isMultiSelectMode}
+      {layout}
       onToggleComponent={handleToggle}
     />
   </div>
