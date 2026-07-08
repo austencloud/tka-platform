@@ -23,9 +23,6 @@
     animate = true,
   }: { config: TunnelConfig; size?: number; animate?: boolean } = $props();
 
-  const HAND_BLUE = "#2E86DE";
-  const HAND_RED = "#E74C3C";
-
   const reduced = $derived(
     browser && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
@@ -34,8 +31,8 @@
   const cx = $derived(size / 2);
   const cy = $derived(size / 2);
   const ringR = $derived(size * 0.4);
-  const endR = $derived(size * 0.036); // blue/red hand cap radius
-  const staffHalf = $derived(size * 0.06); // half the staff body length
+  const endR = $derived(size * 0.052); // blue/red hand cap radius
+  const staffHalf = $derived(size * 0.075); // half the staff body length
 
   const performers = $derived(performerRing(config));
 
@@ -73,10 +70,10 @@
     cy={cy}
     r={ringR}
     fill="none"
-    stroke="var(--theme-stroke, rgba(255,255,255,0.12))"
+    stroke="var(--theme-stroke-strong, rgba(255,255,255,0.22))"
     stroke-width="1"
   />
-  <circle cx={cx} cy={cy} r={size * 0.03} fill="var(--theme-stroke, rgba(255,255,255,0.25))" />
+  <circle cx={cx} cy={cy} r={size * 0.028} fill="var(--theme-text-dim, rgba(255,255,255,0.4))" />
 
   {#each performers as p (p.id)}
     {@const h = hands(p.angleDeg, p.depth)}
@@ -89,28 +86,30 @@
       {#if p.id === "f0"}
         <!-- The base performer ("you") — the seed everything multiplies from. -->
         <circle
+          class="halo"
           cx={c.x}
           cy={c.y}
-          r={staffHalf + endR + size * 0.02}
+          r={staffHalf + endR + size * 0.022}
           fill="none"
           stroke="var(--theme-accent, #c79bff)"
-          stroke-width="1.5"
-          opacity="0.9"
+          stroke-width="1.75"
+          opacity="0.95"
         />
       {/if}
-      <!-- Staff body -->
+      <!-- Staff body (the prop) — bright neutral so it reads on a dark stage. -->
       <line
         x1={h.blue.x}
         y1={h.blue.y}
         x2={h.red.x}
         y2={h.red.y}
-        stroke="var(--theme-text-dim, rgba(255,255,255,0.5))"
-        stroke-width={endR * 0.9}
+        stroke="var(--theme-text, rgba(255,255,255,0.85))"
+        stroke-width={endR * 0.8}
         stroke-linecap="round"
+        opacity="0.75"
       />
-      <!-- Hand ends -->
-      <circle cx={h.blue.x} cy={h.blue.y} r={endR} fill={HAND_BLUE} />
-      <circle cx={h.red.x} cy={h.red.y} r={endR} fill={HAND_RED} />
+      <!-- Hand ends (blue thumb / red pinky), semantic prop colors. -->
+      <circle class="end" cx={h.blue.x} cy={h.blue.y} r={endR} fill="var(--prop-blue, #2E86DE)" />
+      <circle class="end" cx={h.red.x} cy={h.red.y} r={endR} fill="var(--prop-red, #E74C3C)" />
     </g>
   {/each}
 </svg>
@@ -120,9 +119,12 @@
     display: block;
     overflow: visible;
   }
-  .performer :global(circle) {
-    /* Subtle seat so overlapping twins on tighter rings stay legible. */
-    stroke: var(--theme-bg-deep, #0a0a14);
-    stroke-width: 0.5;
+  /* Light seat on the hand ends ONLY (not the accent "you" halo) so overlapping
+     twins on tighter rings stay separated, and the dots pop off a dark stage.
+     paint-order keeps the fill on top of the seat for a clean edge. */
+  .performer :global(circle.end) {
+    stroke: rgba(255, 255, 255, 0.45);
+    stroke-width: 0.75;
+    paint-order: stroke;
   }
 </style>

@@ -1,11 +1,14 @@
 <!--
-  Tunnel Tuner Clarity — interactive prototype.
+  Tunnel Tuner Clarity — A/B judge rig.
 
-  The proposed "dead simple" tuner, wired to a live TunnelConfig, with the REAL
-  kaleidoscope (LookCell) beside it. Toggle Mirror → watch the Performer Ring
-  twins spring in and the count double. Toggle Invert/Echo/Speed → the count
-  holds (motion is free). Judge surface for the 2026-07-07 tuner-clarity design;
-  real components in a test page, per visualization-routing.
+  Two copies of the tuner share ONE TunnelConfig, so their Performer Ring + counts
+  are identical; only the toggle treatment differs:
+    · Solid  — FilterChipBase emphasis="solid": active chips fill accent, matching
+               the Copies SegmentedControl indicator.
+    · Ghost  — FilterChipBase default: active chips are a 15% accent wash.
+  Both use the contrast-overhauled PerformerRing. One live kaleidoscope below
+  reflects the shared config. Pick the winner, then port it to ArtSettingsPanel.
+  Real components in a test page, per visualization-routing.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
@@ -31,8 +34,8 @@
   const performers = $derived(imageCount(config));
   const props = $derived(propCount(config));
 
-  // Everything is a multiplier on ONE base performer ("you"). Only active
-  // (>×1) factors show, so the count reads as a build-up: 1 → ×copies → ×mirror.
+  // Everything multiplies ONE base performer ("you"); only active (>×1) factors
+  // show, so the count reads as a build-up: 1 → ×copies → ×mirror.
   const factors = $derived(
     [
       config.fold > 1 ? { x: config.fold, label: "copies" } : null,
@@ -41,11 +44,8 @@
     ].filter((f): f is { x: number; label: string } => f !== null),
   );
 
-  // Fold shown as a ×multiplier (not a count) so it never collides with the
-  // "performers" total: ×1 selected + Mirror ×2 obviously = 2 performers.
   const foldSegOptions = FOLD_OPTIONS.map((a) => ({ value: String(a), label: `×${a}` }));
 
-  // Count-builders (Mirror/Flip each ×2) vs motion modulators (no new copies).
   const twinChips = $derived([
     { key: "mirror", label: "Mirror ×2", icon: "fas fa-arrows-left-right", active: config.mirror, toggle: () => (config.mirror = !config.mirror) },
     { key: "flip", label: "Flip ×2", icon: "fas fa-arrows-up-down", active: config.flip, toggle: () => (config.flip = !config.flip) },
@@ -104,91 +104,98 @@
   }
 </script>
 
+{#snippet tuner(emphasis: "soft" | "solid", title: string)}
+  <section class="tuner">
+    <h2 class="variant">{title}</h2>
+
+    <!-- Hero: the contrast-overhauled Performer Ring on a real card surface. -->
+    <div class="hero">
+      <div class="ring-seat">
+        <PerformerRing {config} size={120} />
+      </div>
+      <p class="result">
+        <span class="n big">{performers}</span> {performers === 1 ? "performer" : "performers"}
+        <span class="mid">·</span>
+        <span class="n">{props}</span> props
+      </p>
+      {#if factors.length}
+        <p class="build">
+          <span class="seed">1</span>
+          {#each factors as f (f.label)}
+            <span class="dim">×</span> {f.x} {f.label}
+          {/each}
+        </p>
+      {:else}
+        <p class="build">just you</p>
+      {/if}
+    </div>
+
+    <div class="zone">
+      <span class="zone-lbl">Copies <span class="hint">— of you</span></span>
+      <div class="seg">
+        <SegmentedControl
+          options={foldSegOptions}
+          value={String(config.fold)}
+          onchange={(v) => (config.fold = Number(v))}
+          color="accent"
+          size="sm"
+        />
+      </div>
+    </div>
+
+    <div class="zone">
+      <span class="zone-lbl">Add twins <span class="hint">— each doubles</span></span>
+      <div class="chips">
+        {#each twinChips as c (c.key)}
+          <FilterChipBase mode="toggle" {emphasis} size="sm" label={c.label} icon={c.icon} active={c.active} onclick={c.toggle} />
+        {/each}
+      </div>
+    </div>
+
+    <div class="zone">
+      <span class="zone-lbl">Motion <span class="hint">— same count</span></span>
+      <div class="chips">
+        {#each motionChips as c (c.key)}
+          <FilterChipBase mode="toggle" {emphasis} size="sm" label={c.label} icon={c.icon} active={c.active} onclick={c.toggle} />
+        {/each}
+      </div>
+      <div class="stagger">
+        <span class="stagger-lbl">Stagger</span>
+        <button type="button" disabled={config.staggerSteps <= 0} onclick={() => setStagger(config.staggerSteps - 1)} aria-label="Less stagger">−</button>
+        <span class="stagger-val">{config.staggerSteps}</span>
+        <button type="button" disabled={config.staggerSteps >= staggerMax} onclick={() => setStagger(config.staggerSteps + 1)} aria-label="More stagger">+</button>
+      </div>
+    </div>
+  </section>
+{/snippet}
+
 <div class="page">
   <header>
-    <h1>Tunnel Tuner — clarity prototype</h1>
-    <p class="sub">Tap <b>Mirror</b>: twins spring in, count doubles. Tap <b>Invert/Echo/Speed</b>: count holds. · {status}</p>
+    <h1>Tunnel Tuner — Solid vs Ghost toggles</h1>
+    <p class="sub">
+      Same config both sides. <b>Solid</b> = active chips fill accent (match Copies).
+      <b>Ghost</b> = 15% wash. Toggle either — both mirror. · {status}
+    </p>
   </header>
 
   <div class="stage">
-    <!-- LEFT: the proposed tuner -->
-    <section class="tuner">
-      <!-- Hero: the countable Performer Ring + the count sentence -->
-      <div class="hero">
-        <PerformerRing {config} size={120} />
-        <p class="result">
-          <span class="n big">{performers}</span> {performers === 1 ? "performer" : "performers"}
-          <span class="mid">·</span>
-          <span class="n">{props}</span> props
-        </p>
-        {#if factors.length}
-          <p class="build">
-            <span class="seed">1</span>
-            {#each factors as f (f.label)}
-              <span class="dim">×</span> {f.x} {f.label}
-            {/each}
-          </p>
-        {:else}
-          <p class="build">just you</p>
-        {/if}
-      </div>
-
-      <!-- Performers (count-builder) -->
-      <div class="zone">
-        <span class="zone-lbl">Copies <span class="hint">— of you</span></span>
-        <div class="seg">
-          <SegmentedControl
-            options={foldSegOptions}
-            value={String(config.fold)}
-            onchange={(v) => (config.fold = Number(v))}
-            color="accent"
-            size="sm"
-          />
-        </div>
-      </div>
-
-      <!-- Add twins — each doubles -->
-      <div class="zone">
-        <span class="zone-lbl">Add twins <span class="hint">— each doubles</span></span>
-        <div class="chips">
-          {#each twinChips as c (c.key)}
-            <FilterChipBase mode="toggle" size="sm" label={c.label} icon={c.icon} active={c.active} onclick={c.toggle} />
-          {/each}
-        </div>
-      </div>
-
-      <!-- Motion — same count -->
-      <div class="zone">
-        <span class="zone-lbl">Motion <span class="hint">— same count</span></span>
-        <div class="chips">
-          {#each motionChips as c (c.key)}
-            <FilterChipBase mode="toggle" size="sm" label={c.label} icon={c.icon} active={c.active} onclick={c.toggle} />
-          {/each}
-        </div>
-        <div class="stagger">
-          <span class="stagger-lbl">Stagger</span>
-          <button type="button" disabled={config.staggerSteps <= 0} onclick={() => setStagger(config.staggerSteps - 1)} aria-label="Less stagger">−</button>
-          <span class="stagger-val">{config.staggerSteps}</span>
-          <button type="button" disabled={config.staggerSteps >= staggerMax} onclick={() => setStagger(config.staggerSteps + 1)} aria-label="More stagger">+</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- RIGHT: the real kaleidoscope for the same config -->
-    <section class="live">
-      <span class="live-lbl">Live render</span>
-      {#if base}
-        <div class="live-cell">
-          <LookCell {base} {config} label={`${props} props`} {step} propType={propTypeStr} spectrum={true} grid={false} />
-        </div>
-      {:else if !errorMsg}
-        <div class="ph">{status}</div>
-      {/if}
-      {#if errorMsg}
-        <pre class="err">{errorMsg}</pre>
-      {/if}
-    </section>
+    {@render tuner("solid", "Solid")}
+    {@render tuner("soft", "Ghost")}
   </div>
+
+  <section class="live">
+    <span class="live-lbl">Live render — {props} props</span>
+    {#if base}
+      <div class="live-cell">
+        <LookCell {base} {config} label={`${props} props`} {step} propType={propTypeStr} spectrum={true} grid={false} />
+      </div>
+    {:else if !errorMsg}
+      <div class="ph">{status}</div>
+    {/if}
+    {#if errorMsg}
+      <pre class="err">{errorMsg}</pre>
+    {/if}
+  </section>
 </div>
 
 <style>
@@ -199,22 +206,20 @@
     flex-direction: column;
     align-items: center;
     gap: 20px;
-    background: radial-gradient(circle at 50% 20%, #14141f 0%, #0a0a0f 72%);
+    background: radial-gradient(circle at 50% 15%, #14141f 0%, #0a0a0f 72%);
     color: #e8e8f0;
     font-family: system-ui, sans-serif;
   }
   header { text-align: center; }
   h1 { margin: 0; font-size: 1.3rem; }
-  .sub { margin: 6px 0 0; opacity: 0.65; font-size: 0.82rem; }
+  .sub { margin: 6px 0 0; opacity: 0.65; font-size: 0.82rem; max-width: 640px; }
   .sub b { color: #fff; }
 
   .stage {
     display: grid;
-    grid-template-columns: minmax(300px, 380px) minmax(280px, 420px);
-    gap: 28px;
+    grid-template-columns: repeat(2, minmax(280px, 340px));
+    gap: 24px;
     align-items: start;
-    width: 100%;
-    max-width: 900px;
   }
   @media (max-width: 720px) {
     .stage { grid-template-columns: 1fr; }
@@ -226,15 +231,32 @@
     gap: 18px;
     padding: 20px;
     border-radius: 16px;
-    background: rgba(255 255 255 / 0.04);
-    border: 1px solid rgba(255 255 255 / 0.1);
+    background: var(--theme-panel-bg, rgba(255 255 255 / 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255 255 255 / 0.1));
+  }
+  .variant {
+    margin: 0;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    opacity: 0.55;
+    text-align: center;
   }
 
   .hero {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+  }
+  /* The contrast win: the schematic sits on a real card, not raw black. */
+  .ring-seat {
+    display: grid;
+    place-items: center;
+    padding: 12px;
+    border-radius: 14px;
+    background: var(--theme-card-bg, rgba(255 255 255 / 0.05));
+    border: 1px solid var(--theme-stroke, rgba(255 255 255 / 0.1));
   }
   .result {
     margin: 0;
@@ -242,14 +264,8 @@
     font-variant-numeric: tabular-nums;
     text-align: center;
   }
-  .result .n {
-    font-weight: 700;
-    color: #fff;
-  }
-  .result .n.big {
-    font-size: 1.35rem;
-    color: #c79bff;
-  }
+  .result .n { font-weight: 700; color: var(--theme-text, #fff); }
+  .result .n.big { font-size: 1.35rem; color: var(--theme-accent, #c79bff); }
   .result .mid { opacity: 0.4; margin: 0 6px; }
 
   .build {
@@ -259,10 +275,7 @@
     font-variant-numeric: tabular-nums;
     text-align: center;
   }
-  .build .seed {
-    color: #c79bff;
-    font-weight: 700;
-  }
+  .build .seed { color: var(--theme-accent, #c79bff); font-weight: 700; }
   .build .dim { margin: 0 1px; }
 
   .zone { display: flex; flex-direction: column; gap: 8px; }
@@ -273,7 +286,7 @@
     opacity: 0.6;
   }
   .zone-lbl .hint { text-transform: none; letter-spacing: 0; opacity: 0.7; }
-  .seg { max-width: 220px; }
+  .seg { max-width: 240px; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 
   .stagger { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
@@ -293,6 +306,8 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+    align-items: center;
+    width: min(360px, 90vw);
   }
   .live-lbl {
     font-size: 0.72rem;

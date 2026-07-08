@@ -18,6 +18,10 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     chipColor?: string;
     /** toggle = on/off switch · dropdown = opens a popover · action = momentary button (no chevron, no switch role). */
     mode?: "toggle" | "dropdown" | "action";
+    /** soft (default) = active state is a translucent wash of `chipColor` ·
+     *  solid = active state fills with `chipColor` + on-accent text, matching a
+     *  SegmentedControl indicator (use when a toggle sits beside one). */
+    emphasis?: "soft" | "solid";
     /** md = default chip · sm = denser padding for tight scrollable filter rows.
      *  Touch-target floor is preserved in both sizes. */
     size?: "sm" | "md";
@@ -35,6 +39,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     count = null,
     chipColor = "var(--theme-accent)",
     mode = "dropdown",
+    emphasis = "soft",
     size = "md",
     expanded = false,
     disabled = false,
@@ -60,6 +65,7 @@ Popover uses fixed positioning to escape overflow:hidden containers.
   class:active
   class:disabled
   class:expanded
+  class:solid={emphasis === "solid"}
   class:size-sm={size === "sm"}
   style="--chip-color: {chipColor};"
   type="button"
@@ -134,6 +140,24 @@ Popover uses fixed positioning to escape overflow:hidden containers.
     background: color-mix(in srgb, var(--chip-color) 15%, transparent);
     border-color: color-mix(in srgb, var(--chip-color) 40%, transparent);
     color: var(--theme-text);
+  }
+
+  /* Solid emphasis: active chip fills like a SegmentedControl indicator, so a
+     toggle sitting next to one reads in the same accent weight. */
+  .filter-chip.solid.active {
+    background: var(--chip-color);
+    border-color: var(--chip-color);
+    color: var(--theme-text-on-accent, #fff);
+  }
+  .filter-chip.solid.active i:not(.chip-arrow) {
+    color: var(--theme-text-on-accent, #fff);
+  }
+  @media (hover: hover) {
+    .filter-chip.solid.active:not(.disabled):hover {
+      background: color-mix(in srgb, var(--chip-color) 88%, #000);
+      border-color: color-mix(in srgb, var(--chip-color) 88%, #000);
+      color: var(--theme-text-on-accent, #fff);
+    }
   }
 
   .filter-chip.expanded {

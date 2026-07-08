@@ -348,7 +348,9 @@
              performer ("you", haloed); every count-builder multiplies it. The
              faint line under it shows the build-up (1 × 2 copies × 2 mirror). -->
         <div class="tuner-hero">
-          <PerformerRing config={controller.config} size={104} />
+          <div class="ring-seat">
+            <PerformerRing config={controller.config} size={104} />
+          </div>
           <p class="tuner-result">
             <span class="tr-n">{controller.performerCount}</span>
             {controller.performerCount === 1 ? "performer" : "performers"}
@@ -399,6 +401,7 @@
             {#each twinChips as chip (chip.key)}
               <FilterChipBase
                 mode="toggle"
+                emphasis="solid"
                 size="sm"
                 label={chip.label}
                 icon={chip.icon}
@@ -417,6 +420,7 @@
             {#each motionChips as chip (chip.key)}
               <FilterChipBase
                 mode="toggle"
+                emphasis="solid"
                 size="sm"
                 label={chip.label}
                 icon={chip.icon}
@@ -880,8 +884,18 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 10px;
     padding: 4px 0 8px;
+  }
+  /* Seat the schematic on a real card so it reads against a dark stage (matches
+     the card/stroke surface treatment; the ring's own contrast fix does the rest). */
+  .ring-seat {
+    display: grid;
+    place-items: center;
+    padding: 10px;
+    border-radius: 14px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
   .tuner-result {
     margin: 0;
