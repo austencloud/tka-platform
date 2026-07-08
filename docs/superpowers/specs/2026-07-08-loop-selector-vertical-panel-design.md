@@ -1,8 +1,20 @@
 # LOOP Selector → Thin Vertical Panel — Design
 
 **Date:** 2026-07-08
-**Status:** Draft (awaiting review)
+**Status:** Shipped, revised
 **Area:** `src/lib/features/create/generate` — Generate tab LOOP type selector
+
+> **Revision (2026-07-08, post-implementation feedback):**
+> - **Quick Combos / favorites REMOVED.** Curated combos (e.g. "Diagonal Mirror"
+>   for mirror+rotate) were just named primitive combinations — confusing, not
+>   helpful. Every combo is buildable from the 6 primitives in Combo mode. The
+>   strip, `loop-quick-combos`, `loop-favorites-manager`, and `loop-presets` are
+>   deleted (§C below is superseded).
+> - **Panel FILLS full height** (not hug-content). Hugging made it a small box
+>   floating in the corner. The 6 type rows now `stretch` (`grid-auto-rows: 1fr`)
+>   to spread evenly across the full height — larger, easier targets, no empty
+>   bottom.
+> - **Handle kept** (not hidden) so swipe-to-dismiss direction is legible.
 
 ## Problem
 
