@@ -11,13 +11,9 @@
    * page used to mount for itself.
    */
   import type { Snippet } from "svelte";
-  import { onMount, untrack } from "svelte";
+  import { onMount } from "svelte";
   import { page } from "$app/state";
   import { fade } from "svelte/transition";
-  import {
-    suppressBackground,
-    releaseBackground,
-  } from "$lib/shared/background/shared/state/background-suppression.svelte";
   import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
   import ShopMorphLayer from "$lib/features/store/transitions/ShopMorphLayer.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
@@ -42,22 +38,9 @@
   // crossfade between them.
   const ownsViewTransition = $derived(path.startsWith("/shop"));
 
-  // Zero-jank shop: while on /shop, suppress the live WebGL cosmos. Its per-frame
-  // canvas readback is the ONE thing that makes the view-transition morph hitch on
-  // the opening frame (~99ms). The static night-sky gradient plus the
-  // compositor-only .shop-ambient drift below stand in for it — guaranteed-smooth
-  // on every device — and the cosmos returns the instant you leave the shop. Same
-  // suppress/release lever the museum uses for its fullscreen scenes.
-  $effect(() => {
-    if (!ownsViewTransition) return;
-    // untrack: suppressBackground/releaseBackground both READ the shared keys array
-    // (the .includes guard) and WRITE it. Called bare inside an $effect, that
-    // read+write of the same $state is a self-dependency -> effect_update_depth_exceeded
-    // (infinite suppress<->release loop). This effect must react ONLY to
-    // ownsViewTransition, so the mutations run untracked.
-    untrack(() => suppressBackground("shop"));
-    return () => untrack(() => releaseBackground("shop"));
-  });
+  // /shop keeps the live cosmos (Austen wants the space background there). The
+  // view-transition cover morph may hitch ~1 frame on open from the cosmos canvas
+  // readback; acceptable trade for the real backdrop over a static gradient.
 </script>
 
 <div class="mkt-shell">
@@ -67,11 +50,6 @@
   </div>
 
   {#if ownsViewTransition}
-    <!-- Compositor-only ambient backdrop for the shop: two soft gradient blobs
-         that drift via transform on the GPU thread. Replaces the suppressed WebGL
-         cosmos with a living, zero-jank "future-tech" wash that costs nothing to
-         snapshot during the morph. -->
-    <div class="shop-ambient" aria-hidden="true"></div>
     <!-- Shared-element morph overlay (Motion spring-FLIP). Persists across the
          grid<->detail route swap so the ghost can bridge it. -->
     <ShopMorphLayer />
@@ -117,70 +95,6 @@
     background:
       radial-gradient(120% 80% at 78% 12%, rgba(70, 60, 140, 0.35) 0%, transparent 55%),
       radial-gradient(130% 100% at 50% -10%, #181b3d 0%, #0c0e20 48%, #06070f 100%);
-  }
-
-  /* Shop ambient: GPU-composited drifting nebula. The blobs are soft radial
-     gradients painted once into their own layer (will-change: transform), then
-     only translated — no per-frame paint, no layout, nothing to read back during a
-     view-transition snapshot. Overscanned (inset: -20%) so the drift never reveals
-     an edge. */
-  .shop-ambient {
-    position: fixed;
-    inset: -20%;
-    z-index: 0;
-    pointer-events: none;
-    overflow: hidden;
-  }
-  .shop-ambient::before,
-  .shop-ambient::after {
-    content: "";
-    position: absolute;
-    width: 70vmax;
-    height: 70vmax;
-    border-radius: 50%;
-    will-change: transform;
-  }
-  .shop-ambient::before {
-    top: -12%;
-    left: -8%;
-    background: radial-gradient(
-      circle,
-      rgba(99, 102, 241, 0.22) 0%,
-      transparent 62%
-    );
-    animation: shop-drift-a 34s ease-in-out infinite alternate;
-  }
-  .shop-ambient::after {
-    bottom: -12%;
-    right: -8%;
-    background: radial-gradient(
-      circle,
-      rgba(168, 85, 247, 0.18) 0%,
-      transparent 62%
-    );
-    animation: shop-drift-b 44s ease-in-out infinite alternate;
-  }
-  @keyframes shop-drift-a {
-    from {
-      transform: translate3d(0, 0, 0);
-    }
-    to {
-      transform: translate3d(7vw, 6vh, 0);
-    }
-  }
-  @keyframes shop-drift-b {
-    from {
-      transform: translate3d(0, 0, 0);
-    }
-    to {
-      transform: translate3d(-6vw, -5vh, 0);
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .shop-ambient::before,
-    .shop-ambient::after {
-      animation: none;
-    }
   }
 
   .mkt-layer {
