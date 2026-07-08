@@ -27,6 +27,8 @@
   import { flip } from "svelte/animate";
   import { flyFade, growFade, flipDuration } from "$lib/shared/transitions/motion";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
+  import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
   import type { SheetPage, SheetCell, SheetBand, SheetBandPage } from "../../services/sheet-row-planner";
   import type { SheetPageGeometry } from "../../domain/sheet-page-layout";
   import type {
@@ -76,6 +78,10 @@
     onRemoveNote?: (id: string) => void;
     onSetHeader?: (patch: Partial<SheetHeader>) => void;
   } = $props();
+
+  // Whole-sequence selection scope (provided by ChoreoSheetView). Null on hosts
+  // that don't provide one → no ring, SelectionHit renders nothing.
+  const selection = getSequenceSelection();
 
   // Header for the title block / running header (aligned branch only).
   const header = $derived(annotations?.header);
@@ -401,19 +407,20 @@
               {#each row.cells as cell, ci (ci)}
                 <div
                   class="cell"
+                  class:tka-seq-cell={!cell.isBlank && !!cell.sequenceId}
                   class:blank={cell.isBlank}
-                  class:selected={isSelected(cell.sequenceId)}
+                  class:is-hovered={cell.sequenceId ? selection?.isHovered(cell.sequenceId) : false}
+                  class:is-selected={cell.sequenceId ? selection?.isSelected(cell.sequenceId) : false}
                   class:break={isCellBreak(cell)}
                   class:separator={isCellSeparator(cell, pi === 0 && ri === 0 && ci === 0)}
                 >
                   {#if !cell.isBlank && cell.sequenceId && onSelectSequence}
-                    <button
-                      type="button"
-                      class="cell-select"
-                      aria-label="Select this sequence"
-                      aria-pressed={isSelected(cell.sequenceId)}
-                      onclick={() => onSelectSequence?.(cell.sequenceId!)}
-                    ></button>
+                    <SelectionHit
+                      groupId={cell.sequenceId}
+                      isGroupStart={cell.isSequenceStart}
+                      label="Select this sequence"
+                      onselect={(id) => onSelectSequence?.(id)}
+                    />
                   {/if}
                   {#if isCellBreak(cell)}
                     <span class="cell-break-label">
@@ -520,30 +527,9 @@
     border-left: 2px solid var(--print-border-strong, rgba(0, 0, 0, 0.4));
   }
 
-  /* Whole-sequence selection: a transparent hit layer over each cell, an accent
-     ring on every cell of the selected sequence, and a Remove button on its
-     first cell. */
-  .cell-select {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    background: transparent;
-    border: none;
-    padding: 0;
-    margin: 0;
-    cursor: pointer;
-  }
-
-  .cell.selected::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border: 2px solid var(--theme-accent, #6366f1);
-    border-radius: 3px;
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 14%, transparent);
-    pointer-events: none;
-    z-index: 2;
-  }
+  /* Whole-sequence selection is the shared primitive now: the .cell carries
+     .tka-seq-cell + is-hovered/is-selected (selection.css) and hosts a <SelectionHit>.
+     The Remove button on the first cell stays below. */
 
   .block-remove {
     position: absolute;

@@ -16,6 +16,8 @@
 <script lang="ts">
   import { flip } from "svelte/animate";
   import { onMount } from "svelte";
+  import { SequenceSelection, setSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
+  import "$lib/shared/selection/selection.css";
   import {
     createChoreoSheetState,
     setChoreoSheetContext,
@@ -96,6 +98,15 @@
     persistKey: "tka-choreo-sheet-draft",
   });
   setChoreoSheetContext({ state: builder });
+
+  // Shared selection primitive. The builder stays the behavioural owner
+  // (Remove / persistence / Escape); this scope mirrors its selectedId so the
+  // whole-sequence selection ring + a11y match the guide by construction.
+  const selection = new SequenceSelection();
+  setSequenceSelection(selection);
+  $effect(() => {
+    selection.selectedId = builder.selectedSequenceId;
+  });
 
   // id → hydrated sequence, for the row list labels/counts. Ids still hydrating
   // simply show "Loading…" until their data resolves.
