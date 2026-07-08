@@ -49,7 +49,7 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     </div>
   </div>
 
-  {#if isMultiSelectMode && isSelected}
+  {#if isSelected}
     <div class="check-badge">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
         <polyline points="6,12 10,16 18,8"></polyline>
@@ -91,11 +91,14 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     outline-offset: 2px;
   }
 
+  /* Strong, unmistakable selected state. Border stays 2px (no layout shift);
+     the emphasis comes from an inset ring + outer glow (box-shadow only). */
   .loop-component-button.selected {
-    background: color-mix(in srgb, var(--component-color) 35%, rgba(30, 30, 50, 0.95));
+    background: color-mix(in srgb, var(--component-color) 45%, rgba(30, 30, 50, 0.95));
     border-color: var(--component-color);
-    border-width: 2px;
-    box-shadow: 0 0 12px color-mix(in srgb, var(--component-color) 40%, transparent);
+    box-shadow:
+      inset 0 0 0 2px color-mix(in srgb, var(--component-color) 75%, transparent),
+      0 0 20px color-mix(in srgb, var(--component-color) 55%, transparent);
   }
 
   /* Vertical layout (Build Combo mode - no description) */
@@ -159,20 +162,22 @@ Shows description in Quick Apply mode, compact in Build Combo mode
 
   .check-badge {
     position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 20px;
-    height: 20px;
+    top: 8px;
+    right: 8px;
+    width: 26px;
+    height: 26px;
     background: var(--component-color);
+    border: 2px solid rgba(255, 255, 255, 0.9);
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   }
 
   .check-badge svg {
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     color: white;
   }
 
