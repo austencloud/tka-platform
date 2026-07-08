@@ -29,7 +29,6 @@
   import MandalaCategoryControl, {
     type MandalaCategory,
   } from "./mandala/MandalaCategoryControl.svelte";
-  import AppearanceSection from "./AppearanceSection.svelte";
   import PerformerRing from "../tunnel/PerformerRing.svelte";
   import ControlDock, {
     type ControlDockTab,
@@ -48,7 +47,7 @@
 
   type ArtType = "mandala" | "tunnel";
   // Tunnel rail sections (own id union — not the Download panel's PillId).
-  type TunnelRailId = "tunnel" | "appearance" | "effects" | "effort" | "playback";
+  type TunnelRailId = "tunnel" | "effects" | "effort" | "playback";
   // Mandala rail sections — same ids + order as the bottom dock's category bar.
   type MandalaRailId = MandalaCategory;
 
@@ -100,7 +99,6 @@
   // ── Tunnel rail ──
   const tunnelRail: { id: TunnelRailId; icon?: string; label: string; accentColor?: string }[] = [
     { id: "tunnel", icon: "fa-fan", label: "Tunnel" },
-    { id: "appearance", icon: "fa-users", label: "Cast" },
     { id: "effects", icon: "fa-wand-magic-sparkles", label: "Effects" },
     // Effort uses an accent dot (no icon), matching the Download panel's Effort pill.
     { id: "effort", label: "Effort", accentColor: "#94a3b8" },
@@ -160,6 +158,12 @@
       controller.flip ? { x: 2, label: "flip" } : null,
     ].filter((f): f is { x: number; label: string } => f !== null),
   );
+
+  // Rainbow vs Uniform copy coloring (controller.spectrum), shown in Effects.
+  const colorOptions = [
+    { value: "rainbow", label: "Rainbow" },
+    { value: "uniform", label: "Uniform" },
+  ];
 
   // ── Mandala rail (same icons + order the bottom dock uses) ──
   const mandalaRail: { id: MandalaRailId; icon?: string; label: string }[] = [
@@ -257,11 +261,11 @@
   {#if id === "tunnel"}
     <div class="section-pad">
       {#if !tuneOpen}
-        <!-- PRIMARY: curated mandala presets. A preset is a named point in the
+        <!-- PRIMARY: curated tunnel presets. A preset is a named point in the
              primitive config space; the tuner (Customize) is the secondary
              surface. Even 2-col card grid — no ragged wrap on mobile. -->
-        {#if !dense}<span class="rt-section-label">Choose a mandala</span>{/if}
-        <div class="preset-grid" role="radiogroup" aria-label="Mandala preset">
+        {#if !dense}<span class="rt-section-label">Choose a tunnel preset</span>{/if}
+        <div class="preset-grid" role="radiogroup" aria-label="Tunnel preset">
           {#each TUNNEL_PRESETS as p (p.id)}
             <button
               class="preset-card"
@@ -334,7 +338,7 @@
           <i class="fas fa-sliders" aria-hidden="true"></i> Customize
         </button>
       {:else}
-        <!-- SECONDARY: the primitive tuner. Every mandala is a combination of
+        <!-- SECONDARY: the primitive tuner. Every tunnel is a combination of
              these. Even card grid for the toggles — no ragged wrap. -->
         <button class="back-btn" type="button" onclick={() => (tuneOpen = false)}>
           <i class="fas fa-chevron-left" aria-hidden="true"></i> Presets
@@ -457,7 +461,7 @@
                 type="text"
                 bind:value={presetName}
                 maxlength="40"
-                placeholder="Name this mandala"
+                placeholder="Name this tunnel"
                 aria-label="Preset name"
               />
               <button class="save-confirm" type="button" onclick={saveCurrentPreset}>Save</button>
@@ -489,15 +493,27 @@
         <p class="warn">Dense stack ({controller.propCount} props): a heavy effect may drop frames on weaker devices.</p>
       {/if}
     </div>
-  {:else if id === "appearance"}
-    <div class="section-pad">
-      <AppearanceSection {controller} />
-    </div>
   {:else if id === "effects"}
     <div class="section-pad">
-      {#if !dense}
-        <p class="section-hint">Performer colors live in the Cast section.</p>
-      {/if}
+      <!-- Rainbow (every copy fans across the spectrum) vs Uniform (base blue/red).
+           A real tunnel color mode, formerly in the retired Cast section. -->
+      <div class="rt-section colors-row">
+        <span class="rt-section-label">Colors</span>
+        <SegmentedControl
+          options={colorOptions}
+          value={controller.spectrum ? "rainbow" : "uniform"}
+          onchange={(v) => (controller.spectrum = v === "rainbow")}
+          color="accent"
+          size="sm"
+        />
+        {#if !dense}
+          <p class="section-hint">
+            {controller.spectrum
+              ? "Each copy fans across the spectrum."
+              : "Every copy uses the base blue/red."}
+          </p>
+        {/if}
+      </div>
       <EffectsPanel
         layout={dense ? "strip" : "sidebar"}
         showPlayback={false}

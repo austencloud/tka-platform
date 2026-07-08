@@ -23,17 +23,6 @@ import {
   saveTunnelViewState,
   type TunnelViewState,
 } from "./tunnel-view-state";
-import {
-  DEFAULT_APPEARANCE,
-  MAX_SKINS,
-  APPEARANCE_PRESETS,
-  coerceSkins,
-  copyPropTypes,
-  skinForArm,
-  skinsEqual,
-  type PerformerSkin,
-  type TunnelAppearance,
-} from "./tunnel-appearance";
 
 const DEFAULT_PROP_STATE: PropState = { centerPathAngle: 0, staffRotationAngle: 0 };
 
@@ -86,17 +75,6 @@ export class TunnelViewController {
    *  panel's colors drive every prop. Persisted with the view state. */
   spectrum = $state(true);
 
-  /** The performer set — per-hand props each copy cycles through. Arm 0 (center
-   *  pair) wears skins[0]; overlaid layer i wears skins[(i+1) % length]. One
-   *  skin = every performer identical (today's default). Persisted. */
-  skins = $state<PerformerSkin[]>([...DEFAULT_APPEARANCE]);
-
-  /** False until the user edits the performer set. While false, skins[0] tracks
-   *  the viewer's global prop (so the center pair keeps the user's chosen prop
-   *  instead of being clobbered by the default "staff" skin). Any edit flips it
-   *  true and the appearance becomes fully user-owned. Persisted. */
-  appearanceCustomized = $state(false);
-
   /** Active rail section in the Art settings panel, persisted with the view
    *  state so the panel reopens on the section the user last used. */
   section = $state<TunnelViewState["section"]>("tunnel");
@@ -104,12 +82,6 @@ export class TunnelViewController {
   #sources: TunnelControllerSources;
   #layers = $state<SequenceData[]>([]);
   #buildToken = 0;
-
-  // The viewer's live global prop, recorded from syncCenterToGlobal (even while
-  // customized). A reset restores the cast to THIS instead of the hardcoded
-  // "staff" default, so the roster + future edits land on the user's real prop.
-  #globalBlueProp = DEFAULT_APPEARANCE[0]!.blueProp;
-  #globalRedProp = DEFAULT_APPEARANCE[0]!.redProp;
 
   constructor(sources: TunnelControllerSources) {
     this.#sources = sources;
@@ -127,8 +99,6 @@ export class TunnelViewController {
     this.speed = cfg.speed;
     this.gridVisible = view.gridVisible;
     this.spectrum = view.spectrum;
-    this.skins = coerceSkins(view.skins);
-    this.appearanceCustomized = view.appearanceCustomized;
     this.section = view.section;
 
     // Persist the live view state on change.
@@ -137,8 +107,6 @@ export class TunnelViewController {
         config: this.config,
         gridVisible: this.gridVisible,
         spectrum: this.spectrum,
-        skins: this.skins,
-        appearanceCustomized: this.appearanceCustomized,
         section: this.section,
       };
       saveTunnelViewState(snapshot);
@@ -301,89 +269,15 @@ export class TunnelViewController {
   additionalLayersAt(currentStep: number): AdditionalLayerProps[] {
     if (!this.active) return [];
     const mods = copyModulators(this.config);
-    const customized = this.appearanceCustomized;
     return this.#layers.map((seq, i) => {
       const m = mods[i] ?? { staggerSteps: 0, speed: 1 };
       const p = sampleTunnelProps(seq, currentStep, this.#ease, m.staggerSteps, m.speed);
-      // Arm 0 is the center pair; overlaid layer i is arm i+1. A copy carries an
-      // explicit per-hand prop type ONLY once the user owns the cast; while
-      // uncustomized it omits one so the engine falls back to the viewer's global
-      // prop — the same rule the center pair uses (TunnelArtView centerBlue). That
-      // keeps copies and center consistent the instant a reset flips `customized`
-      // false, without waiting for the skin list to re-sync (the bug where reset
-      // left some copies on the old prop until a mandala preset was picked).
-      const types = copyPropTypes(customized, this.skins, i + 1);
-      const layer: AdditionalLayerProps = { blueProp: p.blue, redProp: p.red };
-      if (types) {
-        layer.bluePropType = types.blueProp;
-        layer.redPropType = types.redProp;
-      }
-      return layer;
+      // Every copy inherits the viewer's global prop — a layer carries no explicit
+      // per-hand prop type, so the engine falls back to the global prop (the same
+      // rule the center pair uses). The `AdditionalLayerProps` per-layer prop-type
+      // fields stay optional/unused: the shared additional-layers plumbing keeps
+      // them for other callers, but the tunnel never sets them.
+      return { blueProp: p.blue, redProp: p.red } satisfies AdditionalLayerProps;
     });
-  }
-
-  // ── Performer set (appearance) ──────────────────────────────────────
-
-  /** The center pair's skin (arm 0). Drives the base prop override so the center
-   *  performer wears skins[0]. */
-  centerSkin = $derived(skinForArm(this.skins, 0));
-  centerBluePropType = $derived(this.centerSkin.blueProp);
-  centerRedPropType = $derived(this.centerSkin.redProp);
-
-  /** The built-in appearance preset the current set matches, or null (custom). */
-  activeAppearancePresetId = $derived(
-    APPEARANCE_PRESETS.find((p) => skinsEqual(p.appearance, this.skins))?.id ?? null,
-  );
-
-  /** Keep the center pair (skins[0]) on the viewer's global prop until the user
-   *  takes over the performer set. No-op once customized, or when unchanged.
-   *  Always records the live global prop first so a reset can restore to it. */
-  syncCenterToGlobal(bluePropType: string, redPropType: string): void {
-    this.#globalBlueProp = bluePropType;
-    this.#globalRedProp = redPropType;
-    if (this.appearanceCustomized) return;
-    const cur = this.skins[0];
-    if (cur && cur.blueProp === bluePropType && cur.redProp === redPropType) return;
-    this.skins = [{ blueProp: bluePropType, redProp: redPropType }];
-  }
-
-  /** Swap one hand of one performer's prop. */
-  setSkinProp(index: number, hand: "blue" | "red", propType: string): void {
-    if (index < 0 || index >= this.skins.length) return;
-    this.appearanceCustomized = true;
-    this.skins = this.skins.map((s, i) =>
-      i === index ? { ...s, [hand === "blue" ? "blueProp" : "redProp"]: propType } : s,
-    );
-  }
-
-  /** Add a performer (clones the last skin), capped at MAX_SKINS. */
-  addSkin(): void {
-    if (this.skins.length >= MAX_SKINS) return;
-    this.appearanceCustomized = true;
-    const last = this.skins[this.skins.length - 1] ?? DEFAULT_APPEARANCE[0]!;
-    this.skins = [...this.skins, { ...last }];
-  }
-
-  /** Remove a performer; the set never drops below one skin. */
-  removeSkin(index: number): void {
-    if (this.skins.length <= 1) return;
-    this.appearanceCustomized = true;
-    this.skins = this.skins.filter((_, i) => i !== index);
-  }
-
-  /** Apply a whole performer set (a preset or saved appearance). */
-  applyAppearance(skins: TunnelAppearance): void {
-    this.appearanceCustomized = true;
-    this.skins = coerceSkins(skins);
-  }
-
-  /** Reset the performer set back to tracking the global prop (single skin).
-   *  Restores to the recorded global prop — NOT the hardcoded "staff" default —
-   *  so the roster and the next customization start from the user's real prop.
-   *  (Copies inherit the global regardless via {@link copyPropTypes}; this keeps
-   *  the panel's own display honest too.) */
-  resetAppearance(): void {
-    this.appearanceCustomized = false;
-    this.skins = [{ blueProp: this.#globalBlueProp, redProp: this.#globalRedProp }];
   }
 }

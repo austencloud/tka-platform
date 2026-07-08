@@ -1,5 +1,4 @@
 import { DEFAULT_CONFIG, FOLD_OPTIONS, type TunnelConfig } from "./tunnel-config";
-import { DEFAULT_APPEARANCE, coerceSkins, type TunnelAppearance } from "./tunnel-appearance";
 
 /**
  * Persisted tunnel-view config + chrome (the state the user last left the
@@ -12,14 +11,8 @@ export interface TunnelViewState {
   /** Per-prop rainbow spectrum coloring. On = every copy fans across the
    *  spectrum; off = layers inherit the base/preset colors. */
   spectrum: boolean;
-  /** The performer set — per-hand props each copy cycles through (see
-   *  `tunnel-appearance.ts`). */
-  skins: TunnelAppearance;
-  /** False until the user edits the performer set; while false the center pair
-   *  tracks the global prop instead of the default skin. */
-  appearanceCustomized: boolean;
   /** Active rail section in the Art settings panel. */
-  section: "tunnel" | "appearance" | "effects" | "effort" | "playback";
+  section: "tunnel" | "effects" | "effort" | "playback";
 }
 
 const STORAGE_KEY = "tka_tunnel_view_state";
@@ -28,8 +21,6 @@ const DEFAULTS: TunnelViewState = {
   config: { ...DEFAULT_CONFIG },
   gridVisible: false,
   spectrum: true,
-  skins: [...DEFAULT_APPEARANCE],
-  appearanceCustomized: false,
   section: "tunnel",
 };
 
@@ -101,9 +92,9 @@ export function loadTunnelViewState(): TunnelViewState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULTS, config: { ...DEFAULT_CONFIG } };
     const p = JSON.parse(raw) as Record<string, unknown>;
+    // A stored "appearance" (the retired Cast tab) falls through to "tunnel".
     const section =
       p.section === "tunnel" ||
-      p.section === "appearance" ||
       p.section === "effects" ||
       p.section === "effort" ||
       p.section === "playback"
@@ -113,8 +104,6 @@ export function loadTunnelViewState(): TunnelViewState {
       config: resolveConfig(p),
       gridVisible: bool(p.gridVisible, DEFAULTS.gridVisible),
       spectrum: bool(p.spectrum, DEFAULTS.spectrum),
-      skins: coerceSkins(p.skins),
-      appearanceCustomized: bool(p.appearanceCustomized, DEFAULTS.appearanceCustomized),
       section,
     };
   } catch {

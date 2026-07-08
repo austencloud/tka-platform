@@ -64,25 +64,6 @@
   const base = $derived(controller.basePropsAt(step));
   const additionalLayers = $derived(controller.additionalLayersAt(step));
 
-  // Keep performer 1 (the center pair) mirrored onto the viewer's global prop
-  // until the user takes over the performer set — so the Appearance panel shows
-  // the real current prop and the center never gets clobbered by the default
-  // skin. Once customized, the appearance owns it (see the controller).
-  $effect(() => {
-    if (bluePropType && redPropType) {
-      controller.syncCenterToGlobal(bluePropType, redPropType);
-    }
-  });
-
-  // The center prop passed to the canvas: the user's skin[0] once they've
-  // customized the set, otherwise the global prop unchanged (zero regression).
-  const centerBlue = $derived(
-    controller.appearanceCustomized ? controller.centerBluePropType : bluePropType,
-  );
-  const centerRed = $derived(
-    controller.appearanceCustomized ? controller.centerRedPropType : redPropType,
-  );
-
   // Reuse the sidebar's chosen effect, applied uniformly across every layer.
   const activeEffect = $derived(effectsConfig?.activeEffect ?? "none");
   const tipEffectMap = $derived<TipEffectMap | undefined>(
@@ -108,8 +89,8 @@
         redProp={base.red}
         {additionalLayers}
         tunnelSpectrum={controller.spectrum}
-        bluePropType={centerBlue}
-        redPropType={centerRed}
+        {bluePropType}
+        {redPropType}
         sequenceData={seq}
         currentStep={step}
         isPlaying={true}
