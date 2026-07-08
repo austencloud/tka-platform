@@ -97,3 +97,34 @@ export function captureTunnelSnapshot(deps: SnapshotDeps): TunnelSnapshot {
     trailRender: clone(animationSettings.trail),
   };
 }
+
+export function applyTunnelSnapshot(deps: SnapshotDeps, snap: TunnelSnapshot): void {
+  const { controller, effects, visibility, settings, animationSettings, playback } = deps;
+
+  // Tunnel topology + chrome (applyConfig clamps to the live budget; grid/spectrum/
+  // section are public $state fields on the controller).
+  controller.applyConfig(snap.tunnel.config);
+  controller.gridVisible = snap.tunnel.gridVisible;
+  controller.spectrum = snap.tunnel.spectrum;
+  controller.section = snap.tunnel.section;
+
+  // Effects (its own capture/restore pair).
+  effects.replace(snap.effects);
+
+  // Effort + paths (global visibility manager).
+  visibility.setEffortPreset(snap.effort);
+  visibility.setPathShape(snap.paths.pathShape);
+  visibility.setMotionAwarePaths(snap.paths.motionAwarePaths);
+  visibility.setVisibility("bluePathLines", snap.paths.bluePathLines);
+  visibility.setVisibility("redPathLines", snap.paths.redPathLines);
+
+  // Trail render params (bulk trail set).
+  animationSettings.updateSettings({ trail: snap.trailRender });
+
+  // Playback (mode first, then bpm ramp).
+  playback.handlePlaybackModeChange(snap.playback.playbackMode);
+  playback.handleBpmChange(snap.playback.bpm);
+
+  // Prop types.
+  settings.updateSettings({ bluePropType: snap.props.bluePropType, redPropType: snap.props.redPropType });
+}
