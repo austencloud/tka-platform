@@ -46,6 +46,12 @@ export type GuidePageEntry = {
   level: 0 | 1;
   /** TOC section grouping + heading. */
   group: GuideGroup;
+  /**
+   * The built page paints its own header(s) — GuidePage suppresses the single
+   * manifest title. For multi-section pages (e.g. Type 4/5/6, three calligraphic
+   * titles). The `title` above still drives the TOC row + dev label.
+   */
+  selfTitled?: boolean;
 };
 
 export const GROUP_TITLES: Record<GuideGroup, string> = {
@@ -62,8 +68,8 @@ export const GUIDE_BODY_PAGES: GuidePageEntry[] = [
   { id: "hm-type1", title: "Type 1 Dual-Shifts - Alpha, Beta", level: 1, group: "1.0" },
   { id: "hm-gamma", title: "Gamma - Quarter-Opp, Quarter-Same", level: 1, group: "1.0" },
   { id: "hm-type2", title: "Type 2 - Shifts", level: 1, group: "1.0" },
-  { id: "hm-type34", title: "Type 3/4 Cross-Shifts and Dashes", level: 1, group: "1.0" },
-  { id: "hm-type56", title: "Type 5/6 Dual-Dashes and Statics", level: 1, group: "1.0" },
+  { id: "hm-type34", title: "Type 3 - Cross-Shifts", level: 1, group: "1.0" },
+  { id: "hm-type56", title: "Type 4/5/6 - Dash, Dual-Dash, Static", level: 1, group: "1.0", selfTitled: true },
   { id: "staff-positions", title: "Staff Positions", level: 0, group: "1.0" },
   { id: "staff-motions", title: "Staff Motions", level: 0, group: "1.0" },
   { id: "negative-space", title: "Negative Space / Body Turns", level: 0, group: "1.0" },

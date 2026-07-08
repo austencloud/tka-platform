@@ -1,0 +1,456 @@
+<script lang="ts">
+  /**
+   * Type 4 / 5 / 6 — Dash, Dual-Dash, Static — body page 8, a faithful rebuild of
+   * the proof PDF ("1.0 - Type 5 and 6" artboard, which actually leads with Type 4)
+   * in the CURRENT renderer's language. Same recipe as Type3CrossShiftsPage: proof-
+   * placed strips of real PictographContainers, every adornment system-owned (dash
+   * arrows, Start/count StepNumber, per-box PositionGlyph or TKA letter glyph),
+   * grouped centred paragraphs.
+   *
+   * ONE physical page, THREE titled sections (three calligraphic .guide-title
+   * headers + two full-width divider rules). The manifest entry is `selfTitled`, so
+   * GuidePage does NOT draw its single header — this page paints all three.
+   *
+   * Motion authoring (both props are HAND):
+   *   - dash hand  → DASH (opposite cardinals; straight dash arrow through centre).
+   *   - still hand → STATIC (no arrow).
+   *   - Count numbers → StepData.stepNumber (0 → "Start", 1..n) via StepNumber.
+   *   - Positions (Type 4/5) → startPosition/endPosition → top-centre PositionGlyph.
+   *   - Letter (Type 6)     → showTKA → the bottom-left α/β/γ glyph (the teaching
+   *                           point IS the static letter; matches the artboard).
+   *   - No elemental        → the proof shows no mode badge, so showElemental off.
+   *
+   * LETTERS carry real MCP-verified values, because the dash-location calculator
+   * keys arrow placement off the letter (dash-location-calculator.ts):
+   *   - Type 4 (one dash + one static) never collides → letter null; the DEFAULT
+   *     zero-turn dash map already matches the artboard (S→N=W, N→S=E, E→W=S, W→E=N).
+   *   - Type 5 α→α / β→β put TWO dashes on the SAME vertical line. letter null gives
+   *     both the same location (overlap). Ψ-/Φ- route through PHI_DASH_PSI_DASH_MAP
+   *     → blue side WEST, red side EAST (the artboard's side-by-side arrows).
+   *   - Type 5 γ→γ needs Λ- (LAMBDA_DASH_ZERO_TURNS_MAP): blue S→N→EAST, red E→W→SOUTH
+   *     (letter null would wrongly place blue WEST). Verified box-by-box vs the map.
+   *   - Type 6 α/β/γ → the canonical Type-6 static letters (showTKA glyph).
+   * The position glyph derives from startPosition/endPosition (NOT the letter), so a
+   * pedagogical α→α labelled Ψ- still shows the correct α→α glyph.
+   *
+   * Facelift: lowercase γ (proof used Γ); keyword tints — Dash/Dual-Dash green
+   * (#2f9e44), Dual cyan (#36c3ff), Cross green + Shift purple (#6f2da8), Static
+   * orange (#f08c00). The "two beta / 4-beat" proof OCR is corrected to "two-step /
+   * 4-step". Geometry measured off the artboard border grid (4px/pt): Type 4 boxes
+   * 100pt, Type 5/6 boxes 95pt. Edit mode (press E) can still nudge + Copy.
+   */
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { describePictograph } from "$lib/shared/pictograph/shared/domain/utils/pictograph-description";
+  import { Letter } from "$lib/shared/foundation/domain/models/letter";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { getGuideSequenceClick } from "../_data/guide-data-context";
+  import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+
+  const S = 816 / 612; // pt → px (4/3)
+  const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
+  const OPP: Partial<Record<GridLocation, GridLocation>> = { [N]: SO_, [SO_]: N, [E]: W, [W]: E };
+
+  // Golden step ring: which strip cell the companion is currently animating (null
+  // outside the reader — /print + /book render no ring).
+  const activeStep = getGuideActiveStep();
+  // Reader companion handoff: present ONLY inside GuideReader (null on /print,/book).
+  const emitSequence = getGuideSequenceClick();
+
+  // Motion type from the location pair: same → STATIC, opposite cardinals → DASH.
+  const motion = (color: MotionColor, from: GridLocation, to: GridLocation) =>
+    createMotionData({
+      motionType: from === to ? MotionType.STATIC : OPP[from] === to ? MotionType.DASH : MotionType.PRO,
+      startLocation: from,
+      endLocation: to,
+      color,
+      propType: PropType.HAND,
+      gridMode: GridMode.DIAMOND,
+    });
+
+  // Positions only derive for cardinal pairs.
+  const gp = (a: GridLocation, b: GridLocation) => {
+    try {
+      return getGridPositionFromLocations(a, b);
+    } catch {
+      return null;
+    }
+  };
+
+  // [blueFrom, blueTo, redFrom, redTo]
+  type Move = [GridLocation, GridLocation, GridLocation, GridLocation];
+  const box = (m: Move, step: number | null, id: string, letter: Letter | null = null): StepData =>
+    ({
+      id,
+      letter,
+      gridMode: GridMode.DIAMOND,
+      startPosition: gp(m[0], m[2]),
+      endPosition: gp(m[1], m[3]),
+      motions: {
+        blue: motion(MotionColor.BLUE, m[0], m[1]),
+        red: motion(MotionColor.RED, m[2], m[3]),
+      },
+      stepNumber: step,
+      duration: 1,
+      blueReversal: false,
+      redReversal: false,
+      isBlank: false,
+    }) as unknown as StepData;
+
+  // ── Strips (single-row). tka=Type-6 letter glyph; animate=has a companion hook ──
+  type Cell = { m: Move; step: number; letter?: Letter };
+  type Strip = {
+    key: string;
+    x: number;
+    y: number;
+    box: number;
+    cells: Cell[];
+    tka: boolean;
+    animate: boolean;
+    word: string;
+  };
+
+  const STRIPS: Strip[] = [
+    // Type 4 — Dash. One hand dashes, one static → one arrow, never collides.
+    {
+      key: "t56-4a",
+      x: 156.5,
+      y: 98.5,
+      box: 100,
+      tka: false,
+      animate: true,
+      word: "α → β",
+      cells: [
+        { m: [SO_, SO_, SO_, SO_], step: 0 }, // Start: both S (beta)
+        { m: [SO_, SO_, SO_, N], step: 1 }, //  β→α  red dash S→N, blue static S
+        { m: [SO_, SO_, N, SO_], step: 2 }, //  α→β  red dash N→S, blue static S
+      ],
+    },
+    {
+      key: "t56-4b",
+      x: 56.5,
+      y: 228.5,
+      box: 100,
+      tka: false,
+      animate: true,
+      word: "γ → γ",
+      cells: [
+        { m: [SO_, SO_, E, E], step: 0 }, // Start: blue S, red E (gamma)
+        { m: [SO_, N, E, E], step: 1 }, //  blue dash S→N, red static E
+        { m: [N, N, E, W], step: 2 }, //    red dash E→W, blue static N
+        { m: [N, SO_, W, W], step: 3 }, //  blue dash N→S, red static W
+        { m: [SO_, SO_, W, E], step: 4 }, //  red dash W→E, blue static S  (→ Start)
+      ],
+    },
+    // Type 5 — Dual-Dash. Both dash → letters key the arrow separation.
+    {
+      key: "t56-5a",
+      x: 7.5,
+      y: 426.3,
+      box: 95,
+      tka: false,
+      animate: true,
+      word: "α → α",
+      cells: [
+        { m: [SO_, SO_, N, N], step: 0 }, // Start: blue S, red N (alpha)
+        { m: [SO_, N, N, SO_], step: 1, letter: Letter.PSI_DASH }, // both dash, blue W / red E
+      ],
+    },
+    {
+      key: "t56-5b",
+      x: 213,
+      y: 426.3,
+      box: 95,
+      tka: false,
+      animate: true,
+      word: "β → β",
+      cells: [
+        { m: [SO_, SO_, SO_, SO_], step: 0 }, // Start: both S (beta)
+        { m: [SO_, N, SO_, N], step: 1, letter: Letter.PHI_DASH }, // both dash S→N, blue W / red E
+      ],
+    },
+    {
+      key: "t56-5c",
+      x: 415.5,
+      y: 426.3,
+      box: 95,
+      tka: false,
+      animate: true,
+      word: "γ → γ",
+      cells: [
+        { m: [SO_, SO_, E, E], step: 0 }, // Start: blue S, red E (gamma)
+        { m: [SO_, N, E, W], step: 1, letter: Letter.LAMBDA_DASH }, // blue S→N (E) / red E→W (S)
+      ],
+    },
+    // Type 6 — Static. No hand movement → no arrows; the letter glyph is the point.
+    {
+      key: "t56-6a",
+      x: 7.5,
+      y: 662.5,
+      box: 95,
+      tka: true,
+      animate: false,
+      word: "α",
+      cells: [
+        { m: [SO_, SO_, N, N], step: 0, letter: Letter.ALPHA },
+        { m: [SO_, SO_, N, N], step: 1, letter: Letter.ALPHA },
+      ],
+    },
+    {
+      key: "t56-6b",
+      x: 213,
+      y: 662.5,
+      box: 95,
+      tka: true,
+      animate: false,
+      word: "β",
+      cells: [
+        { m: [SO_, SO_, SO_, SO_], step: 0, letter: Letter.BETA },
+        { m: [SO_, SO_, SO_, SO_], step: 1, letter: Letter.BETA },
+      ],
+    },
+    {
+      key: "t56-6c",
+      x: 415.5,
+      y: 662.5,
+      box: 95,
+      tka: true,
+      animate: false,
+      word: "γ",
+      cells: [
+        { m: [SO_, SO_, E, E], step: 0, letter: Letter.GAMMA },
+        { m: [SO_, SO_, E, E], step: 1, letter: Letter.GAMMA },
+      ],
+    },
+  ];
+
+  const cellData = (s: Strip, c: Cell, i: number) => box(c.m, c.step, `${s.key}-${i}`, c.letter ?? null);
+  // Flatten a strip into ordered StepData for the animation companion.
+  const stripSteps = (s: Strip): StepData[] => s.cells.map((c, i) => box(c.m, c.step, `seq-${i}`, c.letter ?? null));
+
+  // ── Three calligraphic section titles (reuse the shared .guide-title) ──────────
+  type Title = { t: string; y: number };
+  const TITLES: Title[] = [
+    { t: "Type 4 - Dash", y: 22 },
+    { t: "Type 5 - Dual-Dash", y: 340 },
+    { t: "Type 6 - Static", y: 592 },
+  ];
+  // Full-width divider rules between the three sections.
+  const RULES = [336, 587];
+
+  // ── Grouped centred paragraphs (proof coords, pt) ─────────────────────────────
+  type Para = { x: number; y: number; fs: number; lh: number; bold?: boolean; html: string };
+  const DASH = (s: string) => `<span class="k-dash">${s}</span>`;
+  const DUAL = (s: string) => `<span class="k-dual">${s}</span>`;
+  const CROSS = (s: string) => `<span class="k-cross">${s}</span>`;
+  const SHIFT = (s: string) => `<span class="k-shift">${s}</span>`;
+  const STATIC = (s: string) => `<span class="k-static">${s}</span>`;
+  let PARAS: Para[] = $state([
+    {
+      // Proof y=53.3/71.3, shifted down to clear the 48pt calligraphic title above.
+      x: 0,
+      y: 55,
+      fs: 13.5,
+      lh: 16.5,
+      html:
+        `With a ${DASH("Dash")}, one hand executes a dash while the other hand remains static.<br>` +
+        "With alpha → beta, this creates a two-step sequence:",
+    },
+    { x: 0, y: 201, fs: 14, lh: 17, html: "And with gamma → gamma, it creates a 4-step sequence:" },
+    {
+      x: 0,
+      y: 395,
+      fs: 15,
+      lh: 18,
+      html: `With a ${DUAL("Dual")}${DASH("-Dash")}, both hands dash simultaneously to their opposite points.`,
+    },
+    {
+      x: 0,
+      y: 535,
+      fs: 15,
+      lh: 18,
+      bold: true,
+      html:
+        `Practice using ${DUAL("Dual")}${DASH("-Dashes")}, ${DASH("Dashes")}, and ${CROSS("Cross")}${SHIFT("-Shifts")}<br>` +
+        "from different start positions.",
+    },
+    {
+      x: 0,
+      y: 639,
+      fs: 15,
+      lh: 18,
+      html: `Finally, ${STATIC("Static")} motions are indicated by no arrow:`,
+    },
+    { x: 0, y: 765, fs: 15, lh: 18, html: "Later on, static sequences gain complexity when adding prop rotations." },
+  ]);
+
+  const r1 = (n: number) => Math.round(n * 10) / 10;
+  $effect(() =>
+    registerEditSource("Type 4/5/6 (p8)", () => PARAS.map((p, i) => `  para[${i}]: x: ${r1(p.x)}, y: ${r1(p.y)}`).join("\n"))
+  );
+</script>
+
+<div class="type456-page">
+  <!-- Three section titles (shared calligraphic .guide-title, positioned per proof) -->
+  {#each TITLES as ti (ti.t)}
+    <div class="guide-title" style="top:{ti.y * S}px">{ti.t}</div>
+  {/each}
+
+  <!-- Section divider rules -->
+  {#each RULES as ry (ry)}
+    <div class="section-rule" style="top:{ry * S}px"></div>
+  {/each}
+
+  <!-- Pictograph strips -->
+  {#each STRIPS as s (s.key)}
+    {#each s.cells as cell, i (i)}
+      <div
+        class="cell"
+        class:guide-step-active={activeStep?.key === s.key && activeStep.ringStep === cell.step}
+        style="left:{(s.x + i * s.box) * S}px; top:{s.y * S}px; width:{s.box * S}px; height:{s.box * S}px"
+        title={describePictograph(cellData(s, cell, i))}
+      >
+        <PictographContainer
+          pictographData={cellData(s, cell, i)}
+          gridMode={GridMode.DIAMOND}
+          bluePropTypeOverride={PropType.HAND}
+          redPropTypeOverride={PropType.HAND}
+          showGrid={true}
+          showTKA={s.tka}
+          showPositions={!s.tka && cell.step > 0}
+          showElemental={false}
+          showReversals={false}
+          showTnD={false}
+          showNonRadialPoints={false}
+          showHandPoints={true}
+          stepNumberOverride={true}
+          darkMode={false}
+          printMode={true}
+          disableTransitions={true}
+        />
+      </div>
+    {/each}
+  {/each}
+
+  <!-- Reader-only: one transparent hit target per animatable strip → animate it.
+       Absent on /print + /book (emitSequence is null there). -->
+  {#if emitSequence}
+    {#each STRIPS as s (s.key)}
+      {#if s.animate}
+        <button
+          class="seq-hit"
+          style="left:{s.x * S}px; top:{s.y * S}px; width:{s.cells.length * s.box * S}px; height:{s.box * S}px"
+          onclick={() => emitSequence?.({ strip: stripSteps(s), word: s.word, key: s.key })}
+          aria-label={`Animate the ${s.word} sequence`}
+        ></button>
+      {/if}
+    {/each}
+  {/if}
+
+  <!-- Grouped centred paragraphs -->
+  {#each PARAS as p, i (i)}
+    <p
+      class="para"
+      class:strong={p.bold}
+      class:edit={guideEdit.on}
+      class:selected={guideEdit.selectedId === `t456-para-${i}`}
+      style="transform: translateX({p.x * S}px); top:{p.y * S}px; font-size:{p.fs * S}px; line-height:{p.lh * S}px"
+      use:ptDrag={pt(`t456-para-${i}`, "paragraph", p)}
+      use:editText={{ id: `t456-para-${i}`, label: "paragraph", get: () => p.html, set: (h) => (p.html = h) }}
+    >
+      {@html p.html}
+    </p>
+  {/each}
+</div>
+
+<style>
+  .type456-page {
+    position: absolute;
+    inset: 0;
+    color: #141414;
+  }
+
+  /* Pictograph boxes — hairline square like the proof. */
+  .cell {
+    position: absolute;
+    border: 1px solid #c4c4cc;
+    background: #fff;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  /* Full-width black divider rules between the three sections. */
+  .section-rule {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #141414;
+  }
+
+  /* Reader-only transparent hit target over each strip → animate on click. */
+  .seq-hit {
+    position: absolute;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    border-radius: 6px;
+    z-index: 3;
+  }
+  .seq-hit:hover {
+    outline: 2px solid rgba(120, 90, 200, 0.4);
+    outline-offset: 4px;
+    background: rgba(120, 90, 200, 0.06);
+  }
+  .seq-hit:focus-visible {
+    outline: 2px solid #6f2da8;
+    outline-offset: 4px;
+  }
+
+  /* Centred paragraph blocks — full sheet width, one box per paragraph. */
+  .para {
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin: 0;
+    text-align: center;
+    font-family: "Cambria", Georgia, "Times New Roman", serif;
+  }
+  .para.strong {
+    font-weight: 700;
+  }
+  /* Keyword colour-coding (matches the artboard + prior pages). */
+  .para :global(.k-dash),
+  .para :global(.k-cross) {
+    color: #2f9e44;
+    font-weight: 700;
+  }
+  .para :global(.k-dual) {
+    color: #36c3ff;
+    font-weight: 700;
+  }
+  .para :global(.k-shift) {
+    color: #6f2da8;
+    font-weight: 700;
+  }
+  .para :global(.k-static) {
+    color: #f08c00;
+    font-weight: 700;
+  }
+
+  /* Edit-mode affordances. */
+  .para.edit {
+    outline: 1px dashed rgba(55, 48, 163, 0.4);
+    cursor: move;
+  }
+  .para.selected {
+    outline: 1.5px solid #3730a3;
+    outline-offset: 1px;
+  }
+</style>

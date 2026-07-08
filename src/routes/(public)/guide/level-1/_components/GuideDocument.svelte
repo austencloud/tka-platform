@@ -197,12 +197,14 @@
   {/snippet}
   <!-- A built page paints its own bespoke layout edge-to-edge; a proof-text page
        paints the original proof's text edge-to-edge. Both are fullBleed. The
-       title ALWAYS comes from the manifest (entry.title) and is rendered by
-       GuidePage, so a page's heading and its TOC row can never drift. Pages with
-       neither keep the standard placeholder. -->
+       title normally comes from the manifest (entry.title) and is rendered by
+       GuidePage, so a page's heading and its TOC row can never drift. A
+       `selfTitled` page paints its own header(s) instead (multi-section pages),
+       so GuidePage's single title is suppressed — the TOC still uses entry.title.
+       Pages with neither built nor proof keep the standard placeholder. -->
   {@render page({
     kind: "body",
-    title: entry.title,
+    title: entry.selfTitled ? undefined : entry.title,
     fullBleed: isBuilt || hasProof,
     pageNumber: i + 1,
     label: `body p${i + 1}: ${entry.title}`,
