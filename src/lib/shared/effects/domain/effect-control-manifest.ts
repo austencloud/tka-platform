@@ -59,7 +59,6 @@ const TRACK_OPTS = [
 ];
 
 const isCustomPalette = (i: Record<string, unknown>) => i.palette === "custom";
-const isSerpent = (i: Record<string, unknown>) => i.form === "serpent";
 
 /** Build a palette descriptor + its conditional custom-tint, the shared shape
  *  every named-palette effect uses for its Primary "Color". */
@@ -92,10 +91,14 @@ const slider = (
 
 export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
   trails: [
-    { id: "trails-color", label: "Color", type: "colorPair", field: "blueColor", pairFields: ["blueColor", "redColor"], tier: "primary" },
+    { id: "trails-color", label: "Colors", type: "colorPair", field: "blueColor", pairFields: ["blueColor", "redColor"], tier: "primary" },
     { id: "trails-rainbow", label: "Rainbow", type: "chip", field: "rainbow", tier: "primary", swatch: "rainbow" },
     slider("trails", "brightness", "Brightness", { min: 0.3, max: 1, tier: "primary" }),
-    slider("trails", "thickness", "Thickness", { min: 1, max: 12, step: 1, pct: false, tier: "primary" }),
+    slider("trails", "thickness", "Thickness", { min: 1, max: 12, step: 0.5, pct: false, tier: "primary" }),
+    // tailLength lives in animationSettings.trail (see canvas2d-translator), NOT
+    // effectsConfig.trails — host passes a cross-store override for this field.
+    slider("trails", "tailLength", "Tail", { min: 10, max: 400, step: 5, pct: false, tier: "primary" }),
+    // trackingMode also cross-store (animationSettings.trail); host overrides it.
     { id: "trails-track", label: "Track", type: "segmented", field: "trackingMode", options: TRACK_OPTS, tier: "tracking" },
   ],
   fire: [
@@ -103,6 +106,10 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     slider("fire", "intensity", "Intensity", { min: 0.45, max: 1, tier: "primary" }),
     slider("fire", "brightness", "Brightness", { tier: "primary" }),
     slider("fire", "turbulence", "Turbulence", { tier: "primary" }),
+    // propColors is a [PropFlameColor, PropFlameColor] pair with a hex↔flame
+    // conversion + colorBlend side-effect — host passes cross-store overrides
+    // for these two pseudo-fields (fireLeftHex/fireRightHex).
+    { id: "fire-color", label: "Colors", type: "colorPair", field: "fireLeftHex", pairFields: ["fireLeftHex", "fireRightHex"], tier: "primary" },
   ],
   led: [
     { id: "led-color", label: "Color", type: "color", field: "primaryColor", tier: "primary" },
@@ -114,9 +121,9 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     ] },
   ],
   charcoal: [
-    slider("charcoal", "intensity", "Intensity", { tier: "primary" }),
-    slider("charcoal", "spread", "Spread", { tier: "primary" }),
-    slider("charcoal", "glow", "Glow", { tier: "primary" }),
+    slider("charcoal", "intensity", "Intensity", { step: 0.02, tier: "primary" }),
+    slider("charcoal", "spread", "Spread", { step: 0.02, tier: "primary" }),
+    slider("charcoal", "glow", "Glow", { step: 0.02, tier: "primary" }),
   ],
   zap: [
     { id: "zap-color", label: "Color", type: "colorPair", field: "leftColor", pairFields: ["leftColor", "rightColor"], tier: "primary" },
@@ -156,17 +163,16 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
       { value: "solid", label: "Solid" }, { value: "prop-matched", label: "Prop" }, { value: "rainbow", label: "Rainbow" }, { value: "palette", label: "Palette" },
     ] },
     slider("bloom", "intensity", "Intensity", { tier: "primary" }),
-    slider("bloom", "radius", "Radius", { min: 8, max: 90, step: 2, pct: false, tier: "primary" }),
+    slider("bloom", "radius", "Radius", { min: 8, max: 200, step: 2, pct: false, tier: "primary" }),
     { id: "bloom-falloff", label: "Falloff", type: "segmented", field: "falloff", tier: "primary", options: [
       { value: "smooth", label: "Smooth" }, { value: "sharp", label: "Sharp" }, { value: "ring", label: "Ring" },
     ] },
     { id: "bloom-tint", label: "Tint", type: "color", field: "color", tier: "advanced", showWhen: (i) => i.colorMode === "solid" },
+    { id: "bloom-palette", label: "Palette", type: "paletteSwatches", field: "palette", tier: "advanced", showWhen: (i) => i.colorMode === "palette" },
     slider("bloom", "pulse", "Pulse", { tier: "advanced" }),
     slider("bloom", "pulseRate", "Rate", { min: 0.25, max: 4, step: 0.25, pct: false, tier: "advanced" }),
-    slider("bloom", "streak", "Streak", { tier: "advanced" }),
-    slider("bloom", "spikes", "Spikes", { tier: "advanced" }),
-    slider("bloom", "chromatic", "Dispersion", { tier: "advanced" }),
-    slider("bloom", "afterglow", "Afterglow", { tier: "advanced" }),
+    // Trimmed for mobile (streak/spikes/chromatic/afterglow): optical fine-tuning
+    // a flow artist rarely touches — still driven by presets, just not hand-tunable.
   ],
   goo: [
     ...paletteColor("goo", [
@@ -177,11 +183,8 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     slider("goo", "ambientEmission", "Ambient", { tier: "primary" }),
     slider("goo", "motionEmission", "Motion", { tier: "primary" }),
     { id: "goo-track", label: "Track", type: "segmented", field: "trackingMode", options: TRACK_OPTS, tier: "tracking" },
-    { id: "goo-style", label: "Style", type: "segmented", field: "spewStyle", tier: "advanced", options: [
-      { value: "splash", label: "Splash" }, { value: "flow", label: "Flow" }, { value: "mist", label: "Mist" },
-    ] },
-    slider("goo", "clarity", "Clarity", { tier: "advanced" }),
-    slider("goo", "surfaceTension", "Tension", { tier: "advanced" }),
+    // spewStyle/clarity/surfaceTension trimmed: droplet-era fields the current
+    // goo renderer ignores (inert), and the flat panel already omitted them.
   ],
   bubbles: [
     ...paletteColor("bubbles", [
@@ -249,30 +252,42 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
       { value: "satin", label: "Satin" }, { value: "velvet", label: "Velvet" }, { value: "ethereal", label: "Ethereal" },
       { value: "shadow", label: "Shadow" }, { value: "gold_leaf", label: "Gold" }, { value: "ember", label: "Ember" }, { value: "custom", label: "Custom" },
     ]),
-    { id: "silk-form", label: "Form", type: "segmented", field: "form", tier: "primary", options: [
-      { value: "ribbon", label: "Ribbon" }, { value: "serpent", label: "Serpent" },
-    ] },
-    { id: "silk-creature", label: "Creature", type: "segmented", field: "creature", tier: "primary", showWhen: isSerpent, options: [
-      { value: "snake", label: "Snake" }, { value: "dragon", label: "Dragon" },
-    ] },
     slider("silk", "intensity", "Intensity", { tier: "primary" }),
     slider("silk", "width", "Width", { tier: "primary" }),
-    slider("silk", "flutter", "Flutter", { tier: "primary", showWhen: (i) => !isSerpent(i) }),
+    slider("silk", "flutter", "Flutter", { tier: "primary" }),
     { id: "silk-track", label: "Track", type: "segmented", field: "trackingMode", options: TRACK_OPTS, tier: "tracking" },
-    slider("silk", "bodyLength", "Length", { tier: "advanced", showWhen: isSerpent }),
-    slider("silk", "slither", "Slither", { tier: "advanced", showWhen: isSerpent }),
-    slider("silk", "duration", "Duration", { tier: "advanced", showWhen: (i) => !isSerpent(i) }),
-    slider("silk", "tautness", "Tautness", { tier: "advanced", showWhen: (i) => !isSerpent(i) }),
+    slider("silk", "duration", "Duration", { tier: "advanced" }),
+    slider("silk", "tautness", "Tautness", { tier: "advanced" }),
+  ],
+  animal: [
+    ...paletteColor("animal", [
+      { value: "satin", label: "Satin" }, { value: "velvet", label: "Velvet" }, { value: "ethereal", label: "Ethereal" },
+      { value: "shadow", label: "Shadow" }, { value: "gold_leaf", label: "Gold Leaf" }, { value: "ember", label: "Ember" },
+    ]),
+    { id: "animal-creature", label: "Creature", type: "segmented", field: "creature", tier: "primary", options: [
+      { value: "snake", label: "Snake" }, { value: "dragon", label: "Dragon" }, { value: "caterpillar", label: "Caterpillar" },
+    ] },
+    slider("animal", "intensity", "Intensity", { tier: "primary" }),
+    slider("animal", "width", "Width", { tier: "primary" }),
+    { id: "animal-track", label: "Track", type: "segmented", field: "trackingMode", options: TRACK_OPTS, tier: "tracking" },
+    slider("animal", "bodyLength", "Length", { tier: "advanced" }),
+    slider("animal", "slither", "Slither", { tier: "advanced" }),
   ],
   pulse: [
     ...paletteColor("pulse", [
       { value: "sonar", label: "Sonar" }, { value: "ripple", label: "Ripple" }, { value: "aurora", label: "Aurora" },
       { value: "neon", label: "Neon" }, { value: "ember", label: "Ember" }, { value: "void", label: "Void" }, { value: "custom", label: "Custom" },
     ]),
+    { id: "pulse-colormode", label: "Color", type: "segmented", field: "colorMode", tier: "primary", options: [
+      { value: "solid", label: "Solid" }, { value: "prop-matched", label: "Prop" }, { value: "rainbow", label: "Rainbow" }, { value: "palette", label: "Palette" },
+    ] },
+    { id: "pulse-tint-solid", label: "Tint", type: "color", field: "color", tier: "advanced", showWhen: (i) => i.colorMode === "solid" },
     slider("pulse", "intensity", "Intensity", { tier: "primary" }),
     { id: "pulse-trigger", label: "Trigger", type: "segmented", field: "trigger", tier: "primary", options: [
       { value: "beat", label: "Beat" }, { value: "velocity", label: "Velocity" }, { value: "continuous", label: "Steady" },
     ] },
+    slider("pulse", "beatInterval", "Beat", { min: 1, max: 8, step: 1, pct: false, tier: "primary", showWhen: (i) => i.trigger === "beat" }),
+    slider("pulse", "velocityThreshold", "Threshold", { tier: "primary", showWhen: (i) => i.trigger === "velocity" }),
     slider("pulse", "reach", "Reach", { tier: "primary" }),
     { id: "pulse-track", label: "Track", type: "segmented", field: "trackingMode", options: TRACK_OPTS, tier: "tracking" },
     { id: "pulse-style", label: "Style", type: "segmented", field: "style", tier: "advanced", options: [
@@ -280,11 +295,8 @@ export const EFFECT_CONTROLS: Record<EffectId, ControlDescriptor[]> = {
     ] },
     slider("pulse", "lifetime", "Lifetime", { min: 0.2, max: 3, step: 0.1, pct: false, tier: "advanced" }),
     slider("pulse", "thickness", "Thickness", { tier: "advanced" }),
-    slider("pulse", "velocityScale", "Vel→Size", { tier: "advanced" }),
-    slider("pulse", "asymmetry", "Asymmetry", { tier: "advanced" }),
-    slider("pulse", "chromatic", "Chromatic", { tier: "advanced" }),
-    slider("pulse", "flash", "Flash", { tier: "advanced" }),
-    slider("pulse", "harmonics", "Harmonics", { tier: "advanced" }),
+    // Trimmed for mobile (velocityScale/asymmetry/chromatic/flash/harmonics):
+    // ring-shaping fringe params a flow artist rarely touches — preset-driven only.
   ],
 };
 

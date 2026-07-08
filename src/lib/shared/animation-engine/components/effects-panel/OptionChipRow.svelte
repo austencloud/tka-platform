@@ -60,19 +60,26 @@
 </div>
 
 <style>
+  /* Dense inline row: label sits BESIDE the chips (not stacked above), so a
+     segmented control is one ~44px row instead of two. The chip group takes the
+     remaining width and wraps only when it genuinely can't fit. */
   .option-row {
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
   }
 
   .option-label {
+    flex: 0 0 auto;
+    min-width: 3.25rem;
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
   .chip-group {
+    flex: 1 1 auto;
+    min-width: 0;
     display: flex;
     gap: 6px;
     flex-wrap: wrap;

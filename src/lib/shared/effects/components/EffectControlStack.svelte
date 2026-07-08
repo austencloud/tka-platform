@@ -11,6 +11,7 @@
    * pattern (no checkboxes).
    */
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import { PATTERN_DESCRIPTORS as LED_PATTERNS } from "$lib/shared/animation-engine/domain/patterns/registry";
   import type { EffectsConfigState, EffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
   import {
     EFFECT_CONTROLS,
@@ -23,20 +24,45 @@
     config: EffectsConfigState;
     /** Which tiers to render. Default = the Primary view. */
     tiers?: ControlTier[];
+    /** Render ONLY these control ids (overrides `tiers`). Used by the tune-strip
+     *  drill-down to show one knob at a time. */
+    only?: string[];
+    /** Drop each control's inline label + collapse its column. The tune-strip's
+     *  selected knob chip already names the control, so the label is redundant
+     *  and the reclaimed width lets segmented controls fit the narrow tray. */
+    hideLabel?: boolean;
+    /** Per-field get/set overrides for controls whose value does NOT live on
+     *  effectsConfig[effect] (e.g. Trails' tailLength / trackingMode live in the
+     *  separate animationSettings.trail store). Keyed by descriptor `field`. The
+     *  host builds these — it is the layer that legitimately knows both stores,
+     *  so the manifest and this component stay store-agnostic. */
+    overrides?: Record<string, { get: () => unknown; set: (v: unknown) => void }>;
   }
-  let { effect, config, tiers = ["primary", "tracking"] }: Props = $props();
+  let { effect, config, tiers = ["primary", "tracking"], only, hideLabel = false, overrides }: Props = $props();
 
   const intent = $derived(config.effect(effect) as unknown as Record<string, unknown>);
+  // showWhen conditions read the merged view so cross-store fields gate correctly.
+  const intentView = $derived(
+    overrides
+      ? { ...intent, ...Object.fromEntries(Object.entries(overrides).map(([k, o]) => [k, o.get()])) }
+      : intent,
+  );
   const controls = $derived(
     EFFECT_CONTROLS[effect].filter(
-      (c) => tiers.includes(c.tier) && (!c.showWhen || c.showWhen(intent)),
+      (c) =>
+        (only ? only.includes(c.id) : tiers.includes(c.tier)) &&
+        (!c.showWhen || c.showWhen(intentView)),
     ),
   );
 
   function get(field: string): unknown {
-    return intent[field];
+    return overrides?.[field] ? overrides[field].get() : intent[field];
   }
   function set(field: string, value: unknown) {
+    if (overrides?.[field]) {
+      overrides[field].set(value);
+      return;
+    }
     config.updateEffect(effect, { [field]: value } as never);
   }
   function fmt(c: ControlDescriptor, v: number): string {
@@ -45,11 +71,11 @@
   }
 </script>
 
-<div class="control-stack">
+<div class="control-stack" class:hide-label={hideLabel}>
   {#each controls as c (c.id)}
     {#if c.type === "slider"}
       <div class="ctl-row">
-        <span class="ctl-label">{c.label}</span>
+        {#if !hideLabel}<span class="ctl-label">{c.label}</span>{/if}
         <input
           type="range"
           min={c.min}
@@ -67,7 +93,7 @@
           ? c.paletteOptions!.map((p) => ({ value: p.value, label: p.label }))
           : c.options!}
       <div class="ctl-row ctl-row-wide">
-        <span class="ctl-label">{c.label}</span>
+        {#if !hideLabel}<span class="ctl-label">{c.label}</span>{/if}
         <SegmentedControl
           options={opts}
           value={get(c.field) as string}
@@ -78,7 +104,7 @@
       </div>
     {:else if c.type === "toggle"}
       <div class="ctl-row">
-        <span class="ctl-label">{c.label}</span>
+        {#if !hideLabel}<span class="ctl-label">{c.label}</span>{/if}
         <button
           type="button"
           class="ctl-toggle"
@@ -92,7 +118,7 @@
       </div>
     {:else if c.type === "chip"}
       <div class="ctl-row ctl-row-wide">
-        <span class="ctl-label">{c.label}</span>
+        {#if !hideLabel}<span class="ctl-label">{c.label}</span>{/if}
         <button
           type="button"
           class="ctl-chip"
@@ -109,7 +135,7 @@
       </div>
     {:else if c.type === "color"}
       <div class="ctl-row">
-        <span class="ctl-label">{c.label}</span>
+        {#if !hideLabel}<span class="ctl-label">{c.label}</span>{/if}
         <label class="ctl-color">
           <input
             type="color"
@@ -120,26 +146,63 @@
       </div>
     {:else if c.type === "colorPair"}
       <div class="ctl-row">
-        <span class="ctl-label">{c.label}</span>
+        {#if !hideLabel}<span class="ctl-label">{c.label}</span>{/if}
         <div class="ctl-pair">
           <label class="ctl-color">
             <input
               type="color"
-              value={intent[c.pairFields![0]] as string}
+              value={get(c.pairFields![0]) as string}
               oninput={(e) => set(c.pairFields![0], e.currentTarget.value)}
             />
           </label>
           <label class="ctl-color">
             <input
               type="color"
-              value={intent[c.pairFields![1]] as string}
+              value={get(c.pairFields![1]) as string}
               oninput={(e) => set(c.pairFields![1], e.currentTarget.value)}
             />
           </label>
         </div>
       </div>
+    {:else if c.type === "paletteSwatches"}
+      <div class="ctl-row ctl-row-wide">
+        {#if !hideLabel}<span class="ctl-label">{c.label}</span>{/if}
+        <div class="ctl-swatches">
+          {#each Array.from({ length: 5 }, (_, i) => i) as i (i)}
+            <label class="ctl-color">
+              <input
+                type="color"
+                value={((get(c.field) as string[]) ?? [])[i] ?? "#ffffff"}
+                oninput={(e) => {
+                  const arr = [...((get(c.field) as string[]) ?? [])];
+                  while (arr.length <= i) arr.push("#ffffff");
+                  arr[i] = e.currentTarget.value;
+                  set(c.field, arr);
+                }}
+              />
+            </label>
+          {/each}
+        </div>
+      </div>
+    {:else if c.type === "ledPattern"}
+      <div class="ctl-row ctl-row-wide">
+        {#if !hideLabel}<span class="ctl-label">{c.label}</span>{/if}
+        <div class="ctl-patterns" role="radiogroup" aria-label={c.label}>
+          {#each LED_PATTERNS as p (p.id)}
+            <button
+              type="button"
+              class="ctl-pattern"
+              class:active={get(c.field) === p.id}
+              role="radio"
+              aria-checked={get(c.field) === p.id}
+              onclick={() => set(c.field, p.id)}
+            >
+              {p.name}
+            </button>
+          {/each}
+        </div>
+      </div>
     {/if}
-    <!-- "ledPattern" + "paletteSwatches" are wired in Task 2b. -->
   {/each}
 </div>
 
@@ -152,19 +215,71 @@
 
   .ctl-row {
     display: grid;
-    grid-template-columns: 4.5rem 1fr auto;
+    /* minmax(0, …) lets the control column shrink below its content's intrinsic
+       width — without it a wide SegmentedControl overflows narrow containers
+       (e.g. the mobile tune-strip tray) instead of compressing. */
+    grid-template-columns: 4.5rem minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.5rem;
   }
 
   /* Segmented/palette rows let the control take the full remaining width. */
   .ctl-row-wide {
-    grid-template-columns: 4.5rem 1fr;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+  }
+
+  /* hideLabel (tune-strip): the knob chip already names the control, so drop the
+     label column and give the control the full width — segmented controls then
+     fit the narrow phone tray with room to spare. */
+  .hide-label .ctl-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .hide-label .ctl-row-wide {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .ctl-label {
     font-size: var(--font-size-compact, 0.75rem);
     color: var(--theme-text-dim);
+  }
+
+  /* paletteSwatches: a compact row of round color wells. */
+  .ctl-swatches {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  /* ledPattern: horizontal scroll of pattern chips (no fold — scroll to any). */
+  .ctl-patterns {
+    display: flex;
+    gap: 0.35rem;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .ctl-patterns::-webkit-scrollbar {
+    display: none;
+  }
+  .ctl-pattern {
+    flex: 0 0 auto;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 0.75rem;
+    border-radius: 8px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .ctl-pattern.active {
+    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 55%, transparent);
+    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 18%, transparent);
+    color: var(--theme-text, #fff);
   }
 
   .ctl-slider {

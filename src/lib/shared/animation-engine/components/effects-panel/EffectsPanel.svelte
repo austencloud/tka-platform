@@ -10,6 +10,14 @@
   import { DEFAULT_EFFECTS_CONFIG } from "$lib/shared/effects/domain/defaults";
   import ConfirmDialog from "$lib/shared/foundation/ui/ConfirmDialog.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import EffectTuneStrip from "$lib/shared/effects/components/EffectTuneStrip.svelte";
+  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
+  import {
+    hexToFlameColor,
+    flameColorToHex,
+    DEFAULT_PROP_FLAME_COLORS,
+  } from "$lib/shared/animation-engine/domain/types/fire-types";
 
   /** Synthetic chip id for the factory default look (not a named preset). */
   const DEFAULT_CHIP_ID = "__default__";
@@ -53,6 +61,52 @@
   const registration = $derived<EffectRegistration | undefined>(
     activeEffect !== "none" ? getRegistration(activeEffect) : undefined
   );
+
+  // Cross-store field overrides for the tune-strip. EffectsPanel is the one
+  // layer that legitimately knows both effectsConfig AND the other stores, so it
+  // builds the get/set adapters here and the manifest / shared components stay
+  // store-agnostic. Trails' tailLength+trackingMode live in animationSettings.trail
+  // (canvas2d-translator reads them there); Fire's colors are a flame-color pair
+  // needing hex↔flame conversion + a colorBlend side-effect.
+  type TuneOverrides = Record<string, { get: () => unknown; set: (v: unknown) => void }>;
+  const tuneOverrides = $derived.by<TuneOverrides | undefined>(() => {
+    if (activeEffect === "trails") {
+      const o: TuneOverrides = {
+        tailLength: {
+          get: () => animationSettings.trail.tailLength,
+          set: (v) => animationSettings.setTailLength(v as number),
+        },
+        trackingMode: {
+          get: () => animationSettings.trail.trackingMode,
+          set: (v) => animationSettings.setTrackingMode(v as TrackingMode),
+        },
+      };
+      return o;
+    }
+    if (activeEffect === "fire") {
+      const readHex = (i: 0 | 1) => {
+        const pc = effectsConfigState.fire.propColors;
+        return flameColorToHex(pc?.[i] ?? DEFAULT_PROP_FLAME_COLORS[i]);
+      };
+      const write = (left: string, right: string) =>
+        effectsConfigState.updateEffect("fire", {
+          colorBlend: 1.0,
+          propColors: [hexToFlameColor(left), hexToFlameColor(right)],
+        });
+      const o: TuneOverrides = {
+        fireLeftHex: {
+          get: () => readHex(0),
+          set: (v) => write(v as string, readHex(1)),
+        },
+        fireRightHex: {
+          get: () => readHex(1),
+          set: (v) => write(readHex(0), v as string),
+        },
+      };
+      return o;
+    }
+    return undefined;
+  });
 
   // Honest highlight. Priority:
   //   1. live config == factory default            → Default chip (canonical anchor)
@@ -279,15 +333,44 @@
     <Crossfade key={stripView}>
       {#if stripView === "customize" && CustomizeComponent}
         <div class="drill-view">
-          <button type="button" class="back-row" onclick={handleCustomizeClose} aria-label="Back to {EFFECT_LABELS[activeEffect] ?? activeEffect}">
-            <i class="fas fa-arrow-left" aria-hidden="true"></i>
-            <span class="back-row-title">
-              <span class="back-row-label">{EFFECT_LABELS[activeEffect] ?? activeEffect}</span>
-              <span class="back-row-sub">More tuning</span>
-            </span>
-          </button>
-          {@render customizeAnchors()}
-          <CustomizeComponent onBack={handleCustomizeClose} />
+          <!-- Slim one-line header: back + effect name + Default|Custom anchors,
+               replacing the old stacked back-row (48px) + anchor-row (56px) with
+               a single ~44px row. On a phone tray every reclaimed px goes to the
+               canvas above. -->
+          <div class="tune-header">
+            <button type="button" class="tune-back" onclick={handleCustomizeClose} aria-label="Back to {EFFECT_LABELS[activeEffect] ?? activeEffect}">
+              <i class="fas fa-arrow-left" aria-hidden="true"></i>
+            </button>
+            <span class="tune-name">{EFFECT_LABELS[activeEffect] ?? activeEffect}</span>
+            <div class="tune-anchors">
+              <button
+                type="button"
+                class="tune-anchor"
+                class:active={activePresetId === DEFAULT_CHIP_ID}
+                onclick={() => handlePresetSelect(DEFAULT_CHIP_ID)}
+              >
+                Default
+              </button>
+              <button
+                type="button"
+                class="tune-anchor"
+                class:active={activePresetId === CUSTOM_CHIP_ID}
+                disabled={customDisabled}
+                onclick={() => handlePresetSelect(CUSTOM_CHIP_ID)}
+              >
+                Custom
+              </button>
+            </div>
+          </div>
+          <!-- Every effect drills through the shared tune-strip: knobs as a
+               horizontal value-bearing chip rail, one control revealed at a time,
+               so the canvas keeps the screen. Manifest-driven; cross-store fields
+               (Trails tailLength/trackingMode, Fire flame colors) come in via
+               `tuneOverrides`. CustomizeComponent still loads as the readiness
+               signal for this view but is no longer rendered. -->
+          {#if activeEffect !== "none"}
+            <EffectTuneStrip effectId={activeEffect} config={effectsConfigState} overrides={tuneOverrides} />
+          {/if}
         </div>
       {:else if stripView === "detail" && registration && activeEffect !== "none"}
         <div class="drill-view">
@@ -940,6 +1023,81 @@
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: color-mix(in srgb, var(--fx-accent) 80%, transparent);
+  }
+
+  /* The strip's slim tune-header already carries a back arrow, so hide each
+     customize panel's own full-width "Back to presets" button in this layout
+     (avoids a redundant double-back row eating the phone tray). */
+  .drill-view :global(.customize-view > .back-btn) {
+    display: none;
+  }
+
+  /* ── Slim customize header (strip): back + name + Default|Custom, one row ── */
+  .tune-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tune-back {
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--theme-text, rgba(255, 255, 255, 0.8));
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 150ms ease;
+  }
+  .tune-back:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
+  }
+  .tune-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--theme-text, white);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tune-anchors {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .tune-anchor {
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 12px;
+    border-radius: 8px;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 150ms ease;
+  }
+  .tune-anchor.active {
+    border-color: color-mix(in srgb, var(--fx-accent) 55%, transparent);
+    background: color-mix(in srgb, var(--fx-accent) 15%, transparent);
+    color: var(--fx-accent-text);
+  }
+  .tune-anchor:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .tune-anchor:focus-visible {
+    outline: 2px solid var(--fx-accent);
+    outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: reduce) {
