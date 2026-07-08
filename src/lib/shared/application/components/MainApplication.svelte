@@ -602,11 +602,6 @@ import type { SheetType } from "../../navigation/services/types";
       onClose={() => closeSheet()}
     />
 
-    <!-- One-time beta notice (guest + member, once per device) -->
-    {#await import("../../onboarding/components/BetaNoticeToast.svelte") then mod}
-      <mod.default />
-    {/await}
-
     <!-- Inbox Subscriptions (for badge counts) -->
     <InboxSubscriptionProvider />
 

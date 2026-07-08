@@ -70,8 +70,8 @@
 
       if (versionData && versionData.changelogEntries?.length) {
         // Non-blocking update toast instead of an auto-popup modal. Mark seen
-        // on fire (like BetaNoticeToast) so it never re-nags even if ignored;
-        // the "See what's new" action opens the full modal for detail on demand.
+        // on fire so it never re-nags even if ignored; the "See what's new"
+        // action opens the full modal for detail on demand.
         whatsNewState.markVersionAsSeen(currentVersion);
         const count = versionData.changelogEntries.length;
         showToast({

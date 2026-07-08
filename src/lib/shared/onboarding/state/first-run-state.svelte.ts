@@ -8,8 +8,7 @@
  * DisplayNameStep), shown only when the account has no provider/sign-up name
  * (magic-link, password-without-name, or guest→email upgrades). Accounts that
  * already have a name (Google/Facebook/named email signup) auto-complete with
- * zero UI. Favorite prop and theme/pictograph mode moved to Settings; the beta
- * notice is a one-time toast (BetaNoticeToast).
+ * zero UI. Favorite prop and theme/pictograph mode moved to Settings.
  *
  * IMPORTANT: This state syncs with Firebase so returning users on new
  * devices/browsers don't see the wizard again.
