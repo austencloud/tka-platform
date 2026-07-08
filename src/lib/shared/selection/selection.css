@@ -1,0 +1,89 @@
+/* src/lib/shared/selection/selection.css
+ * Canonical hover/selected/focus visual for whole-sequence selection.
+ * Consumed by the guide sequence strips and the choreo sheet: a host applies
+ * `.tka-seq-cell` + `is-hovered`/`is-selected` to its own element and drops a
+ * <SelectionHit> inside. All colour from --theme-accent so it re-themes with the app.
+ * The outward ring is a box-shadow/outline on the ELEMENT (never a nested pseudo) so
+ * an ancestor overflow:hidden can't clip it — same trick as .guide-step-active.
+ * NOTE: values below are STARTING POINTS pending interactive tuning on
+ * /test/sequence-selection. */
+
+:root {
+  --tka-seq-radius: 6px;
+  --tka-seq-hover-width: 2px;
+  --tka-seq-hover-offset: 3px;
+  --tka-seq-hover-tint: 6%;
+  --tka-seq-sel-width: 2px;
+  --tka-seq-sel-tint: 12%;
+  --tka-seq-sel-glow: 10px;
+}
+
+.tka-seq-cell {
+  position: relative;
+}
+
+/* Transparent hit target laid over the unit. */
+.tka-seq-hit {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: var(--tka-seq-radius);
+  min-height: var(--min-touch-target, 44px);
+  min-width: var(--min-touch-target, 44px);
+}
+.tka-seq-hit:focus-visible {
+  outline: 2px solid var(--theme-accent-strong, #4f46e5);
+  outline-offset: 4px;
+}
+
+/* Hover — outline on the element itself (unclipped), lifted above neighbours. */
+.tka-seq-cell.is-hovered {
+  z-index: 4;
+  border-radius: var(--tka-seq-radius);
+  outline: var(--tka-seq-hover-width) solid
+    color-mix(in srgb, var(--theme-accent, #6366f1) 45%, transparent);
+  outline-offset: var(--tka-seq-hover-offset);
+}
+.tka-seq-cell.is-hovered::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--theme-accent, #6366f1) var(--tka-seq-hover-tint), transparent);
+}
+
+/* Selected — solid accent ring + glow as box-shadow ON the element (unclipped). */
+.tka-seq-cell.is-selected {
+  z-index: 10;
+  border-radius: var(--tka-seq-radius);
+  box-shadow:
+    0 0 0 var(--tka-seq-sel-width)
+      color-mix(in srgb, var(--theme-accent, #6366f1) 90%, transparent),
+    0 0 var(--tka-seq-sel-glow)
+      color-mix(in srgb, var(--theme-accent, #6366f1) 45%, transparent);
+}
+.tka-seq-cell.is-selected::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--theme-accent, #6366f1) var(--tka-seq-sel-tint), transparent);
+}
+
+/* Selected wins over hover when both are true (hovering the selected unit). */
+.tka-seq-cell.is-selected.is-hovered {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tka-seq-cell.is-selected {
+    box-shadow: 0 0 0 var(--tka-seq-sel-width) var(--theme-accent, #6366f1);
+  }
+}
