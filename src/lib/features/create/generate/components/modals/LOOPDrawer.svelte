@@ -54,9 +54,19 @@
 </div>
 
 <style>
+  /* Panel skin lives on the DIALOG (not the inner content) so the surface is
+     continuous under the handle — the handle no longer sits in its own
+     transparent gutter with a seam beside the panel. */
   :global(.drawer-content.loop-drawer-sheet) {
-    --sheet-bg: transparent;
+    --sheet-bg: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 25%, #1a1a2e) 0%,
+      color-mix(in srgb, var(--theme-accent, #818cf8) 15%, #1a1a2e) 50%,
+      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 20%, #1a1a2e) 100%
+    );
     --sheet-border: none;
+    --sheet-border-strong: 1px solid
+      color-mix(in srgb, var(--theme-accent) 50%, transparent);
     --sheet-shadow: 0 -4px 24px rgba(0, 0, 0, 0.5);
   }
 
@@ -96,27 +106,17 @@
     flex-basis: auto;
   }
 
+  /* Skin (gradient + border + radius) is on the dialog via --sheet-* above;
+     this wrapper is transparent and just lays out the overlay. */
   .loop-drawer-content {
     display: flex;
     flex-direction: column;
     height: 100%;
     padding-bottom: calc(var(--nav-min-height, 64px) + env(safe-area-inset-bottom, 0px));
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 25%, #1a1a2e) 0%,
-      color-mix(in srgb, var(--theme-accent, #818cf8) 15%, #1a1a2e) 50%,
-      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 20%, #1a1a2e) 100%
-    );
-    border-radius: 16px 16px 0 0;
-    border-top: 1px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
   }
 
-  /* Right panel: left border instead of top; no bottom-nav clearance on desktop
-     (that padding is only needed for the mobile bottom sheet). */
+  /* No bottom-nav clearance on desktop (only the mobile bottom sheet needs it) */
   :global(.drawer-content.loop-drawer-sheet[data-placement="right"]) .loop-drawer-content {
-    border-radius: 16px 0 0 16px;
-    border-top: none;
-    border-left: 1px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
     padding-bottom: 12px;
   }
 
