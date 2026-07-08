@@ -1,230 +1,227 @@
 <script lang="ts">
-  import "$lib/shared/selection/selection.css";
-  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
-  import {
-    SequenceSelection,
-    setSequenceSelection,
-  } from "$lib/shared/selection/sequence-selection.svelte";
-  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-  import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import PresetPanel from "./PresetPanel.svelte";
 
-  const scope = new SequenceSelection();
-  setSequenceSelection(scope);
-
-  const gp = (a: GridLocation, b: GridLocation) => {
-    try {
-      return getGridPositionFromLocations(a, b);
-    } catch {
-      return null;
-    }
-  };
-
-  // A static α pose per cell — real pictograph data, same shape as the guide's box().
-  function staticStep(step: number): StepData {
-    const from = GridLocation.SOUTH;
-    const redFrom = GridLocation.NORTH;
-    return {
-      id: `demo-${step}`,
-      letter: null,
-      gridMode: GridMode.DIAMOND,
-      startPosition: gp(from, redFrom),
-      endPosition: gp(from, redFrom),
-      motions: {
-        blue: createMotionData({
-          motionType: MotionType.STATIC,
-          startLocation: from,
-          endLocation: from,
-          color: MotionColor.BLUE,
-          propType: PropType.HAND,
-          gridMode: GridMode.DIAMOND,
-        }),
-        red: createMotionData({
-          motionType: MotionType.STATIC,
-          startLocation: redFrom,
-          endLocation: redFrom,
-          color: MotionColor.RED,
-          propType: PropType.HAND,
-          gridMode: GridMode.DIAMOND,
-        }),
-      },
-      stepNumber: step,
-      duration: 1,
-      blueReversal: false,
-      redReversal: false,
-      isBlank: false,
-    } as unknown as StepData;
-  }
-
-  const CELLS = [0, 1, 2, 3, 4];
-  const STRIP_KEY = "strip-1";
-  const GROUP_KEY = "group-2";
-
-  let radius = $state(6);
-  let selWidth = $state(2);
-  let selTint = $state(12);
-  let selGlow = $state(10);
-  let hoverWidth = $state(2);
-  let hoverOffset = $state(3);
-  let hoverTint = $state(6);
-
-  const stageVars = $derived(
-    `--tka-seq-radius:${radius}px;` +
-      `--tka-seq-sel-width:${selWidth}px;` +
-      `--tka-seq-sel-tint:${selTint}%;` +
-      `--tka-seq-sel-glow:${selGlow}px;` +
-      `--tka-seq-hover-width:${hoverWidth}px;` +
-      `--tka-seq-hover-offset:${hoverOffset}px;` +
-      `--tka-seq-hover-tint:${hoverTint}%;`
-  );
+  const PRESETS = [
+    {
+      cls: "sel-preset-ring",
+      name: "Crisp Ring",
+      desc: "Clean 2px accent ring, tight radius. Minimal and confident — Linear / Vercel energy.",
+    },
+    {
+      cls: "sel-preset-halo",
+      name: "Soft Halo",
+      desc: "No hard edge — a soft accent bloom that lifts the sequence off the sheet. Airy, premium.",
+    },
+    {
+      cls: "sel-preset-fill",
+      name: "Bold Fill",
+      desc: "Accent ring plus an accent-tinted wash. Unmistakable which sequence is chosen.",
+    },
+    {
+      cls: "sel-preset-lift",
+      name: "Lift & Glow",
+      desc: "Scales up with a drop shadow and accent underglow. Tactile, like it pops toward you.",
+    },
+  ];
 </script>
 
 <div class="page">
-  <h1>Sequence selection — tuning</h1>
-  <p>
-    Hover / click the strip and the wrapping group. Tune the knobs; paste the values
-    into <code>selection.css</code> once it feels right. Selected:
-    <strong>{scope.selectedId ?? "none"}</strong>
-  </p>
+  <header class="masthead">
+    <h1>Sequence selection</h1>
+    <p>
+      Four selection looks on the real pictograph renderer. Hover each strip and grid,
+      click to select. Each panel holds its own state so you can see all four selected
+      at once. Tell me your favorite — I bake it in and wire it into the guide + choreo.
+    </p>
+  </header>
 
-  <div class="knobs">
-    <label>radius <input type="range" min="0" max="16" bind:value={radius} /> {radius}px</label>
-    <label>sel width <input type="range" min="1" max="5" bind:value={selWidth} /> {selWidth}px</label>
-    <label>sel tint <input type="range" min="0" max="40" bind:value={selTint} /> {selTint}%</label>
-    <label>sel glow <input type="range" min="0" max="30" bind:value={selGlow} /> {selGlow}px</label>
-    <label>hover width <input type="range" min="1" max="5" bind:value={hoverWidth} /> {hoverWidth}px</label>
-    <label>hover offset <input type="range" min="0" max="10" bind:value={hoverOffset} /> {hoverOffset}px</label>
-    <label>hover tint <input type="range" min="0" max="30" bind:value={hoverTint} /> {hoverTint}%</label>
-  </div>
-
-  <div class="stage" style={stageVars}>
-    <section>
-      <h2>Contiguous strip (guide-style — 1 unit → single ring)</h2>
-      <div
-        class="demo-strip tka-seq-cell"
-        class:is-hovered={scope.isHovered(STRIP_KEY)}
-        class:is-selected={scope.isSelected(STRIP_KEY)}
-      >
-        {#each CELLS as c (c)}
-          <div class="demo-cell">
-            <PictographContainer
-              pictographData={staticStep(c)}
-              gridMode={GridMode.DIAMOND}
-              bluePropTypeOverride={PropType.HAND}
-              redPropTypeOverride={PropType.HAND}
-              showGrid={true}
-              showTKA={false}
-              showPositions={c > 0}
-              showHandPoints={true}
-              darkMode={false}
-              printMode={true}
-              disableTransitions={true}
-            />
-          </div>
-        {/each}
-        <SelectionHit
-          groupId={STRIP_KEY}
-          isGroupStart
-          label="Select the demo strip"
-          onselect={(id) => scope.select(id)}
-        />
-      </div>
-    </section>
-
-    <section>
-      <h2>Wrapping group (choreo-style — N units → per-cell rings)</h2>
-      <div class="demo-grid">
-        {#each CELLS as c (c)}
-          <div
-            class="demo-gridcell tka-seq-cell"
-            class:is-hovered={scope.isHovered(GROUP_KEY)}
-            class:is-selected={scope.isSelected(GROUP_KEY)}
-          >
-            <div class="demo-cell">
-              <PictographContainer
-                pictographData={staticStep(c)}
-                gridMode={GridMode.DIAMOND}
-                bluePropTypeOverride={PropType.HAND}
-                redPropTypeOverride={PropType.HAND}
-                showGrid={true}
-                showTKA={false}
-                showPositions={c > 0}
-                showHandPoints={true}
-                darkMode={false}
-                printMode={true}
-                disableTransitions={true}
-              />
-            </div>
-            <SelectionHit
-              groupId={GROUP_KEY}
-              isGroupStart={c === 0}
-              label={c === 0 ? "Select the demo group" : ""}
-              onselect={(id) => scope.toggle(id)}
-            />
-          </div>
-        {/each}
-      </div>
-    </section>
+  <div class="gallery">
+    {#each PRESETS as p (p.cls)}
+      <PresetPanel presetClass={p.cls} name={p.name} desc={p.desc} />
+    {/each}
   </div>
 </div>
 
 <style>
   .page {
-    padding: 24px;
-    color: var(--theme-text, #eee);
+    min-height: 100vh;
+    box-sizing: border-box;
+    padding: 48px 32px 80px;
+    color: #e7e7ee;
+    background:
+      radial-gradient(1100px 520px at 78% -8%, rgba(99, 102, 241, 0.18), transparent 60%),
+      radial-gradient(900px 500px at 8% 4%, rgba(139, 92, 246, 0.12), transparent 55%),
+      #0c0c11;
+    font-family:
+      ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
-  .knobs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 16px;
-    margin: 16px 0;
+  .masthead {
+    max-width: 760px;
+    margin: 0 auto 40px;
+    text-align: center;
   }
-  .knobs label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 13px;
+  h1 {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    background: linear-gradient(180deg, #ffffff, #b9b9c8);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
   }
-  .stage {
-    display: flex;
-    flex-direction: column;
-    gap: 40px;
-    margin-top: 24px;
-    background: #fff;
-    padding: 32px;
-    border-radius: 8px;
+  .masthead p {
+    margin: 14px auto 0;
+    max-width: 620px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: #9a9aa8;
   }
-  h2 {
-    color: #333;
-    font-size: 14px;
-    margin: 0 0 8px;
-  }
-  .demo-strip {
+  .gallery {
     display: grid;
-    grid-template-columns: repeat(5, 80px);
-    border: 1px solid #c4c4cc;
-    background: #fff;
-    width: max-content;
+    grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+    gap: 26px;
+    max-width: 1240px;
+    margin: 0 auto;
   }
-  .demo-cell {
+  @media (max-width: 520px) {
+    .gallery {
+      grid-template-columns: 1fr;
+    }
+    .page {
+      padding: 32px 16px 64px;
+    }
+  }
+
+  /* ── Shared structural bits the primitive needs (no base selection.css here so the
+     presets below are the ONLY visuals) ──────────────────────────────────────── */
+  :global(.tka-seq-cell) {
     position: relative;
-    width: 80px;
-    height: 80px;
-    overflow: hidden;
   }
-  .demo-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 84px);
-    gap: 6px;
-    width: max-content;
+  :global(.tka-seq-hit) {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
   }
-  .demo-gridcell {
-    border: 1px solid rgba(0, 0, 0, 0.18);
-    border-radius: 3px;
-    overflow: hidden;
+  :global(.tka-seq-hit:focus-visible) {
+    outline: 2px solid var(--theme-accent-strong, #4f46e5);
+    outline-offset: 3px;
+  }
+  :global(.sel-preset-ring .tka-seq-cell),
+  :global(.sel-preset-halo .tka-seq-cell),
+  :global(.sel-preset-fill .tka-seq-cell),
+  :global(.sel-preset-lift .tka-seq-cell) {
+    transition:
+      box-shadow 0.16s ease,
+      outline-color 0.16s ease,
+      transform 0.16s ease;
+  }
+
+  /* ── 1 · Crisp Ring ─────────────────────────────────────────────────────────── */
+  :global(.sel-preset-ring .tka-seq-cell.is-hovered) {
+    z-index: 4;
+    border-radius: 8px;
+    outline: 2px solid color-mix(in srgb, var(--theme-accent, #6366f1) 45%, transparent);
+    outline-offset: 2px;
+  }
+  :global(.sel-preset-ring .tka-seq-cell.is-selected) {
+    z-index: 10;
+    border-radius: 8px;
+    box-shadow: 0 0 0 2px var(--theme-accent, #6366f1);
+  }
+  :global(.sel-preset-ring .tka-seq-cell.is-selected::after) {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 8%, transparent);
+  }
+
+  /* ── 2 · Soft Halo ──────────────────────────────────────────────────────────── */
+  :global(.sel-preset-halo .tka-seq-cell.is-hovered) {
+    z-index: 4;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px color-mix(in srgb, var(--theme-accent, #6366f1) 22%, transparent);
+  }
+  :global(.sel-preset-halo .tka-seq-cell.is-selected) {
+    z-index: 10;
+    border-radius: 12px;
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--theme-accent, #6366f1) 55%, transparent),
+      0 10px 28px color-mix(in srgb, var(--theme-accent, #6366f1) 38%, transparent);
+  }
+  :global(.sel-preset-halo .tka-seq-cell.is-selected::after) {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 6%, transparent);
+  }
+
+  /* ── 3 · Bold Fill ──────────────────────────────────────────────────────────── */
+  :global(.sel-preset-fill .tka-seq-cell.is-hovered) {
+    z-index: 4;
+    border-radius: 6px;
+    outline: 1.5px solid color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
+  }
+  :global(.sel-preset-fill .tka-seq-cell.is-hovered::after) {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
+  }
+  :global(.sel-preset-fill .tka-seq-cell.is-selected) {
+    z-index: 10;
+    border-radius: 6px;
+    box-shadow: 0 0 0 2px var(--theme-accent, #6366f1);
+  }
+  :global(.sel-preset-fill .tka-seq-cell.is-selected::after) {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 18%, transparent);
+  }
+
+  /* ── 4 · Lift & Glow ────────────────────────────────────────────────────────── */
+  :global(.sel-preset-lift .tka-seq-cell.is-hovered) {
+    z-index: 4;
+    border-radius: 8px;
+    transform: translateY(-1px);
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, 0.18),
+      0 0 0 1.5px color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
+  }
+  :global(.sel-preset-lift .tka-seq-cell.is-selected) {
+    z-index: 10;
+    border-radius: 8px;
+    transform: scale(1.03);
+    box-shadow:
+      0 0 0 2px var(--theme-accent, #6366f1),
+      0 8px 22px color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent),
+      0 6px 18px rgba(0, 0, 0, 0.22);
+  }
+  :global(.sel-preset-lift .tka-seq-cell.is-selected::after) {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: color-mix(in srgb, var(--theme-accent, #6366f1) 6%, transparent);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    :global(.sel-preset-lift .tka-seq-cell.is-selected) {
+      transform: none;
+    }
   }
 </style>
