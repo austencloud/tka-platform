@@ -22,9 +22,6 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   import type { BrowseEventHandler } from "../services/browse-event-handler";
   import MyCollectionsPanel from "../../collections/components/MyCollectionsPanel.svelte";
   import CommunityCollectionsPanel from "../../collections/components/CommunityCollectionsPanel.svelte";
-  import CreatorsPanel from "../../creators/components/CreatorsPanel.svelte";
-  import UserProfilePanel from "../../creators/components/UserProfilePanel.svelte";
-  import { creatorsViewState } from "../../creators/state/creators-view-state.svelte";
   import { createBrowseEngine } from "$lib/shared/browse/engine/create-browse-engine.svelte";
   import GalleryTab from "./GalleryTab.svelte";
   import SmartCollectionSaveDialog from "$lib/features/library/components/SmartCollectionSaveDialog.svelte";
@@ -33,7 +30,6 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
   import {
     browseNavigationState,
-    getCreatorIdFromURL,
     getCollectionScanTargetFromURL,
     type BrowseLocation,
   } from "$lib/shared/browse/state/browse-navigation-state.svelte";
@@ -54,10 +50,10 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   // "collections" is the Library tab (label renamed 2026-07-02; id frozen —
   // routes and persisted nav state reference it). "discover" is the community
   // Collections discovery tab (id "discover" because "collections" is taken).
-  type BrowseModuleType = "gallery" | "collections" | "discover" | "creators" | "hall-of-shame";
+  type BrowseModuleType = "gallery" | "collections" | "discover" | "hall-of-shame";
 
   // Tab order for determining slide direction (left-to-right in bottom nav)
-  const TAB_ORDER: BrowseModuleType[] = ["gallery", "collections", "discover", "creators", "hall-of-shame"];
+  const TAB_ORDER: BrowseModuleType[] = ["gallery", "collections", "discover", "hall-of-shame"];
 
   // Transition configuration
   const SLIDE_DISTANCE = 30; // pixels
@@ -208,8 +204,6 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       newTab = "collections";
     } else if (navTab === "discover") {
       newTab = "discover";
-    } else if (navTab === "creators") {
-      newTab = "creators";
     } else if (navTab === "hall-of-shame") {
       newTab = "hall-of-shame";
     }
@@ -220,7 +214,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       const browseTab =
         newTab === "gallery"
           ? "gallery"
-          : (newTab as "collections" | "discover" | "creators");
+          : (newTab as "collections" | "discover");
       browseNavigationState.navigateTo({ tab: browseTab, view: "list" });
     }
 
@@ -235,42 +229,9 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     activeTab = newTab;
   });
 
-  // Reset creators view state when leaving the creators tab
-  $effect(() => {
-    if (activeTab !== "creators") {
-      creatorsViewState.reset();
-    }
-  });
-
-  // Track when viewing a creator profile (push to history via unified state)
-  // This handles the case when creatorsViewState is updated directly (legacy path)
-  $effect(() => {
-    if (
-      creatorsViewState.currentView === "user-profile" &&
-      creatorsViewState.viewingUserId &&
-      !browseNavigationState.isNavigating
-    ) {
-      // Check if navigation state already shows this profile (avoid duplicate push)
-      const current = browseNavigationState.currentLocation;
-      if (
-        current?.tab === "creators" &&
-        current?.view === "profile" &&
-        current?.contextId === creatorsViewState.viewingUserId
-      ) {
-        return; // Already at this location, don't push again
-      }
-
-      browseNavigationState.navigateTo({
-        tab: "creators",
-        view: "profile",
-        contextId: creatorsViewState.viewingUserId,
-      });
-    }
-  });
-
   // ✅ SYNC UI FROM NAVIGATION STATE
-  // When browseNavigationState.currentLocation changes, update the UI accordingly
-  // This handles the new unified navigation API (viewCreatorProfile, etc.)
+  // When browseNavigationState.currentLocation changes, mirror the active tab
+  // (gallery / collections / discover). Creators now lives in Social.
   $effect(() => {
     const location = browseNavigationState.currentLocation;
     if (!location) return;
@@ -283,18 +244,6 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       navigationState.setActiveTab(
         location.tab === "gallery" ? "gallery" : location.tab
       );
-    }
-
-    // Handle sub-view navigation for creators
-    if (location.tab === "creators") {
-      if (location.view === "profile" && location.contextId) {
-        // Only update creatorsViewState if it doesn't match
-        if (creatorsViewState.viewingUserId !== location.contextId) {
-          creatorsViewState.viewUserProfile(location.contextId);
-        }
-      } else if (creatorsViewState.currentView !== "list") {
-        creatorsViewState.reset();
-      }
     }
   });
 
@@ -310,15 +259,6 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       navigationState.setActiveTab(
         location.tab === "gallery" ? "gallery" : location.tab
       );
-    }
-
-    // Handle sub-view navigation
-    if (location.tab === "creators") {
-      if (location.view === "profile" && location.contextId) {
-        creatorsViewState.viewUserProfile(location.contextId);
-      } else {
-        creatorsViewState.reset();
-      }
     }
 
     // Handle gallery detail view
@@ -381,7 +321,6 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   // Provide navigation context for back/forward buttons and cross-tab navigation
   setContext("browseNavigation", {
     onNavigate: handleHistoryNavigation,
-    navigateToCreatorProfile: browseNavigationState.viewCreatorProfile,
     navigateToSequenceDetail: browseNavigationState.viewSequenceDetail,
     navigateToCollectionDetail: browseNavigationState.viewCollectionDetail,
     navigateToCreatorSequences: browseNavigationState.viewCreatorSequences,
@@ -407,12 +346,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       }
     });
 
-    // Check whether the URL contains a creator profile path (/browse/creators/[userId]).
-    // If it does, override the localStorage-restored state and open that profile directly
-    // so a page refresh lands on the same profile the user was viewing.
-    const initialCreatorId = getCreatorIdFromURL();
-
-    // Same idea for collection deep links (/browse/collections/[id]?scan=1) —
+    // Collection deep links (/browse/collections/[id]?scan=1) —
     // this is the URL a phone lands on after scanning the desktop scan sheet's
     // handoff QR. The scan flag asks the detail view to open the scanner
     // immediately, so the phone goes from QR scan to camera in one hop.
@@ -421,10 +355,8 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     // Initialize navigation state (restores from localStorage if available)
     browseNavigationState.initialize("gallery");
 
-    if (initialCreatorId) {
-      // Override whatever localStorage had - the URL is the source of truth on load.
-      browseNavigationState.viewCreatorProfile(initialCreatorId);
-    } else if (scanTarget) {
+    if (scanTarget) {
+      // The URL is the source of truth on load — override localStorage.
       browseNavigationState.viewCollectionDetail(scanTarget.collectionId);
       if (scanTarget.scan) {
         setPendingScanIntent(scanTarget.collectionId);
@@ -503,32 +435,10 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
             : "Failed to load gallery sequences";
       });
 
-    // Listen for the browser's native Back/Forward within the creators sub-path.
-    // When the user presses Back from /browse/creators/[userId], the URL changes
-    // to /browse/creators. The navigation coordinator handles module/section, but
-    // we need to also close the creator profile view.
-    function handleCreatorPopState() {
-      const creatorId = getCreatorIdFromURL();
-      if (creatorId) {
-        // Navigated forward to a creator profile (e.g., via browser Forward button)
-        if (creatorsViewState.viewingUserId !== creatorId) {
-          browseNavigationState.viewCreatorProfile(creatorId);
-        }
-      } else if (window.location.pathname.startsWith("/browse/creators")) {
-        // Navigated back to the creators list
-        if (creatorsViewState.currentView !== "list") {
-          creatorsViewState.reset();
-        }
-      }
-    }
-
-    window.addEventListener("popstate", handleCreatorPopState);
-
     // Return cleanup function
     return () => {
       cleanup?.();
       unsubscribeReconnect();
-      window.removeEventListener("popstate", handleCreatorPopState);
     };
   });
 
@@ -631,12 +541,6 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
           <MyCollectionsPanel />
         {:else if activeTab === "discover"}
           <CommunityCollectionsPanel />
-        {:else if activeTab === "creators"}
-          {#if creatorsViewState.currentView === "user-profile" && creatorsViewState.viewingUserId}
-            <UserProfilePanel userId={creatorsViewState.viewingUserId} />
-          {:else}
-            <CreatorsPanel />
-          {/if}
         {:else if activeTab === "hall-of-shame"}
           <HallOfShameGallery />
         {/if}

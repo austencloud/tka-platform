@@ -145,16 +145,6 @@ export const BROWSE_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)",
   },
   {
-    id: "creators",
-    labelKey: "tab_browse_creators",
-    descKey: "tab_desc_browse_creators",
-    label: "Creators",
-    icon: '<i class="fas fa-users" aria-hidden="true"></i>',
-    description: "Find creators and their work",
-    color: "#06b6d4",
-    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
-  },
-  {
     id: "hall-of-shame",
     labelKey: "tab_browse_hall_of_shame",
     descKey: "tab_desc_browse_hall_of_shame",
@@ -946,6 +936,19 @@ export const SOCIAL_TABS: Section[] = [
     description: "Sync with nearby spinners",
     color: "#10b981",
     gradient: "linear-gradient(135deg, #34d399 0%, #10b981 100%)",
+  },
+  {
+    // Relocated from Browse → Social (2026-07-08): creator discovery is people
+    // discovery, the same category as Community/Connect. Legacy
+    // /browse/creators/[userId] links redirect here (navigation-coordinator).
+    id: "creators",
+    labelKey: "tab_social_creators",
+    descKey: "tab_desc_social_creators",
+    label: "Creators",
+    icon: '<i class="fas fa-users" aria-hidden="true"></i>',
+    description: "Find creators and their work",
+    color: "#06b6d4",
+    gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
   },
 ];
 

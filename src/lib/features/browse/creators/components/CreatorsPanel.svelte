@@ -18,7 +18,13 @@
   import { getFirestoreInstance } from "$lib/shared/auth/firebase";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { authState, isEffectiveAdmin } from "$lib/shared/auth/state/auth-state.svelte";
-  import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
+  import { creatorsViewState } from "../state/creators-view-state.svelte";
+  import {
+    openCreatorProfile,
+    restoreCreatorProfileFromURL,
+    syncCreatorsViewFromURL,
+  } from "../state/creators-routing.svelte";
+  import UserProfilePanel from "./UserProfilePanel.svelte";
   import { creatorsDataState } from "../state/creators-data-state.svelte";
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { CreatorSortCriteria } from "$lib/shared/community/domain/models/enhanced-user-profile";
@@ -86,6 +92,25 @@
   // Debounce timer for search
   let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
 
+  // ── Self-contained list<->profile routing ────────────────────────────────
+  // This panel is the single host of creatorsViewState. It renders
+  // UserProfilePanel when a profile is active, derives that from the URL on
+  // mount (refresh / deep link / redirected legacy link), and mirrors browser
+  // Back/Forward. Nothing in Browse touches this state anymore.
+  function handleCreatorsPopState() {
+    syncCreatorsViewFromURL();
+  }
+
+  onMount(() => {
+    restoreCreatorProfileFromURL();
+    window.addEventListener("popstate", handleCreatorsPopState);
+    return () => {
+      window.removeEventListener("popstate", handleCreatorsPopState);
+      // Leaving the tab returns to the list next time it opens.
+      creatorsViewState.reset();
+    };
+  });
+
   onMount(async () => {
     try {
       hapticService = getHapticFeedback();
@@ -133,8 +158,9 @@
 
   function handleUserClick(user: EnhancedUserProfile) {
     hapticService?.trigger("selection");
-    // Navigate to user profile using unified navigation state
-    browseNavigationState.viewCreatorProfile(user.id, user.displayName);
+    // Open the profile via the panel-owned routing: sets creatorsViewState and
+    // pushes /social/creators/[id] so the deep link is shareable + back-safe.
+    void openCreatorProfile(user.id, user.displayName);
   }
 
   async function handleFollowToggle(user: EnhancedUserProfile) {
@@ -211,6 +237,9 @@
   }
 </script>
 
+{#if creatorsViewState.currentView === "user-profile" && creatorsViewState.viewingUserId}
+  <UserProfilePanel userId={creatorsViewState.viewingUserId} />
+{:else}
 <div class="creators-panel">
   <div class="content-container">
     <!-- Header -->
@@ -284,6 +313,7 @@
     </PanelContent>
   </div>
 </div>
+{/if}
 
 <style>
   .creators-panel {

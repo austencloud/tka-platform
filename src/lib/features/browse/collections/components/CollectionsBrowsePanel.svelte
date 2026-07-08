@@ -13,7 +13,7 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   import { onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-  import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
+  import { openCreatorProfile } from "$lib/features/browse/creators/state/creators-routing.svelte";
   import {
     collectionsBrowseState,
     type CreatorContentTab,
@@ -93,8 +93,9 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
 
   function handleViewProfile(creatorId: string) {
     hapticService?.trigger("selection");
-    // Navigate to creator profile using unified navigation state
-    browseNavigationState.viewCreatorProfile(creatorId);
+    // Creators now live in Social; this jumps modules to Social > Creators and
+    // opens the profile (self-contained creators routing).
+    void openCreatorProfile(creatorId);
   }
 
   function handleSequenceClick(sequenceId: string) {

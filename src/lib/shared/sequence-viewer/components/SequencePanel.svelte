@@ -30,7 +30,7 @@
   // ExportControlsSection removed - edit mode now uses inline action buttons
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
-  import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
+  import { openCreatorProfile } from "$lib/features/browse/creators/state/creators-routing.svelte";
 
   /**
    * Panel mode determines which features and actions are available
@@ -300,10 +300,8 @@
     if (!creatorInfo?.ownerId) return;
     hapticService?.trigger("selection");
     onClose?.();
-    browseNavigationState.viewCreatorProfile(
-      creatorInfo.ownerId,
-      creatorInfo.displayName
-    );
+    // Creators moved to Social; jump there and open the profile.
+    void openCreatorProfile(creatorInfo.ownerId, creatorInfo.displayName);
   }
 
   function handleAction(action: string) {

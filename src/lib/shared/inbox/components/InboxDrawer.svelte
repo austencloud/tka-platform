@@ -154,9 +154,9 @@
         break;
       }
       case "user-followed": {
-        // Navigate to browse creators
+        // Navigate to Social > Creators (relocated from Browse, 2026-07-08)
         inboxState.close();
-        await handleModuleChange("browse" as ModuleId, "creators");
+        await handleModuleChange("social" as ModuleId, "creators");
         break;
       }
       case "achievement-unlocked": {

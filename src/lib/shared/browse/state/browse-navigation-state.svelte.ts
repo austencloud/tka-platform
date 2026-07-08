@@ -2,22 +2,17 @@
  * Browse Navigation State
  *
  * Unified, persistent navigation state for the Browse module.
- * Handles all navigation within Gallery, Collections, and Creators tabs
- * with full back/forward support and localStorage persistence.
+ * Handles navigation within the Gallery and Collections tabs with full
+ * back/forward support and localStorage persistence.
  *
- * URL sync: creator profile views are reflected in the URL as
- * /browse/creators/[userId] so refreshing the page restores the profile.
+ * Creators relocated Browse -> Social (2026-07-08); its list<->profile routing
+ * now lives in features/browse/creators/state/creators-routing.svelte.ts, so
+ * this state no longer knows about creator profiles.
  */
 
-import { browser } from "$app/environment";
-import {
-  pushState as svelteKitPushState,
-  replaceState as svelteKitReplaceState,
-} from "$app/navigation";
-
 // Tab types matching the Browse module structure
-export type BrowseTab = "gallery" | "collections" | "creators" | "discover";
-export type BrowseView = "list" | "detail" | "profile";
+export type BrowseTab = "gallery" | "collections" | "discover";
+export type BrowseView = "list" | "detail";
 
 /**
  * Represents a location within the Browse module
@@ -47,24 +42,6 @@ const MAX_HISTORY_SIZE = 50;
 // ============================================================================
 
 /**
- * Read the creator ID from the current URL path.
- * Expects paths like /browse/creators/[userId] - returns userId or null.
- * Safe to call on non-creators paths (returns null).
- */
-export function getCreatorIdFromURL(): string | null {
-  if (typeof window === "undefined") return null;
-  const parts = window.location.pathname
-    .replace(/^\/+/, "")
-    .split("/")
-    .filter(Boolean);
-  // Expect: browse / creators / [userId]
-  if (parts[0] === "browse" && parts[1] === "creators" && parts[2]) {
-    return decodeURIComponent(parts[2]);
-  }
-  return null;
-}
-
-/**
  * A collection deep link: /browse/collections/[collectionId], optionally with
  * ?scan=1. This is the URL a phone lands on after scanning the desktop scan
  * sheet's handoff QR — it opens that collection, and the scan flag asks the
@@ -92,41 +69,6 @@ export function getCollectionScanTargetFromURL(): CollectionScanTarget | null {
     return { collectionId: decodeURIComponent(parts[2]), scan };
   }
   return null;
-}
-
-/**
- * Push /browse/creators/[userId] into the browser history stack.
- * Skips the push if the URL already reflects this creator (e.g., on initial load).
- */
-function pushCreatorProfileURL(userId: string): void {
-  if (!browser) return;
-  // If the URL already points at this creator, don't duplicate the history entry.
-  const existingId = getCreatorIdFromURL();
-  if (existingId === userId) return;
-  const url = new URL(window.location.href);
-  url.pathname = `/browse/creators/${encodeURIComponent(userId)}`;
-  url.hash = "";
-  svelteKitPushState(url.toString(), {
-    moduleId: "browse",
-    sectionId: "creators",
-  });
-}
-
-/**
- * Replace the current history entry with /browse/creators (the list view).
- * Called when navigating back to the creators list so the URL reflects the view.
- */
-function replaceCreatorsListURL(): void {
-  if (!browser) return;
-  const url = new URL(window.location.href);
-  // Only act when we're already in the creators subtree
-  if (!url.pathname.startsWith("/browse/creators")) return;
-  url.pathname = "/browse/creators";
-  url.hash = "";
-  svelteKitReplaceState(url.toString(), {
-    moduleId: "browse",
-    sectionId: "creators",
-  });
 }
 
 /**
@@ -261,15 +203,6 @@ function createBrowseNavigationState() {
       const location = state.history[state.currentIndex];
       persistState();
 
-      // Sync URL with the destination view
-      if (location) {
-        if (location.tab === "creators" && location.view === "profile" && location.contextId) {
-          pushCreatorProfileURL(location.contextId);
-        } else if (location.tab === "creators" && location.view === "list") {
-          replaceCreatorsListURL();
-        }
-      }
-
       // Reset flag after a tick
       setTimeout(() => {
         isNavigating = false;
@@ -314,23 +247,6 @@ function createBrowseNavigationState() {
     // ========================================================================
     // Convenience Navigation Methods
     // ========================================================================
-
-    /**
-     * Navigate to a creator's profile.
-     * Also updates the browser URL to /browse/creators/[userId] so the
-     * profile survives a page refresh.
-     */
-    viewCreatorProfile(userId: string, displayName?: string) {
-      this.navigateTo({
-        tab: "creators",
-        view: "profile",
-        contextId: userId,
-        filter: displayName
-          ? { type: "displayName", value: displayName }
-          : undefined,
-      });
-      pushCreatorProfileURL(userId);
-    },
 
     /**
      * Navigate to collection detail view
@@ -390,18 +306,6 @@ function createBrowseNavigationState() {
         tab: "collections",
         view: "list",
       });
-    },
-
-    /**
-     * Navigate to creators list view.
-     * Restores the URL to /browse/creators when leaving a profile.
-     */
-    viewCreators() {
-      this.navigateTo({
-        tab: "creators",
-        view: "list",
-      });
-      replaceCreatorsListURL();
     },
 
     // ========================================================================

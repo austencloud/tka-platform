@@ -12,8 +12,7 @@
   import type { EnhancedUserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import type { UserProfile } from "$lib/shared/community/domain/models/enhanced-user-profile";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { creatorsViewState } from "../state/creators-view-state.svelte";
-  import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
+  import { openCreatorProfile, backToCreatorsList } from "../state/creators-routing.svelte";
   import PanelState from "$lib/shared/components/panel/PanelState.svelte";
   import ProfileHeaderBar from "./profile/ProfileHeaderBar.svelte";
   import ProfileHeroSection from "./profile/ProfileHeroSection.svelte";
@@ -118,19 +117,10 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
 
   function handleBack() {
     hapticService?.trigger("selection");
-    const location = browseNavigationState.goBack();
-
-    if (!location || location.view === "list") {
-      creatorsViewState.goBack();
-    } else if (
-      location.view === "profile" &&
-      location.contextId &&
-      location.contextId !== userId
-    ) {
-      creatorsViewState.viewUserProfile(location.contextId);
-    } else {
-      creatorsViewState.goBack();
-    }
+    // Return to the creators list. The browser Back button walks the full pushed
+    // history (including profile -> profile) via the panel's popstate handler;
+    // this in-page button always lands safely on the list.
+    backToCreatorsList();
   }
 
   async function handleFollowToggle() {
@@ -168,7 +158,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
   function handleSequenceClick(sequence: LibrarySequence) {
     hapticService?.trigger("selection");
     openSequenceViewer(sequence, {
-      returnPath: `/browse/creators/${userId}`,
+      returnPath: `/social/creators/${userId}`,
       returnLabel: userProfile?.displayName ?? "Creator",
     });
   }
@@ -210,7 +200,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
 
   function handleUserCardClick(user: UserProfile) {
     hapticService?.trigger("selection");
-    browseNavigationState.viewCreatorProfile(user.id, user.displayName);
+    void openCreatorProfile(user.id, user.displayName);
   }
 </script>
 

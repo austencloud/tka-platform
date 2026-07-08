@@ -10,6 +10,11 @@
   const tabComponents: Record<string, () => Promise<{ default: Component }>> = {
     community: () => import("$lib/features/community/Community.svelte"),
     connect: () => import("$lib/features/connect/ConnectModule.svelte"),
+    // Creators relocated Browse -> Social (2026-07-08). The panel folder stays
+    // under features/browse/creators/; only its host changed. It is
+    // self-contained (owns its own list<->profile URL/history routing).
+    creators: () =>
+      import("$lib/features/browse/creators/components/CreatorsPanel.svelte"),
   };
 
   const activeTab = $derived(navigationState.activeTab || SOCIAL_TABS[0]?.id || "community");

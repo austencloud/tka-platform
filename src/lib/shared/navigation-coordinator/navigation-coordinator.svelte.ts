@@ -366,7 +366,8 @@ const TAB_ORDERS: Record<string, string[]> = {
     "editor",
     "export",
   ],
-  browse: ["gallery", "collections", "creators", "hall-of-shame"],
+  browse: ["gallery", "collections", "hall-of-shame"],
+  social: ["community", "connect", "creators"],
   learn: ["concepts", "play", "codex"],
   compose: ["arrange", "browse"],
   realm: ["stage", "gallery", "worlds"],
@@ -618,6 +619,18 @@ function parsePathNavigation(): {
     } else if (moduleId === ("dashboard" as unknown)) {
       // Dashboard removed Jan 2026 - Create is now the default landing
       moduleId = "create" as ModuleId;
+    } else if (moduleId === ("browse" as ModuleId) && parts[1] === "creators") {
+      // Creators moved Browse -> Social (2026-07-08). Redirect the module AND
+      // rewrite the address bar to /social/creators[/userId] so the deep
+      // [userId] segment survives the canonical-path flattening in
+      // replaceHistoryState (which runs right after this at boot) — otherwise a
+      // refreshed/shared /browse/creators/[id] link would lose the id and the
+      // panel could not restore the profile.
+      moduleId = "social" as ModuleId;
+      const rewritten = "/social/creators" + (parts[2] ? `/${parts[2]}` : "");
+      const url = new URL(window.location.href);
+      url.pathname = rewritten;
+      svelteKitReplaceState(url, { moduleId: "social", sectionId: "creators" });
     }
 
     // Validate module exists
