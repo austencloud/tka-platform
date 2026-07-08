@@ -47,6 +47,9 @@ const seedFirestore = hasFlag("seed-firestore");
 const startPositionsArg = getArg("startPositions");
 const reversalPattern = getArg("reversalPattern");
 const twin = hasFlag("twin");
+const curateN = parseInt(getArg("curate") || "0", 10);
+const noWrite = hasFlag("no-write");
+const allowReversals = hasFlag("allow-reversals");
 
 // ---------------------------------------------------------------------------
 // Validation
@@ -459,6 +462,56 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
   console.log(`After dedup: ${deduped.length} unique sequences (from ${totalRawSeeds} raw)`);
 
   // ---------------------------------------------------------------------------
+  // Curation (--curate N): select N sequences with even coverage across
+  // (handPathFamily × startPosition) cells via deterministic round-robin —
+  // pick depth-0 of every cell, then depth-1, etc., until N. Produces a
+  // shippable ~54-card physical deck that samples the whole family's variety
+  // rather than over-weighting the largest hand-path families.
+  // ---------------------------------------------------------------------------
+  if (curateN > 0 && !seedFirestore && deduped.length > curateN) {
+    // Preview/JSON path only. The Firestore seed path curates AFTER the
+    // continuous-reversal filter (see the pre-pass in the seeding block), because
+    // curating the pre-filter pool here would leave far fewer than curateN once
+    // the filter drops reversal-containing sequences at execution time.
+    const cells = new Map();
+    for (const s of deduped) {
+      const key = `${s.handPathFamily}||${s.startPos}`;
+      if (!cells.has(key)) cells.set(key, []);
+      cells.get(key).push(s);
+    }
+    const cellLists = [...cells.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map((e) => e[1]);
+    const selected = [];
+    if (cellLists.length >= curateN) {
+      // More cells than cards: stride evenly across the full sorted cell range
+      // so the sample spans the whole family×start spread (not just the
+      // alphabetically-first N cells). One card per sampled cell.
+      for (let i = 0; i < curateN; i++) {
+        selected.push(cellLists[Math.floor((i * cellLists.length) / curateN)][0]);
+      }
+    } else {
+      // Fewer cells than cards: round-robin by depth across all cells.
+      for (let depth = 0; selected.length < curateN; depth++) {
+        let advanced = false;
+        for (const list of cellLists) {
+          if (list.length > depth) {
+            selected.push(list[depth]);
+            advanced = true;
+            if (selected.length >= curateN) break;
+          }
+        }
+        if (!advanced) break;
+      }
+    }
+    deduped.length = 0;
+    deduped.push(...selected);
+    console.log(
+      `Curated to ${deduped.length} sequences (even coverage across ${cells.size} family×start cells)`,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // Apply reversal pattern to edge-level data (for --out JSON and console display).
   // This flips motionType on the CSV edge objects and re-derives letters so that
   // seedWord, display output, and JSON all reflect post-reversal state.
@@ -670,7 +723,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     const db = admin.firestore();
 
     const totalBeats = seedLength * (slice === "quartered" ? 4 : 2);
-    const deckId = `l${level}-${slice}-${loopType.replace(/_/g, "-")}${twin ? "-twin" : ""}-${totalBeats}beat`;
+    const deckId = `l${level}-${slice}-${loopType.replace(/_/g, "-")}${twin ? "-twin" : ""}-${totalBeats}beat${curateN > 0 ? `-c${curateN}` : ""}`;
     const sliceLabel = slice === "quartered" ? "Quartered" : "Halved";
     const loopLabel = loopType.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 
@@ -692,6 +745,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
 
     // Execute LOOP on each seed to produce full circular sequences
     const { loopExecutorSelector } = require("../packages/sequence-engine/dist/loop/execution/LOOPExecutorSelector.js");
+    const { deriveReversals } = require("../packages/sequence-engine/dist/analysis/deriveReversals.js");
     const { calculateEndOrientation } = require("../packages/sequence-engine/dist/core/orientation/OrientationCalculator.js");
     // Twin transform inputs: the engine's vertical-mirror location map and the
     // rotation-flip fn (reused, not hand-rolled), plus a location->position
@@ -879,8 +933,80 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     let totalWritten = 0;
     let loopErrors = 0;
 
+    // ── Curation pre-pass ──────────────────────────────────────────────────
+    // The continuous-reversal filter in the write loop drops sequences whose
+    // executed LOOP contains a rotation-direction reversal. Curating the
+    // pre-filter pool leaves far fewer than curateN, so instead execute + apply
+    // the same filter here to find the survivors, then curate the SURVIVORS to
+    // curateN via even (family × start) coverage. chosenKeys gates the write loop.
+    let chosenKeys = null;
+    if (curateN > 0) {
+      const survivors = [];
+      for (const item of deduped) {
+        const fe = item.edges[0];
+        const ppStart = {
+          id: "pp-start",
+          letter: "x",
+          startPosition: item.startPos,
+          endPosition: item.startPos,
+          beatIndex: 0,
+          stepNumber: 0,
+          duration: 1,
+          motions: {
+            blue: { motionType: "static", rotationDirection: "noRotation", startLocation: fe.blueStartLoc, endLocation: fe.blueStartLoc, startOrientation: "in", endOrientation: "in", turns: 0, color: "blue" },
+            red: { motionType: "static", rotationDirection: "noRotation", startLocation: fe.redStartLoc, endLocation: fe.redStartLoc, startOrientation: "in", endOrientation: "in", turns: 0, color: "red" },
+          },
+        };
+        const ppSeed = [ppStart, ...item.edges.map((e, i) => edgeToEngineStep(e, i + 1))];
+        propagateOrientations(ppSeed);
+        let ppFull;
+        try {
+          ppFull = executor.executeLOOP([...ppSeed], slice);
+        } catch {
+          continue;
+        }
+        if (!allowReversals && (!reversalPattern || reversalPattern === "continuous") && hasReversals(ppFull.slice(1))) {
+          continue;
+        }
+        survivors.push(item);
+      }
+
+      const cells = new Map();
+      for (const s of survivors) {
+        const key = `${s.handPathFamily}||${s.startPos}`;
+        if (!cells.has(key)) cells.set(key, []);
+        cells.get(key).push(`${s.startPos}_${s.seedWord}`);
+      }
+      const cellLists = [...cells.entries()]
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map((e) => e[1]);
+      const chosen = [];
+      if (cellLists.length >= curateN) {
+        for (let i = 0; i < curateN; i++) {
+          chosen.push(cellLists[Math.floor((i * cellLists.length) / curateN)][0]);
+        }
+      } else {
+        for (let depth = 0; chosen.length < curateN; depth++) {
+          let advanced = false;
+          for (const list of cellLists) {
+            if (list.length > depth) {
+              chosen.push(list[depth]);
+              advanced = true;
+              if (chosen.length >= curateN) break;
+            }
+          }
+          if (!advanced) break;
+        }
+      }
+      chosenKeys = new Set(chosen);
+      console.log(
+        `Curated to ${chosenKeys.size} of ${survivors.length} ${allowReversals ? "sequences" : "continuous survivors"} (from ${deduped.length} seeds)`,
+      );
+    }
+
     for (const item of deduped) {
       const seqId = `${item.startPos}_${item.seedWord}`;
+      if (chosenKeys && !chosenKeys.has(seqId)) continue;
       const seqRef = db.doc(`catalogs/${deckId}/sequences/${seqId}`);
 
       // Build seed as engine SequenceStep array (start position + beats)
@@ -934,9 +1060,26 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
 
       // For continuous decks, reject sequences that contain reversals.
       const beatStepsForReversal = fullSteps.slice(1);
-      if (!reversalPattern || reversalPattern === 'continuous') {
+      if (!allowReversals && (!reversalPattern || reversalPattern === 'continuous')) {
         if (hasReversals(beatStepsForReversal)) {
           continue;
+        }
+      }
+
+      // Natural-reversal marking (--allow-reversals): inverted/mirrored LOOPs
+      // reverse prop spin at the transformation seam. That reversal is real and
+      // must render as a dot — but catalog-loader TRUSTS stored blueReversal/
+      // redReversal flags (it only derives when they are absent, and
+      // engineStepToFirestore always writes them). So mark the natural reversals
+      // here with the canonical detector (deriveReversals; prop channel = the dot
+      // channel) so the stored flags are correct. No imposed pattern — the
+      // reversals come from the executed sequence itself.
+      if (allowReversals && (!reversalPattern || reversalPattern === 'continuous')) {
+        const revFlags = deriveReversals(fullSteps, { loop: true });
+        for (let i = 0; i < beatStepsForReversal.length; i++) {
+          const f = revFlags[i + 1];
+          beatStepsForReversal[i].blueReversal = f ? f.blue.propReversal : false;
+          beatStepsForReversal[i].redReversal = f ? f.red.propReversal : false;
         }
       }
 
@@ -1202,7 +1345,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     }
 
     // Flush remaining
-    if (batchCount > 0) {
+    if (!noWrite && batchCount > 0) {
       await batch.commit();
     }
 
@@ -1232,7 +1375,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     }
 
     const deckData = {
-      name: `Level ${level}: ${sliceLabel} ${loopLabel} LOOP${twin ? " · Twin" : ""}`,
+      name: `Level ${level}: ${sliceLabel} ${loopLabel} LOOP · ${totalBeats}-count${curateN > 0 ? ` · ${curateN}-card` : ""}${twin ? " · Twin" : ""}`,
       description: twin
         ? `${sliceLabel} ${loopLabel} LOOP, Twin edition: each card paired with its mirror-swap (vertical mirror + color swap), self-twins excluded. ${totalWritten} sequences across ${familyDocs.length} hand-path families.`
         : `Complete enumeration of all L${level} ${slice} ${loopLabel} LOOP sequences. ${totalWritten} sequences across ${familyDocs.length} hand-path families.`,
@@ -1248,8 +1391,8 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       reversalPattern: reversalPattern || 'continuous',
     };
 
-    await db.doc(`catalogs/${deckId}`).set(deckData);
-    console.log(`  Deck document written`);
+    if (!noWrite) await db.doc(`catalogs/${deckId}`).set(deckData);
+    console.log(noWrite ? `  [no-write] deck doc NOT written (preview)` : `  Deck document written`);
     console.log(`  Done! ${totalWritten} sequences written to decks/${deckId}/sequences/`);
     if (totalWritten < deduped.length) {
       console.log(`  Filtered out ${deduped.length - totalWritten} sequences with reversals (continuous deck)`);
