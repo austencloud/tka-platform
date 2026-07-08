@@ -209,14 +209,9 @@ instead of showing an empty shell.
 <!-- Shared shelf markup: the phone grid and the desktop rail render the same
      cards; only the wrapper (grid vs single column) and the selection
      highlight differ. -->
-{#snippet ownShelves(sel: { id: string; ownerId: string | null } | null)}
-	<CollectionCard
-		collection={allShelf}
-		readonly
-		selected={!!sel && sel.id === "all" && !sel.ownerId}
-		onOpen={() => openCollection("all", "All")}
-	/>
-
+<!-- TKA Originals: the founding "everybody's joint" decks (TKA 1/2/3, Book).
+     Curated by TKA, read-only — a distinct group from the user's own work. -->
+{#snippet tkaOriginalsShelf(sel: { id: string; ownerId: string | null } | null)}
 	{#each foundingCards as f (f.id)}
 		<CollectionCard
 			collection={f}
@@ -225,6 +220,17 @@ instead of showing an empty shell.
 			onOpen={() => openCollection(f.id, f.name)}
 		/>
 	{/each}
+{/snippet}
+
+<!-- My Collections: the All shelf (everything you saved) + your own manual/smart
+     collections + the create tiles. -->
+{#snippet ownShelves(sel: { id: string; ownerId: string | null } | null)}
+	<CollectionCard
+		collection={allShelf}
+		readonly
+		selected={!!sel && sel.id === "all" && !sel.ownerId}
+		onOpen={() => openCollection("all", "All")}
+	/>
 
 	{#each collections as c (c.id)}
 		<CollectionCard
@@ -308,12 +314,18 @@ instead of showing an empty shell.
 					{/each}
 				</div>
 			{:else}
+				<h3 class="shelf-heading">My Collections</h3>
 				<div class="rail-cards">
 					{@render ownShelves(railSelection)}
 				</div>
 
+				<h3 class="shelf-heading">TKA Originals</h3>
+				<div class="rail-cards">
+					{@render tkaOriginalsShelf(railSelection)}
+				</div>
+
 				{#if followedCollectionsState.items.length > 0}
-					<h3 class="following-title">Following</h3>
+					<h3 class="shelf-heading">Following</h3>
 					<div class="rail-cards">
 						{@render followedShelves(railSelection)}
 					</div>
@@ -382,12 +394,18 @@ instead of showing an empty shell.
 					{/each}
 				</div>
 			{:else}
+				<h3 class="shelf-heading">My Collections</h3>
 				<div class="card-grid">
 					{@render ownShelves(null)}
 				</div>
 
+				<h3 class="shelf-heading">TKA Originals</h3>
+				<div class="card-grid">
+					{@render tkaOriginalsShelf(null)}
+				</div>
+
 				{#if followedCollectionsState.items.length > 0}
-					<h3 class="following-title">Following</h3>
+					<h3 class="shelf-heading">Following</h3>
 					<div class="card-grid">
 						{@render followedShelves(null)}
 					</div>
@@ -474,8 +492,9 @@ instead of showing an empty shell.
 		align-content: start;
 	}
 
-	/* Followed collections read as their own shelf under yours. */
-	.following-title {
+	/* Section headers: My Collections / TKA Originals / Following each read as
+	   their own labeled shelf. */
+	.shelf-heading {
 		margin: 10px 0 0;
 		font-size: var(--font-size-sm, 14px);
 		font-weight: 700;
