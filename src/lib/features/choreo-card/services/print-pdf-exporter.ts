@@ -103,7 +103,9 @@ export async function exportHomePrintPDF(
 	const copies = Math.max(1, Math.floor(options.copies ?? 1));
 	const elements = options.elements ?? [];
 	const groupByElement = options.groupByElement ?? true;
-	const slots = planPrintSlots(pairs, elements, copies, cardsPerPage, groupByElement);
+	// firstOnTop: reverse card order so the deck's FIRST card is drawn last and
+	// lands on top of the printed/cut stack (was: last card on top).
+	const slots = planPrintSlots(pairs, elements, copies, cardsPerPage, groupByElement, true);
 	const totalSheets = slots.length / cardsPerPage; // integer by construction
 
 	const pdfDoc = await PDFDocument.create();

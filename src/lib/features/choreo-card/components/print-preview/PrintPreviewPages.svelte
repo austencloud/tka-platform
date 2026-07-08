@@ -204,7 +204,9 @@ import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRend
   // target the correct source card despite grouping, copies, and blank padding.
   let sheets = $derived.by(() => {
     const indexed = renderedCards.map((card, seqIndex) => ({ card, seqIndex }));
-    const slots = planPrintSlots(indexed, tndElements ?? [], copies, layout.cardsPerPage, groupByElement);
+    // firstOnTop=true mirrors the PDF exporter: deck's FIRST card is drawn last
+    // (lands on top of the printed stack). Keeps the preview pixel-for-pixel with print.
+    const slots = planPrintSlots(indexed, tndElements ?? [], copies, layout.cardsPerPage, groupByElement, true);
     const pages: SheetSlot[][] = [];
     for (let i = 0; i < slots.length; i += layout.cardsPerPage) {
       pages.push(

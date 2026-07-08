@@ -103,4 +103,57 @@ describe("planPrintSlots", () => {
       expect(slots.every((s) => s.item)).toBe(true);
     });
   });
+
+  describe("firstOnTop (reverse so deck's FIRST card lands on top of the stack)", () => {
+    // Helper: the flat sequence of real (non-blank) card labels in draw order.
+    const realOrder = (slots: ReturnType<typeof planPrintSlots>) =>
+      slots.filter((s) => s.item).map((s) => (s.item as { label: string }).label);
+
+    // THE invariant: the physical stack reads the authored order top-to-bottom
+    // iff the firstOnTop draw order is the EXACT reverse of the forward draw
+    // order — across ALL families, not just within each. This is the property
+    // that was broken (only within-section reversal put the last section on top).
+    it("reverses the WHOLE real-card order vs forward — grouped, across families", () => {
+      const pairs = [pair("f1"), pair("f2"), pair("w1"), pair("w2")];
+      const elements = [EL("fire"), EL("fire"), EL("water"), EL("water")];
+
+      const fwd = realOrder(planPrintSlots(pairs, elements, 1, 9, true, false));
+      const rev = realOrder(planPrintSlots(pairs, elements, 1, 9, true, true));
+
+      // Whatever the forward family+letter order is, firstOnTop is its full
+      // reverse → the first forward card is the LAST real card drawn (on top).
+      expect(rev).toEqual([...fwd].reverse());
+      expect(rev[rev.length - 1]).toBe(fwd[0]);
+    });
+
+    it("reverses the WHOLE real-card order vs forward — ungrouped", () => {
+      const pairs = [pair("a"), pair("b"), pair("c")];
+      const fwd = realOrder(planPrintSlots(pairs, [], 1, 9, false, false));
+      const rev = realOrder(planPrintSlots(pairs, [], 1, 9, false, true));
+      expect(rev).toEqual([...fwd].reverse()); // ["c","b","a"]
+    });
+
+    it("reverses the WHOLE real-card order vs forward — with copies", () => {
+      const pairs = [pair("a"), pair("b"), pair("c")];
+      const elements = [EL("fire"), EL("water"), EL("water")];
+      const fwd = realOrder(planPrintSlots(pairs, elements, 3, 9, true, false));
+      const rev = realOrder(planPrintSlots(pairs, elements, 3, 9, true, true));
+      expect(rev).toEqual([...fwd].reverse());
+    });
+
+    it("still cut-collates: each card's N copies stay consecutive", () => {
+      const pairs = [pair("a"), pair("b")];
+      const slots = planPrintSlots(pairs, [], 3, 9, false, true);
+      // b's copies then a's (a is drawn last → on top).
+      expect(slots.slice(0, 6).map((s) => s.item?.label)).toEqual(["b", "b", "b", "a", "a", "a"]);
+    });
+
+    it("keeps card↔element pairing correct when reversed", () => {
+      const pairs = [pair("f1"), pair("w1")];
+      const elements = [EL("fire"), EL("water")];
+      const slots = planPrintSlots(pairs, elements, 1, 9, true, true);
+      expect(slots.find((s) => s.item?.label === "f1")?.elementName).toBe("fire");
+      expect(slots.find((s) => s.item?.label === "w1")?.elementName).toBe("water");
+    });
+  });
 });
