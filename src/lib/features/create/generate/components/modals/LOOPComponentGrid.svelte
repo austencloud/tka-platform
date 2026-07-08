@@ -54,9 +54,11 @@ LOOPComponentGrid.svelte - Layout for LOOP component selection buttons
     grid-auto-rows: minmax(64px, auto);
   }
 
-  /* List layout: single vertical column, rows size to their content */
+  /* List layout: single vertical column that fills the panel height, rows
+     stretch to spread evenly (bigger, easy-to-hit targets — no empty bottom). */
   .loop-component-grid.list {
     grid-template-columns: 1fr;
-    grid-auto-rows: auto;
+    grid-auto-rows: 1fr;
+    height: 100%;
   }
 </style>

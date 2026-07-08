@@ -79,7 +79,10 @@
     bottom: 0;
   }
 
-  /* Thin right column (single-column list needs ~400px, not half the viewport) */
+  /* Thin, FULL-HEIGHT right column (single-column list needs ~400px, not half
+     the viewport). Fills the create region top-to-bottom like CustomizeDrawer;
+     the list rows stretch to spread across that height (see LOOPComponentGrid),
+     so there is no empty bottom and no floating-box-in-corner look. */
   :global(
     .drawer-content.loop-drawer-sheet.side-by-side-layout[data-placement="right"]
   ) {
@@ -108,11 +111,13 @@
     border-top: 1px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
   }
 
-  /* Right panel: left border instead of top */
+  /* Right panel: left border instead of top; no bottom-nav clearance on desktop
+     (that padding is only needed for the mobile bottom sheet). */
   :global(.drawer-content.loop-drawer-sheet[data-placement="right"]) .loop-drawer-content {
     border-radius: 16px 0 0 16px;
     border-top: none;
     border-left: 1px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
+    padding-bottom: 12px;
   }
 
 
@@ -128,7 +133,7 @@
     background: transparent;
   }
 
-  /* Grid fills remaining height and scrolls (overlay now fills the drawer) */
+  /* Grid fills the remaining height; its rows stretch to spread evenly */
   .loop-drawer-content :global(.grid-container) {
     flex: 1 1 auto;
     min-height: 0;
