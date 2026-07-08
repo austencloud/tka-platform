@@ -23,6 +23,8 @@
   import GuidePageNav from "./GuidePageNav.svelte";
   import GuideCompanion from "./GuideCompanion.svelte";
   import { GuideActiveStep, setGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { SequenceSelection, setSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
+  import "$lib/shared/selection/selection.css";
   import { stripToSequence } from "../_data/guide-sequence-adapter";
   import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
   import type { GuidePageMeta } from "../_data/guide-manifest";
@@ -55,6 +57,12 @@
   // context (getGuideActiveStep); the companion reports its live step in.
   const activeStep = new GuideActiveStep();
   setGuideActiveStep(activeStep);
+
+  // Whole-sequence selection: the accent "Lift & Glow" ring marks WHICH strip is
+  // active while the amber step ring (activeStep) hops through its steps. Only the
+  // reader sets a scope — /print and /book don't, so their strips stay pristine.
+  const selection = new SequenceSelection();
+  setSequenceSelection(selection);
 
   // Scroll a page into view; the scroll handler keeps activeIndex (the nav
   // highlight) in sync as you scroll freely between the stacked pages.
@@ -112,6 +120,7 @@
     // Ring the clicked strip's Start box immediately (before motion data even
     // resolves), then the player's live step drives it from there.
     activeStep.begin(payload.key ?? "");
+    selection.select(payload.key ?? ""); // persist the accent ring on the active strip
     const seq = stripToSequence(payload.strip, { word: payload.word });
     clicked = (await ensureMotionData(seq)) ?? seq;
     companionOpen = true;
@@ -230,6 +239,7 @@
         onClose={() => {
           companionOpen = false;
           activeStep.clear();
+          selection.clear();
         }}
       />
     {/if}
