@@ -10,11 +10,12 @@ import { deriveSpecMembers } from "$lib/shared/browse/services/smart-filter-spec
 import { CANONICAL_TND_AUTHOR } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
 
 describe("founding collections config", () => {
-  it("declares exactly three founding collections with underscore ids", () => {
+  it("declares exactly four founding collections with underscore ids", () => {
     expect(FOUNDING_SMART_COLLECTIONS.map((c) => c.id)).toEqual([
       "founding_tka-1",
       "founding_tka-2",
       "founding_tka-3",
+      "founding_book",
     ]);
     for (const c of FOUNDING_SMART_COLLECTIONS) {
       expect(isFoundingId(c.id)).toBe(true);
@@ -25,7 +26,15 @@ describe("founding collections config", () => {
   });
 
   it("declares the expected cached counts", () => {
-    expect(FOUNDING_SMART_COLLECTIONS.map((c) => c.sequenceCount)).toEqual([19, 57, 95]);
+    expect(FOUNDING_SMART_COLLECTIONS.map((c) => c.sequenceCount)).toEqual([19, 57, 95, 19]);
+  });
+
+  it("the Book collection rule = author fence + reversal_pattern book, no turn filter", () => {
+    const book = getFoundingCollection("founding_book")!;
+    const types = book.filterSpec.filters.map((f) => f.type);
+    expect(types).toContain("author");
+    expect(types).toContain("reversal_pattern");
+    expect(book.filterSpec.filters.find((f) => f.type === "reversal_pattern")?.value).toBe("book");
   });
 
   it("adapts to a read-only smart LibraryCollection", () => {
@@ -64,9 +73,20 @@ function seq(
   } as unknown as SequenceData;
 }
 
+// Book seeds carry reversalPattern:"book"; everything else is continuous.
+function bookSeq(id: string, author: string, reversalPattern?: string): SequenceData {
+  return {
+    id,
+    author,
+    level: 2,
+    ...(reversalPattern ? { reversalPattern } : {}),
+    steps: [{ isBlank: false, motions: { blue: { turns: 1 }, red: { turns: 1 } } }],
+  } as unknown as SequenceData;
+}
+
 const idsOf = (m: SequenceData[]) => m.map((s) => s.id).sort();
 const A = CANONICAL_TND_AUTHOR;
-const [tka1, tka2, tka3] = FOUNDING_SMART_COLLECTIONS;
+const [tka1, tka2, tka3, book] = FOUNDING_SMART_COLLECTIONS;
 
 describe("founding rules — mechanics over a synthetic pool", () => {
   // Real 19/57/95 over the live alphabet is a runtime acceptance check; this
@@ -97,5 +117,26 @@ describe("founding rules — mechanics over a synthetic pool", () => {
   it("fences user-authored sequences out even when level + turns match", () => {
     expect(deriveSpecMembers(pool, tka2!.filterSpec).some((s) => s.id === "u-l2-t1")).toBe(false);
     expect(deriveSpecMembers(pool, tka1!.filterSpec).some((s) => s.id === "u-l1")).toBe(false);
+  });
+});
+
+describe("Book collection rule — reversal-pattern mechanics", () => {
+  // The injected pool is book-only; the rule (author + reversal_pattern:book)
+  // selects the book variants and fences user content + continuous alphabet.
+  const pool: SequenceData[] = [
+    bookSeq("book-1", A, "book"),
+    bookSeq("book-2", A, "book"),
+    bookSeq("cont-alphabet", A), // continuous alphabet seed (no reversalPattern)
+    bookSeq("user-book", "Someone", "book"), // user content that happens to be book
+  ];
+
+  it("selects only author-fenced book variants", () => {
+    expect(idsOf(deriveSpecMembers(pool, book!.filterSpec))).toEqual(["book-1", "book-2"]);
+  });
+
+  it("excludes the continuous alphabet (absent reversalPattern ≠ book)", () => {
+    expect(deriveSpecMembers(pool, book!.filterSpec).some((s) => s.id === "cont-alphabet")).toBe(
+      false,
+    );
   });
 });

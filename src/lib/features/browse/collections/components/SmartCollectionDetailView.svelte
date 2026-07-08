@@ -31,7 +31,10 @@ header; "Edit rule" reopens the builder to change it.
 	} from "../../shared/state/variation-picker-state.svelte";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
 	import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
-	import { loadCanonicalTnDSequences } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
+	import {
+		loadCanonicalTnDSequences,
+		loadCanonicalBookVariations,
+	} from "$lib/features/browse/gallery-home/canonical-tnd-pool";
 	import {
 		isFoundingId,
 		getFoundingCollection,
@@ -110,8 +113,12 @@ header; "Edit rule" reopens the builder to change it.
 					// Inject the canonical T&D alphabet into the community pool, same
 					// as the main gallery (BrowseModule). Without this a community
 					// rule — e.g. a founding deck filtering AUTHOR "T&D Alphabet" —
-					// sees only user sequences and matches nothing.
-					extraCommunitySequences: loadCanonicalTnDSequences,
+					// sees only user sequences and matches nothing. The Book deck needs
+					// the book reversal variants instead of the continuous alphabet.
+					extraCommunitySequences:
+						collectionId === "founding_book"
+							? loadCanonicalBookVariations
+							: loadCanonicalTnDSequences,
 					// Founding decks (TKA 1/2/3) are the T&D alphabet — group the grid
 					// by canonical TnD family (Split-Same · Water, …) in groups of 3–4
 					// rather than one section per letter. Other smart collections keep

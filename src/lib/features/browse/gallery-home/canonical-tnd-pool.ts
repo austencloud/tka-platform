@@ -19,6 +19,10 @@ import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
 import { resolveTnDFamilyCards } from "$lib/features/lab/vtg-lab/services/resolve-tnd-family-cards";
 import { calculateDifficultyLevel } from "$lib/shared/browse/services/sequence-difficulty-calculator";
 import { processReversals } from "$lib/shared/create/services/reversal-detector";
+import { transformSequence } from "$lib/features/choreo-card/services/reversal-seed-service";
+import { loadDiamondEdges } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
+import { getReversalPattern } from "$lib/features/choreo-card/domain/reversal-patterns";
+import type { ResolvedReversalPattern } from "$lib/features/choreo-card/domain/reversal-transform";
 
 /** Reserved author for the defined T&D alphabet, so it is filterable and
  *  isolatable from user-submitted community sequences. */
@@ -80,6 +84,69 @@ async function resolvePool(): Promise<readonly SequenceData[]> {
         // seed flags.
         out.push(processReversals(tagged));
       }
+    }
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Book reversal variants (collection-scoped — NOT the main gallery)
+// ---------------------------------------------------------------------------
+
+/** The "Classic Book Variations" deck (manifest #009) is the T&D alphabet at
+ * turn 1|1 with the book reversal pattern (PPPP — both props reverse every
+ * step) applied. */
+const BOOK_TURN = "1|1";
+
+const BOOK_PATTERN: ResolvedReversalPattern = (() => {
+  const def = getReversalPattern("book");
+  if (!def) throw new Error('reversal pattern "book" missing from REVERSAL_PATTERNS');
+  // Both hands reverse an even number of times over PPPP → clean loop.
+  return { id: def.id, label: def.label, sequence: def.sequence, isNamed: true, isCleanLoop: true };
+})();
+
+let bookPromise: Promise<readonly SequenceData[]> | null = null;
+
+/**
+ * The 19 book-reversal variants of the base T&D seeds (turn 1|1). Generated
+ * client-side from the same catalog as {@link loadCanonicalTnDSequences} by
+ * applying the book reversal transform. Author/family-tagged and stamped
+ * `reversalPattern: "book"`, so a rule of AUTHOR "T&D Alphabet" +
+ * REVERSAL_PATTERN "book" selects exactly these. Injected ONLY into the Book
+ * collection's engine (never the main gallery), so it adds zero gallery flood.
+ */
+export function loadCanonicalBookVariations(): Promise<readonly SequenceData[]> {
+  if (!bookPromise) {
+    bookPromise = resolveBookPool().catch((err) => {
+      bookPromise = null;
+      throw err;
+    });
+  }
+  return bookPromise;
+}
+
+async function resolveBookPool(): Promise<readonly SequenceData[]> {
+  const edges = await loadDiamondEdges();
+  const out: SequenceData[] = [];
+  for (const element of TND_ELEMENTS) {
+    const matrices = await resolveTnDFamilyCards(element.familyId);
+    for (const matrix of matrices) {
+      const base = matrix.byTurn.get(BOOK_TURN);
+      if (!base) continue;
+      // transformSequence flips pro↔anti + cw↔ccw on reversed hands, re-derives
+      // letters, recomputes the orientation chain, and stamps reversalPattern.
+      const book = transformSequence(base, BOOK_PATTERN, edges);
+      const tagged = updateSequenceData(book, {
+        id: `${matrix.seedId}__t_${safeTurn(BOOK_TURN)}__book`,
+        author: CANONICAL_TND_AUTHOR,
+        dateAdded: TND_BIRTHDAY,
+        birthday: TND_BIRTHDAY,
+        level: calculateDifficultyLevel([...(book.steps ?? [])]),
+        reversalPattern: "book",
+      });
+      // Book = a reversal every step, so dots SHOULD render here (unlike the
+      // continuous decks) — processReversals derives them from the flipped spins.
+      out.push(processReversals(tagged));
     }
   }
   return out;

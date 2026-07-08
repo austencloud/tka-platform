@@ -51,6 +51,17 @@ const diff = (level: 1 | 2 | 3, label: string) => ({
   chipColor: "var(--semantic-warning)",
 });
 
+// Selects the book reversal variants (PPPP) injected into the Book collection's
+// engine. filterByReversalPattern treats an absent reversalPattern as
+// "continuous", so this fences book from the continuous alphabet.
+const BOOK_FILTER = {
+  key: "reversal_pattern",
+  type: String(BrowseFilterType.REVERSAL_PATTERN),
+  value: "book",
+  label: "Book",
+  chipColor: "var(--semantic-info)",
+};
+
 export const FOUNDING_SMART_COLLECTIONS: FoundingSmartCollection[] = [
   {
     id: "founding_tka-1",
@@ -87,6 +98,22 @@ export const FOUNDING_SMART_COLLECTIONS: FoundingSmartCollection[] = [
     filterSpec: {
       source: "community",
       filters: [AUTHOR_FILTER, diff(3, "Level 3"), CEIL_1],
+      sortMethod: "level",
+      sortDirection: "asc",
+    },
+  },
+  {
+    id: "founding_book",
+    name: "Classic Book Variations",
+    description: "The base motions at one turn, with the book reversal — both props reverse every step.",
+    icon: "fa-book",
+    sequenceCount: 19,
+    filterSpec: {
+      source: "community",
+      // No turn filter: the book injector already scopes to turn 1|1, so AUTHOR
+      // (fences user content) + REVERSAL_PATTERN book (selects the injected
+      // variants) yields exactly the deck's 19.
+      filters: [AUTHOR_FILTER, BOOK_FILTER],
       sortMethod: "level",
       sortDirection: "asc",
     },

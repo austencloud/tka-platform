@@ -99,6 +99,8 @@ export function applyFilter(
       return filterByCollection(sequences, filterValue);
     case BrowseFilterType.MAX_TURN_INTENSITY:
       return filterByMaxTurnIntensity(sequences, filterValue);
+    case BrowseFilterType.REVERSAL_PATTERN:
+      return filterByReversalPattern(sequences, filterValue);
     default:
       return sequences;
   }
@@ -637,6 +639,19 @@ function filterByMaxTurnIntensity(
     typeof filterValue === "number" ? filterValue : parseFloat(String(filterValue));
   if (isNaN(ceiling)) return sequences;
   return sequences.filter((seq) => getSequenceMaxTurn(seq) <= ceiling);
+}
+
+/**
+ * Reversal-pattern filter: keep sequences whose reversal pattern id equals the
+ * value. A sequence with no stored `reversalPattern` is treated as "continuous"
+ * (the app-wide reversal display policy: absent = no reversals). One-per-type.
+ */
+function filterByReversalPattern(
+  sequences: SequenceData[],
+  filterValue: BrowseFilterValue
+): SequenceData[] {
+  const want = String(filterValue);
+  return sequences.filter((seq) => (seq.reversalPattern ?? "continuous") === want);
 }
 
 // ============================================================================

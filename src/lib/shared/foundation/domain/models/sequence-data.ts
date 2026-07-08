@@ -110,6 +110,12 @@ export interface SequenceData {
   readonly componentDomains?: Partial<Record<LOOPComponent, LOOPDomain>>;
   readonly loopSpec?: LOOPSpec;
   readonly difficultyLevel?: string;
+  /**
+   * Reversal pattern id (from REVERSAL_PATTERNS): "continuous", "book",
+   * "red-book", … Set on seeded reversal-variant sequences; absent means
+   * continuous. Consumed by the REVERSAL_PATTERN browse filter.
+   */
+  readonly reversalPattern?: string;
   readonly tags: readonly string[];
   /**
    * Extensible metadata bag for stylistic/performance properties.
@@ -220,6 +226,9 @@ export function createSequenceData(
       sequenceLength: data.sequenceLength,
     }),
     ...(data.author !== undefined && { author: data.author }),
+    ...(data.reversalPattern !== undefined && {
+      reversalPattern: data.reversalPattern,
+    }),
     ...(data.level !== undefined && { level: data.level }),
     ...(data.dateAdded !== undefined && { dateAdded: data.dateAdded }),
     ...(data.gridMode !== undefined && { gridMode: data.gridMode }),

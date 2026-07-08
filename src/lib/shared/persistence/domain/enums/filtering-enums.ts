@@ -37,4 +37,8 @@ export enum BrowseFilterType {
   /** Filter by a turn-intensity CEILING: a sequence matches "≤ N turns" when no
    * motion's numeric turns exceed N. "fl" (float) always passes. One-per-type. */
   MAX_TURN_INTENSITY = "max_turn_intensity",
+  /** Filter by reversal pattern id (from REVERSAL_PATTERNS): "continuous",
+   * "book", "red-book", … A sequence with no stored reversalPattern is treated
+   * as "continuous" (matches the app-wide reversal display policy). One-per-type. */
+  REVERSAL_PATTERN = "reversal_pattern",
 }
