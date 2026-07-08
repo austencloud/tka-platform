@@ -50,3 +50,50 @@ export const TunnelSnapshotSchema = z.object({
   props: z.object({ bluePropType: z.string(), redPropType: z.string() }),
   trailRender: z.any(),
 });
+
+import type { TunnelViewController } from "./tunnel-view-controller.svelte";
+import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
+import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+import type { AnimationSettingsState } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+
+/** Everything capture/apply needs, passed in by the caller (no ambient store
+ *  access) so the module is testable in isolation. */
+export interface SnapshotDeps {
+  controller: TunnelViewController;
+  effects: EffectsConfigState;
+  visibility: AnimationVisibilityStateManager;
+  settings: { bluePropType: string; redPropType: string; updateSettings: (p: { bluePropType?: string; redPropType?: string }) => unknown };
+  animationSettings: AnimationSettingsState;
+  playback: { handleBpmChange: (bpm: number) => void; handlePlaybackModeChange: (mode: PlaybackMode) => void };
+  animationPanel: { playbackMode: PlaybackMode };
+  getBpm: () => number;
+}
+
+const clone = <T>(v: T): T => {
+  try { return structuredClone(v); }
+  catch { return JSON.parse(JSON.stringify(v)); }
+};
+
+export function captureTunnelSnapshot(deps: SnapshotDeps): TunnelSnapshot {
+  const { controller, effects, visibility, settings, animationSettings, animationPanel, getBpm } = deps;
+  return {
+    version: SNAPSHOT_VERSION,
+    tunnel: {
+      config: clone(controller.config),
+      gridVisible: controller.gridVisible,
+      spectrum: controller.spectrum,
+      section: controller.section,
+    },
+    effects: clone(effects.config),
+    effort: visibility.getEffortPreset(),
+    paths: {
+      pathShape: visibility.getPathShape(),
+      motionAwarePaths: visibility.getMotionAwarePaths(),
+      bluePathLines: visibility.getVisibility("bluePathLines"),
+      redPathLines: visibility.getVisibility("redPathLines"),
+    },
+    playback: { bpm: getBpm(), playbackMode: animationPanel.playbackMode },
+    props: { bluePropType: settings.bluePropType, redPropType: settings.redPropType },
+    trailRender: clone(animationSettings.trail),
+  };
+}
