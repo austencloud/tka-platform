@@ -441,7 +441,9 @@ export function createPlaybackController(deps: PlaybackControllerDeps) {
     cleanupSubscription?.();
     unregisterVisibilityObserver();
     if (_playbackController) {
-      _playbackController.dispose();
+      // Pass our state as owner: the shared singleton must not tear down if a
+      // newer viewer instance already re-claimed it (HMR remount overlap).
+      _playbackController.dispose(modalAnimationState);
     }
   }
 

@@ -497,7 +497,7 @@ import type { AnimationPanelState } from "../navigation/services/types";
       } else if (!isOpen && previousIsOpen) {
         // Closing: Stop animation and clean up
         if (playbackController) {
-          playbackController.dispose();
+          playbackController.dispose(animationPanelState);
           setAnimationPlaybackRef(null);
         }
         lastLoadedSequenceId = null;
@@ -576,7 +576,7 @@ import type { AnimationPanelState } from "../navigation/services/types";
   $effect(() => {
     return () => {
       if (playbackController) {
-        playbackController.dispose();
+        playbackController.dispose(animationPanelState);
         setAnimationPlaybackRef(null);
       }
     };
@@ -587,7 +587,7 @@ import type { AnimationPanelState } from "../navigation/services/types";
     hapticService?.trigger("selection");
 
     if (playbackController) {
-      playbackController.dispose();
+      playbackController.dispose(animationPanelState);
       setAnimationPlaybackRef(null);
     }
 

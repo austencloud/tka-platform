@@ -200,7 +200,7 @@ export function createEndlessPlayback(config: EndlessPlaybackConfig): EndlessPla
 
     dispose() {
       orchestrator.dispose();
-      playbackController.dispose();
+      playbackController.dispose(animationState);
       animationState.dispose();
     },
   };

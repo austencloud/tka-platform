@@ -151,7 +151,7 @@ import { getAnimationPlaybackController } from "$lib/shared/animation-engine/get
 
   onDestroy(() => {
     stateUnsubscribe?.();
-    playbackController?.dispose();
+    playbackController?.dispose(animationState);
     animationState.dispose();
   });
 </script>

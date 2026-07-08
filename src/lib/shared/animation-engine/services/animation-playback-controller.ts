@@ -70,6 +70,14 @@ export class AnimationPlaybackController {
   }
 
   initialize(sequenceData: SequenceData, state: AnimationPanelState): boolean {
+    // This controller is a shared module singleton. When a new host claims it
+    // (e.g. a viewer remounting under HMR) a prior owner's loop may still be
+    // running against the old state. Stop it so the fresh claim starts paused
+    // at step 0 instead of inheriting an orphaned clock that advances the new
+    // state while the UI reads "paused".
+    this.stopStepPlayback();
+    this.loopService.stop();
+
     this.state = state;
     this.sequenceData = sequenceData;
 
@@ -476,7 +484,21 @@ export class AnimationPlaybackController {
     this.loopCompleteCallback = null;
   }
 
-  dispose(): void {
+  /**
+   * Release this shared singleton. Pass the AnimationPanelState this host
+   * claimed via initialize() so a STALE owner can't clobber a live claim.
+   *
+   * During an HMR remount the incoming host re-claims the singleton
+   * (initialize(seq, newState)) before the outgoing host's onDestroy fires.
+   * If the outgoing host's dispose() then nulled `state`, togglePlayback()
+   * would early-return (pause dead) and the clock would never advance the
+   * props (frozen) while the new render loop kept painting effects. Guarding
+   * on owner identity makes a stale teardown a no-op. Callers that pass no
+   * owner keep the legacy unconditional-teardown behavior.
+   */
+  dispose(owner?: AnimationPanelState): void {
+    if (owner && this.state !== owner) return;
+
     this.stopStepPlayback();
     this.loopService.stop();
     // Clear shared animation state so workspace highlighting stops
