@@ -18,9 +18,10 @@
 
   /* Shared page-title treatment — edit HERE to change EVERY guide title's size
      and placement at once. Values are px on the 816×1056 sheet (1pt = 4/3px):
-     64px = 48pt, 29px ≈ 22pt. */
+     64px = 48pt, 16px = 12pt. Title rides high on the sheet so its descenders
+     never crowd the intro line below — buys every page more clearance. */
   --guide-title-size: 64px; /* 48pt */
-  --guide-title-top: 29px; /* ≈22pt from the top of the sheet */
+  --guide-title-top: 16px; /* 12pt from the top of the sheet */
   --guide-title-color: #14142b;
 }
 

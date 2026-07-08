@@ -122,7 +122,7 @@
     {
       key: "t56-4a",
       x: 156.5,
-      y: 107,
+      y: 98.5,
       box: 100,
       tka: false,
       animate: true,
@@ -238,7 +238,7 @@
   // ── Three calligraphic section titles (reuse the shared .guide-title) ──────────
   type Title = { t: string; y: number };
   const TITLES: Title[] = [
-    { t: "Type 4 - Dash", y: 22 },
+    { t: "Type 4 - Dash", y: 12 }, // matches the global --guide-title-top (12pt)
     { t: "Type 5 - Dual-Dash", y: 340 },
     { t: "Type 6 - Static", y: 592 },
   ];
@@ -254,17 +254,17 @@
   const STATIC = (s: string) => `<span class="k-static">${s}</span>`;
   let PARAS: Para[] = $state([
     {
-      // Proof y=53.3/71.3, shifted down to clear the 48pt calligraphic title above
-      // (whose descenders reach ~68pt); the α→β strip drops in step (98.5 → 107).
+      // Proof y=53.3/71.3. With the title now riding at 12pt, the strips sit at
+      // their measured artboard positions and the intro clears the descenders.
       x: 0,
-      y: 72,
+      y: 64,
       fs: 13,
       lh: 15.5,
       html:
         `With a ${DASH("Dash")}, one hand executes a dash while the other hand remains static.<br>` +
         "With alpha → beta, this creates a two-step sequence:",
     },
-    { x: 0, y: 210, fs: 14, lh: 17, html: "And with gamma → gamma, it creates a 4-step sequence:" },
+    { x: 0, y: 201, fs: 14, lh: 17, html: "And with gamma → gamma, it creates a 4-step sequence:" },
     {
       x: 0,
       y: 395,
