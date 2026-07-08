@@ -53,7 +53,6 @@
   const motionChips = $derived([
     { key: "invert", label: "Invert", icon: "fas fa-arrows-spin", active: config.invert, toggle: () => (config.invert = !config.invert) },
     { key: "echo", label: "Echo", icon: "fas fa-backward", active: config.echo, toggle: () => (config.echo = !config.echo) },
-    { key: "speed", label: "Speed", icon: "fas fa-gauge-high", active: config.speed, toggle: () => (config.speed = !config.speed) },
   ]);
 
   // ── live render base + shared playhead (reused from the tunnel-looks rig) ──

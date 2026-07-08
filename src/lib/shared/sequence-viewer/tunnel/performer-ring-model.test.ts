@@ -39,7 +39,8 @@ describe("performerRing — motion modulators never change the cast", () => {
     for (const over of [
       { invert: true },
       { echo: true },
-      { speed: true },
+      { speedPattern: "alternating" },
+      { speedOverrides: { 1: 2 } },
       { staggerSteps: 3 },
     ] as Partial<TunnelConfig>[]) {
       expect(performerRing({ ...base, ...over })).toEqual(ref);

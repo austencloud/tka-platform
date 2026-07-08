@@ -1,4 +1,10 @@
-import { DEFAULT_CONFIG, FOLD_OPTIONS, type TunnelConfig } from "./tunnel-config";
+import {
+  DEFAULT_CONFIG,
+  FOLD_OPTIONS,
+  coerceSpeedOverrides,
+  coerceSpeedPattern,
+  type TunnelConfig,
+} from "./tunnel-config";
 
 /**
  * User-saved mandala presets — a personal library on top of the built-in
@@ -30,7 +36,8 @@ function coerceConfig(c: Partial<TunnelConfig> | undefined): TunnelConfig {
     echo: bool(c.echo, false),
     staggerSteps:
       typeof c.staggerSteps === "number" && c.staggerSteps > 0 ? Math.floor(c.staggerSteps) : 0,
-    speed: bool(c.speed, false),
+    speedPattern: coerceSpeedPattern(c.speedPattern, (c as { speed?: unknown }).speed),
+    speedOverrides: coerceSpeedOverrides(c.speedOverrides),
   };
 }
 

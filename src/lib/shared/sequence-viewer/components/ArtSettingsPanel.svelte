@@ -38,7 +38,13 @@
   import type { ViewerPlaybackState } from "../domain/viewer-prop-groups";
   import type { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
   import type { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
-  import { FOLD_OPTIONS, TUNNEL_PRESETS, configsEqual } from "../tunnel/tunnel-config";
+  import {
+    FOLD_OPTIONS,
+    SPEED_LADDER,
+    TUNNEL_PRESETS,
+    configsEqual,
+    type SpeedPattern,
+  } from "../tunnel/tunnel-config";
   import { tunnelUserPresets } from "../tunnel/tunnel-user-presets.svelte";
   import type {
     PlaybackMode,
@@ -47,7 +53,7 @@
 
   type ArtType = "mandala" | "tunnel";
   // Tunnel rail sections (own id union — not the Download panel's PillId).
-  type TunnelRailId = "tunnel" | "effects" | "effort" | "playback";
+  type TunnelRailId = "tunnel" | "speed" | "effects" | "effort" | "playback";
   // Mandala rail sections — same ids + order as the bottom dock's category bar.
   type MandalaRailId = MandalaCategory;
 
@@ -99,6 +105,7 @@
   // ── Tunnel rail ──
   const tunnelRail: { id: TunnelRailId; icon?: string; label: string; accentColor?: string }[] = [
     { id: "tunnel", icon: "fa-fan", label: "Tunnel" },
+    { id: "speed", icon: "fa-gauge-high", label: "Speed" },
     { id: "effects", icon: "fa-wand-magic-sparkles", label: "Effects" },
     // Effort uses an accent dot (no icon), matching the Download panel's Effort pill.
     { id: "effort", label: "Effort", accentColor: "#94a3b8" },
@@ -146,8 +153,27 @@
   const motionChips = $derived([
     { key: "invert", label: "Invert", icon: "fas fa-arrows-spin", active: controller.invert, set: (v: boolean) => controller.setInvert(v) },
     { key: "echo", label: "Echo", icon: "fas fa-backward", active: controller.echo, set: (v: boolean) => controller.setEcho(v) },
-    { key: "speed", label: "Speed", icon: "fas fa-gauge-high", active: controller.speed, set: (v: boolean) => controller.setSpeed(v) },
   ]);
+
+  // Speed section (own rail destination): a preset distribution across copies,
+  // plus a per-performer override drawer. "Speed" (not "Tempo") — Playback › Tempo
+  // already owns BPM and Effort owns per-beat dynamics; this is per-copy rate.
+  const speedPatternOptions: { value: SpeedPattern; label: string }[] = [
+    { value: "off", label: "Off" },
+    { value: "alternating", label: "Alternating" },
+    { value: "accelerando", label: "Accelerando" },
+  ];
+  const speedLabel = (r: number): string =>
+    r === 0.25 ? "¼×" : r === 0.5 ? "½×" : `${r}×`;
+  const speedLadderOptions = SPEED_LADDER.map((r) => ({ value: String(r), label: speedLabel(r) }));
+  const speedPatternHint = $derived(
+    controller.speedPattern === "alternating"
+      ? "Copies alternate fast and slow."
+      : controller.speedPattern === "accelerando"
+        ? "Copies sweep from slow to fast."
+        : "Every copy plays at the same speed.",
+  );
+  let speedDrawerOpen = $state(false);
 
   // Faint build-up under the big result: one base performer × each active
   // count-multiplier. Only factors >×1 show, so it reads "1 × 2 copies × 2 mirror".
@@ -497,6 +523,59 @@
         <p class="warn">Dense stack ({controller.propCount} props): a heavy effect may drop frames on weaker devices.</p>
       {/if}
     </div>
+  {:else if id === "speed"}
+    <div class="section-pad">
+      <!-- PRIMARY: a speed preset distributed across the copies. -->
+      {#if !dense}<span class="rt-section-label">Choose a speed</span>{/if}
+      <div class="seg-wrap">
+        <SegmentedControl
+          options={speedPatternOptions}
+          value={controller.speedPattern}
+          onchange={(v) => controller.setSpeedPattern(v as SpeedPattern)}
+          color="accent"
+          size="sm"
+        />
+      </div>
+      {#if !dense}<p class="section-hint">{speedPatternHint}</p>{/if}
+
+      {#if controller.performerCount > 1}
+        <!-- SECONDARY: pin any single performer's rate. "You" (the base) is the
+             fixed 1× reference; each copy (arm 1..n) gets the ×-ladder. -->
+        <button
+          class="drawer-toggle"
+          type="button"
+          aria-expanded={speedDrawerOpen}
+          onclick={() => (speedDrawerOpen = !speedDrawerOpen)}
+        >
+          <i class="fas fa-chevron-right drawer-caret" class:open={speedDrawerOpen} aria-hidden="true"></i>
+          Per performer
+        </button>
+        {#if speedDrawerOpen}
+          <div class="perf-list">
+            {#each controller.speedPerformers as perf (perf.arm)}
+              <div class="perf-row">
+                <span class="perf-lbl">{perf.label}</span>
+                {#if perf.arm === 0}
+                  <span class="perf-fixed">1×</span>
+                {:else}
+                  <div class="seg-wrap">
+                    <SegmentedControl
+                      options={speedLadderOptions}
+                      value={String(perf.rate)}
+                      onchange={(v) => controller.setPerformerSpeed(perf.arm, Number(v))}
+                      color="accent"
+                      size="sm"
+                    />
+                  </div>
+                {/if}
+              </div>
+            {/each}
+          </div>
+        {/if}
+      {:else if !dense}
+        <p class="section-hint">Add copies (Copies ×N, Mirror, Flip) to vary speed per performer.</p>
+      {/if}
+    </div>
   {:else if id === "effects"}
     <div class="section-pad">
       <!-- Rainbow (every copy fans across the spectrum) vs Uniform (base blue/red).
@@ -837,6 +916,54 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
   }
   .seg-wrap { flex: 1; min-width: 0; }
+
+  /* Speed section: a collapsible per-performer override drawer under the preset. */
+  .drawer-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 4px;
+    background: none;
+    border: none;
+    color: var(--theme-text, rgba(255, 255, 255, 0.85));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+  }
+  .drawer-caret {
+    font-size: 10px;
+    opacity: 0.6;
+    transition: transform var(--duration-fast, 150ms) ease;
+  }
+  .drawer-caret.open {
+    transform: rotate(90deg);
+  }
+  .perf-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .perf-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--min-touch-target, 44px);
+  }
+  .perf-lbl {
+    flex: 0 0 64px;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+  }
+  /* Reserved-width fixed marker so the base row doesn't shift the layout. */
+  .perf-fixed {
+    flex: 1;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
+    font-variant-numeric: tabular-nums;
+  }
 
   /* Preset cards (primary surface) + tuner toggle grid (secondary). Both use
      auto-fit + 1fr so a short last row STRETCHES to fill the width — no ragged

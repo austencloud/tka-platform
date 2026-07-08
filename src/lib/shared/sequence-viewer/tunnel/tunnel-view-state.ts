@@ -1,4 +1,10 @@
-import { DEFAULT_CONFIG, FOLD_OPTIONS, type TunnelConfig } from "./tunnel-config";
+import {
+  DEFAULT_CONFIG,
+  FOLD_OPTIONS,
+  coerceSpeedOverrides,
+  coerceSpeedPattern,
+  type TunnelConfig,
+} from "./tunnel-config";
 
 /**
  * Persisted tunnel-view config + chrome (the state the user last left the
@@ -12,7 +18,7 @@ export interface TunnelViewState {
    *  spectrum; off = layers inherit the base/preset colors. */
   spectrum: boolean;
   /** Active rail section in the Art settings panel. */
-  section: "tunnel" | "effects" | "effort" | "playback";
+  section: "tunnel" | "speed" | "effects" | "effort" | "playback";
 }
 
 const STORAGE_KEY = "tka_tunnel_view_state";
@@ -58,7 +64,9 @@ function resolveConfig(p: Record<string, unknown>): TunnelConfig {
       echo: bool(c.echo, DEFAULT_CONFIG.echo),
       staggerSteps:
         typeof c.staggerSteps === "number" && c.staggerSteps > 0 ? Math.floor(c.staggerSteps) : 0,
-      speed: bool(c.speed, DEFAULT_CONFIG.speed),
+      // Migrate the legacy boolean `speed` (true → "alternating").
+      speedPattern: coerceSpeedPattern(c.speedPattern, (c as { speed?: unknown }).speed),
+      speedOverrides: coerceSpeedOverrides(c.speedOverrides),
     };
   }
 
@@ -95,6 +103,7 @@ export function loadTunnelViewState(): TunnelViewState {
     // A stored "appearance" (the retired Cast tab) falls through to "tunnel".
     const section =
       p.section === "tunnel" ||
+      p.section === "speed" ||
       p.section === "effects" ||
       p.section === "effort" ||
       p.section === "playback"

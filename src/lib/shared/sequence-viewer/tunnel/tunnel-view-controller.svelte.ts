@@ -12,12 +12,15 @@ import {
   clampConfig,
   configKey,
   copyModulators,
+  effectiveSpeed,
   getPreset,
   imageCount,
   matchPreset,
   propCount,
+  type SpeedPattern,
   type TunnelConfig,
 } from "./tunnel-config";
+import { performerRing } from "./performer-ring-model";
 import {
   loadTunnelViewState,
   saveTunnelViewState,
@@ -62,8 +65,10 @@ export class TunnelViewController {
   echo = $state<boolean>(DEFAULT_CONFIG.echo);
   /** Arm k shows the sequence offset by k×this steps (0 = off). */
   staggerSteps = $state<number>(DEFAULT_CONFIG.staggerSteps);
-  /** Alternate arms traverse at ½× / 2×. */
-  speed = $state<boolean>(DEFAULT_CONFIG.speed);
+  /** Preset speed distribution across copies (off / alternating / accelerando). */
+  speedPattern = $state<SpeedPattern>(DEFAULT_CONFIG.speedPattern);
+  /** Per-performer speed overrides (arm 1..n → multiplier); wins over the pattern. */
+  speedOverrides = $state<Record<number, number>>({ ...DEFAULT_CONFIG.speedOverrides });
 
   /** Tunnel-specific grid visibility. The kaleidoscope owns this (the global
    *  Visual/Display toggles don't reach the self-clocked tunnel). Default off —
@@ -96,7 +101,8 @@ export class TunnelViewController {
     this.invert = cfg.invert;
     this.echo = cfg.echo;
     this.staggerSteps = cfg.staggerSteps;
-    this.speed = cfg.speed;
+    this.speedPattern = cfg.speedPattern;
+    this.speedOverrides = { ...cfg.speedOverrides };
     this.gridVisible = view.gridVisible;
     this.spectrum = view.spectrum;
     this.section = view.section;
@@ -125,7 +131,8 @@ export class TunnelViewController {
         invert: this.invert,
         echo: this.echo,
         staggerSteps: 0,
-        speed: false,
+        speedPattern: "off",
+        speedOverrides: {},
       };
       const on = this.active;
       if (!on || !seq) {
@@ -148,7 +155,8 @@ export class TunnelViewController {
       invert: this.invert,
       echo: this.echo,
       staggerSteps: this.staggerSteps,
-      speed: this.speed,
+      speedPattern: this.speedPattern,
+      speedOverrides: { ...this.speedOverrides },
     };
   }
 
@@ -195,7 +203,8 @@ export class TunnelViewController {
     this.invert = c.invert;
     this.echo = c.echo;
     this.staggerSteps = c.staggerSteps;
-    this.speed = c.speed;
+    this.speedPattern = c.speedPattern;
+    this.speedOverrides = { ...c.speedOverrides };
   }
 
   /** Select a curated built-in mandala preset (the primary surface). */
@@ -236,9 +245,35 @@ export class TunnelViewController {
   setEcho(on: boolean): void {
     this.echo = on;
   }
-  setSpeed(on: boolean): void {
-    this.speed = on;
+  /** Choose a speed preset. Selecting one is a clean slate — it drops any
+   *  per-performer overrides so the pattern reads exactly as named. */
+  setSpeedPattern(pattern: SpeedPattern): void {
+    this.speedPattern = pattern;
+    this.speedOverrides = {};
   }
+  /** Pin one performer's speed (arm 1..n). Immutable update so `$derived`
+   *  consumers re-run; the base ("you", arm 0) is never overridable. */
+  setPerformerSpeed(arm: number, rate: number): void {
+    if (arm < 1) return;
+    this.speedOverrides = { ...this.speedOverrides, [arm]: rate };
+  }
+  /** Back to every copy at 1× (off pattern, no overrides). */
+  resetSpeed(): void {
+    this.speedPattern = "off";
+    this.speedOverrides = {};
+  }
+  /** Per-performer speed rows for the Speed drawer, in the same overlay order as
+   *  the Performer Ring: index 0 = the base "you" (locked 1×), 1..n = the copies
+   *  (arm k). `rate` is the arm's effective multiplier (override or pattern). */
+  speedPerformers = $derived.by(() => {
+    const cfg = this.config;
+    const count = imageCount(cfg);
+    return performerRing(cfg).map((_p, i) => ({
+      arm: i,
+      label: i === 0 ? "You" : `Copy ${i}`,
+      rate: i === 0 ? 1 : effectiveSpeed(cfg, i, count),
+    }));
+  });
   /** Set the canon offset, clamped to the sequence (the sampler also wraps). */
   setStagger(steps: number): void {
     this.staggerSteps = Math.max(0, Math.min(steps, this.staggerMax));

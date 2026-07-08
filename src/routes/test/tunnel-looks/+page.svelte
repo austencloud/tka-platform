@@ -37,10 +37,11 @@
     { label: "Fold 4 · Echo", config: cfg({ fold: 4, echo: true }) },
     { label: "Fold 4 · Stagger 1", config: cfg({ fold: 4, staggerSteps: 1 }) },
     { label: "Fold 4 · Stagger 2", config: cfg({ fold: 4, staggerSteps: 2 }) },
-    { label: "Fold 4 · Speed", config: cfg({ fold: 4, speed: true }) },
+    { label: "Fold 4 · Alternating", config: cfg({ fold: 4, speedPattern: "alternating" }) },
+    { label: "Fold 4 · Accelerando", config: cfg({ fold: 4, speedPattern: "accelerando" }) },
     { label: "Fold 8 · Mirror", config: cfg({ fold: 8, mirror: true }) },
     { label: "Fold 4 · Mirror · Stagger 1", config: cfg({ fold: 4, mirror: true, staggerSteps: 1 }) },
-    { label: "Fold 8 · Stagger 1 · Speed", config: cfg({ fold: 8, staggerSteps: 1, speed: true }) },
+    { label: "Fold 8 · Stagger 1 · Alternating", config: cfg({ fold: 8, staggerSteps: 1, speedPattern: "alternating" }) },
   ];
 
   let base = $state<SequenceData | null>(null);

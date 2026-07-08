@@ -34,6 +34,16 @@ export type CopyOp =
   | { kind: "invert" } //                 PRO↔ANTI + CW↔CCW (counter-rotation) → invertSequence
   | { kind: "rewind" }; //                time-reversed copy → rewindSequence
 
+/**
+ * How per-copy speed is distributed across the arms (the "Speed" preset). The
+ * base ("you") is always 1×; only the copies vary.
+ *   - `off`         — every copy at 1× (no variation).
+ *   - `alternating` — copies cycle fast/slow ({@link ALTERNATING_CYCLE}); the
+ *                     historical boolean-Speed behavior.
+ *   - `accelerando` — copies sweep monotonically slow→fast across the arms.
+ */
+export type SpeedPattern = "off" | "alternating" | "accelerando";
+
 /** The orthogonal primitive set. Every tunnel is one of these. */
 export interface TunnelConfig {
   /** Rotational arms (cyclic order). Grid = 8 points, so 1/2/4/8 are representable. */
@@ -48,8 +58,11 @@ export interface TunnelConfig {
   echo: boolean;
   /** Arm k shows the sequence offset by k×this many steps (0 = off) — a canon. */
   staggerSteps: number;
-  /** Alternate arms traverse at ½× / 2× — overlaid tempos. */
-  speed: boolean;
+  /** Preset speed distribution across the copies (see {@link patternSpeed}). */
+  speedPattern: SpeedPattern;
+  /** Per-performer speed overrides: arm index (1-based, matching the copy arm) →
+   *  multiplier. Wins over the pattern. The base ("you", arm 0) is always 1×. */
+  speedOverrides: Record<number, number>;
 }
 
 /** A generated copy: baked spatial ops + its sample-time modulators. */
@@ -62,8 +75,19 @@ export interface TunnelCopy {
 /** Selectable rotational folds (ascending — the ladder `clampConfig` walks). */
 export const FOLD_OPTIONS = [1, 2, 4, 8];
 
-/** Per-copy speed cycle when Speed is on (arm 1 → 2×, arm 2 → ½×, arm 3 → 1×…). */
-const SPEED_CYCLE = [1, 2, 0.5];
+/** The `alternating` cycle: arm 1 → 2×, arm 2 → ½×, arm 3 → 1×, repeat. Indexed
+ *  by `arm % 3` (base is arm 0), so a fold-only ring reads fast/slow/normal…. */
+const ALTERNATING_CYCLE = [1, 2, 0.5];
+
+/** The `accelerando` sweep ladder — copies spread monotonically slow→fast. */
+const ACCELERANDO_LADDER = [0.5, 1, 2];
+
+/** Selectable per-performer speed multipliers: the drawer's ×-ladder and the set
+ *  of legal override values. Ordered ascending. */
+export const SPEED_LADDER = [0.25, 0.5, 1, 2, 4];
+
+/** The speed presets, in rail/segmented order. */
+export const SPEED_PATTERNS: SpeedPattern[] = ["off", "alternating", "accelerando"];
 
 export const DEFAULT_CONFIG: TunnelConfig = {
   // Duo (2-fold rotation) is the default — the most legible mandala, easiest to
@@ -74,7 +98,8 @@ export const DEFAULT_CONFIG: TunnelConfig = {
   invert: false,
   echo: false,
   staggerSteps: 0,
-  speed: false,
+  speedPattern: "off",
+  speedOverrides: {},
 };
 
 /**
@@ -138,18 +163,44 @@ export function generateCopyOps(cfg: TunnelConfig): CopyOp[][] {
 }
 
 /**
+ * The speed multiplier a {@link SpeedPattern} assigns to arm `k` (1-based) of a
+ * tunnel with `count` images. `count` only matters for `accelerando` (it spreads
+ * across however many copies exist). The base (arm 0) is never passed here.
+ */
+export function patternSpeed(pattern: SpeedPattern, arm: number, count: number): number {
+  if (pattern === "alternating") return ALTERNATING_CYCLE[arm % ALTERNATING_CYCLE.length] ?? 1;
+  if (pattern === "accelerando") {
+    const copies = Math.max(1, count - 1); // extra copies (base excluded)
+    if (copies <= 1) return ACCELERANDO_LADDER[ACCELERANDO_LADDER.length - 1] ?? 1;
+    const t = (arm - 1) / (copies - 1); // 0 (first copy) .. 1 (last copy)
+    return ACCELERANDO_LADDER[Math.round(t * (ACCELERANDO_LADDER.length - 1))] ?? 1;
+  }
+  return 1;
+}
+
+/**
+ * The effective speed of arm `k`: a per-performer override wins over the pattern
+ * so the drawer can pin any single copy. Overrides are keyed 1-based by arm.
+ */
+export function effectiveSpeed(cfg: TunnelConfig, arm: number, count: number): number {
+  const o = cfg.speedOverrides?.[arm];
+  return typeof o === "number" ? o : patternSpeed(cfg.speedPattern, arm, count);
+}
+
+/**
  * Sample-time modulators per extra copy, aligned index-for-index with
- * {@link generateCopyOps}. Stagger accumulates by arm; Speed cycles alternate
- * arms through {@link SPEED_CYCLE}.
+ * {@link generateCopyOps}. Stagger accumulates by arm; speed is the arm's
+ * {@link effectiveSpeed} (pattern, or a per-performer override).
  */
 export function copyModulators(cfg: TunnelConfig): { staggerSteps: number; speed: number }[] {
-  const n = imageCount(cfg) - 1;
+  const count = imageCount(cfg);
+  const n = count - 1;
   const out: { staggerSteps: number; speed: number }[] = [];
   for (let i = 0; i < n; i++) {
     const arm = i + 1;
     out.push({
       staggerSteps: cfg.staggerSteps > 0 ? arm * cfg.staggerSteps : 0,
-      speed: cfg.speed ? (SPEED_CYCLE[arm % SPEED_CYCLE.length] ?? 1) : 1,
+      speed: effectiveSpeed(cfg, arm, count),
     });
   }
   return out;
@@ -208,7 +259,15 @@ export const TUNNEL_PRESETS: TunnelPreset[] = [
   { id: "cross", name: "Cross", icon: "fas fa-plus", config: { ...DEFAULT_CONFIG, fold: 2, mirror: true } },
 ];
 
-/** Structural equality of two configs (all seven primitives). */
+/** Structural equality of two per-arm override maps (same arms, same rates). */
+function overridesEqual(a: Record<number, number>, b: Record<number, number>): boolean {
+  const ka = Object.keys(a);
+  const kb = Object.keys(b);
+  if (ka.length !== kb.length) return false;
+  return ka.every((k) => a[k as unknown as number] === b[k as unknown as number]);
+}
+
+/** Structural equality of two configs (all primitives, incl. speed pattern + overrides). */
 export function configsEqual(a: TunnelConfig, b: TunnelConfig): boolean {
   return (
     a.fold === b.fold &&
@@ -217,8 +276,33 @@ export function configsEqual(a: TunnelConfig, b: TunnelConfig): boolean {
     a.invert === b.invert &&
     a.echo === b.echo &&
     a.staggerSteps === b.staggerSteps &&
-    a.speed === b.speed
+    a.speedPattern === b.speedPattern &&
+    overridesEqual(a.speedOverrides, b.speedOverrides)
   );
+}
+
+/**
+ * Coerce a persisted value into a valid {@link SpeedPattern}. Falls back to the
+ * legacy boolean `speed` (true → "alternating") so older saves migrate, then
+ * "off".
+ */
+export function coerceSpeedPattern(v: unknown, legacySpeed?: unknown): SpeedPattern {
+  if (v === "off" || v === "alternating" || v === "accelerando") return v;
+  return legacySpeed === true ? "alternating" : "off";
+}
+
+/** Coerce a persisted value into a valid per-arm override map (positive integer
+ *  arms → ladder rates only). Always returns a fresh object. */
+export function coerceSpeedOverrides(v: unknown): Record<number, number> {
+  if (!v || typeof v !== "object") return {};
+  const out: Record<number, number> = {};
+  for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+    const arm = Number(k);
+    if (Number.isInteger(arm) && arm > 0 && typeof val === "number" && SPEED_LADDER.includes(val)) {
+      out[arm] = val;
+    }
+  }
+  return out;
 }
 
 /** The built-in preset id whose config exactly matches `cfg`, or null. */
@@ -230,6 +314,20 @@ export function getPreset(id: string): TunnelPreset | undefined {
   return TUNNEL_PRESETS.find((p) => p.id === id);
 }
 
+/** Speed segment of {@link configKey}: pattern glyph + sorted per-arm overrides.
+ *  `alternating` keeps the legacy "x" so pre-existing keys/filenames stay stable. */
+function speedKey(cfg: TunnelConfig): string {
+  const pat =
+    cfg.speedPattern === "alternating" ? "x" : cfg.speedPattern === "accelerando" ? "xz" : "";
+  const overrides = Object.keys(cfg.speedOverrides ?? {})
+    .map(Number)
+    .filter((a) => Number.isInteger(a) && a > 0)
+    .sort((a, b) => a - b)
+    .map((a) => `t${a}-${SPEED_LADDER.indexOf(cfg.speedOverrides[a] ?? 1)}`)
+    .join("");
+  return pat + overrides;
+}
+
 /** Stable short signature of a config (export filename suffix + build keying). */
 export function configKey(cfg: TunnelConfig): string {
   return (
@@ -239,6 +337,6 @@ export function configKey(cfg: TunnelConfig): string {
     (cfg.invert ? "i" : "") +
     (cfg.echo ? "e" : "") +
     (cfg.staggerSteps > 0 ? `s${cfg.staggerSteps}` : "") +
-    (cfg.speed ? "x" : "")
+    speedKey(cfg)
   );
 }
