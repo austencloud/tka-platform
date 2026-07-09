@@ -55,6 +55,14 @@ import { getSceneUndoManager } from "$lib/shared/3d/undo/get-scene-undo-manager"
 import { charcoalParamsToSemantic } from "$lib/shared/animation-engine/domain/types/charcoal-spark-types";
 
 const STORAGE_KEY = "tka_effects_config";
+/**
+ * Canonical localStorage key for the persisted effects config. Exported so
+ * pre-open seams (e.g. tunnel-collection's openTunnelInViewer) can write a
+ * config that a freshly-constructed `persist:true` instance boots with —
+ * `createEffectsConfigState()` reads this key via `loadStoredConfig()` on
+ * construct. Single source of truth; do not re-hardcode the string.
+ */
+export const EFFECTS_CONFIG_STORAGE_KEY = STORAGE_KEY;
 const BASELINE_KEY = "tka_effects_baseline";
 /** Per-effect custom-look snapshots (the Custom chip's target). */
 const CUSTOM_KEY = "tka_effects_custom";
