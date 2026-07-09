@@ -47,6 +47,7 @@ Last audit: 2025-12-27
   import type { LedOverlayConfig } from "../domain/types/led-types";
   import type { TipEffectMap, TipEffortMap, EffectType } from "../domain/types/tip-effect-types";
   import CanvasContextMenuHost from "./canvas-context-menu/CanvasContextMenuHost.svelte";
+  import type { ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
   import SplitCanvasView from "./SplitCanvasView.svelte";
   import type { EffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
 
@@ -106,6 +107,7 @@ Last audit: 2025-12-27
     progressLine = false,
     hoverHint = "none",
     cornerToggle = false,
+    extraContextMenuItems = [],
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -203,6 +205,10 @@ Last audit: 2025-12-27
      *  canvas via CanvasSurface's cornerControl slot. Pairs with onPlaybackToggle.
      *  Off by default. */
     cornerToggle?: boolean;
+    /** Extra entries injected into the right-click context menu (e.g. "Save
+     *  tunnel"). Prepended before the built-in items by CanvasContextMenuHost.
+     *  Defaults to [] so existing consumers are unaffected. */
+    extraContextMenuItems?: ContextMenuEntry[];
   } = $props();
 
   const resolvedContextId = contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
@@ -659,6 +665,7 @@ Last audit: 2025-12-27
       onToggleDisassemble={externalToggleDisassemble ?? toggleDisassemble}
       captureEffectDiagnostics={() => engine?.captureEffectDiagnostics() ?? {}}
       {onToggle3DView}
+      extraItems={extraContextMenuItems}
     />
   {/if}
 </div>

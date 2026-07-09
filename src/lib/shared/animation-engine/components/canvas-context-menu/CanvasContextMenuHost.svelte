@@ -18,6 +18,9 @@
     onToggleDisassemble?: () => void;
     captureEffectDiagnostics?: () => Record<string, unknown>;
     onToggle3DView?: () => void;
+    /** Extra entries a consumer injects (e.g. "Save tunnel"). Prepended before
+     *  the built-in items. Defaults to [] so existing consumers are unaffected. */
+    extraItems?: ContextMenuEntry[];
   }
 
   const {
@@ -25,6 +28,7 @@
     onToggleDisassemble,
     captureEffectDiagnostics,
     onToggle3DView,
+    extraItems = [],
   }: Props = $props();
 
   // Try to read the viewer-3d context. When this component is rendered inside
@@ -67,15 +71,18 @@
     // Touch menuItemsVersion to re-derive when visibility settings change
     void menuItemsVersion;
 
-    return buildCanvasContextMenuItems({
-      visibilityManager,
-      effectsConfigState,
-      disassembled,
-      onToggleDisassemble,
-      captureEffectDiagnostics,
-      viewer3DState,
-      onToggle3DView,
-    });
+    return [
+      ...extraItems,
+      ...buildCanvasContextMenuItems({
+        visibilityManager,
+        effectsConfigState,
+        disassembled,
+        onToggleDisassemble,
+        captureEffectDiagnostics,
+        viewer3DState,
+        onToggle3DView,
+      }),
+    ];
   });
 
   export function openContextMenu(x: number, y: number): void {
