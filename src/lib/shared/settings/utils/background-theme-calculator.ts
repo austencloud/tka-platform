@@ -193,17 +193,138 @@ export interface DangerTheme {
   hoverShadow: string;
 }
 
-function fallbackAccent(mode: ThemeMode, accentColor?: string): string {
-  if (accentColor) {
-    const luminance = calculateLuminance(accentColor);
-    // Accent must contrast against theme surfaces:
-    // Dark mode surfaces are near-black → accent needs brightness (luminance >= 0.1)
-    // Light mode surfaces are near-white → accent needs depth (luminance <= 0.85)
-    if (mode === "dark" && luminance < 0.1) return "#38bdf8";
-    if (mode === "light" && luminance > 0.85) return "#2563eb";
-    return accentColor;
+// ═══════════════════════════════════════════════════════════════════════════
+// ACCENT CONTRAST FLOOR
+//
+// The accent is used BOTH as text (109+ `color: var(--theme-accent)` sites) and
+// as a fill under white labels. A raw gradient-extracted accent guarantees
+// neither: the old light-mode default #2563eb measured 3.34:1 against the
+// #d0d0ca panel (fails even AA), and dark palettes like Blossom's #db2777
+// measured ~3.7:1 against near-black panels.
+//
+// The floor adjusts ONLY the HSL lightness (hue + saturation preserved, so each
+// background keeps its color identity) until the accent clears a per-mode
+// contrast target against the worst-case theme surface:
+//
+// - Light mode: 7:1 (AAA) vs #c8c8c2 (cardHoverBg, the darkest light surface).
+//   Darkening serves both roles — deep accent text passes AAA, and white labels
+//   on the darkened accent pass comfortably too.
+// - Dark mode: 4.5:1 (AA) vs the effective panel color (~black over a dark
+//   scene). 7:1 is mathematically unreachable for a single token here: an
+//   accent bright enough for 7:1 text on near-black leaves white-on-accent
+//   fills below 3:1. 4.5:1 is the max-min compromise; text that needs AAA in
+//   dark mode uses --theme-accent-text (below), which IS floored at 7:1.
+//
+// src/app.html carries an inline pre-hydration copy of this logic — keep in sync.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** Darkest light-mode surface (cardHoverBg) — the worst case for dark-on-light. */
+const LIGHT_WORST_SURFACE = "#c8c8c2";
+/** Approximate effective dark-mode panel: rgba(0,0,0,.75+) over a dark scene. */
+const DARK_SURFACE_ANCHOR = "#16161f";
+const LIGHT_ACCENT_TARGET = 7; // AAA
+const DARK_ACCENT_TARGET = 4.5; // AA — see ceiling note above
+const ACCENT_TEXT_TARGET = 7; // AAA, both modes (--theme-accent-text)
+
+/** WCAG contrast ratio between two hex colors (1..21). */
+export function contrastRatio(hexA: string, hexB: string): number {
+  const a = calculateLuminance(hexA);
+  const b = calculateLuminance(hexB);
+  const lighter = Math.max(a, b);
+  const darker = Math.min(a, b);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  const color = hex.replace("#", "");
+  const r = parseInt(color.substring(0, 2), 16) / 255;
+  const g = parseInt(color.substring(2, 4), 16) / 255;
+  const b = parseInt(color.substring(4, 6), 16) / 255;
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  if (max === min) return { h: 0, s: 0, l };
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h: number;
+  if (max === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+  else if (max === g) h = ((b - r) / d + 2) / 6;
+  else h = ((r - g) / d + 4) / 6;
+  return { h, s, l };
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  const hue2rgb = (p: number, q: number, t: number): number => {
+    if (t < 0) t += 1;
+    if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  };
+  let r: number, g: number, b: number;
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1 / 3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1 / 3);
   }
-  return mode === "light" ? "#2563eb" : "#38bdf8";
+  const toHex = (v: number) =>
+    Math.round(Math.max(0, Math.min(1, v)) * 255)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+}
+
+/**
+ * Walk the accent's HSL lightness (hue/saturation fixed) until it clears the
+ * contrast target against the surface: darker in light mode, lighter in dark.
+ * Always solvable — black hits ~12.6:1 on the light surface, white ~18:1 on the
+ * dark anchor. Returns the minimal-change hex.
+ */
+export function ensureAccentContrast(
+  accent: string,
+  mode: ThemeMode,
+  target: number = mode === "light" ? LIGHT_ACCENT_TARGET : DARK_ACCENT_TARGET,
+): string {
+  const surface = mode === "light" ? LIGHT_WORST_SURFACE : DARK_SURFACE_ANCHOR;
+  if (contrastRatio(accent, surface) >= target) return accent;
+  const { h, s, l } = hexToHsl(accent);
+  // Binary search the lightness bound that first meets the target. Contrast is
+  // monotonic in lightness on each side of the surface's luminance.
+  let lo = mode === "light" ? 0 : l;
+  let hi = mode === "light" ? l : 1;
+  let best = mode === "light" ? "#000000" : "#ffffff";
+  for (let i = 0; i < 24; i++) {
+    const mid = (lo + hi) / 2;
+    const candidate = hslToHex(h, s, mid);
+    if (contrastRatio(candidate, surface) >= target) {
+      best = candidate;
+      // Meets target — try to stay closer to the original lightness.
+      if (mode === "light") lo = mid;
+      else hi = mid;
+    } else {
+      if (mode === "light") hi = mid;
+      else lo = mid;
+    }
+  }
+  return best;
+}
+
+function isValidHex(color?: string): color is string {
+  return !!color && /^#[0-9a-fA-F]{6}$/.test(color);
+}
+
+function fallbackAccent(mode: ThemeMode, accentColor?: string): string {
+  const base = isValidHex(accentColor)
+    ? accentColor
+    : mode === "light"
+      ? "#2563eb"
+      : "#38bdf8";
+  return ensureAccentContrast(base, mode);
 }
 
 /**
@@ -427,7 +548,13 @@ export function applyThemeFromColors(
     `color-mix(in srgb, ${matteTheme.accent} 80%, white)`
   );
   root.style.setProperty("--theme-accent-border", matteTheme.stroke);
-  root.style.setProperty("--theme-accent-text", matteTheme.accent);
+  // AAA text variant: same as the accent in light mode (already floored at 7:1);
+  // lifted further in dark mode, where the base accent stops at the 4.5:1
+  // fill-compatible ceiling.
+  root.style.setProperty(
+    "--theme-accent-text",
+    ensureAccentContrast(matteTheme.accent, mode, ACCENT_TEXT_TARGET)
+  );
   root.style.setProperty("--theme-input-bg", matteTheme.cardBg);
   root.style.setProperty("--theme-hover-bg", matteTheme.cardHoverBg);
   root.style.setProperty(
