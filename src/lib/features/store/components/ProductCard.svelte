@@ -29,7 +29,8 @@
     productName={product.name}
     morphId={product.id}
     coverSequence={product.coverSequence}
-    coverSequences={product.coverSequences}
+    coverCards={product.coverCards}
+    deckId={product.deckId}
   />
   <div class="card-info">
     <h3 class="card-name">

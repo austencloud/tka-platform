@@ -8,7 +8,7 @@
   } from "../transitions/shop-morph";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import DeckFanCover from "./DeckFanCover.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { CoverCard } from "../domain/models/product";
 
   interface Props {
     coverImageUrl?: string;
@@ -19,12 +19,14 @@
     /** Representative deck sequence. When set (and no cover image), the card shows
         its tip-path mandala as a content-derived cover instead of a bare icon. */
     coverSequence?: { steps: unknown[] };
-    /** Curated cover sequences: rendered as a fan of REAL ChoreoCards. Highest-
+    /** Curated cover cards: rendered as a fan of REAL printed fronts. Highest-
         priority content-derived cover (beats the mandala). */
-    coverSequences?: SequenceData[];
+    coverCards?: CoverCard[];
+    /** QR attribution for the print-path cover renders. */
+    deckId?: string;
   }
 
-  let { coverImageUrl, productName, morphId, coverSequence, coverSequences }: Props = $props();
+  let { coverImageUrl, productName, morphId, coverSequence, coverCards, deckId }: Props = $props();
 
   let containerEl: HTMLDivElement | undefined = $state();
   // Drives the mandala's render size so it fills the card width responsively.
@@ -49,9 +51,14 @@
       class="cover-image"
       loading="lazy"
     />
-  {:else if coverSequences && coverSequences.length > 0}
+  {:else if coverCards && coverCards.length > 0}
     <div class="fan-cover" aria-label="{productName} sample cards">
-      <DeckFanCover sequences={coverSequences} cardWidth={Math.max(96, Math.round((boxW || 280) * 0.34))} />
+      <DeckFanCover
+        cards={coverCards}
+        {deckId}
+        deckName={productName}
+        cardWidth={Math.max(96, Math.round((boxW || 280) * 0.34))}
+      />
     </div>
   {:else if coverSequence}
     <div class="mandala-cover" aria-label="{productName} tip-path mandala">

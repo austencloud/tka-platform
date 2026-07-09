@@ -22,21 +22,29 @@
   // at the moment SvelteKit snapshots the new page. The first visit still fetches.
   state.loadProducts(showDrafts);
 
-  // Backing SKUs of the configurable deck listing. They surface as ONE tile
-  // (the configurator entry), never as a wall of near-identical products.
+  // Backing SKUs of the configurable listings. Each family surfaces as ONE tile
+  // (a configurator entry), never as a wall of near-identical products.
   const deckSkus = $derived(
     state.products.filter((p) => p.listing === "loop-deck" && p.status === "active")
+  );
+  const tndSkus = $derived(
+    state.products.filter((p) => p.listing === "tnd-trilogy" && p.status === "active")
   );
   const deckPrice = $derived(
     deckSkus.length ? `$${(Math.min(...deckSkus.map((p) => p.price)) / 100).toFixed(0)}` : "$25"
   );
-  // Hero fan: the first cover of each flavor — a varied hand, one card per family.
-  const heroSequences = $derived(
-    deckSkus
-      .map((p) => p.coverSequences?.[0])
-      .filter((s): s is NonNullable<typeof s> => s != null)
+  const tndPrice = $derived(
+    tndSkus.length ? `$${(Math.min(...tndSkus.map((p) => p.price)) / 100).toFixed(0)}` : "$30"
   );
-  const tileSequences = $derived(deckSkus[0]?.coverSequences ?? []);
+  // Hero fan: the first cover of each LOOP flavor — a varied hand, one card per family.
+  const heroCards = $derived(
+    deckSkus
+      .map((p) => p.coverCards?.[0])
+      .filter((c): c is NonNullable<typeof c> => c != null)
+  );
+  const tileCards = $derived(deckSkus[0]?.coverCards ?? []);
+  // TnD tile fan: one card per element family from the trilogy's first volume.
+  const tndTileCards = $derived(tndSkus[0]?.coverCards ?? []);
   const allComponents = $derived([
     ...new Set(deckSkus.flatMap((p) => p.loopComponents ?? [])),
   ]);
@@ -63,8 +71,8 @@
     <!-- ============ HERO: the product IS the art ============ -->
     <section class="hero">
       <div class="hero-fan" aria-hidden="true">
-        {#if heroSequences.length}
-          <DeckFanCover sequences={heroSequences} cardWidth={148} maxCardWidth={250} />
+        {#if heroCards.length}
+          <DeckFanCover cards={heroCards} deckName="TKA Shop" cardWidth={148} maxCardWidth={250} />
         {/if}
       </div>
       <h1>Choreography you can shuffle</h1>
@@ -80,32 +88,78 @@
     {#if state.error}
       <div class="error">{state.error}</div>
     {:else}
-      <!-- ============ THE DECK: one listing, seven flavors ============ -->
-      {#if deckSkus.length > 0}
+      <!-- ============ THE TWO DECK LINES ============ -->
+      {#if deckSkus.length > 0 || tndSkus.length > 0}
         <section class="deck-listing" id="deck">
-          <a class="deck-tile" href="/shop/loop-deck">
-            <div class="deck-fan-box">
-              <DeckFanCover sequences={tileSequences} cardWidth={132} maxCardWidth={235} />
-            </div>
-            <div class="deck-info">
-              <span class="eyebrow">The deck</span>
-              <h2>LOOP Deck</h2>
-              <p class="deck-meta">
-                {deckSkus.length} flavors · 54 cards each · poker size
-              </p>
-              <LoopChips components={allComponents} />
-              <p class="deck-desc">
-                Pick a transformation family. Each deck is a curated 54-card slice
-                of it, every sequence ending exactly where it began.
-              </p>
-              <div class="deck-buy-row">
-                <span class="deck-price">{deckPrice}</span>
-                <span class="deck-cta">
-                  Build your deck <i class="fas fa-arrow-right" aria-hidden="true"></i>
-                </span>
+          {#if deckSkus.length > 0}
+            <a class="deck-tile" href="/shop/loop-deck">
+              <div class="deck-fan-box">
+                <DeckFanCover
+                  cards={tileCards}
+                  deckId={deckSkus[0]?.deckId}
+                  deckName="LOOP Deck"
+                  cardWidth={132}
+                  maxCardWidth={235}
+                />
               </div>
-            </div>
-          </a>
+              <div class="deck-info">
+                <span class="eyebrow">The deck</span>
+                <h2>LOOP Deck</h2>
+                <p class="deck-meta">
+                  {deckSkus.length} flavors · 54 cards each · poker size
+                </p>
+                <LoopChips components={allComponents} />
+                <p class="deck-desc">
+                  Pick a transformation family. Each deck is a curated 54-card slice
+                  of it, every sequence ending exactly where it began.
+                </p>
+                <div class="deck-buy-row">
+                  <span class="deck-price">{deckPrice}</span>
+                  <span class="deck-cta">
+                    Build your deck <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                  </span>
+                </div>
+              </div>
+            </a>
+          {/if}
+
+          {#if tndSkus.length > 0}
+            <a class="deck-tile" href="/shop/tnd-trilogy">
+              <div class="deck-fan-box">
+                <DeckFanCover
+                  cards={tndTileCards}
+                  deckName="Timing & Direction"
+                  cardWidth={132}
+                  maxCardWidth={235}
+                />
+              </div>
+              <div class="deck-info">
+                <span class="eyebrow">The trilogy</span>
+                <h2>Timing &amp; Direction</h2>
+                <p class="deck-meta">
+                  {tndSkus.length} volumes · color-coded by element · poker size
+                </p>
+                <span class="element-swatches" aria-hidden="true">
+                  {#each tndTileCards.slice(0, 6) as card (card.footerCenter ?? card.accentColor)}
+                    {#if card.accentColor}
+                      <span class="swatch" style:--c={card.accentColor}></span>
+                    {/if}
+                  {/each}
+                </span>
+                <p class="deck-desc">
+                  The teaching line: base motions, then one-turn, then half-turn
+                  variations. Every card wears its timing and direction family's
+                  element color.
+                </p>
+                <div class="deck-buy-row">
+                  <span class="deck-price">{tndPrice}</span>
+                  <span class="deck-cta">
+                    Pick a volume <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                  </span>
+                </div>
+              </div>
+            </a>
+          {/if}
         </section>
       {/if}
 
@@ -245,9 +299,31 @@
     transform: translateY(-2px);
   }
 
-  /* ---------- the one deck listing ---------- */
+  /* ---------- the deck-line listings ---------- */
   .deck-listing {
     margin-bottom: 72px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  /* Two lines sit side by side once there's room for both. */
+  @media (min-width: 1500px) {
+    .deck-listing {
+      grid-template-columns: repeat(auto-fit, minmax(680px, 1fr));
+    }
+  }
+
+  .element-swatches {
+    display: inline-flex;
+    gap: 6px;
+  }
+  .swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--c);
+    border: 1px solid rgba(255, 255, 255, 0.35);
   }
 
   .deck-tile {

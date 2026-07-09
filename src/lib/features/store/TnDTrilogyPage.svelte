@@ -1,10 +1,10 @@
-<!-- src/lib/features/store/LoopDeckConfiguratorPage.svelte -->
+<!-- src/lib/features/store/TnDTrilogyPage.svelte -->
 <!--
-  The LOOP Deck configurator: ONE listing over the per-flavor backing SKUs
-  (products with listing === "loop-deck"). Buyer picks a flavor (exactly one
-  active), sees the real cards fan + copy swap, and buys the resolved SKU.
-  Size and bundle dials render today (poker / deck-only live; tarot and
-  +guide visible but disabled until they exist).
+  Timing & Direction trilogy: ONE listing over the TKA 1/2/3 volume SKUs
+  (products with listing === "tnd-trilogy"). Buyer picks a volume, sees the
+  real color-coded printed cards fan + element legend, and buys the resolved
+  SKU. The all-three package renders as a visible option, gated until it has a
+  price.
 -->
 <script lang="ts">
   import { getMerchCheckoutCreator } from "$lib/features/store/get-merch-checkout-creator";
@@ -12,10 +12,9 @@
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
   import DeckFanCover from "./components/DeckFanCover.svelte";
-  import LoopChips from "./components/LoopChips.svelte";
   import BuyButton from "./components/BuyButton.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
 
   // Named `store`, not `state`: a local binding called `state` collides with the
   // $state rune (svelte store_rune_conflict).
@@ -23,39 +22,39 @@
   setStoreContext({ state: store });
   store.loadProducts(false);
 
-  const flavors = $derived(
+  const volumes = $derived(
     store.products
-      .filter((p) => p.listing === "loop-deck" && p.status === "active")
+      .filter((p) => p.listing === "tnd-trilogy" && p.status === "active")
       .sort((a, b) => a.sortOrder - b.sortOrder)
   );
 
   let selectedId = $state<string | null>(null);
   const selected = $derived(
-    flavors.find((p) => p.id === selectedId) ?? flavors[0] ?? null
+    volumes.find((p) => p.id === selectedId) ?? volumes[0] ?? null
   );
-
-  // Short flavor names for the picker (the SKU name repeats "LOOP Deck").
-  const flavorName = (name: string) => name.replace(/\s*LOOP Deck$/i, "");
 
   const price = $derived(
-    selected ? `$${(selected.price / 100).toFixed(0)}` : "$25"
+    selected ? `$${(selected.price / 100).toFixed(0)}` : "$30"
   );
 
-  let size = $state<"poker" | "tarot">("poker");
-  let bundle = $state<"deck" | "bundle">("deck");
+  // "TKA 1: Learning Letters" -> ["TKA 1", "Learning Letters"]
+  const nameParts = (name: string): [string, string] => {
+    const i = name.indexOf(":");
+    return i > 0 ? [name.slice(0, i), name.slice(i + 1).trim()] : [name, ""];
+  };
 
   // Roving radiogroup: arrows move selection, exactly one option tabbable.
   function onPickerKeydown(e: KeyboardEvent) {
-    if (!selected || flavors.length === 0) return;
-    const idx = flavors.findIndex((f) => f.id === selected.id);
+    if (!selected || volumes.length === 0) return;
+    const idx = volumes.findIndex((v) => v.id === selected.id);
     let next = -1;
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (idx + 1) % flavors.length;
-    if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (idx - 1 + flavors.length) % flavors.length;
-    const target = next >= 0 ? flavors[next] : undefined;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (idx + 1) % volumes.length;
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (idx - 1 + volumes.length) % volumes.length;
+    const target = next >= 0 ? volumes[next] : undefined;
     if (!target) return;
     e.preventDefault();
     selectedId = target.id;
-    document.getElementById(`flavor-${target.id}`)?.focus();
+    document.getElementById(`volume-${target.id}`)?.focus();
   }
 </script>
 
@@ -67,8 +66,8 @@
 
     {#if store.error}
       <div class="error">{store.error}</div>
-    {:else if store.isLoading && flavors.length === 0}
-      <div class="loading">Loading the deck...</div>
+    {:else if store.isLoading && volumes.length === 0}
+      <div class="loading">Loading the trilogy...</div>
     {:else if selected}
       <div class="config-layout">
         <!-- ============ preview column ============ -->
@@ -78,7 +77,6 @@
               <div class="preview-inner">
                 <DeckFanCover
                   cards={selected.coverCards ?? []}
-                  deckId={selected.deckId}
                   deckName={selected.name}
                   cardWidth={168}
                   maxCardWidth={280}
@@ -87,61 +85,55 @@
               </div>
             </Crossfade>
           </div>
+
+          <div class="legend" aria-label="Element color legend">
+            {#each TND_ELEMENTS as el (el.familyId)}
+              <span class="legend-item">
+                <span class="legend-dot" style:--c={el.accentColor}></span>
+                <span>{el.name}</span>
+              </span>
+            {/each}
+          </div>
         </div>
 
         <!-- ============ choices column ============ -->
         <div class="info-column">
-          <span class="eyebrow">The deck</span>
-          <h1>LOOP Deck</h1>
-          <p class="meta">54 cards · eight counts each · every sequence loops</p>
+          <span class="eyebrow">The trilogy</span>
+          <h1>Timing &amp; Direction</h1>
+          <p class="meta">
+            Three volumes, one system: every card color-coded by its timing and
+            direction family.
+          </p>
 
           <div class="field">
-            <span class="field-label" id="flavor-label">Flavor</span>
-            <div class="flavor-grid" role="radiogroup" aria-labelledby="flavor-label">
-              {#each flavors as flavor (flavor.id)}
-                {@const active = flavor.id === selected.id}
+            <span class="field-label" id="volume-label">Volume</span>
+            <div class="volume-grid" role="radiogroup" aria-labelledby="volume-label">
+              {#each volumes as volume (volume.id)}
+                {@const active = volume.id === selected.id}
+                {@const [num, title] = nameParts(volume.name)}
                 <button
                   type="button"
-                  id="flavor-{flavor.id}"
-                  class="flavor-option"
+                  id="volume-{volume.id}"
+                  class="volume-option"
                   class:active
                   role="radio"
                   aria-checked={active}
                   tabindex={active ? 0 : -1}
-                  onclick={() => (selectedId = flavor.id)}
+                  onclick={() => (selectedId = volume.id)}
                   onkeydown={onPickerKeydown}
                 >
-                  <span class="flavor-name">{flavorName(flavor.name)}</span>
-                  <LoopChips components={flavor.loopComponents ?? []} size="sm" />
+                  <span class="volume-num">{num}</span>
+                  <span class="volume-title">{title}</span>
+                  <span class="volume-meta">{volume.cardCount} cards · ${(volume.price / 100).toFixed(0)}</span>
                 </button>
               {/each}
+              <!-- Package option: visible so the offer is legible, gated until priced. -->
+              <div class="volume-option package" aria-disabled="true">
+                <span class="volume-num">All three</span>
+                <span class="volume-title">The complete trilogy</span>
+                <span class="volume-meta">bundle pricing coming soon</span>
+              </div>
             </div>
-          </div>
-
-          <div class="field">
-            <span class="field-label" id="size-label">Size</span>
-            <SegmentedControl
-              options={[
-                { value: "poker", label: 'Poker · 2.5" × 3.5"' },
-                { value: "tarot", label: "Tarot · coming soon", disabled: true },
-              ]}
-              value={size}
-              onchange={(v) => (size = v)}
-              color="accent"
-            />
-          </div>
-
-          <div class="field">
-            <span class="field-label" id="bundle-label">Bundle</span>
-            <SegmentedControl
-              options={[
-                { value: "deck", label: "Deck only" },
-                { value: "bundle", label: "+ printed guide · coming soon", disabled: true },
-              ]}
-              value={bundle}
-              onchange={(v) => (bundle = v)}
-              color="accent"
-            />
           </div>
 
           <p class="price">{price}</p>
@@ -152,13 +144,13 @@
           {/if}
 
           <ul class="assurance">
-            <li><i class="fas fa-box-open" aria-hidden="true"></i> Explainer card, laminated quick-reference sheet, and deck box included</li>
+            <li><i class="fas fa-box-open" aria-hidden="true"></i> Free laminated quick-reference sheet and deck box included</li>
             <li><i class="fas fa-hand-holding-heart" aria-hidden="true"></i> Beta run: printed and cut by hand in Chicago, small batches</li>
           </ul>
         </div>
       </div>
     {:else}
-      <div class="error">The deck isn't available right now.</div>
+      <div class="error">The trilogy isn't available right now.</div>
     {/if}
   </main>
 </div>
@@ -172,8 +164,6 @@
   }
 
   .config-content {
-    /* Wide fluid band: the preview fan auto-scales into the extra room on 4K
-       instead of the page pinning to a narrow column. */
     max-width: min(1720px, 92vw);
     margin: 0 auto;
     padding: 40px 24px 80px;
@@ -223,8 +213,6 @@
       rgba(255, 255, 255, 0.015)
     );
     padding: clamp(16px, 2.5vw, 32px);
-    /* Tall enough for the fan + the longest description: flavor swaps crossfade
-       in place without resizing the box (no-layout-shift). */
     min-height: 430px;
   }
 
@@ -242,6 +230,29 @@
     text-align: center;
     max-width: 56ch;
     align-self: center;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px 16px;
+    margin-top: 14px;
+  }
+  .legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--c);
+    border: 1px solid rgba(255, 255, 255, 0.35);
   }
 
   /* ---------- info ---------- */
@@ -286,17 +297,17 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
   }
 
-  .flavor-grid {
+  .volume-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 10px;
   }
 
-  .flavor-option {
+  .volume-option {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
+    gap: 4px;
     min-height: var(--min-touch-target, 44px);
     padding: 12px 14px;
     border-radius: 12px;
@@ -306,22 +317,39 @@
     cursor: pointer;
     text-align: left;
     transition: border-color 0.15s ease, background 0.15s ease;
+    font-family: inherit;
   }
-  .flavor-option:hover {
+  .volume-option:hover:not(.package) {
     border-color: var(--theme-border-strong, rgba(255, 255, 255, 0.3));
   }
-  .flavor-option.active {
+  .volume-option.active {
     border-color: #8b6cff;
     background: rgba(139, 108, 255, 0.12);
   }
-  .flavor-option:focus-visible {
+  .volume-option:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 2px;
   }
+  .volume-option.package {
+    opacity: 0.55;
+    cursor: default;
+  }
 
-  .flavor-name {
+  .volume-num {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #b8a6ff;
+  }
+  .volume-title {
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
+  }
+  .volume-meta {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-variant-numeric: tabular-nums;
   }
 
   .price {
@@ -370,7 +398,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .back-button,
-    .flavor-option {
+    .volume-option {
       transition: none;
     }
   }

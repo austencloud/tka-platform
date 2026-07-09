@@ -65,7 +65,8 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
             productName={product.name}
             morphId={product.id}
             coverSequence={product.coverSequence}
-            coverSequences={product.coverSequences}
+            coverCards={product.coverCards}
+            deckId={product.deckId}
           />
         </div>
 

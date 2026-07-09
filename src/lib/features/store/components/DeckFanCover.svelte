@@ -1,24 +1,26 @@
 <!--
-  DeckFanCover — a fanned hand of REAL ChoreoCards (printed 5:7 light look) used
-  as deck cover art in the shop grid, the /shop hero, and the configurator.
-  Same treatment verified on /test/shop-covers: fixed tilts, overlap, hover
-  spread + per-card lift.
+  DeckFanCover — a fanned hand of REAL printed card fronts, rendered through
+  the print pipeline (PrintCardRenderer: canonical locked visibility, MPC
+  stripe frame, accent coloring), used as deck cover art in the shop grid, the
+  /shop hero, and the configurators. What the fan shows IS what prints.
 
-  Decorative by design: ChoreoCard's root is a <button>, and covers render
-  inside links/option buttons, so the whole fan is `inert` + aria-hidden. The
-  host element carries the accessible label.
+  Decorative by design: covers render inside links/option buttons, so the fan
+  is `inert` + aria-hidden; the host element carries the accessible label.
 
-  Card count responds to container width (3–6), capped by maxCards.
+  Card count responds to container width (3–6), capped by maxCards. Cards
+  auto-scale UP from cardWidth to fill the container (ultrawide screens get a
+  properly big fan), capped by maxCardWidth.
 -->
 <script lang="ts">
-  import ChoreoCard from "$lib/features/choreo-card/components/ChoreoCard.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { CoverCard } from "../domain/models/product";
+  import { renderCoverFront } from "../services/cover-front-renderer";
 
   interface Props {
-    sequences: readonly SequenceData[];
-    /** MINIMUM rest width of one card, px. Cards auto-scale UP from here to fill
-        the container (ultrawide screens get a properly big fan), capped by
-        maxCardWidth. Fan height follows (5:7). */
+    cards: readonly CoverCard[];
+    /** QR attribution, same as the print path. */
+    deckId?: string;
+    deckName?: string;
+    /** MINIMUM rest width of one card, px. */
     cardWidth?: number;
     /** Auto-scale ceiling. Defaults to 1.8x cardWidth. */
     maxCardWidth?: number;
@@ -28,7 +30,9 @@
     interactive?: boolean;
   }
   let {
-    sequences,
+    cards,
+    deckId,
+    deckName,
     cardWidth = 122,
     maxCardWidth,
     maxCards = 6,
@@ -47,7 +51,7 @@
     if (w < 520 * unit) return 5;
     return 6;
   }
-  const shown = $derived(sequences.slice(0, Math.max(1, Math.min(maxCards, countFor(boxW)))));
+  const shown = $derived(cards.slice(0, Math.max(1, Math.min(maxCards, countFor(boxW)))));
   const tilt = (i: number, n: number) => (n <= 1 ? 0 : -12 + (24 * i) / (n - 1));
 
   // Auto-scale: grow cards to fill the measured container. Sized against the
@@ -61,6 +65,23 @@
         )
       : cardWidth
   );
+
+  // key -> object URL, filled as the print renders land. Session-cached in the
+  // service, so revisits paint instantly.
+  let urls = $state<Record<string, string>>({});
+  const cardKey = (c: CoverCard) => c.sequence?.id ?? c.sequence?.word ?? JSON.stringify(c).slice(0, 40);
+
+  $effect(() => {
+    for (const c of shown) {
+      const k = cardKey(c);
+      if (urls[k]) continue;
+      renderCoverFront(c, { deckId, deckName })
+        .then((url) => {
+          urls[k] = url;
+        })
+        .catch((e) => console.error("[DeckFanCover] cover render failed:", e));
+    }
+  });
 </script>
 
 <div
@@ -72,11 +93,15 @@
   style:--overlap="{-Math.round(cardW * 0.52)}px"
   style:--overlap-open="{-Math.round(cardW * 0.18)}px"
 >
-  {#each shown as seq, i (seq.id)}
+  {#each shown as card, i (cardKey(card))}
     <div class="fan-slot">
       <div class="fan-tilt" style:transform="rotate({tilt(i, shown.length)}deg)">
         <div class="card-box" style:width="{cardW}px">
-          <ChoreoCard sequence={seq} cardMode showQRCodes={false} customNotesText="" />
+          {#if urls[cardKey(card)]}
+            <img class="card-img" src={urls[cardKey(card)]} alt="" draggable="false" />
+          {:else}
+            <div class="card-pending"></div>
+          {/if}
         </div>
       </div>
     </div>
@@ -113,14 +138,50 @@
     transform-origin: bottom center;
   }
 
-  /* Real printed card: portrait poker 5:7. The card keeps its OWN border (no
-     clip), and the wordcard render is contained, never stretched. */
+  /* Trimmed-card box: the render is the full MPC canvas WITH bleed; cover-fit
+     into the 5:7 box crops the bleed the way the guillotine does, so the fan
+     shows the cut card. */
   .card-box {
     aspect-ratio: 5 / 7;
+    border-radius: 6px;
+    overflow: hidden;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+    background: #f4f4f4;
   }
-  .card-box :global(.prop-thumbnail[data-variant="wordcard"] img) {
-    object-fit: contain;
+
+  .card-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    animation: card-in 220ms ease both;
+  }
+
+  @keyframes card-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Reserved blank card while the print render lands — same box, no shift. */
+  .card-pending {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(110deg, #ececf2 40%, #f8f8fc 50%, #ececf2 60%);
+    background-size: 220% 100%;
+    animation: shimmer 1.4s linear infinite;
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: 130% 0;
+    }
+    to {
+      background-position: -90% 0;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -132,6 +193,12 @@
     }
     .fan.interactive .fan-slot:hover {
       transform: none;
+    }
+    .card-img {
+      animation: none;
+    }
+    .card-pending {
+      animation: none;
     }
   }
 </style>

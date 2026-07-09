@@ -10,6 +10,21 @@ export type ProductType =
 
 export type ProductStatus = "active" | "draft" | "sold-out";
 
+/** One cover card: the sequence plus the frame styling the printed card gets
+ *  (TnD element accent for trilogy decks, LOOP flavor color for LOOP decks). */
+export interface CoverCard {
+  readonly sequence: SequenceData;
+  /** Frame accent color. Neutral print gray when absent. */
+  readonly accentColor?: string;
+  readonly darkComplement?: string;
+  /** Card interior tint opacity (TnD elements carry a tuned value). */
+  readonly tintOpacity?: number;
+  /** Footer element icon (TnD decks). */
+  readonly iconPath?: string;
+  /** Footer center label (e.g. "Split-Same" or "Rotated LOOP"). */
+  readonly footerCenter?: string;
+}
+
 export interface Product {
   readonly id: string;
   readonly name: string;
@@ -27,9 +42,10 @@ export interface Product {
   /** A representative sequence (steps) from the deck, embedded so the grid card
    *  renders its tip-path mandala cover without a second Firestore read. Decks only. */
   readonly coverSequence?: { steps: unknown[] };
-  /** Curated cover sequences (full docs) rendered as a fan of real ChoreoCards.
-   *  Takes precedence over coverSequence. Decks only. */
-  readonly coverSequences?: SequenceData[];
+  /** Curated cover cards (full sequence doc + frame accent/footer), rendered
+   *  through the REAL print pipeline as a fan. Takes precedence over
+   *  coverSequence. Decks only. */
+  readonly coverCards?: CoverCard[];
   /** LOOP component ids for this deck's flavor (enum string values, e.g.
    *  ["mirrored","swapped"]) — drives the color-coded chips. */
   readonly loopComponents?: string[];
