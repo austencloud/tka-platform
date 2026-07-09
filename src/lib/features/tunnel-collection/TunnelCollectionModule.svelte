@@ -756,8 +756,6 @@
       padding: 56px 72px;
     }
     .gallery-head {
-      max-width: 2000px;
-      margin-inline: auto;
       margin-bottom: 28px;
     }
     .gallery-title {
@@ -770,8 +768,6 @@
     .gallery-grid {
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 28px;
-      max-width: 2000px;
-      margin-inline: auto;
     }
     .gallery-card {
       gap: 14px;
