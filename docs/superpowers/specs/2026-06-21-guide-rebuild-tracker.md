@@ -73,7 +73,7 @@ Old guide = 47 pages. Mapping → our 3 chapters. Status: ⬜ todo · 🔧 in pr
 | 14 | Type 4/5/6 Dash/Dual-Dash/Static | `_pages/Type456Page` (`hm-type56`) | 🔧 |
 | 15 | Staff Positions (12) | `_pages/StaffPositionsPage` (body p9) | 🔧 |
 | 16 | Staff Motions | `_pages/StaffMotionsPage` (body p10) | 🔧 |
-| 17 | Negative Space / Body Turns | ch10/NegativeSpace | ⬜ |
+| 17 | Negative Space / Body Turns | `_pages/NegativeSpacePage` (body p11) | 🔧 |
 | 18 | 1.1 Letters (title) | letters | ⬜ |
 | 19 | Double-Staff Codex Type 1-2 (30) | ch11/CodexType12 | ⬜ |
 | 20 | Codex Type 3-6 (17) | ch11/CodexType36 | ⬜ |
@@ -177,6 +177,20 @@ LOOP terminology, per existing section filenames already named Loops*.)
   svelte-check clean (1 pre-existing store error, not mine), screenshot
   row-by-row vs artboard (thumb marks, halfway poses, arrow sweeps). Awaiting
   Austen's eyeball before ✅.
+
+- 2026-07-09: NEGATIVE SPACE / BODY TURNS page (body p11, `negative-space`)
+  built — `_pages/NegativeSpacePage.svelte`, artboard "1.0 - Prerequisites".
+  Two REAL single-staff sequences, Start + 4 steps, fully system-rendered
+  (StepNumber Start/1–4, arc/hook arrows, thumb crossbar from orientations):
+  360° Isolation = 4×PRO S→E→N→W→S ccw, thumb in throughout; 4-Petal Antispin
+  = same handpath, 4×ANTI prop-CW, thumb alternating in/out (orientation
+  algebra). Companion click-to-animate deliberately NOT wired — the reader
+  companion is hand-mode only today; staff playback is a deferred unlock
+  (grow-on-demand). "VTG: 1:1" italic tag beside the title. Geometry:
+  contiguous 99.8pt boxes, iso strip (52.2, 240.5), anti strip (48.3, 522.4),
+  hairlines y 189.6/467.2; text at PROOF_TEXT coords (already "step" not
+  "beat"). Verified: svelte-check 0/0, screenshot box-by-box vs artboard (both
+  strips' orientations + arrows). Awaiting Austen's eyeball before ✅.
 
 ## Conventions (facelift — supersede the old guide)
 
