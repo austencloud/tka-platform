@@ -11,6 +11,7 @@
    * touching nav or companion (see docs/superpowers/specs/2026-07-07-guide-reader-design.md).
    */
   import { onMount, flushSync } from "svelte";
+  import { replaceState } from "$app/navigation";
   import "../_styles/guide.css";
   import "../_styles/guide-print.css";
   import {
@@ -29,6 +30,12 @@
   import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
   import type { GuidePageMeta } from "../_data/guide-manifest";
   import { READER_PAGE_COUNT } from "../_data/guide-reader-nav";
+  import {
+    GUIDE_READER_BASE,
+    indexForSlug,
+    slugForIndex,
+    slugFromPath,
+  } from "../_data/guide-page-links";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { BUILT } from "../_data/built-pages";
 
@@ -87,7 +94,17 @@
   // attribute, which would wipe an imperative visibility we set on the element.
   // Initialized hidden when there's an offset to restore so the FIRST paint is
   // already blanked (SSR-safe: savedScrollTarget() catches missing sessionStorage).
-  let restoring = $state(savedScrollTarget() > 0);
+  //
+  // Deep link: /learn/guide/<slug> parks on that page and takes precedence over
+  // the saved scroll offset (spec: 2026-07-09-guide-deep-links-design.md).
+  const deepLinkIndex: number | null =
+    typeof window === "undefined"
+      ? null
+      : (() => {
+          const slug = slugFromPath(window.location.pathname);
+          return slug ? indexForSlug(slug) : null;
+        })();
+  let restoring = $state(deepLinkIndex !== null || savedScrollTarget() > 0);
   function onScroll() {
     if (scrollRaf) return;
     scrollRaf = requestAnimationFrame(() => {
@@ -132,6 +149,28 @@
   }
   setGuideSequenceClick(handleSequenceClick);
 
+  // Live URL sync: the address bar always carries the active page's deep link
+  // (replaceState — no history spam; copying the URL bar IS the share
+  // affordance, like the sequence ?open= sync). Gated to /learn/guide paths so
+  // the test harness and other hosts never rewrite their URLs.
+  $effect(() => {
+    const i = activeIndex;
+    if (restoring) return;
+    if (typeof window === "undefined") return;
+    if (!window.location.pathname.startsWith(GUIDE_READER_BASE)) return;
+    const slug = slugForIndex(i);
+    if (!slug) return;
+    const t = setTimeout(() => {
+      if (window.location.pathname !== `${GUIDE_READER_BASE}/${slug}`) {
+        replaceState(
+          `${GUIDE_READER_BASE}/${slug}${window.location.search}${window.location.hash}`,
+          {}
+        );
+      }
+    }, 200);
+    return () => clearTimeout(t);
+  });
+
   // Fit each page FULLY inside the pane (whole page visible — no per-page
   // scrolling); the pages then stack and you scroll between them, like a PDF
   // reader's continuous view. 40/32 = the reader-doc padding (20px / 16px).
@@ -153,12 +192,10 @@
   }
 
   onMount(() => {
-    const target = savedScrollTarget();
-
     // Apply the fitted scale, then flush it to the DOM synchronously so the
     // pages take their real heights before we measure/scroll — the doc is then
-    // tall enough that the very first park lands at the saved offset, in this
-    // same (pre-paint) tick. `restoring` keeps the doc hidden until we land.
+    // tall enough that the very first park lands at the target, in this same
+    // (pre-paint) tick. `restoring` keeps the doc hidden until we land.
     fit();
     flushSync();
 
@@ -166,12 +203,33 @@
       restoring = false;
     };
 
-    if (target > 0 && docWrap) {
+    // Where to park: a /learn/guide/<slug> deep link beats the saved scroll
+    // offset. The deep-link target is element-measured (recomputed each attempt
+    // while layout settles); the saved offset is a fixed number.
+    const fixedTarget = savedScrollTarget();
+    const getTarget: (() => number | null) | null =
+      deepLinkIndex !== null
+        ? () => {
+            if (!docWrap) return null;
+            const el = docWrap.querySelectorAll<HTMLElement>(".reader-page")[deepLinkIndex];
+            if (!el) return null;
+            const delta = el.getBoundingClientRect().top - docWrap.getBoundingClientRect().top;
+            return docWrap.scrollTop + delta;
+          }
+        : fixedTarget > 0
+          ? () => fixedTarget
+          : null;
+
+    if (deepLinkIndex !== null) activeIndex = deepLinkIndex; // nav highlight up front
+
+    if (getTarget && docWrap) {
       let attempts = 0;
       let lastHeight = -1;
       let stableFrames = 0;
       const park = (): void => {
         if (!docWrap) return reveal();
+        const target = getTarget();
+        if (target === null) return reveal();
         const scrollHeight = docWrap.scrollHeight;
         // behavior:"instant" — NOT "auto". "auto" defers to the doc's CSS
         // scroll-behavior:smooth, which animates every scrollTo and is exactly
@@ -179,13 +237,13 @@
         docWrap.scrollTo({ top: target, behavior: "instant" });
         attempts += 1;
 
-        // Landed on the saved offset — reveal.
+        // Landed on the target — reveal.
         if (Math.abs(docWrap.scrollTop - target) <= 2) return reveal();
 
         // If the scale is still settling the height keeps growing; retry until
         // we reach the target. Only once the height holds steady across a few
         // frames AND still can't reach the target do we accept the clamp
-        // (content is genuinely shorter than the saved offset now).
+        // (content is genuinely shorter than the target now).
         if (scrollHeight === lastHeight) stableFrames += 1;
         else {
           stableFrames = 0;

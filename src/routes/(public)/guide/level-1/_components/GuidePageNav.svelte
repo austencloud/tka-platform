@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Component } from "svelte";
   import { buildReaderNav } from "../_data/guide-reader-nav";
+  import { hrefForIndex } from "../_data/guide-page-links";
 
   let {
     built,
@@ -13,6 +14,14 @@
   } = $props();
 
   const rows = $derived(buildReaderNav(built));
+
+  // Rows are REAL links (right-click → Copy Link Address, middle-click → new
+  // tab); a plain left click is intercepted for the smooth in-pane scroll.
+  function navClick(e: MouseEvent, index: number) {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    onSelect(index);
+  }
 </script>
 
 <nav class="reader-nav" aria-label="Guide pages">
@@ -20,24 +29,26 @@
     {#if row.kind === "group"}
       <div class="grp">{row.title}</div>
     {:else if row.kind === "front"}
-      <button
+      <a
         class="row front"
         class:active={activeIndex === row.index}
-        onclick={() => onSelect(row.index)}
+        href={hrefForIndex(row.index)}
+        onclick={(e) => navClick(e, row.index)}
       >
         {row.title}
-      </button>
+      </a>
     {:else}
-      <button
+      <a
         class="row page"
         class:sub={row.level === 1}
         class:active={activeIndex === row.index}
         class:soon={!row.built}
-        onclick={() => onSelect(row.index)}
+        href={hrefForIndex(row.index)}
+        onclick={(e) => navClick(e, row.index)}
       >
         <span class="t">{row.title}</span>
         {#if !row.built}<span class="tag">soon</span>{/if}
-      </button>
+      </a>
     {/if}
   {/each}
 </nav>
