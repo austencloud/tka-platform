@@ -380,9 +380,7 @@
   closeOnBackdrop={true}
   closeOnEscape={false}
   onclose={handleClose}
-  class="inbox-drawer {isMobile && inboxState.currentView !== 'list'
-    ? 'inbox-expanded'
-    : ''}"
+  class="inbox-drawer"
   ariaLabel="Inbox"
 >
   <div
@@ -700,19 +698,25 @@
   @media (max-width: 768px) {
     :global(.drawer-content.inbox-drawer) {
       --sheet-width: 100%;
-      /* Always fill viewport on mobile - list, thread, and compose views */
-      --sheet-max-height: none;
       --sheet-radius-large: 0;
-    }
-
-    /* Thread / compose / group-settings fill the viewport so the container's
-       height:100% is the full sheet. Shrinking it by the keyboard height then
-       raises the bottom-anchored composer clear of the keyboard. */
-    :global(.drawer-content.inbox-drawer.inbox-expanded) {
+      /* Fill the viewport on mobile in EVERY view — list included, not just the
+         expanded thread/compose views. A capped height is load-bearing: it gives
+         .inbox-content a bounded height so the conversation / notification list
+         scrolls *inside* it (via .conversations / .notifications). Without the
+         cap the bottom-anchored sheet grew to content height and pushed its top
+         (and the header's notification toggle) above the viewport, and — because
+         nothing was a bounded scroller — swipe-to-dismiss found no scroll
+         boundary to defer to, so every downward scroll swipe closed the panel
+         instead of scrolling. Capping restores the Facebook-style behavior the
+         swipe handler already implements (only dismiss once scrolled to the top). */
+      --sheet-max-height: 100dvh;
       height: 100vh;
       height: 100dvh;
     }
 
+    /* Thread / compose / group-settings shrink by the keyboard height (via the
+       container's inline style) so the bottom-anchored composer clears the
+       on-screen keyboard. */
     .inbox-container.expanded {
       max-height: none;
       height: 100%;
