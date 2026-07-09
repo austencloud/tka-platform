@@ -14,6 +14,12 @@ export { sendMagicLink } from "./sendMagicLink";
 export { transcribeAudio } from "./transcribeAudio";
 export { onNewMessage } from "./push/onNewMessage";
 export { onNewNotification } from "./push/onNewNotification";
+export {
+  pulseUserActivity,
+  pulseScanActivity,
+  pulseSequenceCreated,
+  pulseCollectionCreated,
+} from "./pulse/pulseTriggers";
 export { onFollowCreated, onFollowDeleted } from "./social/onFollowChange";
 
 export {

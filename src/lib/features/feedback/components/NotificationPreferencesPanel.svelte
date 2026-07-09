@@ -217,6 +217,9 @@ import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
     "achievement-unlocked": t("feedback_notif_desc_achievement"),
     "message-received": t("feedback_notif_desc_message"),
     "admin-new-user-signup": t("feedback_notif_desc_signup"),
+    "admin-user-returned": t("feedback_notif_desc_user_returned"),
+    "admin-qr-scan": t("feedback_notif_desc_qr_scan"),
+    "admin-content-created": t("feedback_notif_desc_content_created"),
     "system-announcement": t("feedback_notif_desc_system"),
     "moderation-warning": t("feedback_notif_desc_moderation"),
   };
@@ -256,7 +259,7 @@ import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
         sequence.push(item);
       } else if (type === "user-followed" || type === "achievement-unlocked") {
         social.push(item);
-      } else if (type === "admin-new-user-signup") {
+      } else if (type.startsWith("admin-")) {
         admin.push(item);
       }
     }

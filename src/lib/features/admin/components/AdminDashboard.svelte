@@ -22,6 +22,11 @@
     $state(null);
   let postHogError = $state(false);
 
+  // Lazy load Pulse Dashboard (live visitor activity)
+  let PulseDashboard: typeof import("./pulse/PulseDashboard.svelte").default | null =
+    $state(null);
+  let pulseError = $state(false);
+
   function loadLoopLabeler() {
     loopLabelerError = false;
     import("$lib/features/loop-labeler/components/LOOPLabelerModule.svelte")
@@ -46,6 +51,18 @@
       });
   }
 
+  function loadPulse() {
+    pulseError = false;
+    import("./pulse/PulseDashboard.svelte")
+      .then((mod) => {
+        PulseDashboard = mod.default;
+      })
+      .catch((err) => {
+        console.error("Failed to load Pulse Dashboard:", err);
+        pulseError = true;
+      });
+  }
+
   $effect(() => {
     if (activeSection === "loop-labeler" && !LOOPLabelerModule && !loopLabelerError) {
       loadLoopLabeler();
@@ -53,6 +70,10 @@
 
     if (activeSection === "analytics" && !PostHogDashboard && !postHogError) {
       loadPostHog();
+    }
+
+    if ((!activeSection || activeSection === "pulse") && !PulseDashboard && !pulseError) {
+      loadPulse();
     }
   });
 
@@ -72,7 +93,27 @@
   {:else}
     <!-- Content Area -->
     <main class="admin-content themed-scrollbar">
-      {#if !activeSection || activeSection === "users"}
+      {#if !activeSection || activeSection === "pulse"}
+        <div id="pulse-panel" role="tabpanel" aria-labelledby="pulse-tab">
+          {#if PulseDashboard}
+            <PulseDashboard />
+          {:else if pulseError}
+            <div class="error-state" role="alert">
+              <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+              <p>Failed to load Pulse.</p>
+              <button class="retry-button" onclick={loadPulse}>
+                <i class="fas fa-rotate-right" aria-hidden="true"></i>
+                Retry
+              </button>
+            </div>
+          {:else}
+            <div class="loading-state">
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              <p>Loading Pulse...</p>
+            </div>
+          {/if}
+        </div>
+      {:else if activeSection === "users"}
         <div
           id="users-panel"
           role="tabpanel"
@@ -260,6 +301,11 @@
 
   /* Moderation dashboard is a full-height master/detail layout */
   #moderation-panel {
+    height: 100%;
+  }
+
+  /* Pulse manages its own internal scroll */
+  #pulse-panel {
     height: 100%;
   }
 </style>

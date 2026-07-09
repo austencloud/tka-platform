@@ -32,6 +32,9 @@ const PREF_KEY_MAP: Record<string, string> = {
   "user-followed": "userFollowed",
   "achievement-unlocked": "achievementUnlocked",
   "admin-new-user-signup": "adminNewUserSignup",
+  "admin-user-returned": "adminUserReturned",
+  "admin-qr-scan": "adminQrScan",
+  "admin-content-created": "adminContentCreated",
   "moderation-warning": "moderationWarning",
   "system-announcement": "systemAnnouncement",
 };

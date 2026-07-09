@@ -364,6 +364,16 @@ export const ML_TRAINING_TABS: Section[] = [
 // Admin tabs configuration
 export const ADMIN_TABS: Section[] = [
   {
+    id: "pulse",
+    labelKey: "tab_admin_pulse",
+    descKey: "tab_desc_admin_pulse",
+    label: "Pulse",
+    icon: '<i class="fas fa-wave-square" aria-hidden="true"></i>',
+    description: "Live visitor activity and alerts",
+    color: "#ec4899",
+    gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
+  },
+  {
     id: "users",
     labelKey: "tab_admin_users",
     descKey: "tab_desc_admin_users",

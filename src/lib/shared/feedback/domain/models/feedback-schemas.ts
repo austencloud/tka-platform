@@ -297,6 +297,9 @@ export const NotificationPreferencesDocSchema = z
         achievementUnlocked: z.boolean().optional(),
         messageReceived: z.boolean().optional(),
         adminNewUserSignup: z.boolean().optional(),
+        adminUserReturned: z.boolean().optional(),
+        adminQrScan: z.boolean().optional(),
+        adminContentCreated: z.boolean().optional(),
       })
       .passthrough()
       .optional(),

@@ -67,6 +67,12 @@
         return "fa-envelope";
       case "admin-new-user-signup":
         return "fa-user-check";
+      case "admin-user-returned":
+        return "fa-door-open";
+      case "admin-qr-scan":
+        return "fa-qrcode";
+      case "admin-content-created":
+        return "fa-wand-magic-sparkles";
       case "system-announcement":
         return "fa-bullhorn";
       default:

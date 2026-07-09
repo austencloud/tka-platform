@@ -3,7 +3,8 @@
  * Keeps the PostHog Personal API Key server-side.
  *
  * POST /api/admin/analytics
- * Body: { type: "engagement" | "activity" | "content" | "sessions", userId: string, period?: TimePeriod, limit?: number }
+ * Per-user: { type: "engagement" | "activity" | "content" | "sessions", userId: string, period?, limit? }
+ * Global (Pulse): { type: "pulse-overview" | "pulse-breakdown" | "pulse-feed" | "pulse-live", dimension?, limit? }
  *
  * Requires admin role.
  */
@@ -17,8 +18,46 @@ import { logAdminAction } from "$lib/server/security/audit-logger";
 
 const POSTHOG_API_BASE = "https://us.i.posthog.com/api";
 
-type QueryType = "engagement" | "activity" | "content" | "sessions";
+type QueryType =
+  | "engagement"
+  | "activity"
+  | "content"
+  | "sessions"
+  | "pulse-overview"
+  | "pulse-breakdown"
+  | "pulse-feed"
+  | "pulse-live";
 type TimePeriod = "today" | "week" | "month" | "all";
+type PulseDimension = "country" | "city" | "referrer" | "device";
+
+/** Global pulse queries are site-wide; per-user queries require a userId. */
+const GLOBAL_QUERY_TYPES: ReadonlySet<string> = new Set([
+  "pulse-overview",
+  "pulse-breakdown",
+  "pulse-feed",
+  "pulse-live",
+]);
+
+/**
+ * Admin/dev noise excluded from all global pulse metrics: localhost + dev
+ * hosts, and Austen's own account UIDs (stable production admin accounts).
+ */
+const EXCLUDED_ADMIN_UIDS = [
+  "PBp3GSBO6igCKPwJyLZNmVEmamI3",
+  "8IKsYlGhWxbZDd4ss1bnEZS5eBB3",
+];
+
+function pulseProdFilter(): string {
+  const uidList = EXCLUDED_ADMIN_UIDS.map((u) => `'${escapeHogQL(u)}'`).join(
+    ", "
+  );
+  return `
+    coalesce(properties."$host", '') NOT LIKE 'localhost%'
+    AND coalesce(properties."$host", '') NOT LIKE '192.168.%'
+    AND coalesce(properties."$host", '') != 'dev.tkaflowarts.com'
+    AND distinct_id NOT IN (${uidList})
+  `;
+}
 
 function getPostHogHeaders() {
   if (!env.POSTHOG_PERSONAL_API_KEY) {
@@ -165,6 +204,77 @@ function buildSessionsQuery(userId: string, limit: number): string {
   `;
 }
 
+// --- Global Pulse queries (site-wide, not per-user) ---
+
+function buildPulseOverviewQuery(): string {
+  return `
+    SELECT
+      uniqIf(distinct_id, event = '$pageview' AND timestamp > now() - interval 1 day) as visitors_today,
+      uniqIf(distinct_id, event = '$pageview' AND timestamp > now() - interval 7 day) as visitors_7d,
+      uniqIf(distinct_id, event = '$pageview' AND timestamp > now() - interval 30 day) as visitors_30d,
+      countIf(event = 'card_scanned' AND timestamp > now() - interval 1 day) as scans_today,
+      countIf(event = 'card_scanned' AND timestamp > now() - interval 7 day) as scans_7d,
+      countIf(event = 'card_scanned' AND timestamp > now() - interval 30 day) as scans_30d,
+      countIf(event IN ('sequence_save', 'collection_create') AND timestamp > now() - interval 1 day) as saves_today,
+      countIf(event IN ('sequence_save', 'collection_create') AND timestamp > now() - interval 7 day) as saves_7d,
+      countIf(event IN ('sequence_save', 'collection_create') AND timestamp > now() - interval 30 day) as saves_30d
+    FROM events
+    WHERE timestamp > now() - interval 30 day
+      AND ${pulseProdFilter()}
+  `;
+}
+
+function buildPulseBreakdownQuery(dimension: PulseDimension): string {
+  const dimExpr: Record<PulseDimension, string> = {
+    country: `properties."$geoip_country_name"`,
+    city: `concat(coalesce(properties."$geoip_city_name", ''), ', ', coalesce(properties."$geoip_country_name", ''))`,
+    referrer: `properties."$referring_domain"`,
+    device: `concat(coalesce(properties."$browser", '?'), ' · ', coalesce(properties."$os", '?'))`,
+  };
+  return `
+    SELECT
+      ${dimExpr[dimension]} as name,
+      uniq(distinct_id) as visitors
+    FROM events
+    WHERE event = '$pageview'
+      AND timestamp > now() - interval 30 day
+      AND ${pulseProdFilter()}
+    GROUP BY name
+    HAVING name IS NOT NULL AND name != '' AND name != ', '
+    ORDER BY visitors DESC
+    LIMIT 12
+  `;
+}
+
+function buildPulseFeedQuery(limit: number): string {
+  return `
+    SELECT
+      toString(timestamp) as ts,
+      event,
+      distinct_id,
+      properties."$geoip_city_name" as city,
+      properties."$geoip_country_name" as country,
+      properties."$device_type" as device
+    FROM events
+    WHERE event IN ('session_start', 'card_scanned', 'sequence_save', 'collection_create', '$identify')
+      AND timestamp > now() - interval 14 day
+      AND ${pulseProdFilter()}
+    ORDER BY timestamp DESC
+    LIMIT ${Math.min(limit, 100)}
+  `;
+}
+
+function buildPulseLiveQuery(): string {
+  return `
+    SELECT
+      uniq(distinct_id) as live_total,
+      uniqIf(distinct_id, match(distinct_id, '^[A-Za-z0-9]{28}$') = 0) as live_anon
+    FROM events
+    WHERE timestamp > now() - interval 5 minute
+      AND ${pulseProdFilter()}
+  `;
+}
+
 export const POST: RequestHandler = async (event) => {
   try {
     const caller = await requireAdmin(event);
@@ -173,34 +283,56 @@ export const POST: RequestHandler = async (event) => {
     if (blocked) return blocked;
 
     const body = await event.request.json();
-    const { type, userId, period, limit } = body as {
+    const { type, userId, period, limit, dimension } = body as {
       type: QueryType;
-      userId: string;
+      userId?: string;
       period?: TimePeriod;
       limit?: number;
+      dimension?: PulseDimension;
     };
-    if (!type || !userId) {
+    const isGlobal = GLOBAL_QUERY_TYPES.has(type);
+    if (!type || (!isGlobal && !userId)) {
       throw error(400, "type and userId are required");
     }
 
     // Validate userId - Firebase UIDs are alphanumeric, typically 28 chars
-    if (typeof userId !== "string" || !/^[a-zA-Z0-9]{1,128}$/.test(userId)) {
+    if (
+      !isGlobal &&
+      (typeof userId !== "string" || !/^[a-zA-Z0-9]{1,128}$/.test(userId))
+    ) {
       throw error(400, "Invalid userId format");
     }
 
     let query: string;
     switch (type) {
       case "engagement":
-        query = buildEngagementQuery(userId);
+        query = buildEngagementQuery(userId!);
         break;
       case "activity":
-        query = buildActivityQuery(userId, period ?? "week");
+        query = buildActivityQuery(userId!, period ?? "week");
         break;
       case "content":
-        query = buildContentQuery(userId);
+        query = buildContentQuery(userId!);
         break;
       case "sessions":
-        query = buildSessionsQuery(userId, limit ?? 10);
+        query = buildSessionsQuery(userId!, limit ?? 10);
+        break;
+      case "pulse-overview":
+        query = buildPulseOverviewQuery();
+        break;
+      case "pulse-breakdown": {
+        const dims: PulseDimension[] = ["country", "city", "referrer", "device"];
+        if (!dimension || !dims.includes(dimension)) {
+          throw error(400, "pulse-breakdown requires a valid dimension");
+        }
+        query = buildPulseBreakdownQuery(dimension);
+        break;
+      }
+      case "pulse-feed":
+        query = buildPulseFeedQuery(limit ?? 60);
+        break;
+      case "pulse-live":
+        query = buildPulseLiveQuery();
         break;
       default:
         throw error(400, `Unknown query type: ${type}`);
@@ -211,7 +343,7 @@ export const POST: RequestHandler = async (event) => {
     logAdminAction({
       uid: caller.uid,
       action: "analytics_query",
-      target: userId,
+      target: userId ?? "global",
       metadata: { queryType: type, ...(period != null && { period }) },
       ip: event.getClientAddress(),
     });

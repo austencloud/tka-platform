@@ -103,12 +103,9 @@ export async function notifyUpgradeSignup(): Promise<void> {
     // wondering whether their sequences survived the upgrade.
     toast.success("Account created. Your sequences are saved.");
     void getPropUnlockManager().mergeGuestCollection();
-    const displayName =
-      user.displayName || user.email?.split("@")[0] || "New User";
-    const { notifyNewUserSignup } = await import(
-      "$lib/features/admin/services/admin-notifier"
-    );
-    await notifyNewUserSignup(user.uid, user.email, displayName);
+    // Admin upgrade notifications are handled server-side by the
+    // pulseUserActivity cloud function (fires when isAnonymous flips false
+    // on the user doc). The old client-side notify was rules-denied.
   } catch (error) {
     console.warn(
       "⚠️ [anonymous-upgrade] Failed to notify admins of upgrade signup:",

@@ -24,6 +24,10 @@ export const NOTIFICATION_TYPES = [
   "message-received", // Someone sent you a direct message
   // Admin notifications
   "admin-new-user-signup", // A new user signed up (admin-only)
+  // Pulse activity notifications (admin-only ambient awareness)
+  "admin-user-returned", // A known user opened the app again
+  "admin-qr-scan", // Someone scanned a shared QR code
+  "admin-content-created", // A user saved a sequence or created a collection
   // System notifications
   "system-announcement", // Important system announcements
   // Moderation notifications
@@ -122,6 +126,24 @@ export interface AdminNotification extends BaseNotification {
 }
 
 /**
+ * Pulse activity notification (admin-only ambient awareness).
+ * Written server-side by the pulse cloud functions; payload fields vary
+ * by event source so they are all optional.
+ */
+export interface PulseNotification extends BaseNotification {
+  type: "admin-user-returned" | "admin-qr-scan" | "admin-content-created";
+  returnedUserId?: string;
+  shortCode?: string;
+  scanCity?: string | null;
+  scanCountry?: string | null;
+  contentType?: "sequence" | "collection";
+  sequenceId?: string;
+  collectionId?: string;
+  word?: string;
+  collectionName?: string;
+}
+
+/**
  * Moderation notification (warning issued to user)
  */
 export interface ModerationNotification extends BaseNotification {
@@ -141,6 +163,7 @@ export type UserNotification =
   | MessageNotification
   | SystemNotification
   | AdminNotification
+  | PulseNotification
   | ModerationNotification;
 
 /**
@@ -178,6 +201,9 @@ export interface NotificationPreferences {
 
   // Admin notifications (only relevant for admin users)
   adminNewUserSignup: boolean;
+  adminUserReturned: boolean;
+  adminQrScan: boolean;
+  adminContentCreated: boolean;
 
   // System notifications (cannot be disabled)
   // systemAnnouncement is always enabled
@@ -200,6 +226,9 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
   achievementUnlocked: true,
   messageReceived: true,
   adminNewUserSignup: true,
+  adminUserReturned: true,
+  adminQrScan: true,
+  adminContentCreated: true,
 };
 
 /**
@@ -218,6 +247,9 @@ export function getPreferenceKeyForType(
     "achievement-unlocked": "achievementUnlocked",
     "message-received": "messageReceived",
     "admin-new-user-signup": "adminNewUserSignup",
+    "admin-user-returned": "adminUserReturned",
+    "admin-qr-scan": "adminQrScan",
+    "admin-content-created": "adminContentCreated",
   };
 
   return typeToKey[type] || null;
@@ -288,6 +320,24 @@ export const NOTIFICATION_TYPE_CONFIG: Record<
     color: "#10b981",
     icon: "fa-user-plus",
     actionLabel: "View User",
+  },
+  "admin-user-returned": {
+    label: "User Returned",
+    color: "#06b6d4",
+    icon: "fa-door-open",
+    actionLabel: "View User",
+  },
+  "admin-qr-scan": {
+    label: "QR Scan",
+    color: "#8b5cf6",
+    icon: "fa-qrcode",
+    actionLabel: "View Activity",
+  },
+  "admin-content-created": {
+    label: "Content Created",
+    color: "#f59e0b",
+    icon: "fa-wand-magic-sparkles",
+    actionLabel: "View Activity",
   },
   // System notifications
   "system-announcement": {

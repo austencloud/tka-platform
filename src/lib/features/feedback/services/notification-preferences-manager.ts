@@ -94,6 +94,9 @@ export async function enableAll(userId: string): Promise<void> {
     achievementUnlocked: true,
     messageReceived: true,
     adminNewUserSignup: true,
+    adminUserReturned: true,
+    adminQrScan: true,
+    adminContentCreated: true,
   };
   await savePreferences(userId, allEnabled);
 }
@@ -116,6 +119,9 @@ export async function disableAll(userId: string): Promise<void> {
     achievementUnlocked: false,
     messageReceived: false,
     adminNewUserSignup: false,
+    adminUserReturned: false,
+    adminQrScan: false,
+    adminContentCreated: false,
   };
   await savePreferences(userId, allDisabled);
 }
