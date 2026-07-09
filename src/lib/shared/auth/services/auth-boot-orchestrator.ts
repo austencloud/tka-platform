@@ -153,4 +153,15 @@ export async function initializeChildServices(
     .catch((error) => {
       console.warn("⚠️ [authState] Mandala collection sync failed:", error);
     });
+
+  // Initialize tunnel collection Firebase sync (non-blocking)
+  import("$lib/features/tunnel-collection/state/tunnel-collection-state.svelte")
+    .then(async ({ tunnelCollectionState }) => {
+      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+      await tunnelCollectionState.init(user.uid);
+    })
+    .catch((error) => {
+      console.warn("⚠️ [authState] Tunnel collection sync failed:", error);
+    });
 }

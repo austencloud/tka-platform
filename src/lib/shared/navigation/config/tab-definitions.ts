@@ -870,6 +870,16 @@ export const PLAYGROUND_TABS: Section[] = [
     color: "#f472b6",
     gradient: "linear-gradient(135deg, #f9a8d4 0%, #f472b6 100%)",
   },
+  {
+    id: "tunnels",
+    labelKey: "tab_playground_tunnels",
+    descKey: "tab_desc_playground_tunnels",
+    label: "Tunnels",
+    icon: '<i class="fas fa-fan" aria-hidden="true"></i>',
+    description: "Collect and replay the kaleidoscope tunnels you save from the viewer",
+    color: "#22d3ee",
+    gradient: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)",
+  },
 ];
 
 // Video module tabs (graduated from Lab Mar 2026)

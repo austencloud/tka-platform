@@ -18,6 +18,7 @@
   // Add a tab here when a toy graduates into the Playground (one at a time).
   const tabComponents: Record<string, () => Promise<TabModule>> = {
     mandala: () => import("$lib/features/mandala/MandalaModule.svelte"),
+    tunnels: () => import("$lib/features/tunnel-collection/TunnelCollectionModule.svelte"),
   };
 
   const activeTab = $derived(navigationState.activeTab || PLAYGROUND_TABS[0]?.id || "mandala");

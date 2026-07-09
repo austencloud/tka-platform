@@ -660,6 +660,14 @@ export async function signOut(): Promise<void> {
     }
 
     try {
+      const { tunnelCollectionState } =
+        await import("$lib/features/tunnel-collection/state/tunnel-collection-state.svelte");
+      tunnelCollectionState.teardown();
+    } catch {
+      // Tunnel collection may not be loaded - that's ok
+    }
+
+    try {
       const [{ collectionsState }, { followedCollectionsState }] = await Promise.all([
         import("$lib/features/library/state/collections-state.svelte"),
         import("$lib/features/library/state/followed-collections-state.svelte"),
