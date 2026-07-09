@@ -106,8 +106,10 @@ export const FeedbackItemSchema = z
     type: FeedbackTypeSchema,
     title: z.string(),
     description: z.string(),
-    priority: z
-      .preprocess((v) => v ?? undefined, FeedbackPrioritySchema.optional()),
+    priority: z.preprocess(
+      (v) => v ?? undefined,
+      FeedbackPrioritySchema.optional()
+    ),
     imageUrls: z.array(z.string()).optional(),
 
     originalTitle: z.string().optional(),
@@ -197,15 +199,38 @@ export const AppVersionSchema = z
     id: z.string(),
     version: z.string(),
     releasedAt: firestoreDate,
-    releaseNotes: z.string().optional(),
-    // Legacy version docs predate feedback aggregation — default to zero so they
-    // parse instead of getting skipped (was spamming "[firestore] Validation
-    // failed for versions/…" in the Release Notes console).
+    // Legacy release scripts wrote explicit `null` for absent fields (not
+    // `undefined`), and `.optional()` rejects null. Accept null and coerce
+    // it back to undefined. This lets those docs parse instead of getting
+    // dropped, while keeping the output type `T | undefined` (so consumers that
+    // treat these as optional stay sound). Same intent as the zero defaults
+    // below (was spamming "[firestore] Validation failed for versions/…" in the
+    // Release Notes console on every load, e.g. versions/0.3.0 whose
+    // releaseNotes is null).
+    releaseNotes: z
+      .string()
+      .nullish()
+      .transform((v) => v ?? undefined),
+    // Legacy version docs predate feedback aggregation. Default to zero so they
+    // parse instead of getting skipped.
     feedbackCount: z.number().default(0),
-    feedbackSummary: FeedbackSummarySchema.default({ bugs: 0, features: 0, general: 0 }),
-    changelogEntries: z.array(ChangelogEntrySchema).optional(),
-    highlights: z.array(z.string()).optional(),
-    contributorIds: z.array(z.string()).optional(),
+    feedbackSummary: FeedbackSummarySchema.default({
+      bugs: 0,
+      features: 0,
+      general: 0,
+    }),
+    changelogEntries: z
+      .array(ChangelogEntrySchema)
+      .nullish()
+      .transform((v) => v ?? undefined),
+    highlights: z
+      .array(z.string())
+      .nullish()
+      .transform((v) => v ?? undefined),
+    contributorIds: z
+      .array(z.string())
+      .nullish()
+      .transform((v) => v ?? undefined),
   })
   .passthrough();
 
