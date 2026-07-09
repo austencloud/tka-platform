@@ -76,7 +76,7 @@
           <div class="preview-box">
             <Crossfade key={selected.id}>
               <div class="preview-inner">
-                <DeckFanCover sequences={selected.coverSequences ?? []} cardWidth={168} />
+                <DeckFanCover sequences={selected.coverSequences ?? []} cardWidth={168} maxCardWidth={280} />
                 <p class="preview-desc">{selected.description}</p>
               </div>
             </Crossfade>
@@ -166,7 +166,9 @@
   }
 
   .config-content {
-    max-width: 1240px;
+    /* Wide fluid band: the preview fan auto-scales into the extra room on 4K
+       instead of the page pinning to a narrow column. */
+    max-width: min(1720px, 92vw);
     margin: 0 auto;
     padding: 40px 24px 80px;
   }

@@ -64,7 +64,7 @@
     <section class="hero">
       <div class="hero-fan" aria-hidden="true">
         {#if heroSequences.length}
-          <DeckFanCover sequences={heroSequences} cardWidth={148} />
+          <DeckFanCover sequences={heroSequences} cardWidth={148} maxCardWidth={250} />
         {/if}
       </div>
       <h1>Choreography you can shuffle</h1>
@@ -85,7 +85,7 @@
         <section class="deck-listing" id="deck">
           <a class="deck-tile" href="/shop/loop-deck">
             <div class="deck-fan-box">
-              <DeckFanCover sequences={tileSequences} cardWidth={132} />
+              <DeckFanCover sequences={tileSequences} cardWidth={132} maxCardWidth={235} />
             </div>
             <div class="deck-info">
               <span class="eyebrow">The deck</span>
@@ -109,7 +109,11 @@
         </section>
       {/if}
 
-      <!-- ============ HOW IT WORKS ============ -->
+      <!-- ============ INFO BANDS ============
+           Stacked strips on normal screens; on ultrawide they compose into ONE
+           side-by-side band (how / box / story), so the width carries density
+           instead of stretched one-line cards. -->
+      <div class="info-bands">
       <section class="band">
         <h2 class="section-title">How it works</h2>
         <div class="steps-grid">
@@ -145,12 +149,16 @@
       <!-- ============ BETA RUN STORY ============ -->
       <section class="band story">
         <h2 class="section-title">First run, made by hand</h2>
-        <p>
-          Every beta deck is printed, guillotine-cut, and packed in Chicago by the
-          person who built the system. Small batches, shipped fast. When the beta
-          run sells through, the finished edition goes to professional printing.
-        </p>
+        <div class="story-card">
+          <i class="fas fa-scissors" aria-hidden="true"></i>
+          <p>
+            Every beta deck is printed, guillotine-cut, and packed in Chicago by the
+            person who built the system. Small batches, shipped fast. When the beta
+            run sells through, the finished edition goes to professional printing.
+          </p>
+        </div>
       </section>
+      </div>
 
       <!-- ============ EVERYTHING ELSE ============ -->
       {#if state.isLoading}
@@ -194,26 +202,27 @@
     margin-bottom: 72px;
   }
 
-  /* Reserved box: the fan streams in without shoving the headline (no-layout-shift). */
+  /* Reserved box: the fan streams in without shoving the headline (no-layout-shift).
+     Scales with the viewport so the auto-scaled fan has room on 4K. */
   .hero-fan {
-    min-height: 250px;
+    min-height: clamp(250px, 15.5vw, 410px);
     display: grid;
     place-items: center;
     margin-bottom: 8px;
   }
 
   .hero h1 {
-    font-size: clamp(2.2rem, 4vw, 3.4rem);
+    font-size: clamp(2.2rem, 3.2vw, 4.2rem);
     font-weight: 800;
     letter-spacing: -0.02em;
     margin: 0 0 14px;
   }
 
   .hero-subtitle {
-    font-size: clamp(1rem, 1.4vw, 1.2rem);
+    font-size: clamp(1rem, 1.2vw, 1.35rem);
     line-height: 1.6;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.66));
-    max-width: 620px;
+    max-width: 68ch;
     margin: 0 auto 26px;
   }
 
@@ -260,7 +269,7 @@
   }
 
   .deck-fan-box {
-    min-height: 240px;
+    min-height: clamp(240px, 15vw, 420px);
     display: grid;
     place-items: center;
     border-radius: 16px;
@@ -406,12 +415,51 @@
     flex: 0 0 auto;
   }
 
-  .story p {
-    font-size: clamp(1rem, 1.3vw, 1.15rem);
+  .story-card {
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    max-width: 78ch;
+  }
+  .story-card i {
+    font-size: 1.4rem;
+    color: #8b6cff;
+    margin-bottom: 12px;
+    display: block;
+  }
+  .story-card p {
+    font-size: var(--font-size-min, 14px);
     line-height: 1.7;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.75));
-    max-width: 68ch;
     margin: 0;
+  }
+
+  /* ---------- ultrawide composition (4K+) ----------
+     Don't stretch the strips: recompose them. The three info bands sit
+     side-by-side as columns, each internally stacked, so a 4K viewport shows
+     one dense band instead of three sparse full-width ones. */
+  @media (min-width: 1800px) {
+    .info-bands {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 28px;
+      align-items: start;
+      margin-bottom: 72px;
+    }
+    .info-bands .band {
+      margin-bottom: 0;
+    }
+    .info-bands .steps-grid {
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .info-bands .box-list {
+      grid-template-columns: 1fr;
+    }
+    .info-bands .story-card {
+      max-width: none;
+    }
   }
 
   /* ---------- remaining sections ---------- */

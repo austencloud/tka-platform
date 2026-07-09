@@ -16,14 +16,24 @@
 
   interface Props {
     sequences: readonly SequenceData[];
-    /** Rest width of one card, px. Fan height follows (5:7). */
+    /** MINIMUM rest width of one card, px. Cards auto-scale UP from here to fill
+        the container (ultrawide screens get a properly big fan), capped by
+        maxCardWidth. Fan height follows (5:7). */
     cardWidth?: number;
+    /** Auto-scale ceiling. Defaults to 1.8x cardWidth. */
+    maxCardWidth?: number;
     /** Upper bound on cards shown (width may show fewer). */
     maxCards?: number;
     /** Disable hover spread/lift (e.g. tiny tiles). */
     interactive?: boolean;
   }
-  let { sequences, cardWidth = 122, maxCards = 6, interactive = true }: Props = $props();
+  let {
+    sequences,
+    cardWidth = 122,
+    maxCardWidth,
+    maxCards = 6,
+    interactive = true,
+  }: Props = $props();
 
   let boxW = $state(0);
 
@@ -39,6 +49,18 @@
   }
   const shown = $derived(sequences.slice(0, Math.max(1, Math.min(maxCards, countFor(boxW)))));
   const tilt = (i: number, n: number) => (n <= 1 ? 0 : -12 + (24 * i) / (n - 1));
+
+  // Auto-scale: grow cards to fill the measured container. Sized against the
+  // HOVER-OPEN span (overlap 0.18 → each extra card shows 82%) plus ~5% slack
+  // for tilt overhang, so the spread never spills the box.
+  const maxW = $derived(maxCardWidth ?? Math.round(cardWidth * 1.8));
+  const cardW = $derived(
+    shown.length && boxW
+      ? Math.round(
+          Math.min(maxW, Math.max(cardWidth, boxW / ((1 + 0.82 * (shown.length - 1)) * 1.05)))
+        )
+      : cardWidth
+  );
 </script>
 
 <div
@@ -47,13 +69,13 @@
   bind:clientWidth={boxW}
   inert
   aria-hidden="true"
-  style:--overlap="{-Math.round(cardWidth * 0.52)}px"
-  style:--overlap-open="{-Math.round(cardWidth * 0.18)}px"
+  style:--overlap="{-Math.round(cardW * 0.52)}px"
+  style:--overlap-open="{-Math.round(cardW * 0.18)}px"
 >
   {#each shown as seq, i (seq.id)}
     <div class="fan-slot">
       <div class="fan-tilt" style:transform="rotate({tilt(i, shown.length)}deg)">
-        <div class="card-box" style:width="{cardWidth}px">
+        <div class="card-box" style:width="{cardW}px">
           <ChoreoCard sequence={seq} cardMode showQRCodes={false} customNotesText="" />
         </div>
       </div>
