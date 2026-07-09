@@ -1,27 +1,50 @@
 <!-- src/lib/features/store/components/BuyButton.svelte -->
+<!--
+  Buy CTA with an availability gate: a product with no Stripe price is NOT
+  purchasable, so instead of a Buy Now that spins and errors after the click,
+  it renders an honest "not on sale yet" state with the shared waitlist form.
+-->
 <script lang="ts">
   import { getStoreContext } from "../context/store-context";
+  import type { Product } from "../domain/models/product";
+  import WaitlistForm from "./WaitlistForm.svelte";
 
   interface Props {
-    productId: string;
+    product: Product;
   }
 
-  let { productId }: Props = $props();
+  let { product }: Props = $props();
   const { state } = getStoreContext();
+
+  const available = $derived(Boolean(product.stripePriceId));
 </script>
 
-<button
-  class="buy-button"
-  onclick={() => state.startCheckout(productId)}
-  disabled={state.isCheckingOut}
->
-  {#if state.isCheckingOut}
-    <span class="spinner" aria-hidden="true"></span>
-    Opening checkout...
-  {:else}
-    Buy Now
-  {/if}
-</button>
+{#if available}
+  <button
+    class="buy-button"
+    onclick={() => state.startCheckout(product.id)}
+    disabled={state.isCheckingOut}
+  >
+    {#if state.isCheckingOut}
+      <span class="spinner" aria-hidden="true"></span>
+      Opening checkout...
+    {:else}
+      Buy Now
+    {/if}
+  </button>
+{:else}
+  <div class="unavailable">
+    <p class="unavailable-line">
+      <i class="fas fa-hourglass-half" aria-hidden="true"></i>
+      Not on sale yet. Leave an email and you'll hear the moment it is.
+    </p>
+    <WaitlistForm
+      source="shop-product-{product.id}"
+      compact
+      confirmText="You're on the list for this one."
+    />
+  </div>
+{/if}
 
 <style>
   .buy-button {
@@ -70,6 +93,29 @@
     to {
       transform: rotate(360deg);
     }
+  }
+
+  .unavailable {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px;
+    border-radius: 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+
+  .unavailable-line {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 600;
+    color: var(--theme-text, #fff);
+  }
+  .unavailable-line i {
+    color: var(--theme-warning, #f59e0b);
   }
 
   @media (prefers-reduced-motion: reduce) {

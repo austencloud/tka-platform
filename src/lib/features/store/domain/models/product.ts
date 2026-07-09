@@ -1,4 +1,5 @@
 import type { Timestamp } from "firebase/firestore";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 export type ProductType =
   | "physical-deck"
@@ -26,6 +27,15 @@ export interface Product {
   /** A representative sequence (steps) from the deck, embedded so the grid card
    *  renders its tip-path mandala cover without a second Firestore read. Decks only. */
   readonly coverSequence?: { steps: unknown[] };
+  /** Curated cover sequences (full docs) rendered as a fan of real ChoreoCards.
+   *  Takes precedence over coverSequence. Decks only. */
+  readonly coverSequences?: SequenceData[];
+  /** LOOP component ids for this deck's flavor (enum string values, e.g.
+   *  ["mirrored","swapped"]) — drives the color-coded chips. */
+  readonly loopComponents?: string[];
+  /** Products sharing a listing collapse into ONE storefront entry (the deck
+   *  configurator). They stay individually purchasable backing SKUs. */
+  readonly listing?: string;
   /** True when the deck is sold ahead of printing; pairs with shipBy. From Stripe metadata. */
   readonly preorder?: boolean;
   /** Human ship-by label shown on pre-order products, e.g. "September 2026". From Stripe metadata. */

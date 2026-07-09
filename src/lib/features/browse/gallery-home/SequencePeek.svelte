@@ -20,8 +20,11 @@
     /** Fixed tilt in degrees (deterministic per slot). */
     tilt?: number;
     overlay?: Snippet;
+    /** Render the light (printed) card look instead of the dark gallery one.
+        Default false keeps the front-door fans dark. */
+    lightMode?: boolean;
   }
-  let { sequence, width, height, tilt = 0, overlay }: Props = $props();
+  let { sequence, width, height, tilt = 0, overlay, lightMode = false }: Props = $props();
 </script>
 
 <div
@@ -35,7 +38,7 @@
          disallow it. No explicit visibility override: peeks share the gallery
          grid's default cache class (static/cloud hits) instead of forcing a
          custom-keyed local render per peek. -->
-    <PropAwareThumbnail {sequence} eager allowQR={false} />
+    <PropAwareThumbnail {sequence} eager allowQR={false} {lightMode} />
   {/if}
   {#if overlay}
     <span class="overlay">{@render overlay()}</span>

@@ -9,6 +9,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   import CardMockupPreview from "./components/CardMockupPreview.svelte";
   import SampleCardCarousel from "./components/SampleCardCarousel.svelte";
   import BuyButton from "./components/BuyButton.svelte";
+  import LoopChips from "./components/LoopChips.svelte";
   import { captureMorphSource } from "./transitions/shop-morph";
   import type { Product } from "./domain/models/product";
 
@@ -63,11 +64,16 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
             coverImageUrl={product.coverImageUrl}
             productName={product.name}
             morphId={product.id}
+            coverSequence={product.coverSequence}
+            coverSequences={product.coverSequences}
           />
         </div>
 
         <div class="info-column">
           <h1>{product.name}</h1>
+          {#if product.loopComponents?.length}
+            <LoopChips components={product.loopComponents} />
+          {/if}
           {#if product.cardCount}
             <p class="meta">{product.cardCount} cards, poker size (2.5" x 3.5")</p>
           {/if}
@@ -78,7 +84,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
               Pre-order.{product.shipBy ? ` Ships ${product.shipBy}.` : ""} You pay now and it ships once printed.
             </p>
           {/if}
-          <BuyButton productId={product.id} />
+          <BuyButton {product} />
           {#if state.checkoutError}
             <p class="checkout-error" role="alert">{state.checkoutError}</p>
           {/if}

@@ -2,6 +2,7 @@
 <script lang="ts">
   import type { Product } from "../domain/models/product";
   import CardMockupPreview from "./CardMockupPreview.svelte";
+  import LoopChips from "./LoopChips.svelte";
   import { captureMorphSource } from "../transitions/shop-morph";
 
   interface Props {
@@ -28,9 +29,19 @@
     productName={product.name}
     morphId={product.id}
     coverSequence={product.coverSequence}
+    coverSequences={product.coverSequences}
   />
   <div class="card-info">
-    <h3 class="card-name">{product.name}</h3>
+    <h3 class="card-name">
+      {product.name}
+      {#if product.status !== "active"}
+        <!-- Only reachable in the admin showDrafts view; buyers never load drafts. -->
+        <span class="status-badge">{product.status}</span>
+      {/if}
+    </h3>
+    {#if product.loopComponents?.length}
+      <LoopChips components={product.loopComponents} size="sm" />
+    {/if}
     {#if product.cardCount}
       <p class="card-meta">{product.cardCount} cards</p>
     {/if}
@@ -125,6 +136,21 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 600;
     margin: 0;
+  }
+
+  .status-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: var(--font-size-compact, 11px);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #ffd9a0;
+    background: rgba(245, 158, 11, 0.16);
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    vertical-align: middle;
   }
 
   .card-meta {

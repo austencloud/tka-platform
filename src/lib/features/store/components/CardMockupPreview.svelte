@@ -7,6 +7,8 @@
     startMorphInto,
   } from "../transitions/shop-morph";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
+  import DeckFanCover from "./DeckFanCover.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   interface Props {
     coverImageUrl?: string;
@@ -17,9 +19,12 @@
     /** Representative deck sequence. When set (and no cover image), the card shows
         its tip-path mandala as a content-derived cover instead of a bare icon. */
     coverSequence?: { steps: unknown[] };
+    /** Curated cover sequences: rendered as a fan of REAL ChoreoCards. Highest-
+        priority content-derived cover (beats the mandala). */
+    coverSequences?: SequenceData[];
   }
 
-  let { coverImageUrl, productName, morphId, coverSequence }: Props = $props();
+  let { coverImageUrl, productName, morphId, coverSequence, coverSequences }: Props = $props();
 
   let containerEl: HTMLDivElement | undefined = $state();
   // Drives the mandala's render size so it fills the card width responsively.
@@ -44,6 +49,10 @@
       class="cover-image"
       loading="lazy"
     />
+  {:else if coverSequences && coverSequences.length > 0}
+    <div class="fan-cover" aria-label="{productName} sample cards">
+      <DeckFanCover sequences={coverSequences} cardWidth={Math.max(96, Math.round((boxW || 280) * 0.34))} />
+    </div>
   {:else if coverSequence}
     <div class="mandala-cover" aria-label="{productName} tip-path mandala">
       <SequenceMandala
@@ -79,6 +88,21 @@
     /* Ken-Burns zoom on hover. Transform only (compositor); .mockup-container's
        overflow: hidden crops it. Applied to the inner content, NOT the
        view-transition-named container, so the morph capture is never affected. */
+    transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Fanned real-card cover: same soft wash frame as the mandala, the fan does
+     the rest. Centered in the 3:4 box. */
+  .fan-cover {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    background: radial-gradient(
+      circle at 50% 42%,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.015)
+    );
     transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
@@ -118,19 +142,22 @@
 
   .mockup-container:hover .cover-image,
   .mockup-container:hover .placeholder,
-  .mockup-container:hover .mandala-cover {
+  .mockup-container:hover .mandala-cover,
+  .mockup-container:hover .fan-cover {
     transform: scale(1.05);
   }
 
   @media (prefers-reduced-motion: reduce) {
     .cover-image,
     .placeholder,
-    .mandala-cover {
+    .mandala-cover,
+    .fan-cover {
       transition: none;
     }
     .mockup-container:hover .cover-image,
     .mockup-container:hover .placeholder,
-    .mockup-container:hover .mandala-cover {
+    .mockup-container:hover .mandala-cover,
+    .mockup-container:hover .fan-cover {
       transform: none;
     }
   }

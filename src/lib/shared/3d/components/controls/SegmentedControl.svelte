@@ -10,6 +10,8 @@
     icon?: string; // FontAwesome class
     /** Optional trailing count badge (e.g. number of items in this group). */
     count?: number | null;
+    /** Not selectable (e.g. a "coming soon" size). Still rendered, dimmed. */
+    disabled?: boolean;
   }
 
   interface Props {
@@ -59,6 +61,7 @@
       onclick={() => handleSelect(option.value)}
       aria-label={option.label}
       aria-pressed={value === option.value}
+      disabled={option.disabled}
     >
       {#if option.icon}
         <i class={option.icon} aria-hidden="true"></i>
@@ -134,6 +137,11 @@
     outline-offset: 2px;
     border-radius: 6px;
     z-index: 2;
+  }
+
+  .segment:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
   }
 
   @media (prefers-reduced-motion: reduce) {
