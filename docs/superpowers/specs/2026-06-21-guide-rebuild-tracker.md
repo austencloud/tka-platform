@@ -72,7 +72,7 @@ Old guide = 47 pages. Mapping → our 3 chapters. Status: ⬜ todo · 🔧 in pr
 | 13 | Type 3 Cross-Shifts (β→γ) | `_pages/Type3CrossShiftsPage` (`hm-type34`) | 🔧 |
 | 14 | Type 4/5/6 Dash/Dual-Dash/Static | `_pages/Type456Page` (`hm-type56`) | 🔧 |
 | 15 | Staff Positions (12) | `_pages/StaffPositionsPage` (body p9) | 🔧 |
-| 16 | Staff Motions | ch10/StaffMotions | ⬜ |
+| 16 | Staff Motions | `_pages/StaffMotionsPage` (body p10) | 🔧 |
 | 17 | Negative Space / Body Turns | ch10/NegativeSpace | ⬜ |
 | 18 | 1.1 Letters (title) | letters | ⬜ |
 | 19 | Double-Staff Codex Type 1-2 (30) | ch11/CodexType12 | ⬜ |
@@ -155,6 +155,28 @@ LOOP terminology, per existing section filenames already named Loops*.)
   (3 pre-existing errors in another agent's feedback files), /print SSR 200,
   12 pictograph SVGs mounted, DevTools screenshot row-by-row vs artboard.
   Awaiting Austen's eyeball before ✅.
+
+- 2026-07-09: STAFF MOTIONS page (body p10, `staff-motions`) built —
+  `_pages/StaffMotionsPage.svelte`, artboard "1.0 - Layer 1 Staff Motions".
+  Three rows (Prospin/Antispin/Dash): start/end/combined = REAL single-staff
+  pictographs (red only); the HALFWAY frame (a mid-motion pose the system
+  doesn't model) composes system pieces — a bare-grid pictograph (invisible
+  placeholder motions) + the real staff SVG path with the renderer's own
+  placement recipe (`translate(point) rotate(θ) translate(-126.4,-38.9)`,
+  crossbar=+x): prospin SE-hand-point rotate(225°), antispin SE rotate(-45°),
+  dash center rotate(-90°). End orientations follow the algebra (pro preserves
+  in→in; anti/dash flip in→out) and matched the proof captions unprompted.
+  KEY CONVENTION (MCP-verified vs letter B): `rotationDirection` = the PROP's
+  rotation, not the handpath's — anti S→E (ccw handpath) takes CW; wrong
+  direction renders the arc arrow swept backwards. Facelift deviations
+  (flagged): frames are clean POSES (the proof drew partial-progress arrows in
+  halfway/end frames; the motion arrow now lives only in the combined "="
+  pictograph), and the top heavy rule moved 55.4→60pt to clear the Tangerine
+  title descenders. Geometry: 100pt boxes, cols x 80.5/200.5/320.5/440.5, rows
+  y 213.1/448.4/662.9; heavy rules y 60/583.1; hairline y 356.3. Verified:
+  svelte-check clean (1 pre-existing store error, not mine), screenshot
+  row-by-row vs artboard (thumb marks, halfway poses, arrow sweeps). Awaiting
+  Austen's eyeball before ✅.
 
 ## Conventions (facelift — supersede the old guide)
 
