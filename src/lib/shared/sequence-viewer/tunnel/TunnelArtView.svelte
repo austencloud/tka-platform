@@ -10,7 +10,7 @@
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
 
-  const {
+  let {
     sequence,
     playback,
     controller,
@@ -18,7 +18,7 @@
     bluePropType,
     redPropType,
     onSaveTunnel,
-    playing = true,
+    playing = $bindable(true),
   }: {
     sequence: SequenceData;
     playback: ViewerPlaybackState;
@@ -32,9 +32,10 @@
     /** Save the live tunnel to the collection (owned by ArtPane). Absent = no
      *  save entry in the canvas right-click menu. */
     onSaveTunnel?: () => void;
-    /** Pause the self-clock (the playhead holds its frame). Hosts that autoplay
-     *  the tunnel outside the viewer (e.g. the collection's detail preview)
-     *  expose a pause toggle through this — WCAG 2.2.2. */
+    /** Pause the self-clock (the playhead holds its frame). Bindable so a tap
+     *  on the canvas toggles it (matching the regular animation canvas) while
+     *  hosts with their own pause control (e.g. the collection's detail
+     *  preview) stay in sync — WCAG 2.2.2. */
     playing?: boolean;
   } = $props();
 
@@ -133,7 +134,10 @@
         {redPropType}
         sequenceData={seq}
         currentStep={step}
-        isPlaying={true}
+        isPlaying={playing}
+        tapToToggle={true}
+        hoverHint="badge"
+        onPlaybackToggle={() => (playing = !playing)}
         {gridMode}
         {trailSettings}
         {tipEffectMap}

@@ -119,7 +119,7 @@
       bpm={snap.playback.bpm}
       bluePropType={snap.props.bluePropType}
       redPropType={snap.props.redPropType}
-      {playing}
+      bind:playing
     />
   </div>
   <button
