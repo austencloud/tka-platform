@@ -26,15 +26,26 @@ export class HapticFeedback {
   private config: HapticFeedbackConfig = { ...DEFAULT_CONFIG };
   private _effortMapper = effortHapticMapper;
   private hasVibrate: boolean = false;
+  private hasSwitchHaptics: boolean = false;
+  private switchLabel: HTMLLabelElement | null = null;
 
   constructor() {
     if (browser) {
-       
+
       this.hasVibrate =
         typeof navigator !== "undefined" &&
         // eslint-disable-next-line no-restricted-properties
         typeof navigator.vibrate === "function" &&
         (navigator.maxTouchPoints ?? 0) > 0;
+      // WebKit-only: <input type="checkbox" switch> fires the Taptic Engine when
+      // toggled (iOS 17.4–26.4; Apple patched programmatic triggering in 26.5,
+      // where this degrades to a silent no-op). The "switch" IDL attribute only
+      // exists in WebKit, so this branch never activates on Chromium/Android.
+      this.hasSwitchHaptics =
+        !this.hasVibrate &&
+        typeof navigator !== "undefined" &&
+        (navigator.maxTouchPoints ?? 0) > 0 &&
+        "switch" in document.createElement("input");
     }
     this.setupReducedMotionListener();
   }
@@ -106,7 +117,7 @@ export class HapticFeedback {
   }
 
   public isSupported(): boolean {
-    return this.isNative() || this.hasVibrate;
+    return this.isNative() || this.hasVibrate || this.hasSwitchHaptics;
   }
 
   public setEnabled(enabled: boolean): void {
@@ -175,14 +186,57 @@ export class HapticFeedback {
   }
 
   private webVibrate(ms: number): boolean {
-    if (!this.hasVibrate) return false;
+    if (this.hasVibrate) {
+      try {
+        // eslint-disable-next-line no-restricted-properties
+        navigator.vibrate(ms);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    return this.switchHapticTap();
+  }
+
+  // iOS web/PWA path: clicking the label toggles a hidden native switch input,
+  // which fires one system haptic tap. Intensity is not controllable — iOS
+  // produces the same tap for every style, so `ms` is intentionally unused here.
+  private switchHapticTap(): boolean {
+    if (!this.hasSwitchHaptics) return false;
     try {
-      // eslint-disable-next-line no-restricted-properties
-      navigator.vibrate(ms);
+      this.ensureSwitchElements().click();
       return true;
     } catch {
       return false;
     }
+  }
+
+  private ensureSwitchElements(): HTMLLabelElement {
+    if (this.switchLabel?.isConnected) return this.switchLabel;
+
+    // Exemption from the no-checkboxes design rule: this input is a haptic
+    // actuator, never rendered UI — offscreen, aria-hidden, unfocusable.
+    // Visually hidden without display:none, which can suppress the toggle.
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.setAttribute("switch", "");
+    input.id = "tka-haptic-switch";
+
+    const label = document.createElement("label");
+    label.htmlFor = input.id;
+
+    const host = document.createElement("div");
+    host.setAttribute("aria-hidden", "true");
+    host.style.cssText =
+      "position:fixed;top:-100px;left:-100px;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;";
+    input.tabIndex = -1;
+    label.tabIndex = -1;
+
+    host.appendChild(input);
+    host.appendChild(label);
+    document.body.appendChild(host);
+    this.switchLabel = label;
+    return label;
   }
 
   private canTrigger(): boolean {
