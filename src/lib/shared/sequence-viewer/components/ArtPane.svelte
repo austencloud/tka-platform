@@ -175,14 +175,21 @@
     // first canvas, so the saved thumbnail matches the live look.
     const poster = capturePosterFromContainer(artBodyEl);
     const name = seq.word || `Tunnel #${tunnelCollectionState.count + 1}`;
-    await tunnelCollectionState.add({
-      name,
-      steps: [...seq.steps],
-      snapshot,
-      poster,
-      source: "viewer",
-    });
-    toast.success("Tunnel saved to your collection");
+    try {
+      await tunnelCollectionState.add({
+        name,
+        steps: [...seq.steps],
+        snapshot,
+        poster,
+        source: "viewer",
+      });
+      toast.success("Tunnel saved to your collection");
+    } catch (error) {
+      // add() unshifts locally before the Firestore write, so the entry shows in
+      // this session either way — be honest that it didn't sync.
+      console.warn("[ArtPane] Tunnel save failed to sync:", error);
+      toast.error("Couldn't sync the tunnel to your account");
+    }
   }
 </script>
 

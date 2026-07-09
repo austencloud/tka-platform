@@ -464,6 +464,14 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
+      // TUNNEL COLLECTION (Saved tunnel snapshots — sequence + full look)
+      // -------------------------------------------------------------------------
+      match /tunnel-collection/{tunnelId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
       // FCM PUSH TOKENS (Device registration for push notifications)
       // -------------------------------------------------------------------------
       match /fcmTokens/{tokenId} {

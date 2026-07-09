@@ -32,7 +32,13 @@
   import type { CollectedTunnel } from "../domain/tunnel-collection-types";
 
   const { tunnel }: { tunnel: CollectedTunnel } = $props();
-  const snap = tunnel.snapshot;
+  // Unwrap the $state proxy from the collection store into plain data ONCE —
+  // structuredClone (inside createEffectsConfigState) throws DataCloneError on
+  // Svelte 5 state proxies, and downstream transforms shouldn't see proxies
+  // either. The record is immutable while previewing, so a one-time deep
+  // snapshot is safe.
+  const data = $state.snapshot(tunnel) as CollectedTunnel;
+  const snap = data.snapshot;
 
   // Capture the pristine persisted tunnel-view state BEFORE constructing the
   // controller (its persist $effect writes this key on every config change).
@@ -47,11 +53,11 @@
   // recovered from the steps so the correct grid renders (same rule the viewer
   // uses). Steps were captured from a hydrated sequence, so they carry motions.
   const sequence = createSequenceData({
-    id: tunnel.id,
-    name: tunnel.name,
-    word: tunnel.name,
-    steps: [...tunnel.steps],
-    gridMode: tunnel.steps.find((s) => s.gridMode)?.gridMode,
+    id: data.id,
+    name: data.name,
+    word: data.name,
+    steps: [...data.steps],
+    gridMode: data.steps.find((s) => s.gridMode)?.gridMode,
   });
   const controller = new TunnelViewController({ getSequence: () => sequence });
   controller.applyConfig(snap.tunnel.config);
