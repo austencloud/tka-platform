@@ -37,6 +37,10 @@ messaging.onBackgroundMessage((payload) => {
     icon: "/pwa/icons/icon-192x192.png",
     badge: "/pwa/icons/icon-96x96.png",
     tag: data.tag || "tka-notification",
+    // Same-tag notifications REPLACE each other; without renotify the
+    // replacement is silent (no sound/vibration/heads-up) — a second QR-scan
+    // alert would slip in unnoticed. renotify makes every arrival alert.
+    renotify: true,
     data: {
       url: data.url || "/app",
       conversationId: data.conversationId || null,
