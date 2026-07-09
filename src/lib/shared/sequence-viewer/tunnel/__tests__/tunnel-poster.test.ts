@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { captureTunnelPoster, POSTER_SIZE } from "./tunnel-poster";
+import { captureTunnelPoster, POSTER_SIZE } from "../tunnel-poster";
 
 function fakeSource(w: number, h: number): HTMLCanvasElement {
   return { width: w, height: h } as HTMLCanvasElement;

@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { LocalTunnelCollectionRepository } from "./local-tunnel-collection-repository";
-import { TUNNEL_COLLECTION_STORAGE_KEY, TUNNEL_COLLECTION_SCHEMA_VERSION } from "../domain/tunnel-collection-types";
-import type { CollectedTunnel } from "../domain/tunnel-collection-types";
+import { LocalTunnelCollectionRepository } from "../local-tunnel-collection-repository";
+import { TUNNEL_COLLECTION_STORAGE_KEY, TUNNEL_COLLECTION_SCHEMA_VERSION } from "../../domain/tunnel-collection-types";
+import type { CollectedTunnel } from "../../domain/tunnel-collection-types";
 
 function makeStorage(): Storage {
   const map = new Map<string, string>();

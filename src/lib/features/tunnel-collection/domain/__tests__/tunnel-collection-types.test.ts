@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { CollectedTunnelSchema, TUNNEL_COLLECTION_STORAGE_KEY } from "./tunnel-collection-types";
+import { CollectedTunnelSchema, TUNNEL_COLLECTION_STORAGE_KEY } from "../tunnel-collection-types";
 import { SNAPSHOT_VERSION } from "$lib/shared/sequence-viewer/tunnel/tunnel-snapshot";
 import { DEFAULT_CONFIG } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
 

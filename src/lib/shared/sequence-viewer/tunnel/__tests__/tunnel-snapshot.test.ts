@@ -1,12 +1,12 @@
 import { describe, it, expect, vi } from "vitest";
-import { TunnelSnapshotSchema, SNAPSHOT_VERSION } from "./tunnel-snapshot";
+import { TunnelSnapshotSchema, SNAPSHOT_VERSION } from "../tunnel-snapshot";
 import {
   captureTunnelSnapshot,
   applyTunnelSnapshot,
   type SnapshotDeps,
   type TunnelSnapshot,
-} from "./tunnel-snapshot";
-import { DEFAULT_CONFIG } from "./tunnel-config";
+} from "../tunnel-snapshot";
+import { DEFAULT_CONFIG } from "../tunnel-config";
 
 const validSnapshot = {
   version: SNAPSHOT_VERSION,
