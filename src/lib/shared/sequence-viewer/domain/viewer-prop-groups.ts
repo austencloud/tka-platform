@@ -12,6 +12,11 @@ export interface ViewerPlaybackState {
   currentLetter: Letter | null;
   currentStepData: StartPositionData | StepData | null;
   highlightedStepIndex: number | null;
+  /** Live AnimationPlaybackController handle, once the orchestrator has wired
+   *  one. Optional — standalone hosts (e.g. the tunnel collection's detail
+   *  preview) build this state without a controller. Used as the readiness
+   *  signal for the auto-export intent (ArtPane). */
+  getPlaybackController?: () => unknown;
 }
 
 export interface ImageCompositionProps {

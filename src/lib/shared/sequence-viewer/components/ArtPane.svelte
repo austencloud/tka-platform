@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { fade } from "svelte/transition";
   import MandalaPane from "./MandalaPane.svelte";
   import TunnelArtView from "../tunnel/TunnelArtView.svelte";
@@ -24,6 +25,7 @@
   import { captureTunnelSnapshot, type SnapshotDeps } from "../tunnel/tunnel-snapshot";
   import { capturePosterFromContainer } from "../tunnel/tunnel-poster";
   import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
+  import { TUNNEL_AUTO_EXPORT_INTENT_KEY } from "$lib/features/tunnel-collection/services/open-tunnel-in-viewer";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // Mandala is the static tip-path bloom; Tunnel is the live kaleidoscope. The
@@ -114,6 +116,39 @@
   function handleExport() {
     onArtExport?.({ artType, controller, mandalaController });
   }
+
+  // Auto-export intent (collection page "Export video" button): consume the
+  // session flag once, then fire the normal export path as soon as the live
+  // playback controller + hydrated sequence exist. Poll (250ms, 15s cap) —
+  // readiness spans the orchestrator's async service load, which has no single
+  // reactive signal reachable from here.
+  onMount(() => {
+    if (artType !== "tunnel" || !onArtExport) return;
+    let intent = false;
+    try {
+      intent = sessionStorage.getItem(TUNNEL_AUTO_EXPORT_INTENT_KEY) === "1";
+      if (intent) sessionStorage.removeItem(TUNNEL_AUTO_EXPORT_INTENT_KEY);
+    } catch {
+      /* storage unavailable — no auto-export */
+    }
+    if (!intent) return;
+    const started = performance.now();
+    const timer = setInterval(() => {
+      const ready =
+        !playback.animationLoading &&
+        !!playback.animationState.sequenceData &&
+        !!playback.getPlaybackController?.();
+      if (ready) {
+        clearInterval(timer);
+        // One settle frame so the engine finishes its first render before the
+        // offscreen exporter clones its state.
+        setTimeout(() => handleExport(), 400);
+      } else if (performance.now() - started > 15_000) {
+        clearInterval(timer); // give up silently; the manual Export still works
+      }
+    }, 250);
+    return () => clearInterval(timer);
+  });
 
   // Tunnel export drives the shared sequenceModalExporter (mandala uses its own
   // worker), so its progress + inline preview surface over the canvas here — the

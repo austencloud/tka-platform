@@ -15,8 +15,8 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-typ
 /**
  * Reproduce a saved tunnel in the real sequence viewer: apply the snapshot's
  * global/persisted state, then open the viewer overlay with its sequence. The
- * viewer boots showing the exact saved tunnel. Export is done from the viewer
- * (its existing Export button); this action deliberately does NOT auto-export.
+ * viewer boots showing the exact saved tunnel. With `autoExport`, an intent
+ * flag is seeded so the viewer fires its tunnel video export once ready.
  *
  * Two seam classes are in play, and the ordering below is load-bearing:
  *
@@ -34,8 +34,24 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-typ
  *    `openSequenceOverlay` flips reactive state; the fresh mount runs in a later
  *    microtask, after these synchronous writes have landed.
  */
-export function openTunnelInViewer(tunnel: CollectedTunnel): void {
+/** Session key: ArtPane consumes this once on mount and auto-fires the tunnel
+ *  video export as soon as the playback controller is ready. sessionStorage so
+ *  a stray flag can't survive into a later browser session. */
+export const TUNNEL_AUTO_EXPORT_INTENT_KEY = "tka_tunnel_auto_export";
+
+export function openTunnelInViewer(
+  tunnel: CollectedTunnel,
+  options: { autoExport?: boolean } = {},
+): void {
   const snap = tunnel.snapshot;
+
+  if (options.autoExport && typeof sessionStorage !== "undefined") {
+    try {
+      sessionStorage.setItem(TUNNEL_AUTO_EXPORT_INTENT_KEY, "1");
+    } catch {
+      // storage unavailable — viewer still opens; user exports manually.
+    }
+  }
 
   // 1. Live singletons — effort, path shapes, trail, and prop types apply
   //    directly (mirrors applyTunnelSnapshot's global-visibility writes, which

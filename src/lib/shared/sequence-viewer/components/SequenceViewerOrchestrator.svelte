@@ -1162,6 +1162,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       currentLetter,
       currentStepData,
       highlightedStepIndex,
+      getPlaybackController: () => playbackControllerRef,
     },
     splitPaneImageComposition: {
       showWord: imgComp.imgShowWord,

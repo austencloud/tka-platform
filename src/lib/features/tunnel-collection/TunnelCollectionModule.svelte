@@ -219,12 +219,6 @@
     {:else if selected}
       <div class="detail-layout">
         <div class="detail-preview">
-          {#key selected.id}
-            <TunnelDetailPreview tunnel={selected} />
-          {/key}
-        </div>
-
-        <div class="detail-panel">
           <button
             type="button"
             class="back-btn"
@@ -235,7 +229,12 @@
             <i class="fas fa-arrow-left" aria-hidden="true"></i>
             <span>Gallery</span>
           </button>
+          {#key selected.id}
+            <TunnelDetailPreview tunnel={selected} />
+          {/key}
+        </div>
 
+        <div class="detail-panel">
           <div class="detail-info">
             <div class="name-row">
               {#if renaming}
@@ -277,17 +276,23 @@
           <div class="detail-actions">
             <button
               type="button"
+              class="action-btn export-btn"
+              onclick={() => openTunnelInViewer(selected!, { autoExport: true })}
+            >
+              <i class="fas fa-video" aria-hidden="true"></i>
+              <span>Export video</span>
+            </button>
+            <button
+              type="button"
               class="action-btn open-btn"
               onclick={() => openTunnelInViewer(selected!)}
             >
               <i class="fas fa-up-right-from-square" aria-hidden="true"></i>
               <span>Open in Viewer</span>
             </button>
-            <!-- One honest action. Export lives in the viewer once open; auto-firing
-                 it from here needs an orchestrator handshake (live playback
-                 controller + canvas) — deferred. -->
-            <p class="action-hint">Export video from the viewer once it’s open.</p>
+          </div>
 
+          <div class="detail-footer">
             <button
               type="button"
               class="action-btn delete-btn"
@@ -485,6 +490,7 @@
   }
 
   .detail-preview {
+    position: relative;
     flex: 1;
     display: flex;
     align-items: center;
@@ -505,26 +511,32 @@
     gap: 24px;
   }
 
+  /* Floating glass button over the preview's top-left — the conventional
+     lightbox "back" spot, instead of orphaned at the top of the info panel. */
   .back-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 2;
     display: flex;
     align-items: center;
     gap: 8px;
     min-height: 48px;
-    padding: 8px 16px;
-    background: transparent;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    padding: 8px 18px;
+    background: color-mix(in srgb, var(--theme-panel-bg, rgba(10, 10, 20, 0.85)) 80%, transparent);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 999px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
-    align-self: flex-start;
   }
 
   @media (hover: hover) {
     .back-btn:hover {
-      background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+      background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
       border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
       color: var(--theme-text, white);
     }
@@ -629,18 +641,21 @@
     color: color-mix(in srgb, var(--theme-accent, #22d3ee) 70%, white);
   }
 
+  /* Actions sit right under the chips (no dead zone); only the destructive
+     delete is pinned to the panel bottom, visually separated. */
   .detail-actions {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    margin-top: auto;
   }
 
-  .action-hint {
-    margin: 0;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    text-align: center;
+  .detail-footer {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+  }
+  .detail-footer .action-btn {
+    width: 100%;
   }
 
   .action-btn {
@@ -674,6 +689,12 @@
     box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent);
   }
 
+  .export-btn {
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 45%, transparent);
+    color: var(--theme-accent-text, var(--theme-accent, #22d3ee));
+  }
+
   .delete-btn {
     background: transparent;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
@@ -687,6 +708,10 @@
   }
 
   @media (hover: hover) {
+    .export-btn:hover {
+      background: color-mix(in srgb, var(--theme-accent, #22d3ee) 12%, transparent);
+      border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 70%, transparent);
+    }
     .open-btn:hover {
       transform: translateY(-1px);
       box-shadow: 0 6px 16px color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
@@ -708,8 +733,92 @@
   /* ── Responsive (container-relative, so nesting in a narrower host still
         reflects real available width) ── */
   @container (min-width: 1200px) {
+    .gallery-view {
+      padding: 40px 48px;
+    }
     .gallery-grid {
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+    }
+    .detail-panel {
+      width: 380px;
+      padding: 32px;
+    }
+    .detail-preview {
+      padding: 32px;
+    }
+  }
+
+  /* 4K / ultrawide: everything scales up — grid density, type, panel width —
+     and the gallery stops stretching into a mile-wide ribbon. */
+  @container (min-width: 1800px) {
+    .gallery-view {
+      padding: 56px 72px;
+    }
+    .gallery-head {
+      max-width: 2000px;
+      margin-inline: auto;
+      margin-bottom: 28px;
+    }
+    .gallery-title {
+      font-size: 24px;
+    }
+    .gallery-count {
+      font-size: var(--font-size-min, 14px);
+      padding: 3px 14px;
+    }
+    .gallery-grid {
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 28px;
+      max-width: 2000px;
+      margin-inline: auto;
+    }
+    .gallery-card {
+      gap: 14px;
+      padding: 20px 16px 18px;
+      border-radius: 18px;
+    }
+    .card-thumb {
+      border-radius: 14px;
+    }
+    .card-label {
+      font-size: var(--font-size-min, 14px);
+    }
+    .detail-panel {
+      width: 440px;
+      padding: 40px 36px;
+      gap: 28px;
+    }
+    .detail-preview {
+      padding: 48px;
+    }
+    .detail-name {
+      font-size: 26px;
+    }
+    .name-input {
+      font-size: 26px;
+    }
+    .detail-date {
+      font-size: var(--font-size-min, 14px);
+    }
+    .meta-chip {
+      font-size: var(--font-size-min, 14px);
+      padding: 8px 16px;
+    }
+    .meta-chip i {
+      font-size: 13px;
+    }
+    .action-btn {
+      min-height: 56px;
+      font-size: 16px;
+      border-radius: 14px;
+    }
+    .back-btn {
+      top: 28px;
+      left: 28px;
+      min-height: 52px;
+      padding: 10px 22px;
+      font-size: var(--font-size-min, 15px);
     }
   }
 
