@@ -18,6 +18,13 @@
     PlaybackMode,
     StepPlaybackStepSize,
   } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+  import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
+  import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import { captureTunnelSnapshot, type SnapshotDeps } from "../tunnel/tunnel-snapshot";
+  import { captureTunnelPoster } from "../tunnel/tunnel-poster";
+  import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // Mandala is the static tip-path bloom; Tunnel is the live kaleidoscope. The
   // viewer's mode rail picks one — this pane renders the chosen view, fixed.
@@ -92,6 +99,12 @@
     getRedPropType: () => redPropType,
   });
 
+  // Effects config (grabbed at init — getContext must run during setup) + a ref
+  // to the art body so "Save tunnel" can snapshot the live config and grab a
+  // poster off the rendered canvas.
+  const effectsForSave = getEffectsConfigContext();
+  let artBodyEl = $state<HTMLDivElement | null>(null);
+
   // Playback display state read from the live panel state, so the rail's
   // Playback pane mirrors the 2D transport.
   const stepSize = $derived<StepPlaybackStepSize>(
@@ -132,10 +145,48 @@
       title: "TKA Tunnel",
     });
   }
+
+  // Capture the live tunnel (config + effects + poster) into the collection. The
+  // whole flow lives here — ArtPane owns the controller and the effects context,
+  // so both the settings-panel button and the canvas right-click route through
+  // this one handler.
+  async function handleSaveTunnel() {
+    const seq = effectiveSeq;
+    if (!seq || !effectsForSave) return;
+    // Capture-only deps: real handles for everything captureTunnelSnapshot READS;
+    // the apply-only members (settings.updateSettings, playback.*) are never
+    // called on this path, so they are no-op stubs.
+    const deps: SnapshotDeps = {
+      controller,
+      effects: effectsForSave,
+      visibility: getAnimationVisibilityManager(),
+      settings: {
+        bluePropType: bluePropType ?? "staff",
+        redPropType: redPropType ?? "staff",
+        updateSettings: () => {},
+      },
+      animationSettings,
+      playback: { handleBpmChange: () => {}, handlePlaybackModeChange: () => {} },
+      animationPanel: { playbackMode },
+      getBpm: () => bpm,
+    };
+    const snapshot = captureTunnelSnapshot(deps);
+    const canvas = artBodyEl?.querySelector("canvas") as HTMLCanvasElement | null;
+    const poster = canvas ? captureTunnelPoster(canvas) : "";
+    const name = seq.word || `Tunnel #${tunnelCollectionState.count + 1}`;
+    await tunnelCollectionState.add({
+      name,
+      steps: [...seq.steps],
+      snapshot,
+      poster,
+      source: "viewer",
+    });
+    toast.success("Tunnel saved to your collection");
+  }
 </script>
 
 <div class="art-pane" class:dock-mode={layout === "bottom"}>
-  <div class="art-body">
+  <div class="art-body" bind:this={artBodyEl}>
     {#if artType === "mandala"}
       <!-- controlsPlacement="external": the mandala's controls live in the Art
            sidebar now, so suppress the bottom dock. -->
@@ -147,7 +198,7 @@
         {redPropType}
       />
     {:else}
-      <TunnelArtView {sequence} {playback} {controller} {bpm} {bluePropType} {redPropType} />
+      <TunnelArtView {sequence} {playback} {controller} {bpm} {bluePropType} {redPropType} onSaveTunnel={handleSaveTunnel} />
     {/if}
 
     {#if artType === "tunnel" && exportState.previewBlobUrl && !exportState.isExporting}
@@ -190,6 +241,7 @@
     {artType}
     {layout}
     onExport={handleExport}
+    onSaveTunnel={handleSaveTunnel}
     {bpm}
     {playbackMode}
     {stepSize}

@@ -5,6 +5,7 @@
   import type { ViewerPlaybackState } from "../domain/viewer-prop-groups";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import type { TunnelViewController } from "./tunnel-view-controller.svelte";
+  import type { ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
   import { getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
@@ -16,6 +17,7 @@
     bpm = 60,
     bluePropType,
     redPropType,
+    onSaveTunnel,
   }: {
     sequence: SequenceData;
     playback: ViewerPlaybackState;
@@ -26,7 +28,21 @@
     bpm?: number;
     bluePropType?: string;
     redPropType?: string;
+    /** Save the live tunnel to the collection (owned by ArtPane). Absent = no
+     *  save entry in the canvas right-click menu. */
+    onSaveTunnel?: () => void;
   } = $props();
+
+  // Prepend a "Save tunnel" entry (+ separator) to the canvas context menu when
+  // a save handler is wired. AnimatorCanvas prepends these to its own menu.
+  const saveMenuItems = $derived<ContextMenuEntry[]>(
+    onSaveTunnel
+      ? [
+          { id: "save-tunnel", label: "Save tunnel", icon: "fa-bookmark", action: onSaveTunnel },
+          { type: "separator" },
+        ]
+      : [],
+  );
 
   // An art view animates on its own clock (like the mandala) — it must not
   // depend on the 2D transport being played. Effects/props/effort come from the
@@ -107,6 +123,7 @@
         hidePathLines={true}
         fillContainer={true}
         fireConfig={{ disableFrameCache: true }}
+        extraContextMenuItems={saveMenuItems}
       />
     {/if}
   </div>

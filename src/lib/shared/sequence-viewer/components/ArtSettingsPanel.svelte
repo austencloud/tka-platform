@@ -66,6 +66,7 @@
     artType,
     layout = "sidebar",
     onExport,
+    onSaveTunnel,
     bpm = $bindable(60),
     playbackMode = "continuous",
     stepSize = 1,
@@ -87,6 +88,8 @@
      *  + slide-up tray) floating over the art. Default "sidebar". */
     layout?: "sidebar" | "bottom";
     onExport: () => void;
+    /** Save the live tunnel to the collection (owned by ArtPane). */
+    onSaveTunnel?: () => void;
     bpm?: number;
     playbackMode?: PlaybackMode;
     stepSize?: StepPlaybackStepSize;
@@ -358,6 +361,11 @@
         <button class="customize-btn" type="button" onclick={() => (tuneOpen = true)}>
           <i class="fas fa-sliders" aria-hidden="true"></i> Customize
         </button>
+        {#if onSaveTunnel}
+          <button class="customize-btn" type="button" onclick={() => onSaveTunnel?.()}>
+            <i class="fas fa-bookmark" aria-hidden="true"></i> Save tunnel
+          </button>
+        {/if}
       {:else}
         <!-- SECONDARY: the primitive tuner. Every tunnel is a combination of
              these. Even card grid for the toggles — no ragged wrap. -->
