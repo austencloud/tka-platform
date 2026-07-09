@@ -18,6 +18,7 @@
     bluePropType,
     redPropType,
     onSaveTunnel,
+    playing = true,
   }: {
     sequence: SequenceData;
     playback: ViewerPlaybackState;
@@ -31,6 +32,10 @@
     /** Save the live tunnel to the collection (owned by ArtPane). Absent = no
      *  save entry in the canvas right-click menu. */
     onSaveTunnel?: () => void;
+    /** Pause the self-clock (the playhead holds its frame). Hosts that autoplay
+     *  the tunnel outside the viewer (e.g. the collection's detail preview)
+     *  expose a pause toggle through this — WCAG 2.2.2. */
+    playing?: boolean;
   } = $props();
 
   // Prepend a "Save tunnel" entry (+ separator) to the canvas context menu when
@@ -61,14 +66,32 @@
   let step = $state(1);
   const speed = $derived(Math.max(0, bpm) / 60);
 
+  // Honor the OS motion preference on the self-clock itself (the controller
+  // already caps copy DENSITY under reduced motion; this damps the MOTION —
+  // WCAG 2.3.3). A slow drift keeps the kaleidoscope legible without the spin.
+  let reducedMotion = $state(
+    typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  $effect(() => {
+    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const handler = (e: MediaQueryListEvent) => {
+      reducedMotion = e.matches;
+    };
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  });
+  const REDUCED_MOTION_DAMP = 0.15;
+  const effSpeed = $derived(reducedMotion ? speed * REDUCED_MOTION_DAMP : speed);
+
   onMount(() => {
     let raf = 0;
     let last = performance.now();
     const tick = (now: number) => {
       const dt = (now - last) / 1000;
       last = now;
-      if (stepCount > 0) {
-        const beat = (step - 1 + dt * speed) % stepCount;
+      if (stepCount > 0 && playing) {
+        const beat = (step - 1 + dt * effSpeed) % stepCount;
         step = beat + 1;
       }
       raf = requestAnimationFrame(tick);

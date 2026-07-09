@@ -1091,7 +1091,7 @@
     justify-content: center;
     gap: 8px;
     width: 100%;
-    min-height: var(--min-touch-target, 44px);
+    min-height: 48px;
     padding: 10px 16px;
     border: 1.5px solid color-mix(in srgb, var(--theme-accent) 40%, transparent);
     border-radius: 10px;

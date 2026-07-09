@@ -32,6 +32,10 @@
   import type { CollectedTunnel } from "../domain/tunnel-collection-types";
 
   const { tunnel }: { tunnel: CollectedTunnel } = $props();
+
+  // Autoplaying motion needs a user-reachable pause (WCAG 2.2.2) — the viewer
+  // has a transport; this gallery preview gets its own toggle.
+  let playing = $state(true);
   // Unwrap the $state proxy from the collection store into plain data ONCE —
   // structuredClone (inside createEffectsConfigState) throws DataCloneError on
   // Svelte 5 state proxies, and downstream transforms shouldn't see proxies
@@ -107,14 +111,26 @@
 </script>
 
 <div class="preview-stage">
-  <TunnelArtView
-    {sequence}
-    {playback}
-    {controller}
-    bpm={snap.playback.bpm}
-    bluePropType={snap.props.bluePropType}
-    redPropType={snap.props.redPropType}
-  />
+  <div class="art" role="img" aria-label="Live animated preview of {data.name}">
+    <TunnelArtView
+      {sequence}
+      {playback}
+      {controller}
+      bpm={snap.playback.bpm}
+      bluePropType={snap.props.bluePropType}
+      redPropType={snap.props.redPropType}
+      {playing}
+    />
+  </div>
+  <button
+    type="button"
+    class="pause-toggle"
+    aria-pressed={!playing}
+    aria-label={playing ? "Pause preview" : "Play preview"}
+    onclick={() => (playing = !playing)}
+  >
+    <i class="fas {playing ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
+  </button>
 </div>
 
 <style>
@@ -126,5 +142,49 @@
     background: #000;
     border-radius: 12px;
     overflow: hidden;
+    /* Ambient accent glow lifts the stage off the page. */
+    box-shadow:
+      0 0 0 1px var(--theme-stroke, rgba(255, 255, 255, 0.08)),
+      0 12px 60px color-mix(in srgb, var(--theme-accent, #22d3ee) 14%, transparent);
+  }
+
+  .art {
+    position: absolute;
+    inset: 0;
+  }
+
+  .pause-toggle {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 14px;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
+  }
+  @media (hover: hover) {
+    .pause-toggle:hover {
+      background: rgba(0, 0, 0, 0.75);
+      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.3));
+      color: white;
+    }
+  }
+  .pause-toggle:focus-visible {
+    outline: 2px solid var(--theme-accent, #22d3ee);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pause-toggle {
+      transition: none;
+    }
   }
 </style>

@@ -50,12 +50,39 @@ export class TunnelCollectionState {
 
 	async remove(id: string): Promise<void> {
 		const idx = this.collection.findIndex((t) => t.id === id);
-		if (idx !== -1) {
-			this.collection.splice(idx, 1);
-			if (this.userId) {
+		if (idx === -1) return;
+		// Optimistic removal with rollback: re-insert at the same position if the
+		// Firestore delete fails, so the UI never diverges from the store.
+		const [removed] = this.collection.splice(idx, 1);
+		if (this.userId) {
+			try {
 				await removeTunnel(this.userId, id);
+			} catch (error) {
+				if (removed) this.collection.splice(idx, 0, removed);
+				throw error;
 			}
 		}
+	}
+
+	/** Rename a saved tunnel (immutable entry swap so $derived consumers re-run).
+	 *  Rolls the name back if the Firestore write fails. */
+	async rename(id: string, name: string): Promise<CollectedTunnel | null> {
+		const trimmed = name.trim();
+		const idx = this.collection.findIndex((t) => t.id === id);
+		if (idx === -1 || !trimmed) return null;
+		const prev = this.collection[idx]!;
+		if (prev.name === trimmed) return prev;
+		const next: CollectedTunnel = { ...prev, name: trimmed };
+		this.collection[idx] = next;
+		if (this.userId) {
+			try {
+				await saveTunnel(this.userId, next);
+			} catch (error) {
+				this.collection[idx] = prev;
+				throw error;
+			}
+		}
+		return next;
 	}
 
 	get count(): number {

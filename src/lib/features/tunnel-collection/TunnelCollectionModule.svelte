@@ -2,20 +2,25 @@
   TunnelCollectionModule.svelte — the Playground "Tunnels" tab.
 
   A gallery of the kaleidoscope tunnels the user saved from the sequence viewer
-  (right-click the tunnel canvas → "Save tunnel"). Selecting one opens a detail
-  view that reproduces it live in-page (TunnelDetailPreview) with actions to open
-  it in the real viewer, export, or delete.
+  ("Save tunnel" button in the tunnel settings, or right-click the tunnel canvas).
+  Selecting one opens a detail view that reproduces it live in-page
+  (TunnelDetailPreview) with meta chips, inline rename, open-in-viewer, and a
+  two-tap delete.
 
-  Mirrors MandalaModule's gallery/detail structure, card styling, empty state, and
-  two-tap delete affordance.
+  Mirrors MandalaModule's gallery/detail structure; phase swaps ride the shared
+  Crossfade primitive (both phases remount by design — the detail preview is
+  keyed per selection anyway).
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { tunnelCollectionState } from "./state/tunnel-collection-state.svelte";
   import type { CollectedTunnel } from "./domain/tunnel-collection-types";
   import { openTunnelInViewer } from "./services/open-tunnel-in-viewer";
   import TunnelDetailPreview from "./components/TunnelDetailPreview.svelte";
   import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { imageCount } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   type Phase = "gallery" | "detail";
   let phase = $state<Phase>("gallery");
@@ -23,9 +28,20 @@
 
   const items = $derived(tunnelCollectionState.collection);
 
+  // ── Focus management + SR announcements for the SPA phase swap ──
+  let rootEl = $state<HTMLDivElement | null>(null);
+  let backBtnEl = $state<HTMLButtonElement | null>(null);
+  let lastCardId: string | null = null;
+  let announce = $state("");
+
   // ── Delete confirmation (two-tap, auto-reset like MandalaModule) ──
   let confirmingDelete = $state<string | null>(null);
   let deleteTimer: ReturnType<typeof setTimeout> | undefined;
+
+  // ── Inline rename ──
+  let renaming = $state(false);
+  let renameValue = $state("");
+  let renameInputEl = $state<HTMLInputElement | null>(null);
 
   const dateLabel = $derived(
     selected
@@ -37,17 +53,51 @@
       : "",
   );
 
-  function open(t: CollectedTunnel) {
-    selected = t;
-    confirmingDelete = null;
-    phase = "detail";
+  // What the tunnel IS, at a glance — all derivable from the snapshot.
+  const meta = $derived.by(() => {
+    if (!selected) return [];
+    const snap = selected.snapshot;
+    const performers = imageCount(snap.tunnel.config);
+    const effect = snap.effects?.activeEffect ?? "none";
+    const { bluePropType, redPropType } = snap.props;
+    const prop =
+      bluePropType === redPropType ? bluePropType : `${bluePropType} · ${redPropType}`;
+    const chips: { icon: string; label: string }[] = [
+      { icon: "fa-users", label: `${performers} performer${performers === 1 ? "" : "s"}` },
+      { icon: "fa-gauge-high", label: `${snap.playback.bpm} BPM` },
+      { icon: "fa-wand-magic-sparkles", label: cap(effect === "none" ? "No effect" : effect) },
+      { icon: "fa-hand", label: cap(prop) },
+    ];
+    return chips;
+  });
+
+  function cap(s: string): string {
+    return s.charAt(0).toUpperCase() + s.slice(1);
   }
 
-  function back() {
+  async function open(t: CollectedTunnel) {
+    selected = t;
+    lastCardId = t.id;
+    confirmingDelete = null;
+    renaming = false;
+    phase = "detail";
+    announce = `Opened ${t.name}`;
+    await tick();
+    backBtnEl?.focus();
+  }
+
+  async function back() {
     phase = "gallery";
     selected = null;
     confirmingDelete = null;
+    renaming = false;
     clearTimeout(deleteTimer);
+    announce = "Back to tunnel gallery";
+    await tick();
+    // Return focus to the card the user drilled in from.
+    rootEl
+      ?.querySelector<HTMLButtonElement>(`[data-card-id="${lastCardId}"]`)
+      ?.focus();
   }
 
   async function del(id: string) {
@@ -59,8 +109,55 @@
       return;
     }
     clearTimeout(deleteTimer);
-    await tunnelCollectionState.remove(id);
-    back();
+    try {
+      await tunnelCollectionState.remove(id);
+      toast.success("Tunnel deleted");
+      void back();
+    } catch (error) {
+      console.warn("[TunnelCollection] Delete failed:", error);
+      confirmingDelete = null;
+      toast.error("Couldn't delete the tunnel — try again");
+    }
+  }
+
+  function startRename() {
+    if (!selected) return;
+    renameValue = selected.name;
+    renaming = true;
+    void tick().then(() => {
+      renameInputEl?.focus();
+      renameInputEl?.select();
+    });
+  }
+
+  async function commitRename() {
+    if (!renaming || !selected) return;
+    renaming = false;
+    const next = renameValue.trim();
+    if (!next || next === selected.name) return;
+    try {
+      const renamed = await tunnelCollectionState.rename(selected.id, next);
+      if (renamed) selected = renamed;
+    } catch (error) {
+      console.warn("[TunnelCollection] Rename failed:", error);
+      toast.error("Couldn't rename the tunnel — try again");
+    }
+  }
+
+  function handleRenameKeydown(e: KeyboardEvent) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      void commitRename();
+    } else if (e.key === "Escape") {
+      e.stopPropagation(); // don't also back out of the detail view
+      renaming = false;
+    }
+  }
+
+  function handleWindowKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape" && phase === "detail" && !renaming) {
+      void back();
+    }
   }
 
   onMount(() => {
@@ -68,102 +165,149 @@
   });
 </script>
 
-<div class="tunnel-module">
-  {#if phase === "gallery"}
-    <div class="gallery-view">
-      {#if tunnelCollectionState.loading && items.length === 0}
-        <div class="loading-state">
-          <PanelSpinner size={12} />
-          <p class="loading-label">Loading your tunnels…</p>
+<svelte:window onkeydown={handleWindowKeydown} />
+
+<div class="tunnel-module" bind:this={rootEl}>
+  <!-- Persistent live region: announces phase changes to screen readers. -->
+  <div class="sr-only" aria-live="polite">{announce}</div>
+
+  <Crossfade key={phase} fill>
+    {#if phase === "gallery"}
+      <div class="gallery-view">
+        {#if tunnelCollectionState.loading && items.length === 0}
+          <div class="loading-state">
+            <PanelSpinner size={12} />
+            <p class="loading-label">Loading your tunnels…</p>
+          </div>
+        {:else if items.length === 0}
+          <div class="empty-state">
+            <i class="fas fa-fan empty-icon" aria-hidden="true"></i>
+            <p class="empty-title">No tunnels yet</p>
+            <p class="empty-hint">
+              Open a sequence, switch to the Tunnel art view, and press
+              “Save tunnel” — or right-click the tunnel itself.
+            </p>
+          </div>
+        {:else}
+          <header class="gallery-head">
+            <h2 class="gallery-title">Saved tunnels</h2>
+            <span class="gallery-count">{items.length}</span>
+          </header>
+          <div class="gallery-grid">
+            {#each items as item, i (item.id)}
+              <button
+                type="button"
+                class="gallery-card"
+                data-card-id={item.id}
+                onclick={() => open(item)}
+                aria-label="View {item.name}, {i + 1} of {items.length}"
+                title={item.name}
+              >
+                <div class="card-thumb">
+                  {#if item.poster}
+                    <img src={item.poster} alt={item.name} loading="lazy" />
+                  {:else}
+                    <i class="fas fa-fan thumb-fallback" aria-hidden="true"></i>
+                  {/if}
+                </div>
+                <span class="card-label">{item.name}</span>
+              </button>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    {:else if selected}
+      <div class="detail-layout">
+        <div class="detail-preview">
+          {#key selected.id}
+            <TunnelDetailPreview tunnel={selected} />
+          {/key}
         </div>
-      {:else if items.length === 0}
-        <div class="empty-state">
-          <i class="fas fa-fan empty-icon" aria-hidden="true"></i>
-          <p class="empty-title">No tunnels yet</p>
-          <p class="empty-hint">Right-click a tunnel in the viewer to save one</p>
-        </div>
-      {:else}
-        <div class="gallery-grid">
-          {#each items as item (item.id)}
+
+        <div class="detail-panel">
+          <button
+            type="button"
+            class="back-btn"
+            onclick={back}
+            bind:this={backBtnEl}
+            aria-label="Back to gallery"
+          >
+            <i class="fas fa-arrow-left" aria-hidden="true"></i>
+            <span>Gallery</span>
+          </button>
+
+          <div class="detail-info">
+            <div class="name-row">
+              {#if renaming}
+                <!-- svelte-ignore a11y_autofocus -->
+                <input
+                  type="text"
+                  class="name-input"
+                  bind:this={renameInputEl}
+                  bind:value={renameValue}
+                  onkeydown={handleRenameKeydown}
+                  onblur={() => void commitRename()}
+                  maxlength="60"
+                  aria-label="Tunnel name"
+                />
+              {:else}
+                <h2 class="detail-name" title={selected.name}>{selected.name}</h2>
+                <button
+                  type="button"
+                  class="rename-btn"
+                  onclick={startRename}
+                  aria-label="Rename tunnel"
+                >
+                  <i class="fas fa-pen" aria-hidden="true"></i>
+                </button>
+              {/if}
+            </div>
+            <span class="detail-date">{dateLabel}</span>
+          </div>
+
+          <div class="meta-chips">
+            {#each meta as chip (chip.label)}
+              <span class="meta-chip">
+                <i class="fas {chip.icon}" aria-hidden="true"></i>
+                {chip.label}
+              </span>
+            {/each}
+          </div>
+
+          <div class="detail-actions">
             <button
               type="button"
-              class="gallery-card"
-              onclick={() => open(item)}
-              aria-label="View {item.name}"
+              class="action-btn open-btn"
+              onclick={() => openTunnelInViewer(selected!)}
             >
-              <div class="card-thumb">
-                {#if item.poster}
-                  <img src={item.poster} alt={item.name} loading="lazy" />
-                {:else}
-                  <i class="fas fa-fan thumb-fallback" aria-hidden="true"></i>
-                {/if}
-              </div>
-              <span class="card-label">{item.name}</span>
+              <i class="fas fa-up-right-from-square" aria-hidden="true"></i>
+              <span>Open in Viewer</span>
             </button>
-          {/each}
-        </div>
-      {/if}
-    </div>
-  {:else if phase === "detail" && selected}
-    <div class="detail-layout">
-      <div class="detail-preview">
-        {#key selected.id}
-          <TunnelDetailPreview tunnel={selected} />
-        {/key}
-      </div>
+            <!-- One honest action. Export lives in the viewer once open; auto-firing
+                 it from here needs an orchestrator handshake (live playback
+                 controller + canvas) — deferred. -->
+            <p class="action-hint">Export video from the viewer once it’s open.</p>
 
-      <div class="detail-panel">
-        <button type="button" class="back-btn" onclick={back} aria-label="Back to gallery">
-          <i class="fas fa-arrow-left" aria-hidden="true"></i>
-          <span>Gallery</span>
-        </button>
-
-        <div class="detail-info">
-          <span class="detail-name">{selected.name}</span>
-          <span class="detail-date">{dateLabel}</span>
-        </div>
-
-        <div class="detail-actions">
-          <button
-            type="button"
-            class="action-btn open-btn"
-            onclick={() => openTunnelInViewer(selected!)}
-          >
-            <i class="fas fa-up-right-from-square" aria-hidden="true"></i>
-            <span>Open in Viewer</span>
-          </button>
-
-          <!-- v1: Export routes through the viewer's existing Export button. Firing
-               the export straight from the collection needs an orchestrator
-               handshake (a live playback controller + canvas to drive the offscreen
-               render), which isn't reachable here — deferred. -->
-          <button
-            type="button"
-            class="action-btn export-btn"
-            onclick={() => openTunnelInViewer(selected!)}
-          >
-            <i class="fas fa-download" aria-hidden="true"></i>
-            <span>Export in Viewer</span>
-          </button>
-
-          <button
-            type="button"
-            class="action-btn delete-btn"
-            class:confirming={confirmingDelete === selected.id}
-            onclick={() => del(selected!.id)}
-          >
-            {#if confirmingDelete === selected.id}
-              <i class="fas fa-check" aria-hidden="true"></i>
-              <span>Confirm?</span>
-            {:else}
-              <i class="fas fa-trash-alt" aria-hidden="true"></i>
-              <span>Delete</span>
-            {/if}
-          </button>
+            <button
+              type="button"
+              class="action-btn delete-btn"
+              class:confirming={confirmingDelete === selected.id}
+              onclick={() => del(selected!.id)}
+              aria-live="polite"
+            >
+              {#if confirmingDelete === selected.id}
+                <i class="fas fa-check" aria-hidden="true"></i>
+                <span>Press again to confirm</span>
+              {:else}
+                <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                <span>Delete</span>
+              {/if}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  {/if}
+    {/if}
+  </Crossfade>
 </div>
 
 <style>
@@ -174,6 +318,19 @@
     flex-direction: column;
     overflow: hidden;
     background: transparent;
+    container-type: inline-size;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 
   /* ── Gallery ── */
@@ -182,6 +339,29 @@
     height: 100%;
     overflow-y: auto;
     padding: 32px;
+  }
+
+  .gallery-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .gallery-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--theme-text, white);
+  }
+  .gallery-count {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-variant-numeric: tabular-nums;
   }
 
   .gallery-grid {
@@ -204,11 +384,22 @@
     min-height: var(--min-touch-target, 44px);
   }
 
+  .card-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform var(--duration-normal, 250ms) var(--ease-out, ease);
+  }
+
   @media (hover: hover) {
     .gallery-card:hover {
       background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.07));
       border-color: color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
       transform: translateY(-2px);
+    }
+    .gallery-card:hover .card-thumb img {
+      transform: scale(1.06);
     }
   }
 
@@ -218,7 +409,7 @@
   }
 
   .gallery-card:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 50%, transparent);
+    outline: 2px solid var(--theme-accent, #22d3ee);
     outline-offset: 2px;
   }
 
@@ -232,13 +423,6 @@
     background: #000;
     border-radius: 10px;
     overflow: hidden;
-  }
-
-  .card-thumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
   }
 
   .thumb-fallback {
@@ -265,7 +449,9 @@
     justify-content: center;
     height: 100%;
     gap: 8px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-align: center;
+    padding: 0 24px;
   }
 
   .empty-icon {
@@ -276,19 +462,20 @@
     font-size: 16px;
     font-weight: 500;
     margin: 0;
+    color: var(--theme-text, white);
   }
   .empty-hint {
-    font-size: 13px;
+    font-size: var(--font-size-min, 14px);
     margin: 0;
-    opacity: 0.7;
+    max-width: 40ch;
+    line-height: 1.5;
   }
   .loading-state {
     gap: 16px;
   }
   .loading-label {
-    font-size: 13px;
+    font-size: var(--font-size-min, 14px);
     margin: 0;
-    opacity: 0.7;
   }
 
   /* ── Detail layout ── */
@@ -310,24 +497,25 @@
     width: 320px;
     flex-shrink: 0;
     padding: 24px;
+    background: var(--theme-panel-bg, rgba(10, 10, 20, 0.85));
     border-left: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 28px;
+    gap: 24px;
   }
 
   .back-btn {
     display: flex;
     align-items: center;
     gap: 8px;
-    min-height: var(--min-touch-target, 44px);
+    min-height: 48px;
     padding: 8px 16px;
     background: transparent;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: 10px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: 13px;
+    font-size: var(--font-size-min, 14px);
     font-weight: 500;
     cursor: pointer;
     transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
@@ -343,51 +531,135 @@
   }
 
   .back-btn:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 50%, transparent);
+    outline: 2px solid var(--theme-accent, #22d3ee);
     outline-offset: 2px;
   }
 
   .detail-info {
     display: flex;
     flex-direction: column;
+    gap: 6px;
+  }
+
+  .name-row {
+    display: flex;
+    align-items: center;
     gap: 8px;
+    min-height: 44px;
   }
 
   .detail-name {
+    margin: 0;
     font-size: 20px;
     font-weight: 600;
     color: var(--theme-text, white);
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .name-input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    padding: 4px 12px;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--theme-text, white);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-accent, #22d3ee);
+    border-radius: 10px;
+    outline: none;
+  }
+
+  .rename-btn {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
+    font-size: 13px;
+    cursor: pointer;
+    transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
+  }
+  @media (hover: hover) {
+    .rename-btn:hover {
+      color: var(--theme-text, white);
+      background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+      border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
+  }
+  .rename-btn:focus-visible {
+    outline: 2px solid var(--theme-accent, #22d3ee);
+    outline-offset: 2px;
   }
 
   .detail-date {
-    font-size: 13px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  /* ── Meta chips (display-only) ── */
+  .meta-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 500;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border-radius: 999px;
+    font-variant-numeric: tabular-nums;
+  }
+  .meta-chip i {
+    font-size: 11px;
+    color: color-mix(in srgb, var(--theme-accent, #22d3ee) 70%, white);
   }
 
   .detail-actions {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    margin-top: auto;
+  }
+
+  .action-hint {
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+    text-align: center;
   }
 
   .action-btn {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 10px;
     width: 100%;
     min-height: 48px;
     padding: 12px 18px;
     border-radius: 12px;
-    font-size: 14px;
+    font-size: var(--font-size-min, 14px);
     font-weight: 600;
     cursor: pointer;
     transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
   }
 
   .action-btn:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent, #22d3ee) 50%, transparent);
+    outline: 2px solid var(--theme-accent, #22d3ee);
     outline-offset: 2px;
   }
 
@@ -402,17 +674,10 @@
     box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent, #22d3ee) 30%, transparent);
   }
 
-  .export-btn {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    color: var(--theme-text, white);
-  }
-
   .delete-btn {
     background: transparent;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    margin-top: auto;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
   }
 
   .delete-btn.confirming {
@@ -425,10 +690,6 @@
     .open-btn:hover {
       transform: translateY(-1px);
       box-shadow: 0 6px 16px color-mix(in srgb, var(--theme-accent, #22d3ee) 40%, transparent);
-    }
-    .export-btn:hover {
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
-      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
     }
     .delete-btn:hover {
       color: var(--semantic-error, #ef4444);
@@ -444,14 +705,15 @@
     transition-duration: 50ms;
   }
 
-  /* ── Responsive ── */
-  @media (min-width: 1200px) {
+  /* ── Responsive (container-relative, so nesting in a narrower host still
+        reflects real available width) ── */
+  @container (min-width: 1200px) {
     .gallery-grid {
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     }
   }
 
-  @media (max-width: 768px) {
+  @container (max-width: 768px) {
     .gallery-view {
       padding: 20px;
     }
@@ -475,7 +737,7 @@
     }
   }
 
-  @media (max-width: 480px) {
+  @container (max-width: 480px) {
     .gallery-view {
       padding: 16px;
     }
@@ -492,10 +754,13 @@
   @media (prefers-reduced-motion: reduce) {
     .gallery-card,
     .action-btn,
-    .back-btn {
+    .back-btn,
+    .rename-btn,
+    .card-thumb img {
       transition: none !important;
     }
     .gallery-card:hover,
+    .gallery-card:hover .card-thumb img,
     .action-btn:active {
       transform: none;
     }

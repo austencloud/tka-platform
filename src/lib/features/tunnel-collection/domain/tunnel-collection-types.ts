@@ -19,7 +19,10 @@ export const CollectedTunnelSchema = z.object({
   steps: z.array(StepDataSchema),
   snapshot: TunnelSnapshotSchema,
   poster: z.string(),
-  createdAt: z.any(),
+  // createdAt is always the client's Date.now() number (saveTunnel passes an
+  // explicit id, so firestoreSet preserves it). updatedAt is a SERVER timestamp
+  // firestoreSet stamps on every write — an object on read, hence z.any().
+  createdAt: z.number(),
   updatedAt: z.any().optional(),
   source: z.enum(["viewer", "default"]).optional(),
 });
