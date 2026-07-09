@@ -116,11 +116,16 @@
     });
   }
 
+  // Which prop the companion animates for the clicked strip (staff pages hand
+  // up "staff" so the player renders real staves from the authored orientations).
+  let clickedPropType = $state<"hand" | "staff">("hand");
+
   async function handleSequenceClick(payload: GuideSequenceClick) {
     // Ring the clicked strip's Start box immediately (before motion data even
     // resolves), then the player's live step drives it from there.
     activeStep.begin(payload.key ?? "");
     selection.select(payload.key ?? ""); // persist the accent ring on the active strip
+    clickedPropType = payload.propType ?? "hand";
     const seq = stripToSequence(payload.strip, { word: payload.word });
     clicked = (await ensureMotionData(seq)) ?? seq;
     companionOpen = true;
@@ -235,6 +240,7 @@
     {#if companionOpen}
       <GuideCompanion
         sequence={clicked}
+        propType={clickedPropType}
         onStep={(s) => activeStep.report(s)}
         onClose={() => {
           companionOpen = false;

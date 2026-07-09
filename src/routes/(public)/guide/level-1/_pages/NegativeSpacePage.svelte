@@ -20,7 +20,12 @@
    * terminology pass).
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
+  import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
+  import {
+    createMotionData,
+    createPlaceholderMotion,
+  } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
     MotionColor,
@@ -29,7 +34,10 @@
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { getGuideSequenceClick } from "../_data/guide-data-context";
+  import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -37,6 +45,12 @@
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
   const CW = RotationDirection.CLOCKWISE;
   const NOROT = RotationDirection.NO_ROTATION;
+
+  // Reader wiring: whole-strip selection ring, golden step ring, and the
+  // companion handoff (all null outside the reader — /print,/book stay inert).
+  const selection = getSequenceSelection();
+  const activeStep = getGuideActiveStep();
+  const emitSequence = getGuideSequenceClick();
 
   type Cell = {
     step: number;
@@ -47,12 +61,15 @@
     eo: Orientation;
     rot: RotationDirection;
   };
+  // Blue is an invisible placeholder (both-hands step contract) — renderers and
+  // the animation engine skip it; only the red staff shows/plays.
   const cellData = (stripId: string, c: Cell) => ({
     id: `ns-${stripId}-${c.step}`,
     letter: null,
     gridMode: GridMode.DIAMOND,
     stepNumber: c.step,
     motions: {
+      blue: createPlaceholderMotion(MotionColor.BLUE, { location: SO_, orientation: IN }),
       red: createMotionData({
         motionType: c.type,
         rotationDirection: c.rot,
@@ -68,12 +85,17 @@
     },
   });
 
-  type Strip = { id: string; x: number; y: number; cells: Cell[] };
+  /** Strip → ordered StepData for the animation companion (staff props). */
+  const stripSteps = (s: Strip): StepData[] =>
+    s.cells.map((c) => cellData(s.id, c) as unknown as StepData);
+
+  type Strip = { id: string; word: string; x: number; y: number; cells: Cell[] };
   const SIZE = 99.8;
   const STRIPS: Strip[] = [
     {
       // 360° Isolation — pro all the way around, thumb in throughout.
       id: "iso",
+      word: "360° Isolation",
       x: 52.2,
       y: 240.5,
       cells: [
@@ -87,6 +109,7 @@
     {
       // 4-Petal Antispin — same handpath, prop counter-rotates (CW), thumb alternates.
       id: "anti",
+      word: "4-Petal Antispin",
       x: 48.3,
       y: 522.4,
       cells: [
@@ -188,29 +211,50 @@
     <div class="rule hair" style="left:{20 * S}px; top:{hy * S}px; width:{572 * S}px"></div>
   {/each}
 
-  <!-- The two staff sequences: Start + 4 steps, all system-rendered. -->
+  <!-- The two staff sequences: Start + 4 steps, all system-rendered. In the
+       reader each strip is clickable (SelectionHit) and animates in the
+       companion with STAFF props from the authored in-orientation. -->
   {#each STRIPS as strip (strip.id)}
-    {#each strip.cells as c (c.step)}
-      <div class="mini" style="left:{(strip.x + c.step * SIZE) * S}px; top:{strip.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-        <PictographContainer
-          pictographData={cellData(strip.id, c)}
-          gridMode={GridMode.DIAMOND}
-          redPropTypeOverride={PropType.STAFF}
-          showGrid={true}
-          showTKA={false}
-          showPositions={false}
-          showReversals={false}
-          showTnD={false}
-          showElemental={false}
-          showNonRadialPoints={false}
-          showHandPoints={true}
-          stepNumberOverride={true}
-          darkMode={false}
-          printMode={true}
-          disableTransitions={true}
-        />
-      </div>
-    {/each}
+    {@const key = `ns-${strip.id}`}
+    <div
+      class="strip-wrap tka-seq-cell"
+      class:is-hovered={selection?.isHovered(key)}
+      class:is-selected={selection?.isSelected(key)}
+      style="left:{strip.x * S}px; top:{strip.y * S}px; width:{strip.cells.length * SIZE * S}px; height:{SIZE * S}px"
+    >
+      {#each strip.cells as c (c.step)}
+        <div
+          class="mini"
+          class:guide-step-active={activeStep?.key === key && activeStep.ringStep === c.step}
+          style="left:{c.step * SIZE * S}px; top:0; width:{SIZE * S}px; height:{SIZE * S}px"
+        >
+          <PictographContainer
+            pictographData={cellData(strip.id, c)}
+            gridMode={GridMode.DIAMOND}
+            redPropTypeOverride={PropType.STAFF}
+            showGrid={true}
+            showTKA={false}
+            showPositions={false}
+            showReversals={false}
+            showTnD={false}
+            showElemental={false}
+            showNonRadialPoints={false}
+            showHandPoints={true}
+            stepNumberOverride={true}
+            darkMode={false}
+            printMode={true}
+            disableTransitions={true}
+          />
+        </div>
+      {/each}
+      <SelectionHit
+        groupId={key}
+        isGroupStart
+        label={`Animate the ${strip.word} sequence`}
+        onselect={() =>
+          emitSequence?.({ strip: stripSteps(strip), word: strip.word, key, propType: "staff" })}
+      />
+    </div>
   {/each}
 
   <!-- Paragraphs (proof coords). -->
@@ -250,6 +294,11 @@
 
   .section-head {
     font-size: 48px;
+  }
+
+  /* Per-sequence wrapper — carries the shared selection ring (.tka-seq-cell). */
+  .strip-wrap {
+    position: absolute;
   }
 
   .mini {

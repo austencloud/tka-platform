@@ -50,8 +50,16 @@ export function getGuidePrintMode(): boolean {
 
 /** Payload a page hands up when the user clicks one of its sequences. `key`
  *  uniquely identifies the strip (`"<page>-<stripIndex>"`) so the reader can
- *  scope the golden step ring to exactly the strip that's animating. */
-export type GuideSequenceClick = { strip: StepData[]; word?: string; key?: string };
+ *  scope the golden step ring to exactly the strip that's animating.
+ *  `propType` picks the companion's animated prop — hand for the hand-motion
+ *  chapters (default), staff for the staff pages (isolation/antispin strips
+ *  animate real staves from their authored orientations). */
+export type GuideSequenceClick = {
+  strip: StepData[];
+  word?: string;
+  key?: string;
+  propType?: "hand" | "staff";
+};
 
 /** The reader registers a handler; pages call it to open the animation companion. */
 export function setGuideSequenceClick(

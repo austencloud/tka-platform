@@ -207,6 +207,20 @@ LOOP terminology, per existing section filenames already named Loops*.)
   boxes incl. STUV full row; T2: OPEN/CLOSE + Greek names; T3-6: all four
   sections + dividers), content 1016/1004px ≤ 1056 sheet. Awaiting eyeball.
 
+- 2026-07-09: STAFF STRIPS CLICK-TO-ANIMATE (Austen directive) — the two
+  Negative Space strips (360° Isolation, 4-Petal Antispin) are now clickable in
+  the reader and animate REAL STAVES from the authored in-orientation. Seam:
+  `GuideSequenceClick` gained `propType?: "hand" | "staff"` → GuideReader holds
+  it → GuideCompanion's new `propType` prop feeds InlineAnimationPlayer's
+  blue/redPropType (previously hardcoded "hand"). The adapter's linear-path
+  forcing is now HAND-ONLY — staff strips keep their natural arc (linear would
+  detach the isolation's pinned center end mid-sweep). Cells carry an invisible
+  blue placeholder (both-hands step contract). Verified in the reader via
+  DevTools: click → companion opens, red staff animates pinned-at-center
+  (arc), accent ring + golden step ring track live. NOTE (Austen 2026-07-09):
+  the embedded codex pages are NOT the intended look — codex will be redone
+  manually; treat bl-double-staff/-36 as placeholders pending his direction.
+
 ## Conventions (facelift — supersede the old guide)
 
 - **gamma = lowercase γ** (NOT uppercase Γ). The old artboards + existing guide

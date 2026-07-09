@@ -18,12 +18,16 @@
     sequence,
     onClose,
     onStep,
+    propType = "hand",
   }: {
     sequence: SequenceData | null;
     onClose: () => void;
     /** Live playback step from the player, forwarded so the reader can ring the
      *  matching on-screen strip cell (see GuideActiveStep). */
     onStep?: (currentStep: number) => void;
+    /** Animated prop — hand for the hand chapters, staff for staff strips
+     *  (the engine keys on this explicit prop, not motion.propType). */
+    propType?: "hand" | "staff";
   } = $props();
 
   let bpm = $state(60);
@@ -49,8 +53,8 @@
           autoPlay={true}
           chrome="minimal"
           externalBpm={bpm}
-          bluePropType="hand"
-          redPropType="hand"
+          bluePropType={propType}
+          redPropType={propType}
           onStepChange={onStep}
         />
       {/key}
