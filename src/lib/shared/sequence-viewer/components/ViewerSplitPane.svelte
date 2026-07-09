@@ -32,6 +32,7 @@
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext, getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { startSceneAssetPreload } from "$lib/shared/3d/services/scene-asset-preloader.svelte";
+  import { createPaneKeepAlive } from "./pane-keep-alive.svelte";
 
   // Derive trail settings from the global singleton so canvas settings changes
   // (e.g. switching from "one end" to "both ends") propagate to this canvas.
@@ -305,133 +306,18 @@
     if (_2dRightActive) _2dRightMounted = true;
   });
 
-  let _cardLeftMounted = $state(false);
-  let _cardLeftShown = $state(false);
-  const _cardLeftActive = $derived(splitConfig.leftPane === 'card');
-  $effect(() => {
-    if (_cardLeftActive) {
-      if (!_cardLeftMounted) {
-        _cardLeftMounted = true;
-        requestAnimationFrame(() => { _cardLeftShown = true; });
-      } else {
-        _cardLeftShown = true;
-      }
-    } else {
-      _cardLeftShown = false;
-    }
-  });
-
-  let _videosLeftMounted = $state(false);
-  let _videosLeftShown = $state(false);
-  const _videosLeftActive = $derived(splitConfig.leftPane === 'videos');
-  $effect(() => {
-    if (_videosLeftActive) {
-      if (!_videosLeftMounted) {
-        _videosLeftMounted = true;
-        requestAnimationFrame(() => { _videosLeftShown = true; });
-      } else {
-        _videosLeftShown = true;
-      }
-    } else {
-      _videosLeftShown = false;
-    }
-  });
-
-  let _mandalaLeftMounted = $state(false);
-  let _mandalaLeftShown = $state(false);
-  const _mandalaLeftActive = $derived(splitConfig.leftPane === 'mandala');
-  $effect(() => {
-    if (_mandalaLeftActive) {
-      if (!_mandalaLeftMounted) {
-        _mandalaLeftMounted = true;
-        requestAnimationFrame(() => { _mandalaLeftShown = true; });
-      } else {
-        _mandalaLeftShown = true;
-      }
-    } else {
-      _mandalaLeftShown = false;
-    }
-  });
-
-  let _tunnelLeftMounted = $state(false);
-  let _tunnelLeftShown = $state(false);
-  const _tunnelLeftActive = $derived(splitConfig.leftPane === 'tunnel');
-  $effect(() => {
-    if (_tunnelLeftActive) {
-      if (!_tunnelLeftMounted) {
-        _tunnelLeftMounted = true;
-        requestAnimationFrame(() => { _tunnelLeftShown = true; });
-      } else {
-        _tunnelLeftShown = true;
-      }
-    } else {
-      _tunnelLeftShown = false;
-    }
-  });
-
-  let _cardRightMounted = $state(false);
-  let _cardRightShown = $state(false);
-  const _cardRightActive = $derived(splitConfig.rightPane === 'card');
-  $effect(() => {
-    if (_cardRightActive) {
-      if (!_cardRightMounted) {
-        _cardRightMounted = true;
-        requestAnimationFrame(() => { _cardRightShown = true; });
-      } else {
-        _cardRightShown = true;
-      }
-    } else {
-      _cardRightShown = false;
-    }
-  });
-
-  let _videosRightMounted = $state(false);
-  let _videosRightShown = $state(false);
-  const _videosRightActive = $derived(splitConfig.rightPane === 'videos');
-  $effect(() => {
-    if (_videosRightActive) {
-      if (!_videosRightMounted) {
-        _videosRightMounted = true;
-        requestAnimationFrame(() => { _videosRightShown = true; });
-      } else {
-        _videosRightShown = true;
-      }
-    } else {
-      _videosRightShown = false;
-    }
-  });
-
-  let _mandalaRightMounted = $state(false);
-  let _mandalaRightShown = $state(false);
-  const _mandalaRightActive = $derived(splitConfig.rightPane === 'mandala');
-  $effect(() => {
-    if (_mandalaRightActive) {
-      if (!_mandalaRightMounted) {
-        _mandalaRightMounted = true;
-        requestAnimationFrame(() => { _mandalaRightShown = true; });
-      } else {
-        _mandalaRightShown = true;
-      }
-    } else {
-      _mandalaRightShown = false;
-    }
-  });
-
-  let _tunnelRightMounted = $state(false);
-  let _tunnelRightShown = $state(false);
-  const _tunnelRightActive = $derived(splitConfig.rightPane === 'tunnel');
-  $effect(() => {
-    if (_tunnelRightActive) {
-      if (!_tunnelRightMounted) {
-        _tunnelRightMounted = true;
-        requestAnimationFrame(() => { _tunnelRightShown = true; });
-      } else {
-        _tunnelRightShown = true;
-      }
-    } else {
-      _tunnelRightShown = false;
-    }
-  });
+  // Companion panes (Card / Videos / Mandala / Tunnel) stay mounted after first
+  // activation and toggle via a hidden class — see createPaneKeepAlive for the
+  // reveal timing (and the stale-frame guard that keeps a pane deselected
+  // during boot from painting over the split view).
+  const _cardLeft = createPaneKeepAlive(() => splitConfig.leftPane === 'card');
+  const _videosLeft = createPaneKeepAlive(() => splitConfig.leftPane === 'videos');
+  const _mandalaLeft = createPaneKeepAlive(() => splitConfig.leftPane === 'mandala');
+  const _tunnelLeft = createPaneKeepAlive(() => splitConfig.leftPane === 'tunnel');
+  const _cardRight = createPaneKeepAlive(() => splitConfig.rightPane === 'card');
+  const _videosRight = createPaneKeepAlive(() => splitConfig.rightPane === 'videos');
+  const _mandalaRight = createPaneKeepAlive(() => splitConfig.rightPane === 'mandala');
+  const _tunnelRight = createPaneKeepAlive(() => splitConfig.rightPane === 'tunnel');
 
   let _pane2d: HTMLDivElement | undefined = $state();
   let _pane3d: HTMLDivElement | undefined = $state();
@@ -609,8 +495,8 @@
       </div>
     {/if}
 
-    {#if _cardLeftMounted}
-      <div class="media-pane preview-pane content-overlay" class:content-overlay-hidden={!_cardLeftShown}>
+    {#if _cardLeft.mounted}
+      <div class="media-pane preview-pane content-overlay" class:content-overlay-hidden={!_cardLeft.shown}>
         <ChoreoCard
           {sequence}
           highlightedStepIndex={playback.highlightedStepIndex}
@@ -643,13 +529,13 @@
         />
       </div>
     {/if}
-    {#if _videosLeftMounted}
-      <div class="media-pane content-overlay" class:content-overlay-hidden={!_videosLeftShown}>
+    {#if _videosLeft.mounted}
+      <div class="media-pane content-overlay" class:content-overlay-hidden={!_videosLeft.shown}>
         <VideoGallery {sequence} isOwned={false} {isLoggedIn} onUpload={onVideoUpload} />
       </div>
     {/if}
-    {#if _mandalaLeftMounted}
-      <div class="media-pane content-overlay" class:content-overlay-hidden={!_mandalaLeftShown}>
+    {#if _mandalaLeft.mounted}
+      <div class="media-pane content-overlay" class:content-overlay-hidden={!_mandalaLeft.shown}>
         <ArtPane
           artType="mandala"
           {sequence}
@@ -666,8 +552,8 @@
         />
       </div>
     {/if}
-    {#if _tunnelLeftMounted}
-      <div class="media-pane content-overlay" class:content-overlay-hidden={!_tunnelLeftShown}>
+    {#if _tunnelLeft.mounted}
+      <div class="media-pane content-overlay" class:content-overlay-hidden={!_tunnelLeft.shown}>
         <ArtPane
           artType="tunnel"
           {sequence}
@@ -730,9 +616,9 @@
         </div>
       {/if}
 
-      {#if _cardRightMounted}
-        <div class="media-pane preview-pane content-overlay" class:content-overlay-hidden={!_cardRightShown}>
-          {#if _cardRightActive && layout.focusedPane === "image" && !layout.isMobile && !layout.suppressCloseButton}
+      {#if _cardRight.mounted}
+        <div class="media-pane preview-pane content-overlay" class:content-overlay-hidden={!_cardRight.shown}>
+          {#if _cardRight.active && layout.focusedPane === "image" && !layout.isMobile && !layout.suppressCloseButton}
             <div
               class="pane-close-btn"
               role="button"
@@ -804,13 +690,13 @@
           </div>
         </div>
       {/if}
-      {#if _videosRightMounted}
-        <div class="media-pane content-overlay" class:content-overlay-hidden={!_videosRightShown}>
+      {#if _videosRight.mounted}
+        <div class="media-pane content-overlay" class:content-overlay-hidden={!_videosRight.shown}>
           <VideoGallery {sequence} isOwned={false} {isLoggedIn} onUpload={onVideoUpload} />
         </div>
       {/if}
-      {#if _mandalaRightMounted}
-        <div class="media-pane content-overlay" class:content-overlay-hidden={!_mandalaRightShown}>
+      {#if _mandalaRight.mounted}
+        <div class="media-pane content-overlay" class:content-overlay-hidden={!_mandalaRight.shown}>
           <ArtPane
             artType="mandala"
             {sequence}
@@ -827,8 +713,8 @@
           />
         </div>
       {/if}
-      {#if _tunnelRightMounted}
-        <div class="media-pane content-overlay" class:content-overlay-hidden={!_tunnelRightShown}>
+      {#if _tunnelRight.mounted}
+        <div class="media-pane content-overlay" class:content-overlay-hidden={!_tunnelRight.shown}>
           <ArtPane
             artType="tunnel"
             {sequence}
