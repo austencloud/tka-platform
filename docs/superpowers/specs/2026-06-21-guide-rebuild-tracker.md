@@ -75,8 +75,8 @@ Old guide = 47 pages. Mapping → our 3 chapters. Status: ⬜ todo · 🔧 in pr
 | 16 | Staff Motions | `_pages/StaffMotionsPage` (body p10) | 🔧 |
 | 17 | Negative Space / Body Turns | `_pages/NegativeSpacePage` (body p11) | 🔧 |
 | 18 | 1.1 Letters (title) | letters | ⬜ |
-| 19 | Double-Staff Codex Type 1-2 (30) | ch11/CodexType12 | ⬜ |
-| 20 | Codex Type 3-6 (17) | ch11/CodexType36 | ⬜ |
+| 19 | Double-Staff Codex Type 1-2 (30) | `_pages/DoubleStaffCodexT12Page` (bl-double-staff) | 🔧 |
+| 20 | Codex Type 3-6 (17) | `_pages/DoubleStaffCodexT36Page` (bl-double-staff-36) | 🔧 |
 | 21 | Type 1 Letters | ch11/Type1Letters | ⬜ |
 | 22 | Basic Words ABC/GHI | ch11/AlphaBetaWords | ⬜ |
 | 23 | Compound Letters (15) | ch11/CompoundLetters | ⬜ |
@@ -191,6 +191,21 @@ LOOP terminology, per existing section filenames already named Loops*.)
   hairlines y 189.6/467.2; text at PROOF_TEXT coords (already "step" not
   "beat"). Verified: svelte-check 0/0, screenshot box-by-box vs artboard (both
   strips' orientations + arrows). Awaiting Austen's eyeball before ✅.
+
+- 2026-07-09: DOUBLE-STAFF CODEX pages (bl-double-staff + NEW bl-double-staff-36)
+  built by PURE REUSE — the printable codex (guide/codex, SHEET1/SHEET2, already
+  parity-verified vs these exact artboards) is embedded via a new `embed` prop
+  on CodexSheet (drops sheet chrome + title; GuidePage paints the manifest
+  title). One codex source of truth, two frames. Manifest SPLIT (hm-gamma
+  precedent): proof p19/p20 are two full sheets → "Double Staff · Types 1–2" +
+  "· Types 3–6". Two context fixes in the thin page wrappers: (1) guide.css
+  globally pins `.size-sm .pictograph-wrapper` to 120px which explodes the
+  codex's 64px cells — scoped restore to cell-owned sizing; (2) body pages
+  render FULL-BLEED (no .page-body padding) → wrapper carries `1in 0.55in 0`
+  and cells scale to 86px so the sheet fills like the artboard. Verified:
+  svelte-check 0/0, guide unit tests 26/26, screenshots of both pages (T1: 7
+  boxes incl. STUV full row; T2: OPEN/CLOSE + Greek names; T3-6: all four
+  sections + dividers), content 1016/1004px ≤ 1056 sheet. Awaiting eyeball.
 
 ## Conventions (facelift — supersede the old guide)
 

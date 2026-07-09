@@ -76,7 +76,10 @@ export const GUIDE_BODY_PAGES: GuidePageEntry[] = [
 
   // ── 1.1 Letters (p11–p29) ─────────────────────────────────────────────
   { id: "base-letters", title: "Base Letters", level: 0, group: "1.1" },
-  { id: "bl-double-staff", title: "Double Staff", level: 1, group: "1.1" },
+  // The double-staff codex is two full sheets in the proof (p19 Types 1–2,
+  // p20 Types 3–6) — split like hm-gamma/hm-type2; numbers re-derive.
+  { id: "bl-double-staff", title: "Double Staff · Types 1–2", level: 1, group: "1.1" },
+  { id: "bl-double-staff-36", title: "Double Staff · Types 3–6", level: 1, group: "1.1" },
   { id: "bl-clubs", title: "Clubs", level: 1, group: "1.1" },
   { id: "bl-buugeng", title: "Buugeng", level: 1, group: "1.1" },
   { id: "bl-triads", title: "Triads", level: 1, group: "1.1" },

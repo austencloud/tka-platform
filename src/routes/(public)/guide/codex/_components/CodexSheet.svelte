@@ -2,11 +2,20 @@
   import CodexBox from "./CodexBox.svelte";
   import type { CodexSheetDef } from "../_data/codex-groups";
 
-  let { sheet }: { sheet: CodexSheetDef } = $props();
+  let {
+    sheet,
+    embed = false,
+  }: {
+    sheet: CodexSheetDef;
+    /** Render only the type blocks — no sheet chrome (size/padding/background)
+     *  and no title — for hosting inside another page frame (the Level 1 guide's
+     *  GuidePage owns the sheet + paints the manifest title). */
+    embed?: boolean;
+  } = $props();
 </script>
 
-<section class="codex-sheet">
-  {#if sheet.title}
+<section class="codex-sheet" class:embed>
+  {#if sheet.title && !embed}
     <h1 class="sheet-title">{sheet.title}</h1>
   {/if}
 
@@ -38,6 +47,14 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+
+  /* Embedded in another page frame (guide): the host owns sheet chrome. */
+  .codex-sheet.embed {
+    width: 100%;
+    min-height: 0;
+    padding: 0;
+    background: transparent;
   }
 
   .sheet-title {

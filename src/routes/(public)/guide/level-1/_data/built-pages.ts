@@ -16,6 +16,8 @@ import Type456Page from "../_pages/Type456Page.svelte";
 import StaffPositionsPage from "../_pages/StaffPositionsPage.svelte";
 import StaffMotionsPage from "../_pages/StaffMotionsPage.svelte";
 import NegativeSpacePage from "../_pages/NegativeSpacePage.svelte";
+import DoubleStaffCodexT12Page from "../_pages/DoubleStaffCodexT12Page.svelte";
+import DoubleStaffCodexT36Page from "../_pages/DoubleStaffCodexT36Page.svelte";
 
 export const BUILT: Record<string, Component> = {
   "the-grid": TheGridPage,
@@ -29,4 +31,6 @@ export const BUILT: Record<string, Component> = {
   "staff-positions": StaffPositionsPage,
   "staff-motions": StaffMotionsPage,
   "negative-space": NegativeSpacePage,
+  "bl-double-staff": DoubleStaffCodexT12Page,
+  "bl-double-staff-36": DoubleStaffCodexT36Page,
 };
