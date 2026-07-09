@@ -13,6 +13,7 @@ import GammaPage from "../_pages/GammaPage.svelte";
 import Type2ShiftsPage from "../_pages/Type2ShiftsPage.svelte";
 import Type3CrossShiftsPage from "../_pages/Type3CrossShiftsPage.svelte";
 import Type456Page from "../_pages/Type456Page.svelte";
+import StaffPositionsPage from "../_pages/StaffPositionsPage.svelte";
 
 export const BUILT: Record<string, Component> = {
   "the-grid": TheGridPage,
@@ -23,4 +24,5 @@ export const BUILT: Record<string, Component> = {
   "hm-type2": Type2ShiftsPage,
   "hm-type34": Type3CrossShiftsPage,
   "hm-type56": Type456Page,
+  "staff-positions": StaffPositionsPage,
 };

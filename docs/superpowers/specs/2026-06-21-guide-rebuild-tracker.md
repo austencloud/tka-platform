@@ -71,7 +71,7 @@ Old guide = 47 pages. Mapping → our 3 chapters. Status: ⬜ todo · 🔧 in pr
 | 12 | Type 2 Shifts | `_pages/Type2ShiftsPage` (body p6) | 🔧 |
 | 13 | Type 3 Cross-Shifts (β→γ) | `_pages/Type3CrossShiftsPage` (`hm-type34`) | 🔧 |
 | 14 | Type 4/5/6 Dash/Dual-Dash/Static | `_pages/Type456Page` (`hm-type56`) | 🔧 |
-| 15 | Staff Positions (12) | ch10/StaffPositions | ⬜ |
+| 15 | Staff Positions (12) | `_pages/StaffPositionsPage` (body p9) | 🔧 |
 | 16 | Staff Motions | ch10/StaffMotions | ⬜ |
 | 17 | Negative Space / Body Turns | ch10/NegativeSpace | ⬜ |
 | 18 | 1.1 Letters (title) | letters | ⬜ |
@@ -134,6 +134,27 @@ LOOP terminology, per existing section filenames already named Loops*.)
   topic). Verified: `npm run check` 0 errors/0 warnings; SSR `/print` HTTP 200
   with all three titles + corrected copy. Awaiting Austen's eyeball pass
   (arrow rendering, Type-6 glyph, title/rule/spacing fidelity) before ✅.
+
+- 2026-07-09: STAFF POSITIONS page (body p9, `staff-positions`) built —
+  `_pages/StaffPositionsPage.svelte`, artboard "1.0 - Layer 1 Staff Positions".
+  12 real STAFF pictographs (props pinned via `bluePropTypeOverride`/`red…` so
+  viewer prop settings can't leak in): α = blue W / red E, β = both S (system
+  beta offset), γ = blue S / red E, × four thumb-orientation columns in
+  blue/red order — in/in, out/out, out/in, in/out — authored as per-hand
+  `startOrientation`/`endOrientation` on static motions (MCP: IN = toward
+  center). The staff SVG's crossbar IS the thumb mark, so orientation renders
+  the artboard's thumb line for free. Verified box-by-box vs artboard crops:
+  alpha row 4/4, gamma row 4/4, beta row orientations 4/4 — beta's LEFT/RIGHT
+  staff order differs (artboard blue-left/red-right; current beta-offset system
+  renders red-left/blue-right; system-owned, kept — same path Type456Page's β
+  shipped through). Facelift: lowercase γ row glyph (artboard used Γ); proof
+  typos corrected ("Many of [the] pictographs", "categorizating"→
+  "categorizing"). Geometry off artboard border scan (20px/pt): 99.8pt boxes,
+  cols x 107.5/228.1/348.6/469.2, rows y 271.8/405.8/535.6, black 2pt rules at
+  y 257.4/389.7/521.3. Text at PROOF_TEXT coords. Verified: svelte-check clean
+  (3 pre-existing errors in another agent's feedback files), /print SSR 200,
+  12 pictograph SVGs mounted, DevTools screenshot row-by-row vs artboard.
+  Awaiting Austen's eyeball before ✅.
 
 ## Conventions (facelift — supersede the old guide)
 
