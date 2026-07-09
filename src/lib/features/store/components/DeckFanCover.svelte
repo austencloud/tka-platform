@@ -26,6 +26,9 @@
     maxCardWidth?: number;
     /** Upper bound on cards shown (width may show fewer). */
     maxCards?: number;
+    /** Show EXACTLY this many cards regardless of width (e.g. the trilogy tile
+        always fans all six element families). Cards scale down to fit. */
+    exactCount?: number;
     /** Disable hover spread/lift (e.g. tiny tiles). */
     interactive?: boolean;
   }
@@ -36,6 +39,7 @@
     cardWidth = 122,
     maxCardWidth,
     maxCards = 6,
+    exactCount,
     interactive = true,
   }: Props = $props();
 
@@ -51,17 +55,26 @@
     if (w < 520 * unit) return 5;
     return 6;
   }
-  const shown = $derived(cards.slice(0, Math.max(1, Math.min(maxCards, countFor(boxW)))));
+  const shown = $derived(
+    cards.slice(0, exactCount ?? Math.max(1, Math.min(maxCards, countFor(boxW))))
+  );
   const tilt = (i: number, n: number) => (n <= 1 ? 0 : -12 + (24 * i) / (n - 1));
 
   // Auto-scale: grow cards to fill the measured container. Sized against the
   // HOVER-OPEN span (overlap 0.18 → each extra card shows 82%) plus ~5% slack
-  // for tilt overhang, so the spread never spills the box.
+  // for tilt overhang, so the spread never spills the box. With exactCount the
+  // minimum floor drops away so a forced-full fan can shrink to fit instead.
   const maxW = $derived(maxCardWidth ?? Math.round(cardWidth * 1.8));
   const cardW = $derived(
     shown.length && boxW
       ? Math.round(
-          Math.min(maxW, Math.max(cardWidth, boxW / ((1 + 0.82 * (shown.length - 1)) * 1.05)))
+          Math.min(
+            maxW,
+            Math.max(
+              exactCount ? 72 : cardWidth,
+              boxW / ((1 + 0.82 * (shown.length - 1)) * 1.05)
+            )
+          )
         )
       : cardWidth
   );

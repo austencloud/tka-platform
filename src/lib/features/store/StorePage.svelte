@@ -7,6 +7,7 @@
   import ProductCard from "./components/ProductCard.svelte";
   import DeckFanCover from "./components/DeckFanCover.svelte";
   import LoopChips from "./components/LoopChips.svelte";
+  import { prewarmCovers } from "./services/cover-front-renderer";
   import type { ProductType } from "./domain/models/product";
 
   // showDrafts: the admin "play with it" view loads every product including
@@ -48,6 +49,13 @@
   const allComponents = $derived([
     ...new Set(deckSkus.flatMap((p) => p.loopComponents ?? [])),
   ]);
+
+  // ONE worker seed for the whole page's covers (union signature), so every fan
+  // composes with arrow/prop/glyph assets present instead of bare grids.
+  $effect(() => {
+    const all = state.products.flatMap((p) => p.coverCards ?? []);
+    if (all.length) prewarmCovers(all);
+  });
 
   // Product type -> section for everything that is NOT part of a listing.
   const SECTIONS: { type: ProductType; label: string }[] = [
@@ -126,11 +134,13 @@
           {#if tndSkus.length > 0}
             <a class="deck-tile" href="/shop/tnd-trilogy">
               <div class="deck-fan-box">
+                <!-- Always all six element families in the fan. -->
                 <DeckFanCover
                   cards={tndTileCards}
                   deckName="Timing & Direction"
-                  cardWidth={132}
+                  cardWidth={110}
                   maxCardWidth={235}
+                  exactCount={Math.min(6, tndTileCards.length)}
                 />
               </div>
               <div class="deck-info">

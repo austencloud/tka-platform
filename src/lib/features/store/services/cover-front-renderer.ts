@@ -3,20 +3,135 @@
  *
  * Renders shop cover cards through the REAL print pipeline
  * (PrintCardRenderer.renderFront: canonical locked visibility + MPC frame +
- * TnD/flavor accent), so a shop fan shows the exact card a buyer receives,
- * not an approximation. Returns object URLs, cached per (sequence, accent)
- * for the session; renders are throttled to a few lanes so a grid of fans
- * doesn't stampede the composition worker.
+ * accent coloring), so a shop fan shows the exact card a buyer receives, not
+ * an approximation. Returns object URLs, cached per (sequence, accent) for the
+ * session; renders are throttled to a few lanes so a grid of fans doesn't
+ * stampede the composition worker.
+ *
+ * Two pieces of app wiring the public shop routes don't otherwise get:
+ * - QR generator injection (the app does it in composition-root
+ *   deferred-registrations) — without it renderFront silently skips the QR.
+ * - Worker asset-bundle seeding (prewarmCardPool) — without it the worker
+ *   composes cells with NO arrow/prop/glyph assets and cards come out as bare
+ *   grids. Call `prewarmCovers` with a page's full cover set BEFORE fans
+ *   mount; the dispatcher gate makes racing renders wait for the seed.
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { CoverCard } from "../domain/models/product";
 import { getPrintCardRenderer } from "$lib/features/choreo-card/getPrintCardRenderer";
 import { getCatalogLayoutPolicy } from "$lib/features/choreo-card/domain/catalog-layout-policy";
+import { hydrateSequence } from "$lib/features/choreo-card/services/catalog-loader";
 import type { TnDElement } from "$lib/features/choreo-card/domain/tnd-element";
 import type { PrintRenderOptions } from "$lib/features/choreo-card/services/types";
+import { getImageComposer } from "$lib/shared/render/get-image-composer";
+import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
+import { prewarmCardPool } from "$lib/shared/render/services/card-pool-prewarm";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import {
+  configureShortCodeManager,
+  getShortCodeManager,
+} from "$lib/shared/qr/get-short-code-manager";
+import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
+import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
+import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
+import { registerLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
+import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
+import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
+
+// Physical decks print with staves; covers show the printed deck, so they
+// don't follow the viewer's prop settings.
+const COVER_BLUE_PROP = PropType.STAFF;
+const COVER_RED_PROP = PropType.STAFF;
+
+// Browse-cache integration the shortcode manager doesn't need for GENERATING
+// codes (same stub /q uses — see routes/q/[code]/+page.svelte).
+const stubBrowseLoader = {
+  loadSequenceMetadata: async () => [],
+  loadFullSequenceData: async () => null,
+  removeFromCache: () => {},
+  addToCache: () => {},
+  warmFromCache: () => {},
+  refreshFromFirestore: async () => [],
+} as unknown as PublicSequencesLoader;
+
+// Public shop routes skip the app composition root, so the print pipeline's
+// dependencies never register. Wire the same set /q wires: shortcode manager
+// (QR codes), LOOP detector (compositional QR encoding), loop display
+// resolver, settings service, then inject the QR generator the way
+// composition-root/deferred-registrations does. Idempotent; respects an
+// already-configured app context.
+let bootstrapped: Promise<void> | null = null;
+function ensureCardPipeline(): Promise<void> {
+  return (bootstrapped ??= (async () => {
+    try {
+      try {
+        getShortCodeManager();
+      } catch {
+        configureShortCodeManager(stubBrowseLoader);
+      }
+      registerLoopDetector(loopDetector);
+      registerLoopDisplayResolver(resolveLoopDisplay);
+      await initializeAppServices();
+      getImageComposer().setQRCodeGenerator(getQRCodeGenerator());
+    } catch (e) {
+      console.warn("[cover-front-renderer] card pipeline bootstrap failed:", e);
+    }
+  })());
+}
+
+// Renders wait for the first prewarm so the worker never seeds an EMPTY asset
+// bundle (bare-grid cards). Fallback timer keeps a surface that forgot to call
+// prewarmCovers rendering (main-thread path still works without a seed).
+let seedRequested: (() => void) | null = null;
+const seedGate = new Promise<void>((resolve) => {
+  seedRequested = resolve;
+});
+const seedGateWithTimeout = Promise.race([
+  seedGate,
+  new Promise<void>((resolve) => setTimeout(resolve, 8000)),
+]);
+
+/**
+ * Seed the composition worker with the asset bundle for a page's full cover
+ * set (union across fans, ONE signature) so every fan hits the warm worker
+ * path with arrows/props/glyphs present. Fire-and-forget and idempotent per
+ * set; safe to call again when products stream in.
+ */
+export function prewarmCovers(cards: readonly CoverCard[]): void {
+  const sequences = cards
+    .map((c) => c.sequence && hydrateCached(c.sequence))
+    .filter(Boolean) as SequenceData[];
+  if (!sequences.length) return;
+  void ensureCardPipeline();
+  const iconPaths = [...new Set(cards.map((c) => c.iconPath).filter((p): p is string => !!p))];
+  // beginSeed inside prewarmCardPool is synchronous, so opening the render gate
+  // right after guarantees queued renders wait on the dispatcher's seed gate
+  // instead of seeding the pool empty.
+  prewarmCardPool({
+    sequences,
+    bluePropType: COVER_BLUE_PROP,
+    redPropType: COVER_RED_PROP,
+    theme: "cosmic",
+    iconPaths,
+  });
+  seedRequested?.();
+}
 
 const urlCache = new Map<string, Promise<string>>();
+
+// Raw embedded cover docs -> render-ready SequenceData (arrow/prop placement
+// data filled). Cached per raw object so prewarm + render share one hydration.
+const hydrationCache = new WeakMap<object, SequenceData>();
+function hydrateCached(raw: SequenceData): SequenceData {
+  const key = raw as unknown as object;
+  let hydrated = hydrationCache.get(key);
+  if (!hydrated) {
+    hydrated = hydrateSequence(raw as unknown as Record<string, unknown>);
+    hydrationCache.set(key, hydrated);
+  }
+  return hydrated;
+}
 
 // Bounded lanes: cover fans can queue 12+ renders at once on /shop.
 const MAX_LANES = 3;
@@ -66,9 +181,12 @@ export function renderCoverFront(
   if (cached) return cached;
 
   const work = (async () => {
+    await seedGateWithTimeout;
+    await ensureCardPipeline();
     await acquireLane();
     try {
-      const stepCount = seq.steps?.length ?? 8;
+      const hydrated = hydrateCached(seq);
+      const stepCount = hydrated.steps?.length ?? 8;
       const options: PrintRenderOptions = {
         includeStartPosition: true,
         // Same policy as the print preview: 8/12-count cards put the start
@@ -76,12 +194,16 @@ export function renderCoverFront(
         startPositionLayout: getCatalogLayoutPolicy(stepCount),
         showMandala: true,
         tndElement: frameElement(card),
-        notes: card.footerCenter ?? "",
+        bluePropType: COVER_BLUE_PROP,
+        redPropType: COVER_RED_PROP,
+        // TnD cards keep their element footer; everything else carries the
+        // brand line (the deck identity lives on the card BACK).
+        notes: card.footerCenter ?? "The Kinetic Alphabet",
         iconPath: card.iconPath,
         ...(deck.deckId && { deckId: deck.deckId }),
         ...(deck.deckName && { deckName: deck.deckName }),
       };
-      const canvas = await getPrintCardRenderer().renderFront(seq as SequenceData, options);
+      const canvas = await getPrintCardRenderer().renderFront(hydrated, options);
       const blob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob(resolve, "image/png")
       );

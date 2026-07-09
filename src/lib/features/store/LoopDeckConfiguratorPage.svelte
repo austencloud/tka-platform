@@ -16,6 +16,7 @@
   import BuyButton from "./components/BuyButton.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import { prewarmCovers } from "./services/cover-front-renderer";
 
   // Named `store`, not `state`: a local binding called `state` collides with the
   // $state rune (svelte store_rune_conflict).
@@ -33,6 +34,13 @@
   const selected = $derived(
     flavors.find((p) => p.id === selectedId) ?? flavors[0] ?? null
   );
+
+  // ONE worker seed covering every flavor's covers, so flavor swaps render
+  // with full arrow/prop assets (see cover-front-renderer).
+  $effect(() => {
+    const all = flavors.flatMap((p) => p.coverCards ?? []);
+    if (all.length) prewarmCovers(all);
+  });
 
   // Short flavor names for the picker (the SKU name repeats "LOOP Deck").
   const flavorName = (name: string) => name.replace(/\s*LOOP Deck$/i, "");

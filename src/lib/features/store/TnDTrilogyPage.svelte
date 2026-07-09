@@ -15,6 +15,7 @@
   import BuyButton from "./components/BuyButton.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
+  import { prewarmCovers } from "./services/cover-front-renderer";
 
   // Named `store`, not `state`: a local binding called `state` collides with the
   // $state rune (svelte store_rune_conflict).
@@ -32,6 +33,12 @@
   const selected = $derived(
     volumes.find((p) => p.id === selectedId) ?? volumes[0] ?? null
   );
+
+  // ONE worker seed covering every volume's covers (see cover-front-renderer).
+  $effect(() => {
+    const all = volumes.flatMap((p) => p.coverCards ?? []);
+    if (all.length) prewarmCovers(all);
+  });
 
   const price = $derived(
     selected ? `$${(selected.price / 100).toFixed(0)}` : "$30"
@@ -75,11 +82,13 @@
           <div class="preview-box">
             <Crossfade key={selected.id}>
               <div class="preview-inner">
+                <!-- All six element families, always. -->
                 <DeckFanCover
                   cards={selected.coverCards ?? []}
                   deckName={selected.name}
-                  cardWidth={168}
+                  cardWidth={150}
                   maxCardWidth={280}
+                  exactCount={Math.min(6, (selected.coverCards ?? []).length)}
                 />
                 <p class="preview-desc">{selected.description}</p>
               </div>

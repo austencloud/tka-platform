@@ -171,7 +171,17 @@ export async function loadCatalogSequencesPage(
 
 // Shared hydration logic for a single Firestore document
 function hydrateDoc(d: QueryDocumentSnapshot): SequenceData {
-  const raw = { id: d.id, ...d.data() };
+  return hydrateSequence({ id: d.id, ...d.data() });
+}
+
+/**
+ * Hydrate a RAW catalog sequence blob (Firestore doc data, or a doc embedded
+ * elsewhere — e.g. shop product coverCards) into render-ready SequenceData:
+ * createMotionData fills arrow/prop placement data, steps get canonical
+ * placeholders, reversals derive when absent. Rendering a raw blob without
+ * this silently drops every arrow and prop.
+ */
+export function hydrateSequence(raw: Record<string, unknown>): SequenceData {
   const seq = createSequenceData(raw);
 
   const startPosition = seq.startPosition
