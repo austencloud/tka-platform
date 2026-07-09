@@ -22,7 +22,7 @@
   import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { captureTunnelSnapshot, type SnapshotDeps } from "../tunnel/tunnel-snapshot";
-  import { captureTunnelPoster } from "../tunnel/tunnel-poster";
+  import { capturePosterFromContainer } from "../tunnel/tunnel-poster";
   import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
@@ -171,8 +171,9 @@
       getBpm: () => bpm,
     };
     const snapshot = captureTunnelSnapshot(deps);
-    const canvas = artBodyEl?.querySelector("canvas") as HTMLCanvasElement | null;
-    const poster = canvas ? captureTunnelPoster(canvas) : "";
+    // Composite ALL stage layers (props + trails + effect overlays), not just the
+    // first canvas, so the saved thumbnail matches the live look.
+    const poster = capturePosterFromContainer(artBodyEl);
     const name = seq.word || `Tunnel #${tunnelCollectionState.count + 1}`;
     await tunnelCollectionState.add({
       name,

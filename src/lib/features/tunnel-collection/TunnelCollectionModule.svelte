@@ -143,7 +143,7 @@
             onclick={() => openTunnelInViewer(selected!)}
           >
             <i class="fas fa-download" aria-hidden="true"></i>
-            <span>Export</span>
+            <span>Export in Viewer</span>
           </button>
 
           <button
