@@ -13,13 +13,18 @@ import type { PushPayload } from "./types";
 const db = admin.firestore();
 
 /**
- * Token docs are keyed by the SHA-256 hex hash of the token (see the client's
- * fcm-token-manager.storeToken). Cleanup must address docs by that hash —
- * deleting by raw token value silently removes nothing, which left stale
+ * Token docs are keyed by the FIRST 32 HEX CHARS of the SHA-256 hash of the
+ * token (see the client's fcm-token-manager.hashToken — it slices to 32).
+ * Cleanup must address docs by that exact id — deleting by raw token value
+ * (or by the full 64-char hash) silently removes nothing, which left stale
  * tokens accumulating forever (15 zombies observed on 2026-07-09).
  */
 function tokenDocId(token: string): string {
-  return crypto.createHash("sha256").update(token).digest("hex");
+  return crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex")
+    .slice(0, 32);
 }
 
 /** FCM error codes that indicate a token is permanently invalid */
