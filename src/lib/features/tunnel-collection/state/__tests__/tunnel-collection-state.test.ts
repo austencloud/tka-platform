@@ -21,7 +21,7 @@ describe("TunnelCollectionState", () => {
     const entry = await s.add(base);
     expect(entry.id).toBeTruthy();
     expect(typeof entry.createdAt).toBe("number");
-    expect(s.collection[0].id).toBe(entry.id);
+    expect(s.collection[0]?.id).toBe(entry.id);
     expect(s.count).toBe(1);
     expect(saved).toHaveLength(1);
   });
