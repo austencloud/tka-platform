@@ -37,7 +37,28 @@ import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
   onMount(() => {
     // Module is now loaded via container
     messagingModuleLoaded = true;
+
+    // Sweep delivered (shade) notifications whenever the app is opened or
+    // refocused. Android derives the PWA icon badge from notifications
+    // sitting in the shade, so reading in-app must also close the shade
+    // copies — otherwise the badge number sticks after the inbox is cleared.
+    sweepDeliveredNotifications();
+    const onVisible = () => {
+      if (!document.hidden) sweepDeliveredNotifications();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
   });
+
+  function sweepDeliveredNotifications(): void {
+    if (!("serviceWorker" in navigator)) return;
+    void navigator.serviceWorker.ready
+      .then(async (reg) => {
+        const delivered = await reg.getNotifications();
+        for (const n of delivered) n.close();
+      })
+      .catch(() => {});
+  }
 
   // Track effective user ID (supports preview/impersonation mode)
   const currentUserId = $derived(
@@ -94,9 +115,12 @@ import { getFCMTokenManager } from "$lib/shared/push/get-fcm-token-manager";
     }
   });
 
-  // Show push prompt when unread messages appear (one-time per session)
+  // Show push prompt when unread inbox items appear (one-time per session).
+  // Counts notifications too, not just DMs — otherwise a fresh install that
+  // receives notifications (e.g. admin Pulse alerts) is never asked for push
+  // permission and never registers an FCM token.
   $effect(() => {
-    const messageCount = inboxState.unreadMessageCount;
+    const messageCount = inboxState.totalUnreadCount;
     if (messageCount > 0 && !pushPromptChecked && currentUserId) {
       pushPromptChecked = true;
       void (async () => {
