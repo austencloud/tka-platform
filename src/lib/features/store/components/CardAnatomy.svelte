@@ -27,7 +27,16 @@
   let {
     highlight = null,
     onhighlight,
-  }: { highlight?: string | null; onhighlight?: (id: string | null) => void } = $props();
+    face = "both",
+  }: {
+    highlight?: string | null;
+    onhighlight?: (id: string | null) => void;
+    /** "both" = desktop side-by-side; "front"/"back" = mobile single face. */
+    face?: "both" | "front" | "back";
+  } = $props();
+
+  const showFront = $derived(face === "both" || face === "front");
+  const showBack = $derived(face === "both" || face === "back");
 
   // The shown card. First paint uses a real baked cover (instant). Shuffle
   // GENERATES a fresh card at a random count (8/12/16) with a turn pattern, so
@@ -250,7 +259,8 @@
 
 {#if shown}
   <div class="anatomy-stack">
-    <div class="anatomy" class:busy={shuffling}>
+    <div class="anatomy" class:busy={shuffling} class:single={face !== "both"}>
+    {#if showFront}
     <figure class="face" class:backgrounded={activeRegion && activeRegion.face !== "front"}>
       <!-- Hover affordance only; the legend buttons are the keyboard/AT path. -->
       <div
@@ -265,9 +275,11 @@
         <img src={shown.frontUrl} alt="Front of a real Choreo Card" />
         {@render spotlight("front")}
       </div>
-      <figcaption>Front</figcaption>
+      {#if face === "both"}<figcaption>Front</figcaption>{/if}
     </figure>
+    {/if}
 
+    {#if showBack}
     <figure class="face" class:backgrounded={activeRegion && activeRegion.face !== "back"}>
       <div
         class="card-box back"
@@ -282,8 +294,9 @@
         <CardBack sequence={shown.sequence} />
         {@render spotlight("back")}
       </div>
-      <figcaption>Back</figcaption>
+      {#if face === "both"}<figcaption>Back</figcaption>{/if}
     </figure>
+    {/if}
     </div>
 
     <div class="shuffle-bar">
@@ -320,6 +333,10 @@
   }
   .anatomy.busy {
     opacity: 0.55;
+  }
+  /* Single-face (mobile): one card, centered, sized to the column. */
+  .anatomy.single .face {
+    flex: 0 1 340px;
   }
 
   .shuffle-bar {

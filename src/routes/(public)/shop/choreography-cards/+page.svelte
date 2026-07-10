@@ -2,6 +2,7 @@
   import { browser } from "$app/environment";
   import { onMount } from "svelte";
   import type { CoverCard } from "$lib/features/store/domain/models/product";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   // Real baked card fronts, one fan per deck line (variety proof under
@@ -106,6 +107,31 @@
   function toggle(id: string) {
     highlight = highlight === id ? null : id;
   }
+
+  // Desktop = the three-column front|cards|back diagram (hover-driven). Mobile
+  // (<1100px) = one card with a Front/Back toggle, a detail slot, and a chip
+  // row, so the card and its explanation always share the screen. Default true
+  // so the prerendered HTML carries the full diagram for SEO; hydrate corrects.
+  let isDesktop = $state(true);
+  onMount(() => {
+    const mq = window.matchMedia("(min-width: 1100px)");
+    const update = () => (isDesktop = mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  });
+
+  // Mobile single-face toggle + detail lookup.
+  let face = $state<"front" | "back">("front");
+  function switchFace(f: "front" | "back") {
+    face = f;
+    highlight = null;
+  }
+  const legendById = $derived(
+    new Map([...frontLegend, ...backLegend].map((i) => [i.id, i]))
+  );
+  const detail = $derived(highlight ? legendById.get(highlight) : null);
+  const faceLegend = $derived(face === "front" ? frontLegend : backLegend);
 </script>
 
 <svelte:head>
@@ -175,53 +201,103 @@
     <h2 class="section-title">What's on the Card</h2>
     <p class="anatomy-hint">Tap or point at any part of the card, or any row in the list. Its match lights up.</p>
 
-    <div class="anatomy-layout" class:dimming={highlight !== null}>
-      <div class="legend-col front">
-        <h3 class="legend-title">Front</h3>
-        <div class="legend-list" role="list">
-          {#each frontLegend as item}
+    {#if isDesktop}
+      <!-- Desktop: front labels | cards | back labels, hover-driven. -->
+      <div class="anatomy-layout" class:dimming={highlight !== null}>
+        <div class="legend-col front">
+          <h3 class="legend-title">Front</h3>
+          <div class="legend-list" role="list">
+            {#each frontLegend as item}
+              <button
+                type="button"
+                class="legend-row"
+                class:active={highlight === item.id}
+                onpointerenter={(e) => e.pointerType === "mouse" && (highlight = item.id)}
+                onpointerleave={(e) => e.pointerType === "mouse" && (highlight = null)}
+                onclick={() => toggle(item.id)}
+              >
+                <span class="legend-term">{item.term}</span>
+                <span class="legend-text">{item.text}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <div class="cards-slot">
+          {#if browser}
+            {#await import("$lib/features/store/components/CardAnatomy.svelte") then { default: CardAnatomy }}
+              <CardAnatomy {highlight} onhighlight={(id) => (highlight = id)} />
+            {/await}
+          {/if}
+        </div>
+
+        <div class="legend-col back">
+          <h3 class="legend-title">Back</h3>
+          <div class="legend-list" role="list">
+            {#each backLegend as item}
+              <button
+                type="button"
+                class="legend-row"
+                class:active={highlight === item.id}
+                onpointerenter={(e) => e.pointerType === "mouse" && (highlight = item.id)}
+                onpointerleave={(e) => e.pointerType === "mouse" && (highlight = null)}
+                onclick={() => toggle(item.id)}
+              >
+                <span class="legend-term">{item.term}</span>
+                <span class="legend-text">{item.text}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      </div>
+    {:else}
+      <!-- Mobile: one card + a Front/Back toggle, its detail directly beneath,
+           and a chip row — card and text always on screen together. -->
+      <div class="mobile-anatomy">
+        <div class="face-toggle">
+          <SegmentedControl
+            options={[
+              { value: "front", label: "Front" },
+              { value: "back", label: "Back" },
+            ]}
+            value={face}
+            onchange={switchFace}
+            color="accent"
+          />
+        </div>
+
+        <div class="cards-slot">
+          {#if browser}
+            {#await import("$lib/features/store/components/CardAnatomy.svelte") then { default: CardAnatomy }}
+              <CardAnatomy {highlight} {face} onhighlight={(id) => (highlight = id)} />
+            {/await}
+          {/if}
+        </div>
+
+        <div class="detail-slot" aria-live="polite">
+          {#if detail}
+            <span class="detail-term">{detail.term}</span>
+            <span class="detail-text">{detail.text}</span>
+          {:else}
+            <span class="detail-prompt">Tap a part of the card, or a chip below, to learn what it is.</span>
+          {/if}
+        </div>
+
+        <div class="chip-row" role="list">
+          {#each faceLegend as item}
             <button
               type="button"
-              class="legend-row"
+              class="part-chip"
               class:active={highlight === item.id}
-              onpointerenter={(e) => e.pointerType === "mouse" && (highlight = item.id)}
-              onpointerleave={(e) => e.pointerType === "mouse" && (highlight = null)}
+              aria-pressed={highlight === item.id}
               onclick={() => toggle(item.id)}
             >
-              <span class="legend-term">{item.term}</span>
-              <span class="legend-text">{item.text}</span>
+              {item.term}
             </button>
           {/each}
         </div>
       </div>
-
-      <div class="cards-slot">
-        {#if browser}
-          {#await import("$lib/features/store/components/CardAnatomy.svelte") then { default: CardAnatomy }}
-            <CardAnatomy {highlight} onhighlight={(id) => (highlight = id)} />
-          {/await}
-        {/if}
-      </div>
-
-      <div class="legend-col back">
-        <h3 class="legend-title">Back</h3>
-        <div class="legend-list" role="list">
-          {#each backLegend as item}
-            <button
-              type="button"
-              class="legend-row"
-              class:active={highlight === item.id}
-              onpointerenter={(e) => e.pointerType === "mouse" && (highlight = item.id)}
-              onpointerleave={(e) => e.pointerType === "mouse" && (highlight = null)}
-              onclick={() => toggle(item.id)}
-            >
-              <span class="legend-term">{item.term}</span>
-              <span class="legend-text">{item.text}</span>
-            </button>
-          {/each}
-        </div>
-      </div>
-    </div>
+    {/if}
 
     <p class="qr-live">
       That QR code is live. Scan it with your phone and this card's sequence opens.
@@ -352,10 +428,82 @@
     gap: 1.75rem;
   }
 
-  /* Mobile: cards first, then the two label lists. */
-  @media (max-width: 1099.98px) {
-    .cards-slot {
-      order: -1;
+  /* ---------- mobile single-card layout ---------- */
+  .mobile-anatomy {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    max-width: 30rem;
+    margin-inline: auto;
+  }
+
+  .face-toggle {
+    width: 100%;
+    max-width: 18rem;
+    margin-inline: auto;
+  }
+
+  /* Detail directly under the card. Reserved height so a longer description
+     never shoves the chips (no-layout-shift): sized to the wordiest entry. */
+  .detail-slot {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    min-height: 7.5rem;
+    padding: 0.9rem 1rem;
+    border-radius: 12px;
+    border: 1px solid oklch(0.4 0.04 270 / 0.25);
+    background: oklch(0.2 0.03 270 / 0.4);
+  }
+  .detail-term {
+    font-weight: 700;
+    font-size: 1rem;
+    color: oklch(0.95 0.01 270);
+  }
+  .detail-text {
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: oklch(0.78 0.015 270);
+  }
+  .detail-prompt {
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: oklch(0.62 0.02 270);
+    font-style: italic;
+  }
+
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+  .part-chip {
+    min-height: 44px;
+    padding: 0.5rem 0.9rem;
+    border-radius: 999px;
+    border: 1px solid oklch(0.42 0.04 270 / 0.35);
+    background: oklch(0.24 0.03 270 / 0.5);
+    color: oklch(0.9 0.01 270);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 140ms ease, border-color 140ms ease, box-shadow 180ms ease;
+  }
+  .part-chip.active {
+    border-color: color-mix(in oklch, var(--accent, #ec4899) 55%, transparent);
+    background: oklch(0.32 0.04 270 / 0.6);
+    box-shadow: 0 0 20px color-mix(in oklch, var(--accent, #ec4899) 20%, transparent);
+  }
+  .part-chip:focus-visible {
+    outline: 2px solid oklch(0.7 0.1 275 / 0.7);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .part-chip {
+      transition: none;
     }
   }
 
