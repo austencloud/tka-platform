@@ -274,6 +274,51 @@ LOOP terminology, per existing section filenames already named Loops*.)
   (mid-flight screenshot); console error-free; svelte-check 0/0. Awaiting
   eyeball.
 
+- 2026-07-09: AUTONOMOUS BOOK RUN (Austen: skip prop codexes, full freedom to
+  finish the book). LEDGER — [x] done · [ ] remaining:
+  - [x] lt1-abc-ghi → `AlphaBetaWordsPage` "Alpha/Beta Words" (`a582ea0f11`) —
+    AAAA/BBBB/CCCC + GGGG/HHHH/IIII word strips, shared Start per block,
+    click-to-animate; proof p22.
+  - [x] lt1-dj-ek-fl → `CompoundLettersPage` "Compound Letters" (`6c6551fff6`)
+    — Tog-Opp/Split-Opp D–L grid + DJ/EK/FL strips; proof p23 (v05 merged the
+    old letters+words pages).
+  - [x] lt1-mp-nq-or-stuv → `GammaLettersPage` "Gamma Letters" (`3b831745d3`)
+    — QO grid M–R, MP/NQ/OR strips, QS row STUV (red leads; U=leader-pro,
+    V=leader-anti); proof p25.
+  - [ ] NEW ENTRY `lt1-gamma-words` "Gamma Words" after lt1-mp-nq-or-stuv —
+    proof p26 / artboard "1.1 - Gamma Words - MP, NQ, OR, STUV.png" (no
+    PROOF_TEXT; text read off artboard).
+  - [x] NEW `lt1-gamma-words` "Gamma Words" (`7627054b1a`) — proof p26; 7 word
+    rows (MPMP/NQNQ/OROR + SSSS/TTTT/UUUU/VVVV) off shared γ Starts.
+  - [x] lt2-wxyz → `Type2ShiftLettersPage` "Type 2 - Shift" (`fad6746244`) —
+    selfTitled purple head, level 0, letters-type2 row removed; 4 OPEN/CLOSE
+    boxes + WΣYΘ/XΔZΩ word rows.
+  - [x] lt3-dash-letters → `Type3CrossShiftLettersPage` "Type 3 - Cross-Shift"
+    (`07f62d8711`) — selfTitled, level 0, letters-type3 removed; LABEL
+    CORRECTION: Σ-/Δ- start BETA, Θ-/Ω- start ALPHA (dataset; old guide had
+    them swapped); W-/Δ- start→halfway→end=combined breakdowns w/ composed
+    staff poses.
+  - [x] lt456-phi-psi-lambda → `Type456LettersPage` (`df0e101b11`) —
+    selfTitled 3 sections, level 0; letters-type456/-dash/-abg + letters-type1
+    rows removed.
+  - [x] words → `WordsPage` (`9644361cc9`) — AABB ×3 thumb orientations
+    (in|in, out|out, in|out).
+  - [x] permutations → `LoopsPage` "LOOPs" (`71f54965f5`) — CAP→LOOP facelift;
+    Mirrored (R R step 5) / Rotated (DΨ ×4, no R) / Swapped (Δ-TQZ- ×2, blue R
+    3+5, red R 7); reversal flags = prop-rotation flips only.
+  - [ ] reversals — proof p33 / artboard "1.2 - Reversals.png".
+  - [ ] examples-abc — proof p34 / artboard "1.2 - Guide pt 1 - AABB.png".
+  - [ ] misc-permutations — proof p37 / artboard (Type 1 Permutations?
+    match by content).
+  - [ ] OPTIONAL new entries for unhomed p35/36/38-43 (CCCC, ACAC/BCBC,
+    Type 1/2 LOOPs, 16-count, 8-letter, prop/full-reversal) if context allows.
+  Verification mode after DevTools MCP dropped mid-run: own vite on :5174
+  (user's 5173 dev server went down; hooks forbid npm run dev), claude-in-chrome
+  screenshots on /print (reader /learn/* redirects — that Chrome profile is
+  logged out), check:fast per page + one full check at run end. Reader click
+  runs for pages after Compound Letters ride on the seam verified 3× earlier
+  today (base-letters, hand-motions, staff-motions).
+
 - 2026-07-09: STAFF MOTIONS combined pictographs click-to-animate (Austen: "make
   the end motion animatable also") — the three combined "=" pictographs
   (Prospin/Antispin/Dash) each play Start → motion in the companion with the
