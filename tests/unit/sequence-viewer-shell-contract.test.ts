@@ -20,10 +20,17 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../
 const SHELL_PATH =
   "src/lib/shared/sequence-viewer/components/SequenceViewerShell.svelte";
 
-const HOSTS: Record<string, string> = {
-  "drawer host":
+// A host may span multiple files (the /q route splits into a thin SSR-head
+// +page.svelte + the QScanPage component that renders the shell — 9ed559a6b3);
+// the contract applies to the host's combined source.
+const HOSTS: Record<string, string[]> = {
+  "drawer host": [
     "src/lib/shared/sequence-viewer/components/SequenceViewerDrawerHost.svelte",
-  "/q scan host": "src/routes/q/[code]/+page.svelte",
+  ],
+  "/q scan host": [
+    "src/routes/q/[code]/+page.svelte",
+    "src/routes/q/[code]/QScanPage.svelte",
+  ],
 };
 
 /**
@@ -58,7 +65,7 @@ function importSpecifierLines(source: string): string[] {
 
 const shellSource = read(SHELL_PATH);
 const hostEntries = Object.entries(HOSTS).map(
-  ([name, rel]) => [name, read(rel)] as const,
+  ([name, rels]) => [name, rels.map(read).join("\n")] as const,
 );
 
 describe("SequenceViewerShell host contract", () => {
