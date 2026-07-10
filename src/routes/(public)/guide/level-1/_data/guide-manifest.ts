@@ -91,8 +91,9 @@ export const GUIDE_BODY_PAGES: GuidePageEntry[] = [
   { id: "lt1-mp-nq-or-stuv", title: "Gamma Letters", level: 1, group: "1.1" },
   // Old p26 (Gamma Words) — added during the 2026-07-09 autonomous run.
   { id: "lt1-gamma-words", title: "Gamma Words", level: 1, group: "1.1" },
-  { id: "letters-type2", title: "Type 2 - Shifts", level: 0, group: "1.1" },
-  { id: "lt2-wxyz", title: "WXYZ, ΣΔθΩ", level: 1, group: "1.1" },
+  // Old p27 is ONE page (letters + words) — the empty letters-type2 section row
+  // was removed 2026-07-09; lt2-wxyz carries the whole Type 2 chapter page.
+  { id: "lt2-wxyz", title: "Type 2 - Shift", level: 0, group: "1.1", selfTitled: true },
   { id: "letters-type3", title: "Type 3 - Cross-Shifts", level: 0, group: "1.1" },
   { id: "lt3-dash-letters", title: "W- X- Y- Z-, Σ- Δ- θ- Ω-", level: 1, group: "1.1" },
   { id: "letters-type456", title: "Type 4, 5, 6", level: 0, group: "1.1" },
