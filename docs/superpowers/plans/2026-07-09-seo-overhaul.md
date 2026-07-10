@@ -531,10 +531,10 @@ Evidence (2026-07-09 build, `npm run build`, exit 0, `.svelte-kit/cloudflare/`):
 - Modify: landing section component (determine: `src/routes/landing/components/` — likely `HeroCarouselSection` CTA row or a dedicated section) 
 - Modify: `src/lib/shared/navigation/config/module-definitions.ts`
 
-- [ ] **Step 1:** Landing CTA: grep `SiteHeader` + `LandingFooter` for existing `/shop` links first. Add a shop CTA into the landing flow using EXISTING button primitives (grep `class:` usage in sibling sections; reuse their CTA button component — never hand-roll). While the shop is gated, CTA copy = "Choreo Cards — coming soon" linking `/shop` (waitlist page is the funnel).
-- [ ] **Step 2:** App nav: read `module-definitions.ts` to see whether a module can be a plain external-style link (grep `href` in the definitions and in the nav renderer). If link-style entries are supported, add Shop → `/shop`. If NOT supported, add the minimal seam: a `linkHref?: string` field on the definition type + nav renderer branch that renders an `<a href>` instead of a module button (44px target, existing nav item styling). Do not create a shop module that boots the app shell.
-- [ ] **Step 3:** Verify via `npm run check` + curl of built landing HTML containing the CTA link. Interactive click-verify needs the browser — ask Austen or use read-only snapshot per browser rules.
-- [ ] **Step 4:** Commit (explicit pathspec).
+- [x] **Step 1:** Landing CTA: grep `SiteHeader` + `LandingFooter` for existing `/shop` links first. Add a shop CTA into the landing flow using EXISTING button primitives (grep `class:` usage in sibling sections; reuse their CTA button component — never hand-roll). While the shop is gated, CTA copy = "Choreo Cards — coming soon" linking `/shop` (waitlist page is the funnel).
+- [x] **Step 2:** App nav: read `module-definitions.ts` to see whether a module can be a plain external-style link (grep `href` in the definitions and in the nav renderer). If link-style entries are supported, add Shop → `/shop`. If NOT supported, add the minimal seam: a `linkHref?: string` field on the definition type + nav renderer branch that renders an `<a href>` instead of a module button (44px target, existing nav item styling). Do not create a shop module that boots the app shell.
+- [x] **Step 3:** Verify via `npm run check` + curl of built landing HTML containing the CTA link. Interactive click-verify needs the browser — ask Austen or use read-only snapshot per browser rules.
+- [x] **Step 4:** Commit (explicit pathspec).
 
 ### Task 14: Full verification sweep
 
