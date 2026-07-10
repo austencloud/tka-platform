@@ -502,26 +502,22 @@ git commit -m "docs(seo): keyword-mapped content roadmap" -- docs/reference/seo-
 **Files:**
 - Modify: guide chapter `+page.svelte` files under `src/routes/(public)/guide/level-1/` (enumerate first)
 
-- [ ] **Step 1:** Enumerate chapters, read one to find where head tags live today (page vs layout).
-- [ ] **Step 2:** Per chapter add: `<title>`/description matched to roadmap queries (e.g. "Learn Flow Arts Notation: Positions & Motions — Level 1 Guide"), canonical, and JSON-LD `LearningResource` + `BreadcrumbList`:
-
-```svelte
-{@html `<script type="application/ld+json">${JSON.stringify({
-  "@context": "https://schema.org",
-  "@type": "LearningResource",
-  name: chapterTitle,
-  description: chapterDescription,
-  educationalLevel: "Beginner",
-  learningResourceType: "Lesson",
-  inLanguage: "en",
-  isPartOf: { "@type": "Course", name: "The Kinetic Alphabet — Level 1", url: "https://tkaflowarts.com/guide/level-1" },
-  url: canonical,
-}).replace(/</g, "\\u003c")}</script>`}
-```
+- [x] **Step 1:** Enumerate chapters, read one to find where head tags live today (page vs layout).
+- [x] **Step 2:** Per chapter add: `<title>`/description matched to roadmap queries, canonical, and JSON-LD `LearningResource` + `BreadcrumbList`.
 
 (BreadcrumbList analogous: Home → Guide → Level 1 → Chapter.) Since chapters are prerendered, verify schema lands in static HTML: after build, `grep -c "LearningResource" .svelte-kit/cloudflare/guide/level-1/*/index.html` (adjust output dir to actual; find via `Glob .svelte-kit/**/guide/**/*.html`).
-- [ ] **Step 3:** Also verify prerendered chapter HTML contains real instructional text (spec Phase 3 requirement): `wc -c` on the built chapter HTML and grep a known sentence from the chapter content. If content is JS-shell-only, report — content SSR is a separate fix, don't bolt it on silently.
-- [ ] **Step 4:** Commit (pathspec = touched chapter files).
+- [x] **Step 3:** Also verify prerendered chapter HTML contains real instructional text (spec Phase 3 requirement): `wc -c` on the built chapter HTML and grep a known sentence from the chapter content. If content is JS-shell-only, report — content SSR is a separate fix, don't bolt it on silently.
+- [x] **Step 4:** Commit (pathspec = touched chapter files).
+
+**Found already implemented** (pre-existing, no diff needed this session): `src/routes/(public)/guide/level-1/_components/GuideSeo.svelte` is a shared head/schema primitive already consumed by `level-1/+page.svelte` (kind="Course"), `level-1/letters/+page.svelte`, `level-1/positions-motions/+page.svelte`, and `level-1/words/+page.svelte` (all kind="LearningResource" via default). It renders `<title>`, description, canonical, OG/Twitter tags, and a single `@graph` JSON-LD (`LearningResource`/`Course` + `BreadcrumbList`) with `.replace(/</g, "\\u003c")` escaping. Titles are query-matched (e.g. "1.0 Positions & Motions · Level 1 Guide · The Kinetic Alphabet"). All four routes have `export const prerender = true`. Verified via full build — see evidence below. No code change was required; this entry documents verification only.
+
+Evidence (2026-07-09 build, `npm run build`, exit 0, `.svelte-kit/cloudflare/`):
+- `guide/level-1/letters.html` — 110,508 bytes; `LearningResource` x1, `BreadcrumbList` x1; `<title>1.1 Letters · Level 1 Guide · The Kinetic Alphabet</title>`; canonical `https://tkaflowarts.com/guide/level-1/letters`
+- `guide/level-1/positions-motions.html` — 98,024 bytes; `LearningResource` x1, `BreadcrumbList` x1; title "1.0 Positions & Motions · Level 1 Guide · The Kinetic Alphabet"
+- `guide/level-1/words.html` — 83,698 bytes; `LearningResource` x1, `BreadcrumbList` x1; title "1.2 Words & LOOPs · Level 1 Guide · The Kinetic Alphabet"
+- `guide/level-1.html` (index, kind="Course") — 64,543 bytes; `BreadcrumbList` x1 (Course type, not LearningResource — by design); title "Level 1 Guide: The Kinetic Alphabet"
+- Real instructional prose confirmed prerendered (not JS-shell): e.g. `<h2>Double Staff Codex</h2>`, `<h2>Type 1: Dual-Shift Letters</h2>` in letters.html; `<p>The Kinetic Alphabet is based on a 4-point grid.` in positions-motions.html.
+- `npx vitest run tests/unit/seo-head-contract.test.ts` — 5/5 passed.
 
 ### Task 12: Targeted landing pages
 
