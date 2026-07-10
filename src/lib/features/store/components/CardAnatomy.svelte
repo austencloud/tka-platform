@@ -193,8 +193,11 @@
     return { x: ((e.clientX - b.left) / b.width) * 100, y: ((e.clientY - b.top) / b.height) * 100 };
   }
 
+  // Hover path (mouse only): move over a region → highlight it, leave → clear.
+  // Touch has no hover, so pointermove never fires on a tap — the tap path
+  // below (onclick) handles touch + also works for mouse clicks.
   function frontHit(e: PointerEvent) {
-    if (!frontRegions) return;
+    if (e.pointerType !== "mouse" || !frontRegions) return;
     const p = pointerPct(e);
     for (const [id, rg] of Object.entries(frontRegions)) {
       if (inRect(p.x, p.y, rg)) return onhighlight?.(id);
@@ -203,10 +206,34 @@
   }
 
   function backHit(e: PointerEvent) {
+    if (e.pointerType !== "mouse") return;
     const p = pointerPct(e);
     for (const id of Object.keys(BACK_SELECTORS)) {
       const rg = measureBack(id);
       if (rg && inRect(p.x, p.y, rg)) return onhighlight?.(id);
+    }
+    onhighlight?.(null);
+  }
+
+  // Tap path: a click fires on a real tap (mouse OR touch) but NOT on a scroll,
+  // so it's the honest mobile hit-test. Toggle so tapping the lit part clears it.
+  const clickPct = (e: MouseEvent) => {
+    const b = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    return { x: ((e.clientX - b.left) / b.width) * 100, y: ((e.clientY - b.top) / b.height) * 100 };
+  };
+  function frontTap(e: MouseEvent) {
+    if (!frontRegions) return;
+    const p = clickPct(e);
+    for (const [id, rg] of Object.entries(frontRegions)) {
+      if (inRect(p.x, p.y, rg)) return onhighlight?.(highlight === id ? null : id);
+    }
+    onhighlight?.(null);
+  }
+  function backTap(e: MouseEvent) {
+    const p = clickPct(e);
+    for (const id of Object.keys(BACK_SELECTORS)) {
+      const rg = measureBack(id);
+      if (rg && inRect(p.x, p.y, rg)) return onhighlight?.(highlight === id ? null : id);
     }
     onhighlight?.(null);
   }
@@ -231,7 +258,8 @@
         role="presentation"
         class:dimmable={activeRegion?.face === "front"}
         onpointermove={frontHit}
-        onpointerleave={() => onhighlight?.(null)}
+        onpointerleave={(e) => e.pointerType === "mouse" && onhighlight?.(null)}
+        onclick={frontTap}
         oncontextmenu={openCardMenu}
       >
         <img src={shown.frontUrl} alt="Front of a real Choreo Card" />
@@ -247,7 +275,8 @@
         bind:this={backBox}
         class:dimmable={activeRegion?.face === "back"}
         onpointermove={backHit}
-        onpointerleave={() => onhighlight?.(null)}
+        onpointerleave={(e) => e.pointerType === "mouse" && onhighlight?.(null)}
+        onclick={backTap}
         oncontextmenu={openCardMenu}
       >
         <CardBack sequence={shown.sequence} />
@@ -366,10 +395,15 @@
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-    /* Hover reveals info about the part under the cursor; clicking does
-       nothing. `help` is the honest affordance (pointer would imply a
-       navigation that never happens). */
+    /* Mouse: hover reveals the part under the cursor (`help`). Touch: tapping a
+       part lights it (the tap path), so coarse pointers get a real pointer
+       cursor — the affordance matches the actual interaction. */
     cursor: help;
+  }
+  @media (pointer: coarse) {
+    .card-box {
+      cursor: pointer;
+    }
   }
 
   .card-box img {

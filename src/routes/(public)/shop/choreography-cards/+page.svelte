@@ -173,7 +173,7 @@
   <section class="editorial-section anatomy-section" style="--accent: #ec4899">
     <span class="section-kicker">Anatomy</span>
     <h2 class="section-title">What's on the Card</h2>
-    <p class="anatomy-hint">Point at any part of the card, or any row in the list. Its match lights up.</p>
+    <p class="anatomy-hint">Tap or point at any part of the card, or any row in the list. Its match lights up.</p>
 
     <div class="anatomy-layout" class:dimming={highlight !== null}>
       <div class="legend-col front">
@@ -184,8 +184,8 @@
               type="button"
               class="legend-row"
               class:active={highlight === item.id}
-              onmouseenter={() => (highlight = item.id)}
-              onmouseleave={() => (highlight = null)}
+              onpointerenter={(e) => e.pointerType === "mouse" && (highlight = item.id)}
+              onpointerleave={(e) => e.pointerType === "mouse" && (highlight = null)}
               onclick={() => toggle(item.id)}
             >
               <span class="legend-term">{item.term}</span>
@@ -211,8 +211,8 @@
               type="button"
               class="legend-row"
               class:active={highlight === item.id}
-              onmouseenter={() => (highlight = item.id)}
-              onmouseleave={() => (highlight = null)}
+              onpointerenter={(e) => e.pointerType === "mouse" && (highlight = item.id)}
+              onpointerleave={(e) => e.pointerType === "mouse" && (highlight = null)}
               onclick={() => toggle(item.id)}
             >
               <span class="legend-term">{item.term}</span>
