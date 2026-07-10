@@ -18,10 +18,8 @@ const pages = [
   // Guide — the indexable, reflowable article routes (the /print + /book
   // replicas are noindex; the canonical is the article, so only these are listed)
   { url: "guide", priority: "0.7", changefreq: "monthly" },
-  { url: "guide/level-1", priority: "0.8", changefreq: "monthly" },
-  { url: "guide/level-1/positions-motions", priority: "0.7", changefreq: "monthly" },
-  { url: "guide/level-1/letters", priority: "0.7", changefreq: "monthly" },
-  { url: "guide/level-1/words", priority: "0.7", changefreq: "monthly" },
+  // Level 1 lives in the in-app reader; /guide/level-1* now 308s there.
+  { url: "learn/guide", priority: "0.8", changefreq: "monthly" },
   { url: "guide/level-2", priority: "0.8", changefreq: "monthly" },
   { url: "guide/level-2/turns", priority: "0.7", changefreq: "monthly" },
   { url: "guide/level-2/double-turns", priority: "0.7", changefreq: "monthly" },

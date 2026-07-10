@@ -241,7 +241,7 @@
       <h2 class="section-title">New to Notation?</h2>
       <div class="prose">
         <p>
-          Start with the free <a href="/guide/level-1">Level 1 guide</a>, or read
+          Start with the free <a href="/learn/guide">Level 1 guide</a>, or read
           <a href="/notation">what flow arts notation is</a>.
         </p>
       </div>

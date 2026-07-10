@@ -128,9 +128,9 @@
     <div class="prose">
       <p>Your first session with TKA looks like learning A, B, and C:</p>
       <ol>
-        <li><a href="/guide/level-1/positions-motions">Positions and motions</a></li>
-        <li><a href="/guide/level-1/letters">Letters</a></li>
-        <li><a href="/guide/level-1/words">Your first words</a></li>
+        <li><a href="/learn/guide/the-grid">Positions and motions</a></li>
+        <li><a href="/learn/guide/base-letters">Letters</a></li>
+        <li><a href="/learn/guide/words">Your first words</a></li>
       </ol>
       <p>
         <a href="/shop/choreography-cards">Choreo Cards</a> make practice physical.

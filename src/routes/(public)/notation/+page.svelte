@@ -143,7 +143,7 @@
     <h2 class="section-title">Where to Start</h2>
     <div class="prose">
       <p>
-        Start with the <a href="/guide/level-1">guide</a>: it introduces all the concepts.
+        Start with the <a href="/learn/guide">guide</a>: it introduces all the concepts.
         Then the <a href="/shop/choreography-cards">cards</a>: accessible ways to use those
         concepts. Then the app: everything else you might possibly ever want to do.
       </p>
