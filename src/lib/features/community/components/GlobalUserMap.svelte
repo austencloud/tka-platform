@@ -34,7 +34,7 @@
       lat: number;
       lng: number;
       label?: string;
-      styleClass?: "pin" | "pin-new";
+      styleClass?: "pin" | "pin-new" | "pin-approx";
     }>;
     /** Fired when a scan-origin pin is clicked (Scan Activity view). */
     onScanMarkerClick?: (id: string) => void;
@@ -191,7 +191,10 @@
     const { AdvancedMarkerElement } = google.maps.marker;
     for (const m of incoming) {
       const content = document.createElement("div");
-      content.className = `scan-pin${m.styleClass === "pin-new" ? " scan-pin--new" : ""}`;
+      content.className =
+        m.styleClass === "pin-approx"
+          ? "scan-pin scan-pin--approx"
+          : `scan-pin${m.styleClass === "pin-new" ? " scan-pin--new" : ""}`;
       const marker = new AdvancedMarkerElement({
         map,
         position: { lat: m.lat, lng: m.lng },
@@ -270,6 +273,16 @@
 
   :global(.scan-pin--new) {
     animation: scanPinPulse 1.5s infinite;
+  }
+
+  /* Country-centroid aggregate — hollow dashed ring, amber, visibly
+     "approximate" next to the solid exact pins. */
+  :global(.scan-pin--approx) {
+    width: 22px;
+    height: 22px;
+    background: color-mix(in srgb, var(--semantic-warning, #f59e0b) 22%, transparent);
+    border: 2px dashed var(--semantic-warning, #f59e0b);
+    box-shadow: none;
   }
 
   @keyframes scanPinPulse {

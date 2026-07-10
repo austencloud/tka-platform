@@ -22,6 +22,7 @@ import {
   type Unsubscribe,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { countryCentroid } from "$lib/features/choreo-card/components/scan-activity/country-centroids";
 import { decodeSequenceFromQR } from "$lib/shared/navigation/services/sequence-encoder";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
@@ -57,7 +58,7 @@ export interface ScanMapPin {
   lat: number;
   lng: number;
   label: string;
-  styleClass: "pin" | "pin-new";
+  styleClass: "pin" | "pin-new" | "pin-approx";
 }
 
 function toFiniteOrNull(val: unknown): number | null {
@@ -67,8 +68,11 @@ function toFiniteOrNull(val: unknown): number | null {
 
 /**
  * Build scan-origin pins from recent events. Pure so it can be unit-tested
- * without the reactive singleton. Only events with finite lat/lng are plotted;
- * the newest located event becomes the pulsing "pin-new". `wordFor` resolves a
+ * without the reactive singleton. Events with finite lat/lng plot exactly;
+ * the newest located event becomes the pulsing "pin-new". Coordless events
+ * that still carry a country (all pre-2026-07-09 card scans — geo headers
+ * were off, so they got country only) aggregate into ONE "pin-approx" per
+ * country at its centroid, never a fake exact position. `wordFor` resolves a
  * human label for a code (falls back to the code itself).
  */
 export function buildScanMapPins(
@@ -76,8 +80,14 @@ export function buildScanMapPins(
   wordFor?: (code: string) => string | undefined
 ): ScanMapPin[] {
   const pins: ScanMapPin[] = [];
+  const approxByCountry = new Map<string, number>();
   events.forEach((e, i) => {
-    if (e.lat === null || e.lng === null) return;
+    if (e.lat === null || e.lng === null) {
+      if (e.country) {
+        approxByCountry.set(e.country, (approxByCountry.get(e.country) ?? 0) + 1);
+      }
+      return;
+    }
     const place = e.city ?? e.country ?? "";
     pins.push({
       id: `${e.code}-${e.timestamp}`,
@@ -87,6 +97,17 @@ export function buildScanMapPins(
       styleClass: i === 0 ? "pin-new" : "pin",
     });
   });
+  for (const [country, count] of approxByCountry) {
+    const centroid = countryCentroid(country);
+    if (!centroid) continue;
+    pins.push({
+      id: `country-${country}`,
+      lat: centroid[0],
+      lng: centroid[1],
+      label: `${country} · ${count} scan${count === 1 ? "" : "s"} (country-level)`,
+      styleClass: "pin-approx",
+    });
+  }
   return pins;
 }
 
@@ -117,16 +138,19 @@ class ScanActivityState {
   private authorInflight = new Map<string, Promise<{ displayName: string; avatarUrl?: string }>>();
 
   /**
-   * Scan-origin pins for GlobalUserMap — recent events that carry finite
-   * coordinates. Events without lat/lng (pre-Cloudflare-headers, dev/localhost)
-   * are excluded here and surfaced only as a count, never plotted at a fake
-   * position. Newest located scan renders as the pulsing "pin-new".
+   * Scan-origin pins for GlobalUserMap. Exact pins for events with finite
+   * coordinates (newest pulses as "pin-new"); country-centroid "pin-approx"
+   * aggregates for coordless events that carry a country. Events with no geo
+   * at all (in-app scans) surface only as a count.
    */
   mapPins = $derived(
     buildScanMapPins(this.recentEvents, (code) => this.byCode.get(code)?.word)
   );
 
-  locatedCount = $derived(this.mapPins.length);
+  /** Exact city-level pins only — approx country aggregates don't count as located. */
+  locatedCount = $derived(
+    this.mapPins.filter((p) => p.styleClass !== "pin-approx").length
+  );
 
   async subscribe(currentUserId: string | null, isAdmin: boolean): Promise<void> {
     this.loading = true;
