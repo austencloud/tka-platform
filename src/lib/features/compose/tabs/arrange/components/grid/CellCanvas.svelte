@@ -376,7 +376,11 @@
         showCreatorName={false}
         showNotes={false}
         showBirthday={false}
+        onContextMenu={() => {}}
       />
+      <!-- onContextMenu no-op: without it ChoreoCard opens its own fallback
+           menu AND the event bubbles to CompositionGrid's cell menu — two
+           menus for one right-click. The cell menu owns this surface. -->
     </div>
   {:else}
     <!-- Non-animation media type placeholder (video, image, or empty choreo-card) -->

@@ -68,7 +68,9 @@
   } from "$lib/shared/choreo-card/services/choreo-card-label-format";
   import { createChoreoCardLayoutState } from "$lib/shared/choreo-card/state/choreo-card-layout-state.svelte";
   import { createCrossfaderState } from "$lib/shared/choreo-card/state/crossfader-state.svelte";
-  import { buildChoreoCardContextMenu } from "$lib/shared/choreo-card/services/choreo-card-context-menu";
+  import { composeMenu } from "$lib/shared/components/context-menu/compose-menu";
+  import { buildCardMenuSection } from "$lib/shared/choreo-card/services/card-menu-section";
+  import { buildPictographContextMenuItems } from "$lib/shared/pictograph/shared/components/context-menu/pictograph-context-menu-builder";
 
   // Eagerly initialize the singleton so its constructor (which mutates $state)
   // runs in the script block, not inside a $derived expression.
@@ -1124,17 +1126,37 @@
     cells = [];
   }
 
-  // Admin context menu (extracted to choreo-card-context-menu.ts)
+  // Fallback context menu (when no onContextMenu prop is wired): additive
+  // Pictograph section (cells live-follow the visibility manager) + Card
+  // section (Re-render for everyone, image actions for admins).
   let contextMenuState: ContextMenuState = $state({ open: false });
 
-  const contextMenuItems = $derived(
-    buildChoreoCardContextMenu(sequence, featureFlagService.isAdmin, {
-      forceRerender: forceRerenderAllCells,
-    })
-  );
+  const contextMenuItems = $derived.by(() => {
+    void glyphVisibilityVersion;
+    return composeMenu([
+      {
+        header: "Pictograph",
+        entries: buildPictographContextMenuItems({
+          visibilityManager: vm,
+          // Card step numbers read ImageComposition.addStepNumbers, not the
+          // visibility manager — the toggle would lie here.
+          includeStepNumbers: false,
+        }),
+      },
+      {
+        header: "Card",
+        entries: buildCardMenuSection({
+          onRerender: () => void forceRerenderAllCells(),
+          isAdmin: featureFlagService.isAdmin,
+          sequenceForImageActions: sequence,
+        }),
+      },
+    ]);
+  });
 
   function handleContextMenu(e: MouseEvent) {
     e.preventDefault();
+    glyphVisibilityVersion++;
     contextMenuState = { open: true, x: e.clientX, y: e.clientY };
   }
 

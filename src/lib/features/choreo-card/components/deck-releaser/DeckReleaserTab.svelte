@@ -57,7 +57,12 @@
   import type { PrintSide } from "../print-preview/PrintPanel.svelte";
 
   interface Props {
-    onContextMenu?: (x: number, y: number, rerender: () => void) => void;
+    onContextMenu?: (
+      x: number,
+      y: number,
+      rerender: () => void,
+      sequence?: import("$lib/shared/foundation/domain/models/sequence-data").SequenceData,
+    ) => void;
   }
 
   let { onContextMenu }: Props = $props();

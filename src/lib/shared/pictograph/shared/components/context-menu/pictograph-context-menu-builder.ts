@@ -17,6 +17,12 @@ interface PictographContextMenuDeps {
   onAdjustArrow?: (color: "blue" | "red") => void;
   /** True if the user is admin and the pictograph has motions (not a blank/start beat) */
   showArrowAdjustment?: boolean;
+  /**
+   * Card surfaces pass false: their step-number overlay reads
+   * ImageCompositionStateManager.addStepNumbers, NOT the visibility manager's
+   * stepNumbers — showing this toggle there would be a lying control.
+   */
+  includeStepNumbers?: boolean;
 }
 
 function buildGridChildren(vm: VisibilityStateManager): ContextMenuItem[] {
@@ -89,16 +95,19 @@ export function buildPictographContextMenuItems(
       icon: "fa-font",
       children: buildGlyphChildren(vm),
     },
-    { type: "separator" },
-    {
+  ];
+
+  if (deps.includeStepNumbers !== false) {
+    items.push({ type: "separator" });
+    items.push({
       id: "toggle-step-numbers",
       label: "Step Numbers",
       icon: "fa-list-ol",
       checked: vm.getStepNumbersVisibility(),
       keepOpen: true,
       action: () => vm.setStepNumbersVisibility(!vm.getStepNumbersVisibility()),
-    },
-  ];
+    });
+  }
 
   if (deps.showArrowAdjustment && deps.onAdjustArrow) {
     items.push({ type: "separator" });

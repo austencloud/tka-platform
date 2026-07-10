@@ -15,15 +15,27 @@
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
-  import { buildChoreoCardContextMenuItems } from "$lib/shared/choreo-card/services/card-designer-context-menu-builder";
+  import { buildCardMenuSection } from "$lib/shared/choreo-card/services/card-menu-section";
+  import {
+    openSendSequenceSheet,
+    buildSequenceSharePayload,
+  } from "$lib/shared/inbox/state/send-sequence-state.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
   // Context menu for right-click on any choreo card thumbnail.
-  // Stores the rerender callback from the specific card that was right-clicked.
+  // Stores the rerender callback + sequence from the specific card clicked.
+  // Card section only — releaser/print cards render the frozen canonical
+  // visibility profile, so the pictograph section is deliberately absent
+  // (see docs/superpowers/specs/2026-07-09-context-menu-unification-design.md).
   let contextMenuState: ContextMenuState = $state({ open: false });
   let activeCardRerender: (() => void) | undefined = $state(undefined);
+  let activeCardSequence: SequenceData | undefined = $state(undefined);
+  let menuVersion = $state(0);
 
-  function openCardContextMenu(x: number, y: number, rerender: () => void) {
+  function openCardContextMenu(x: number, y: number, rerender: () => void, sequence?: SequenceData) {
     activeCardRerender = rerender;
+    activeCardSequence = sequence;
+    menuVersion++;
     contextMenuState = { open: true, x, y };
   }
 
@@ -31,11 +43,21 @@
     contextMenuState = { open: false };
   }
 
-  const contextMenuItems: ContextMenuEntry[] = $derived(
-    buildChoreoCardContextMenuItems({
+  const contextMenuItems: ContextMenuEntry[] = $derived.by(() => {
+    void menuVersion;
+    const seq = activeCardSequence;
+    return buildCardMenuSection({
       onRerender: activeCardRerender,
-    })
-  );
+      stepCount: seq?.steps?.length ?? 0,
+      onColumnCountChange: () => { menuVersion++; },
+      onSendTo: seq
+        ? () => {
+            closeCardContextMenu();
+            openSendSequenceSheet(buildSequenceSharePayload(seq));
+          }
+        : undefined,
+    });
+  });
 
   // Mode state - synced with global navigation (sidebar tab selection)
   type ChoreoCardMode = "scan-activity" | "releaser" | "codex";

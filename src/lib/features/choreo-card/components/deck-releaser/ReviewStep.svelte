@@ -41,7 +41,7 @@
     isReleasing: boolean;
     readOnly?: boolean;
     footers?: CardFooter[];
-    onContextMenu?: (x: number, y: number, rerender: () => void) => void;
+    onContextMenu?: (x: number, y: number, rerender: () => void, sequence?: SequenceData) => void;
     brokenLoopCount?: number;
     /** Reroll only makes sense for randomly-rolled decks (LOOP). TnD is a finite,
      *  deterministic enumeration, so the redraw button is hidden for it. */
@@ -297,7 +297,7 @@
       deckName={`LOOP Deck #${nextDeckNumber}`}
       {deckSummary}
       onCardClick={handleCardClick}
-      onCardContextMenu={onContextMenu ? (x, y, rerender) => onContextMenu(x, y, rerender) : undefined}
+      onCardContextMenu={onContextMenu ? (x, y, rerender, sequence) => onContextMenu(x, y, rerender, sequence) : undefined}
       onPairsReady={onPairsReady}
       onRenderStateChange={onRenderStateChange}
     />
@@ -318,7 +318,7 @@
             if (newUrl) inspectedFrontImageUrl = newUrl;
           });
         }
-      });
+      }, inspectedSequence ?? undefined);
     } : undefined}
     onClose={() => { inspectedSequence = null; inspectedFrontImageUrl = null; inspectedRerender = null; }}
   >

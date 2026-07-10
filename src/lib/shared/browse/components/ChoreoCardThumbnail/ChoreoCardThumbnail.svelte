@@ -20,10 +20,9 @@ Variation support:
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
   import type { ContextMenuEntry, ContextMenuState } from "$lib/shared/components/context-menu/context-menu-types";
+  import { buildCardMenuSection } from "$lib/shared/choreo-card/services/card-menu-section";
   import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
-  import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { DEFAULT_SHARE_OPTIONS } from "$lib/shared/share/domain/models/share-options";
   import {
     openSendSequenceSheet,
     buildSequenceSharePayload,
@@ -218,86 +217,18 @@ Variation support:
 
   const contextMenuItems: ContextMenuEntry[] = $derived.by(() => {
     const seq = displayedSequence;
-    const items: ContextMenuEntry[] = [
-      {
-        id: "send-to",
-        label: "Send to...",
-        icon: "fa-paper-plane",
-        action: handleSendTo,
+    // Canonical card section (Re-render, Send to, admin image actions). No
+    // pictograph section here: thumbnails are static cached images that don't
+    // re-render on visibility toggles.
+    const items: ContextMenuEntry[] = buildCardMenuSection({
+      onRerender: () => {
+        closeContextMenu();
+        thumbnailRef?.forceRerender();
       },
-      {
-        id: "re-render",
-        label: "Re-render",
-        icon: "fa-rotate",
-        action() {
-          closeContextMenu();
-          thumbnailRef?.forceRerender();
-        },
-      },
-    ];
-
-    // Admin-only items
-    if (featureFlagService.isAdmin) {
-      items.push(
-        { type: "separator" } as ContextMenuEntry,
-        {
-          id: "save-image",
-          label: "Save image",
-          icon: "fa-download",
-          async action() {
-            try {
-              const { sharer } = await import(
-                "$lib/shared/share/services/sharer"
-              );
-              await sharer.downloadImage(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
-              toast.success("Image saved");
-            } catch (err) {
-              console.error("Save image failed:", err);
-              toast.error("Failed to save image");
-            }
-          },
-        },
-        {
-          id: "copy-image",
-          label: "Copy image",
-          icon: "fa-copy",
-          async action() {
-            try {
-              const { sharer } = await import(
-                "$lib/shared/share/services/sharer"
-              );
-              const blob = await sharer.getImageBlob(seq, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
-              await navigator.clipboard.write([
-                new ClipboardItem({ "image/png": blob }),
-              ]);
-              toast.success("Image copied to clipboard");
-            } catch (err) {
-              console.error("Copy image failed:", err);
-              toast.error("Failed to copy image");
-            }
-          },
-        },
-        {
-          id: "copy-for-claude",
-          label: "Copy for Claude",
-          icon: "fa-robot",
-          async action() {
-            try {
-              const copier = getClaudeCodeCopier();
-              const result = await copier.copyForClaude(seq);
-              if (result.success) {
-                toast.success("Copied for Claude");
-              } else {
-                toast.error("Failed to copy for Claude");
-              }
-            } catch (err) {
-              console.error("Copy for Claude failed:", err);
-              toast.error("Failed to copy for Claude");
-            }
-          },
-        },
-      );
-    }
+      onSendTo: handleSendTo,
+      isAdmin: featureFlagService.isAdmin,
+      sequenceForImageActions: seq,
+    });
 
     const myUid = authState.user?.uid;
     const isOwner = !!myUid && seq.ownerId === myUid;
