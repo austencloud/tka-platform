@@ -85,7 +85,7 @@ export const GUIDE_BODY_PAGES: GuidePageEntry[] = [
   { id: "bl-triads", title: "Triads", level: 1, group: "1.1" },
   { id: "bl-fans", title: "Fans", level: 1, group: "1.1" },
   { id: "bl-mini-hoops", title: "Mini Hoops", level: 1, group: "1.1" },
-  { id: "letters-type1", title: "Type 1 - Dual-Shifts", level: 0, group: "1.1" },
+  // (letters-type1 removed 2026-07-09 — base-letters carries the Type 1 head.)
   { id: "lt1-abc-ghi", title: "Alpha/Beta Words", level: 1, group: "1.1" },
   { id: "lt1-dj-ek-fl", title: "Compound Letters", level: 1, group: "1.1" },
   { id: "lt1-mp-nq-or-stuv", title: "Gamma Letters", level: 1, group: "1.1" },
@@ -97,10 +97,9 @@ export const GUIDE_BODY_PAGES: GuidePageEntry[] = [
   // Old p28 is ONE page — the empty letters-type3 section row was removed
   // 2026-07-09; lt3-dash-letters carries the whole Type 3 chapter page.
   { id: "lt3-dash-letters", title: "Type 3 - Cross-Shift", level: 0, group: "1.1", selfTitled: true },
-  { id: "letters-type456", title: "Type 4, 5, 6", level: 0, group: "1.1" },
-  { id: "lt456-phi-psi-lambda", title: "Φ, Ψ, Λ", level: 1, group: "1.1" },
-  { id: "lt456-phi-psi-lambda-dash", title: "Φ-, Ψ-, Λ-", level: 1, group: "1.1" },
-  { id: "lt456-alpha-beta-gamma", title: "α, β, γ", level: 1, group: "1.1" },
+  // Old p29 is ONE page covering Types 4/5/6 — the empty letters-type456 row
+  // and the two seeded splits (-dash, -abg) were removed 2026-07-09.
+  { id: "lt456-phi-psi-lambda", title: "Type 4/5/6 - Φ, Ψ, Λ", level: 0, group: "1.1", selfTitled: true },
 
   // ── 1.2 Words (p30–p34) ───────────────────────────────────────────────
   { id: "words", title: "Words", level: 0, group: "1.2" },
