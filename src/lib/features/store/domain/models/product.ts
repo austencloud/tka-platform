@@ -60,6 +60,9 @@ export interface Product {
   /** Products sharing a listing collapse into ONE storefront entry (the deck
    *  configurator). They stay individually purchasable backing SKUs. */
   readonly listing?: string;
+  /** Physical box contents, one line each — rendered as the what's-in-the-box
+   *  check-list on bundle listings (the starter pack). */
+  readonly boxContents?: string[];
   /** True when the deck is sold ahead of printing; pairs with shipBy. From Stripe metadata. */
   readonly preorder?: boolean;
   /** Human ship-by label shown on pre-order products, e.g. "September 2026". From Stripe metadata. */

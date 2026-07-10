@@ -56,6 +56,22 @@
     if (all.length) prewarmCovers(all);
   });
 
+  // The starter pack: the flagship bundle listing. Its fan is a mixed hand of
+  // LOOP flavors + trilogy elements pulled from the other products' covers.
+  const starterPack = $derived(
+    state.products.find(
+      (p) => p.listing === "starter-pack" && p.status === "active"
+    ) ?? null
+  );
+  const starterPrice = $derived(
+    starterPack ? `$${(starterPack.price / 100).toFixed(0)}` : ""
+  );
+  // Deliberately half LOOP, half color-coded trilogy: the mix is the message.
+  const starterCards = $derived([
+    ...heroCards.slice(0, 3),
+    ...tndTileCards.slice(0, 3),
+  ]);
+
   // The companion book: the only non-deck product on offer. Everything the shop
   // sells sits above the fold (two deck lines + the book) — no catch-all grid.
   const book = $derived(
@@ -88,6 +104,39 @@
     {#if state.error}
       <div class="error">{state.error}</div>
     {:else}
+      <!-- ============ THE STARTER PACK ============
+           Flagship bundle band under the hero: newcomers start here, before
+           the individual deck lines. -->
+      {#if starterPack}
+        <section class="starter-band">
+          <a class="starter-tile" href="/shop/starter-pack">
+            <div class="starter-fan-box">
+              <DeckFanCover
+                cards={starterCards}
+                deckName={starterPack.name}
+                cardWidth={128}
+                maxCardWidth={230}
+                exactCount={Math.min(6, starterCards.length)}
+              />
+            </div>
+            <div class="deck-info">
+              <span class="eyebrow">Start here</span>
+              <h2>{starterPack.name}</h2>
+              <p class="deck-meta">
+                Trilogy · mixed LOOP deck · the book · waterproof card holder
+              </p>
+              <p class="deck-desc">{starterPack.description}</p>
+              <div class="deck-buy-row">
+                <span class="deck-price">{starterPrice}</span>
+                <span class="deck-cta">
+                  Get the pack <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                </span>
+              </div>
+            </div>
+          </a>
+        </section>
+      {/if}
+
       <!-- ============ THE TWO DECK LINES ============ -->
       {#if deckSkus.length > 0 || tndSkus.length > 0}
         <section class="deck-listing" id="deck">
@@ -332,6 +381,56 @@
   .hero-cta:hover {
     filter: brightness(1.08);
     transform: translateY(-2px);
+  }
+
+  /* ---------- the starter pack (flagship band) ---------- */
+  .starter-band {
+    margin-bottom: 28px;
+  }
+
+  .starter-tile {
+    /* One wide featured tile: caps and centers on ultrawide like the book. */
+    max-width: 1700px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: clamp(20px, 3vw, 48px);
+    align-items: center;
+    padding: clamp(20px, 3vw, 40px);
+    border-radius: 24px;
+    border: 1px solid rgba(139, 108, 255, 0.35);
+    background:
+      linear-gradient(
+        135deg,
+        rgba(139, 108, 255, 0.1),
+        rgba(111, 140, 255, 0.04) 55%,
+        rgba(255, 255, 255, 0.03)
+      );
+    color: inherit;
+    text-decoration: none;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s;
+  }
+  .starter-tile:hover {
+    transform: translateY(-4px);
+    border-color: rgba(139, 108, 255, 0.7);
+  }
+
+  .starter-fan-box {
+    min-height: clamp(240px, 15vw, 400px);
+    display: grid;
+    place-items: center;
+    border-radius: 16px;
+    background: radial-gradient(
+      circle at 50% 42%,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.015)
+    );
+  }
+
+  @media (max-width: 820px) {
+    .starter-tile {
+      grid-template-columns: 1fr;
+    }
   }
 
   /* ---------- the deck-line listings ---------- */
