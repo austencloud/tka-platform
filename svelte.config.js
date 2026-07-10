@@ -37,8 +37,6 @@ const config = {
           '/legacy-sw.js',
           '/manifest.webmanifest',
           '/og-default.png',
-          '/robots.txt',
-          '/sitemap.xml',
           '/sw.js',
         ]
       }
