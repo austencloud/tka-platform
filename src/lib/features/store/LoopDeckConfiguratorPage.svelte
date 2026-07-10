@@ -102,8 +102,9 @@
   // ── generate-panel bento palette + LOOP/prop tile gradients (shared with the
   //    deck-releaser LoopBentoBoard so the surfaces match). ──
   const cc = getCardColors(BackgroundType.COSMIC);
-  const LOOP_COLOR = "linear-gradient(135deg, #a3a32a 0%, #8a8a22 50%, #6b6b1a 100%)";
-  const LOOP_SHADOW = "60deg 55% 35%";
+  // LOOP identity gold, brightened off the drab olive so the hero tile reads warm.
+  const LOOP_COLOR = "linear-gradient(135deg, #d9c24a 0%, #a89a2c 48%, #6f6318 100%)";
+  const LOOP_SHADOW = "50deg 60% 42%";
   const PROP_TILE_COLOR = "linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%)";
   const PROP_TILE_SHADOW = "275deg 70% 50%";
   // Mix = a bit of every level: baby-blue → silver → gold.
@@ -284,8 +285,8 @@
                   deckId={selectedSku?.deckId}
                   deckName={selectedSku?.name ?? "Variety Pack"}
                   {propType}
-                  cardWidth={168}
-                  maxCardWidth={280}
+                  cardWidth={210}
+                  maxCardWidth={340}
                   exactCount={flavor === "variety"
                     ? Math.min(6, fanCards.length)
                     : undefined}
@@ -338,8 +339,9 @@
               </div>
             </div>
 
+            <!-- Flavor: the identity choice — a full-width hero tile. -->
             <div class="tile-row">
-              <div class="tile">
+              <div class="tile hero">
                 <BaseCard
                   title="Flavor"
                   currentValue={flavorTileValue}
@@ -349,6 +351,12 @@
                   onClick={() => (showFlavor = true)}
                 />
               </div>
+            </div>
+
+            <!-- Prop (interactive) + Size / Bundle (fixed this beta run: tarot /
+                 bundle coming soon) three across. Muted non-interactive tiles —
+                 no fake-pickable disabled controls. -->
+            <div class="tile-row trio">
               <div class="tile prop-tile">
                 <BaseCard
                   title="Prop"
@@ -359,21 +367,18 @@
                   onClick={() => (showProp = true)}
                 >
                   <div class="prop-tile-inner">
-                    <img
-                      class="prop-tile-img"
-                      src={shopPropImage(propType)}
-                      alt=""
-                      draggable="false"
-                    />
+                    <span class="prop-tile-chip">
+                      <img
+                        class="prop-tile-img"
+                        src={shopPropImage(propType)}
+                        alt=""
+                        draggable="false"
+                      />
+                    </span>
                     <span class="prop-tile-label">{shopPropLabel(propType)}</span>
                   </div>
                 </BaseCard>
               </div>
-            </div>
-
-            <!-- secondary: fixed for the beta run (tarot / bundle coming soon).
-                 Muted, non-interactive tiles — no fake-pickable disabled controls. -->
-            <div class="tile-row secondary">
               <div class="tile small">
                 <BaseCard
                   title="Size"
@@ -621,19 +626,16 @@
     }
   }
 
-  /* Wide screens: stretch the preview stage to the info column's height. */
-  @media (min-width: 1400px) {
-    .config-layout {
-      align-items: stretch;
-    }
+  /* Wide screens: the info column is taller than the preview, so DON'T stretch
+     the stage to match (that left a big void with the fan floating in it).
+     Keep the box at a hero height and pin it in view as the column scrolls. */
+  @media (min-width: 1200px) {
     .preview-column {
-      display: flex;
-      flex-direction: column;
+      position: sticky;
+      top: 88px;
     }
     .preview-box {
-      flex: 1;
-      height: auto;
-      min-height: clamp(360px, 36vw, 460px);
+      height: clamp(400px, 46vh, 480px);
     }
   }
 
@@ -723,8 +725,19 @@
     min-width: 180px;
     height: 118px;
   }
-  .tile-row.secondary > .tile.small {
-    height: 82px;
+  /* Flavor hero: full-width identity tile, a touch taller than the steppers. */
+  .tile-row > .tile.hero {
+    flex: 1 1 100%;
+    height: 132px;
+  }
+  /* Prop + Size + Bundle three across; prop gets a little more room. */
+  .tile-row.trio > .tile {
+    flex: 1 1 150px;
+    min-width: 132px;
+    height: 100px;
+  }
+  .tile-row.trio > .tile.prop-tile {
+    flex: 1.5 1 180px;
   }
   .tile > :global(*) {
     width: 100%;
@@ -736,10 +749,10 @@
     font-size: 24px !important;
     line-height: 1.15 !important;
   }
-  .tile-row.secondary :global(.base-card .card-value) {
-    font-size: 15px !important;
+  .tile.small :global(.base-card .card-value) {
+    font-size: 14px !important;
     font-weight: 700 !important;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.75)) !important;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.78)) !important;
     white-space: normal !important;
   }
   .bento-board :global(.card-title) {
@@ -759,21 +772,34 @@
     align-items: center;
     justify-content: center;
   }
+  /* Single centered row — a small framed image chip + the prop name. A thin
+     prop (staff) reads clearly inside the chip; nothing overflows the tile. */
   .prop-tile-inner {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 6px;
+    justify-content: center;
+    gap: 9px;
+  }
+  .prop-tile-chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.16);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
   .prop-tile-img {
-    width: 40px;
-    height: 40px;
+    width: 24px;
+    height: 24px;
     object-fit: contain;
     pointer-events: none;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
   }
   .prop-tile-label {
-    font-size: var(--font-size-min, 14px);
+    font-size: var(--font-size-min, 15px);
     font-weight: 800;
     text-shadow: var(--card-text-shadow);
   }
