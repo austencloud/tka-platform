@@ -113,6 +113,10 @@
     onProgressBarScrubEnd?: () => void;
     playbackMode?: "continuous" | "step";
     onPlaybackModeChange?: (mode: "continuous" | "step") => void;
+    /** Forwarded from the 3D canvas load gate (first-load latched). Lets the host
+        withhold sibling chrome — e.g. the Record Scene pill — until the stage is
+        set, matching the in-pane rail gate. */
+    onSceneReadyChange?: (ready: boolean) => void;
     rerenderTrigger?: number;
     /**
      * When true, the tap-to-focus handlers on both panes are suppressed
@@ -176,6 +180,7 @@
     onProgressBarScrubEnd,
     playbackMode,
     onPlaybackModeChange,
+    onSceneReadyChange,
     rerenderTrigger = 0,
     isExporting = false,
     splitConfig = { leftPane: 'animation', rightPane: 'card' },
@@ -410,7 +415,10 @@
               {onProgressBarSeek}
               {playbackMode}
               {onPlaybackModeChange}
-              onSceneReadyChange={(ready) => (_scene3dReady = ready)}
+              onSceneReadyChange={(ready) => {
+                _scene3dReady = ready;
+                onSceneReadyChange?.(ready);
+              }}
             />
           {/if}
         </div>

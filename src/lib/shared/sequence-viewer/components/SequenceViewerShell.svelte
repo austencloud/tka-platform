@@ -245,6 +245,11 @@
   let rerenderTrigger = $state(0);
   let choreoCardMenuHost: ChoreoCardContextMenuHost | undefined = $state();
 
+  // 3D scene load gate (first-load latched, forwarded from the 3D canvas via
+  // ViewerSplitPane). Withholds the Record Scene pill until the stage is set, so
+  // it doesn't sit over a black "Setting the stage" pane reading as ready.
+  let sceneReady3d = $state(false);
+
   // ── Derived view flags (were {@const} in the drawer's snippet body) ──
   const isVideoExportActive = $derived(ctx.editingPane === "animation");
   const isImageExportActive = $derived(ctx.editingPane === "image");
@@ -551,6 +556,7 @@
               onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
               playbackMode={ctx.playbackMode}
               onPlaybackModeChange={ctx.handlePlaybackModeChange}
+              onSceneReadyChange={(ready) => (sceneReady3d = ready)}
               splitConfig={ctx.viewerState.viewerMode === 'split'
                 ? { leftPane: 'animation', rightPane: 'card' }
                 : (ctx.viewerState.viewerMode === 'card'
@@ -603,7 +609,7 @@
             onSendToStickerLab={handleSendToStickerLab}
             stepCount={sequence?.steps?.length ?? 0}
           />
-          {#if isRecordSceneActive && ctx.effectiveSequence}
+          {#if isRecordSceneActive && ctx.effectiveSequence && sceneReady3d}
             <RecordSceneChrome
               isExporting={ctx.isExporting}
               canvasReady={ctx.canvasReady}
