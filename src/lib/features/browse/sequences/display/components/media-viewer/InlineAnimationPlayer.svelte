@@ -378,6 +378,7 @@
         letter={currentLetter}
         stepData={currentStepData}
         sequenceData={animationState.sequenceData}
+        currentStep={animationState.currentStep}
         {isPlaying}
         onPlaybackToggle={togglePlayback}
         trailSettings={animationSettings.trail}
