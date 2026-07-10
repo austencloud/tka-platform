@@ -89,6 +89,8 @@ export const GUIDE_BODY_PAGES: GuidePageEntry[] = [
   { id: "lt1-abc-ghi", title: "Alpha/Beta Words", level: 1, group: "1.1" },
   { id: "lt1-dj-ek-fl", title: "Compound Letters", level: 1, group: "1.1" },
   { id: "lt1-mp-nq-or-stuv", title: "Gamma Letters", level: 1, group: "1.1" },
+  // Old p26 (Gamma Words) — added during the 2026-07-09 autonomous run.
+  { id: "lt1-gamma-words", title: "Gamma Words", level: 1, group: "1.1" },
   { id: "letters-type2", title: "Type 2 - Shifts", level: 0, group: "1.1" },
   { id: "lt2-wxyz", title: "WXYZ, ΣΔθΩ", level: 1, group: "1.1" },
   { id: "letters-type3", title: "Type 3 - Cross-Shifts", level: 0, group: "1.1" },

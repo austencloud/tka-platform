@@ -20,6 +20,7 @@ import BaseLettersPage from "../_pages/BaseLettersPage.svelte";
 import AlphaBetaWordsPage from "../_pages/AlphaBetaWordsPage.svelte";
 import CompoundLettersPage from "../_pages/CompoundLettersPage.svelte";
 import GammaLettersPage from "../_pages/GammaLettersPage.svelte";
+import GammaWordsPage from "../_pages/GammaWordsPage.svelte";
 import DoubleStaffCodexT12Page from "../_pages/DoubleStaffCodexT12Page.svelte";
 import DoubleStaffCodexT36Page from "../_pages/DoubleStaffCodexT36Page.svelte";
 
@@ -39,6 +40,7 @@ export const BUILT: Record<string, Component> = {
   "lt1-abc-ghi": AlphaBetaWordsPage,
   "lt1-dj-ek-fl": CompoundLettersPage,
   "lt1-mp-nq-or-stuv": GammaLettersPage,
+  "lt1-gamma-words": GammaWordsPage,
   "bl-double-staff": DoubleStaffCodexT12Page,
   "bl-double-staff-36": DoubleStaffCodexT36Page,
 };
