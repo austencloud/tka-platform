@@ -19,6 +19,8 @@ export function startForegroundMessageListener(): void {
 
 		unsubscribe = onMessage(messaging, (payload) => {
 			const data = payload.data || {};
+			// State-sync messages (badge/dismiss) are not user-facing.
+			if (data.action) return;
 			const title = data.title || "New notification";
 			const body = data.body || "";
 

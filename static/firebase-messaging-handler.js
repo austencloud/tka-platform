@@ -29,6 +29,23 @@ messaging.onBackgroundMessage((payload) => {
   const data = payload.data || {};
   const notification = payload.notification || {};
 
+  // State-sync messages: dismiss shade notifications + resync the badge when
+  // the inbox was cleared on another device. Never display these.
+  if (data.action === "dismiss-notifications") {
+    self.registration.getNotifications().then((delivered) => {
+      for (const n of delivered) {
+        // Leave DM notifications alone — message reads sync separately.
+        if (n.data?.type !== "message-received") n.close();
+      }
+    });
+    const count = parseInt(data.unreadCount, 10);
+    if (self.navigator?.setAppBadge) {
+      if (!isNaN(count) && count > 0) self.navigator.setAppBadge(count);
+      else if (self.navigator.clearAppBadge) self.navigator.clearAppBadge();
+    }
+    return;
+  }
+
   const title = notification.title || data.title || "TKA Composer";
   const body = notification.body || data.body || "";
 

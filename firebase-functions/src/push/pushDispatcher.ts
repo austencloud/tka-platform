@@ -105,6 +105,30 @@ export async function sendPushToUser(
 }
 
 /**
+ * Send a data-only (non-displaying) message to all of a user's devices.
+ * Used for state sync (badge counts, dismissing shade notifications after
+ * the inbox is cleared elsewhere). The service worker recognizes
+ * `data.action` payloads and never calls showNotification for them.
+ */
+export async function sendDataToUser(
+  userId: string,
+  data: Record<string, string>
+): Promise<void> {
+  const tokens = await getActiveTokens(userId);
+  if (tokens.length === 0) return;
+
+  const response = await admin.messaging().sendEachForMulticast({
+    tokens,
+    data,
+    webpush: { headers: { Urgency: "high" } },
+  });
+
+  if (response.failureCount > 0) {
+    await cleanupStaleTokens(userId, tokens, response.responses);
+  }
+}
+
+/**
  * Check whether push notifications should be sent for a given
  * notification type, based on the user's stored preferences.
  *
