@@ -1,17 +1,25 @@
 import type { PageLoad } from "./$types";
+import { browser } from "$app/environment";
+import type { Product } from "$lib/features/store/domain/models/product";
 
 export const prerender = false;
-export const ssr = false;
+export const ssr = true;
 
-// Load the product here (not in onMount) so a client-side navigation's
-// `navigation.complete` waits for the data. That keeps the view-transition holding
-// the old grid until the detail is data-ready, so the shared cover morphs cleanly
-// instead of flashing the loading state mid-transition. Dynamic import keeps the
-// Firebase client loader out of the SSR module graph.
-export const load: PageLoad = async ({ params }) => {
-  const { getProductLoader } = await import(
-    "$lib/features/store/get-product-loader"
-  );
-  const product = await getProductLoader().loadProduct(params.productId);
-  return { product, productId: params.productId };
+// Client nav still loads via the client SDK (keeps the view-transition
+// holding until data-ready — see comment history above). On SSR the server
+// load (+page.server.ts, Admin SDK) already provided the product; reuse it
+// instead of hitting Firestore from the server-rendered pass. Dynamic import
+// keeps the Firebase client loader out of the SSR module graph.
+export const load: PageLoad = async ({ params, data }) => {
+  // The server load returns the raw Firestore doc; it IS the products
+  // collection's Product shape (see +page.server.ts).
+  const serverProduct = (data?.serverProduct ?? null) as Product | null;
+  if (browser) {
+    const { getProductLoader } = await import(
+      "$lib/features/store/get-product-loader"
+    );
+    const product = await getProductLoader().loadProduct(params.productId);
+    return { product: product ?? serverProduct, productId: params.productId };
+  }
+  return { product: serverProduct, productId: params.productId };
 };
