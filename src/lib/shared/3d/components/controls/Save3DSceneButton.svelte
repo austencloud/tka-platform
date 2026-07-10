@@ -1,10 +1,11 @@
 <!--
   Save3DSceneButton — captures the live 3D viewer configuration into the
   Scenes collection (Playground › Scenes). Mirrors the tunnel "Save tunnel"
-  button. Lives in the 3D side panel where getViewer3DContext() is in scope.
+  button. Rendered inside the Scene popover (RightRail + mobile sheet); hides
+  itself if no viewer 3D context is in scope.
 -->
 <script lang="ts">
-  import { getViewer3DContext } from "../../context/viewer-3d-context";
+  import { tryGetViewer3DContext } from "../../context/viewer-3d-context";
   import {
     captureScene3DSnapshot,
     captureScene3DPoster,
@@ -13,20 +14,20 @@
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { StepData } from "$lib/features/scene-3d-collection/domain/scene-3d-collection-types";
 
-  const viewer3DState = getViewer3DContext();
+  const viewer3DState = tryGetViewer3DContext();
 
   let saving = $state(false);
 
   // A sensible default name from the loaded sequence, falling back to a date.
   function defaultName(): string {
-    const seq = viewer3DState.currentSequenceData;
+    const seq = viewer3DState?.currentSequenceData;
     const word = seq?.word || seq?.name;
     if (word) return `${word} — 3D scene`;
     return "3D scene";
   }
 
   async function handleSave() {
-    if (saving) return;
+    if (saving || !viewer3DState) return;
     saving = true;
     try {
       const snapshot = captureScene3DSnapshot(viewer3DState);
@@ -49,6 +50,7 @@
   }
 </script>
 
+{#if viewer3DState}
 <button
   type="button"
   class="save-scene-btn"
@@ -59,6 +61,7 @@
   <i class="fas {saving ? 'fa-spinner fa-spin' : 'fa-bookmark'}" aria-hidden="true"></i>
   <span>{saving ? "Saving…" : "Save scene"}</span>
 </button>
+{/if}
 
 <style>
   .save-scene-btn {

@@ -4,6 +4,7 @@
   import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
   import SceneFeatureTiles from "../scene-features/components/SceneFeatureTiles.svelte";
   import { tryGetSceneFeatureContext } from "../scene-features/context/scene-feature-context";
+  import Save3DSceneButton from "./controls/Save3DSceneButton.svelte";
 
   const currentBg = $derived(settingsService.settings.backgroundType);
   const hasSceneFeatures = tryGetSceneFeatureContext() !== undefined;
@@ -34,6 +35,9 @@
   <div class="section-divider"></div>
   <SceneFeatureTiles />
 {/if}
+
+<div class="section-divider"></div>
+<Save3DSceneButton />
 
 <style>
   .scene-grid {
