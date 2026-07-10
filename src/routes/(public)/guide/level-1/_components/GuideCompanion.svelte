@@ -28,6 +28,20 @@
    * `tka-pending-edit-sequence` localStorage key that
    * deep-link-sequence-handler.ts already reads on construct-tab mount, then
    * navigate. No sequence-viewer chrome imported — just the handoff data path.
+   *
+   * P3 (Guide Companion v2): "Edit steps" swaps the animator area for an
+   * inline editing sub-panel — a mini strip of tappable PictographContainer
+   * cells (tap step N to truncate + rebuild from there) plus an embedded
+   * OptionPicker (hideFilters, simplified grid). Edits stage locally
+   * (stagedStrip, plain $state — no per-tap Firestore writes); Save converts
+   * the staged strip through sequenceToStrip/guide-inline-edit and calls
+   * saveOverride once. OptionPicker takes only currentSequence/currentGridMode
+   * props (no CreateModuleContext dependency — verified by grep, no
+   * getContext/setContext in option-picker/), so it's safe to embed directly
+   * here. Plain `{#if editing}` swap, not <Crossfade> — the picker is heavy/
+   * stateful (per crossfade-primitive.md, remounting is fine here since there's
+   * no state to preserve across the swap, but a keyed crossfade would be the
+   * wrong tool for a full sub-panel replacement anyway).
    */
   import { Popover } from "bits-ui";
   import { goto } from "$app/navigation";
@@ -39,7 +53,7 @@
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import { sequenceToStrip } from "../_data/guide-sequence-adapter";
+  import { sequenceToStrip, stripToSequence } from "../_data/guide-sequence-adapter";
   import {
     hasOverride,
     hasRevisionsCached,
@@ -48,8 +62,20 @@
     revertOverride,
     saveOverride,
   } from "../_data/guide-overrides.svelte";
+  import {
+    appendStep,
+    deriveWordFromStrip,
+    stepsOf,
+    truncateStripAt,
+  } from "../_data/guide-inline-edit";
   import { mirrorSequence, swapColors } from "$lib/shared/create/services/sequence-transformer";
   import { rotateSequenceGeometry } from "$lib/shared/create/services/sequence-derived-fields";
+  import OptionPicker from "$lib/features/create/construct/option-picker/components/OptionPicker.svelte";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
   const PENDING_EDIT_SEQUENCE_KEY = "tka-pending-edit-sequence";
   type TransformKind = "mirror" | "colorSwap" | "rotateCw" | "rotateCcw";
@@ -82,6 +108,16 @@
   let pickerOpen = $state(false);
   let transformOpen = $state(false);
   let transformBusy = $state(false);
+
+  // Inline step editing (P3) — staged locally; nothing hits Firestore until Save.
+  let editing = $state(false);
+  let stagedStrip = $state<StepData[] | null>(null);
+  let editSaving = $state(false);
+  const stagedSteps = $derived(stagedStrip ? stepsOf(stagedStrip) : []);
+  const editGridMode = $derived(
+    (stagedStrip?.[0]?.gridMode as GridMode | undefined) ?? GridMode.DIAMOND
+  );
+  const editPropTypeOverride = $derived(propType === "staff" ? PropType.STAFF : PropType.HAND);
 
   // Revert availability is fetched lazily (Firestore read) whenever a new
   // strip is clicked while signed in as admin — cached in the override module
@@ -181,6 +217,47 @@
     }
     void goto("/create/construct");
   }
+
+  /** Enter edit mode — stage the current sequence's flat strip locally. */
+  function startEdit() {
+    if (!sequence || !stripKey) return;
+    stagedStrip = sequenceToStrip(sequence);
+    editing = true;
+  }
+
+  /** Tap step N in the mini strip: drop steps after N, resume picking from there. */
+  function handleTruncateAt(stepNumber: number) {
+    if (!stagedStrip) return;
+    stagedStrip = truncateStripAt(stagedStrip, stepNumber);
+  }
+
+  /** OptionPicker selection — append the picked pictograph as the next step. */
+  function handleEditOptionSelected(option: PictographData) {
+    if (!stagedStrip) return;
+    stagedStrip = appendStep(stagedStrip, option);
+  }
+
+  function cancelEdit() {
+    editing = false;
+    stagedStrip = null;
+  }
+
+  async function saveEdit() {
+    if (!stagedStrip || !stripKey || editSaving) return;
+    editSaving = true;
+    try {
+      const word = deriveWordFromStrip(stagedStrip);
+      await saveOverride(stripKey, stagedStrip, word || undefined);
+      toast.success("Guide sequence updated.");
+      editing = false;
+      stagedStrip = null;
+    } catch (err) {
+      console.error("[GuideCompanion] Save edit failed:", err);
+      toast.error("Failed to save the edited sequence.");
+    } finally {
+      editSaving = false;
+    }
+  }
 </script>
 
 <div class="companion">
@@ -201,23 +278,67 @@
   </div>
 
   <div class="body">
-    {#if sequence}
-      {#key sequence.id}
-        <InlineAnimationPlayer
-          {sequence}
-          autoPlay={true}
-          chrome="minimal"
-          externalBpm={bpm}
-          bluePropType={propType}
-          redPropType={propType}
-          onStepChange={onStep}
-        />
-      {/key}
-    {:else}
-      <p class="hint">Click a sequence on the page to animate it.</p>
-    {/if}
+    {#if editing && stagedStrip}
+      <div class="edit-panel">
+        <div class="edit-strip" role="group" aria-label="Staged steps — tap a step to rebuild from there">
+          {#each stagedStrip as box, i (box.id ?? i)}
+            {@const stepNumber = box.stepNumber ?? 0}
+            <button
+              type="button"
+              class="edit-cell"
+              class:is-start={stepNumber === 0}
+              onclick={() => handleTruncateAt(stepNumber)}
+              aria-label={stepNumber === 0 ? "Start position" : `Step ${stepNumber} — tap to rebuild from here`}
+            >
+              <PictographContainer
+                pictographData={box}
+                gridMode={editGridMode}
+                bluePropTypeOverride={editPropTypeOverride}
+                redPropTypeOverride={editPropTypeOverride}
+                stepNumberOverride={true}
+              />
+            </button>
+          {/each}
+        </div>
 
-    <div class="tempo-row">
+        <div class="edit-picker">
+          <OptionPicker
+            currentSequence={stagedSteps as unknown as PictographData[]}
+            currentGridMode={editGridMode}
+            onOptionSelected={handleEditOptionSelected}
+            hideFilters={true}
+          />
+        </div>
+
+        <div class="edit-actions" role="group" aria-label="Save or cancel editing">
+          <button class="admin-btn" type="button" onclick={cancelEdit} disabled={editSaving}>
+            <i class="fas fa-xmark" aria-hidden="true"></i>
+            <span>Cancel</span>
+          </button>
+          <button class="admin-btn is-primary" type="button" onclick={saveEdit} disabled={editSaving}>
+            <i class="fas fa-check" aria-hidden="true"></i>
+            <span>{editSaving ? "Saving…" : "Save"}</span>
+          </button>
+        </div>
+      </div>
+    {:else}
+      {#if sequence}
+        {#key sequence.id}
+          <InlineAnimationPlayer
+            {sequence}
+            autoPlay={true}
+            chrome="minimal"
+            externalBpm={bpm}
+            bluePropType={propType}
+            redPropType={propType}
+            onStepChange={onStep}
+          />
+        {/key}
+      {:else}
+        <p class="hint">Click a sequence on the page to animate it.</p>
+      {/if}
+
+      <div class="tempo-row">
       <Popover.Root bind:open={bpmOpen}>
         <Popover.Trigger>
           {#snippet child({ props })}
@@ -330,7 +451,12 @@
           <i class="fas fa-pen-to-square" aria-hidden="true"></i>
           <span>Remix</span>
         </button>
+        <button class="admin-btn" type="button" disabled={!sequence} onclick={startEdit}>
+          <i class="fas fa-pen" aria-hidden="true"></i>
+          <span>Edit steps</span>
+        </button>
       </div>
+    {/if}
     {/if}
   </div>
 </div>
@@ -550,11 +676,81 @@
     opacity: 0.4;
     cursor: not-allowed;
   }
+  .admin-btn.is-primary {
+    background: var(--theme-accent, #6366f1);
+    border-color: var(--theme-accent, #6366f1);
+    color: #fff;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .admin-btn.is-primary:hover:not(:disabled) {
+      background: color-mix(in srgb, var(--theme-accent, #6366f1) 85%, white);
+    }
+  }
+
+  /* Inline pictograph editing (P3) — mini strip + embedded OptionPicker. */
+  .edit-panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .edit-strip {
+    flex: 0 0 auto;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0.4rem;
+    border-radius: 10px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+  .edit-cell {
+    all: unset;
+    cursor: pointer;
+    box-sizing: border-box;
+    width: 56px;
+    height: 56px;
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color var(--duration-fast, 150ms) ease;
+  }
+  .edit-cell.is-start {
+    border-color: var(--theme-accent, #6366f1);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .edit-cell:hover {
+      border-color: var(--theme-accent, #6366f1);
+    }
+  }
+  .edit-cell:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+  }
+  .edit-picker {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 10px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+  .edit-actions {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+  }
 
   @media (prefers-reduced-motion: reduce) {
     .bpm-btn,
     .admin-btn,
-    .transform-item {
+    .transform-item,
+    .edit-cell {
       transition: none;
     }
   }

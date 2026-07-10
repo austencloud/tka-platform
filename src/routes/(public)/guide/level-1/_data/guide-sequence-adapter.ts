@@ -19,7 +19,7 @@ import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 /** A box is the start pose when it has no beat number (0 or null/undefined). */
-const isStartBox = (b: StepData): boolean =>
+export const isStartBox = (b: StepData): boolean =>
   b.stepNumber === 0 || b.stepNumber === null || b.stepNumber === undefined;
 
 /**
