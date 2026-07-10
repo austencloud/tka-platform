@@ -52,12 +52,12 @@
     {
       id: "mandala",
       term: "Combined mandala",
-      text: "A combination of the two mandalas.",
+      text: "A combination of the two mandalas. The purple represents where they overlap.",
     },
     {
       id: "looptype",
       term: "LOOP type",
-      text: "The LOOP type, rotated being the most common and most understandable one.",
+      text: "The LOOP type of the sequence.",
     },
     {
       id: "difficulty",
@@ -132,41 +132,13 @@
     <p class="page-subtitle">The newest technology in flow arts notation</p>
   </header>
 
-  <div class="pair">
-    <section class="editorial-section" style="--accent: #22c55e">
-      <span class="section-kicker">The cards</span>
-      <div class="prose">
-        <p>
-          Each card holds a sequence. Scan the QR code and it takes you to a page where you
-          can immediately visualize that sequence with any prop at any speed, save it to
-          your own personal catalog so you can keep track of all of your sequences, and
-          open a practice mode that lets you learn the sequence at your own pace.
-        </p>
-      </div>
-    </section>
-
-    <section class="editorial-section" style="--accent: #14b8a6">
-      <span class="section-kicker">The decks</span>
-      <h2 class="section-title">Every Deck Is Different</h2>
-      <div class="prose">
-        <p>
-          Every deck is algorithmically generated, a unique configuration of cards, many of
-          which may have never been seen before. It's like opening a pack of Pokémon or
-          Magic cards: you don't know what you're going to get, and you get a variety pack
-          of different levels. You're not buying the same thing the person next to you
-          bought.
-        </p>
-      </div>
-      <div class="deck-links">
-        {#each decks as deck}
-          <a class="deck-link" href={deck.href}>
-            <span class="deck-name">{deck.name}</span>
-            <span class="deck-blurb">{deck.blurb}</span>
-            <span class="deck-arrow"><i class="fas fa-arrow-right" aria-hidden="true"></i></span>
-          </a>
-        {/each}
-      </div>
-    </section>
+  <div class="lede">
+    <p>
+      Each card holds a sequence. Scan the QR code and it takes you to a page where you
+      can immediately visualize that sequence with any prop at any speed, save it to
+      your own personal catalog so you can keep track of all of your sequences, and
+      open a practice mode that lets you learn the sequence at your own pace.
+    </p>
   </div>
 
   <section class="editorial-section anatomy-section" style="--accent: #ec4899">
@@ -223,45 +195,52 @@
     </div>
   </section>
 
-  <div class="pair">
-    <section class="editorial-section" style="--accent: #f59e0b">
-      <span class="section-kicker">Lineage</span>
-      <h2 class="section-title">Built on VTG</h2>
-      <div class="prose">
-        <p>
-          This was built on a foundation of what Vulcan Tech Gospel did before it. VTG
-          holds the basis for this. TKA is the child of VTG in a way, and we pay respects
-          to it by taking it further. What TKA does has unique properties VTG cannot and
-          would not ever cover.
-        </p>
-      </div>
-    </section>
+  <section class="editorial-section narrow" style="--accent: #14b8a6">
+    <span class="section-kicker">The decks</span>
+    <h2 class="section-title">Every Deck Is Different</h2>
+    <div class="prose">
+      <p>
+        Every deck is algorithmically generated, a unique configuration of cards, many of
+        which may have never been seen before. It's like opening a pack of Pokémon or
+        Magic cards: you don't know what you're going to get, and you get a variety pack
+        of different levels. You're not buying the same thing the person next to you
+        bought.
+      </p>
+    </div>
+    <div class="deck-links">
+      {#each decks as deck}
+        <a class="deck-link" href={deck.href}>
+          <span class="deck-name">{deck.name}</span>
+          <span class="deck-blurb">{deck.blurb}</span>
+          <span class="deck-arrow"><i class="fas fa-arrow-right" aria-hidden="true"></i></span>
+        </a>
+      {/each}
+    </div>
+  </section>
 
-    <section class="editorial-section" style="--accent: #06b6d4">
-      <span class="section-kicker">Getting started</span>
-      <h2 class="section-title">New to Notation?</h2>
-      <div class="prose">
-        <p>
-          Start with the free <a href="/learn/guide">Level 1 guide</a>, or read
-          <a href="/notation">what flow arts notation is</a>.
-        </p>
-      </div>
-    </section>
-  </div>
+  <section class="editorial-section narrow" style="--accent: #06b6d4">
+    <span class="section-kicker">Getting started</span>
+    <h2 class="section-title">New to Notation?</h2>
+    <div class="prose">
+      <p>
+        Start with the free <a href="/learn/guide">Level 1 guide</a>, or read
+        <a href="/notation">what flow arts notation is</a>.
+      </p>
+    </div>
+  </section>
 </div>
 
 <style>
-  /* Desktop uses the width: widen the editorial column and pair sections
-     side by side. Mobile keeps the single readable column. */
+  /* One rhythm: prose stays at reading width, only the anatomy diagram
+     goes wide. */
+  .narrow {
+    max-width: 46rem;
+    margin-inline: auto;
+  }
+
   @media (min-width: 1100px) {
     .editorial.wide {
       max-width: 76rem;
-    }
-    .pair {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2.5rem;
-      align-items: start;
     }
     /* Anatomy diagram: front labels | cards | back labels. The section
        breaks out of the editorial column and the label columns center
@@ -287,6 +266,12 @@
 
   .anatomy-section {
     margin-top: 2rem;
+  }
+  /* The diagram is centered and full-width; its header centers with it. */
+  .anatomy-section > :global(.section-kicker),
+  .anatomy-section > .section-title,
+  .anatomy-section > .anatomy-hint {
+    text-align: center;
   }
 
   .anatomy-hint {
@@ -385,6 +370,11 @@
     display: grid;
     gap: 0.85rem;
     margin-top: 1.25rem;
+  }
+  @media (min-width: 640px) {
+    .deck-links {
+      grid-template-columns: 1fr 1fr;
+    }
   }
   .deck-link {
     display: grid;
