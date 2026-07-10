@@ -8,21 +8,24 @@ Allow: /
 # Sitemap
 Sitemap: ${LANDING_DOMAIN}/sitemap.xml
 
-# Public pages
-Allow: /
-Allow: /profile
-Allow: /sequence/
-Allow: /landing
-
-# Block internal paths
+# Block internal + utility paths
 Disallow: /api/
 Disallow: /admin/
 Disallow: /test/
 Disallow: /demo/
 Disallow: /_app/
 Disallow: /.svelte-kit/
+Disallow: /embed/
+Disallow: /render-pictographs
+Disallow: /endless-spinner
+Disallow: /coven
+Disallow: /hall-of-shame
+Disallow: /grant-feature
+Disallow: /1989
+Disallow: /1995
+Disallow: /1998
+Disallow: /2003
 
-# Crawl delay for respectful crawling
 Crawl-delay: 1`;
 
   return new Response(robots, {
