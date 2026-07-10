@@ -94,8 +94,9 @@ export const GUIDE_BODY_PAGES: GuidePageEntry[] = [
   // Old p27 is ONE page (letters + words) — the empty letters-type2 section row
   // was removed 2026-07-09; lt2-wxyz carries the whole Type 2 chapter page.
   { id: "lt2-wxyz", title: "Type 2 - Shift", level: 0, group: "1.1", selfTitled: true },
-  { id: "letters-type3", title: "Type 3 - Cross-Shifts", level: 0, group: "1.1" },
-  { id: "lt3-dash-letters", title: "W- X- Y- Z-, Σ- Δ- θ- Ω-", level: 1, group: "1.1" },
+  // Old p28 is ONE page — the empty letters-type3 section row was removed
+  // 2026-07-09; lt3-dash-letters carries the whole Type 3 chapter page.
+  { id: "lt3-dash-letters", title: "Type 3 - Cross-Shift", level: 0, group: "1.1", selfTitled: true },
   { id: "letters-type456", title: "Type 4, 5, 6", level: 0, group: "1.1" },
   { id: "lt456-phi-psi-lambda", title: "Φ, Ψ, Λ", level: 1, group: "1.1" },
   { id: "lt456-phi-psi-lambda-dash", title: "Φ-, Ψ-, Λ-", level: 1, group: "1.1" },
