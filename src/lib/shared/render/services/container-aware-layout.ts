@@ -102,12 +102,20 @@ interface Candidate {
   balance: number;
 }
 
-/** True when `a` is a strictly better fit than `b`. */
+/**
+ * True when `a` is a strictly better fit than `b`.
+ *
+ * Objective order (see 2026-07-10-auto-layout-full-grid-design.md):
+ *  1. Fewest empty cells — the fullest grid wins. Prevents Auto from choosing a
+ *     shape with corner/upward gaps just because it renders marginally bigger.
+ *  2. Largest cell edge (within CELL_EDGE_EPSILON) — among equally-full shapes,
+ *     render the biggest.
+ *  3. Best balance — closest-to-square breaks any remaining tie.
+ */
 function isBetter(a: Candidate, b: Candidate): boolean {
+  if (a.wasted !== b.wasted) return a.wasted < b.wasted;
   if (a.cellEdge > b.cellEdge + CELL_EDGE_EPSILON) return true;
   if (b.cellEdge > a.cellEdge + CELL_EDGE_EPSILON) return false;
-  // Tie on rendered size: prefer fewer empty cells, then a more balanced grid.
-  if (a.wasted !== b.wasted) return a.wasted < b.wasted;
   return a.balance < b.balance;
 }
 
