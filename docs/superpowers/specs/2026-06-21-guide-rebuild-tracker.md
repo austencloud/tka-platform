@@ -606,3 +606,13 @@ LOOP terminology, per existing section filenames already named Loops*.)
   HandPositions/TheGrid, family-only margin-glyph position literals,
   BaseLettersPage hardcoded-CW helper, GammaWordsPage dead `block` param) are
   documented-cosmetic; left as-is.
+  (e) Words-chapter auditor addendum: WordsPage/LoopsPage clean (all authored
+  R flags match linear recomputation exactly). ExamplesPage ex-v1's step-1 R
+  flag uses CYCLIC (loop-wrap) semantics — flagged by the auditor as a linear-
+  convention violation, but it is artboard-faithful (proof marks R on 1 & 3;
+  "reversal after step 4" wraps onto step 1 of the repeat) and documented in
+  the page comment. Deliberate; kept. KIEC observation: locations close home
+  but orientations end OUT/OUT vs the IN/IN start — LOOP closure is scoped to
+  positions (locations), so faithful; noted for awareness. Type1LoopsPage
+  independently re-derived by the auditor (chains, swap+rotate transform,
+  deriveReversals by hand): all confirmed post-fix.
