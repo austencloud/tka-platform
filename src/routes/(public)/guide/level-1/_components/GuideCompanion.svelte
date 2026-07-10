@@ -14,8 +14,23 @@
    * Claude instead of describing it) and an edit action row (Replace via
    * SequencePickerModal, Revert/Reset via guide-overrides.svelte). Edits persist
    * in Firestore for every reader after refresh — see guide-overrides.svelte.ts.
+   *
+   * P2 (Guide Companion v2): Transform (mirror/color-swap/rotate) opens a
+   * bits-ui Popover menu — same wrapping pattern as the BPM popover above —
+   * and reuses the existing pure transform services (decoupled from
+   * CreateModuleContext, so safe to call from a guide route):
+   *   - mirrorSequence / swapColors from sequence-transformer.ts (module-level
+   *     functions binding the shared motionQueryHandler singleton)
+   *   - rotateSequenceGeometry from sequence-derived-fields.ts (pure geometry
+   *     rotation; `steps` is in 45° increments, so 90° = 2)
+   * Remix copies the /q scan host's composer-handoff mechanism exactly
+   * (QScanPage.svelte `openInComposer`): stash the SequenceData under the
+   * `tka-pending-edit-sequence` localStorage key that
+   * deep-link-sequence-handler.ts already reads on construct-tab mount, then
+   * navigate. No sequence-viewer chrome imported — just the handoff data path.
    */
   import { Popover } from "bits-ui";
+  import { goto } from "$app/navigation";
   import InlineAnimationPlayer from "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte";
   import BpmQuickPopover from "$lib/shared/animation-engine/components/controls/BpmQuickPopover.svelte";
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
@@ -33,6 +48,11 @@
     revertOverride,
     saveOverride,
   } from "../_data/guide-overrides.svelte";
+  import { mirrorSequence, swapColors } from "$lib/shared/create/services/sequence-transformer";
+  import { rotateSequenceGeometry } from "$lib/shared/create/services/sequence-derived-fields";
+
+  const PENDING_EDIT_SEQUENCE_KEY = "tka-pending-edit-sequence";
+  type TransformKind = "mirror" | "colorSwap" | "rotateCw" | "rotateCcw";
 
   let {
     sequence,
@@ -60,6 +80,8 @@
   let bpm = $state(60);
   let bpmOpen = $state(false);
   let pickerOpen = $state(false);
+  let transformOpen = $state(false);
+  let transformBusy = $state(false);
 
   // Revert availability is fetched lazily (Firestore read) whenever a new
   // strip is clicked while signed in as admin — cached in the override module
@@ -109,6 +131,55 @@
       console.error("[GuideCompanion] Reset failed:", err);
       toast.error("Failed to reset.");
     }
+  }
+
+  /** Mirror / Color Swap / Rotate — pure transform services, decoupled from
+   *  CreateModuleContext, so callable directly from this public guide route.
+   *  rotateSequenceGeometry's `steps` unit is 45°; 90° = 2 steps. */
+  async function runTransform(kind: TransformKind) {
+    if (!stripKey || !sequence || transformBusy) return;
+    transformBusy = true;
+    try {
+      let result: SequenceData;
+      switch (kind) {
+        case "mirror":
+          result = await mirrorSequence(sequence, "both");
+          break;
+        case "colorSwap":
+          result = swapColors(sequence);
+          break;
+        case "rotateCw":
+          result = rotateSequenceGeometry(sequence, 2);
+          break;
+        case "rotateCcw":
+          result = rotateSequenceGeometry(sequence, -2);
+          break;
+      }
+      const strip = sequenceToStrip(result);
+      await saveOverride(stripKey, strip, result.word);
+      toast.success("Transform applied.");
+    } catch (err) {
+      console.error("[GuideCompanion] Transform failed:", err);
+      toast.error("Failed to apply the transform.");
+    } finally {
+      transformBusy = false;
+      transformOpen = false;
+    }
+  }
+
+  /** Composer handoff — identical mechanism to QScanPage.svelte's
+   *  `openInComposer`: stash the SequenceData under the well-known pending-edit
+   *  key (deep-link-sequence-handler.ts reads it on construct-tab mount), then
+   *  navigate. No sequence-viewer chrome imported. */
+  function handleRemix() {
+    if (!sequence) return;
+    try {
+      localStorage.setItem(PENDING_EDIT_SEQUENCE_KEY, JSON.stringify(sequence));
+    } catch {
+      // Storage unavailable (private mode) — still navigate; the composer
+      // just starts empty.
+    }
+    void goto("/create/construct");
   }
 </script>
 
@@ -192,6 +263,72 @@
         >
           <i class="fas fa-arrow-rotate-right" aria-hidden="true"></i>
           <span>Reset</span>
+        </button>
+        <Popover.Root bind:open={transformOpen}>
+          <Popover.Trigger>
+            {#snippet child({ props })}
+              <button {...props} class="admin-btn" type="button" disabled={!sequence || transformBusy}>
+                <i class="fas fa-shuffle" aria-hidden="true"></i>
+                <span>Transform</span>
+              </button>
+            {/snippet}
+          </Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Content
+              side="top"
+              align="center"
+              sideOffset={12}
+              collisionPadding={12}
+              class="guide-transform-pop"
+            >
+              <div class="transform-menu" role="menu">
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="transform-item"
+                  disabled={transformBusy}
+                  onclick={() => runTransform("mirror")}
+                >
+                  <i class="fas fa-left-right" aria-hidden="true"></i>
+                  <span>Mirror</span>
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="transform-item"
+                  disabled={transformBusy}
+                  onclick={() => runTransform("colorSwap")}
+                >
+                  <i class="fas fa-palette" aria-hidden="true"></i>
+                  <span>Color Swap</span>
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="transform-item"
+                  disabled={transformBusy}
+                  onclick={() => runTransform("rotateCw")}
+                >
+                  <i class="fas fa-rotate-right" aria-hidden="true"></i>
+                  <span>Rotate 90° CW</span>
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  class="transform-item"
+                  disabled={transformBusy}
+                  onclick={() => runTransform("rotateCcw")}
+                >
+                  <i class="fas fa-rotate-left" aria-hidden="true"></i>
+                  <span>Rotate 90° CCW</span>
+                </button>
+              </div>
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
+        <button class="admin-btn" type="button" disabled={!sequence} onclick={handleRemix}>
+          <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+          <span>Remix</span>
         </button>
       </div>
     {/if}
@@ -325,11 +462,58 @@
   :global(.guide-bpm-pop) {
     z-index: var(--z-dropdown, 1000);
   }
+  :global(.guide-transform-pop) {
+    z-index: var(--z-dropdown, 1000);
+  }
+  .transform-menu {
+    display: flex;
+    flex-direction: column;
+    min-width: 168px;
+    padding: 6px;
+    border-radius: 12px;
+    background: var(--theme-card-bg, #1c1a24);
+    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+  .transform-item {
+    all: unset;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: var(--theme-text, #e8e6f0);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    -webkit-tap-highlight-color: transparent;
+    transition: background var(--duration-fast, 150ms) ease;
+  }
+  .transform-item i {
+    width: 1em;
+    text-align: center;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .transform-item:hover:not(:disabled) {
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+    }
+  }
+  .transform-item:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: -2px;
+  }
+  .transform-item:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
 
   /* Admin edit actions — same button styling family as .bpm-btn, in a row. */
   .admin-row {
     flex: 0 0 auto;
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     gap: 8px;
     padding-top: 0.4rem;
@@ -369,7 +553,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .bpm-btn,
-    .admin-btn {
+    .admin-btn,
+    .transform-item {
       transition: none;
     }
   }
