@@ -15,7 +15,7 @@
 	import { getFuseContext } from "../context/fuse-context";
 	import FusePanel from "./FusePanel.svelte";
 	import BpmQuickPopover from "$lib/shared/animation-engine/components/controls/BpmQuickPopover.svelte";
-	import { fuseSequences } from "../services/sequence-fuser";
+	import { fuseSequences, fusedDisplayName } from "../services/sequence-fuser";
 	import { deriveLettersForSequence } from "$lib/shared/navigation/services/letter-deriver";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
 	import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -63,11 +63,27 @@
 				),
 			});
 
-			// Derive letters so the fused sequence has a word (best effort)
+			// Derive letters so the fused sequence carries its real word BEFORE the
+			// viewer/save path ever sees it. This used to be a silent best-effort;
+			// partial failures shipped words like "GI" for a 12-step fuse straight
+			// into Firestore. Derivation failure is now loud, and name/displayName
+			// are kept consistent with the derived word so the saved doc can't end
+			// up with a name ("IIECCKIIECCK") that disagrees with its word ("GI").
 			try {
 				result = await deriveLettersForSequence(result);
-			} catch {
-				// Letters are nice-to-have, don't block on failure
+				const letteredSteps = result.steps.filter((s) => s.letter).length;
+				if (letteredSteps < result.steps.length) {
+					console.warn(
+						`[Fuse] Only ${letteredSteps}/${result.steps.length} fused steps derived a letter; ` +
+							`word "${result.word}" is incomplete`
+					);
+				}
+				const name = fusedDisplayName(result.word);
+				result = { ...result, name, displayName: name };
+			} catch (deriveErr) {
+				// Keep the "__fused__" sentinel word (never matches a gallery entry)
+				// and the placeholder name — but never fail silently.
+				console.error("[Fuse] Letter derivation failed; opening without a word:", deriveErr);
 			}
 
 			openSequenceViewer(result, {

@@ -10,8 +10,21 @@ import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/mo
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { FuseOptions } from "./types";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
 const DEFAULT_MAX_STEPS = 64;
+
+/**
+ * Human-facing name for a fused sequence once its word has been derived.
+ * "IIECCKIIECCK" reads as two words glued together; the simplified repeat
+ * ("IIECCK") is the name used across the app (export filenames, gallery word
+ * population — see word-simplifier). Empty/underivable words fall back to an
+ * honest label instead of the "__fused__" sentinel or "blue + red".
+ */
+export function fusedDisplayName(word: string): string {
+	const simplified = simplifyRepeatedWord(word ?? "");
+	return simplified && simplified !== "__fused__" ? simplified : "Fused sequence";
+}
 
 function gcd(a: number, b: number): number {
 	return b === 0 ? a : gcd(b, a % b);
@@ -212,9 +225,17 @@ export function fuseSequences(
 		});
 	}
 
+	// Placeholder name until letters are derived (see fusedDisplayName). HandPath
+	// data carries no `name` in practice, so the old `"blue + red"` label leaked
+	// into saved docs — fall back to an honest human label instead.
+	const placeholderName =
+		blueHandPath.name && redHandPath.name
+			? `${blueHandPath.name} + ${redHandPath.name}`
+			: "Fused sequence";
+
 	return createSequenceData({
-		name: `${blueHandPath.name ?? "blue"} + ${redHandPath.name ?? "red"}`,
-		displayName: `${blueHandPath.name ?? "blue"} + ${redHandPath.name ?? "red"}`,
+		name: placeholderName,
+		displayName: placeholderName,
 		word: "__fused__",
 		steps,
 		blueSoloProp,

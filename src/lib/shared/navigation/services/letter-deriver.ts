@@ -42,11 +42,21 @@ export async function deriveLettersForSequence(
     )) as StartPositionData;
   }
 
-  // Build the word from the letters
-  const word = stepsWithLetters
-    .map((step) => step.letter ?? "")
-    .join("")
-    .toUpperCase();
+  // Build the word from the letters. Steps without a derived letter contribute
+  // nothing to the word — that matches the codebase-wide convention
+  // (word-deriver.deriveWordFromBeats skips unlettered steps) — but it must
+  // never happen SILENTLY: a partial word like "GI" from a 12-step sequence
+  // misrepresents the sequence everywhere it's displayed or saved. Warn with
+  // counts so callers (and logs) can see the word is incomplete.
+  const letters = stepsWithLetters.map((step) => step.letter ?? "");
+  const missingCount = letters.filter((l) => l === "").length;
+  if (missingCount > 0) {
+    console.warn(
+      `[letter-deriver] ${missingCount}/${letters.length} steps derived no letter — ` +
+        `word "${letters.join("")}" omits them and is incomplete`
+    );
+  }
+  const word = letters.join("").toUpperCase();
 
   return {
     ...sequence,
