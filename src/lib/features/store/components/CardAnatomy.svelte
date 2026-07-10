@@ -179,7 +179,7 @@
     flex-direction: column;
     align-items: center;
     gap: 0.6rem;
-    flex: 1 1 280px;
+    flex: 1 1 240px;
     transition: opacity 200ms ease;
   }
 

@@ -174,49 +174,50 @@
     <h2 class="section-title">What's on the Card</h2>
     <p class="anatomy-hint">Point at any part of the card, or any row in the list. Its match lights up.</p>
 
-    <div class="anatomy-layout">
-      {#if browser}
-        {#await import("$lib/features/store/components/CardAnatomy.svelte") then { default: CardAnatomy }}
-          <CardAnatomy {highlight} onhighlight={(id) => (highlight = id)} />
-        {/await}
-      {/if}
-
-      <div class="legend" class:dimming={highlight !== null}>
-        <div class="legend-col">
-          <h3 class="legend-title">Front</h3>
-          <div class="legend-list" role="list">
-            {#each frontLegend as item}
-              <button
-                type="button"
-                class="legend-row"
-                class:active={highlight === item.id}
-                onmouseenter={() => (highlight = item.id)}
-                onmouseleave={() => (highlight = null)}
-                onclick={() => toggle(item.id)}
-              >
-                <span class="legend-term">{item.term}</span>
-                <span class="legend-text">{item.text}</span>
-              </button>
-            {/each}
-          </div>
+    <div class="anatomy-layout" class:dimming={highlight !== null}>
+      <div class="legend-col front">
+        <h3 class="legend-title">Front</h3>
+        <div class="legend-list" role="list">
+          {#each frontLegend as item}
+            <button
+              type="button"
+              class="legend-row"
+              class:active={highlight === item.id}
+              onmouseenter={() => (highlight = item.id)}
+              onmouseleave={() => (highlight = null)}
+              onclick={() => toggle(item.id)}
+            >
+              <span class="legend-term">{item.term}</span>
+              <span class="legend-text">{item.text}</span>
+            </button>
+          {/each}
         </div>
-        <div class="legend-col">
-          <h3 class="legend-title">Back</h3>
-          <div class="legend-list" role="list">
-            {#each backLegend as item}
-              <button
-                type="button"
-                class="legend-row"
-                class:active={highlight === item.id}
-                onmouseenter={() => (highlight = item.id)}
-                onmouseleave={() => (highlight = null)}
-                onclick={() => toggle(item.id)}
-              >
-                <span class="legend-term">{item.term}</span>
-                <span class="legend-text">{item.text}</span>
-              </button>
-            {/each}
-          </div>
+      </div>
+
+      <div class="cards-slot">
+        {#if browser}
+          {#await import("$lib/features/store/components/CardAnatomy.svelte") then { default: CardAnatomy }}
+            <CardAnatomy {highlight} onhighlight={(id) => (highlight = id)} />
+          {/await}
+        {/if}
+      </div>
+
+      <div class="legend-col back">
+        <h3 class="legend-title">Back</h3>
+        <div class="legend-list" role="list">
+          {#each backLegend as item}
+            <button
+              type="button"
+              class="legend-row"
+              class:active={highlight === item.id}
+              onmouseenter={() => (highlight = item.id)}
+              onmouseleave={() => (highlight = null)}
+              onclick={() => toggle(item.id)}
+            >
+              <span class="legend-term">{item.term}</span>
+              <span class="legend-text">{item.text}</span>
+            </button>
+          {/each}
         </div>
       </div>
     </div>
@@ -262,26 +263,25 @@
       gap: 2.5rem;
       align-items: start;
     }
+    /* Anatomy diagram: front labels | cards | back labels. The section
+       breaks out of the editorial column and the label columns center
+       against the cards, so neither side towers over the other. */
     .anatomy-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-      gap: 2.5rem;
-      align-items: start;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2.3fr) minmax(0, 1fr);
+      gap: clamp(1.5rem, 2.5vw, 3.25rem);
+      align-items: center;
+      width: min(100vw - 4rem, 110rem);
+      margin-inline: calc((100% - min(100vw - 4rem, 110rem)) / 2);
     }
-    .legend {
-      grid-template-columns: 1fr;
+    .cards-slot {
+      order: 0;
     }
-  }
-
-  /* Big desktops: widen the whole column and give the cards the room to
-     sit side by side at full size instead of wrapping into a stack. */
-  @media (min-width: 1700px) {
-    .editorial.wide {
-      max-width: 92rem;
+    /* Left labels read toward the card they describe. */
+    .legend-col.front {
+      text-align: right;
     }
-    .anatomy-layout {
-      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-      gap: 3.5rem;
+    .legend-col.front .legend-row {
+      align-items: flex-end;
     }
   }
 
@@ -300,9 +300,11 @@
     gap: 1.75rem;
   }
 
-  .legend {
-    display: grid;
-    gap: 1.5rem;
+  /* Mobile: cards first, then the two label lists. */
+  @media (max-width: 1099.98px) {
+    .cards-slot {
+      order: -1;
+    }
   }
 
   .legend-title {
@@ -349,16 +351,16 @@
       0 0 0 1px color-mix(in oklch, var(--accent, #ec4899) 40%, transparent),
       0 0 22px color-mix(in oklch, var(--accent, #ec4899) 16%, transparent);
   }
-  .legend.dimming .legend-row:not(.active) {
+  .anatomy-layout.dimming .legend-row:not(.active) {
     opacity: 0.35;
   }
-  .legend.dimming .legend-title {
+  .anatomy-layout.dimming .legend-title {
     opacity: 0.5;
     transition: opacity 180ms ease;
   }
   @media (prefers-reduced-motion: reduce) {
     .legend-row,
-    .legend.dimming .legend-title {
+    .anatomy-layout.dimming .legend-title {
       transition: none;
     }
   }
