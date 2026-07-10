@@ -15,7 +15,8 @@ import {
   serverTimestamp,
   increment,
 } from "firebase/firestore";
-import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { getFirestoreInstance, getAuthInstance } from "$lib/shared/auth/firebase";
+import { captureException } from "$lib/shared/analytics/services/posthog";
 import type { ShowErrorOptions } from "$lib/shared/error/domain/error-models";
 
 const COLLECTION = "errorTelemetry";
@@ -40,9 +41,27 @@ function isMissingDocError(err: unknown): boolean {
   return code === "not-found" || code === "permission-denied";
 }
 
-export async function reportErrorTelemetry(options: ShowErrorOptions): Promise<void> {
+export async function reportErrorTelemetry(
+  options: ShowErrorOptions,
+  { skipPostHog = false }: { skipPostHog?: boolean } = {},
+): Promise<void> {
+  // Mirror into PostHog error tracking so handled errors land in the same
+  // per-user timeline (session replay, rage clicks) as uncaught ones.
+  // Callers reporting errors PostHog already auto-captures (unhandled
+  // rejections, window errors) pass skipPostHog to avoid double $exception.
+  if (!skipPostHog) {
+    captureException(options.error ?? new Error(options.message), {
+      telemetry_module: options.context?.module ?? "unknown",
+      telemetry_action: options.context?.action ?? "unknown",
+      severity: options.severity ?? "error",
+    });
+  }
+
   try {
     const db = await getFirestoreInstance();
+    const userId = await getAuthInstance()
+      .then((auth) => auth.currentUser?.uid ?? null)
+      .catch(() => null);
 
     const message = options.message;
     const module = options.context?.module ?? "unknown";
@@ -63,6 +82,7 @@ export async function reportErrorTelemetry(options: ShowErrorOptions): Promise<v
         lastSeen: serverTimestamp(),
         lastStack,
         lastAdditionalData,
+        lastUserId: userId,
       });
     } catch (err) {
       if (!isMissingDocError(err)) throw err;
@@ -79,6 +99,8 @@ export async function reportErrorTelemetry(options: ShowErrorOptions): Promise<v
         lastSeen: serverTimestamp(),
         lastStack,
         lastAdditionalData,
+        firstUserId: userId,
+        lastUserId: userId,
         userAgent:
           typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
         resolved: false,

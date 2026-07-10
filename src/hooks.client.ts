@@ -1,6 +1,7 @@
 /**
  * Client-side hooks
  */
+import type { HandleClientError } from "@sveltejs/kit";
 import { browser, dev } from "$app/environment";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { createSwUpdateManager } from "$lib/shared/offline/services/sw-update-manager";
@@ -194,23 +195,54 @@ if (browser && !dev) {
 
     import("$lib/shared/error/services/error-telemetry-reporter")
       .then(({ reportErrorTelemetry }) => {
-        reportErrorTelemetry({
-          message: `Unhandled rejection: ${message.slice(0, 200)}`,
-          severity: "warning",
-          context: {
-            module: "global",
-            action: "unhandledrejection",
-            additionalData: {
-              url: window.location.pathname,
-              stack: stack?.slice(0, 1000),
+        reportErrorTelemetry(
+          {
+            message: `Unhandled rejection: ${message.slice(0, 200)}`,
+            severity: "warning",
+            context: {
+              module: "global",
+              action: "unhandledrejection",
+              additionalData: {
+                url: window.location.pathname,
+                stack: stack?.slice(0, 1000),
+              },
             },
+            error: reason instanceof Error ? reason : undefined,
           },
-          error: reason instanceof Error ? reason : undefined,
-        });
+          // PostHog capture_exceptions already auto-captures unhandled
+          // rejections — mirroring here would double-count the $exception.
+          { skipPostHog: true },
+        );
       })
       .catch(() => {});
   });
 }
+
+// SvelteKit routes unexpected load/navigation errors here — they never reach
+// window.onerror, so PostHog's auto-capture misses them without this hook.
+export const handleError: HandleClientError = ({ error, message, status }) => {
+  if (browser && !dev) {
+    import("$lib/shared/error/services/error-telemetry-reporter")
+      .then(({ reportErrorTelemetry }) => {
+        reportErrorTelemetry({
+          message: `Client error: ${message.slice(0, 200)}`,
+          severity: "error",
+          context: {
+            module: "global",
+            action: "handleError",
+            additionalData: {
+              url: window.location.pathname,
+              status,
+              stack: (error as Error)?.stack?.slice(0, 1000),
+            },
+          },
+          error: error instanceof Error ? error : undefined,
+        });
+      })
+      .catch(() => {});
+  }
+  return { message };
+};
 
 // Production: register the minimal hand-written service worker
 // (The old "tka-sync-queue" Background Sync registration was deleted — the SW

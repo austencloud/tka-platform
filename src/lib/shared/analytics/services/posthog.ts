@@ -58,6 +58,14 @@ export async function initPostHog(): Promise<void> {
     // Autocapture clicks, form submissions, etc.
     autocapture: true,
 
+    // Error tracking: capture every uncaught error, unhandled rejection, and
+    // console.error as $exception events, tied to the identified user.
+    capture_exceptions: {
+      capture_unhandled_errors: true,
+      capture_unhandled_rejections: true,
+      capture_console_errors: true,
+    },
+
     // Feature flags - load on init for immediate availability
     bootstrap: {
       featureFlags: {},
@@ -129,6 +137,19 @@ export function identifyUser(
 export function resetUser(): void {
   if (!browser || !initialized) return;
   posthog.reset();
+}
+
+/**
+ * Capture a handled exception into PostHog error tracking.
+ * Use for errors we catch and report ourselves (toasts, telemetry) so they
+ * show up in the same per-user error timeline as uncaught ones.
+ */
+export function captureException(
+  error: unknown,
+  properties?: Record<string, unknown>
+): void {
+  if (!browser || !initialized) return;
+  posthog.captureException(error, properties);
 }
 
 /**
