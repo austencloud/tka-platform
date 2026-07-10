@@ -17,6 +17,7 @@ import StaffPositionsPage from "../_pages/StaffPositionsPage.svelte";
 import StaffMotionsPage from "../_pages/StaffMotionsPage.svelte";
 import NegativeSpacePage from "../_pages/NegativeSpacePage.svelte";
 import BaseLettersPage from "../_pages/BaseLettersPage.svelte";
+import AlphaBetaWordsPage from "../_pages/AlphaBetaWordsPage.svelte";
 import DoubleStaffCodexT12Page from "../_pages/DoubleStaffCodexT12Page.svelte";
 import DoubleStaffCodexT36Page from "../_pages/DoubleStaffCodexT36Page.svelte";
 
@@ -33,6 +34,7 @@ export const BUILT: Record<string, Component> = {
   "staff-motions": StaffMotionsPage,
   "negative-space": NegativeSpacePage,
   "base-letters": BaseLettersPage,
+  "lt1-abc-ghi": AlphaBetaWordsPage,
   "bl-double-staff": DoubleStaffCodexT12Page,
   "bl-double-staff-36": DoubleStaffCodexT36Page,
 };
