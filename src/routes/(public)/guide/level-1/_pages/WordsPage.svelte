@@ -32,8 +32,10 @@
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -133,6 +135,20 @@
     }) as unknown as StepData;
 
   const rowSteps = (r: RowDef): StepData[] => [startBox(r), ...[0, 1, 2, 3].map((i) => rowStep(r, i))];
+
+  // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
+  // present, resolved before baking — reversal dots stay derived either way.
+  // Reactive so a save/revert/reset while the reader is open re-renders.
+  const resolvedRowSteps = (r: RowDef): StepData[] => {
+    const authored = rowSteps(r);
+    const override = overrideStepsFor(r.key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const RESOLVED: Record<string, StepData[]> = $derived(
+    Object.fromEntries(ROWS.map((r) => [r.key, resolvedRowSteps(r)]))
+  );
 
   // ── Geometry ────────────────────────────────────────────────────────────────
   const CELL = 99.9;
@@ -254,7 +270,7 @@
           style="left:{(i + 1) * CELL * S}px; top:0; width:{CELL * S}px; height:{CELL * S}px"
         >
           <PictographContainer
-            pictographData={i === -1 ? startBox(r) : rowStep(r, i)}
+            pictographData={RESOLVED[r.key]![i + 1]}
             gridMode={GridMode.DIAMOND}
             bluePropTypeOverride={PropType.STAFF}
             redPropTypeOverride={PropType.STAFF}
@@ -267,7 +283,7 @@
         groupId={r.key}
         isGroupStart
         label={`Animate AABB starting thumbs ${r.label}`}
-        onselect={() => emitSequence?.({ strip: rowSteps(r), word: `AABB (${r.label})`, key: r.key, propType: "staff" })}
+        onselect={() => emitSequence?.({ strip: RESOLVED[r.key]!, word: `AABB (${r.label})`, key: r.key, propType: "staff" })}
       />
     </div>
   {/each}

@@ -41,8 +41,10 @@
   import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -176,6 +178,29 @@
 
   const cellSteps = (c: CellDef, key: string): StepData[] => [startFor(c, `${key}-0`), cellStep(c, `${key}-1`, 1)];
 
+  // Override-aware resolution: an admin override (guide-overrides.svelte)
+  // replaces the WHOLE strip when present; reversal dots are always DERIVED
+  // via bakeReversals, never hand-authored. Reactive ($derived) so a
+  // save/revert/reset while the reader is open re-renders these cells without
+  // a refresh.
+  const resolvedCellSteps = (c: CellDef, key: string): StepData[] => {
+    const authored = cellSteps(c, key);
+    const override = overrideStepsFor(key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const RESOLVED: Record<string, StepData[]> = $derived(
+    Object.fromEntries(
+      SECTIONS.flatMap((sec) =>
+        sec.cells.map((c, ci) => {
+          const key = `t456-${sec.key}-${ci}`;
+          return [key, resolvedCellSteps(c, key)];
+        })
+      )
+    )
+  );
+
   // ── Geometry ────────────────────────────────────────────────────────────────
   const CELL = 80;
   const GRID_X = 185.9;
@@ -264,7 +289,7 @@
         style="left:{(GRID_X + ci * CELL) * S}px; top:{sec.y * S}px; width:{CELL * S}px; height:{CELL * S}px"
       >
         <PictographContainer
-          pictographData={cellStep(c, `${key}-p`, null)}
+          pictographData={RESOLVED[key]![1]}
           gridMode={GridMode.DIAMOND}
           bluePropTypeOverride={PropType.STAFF}
           redPropTypeOverride={PropType.STAFF}
@@ -274,7 +299,7 @@
           groupId={key}
           isGroupStart
           label={`Animate ${c.name}`}
-          onselect={() => emitSequence?.({ strip: cellSteps(c, key), word: c.name, key, propType: "staff" })}
+          onselect={() => emitSequence?.({ strip: RESOLVED[key]!, word: c.name, key, propType: "staff" })}
         />
       </div>
     {/each}

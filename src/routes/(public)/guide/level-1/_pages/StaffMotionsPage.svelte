@@ -44,8 +44,10 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_ } = GridLocation;
@@ -168,7 +170,22 @@
         red: data.motions.red,
       },
     }) as unknown as StepData;
-  const rowSteps = (row: RowDef): StepData[] => [animStep(row.start, 0), animStep(row.combined, 1)];
+  const authoredRowSteps = (row: RowDef): StepData[] => [animStep(row.start, 0), animStep(row.combined, 1)];
+
+  // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
+  // present, resolved before baking — reversal dots stay derived either way.
+  // Reactive ($derived) so a save/revert/reset re-renders without a refresh.
+  const resolvedRowStrip = (row: RowDef, key: string): StepData[] => {
+    const authored = authoredRowSteps(row);
+    const override = overrideStepsFor(key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const RESOLVED: Record<string, StepData[]> = $derived(
+    Object.fromEntries(ROWS.map((row, ri) => [ROW_KEYS[ri]!, resolvedRowStrip(row, ROW_KEYS[ri]!)]))
+  );
+  const rowSteps = (row: RowDef, key: string): StepData[] => RESOLVED[key]!;
 
   // ── Flow arrows (prospin row only, per the proof) + "=" on every row ────────
   const rowMid = (y: number) => y + SIZE / 2;
@@ -311,12 +328,12 @@
       class:guide-step-active={activeStep?.key === key}
       style="left:{COLS[3]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px"
     >
-      <PictographContainer pictographData={row.combined} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+      <PictographContainer pictographData={{ ...RESOLVED[key]![1], stepNumber: undefined } as unknown as StepData} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
       <SelectionHit
         groupId={key}
         isGroupStart
         label={`Animate the ${ROW_WORDS[ri]} motion`}
-        onselect={() => emitSequence?.({ strip: rowSteps(row), word: ROW_WORDS[ri]!, key, propType: "staff" })}
+        onselect={() => emitSequence?.({ strip: rowSteps(row, key), word: ROW_WORDS[ri]!, key, propType: "staff" })}
       />
     </div>
   {/each}

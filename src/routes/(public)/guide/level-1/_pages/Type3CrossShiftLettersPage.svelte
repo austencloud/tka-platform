@@ -48,8 +48,10 @@
   import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -182,6 +184,22 @@
 
   const cellSteps = (c: CellDef, key: string): StepData[] => [startFor(c, `${key}-0`), cellStep(c, `${key}-1`, 1)];
 
+  // Override-aware resolution for the four letter boxes (8 cells). An admin
+  // override (guide-overrides.svelte) replaces the WHOLE strip when present;
+  // reversal dots are always DERIVED via bakeReversals, never hand-authored.
+  const resolvedCellSteps = (c: CellDef, key: string): StepData[] => {
+    const authored = cellSteps(c, key);
+    const override = overrideStepsFor(key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const RESOLVED_CELLS: Record<string, StepData[]> = $derived(
+    Object.fromEntries(
+      BOXES.flatMap((box) => box.cells.map((c) => [`t3-${c.name}`, resolvedCellSteps(c, `t3-${c.name}`)]))
+    )
+  );
+
   // ── Breakdown rows (start → halfway → end = combined) ───────────────────────
   const STAFF_D =
     "M251.4 67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1 3.9-9.1 8.7v19.2H10.3c-4.9 0-8.9 3.8-8.9 8.5V41c0 4.6 4 8.5 8.9 8.5h222.9v18.2c0 4.8 4.1 8.7 9.1 8.7s9.1-3.9 9.1-8.7z";
@@ -250,6 +268,18 @@
     }) as unknown as StepData;
 
   const bdSteps = (b: Breakdown): StepData[] => [bdFrame(b, "start"), cellStep(b.cell, `${b.key}-s1`, 1)];
+
+  // Override-aware resolution for the two breakdown rows' combined pictograph.
+  const resolvedBdSteps = (b: Breakdown, key: string): StepData[] => {
+    const authored = bdSteps(b);
+    const override = overrideStepsFor(key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const RESOLVED_BD: Record<string, StepData[]> = $derived(
+    Object.fromEntries(BREAKDOWNS.map((b) => [`${b.key}-full`, resolvedBdSteps(b, `${b.key}-full`)]))
+  );
 
   // ── Geometry ────────────────────────────────────────────────────────────────
   const BCELL = 90;
@@ -347,7 +377,7 @@
         style="left:{(box.x + ci * BCELL) * S}px; top:{box.y * S}px; width:{BCELL * S}px; height:{BCELL * S}px"
       >
         <PictographContainer
-          pictographData={cellStep(c, `${key}-p`, null)}
+          pictographData={RESOLVED_CELLS[key]![1]}
           gridMode={GridMode.DIAMOND}
           bluePropTypeOverride={PropType.STAFF}
           redPropTypeOverride={PropType.STAFF}
@@ -357,7 +387,7 @@
           groupId={key}
           isGroupStart
           label={`Animate letter ${c.name}`}
-          onselect={() => emitSequence?.({ strip: cellSteps(c, key), word: `Letter ${c.name}`, key, propType: "staff" })}
+          onselect={() => emitSequence?.({ strip: RESOLVED_CELLS[key]!, word: `Letter ${c.name}`, key, propType: "staff" })}
         />
       </div>
     {/each}
@@ -402,7 +432,7 @@
       style="left:{BD_XS[3]! * S}px; top:{b.y * S}px; width:{FRAME * S}px; height:{FRAME * S}px"
     >
       <PictographContainer
-        pictographData={cellStep(b.cell, `${key}-p`, null)}
+        pictographData={RESOLVED_BD[key]![1]}
         gridMode={GridMode.DIAMOND}
         bluePropTypeOverride={PropType.STAFF}
         redPropTypeOverride={PropType.STAFF}
@@ -412,7 +442,7 @@
         groupId={key}
         isGroupStart
         label={`Animate ${b.name} step by step`}
-        onselect={() => emitSequence?.({ strip: bdSteps(b), word: b.name, key, propType: "staff" })}
+        onselect={() => emitSequence?.({ strip: RESOLVED_BD[key]!, word: b.name, key, propType: "staff" })}
       />
     </div>
 

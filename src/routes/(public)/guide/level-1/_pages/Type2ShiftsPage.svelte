@@ -49,8 +49,10 @@
   import { describePictograph } from "$lib/shared/pictograph/shared/domain/utils/pictograph-description";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -211,6 +213,32 @@
       .filter((cell): cell is { m: Move; step: number } => cell !== null)
       .map((cell) => box(cell.m, cell.step));
 
+  // Override-resolving rows: an admin override (guide-overrides.svelte) replaces
+  // the WHOLE strip when present; reversal dots stay derived either way
+  // (bakeReversals, never hand-authored). Re-laid into the strip's own null-
+  // preserving row/col shape so the template's existing iteration is untouched.
+  // Reactive so a save/revert/reset while the reader is open re-renders these
+  // cells without a refresh.
+  const resolvedRows = (strip: Strip, si: number): (StepData | null)[][] => {
+    const authored = stripSteps(strip);
+    const override = overrideStepsFor(`t2-${si}`);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    const baked = [start!, ...bakeReversals(steps)];
+    let idx = 0;
+    return strip.rows.map((row) =>
+      row.map((cell) => {
+        if (!cell) return null;
+        const sd = baked[idx];
+        idx++;
+        return sd ?? null;
+      })
+    );
+  };
+  const RESOLVED: Record<number, (StepData | null)[][]> = $derived(
+    Object.fromEntries(STRIPS.map((s, si) => [si, resolvedRows(s, si)]))
+  );
+
   const r1 = (n: number) => Math.round(n * 10) / 10;
   $effect(() =>
     registerEditSource("Type 2 (p6)", () =>
@@ -232,10 +260,10 @@
       {#each strip.rows as row, ri (ri)}
         {#each row as cell, ci (ci)}
           {#if cell}
-            {@const cellStep = box(cell.m, cell.step)}
+            {@const cellStep = RESOLVED[si]![ri]![ci]!}
             <div
               class="pbox"
-              class:guide-step-active={activeStep?.key === `t2-${si}` && activeStep.ringStep === cell.step}
+              class:guide-step-active={activeStep?.key === `t2-${si}` && activeStep.ringStep === cellStep.stepNumber}
               title={describePictograph(cellStep)}
               style="left:{ci * BOX * S}px; top:{ri * BOX * S}px; width:{BOX * S}px; height:{BOX * S}px"
             >
@@ -246,7 +274,7 @@
                 redPropTypeOverride={PropType.HAND}
                 showGrid={true}
                 showTKA={false}
-                showPositions={cell.step > 0}
+                showPositions={(cellStep.stepNumber ?? 0) > 0}
                 showElemental={false}
                 showReversals={false}
                 showTnD={false}
@@ -265,7 +293,7 @@
         groupId={`t2-${si}`}
         isGroupStart
         label={`Animate the ${SEQ_WORDS[si]} sequence`}
-        onselect={() => emitSequence?.({ strip: stripSteps(strip), word: SEQ_WORDS[si], key: `t2-${si}` })}
+        onselect={() => emitSequence?.({ strip: RESOLVED[si]!.flat().filter((sd): sd is StepData => sd !== null), word: SEQ_WORDS[si], key: `t2-${si}` })}
       />
     </div>
   {/each}

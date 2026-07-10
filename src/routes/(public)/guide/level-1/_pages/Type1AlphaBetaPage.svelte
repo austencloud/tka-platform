@@ -39,8 +39,10 @@
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -221,8 +223,23 @@
   // /book), so the printable pages stay pristine and gain no click affordance.
   const emitSequence = getGuideSequenceClick();
   const SEQ_WORDS = ["α→α Split-Same", "β→β Tog-Same", "α↔β Split-Opp", "α↔β Tog-Opp"];
-  const stripSteps = (strip: Strip): StepData[] =>
+  const authoredStripSteps = (strip: Strip): StepData[] =>
     strip.moves.map((m, i) => box(m, i, strip.letters[i] ?? null));
+
+  // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
+  // present, resolved before baking — reversal dots stay derived either way.
+  // Reactive ($derived) so a save/revert/reset re-renders without a refresh.
+  const resolvedStripSteps = (strip: Strip, key: string): StepData[] => {
+    const authored = authoredStripSteps(strip);
+    const override = overrideStepsFor(key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const RESOLVED: Record<string, StepData[]> = $derived(
+    Object.fromEntries(STRIPS.map((strip, si) => [`t1-${si}`, resolvedStripSteps(strip, `t1-${si}`)]))
+  );
+  const stripSteps = (strip: Strip, key: string): StepData[] => RESOLVED[key]!;
 
   // Edit mode: dump paragraph + label coords for CoordsPanel's Copy button.
   const r1 = (n: number) => Math.round(n * 10) / 10;
@@ -248,7 +265,7 @@
       {#each strip.moves as m, bi (bi)}
         <div class="cell" class:guide-step-active={activeStep?.key === `t1-${si}` && activeStep.ringStep === bi}>
           <PictographContainer
-            pictographData={box(m, bi, strip.letters[bi] ?? null)}
+            pictographData={RESOLVED[`t1-${si}`]![bi]}
             gridMode={GridMode.DIAMOND}
             bluePropTypeOverride={PropType.HAND}
             redPropTypeOverride={PropType.HAND}
@@ -271,7 +288,7 @@
         groupId={`t1-${si}`}
         isGroupStart
         label={`Animate the ${SEQ_WORDS[si]} sequence`}
-        onselect={() => emitSequence?.({ strip: stripSteps(strip), word: SEQ_WORDS[si], key: `t1-${si}` })}
+        onselect={() => emitSequence?.({ strip: stripSteps(strip, `t1-${si}`), word: SEQ_WORDS[si], key: `t1-${si}` })}
       />
     </div>
   {/each}

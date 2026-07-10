@@ -40,8 +40,10 @@
   import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -182,6 +184,34 @@
     step(c, `${key}-s-1`, 1),
   ];
 
+  // Override-aware resolution: an admin override (guide-overrides.svelte)
+  // replaces the WHOLE strip when present; reversal dots are always DERIVED
+  // via bakeReversals, never hand-authored. Reactive ($derived) so a
+  // save/revert/reset while the reader is open re-renders these cells without
+  // a refresh.
+  const resolvedBoxCellSteps = (c: CellDef, key: string): StepData[] => {
+    const authored = boxCellSteps(c, key);
+    const override = overrideStepsFor(key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const resolvedRowSteps = (r: RowDef): StepData[] => {
+    const authored = rowSteps(r);
+    const override = overrideStepsFor(r.key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const RESOLVED_BOX: Record<string, StepData[]> = $derived(
+    Object.fromEntries(
+      BOXES.flatMap((box) => box.cells.map((c) => [`t2-${c.name}`, resolvedBoxCellSteps(c, `t2-${c.name}`)]))
+    )
+  );
+  const RESOLVED_ROWS: Record<string, StepData[]> = $derived(
+    Object.fromEntries(ROWS.map((r) => [r.key, resolvedRowSteps(r)]))
+  );
+
   // ── Geometry ────────────────────────────────────────────────────────────────
   const BCELL = 90;
   const WCELL = 99.9;
@@ -267,7 +297,7 @@
         style="left:{(box.x + ci * BCELL) * S}px; top:{box.y * S}px; width:{BCELL * S}px; height:{BCELL * S}px"
       >
         <PictographContainer
-          pictographData={step(c, `${key}-p`, null)}
+          pictographData={RESOLVED_BOX[key]![1]}
           gridMode={GridMode.DIAMOND}
           bluePropTypeOverride={PropType.STAFF}
           redPropTypeOverride={PropType.STAFF}
@@ -277,7 +307,7 @@
           groupId={key}
           isGroupStart
           label={`Animate letter ${c.name}`}
-          onselect={() => emitSequence?.({ strip: boxCellSteps(c, key), word: `Letter ${c.name}`, key, propType: "staff" })}
+          onselect={() => emitSequence?.({ strip: RESOLVED_BOX[key]!, word: `Letter ${c.name}`, key, propType: "staff" })}
         />
       </div>
     {/each}
@@ -312,14 +342,14 @@
       class:is-selected={selection?.isSelected(r.key)}
       style="left:{WORD_X * S}px; top:{r.y * S}px; width:{WCELL * 4 * S}px; height:{WCELL * S}px"
     >
-      {#each [0, 1, 2, 3] as i (i)}
+      {#each RESOLVED_ROWS[r.key]!.slice(1) as sd, i (i)}
         <div
           class="mini cell"
           class:guide-step-active={activeStep?.key === r.key && activeStep.ringStep === i + 1}
           style="left:{i * WCELL * S}px; top:0; width:{WCELL * S}px; height:{WCELL * S}px"
         >
           <PictographContainer
-            pictographData={step(rowCell(r, i), `${r.key}-p-${i + 1}`, i + 1)}
+            pictographData={sd}
             gridMode={GridMode.DIAMOND}
             bluePropTypeOverride={PropType.STAFF}
             redPropTypeOverride={PropType.STAFF}
@@ -332,7 +362,7 @@
         groupId={r.key}
         isGroupStart
         label={`Animate the word ${r.word}`}
-        onselect={() => emitSequence?.({ strip: rowSteps(r), word: r.word, key: r.key, propType: "staff" })}
+        onselect={() => emitSequence?.({ strip: RESOLVED_ROWS[r.key]!, word: r.word, key: r.key, propType: "staff" })}
       />
     </div>
   {/each}

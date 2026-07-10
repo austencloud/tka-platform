@@ -38,8 +38,10 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -120,6 +122,20 @@
   };
 
   const stripSteps = (s: StripDef): StepData[] => [startBox(s), stepData(s, 0), stepData(s, 1)];
+
+  // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
+  // present, resolved before baking — reversal dots stay derived either way.
+  // Reactive so a save/revert/reset while the reader is open re-renders.
+  const resolvedStripSteps = (s: StripDef): StepData[] => {
+    const authored = stripSteps(s);
+    const override = overrideStepsFor(s.key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const RESOLVED: Record<string, StepData[]> = $derived(
+    Object.fromEntries(STRIPS.map((s) => [s.key, resolvedStripSteps(s)]))
+  );
 
   // ── Geometry + heads ────────────────────────────────────────────────────────
   const CELL = 80;
@@ -220,7 +236,7 @@
           style="left:{i * CELL * S}px; top:0; width:{CELL * S}px; height:{CELL * S}px"
         >
           <PictographContainer
-            pictographData={i === 0 ? startBox(s) : stepData(s, i - 1)}
+            pictographData={RESOLVED[s.key]![i]}
             gridMode={GridMode.DIAMOND}
             bluePropTypeOverride={PropType.STAFF}
             redPropTypeOverride={PropType.STAFF}
@@ -233,7 +249,7 @@
         groupId={s.key}
         isGroupStart
         label={`Animate the ${s.label} ${s.color} reversal`}
-        onselect={() => emitSequence?.({ strip: stripSteps(s), word: s.label, key: s.key, propType: "staff" })}
+        onselect={() => emitSequence?.({ strip: RESOLVED[s.key]!, word: s.label, key: s.key, propType: "staff" })}
       />
     </div>
   {/each}

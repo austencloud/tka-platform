@@ -53,8 +53,10 @@
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -234,9 +236,23 @@
     },
   ];
 
-  const cellData = (s: Strip, c: Cell, i: number) => box(c.m, c.step, `${s.key}-${i}`, c.letter ?? null);
   // Flatten a strip into ordered StepData for the animation companion.
   const stripSteps = (s: Strip): StepData[] => s.cells.map((c, i) => box(c.m, c.step, `seq-${i}`, c.letter ?? null));
+
+  // Override-resolving strip: an admin override (guide-overrides.svelte) replaces
+  // the WHOLE strip when present; reversal dots stay derived either way
+  // (bakeReversals, never hand-authored). Reactive so a save/revert/reset while
+  // the reader is open re-renders these cells without a refresh.
+  const resolvedStrip = (s: Strip): StepData[] => {
+    const authored = stripSteps(s);
+    const override = overrideStepsFor(s.key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const RESOLVED: Record<string, StepData[]> = $derived(
+    Object.fromEntries(STRIPS.map((s) => [s.key, resolvedStrip(s)]))
+  );
 
   // ── Three calligraphic section titles (reuse the shared .guide-title) ──────────
   type Title = { t: string; y: number };
@@ -325,10 +341,10 @@
           class="cell"
           class:guide-step-active={activeStep?.key === s.key && activeStep.ringStep === cell.step}
           style="left:{i * s.box * S}px; top:0; width:{s.box * S}px; height:{s.box * S}px"
-          title={describePictograph(cellData(s, cell, i))}
+          title={describePictograph(RESOLVED[s.key]![i]!)}
         >
           <PictographContainer
-            pictographData={cellData(s, cell, i)}
+            pictographData={RESOLVED[s.key]![i]}
             gridMode={GridMode.DIAMOND}
             bluePropTypeOverride={PropType.HAND}
             redPropTypeOverride={PropType.HAND}
@@ -352,7 +368,7 @@
           groupId={s.key}
           isGroupStart
           label={`Animate the ${s.word} sequence`}
-          onselect={() => emitSequence?.({ strip: stripSteps(s), word: s.word, key: s.key })}
+          onselect={() => emitSequence?.({ strip: RESOLVED[s.key]!, word: s.word, key: s.key })}
         />
       {/if}
     </div>

@@ -36,8 +36,10 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -90,6 +92,18 @@
     s.cells.map((c) => cellData(s.id, c) as unknown as StepData);
 
   type Strip = { id: string; word: string; x: number; y: number; cells: Cell[] };
+
+  // Override-resolving strip: an admin override (guide-overrides.svelte) replaces
+  // the WHOLE strip when present; reversal dots stay derived either way
+  // (bakeReversals, never hand-authored). Reactive so a save/revert/reset while
+  // the reader is open re-renders these cells without a refresh.
+  const resolvedStrip = (s: Strip): StepData[] => {
+    const authored = stripSteps(s);
+    const override = overrideStepsFor(`ns-${s.id}`);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
   const SIZE = 99.8;
   const STRIPS: Strip[] = [
     {
@@ -121,6 +135,10 @@
       ],
     },
   ];
+
+  const RESOLVED: Record<string, StepData[]> = $derived(
+    Object.fromEntries(STRIPS.map((s) => [s.id, resolvedStrip(s)]))
+  );
 
   // ── Section headings (script face) + hairlines ──────────────────────────────
   const HEADS = [
@@ -222,14 +240,14 @@
       class:is-selected={selection?.isSelected(key)}
       style="left:{strip.x * S}px; top:{strip.y * S}px; width:{strip.cells.length * SIZE * S}px; height:{SIZE * S}px"
     >
-      {#each strip.cells as c (c.step)}
+      {#each strip.cells as c, i (c.step)}
         <div
           class="mini"
           class:guide-step-active={activeStep?.key === key && activeStep.ringStep === c.step}
           style="left:{c.step * SIZE * S}px; top:0; width:{SIZE * S}px; height:{SIZE * S}px"
         >
           <PictographContainer
-            pictographData={cellData(strip.id, c)}
+            pictographData={RESOLVED[strip.id]![i]}
             gridMode={GridMode.DIAMOND}
             redPropTypeOverride={PropType.STAFF}
             showGrid={true}
@@ -252,7 +270,7 @@
         isGroupStart
         label={`Animate the ${strip.word} sequence`}
         onselect={() =>
-          emitSequence?.({ strip: stripSteps(strip), word: strip.word, key, propType: "staff" })}
+          emitSequence?.({ strip: RESOLVED[strip.id]!, word: strip.word, key, propType: "staff" })}
       />
     </div>
   {/each}

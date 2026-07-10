@@ -42,8 +42,10 @@
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -166,10 +168,25 @@
       },
     }) as unknown as StepData;
 
-  const wordSteps = (w: WordDef): StepData[] => [
+  const authoredWordSteps = (w: WordDef): StepData[] => [
     startBox(w.block),
     ...[0, 1, 2, 3].map((i) => wordStep(w, i, true)),
   ];
+
+  // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
+  // present, resolved before baking — reversal dots stay derived either way.
+  // Reactive ($derived) so a save/revert/reset re-renders without a refresh.
+  const resolvedWordStrip = (w: WordDef): StepData[] => {
+    const authored = authoredWordSteps(w);
+    const override = overrideStepsFor(w.key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const RESOLVED: Record<string, StepData[]> = $derived(
+    Object.fromEntries(WORDS.map((w) => [w.key, resolvedWordStrip(w)]))
+  );
+  const wordSteps = (w: WordDef): StepData[] => RESOLVED[w.key]!;
 
   // ── Geometry (artboard border scan) ─────────────────────────────────────────
   const CELL = 90;
@@ -275,7 +292,7 @@
           style="left:{i * CELL * S}px; top:0; width:{CELL * S}px; height:{CELL * S}px"
         >
           <PictographContainer
-            pictographData={wordStep(w, i, false)}
+            pictographData={{ ...RESOLVED[w.key]![i + 1], stepNumber: undefined } as unknown as StepData}
             gridMode={GridMode.DIAMOND}
             bluePropTypeOverride={PropType.STAFF}
             redPropTypeOverride={PropType.STAFF}

@@ -43,8 +43,10 @@
   import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -108,10 +110,32 @@
       },
     }) as unknown as StepData;
 
-  const demoSteps = (key: string, type: MotionType, from: GridLocation, to: GridLocation): StepData[] => [
+  const authoredDemoSteps = (key: string, type: MotionType, from: GridLocation, to: GridLocation): StepData[] => [
     demoStep(key, MotionType.STATIC, from, from, 0),
     demoStep(key, type, from, to, 1),
   ];
+
+  // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
+  // present, resolved before baking — reversal dots stay derived either way.
+  // Reactive ($derived) so a save/revert/reset re-renders without a refresh.
+  const resolvedDemoStrip = (key: string, type: MotionType, from: GridLocation, to: GridLocation): StepData[] => {
+    const authored = authoredDemoSteps(key, type, from, to);
+    const override = overrideStepsFor(key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const RESOLVED_DEMOS: Record<string, StepData[]> = $derived(
+    Object.fromEntries(
+      boxes
+        .filter((b) => !!b.word)
+        .map((b) => {
+          const m = b.data.motions.blue!;
+          return [b.data.id, resolvedDemoStrip(b.data.id, m.motionType, m.startLocation, m.endLocation)];
+        })
+    )
+  );
+  const demoSteps = (key: string): StepData[] => RESOLVED_DEMOS[key]!;
 
   // Two-hand combination examples — one per named cell, blue does the first
   // motion of the description, red the second. Locations keep the ends distinct.
@@ -149,7 +173,22 @@
       },
     }) as unknown as StepData;
 
-  const comboSteps = (ci: number, d: ComboDemo): StepData[] => [comboStep(ci, d, true), comboStep(ci, d, false)];
+  const authoredComboSteps = (ci: number, d: ComboDemo): StepData[] => [comboStep(ci, d, true), comboStep(ci, d, false)];
+
+  // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
+  // present, resolved before baking — reversal dots stay derived either way.
+  // Reactive ($derived) so a save/revert/reset re-renders without a refresh.
+  const resolvedComboStrip = (ci: number, d: ComboDemo, key: string): StepData[] => {
+    const authored = authoredComboSteps(ci, d);
+    const override = overrideStepsFor(key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const RESOLVED_COMBOS: Record<string, StepData[]> = $derived(
+    Object.fromEntries(COMBO_DEMOS.map((d, ci) => [`hm-combo-${ci}`, resolvedComboStrip(ci, d, `hm-combo-${ci}`)]))
+  );
+  const comboSteps = (ci: number, d: ComboDemo): StepData[] => RESOLVED_COMBOS[`hm-combo-${ci}`]!;
 
   // Invisible hit regions over the six combination cells (name + description),
   // bounded by the table's own dividers.
@@ -302,7 +341,7 @@
       style="left:{box.x * S}px; top:{box.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px"
     >
       <PictographContainer
-        pictographData={box.data}
+        pictographData={box.word ? ({ ...RESOLVED_DEMOS[key]![1], stepNumber: undefined } as unknown as StepData) : box.data}
         gridMode={GridMode.DIAMOND}
         bluePropTypeOverride={PropType.HAND}
         redPropTypeOverride={PropType.HAND}
@@ -320,14 +359,13 @@
         disableTransitions={true}
       />
       {#if box.word}
-        {@const m = box.data.motions.blue!}
         <SelectionHit
           groupId={key}
           isGroupStart
           label={`Animate a ${box.word.toLowerCase()}`}
           onselect={() =>
             emitSequence?.({
-              strip: demoSteps(key, m.motionType, m.startLocation, m.endLocation),
+              strip: demoSteps(key),
               word: box.word!,
               key,
               propType: "hand",

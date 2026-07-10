@@ -41,8 +41,10 @@
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -136,7 +138,7 @@
 
   // Companion strip: a static Start at the letter's start position, then the
   // letter itself — so playback opens from the in orientation like the page says.
-  const cellSteps = (c: Cell): StepData[] => [
+  const authoredCellSteps = (c: Cell): StepData[] => [
     {
       id: `bl-${c.name}-start`,
       letter: null,
@@ -151,6 +153,24 @@
     } as unknown as StepData,
     letterStep(c, 1),
   ];
+
+  // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
+  // present, resolved before baking — reversal dots stay derived either way.
+  // Reactive ($derived) so a save/revert/reset re-renders without a refresh.
+  const resolvedCellStrip = (c: Cell): StepData[] => {
+    const authored = authoredCellSteps(c);
+    const key = `bl-${c.name}`;
+    const override = overrideStepsFor(key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const RESOLVED: Record<string, StepData[]> = $derived(
+    Object.fromEntries(
+      BOXES.flatMap((bx) => bx.cells.map((c) => [`bl-${c.name}`, resolvedCellStrip(c)]))
+    )
+  );
+  const cellSteps = (c: Cell): StepData[] => RESOLVED[`bl-${c.name}`]!;
 
   // ── Rules + section head ────────────────────────────────────────────────────
   const HEAVY_RULE = 123.5;
@@ -262,7 +282,7 @@
         style="left:{(bx.x + ci * CELL) * S}px; top:{bx.y * S}px; width:{CELL * S}px; height:{CELL * S}px"
       >
         <PictographContainer
-          pictographData={letterStep(c)}
+          pictographData={{ ...RESOLVED[key]![1], stepNumber: undefined } as unknown as StepData}
           gridMode={GridMode.DIAMOND}
           bluePropTypeOverride={PropType.STAFF}
           redPropTypeOverride={PropType.STAFF}
@@ -282,7 +302,7 @@
           groupId={key}
           isGroupStart
           label={`Animate letter ${c.name}`}
-          onselect={() => emitSequence?.({ strip: cellSteps(c), word: `Letter ${c.name}`, key, propType: "staff" })}
+          onselect={() => emitSequence?.({ strip: RESOLVED[key]!, word: `Letter ${c.name}`, key, propType: "staff" })}
         />
       </div>
     {/each}

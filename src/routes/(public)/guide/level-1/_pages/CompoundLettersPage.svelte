@@ -44,8 +44,10 @@
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -206,6 +208,35 @@
     ...w.steps.map((c, i) => cellStep(c, `${wordKey(w)}-s`, i + 1)),
   ];
 
+  // ── Override resolution (admin edits replace the WHOLE strip when present;
+  // reversal dots stay derived via bakeReversals either way). Reactive so a
+  // save/revert/reset while the reader is open re-renders these cells.
+  const cellKey = (hi: number, c: CellDef) => `cl-${hi === 0 ? "tog" : "split"}-${c.name}`;
+  const ALL_CELLS: { c: CellDef; key: string }[] = [TOG, SPLIT].flatMap((half, hi) =>
+    half.rows.flatMap((row) => row.map((c) => ({ c, key: cellKey(hi, c) })))
+  );
+  const resolvedCellSteps = (c: CellDef, key: string): StepData[] => {
+    const authored = cellSteps(c, key);
+    const override = overrideStepsFor(key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const CELL_RESOLVED: Record<string, StepData[]> = $derived(
+    Object.fromEntries(ALL_CELLS.map(({ c, key }) => [key, resolvedCellSteps(c, key)]))
+  );
+
+  const resolvedWordSteps = (w: WordDef): StepData[] => {
+    const authored = wordSteps(w);
+    const override = overrideStepsFor(wordKey(w));
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const WORD_RESOLVED: Record<string, StepData[]> = $derived(
+    Object.fromEntries(WORDS.map((w) => [wordKey(w), resolvedWordSteps(w)]))
+  );
+
   // ── Geometry ────────────────────────────────────────────────────────────────
   const CELL = 90;
   const GRID_ROWS_Y = [265.3, 355.3];
@@ -276,7 +307,7 @@
   {#each [TOG, SPLIT] as half, hi (hi)}
     {#each half.rows as row, ri (ri)}
       {#each row as c, ci (ci)}
-        {@const key = `cl-${hi === 0 ? "tog" : "split"}-${c.name}`}
+        {@const key = cellKey(hi, c)}
         <div
           class="mini tka-seq-cell"
           class:is-hovered={selection?.isHovered(key)}
@@ -285,17 +316,18 @@
           style="left:{(half.x + ci * CELL) * S}px; top:{GRID_ROWS_Y[ri]! * S}px; width:{CELL * S}px; height:{CELL * S}px"
         >
           <PictographContainer
-            pictographData={cellStep(c, key, null)}
+            pictographData={CELL_RESOLVED[key]![1]}
             gridMode={GridMode.DIAMOND}
             bluePropTypeOverride={PropType.STAFF}
             redPropTypeOverride={PropType.STAFF}
+            stepNumberOverride={false}
             {...PICTO_FLAGS}
           />
           <SelectionHit
             groupId={key}
             isGroupStart
             label={`Animate letter ${c.name} (${hi === 0 ? "Tog-Opp" : "Split-Opp"})`}
-            onselect={() => emitSequence?.({ strip: cellSteps(c, key), word: `Letter ${c.name}`, key, propType: "staff" })}
+            onselect={() => emitSequence?.({ strip: CELL_RESOLVED[key]!, word: `Letter ${c.name}`, key, propType: "staff" })}
           />
         </div>
       {/each}
@@ -311,14 +343,14 @@
       class:is-selected={selection?.isSelected(key)}
       style="left:{w.x * S}px; top:{WORD_Y * S}px; width:{CELL * 2 * S}px; height:{CELL * S}px"
     >
-      {#each w.steps as c, i (i)}
+      {#each WORD_RESOLVED[key]!.slice(1) as sd, i (i)}
         <div
           class="mini cell"
           class:guide-step-active={activeStep?.key === key && activeStep.ringStep === i + 1}
           style="left:{i * CELL * S}px; top:0; width:{CELL * S}px; height:{CELL * S}px"
         >
           <PictographContainer
-            pictographData={cellStep(c, `${key}-p`, i + 1)}
+            pictographData={sd}
             gridMode={GridMode.DIAMOND}
             bluePropTypeOverride={PropType.STAFF}
             redPropTypeOverride={PropType.STAFF}
@@ -331,7 +363,7 @@
         groupId={key}
         isGroupStart
         label={`Animate the word ${w.word}`}
-        onselect={() => emitSequence?.({ strip: wordSteps(w), word: w.word, key, propType: "staff" })}
+        onselect={() => emitSequence?.({ strip: WORD_RESOLVED[key]!, word: w.word, key, propType: "staff" })}
       />
     </div>
     <p class="caption" style="left:{w.x * S}px; top:{716.2 * S}px; width:{CELL * 2 * S}px; font-size:{14 * S}px">

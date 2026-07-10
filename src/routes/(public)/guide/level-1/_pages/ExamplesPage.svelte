@@ -38,8 +38,10 @@
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -169,6 +171,20 @@
     }) as unknown as StepData;
   const seqSteps = (q: SeqDef): StepData[] => [startPose(q), ...q.steps.map((_, i) => stepData(q, i))];
 
+  // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
+  // present, resolved before baking — reversal dots stay derived either way.
+  // Reactive so a save/revert/reset while the reader is open re-renders.
+  const resolvedSeqSteps = (q: SeqDef): StepData[] => {
+    const authored = seqSteps(q);
+    const override = overrideStepsFor(q.key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const RESOLVED: Record<string, StepData[]> = $derived(
+    Object.fromEntries(SEQS.map((q) => [q.key, resolvedSeqSteps(q)]))
+  );
+
   // ── Geometry ────────────────────────────────────────────────────────────────
   const CELL = 90;
   const RULES = [253.5, 508.2];
@@ -267,7 +283,7 @@
           style="left:{(i % 4) * CELL * S}px; top:{(Math.floor(i / 4) * (q.rowYs.length === 1 ? 0 : q.rowYs[1]! - q.rowYs[0]!)) * S}px; width:{CELL * S}px; height:{CELL * S}px"
         >
           <PictographContainer
-            pictographData={stepData(q, i)}
+            pictographData={RESOLVED[q.key]!.slice(1)[i]}
             gridMode={GridMode.DIAMOND}
             bluePropTypeOverride={PropType.STAFF}
             redPropTypeOverride={PropType.STAFF}
@@ -280,7 +296,7 @@
         groupId={q.key}
         isGroupStart
         label={`Animate ${q.word}`}
-        onselect={() => emitSequence?.({ strip: seqSteps(q), word: q.word, key: q.key, propType: "staff" })}
+        onselect={() => emitSequence?.({ strip: RESOLVED[q.key]!, word: q.word, key: q.key, propType: "staff" })}
       />
     </div>
   {/each}

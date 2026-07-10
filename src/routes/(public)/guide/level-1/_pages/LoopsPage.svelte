@@ -39,8 +39,10 @@
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
+  import { overrideStepsFor } from "../_data/guide-overrides.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
@@ -204,7 +206,23 @@
       },
     }) as unknown as StepData;
 
-  const loopSteps = (l: LoopDef): StepData[] => [startBox(l), ...l.steps.map((_, i) => stepData(l, i))];
+  // Static authoring — build each LOOP's full strip (start + numbered steps),
+  // with reversal dots derived from the motions themselves (bakeReversals;
+  // never hand-authored). An admin override (guide-overrides.svelte) replaces
+  // the WHOLE strip when present, resolved before baking — reversal dots stay
+  // derived either way. Reactive ($derived) so a save/revert/reset while the
+  // reader is open re-renders these cells without a refresh.
+  const resolvedStrip = (l: LoopDef): StepData[] => {
+    const authored = [startBox(l), ...l.steps.map((_, i) => stepData(l, i))];
+    const override = overrideStepsFor(l.key);
+    const full = override && override.length > 0 ? override : authored;
+    const [start, ...steps] = full;
+    return [start!, ...bakeReversals(steps)];
+  };
+  const RESOLVED: Record<string, StepData[]> = $derived(
+    Object.fromEntries(LOOPS.map((l) => [l.key, resolvedStrip(l)]))
+  );
+  const loopSteps = (l: LoopDef): StepData[] => RESOLVED[l.key]!;
 
   // ── Geometry ────────────────────────────────────────────────────────────────
   const CELL = 75;
@@ -307,7 +325,7 @@
         style="left:{(l.startX - Math.min(l.startX, l.rowX)) * S}px; top:0; width:{CELL * S}px; height:{CELL * S}px"
       >
         <PictographContainer
-          pictographData={startBox(l)}
+          pictographData={RESOLVED[l.key]![0]}
           gridMode={GridMode.DIAMOND}
           bluePropTypeOverride={PropType.STAFF}
           redPropTypeOverride={PropType.STAFF}
@@ -316,14 +334,14 @@
         />
       </div>
       <!-- 8 steps in two rows of 4 -->
-      {#each l.steps as _, i (i)}
+      {#each RESOLVED[l.key]!.slice(1) as sd, i (i)}
         <div
           class="mini"
           class:guide-step-active={activeStep?.key === l.key && activeStep.ringStep === i + 1}
           style="left:{(l.rowX + (i % 4) * CELL - Math.min(l.startX, l.rowX)) * S}px; top:{(Math.floor(i / 4) * (l.rowYs[1] - l.rowYs[0])) * S}px; width:{CELL * S}px; height:{CELL * S}px"
         >
           <PictographContainer
-            pictographData={stepData(l, i)}
+            pictographData={sd}
             gridMode={GridMode.DIAMOND}
             bluePropTypeOverride={PropType.STAFF}
             redPropTypeOverride={PropType.STAFF}
