@@ -1,6 +1,7 @@
 <!-- WorkspaceGrid.svelte - Unified workspace grid with standard and timeline layout modes -->
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
@@ -235,7 +236,8 @@
       icon: "fa-bookmark",
       action: () => {
         const name =
-          sequenceWord || `Mandala #${mandalaCollectionState.count + 1}`;
+          simplifyRepeatedWord(sequenceWord) ||
+          `Mandala #${mandalaCollectionState.count + 1}`;
         mandalaCollectionState.add({
           name,
           steps: [...steps],

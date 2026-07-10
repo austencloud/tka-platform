@@ -15,6 +15,7 @@
   } from "../services/capture-3d-scene";
   import { scene3dCollectionState } from "../state/scene-3d-collection-state.svelte";
   import { SCENE_3D_GROUPS } from "../domain/scene-3d-collection-types";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { Scene3DGroupId, StepData } from "../domain/scene-3d-collection-types";
 
   let {
@@ -43,7 +44,7 @@
   $effect(() => {
     if (!open || !viewer3DState) return;
     const seq = viewer3DState.currentSequenceData;
-    const word = seq?.word || seq?.name;
+    const word = simplifyRepeatedWord(seq?.word || seq?.name || "");
     name = word ? `${word} — 3D scene` : "3D scene";
     poster = captureScene3DPoster(viewer3DState);
     enabled = allOn();
@@ -98,7 +99,7 @@
         icon: "fa-music",
         title: "Performance",
         summary: hasSteps
-          ? `${seq?.word || seq?.name || "sequence"} · ${seq?.steps?.length} steps${bpm ? ` · ${bpm} BPM` : ""}`
+          ? `${simplifyRepeatedWord(seq?.word || seq?.name || "sequence")} · ${seq?.steps?.length} steps${bpm ? ` · ${bpm} BPM` : ""}`
           : "No sequence loaded — look-only save",
         disabled: !hasSteps,
       },

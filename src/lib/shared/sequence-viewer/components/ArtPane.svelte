@@ -26,6 +26,7 @@
   import { capturePosterFromContainer } from "../tunnel/tunnel-poster";
   import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
   import { TUNNEL_AUTO_EXPORT_INTENT_KEY } from "$lib/features/tunnel-collection/services/open-tunnel-in-viewer";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   // Mandala is the static tip-path bloom; Tunnel is the live kaleidoscope. The
@@ -209,7 +210,7 @@
     // Composite ALL stage layers (props + trails + effect overlays), not just the
     // first canvas, so the saved thumbnail matches the live look.
     const poster = capturePosterFromContainer(artBodyEl);
-    const name = seq.word || `Tunnel #${tunnelCollectionState.count + 1}`;
+    const name = simplifyRepeatedWord(seq.word || "") || `Tunnel #${tunnelCollectionState.count + 1}`;
     try {
       await tunnelCollectionState.add({
         name,
