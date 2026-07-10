@@ -691,7 +691,7 @@
                 <button
                   class="mini-tile"
                   type="button"
-                  onclick={() => navigationState.setActiveTab("discover")}
+                  onclick={() => navigationState.setActiveTab("community")}
                 >
                   <span class="mini-art" aria-hidden="true">
                     <i class="fas fa-folder"></i>

@@ -609,7 +609,7 @@ function parsePathNavigation(): {
     const parts = pathname.substring(1).split("/").filter(Boolean);
     let moduleId = parts[0] as ModuleId;
     // Section can come from path (/admin/loop-labeler) OR query param (?section=loop-labeler)
-    const sectionId = parts[1] || searchParams.get("section") || undefined;
+    let sectionId = parts[1] || searchParams.get("section") || undefined;
 
     // Redirect legacy module URLs to their new locations
     // (Note: these IDs are not in ModuleId type but may exist in legacy URLs)
@@ -619,6 +619,17 @@ function parsePathNavigation(): {
     } else if (moduleId === ("dashboard" as unknown)) {
       // Dashboard removed Jan 2026 - Create is now the default landing
       moduleId = "create" as ModuleId;
+    } else if (moduleId === ("browse" as ModuleId) && parts[1] === "discover") {
+      // Browse's community-collections tab id renamed discover -> community
+      // (2026-07-10) so the URL reads sensibly. Old bookmarks/deep links to
+      // /browse/discover land on the same tab under its new id. Scoped to
+      // the browse module only — Festivals also has an unrelated "discover"
+      // tab id and must not be redirected here.
+      sectionId = "community";
+      const rewritten = "/browse/community";
+      const url = new URL(window.location.href);
+      url.pathname = rewritten;
+      svelteKitReplaceState(url, { moduleId: "browse", sectionId: "community" });
     } else if (moduleId === ("browse" as ModuleId) && parts[1] === "creators") {
       // Creators moved Browse -> Social (2026-07-08). Redirect the module AND
       // rewrite the address bar to /social/creators[/userId] so the deep
@@ -759,6 +770,11 @@ export function initializeNavigationHistory() {
       // Dashboard removed Jan 2026 - Create is now the default landing
       targetModule = "create" as ModuleId;
       targetSection = undefined;
+      needsHistoryUpdate = true;
+    } else if (targetModule === ("browse" as ModuleId) && targetSection === "discover") {
+      // Browse tab id renamed discover -> community (2026-07-10). A history
+      // entry pushed before the rename still carries the old sectionId.
+      targetSection = "community";
       needsHistoryUpdate = true;
     }
 

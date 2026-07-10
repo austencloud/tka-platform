@@ -48,12 +48,16 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
   } from "../services/gallery-view-persister";
 
   // "collections" is the Library tab (label renamed 2026-07-02; id frozen —
-  // routes and persisted nav state reference it). "discover" is the community
-  // Collections discovery tab (id "discover" because "collections" is taken).
-  type BrowseModuleType = "gallery" | "collections" | "discover" | "hall-of-shame";
+  // routes and persisted nav state reference it). "community" is the
+  // community Collections discovery tab (id renamed from "discover" ->
+  // "community" 2026-07-10 so /browse/community reads sensibly; legacy
+  // /browse/discover URLs and persisted "discover" nav state still resolve
+  // here via the redirects in navigation-coordinator.svelte.ts and
+  // browse-navigation-state.svelte.ts).
+  type BrowseModuleType = "gallery" | "collections" | "community" | "hall-of-shame";
 
   // Tab order for determining slide direction (left-to-right in bottom nav)
-  const TAB_ORDER: BrowseModuleType[] = ["gallery", "collections", "discover", "hall-of-shame"];
+  const TAB_ORDER: BrowseModuleType[] = ["gallery", "collections", "community", "hall-of-shame"];
 
   // Transition configuration
   const SLIDE_DISTANCE = 30; // pixels
@@ -202,8 +206,8 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       newTab = "gallery";
     } else if (navTab === "collections") {
       newTab = "collections";
-    } else if (navTab === "discover") {
-      newTab = "discover";
+    } else if (navTab === "community") {
+      newTab = "community";
     } else if (navTab === "hall-of-shame") {
       newTab = "hall-of-shame";
     }
@@ -214,7 +218,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       const browseTab =
         newTab === "gallery"
           ? "gallery"
-          : (newTab as "collections" | "discover");
+          : (newTab as "collections" | "community");
       browseNavigationState.navigateTo({ tab: browseTab, view: "list" });
     }
 
@@ -231,7 +235,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
 
   // ✅ SYNC UI FROM NAVIGATION STATE
   // When browseNavigationState.currentLocation changes, mirror the active tab
-  // (gallery / collections / discover). Creators now lives in Social.
+  // (gallery / collections / community). Creators now lives in Social.
   $effect(() => {
     const location = browseNavigationState.currentLocation;
     if (!location) return;
@@ -539,7 +543,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
           {/if}
         {:else if activeTab === "collections"}
           <MyCollectionsPanel />
-        {:else if activeTab === "discover"}
+        {:else if activeTab === "community"}
           <CommunityCollectionsPanel />
         {:else if activeTab === "hall-of-shame"}
           <HallOfShameGallery />

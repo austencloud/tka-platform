@@ -135,7 +135,12 @@ export const BROWSE_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #d8b4fe 0%, #c084fc 100%)",
   },
   {
-    id: "discover",
+    // id renamed discover -> community (2026-07-10) so the URL
+    // (/browse/community) matches the "Collections" label's meaning —
+    // community-shared collections, not the user's own (that's "collections"
+    // above, labeled "Library"). labelKey/descKey kept as-is to avoid
+    // translation churn across locale files.
+    id: "community",
     labelKey: "tab_browse_discover",
     descKey: "tab_desc_browse_discover",
     label: "Collections",

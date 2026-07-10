@@ -11,7 +11,7 @@
  */
 
 // Tab types matching the Browse module structure
-export type BrowseTab = "gallery" | "collections" | "discover";
+export type BrowseTab = "gallery" | "collections" | "community";
 export type BrowseView = "list" | "detail";
 
 /**
@@ -132,6 +132,14 @@ function createBrowseNavigationState() {
         Array.isArray(data.history) &&
         data.history.length > 0
       ) {
+        // Migrate legacy persisted tab id "discover" -> "community" (renamed
+        // 2026-07-10). Old localStorage entries otherwise carry a tab value
+        // no component matches, silently landing on no panel.
+        for (const loc of data.history) {
+          if ((loc.tab as string) === "discover") {
+            loc.tab = "community";
+          }
+        }
         state.history = data.history;
         state.currentIndex = Math.min(
           data.currentIndex,
