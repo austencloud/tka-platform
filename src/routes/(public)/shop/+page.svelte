@@ -11,7 +11,6 @@
   // signed-in non-admin) sees Coming Soon. Same URL. Launch later = drop the gate.
   // Chrome (nav + cosmic background) is provided by +layout.svelte.
   import { onMount } from "svelte";
-  import StorePage from "$lib/features/store/StorePage.svelte";
   import ShopComingSoon from "$lib/features/store/components/ShopComingSoon.svelte";
 
   // Seed from the session cache so a return visit renders correctly on frame one.
@@ -60,12 +59,29 @@
     name="description"
     content="Printed Choreo card decks, guides, and flow props from The Kinetic Alphabet."
   />
+  <link rel="canonical" href="https://tkaflowarts.com/shop" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="The Kinetic Alphabet" />
+  <meta property="og:title" content="Shop | The Kinetic Alphabet" />
+  <meta
+    property="og:description"
+    content="Printed Choreo card decks, guides, and flow props from The Kinetic Alphabet."
+  />
+  <meta property="og:url" content="https://tkaflowarts.com/shop" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="Shop | The Kinetic Alphabet" />
+  <meta
+    name="twitter:description"
+    content="Printed Choreo card decks, guides, and flow props from The Kinetic Alphabet."
+  />
 </svelte:head>
 
 <!-- Default to Coming Soon while auth resolves: the common visitor is non-admin,
      so this avoids a blank flash. Admin briefly sees Coming Soon, then the shop. -->
 {#if ready && isAdmin}
-  <StorePage showDrafts />
+  {#await import("$lib/features/store/StorePage.svelte") then { default: StorePage }}
+    <StorePage showDrafts />
+  {/await}
 {:else}
   <ShopComingSoon />
 {/if}
