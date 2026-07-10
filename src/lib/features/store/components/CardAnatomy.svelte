@@ -179,7 +179,7 @@
     flex-direction: column;
     align-items: center;
     gap: 0.6rem;
-    flex: 0 1 300px;
+    flex: 1 1 280px;
     transition: opacity 200ms ease;
   }
 
@@ -191,7 +191,7 @@
   .card-box {
     position: relative;
     width: 100%;
-    max-width: 320px;
+    max-width: 430px;
     aspect-ratio: 5 / 7;
     border-radius: 12px;
     overflow: hidden;

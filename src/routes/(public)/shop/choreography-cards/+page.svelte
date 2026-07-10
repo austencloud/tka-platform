@@ -264,12 +264,24 @@
     }
     .anatomy-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
       gap: 2.5rem;
       align-items: start;
     }
     .legend {
       grid-template-columns: 1fr;
+    }
+  }
+
+  /* Big desktops: widen the whole column and give the cards the room to
+     sit side by side at full size instead of wrapping into a stack. */
+  @media (min-width: 1700px) {
+    .editorial.wide {
+      max-width: 92rem;
+    }
+    .anatomy-layout {
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+      gap: 3.5rem;
     }
   }
 
