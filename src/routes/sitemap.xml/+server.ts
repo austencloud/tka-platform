@@ -2,13 +2,15 @@ import { LANDING_DOMAIN } from "../../config/domains";
 import type { RequestHandler } from "./$types";
 
 const pages = [
-  // Landing page
+  // Landing page (canonical — /landing duplicates this and is dropped)
   { url: "", priority: "1.0", changefreq: "weekly" },
-  // App entry (default module)
-  { url: "create", priority: "0.9", changefreq: "weekly" },
-  // Public pages
-  { url: "profile", priority: "0.5", changefreq: "monthly" },
-  { url: "landing", priority: "0.8", changefreq: "weekly" },
+  // Shop
+  { url: "shop", priority: "0.9", changefreq: "weekly" },
+  { url: "shop/loop-deck", priority: "0.8", changefreq: "monthly" },
+  { url: "shop/tnd-trilogy", priority: "0.8", changefreq: "monthly" },
+  // Marketing
+  { url: "about", priority: "0.6", changefreq: "monthly" },
+  { url: "support", priority: "0.5", changefreq: "monthly" },
   // Guide — the indexable, reflowable article routes (the /print + /book
   // replicas are noindex; the canonical is the article, so only these are listed)
   { url: "guide", priority: "0.7", changefreq: "monthly" },
