@@ -12,53 +12,94 @@
    */
   import { onMount } from "svelte";
   import { loadActiveProducts } from "../services/product-loader";
-  import type { CoverCard } from "../domain/models/product";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import CardBack from "$lib/features/choreo-card/components/card-back/CardBack.svelte";
+  import { computeFrontRegions } from "../services/card-front-regions";
 
   let {
     highlight = null,
     onhighlight,
   }: { highlight?: string | null; onhighlight?: (id: string | null) => void } = $props();
 
-  // A pool of real baked cards across every active deck (varied words,
-  // mandalas, LOOP types, difficulties). Shuffle swaps the shown card; the
-  // anatomy still maps because front regions are % of the fixed print layout
-  // and back regions are measured off the live CardBack DOM.
-  let pool: CoverCard[] = $state([]);
-  let index = $state(0);
-  const card = $derived(pool[index] ?? null);
+  // The shown card. First paint uses a real baked cover (instant). Shuffle
+  // GENERATES a fresh card at a random count (8/12/16) with a turn pattern, so
+  // the reader sees the real variety — different words, mandalas, LOOP types,
+  // difficulties, and step counts. The anatomy stays accurate because front
+  // regions are computed from the print layout for that step count, and back
+  // regions are measured off the live CardBack DOM.
+  type Shown = { sequence: SequenceData; frontUrl: string; stepCount: number };
+  let shown = $state<Shown | null>(null);
+  let shuffling = $state(false);
+
+  const frontRegions = $derived(shown ? computeFrontRegions(shown.stepCount) : null);
 
   onMount(async () => {
     try {
       const products = await loadActiveProducts();
-      const all: CoverCard[] = [];
       for (const p of products) {
-        for (const c of p.coverCards ?? []) {
-          if (c.imageUrl && c.sequence) all.push(c);
+        const baked = (p.coverCards ?? []).find((c) => c.imageUrl && c.sequence);
+        if (baked?.imageUrl) {
+          shown = {
+            sequence: baked.sequence,
+            frontUrl: baked.imageUrl,
+            stepCount: baked.sequence.steps?.length ?? 8,
+          };
+          break;
         }
       }
-      pool = all;
     } catch (error) {
       console.warn("[CardAnatomy] product load failed; keeping text-only anatomy", error);
     }
   });
 
-  function shuffle() {
-    if (pool.length < 2) return;
-    let next = index;
-    while (next === index) next = Math.floor(Math.random() * pool.length);
-    index = next;
-    onhighlight?.(null); // drop any active spotlight; it re-maps on next hover
-  }
+  const COUNTS = [8, 12, 16] as const;
 
-  // Front spotlight rects in % of the baked 822x1122 print render.
-  const FRONT_REGIONS: Record<string, { x: number; y: number; w: number; h: number }> = {
-    word: { x: 16, y: 6.7, w: 68, h: 7.6 },
-    start: { x: 11, y: 14.5, w: 26, h: 19 },
-    steps: { x: 37, y: 14.5, w: 52, h: 75 },
-    mandalas: { x: 11, y: 33.5, w: 26, h: 37 },
-    qr: { x: 12, y: 70.5, w: 24, h: 19 },
-  };
+  async function shuffle() {
+    if (shuffling) return;
+    shuffling = true;
+    try {
+      const [{ generationOrchestrator }, gen, circ, grid, prop, renderMod] = await Promise.all([
+        import("$lib/shared/create/services/generation-orchestrator"),
+        import("$lib/shared/foundation/domain/models/generation/generate-models"),
+        import("$lib/shared/foundation/domain/models/generation/circular-models"),
+        import("$lib/shared/pictograph/grid/domain/enums/grid-enums"),
+        import("$lib/shared/pictograph/prop/domain/enums/prop-type"),
+        import("../services/cover-front-renderer"),
+      ]);
+
+      const loops = [circ.LOOPType.ROTATED, circ.LOOPType.MIRRORED, circ.LOOPType.SWAPPED, circ.LOOPType.FLIPPED];
+      const count = COUNTS[Math.floor(Math.random() * COUNTS.length)]!;
+      const loopType = loops[Math.floor(Math.random() * loops.length)]!;
+      // Max turn intensity 1, but let ~60% of cards carry a turn pattern.
+      const turnIntensity = Math.random() < 0.6 ? 1 : 0;
+      const period =
+        count % 4 === 0 && Math.random() < 0.5 ? circ.Period.QUARTERED : circ.Period.HALVED;
+
+      const sequence = await generationOrchestrator.generateSequence({
+        mode: gen.GenerationMode.CIRCULAR,
+        length: count,
+        gridMode: grid.GridMode.DIAMOND,
+        propType: prop.PropType.STAFF,
+        difficulty: gen.DifficultyLevel.INTERMEDIATE,
+        propContinuity: gen.PropContinuity.CONTINUOUS,
+        turnIntensity,
+        loopType,
+        period,
+      });
+
+      const frontUrl = await renderMod.renderCoverFront(
+        { sequence },
+        { deckName: "Choreo Cards", propType: prop.PropType.STAFF }
+      );
+
+      onhighlight?.(null);
+      shown = { sequence, frontUrl, stepCount: sequence.steps?.length ?? count };
+    } catch (error) {
+      console.error("[CardAnatomy] shuffle generation failed", error);
+    } finally {
+      shuffling = false;
+    }
+  }
 
   // Back regions are measured off the live CardBack DOM at hover time, so
   // they track the real element positions regardless of theme border width
@@ -101,7 +142,7 @@
 
   const activeRegion = $derived.by(() => {
     if (!highlight) return null;
-    const front = FRONT_REGIONS[highlight];
+    const front = frontRegions?.[highlight];
     if (front) return { face: "front" as const, ...front };
     const rg = measureBack(highlight);
     return rg ? { face: "back" as const, ...rg } : null;
@@ -119,8 +160,9 @@
   }
 
   function frontHit(e: PointerEvent) {
+    if (!frontRegions) return;
     const p = pointerPct(e);
-    for (const [id, rg] of Object.entries(FRONT_REGIONS)) {
+    for (const [id, rg] of Object.entries(frontRegions)) {
       if (inRect(p.x, p.y, rg)) return onhighlight?.(id);
     }
     onhighlight?.(null);
@@ -145,9 +187,9 @@
   {/if}
 {/snippet}
 
-{#if card}
+{#if shown}
   <div class="anatomy-stack">
-    <div class="anatomy">
+    <div class="anatomy" class:busy={shuffling}>
     <figure class="face" class:backgrounded={activeRegion && activeRegion.face !== "front"}>
       <!-- Hover affordance only; the legend buttons are the keyboard/AT path. -->
       <div
@@ -157,7 +199,7 @@
         onpointermove={frontHit}
         onpointerleave={() => onhighlight?.(null)}
       >
-        <img src={card.imageUrl} alt="Front of a real Choreo Card" loading="lazy" />
+        <img src={shown.frontUrl} alt="Front of a real Choreo Card" />
         {@render spotlight("front")}
       </div>
       <figcaption>Front</figcaption>
@@ -172,21 +214,24 @@
         onpointermove={backHit}
         onpointerleave={() => onhighlight?.(null)}
       >
-        <CardBack sequence={card.sequence} />
+        <CardBack sequence={shown.sequence} />
         {@render spotlight("back")}
       </div>
       <figcaption>Back</figcaption>
     </figure>
     </div>
 
-    {#if pool.length > 1}
-      <div class="shuffle-bar">
-        <button type="button" class="shuffle-btn" onclick={shuffle}>
+    <div class="shuffle-bar">
+      <button type="button" class="shuffle-btn" onclick={shuffle} disabled={shuffling}>
+        {#if shuffling}
+          <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+          <span>Dealing a card…</span>
+        {:else}
           <i class="fas fa-shuffle" aria-hidden="true"></i>
           <span>Shuffle another card</span>
-        </button>
-      </div>
-    {/if}
+        {/if}
+      </button>
+    </div>
   </div>
 {/if}
 
@@ -204,6 +249,10 @@
     justify-content: center;
     flex-wrap: wrap;
     width: 100%;
+    transition: opacity 160ms ease;
+  }
+  .anatomy.busy {
+    opacity: 0.55;
   }
 
   .shuffle-bar {
@@ -237,6 +286,10 @@
   }
   .shuffle-btn:active {
     transform: translateY(1px);
+  }
+  .shuffle-btn:disabled {
+    cursor: default;
+    opacity: 0.75;
   }
   .shuffle-btn:focus-visible {
     outline: 2px solid oklch(0.7 0.1 275 / 0.7);
