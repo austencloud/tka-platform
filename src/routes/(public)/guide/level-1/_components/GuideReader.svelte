@@ -40,6 +40,7 @@
   } from "../_data/guide-page-links";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { BUILT } from "../_data/built-pages";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   // Faithful pages render in print STYLE (ink-on-white, static pictographs).
   setGuidePrintMode();
@@ -136,8 +137,9 @@
   }
 
   // Which prop the companion animates for the clicked strip (staff pages hand
-  // up "staff" so the player renders real staves from the authored orientations).
-  let clickedPropType = $state<"hand" | "staff">("hand");
+  // up "staff" so the player renders real staves from the authored orientations;
+  // the codex page hands up any PropType the reader has selected there).
+  let clickedPropType = $state<"hand" | "staff" | PropType>("hand");
   // Identity of the clicked strip + a human page label — the companion needs
   // both for the admin action row (saveOverride key) and Copy-for-AI's header
   // ("Guide: Level 1 › <page title> › <word>").

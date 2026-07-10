@@ -93,9 +93,10 @@
     /** Live playback step from the player, forwarded so the reader can ring the
      *  matching on-screen strip cell (see GuideActiveStep). */
     onStep?: (currentStep: number) => void;
-    /** Animated prop — hand for the hand chapters, staff for staff strips
-     *  (the engine keys on this explicit prop, not motion.propType). */
-    propType?: "hand" | "staff";
+    /** Animated prop — hand for the hand chapters, staff for staff strips, or
+     *  any PropType from the codex page's prop selector (the engine keys on
+     *  this explicit prop, not motion.propType). */
+    propType?: "hand" | "staff" | PropType;
     /** The clicked strip's identity — the key an override saves/reverts/resets
      *  under. Null when nothing is clicked yet. */
     stripKey?: string | null;

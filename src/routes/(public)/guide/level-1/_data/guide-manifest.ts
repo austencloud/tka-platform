@@ -76,15 +76,14 @@ export const GUIDE_BODY_PAGES: GuidePageEntry[] = [
 
   // ── 1.1 Letters (p11–p29) ─────────────────────────────────────────────
   { id: "base-letters", title: "Base Letters", level: 0, group: "1.1" },
-  // The double-staff codex is two full sheets in the proof (p19 Types 1–2,
-  // p20 Types 3–6) — split like hm-gamma/hm-type2; numbers re-derive.
-  { id: "bl-double-staff", title: "Double Staff · Types 1–2", level: 1, group: "1.1" },
-  { id: "bl-double-staff-36", title: "Double Staff · Types 3–6", level: 1, group: "1.1" },
-  { id: "bl-clubs", title: "Clubs", level: 1, group: "1.1" },
-  { id: "bl-buugeng", title: "Buugeng", level: 1, group: "1.1" },
-  { id: "bl-triads", title: "Triads", level: 1, group: "1.1" },
-  { id: "bl-fans", title: "Fans", level: 1, group: "1.1" },
-  { id: "bl-mini-hoops", title: "Mini Hoops", level: 1, group: "1.1" },
+  // Guide/Codex merge (2026-07-10): the 7 broken/static catalog entries
+  // (bl-double-staff, bl-double-staff-36, bl-clubs, bl-buugeng, bl-triads,
+  // bl-fans, bl-mini-hoops) are replaced by ONE interactive codex page. In the
+  // reader it renders the live Codex explorer (letter picker + variations +
+  // prop switch); on /print and /book (which share this same manifest + BUILT
+  // registry) GuideCodexPage itself branches on getGuidePrintMode() to render
+  // the faithful static Double-Staff sheets instead — see GuideCodexPage.svelte.
+  { id: "codex", title: "Codex", level: 0, group: "1.1" },
   // (letters-type1 removed 2026-07-09 — base-letters carries the Type 1 head.)
   { id: "lt1-abc-ghi", title: "Alpha/Beta Words", level: 1, group: "1.1" },
   { id: "lt1-dj-ek-fl", title: "Compound Letters", level: 1, group: "1.1" },

@@ -2,6 +2,7 @@ import { getContext, setContext } from "svelte";
 import type { GuideChapterData } from "./guide-types";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const GUIDE_DATA_KEY = Symbol("guide-data");
 const ACTIVE_SECTION_KEY = Symbol("active-section");
@@ -53,12 +54,15 @@ export function getGuidePrintMode(): boolean {
  *  scope the golden step ring to exactly the strip that's animating.
  *  `propType` picks the companion's animated prop — hand for the hand-motion
  *  chapters (default), staff for the staff pages (isolation/antispin strips
- *  animate real staves from their authored orientations). */
+ *  animate real staves from their authored orientations). Widened (2026-07-10,
+ *  guide/codex merge) to accept any PropType — the codex page lets the reader
+ *  switch prop family (club, buugeng, triad, fan, mini hoop, hand); existing
+ *  "hand"/"staff" string literals from other pages keep working unchanged. */
 export type GuideSequenceClick = {
   strip: StepData[];
   word?: string;
   key?: string;
-  propType?: "hand" | "staff";
+  propType?: "hand" | "staff" | PropType;
 };
 
 /** The reader registers a handler; pages call it to open the animation companion. */
