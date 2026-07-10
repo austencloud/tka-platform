@@ -77,7 +77,7 @@ Old guide = 47 pages. Mapping → our 3 chapters. Status: ⬜ todo · 🔧 in pr
 | 18 | 1.1 Letters (title) | letters | ⬜ |
 | 19 | Double-Staff Codex Type 1-2 (30) | `_pages/DoubleStaffCodexT12Page` (bl-double-staff) | 🔧 |
 | 20 | Codex Type 3-6 (17) | `_pages/DoubleStaffCodexT36Page` (bl-double-staff-36) | 🔧 |
-| 21 | Type 1 Letters | ch11/Type1Letters | ⬜ |
+| 21 | Type 1 Letters | `_pages/BaseLettersPage` (`base-letters`) | 🔧 |
 | 22 | Basic Words ABC/GHI | ch11/AlphaBetaWords | ⬜ |
 | 23 | Compound Letters (15) | ch11/CompoundLetters | ⬜ |
 | 24 | Compound Words DJ/EK/FL | ch11/CompoundWords | ⬜ |
@@ -220,6 +220,38 @@ LOOP terminology, per existing section filenames already named Loops*.)
   (arc), accent ring + golden step ring track live. NOTE (Austen 2026-07-09):
   the embedded codex pages are NOT the intended look — codex will be redone
   manually; treat bl-double-staff/-36 as placeholders pending his direction.
+
+- 2026-07-09: BASE LETTERS page (body p12, `base-letters`) built —
+  `_pages/BaseLettersPage.svelte`, proof p21 / artboard "1.1 - Letters - Type 1".
+  The first REAL letters: A B C (α→α Split-Same, blue s→w / red n→e) and G H I
+  (β→β Tog-Same, both e→s) in the Pro - Anti - Hybrid pattern, each cell a real
+  PictographContainer in the system's letter language — grid + motion arrows +
+  STAFF props + bottom-left `showTKA` glyph (the codex/workspace form; the old
+  artboard drew bare arrows only — flagged facelift deviation; the in-orientation
+  staffs happen to read exactly like the artboard's blue/red bars). NOT authored
+  as HAND: PictographPreparer's hand-path mode converts everything to FLOAT,
+  which would erase the pro/anti distinction this page teaches. All six letters
+  MCP-verified (`get_pictograph_data`): pro = prop CW with the handpath (in→in),
+  anti = prop CCW (in→out), hybrids C/I = blue anti + red pro (proof: "right is
+  in pro and left in anti"). Artboard variant identified via the source strips
+  (`images/level-1/alpha-beta-words/`): A/B/C = alpha1→alpha3, G/H/I = the e→s
+  frame. NOTE: MCP G var0/var2 carry internally inconsistent position names vs
+  locations (beta3→beta5 with w→n locations); authored by explicit LOCATIONS.
+  Reader: every cell clickable → companion animates Start→letter with staffs
+  from the in orientation (per-cell 2-step strip, keys `bl-A`…`bl-I`); golden
+  ring = whole cell while its letter plays. Faithful-with-corrections: "A,B, and
+  C"→"A, B, and C", Tog-Same italicized to match Split-Same, the β→β margin
+  label (dropped by extraction) restored symmetric to α→α, margin glyphs are
+  real PositionGlyphs, Dual-Shift head reuses the Type-1 tokens (#36c3ff/#6f2da8)
+  and right/left the cR/cB tokens instead of the artboard hexes. Painted title
+  stays the manifest "Base Letters" (artboard says just "Letters" — flip to
+  selfTitled if Austen prefers). Geometry off the artboard border scan (20px/pt):
+  both boxes x 154.5, 3×120pt cells, ABC y 231.8, GHI y 563.4, heavy rule
+  y 123.5, col labels y 207/536, text at PROOF_TEXT coords (intro nudged
+  52.8→56 to clear the Tangerine title). Verified: svelte-check 0/0, DevTools
+  screenshots vs artboard (arrow shapes pro-arc/anti-hook/hybrid per cell),
+  reader deep link `/learn/guide/base-letters` lands parked, click letter A/C →
+  companion staff animation + rings live, console clean. Awaiting eyeball.
 
 ## Conventions (facelift — supersede the old guide)
 
