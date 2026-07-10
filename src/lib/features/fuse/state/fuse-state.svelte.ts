@@ -1,32 +1,20 @@
 /**
  * Fuse State Factory
  *
- * Five-phase state machine for merging two sequences into one.
- * Phases: browse -> left-selected -> both-selected -> fusing -> result
+ * Owns the shared beat clock and playback-controller registry for the two
+ * shuffle panels. Fusing itself is a one-shot action in FuseLayout (pure
+ * `fuseSequences` call → sequence viewer drawer), so no phase machine lives
+ * here anymore.
  *
- * The factory receives DI services as arguments (never resolves from container internally).
  * Returns a plain object with getter accessors, matching the Factory + Context pattern.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
-import type { fuseSequences } from "../services/sequence-fuser";
-export type FusePhase =
-	| "browse"
-	| "left-selected"
-	| "both-selected"
-	| "fusing"
-	| "result";
-
-export interface FuseStateDeps {
-	sequenceFuser: { fuse: typeof fuseSequences };
-}
 
 const STORAGE_KEY = "fuse-tab-state";
 
 interface PersistedFuseState {
 	bpm?: number;
-	matchLengths?: boolean;
 }
 
 function readPersistedState(): PersistedFuseState {
@@ -47,16 +35,9 @@ function writePersistedState(data: PersistedFuseState): void {
 	}
 }
 
-export function createFuseState(deps: FuseStateDeps) {
-	const { sequenceFuser } = deps;
-
+export function createFuseState() {
 	const persisted = readPersistedState();
 
-	let phase = $state<FusePhase>("browse");
-	let leftSequence = $state<SequenceData | null>(null);
-	let rightSequence = $state<SequenceData | null>(null);
-	let fusedSequence = $state<SequenceData | null>(null);
-	const matchLengths = true;
 	let bpm = $state(persisted.bpm ?? 60);
 
 	const DEFAULT_BPM = 60;
@@ -105,98 +86,6 @@ export function createFuseState(deps: FuseStateDeps) {
 		});
 	}
 
-	const canFuse = $derived(
-		phase === "both-selected" &&
-			leftSequence !== null &&
-			rightSequence !== null
-	);
-
-	function selectLeft(seq: SequenceData) {
-		leftSequence = seq;
-		if (rightSequence) {
-			phase = "both-selected";
-		} else {
-			phase = "left-selected";
-		}
-	}
-
-	function selectRight(seq: SequenceData) {
-		rightSequence = seq;
-		if (leftSequence) {
-			phase = "both-selected";
-		}
-		// If no left yet, stay in current phase (user picked right first - still need left)
-	}
-
-	function deselectLeft() {
-		leftSequence = null;
-		fusedSequence = null;
-		leftController?.dispose();
-		leftController = null;
-		phase = rightSequence ? "browse" : "browse";
-	}
-
-	function deselectRight() {
-		rightSequence = null;
-		fusedSequence = null;
-		rightController?.dispose();
-		rightController = null;
-		phase = leftSequence ? "left-selected" : "browse";
-	}
-
-	function startFuse() {
-		if (!leftSequence || !rightSequence) return;
-
-		// Compute the fused result first, then enter the "fusing" phase so the
-		// layout can play the assembly animation. The layout calls completeFuse()
-		// when the animation finishes, which transitions to "result".
-		try {
-			const blue = leftSequence.blueSoloProp;
-			const red = rightSequence.redSoloProp;
-
-			if (!blue || !red) {
-				// Cannot fuse sequences without compositional data yet.
-				// Later tasks will add sequence-to-solo-prop extraction.
-				return;
-			}
-
-			const result = sequenceFuser.fuse(blue, red, {
-				maxSteps: matchLengths
-					? Math.min(
-							leftSequence.steps.length || 8,
-							rightSequence.steps.length || 8
-						)
-					: undefined,
-			});
-
-			fusedSequence = result;
-			phase = "fusing";
-		} catch {
-			// Revert to both-selected so user can retry or change selections
-			phase = "both-selected";
-		}
-	}
-
-	function completeFuse() {
-		// Called by FuseLayout after the assembly animation finishes.
-		// Transitions from "fusing" to "result" so FuseTab renders FuseResultView.
-		phase = "result";
-	}
-
-	function reset() {
-		stopClock();
-		currentStep = 0;
-		phase = "browse";
-		leftSequence = null;
-		rightSequence = null;
-		fusedSequence = null;
-		bpm = 60;
-		leftController?.dispose();
-		rightController?.dispose();
-		leftController = null;
-		rightController = null;
-	}
-
 	function toggleClock() {
 		if (clockRunning) {
 			stopClock();
@@ -206,7 +95,11 @@ export function createFuseState(deps: FuseStateDeps) {
 	}
 
 	function dispose() {
+		// Controllers are owned (and disposed) by their FuseAnimationPreview
+		// instances - the state only drops its references.
 		stopClock();
+		leftController = null;
+		rightController = null;
 	}
 
 	function registerController(side: "left" | "right", controller: AnimationPlaybackController) {
@@ -216,20 +109,6 @@ export function createFuseState(deps: FuseStateDeps) {
 		// Sync BPM to the newly registered controller
 		const speed = bpm / DEFAULT_BPM;
 		controller.setSpeed(speed);
-
-		// When both controllers are present, seek the second to match the first
-		if (leftController && rightController) {
-			const reference = side === "right" ? leftController : rightController;
-			const newOne = controller;
-			try {
-				const states = reference.getCurrentPropStates();
-				if (states) {
-					newOne.seekToStep(0);
-				}
-			} catch {
-				// Controller may not be fully initialized yet
-			}
-		}
 	}
 
 	function unregisterController(side: "left" | "right") {
@@ -245,49 +124,23 @@ export function createFuseState(deps: FuseStateDeps) {
 		rightController?.setSpeed(speed);
 	}
 
-	function setFusedSequence(seq: SequenceData) {
-		fusedSequence = seq;
-	}
-
 	return {
-		get phase() {
-			return phase;
-		},
-		get leftSequence() {
-			return leftSequence;
-		},
-		get rightSequence() {
-			return rightSequence;
-		},
-		get fusedSequence() {
-			return fusedSequence;
-		},
-		get matchLengths() {
-			return matchLengths;
-		},
 		get bpm() {
 			return bpm;
 		},
-		get canFuse() {
-			return canFuse;
+		get currentStep() {
+			return currentStep;
 		},
-		get currentStep() { return currentStep; },
-		get clockRunning() { return clockRunning; },
+		get clockRunning() {
+			return clockRunning;
+		},
 		startClock,
 		stopClock,
 		toggleClock,
 		dispose,
-		selectLeft,
-		selectRight,
-		deselectLeft,
-		deselectRight,
-		startFuse,
-		completeFuse,
-		reset,
 		setBpm,
 		registerController,
 		unregisterController,
-		setFusedSequence,
 	};
 }
 

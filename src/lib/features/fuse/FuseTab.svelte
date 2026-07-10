@@ -3,21 +3,19 @@
 	 * Fuse Tab Root
 	 *
 	 * Owns its own state (does not participate in CreateModuleState).
-	 * Creates the fuse state factory, sets context, and renders the
-	 * appropriate view based on the current phase.
+	 * Creates the fuse state factory, sets context, and renders the layout.
+	 * The fused result opens in the shared sequence viewer drawer, so there
+	 * is no result phase here.
 	 */
 
 	import { onDestroy } from "svelte";
-	import { fade } from "svelte/transition";
-	import { fuseSequences } from "./services/sequence-fuser";
 	import { createFuseState } from "./state/fuse-state.svelte";
 	import { setFuseContext } from "./context/fuse-context";
 	import FuseLayout from "./components/FuseLayout.svelte";
-	import FuseResultView from "./components/FuseResultView.svelte";
 
 	function init(): { state: ReturnType<typeof createFuseState>; error: null } | { state: null; error: string } {
 		try {
-			const state = createFuseState({ sequenceFuser: { fuse: fuseSequences } });
+			const state = createFuseState();
 			setFuseContext({ state });
 			return { state, error: null };
 		} catch (err) {
@@ -39,15 +37,9 @@
 		<p class="error-detail">{initError}</p>
 	</div>
 {:else if fuseState}
-	{#if fuseState.phase === "result"}
-		<div class="fuse-view" in:fade={{ duration: 300, delay: 150 }} out:fade={{ duration: 150 }}>
-			<FuseResultView />
-		</div>
-	{:else}
-		<div class="fuse-view" in:fade={{ duration: 300, delay: 150 }} out:fade={{ duration: 150 }}>
-			<FuseLayout />
-		</div>
-	{/if}
+	<div class="fuse-view">
+		<FuseLayout />
+	</div>
 {:else}
 	<div class="fuse-error">
 		<p>Fuse tab initializing...</p>

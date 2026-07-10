@@ -3,276 +3,179 @@
 	 * Fuse Layout
 	 *
 	 * Shuffle-to-discover: pick a step length, shuffle cards on each side,
-	 * hit Fuse when you like what's showing. No pick step.
+	 * hit Fuse when you like what's showing. The fused sequence opens in the
+	 * shared sequence viewer drawer (save/export/practice come with it).
+	 *
+	 * Under 700px the panels go animation-first: two live animations side by
+	 * side, notation grids behind per-panel drawer buttons (see FusePanel).
 	 */
 
+	import { onMount } from "svelte";
+	import { Popover } from "bits-ui";
 	import { getFuseContext } from "../context/fuse-context";
 	import FusePanel from "./FusePanel.svelte";
-	import FuseAnimationPreview from "./FuseAnimationPreview.svelte";
 	import FuseTour from "$lib/shared/onboarding/components/fuse-tour/FuseTour.svelte";
 	import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
+	import BpmQuickPopover from "$lib/shared/animation-engine/components/controls/BpmQuickPopover.svelte";
 	import { fuseTourState } from "$lib/shared/onboarding/state/fuse-tour-state.svelte";
-	import { animateFuseAssembly } from "../services/fuse-assembly-animator";
+	import { fuseSequences } from "../services/sequence-fuser";
 	import { deriveLettersForSequence } from "$lib/shared/navigation/services/letter-deriver";
-	import { onMount } from "svelte";
+	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
+	import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+	import { hasOpenDrawers } from "$lib/shared/foundation/ui/drawer/drawer-stack";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 	const { state: fuseState } = getFuseContext();
 
-	let fuseLength: number = $state(8);
-	let showLengthPicker = $state(false);
-
 	const LENGTHS = [2, 4, 8, 12, 16, 24, 32];
+
+	let fuseLength = $state(8);
+	let lengthOpen = $state(false);
+	let bpmOpen = $state(false);
+
+	// Animation-first breakpoint - measured on the layout itself so the tab
+	// responds to its actual slot, not the viewport.
+	let layoutWidth = $state(0);
+	const compact = $derived(layoutWidth > 0 && layoutWidth < 700);
+
+	// Track what each panel is currently showing
+	let leftBrowsingSeq = $state<SequenceData | null>(null);
+	let rightBrowsingSeq = $state<SequenceData | null>(null);
+
+	// Fusable only when both sides carry compositional solo-prop data
+	// (older public-index entries may lack it).
+	const canFuse = $derived(
+		!!leftBrowsingSeq?.blueSoloProp && !!rightBrowsingSeq?.redSoloProp
+	);
 
 	onMount(() => {
 		fuseTourState.triggerIfFirstTime();
 	});
 
-
 	function selectLength(len: number) {
 		fuseLength = len;
-		showLengthPicker = false;
+		lengthOpen = false;
 	}
 
-	// Track what each panel is currently showing (for fusing without pick)
-	let leftBrowsingSeq = $state<SequenceData | null>(null);
-	let rightBrowsingSeq = $state<SequenceData | null>(null);
-
-	const canFuse = $derived(leftBrowsingSeq !== null && rightBrowsingSeq !== null);
-
-	// DOM refs for assembly animation
-	let leftPanelEl = $state<HTMLDivElement | null>(null);
-	let rightPanelEl = $state<HTMLDivElement | null>(null);
-	let fuseTargetEl = $state<HTMLDivElement | null>(null);
-
-
 	async function handleFuse() {
-		if (!leftBrowsingSeq || !rightBrowsingSeq) return;
-		// Set the sequences on fuse state so startFuse can use them
-		fuseState.selectLeft(leftBrowsingSeq);
-		fuseState.selectRight(rightBrowsingSeq);
-		fuseState.startFuse();
+		const blue = leftBrowsingSeq?.blueSoloProp;
+		const red = rightBrowsingSeq?.redSoloProp;
+		if (!blue || !red) return;
 
-		// Derive letters on the fused sequence so it has a word
-		if (fuseState.fusedSequence) {
+		try {
+			let result = fuseSequences(blue, red, {
+				maxSteps: Math.min(
+					leftBrowsingSeq!.steps?.length || 8,
+					rightBrowsingSeq!.steps?.length || 8
+				),
+			});
+
+			// Derive letters so the fused sequence has a word (best effort)
 			try {
-				const withLetters = await deriveLettersForSequence(fuseState.fusedSequence);
-				fuseState.setFusedSequence(withLetters);
+				result = await deriveLettersForSequence(result);
 			} catch {
 				// Letters are nice-to-have, don't block on failure
 			}
+
+			openSequenceViewer(result, {
+				returnPath: "/app/create",
+				returnLabel: "Fuse",
+				initialBpm: fuseState.bpm,
+			});
+		} catch (err) {
+			console.error("[Fuse] Failed to fuse sequences:", err);
+			showToast("These two didn't fuse - shuffle and try again", "error");
 		}
 	}
 
-	// When state enters "fusing", complete immediately - the crossfade
-	// transition on FuseTab handles the visual transition between views
-	$effect(() => {
-		if (fuseState.phase !== "fusing") return;
-		fuseState.completeFuse();
-	});
+	async function handleTourFuse() {
+		fuseTourState.complete();
+		await handleFuse();
+	}
 
 	function handleKeydown(event: KeyboardEvent) {
-		if (event.key === " ") {
+		if (event.key === " " && !hasOpenDrawers()) {
 			event.preventDefault();
 			fuseState.toggleClock();
 		}
-	}
-
-	function decrementBpm() {
-		fuseState.setBpm(Math.max(10, fuseState.bpm - 5));
-	}
-
-	function incrementBpm() {
-		fuseState.setBpm(Math.min(300, fuseState.bpm + 5));
-	}
-
-	// Tour fuse result state
-	let tourFuseCompleted = $state(false);
-	let tourFusedWord = $state("");
-
-	async function handleTourFuse() {
-		await handleFuse();
-		tourFuseCompleted = true;
-		tourFusedWord = fuseState.fusedSequence?.word ??
-			fuseState.fusedSequence?.steps?.map(s => s.letter).filter(Boolean).join("") ?? "";
 	}
 </script>
 
 <svelte:window onkeydown={handleKeydown} />
 
+{#snippet panels(tourShuffleGlow: boolean = false)}
+	<div class="fuse-panels">
+		<FusePanel
+			side="left"
+			bpm={fuseState.bpm}
+			onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
+			length={fuseLength}
+			currentStep={fuseState.currentStep}
+			onCurrentSequenceChange={(seq) => (leftBrowsingSeq = seq)}
+			{compact}
+			{tourShuffleGlow}
+		/>
+		<FusePanel
+			side="right"
+			bpm={fuseState.bpm}
+			onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
+			length={fuseLength}
+			currentStep={fuseState.currentStep}
+			onCurrentSequenceChange={(seq) => (rightBrowsingSeq = seq)}
+			{compact}
+			{tourShuffleGlow}
+		/>
+	</div>
+{/snippet}
+
 {#if fuseTourState.isActive}
-	<!-- TOUR MODE: fixed overlay covers entire viewport including bottom nav -->
-	<div class="tour-overlay">
+	<!-- TOUR MODE: overlay covers the tab content -->
+	<div class="tour-overlay" bind:clientWidth={layoutWidth}>
 		{#if fuseTourState.currentStop === "welcome"}
-			<!-- Stop 1: Welcome - fullscreen centered FuseTour -->
 			<div class="tour-stop welcome-stop">
 				<FuseTour variant="fullscreen" />
 			</div>
-
 		{:else if fuseTourState.currentStop === "panels"}
-			<!-- Stop 2: Both Panels - banner at top, both panels below -->
-			<div class="tour-stop panels-stop">
+			<div class="tour-stop">
 				<div class="tour-banner-area">
 					<FuseTour variant="banner" />
 				</div>
-				<div class="tour-panels">
-					<div class="panel-wrap" bind:this={leftPanelEl}>
-						<FusePanel
-							side="left"
-							bpm={fuseState.bpm}
-							onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
-							length={fuseLength}
-							currentStep={fuseState.currentStep}
-							onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
-						/>
-					</div>
-					<div class="panel-wrap" bind:this={rightPanelEl}>
-						<FusePanel
-							side="right"
-							bpm={fuseState.bpm}
-							onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
-							length={fuseLength}
-							currentStep={fuseState.currentStep}
-							onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
-						/>
-					</div>
-				</div>
+				{@render panels()}
 			</div>
-
 		{:else if fuseTourState.currentStop === "shuffle"}
-			<!-- Stop 3: Shuffle - banner below panels, near the shuffle buttons -->
-			<div class="tour-stop shuffle-stop">
-				<div class="tour-panels">
-					<div class="panel-wrap" bind:this={leftPanelEl}>
-						<FusePanel
-							side="left"
-							bpm={fuseState.bpm}
-							onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
-							length={fuseLength}
-							currentStep={fuseState.currentStep}
-							onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
-							tourShuffleGlow={true}
-						/>
-					</div>
-					<div class="panel-wrap" bind:this={rightPanelEl}>
-						<FusePanel
-							side="right"
-							bpm={fuseState.bpm}
-							onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
-							length={fuseLength}
-							currentStep={fuseState.currentStep}
-							onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
-							tourShuffleGlow={true}
-						/>
-					</div>
-				</div>
+			<div class="tour-stop">
+				{@render panels(true)}
 				<div class="tour-banner-area">
 					<FuseTour variant="banner" />
 				</div>
 			</div>
-
 		{:else if fuseTourState.currentStop === "fuse"}
-			<!-- Stop 4: Fuse - panels dimmed with fuse button, or result after fusing -->
-			<div class="tour-stop fuse-stop">
-				{#if !tourFuseCompleted}
-					<!-- Pre-fuse: panels dimmed, fuse button pulsing -->
-					<div class="tour-banner-area">
-						<FuseTour variant="banner" />
-					</div>
-					<div class="tour-panels tour-panels-dimmed">
-						<div class="panel-wrap" bind:this={leftPanelEl}>
-							<FusePanel
-								side="left"
-								bpm={fuseState.bpm}
-								onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
-								length={fuseLength}
-								currentStep={fuseState.currentStep}
-								onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
-							/>
-						</div>
-						<div class="panel-wrap" bind:this={rightPanelEl}>
-							<FusePanel
-								side="right"
-								bpm={fuseState.bpm}
-								onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
-								length={fuseLength}
-								currentStep={fuseState.currentStep}
-								onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
-							/>
-						</div>
-					</div>
-					<div class="tour-fuse-area">
-						<button
-							class="fuse-button tour-fuse-btn"
-							onclick={handleTourFuse}
-						>
-							<i class="fas fa-fire" aria-hidden="true"></i>
-							<span>Fuse</span>
-						</button>
-					</div>
-				{:else}
-					<!-- Post-fuse: result with derived word + "Let's go" button -->
-					<div class="tour-result">
-						<div class="tour-result-word">{tourFusedWord || "Fused!"}</div>
-						<p class="tour-result-subtitle">Your fused sequence</p>
-
-						{#if fuseState.fusedSequence}
-							<div class="tour-result-preview">
-								<FuseAnimationPreview
-									sequence={fuseState.fusedSequence}
-									bpm={fuseState.bpm}
-									currentStep={fuseState.currentStep}
-									showBackButton={false}
-								/>
-							</div>
-						{/if}
-
-						<button
-							class="fuse-button tour-finish-btn"
-							onclick={() => {
-								fuseTourState.complete();
-								tourFuseCompleted = false;
-								tourFusedWord = "";
-							}}
-						>
-							Let's go
-						</button>
-					</div>
-				{/if}
+			<div class="tour-stop">
+				<div class="tour-banner-area">
+					<FuseTour variant="banner" />
+				</div>
+				<div class="tour-panels-dimmed">
+					{@render panels()}
+				</div>
+				<div class="tour-fuse-area">
+					<button
+						class="fuse-button tour-fuse-btn"
+						disabled={!canFuse}
+						onclick={handleTourFuse}
+					>
+						<i class="fas fa-fire" aria-hidden="true"></i>
+						<span>Fuse</span>
+					</button>
+				</div>
 			</div>
 		{/if}
 	</div>
-
 {:else}
 	<!-- NORMAL MODE -->
-	<div class="fuse-layout">
-		<div class="fuse-panels">
-			<div class="panel-wrap" bind:this={leftPanelEl}>
-				<FusePanel
-					side="left"
-					bpm={fuseState.bpm}
-					onControllerReady={(ctrl) => fuseState.registerController("left", ctrl)}
-					length={fuseLength}
-					currentStep={fuseState.currentStep}
-					onCurrentSequenceChange={(seq) => leftBrowsingSeq = seq}
-				/>
-			</div>
-			<div class="panel-wrap" bind:this={rightPanelEl}>
-				<FusePanel
-					side="right"
-					bpm={fuseState.bpm}
-					onControllerReady={(ctrl) => fuseState.registerController("right", ctrl)}
-					length={fuseLength}
-					currentStep={fuseState.currentStep}
-					onCurrentSequenceChange={(seq) => rightBrowsingSeq = seq}
-				/>
-			</div>
-		</div>
+	<div class="fuse-layout" bind:clientWidth={layoutWidth}>
+		{@render panels()}
 
-		<!-- Invisible target for assembly animation -->
-		<div class="fuse-target" bind:this={fuseTargetEl} aria-hidden="true"></div>
-
-		<!-- Bottom bar -->
+		<!-- Bottom bar: help | length | bpm | play | fuse -->
 		<div class="fuse-bottom">
 			<HelpButton
 				onclick={() => fuseTourState.restart()}
@@ -281,40 +184,76 @@
 				size="compact"
 			/>
 
-			<div class="length-picker-wrap">
-				<button
-					class="length-trigger"
-					onclick={() => showLengthPicker = !showLengthPicker}
-					aria-label="Change step length (currently {fuseLength})"
-				>
-					<span class="length-value">{fuseLength}</span>
-					<span class="length-unit">steps</span>
-				</button>
-				{#if showLengthPicker}
-					<!-- svelte-ignore a11y_no_static_element_interactions -->
-					<div class="length-popover" role="radiogroup" aria-label="Step length">
-						{#each LENGTHS as len}
-							<button
-								class="length-option"
-								class:active={fuseLength === len}
-								role="radio"
-								aria-checked={fuseLength === len}
-								onclick={() => selectLength(len)}
-							>{len}</button>
-						{/each}
-					</div>
-				{/if}
-			</div>
+			<Popover.Root bind:open={lengthOpen}>
+				<Popover.Trigger>
+					{#snippet child({ props })}
+						<button
+							{...props}
+							class="chip-trigger"
+							type="button"
+							aria-label="Change step length, currently {fuseLength} steps"
+						>
+							<!-- Ghost-sized to the widest value so the bar never shifts -->
+							<span class="chip-sizer" aria-hidden="true">
+								<span class="chip-value">32</span>
+								<span class="chip-unit">steps <i class="fas fa-caret-up"></i></span>
+							</span>
+							<span class="chip-live">
+								<span class="chip-value">{fuseLength}</span>
+								<span class="chip-unit">steps <i class="fas fa-caret-up" aria-hidden="true"></i></span>
+							</span>
+						</button>
+					{/snippet}
+				</Popover.Trigger>
+				<Popover.Portal>
+					<Popover.Content side="top" align="center" sideOffset={12} collisionPadding={12} class="fuse-pop">
+						<div class="length-options" role="radiogroup" aria-label="Step length">
+							{#each LENGTHS as len}
+								<button
+									class="length-option"
+									class:active={fuseLength === len}
+									role="radio"
+									aria-checked={fuseLength === len}
+									onclick={() => selectLength(len)}
+								>{len}</button>
+							{/each}
+						</div>
+					</Popover.Content>
+				</Popover.Portal>
+			</Popover.Root>
 
-			<div class="bpm-control">
-				<button class="bpm-btn" onclick={decrementBpm} aria-label="Decrease BPM">
-					<i class="fas fa-minus" aria-hidden="true"></i>
-				</button>
-				<span class="bpm-display">{fuseState.bpm}</span>
-				<button class="bpm-btn" onclick={incrementBpm} aria-label="Increase BPM">
-					<i class="fas fa-plus" aria-hidden="true"></i>
-				</button>
-			</div>
+			<Popover.Root bind:open={bpmOpen}>
+				<Popover.Trigger>
+					{#snippet child({ props })}
+						<button
+							{...props}
+							class="chip-trigger"
+							type="button"
+							aria-label="Set tempo, currently {fuseState.bpm} BPM"
+						>
+							<span class="chip-sizer" aria-hidden="true">
+								<span class="chip-value">300</span>
+								<span class="chip-unit">BPM <i class="fas fa-caret-up"></i></span>
+							</span>
+							<span class="chip-live">
+								<span class="chip-value">{fuseState.bpm}</span>
+								<span class="chip-unit">BPM <i class="fas fa-caret-up" aria-hidden="true"></i></span>
+							</span>
+						</button>
+					{/snippet}
+				</Popover.Trigger>
+				<Popover.Portal>
+					<Popover.Content side="top" align="center" sideOffset={12} collisionPadding={12} class="fuse-pop">
+						<BpmQuickPopover
+							bpm={fuseState.bpm}
+							min={10}
+							max={300}
+							onBpmChange={(v) => fuseState.setBpm(v)}
+							onClose={() => (bpmOpen = false)}
+						/>
+					</Popover.Content>
+				</Popover.Portal>
+			</Popover.Root>
 
 			<button
 				class="play-btn"
@@ -346,7 +285,7 @@
 
 <style>
 	/* Shared Fuse brand gradient — defined once, referenced by every fuse
-	   accent surface here and mirrored in FuseResultView / FuseSequenceBrowser. */
+	   accent surface here. */
 	.fuse-layout,
 	.tour-overlay {
 		--fuse-gradient: linear-gradient(
@@ -368,42 +307,23 @@
 		position: relative;
 	}
 
+	/* Panels always sit side by side - blue | red is the tab's identity.
+	   Below 700px each panel switches itself to animation-first (compact). */
 	.fuse-panels {
 		flex: 1;
 		min-height: 0;
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		grid-template-rows: 1fr;
 		gap: var(--spacing-xs, 4px);
 		padding: var(--spacing-xs, 4px);
 	}
 
-	@container fuse-layout (max-width: 700px) {
-		.fuse-panels {
-			grid-template-columns: 1fr;
-			grid-template-rows: 1fr 1fr;
-		}
-	}
-
-	.panel-wrap {
+	.fuse-panels > :global(*) {
 		min-height: 0;
-		display: flex;
+		min-width: 0;
 	}
 
-	.panel-wrap > :global(*) {
-		flex: 1;
-		min-height: 0;
-	}
-
-	.fuse-target {
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		width: 200px;
-		height: 200px;
-		transform: translate(-50%, -50%);
-		pointer-events: none;
-	}
+	/* ── Bottom bar ─────────────────────────────────────────────── */
 
 	.fuse-bottom {
 		flex-shrink: 0;
@@ -415,40 +335,19 @@
 		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
 	}
 
-	.bpm-control {
-		display: flex;
+	@container fuse-layout (max-width: 480px) {
+		.fuse-bottom {
+			gap: var(--spacing-sm, 8px);
+			padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+		}
+	}
+
+	/* Length + BPM triggers share one chip shape. Ghost-sizer technique:
+	   the widest possible value sits invisible under the live value so the
+	   chip never changes width (no-layout-shift). */
+	.chip-trigger {
+		display: inline-grid;
 		align-items: center;
-		gap: var(--spacing-xs, 4px);
-	}
-
-	.bpm-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 44px;
-		height: 44px;
-		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: 50%;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-		font-size: 12px;
-		cursor: pointer;
-		transition: border-color 150ms ease, color 150ms ease;
-	}
-
-	.bpm-btn:hover {
-		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-		color: var(--theme-text, #ffffff);
-	}
-
-	.length-picker-wrap {
-		position: relative;
-	}
-
-	.length-trigger {
-		display: flex;
-		align-items: center;
-		gap: 4px;
 		min-height: 44px;
 		padding: 6px 12px;
 		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -459,27 +358,57 @@
 		transition: border-color 150ms ease;
 	}
 
-	.length-trigger:hover {
+	.chip-trigger:hover {
 		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
 	}
 
-	.length-value {
+	.chip-sizer,
+	.chip-live {
+		grid-area: 1 / 1;
+		display: flex;
+		align-items: baseline;
+		justify-content: center;
+		gap: 4px;
+		white-space: nowrap;
+	}
+
+	.chip-sizer {
+		visibility: hidden;
+	}
+
+	.chip-value {
 		font-size: var(--font-size-sm, 14px);
 		font-weight: 700;
 		font-variant-numeric: tabular-nums;
 	}
 
-	.length-unit {
+	.chip-unit {
 		font-size: var(--font-size-compact, 12px);
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
 	}
 
-	.length-popover {
-		position: absolute;
-		bottom: 100%;
-		left: 50%;
-		transform: translateX(-50%);
-		margin-bottom: 6px;
+	.chip-unit i {
+		font-size: 9px;
+		opacity: 0.8;
+	}
+
+	/* Popover surface (portalled - needs :global). BpmQuickPopover brings its
+	   own surface; the length options get one here. */
+	:global(.fuse-pop) {
+		z-index: var(--z-dropdown, 1000);
+		transform-origin: bottom center;
+	}
+
+	:global(.fuse-pop[data-state="open"]) {
+		animation: fuse-pop-in 170ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+	}
+
+	@keyframes fuse-pop-in {
+		from { opacity: 0; transform: translateY(8px) scale(0.96); }
+		to { opacity: 1; transform: translateY(0) scale(1); }
+	}
+
+	.length-options {
 		display: flex;
 		gap: 2px;
 		padding: 4px;
@@ -487,7 +416,6 @@
 		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
 		border-radius: var(--radius-md, 8px);
 		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-		z-index: 20;
 	}
 
 	.length-option {
@@ -499,6 +427,7 @@
 		color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
 		font-size: var(--font-size-sm, 14px);
 		font-weight: 500;
+		font-variant-numeric: tabular-nums;
 		cursor: pointer;
 		display: flex;
 		align-items: center;
@@ -513,15 +442,6 @@
 	.length-option.active {
 		background: var(--theme-accent, #6366f1);
 		color: #ffffff;
-	}
-
-	.bpm-display {
-		min-width: 36px;
-		text-align: center;
-		font-size: var(--font-size-sm, 14px);
-		font-weight: 600;
-		color: var(--theme-text, #ffffff);
-		font-variant-numeric: tabular-nums;
 	}
 
 	.play-btn {
@@ -576,6 +496,12 @@
 		transition: opacity 0.15s ease, transform 0.1s ease;
 	}
 
+	@container fuse-layout (max-width: 480px) {
+		.fuse-button {
+			padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
+		}
+	}
+
 	.fuse-button:hover:not(:disabled) {
 		opacity: 0.9;
 	}
@@ -589,7 +515,9 @@
 		cursor: not-allowed;
 	}
 
-	/* Tour overlay - fills the sub-tab-content container (which has container-type: size,
+	/* ── Tour overlay ───────────────────────────────────────────── */
+
+	/* Fills the sub-tab-content container (which has container-type: size,
 	   trapping position: fixed). Bottom nav is hidden separately via MainInterface. */
 	.tour-overlay {
 		position: absolute;
@@ -604,6 +532,8 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
+		container-type: inline-size;
+		container-name: fuse-layout;
 	}
 
 	.tour-stop {
@@ -623,16 +553,11 @@
 		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
 	}
 
-	.tour-panels {
+	.tour-panels-dimmed {
+		display: flex;
+		flex-direction: column;
 		flex: 1;
 		min-height: 0;
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: var(--spacing-xs, 4px);
-		padding: 0 var(--spacing-xs, 4px);
-	}
-
-	.tour-panels-dimmed {
 		opacity: 0.6;
 	}
 
@@ -655,51 +580,17 @@
 		50% { box-shadow: 0 0 0 12px color-mix(in srgb, var(--fuse-accent, #f97316) 0%, transparent); }
 	}
 
-	.tour-result {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 16px;
-		padding: var(--spacing-md, 16px);
-		min-height: 0;
-	}
-
-	.tour-result-word {
-		font-size: 2.5rem;
-		font-weight: 800;
-		color: white;
-		letter-spacing: 0.15em;
-		text-transform: uppercase;
-	}
-
-	.tour-result-subtitle {
-		margin: 0;
-		font-size: var(--font-size-sm, 14px);
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-	}
-
-	.tour-result-preview {
-		width: 100%;
-		max-width: 400px;
-		aspect-ratio: 1;
-		border-radius: var(--radius-md, 12px);
-		overflow: hidden;
-		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-	}
-
-	.tour-finish-btn {
-		margin-top: 8px;
-	}
-
 	@media (prefers-reduced-motion: reduce) {
-		.bpm-btn,
+		.chip-trigger,
 		.play-btn,
-		.fuse-button {
+		.fuse-button,
+		.length-option {
 			transition: none;
 		}
 		.tour-fuse-btn {
+			animation: none;
+		}
+		:global(.fuse-pop[data-state="open"]) {
 			animation: none;
 		}
 	}

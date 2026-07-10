@@ -18,19 +18,15 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 	let {
 		sequence,
 		bpm = 60,
-		onBack,
 		onControllerReady,
 		propColor,
 		currentStep = 0,
-		showBackButton = true,
 	}: {
 		sequence: SequenceData;
 		bpm?: number;
-		onBack?: () => void;
 		onControllerReady?: (controller: AnimationPlaybackController) => void;
 		propColor?: "blue" | "red";
 		currentStep?: number;
-		showBackButton?: boolean;
 	} = $props();
 
 	let controller = $state<AnimationPlaybackController | null>(null);
@@ -162,16 +158,6 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 				progressBarVariant="minimal"
 				fillContainer={true}
 			/>
-
-			{#if showBackButton && onBack}
-				<button
-					class="back-btn"
-					onclick={onBack}
-					aria-label="Deselect sequence"
-				>
-					<i class="fas fa-arrow-left" aria-hidden="true"></i>
-				</button>
-			{/if}
 		</div>
 	{/if}
 </div>
@@ -195,29 +181,6 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 		justify-content: center;
 	}
 
-	.back-btn {
-		position: absolute;
-		top: var(--spacing-xs, 4px);
-		left: var(--spacing-xs, 4px);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 44px;
-		height: 44px;
-		border: none;
-		border-radius: var(--radius-sm, 8px);
-		background: var(--color-scrim, rgba(0, 0, 0, 0.5));
-		color: var(--theme-text, #ffffff);
-		font-size: 1rem;
-		cursor: pointer;
-		z-index: 10;
-		transition: background 0.15s ease;
-	}
-
-	.back-btn:hover {
-		background: var(--color-scrim-strong, rgba(0, 0, 0, 0.7));
-	}
-
 	.state-msg {
 		display: flex;
 		flex-direction: column;
@@ -230,11 +193,5 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 
 	.state-msg.error {
 		color: var(--semantic-error, #fca5a5);
-	}
-
-	@media (prefers-reduced-motion: reduce) {
-		.back-btn {
-			transition: none;
-		}
 	}
 </style>
