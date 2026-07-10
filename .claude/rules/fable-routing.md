@@ -3,7 +3,8 @@
 ## Trigger
 
 Active whenever the main conversation model is Fable 5. Self-deactivates when the
-session model is anything else — then `never-opus-47.md` defaults resume.
+session model is anything else — then default subagent routing resumes (omit
+`model` to inherit the session model; explicit `sonnet`/`haiku` for mechanical work).
 
 ## The Problem This Solves
 
@@ -70,6 +71,5 @@ Fable runs safety classifiers that fall back to Opus 4.8 **and stay there**.
 
 ## Related
 
-- `never-opus-47.md` (amended: omit-model advice conditional on session model)
 - `commit-only-your-own-changes.md`, `verification-protocol.md`
 - Spec: `docs/superpowers/specs/2026-07-09-fable-routing-scaffolding-design.md`

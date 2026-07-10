@@ -2,7 +2,7 @@
 
 ## The Problem This Solves
 
-Claude 4.7 is less eager than 4.6 to auto-invoke the `superpowers:brainstorming` skill, even for work that clearly requires it. Austen's workflow depends on deep brainstorming before any spec or plan. Skipping it produces shallow specs that cascade into broken implementations.
+Claude is sometimes reluctant to auto-invoke the `superpowers:brainstorming` skill, even for work that clearly requires it. Austen's workflow depends on deep brainstorming before any spec or plan. Skipping it produces shallow specs that cascade into broken implementations.
 
 ## The Rule
 
@@ -27,4 +27,4 @@ Memory of past brainstorms doesn't count. Each new feature = fresh brainstorming
 
 ## Why this is a hard rule
 
-Austen's feedback, verbatim: *"why are we not brainstorming anymore like this really feels shady."* The model's threshold for firing the skill regressed in 4.7. This rule compensates by making brainstorming a context requirement, not a judgment call.
+Austen's feedback, verbatim: *"why are we not brainstorming anymore like this really feels shady."* Model thresholds for firing the skill vary across releases. This rule compensates by making brainstorming a context requirement, not a judgment call.

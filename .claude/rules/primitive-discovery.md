@@ -4,7 +4,7 @@
 
 Austen's feedback: *"I hate having to manually tell Claude that there are many primitives that we've already created in this codebase and that any time we're asking it to create a UI component the very first thing it should do would be find the existing primitives and parents that would consume this component."*
 
-Claude 4.7 jumps straight to writing new components without checking what already exists. Result: inconsistent UI, duplicated primitives, visual drift.
+Claude often jumps straight to writing new components without checking what already exists. Result: inconsistent UI, duplicated primitives, visual drift.
 
 ## The Rule
 

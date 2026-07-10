@@ -2,7 +2,7 @@
 
 ## The Problem This Solves
 
-Claude 4.7 hallucinates TKA domain facts (letter behaviors, VTG patterns, position definitions, pictograph details) from its training data instead of calling the Flow Arts Knowledge MCP server that contains the actual authoritative data. Austen's feedback: *"it's like it's making up shit. I've received so many more hallucinations in the last day than in the last two months combined."*
+Claude hallucinates TKA domain facts (letter behaviors, VTG patterns, position definitions, pictograph details) from its training data instead of calling the Flow Arts Knowledge MCP server that contains the actual authoritative data. Austen's feedback: *"it's like it's making up shit. I've received so many more hallucinations in the last day than in the last two months combined."*
 
 ## The Rule
 

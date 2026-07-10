@@ -2,7 +2,7 @@
 
 ## The Problem This Solves
 
-Claude 4.7 stops mid-task, asks questions it could answer itself, and claims work is done without verifying. The regression from 4.6 is real and repeated. Austen's feedback (2026-04-21):
+Claude has repeatedly stopped mid-task, asked questions it could answer itself, and claimed work done without verifying. Austen's feedback (2026-04-21):
 
 > *"I don't want to have to ask you to do more at this point i've given you plenty of information and if you should have any other questions which naturally will arise it's imperative that you answer the question yourself by looking in the code base please do not attempt to short change me and not complete the task please don't attempt to say oh well maybe we should pick this up tomorrow ... your mode of operation going forth is by giving you full permission to slurp up all the context you need to do a particular job correctly the first time rather than have you play dumb waste time."*
 
