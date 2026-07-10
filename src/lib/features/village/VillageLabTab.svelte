@@ -15,17 +15,22 @@
 	import {
 		MUSEUM_EXHIBIT_SEQUENCES,
 	} from "$lib/features/museum/data/museum-exhibit-sequences";
-	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+	import {
+		createSequenceData,
+		type SequenceData,
+	} from "$lib/shared/foundation/domain/models/sequence-data";
 
 	// Build seed sequences from museum exhibits (first 3)
 	function buildSeedSequences(): SequenceData[] {
 		const entries = Object.entries(MUSEUM_EXHIBIT_SEQUENCES).slice(0, 3);
-		return entries.map(([id, museumSeq]) => ({
-			id: `village-seed-${id}`,
-			word: museumSeq.word,
-			steps: museumSeq.steps,
-			isCircular: true,
-		} as SequenceData));
+		return entries.map(([id, museumSeq]) =>
+			createSequenceData({
+				id: `village-seed-${id}`,
+				word: museumSeq.word,
+				steps: museumSeq.steps,
+				isCircular: true,
+			})
+		);
 	}
 
 	// Create state synchronously during component init - required for setContext

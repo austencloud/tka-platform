@@ -15,7 +15,10 @@ import { createVillageState, type VillageState } from "$lib/features/village/sta
 import { createVillageVisualState, type VillageVisualState } from "$lib/features/village/state/village-visual-state.svelte";
 import { MUSEUM_EXHIBIT_SEQUENCES } from "../data/museum-exhibit-sequences";
 import { getAvatarModelPath } from "@austencloud/scene-3d";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import {
+	createSequenceData,
+	type SequenceData,
+} from "$lib/shared/foundation/domain/models/sequence-data";
 
 // propInterpolator / sequenceConverter are now module-level functions
 
@@ -59,12 +62,12 @@ function buildSeedSequences(): SequenceData[] {
 		.map((id) => {
 			const museumSeq = MUSEUM_EXHIBIT_SEQUENCES[id];
 			if (!museumSeq) return null;
-			return {
+			return createSequenceData({
 				id: `museum-village-${id}`,
 				word: museumSeq.word,
 				steps: museumSeq.steps,
 				isCircular: true,
-			} as SequenceData;
+			});
 		})
 		.filter((s): s is SequenceData => s !== null);
 }
