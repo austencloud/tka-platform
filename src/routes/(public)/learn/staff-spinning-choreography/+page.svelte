@@ -104,7 +104,7 @@
   </section>
 
   <section class="editorial-section" style="--accent: #ec4899">
-    <h2 class="section-title">This Is Not the Performance</h2>
+    <h2 class="section-title">The End Goal Is Expression</h2>
     <div class="prose">
       <p>
         Learning Kinetic Alphabet sequences is like learning your lines in a play. If you

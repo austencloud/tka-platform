@@ -86,11 +86,11 @@
     <h2 class="section-title">Every Deck Is Different</h2>
     <div class="prose">
       <p>
-        These cards are not pre-configured. They're algorithmically generated, and each
-        deck is a unique configuration of cards, many of which may have never been seen
-        before. It's like opening a pack of Pokémon or Magic cards: you don't know what
-        you're going to get, and you get a variety pack of different levels. You're not
-        buying the same thing the person next to you bought.
+        Every deck is algorithmically generated, a unique configuration of cards, many of
+        which may have never been seen before. It's like opening a pack of Pokémon or
+        Magic cards: you don't know what you're going to get, and you get a variety pack
+        of different levels. You're not buying the same thing the person next to you
+        bought.
       </p>
     </div>
     <div class="deck-links">
