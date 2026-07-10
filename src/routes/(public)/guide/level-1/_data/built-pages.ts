@@ -24,6 +24,7 @@ import GammaWordsPage from "../_pages/GammaWordsPage.svelte";
 import Type2ShiftLettersPage from "../_pages/Type2ShiftLettersPage.svelte";
 import Type3CrossShiftLettersPage from "../_pages/Type3CrossShiftLettersPage.svelte";
 import Type456LettersPage from "../_pages/Type456LettersPage.svelte";
+import WordsPage from "../_pages/WordsPage.svelte";
 import DoubleStaffCodexT12Page from "../_pages/DoubleStaffCodexT12Page.svelte";
 import DoubleStaffCodexT36Page from "../_pages/DoubleStaffCodexT36Page.svelte";
 
@@ -47,6 +48,7 @@ export const BUILT: Record<string, Component> = {
   "lt2-wxyz": Type2ShiftLettersPage,
   "lt3-dash-letters": Type3CrossShiftLettersPage,
   "lt456-phi-psi-lambda": Type456LettersPage,
+  "words": WordsPage,
   "bl-double-staff": DoubleStaffCodexT12Page,
   "bl-double-staff-36": DoubleStaffCodexT36Page,
 };
