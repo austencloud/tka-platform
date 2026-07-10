@@ -42,40 +42,71 @@ primes and awkward counts. For 7 steps the only clean divisors are `sc ∈ {1, 7
 forcing Auto into a 1-wide strip or a 7-wide row — strictly worse than today. A
 hard divisor filter is out.
 
-## Design: flip the scoring objective
+## Rejected approach: fewest-empty-cells primary
 
-`pickBestFitLayout` already enumerates every valid `(stepCols, placement)`
-candidate and computes, per candidate, both its rendered `cellEdge` and its
-`wasted` cell count (`cols * rows - usedCells`). The only change is the
-**comparison order** in `isBetter`:
+The first attempt made `wasted` the primary objective (fewest gaps wins, size
+only a tie-breaker). It fixed the 8-count but **over-corrected**: for a 12-count
++ start + QR in a tall container it picked the *skinniest* full grid — a 2-wide
+2×7 (wasted 1) — over the container-filling 4×4 (the shape the deterministic
+table and the card-download preview both use). Pure fewest-waste ignores how
+small/skinny the winner renders. Symmetric failure to pure-size: one leaves
+corner gaps, the other leaves horizontal dead space around a tiny card.
 
-1. **Primary — fewest empty cells** (`wasted`, smaller wins). The fullest grid
-   always wins.
-2. **Secondary — largest cell edge** (`cellEdge`, bigger wins, within the
-   existing 0.5px epsilon for float/stability noise). Among equally-full shapes,
-   render the biggest.
-3. **Tertiary — best balance** (`|cols - rows|`, smaller wins). Closest to
-   square breaks remaining ties.
+## Rejected approach: fewest-empty-cells + slack
 
-No divisor math, no per-count whitelist, no new state. `wasted` is already the
-right gap metric: it counts the reserved QR cell uniformly across all start+QR
-candidates (an ordering-neutral constant offset), and every genuinely-empty
-non-QR cell adds to it.
+"Allow at most `k` more gaps than the fullest shape, then maximize size." With
+`k = 1` it fixes the 8-count (5×2) but the 12-count's fullest shape is the skinny
+2×7 (wasted 1), so `k = 1` caps the pool at wasted ≤ 2 and excludes the
+container-filling 4×4 (wasted 3) — giving a 4-wide `5×3` instead of the table's
+4×4. Raising to `k = 2` re-admits the 8-count's 3-gap 4×3. The slack `k` is in
+the same 8-vs-12 tension as a raw primary flip: it can't weigh *how much* bigger
+a gappy shape renders.
+
+## Design: gap-penalized size
+
+`pickBestFitLayout` enumerates every valid `(stepCols, placement)` candidate and
+computes, per candidate, its rendered `cellEdge`, `wasted` cell count
+(`cols * rows - usedCells`), and `balance` (`|cols - rows|`). Pick the candidate
+that maximizes a **gap-penalized score**:
+
+```
+bestEdge = max(cellEdge over all candidates)
+score    = cellEdge - GAP_PENALTY_FRACTION * bestEdge * wasted
+```
+
+Ties (within `CELL_EDGE_EPSILON`) break on raw `cellEdge`, then on `balance`.
+
+Each empty cell docks a fixed fraction of the *biggest achievable* cell edge, so
+the penalty is scale-invariant (independent of container pixel size). A shape
+with an extra gap must render at least `GAP_PENALTY_FRACTION * bestEdge` bigger
+per gap to win. This is exactly the missing degree of freedom: it weighs the
+size gain of a gappy shape against its gaps, instead of ranking size and gaps
+lexically.
+
+`GAP_PENALTY_FRACTION = 0.12`. The usable band is ~0.10–0.15, derived from the
+two real cases:
+
+- **8 + start + QR** (~1.05 container): the gappy 4×3 renders ~25% bigger than
+  the full 5×2 but wastes 2 more cells. Requires `f > 0.10` to reject 4×3.
+- **12 + start + QR** (~0.95 container): the container-filling 4×4 renders enough
+  bigger than the fuller 5×3/3×5 to earn its extra gap. Requires `f < 0.15` to
+  keep 4×4.
+
+0.12 sits mid-band. Result: 8→5×2 (full), 12→4×4 (matches the card-download
+preview), 7→2×5 (no strip), 8-no-start→3×3.
 
 ### Why this is prime-safe
 
-`wasted` is defined for every candidate, so the primary objective is always
-satisfiable. For 7 steps + start + QR the least-wasteful real shape is `sc=4`
-column (5×2 = 10 cells, one trailing empty in the last step row) — Auto now picks
-that instead of a strip. No candidate is ever excluded; the ordering simply
-prefers full grids.
+`score` is defined for every candidate; nothing is ever excluded, so a valid
+shape always wins. For 7 steps + start + QR the winner is a 2×5 (one trailing
+empty), never a 1-wide strip.
 
-### Behavior change to confirm (confirmed by Austen)
+### Behavior (confirmed by Austen)
 
-In a container whose aspect strongly favors a gappy shape, Auto will now pick a
-**slightly smaller but full** card rather than a bigger card with corner gaps.
-This is the intended trade: no upward/corner dead space, even at a small size
-cost.
+Auto now matches the deterministic table's proportions far more closely — the
+interactive viewer and the card-download preview pick the same sensible grid
+shape for the same sequence, instead of the viewer chasing raw size into
+gappy or skinny layouts.
 
 ## Non-goals / unchanged
 

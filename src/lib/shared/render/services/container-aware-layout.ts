@@ -45,6 +45,18 @@ export interface BestFitInput {
 /** Cell-edge ties within this many px are treated as equal (stability + float noise). */
 const CELL_EDGE_EPSILON = 0.5;
 
+/**
+ * Each empty cell costs this fraction of the best achievable cell edge. A shape
+ * with more gaps must render at least this much bigger (per extra gap) to win —
+ * so a marginally-bigger-but-gappy grid loses to a full one, while a much-bigger
+ * grid can still justify a gap. Tuned against two real cases: an 8-count +
+ * start + QR (rejects the 3-gap 4×3 in favor of the full 5×2) and a 12-count +
+ * start + QR (keeps the container-filling 4×4 over the skinny full 2×7). The
+ * usable band is ~0.10–0.15; 0.12 sits in the middle.
+ * See docs/superpowers/specs/2026-07-10-auto-layout-full-grid-design.md.
+ */
+const GAP_PENALTY_FRACTION = 0.12;
+
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -103,17 +115,21 @@ interface Candidate {
 }
 
 /**
- * True when `a` is a strictly better fit than `b`.
+ * True when `a` is a strictly better fit than `b`, given the best achievable
+ * cell edge across all candidates (used to price gaps).
  *
- * Objective order (see 2026-07-10-auto-layout-full-grid-design.md):
- *  1. Fewest empty cells — the fullest grid wins. Prevents Auto from choosing a
- *     shape with corner/upward gaps just because it renders marginally bigger.
- *  2. Largest cell edge (within CELL_EDGE_EPSILON) — among equally-full shapes,
- *     render the biggest.
- *  3. Best balance — closest-to-square breaks any remaining tie.
+ * Objective (see 2026-07-10-auto-layout-full-grid-design.md): maximize a
+ * gap-penalized score — `cellEdge - GAP_PENALTY_FRACTION * bestEdge * wasted`.
+ * Each empty cell docks a fixed fraction of the biggest possible cell, so a
+ * marginally-bigger-but-gappy grid loses to a full one, while a much-bigger grid
+ * can still earn a gap. Ties break on raw cell edge (within CELL_EDGE_EPSILON),
+ * then on balance (closest to square).
  */
-function isBetter(a: Candidate, b: Candidate): boolean {
-  if (a.wasted !== b.wasted) return a.wasted < b.wasted;
+function isBetter(a: Candidate, b: Candidate, bestEdge: number): boolean {
+  const penalty = GAP_PENALTY_FRACTION * bestEdge;
+  const scoreA = a.cellEdge - penalty * a.wasted;
+  const scoreB = b.cellEdge - penalty * b.wasted;
+  if (Math.abs(scoreA - scoreB) > CELL_EDGE_EPSILON) return scoreA > scoreB;
   if (a.cellEdge > b.cellEdge + CELL_EDGE_EPSILON) return true;
   if (b.cellEdge > a.cellEdge + CELL_EDGE_EPSILON) return false;
   return a.balance < b.balance;
@@ -143,7 +159,8 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
     ? ["row", "column"]
     : ["none"];
 
-  let best: Candidate | null = null;
+  const usedCells = stepCount + (includeStartPosition ? 1 : 0);
+  const candidates: Candidate[] = [];
 
   for (let sc = 1; sc <= stepCount; sc++) {
     for (const placement of placements) {
@@ -159,19 +176,26 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
       const heightCells = cardHeightInCells(cols, rows, showHeader, showFooter);
       const cellEdge = Math.min(containerWidth / cols, containerHeight / heightCells);
 
-      const usedCells = stepCount + (includeStartPosition ? 1 : 0);
-      const candidate: Candidate = {
+      candidates.push({
         cols,
         rows,
         startPlacement: placement,
         cellEdge,
         wasted: cols * rows - usedCells,
         balance: Math.abs(cols - rows),
-      };
-
-      if (!best || isBetter(candidate, best)) best = candidate;
+      });
     }
   }
+
+  if (candidates.length === 0) return null;
+
+  // Gaps are priced as a fraction of the biggest achievable cell, so the pass
+  // below needs the best raw edge before it can score.
+  let bestEdge = 0;
+  for (const c of candidates) if (c.cellEdge > bestEdge) bestEdge = c.cellEdge;
+
+  let best: Candidate | null = null;
+  for (const c of candidates) if (!best || isBetter(c, best, bestEdge)) best = c;
 
   if (!best) return null;
   return { cols: best.cols, rows: best.rows, startPlacement: best.startPlacement };
