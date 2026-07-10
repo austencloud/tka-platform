@@ -34,28 +34,57 @@
     }
   });
 
-  // Spotlight rects in % of each card face. Front measured against the baked
-  // 822x1122 print render. Back computed from CardBack.svelte's cqi layout
-  // (card = 100 x 140 cqi, 2cqi border padding): corner glyph boxes are
-  // 10x6cqi at 3.2cqi insets, mandala anchor is 72cqi centered in the content
-  // inset, loop row bottoms at 28cqi, level badge at 18cqi, start pictograph
-  // is 12x12cqi, step-count numeral is 9cqi type.
-  const REGIONS: Record<string, { face: "front" | "back"; x: number; y: number; w: number; h: number }> = {
-    word: { face: "front", x: 16, y: 6.7, w: 68, h: 7.6 },
-    start: { face: "front", x: 11, y: 14.5, w: 26, h: 19 },
-    steps: { face: "front", x: 37, y: 14.5, w: 52, h: 75 },
-    mandalas: { face: "front", x: 11, y: 33.5, w: 26, h: 37 },
-    qr: { face: "front", x: 12, y: 70.5, w: 24, h: 19 },
-    turn: { face: "back", x: 4.2, y: 3, w: 12, h: 5.7 },
-    reversal: { face: "back", x: 83.8, y: 3, w: 12, h: 5.7 },
-    mandala: { face: "back", x: 16, y: 19, w: 68, h: 47.5 },
-    looptype: { face: "back", x: 34, y: 69.5, w: 32, h: 9.5 },
-    difficulty: { face: "back", x: 44, y: 80, w: 12, h: 6.6 },
-    startpos: { face: "back", x: 4, y: 87.6, w: 14.5, h: 10 },
-    stepcount: { face: "back", x: 86.5, y: 90, w: 10, h: 8 },
+  // Front spotlight rects in % of the baked 822x1122 print render.
+  const FRONT_REGIONS: Record<string, { x: number; y: number; w: number; h: number }> = {
+    word: { x: 16, y: 6.7, w: 68, h: 7.6 },
+    start: { x: 11, y: 14.5, w: 26, h: 19 },
+    steps: { x: 37, y: 14.5, w: 52, h: 75 },
+    mandalas: { x: 11, y: 33.5, w: 26, h: 37 },
+    qr: { x: 12, y: 70.5, w: 24, h: 19 },
   };
 
-  const activeRegion = $derived(highlight ? (REGIONS[highlight] ?? null) : null);
+  // Back regions are measured off the live CardBack DOM at hover time, so
+  // they track the real element positions regardless of theme border width
+  // or how many LOOP icons this card shows. Multiple matches union (loop-col).
+  const BACK_SELECTORS: Record<string, string> = {
+    turn: ".corner.top-left",
+    reversal: ".corner.top-right",
+    mandala: ".mandala-anchor",
+    looptype: ".loop-col",
+    difficulty: ".level-badge-slot > :first-child",
+    startpos: ".corner.bottom-left",
+    stepcount: ".corner.bottom-right",
+  };
+
+  const PAD = 1; // % breathing room around the measured element
+
+  let backBox: HTMLElement | null = $state(null);
+
+  const activeRegion = $derived.by(() => {
+    if (!highlight) return null;
+    const front = FRONT_REGIONS[highlight];
+    if (front) return { face: "front" as const, ...front };
+    const sel = BACK_SELECTORS[highlight];
+    if (!sel || !backBox) return null;
+    const els = backBox.querySelectorAll(sel);
+    if (els.length === 0) return null;
+    const b = backBox.getBoundingClientRect();
+    let left = Infinity, top = Infinity, right = -Infinity, bottom = -Infinity;
+    for (const el of els) {
+      const r = el.getBoundingClientRect();
+      left = Math.min(left, r.left);
+      top = Math.min(top, r.top);
+      right = Math.max(right, r.right);
+      bottom = Math.max(bottom, r.bottom);
+    }
+    return {
+      face: "back" as const,
+      x: ((left - b.left) / b.width) * 100 - PAD,
+      y: ((top - b.top) / b.height) * 100 - PAD,
+      w: ((right - left) / b.width) * 100 + 2 * PAD,
+      h: ((bottom - top) / b.height) * 100 + 2 * PAD,
+    };
+  });
 </script>
 
 {#snippet spotlight(face: "front" | "back")}
@@ -78,7 +107,7 @@
     </figure>
 
     <figure class="face">
-      <div class="card-box back" class:dimmable={activeRegion?.face === "back"}>
+      <div class="card-box back" bind:this={backBox} class:dimmable={activeRegion?.face === "back"}>
         <CardBack sequence={card.sequence} />
         {@render spotlight("back")}
       </div>
