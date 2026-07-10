@@ -20,22 +20,36 @@
     onhighlight,
   }: { highlight?: string | null; onhighlight?: (id: string | null) => void } = $props();
 
-  let card: CoverCard | null = $state(null);
+  // A pool of real baked cards across every active deck (varied words,
+  // mandalas, LOOP types, difficulties). Shuffle swaps the shown card; the
+  // anatomy still maps because front regions are % of the fixed print layout
+  // and back regions are measured off the live CardBack DOM.
+  let pool: CoverCard[] = $state([]);
+  let index = $state(0);
+  const card = $derived(pool[index] ?? null);
 
   onMount(async () => {
     try {
       const products = await loadActiveProducts();
+      const all: CoverCard[] = [];
       for (const p of products) {
-        const baked = (p.coverCards ?? []).find((c) => c.imageUrl && c.sequence);
-        if (baked) {
-          card = baked;
-          break;
+        for (const c of p.coverCards ?? []) {
+          if (c.imageUrl && c.sequence) all.push(c);
         }
       }
+      pool = all;
     } catch (error) {
       console.warn("[CardAnatomy] product load failed; keeping text-only anatomy", error);
     }
   });
+
+  function shuffle() {
+    if (pool.length < 2) return;
+    let next = index;
+    while (next === index) next = Math.floor(Math.random() * pool.length);
+    index = next;
+    onhighlight?.(null); // drop any active spotlight; it re-maps on next hover
+  }
 
   // Front spotlight rects in % of the baked 822x1122 print render.
   const FRONT_REGIONS: Record<string, { x: number; y: number; w: number; h: number }> = {
@@ -132,7 +146,8 @@
 {/snippet}
 
 {#if card}
-  <div class="anatomy">
+  <div class="anatomy-stack">
+    <div class="anatomy">
     <figure class="face" class:backgrounded={activeRegion && activeRegion.face !== "front"}>
       <!-- Hover affordance only; the legend buttons are the keyboard/AT path. -->
       <div
@@ -162,15 +177,79 @@
       </div>
       <figcaption>Back</figcaption>
     </figure>
+    </div>
+
+    {#if pool.length > 1}
+      <div class="shuffle-bar">
+        <button type="button" class="shuffle-btn" onclick={shuffle}>
+          <i class="fas fa-shuffle" aria-hidden="true"></i>
+          <span>Shuffle another card</span>
+        </button>
+      </div>
+    {/if}
   </div>
 {/if}
 
 <style>
+  .anatomy-stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
   .anatomy {
     display: flex;
     gap: clamp(1rem, 3vw, 2.5rem);
     justify-content: center;
     flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .shuffle-bar {
+    display: flex;
+    justify-content: center;
+  }
+
+  .shuffle-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 44px;
+    padding: 0.65rem 1.4rem;
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: oklch(0.93 0.01 270);
+    background: oklch(0.28 0.03 275 / 0.5);
+    border: 1px solid oklch(0.6 0.08 275 / 0.35);
+    border-radius: 999px;
+    cursor: pointer;
+    transition:
+      background 160ms ease,
+      border-color 160ms ease,
+      transform 160ms ease;
+  }
+  .shuffle-btn:hover,
+  .shuffle-btn:focus-visible {
+    background: oklch(0.34 0.05 275 / 0.6);
+    border-color: oklch(0.68 0.12 275 / 0.6);
+  }
+  .shuffle-btn:active {
+    transform: translateY(1px);
+  }
+  .shuffle-btn:focus-visible {
+    outline: 2px solid oklch(0.7 0.1 275 / 0.7);
+    outline-offset: 2px;
+  }
+  .shuffle-btn i {
+    font-size: 0.9rem;
+    color: oklch(0.78 0.13 275);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .shuffle-btn {
+      transition: none;
+    }
   }
 
   .face {
@@ -196,7 +275,10 @@
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
-    cursor: pointer;
+    /* Hover reveals info about the part under the cursor; clicking does
+       nothing. `help` is the honest affordance (pointer would imply a
+       navigation that never happens). */
+    cursor: help;
   }
 
   .card-box img {
