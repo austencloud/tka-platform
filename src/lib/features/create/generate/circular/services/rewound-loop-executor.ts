@@ -17,7 +17,10 @@
  */
 
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  createPlaceholderMotion,
+  type MotionData,
+} from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionColor,
   RotationDirection,
@@ -109,10 +112,12 @@ export class RewoundLOOPExecutor implements ILOOPExecutor {
       // Reverse motions
       motions: {
         [MotionColor.BLUE]: this.createRewoundMotion(
+          MotionColor.BLUE,
           sourceStep.motions[MotionColor.BLUE],
           previousStep.motions[MotionColor.BLUE]
         ),
         [MotionColor.RED]: this.createRewoundMotion(
+          MotionColor.RED,
           sourceStep.motions[MotionColor.RED],
           previousStep.motions[MotionColor.RED]
         ),
@@ -128,11 +133,12 @@ export class RewoundLOOPExecutor implements ILOOPExecutor {
    * Swaps start/end locations and reverses rotation direction
    */
   private createRewoundMotion(
+    color: MotionColor,
     sourceMotion: MotionData | undefined,
     previousMotion: MotionData | undefined
   ): MotionData {
     if (!sourceMotion) {
-      return {} as MotionData;
+      return createPlaceholderMotion(color);
     }
 
     // Reverse rotation direction

@@ -13,7 +13,7 @@ import { MotionType } from "../../../shared/domain/enums/pictograph-enums";
 import type { MotionData } from "../../../shared/domain/models/motion-data";
 
 export function calculateQuadrantIndex(
-  motion: MotionData,
+  motion: Pick<MotionData, "motionType" | "startLocation" | "endLocation">,
   location: GridLocation
 ): number {
   const gridMode = determineGridMode(motion, location);
@@ -35,7 +35,7 @@ export function calculateQuadrantIndex(
 }
 
 export function determineGridMode(
-  motion: MotionData,
+  motion: Pick<MotionData, "motionType" | "startLocation" | "endLocation">,
   calculatedLocation?: GridLocation
 ): GridMode {
   const diagonalLocations: GridLocation[] = [
@@ -134,7 +134,12 @@ export function getQuadrantMapping(
   ];
 
   for (const location of locations) {
-    const motion = { motionType } as MotionData;
+    // Only motionType is read by calculateQuadrantIndex/determineGridMode in
+    // this mapping-table context (locations are pre-set diagonal quadrants,
+    // so startLocation/endLocation are irrelevant to the shift-vs-static
+    // branch here) — start/end are set to the loop location as harmless
+    // stand-ins rather than lying about a full MotionData.
+    const motion = { motionType, startLocation: location, endLocation: location };
     mapping[location] = calculateQuadrantIndex(motion, location);
   }
 

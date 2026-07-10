@@ -16,7 +16,6 @@
 		MUSEUM_EXHIBIT_SEQUENCES,
 	} from "$lib/features/museum/data/museum-exhibit-sequences";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-	import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 	// Build seed sequences from museum exhibits (first 3)
 	function buildSeedSequences(): SequenceData[] {
@@ -24,7 +23,7 @@
 		return entries.map(([id, museumSeq]) => ({
 			id: `village-seed-${id}`,
 			word: museumSeq.word,
-			steps: museumSeq.steps as readonly StepData[],
+			steps: museumSeq.steps,
 			isCircular: true,
 		} as SequenceData));
 	}

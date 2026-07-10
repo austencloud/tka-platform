@@ -16,7 +16,6 @@ import { createVillageVisualState, type VillageVisualState } from "$lib/features
 import { MUSEUM_EXHIBIT_SEQUENCES } from "../data/museum-exhibit-sequences";
 import { getAvatarModelPath } from "@austencloud/scene-3d";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 // propInterpolator / sequenceConverter are now module-level functions
 
@@ -63,7 +62,7 @@ function buildSeedSequences(): SequenceData[] {
 			return {
 				id: `museum-village-${id}`,
 				word: museumSeq.word,
-				steps: museumSeq.steps as readonly StepData[],
+				steps: museumSeq.steps,
 				isCircular: true,
 			} as SequenceData;
 		})
