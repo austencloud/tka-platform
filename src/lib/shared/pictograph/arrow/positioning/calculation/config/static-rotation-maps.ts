@@ -75,10 +75,13 @@ export const staticRadialOverrideMap: Record<
   [GridLocation.EAST]: { cw: 270, ccw: 270 },
   [GridLocation.SOUTH]: { cw: 0, ccw: 0 },
   [GridLocation.WEST]: { cw: 90, ccw: 90 },
-  [GridLocation.NORTHEAST]: { cw: 135, ccw: 135 },
-  [GridLocation.SOUTHEAST]: { cw: 45, ccw: 45 },
-  [GridLocation.SOUTHWEST]: { cw: 315, ccw: 315 },
-  [GridLocation.NORTHWEST]: { cw: 225, ccw: 225 },
+  // Intercardinals corrected to normal+180, matching the cardinal entries' rule.
+  // Prior values put the static-radial-override arrow 90 degrees off at every
+  // intercardinal: NE 135 to 225, SE 45 to 315, SW 315 to 45, NW 225 to 135.
+  [GridLocation.NORTHEAST]: { cw: 225, ccw: 225 },
+  [GridLocation.SOUTHEAST]: { cw: 315, ccw: 315 },
+  [GridLocation.SOUTHWEST]: { cw: 45, ccw: 45 },
+  [GridLocation.NORTHWEST]: { cw: 135, ccw: 135 },
   [GridLocation.CENTER]: { cw: 0, ccw: 0 },
 };
 

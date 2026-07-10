@@ -176,6 +176,145 @@
     },
   };
 
+  // Θ (box) — the disputed instance: blue static SE turns=1 (in→out), red pro SE→NE ccw.
+  // Blue arrow shows rotationAngle 45° with "Rotation Override: YES".
+  // Normal staticRadialCounterClockwise map at SE = 135°; the (s,0,1) special-placement
+  // override forces 45° instead — the 90° swing the user is questioning.
+  const thetaBoxSE: PictographData = {
+    id: "theta-box-se",
+    letter: Letter.THETA,
+    startPosition: GridPosition.BETA4,
+    endPosition: GridPosition.GAMMA10,
+    motions: {
+      [MotionColor.BLUE]: createMotionData({
+        motionType: MotionType.STATIC,
+        startOrientation: Orientation.IN,
+        rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+        startLocation: GridLocation.SOUTHEAST,
+        endLocation: GridLocation.SOUTHEAST,
+        turns: 1,
+        endOrientation: Orientation.OUT,
+        color: MotionColor.BLUE,
+        arrowLocation: GridLocation.SOUTHEAST,
+        gridMode: GridMode.BOX,
+      }),
+      [MotionColor.RED]: createMotionData({
+        motionType: MotionType.PRO,
+        startOrientation: Orientation.IN,
+        rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+        startLocation: GridLocation.SOUTHEAST,
+        endLocation: GridLocation.NORTHEAST,
+        turns: 0,
+        endOrientation: Orientation.IN,
+        color: MotionColor.RED,
+        arrowLocation: GridLocation.EAST,
+        gridMode: GridMode.BOX,
+      }),
+    },
+  };
+
+  // Θ (box) at SW — blue static SW turns=1 (in→out), red pro SW→SE ccw.
+  const thetaBoxSW: PictographData = {
+    id: "theta-box-sw",
+    letter: Letter.THETA,
+    startPosition: GridPosition.BETA6,
+    endPosition: GridPosition.GAMMA12,
+    motions: {
+      [MotionColor.BLUE]: createMotionData({
+        motionType: MotionType.STATIC,
+        startOrientation: Orientation.IN,
+        rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+        startLocation: GridLocation.SOUTHWEST,
+        endLocation: GridLocation.SOUTHWEST,
+        turns: 1,
+        endOrientation: Orientation.OUT,
+        color: MotionColor.BLUE,
+        arrowLocation: GridLocation.SOUTHWEST,
+        gridMode: GridMode.BOX,
+      }),
+      [MotionColor.RED]: createMotionData({
+        motionType: MotionType.PRO,
+        startOrientation: Orientation.IN,
+        rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+        startLocation: GridLocation.SOUTHWEST,
+        endLocation: GridLocation.SOUTHEAST,
+        turns: 0,
+        endOrientation: Orientation.IN,
+        color: MotionColor.RED,
+        arrowLocation: GridLocation.SOUTH,
+        gridMode: GridMode.BOX,
+      }),
+    },
+  };
+
+  // Θ (box) at NE — blue static NE turns=1 (in→out), red pro NE→NW ccw.
+  const thetaBoxNE: PictographData = {
+    id: "theta-box-ne",
+    letter: Letter.THETA,
+    startPosition: GridPosition.BETA2,
+    endPosition: GridPosition.GAMMA4,
+    motions: {
+      [MotionColor.BLUE]: createMotionData({
+        motionType: MotionType.STATIC,
+        startOrientation: Orientation.IN,
+        rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+        startLocation: GridLocation.NORTHEAST,
+        endLocation: GridLocation.NORTHEAST,
+        turns: 1,
+        endOrientation: Orientation.OUT,
+        color: MotionColor.BLUE,
+        arrowLocation: GridLocation.NORTHEAST,
+        gridMode: GridMode.BOX,
+      }),
+      [MotionColor.RED]: createMotionData({
+        motionType: MotionType.PRO,
+        startOrientation: Orientation.IN,
+        rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+        startLocation: GridLocation.NORTHEAST,
+        endLocation: GridLocation.NORTHWEST,
+        turns: 0,
+        endOrientation: Orientation.IN,
+        color: MotionColor.RED,
+        arrowLocation: GridLocation.NORTH,
+        gridMode: GridMode.BOX,
+      }),
+    },
+  };
+
+  // Θ (box) at NW — blue static NW turns=1 (in→out), red pro NW→SW ccw.
+  const thetaBoxNW: PictographData = {
+    id: "theta-box-nw",
+    letter: Letter.THETA,
+    startPosition: GridPosition.BETA8,
+    endPosition: GridPosition.GAMMA16,
+    motions: {
+      [MotionColor.BLUE]: createMotionData({
+        motionType: MotionType.STATIC,
+        startOrientation: Orientation.IN,
+        rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+        startLocation: GridLocation.NORTHWEST,
+        endLocation: GridLocation.NORTHWEST,
+        turns: 1,
+        endOrientation: Orientation.OUT,
+        color: MotionColor.BLUE,
+        arrowLocation: GridLocation.NORTHWEST,
+        gridMode: GridMode.BOX,
+      }),
+      [MotionColor.RED]: createMotionData({
+        motionType: MotionType.PRO,
+        startOrientation: Orientation.IN,
+        rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+        startLocation: GridLocation.NORTHWEST,
+        endLocation: GridLocation.SOUTHWEST,
+        turns: 0,
+        endOrientation: Orientation.IN,
+        color: MotionColor.RED,
+        arrowLocation: GridLocation.WEST,
+        gridMode: GridMode.BOX,
+      }),
+    },
+  };
+
   // Expected angles from staticRadialClockwiseMap
   const expectedAngles: Record<string, number> = {
     n: 0,
@@ -212,6 +351,38 @@
       staticLocation: "n",
       expectedAngle: expectedAngles.n,
       description: "Red static CW at North, Blue anti CCW E→S",
+    },
+    {
+      id: "theta-box-se",
+      label: "Θ (box) SE — fixed",
+      pictograph: thetaBoxSE,
+      staticLocation: "se",
+      expectedAngle: 315,
+      description: "Blue static SE turns=1 in→out (ccw). Override now 315°.",
+    },
+    {
+      id: "theta-box-sw",
+      label: "Θ (box) SW — fixed",
+      pictograph: thetaBoxSW,
+      staticLocation: "sw",
+      expectedAngle: 45,
+      description: "Blue static SW turns=1 in→out (ccw). Override 315→45° (CW 90).",
+    },
+    {
+      id: "theta-box-ne",
+      label: "Θ (box) NE — fixed",
+      pictograph: thetaBoxNE,
+      staticLocation: "ne",
+      expectedAngle: 225,
+      description: "Blue static NE turns=1 in→out (ccw). Override 135→225° (CW 90).",
+    },
+    {
+      id: "theta-box-nw",
+      label: "Θ (box) NW — fixed",
+      pictograph: thetaBoxNW,
+      staticLocation: "nw",
+      expectedAngle: 135,
+      description: "Blue static NW turns=1 in→out (ccw). Override 225→135° (CCW 90).",
     },
   ];
 </script>
