@@ -154,7 +154,6 @@ export function deriveSteps(
       blueReversal: pairing.blueReversal,
       redReversal: pairing.redReversal,
       isBlank: false,
-      isStep: true,
     };
 
     return stepData;

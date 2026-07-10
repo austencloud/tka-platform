@@ -23,7 +23,7 @@ export function beatDataToPictographData(
   // The beat context properties will be available but not enforced by the PictographData type
   return {
     ...stepData,
-    isSelected: isSelected || stepData.isSelected,
+    isSelected,
   } as PictographData;
 }
 
@@ -86,7 +86,6 @@ export function hasStepContext(data: PictographData): boolean {
     blueReversal?: boolean;
     redReversal?: boolean;
     isBlank?: boolean;
-    isSelected?: boolean;
   };
 
   return (
@@ -94,8 +93,7 @@ export function hasStepContext(data: PictographData): boolean {
     dataWithStepContext.duration !== undefined ||
     dataWithStepContext.blueReversal !== undefined ||
     dataWithStepContext.redReversal !== undefined ||
-    dataWithStepContext.isBlank !== undefined ||
-    dataWithStepContext.isSelected !== undefined
+    dataWithStepContext.isBlank !== undefined
   );
 }
 

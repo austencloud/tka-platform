@@ -45,7 +45,8 @@ export function isStartPosition(
 /**
  * Type guard: Check if data is StepData
  *
- * Checks for the presence of isStep discriminator OR stepNumber >= 1 (legacy)
+ * Checks for stepNumber >= 1 (the isStep discriminator was retired — steps
+ * are identified structurally by stepNumber).
  */
 export function isStep(
   data: PictographData | StepData | StartPositionData | unknown
@@ -56,13 +57,6 @@ export function isStep(
 
   const obj = data as Record<string, unknown>;
 
-  // Primary check: Type discriminator field
-  if (obj.isStep === true) {
-    return true;
-  }
-
-  // Fallback check: Legacy stepNumber >= 1 pattern
-  // This supports old data before migration is complete
   if (
     "stepNumber" in obj &&
     typeof obj.stepNumber === "number" &&

@@ -39,7 +39,6 @@ export const StepDataSchema = PictographDataSchema.extend({
   blueReversal: z.boolean().default(false),
   redReversal: z.boolean().default(false),
   isBlank: z.boolean().default(false),
-  isSelected: z.boolean().optional(),
 });
 
 export const SequenceDataSchema = z.object({

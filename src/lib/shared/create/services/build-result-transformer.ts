@@ -168,7 +168,6 @@ export class BuildResultTransformer {
         [MotionColor.RED]: redMotion,
       },
       gridMode: options.gridMode,
-      isStep: true as const,
       stepNumber,
       duration: 1,
       blueReversal: false, // Set by ReversalDetector later

@@ -46,11 +46,6 @@ export interface StepData extends Step {
   readonly betaSwapped?: boolean;
   readonly category?: number | null;
 
-  // App-level runtime discriminator (pictograph-type-guards distinguishes
-  // StepData / StartPositionData / bare PictographData by it)
-  readonly isStep?: true;
-  // Selection state (UI extra; the id-keyed selection store is the successor)
-  readonly isSelected?: boolean;
 }
 
 // Compile-time proof the redefinition holds: every StepData is a canonical

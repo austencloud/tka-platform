@@ -317,7 +317,6 @@ async function createStep(
 
   return {
     id: crypto.randomUUID(),
-    isStep: true,
     stepNumber,
     duration: 1,
     blueReversal: false,

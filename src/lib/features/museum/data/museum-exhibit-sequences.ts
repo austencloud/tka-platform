@@ -74,7 +74,6 @@ function convertRaw(raw: RawSequence, gridMode: GridMode = "diamond" as GridMode
 				blue: toMotionData(step.blueMotion, gridMode),
 				red: toMotionData(step.redMotion, gridMode),
 			},
-			isStep: true as const,
 			stepNumber: step.stepNumber,
 			duration: 1,
 			blueReversal: false,

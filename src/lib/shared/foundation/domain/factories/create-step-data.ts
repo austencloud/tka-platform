@@ -26,9 +26,6 @@ export function createStepData(data: CreateStepDataInput = {}): StepData {
     red: data.motions?.red ?? createPlaceholderMotion(MotionColor.RED),
   };
   return {
-    // Type discriminator
-    isStep: true as const,
-
     // Canonical Step properties
     id: data.id ?? crypto.randomUUID(),
     letter: data.letter ?? null,
@@ -42,8 +39,6 @@ export function createStepData(data: CreateStepDataInput = {}): StepData {
     blueReversal: data.blueReversal ?? false,
     redReversal: data.redReversal ?? false,
     isBlank: data.isBlank ?? false,
-    // Conditionally include isSelected only if it's defined
-    ...(data.isSelected !== undefined && { isSelected: data.isSelected }),
     // Beta offset swap — preserve if set
     ...(data.betaSwapped !== undefined && { betaSwapped: data.betaSwapped }),
   };

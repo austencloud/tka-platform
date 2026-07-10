@@ -258,7 +258,6 @@ export function buildGuideMotionSequence(config: GuideMotionConfig): SequenceDat
   };
 
   const step: StepData = {
-    isStep: true as const,
     id: `guide-${config.id}-step1`,
     stepNumber: 1,
     duration: 1,

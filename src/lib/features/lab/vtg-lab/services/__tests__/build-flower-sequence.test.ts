@@ -22,7 +22,6 @@ function proArchetype(): SequenceData {
   });
   const step = {
     id: "step-1",
-    isStep: true as const,
     stepNumber: 1,
     duration: 1,
     blueReversal: false,

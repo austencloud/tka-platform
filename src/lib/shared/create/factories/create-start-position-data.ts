@@ -22,8 +22,5 @@ export function createStartPositionData(
 
     // StartPosition-specific properties
     gridPosition: data.gridPosition ?? null,
-
-    // Selection state
-    ...(data.isSelected !== undefined && { isSelected: data.isSelected }),
   };
 }

@@ -42,9 +42,8 @@ describe("stepDataToStep", () => {
     expect(step.motions.red.motionType).toBe(sd.motions.red!.motionType);
     expect(Object.isFrozen(step)).toBe(true);
     expect(Object.isFrozen(step.motions)).toBe(true);
-    // dropped: stored reversal + selection state
+    // dropped: stored reversal state
     expect("blueReversal" in step).toBe(false);
-    expect("isSelected" in step).toBe(false);
   });
 
   it("factory placeholder-fill means one-hand input still constructs (invisible red)", () => {
@@ -97,9 +96,8 @@ describe("stepToStepData (reverse) + round-trip", () => {
     expect(back.motions[MotionColor.BLUE]!.arrowPlacementData).toBeDefined();
     expect(back.motions[MotionColor.BLUE]!.propPlacementData).toBeDefined();
 
-    // reversal flags default false (filled by the reversal pipeline), discriminator kept
+    // reversal flags default false (filled by the reversal pipeline)
     expect(back.blueReversal).toBe(false);
     expect(back.redReversal).toBe(false);
-    expect(back.isStep).toBe(true);
   });
 });

@@ -24,7 +24,4 @@ export interface StartPositionData extends PictographData {
   // Grid position where sequence starts (e.g., "gamma13")
   // This represents the location in the grid system, not a beat position
   readonly gridPosition?: GridPosition | null;
-
-  // Selection state (for UI)
-  readonly isSelected?: boolean;
 }
