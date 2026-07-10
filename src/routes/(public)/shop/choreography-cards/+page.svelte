@@ -230,14 +230,18 @@
 
   <section class="editorial-section narrow" style="--accent: #14b8a6">
     <span class="section-kicker">The decks</span>
-    <h2 class="section-title">Every Deck Is Different</h2>
+    <h2 class="section-title">Two Ways to Buy</h2>
     <div class="prose">
       <p>
-        Every deck is algorithmically generated, a unique configuration of cards, many of
-        which may have never been seen before. It's like opening a pack of Pokémon or
-        Magic cards: you don't know what you're going to get, and you get a variety pack
-        of different levels. You're not buying the same thing the person next to you
+        The LOOP Deck is algorithmically generated: a unique configuration of cards, many
+        of which may have never been seen before. It's like opening a pack of Pokémon or
+        Magic cards. You don't know what you're going to get, you get a variety pack of
+        different levels, and you're not buying the same thing the person next to you
         bought.
+      </p>
+      <p>
+        The T&D Trilogy is the opposite: a curated set, organized by timing and direction,
+        the same in every copy so you can learn and reference it deliberately.
       </p>
     </div>
     <div class="deck-links">
