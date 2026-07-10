@@ -6,8 +6,9 @@
 	 * hit Fuse when you like what's showing. The fused sequence opens in the
 	 * shared sequence viewer drawer (save/export/practice come with it).
 	 *
-	 * Under 700px the panels go animation-first: two live animations side by
-	 * side, notation grids behind per-panel drawer buttons (see FusePanel).
+	 * Under 700px the actions rearrange for phones: Fuse becomes the full-width
+	 * hero button, settings drop to a quiet row. The panels themselves adapt to
+	 * their own shape (see FusePanel's tall-panel container query).
 	 */
 
 	import { Popover } from "bits-ui";
@@ -99,7 +100,6 @@
 			length={fuseLength}
 			currentStep={fuseState.currentStep}
 			onCurrentSequenceChange={(seq) => (leftBrowsingSeq = seq)}
-			{compact}
 		/>
 		<FusePanel
 			side="right"
@@ -108,7 +108,6 @@
 			length={fuseLength}
 			currentStep={fuseState.currentStep}
 			onCurrentSequenceChange={(seq) => (rightBrowsingSeq = seq)}
-			{compact}
 		/>
 	</div>
 {/snippet}
@@ -282,12 +281,11 @@
 	}
 
 	@container fuse-layout (max-width: 700px) {
-		/* Bottom-anchor the cluster: panels sit right above the hero Fuse
-		   button, in thumb reach. The void (if any) goes to the top. */
+		/* Narrow: uncap the columns and keep the row stretched - each panel
+		   fills the full height and its notation strip absorbs the vertical
+		   space internally (see FusePanel's tall-panel container query). */
 		.fuse-panels {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
-			grid-auto-rows: min-content;
-			align-content: end;
 			gap: var(--spacing-sm, 8px);
 			padding: var(--spacing-sm, 8px) var(--spacing-sm, 8px) var(--spacing-xs, 4px);
 		}
@@ -301,7 +299,7 @@
 		flex-direction: column;
 		align-items: center;
 		gap: var(--spacing-sm, 8px);
-		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px) var(--spacing-md, 16px);
+		padding: var(--spacing-xs, 4px) var(--spacing-md, 16px) var(--spacing-sm, 8px);
 	}
 
 	.fuse-hero {
@@ -309,6 +307,21 @@
 		max-width: 420px;
 		min-height: 56px;
 		font-size: var(--font-size-md, 16px);
+	}
+
+	/* Ready-to-fuse: slow ember breathe so the hero reads as live, not static */
+	.fuse-hero:not(:disabled) {
+		animation: heroBreathe 3.2s ease-in-out infinite;
+	}
+
+	@keyframes heroBreathe {
+		0%,
+		100% {
+			box-shadow: 0 4px 20px color-mix(in srgb, var(--fuse-accent, #f97316) 30%, transparent);
+		}
+		50% {
+			box-shadow: 0 6px 30px color-mix(in srgb, var(--fuse-accent, #f97316) 55%, transparent);
+		}
 	}
 
 	.fuse-settings-row {
@@ -534,6 +547,9 @@
 		.fuse-button,
 		.length-option {
 			transition: none;
+		}
+		.fuse-hero:not(:disabled) {
+			animation: none;
 		}
 		:global(.fuse-pop[data-state="open"]) {
 			animation: none;
