@@ -277,6 +277,13 @@
     onUnfocusPane();
   }
 
+  // Scene load gate: the 3D viewer surface (canvas + transport + rail) stays
+  // behind the loading curtain until every enabled async scene feature is ready.
+  // The canvas owns the curtain + transport hold; this gates the sibling rail
+  // chrome (RightRail + PerformerHub) that lives outside the canvas pane. Latched
+  // true by the child on first load — never re-hides on pane switches.
+  let _scene3dReady = $state(false);
+
   // Persist canvases once activated — avoids full teardown+rebuild on pane switch.
   let _3dLeftMounted = $state(false);
   const _3dLeftActive = $derived(splitConfig.leftPane === 'animation-3d');
@@ -403,6 +410,7 @@
               {onProgressBarSeek}
               {playbackMode}
               {onPlaybackModeChange}
+              onSceneReadyChange={(ready) => (_scene3dReady = ready)}
             />
           {/if}
         </div>
@@ -487,7 +495,9 @@
       </div>
     {/if}
     {#if _3dLeftMounted}
-      <div bind:this={_rail3d} class="persistent-rail" class:persistent-rail-hidden={!_3dLeftActive}>
+      <!-- Rail withheld until the scene load gate opens, so it fades in with the
+           curtain lift instead of showing over a black "Setting the stage" pane. -->
+      <div bind:this={_rail3d} class="persistent-rail" class:persistent-rail-hidden={!_3dLeftActive || !_scene3dReady}>
         <RightRail renderMode="3d" {bpm} />
         {#if PerformerHub}
           <PerformerHub />

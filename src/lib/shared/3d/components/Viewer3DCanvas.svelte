@@ -53,6 +53,9 @@
     onProgressBarSeek?: (targetStep: number) => void;
     playbackMode?: PlaybackMode;
     onPlaybackModeChange?: (mode: PlaybackMode) => void;
+    /** Fires when the scene load gate opens/closes (first-load latched). The
+        parent withholds the 3D rail chrome until the stage is ready. */
+    onSceneReadyChange?: (ready: boolean) => void;
   }
 
   let {
@@ -71,6 +74,7 @@
     onProgressBarSeek,
     playbackMode,
     onPlaybackModeChange,
+    onSceneReadyChange,
   }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
@@ -160,6 +164,44 @@
     }, 15_000);
 
     return () => clearTimeout(timer);
+  });
+
+  // ── Scene load gate ──
+  // First-load latch: true once every enabled async scene feature has reported
+  // ready. Never flips back if the user toggles a feature on later (matches the
+  // curtain's own latch), so the rail/playback gate only fires on first load.
+  let sceneReady = $state(false);
+  $effect(() => {
+    if (!sceneReady && sceneFeatureState.allEnabledReady) {
+      sceneReady = true;
+    }
+  });
+
+  // Tell the parent so it can withhold the 3D rail chrome until the stage is set.
+  $effect(() => {
+    onSceneReadyChange?.(sceneReady);
+  });
+
+  // Hold playback while the curtain is up. Switching into 3D mid-play otherwise
+  // keeps the shared clock advancing behind the loading screen, so the scene
+  // reveals mid-sequence (the "it already went past loading" tell). Pause on
+  // entry, resume on ready — held in place, not reset to 0 (would discard a
+  // deliberate seek). Mirrors the scrub-pause pattern; the 15s force-ready
+  // timeout above guarantees this always releases. The transport is covered by
+  // the curtain during the hold, so the user can't fight it.
+  let heldForSceneLoad = false;
+  $effect(() => {
+    if (sceneReady) {
+      if (heldForSceneLoad) {
+        heldForSceneLoad = false;
+        onPlaybackToggle?.();
+      }
+      return;
+    }
+    if (isPlaying && !heldForSceneLoad) {
+      heldForSceneLoad = true;
+      onPlaybackToggle?.();
+    }
   });
 
 </script>

@@ -79,7 +79,9 @@
   .curtain {
     position: absolute;
     inset: 0;
-    z-index: 20;
+    /* Above the transport (.timeline-anchor, z-index 20) and beat strip (10) so
+       the scrubber doesn't paint over the loading screen and read as "loaded". */
+    z-index: 30;
     background: #0a0e14;
     display: flex;
     align-items: center;
