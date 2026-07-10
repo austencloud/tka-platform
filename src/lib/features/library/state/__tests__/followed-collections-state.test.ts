@@ -62,6 +62,10 @@ async function emit(refs: FollowedCollectionRef[]): Promise<void> {
 
 beforeEach(() => {
 	followedCollectionsState.teardown();
+	// The state now seeds synchronously from the localStorage mirror; clear it so
+	// one test's resolved items don't seed the next (and leave loading=false,
+	// which would let emit()'s waitFor pass before resolve runs).
+	localStorage.clear();
 	vi.clearAllMocks();
 	mocks.snapshotCb = null;
 	mocks.getUserDisplayNames.mockResolvedValue(new Map<string, string>());

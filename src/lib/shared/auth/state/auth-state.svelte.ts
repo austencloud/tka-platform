@@ -676,6 +676,15 @@ export async function signOut(): Promise<void> {
       // logout and throw permission errors once the auth token is revoked.
       collectionsState.teardown();
       followedCollectionsState.teardown();
+      // Drop the local text mirror so this user's list never seeds the next
+      // signed-in account on the same device.
+      const outgoingUid = _state.user?.uid;
+      if (outgoingUid) {
+        const { clearMirror } = await import(
+          "$lib/features/library/services/collection-cache-mirror"
+        );
+        clearMirror(outgoingUid);
+      }
     } catch {
       // Collection states may not be loaded - that's ok
     }

@@ -143,6 +143,25 @@ export async function initializeChildServices(
     }
   })();
 
+  // Start the Library collection subscriptions at boot so their local mirror is
+  // written well before the user opens Library — the panel's own ensureStarted()
+  // is idempotent per-uid, so its call becomes a no-op and Library paints from
+  // the fresh mirror instantly. (non-blocking)
+  import("$lib/features/library/state/collections-state.svelte")
+    .then(({ collectionsState }) => {
+      if (getUserFromState()) collectionsState.ensureStarted();
+    })
+    .catch((error) => {
+      console.warn("⚠️ [authState] Collections prewarm failed:", error);
+    });
+  import("$lib/features/library/state/followed-collections-state.svelte")
+    .then(({ followedCollectionsState }) => {
+      if (getUserFromState()) followedCollectionsState.ensureStarted();
+    })
+    .catch((error) => {
+      console.warn("⚠️ [authState] Followed collections prewarm failed:", error);
+    });
+
   // Initialize mandala collection Firebase sync (non-blocking)
   import("$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte")
     .then(async ({ mandalaCollectionState }) => {

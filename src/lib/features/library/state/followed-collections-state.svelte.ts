@@ -9,6 +9,10 @@ import {
 } from "$lib/shared/library/services/followed-collections";
 import { getPublicCollection } from "$lib/features/library/services/public-collection-loader";
 import { getUserDisplayNames } from "$lib/shared/community/services/user-repository";
+import {
+	readFollowedMirror,
+	writeFollowedMirror,
+} from "$lib/features/library/services/collection-cache-mirror";
 
 export interface FollowedCollection {
 	readonly collection: LibraryCollection;
@@ -42,7 +46,13 @@ class FollowedCollectionsState {
 
 		this.teardown();
 		this.startedFor = uid;
-		this.loading = true;
+
+		// Synchronous paint: seed the followed shelf from the local mirror before
+		// the refs subscription + per-owner resolves land. A non-empty seed skips
+		// the skeleton; resolve() reconciles.
+		const seed = readFollowedMirror(uid) ?? [];
+		this.items = seed;
+		this.loading = seed.length === 0;
 
 		void subscribeToFollowedCollections((refs) => {
 			this.refs = refs;
@@ -131,6 +141,9 @@ class FollowedCollectionsState {
 					ownerName: names.get(ref.ownerId) ?? "Someone",
 				}),
 			);
+			// Persist the resolved shelf so the next open paints it synchronously.
+			const uid = authState.user?.uid;
+			if (uid) writeFollowedMirror(uid, this.items);
 		} catch (err) {
 			// Batched name lookup failed; keep the last good items rather than
 			// wedging. The next snapshot re-resolves.

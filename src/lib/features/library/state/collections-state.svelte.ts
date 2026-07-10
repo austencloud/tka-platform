@@ -17,6 +17,10 @@ import {
 } from "$lib/shared/library/services/collection-manager";
 import { setCollectionMembershipResolver } from "$lib/shared/browse/services/browse-filter";
 import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
+import {
+	readOwnMirror,
+	writeOwnMirror,
+} from "$lib/features/library/services/collection-cache-mirror";
 
 /**
  * collections-state - live view of the signed-in user's own collections.
@@ -48,7 +52,13 @@ class CollectionsState {
 
 		this.teardown();
 		this.startedFor = uid;
-		this.loading = true;
+
+		// Synchronous paint: seed from the local mirror before Firestore even
+		// initializes. A non-empty seed means we have something to show, so skip
+		// the skeleton; the live snapshot reconciles it moments later.
+		const seed = readOwnMirror(uid) ?? [];
+		this.collections = seed;
+		this.loading = seed.length === 0;
 
 		// Favorites has to exist so it can anchor the picker's first chip; the
 		// subscription reports it the moment it's created. Fire-and-forget.
@@ -59,6 +69,7 @@ class CollectionsState {
 		this.unsubscribe = subscribeToCollections((cols) => {
 			this.collections = cols;
 			this.loading = false;
+			writeOwnMirror(uid, cols);
 		});
 	}
 
