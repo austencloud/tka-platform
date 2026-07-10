@@ -28,8 +28,10 @@
   import "$lib/shared/selection/selection.css";
   import { stripToSequence } from "../_data/guide-sequence-adapter";
   import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
+  import { loadOverrides } from "../_data/guide-overrides.svelte";
   import type { GuidePageMeta } from "../_data/guide-manifest";
-  import { READER_PAGE_COUNT } from "../_data/guide-reader-nav";
+  import { GUIDE_BODY_PAGES } from "../_data/guide-manifest";
+  import { READER_PAGE_COUNT, FRONT_MATTER_COUNT } from "../_data/guide-reader-nav";
   import {
     GUIDE_READER_BASE,
     indexForSlug,
@@ -136,6 +138,11 @@
   // Which prop the companion animates for the clicked strip (staff pages hand
   // up "staff" so the player renders real staves from the authored orientations).
   let clickedPropType = $state<"hand" | "staff">("hand");
+  // Identity of the clicked strip + a human page label — the companion needs
+  // both for the admin action row (saveOverride key) and Copy-for-AI's header
+  // ("Guide: Level 1 › <page title> › <word>").
+  let clickedKey = $state<string | null>(null);
+  let clickedPageTitle = $state("");
 
   async function handleSequenceClick(payload: GuideSequenceClick) {
     // Ring the clicked strip's Start box immediately (before motion data even
@@ -143,11 +150,20 @@
     activeStep.begin(payload.key ?? "");
     selection.select(payload.key ?? ""); // persist the accent ring on the active strip
     clickedPropType = payload.propType ?? "hand";
+    clickedKey = payload.key ?? null;
+    clickedPageTitle = GUIDE_BODY_PAGES[activeIndex - FRONT_MATTER_COUNT]?.title ?? "";
     const seq = stripToSequence(payload.strip, { word: payload.word });
     clicked = (await ensureMotionData(seq)) ?? seq;
     companionOpen = true;
   }
   setGuideSequenceClick(handleSequenceClick);
+
+  // Guide overrides load once per reader mount (public read; admin gate lives
+  // on the write side). Reactive singleton — pages + companion re-render as
+  // soon as this resolves, no manual plumbing needed beyond this one call.
+  onMount(() => {
+    loadOverrides();
+  });
 
   // Live URL sync: the address bar always carries the active page's deep link
   // (replaceState — no history spam; copying the URL bar IS the share
@@ -299,6 +315,8 @@
       <GuideCompanion
         sequence={clicked}
         propType={clickedPropType}
+        stripKey={clickedKey}
+        pageTitle={clickedPageTitle}
         onStep={(s) => activeStep.report(s)}
         onClose={() => {
           companionOpen = false;

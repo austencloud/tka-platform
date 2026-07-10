@@ -21,8 +21,14 @@
   import GuideDocument from "../_components/GuideDocument.svelte";
   import type { GuidePageMeta } from "../_data/guide-manifest";
   import { BUILT } from "../_data/built-pages";
+  import { loadOverrides } from "../_data/guide-overrides.svelte";
 
   setGuidePrintMode();
+
+  // The override IS the guide — the rebuild pane reflects saved edits too.
+  onMount(() => {
+    loadOverrides();
+  });
 
   const OLD_PDF = "/guides/_proof/level-1-v05.pdf";
   const PAGE_W = 816; // 8.5in @96dpi (GuidePage native width)

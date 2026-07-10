@@ -11,6 +11,7 @@
   the source for the regenerated static/guides/level-1.pdf.
 -->
 <script lang="ts">
+  import { onMount } from "svelte";
   import "../_styles/guide.css";
   import "../_styles/guide-print.css";
   import { setGuidePrintMode } from "../_data/guide-data-context";
@@ -22,8 +23,14 @@
   import type { GuidePageMeta } from "../_data/guide-manifest";
   import { BUILT } from "../_data/built-pages";
   import { guideEdit } from "../_data/guide-edit.svelte";
+  import { loadOverrides } from "../_data/guide-overrides.svelte";
 
   setGuidePrintMode();
+
+  // The override IS the guide — /print reflects saved edits too (public read).
+  onMount(() => {
+    loadOverrides();
+  });
 
   // Cover edition — toggled in the GuideDevBar; ?theme=home still seeds the
   // ink-cheap light cover for home printers (default = navy foil).

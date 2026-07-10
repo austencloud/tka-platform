@@ -127,6 +127,20 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Guide sequence overrides (Level 1 Guide Companion v2) - the printed guide
+    // is public, so overrides are public-read; editing a broken guide strip is
+    // admin-only. Revisions subcollection snapshots the replaced state for
+    // in-app revert, same admin gate.
+    match /guideOverrides/{stripKey} {
+      allow read: if true;
+      allow write: if isAdmin();
+
+      match /revisions/{revisionId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+    }
+
     // Feature flag audit log - append-only for admins
     match /audit/featureFlags/entries/{entryId} {
       allow read: if isAdmin();

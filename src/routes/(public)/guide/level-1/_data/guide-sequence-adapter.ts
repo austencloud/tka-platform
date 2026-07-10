@@ -98,3 +98,22 @@ export function stripToSequence(
     name: opts.name ?? opts.word ?? "guide-sequence",
   });
 }
+
+/**
+ * Inverse of stripToSequence — a SequenceData picked via SequencePickerModal
+ * (Guide Companion v2 "Replace") becomes a flat strip: the start position
+ * first (stepNumber 0), then the numbered steps. Best-effort field carry-over
+ * (StartPositionData and StepData overlap on motions/gridMode/letter, per the
+ * StepData<->PictographData structural-assignability guarantee); the caller
+ * persists the result via saveOverride.
+ */
+export function sequenceToStrip(sequence: SequenceData): StepData[] {
+  const strip: StepData[] = [];
+  if (sequence.startPosition) {
+    strip.push({ ...(sequence.startPosition as object), stepNumber: 0 } as unknown as StepData);
+  }
+  for (const step of sequence.steps ?? []) {
+    strip.push(step as unknown as StepData);
+  }
+  return strip;
+}
