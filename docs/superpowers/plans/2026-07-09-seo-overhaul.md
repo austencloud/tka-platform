@@ -151,9 +151,9 @@ git commit -m "chore(seo): delete dead seo-manager service + legacy keywords met
 - Modify: `src/routes/sequence/[id]/+page.svelte` (becomes thin shell)
 - Modify: `src/routes/sequence/+layout.ts` (`ssr = true`)
 
-- [ ] **Step 1:** Move the ENTIRE current content of `+page.svelte` to `SequenceViewerPage.svelte` unchanged, except: it receives `data` as a normal prop (keep the existing `Props` interface).
+- [x] **Step 1:** Move the ENTIRE current content of `+page.svelte` to `SequenceViewerPage.svelte` unchanged, except: it receives `data` as a normal prop (keep the existing `Props` interface).
 
-- [ ] **Step 2:** Rewrite `+page.svelte` as the SSR-safe shell. NOTHING client-heavy may be statically imported here:
+- [x] **Step 2:** Rewrite `+page.svelte` as the SSR-safe shell. NOTHING client-heavy may be statically imported here:
 
 ```svelte
 <script lang="ts">
@@ -201,7 +201,7 @@ git commit -m "chore(seo): delete dead seo-manager service + legacy keywords met
 {/if}
 ```
 
-- [ ] **Step 3:** `src/routes/sequence/+layout.ts` becomes:
+- [x] **Step 3:** `src/routes/sequence/+layout.ts` becomes:
 
 ```ts
 // SSR renders only the thin +page.svelte head shell; the viewer body is
@@ -210,9 +210,9 @@ export const ssr = true;
 export const prerender = false;
 ```
 
-- [ ] **Step 4:** Check for other routes under `src/routes/sequence/` that would now SSR (`ls src/routes/sequence`) — if siblings exist with client-only pages, give them their own `export const ssr = false` in their `+page.ts` (create if absent).
+- [x] **Step 4:** Check for other routes under `src/routes/sequence/` that would now SSR (`ls src/routes/sequence`) — if siblings exist with client-only pages, give them their own `export const ssr = false` in their `+page.ts` (create if absent).
 
-- [ ] **Step 5:** Verify SSR output. Build once (`npm run build > /tmp/build.log 2>&1; tail -5 /tmp/build.log`), then `node -e` is not enough — use vite preview:
+- [x] **Step 5:** Verify SSR output. Build once (`npm run build > /tmp/build.log 2>&1; tail -5 /tmp/build.log`), then `node -e` is not enough — use vite preview:
 
 ```bash
 npx vite preview --port 4173 &
@@ -223,9 +223,9 @@ curl -s http://localhost:4173/sequence/TEST?word=CAKE | grep -c "og:title"
 
 Expected: title contains `CAKE`; og:title count ≥ 1. (adapter-cloudflare preview: if `vite preview` doesn't serve SSR, use `npx wrangler pages dev .svelte-kit/cloudflare --port 4173` — check `package.json` scripts for an existing preview command first and prefer it.)
 
-- [ ] **Step 6:** `npm run check > /tmp/check.log 2>&1; grep -ciE "error" /tmp/check.log` — no NEW errors vs pre-change baseline (capture baseline before Step 1).
+- [x] **Step 6:** `npm run check > /tmp/check.log 2>&1; grep -ciE "error" /tmp/check.log` — no NEW errors vs pre-change baseline (capture baseline before Step 1).
 
-- [ ] **Step 7:** Commit:
+- [x] **Step 7:** Commit:
 
 ```bash
 git commit -m "feat(seo): SSR head + OG/Twitter meta for /sequence/[id] via thin-shell pattern" -- src/routes/sequence/+layout.ts "src/routes/sequence/[id]/+page.svelte" "src/routes/sequence/[id]/SequenceViewerPage.svelte"
@@ -240,9 +240,9 @@ git commit -m "feat(seo): SSR head + OG/Twitter meta for /sequence/[id] via thin
 
 Same pattern as Task 5. Notes specific to /q:
 
-- [ ] **Step 1:** Move current `+page.svelte` body (including its `+layout@.svelte` breakout comment context — the breakout stays where it is, only the page component's content moves) to `QScanPage.svelte`, receiving `data` prop.
+- [x] **Step 1:** Move current `+page.svelte` body (including its `+layout@.svelte` breakout comment context — the breakout stays where it is, only the page component's content moves) to `QScanPage.svelte`, receiving `data` prop.
 
-- [ ] **Step 2:** New `+page.svelte` shell — same structure as Task 5 Step 2 with these differences: meta comes from `data.meta` (word, creator, thumbnailUrl, deckName from the shortcodes Firestore doc), and canonical points at the MAIN domain (tka.run must not be canonical):
+- [x] **Step 2:** New `+page.svelte` shell — same structure as Task 5 Step 2 with these differences: meta comes from `data.meta` (word, creator, thumbnailUrl, deckName from the shortcodes Firestore doc), and canonical points at the MAIN domain (tka.run must not be canonical):
 
 ```svelte
 const title = $derived(
@@ -258,13 +258,13 @@ const canonical = $derived(`https://tkaflowarts.com/q/${page.params.code}`);
 
 Head block identical shape to Task 5 (title/description/canonical/og/twitter with thumbnail conditional).
 
-- [ ] **Step 3:** `src/routes/q/+layout.ts` → `ssr = true; prerender = false;` with the same explanatory comment as Task 5 Step 3.
+- [x] **Step 3:** `src/routes/q/+layout.ts` → `ssr = true; prerender = false;` with the same explanatory comment as Task 5 Step 3.
 
-- [ ] **Step 4:** The server loader (`+page.server.ts`) already returns `meta`; unchanged. Confirm nothing in the loader depends on `ssr:false` (it doesn't — it's a server loader).
+- [x] **Step 4:** The server loader (`+page.server.ts`) already returns `meta`; unchanged. Confirm nothing in the loader depends on `ssr:false` (it doesn't — it's a server loader).
 
-- [ ] **Step 5:** Verify with preview server: `curl -s http://localhost:4173/q/ZZZZ | grep -o "<title>[^<]*</title>"` — expect fallback title (unknown code) with proper head structure; if a known dev code exists in Firestore emulator/prod, spot-check it too. Also confirm scan analytics still fire client-side (QScanPage mounts in browser — grep moved file for `markScan` to confirm it moved intact).
+- [x] **Step 5:** Verify with preview server: `curl -s http://localhost:4173/q/ZZZZ | grep -o "<title>[^<]*</title>"` — expect fallback title (unknown code) with proper head structure; if a known dev code exists in Firestore emulator/prod, spot-check it too. Also confirm scan analytics still fire client-side (QScanPage mounts in browser — grep moved file for `markScan` to confirm it moved intact).
 
-- [ ] **Step 6:** Full check as Task 5 Step 6. Commit:
+- [x] **Step 6:** Full check as Task 5 Step 6. Commit:
 
 ```bash
 git commit -m "feat(seo): SSR head + OG meta + main-domain canonical for /q/[code]" -- src/routes/q/+layout.ts "src/routes/q/[code]/+page.svelte" "src/routes/q/[code]/QScanPage.svelte"
@@ -277,9 +277,9 @@ git commit -m "feat(seo): SSR head + OG meta + main-domain canonical for /q/[cod
 - Modify: `src/routes/(public)/shop/[productId]/+page.ts` (remove ssr:false + client load)
 - Modify: `src/routes/(public)/shop/[productId]/+page.svelte` (full head + JSON-LD)
 
-- [ ] **Step 1:** Read `src/lib/features/store/domain/models/product.ts` to learn the `Product` shape (name, description, price fields, image fields, status). Read `src/lib/server/firebaseAdmin.ts` exports. Do not guess field names — every field used below must exist in the model; adjust to the real names.
+- [x] **Step 1:** Read `src/lib/features/store/domain/models/product.ts` to learn the `Product` shape (name, description, price fields, image fields, status). Read `src/lib/server/firebaseAdmin.ts` exports. Do not guess field names — every field used below must exist in the model; adjust to the real names.
 
-- [ ] **Step 2:** Create `+page.server.ts`:
+- [x] **Step 2:** Create `+page.server.ts`:
 
 ```ts
 import type { PageServerLoad } from "./$types";
@@ -304,7 +304,7 @@ export const load: PageServerLoad = async ({ params }) => {
 
 CAUTION: `JSON.parse(JSON.stringify(...))` turns admin Timestamps into `{_seconds,...}` objects, not ISO strings. If the `Product` model has date fields the UI renders, map them explicitly (check Step 1 findings). If the model is all strings/numbers (likely for name/price/images), the round-trip is a no-op safety net.
 
-- [ ] **Step 3:** Rewrite `+page.ts` — SSR on, keep client loader as fallback/enrichment so the view-transition data-ready behavior is preserved:
+- [x] **Step 3:** Rewrite `+page.ts` — SSR on, keep client loader as fallback/enrichment so the view-transition data-ready behavior is preserved:
 
 ```ts
 import type { PageLoad } from "./$types";
@@ -328,7 +328,7 @@ export const load: PageLoad = async ({ params, data }) => {
 };
 ```
 
-- [ ] **Step 4:** `+page.svelte` head block (keep the `ProductDetailPage` render line; the component is client-heavy — check whether it survives SSR by building; if it throws server-side, wrap it in the same `{#if browser}` + dynamic-import shell as Tasks 5/6):
+- [x] **Step 4:** `+page.svelte` head block (keep the `ProductDetailPage` render line; the component is client-heavy — check whether it survives SSR by building; if it throws server-side, wrap it in the same `{#if browser}` + dynamic-import shell as Tasks 5/6):
 
 ```svelte
 <script lang="ts">
@@ -403,11 +403,11 @@ export const load: PageLoad = async ({ params, data }) => {
 
 Price/image/status field names MUST be corrected to the real model from Step 1. JSON-LD via `{@html}` is safe here — content is our own Firestore product data serialized with JSON.stringify, but still ensure `</script>` can't break out: add `.replace(/</g, "\\u003c")` on the stringified JSON.
 
-- [ ] **Step 5:** Draft products must NOT be indexable. In the head, when `p?.status !== "active"`, emit `<meta name="robots" content="noindex" />`. While the shop is gated this keeps drafts out of the index; active products index even pre-launch (listing stays ComingSoon — that's fine, product URLs are the SEO surface).
+- [x] **Step 5:** Draft products must NOT be indexable. In the head, when `p?.status !== "active"`, emit `<meta name="robots" content="noindex" />`. While the shop is gated this keeps drafts out of the index; active products index even pre-launch (listing stays ComingSoon — that's fine, product URLs are the SEO surface).
 
-- [ ] **Step 6:** Build + preview curl: `curl -s http://localhost:4173/shop/<real-product-id> | grep -c "application/ld+json"` expect ≥1; grep title/og. Get a real product id via the admin scripts or Firestore console; if none available server-side, verify with a nonexistent id that the fallback head renders and page doesn't 500.
+- [x] **Step 6:** Build + preview curl: `curl -s http://localhost:4173/shop/<real-product-id> | grep -c "application/ld+json"` expect ≥1; grep title/og. Get a real product id via the admin scripts or Firestore console; if none available server-side, verify with a nonexistent id that the fallback head renders and page doesn't 500.
 
-- [ ] **Step 7:** `npm run check` gate. Commit:
+- [x] **Step 7:** `npm run check` gate. Commit:
 
 ```bash
 git commit -m "feat(seo): SSR product pages with meta + Product/Offer JSON-LD" -- "src/routes/(public)/shop/[productId]/+page.server.ts" "src/routes/(public)/shop/[productId]/+page.ts" "src/routes/(public)/shop/[productId]/+page.svelte"
