@@ -124,7 +124,12 @@
     transition: color var(--duration-fast);
     position: relative;
     z-index: 1;
-    white-space: nowrap;
+    /* Long labels wrap instead of clipping — narrow screens were silently
+       truncating "coming soon" options mid-word. Equal-width segments keep
+       the sliding indicator honest; the control just grows taller. */
+    white-space: normal;
+    text-align: center;
+    line-height: 1.25;
     display: flex;
     align-items: center;
     justify-content: center;

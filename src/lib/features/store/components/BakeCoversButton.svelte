@@ -59,11 +59,16 @@
 
 <style>
   .bake-bar {
+    /* Floating admin dock: the bar used to render at page top UNDERNEATH the
+       fixed SiteHeader, where it was invisible and unclickable. */
+    position: fixed;
+    bottom: 18px;
+    right: 18px;
+    z-index: 60;
     display: flex;
     align-items: center;
     gap: 12px;
     justify-content: center;
-    padding: 8px 0;
   }
 
   .bake-btn {

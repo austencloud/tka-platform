@@ -231,9 +231,10 @@
       rgba(255, 255, 255, 0.015)
     );
     padding: clamp(16px, 2.5vw, 32px);
-    /* Tall enough for the fan + the longest description: flavor swaps crossfade
-       in place without resizing the box (no-layout-shift). */
-    min-height: 430px;
+    /* Tall enough for the fan + the longest description so flavor swaps
+       crossfade without resizing the box (no-layout-shift) — but scaled down
+       on phones, where a flat 430px reserved dead air. */
+    min-height: clamp(320px, 34vw, 430px);
   }
 
   .preview-inner {

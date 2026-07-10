@@ -222,7 +222,9 @@
       rgba(255, 255, 255, 0.015)
     );
     padding: clamp(16px, 2.5vw, 32px);
-    min-height: 430px;
+    /* Reserve for the tallest volume swap (no-layout-shift), but scale down on
+       phones — a flat 430px left ~150px of dead air under the description. */
+    min-height: clamp(320px, 34vw, 430px);
   }
 
   .preview-inner {

@@ -92,6 +92,7 @@
       {#if deckSkus.length > 0 || tndSkus.length > 0}
         <section class="deck-listing" id="deck">
           {#if deckSkus.length > 0}
+          <div class="tile-shell">
             <a class="deck-tile" href="/shop/loop-deck">
               <div class="deck-fan-box">
                 <DeckFanCover
@@ -121,9 +122,11 @@
                 </div>
               </div>
             </a>
+          </div>
           {/if}
 
           {#if tndSkus.length > 0}
+          <div class="tile-shell">
             <a class="deck-tile" href="/shop/tnd-trilogy">
               <div class="deck-fan-box">
                 <!-- Always all six element families in the fan. -->
@@ -161,6 +164,7 @@
                 </div>
               </div>
             </a>
+          </div>
           {/if}
         </section>
       {/if}
@@ -280,12 +284,14 @@
   }
 
   /* Reserved box: the fan streams in without shoving the headline (no-layout-shift).
-     Scales with the viewport so the auto-scaled fan has room on 4K. */
+     Scales with the viewport so the auto-scaled fan has room on 4K. Top padding
+     keeps the rotated card corners off the fixed header on wide screens. */
   .hero-fan {
     min-height: clamp(250px, 15.5vw, 410px);
     display: grid;
     place-items: center;
     margin-bottom: 8px;
+    padding-top: 24px;
   }
 
   .hero h1 {
@@ -330,11 +336,21 @@
     gap: 28px;
   }
 
-  /* Two lines sit side by side once there's room for both. */
-  @media (min-width: 1500px) {
+  /* Two lines sit side by side from laptop width up (1366 is the most common
+     desktop and used to get the stacked layout). Below ~640px of TILE width
+     the tile's own container query stacks its internals, so narrow side-by-side
+     tiles stay clean. */
+  @media (min-width: 1200px) {
     .deck-listing {
-      grid-template-columns: repeat(auto-fit, minmax(680px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(540px, 1fr));
     }
+  }
+
+  /* Each tile measures itself; internals stack when the tile (not the
+     viewport) is narrow. */
+  .tile-shell {
+    container-type: inline-size;
+    min-width: 0;
   }
 
   .element-swatches {
@@ -441,7 +457,7 @@
     font-size: var(--font-size-min, 14px);
   }
 
-  @media (max-width: 820px) {
+  @container (max-width: 639px) {
     .deck-tile {
       grid-template-columns: 1fr;
     }

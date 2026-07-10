@@ -45,38 +45,26 @@
 
   let boxW = $state(0);
 
-  // "3-6 depending on the size of the component" — width thresholds scale with
-  // the card size so bigger cards claim more room per slot.
-  function countFor(w: number): number {
-    if (!w) return 4;
-    const unit = cardWidth / 122;
-    if (w < 340 * unit) return 3;
-    if (w < 430 * unit) return 4;
-    if (w < 520 * unit) return 5;
-    return 6;
-  }
-  const shown = $derived(
-    cards.slice(0, exactCount ?? Math.max(1, Math.min(maxCards, countFor(boxW))))
-  );
+  // Fit-based layout: cards ALWAYS share the measured box (sized against the
+  // hover-open span, overlap 0.18 → each extra card shows 82%, plus ~5% tilt
+  // slack), so a fan can never spill its container — the old minimum-width
+  // floor overflowed the 390px configurator. Card count drops (min 3) while a
+  // card would fall below cardWidth; at 3 cards they shrink instead.
+  // exactCount skips the count reduction and always shrinks to fit.
+  const fitW = (n: number) => boxW / ((1 + 0.82 * (n - 1)) * 1.05);
+  const count = $derived.by(() => {
+    const avail = cards.length;
+    if (exactCount) return Math.max(1, Math.min(exactCount, avail));
+    let n = Math.max(1, Math.min(maxCards, avail));
+    while (n > 3 && boxW && fitW(n) < cardWidth) n--;
+    return n;
+  });
+  const shown = $derived(cards.slice(0, count));
   const tilt = (i: number, n: number) => (n <= 1 ? 0 : -12 + (24 * i) / (n - 1));
 
-  // Auto-scale: grow cards to fill the measured container. Sized against the
-  // HOVER-OPEN span (overlap 0.18 → each extra card shows 82%) plus ~5% slack
-  // for tilt overhang, so the spread never spills the box. With exactCount the
-  // minimum floor drops away so a forced-full fan can shrink to fit instead.
   const maxW = $derived(maxCardWidth ?? Math.round(cardWidth * 1.8));
   const cardW = $derived(
-    shown.length && boxW
-      ? Math.round(
-          Math.min(
-            maxW,
-            Math.max(
-              exactCount ? 72 : cardWidth,
-              boxW / ((1 + 0.82 * (shown.length - 1)) * 1.05)
-            )
-          )
-        )
-      : cardWidth
+    shown.length && boxW ? Math.round(Math.min(maxW, fitW(shown.length))) : cardWidth
   );
 
   // key -> object URL, filled as the print renders land. Session-cached in the
