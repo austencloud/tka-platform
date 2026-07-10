@@ -73,6 +73,22 @@
       : "",
   );
 
+  // Gallery thumbnail size scales with available width (one observer for the
+  // whole grid, not one per card) so the live mandala render — not just its box —
+  // grows on a 4K monitor, matching the Tunnels poster grid.
+  let galleryEl = $state<HTMLElement | null>(null);
+  let cardThumbSize = $state(140);
+  $effect(() => {
+    if (!galleryEl) return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0;
+      cardThumbSize =
+        w >= 1800 ? 220 : w >= 1200 ? 180 : w < 480 ? 90 : w < 768 ? 110 : 140;
+    });
+    ro.observe(galleryEl);
+    return () => ro.disconnect();
+  });
+
   let detailPreviewEl = $state<HTMLElement | null>(null);
   let detailPreviewSize = $state(300);
 
@@ -298,7 +314,7 @@
 <div class="mandala-module">
   <!-- ═══ GALLERY ═══ -->
   {#if phase === "gallery"}
-    <div class="gallery-view">
+    <div class="gallery-view" bind:this={galleryEl}>
       {#if mandalaCollectionState.loading && items.length === 0}
         <div class="loading-state">
           <PanelSpinner size={12} />
@@ -311,6 +327,10 @@
           <p class="empty-hint">Right-click a mandala in the workspace to save one</p>
         </div>
       {:else}
+        <header class="gallery-head">
+          <h2 class="gallery-title">Mandalas</h2>
+          <span class="gallery-count">{items.length}</span>
+        </header>
         <div class="gallery-grid">
           {#each items as item (item.id)}
             <button
@@ -319,10 +339,14 @@
               onclick={() => selectMandala(item)}
               aria-label="View {item.name}"
             >
-              <div class="card-thumb">
+              <div
+                class="card-thumb"
+                style:width="{cardThumbSize}px"
+                style:height="{cardThumbSize}px"
+              >
                 <SequenceMandala
                   sequence={{ steps: item.steps }}
-                  size={140}
+                  size={cardThumbSize}
                   show={item.variant}
                   bluePropType={item.bluePropType}
                   redPropType={item.redPropType}
@@ -341,6 +365,15 @@
   {:else if phase === "detail" && selectedMandala}
     <div class="detail-layout">
       <div class="detail-preview" bind:this={detailPreviewEl}>
+        <button
+          type="button"
+          class="back-btn"
+          onclick={backToGallery}
+          aria-label="Back to gallery"
+        >
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+          <span>Gallery</span>
+        </button>
         <SequenceMandala
           sequence={{ steps: selectedMandala.steps }}
           size={detailPreviewSize}
@@ -357,16 +390,6 @@
       </div>
 
       <div class="detail-panel">
-        <button
-          type="button"
-          class="back-btn"
-          onclick={backToGallery}
-          aria-label="Back to gallery"
-        >
-          <i class="fas fa-arrow-left" aria-hidden="true"></i>
-          <span>Gallery</span>
-        </button>
-
         <div class="detail-info">
           <div class="detail-glyphs">
             <TKAWordGlyph word={selectedMandala.name} height={28} darkMode />
@@ -394,7 +417,9 @@
             <i class="fas fa-download" aria-hidden="true"></i>
             <span>Export PNG</span>
           </button>
+        </div>
 
+        <div class="detail-footer">
           <button
             type="button"
             class="action-btn delete-btn"
@@ -595,6 +620,7 @@
     flex-direction: column;
     overflow: hidden;
     background: transparent;
+    container-type: inline-size;
   }
 
   /* ── Gallery ── */
@@ -603,6 +629,29 @@
     height: 100%;
     overflow-y: auto;
     padding: 32px;
+  }
+
+  .gallery-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .gallery-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--theme-text, white);
+  }
+  .gallery-count {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 999px;
+    padding: 2px 10px;
+    font-variant-numeric: tabular-nums;
   }
 
   .gallery-grid {
@@ -643,9 +692,8 @@
     outline-offset: 2px;
   }
 
+  /* width/height set inline from cardThumbSize so the live render scales too. */
   .card-thumb {
-    width: 140px;
-    height: 140px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -694,6 +742,7 @@
   }
 
   .detail-preview {
+    position: relative;
     flex: 1;
     display: flex;
     align-items: center;
@@ -729,11 +778,31 @@
     align-self: flex-start;
   }
 
+  /* Detail back button floats as a glass pill over the preview's top-left
+     (lightbox convention, matching the Tunnels playground). The export phase's
+     back-btn keeps the plain inline style above. */
+  .detail-preview .back-btn {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 2;
+    padding: 8px 18px;
+    background: color-mix(in srgb, var(--theme-panel-bg, rgba(10, 10, 20, 0.85)) 80%, transparent);
+    backdrop-filter: blur(8px);
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 999px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-min, 14px);
+  }
+
   @media (hover: hover) {
     .back-btn:hover {
       background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
       border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
       color: var(--theme-text, white);
+    }
+    .detail-preview .back-btn:hover {
+      background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
     }
   }
 
@@ -762,6 +831,15 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+  }
+
+  .detail-footer {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
+  }
+  .detail-footer .action-btn {
+    width: 100%;
   }
 
   .action-btn {
@@ -804,7 +882,6 @@
     background: transparent;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    margin-top: auto;
   }
 
   .delete-btn.confirming {
@@ -1105,21 +1182,50 @@
     outline-offset: 2px;
   }
 
-  /* ── Responsive ── */
-  @media (min-width: 1200px) {
+  /* ── Responsive (container-relative, matching the Tunnels playground so both
+        surfaces respond to real available width when nested) ── */
+  @container (min-width: 1200px) {
+    .gallery-view { padding: 40px 48px; }
     .gallery-grid {
-      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
     }
-    .card-thumb { width: 160px; height: 160px; }
+    .detail-panel { width: 380px; padding: 32px; }
   }
 
-  @media (max-width: 768px) {
+  /* 4K / ultrawide: grid density, type, thumbnails, panel width all scale up,
+     anchored left so a few cards don't float in a centered ribbon. */
+  @container (min-width: 1800px) {
+    .gallery-view { padding: 56px 72px; }
+    .gallery-head { margin-bottom: 28px; }
+    .gallery-title { font-size: 24px; }
+    .gallery-count {
+      font-size: var(--font-size-min, 14px);
+      padding: 3px 14px;
+    }
+    .gallery-grid {
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 28px;
+    }
+    .gallery-card { gap: 14px; padding: 24px 16px 18px; border-radius: 18px; }
+    .detail-panel { width: 440px; padding: 40px 36px; gap: 32px; }
+    .detail-date { font-size: var(--font-size-min, 14px); }
+    .action-btn { min-height: 56px; font-size: 16px; border-radius: 14px; }
+    .detail-preview .back-btn {
+      top: 28px;
+      left: 28px;
+      min-height: 52px;
+      padding: 10px 22px;
+      font-size: var(--font-size-min, 15px);
+    }
+  }
+
+  @container (max-width: 768px) {
     .gallery-view { padding: 20px; }
     .gallery-grid {
       grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
       gap: 12px;
     }
-    .card-thumb { width: 110px; height: 110px; }
 
     .detail-layout { flex-direction: column; }
     .detail-preview { flex: 1; min-height: 40%; }
@@ -1149,13 +1255,12 @@
     .export-preview { flex: 1; min-height: 0; padding: 16px; }
   }
 
-  @media (max-width: 480px) {
+  @container (max-width: 480px) {
     .gallery-view { padding: 16px; }
     .gallery-grid {
       grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
       gap: 10px;
     }
-    .card-thumb { width: 90px; height: 90px; }
     .gallery-card { padding: 12px 6px 10px; gap: 8px; }
   }
 
