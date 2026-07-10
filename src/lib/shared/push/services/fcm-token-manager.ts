@@ -10,8 +10,11 @@ import {
 	setDoc,
 	deleteDoc,
 	serverTimestamp,
+	getDocs,
+	type CollectionReference,
 } from "firebase/firestore";
 import { getFirestoreInstance, app } from "$lib/shared/auth/firebase";
+import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 import { VAPID_KEY } from "../config/vapid";
 
 const FCM_TOKENS_COLLECTION = "fcmTokens";
@@ -116,18 +119,56 @@ export class FCMTokenManager {
 	private async storeToken(userId: string, token: string): Promise<void> {
 		const firestore = await getFirestoreInstance();
 		const tokenHash = await this.hashToken(token);
-		const tokenRef = doc(
-			collection(firestore, "users", userId, FCM_TOKENS_COLLECTION),
-			tokenHash,
+		const deviceId = getDeviceId();
+		const tokensCol = collection(
+			firestore,
+			"users",
+			userId,
+			FCM_TOKENS_COLLECTION,
 		);
 
-		await setDoc(tokenRef, {
+		await setDoc(doc(tokensCol, tokenHash), {
 			token,
 			createdAt: serverTimestamp(),
 			lastRefreshed: serverTimestamp(),
 			device: this.getDeviceLabel(),
+			deviceId,
 			userAgent: navigator.userAgent,
 		});
+
+		// One live token per physical device. A device that rotates its FCM
+		// token (SDK refresh, PWA reinstall, dev-mode service-worker churn)
+		// mints a new token — and a new hash-keyed doc — while the old doc
+		// lingers as a tombstone. FCM may still "accept" a send to that dead
+		// subscription (returns SENT ok) yet deliver nowhere, so server-side
+		// error cleanup never reclaims it. Prune every other doc stamped with
+		// THIS deviceId, keeping only the one just written.
+		await this.pruneStaleDeviceTokens(tokensCol, tokenHash, deviceId);
+	}
+
+	/**
+	 * Delete FCM token docs belonging to this same physical device that are not
+	 * the token just registered. Matches on deviceId only: it is origin-scoped
+	 * (per-origin localStorage), so an installed PWA and a dev build on the same
+	 * phone carry distinct deviceIds and never prune each other's tokens.
+	 * Best-effort — never fails token registration over cleanup.
+	 */
+	private async pruneStaleDeviceTokens(
+		tokensCol: CollectionReference,
+		keepHash: string,
+		deviceId: string,
+	): Promise<void> {
+		try {
+			const snap = await getDocs(tokensCol);
+			const deletions: Promise<void>[] = [];
+			snap.forEach((d) => {
+				if (d.id === keepHash) return;
+				if (d.data().deviceId === deviceId) deletions.push(deleteDoc(d.ref));
+			});
+			if (deletions.length > 0) await Promise.all(deletions);
+		} catch (error) {
+			console.warn("[FCMTokenManager] Stale-token prune skipped:", error);
+		}
 	}
 
 	private async removeToken(userId: string, token: string): Promise<void> {
