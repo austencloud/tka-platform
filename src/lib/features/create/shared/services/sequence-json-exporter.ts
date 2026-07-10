@@ -108,9 +108,30 @@ export function toJsonString(sequence: SequenceData): string {
   return JSON.stringify(minimal, null, 2);
 }
 
+/**
+ * Escape every non-ASCII character to a `\uXXXX` sequence. TKA letters are UTF-8
+ * Greek (Σ Θ Φ Ψ Ω …); when copied text crosses a non-UTF-8 boundary (Windows
+ * clipboard ANSI interop, a codepage-narrowing paste target) those bytes are
+ * lost — a char becomes `?` (codepage substitution) or `�` U+FFFD (invalid-UTF-8
+ * decode), unrecoverably. `\u`-escaped JSON is pure 7-bit ASCII, still valid
+ * JSON, and parses back to the exact glyph, so it survives any transport.
+ */
+function escapeNonAscii(s: string): string {
+  return s.replace(/[^\x00-\x7F]/g, (c) => {
+    const cp = c.codePointAt(0)!;
+    return "\\u" + cp.toString(16).padStart(4, "0");
+  });
+}
+
+/** ASCII-safe payload for clipboard/paste transport (see escapeNonAscii). */
+export function toAsciiSafeJsonString(sequence: SequenceData): string {
+  return escapeNonAscii(toJsonString(sequence));
+}
+
 export async function copyToClipboard(sequence: SequenceData): Promise<boolean> {
   try {
-    const jsonString = toJsonString(sequence);
+    // ASCII-safe so Greek letters survive the clipboard/paste encoding boundary.
+    const jsonString = toAsciiSafeJsonString(sequence);
     await navigator.clipboard.writeText(jsonString);
     return true;
   } catch (error) {
