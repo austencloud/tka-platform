@@ -575,3 +575,34 @@ LOOP terminology, per existing section filenames already named Loops*.)
   proof shows no badge). Facelift: lowercase γ, purple "Shift"/"Shifts". Verified:
   `npm run check` exit 0; DevTools 23 pictographs, layout + glyphs + arrows match
   the proof. Awaiting Austen's eyeball pass. Registry `BUILT["hm-type2"]` added.
+- 2026-07-10: POST-BUILD REVIEW ROUND (Austen's notes + board-wide self-audit).
+  (a) Companion overlay fixed — InlineAnimationPlayer never passed currentStep
+  to AnimatorCanvas, so the top-left label froze at "Start" (and the minimal
+  progress line never moved). One-line wire-through; CDP-verified timeline now
+  Start → step N → End (End only on non-loopable strips; seamless LOOPs
+  correctly skip it). Commit `96cbdc1811`.
+  (b) Type 1 LOOPs page: BBLF steps 7-8 corrected (Austen caught it) — the
+  Swapped & Rotated second half must trade the colors' roles; step 7 = blue-PRO
+  n→w + red-ANTI s→w, step 8 continues home. Letters stay L/F (hybrids keep
+  their letter under color swap — L/F MCP re-verified). Reversal dots now
+  DERIVED via `bakeReversals()` (new, guide-sequence-adapter.ts; canonical
+  engine `deriveReversals`, propReversal channel, linear read, start box inert)
+  instead of hand-authored — the old buggy 7-8 contained a real unmarked prop
+  reversal, which is the exact failure derivation closes. Derived dots: DJII
+  R/R at step 7 (mirror point), KIEC steps 2-3 (K→I→E retraces), BBLF none.
+  showReversals now true on this page. Commit `80980389c6`.
+  (c) TKA Letters webfont for sequence-word TITLES (margin words DJII/BBLF/KIEC;
+  DJ/EK/FL + MP/NQ/OR strip captions) — real selectable text via `.tka-font`
+  (app.css global). Austen's rule: title-position words get the font; prose
+  mentions stay serif (in-paragraph glyphs sized awkwardly — reverted).
+  (d) Board-wide audit (4 parallel Sonnet auditors, every BUILT page): ZERO
+  motion-data bugs beyond BBLF. All four SUSPECT-LETTER flags dismissed against
+  the canonical dataset (list_letter_variations): U/V on the gamma pages match
+  variations U[14]/V[14] exactly (leader is positional — the compact
+  get_letter_explanation line only reflects variation 0); Type 2 Σ/Δ box vs
+  word-row = variations Σ[0]/Σ[5] (mirror-invariance makes opposite chirality
+  legitimate); Type 3 Δ- box vs breakdown = Δ-[0]/Δ-[6]. ReversalsPage flags
+  recomputed clean. Remaining NITs (unkeyed static {#each}es on
+  HandPositions/TheGrid, family-only margin-glyph position literals,
+  BaseLettersPage hardcoded-CW helper, GammaWordsPage dead `block` param) are
+  documented-cosmetic; left as-is.
