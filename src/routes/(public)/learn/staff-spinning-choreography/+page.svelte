@@ -2,7 +2,7 @@
   import "$lib/shared/landing/styles/public-editorial.css";
 
   const DESCRIPTION =
-    "Write it down, read it back, reproduce it later. A free guide to staff choreography you can read on paper.";
+    "Learn staff choreography with The Kinetic Alphabet: a notation system built for double staves, from your first isolation to written sequences.";
 </script>
 
 <svelte:head>
@@ -54,18 +54,19 @@
 <div class="editorial">
   <header class="editorial-header">
     <h1 class="page-title">Learn Staff Choreography</h1>
-    <p class="page-subtitle">Choreography you can write down</p>
+    <p class="page-subtitle">The Kinetic Alphabet started with staves</p>
   </header>
 
   <section class="editorial-section" style="--accent: #22c55e">
+    <h2 class="section-title">Picking Up Staves for the First Time?</h2>
     <div class="prose">
+      <p>That's awesome. Hell yeah.</p>
       <p>
-        Flow arts is young. Most spinners learn alone, develop their own vocabulary, and have
-        a hard time collaborating with people who learned differently.
-      </p>
-      <p>
-        When patterns are written down, choreographers can share and build on each other's
-        work. You can also archive your own material and actually find it again months later.
+        First question: have you ever done an isolation or a four-petal antispin? Those are
+        really foundational moves. Spend five or ten minutes learning how to turn your body
+        to accomplish an isolation, and how to use negative space to accomplish an
+        antispin. The sooner you get those moves, the sooner you'll have the technicality
+        in your body to learn a wide variety of others.
       </p>
     </div>
   </section>
@@ -74,53 +75,66 @@
     <h2 class="section-title">Why Staves</h2>
     <div class="prose">
       <p>
-        TKA was built for double staves. Each staff has two visible ends: one is a consistent
-        thumb reference, the other a consistent pinky reference. With proper technique those
-        references never change, which is what keeps written choreography readable
-        mid-sequence.
+        The Kinetic Alphabet started with staves. When it was first made it was called the
+        Double Staff Alphabet; the name changed later. Staves are really easy to display in
+        a pictograph: they look the same whether their orientation is in or out, which is
+        not true of single-ended props like a fan or a club. And because they're simple
+        straight lines, they're easy to draw on a page. When TKA started, all of the
+        pictographs were hand-drawn.
+      </p>
+      <!-- Image slot: first hand-drawn staff sequences. Austen has the originals
+           above his desk; add when he provides photos. -->
+      <p>
+        Pretty soon it became clear that all of this choreography applies to any static
+        prop. That does not include poi, because poi is not a static prop. Static props
+        have the magical ability to transcend gravity: hold any orientation for as long as
+        you want, and reverse direction on the fly, instantly, with no relationship to
+        momentum making that difficult.
+      </p>
+      <p>
+        That distinguishes TKA from previous prop systems, in particular from VTG, which
+        was built for momentum-based props and continuous spinning at a continuous rate.
+        TKA says: spin at whatever rate we want, add reversals whenever we want, turn on a
+        dime, hold any prop at any of eight orientations at any of nine points, move
+        between any of them, and categorize every combination therein. It explores a wider
+        space, one that's only accessible to props like staves. That's why we start with
+        staves.
       </p>
     </div>
   </section>
 
   <section class="editorial-section" style="--accent: #ec4899">
-    <h2 class="section-title">The Level System</h2>
+    <h2 class="section-title">This Is Not the Performance</h2>
     <div class="prose">
       <p>
-        The level system starts simple and gets denser, so you set your own pace. A beginner
-        at Level 1 works with 6 possible single-hand motions from any grid point. By Level 5,
-        that number grows to 129.
+        Learning Kinetic Alphabet sequences is like learning your lines in a play. If you
+        then stand and speak them flatly, you've missed the point. The whole point of this
+        is creative freedom, not creative bottlenecking.
       </p>
       <p>
-        It tracks individual parts, which helps if you struggle with memory or executive
-        function.
+        The purpose of the system is to let you turn your brain off, by taking care of the
+        nitty gritty of what your staves are doing on what step, so that you have a huge
+        amount of freed mental space to express yourself and move freely. You have to train
+        your body to get there first, and you have to understand the bits and pieces. Just
+        understand that's not the end goal. The end goal is freedom of expression and
+        creative output that feels like you're creating something new to you, because that
+        experience is valuable both to you and to the art form.
       </p>
     </div>
   </section>
 
   <section class="editorial-section" style="--accent: #f59e0b">
-    <h2 class="section-title">Your First Session</h2>
+    <h2 class="section-title">Learn A, B, and C</h2>
     <div class="prose">
+      <p>Your first session with TKA looks like learning A, B, and C:</p>
       <ol>
         <li><a href="/guide/level-1/positions-motions">Positions and motions</a></li>
         <li><a href="/guide/level-1/letters">Letters</a></li>
         <li><a href="/guide/level-1/words">Your first words</a></li>
       </ol>
       <p>
-        If you care more about theatrical performance than technical patterns, that's fine.
-        Learn the notation, then forget about it while you perform.
+        <a href="/shop/choreography-cards">Choreo Cards</a> make practice physical.
       </p>
-    </div>
-  </section>
-
-  <section class="editorial-section" style="--accent: #06b6d4">
-    <h2 class="section-title">Practice Tools</h2>
-    <div class="prose">
-      <ul>
-        <li>The app animates any sequence at any speed. Free, no download required.</li>
-        <li>
-          <a href="/shop/choreography-cards">Choreo Cards</a> make practice physical.
-        </li>
-      </ul>
     </div>
   </section>
 

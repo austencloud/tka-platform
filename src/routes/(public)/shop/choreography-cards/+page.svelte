@@ -2,7 +2,7 @@
   import "$lib/shared/landing/styles/public-editorial.css";
 
   const DESCRIPTION =
-    "Each card is a sequence. Scan the QR code. Watch it animate. Learn it with your body.";
+    "Choreo Cards: the newest technology in flow arts notation. Each card holds a sequence. Scan the QR code, visualize it with any prop at any speed, and save it to your catalog.";
 
   const decks = [
     {
@@ -19,18 +19,18 @@
 </script>
 
 <svelte:head>
-  <title>Choreo Cards: Choreography You Can Hold, Scan, and Learn | TKA Shop</title>
+  <title>Choreo Cards: The Newest Technology in Flow Arts Notation | TKA Shop</title>
   <meta name="description" content={DESCRIPTION} />
   <link rel="canonical" href="https://tkaflowarts.com/shop/choreography-cards" />
 
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://tkaflowarts.com/shop/choreography-cards" />
-  <meta property="og:title" content="Choreo Cards: Choreography You Can Hold, Scan, and Learn" />
+  <meta property="og:title" content="Choreo Cards: The Newest Technology in Flow Arts Notation" />
   <meta property="og:description" content={DESCRIPTION} />
   <meta property="og:image" content="https://tkaflowarts.com/branding/og-image.png" />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Choreo Cards: Choreography You Can Hold, Scan, and Learn" />
+  <meta name="twitter:title" content="Choreo Cards: The Newest Technology in Flow Arts Notation" />
   <meta name="twitter:description" content={DESCRIPTION} />
   <meta name="twitter:image" content="https://tkaflowarts.com/branding/og-image.png" />
 
@@ -68,30 +68,29 @@
 <div class="editorial">
   <header class="editorial-header">
     <h1 class="page-title">Choreo Cards</h1>
-    <p class="page-subtitle">Choreography you can hold, scan, and learn</p>
+    <p class="page-subtitle">The newest technology in flow arts notation</p>
   </header>
 
   <section class="editorial-section" style="--accent: #22c55e">
     <div class="prose">
       <p>
-        I built TKA because I wanted to write down what my hands were doing. A letter for
-        every movement a staff can make. Letters combined into sequences. Sequences became
-        cards.
-      </p>
-      <p>
-        The app is free at tkaflowarts.com. The cards are the physical version. Shuffle
-        through them at a festival, hand one to a friend, spread them across a table and
-        study the patterns.
+        Each card holds a sequence. Scan the QR code and it takes you to a page where you
+        can immediately visualize that sequence with any prop at any speed, save it to your
+        own personal catalog so you can keep track of all of your sequences, and open a
+        practice mode that lets you learn the sequence at your own pace.
       </p>
     </div>
   </section>
 
   <section class="editorial-section" style="--accent: #14b8a6">
-    <h2 class="section-title">The Decks</h2>
+    <h2 class="section-title">Every Deck Is Different</h2>
     <div class="prose">
       <p>
-        Each deck contains every possible sequence for its configuration. The complete
-        mathematical space. Not a curated selection.
+        These cards are not pre-configured. They're algorithmically generated, and each
+        deck is a unique configuration of cards, many of which may have never been seen
+        before. It's like opening a pack of Pokémon or Magic cards: you don't know what
+        you're going to get, and you get a variety pack of different levels. You're not
+        buying the same thing the person next to you bought.
       </p>
     </div>
     <div class="deck-links">
@@ -106,13 +105,34 @@
   </section>
 
   <section class="editorial-section" style="--accent: #ec4899">
-    <h2 class="section-title">How the Cards Work</h2>
+    <h2 class="section-title">What's on the Card</h2>
     <div class="prose">
-      <p>Each card is a sequence. Scan the QR code. Watch it animate. Learn it with your body.</p>
       <p>
-        Poker size, 2.5 x 3.5 inches. Front: the sequence as pictographs. Back: a mandala
-        generated from the sequence itself.
+        On the front: the sequence itself, the QR code, and the mandalas that show in blue
+        and red what the sequence looks like when performed.
       </p>
+      <p>On the back: a combination of the two mandalas, with information in each corner
+        that categorizes the card alongside other sequences.</p>
+      <ul>
+        <li>
+          <strong>Bottom left:</strong> the start position, which shows you where the
+          sequence starts and ends, and the prop that sequence is using on that card.
+        </li>
+        <li><strong>Bottom right:</strong> the number of steps in the sequence.</li>
+        <li>
+          <strong>Bottom middle:</strong> the difficulty level (the Kinetic Alphabet is
+          built into clear tiers of difficulty) and the LOOP type, rotated being the most
+          common and most understandable one.
+        </li>
+        <li>
+          <strong>Top right:</strong> the reversal pattern, a simple glyph showing whether
+          the props alternate spin direction over the course of the pattern.
+        </li>
+        <li>
+          <strong>Top left:</strong> the turn pattern: how many extra rotations the
+          sequence carries, and whether there's a pattern in that too.
+        </li>
+      </ul>
     </div>
   </section>
 
@@ -120,11 +140,10 @@
     <h2 class="section-title">Built on VTG</h2>
     <div class="prose">
       <p>
-        TKA was built on the foundation of Vulcan Tech Gospel (VTG), created by Noel Yee and
-        spinners at the Vulcan Lofts in Oakland. VTG gave flow arts its first shared language
-        for timing and direction. TKA takes that foundation and adds a combined notation:
-        both hands described together in a single letter. The VTG categories are still here,
-        built into every card as a classification layer.
+        This was built on a foundation of what Vulcan Tech Gospel did before it. VTG holds
+        the basis for this. TKA is the child of VTG in a way, and we pay respects to it by
+        taking it further. What TKA does has unique properties VTG cannot and would not
+        ever cover.
       </p>
     </div>
   </section>

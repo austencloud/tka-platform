@@ -6,7 +6,7 @@
   let positionLightsOn = $state(true);
 
   const DESCRIPTION =
-    "The Kinetic Alphabet is a notation system for flow arts. Write it down, read it back, reproduce it later.";
+    "The Kinetic Alphabet is a pictographic system that uses letters and pictures to represent flow arts sequences that can be read on a page like music notation.";
 </script>
 
 <svelte:head>
@@ -62,26 +62,12 @@
 <div class="editorial">
   <header class="editorial-header">
     <h1 class="page-title">Flow Arts Notation</h1>
-    <p class="page-subtitle">A notation system for flow arts</p>
+    <p class="page-subtitle">The Kinetic Alphabet</p>
   </header>
 
   <section class="editorial-section" style="--accent: #22c55e">
-    <div class="prose">
-      <p>
-        TKA is a notation system for flow arts. Other people have documented patterns before,
-        and that work matters. TKA tries to take it further.
-      </p>
-      <p>
-        Right now, flow arts knowledge lives mostly in videos scattered across the internet.
-        Sheet music tells musicians what to play. Scripts tell actors what to say. TKA does
-        that for prop movement: write it down, read it back, reproduce it later.
-      </p>
-    </div>
-  </section>
-
-  <section class="editorial-section" style="--accent: #14b8a6">
     <div class="section-head">
-      <h2 class="section-title">How It Works</h2>
+      <h2 class="section-title">What It Is</h2>
       <LightsToggleButton
         lightsOn={positionLightsOn}
         onToggle={() => (positionLightsOn = !positionLightsOn)}
@@ -90,72 +76,77 @@
     </div>
     <div class="prose">
       <p>
-        Each step of movement gets a pictograph. It shows where your hands are and how they
-        move on a grid. You can read it without memorizing terminology. Positions are simple:
-        hands across from each other, at the same point, or at a right angle.
+        The Kinetic Alphabet is a system for constructing, recording, and memorizing
+        choreography, so you can keep track of the sequences you build, share them with
+        friends, and create performances that rely on synchronicity and choreographed
+        elements rather than a free-flowing solo experience.
+      </p>
+      <p>
+        Another way to say it: TKA is a pictographic system that uses letters and pictures
+        to represent sequences that can be read on a page like music notation and
+        communicated with speech, text, or drawings.
       </p>
 
       <PositionTrioGrid lightsOn={positionLightsOn} />
 
       <p>
-        Pictographs also capture motion type, direction, and rotation. Letters are optional
-        but handy when you need to talk about a specific step during rehearsal.
+        At its core, the Kinetic Alphabet is a way to write down what comes to your head
+        when it comes to choreography grid work. It captures ideas that would otherwise be
+        ephemeral and unnamable, and gives them distinct, clear names that can be repeated,
+        spoken, and memorized, with a system of terminology underneath that maps out the
+        building blocks and boundaries of the system.
       </p>
+    </div>
+  </section>
+
+  <section class="editorial-section" style="--accent: #14b8a6">
+    <h2 class="section-title">How I Show People</h2>
+    <div class="prose">
       <p>
-        A sequence of movements becomes a word. "CAKE" is not a metaphor. It is four specific
-        steps of movement, each unambiguous, each reproducible.
+        When someone asks me what TKA is at a jam, I usually just open my phone. Look: you
+        can construct a sequence by going boop, boop, boop, and there's your sequence. Play
+        it back, and it's animated. Add effects and props. Then it gets cooler: you can
+        generate sequences. Put in your name, generate your name as a sequence, play it
+        back, and save it to your own collection.
       </p>
     </div>
   </section>
 
   <section class="editorial-section" style="--accent: #ec4899">
-    <h2 class="section-title">TKA Isn't the First Attempt</h2>
+    <h2 class="section-title">Built on VTG</h2>
     <div class="prose">
       <p>
-        Several theoretical frameworks have emerged over the past two decades. The Vulcan Tech
-        Gospel (VTG), developed by Noel Yee and Jordan Campbell in Oakland, CA, classifies
-        timing and direction relationships between two spinning props. Charlie Cushing's
-        9-Square Theory quantizes the space around the performer's body into a navigable grid.
-        Cushing and Ben Drexler developed QFT Notation, a precise but highly technical formula
-        for recording any movement.
-      </p>
-      <p>
-        These systems are valuable and TKA builds on their ideas. Where they focus on
-        classification and analysis, TKA focuses on a different problem: giving people a way
-        to write movement down and share it. For comparison, a QFT formula looks like this:
-        <code>a,b(h(+/-x+/-y+/-z)h')&#123;Class&#125;a',b'</code>. It is precise. TKA's
-        equivalent is a pictograph you can draw on a napkin, or a word like "CAKE" you can
-        text to a collaborator.
+        This was built on a foundation of what Vulcan Tech Gospel did before it. VTG holds
+        the basis for this. TKA is the child of VTG in a way, and we pay respects to it by
+        taking it further, not by claiming what we're doing is in a completely different
+        ballpark. What TKA does has unique properties VTG cannot and would not ever cover.
       </p>
     </div>
   </section>
 
   <section class="editorial-section" style="--accent: #f59e0b">
-    <h2 class="section-title">It Works on Paper</h2>
+    <h2 class="section-title">It Started on Paper</h2>
     <div class="prose">
       <p>
-        The system also works on paper. The pictographs are designed to be hand-drawn. The
-        letters are single characters. A choreographer with a pen and a printed grid template
-        can notate a sequence without any software.
+        For the first couple of years there was no software. Sequences got written by hand
+        or drawn in Adobe Illustrator. The point stands: if you were on a desert island,
+        you could record sequences on a rock with a system like this. All you need is pen
+        and paper. Two pens, ideally, so you can treat the pens as your spinning devices
+        while you figure out the pattern. No internet, no phone, no prop required.
       </p>
-      <p>
-        TKA uses symbols and pictures instead of English terminology, so it works across
-        languages. It works on paper and on screen.
-      </p>
+      <!-- Image slot: hand-drawn archival TKA pages. Austen has photos of the
+           originals above his desk; add when he provides them. -->
     </div>
   </section>
 
   <section class="editorial-section" style="--accent: #06b6d4">
     <h2 class="section-title">Where to Start</h2>
     <div class="prose">
-      <ul>
-        <li>
-          The free <a href="/guide/level-1">Level 1 guide</a> teaches positions, motions, and
-          your first words.
-        </li>
-        <li>The app animates any sequence. Free, no download required.</li>
-        <li><a href="/shop/choreography-cards">Choreo Cards</a> are the physical version.</li>
-      </ul>
+      <p>
+        Start with the <a href="/guide/level-1">guide</a>: it introduces all the concepts.
+        Then the <a href="/shop/choreography-cards">cards</a>: accessible ways to use those
+        concepts. Then the app: everything else you might possibly ever want to do.
+      </p>
     </div>
   </section>
 
@@ -178,10 +169,5 @@
   }
   .section-head .section-title {
     margin-bottom: 1.1rem;
-  }
-
-  code {
-    font-size: 0.85em;
-    word-break: break-all;
   }
 </style>
