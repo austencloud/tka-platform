@@ -87,7 +87,7 @@ export const GUIDE_BODY_PAGES: GuidePageEntry[] = [
   { id: "bl-mini-hoops", title: "Mini Hoops", level: 1, group: "1.1" },
   { id: "letters-type1", title: "Type 1 - Dual-Shifts", level: 0, group: "1.1" },
   { id: "lt1-abc-ghi", title: "Alpha/Beta Words", level: 1, group: "1.1" },
-  { id: "lt1-dj-ek-fl", title: "DJ, EK, FL", level: 1, group: "1.1" },
+  { id: "lt1-dj-ek-fl", title: "Compound Letters", level: 1, group: "1.1" },
   { id: "lt1-mp-nq-or-stuv", title: "MP, NQ, OR, STUV", level: 1, group: "1.1" },
   { id: "letters-type2", title: "Type 2 - Shifts", level: 0, group: "1.1" },
   { id: "lt2-wxyz", title: "WXYZ, ΣΔθΩ", level: 1, group: "1.1" },
