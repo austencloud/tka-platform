@@ -1,14 +1,58 @@
 <script lang="ts">
+  /**
+   * A single codex cell — one letter's pictograph plus its transition/name
+   * captions. Print/card callers (the /codex sheets, poster, Choreo Card
+   * printing) pass NOTHING beyond `cell`: they get the exact byte-identical
+   * static Double-Staff rendering this component always produced.
+   *
+   * The interactive guide reader (GuideCodexPage.svelte) additionally passes
+   * `propType`/`visibility`/`dataOverride`/`onSelect` — the SAME sheet, live:
+   * propType re-skins the pictograph, visibility toggles its layers, and
+   * `onSelect` makes the cell clickable via the shared sequence-selection
+   * primitive (`SelectionHit` + `.tka-seq-cell`, the same hover/select ring
+   * used elsewhere in the guide — see feedback_sequence_selection_primitive),
+   * never a hand-rolled button/hover style. No gray fill is added either way —
+   * the printable white-paper look is preserved.
+   */
   import GuidePictograph from "../../level-1/_components/GuidePictograph.svelte";
+  import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
+  import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { codexData, type CodexCellDef } from "../_data/codex-groups";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
-  let { cell }: { cell: CodexCellDef } = $props();
+  let {
+    cell,
+    propType = PropType.STAFF,
+    showGlyph = false,
+    showGrid = true,
+    showTKA = true,
+    showPositions = false,
+    showReversals = false,
+    showNonRadialPoints = false,
+    dataOverride,
+    onSelect,
+  }: {
+    cell: CodexCellDef;
+    propType?: PropType;
+    showGlyph?: boolean;
+    showGrid?: boolean;
+    showTKA?: boolean;
+    showPositions?: boolean;
+    showReversals?: boolean;
+    showNonRadialPoints?: boolean;
+    /** Live-transformed pictograph (rotate/mirror/color-swap) to render instead
+     *  of the canonical dataset. Only the interactive reader supplies this. */
+    dataOverride?: PictographData | null;
+    /** Presence makes the cell clickable — only the reader supplies it. */
+    onSelect?: (id: string) => void;
+  } = $props();
 
-  const data = codexData(cell.id);
+  const data = $derived(dataOverride ?? codexData(cell.id));
+  const selection = onSelect ? getSequenceSelection() : null;
 </script>
 
-<div class="codex-cell">
+{#snippet cellBody()}
   {#if cell.top}
     <span class="cell-top">{cell.top}</span>
   {/if}
@@ -16,9 +60,15 @@
     <GuidePictograph
       {data}
       size="sm"
-      showGrid={true}
+      showGrid={showGrid}
       showArrows={true}
-      propType={PropType.STAFF}
+      {propType}
+      showTKA={showTKA}
+      showTnD={showGlyph}
+      showElemental={showGlyph}
+      showPositions={showPositions}
+      showReversals={showReversals}
+      showNonRadialPoints={showNonRadialPoints}
       printMode={true}
       darkMode={false}
       eager={true}
@@ -27,7 +77,27 @@
   {#if cell.name}
     <span class="cell-name">{cell.name}</span>
   {/if}
-</div>
+{/snippet}
+
+{#if onSelect}
+  <div
+    class="codex-cell interactive tka-seq-cell"
+    class:is-hovered={selection?.isHovered(cell.id)}
+    class:is-selected={selection?.isSelected(cell.id)}
+  >
+    {@render cellBody()}
+    <SelectionHit
+      groupId={cell.id}
+      isGroupStart
+      label={`Animate ${cell.label}`}
+      onselect={() => onSelect(cell.id)}
+    />
+  </div>
+{:else}
+  <div class="codex-cell">
+    {@render cellBody()}
+  </div>
+{/if}
 
 <style>
   .codex-cell {
@@ -65,5 +135,12 @@
     font-size: 0.6rem;
     color: #555;
     line-height: 1.1;
+  }
+
+  /* Interactive (reader) cells: cursor affordance only — the hover/select
+   * ring comes entirely from the shared .tka-seq-cell primitive above, never
+   * a gray fill. Keeps the print-sheet white-paper look intact. */
+  .codex-cell.interactive {
+    cursor: pointer;
   }
 </style>

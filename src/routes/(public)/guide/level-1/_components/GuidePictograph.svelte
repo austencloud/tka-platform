@@ -20,6 +20,16 @@
     darkMode,
     /** Skip IntersectionObserver and render immediately — use for print/poster contexts. */
     eager = false,
+    /** Optional layer toggles — default to this component's long-standing
+     *  hardcoded values so every existing caller (which passes none of these)
+     *  renders byte-identically. Only the interactive guide Codex page passes
+     *  these explicitly, driven by its visibility controls. */
+    showTKA = true,
+    showTnD = false,
+    showElemental = false,
+    showPositions = false,
+    showReversals = false,
+    showNonRadialPoints = false,
   }: {
     data?: PictographData | null;
     pngFallback?: string;
@@ -32,6 +42,12 @@
     printMode?: boolean;
     darkMode?: boolean;
     eager?: boolean;
+    showTKA?: boolean;
+    showTnD?: boolean;
+    showElemental?: boolean;
+    showPositions?: boolean;
+    showReversals?: boolean;
+    showNonRadialPoints?: boolean;
   } = $props();
 
   let prepared: PreparedPictographData | null = $state(null);
@@ -128,12 +144,12 @@
         {showGrid}
         printMode={printModeEffective}
         {darkMode}
-        showTKA={true}
-        showReversals={false}
-        showTnD={false}
-        showElemental={false}
-        showPositions={false}
-        showNonRadialPoints={false}
+        {showTKA}
+        {showReversals}
+        {showTnD}
+        {showElemental}
+        {showPositions}
+        {showNonRadialPoints}
         blueMotionVisible={true}
         redMotionVisible={true}
       />

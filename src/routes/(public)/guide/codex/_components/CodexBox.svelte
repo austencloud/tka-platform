@@ -1,8 +1,25 @@
 <script lang="ts">
   import CodexCell from "./CodexCell.svelte";
   import type { CodexBoxDef } from "../_data/codex-groups";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { GuideCodexVisibility } from "../../level-1/_data/guide-codex-persistence";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
-  let { box }: { box: CodexBoxDef } = $props();
+  let {
+    box,
+    propType,
+    visibility,
+    getData,
+    onCellSelect,
+  }: {
+    box: CodexBoxDef;
+    /** Interactive-reader overrides — undefined for print/card callers, which
+     *  keeps this component's default (canonical) rendering untouched. */
+    propType?: PropType;
+    visibility?: GuideCodexVisibility;
+    getData?: (id: string) => PictographData | null | undefined;
+    onCellSelect?: (id: string) => void;
+  } = $props();
 </script>
 
 <div class="codex-box" class:full={box.full}>
@@ -14,7 +31,18 @@
   {/if}
   <div class="box-cells" style:--cols={box.cells.length}>
     {#each box.cells as cell (cell.id)}
-      <CodexCell {cell} />
+      <CodexCell
+        {cell}
+        {propType}
+        showGlyph={visibility?.showGlyph}
+        showGrid={visibility?.showGrid}
+        showTKA={visibility?.showTKA}
+        showPositions={visibility?.showPositions}
+        showReversals={visibility?.showReversals}
+        showNonRadialPoints={visibility?.showNonRadialPoints}
+        dataOverride={getData?.(cell.id)}
+        onSelect={onCellSelect}
+      />
     {/each}
   </div>
 </div>

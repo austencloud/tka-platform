@@ -1,16 +1,15 @@
 // Pure serialize/restore for the guide Codex page's durable view prefs.
-// Mirrors src/lib/features/learn/codex/state/codex-explorer-persistence.ts —
-// same shape (letter, grid mode, visibility), plus the guide-only addition of
-// a selected PropType (staff/club/buugeng/triad/fan/minihoop/hand). Kept
-// separate from the $state factory so it's unit-testable without a Svelte
-// runtime.
+// The page itself (GuideCodexPage.svelte) is the printable sheet — there is no
+// letter/grid-mode selection anymore (that lived in the retired Explorer-style
+// layout). What persists now is just the reader's two live controls: which
+// prop family renders across the whole sheet, and which layers are visible.
+// Kept separate from the $state factory (guide-codex-state.svelte.ts) so it's
+// unit-testable without a Svelte runtime.
 
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export const GUIDE_CODEX_STORAGE_KEY = "guide-codex-view-prefs";
-const GUIDE_CODEX_PREFS_VERSION = 1;
-
-export type GuideCodexGridMode = "diamond" | "box";
+const GUIDE_CODEX_PREFS_VERSION = 2;
 
 /** Prop families that actually render in the codex — see prop-type.ts. */
 export const GUIDE_CODEX_PROP_TYPES = [
@@ -34,15 +33,17 @@ export interface GuideCodexVisibility {
 
 export interface GuideCodexPrefs {
   version: number;
-  selectedLetter: string;
-  gridMode: GuideCodexGridMode;
-  visibility: GuideCodexVisibility;
   propType: PropType;
+  visibility: GuideCodexVisibility;
 }
 
+/** Matches the printed sheet's hardcoded defaults exactly (grid + TKA glyph
+ *  visible; the elemental/TnD glyph, positions, reversals and non-radial
+ *  markers hidden) — so switching into the reader shows the identical sheet
+ *  before the user touches a single control. */
 export function defaultGuideCodexVisibility(): GuideCodexVisibility {
   return {
-    showGlyph: true,
+    showGlyph: false,
     showGrid: true,
     showTKA: true,
     showPositions: false,
@@ -54,10 +55,8 @@ export function defaultGuideCodexVisibility(): GuideCodexVisibility {
 export function defaultGuideCodexPrefs(): GuideCodexPrefs {
   return {
     version: GUIDE_CODEX_PREFS_VERSION,
-    selectedLetter: "A",
-    gridMode: "diamond",
-    visibility: defaultGuideCodexVisibility(),
     propType: PropType.STAFF,
+    visibility: defaultGuideCodexVisibility(),
   };
 }
 
@@ -89,9 +88,7 @@ export function restoreGuideCodexPrefs(raw: string | null): GuideCodexPrefs {
     : d.propType;
   return {
     version: GUIDE_CODEX_PREFS_VERSION,
-    selectedLetter: typeof p.selectedLetter === "string" ? p.selectedLetter : d.selectedLetter,
-    gridMode: p.gridMode === "box" ? "box" : "diamond",
-    visibility: { ...d.visibility, ...(p.visibility ?? {}) },
     propType,
+    visibility: { ...d.visibility, ...(p.visibility ?? {}) },
   };
 }

@@ -1,16 +1,29 @@
 <script lang="ts">
   import CodexBox from "./CodexBox.svelte";
   import type { CodexSheetDef } from "../_data/codex-groups";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { GuideCodexVisibility } from "../../level-1/_data/guide-codex-persistence";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
   let {
     sheet,
     embed = false,
+    propType,
+    visibility,
+    getData,
+    onCellSelect,
   }: {
     sheet: CodexSheetDef;
     /** Render only the type blocks — no sheet chrome (size/padding/background)
      *  and no title — for hosting inside another page frame (the Level 1 guide's
      *  GuidePage owns the sheet + paints the manifest title). */
     embed?: boolean;
+    /** Interactive-reader overrides — all undefined for print/card callers,
+     *  which keeps this component's default (canonical) rendering untouched. */
+    propType?: PropType;
+    visibility?: GuideCodexVisibility;
+    getData?: (id: string) => PictographData | null | undefined;
+    onCellSelect?: (id: string) => void;
   } = $props();
 </script>
 
@@ -29,7 +42,7 @@
       </h2>
       <div class="type-boxes">
         {#each type.boxes as box, i (i)}
-          <CodexBox {box} />
+          <CodexBox {box} {propType} {visibility} {getData} {onCellSelect} />
         {/each}
       </div>
     </div>

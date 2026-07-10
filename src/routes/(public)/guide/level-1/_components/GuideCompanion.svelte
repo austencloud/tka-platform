@@ -72,6 +72,7 @@
   import { rotateSequenceGeometry } from "$lib/shared/create/services/sequence-derived-fields";
   import OptionPicker from "$lib/features/create/construct/option-picker/components/OptionPicker.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import GuideCodexControls from "./GuideCodexControls.svelte";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -87,6 +88,7 @@
     propType = "hand",
     stripKey = null,
     pageTitle = "",
+    isCodexMode = false,
   }: {
     sequence: SequenceData | null;
     onClose: () => void;
@@ -102,6 +104,10 @@
     stripKey?: string | null;
     /** Human page label for the Copy-for-AI header ("Guide: Level 1 › <title> › <word>"). */
     pageTitle?: string;
+    /** True while the reader's active page is the interactive Codex sheet —
+     *  renders GuideCodexControls above the player region (or above the "click
+     *  a sequence" hint, if nothing's been clicked yet). */
+    isCodexMode?: boolean;
   } = $props();
 
   let bpm = $state(60);
@@ -263,7 +269,7 @@
 
 <div class="companion">
   <div class="head">
-    <span class="ttl">Animation</span>
+    <span class="ttl">{isCodexMode && !sequence ? "Codex" : "Animation"}</span>
     <div class="head-actions">
       {#if authState.isAdmin}
         <CopyForAIButton
@@ -279,6 +285,9 @@
   </div>
 
   <div class="body">
+    {#if isCodexMode}
+      <GuideCodexControls />
+    {/if}
     {#if editing && stagedStrip}
       <div class="edit-panel">
         <div class="edit-strip" role="group" aria-label="Staged steps — tap a step to rebuild from there">

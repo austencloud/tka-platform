@@ -60,6 +60,20 @@
 
   let clicked = $state<SequenceData | null>(null);
   let companionOpen = $state(false);
+  // Codex mode: the active body page is the interactive Codex sheet (manifest
+  // id "codex"). The companion auto-opens to host its controls (prop family,
+  // visibility, transforms) even before any cell is clicked — see
+  // GuideCodexControls.svelte / guide-codex-state.svelte.ts.
+  const isCodexPage = $derived(GUIDE_BODY_PAGES[activeIndex - FRONT_MATTER_COUNT]?.id === "codex");
+  $effect(() => {
+    if (isCodexPage) {
+      companionOpen = true;
+    } else if (!clicked) {
+      // Leaving the Codex page with nothing animating — close the panel that
+      // was opened purely to host its controls.
+      companionOpen = false;
+    }
+  });
 
   // Golden step ring: the companion animates a clicked strip while THIS signal
   // rings the matching cell on the page's on-screen strip, in sync — the same
@@ -319,6 +333,7 @@
         propType={clickedPropType}
         stripKey={clickedKey}
         pageTitle={clickedPageTitle}
+        isCodexMode={isCodexPage}
         onStep={(s) => activeStep.report(s)}
         onClose={() => {
           companionOpen = false;
