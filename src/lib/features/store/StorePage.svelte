@@ -30,8 +30,14 @@
   const tndSkus = $derived(
     state.products.filter((p) => p.listing === "tnd-trilogy" && p.status === "active")
   );
+  // Flat $30 lives on the single purchasable custom SKU (dial funnel v2).
+  const loopCustomSku = $derived(
+    state.products.find(
+      (p) => p.listing === "loop-deck-custom" && p.status === "active"
+    ) ?? null
+  );
   const deckPrice = $derived(
-    deckSkus.length ? `$${(Math.min(...deckSkus.map((p) => p.price)) / 100).toFixed(0)}` : "$25"
+    loopCustomSku ? `$${(loopCustomSku.price / 100).toFixed(0)}` : "$30"
   );
   const tndPrice = $derived(
     tndSkus.length ? `$${(Math.min(...tndSkus.map((p) => p.price)) / 100).toFixed(0)}` : "$30"
@@ -96,9 +102,14 @@
         Real flow sequences, printed as playing cards. Every card holds a complete
         eight-count LOOP: read it, drill it, run it forever.
       </p>
-      <a class="hero-cta" href="/shop/loop-deck">
-        Build your deck <i class="fas fa-arrow-right" aria-hidden="true"></i>
-      </a>
+      <div class="hero-actions">
+        <a class="hero-cta" href="/shop/loop-deck">
+          Build your deck <i class="fas fa-arrow-right" aria-hidden="true"></i>
+        </a>
+        <a class="hero-cta secondary" href="/shop/choreography-cards">
+          See what's on a card
+        </a>
+      </div>
     </section>
 
     {#if state.error}
@@ -156,12 +167,12 @@
                 <span class="eyebrow">The deck</span>
                 <h2>LOOP Deck</h2>
                 <p class="deck-meta">
-                  {deckSkus.length} flavors · 54 cards each · poker size
+                  built to your dials · 54 cards · poker size
                 </p>
                 <LoopChips components={allComponents} />
                 <p class="deck-desc">
-                  Pick a transformation family. Each deck is a curated 54-card slice
-                  of it, every sequence ending exactly where it began.
+                  Pick a level, a length, and a flavor, or let the Variety Pack
+                  blend them. Every sequence ends exactly where it began.
                 </p>
                 <div class="deck-buy-row">
                   <span class="deck-price">{deckPrice}</span>
@@ -290,6 +301,7 @@
           <li><i class="fas fa-circle-info" aria-hidden="true"></i> 1 explainer card: what this deck is and where it sits in the full system</li>
           <li><i class="fas fa-file-lines" aria-hidden="true"></i> Free laminated quick-reference sheet</li>
           <li><i class="fas fa-box-open" aria-hidden="true"></i> Foldable deck box</li>
+          <li><i class="fas fa-gift" aria-hidden="true"></i> 59 cards in a 54-card box. We count generously.</li>
         </ul>
       </section>
 
@@ -381,6 +393,25 @@
   .hero-cta:hover {
     filter: brightness(1.08);
     transform: translateY(-2px);
+  }
+
+  .hero-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  /* Newcomer on-ramp: the anatomy explainer. Same pill shape, quiet fill. */
+  .hero-cta.secondary {
+    background: rgba(111, 140, 255, 0.12);
+    border: 1px solid rgba(139, 108, 255, 0.45);
+    color: var(--text-primary, #e8e8f2);
+    font-weight: 600;
+  }
+  .hero-cta.secondary:hover {
+    background: rgba(111, 140, 255, 0.2);
   }
 
   /* ---------- the starter pack (flagship band) ---------- */
