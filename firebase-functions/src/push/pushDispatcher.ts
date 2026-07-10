@@ -34,6 +34,17 @@ const STALE_TOKEN_ERRORS = new Set([
 ]);
 
 /**
+ * A token whose device hasn't opened the app in a very long time is almost
+ * always dead. The client stamps `lastRefreshed` on every registration (each
+ * app open), so a frozen `lastRefreshed` marks an abandoned device. 270 days
+ * follows Google's own FCM hygiene guidance (refresh monthly; treat long-idle
+ * tokens as stale). Pruning by age reclaims two classes that error-based
+ * cleanup misses: legacy tokens that predate per-device dedup, and dead
+ * subscriptions FCM keeps "accepting" (returns success) yet never delivers to.
+ */
+const STALE_TOKEN_MAX_AGE_MS = 270 * 24 * 60 * 60 * 1000;
+
+/**
  * Maps notification types to their preference key in the user's
  * notification preferences document. Types not in this map are
  * either always-on (system-announcement) or handled elsewhere
@@ -208,6 +219,12 @@ export async function getUnreadCount(userId: string): Promise<number> {
 /**
  * Fetch all active FCM tokens for a user.
  * Tokens are stored as documents in users/{userId}/fcmTokens.
+ *
+ * Opportunistically prunes malformed docs (no token) and abandoned-device
+ * tokens (lastRefreshed older than STALE_TOKEN_MAX_AGE_MS) so every send
+ * targets only live devices and the collection can't accumulate zombies that
+ * FCM never flags as invalid. Cleanup is awaited only when something is
+ * actually stale, so the common path adds no latency.
  */
 async function getActiveTokens(userId: string): Promise<string[]> {
   const tokensSnapshot = await db
@@ -216,9 +233,37 @@ async function getActiveTokens(userId: string): Promise<string[]> {
     .collection("fcmTokens")
     .get();
 
-  return tokensSnapshot.docs
-    .map((doc) => doc.data().token as string)
-    .filter(Boolean);
+  const now = Date.now();
+  const live: string[] = [];
+  const staleRefs: admin.firestore.DocumentReference[] = [];
+
+  tokensSnapshot.docs.forEach((doc) => {
+    const data = doc.data();
+    const token = data.token as string | undefined;
+    if (!token) {
+      staleRefs.push(doc.ref);
+      return;
+    }
+    const refreshedAt = (
+      data.lastRefreshed as admin.firestore.Timestamp | undefined
+    )?.toMillis?.();
+    if (refreshedAt !== undefined && now - refreshedAt > STALE_TOKEN_MAX_AGE_MS) {
+      staleRefs.push(doc.ref);
+      return;
+    }
+    live.push(token);
+  });
+
+  if (staleRefs.length > 0) {
+    await Promise.all(staleRefs.map((ref) => ref.delete())).catch((error) => {
+      console.warn(`Age-based token prune failed for ${userId}:`, error);
+    });
+    console.log(
+      `Pruned ${staleRefs.length} abandoned FCM token(s) for user ${userId}`
+    );
+  }
+
+  return live;
 }
 
 /**
