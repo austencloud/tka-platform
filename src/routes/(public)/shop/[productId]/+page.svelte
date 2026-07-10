@@ -38,7 +38,9 @@
                   availability:
                     p.status === "active"
                       ? "https://schema.org/InStock"
-                      : "https://schema.org/PreOrder",
+                      : p.status === "sold-out"
+                        ? "https://schema.org/SoldOut"
+                        : "https://schema.org/PreOrder",
                   url: canonical,
                 },
               }
