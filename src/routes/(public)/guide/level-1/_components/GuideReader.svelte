@@ -97,7 +97,17 @@
       behavior: "smooth",
       block: "start",
     });
+    // Settle-correction: the nearest-center recompute runs on every
+    // 'scroll'/'scrollend' event during the animation via a throttled rAF, so
+    // it can land on activeIndex === i mid-transit and never get a final
+    // correcting pass if the tab is backgrounded/inactive enough to starve
+    // requestAnimationFrame (observed: isCodexPage — and any page's nav
+    // highlight — can go stale after a nav click otherwise). Calling the pure
+    // recompute directly (no rAF) once the smooth scroll should be done closes
+    // that gap without touching the scroll-event path at all.
+    settleTimer = setTimeout(recomputeActiveIndex, 500);
   }
+  let settleTimer: ReturnType<typeof setTimeout> | undefined;
 
   // Nearest-to-viewport-centre page becomes the active (highlighted) one, and
   // the raw scrollTop is persisted so a remount/reload can restore it.
@@ -122,31 +132,40 @@
           return slug ? indexForSlug(slug) : null;
         })();
   let restoring = $state(deepLinkIndex !== null || savedScrollTarget() > 0);
+  // The actual nearest-to-center recompute — pulled out of the rAF wrapper so
+  // the settle-correction timer in go() can call it directly. If a scroll
+  // handler's rAF never gets scheduled (backgrounded/inactive tab throttling
+  // can starve it indefinitely), this direct call still lands, so activeIndex
+  // (and anything derived from it, like isCodexPage) can't get stuck stale
+  // after a nav click's smooth scroll settles.
+  function recomputeActiveIndex() {
+    if (!docWrap) return;
+    const cont = docWrap.getBoundingClientRect();
+    const mid = cont.top + cont.height / 2;
+    let best = 0;
+    let bestDist = Infinity;
+    docWrap.querySelectorAll<HTMLElement>(".reader-page").forEach((p, i) => {
+      const r = p.getBoundingClientRect();
+      const d = Math.abs(r.top + r.height / 2 - mid);
+      if (d < bestDist) {
+        bestDist = d;
+        best = i;
+      }
+    });
+    if (best !== activeIndex) activeIndex = best;
+    if (restoring) return; // don't clobber the saved target mid-restore
+    try {
+      sessionStorage.setItem(SCROLL_KEY, String(docWrap.scrollTop));
+    } catch {
+      // sessionStorage unavailable (private mode / disabled) — scroll just
+      // won't persist; not worth surfacing.
+    }
+  }
   function onScroll() {
     if (scrollRaf) return;
     scrollRaf = requestAnimationFrame(() => {
       scrollRaf = 0;
-      if (!docWrap) return;
-      const cont = docWrap.getBoundingClientRect();
-      const mid = cont.top + cont.height / 2;
-      let best = 0;
-      let bestDist = Infinity;
-      docWrap.querySelectorAll<HTMLElement>(".reader-page").forEach((p, i) => {
-        const r = p.getBoundingClientRect();
-        const d = Math.abs(r.top + r.height / 2 - mid);
-        if (d < bestDist) {
-          bestDist = d;
-          best = i;
-        }
-      });
-      if (best !== activeIndex) activeIndex = best;
-      if (restoring) return; // don't clobber the saved target mid-restore
-      try {
-        sessionStorage.setItem(SCROLL_KEY, String(docWrap.scrollTop));
-      } catch {
-        // sessionStorage unavailable (private mode / disabled) — scroll just
-        // won't persist; not worth surfacing.
-      }
+      recomputeActiveIndex();
     });
   }
 
@@ -320,6 +339,7 @@
       class:restoring
       bind:this={docWrap}
       onscroll={onScroll}
+      onscrollend={onScroll}
       style="--w:{PAGE_W * scale}px; --h:{PAGE_H * scale}px"
     >
       <GuideDocument built={BUILT} page={sheetFrame} />
