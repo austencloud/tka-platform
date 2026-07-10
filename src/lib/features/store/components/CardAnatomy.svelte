@@ -15,7 +15,10 @@
   import type { CoverCard } from "../domain/models/product";
   import CardBack from "$lib/features/choreo-card/components/card-back/CardBack.svelte";
 
-  let { highlight = null }: { highlight?: string | null } = $props();
+  let {
+    highlight = null,
+    onhighlight,
+  }: { highlight?: string | null; onhighlight?: (id: string | null) => void } = $props();
 
   let card: CoverCard | null = $state(null);
 
@@ -60,11 +63,8 @@
 
   let backBox: HTMLElement | null = $state(null);
 
-  const activeRegion = $derived.by(() => {
-    if (!highlight) return null;
-    const front = FRONT_REGIONS[highlight];
-    if (front) return { face: "front" as const, ...front };
-    const sel = BACK_SELECTORS[highlight];
+  function measureBack(id: string) {
+    const sel = BACK_SELECTORS[id];
     if (!sel || !backBox) return null;
     const els = backBox.querySelectorAll(sel);
     if (els.length === 0) return null;
@@ -78,13 +78,48 @@
       bottom = Math.max(bottom, r.bottom);
     }
     return {
-      face: "back" as const,
       x: ((left - b.left) / b.width) * 100 - PAD,
       y: ((top - b.top) / b.height) * 100 - PAD,
       w: ((right - left) / b.width) * 100 + 2 * PAD,
       h: ((bottom - top) / b.height) * 100 + 2 * PAD,
     };
+  }
+
+  const activeRegion = $derived.by(() => {
+    if (!highlight) return null;
+    const front = FRONT_REGIONS[highlight];
+    if (front) return { face: "front" as const, ...front };
+    const rg = measureBack(highlight);
+    return rg ? { face: "back" as const, ...rg } : null;
   });
+
+  // Reverse direction: pointing at a card part highlights it (and the page's
+  // legend row via onhighlight). Same rects the spotlight uses, so the hit
+  // zones and the drawn regions can't disagree.
+  const inRect = (x: number, y: number, r: { x: number; y: number; w: number; h: number }) =>
+    x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+
+  function pointerPct(e: PointerEvent) {
+    const b = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    return { x: ((e.clientX - b.left) / b.width) * 100, y: ((e.clientY - b.top) / b.height) * 100 };
+  }
+
+  function frontHit(e: PointerEvent) {
+    const p = pointerPct(e);
+    for (const [id, rg] of Object.entries(FRONT_REGIONS)) {
+      if (inRect(p.x, p.y, rg)) return onhighlight?.(id);
+    }
+    onhighlight?.(null);
+  }
+
+  function backHit(e: PointerEvent) {
+    const p = pointerPct(e);
+    for (const id of Object.keys(BACK_SELECTORS)) {
+      const rg = measureBack(id);
+      if (rg && inRect(p.x, p.y, rg)) return onhighlight?.(id);
+    }
+    onhighlight?.(null);
+  }
 </script>
 
 {#snippet spotlight(face: "front" | "back")}
@@ -98,16 +133,30 @@
 
 {#if card}
   <div class="anatomy">
-    <figure class="face">
-      <div class="card-box" class:dimmable={activeRegion?.face === "front"}>
+    <figure class="face" class:backgrounded={activeRegion && activeRegion.face !== "front"}>
+      <!-- Hover affordance only; the legend buttons are the keyboard/AT path. -->
+      <div
+        class="card-box"
+        role="presentation"
+        class:dimmable={activeRegion?.face === "front"}
+        onpointermove={frontHit}
+        onpointerleave={() => onhighlight?.(null)}
+      >
         <img src={card.imageUrl} alt="Front of a real Choreo Card" loading="lazy" />
         {@render spotlight("front")}
       </div>
       <figcaption>Front</figcaption>
     </figure>
 
-    <figure class="face">
-      <div class="card-box back" bind:this={backBox} class:dimmable={activeRegion?.face === "back"}>
+    <figure class="face" class:backgrounded={activeRegion && activeRegion.face !== "back"}>
+      <div
+        class="card-box back"
+        role="presentation"
+        bind:this={backBox}
+        class:dimmable={activeRegion?.face === "back"}
+        onpointermove={backHit}
+        onpointerleave={() => onhighlight?.(null)}
+      >
         <CardBack sequence={card.sequence} />
         {@render spotlight("back")}
       </div>
@@ -131,6 +180,12 @@
     align-items: center;
     gap: 0.6rem;
     flex: 0 1 300px;
+    transition: opacity 200ms ease;
+  }
+
+  /* When the focus is on the other face, this one steps back. */
+  .face.backgrounded {
+    opacity: 0.45;
   }
 
   .card-box {
@@ -141,6 +196,7 @@
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    cursor: crosshair;
   }
 
   .card-box img {
@@ -178,6 +234,9 @@
   @media (prefers-reduced-motion: reduce) {
     .region {
       animation: none;
+    }
+    .face {
+      transition: none;
     }
   }
 

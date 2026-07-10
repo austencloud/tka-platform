@@ -172,16 +172,16 @@
   <section class="editorial-section anatomy-section" style="--accent: #ec4899">
     <span class="section-kicker">Anatomy</span>
     <h2 class="section-title">What's on the Card</h2>
-    <p class="anatomy-hint">Point at a part below to see it on the card.</p>
+    <p class="anatomy-hint">Point at any part of the card, or any row in the list. Its match lights up.</p>
 
     <div class="anatomy-layout">
       {#if browser}
         {#await import("$lib/features/store/components/CardAnatomy.svelte") then { default: CardAnatomy }}
-          <CardAnatomy {highlight} />
+          <CardAnatomy {highlight} onhighlight={(id) => (highlight = id)} />
         {/await}
       {/if}
 
-      <div class="legend">
+      <div class="legend" class:dimming={highlight !== null}>
         <div class="legend-col">
           <h3 class="legend-title">Front</h3>
           <div class="legend-list" role="list">
@@ -320,12 +320,35 @@
     border-radius: 10px;
     cursor: pointer;
     font: inherit;
-    transition: background 140ms ease;
+    transition:
+      background 140ms ease,
+      opacity 180ms ease,
+      box-shadow 180ms ease;
   }
   .legend-row:hover,
   .legend-row:focus-visible,
   .legend-row.active {
     background: oklch(0.3 0.03 270 / 0.22);
+  }
+  /* Focused pair lights up; every other row steps back. */
+  .legend-row.active {
+    background: oklch(0.33 0.04 270 / 0.45);
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--accent, #ec4899) 40%, transparent),
+      0 0 22px color-mix(in oklch, var(--accent, #ec4899) 16%, transparent);
+  }
+  .legend.dimming .legend-row:not(.active) {
+    opacity: 0.35;
+  }
+  .legend.dimming .legend-title {
+    opacity: 0.5;
+    transition: opacity 180ms ease;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .legend-row,
+    .legend.dimming .legend-title {
+      transition: none;
+    }
   }
   .legend-row:focus-visible {
     outline: 2px solid oklch(0.7 0.1 275 / 0.7);
