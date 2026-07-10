@@ -9,7 +9,7 @@
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import type { TimeSignatureKey } from "$lib/shared/foundation/domain/models/time-signature";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { createStepData } from "$lib/shared/create/factories/create-step-data";
+  import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
   import { onMount } from "svelte";
   import {
     createStepGridDisplayState,

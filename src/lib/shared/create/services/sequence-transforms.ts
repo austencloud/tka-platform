@@ -17,7 +17,7 @@ import {
   updateSequenceData,
   createSequenceData,
 } from "$lib/shared/foundation/domain/models/sequence-data";
-import { createStepData } from "$lib/shared/create/factories/create-step-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";

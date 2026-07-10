@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { deriveSequenceLetters } from "./sequence-transforms";
-import { createStepData } from "$lib/shared/create/factories/create-step-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {

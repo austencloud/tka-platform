@@ -5,7 +5,7 @@ import {
   rotateSequenceGeometry,
 } from "./sequence-derived-fields";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { createStepData } from "$lib/shared/create/factories/create-step-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {

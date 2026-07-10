@@ -9,7 +9,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { createPictographData } from "$lib/shared/pictograph/shared/domain/factories/create-pictograph-data";
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { createStepData } from "$lib/shared/create/factories/create-step-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import {

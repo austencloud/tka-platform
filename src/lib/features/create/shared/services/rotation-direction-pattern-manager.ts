@@ -67,7 +67,7 @@ import {
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
-import { createStepData } from "$lib/shared/create/factories/create-step-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 
 const logger = createComponentLogger("RotationDirectionPatternManager");

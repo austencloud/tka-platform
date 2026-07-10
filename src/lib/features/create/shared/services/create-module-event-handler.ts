@@ -19,7 +19,7 @@ import {
   updateEndOrientations,
 } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import { createStepData } from "$lib/shared/create/factories/create-step-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 
 import { getConstructCoordinator } from "$lib/features/create/shared/get-construct-coordinator";
 

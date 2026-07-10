@@ -28,7 +28,7 @@ import {
   lookupLetter,
 } from "$lib/features/assemble-lab/services/builder-step-converter";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import { createStepData } from "$lib/shared/create/factories/create-step-data";
+import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
