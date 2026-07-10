@@ -99,7 +99,10 @@ const seedGateWithTimeout = Promise.race([
  * set; safe to call again when products stream in.
  */
 export function prewarmCovers(cards: readonly CoverCard[]): void {
+  // Baked cards (imageUrl) load as plain images — only unbaked ones need the
+  // worker pipeline seeded.
   const sequences = cards
+    .filter((c) => !c.imageUrl)
     .map((c) => c.sequence && hydrateCached(c.sequence))
     .filter(Boolean) as SequenceData[];
   if (!sequences.length) return;

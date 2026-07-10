@@ -79,6 +79,9 @@
 <!-- Default to Coming Soon while auth resolves: the common visitor is non-admin,
      so this avoids a blank flash. Admin briefly sees Coming Soon, then the shop. -->
 {#if ready && isAdmin}
+  {#await import("$lib/features/store/components/BakeCoversButton.svelte") then { default: BakeCoversButton }}
+    <BakeCoversButton />
+  {/await}
   {#await import("$lib/features/store/StorePage.svelte") then { default: StorePage }}
     <StorePage showDrafts />
   {/await}

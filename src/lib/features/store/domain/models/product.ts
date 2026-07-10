@@ -23,6 +23,10 @@ export interface CoverCard {
   readonly iconPath?: string;
   /** Footer center label (e.g. "Split-Same" or "Rotated LOOP"). */
   readonly footerCenter?: string;
+  /** Baked render of this card front (Firebase Storage URL). When present the
+   *  fan loads this image directly instead of running the print pipeline in
+   *  the visitor's browser. Written by the admin cover bake. */
+  readonly imageUrl?: string;
 }
 
 export interface Product {

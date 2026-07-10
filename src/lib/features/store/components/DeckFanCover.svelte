@@ -88,6 +88,11 @@
     for (const c of shown) {
       const k = cardKey(c);
       if (urls[k]) continue;
+      // Baked covers load straight from Storage — no print pipeline.
+      if (c.imageUrl) {
+        urls[k] = c.imageUrl;
+        continue;
+      }
       renderCoverFront(c, { deckId, deckName })
         .then((url) => {
           urls[k] = url;
