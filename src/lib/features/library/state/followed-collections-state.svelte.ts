@@ -1,13 +1,17 @@
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
+import { isSmartCollection } from "$lib/shared/library/domain/models/collection";
 import {
 	followCollection,
 	subscribeToFollowedCollections,
 	unfollowCollection,
 	type FollowedCollectionRef,
 } from "$lib/shared/library/services/followed-collections";
-import { getPublicCollection } from "$lib/features/library/services/public-collection-loader";
+import {
+	getPublicCollection,
+	countPublicMembers,
+} from "$lib/features/library/services/public-collection-loader";
 import { getUserDisplayNames } from "$lib/shared/community/services/user-repository";
 
 export interface FollowedCollection {
@@ -120,11 +124,23 @@ class FollowedCollectionsState {
 			// not one profile read per follow.
 			const names = await getUserDisplayNames(surviving.map((s) => s.ref.ownerId));
 
+			// Followers only ever see a collection's PUBLIC members, but the doc's
+			// sequenceCount includes the owner's private ones — count against the
+			// public index instead so the rail agrees with the opened view. Smart
+			// collections derive membership from filterSpec; keep their stored count.
+			const publicCounts = await Promise.all(
+				surviving.map(({ col }) =>
+					isSmartCollection(col)
+						? Promise.resolve(col.sequenceCount)
+						: countPublicMembers(col.sequenceIds).catch(() => col.sequenceCount),
+				),
+			);
+
 			// A newer snapshot's resolution may have started while this one awaited.
 			if (epoch !== this.resolveEpoch) return;
 			this.items = surviving.map(
-				({ ref, col }): FollowedCollection => ({
-					collection: col,
+				({ ref, col }, i): FollowedCollection => ({
+					collection: { ...col, sequenceCount: publicCounts[i]! },
 					ownerId: ref.ownerId,
 					ownerName: names.get(ref.ownerId) ?? "Someone",
 				}),

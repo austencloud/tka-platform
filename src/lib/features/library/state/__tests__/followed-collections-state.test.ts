@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
 	followCollection: vi.fn(),
 	unfollowCollection: vi.fn(),
 	getPublicCollection: vi.fn(),
+	// Public-member count for the rail label; tests assert the passthrough.
+	countPublicMembers: vi.fn(async (ids: readonly string[]) => ids.length),
 	getUserDisplayNames: vi.fn(),
 	toastError: vi.fn(),
 	snapshotCb: null as ((refs: FollowedCollectionRef[]) => void) | null,
@@ -22,6 +24,7 @@ vi.mock("$lib/shared/library/services/followed-collections", () => ({
 }));
 vi.mock("$lib/features/library/services/public-collection-loader", () => ({
 	getPublicCollection: mocks.getPublicCollection,
+	countPublicMembers: mocks.countPublicMembers,
 }));
 vi.mock("$lib/shared/community/services/user-repository", () => ({
 	getUserDisplayNames: mocks.getUserDisplayNames,
@@ -85,6 +88,20 @@ describe("followedCollectionsState", () => {
 		expect(survivor?.collection.id).toBe("c1");
 		expect(survivor?.ownerName).toBe("Alice");
 		expect(followedCollectionsState.loading).toBe(false);
+	});
+
+	it("shows the public member count, not the owner's stored total", async () => {
+		// Owner has 4 members but only 1 is public — the rail must say 1.
+		mocks.getPublicCollection.mockResolvedValue(
+			col("c1", { sequenceIds: ["a", "b", "c", "d"], sequenceCount: 4 }),
+		);
+		mocks.countPublicMembers.mockResolvedValueOnce(1);
+		mocks.getUserDisplayNames.mockResolvedValue(new Map([["o1", "Alice"]]));
+
+		await emit([{ ownerId: "o1", collectionId: "c1" }]);
+
+		expect(mocks.countPublicMembers).toHaveBeenCalledWith(["a", "b", "c", "d"]);
+		expect(followedCollectionsState.items[0]?.collection.sequenceCount).toBe(1);
 	});
 
 	it("drops a follow whose collection is null (deleted/unpublished)", async () => {
