@@ -14,7 +14,7 @@ Acceptable subagent models: **Opus 4.8**, **Opus 4.6**, or **Sonnet** (Haiku for
 
 The Agent tool's `model` param only accepts `sonnet` / `opus` / `haiku` — no version. Bare `opus` can resolve to 4.7. Therefore:
 
-- **For capable-model subagent work, OMIT the `model` param entirely.** The agent then inherits the main-loop model (the resolved session model, currently Opus 4.8). This is the default-correct choice.
+- **For capable-model subagent work, OMIT the `model` param only when inheriting the session model is intended.** Omitting inherits the main-loop model. When the session runs Opus 4.8 that is the default-correct choice. When the session runs **Fable**, omitting spawns a Fable subagent at ~2x cost — see `fable-routing.md`: non-Fable-tier work gets explicit `sonnet`/`haiku`.
 - Explicit `model: "sonnet"` is fine for standard/mechanical tasks. `model: "haiku"` for trivial ones.
 - **NEVER pass `model: "opus"` explicitly** unless you have confirmed it maps to 4.8/4.6, not 4.7. When unsure, omit.
 

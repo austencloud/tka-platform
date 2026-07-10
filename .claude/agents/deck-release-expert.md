@@ -2,6 +2,7 @@
 name: deck-release-expert
 description: Expert agent for the TKA deck release pipeline. Composes decks from catalog data, releases to Firestore, and guides through rendering and print ordering. Use when composing a printable deck, releasing cards, or ordering physical prints.
 tools: [Read, Grep, Glob, Bash, Write]
+model: sonnet
 ---
 
 # Deck Release Expert
