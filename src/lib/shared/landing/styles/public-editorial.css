@@ -83,27 +83,26 @@
   font-style: italic;
 }
 
-/* ── sections ── */
+/* ── sections ──
+   Type-led: a hairline rule and an uppercase kicker carry the section
+   boundary; the accent color lives in the kicker text only. (The old
+   fading accent spine is gone — decoration was doing structure's job.) */
 .editorial-section {
   position: relative;
-  margin: 0 0 3.4rem;
-  padding-left: 1.7rem;
+  margin: 0 0 4rem;
 }
-/* Structural accent spine: the per-influence color runs the height of the
-   section and fades out — a real border, replacing the old floating dash. */
-.editorial-section:not(.panel)::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0.35rem;
-  bottom: 0.6rem;
-  width: 2px;
-  border-radius: 2px;
-  background: linear-gradient(
-    180deg,
-    var(--accent, oklch(0.7 0.13 275)) 0%,
-    transparent 88%
-  );
+.editorial-section:not(.panel) {
+  border-top: 1px solid oklch(0.6 0.02 270 / 0.14);
+  padding-top: 2rem;
+}
+.section-kicker {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 640;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in oklch, var(--accent, oklch(0.7 0.13 275)) 62%, oklch(0.72 0.01 270));
+  margin: 0 0 0.55rem;
 }
 .editorial-section.panel {
   padding: 2rem 1.9rem;

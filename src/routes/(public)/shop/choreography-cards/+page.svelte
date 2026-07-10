@@ -19,38 +19,54 @@
   ];
 
   const frontLegend = [
-    { n: 1, text: "The sequence's word, spelled in TKA letters." },
-    { n: 2, text: "The start position: where the sequence starts and ends." },
-    { n: 3, text: "The sequence itself, step by step, as pictographs." },
+    { id: "word", term: "The word", text: "The sequence's word, spelled in TKA letters." },
     {
-      n: 4,
+      id: "start",
+      term: "Start",
+      text: "The start position: where the sequence starts and ends.",
+    },
+    { id: "steps", term: "The steps", text: "The sequence itself, step by step, as pictographs." },
+    {
+      id: "mandalas",
+      term: "Mandalas",
       text: "The mandalas that show in blue and red what the sequence looks like when performed.",
     },
     {
-      n: 5,
-      text: "The QR code. Scan it to immediately visualize this sequence with any prop at any speed, save it to your personal catalog, and open practice mode.",
+      id: "qr",
+      term: "QR code",
+      text: "Scan it to immediately visualize this sequence with any prop at any speed, save it to your personal catalog, and open practice mode.",
     },
   ];
 
   const backLegend = [
     {
-      n: 6,
-      text: "Top left: the turn pattern. How many extra rotations the sequence carries, and whether there's a pattern in that too.",
+      id: "turn",
+      term: "Turn pattern",
+      text: "How many extra rotations the sequence carries, and whether there's a pattern in that too.",
     },
     {
-      n: 7,
-      text: "Top right: the reversal pattern. A simple glyph showing whether the props alternate spin direction over the course of the pattern.",
+      id: "reversal",
+      term: "Reversal pattern",
+      text: "A simple glyph showing whether the props alternate spin direction over the course of the pattern.",
     },
     {
-      n: 8,
-      text: "Center: a combination of the two mandalas, plus the difficulty level (the Kinetic Alphabet is built into clear tiers of difficulty) and the LOOP type, rotated being the most common and most understandable one.",
+      id: "center",
+      term: "Combined mandala",
+      text: "A combination of the two mandalas, plus the difficulty level (the Kinetic Alphabet is built into clear tiers of difficulty) and the LOOP type, rotated being the most common and most understandable one.",
     },
     {
-      n: 9,
-      text: "Bottom left: the start position, which shows you where the sequence starts and ends, and the prop that sequence is using on that card.",
+      id: "startpos",
+      term: "Start position",
+      text: "Shows you where the sequence starts and ends, and the prop that sequence is using on that card.",
     },
-    { n: 10, text: "Bottom right: the number of steps in the sequence." },
+    { id: "stepcount", term: "Step count", text: "The number of steps in the sequence." },
   ];
+
+  let highlight = $state<string | null>(null);
+
+  function toggle(id: string) {
+    highlight = highlight === id ? null : id;
+  }
 </script>
 
 <svelte:head>
@@ -108,6 +124,7 @@
 
   <div class="pair">
     <section class="editorial-section" style="--accent: #22c55e">
+      <span class="section-kicker">The cards</span>
       <div class="prose">
         <p>
           Each card holds a sequence. Scan the QR code and it takes you to a page where you
@@ -119,6 +136,7 @@
     </section>
 
     <section class="editorial-section" style="--accent: #14b8a6">
+      <span class="section-kicker">The decks</span>
       <h2 class="section-title">Every Deck Is Different</h2>
       <div class="prose">
         <p>
@@ -142,42 +160,61 @@
   </div>
 
   <section class="editorial-section anatomy-section" style="--accent: #ec4899">
+    <span class="section-kicker">Anatomy</span>
     <h2 class="section-title">What's on the Card</h2>
+    <p class="anatomy-hint">Point at a part below to see it on the card.</p>
 
-    {#if browser}
-      {#await import("$lib/features/store/components/CardAnatomy.svelte") then { default: CardAnatomy }}
-        <CardAnatomy />
-      {/await}
-    {/if}
+    <div class="anatomy-layout">
+      {#if browser}
+        {#await import("$lib/features/store/components/CardAnatomy.svelte") then { default: CardAnatomy }}
+          <CardAnatomy {highlight} />
+        {/await}
+      {/if}
 
-    <div class="legend">
-      <div class="legend-col">
-        <h3 class="legend-title">Front</h3>
-        <ol class="legend-list">
-          {#each frontLegend as item}
-            <li>
-              <span class="legend-badge">{item.n}</span>
-              <span>{item.text}</span>
-            </li>
-          {/each}
-        </ol>
-      </div>
-      <div class="legend-col">
-        <h3 class="legend-title">Back</h3>
-        <ol class="legend-list">
-          {#each backLegend as item}
-            <li>
-              <span class="legend-badge">{item.n}</span>
-              <span>{item.text}</span>
-            </li>
-          {/each}
-        </ol>
+      <div class="legend">
+        <div class="legend-col">
+          <h3 class="legend-title">Front</h3>
+          <div class="legend-list" role="list">
+            {#each frontLegend as item}
+              <button
+                type="button"
+                class="legend-row"
+                class:active={highlight === item.id}
+                onmouseenter={() => (highlight = item.id)}
+                onmouseleave={() => (highlight = null)}
+                onclick={() => toggle(item.id)}
+              >
+                <span class="legend-term">{item.term}</span>
+                <span class="legend-text">{item.text}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
+        <div class="legend-col">
+          <h3 class="legend-title">Back</h3>
+          <div class="legend-list" role="list">
+            {#each backLegend as item}
+              <button
+                type="button"
+                class="legend-row"
+                class:active={highlight === item.id}
+                onmouseenter={() => (highlight = item.id)}
+                onmouseleave={() => (highlight = null)}
+                onclick={() => toggle(item.id)}
+              >
+                <span class="legend-term">{item.term}</span>
+                <span class="legend-text">{item.text}</span>
+              </button>
+            {/each}
+          </div>
+        </div>
       </div>
     </div>
   </section>
 
   <div class="pair">
     <section class="editorial-section" style="--accent: #f59e0b">
+      <span class="section-kicker">Lineage</span>
       <h2 class="section-title">Built on VTG</h2>
       <div class="prose">
         <p>
@@ -190,6 +227,7 @@
     </section>
 
     <section class="editorial-section" style="--accent: #06b6d4">
+      <span class="section-kicker">Getting started</span>
       <h2 class="section-title">New to Notation?</h2>
       <div class="prose">
         <p>
@@ -214,8 +252,14 @@
       gap: 2.5rem;
       align-items: start;
     }
+    .anatomy-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      gap: 2.5rem;
+      align-items: start;
+    }
     .legend {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
     }
   }
 
@@ -223,50 +267,71 @@
     margin-top: 2rem;
   }
 
+  .anatomy-hint {
+    color: oklch(0.6 0.02 270);
+    font-size: 0.9rem;
+    margin: -0.4rem 0 1.5rem;
+  }
+
+  .anatomy-layout {
+    display: grid;
+    gap: 1.75rem;
+  }
+
   .legend {
     display: grid;
     gap: 1.5rem;
-    margin-top: 1.75rem;
   }
 
   .legend-title {
-    font-size: 0.85rem;
-    letter-spacing: 0.08em;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: oklch(0.65 0.02 270);
-    margin: 0 0 0.75rem;
+    color: oklch(0.6 0.02 270);
+    margin: 0 0 0.6rem;
   }
 
   .legend-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.7rem;
   }
 
-  .legend-list li {
+  .legend-row {
     display: flex;
-    gap: 0.7rem;
+    flex-direction: column;
+    gap: 0.15rem;
     align-items: flex-start;
-    color: oklch(0.85 0.01 270);
-    line-height: 1.55;
+    text-align: left;
+    width: 100%;
+    min-height: 44px;
+    padding: 0.6rem 0.75rem;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font: inherit;
+    transition: background 140ms ease;
+  }
+  .legend-row:hover,
+  .legend-row:focus-visible,
+  .legend-row.active {
+    background: oklch(0.3 0.03 270 / 0.22);
+  }
+  .legend-row:focus-visible {
+    outline: 2px solid oklch(0.7 0.1 275 / 0.7);
+    outline-offset: 2px;
   }
 
-  .legend-badge {
-    flex-shrink: 0;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: 700;
-    color: #0b0b14;
-    background: #fbbf24;
-    margin-top: 0.1rem;
+  .legend-term {
+    font-weight: 650;
+    font-size: 0.92rem;
+    color: oklch(0.93 0.01 270);
+  }
+
+  .legend-text {
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: oklch(0.72 0.012 270);
   }
 
   .deck-links {

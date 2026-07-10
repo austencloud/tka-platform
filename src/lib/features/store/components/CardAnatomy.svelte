@@ -1,16 +1,21 @@
 <!-- src/lib/features/store/components/CardAnatomy.svelte -->
 <script lang="ts">
   /**
-   * Annotated front + back of a real Choreo Card for the marketing page.
+   * Front + back of a real Choreo Card for the marketing page.
    * Front = baked print render (Firebase Storage URL from the admin cover
    * bake, instant load). Back = live CardBack render fed the same sequence,
-   * so the anatomy can never drift from the real card design. Numbered
-   * badges on each face key into the legend the page renders beside this.
+   * so the anatomy can never drift from the real card design.
+   *
+   * No markers sit on the cards. The page's legend rows drive `highlight`;
+   * the matching region gets a spotlight (everything else dims) so the
+   * cards stay pristine until the reader asks about a part.
    */
   import { onMount } from "svelte";
   import { loadActiveProducts } from "../services/product-loader";
   import type { CoverCard } from "../domain/models/product";
   import CardBack from "$lib/features/choreo-card/components/card-back/CardBack.svelte";
+
+  let { highlight = null }: { highlight?: string | null } = $props();
 
   let card: CoverCard | null = $state(null);
 
@@ -29,43 +34,47 @@
     }
   });
 
-  // Badge anchor points, in % of the card face. Front positions follow the
-  // print layout (title band, start cell, step grid, mandala column, QR).
-  const frontBadges = [
-    { n: 1, x: 50, y: 7 },
-    { n: 2, x: 24, y: 22 },
-    { n: 3, x: 72, y: 45 },
-    { n: 4, x: 24, y: 48 },
-    { n: 5, x: 24, y: 82 },
-  ];
-  // Back positions follow CardBack's four corners + center.
-  const backBadges = [
-    { n: 6, x: 14, y: 10 },
-    { n: 7, x: 86, y: 10 },
-    { n: 8, x: 50, y: 50 },
-    { n: 9, x: 14, y: 88 },
-    { n: 10, x: 86, y: 88 },
-  ];
+  // Spotlight rects in % of each card face. Front follows the print layout;
+  // back follows CardBack's four corners + center.
+  const REGIONS: Record<string, { face: "front" | "back"; x: number; y: number; w: number; h: number }> = {
+    word: { face: "front", x: 8, y: 5.5, w: 84, h: 9 },
+    start: { face: "front", x: 11, y: 14.5, w: 26, h: 19 },
+    steps: { face: "front", x: 37, y: 14.5, w: 52, h: 75 },
+    mandalas: { face: "front", x: 11, y: 33.5, w: 26, h: 37 },
+    qr: { face: "front", x: 12, y: 70.5, w: 24, h: 19 },
+    turn: { face: "back", x: 4, y: 3, w: 30, h: 16 },
+    reversal: { face: "back", x: 66, y: 3, w: 30, h: 16 },
+    center: { face: "back", x: 18, y: 28, w: 64, h: 44 },
+    startpos: { face: "back", x: 4, y: 76, w: 34, h: 20 },
+    stepcount: { face: "back", x: 62, y: 76, w: 34, h: 20 },
+  };
+
+  const activeRegion = $derived(highlight ? (REGIONS[highlight] ?? null) : null);
 </script>
+
+{#snippet spotlight(face: "front" | "back")}
+  {#if activeRegion && activeRegion.face === face}
+    <div
+      class="region"
+      style="left: {activeRegion.x}%; top: {activeRegion.y}%; width: {activeRegion.w}%; height: {activeRegion.h}%"
+    ></div>
+  {/if}
+{/snippet}
 
 {#if card}
   <div class="anatomy">
     <figure class="face">
-      <div class="card-box">
+      <div class="card-box" class:dimmable={activeRegion?.face === "front"}>
         <img src={card.imageUrl} alt="Front of a real Choreo Card" loading="lazy" />
-        {#each frontBadges as b}
-          <span class="badge" style="left: {b.x}%; top: {b.y}%">{b.n}</span>
-        {/each}
+        {@render spotlight("front")}
       </div>
       <figcaption>Front</figcaption>
     </figure>
 
     <figure class="face">
-      <div class="card-box back">
+      <div class="card-box back" class:dimmable={activeRegion?.face === "back"}>
         <CardBack sequence={card.sequence} />
-        {#each backBadges as b}
-          <span class="badge" style="left: {b.x}%; top: {b.y}%">{b.n}</span>
-        {/each}
+        {@render spotlight("back")}
       </div>
       <figcaption>Back</figcaption>
     </figure>
@@ -111,22 +120,30 @@
     container-type: size;
   }
 
-  .badge {
+  /* Spotlight: the region outline plus a huge shadow that dims the rest of
+     the card (clipped by the card's overflow:hidden). */
+  .region {
     position: absolute;
-    transform: translate(-50%, -50%);
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    font-weight: 700;
-    color: #0b0b14;
-    background: #fbbf24;
-    border: 2px solid rgba(0, 0, 0, 0.35);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
+    outline: 1.5px solid oklch(0.95 0.01 270 / 0.9);
+    box-shadow: 0 0 0 200vmax oklch(0.08 0.02 270 / 0.55);
     pointer-events: none;
+    animation: region-in 180ms ease both;
+  }
+
+  @keyframes region-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .region {
+      animation: none;
+    }
   }
 
   figcaption {
