@@ -1,16 +1,23 @@
 <script lang="ts">
   import CodexSheet from "./_components/CodexSheet.svelte";
   import { SHEETS } from "./_data/codex-groups";
+  import GuideSeo from "../level-1/_components/GuideSeo.svelte";
 
   function print() {
     window.print();
   }
 </script>
 
-<svelte:head>
-  <title>Double Staff Codex: Printable</title>
-  <meta name="description" content="Printable Kinetic Alphabet base-letter codex for double staves. Types 1–6." />
-</svelte:head>
+<GuideSeo
+  title="Double Staff Codex: Every Base Letter, Printable | The Kinetic Alphabet"
+  description="The complete Kinetic Alphabet base-letter codex for double staves, Types 1–6, as a printable reference sheet."
+  path="/guide/codex"
+  breadcrumbs={[
+    { name: "Home", path: "/" },
+    { name: "Guide", path: "/guide" },
+    { name: "Codex", path: "/guide/codex" },
+  ]}
+/>
 
 <div class="codex-print-root">
   <div class="toolbar">

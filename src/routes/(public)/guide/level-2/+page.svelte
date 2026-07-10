@@ -1,10 +1,18 @@
 <script lang="ts">
+  import GuideSeo from "../level-1/_components/GuideSeo.svelte";
 </script>
 
-<svelte:head>
-  <title>Level 2: Turns</title>
-  <meta name="description" content="The Kinetic Alphabet Level 2 guide: adding prop rotations (1-turns and 2-turns) to the base motions." />
-</svelte:head>
+<GuideSeo
+  kind="Course"
+  title="Level 2 Guide: Turns | The Kinetic Alphabet"
+  description="The Kinetic Alphabet Level 2 guide: adding prop rotations (1-turns and 2-turns) to the base motions, with expanded glyphs, PADS ordering, and rotational-relationship dots."
+  path="/guide/level-2"
+  breadcrumbs={[
+    { name: "Home", path: "/" },
+    { name: "Guide", path: "/guide" },
+    { name: "Level 2", path: "/guide/level-2" },
+  ]}
+/>
 
 <div class="landing">
   <h1>The Kinetic Alphabet</h1>

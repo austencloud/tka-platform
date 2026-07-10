@@ -18,6 +18,10 @@ const pages = [
   { url: "guide/level-1/positions-motions", priority: "0.7", changefreq: "monthly" },
   { url: "guide/level-1/letters", priority: "0.7", changefreq: "monthly" },
   { url: "guide/level-1/words", priority: "0.7", changefreq: "monthly" },
+  { url: "guide/level-2", priority: "0.8", changefreq: "monthly" },
+  { url: "guide/level-2/turns", priority: "0.7", changefreq: "monthly" },
+  { url: "guide/level-2/double-turns", priority: "0.7", changefreq: "monthly" },
+  { url: "guide/codex", priority: "0.7", changefreq: "monthly" },
 ];
 
 /**

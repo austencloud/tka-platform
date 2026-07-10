@@ -17,12 +17,23 @@
   import Type6Turns from "../_sections/ch20/Type6Turns.svelte";
   import OneOneTurns from "../_sections/ch20/OneOneTurns.svelte";
 
+  import GuideSeo from "../../level-1/_components/GuideSeo.svelte";
+
   setGuideData(chapterData as unknown as GuideChapterData);
 </script>
 
-<svelte:head>
-  <title>2.0 1-Turns: Level 2 Guide</title>
-</svelte:head>
+<GuideSeo
+  title="2.0 1-Turns · Level 2 Guide · The Kinetic Alphabet"
+  description="Level 2 chapter on 1-turns: 180° prop rotations layered onto shifts, dashes, and static motions, with glyphs, PADS ordering, and Types 1–6 with turns."
+  path="/guide/level-2/turns"
+  partOf={{ name: "Level 2 Guide: Turns", path: "/guide/level-2" }}
+  breadcrumbs={[
+    { name: "Home", path: "/" },
+    { name: "Guide", path: "/guide" },
+    { name: "Level 2", path: "/guide/level-2" },
+    { name: "1-Turns", path: "/guide/level-2/turns" },
+  ]}
+/>
 
 <h1>1-Turns</h1>
 
