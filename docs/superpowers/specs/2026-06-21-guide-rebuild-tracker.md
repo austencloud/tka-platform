@@ -306,12 +306,27 @@ LOOP terminology, per existing section filenames already named Loops*.)
   - [x] permutations → `LoopsPage` "LOOPs" (`71f54965f5`) — CAP→LOOP facelift;
     Mirrored (R R step 5) / Rotated (DΨ ×4, no R) / Swapped (Δ-TQZ- ×2, blue R
     3+5, red R 7); reversal flags = prop-rotation flips only.
-  - [ ] reversals — proof p33 / artboard "1.2 - Reversals.png".
-  - [ ] examples-abc — proof p34 / artboard "1.2 - Guide pt 1 - AABB.png".
-  - [ ] misc-permutations — proof p37 / artboard (Type 1 Permutations?
-    match by content).
-  - [ ] OPTIONAL new entries for unhomed p35/36/38-43 (CCCC, ACAC/BCBC,
-    Type 1/2 LOOPs, 16-count, 8-letter, prop/full-reversal) if context allows.
+  - [x] reversals → `ReversalsPage` (`fefb9f213c`) — hand/prop/full reversal
+    strips (single staff, Start at N); R = system indicator on the step
+    (facelift from the old gutter "R"); prop-only rule throughout.
+  - [x] examples-abc → `ExamplesPage` "Examples" (`6e90109b0b`) — AABB with
+    reversals after 2&4 / 1&5 (Mirrored LOOP) / 3&7; steps-not-beats.
+  - [ ] misc-permutations — proof p37 / artboard "1.2 - Type 1 Permutations -
+    DJII, BBLF, KIEC.png". Three 8-step LOOPs already visually decoded at a
+    high level: DJII = Mirrored (steps 5-8 mirror 1-4, from β); BBLF = Swapped
+    & Rotated (from α); KIEC = Swapped & Mirrored (colors swap in second half,
+    from α). Start boxes present. Follow the LoopsPage/ExamplesPage skeleton;
+    decode the 24 cells from artboard crops + set prop-only reversal flags.
+  - [ ] OPTIONAL new entries for unhomed p35/36/38-43 (CCCC, ACAC/BCBC guide
+    parts, gamma connect, Type 2 LOOPs, 16-count GθOZ/EΔQY, 8-letter words,
+    prop/full-reversal LOOPs) — decide manifest slots, then same recipe.
+  RUN END 2026-07-09: 10 pages built+committed this run (lt1-abc-ghi through
+  examples-abc) + Staff Motions/Hand Motions/Base Letters interactivity.
+  Verification caveat for the run's later pages: dev server 5173 went down
+  mid-run and the reader (/learn) redirects in the extension Chrome profile
+  (logged out), so click-to-animate for pages after Compound Letters rides on
+  the seam verified live 3× earlier today; print-route rendering of EVERY page
+  was screenshot-verified against its artboard on a self-hosted vite :5174.
   Verification mode after DevTools MCP dropped mid-run: own vite on :5174
   (user's 5173 dev server went down; hooks forbid npm run dev), claude-in-chrome
   screenshots on /print (reader /learn/* redirects — that Chrome profile is
