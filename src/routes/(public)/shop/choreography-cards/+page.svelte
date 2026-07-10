@@ -50,9 +50,19 @@
       text: "A simple glyph showing whether the props alternate spin direction over the course of the pattern.",
     },
     {
-      id: "center",
+      id: "mandala",
       term: "Combined mandala",
-      text: "A combination of the two mandalas, plus the difficulty level (the Kinetic Alphabet is built into clear tiers of difficulty) and the LOOP type, rotated being the most common and most understandable one.",
+      text: "A combination of the two mandalas.",
+    },
+    {
+      id: "looptype",
+      term: "LOOP type",
+      text: "The LOOP type, rotated being the most common and most understandable one.",
+    },
+    {
+      id: "difficulty",
+      term: "Difficulty",
+      text: "The difficulty level. The Kinetic Alphabet is built into clear tiers of difficulty.",
     },
     {
       id: "startpos",
