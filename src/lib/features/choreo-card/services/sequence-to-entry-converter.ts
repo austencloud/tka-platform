@@ -5,9 +5,8 @@
  * This converter extracts the necessary data from the typed SequenceData model.
  */
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { SequenceEntry, RawStepData, RawMotionAttributes } from "$lib/shared/loop-labeler/domain/sequence-models";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { Step, Motion } from "@tka/tka-types";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
@@ -53,7 +52,7 @@ function convertStepsToRaw(sequence: SequenceData): RawStepData[] {
   return result;
 }
 
-function convertStepToRaw(step: StepData): RawStepData {
+function convertStepToRaw(step: Step): RawStepData {
   const blueMotion = step.motions[MotionColor.BLUE];
   const redMotion = step.motions[MotionColor.RED];
 
@@ -67,7 +66,7 @@ function convertStepToRaw(step: StepData): RawStepData {
   };
 }
 
-function convertMotionToRaw(motion: MotionData): RawMotionAttributes {
+function convertMotionToRaw(motion: Motion): RawMotionAttributes {
   return {
     motionType: motion.motionType,
     startLoc: motion.startLocation,

@@ -6,6 +6,7 @@
  */
 
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { Step } from "@tka/tka-types";
 
 export interface StepCalculationResult {
   currentStepIndex: number;
@@ -86,7 +87,7 @@ export function displayedBeatNumber(
 /**
  * Validate step data array
  */
-export function validateSteps(steps: readonly StepData[]): boolean {
+export function validateSteps(steps: readonly Step[]): boolean {
   if (!Array.isArray(steps)) {
     console.error("StepCalculator: steps is not an array");
     return false;
@@ -127,7 +128,7 @@ export function getStepSafely(steps: readonly StepData[], index: number): StepDa
 /**
  * Calculate total duration of sequence
  */
-export function calculateTotalDuration(steps: readonly StepData[]): number {
+export function calculateTotalDuration(steps: readonly Step[]): number {
   if (steps.length === 0) {
     return 0;
   }
@@ -158,7 +159,7 @@ export function findStepByNumber(
  */
 export function mapTimePositionToBeat(
   timePosition: number,
-  steps: readonly StepData[]
+  steps: readonly Step[]
 ): { stepIndex: number; stepProgress: number } {
   if (steps.length === 0) {
     return { stepIndex: 0, stepProgress: 0 };
@@ -201,7 +202,7 @@ export function mapTimePositionToBeat(
  * @param steps - Array of step data
  * @returns The cumulative time position where this beat begins
  */
-export function getStepStartTime(stepIndex: number, steps: readonly StepData[]): number {
+export function getStepStartTime(stepIndex: number, steps: readonly Step[]): number {
   if (stepIndex <= 0 || steps.length === 0) {
     return 0;
   }

@@ -1,3 +1,4 @@
+import type { Step } from "@tka/tka-types";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
@@ -77,8 +78,8 @@ export function analyzeBeatPair(step1: StepData, step2: StepData): StepPairRelat
  * Analyze the letter-based relationship between two steps
  */
 function analyzeLetterRelationship(
-  step1: StepData,
-  step2: StepData
+  step1: Step,
+  step2: Step
 ): LetterRelationshipInfo | undefined {
   const letter1 = step1.letter;
   const letter2 = step2.letter;
@@ -116,7 +117,7 @@ function analyzeLetterRelationship(
   };
 }
 
-function isIdentical(step1: StepData, step2: StepData): boolean {
+function isIdentical(step1: Step, step2: Step): boolean {
   const blue1 = step1.motions.blue;
   const blue2 = step2.motions.blue;
   const red1 = step1.motions.red;
@@ -136,7 +137,7 @@ function isIdentical(step1: StepData, step2: StepData): boolean {
   );
 }
 
-function isRotated(step1: StepData, step2: StepData): boolean {
+function isRotated(step1: Step, step2: Step): boolean {
   // Simplified check: locations should be rotated 180°
   const rotate180 = (loc: string) => {
     const map: Record<string, string> = {
@@ -169,7 +170,7 @@ function isRotated(step1: StepData, step2: StepData): boolean {
   );
 }
 
-function isSwapped(step1: StepData, step2: StepData): boolean {
+function isSwapped(step1: Step, step2: Step): boolean {
   const blue1 = step1.motions.blue;
   const blue2 = step2.motions.blue;
   const red1 = step1.motions.red;
@@ -190,7 +191,7 @@ function isSwapped(step1: StepData, step2: StepData): boolean {
   );
 }
 
-function isMirrored(step1: StepData, step2: StepData): boolean {
+function isMirrored(step1: Step, step2: Step): boolean {
   // Mirror vertically (left↔right) = reflect across vertical axis = e↔w swap
   const mirrorVertical = (loc: string) => {
     const map: Record<string, string> = {
@@ -224,7 +225,7 @@ function isMirrored(step1: StepData, step2: StepData): boolean {
   );
 }
 
-function isFlipped(step1: StepData, step2: StepData): boolean {
+function isFlipped(step1: Step, step2: Step): boolean {
   // Flip horizontally (top↔bottom) = reflect across horizontal axis = n↔s swap
   const flipHorizontal = (loc: string) => {
     const map: Record<string, string> = {
@@ -289,7 +290,7 @@ function isInverted(step1: StepData, step2: StepData): boolean {
 
 // Combined transformation checks - apply transformations in sequence
 
-function isRotatedThenSwapped(step1: StepData, step2: StepData): boolean {
+function isRotatedThenSwapped(step1: Step, step2: Step): boolean {
   // Apply rotation to step1, then swap colors, check if matches step2
   const rotate180 = (loc: string) => {
     const map: Record<string, string> = {
@@ -368,7 +369,7 @@ function isRotatedThenInverted(step1: StepData, step2: StepData): boolean {
   );
 }
 
-function isMirroredThenFlipped(step1: StepData, step2: StepData): boolean {
+function isMirroredThenFlipped(step1: Step, step2: Step): boolean {
   // Mirror (e↔w) then flip (n↔s) = 180° rotation
   // This is equivalent to rotation, so check if it matches but rotation alone doesn't
   const mirrorThenFlip = (loc: string) => {
@@ -415,7 +416,7 @@ function isMirroredThenFlipped(step1: StepData, step2: StepData): boolean {
   );
 }
 
-function isMirroredThenSwapped(step1: StepData, step2: StepData): boolean {
+function isMirroredThenSwapped(step1: Step, step2: Step): boolean {
   // Apply mirror (e↔w) to step1, then swap colors, check if matches step2
   const mirrorVertical = (loc: string) => {
     const map: Record<string, string> = {
@@ -455,7 +456,7 @@ function isMirroredThenSwapped(step1: StepData, step2: StepData): boolean {
   );
 }
 
-function isFlippedThenSwapped(step1: StepData, step2: StepData): boolean {
+function isFlippedThenSwapped(step1: Step, step2: Step): boolean {
   // Apply flip (n↔s) to step1, then swap colors, check if matches step2
   const flipHorizontal = (loc: string) => {
     const map: Record<string, string> = {

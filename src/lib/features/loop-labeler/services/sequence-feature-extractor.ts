@@ -6,6 +6,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { Step } from "@tka/tka-types";
 import type { SequenceAnalyzer } from "../../create/shared/services/sequence-analyzer";
 import type { StrictLoopType } from "../../create/shared/services/sequence-analyzer";
 import type {
@@ -290,7 +291,7 @@ export class SequenceFeatureExtractor {
   /**
    * Analyze which position groups are present in the sequence
    */
-  analyzePositionPresence(steps: StepData[]): {
+  analyzePositionPresence(steps: readonly Step[]): {
     hasAlpha: boolean;
     hasBeta: boolean;
     hasGamma: boolean;
@@ -326,7 +327,7 @@ export class SequenceFeatureExtractor {
    * Turns are PRO or ANTI motion types where the prop actually rotates.
    * FLOAT, DASH, and STATIC don't count as turns.
    */
-  analyzeTurns(steps: StepData[]): {
+  analyzeTurns(steps: readonly Step[]): {
     hasTurns: boolean;
     turnStepCount: number;
   } {

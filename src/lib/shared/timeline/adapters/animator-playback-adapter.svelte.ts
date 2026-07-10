@@ -1,5 +1,5 @@
 import type { UnifiedPlaybackContext } from "../unified-playback-context";
-import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { Step } from "@tka/tka-types";
 
 // ── Pure computation functions (exported for testing) ──────────────────
 
@@ -77,13 +77,13 @@ export function computeBeatMarkerPositions(durations: number[]): number[] {
 
 export interface AnimatorPlaybackParams {
   getCurrentStep: () => number;
-  getSteps: () => readonly StepData[];
+  getSteps: () => readonly Step[];
   getIsPlaying: () => boolean;
   onSeek: (targetStep: number) => void;
   onTogglePlay: () => void;
 }
 
-function getDurations(steps: readonly StepData[]): number[] {
+function getDurations(steps: readonly Step[]): number[] {
   return steps.map((s) => s.duration ?? 1);
 }
 

@@ -1,5 +1,5 @@
 import type { SequenceData } from "../../foundation/domain/models/sequence-data";
-import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { Step } from "@tka/tka-types";
 import type { SequenceExportOptions } from "../domain/models/sequence-export-options";
 import type { CompositionProgressCallback, RenderCanvas } from "./types";
 import { createRenderCanvas } from "./create-render-canvas";
@@ -56,7 +56,7 @@ export async function composeCardImage(
   const earlyLoopType = options.loopType ?? sequence.loopType;
   const earlyShowLoopGlyph = options.showLoopGlyph !== false && !!earlyLoopType;
   const rawWord = (sequence.steps ?? [])
-    .map((s: StepData) => s.letter ?? "")
+    .map((s: Step) => s.letter ?? "")
     .join("");
   const showHeader =
     (options.addWord && (rawWord || options.customName)) ||
