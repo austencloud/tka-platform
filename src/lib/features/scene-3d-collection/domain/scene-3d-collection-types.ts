@@ -9,8 +9,21 @@ import type { CameraStateSnapshot } from "@austencloud/scene-3d";
  * scene-feature toggles, camera) into one flat blob. See
  * `docs/superpowers/specs/2026-07-10-save-a-3d-scene-collection-design.md`.
  */
+/** The user-facing save groups shown in the packing-list modal. */
+export const SCENE_3D_GROUPS = [
+  "performance",
+  "performers",
+  "props",
+  "efforts",
+  "effects",
+  "scene",
+  "camera",
+] as const;
+export type Scene3DGroupId = (typeof SCENE_3D_GROUPS)[number];
+
 export interface Scene3DSnapshot {
-  version: 1;
+  /** 1 = original shape; 2 = adds bpm, groups mask, per-performer settings. */
+  version: 1 | 2;
   scene: { backgroundType: string; oceanVariant: string };
   camera: CameraStateSnapshot | null;
   performers: StoredPerformerSnapshot[];
@@ -30,11 +43,22 @@ export interface Scene3DSnapshot {
   activePreset: string | null;
   activeCameraPreset: string;
   stageGroundOffset: number;
-  /** Captured + shown, but NOT auto-restored on open — the app never persists
-   *  the 3D effect toggles, so reproducing them is a separate capability. */
   effectToggles: Record<string, boolean>;
   sceneFeatures: Record<string, boolean>;
   props: { bluePropType?: string; redPropType?: string };
+  /** Playback tempo at save time. Absent when the playback seam was
+   *  unavailable (v1 snapshots, or capture outside the viewer). */
+  bpm?: number;
+  /** Which packing-list groups the user chose to save. Absent (v1) = all. */
+  groups?: Record<Scene3DGroupId, boolean>;
+}
+
+/** Per-performer cascade overrides; null = inherit the viewer default. */
+export interface StoredPerformerSettings {
+  prop: string | null;
+  effortId: string | null;
+  effect: string | null;
+  staffLengthCm: number | null;
 }
 
 export interface StoredPerformerSnapshot {
@@ -43,6 +67,8 @@ export interface StoredPerformerSnapshot {
   customBluePlane: string;
   customRedPlane: string;
   name?: string | null;
+  /** Absent = no overrides (v1 snapshots). */
+  settings?: StoredPerformerSettings;
 }
 
 export interface Collected3DScene {
@@ -59,16 +85,26 @@ export interface Collected3DScene {
 // External-enum fields (camera vectors, planes, formation, backgroundType) are
 // kept loose — the same pragmatism the tunnel schema uses for `updatedAt` and
 // nested StepData. Booleans / numbers / version are strict.
+const StoredPerformerSettingsSchema = z.object({
+  prop: z.string().nullable(),
+  effortId: z.string().nullable(),
+  effect: z.string().nullable(),
+  staffLengthCm: z.number().nullable(),
+});
+
 const StoredPerformerSnapshotSchema = z.object({
   position: z.object({ x: z.number(), z: z.number() }),
   facingAngle: z.number(),
   customBluePlane: z.string(),
   customRedPlane: z.string(),
   name: z.string().nullable().optional(),
+  settings: StoredPerformerSettingsSchema.optional(),
 });
 
+const GroupsSchema = z.record(z.enum(SCENE_3D_GROUPS), z.boolean());
+
 export const Scene3DSnapshotSchema = z.object({
-  version: z.literal(1),
+  version: z.union([z.literal(1), z.literal(2)]),
   scene: z.object({ backgroundType: z.string(), oceanVariant: z.string() }),
   camera: z.any().nullable(),
   performers: z.array(StoredPerformerSnapshotSchema),
@@ -94,7 +130,14 @@ export const Scene3DSnapshotSchema = z.object({
     bluePropType: z.string().optional(),
     redPropType: z.string().optional(),
   }),
+  bpm: z.number().optional(),
+  groups: GroupsSchema.optional(),
 });
+
+/** Whether a group was saved. Absent mask (v1) = everything saved. */
+export function isGroupSaved(snapshot: Scene3DSnapshot, group: Scene3DGroupId): boolean {
+  return snapshot.groups?.[group] ?? true;
+}
 
 export const Collected3DSceneSchema = z.object({
   id: z.string().min(1),

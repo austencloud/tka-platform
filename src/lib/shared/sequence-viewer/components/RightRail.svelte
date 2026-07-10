@@ -9,13 +9,18 @@
   import { createViewer3DKeyboardHandler } from "$lib/shared/3d/keyboard/viewer-3d-keyboard-handler";
   import DevToolsPopover from "$lib/shared/3d/components/controls/DevToolsPopover.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import SaveSceneModal from "$lib/features/scene-3d-collection/components/SaveSceneModal.svelte";
 
   const viewer = getViewer3DContext();
 
   interface Props {
     renderMode: "2d" | "3d";
+    /** Playback tempo, threaded from the split pane so scene saves capture it. */
+    bpm?: number;
   }
-  let { renderMode }: Props = $props();
+  let { renderMode, bpm }: Props = $props();
+
+  let saveSceneOpen = $state(false);
 
   onMount(() => {
     const cleanupKeyboard = createViewer3DKeyboardHandler({
@@ -46,6 +51,16 @@
       <ExportPopover />
     </ViewerPopover>
 
+    <button
+      type="button"
+      class="rail-chip"
+      aria-label="Save scene"
+      data-tooltip="Save scene"
+      onclick={() => (saveSceneOpen = true)}
+    >
+      <i class="fas fa-bookmark"></i>
+    </button>
+
     <ViewerPopover id="scene" title="Scene" icon="fa-mountain-sun" tooltip="Scene" width={320}>
       <SceneSelectorPopover />
     </ViewerPopover>
@@ -63,6 +78,10 @@
   {/if}
 </div>
 
+{#if renderMode === "3d"}
+  <SaveSceneModal bind:open={saveSceneOpen} {bpm} />
+{/if}
+
 <style>
   .right-rail {
     position: absolute;
@@ -72,6 +91,56 @@
     flex-direction: column;
     gap: 8px;
     z-index: 9;
+  }
+  /* Standalone rail chip — mirrors ViewerPopover's .rail-chip (scoped there). */
+  .rail-chip {
+    width: 56px;
+    height: 56px;
+    background: rgba(20, 22, 32, 0.78);
+    backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+    color: rgba(255, 255, 255, 0.62);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: all 180ms cubic-bezier(0.2, 0, 0.13, 1.5);
+  }
+  .rail-chip:hover {
+    transform: scale(1.08);
+    border-color: rgba(255, 255, 255, 0.22);
+  }
+  .rail-chip:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    right: calc(100% + 10px);
+    top: 50%;
+    background: rgba(0, 0, 0, 0.88);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    pointer-events: none;
+    animation: rail-tooltip-in 160ms cubic-bezier(0.2, 0, 0.13, 1.5) 180ms both;
+  }
+  @keyframes rail-tooltip-in {
+    from {
+      opacity: 0;
+      transform: translateY(-50%) translateX(4px) scale(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0) scale(1);
+    }
+  }
+  .rail-chip i {
+    font-size: 22px;
   }
   .performer-separator {
     display: flex;

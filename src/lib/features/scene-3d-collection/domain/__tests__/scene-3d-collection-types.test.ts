@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   Collected3DSceneSchema,
   Scene3DSnapshotSchema,
+  isGroupSaved,
   type Scene3DSnapshot,
 } from "../scene-3d-collection-types";
 
@@ -44,8 +45,56 @@ describe("Scene3DSnapshotSchema", () => {
   });
 
   it("rejects a wrong version", () => {
-    const bad = { ...snapshot, version: 2 };
+    const bad = { ...snapshot, version: 3 };
     expect(Scene3DSnapshotSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("accepts a v2 snapshot with bpm, groups, and per-performer settings", () => {
+    const v2: Scene3DSnapshot = {
+      ...snapshot,
+      version: 2,
+      bpm: 90,
+      groups: {
+        performance: true,
+        performers: true,
+        props: false,
+        efforts: true,
+        effects: true,
+        scene: true,
+        camera: false,
+      },
+      performers: [
+        {
+          ...snapshot.performers[0]!,
+          settings: { prop: "fan", effortId: null, effect: "trails", staffLengthCm: 95 },
+        },
+      ],
+    };
+    expect(Scene3DSnapshotSchema.safeParse(v2).success).toBe(true);
+  });
+
+  it("rejects an unknown group key", () => {
+    const bad = { ...snapshot, version: 2, groups: { lasers: true } };
+    expect(Scene3DSnapshotSchema.safeParse(bad).success).toBe(false);
+  });
+
+  it("isGroupSaved treats a missing mask (v1) as all-saved", () => {
+    expect(isGroupSaved(snapshot, "effects")).toBe(true);
+    const masked: Scene3DSnapshot = {
+      ...snapshot,
+      version: 2,
+      groups: {
+        performance: true,
+        performers: true,
+        props: true,
+        efforts: true,
+        effects: false,
+        scene: true,
+        camera: true,
+      },
+    };
+    expect(isGroupSaved(masked, "effects")).toBe(false);
+    expect(isGroupSaved(masked, "scene")).toBe(true);
   });
 });
 

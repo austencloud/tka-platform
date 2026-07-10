@@ -185,6 +185,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
 <script lang="ts">
   import { onMount, onDestroy, untrack, type Snippet } from "svelte";
+  import { SCENE_BPM_INTENT_KEY } from "$lib/features/scene-3d-collection/services/open-3d-scene";
   import { goto } from "$app/navigation";
   import { browser } from "$app/environment";
   import { generateViewerURL, encodePropForURL } from "$lib/shared/navigation/services/sequence-encoder";
@@ -287,7 +288,21 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
   const playback = createPlaybackController({ modalAnimationState, initialBpm: 60, initialStep: 0 });
 
-  $effect.pre(() => { playback.currentStepLocal = initialStep; playback.bpmLocal = initialBpm; });
+  // One-shot tempo seed from "open saved 3D scene" (consumed at init so the
+  // initialBpm effect below can't overwrite it afterwards).
+  const _sceneBpmIntent: number | null = (() => {
+    try {
+      const raw = sessionStorage.getItem(SCENE_BPM_INTENT_KEY);
+      if (raw === null) return null;
+      sessionStorage.removeItem(SCENE_BPM_INTENT_KEY);
+      const n = Number(raw);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  $effect.pre(() => { playback.currentStepLocal = initialStep; playback.bpmLocal = _sceneBpmIntent ?? initialBpm; });
 
   const viewer3DState = createViewer3DState();
   setViewer3DContext(viewer3DState);

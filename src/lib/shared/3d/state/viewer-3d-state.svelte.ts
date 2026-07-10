@@ -18,6 +18,7 @@ import { Plane, PlaneMode } from "@austencloud/scene-3d";
 import type { AvatarInstanceState } from "./avatar-instance-state.svelte";
 import { derivePlaneModeFromHands } from "./avatar-instance-state.svelte";
 import type { DefaultPerformerSettings, CascadeCategory } from "./performer-settings-types";
+import type { EffectType } from "$lib/shared/effects/domain/effects-config";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { EffortId } from "$lib/shared/effort/domain/effort-types";
 import { createPerformerManager, type PerformerManager } from "./performer-manager.svelte";
@@ -101,13 +102,23 @@ const STORAGE_KEY_ACTIVE_FORMATION = "tka-viewer3d-activeFormation";
 const STORAGE_KEY_SELECTED_INDEX = "tka-viewer3d-selectedIndex";
 const STORAGE_KEY_DEFAULT_PROP = "tka-viewer3d-defaultProp";
 
-interface StoredPerformerSnapshot {
+/** Per-performer cascade overrides; null = inherit the viewer default. */
+export interface StoredPerformerSettings {
+  prop: string | null;
+  effortId: string | null;
+  effect: string | null;
+  staffLengthCm: number | null;
+}
+
+export interface StoredPerformerSnapshot {
   position: { x: number; z: number };
   facingAngle: number;
   customBluePlane: Plane;
   customRedPlane: Plane;
   /** User-assigned display name; absent/null = inherit the avatar model's name. */
   name?: string | null;
+  /** Cascade overrides; absent = no overrides (pre-v2 snapshots). */
+  settings?: StoredPerformerSettings;
 }
 
 function loadPersistedMode(): "2d" | "3d" {
@@ -901,6 +912,12 @@ export function createViewer3DState() {
       customBluePlane: p.customBluePlane,
       customRedPlane: p.customRedPlane,
       name: p.displayName,
+      settings: {
+        prop: p.settings.prop,
+        effortId: p.settings.effortId,
+        effect: p.settings.effect,
+        staffLengthCm: p.settings.staffLengthCm,
+      },
     }));
     if (!_performersPersistReady) return;
     persistPerformers(snapshots);
@@ -952,6 +969,12 @@ export function createViewer3DState() {
           p.setHandPlane("blue", snap.customBluePlane);
           p.setHandPlane("red", snap.customRedPlane);
           p.setDisplayName(snap.name ?? null);
+          if (snap.settings) {
+            if (snap.settings.prop !== null) p.setProp(snap.settings.prop as PropType);
+            if (snap.settings.effortId !== null) p.setEffort(snap.settings.effortId as EffortId);
+            if (snap.settings.effect !== null) p.setEffect(snap.settings.effect as EffectType);
+            if (snap.settings.staffLengthCm !== null) p.setStaffLengthCm(snap.settings.staffLengthCm);
+          }
         });
       });
     }
@@ -1016,6 +1039,12 @@ export function createViewer3DState() {
         customBluePlane: p.customBluePlane,
         customRedPlane: p.customRedPlane,
         name: p.displayName ?? null,
+        settings: {
+          prop: p.settings.prop,
+          effortId: p.settings.effortId,
+          effect: p.settings.effect,
+          staffLengthCm: p.settings.staffLengthCm,
+        },
       })),
       selectedPerformerIndex,
       activeFormation,
@@ -1371,11 +1400,13 @@ export interface Viewer3DPersistConfig {
 }
 
 /**
- * Seed every localStorage key a freshly-constructed viewer-3d-state reads, plus
- * force render mode to "3d". Best-effort per key so a single quota failure
- * doesn't abort the rest. Call BEFORE mounting the viewer.
+ * Seed the localStorage keys a freshly-constructed viewer-3d-state reads, plus
+ * force render mode to "3d". Only PROVIDED fields are written — omit a field to
+ * leave the user's current persisted value alone (this is how the packing-list
+ * group mask applies selectively). Best-effort per key so a single quota
+ * failure doesn't abort the rest. Call BEFORE mounting the viewer.
  */
-export function writeViewer3DConfig(config: Viewer3DPersistConfig): void {
+export function writeViewer3DConfig(config: Partial<Viewer3DPersistConfig>): void {
   if (typeof localStorage === "undefined") return;
   const set = (key: string, value: string) => {
     try {
@@ -1386,19 +1417,21 @@ export function writeViewer3DConfig(config: Viewer3DPersistConfig): void {
   };
   set(STORAGE_KEY_MODE, "3d");
   if (config.camera) set(STORAGE_KEY_CAMERA, JSON.stringify(config.camera));
-  set(STORAGE_KEY_PERFORMERS, JSON.stringify(config.performers));
-  set(STORAGE_KEY_ACTIVE_FORMATION, config.activeFormation);
-  set(
-    STORAGE_KEY_SELECTED_INDEX,
-    config.selectedPerformerIndex === null ? "null" : String(config.selectedPerformerIndex),
-  );
-  set(STORAGE_KEY_DEFAULT_PROP, config.defaultProp);
-  set(STORAGE_KEY_OCEAN_VARIANT, config.oceanVariant);
-  set(STORAGE_KEY_NAV_MODE, config.navMode);
-  set(STORAGE_KEY_PRESET, config.activePreset ?? "");
-  set(STORAGE_KEY_CAM_PRESET, config.activeCameraPreset);
-  set(STORAGE_KEY_GRID_LABELS, String(config.showGridLabels));
-  set(STORAGE_KEY_VISIBLE_PLANES, JSON.stringify(config.visiblePlanes));
+  if (config.performers) set(STORAGE_KEY_PERFORMERS, JSON.stringify(config.performers));
+  if (config.activeFormation !== undefined) set(STORAGE_KEY_ACTIVE_FORMATION, config.activeFormation);
+  if (config.selectedPerformerIndex !== undefined) {
+    set(
+      STORAGE_KEY_SELECTED_INDEX,
+      config.selectedPerformerIndex === null ? "null" : String(config.selectedPerformerIndex),
+    );
+  }
+  if (config.defaultProp !== undefined) set(STORAGE_KEY_DEFAULT_PROP, config.defaultProp);
+  if (config.oceanVariant !== undefined) set(STORAGE_KEY_OCEAN_VARIANT, config.oceanVariant);
+  if (config.navMode !== undefined) set(STORAGE_KEY_NAV_MODE, config.navMode);
+  if (config.activePreset !== undefined) set(STORAGE_KEY_PRESET, config.activePreset ?? "");
+  if (config.activeCameraPreset !== undefined) set(STORAGE_KEY_CAM_PRESET, config.activeCameraPreset);
+  if (config.showGridLabels !== undefined) set(STORAGE_KEY_GRID_LABELS, String(config.showGridLabels));
+  if (config.visiblePlanes) set(STORAGE_KEY_VISIBLE_PLANES, JSON.stringify(config.visiblePlanes));
   if (config.effectToggles) {
     set(STORAGE_KEY_EFFECT_TOGGLES, JSON.stringify(config.effectToggles));
   }

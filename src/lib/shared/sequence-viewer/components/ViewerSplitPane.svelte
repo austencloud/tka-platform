@@ -488,7 +488,7 @@
     {/if}
     {#if _3dLeftMounted}
       <div bind:this={_rail3d} class="persistent-rail" class:persistent-rail-hidden={!_3dLeftActive}>
-        <RightRail renderMode="3d" />
+        <RightRail renderMode="3d" {bpm} />
         {#if PerformerHub}
           <PerformerHub />
         {/if}

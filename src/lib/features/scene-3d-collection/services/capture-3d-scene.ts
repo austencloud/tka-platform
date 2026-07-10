@@ -1,7 +1,11 @@
 import type { Viewer3DState } from "$lib/shared/3d/context/viewer-3d-context";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
 import { captureTunnelPoster } from "$lib/shared/sequence-viewer/tunnel/tunnel-poster";
-import type { Scene3DSnapshot, StoredPerformerSnapshot } from "../domain/scene-3d-collection-types";
+import type {
+  Scene3DGroupId,
+  Scene3DSnapshot,
+  StoredPerformerSnapshot,
+} from "../domain/scene-3d-collection-types";
 
 const SCENE_FEATURES_STORAGE_KEY = "tka-scene-features";
 
@@ -24,7 +28,17 @@ function readSceneFeatures(): Record<string, boolean> {
  * the persisted scene-feature toggles (their context is scoped inside
  * Viewer3DCanvas, so the persisted key is read directly).
  */
-export function captureScene3DSnapshot(viewer3DState: Viewer3DState): Scene3DSnapshot {
+export interface CaptureScene3DOptions {
+  /** Playback tempo, threaded from the playback seam when available. */
+  bpm?: number;
+  /** Packing-list group mask. Absent = save everything. */
+  groups?: Record<Scene3DGroupId, boolean>;
+}
+
+export function captureScene3DSnapshot(
+  viewer3DState: Viewer3DState,
+  options: CaptureScene3DOptions = {},
+): Scene3DSnapshot {
   const cfg = viewer3DState.serialize();
   const d = viewer3DState.defaultSettings;
   const settings = settingsService.settings;
@@ -35,10 +49,11 @@ export function captureScene3DSnapshot(viewer3DState: Viewer3DState): Scene3DSna
     customBluePlane: String(p.customBluePlane),
     customRedPlane: String(p.customRedPlane),
     name: p.name ?? null,
+    ...(p.settings ? { settings: { ...p.settings } } : {}),
   }));
 
   return {
-    version: 1,
+    version: 2,
     scene: {
       backgroundType: String(settings.backgroundType),
       oceanVariant: cfg.oceanVariant,
@@ -67,6 +82,8 @@ export function captureScene3DSnapshot(viewer3DState: Viewer3DState): Scene3DSna
       bluePropType: settings.bluePropType ? String(settings.bluePropType) : undefined,
       redPropType: settings.redPropType ? String(settings.redPropType) : undefined,
     },
+    ...(options.bpm !== undefined ? { bpm: options.bpm } : {}),
+    ...(options.groups ? { groups: { ...options.groups } } : {}),
   };
 }
 
