@@ -267,6 +267,18 @@ instead of showing a ghost.
 	function countLabel(n: number): string {
 		return `${n} ${n === 1 ? "sequence" : "sequences"}`;
 	}
+
+	// Foreign viewers only ever receive the PUBLIC members — counting
+	// sequenceIds would advertise private ones they can't see (e.g. "4
+	// sequences" over a 1-sequence grid). Owners keep the full-id count so the
+	// header doesn't flicker while members stream in.
+	const visibleCount = $derived(
+		foreignOwnerId
+			? loadingMembers
+				? null
+				: members.length
+			: (collection?.sequenceIds.length ?? null),
+	);
 </script>
 
 <div class="collection-detail" style="--tile-color: {tileColor};">
@@ -297,8 +309,8 @@ instead of showing a ghost.
 			<div class="header-text">
 				<h2 class="header-name">{collection?.name ?? ""}</h2>
 				<span class="header-count">
-					{#if ownerName}by {ownerName} · {/if}{collection
-						? countLabel(collection.sequenceIds.length)
+					{#if ownerName}by {ownerName} · {/if}{visibleCount !== null
+						? countLabel(visibleCount)
 						: ""}
 				</span>
 			</div>
