@@ -58,8 +58,12 @@
     type GuideCodexVisibility,
   } from "../_data/guide-codex-persistence";
 
-  const printMode = getGuidePrintMode();
   const emitSequence = getGuideSequenceClick();
+  // The reader ALSO sets guide print mode (print STYLE + eager pictographs), so
+  // getGuidePrintMode() can't tell reader from /print,/book. The sequence-click
+  // context can: only the reader provides it. Interactive there; static sheets
+  // everywhere else.
+  const printMode = getGuidePrintMode() && emitSequence === null;
 
   // ── Persisted view state (letter, grid mode, visibility, prop type) ───────
   const initial = (() => {
