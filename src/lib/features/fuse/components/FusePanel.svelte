@@ -57,12 +57,39 @@
 		color: propColor,
 	});
 
-	// Even grid, no start cell. Wide panels read 4 across (8-count = 4x2);
-	// narrow panels read 2 across (8-count = 2x4). Every length option divides
-	// evenly by both. Length 2 is a single pair either way.
+	// Even grid, no start cell, columns picked from the panel's shape so rows
+	// always divide evenly: narrow panels read 2 across (8-count = 2x4),
+	// mid-size read 4 across (4x2), and big column-mode panels (4K) lay the
+	// strip as a full-width timeline (8-count = one row of 8; 12 = 6x2;
+	// 16/24/32 = 8 across).
 	let panelWidth = $state(0);
+	let panelHeight = $state(0);
+	const panelAspect = $derived(panelHeight > 0 ? panelWidth / panelHeight : 1);
+	// Panel modes mirror the CSS container queries below
+	const isColumnPanel = $derived(panelAspect >= 3 / 4 && panelAspect <= 4 / 3);
+	const isRowPanel = $derived(panelAspect > 4 / 3);
+	// Row mode: the strip gets whatever width the stage square leaves over -
+	// pick columns from that slot's shape (mirrors the CSS stage sizing).
+	const rowStripAspect = $derived.by(() => {
+		if (!isRowPanel || panelHeight <= 0) return 1;
+		const bodyH = panelHeight - 82;
+		const stageW = Math.min(bodyH, 0.55 * panelWidth);
+		return Math.max(0.1, (panelWidth - stageW - 24) / bodyH);
+	});
 	const cardColumns = $derived(
-		length === 2 ? 2 : panelWidth > 0 && panelWidth < 300 ? 2 : 4
+		length === 2
+			? 2
+			: panelWidth > 0 && panelWidth < 300
+				? 2
+				: isColumnPanel && panelWidth >= 640
+					? length <= 8
+						? length
+						: length === 12
+							? 6
+							: 8
+					: isRowPanel && rowStripAspect < 1
+						? 2
+						: 4
 	);
 
 	const pool = createFuseShufflePool({
@@ -124,9 +151,14 @@
 	class="fuse-panel"
 	role="region"
 	aria-label="{label} prop path"
-	style="--accent: {accentColor};"
+	style="--accent: {accentColor}; --strip-cols: {cardColumns}; --strip-rows: {Math.ceil(length / cardColumns)};"
 	bind:clientWidth={panelWidth}
+	bind:clientHeight={panelHeight}
 >
+	<!-- Body: stage + strip. A wrapper because the panel is the query
+	     container and a container can't restyle itself - wide panels flip
+	     this row-wise (stage left, notation right). -->
+	<div class="panel-body">
 	<!-- Hero stage: ring-lit square, ambient spotlight behind -->
 	<div class="stage">
 		<div class="stage-box">
@@ -171,6 +203,7 @@
 			</Crossfade>
 		{/if}
 	</div>
+	</div>
 
 	<div class="panel-actions">
 		<button
@@ -210,11 +243,21 @@
 		overflow: hidden;
 	}
 
+	/* Stage + strip live in the body; the shuffle row stays pinned below.
+	   The body is what the panel's shape queries rearrange. */
+	.panel-body {
+		flex: 1 1 auto;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+	}
+
 	/* ── Hero stage ─────────────────────────────────────────────── */
 
-	/* Wide panels: fills the space above the strip; centers a square stage box
-	   sized to whichever axis is tighter. The spotlight covers the WHOLE stage
-	   area so leftover space around the square reads as ambience, not void. */
+	/* Column panels: fills the space above the strip; centers a square stage
+	   box sized to whichever axis is tighter. The spotlight covers the WHOLE
+	   stage area so leftover space around the square reads as ambience, not
+	   void. */
 	.stage {
 		flex: 1 1 auto;
 		min-height: 0;
@@ -316,6 +359,45 @@
 		.strip {
 			flex: 1 1 auto;
 			min-height: 0;
+		}
+	}
+
+	/* Big column panels (4K): the strip sizes itself to the card's actual
+	   rows (cells are ~square at width/cols) instead of a fixed share, so the
+	   stage absorbs every spare pixel and the strip has no dead bands. Capped
+	   at 45cqh so many-row lengths can't starve the stage (the card
+	   contain-shrinks instead). */
+	@container fuse-panel (min-aspect-ratio: 3/4) and (max-aspect-ratio: 4/3) and (min-width: 640px) {
+		.strip {
+			flex: 0 1 auto;
+			height: min(
+				calc((100cqw - 48px) / var(--strip-cols, 4) * var(--strip-rows, 2) * 1.12 + 16px),
+				45cqh
+			);
+			min-height: 120px;
+		}
+	}
+
+	/* Wide panels (4K, ultrawide, short windows): row the body - square stage
+	   on the left, notation fills the width on the right. Width becomes
+	   content instead of margin. cq units resolve against the panel, so the
+	   stage square keys off panel height minus the shuffle row. */
+	@container fuse-panel (min-aspect-ratio: 4/3) {
+		.panel-body {
+			flex-direction: row;
+			align-items: stretch;
+		}
+
+		.stage {
+			flex: 0 0 auto;
+			width: min(100cqh - 82px, 55cqw);
+		}
+
+		.strip {
+			flex: 1 1 auto;
+			min-height: 0;
+			min-width: 0;
+			padding: var(--spacing-sm, 8px) var(--spacing-sm, 8px) var(--spacing-sm, 8px) 0;
 		}
 	}
 

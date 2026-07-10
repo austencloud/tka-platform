@@ -283,16 +283,17 @@
 	}
 
 	/* Panels always sit side by side - blue | red is the tab's identity.
-	   Cells are capped and the pair centered, so panels stay proportioned on
-	   ultrawide instead of leaving dead columns inside stretched boxes.
-	   Below 700px each panel switches itself to animation-first (compact). */
+	   Cells are capped and the pair centered; the cap is generous (960) so a
+	   4K screen gets big panels, and each panel rearranges itself by its own
+	   aspect ratio (see FusePanel) so a big panel means a big stage + wide
+	   notation, never bigger margins. */
 	.fuse-panels {
 		flex: 1;
 		min-height: 0;
 		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 560px));
+		grid-template-columns: repeat(2, minmax(0, 960px));
 		justify-content: center;
-		gap: var(--spacing-md, 16px);
+		gap: clamp(16px, 1.5cqw, 32px);
 		padding: var(--spacing-md, 16px) var(--spacing-md, 16px) var(--spacing-sm, 8px);
 	}
 
