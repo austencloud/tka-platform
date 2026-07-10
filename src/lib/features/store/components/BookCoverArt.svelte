@@ -1,55 +1,54 @@
 <!-- src/lib/features/store/components/BookCoverArt.svelte -->
 <!--
-  Typographic stand-in cover for the printed book, shared by the /shop book
-  band and the /shop/book detail preview. Replace with a real photo once the
-  printed book exists. Decorative: hosts label the product in text.
+  The book's REAL cover in the shop: renders the locked Level 1 guide cover
+  (GuideCover, navy edition — mandala emblem, trio arc, byline) inside a
+  book-shaped frame. The cover is authored for a full 8.5x11 page with px font
+  floors, so it renders at a fixed 480px width and scales down to the frame —
+  identical proportions at every shop size. Decorative: hosts label the product
+  in text.
 -->
 <script lang="ts">
+  import GuideCover from "../../../../routes/(public)/guide/level-1/_components/GuideCover.svelte";
+
   let { width = "clamp(150px, 11vw, 210px)" }: { width?: string } = $props();
+
+  // Native render width the cover is laid out at before scaling down.
+  const NATIVE_W = 480;
+  const NATIVE_H = Math.round((NATIVE_W * 11) / 8.5);
+
+  let boxW = $state(0);
+  const scale = $derived(boxW ? boxW / NATIVE_W : 0);
 </script>
 
-<div class="book-cover" style:width aria-hidden="true">
-  <i class="fas fa-book-open" aria-hidden="true"></i>
-  <span class="book-cover-title">The Kinetic<br />Alphabet</span>
-  <span class="book-cover-sub">the book</span>
+<div class="book" style:width bind:clientWidth={boxW} aria-hidden="true">
+  {#if scale}
+    <div
+      class="native"
+      style:width="{NATIVE_W}px"
+      style:height="{NATIVE_H}px"
+      style:transform="scale({scale})"
+    >
+      <GuideCover theme="navy" />
+    </div>
+  {/if}
 </div>
 
 <style>
-  .book-cover {
-    aspect-ratio: 2 / 3;
-    border-radius: 8px 14px 14px 8px; /* squared spine edge */
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    border-left: 6px solid #8b6cff;
-    background: linear-gradient(155deg, #2c3060, #15182f 78%);
+  .book {
+    aspect-ratio: 8.5 / 11;
+    position: relative;
+    overflow: hidden;
+    border-radius: 4px 10px 10px 4px; /* squared spine edge */
+    border-left: 5px solid #8b6cff;
     box-shadow: 14px 18px 36px rgba(0, 0, 0, 0.45);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    text-align: center;
-    padding: 18px;
+    background: #14142b; /* cover's navy ground while it mounts */
     transform: rotate(-2deg);
   }
 
-  .book-cover i {
-    font-size: 1.6rem;
-    color: #8b6cff;
-  }
-
-  .book-cover-title {
-    font-size: clamp(1.05rem, 1.2vw, 1.4rem);
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    line-height: 1.25;
-    color: #fff;
-  }
-
-  .book-cover-sub {
-    font-size: var(--font-size-compact, 12px);
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: rgba(255, 255, 255, 0.55);
+  .native {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: top left;
   }
 </style>
