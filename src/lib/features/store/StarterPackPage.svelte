@@ -12,8 +12,11 @@
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
   import DeckFanCover from "./components/DeckFanCover.svelte";
+  import BookCoverArt from "./components/BookCoverArt.svelte";
+  import SleeveArt from "./components/SleeveArt.svelte";
   import BuyButton from "./components/BuyButton.svelte";
   import PropPicker from "./components/PropPicker.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { prewarmCovers } from "./services/cover-front-renderer";
   import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
@@ -31,26 +34,40 @@
     ) ?? null
   );
 
-  // Mixed hand, half LOOP flavors + half color-coded trilogy elements: the mix
-  // is the message. No pack-specific bake needed.
-  const fanCards = $derived.by(() => {
-    const loops = store.products
+  // Cover pools: one card per LOOP flavor, and the trilogy's six element cards.
+  // No pack-specific bake needed — everything reuses the other listings' covers.
+  const loopCards = $derived(
+    store.products
       .filter((p) => p.listing === "loop-deck" && p.status === "active")
       .map((p) => p.coverCards?.[0])
-      .filter((c): c is NonNullable<typeof c> => c != null);
-    const tnd =
-      store.products.find(
-        (p) => p.listing === "tnd-trilogy" && p.status === "active"
-      )?.coverCards ?? [];
-    return [...loops.slice(0, 3), ...tnd.slice(0, 3)];
-  });
+      .filter((c): c is NonNullable<typeof c> => c != null)
+  );
+  const tndCards = $derived(
+    store.products.find(
+      (p) => p.listing === "tnd-trilogy" && p.status === "active"
+    )?.coverCards ?? []
+  );
+  // The pile slide's mixed hand: half LOOP, half color-coded trilogy.
+  const fanCards = $derived([...loopCards.slice(0, 3), ...tndCards.slice(0, 3)]);
+
+  // Gallery: show each thing in the box, plus the whole pile together.
+  type Slide = "pile" | "loop" | "tnd" | "guide" | "holder";
+  let slide = $state<Slide>("pile");
+  const slideOptions: { value: Slide; label: string }[] = [
+    { value: "pile", label: "The lot" },
+    { value: "loop", label: "LOOP deck" },
+    { value: "tnd", label: "Trilogy" },
+    { value: "guide", label: "The book" },
+    { value: "holder", label: "Holder" },
+  ];
 
   let propType = $state<PropType>(DEFAULT_SHOP_PROP);
 
-  // ONE worker seed for the fan's covers at the picked prop (live fallback
+  // ONE worker seed for every fan's covers at the picked prop (live fallback
   // only — baked covers load straight from Storage).
   $effect(() => {
-    if (fanCards.length) prewarmCovers(fanCards, propType);
+    const all = [...loopCards, ...tndCards];
+    if (all.length) prewarmCovers(all, propType);
   });
 
   const price = $derived(pack ? `$${(pack.price / 100).toFixed(0)}` : "$65");
@@ -71,19 +88,68 @@
         <!-- ============ preview column ============ -->
         <div class="preview-column">
           <div class="preview-box">
-            <Crossfade key={propType}>
+            <Crossfade key={`${slide}|${propType}`}>
               <div class="preview-inner">
-                <DeckFanCover
-                  cards={fanCards}
-                  deckName={pack.name}
-                  {propType}
-                  cardWidth={150}
-                  maxCardWidth={280}
-                  exactCount={Math.min(6, fanCards.length)}
-                />
+                {#if slide === "pile"}
+                  <!-- Everything together: mixed fan with the book + holder
+                       stand-ins tucked beside it. -->
+                  <div class="pile">
+                    <div class="pile-fan">
+                      <DeckFanCover
+                        cards={fanCards}
+                        deckName={pack.name}
+                        {propType}
+                        cardWidth={140}
+                        maxCardWidth={250}
+                        exactCount={Math.min(6, fanCards.length)}
+                      />
+                    </div>
+                    <div class="pile-side">
+                      <BookCoverArt width="clamp(96px, 7vw, 140px)" />
+                      <SleeveArt width="clamp(90px, 6.5vw, 130px)" />
+                    </div>
+                  </div>
+                {:else if slide === "loop"}
+                  <DeckFanCover
+                    cards={loopCards}
+                    deckName="LOOP Deck"
+                    {propType}
+                    cardWidth={150}
+                    maxCardWidth={280}
+                    exactCount={Math.min(6, loopCards.length)}
+                  />
+                {:else if slide === "tnd"}
+                  <!-- The full six-element rainbow. -->
+                  <DeckFanCover
+                    cards={tndCards}
+                    deckName="Timing & Direction"
+                    {propType}
+                    cardWidth={150}
+                    maxCardWidth={280}
+                    exactCount={Math.min(6, tndCards.length)}
+                  />
+                {:else if slide === "guide"}
+                  <div class="solo-art">
+                    <BookCoverArt width="clamp(180px, 15vw, 250px)" />
+                  </div>
+                {:else}
+                  <div class="solo-art">
+                    <SleeveArt width="clamp(170px, 14vw, 230px)" />
+                  </div>
+                {/if}
                 <p class="preview-desc">{pack.description}</p>
               </div>
             </Crossfade>
+          </div>
+
+          <div class="slide-picker">
+            <SegmentedControl
+              options={slideOptions}
+              value={slide}
+              onchange={(s) => (slide = s)}
+              color="accent"
+              size="sm"
+            />
           </div>
         </div>
 
@@ -218,6 +284,43 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+  }
+
+  .pile {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: clamp(12px, 1.5vw, 24px);
+    align-items: center;
+  }
+  .pile-fan {
+    min-width: 0;
+  }
+  .pile-side {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    align-items: center;
+  }
+  @media (max-width: 640px) {
+    .pile {
+      grid-template-columns: 1fr;
+    }
+    .pile-side {
+      flex-direction: row;
+      justify-content: center;
+    }
+  }
+
+  .solo-art {
+    display: grid;
+    place-items: center;
+    padding: 12px 0;
+  }
+
+  .slide-picker {
+    display: flex;
+    justify-content: center;
+    margin-top: 14px;
   }
 
   .preview-desc {
