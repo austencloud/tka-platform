@@ -48,14 +48,32 @@ if (browser && dev && "serviceWorker" in navigator) {
   void (async () => {
     try {
       const registrations = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(registrations.map((reg) => reg.unregister()));
+      // Spare the FCM-only worker: it has no fetch handler, so it cannot
+      // interfere with HMR — and killing it would break push on the dev
+      // origin every session (fcm-token-manager registers it on demand).
+      await Promise.all(
+        registrations
+          .filter(
+            (reg) =>
+              !(
+                reg.active ??
+                reg.waiting ??
+                reg.installing
+              )?.scriptURL.includes("firebase-messaging-sw"),
+          )
+          .map((reg) => reg.unregister()),
+      );
 
       if ("caches" in window) {
         const keys = await caches.keys();
         await Promise.all(keys.map((key) => caches.delete(key)));
       }
 
-      if (navigator.serviceWorker.controller) {
+      const controller = navigator.serviceWorker.controller;
+      const controllerIsFcmOnly = controller?.scriptURL.includes(
+        "firebase-messaging-sw",
+      );
+      if (controller && !controllerIsFcmOnly) {
         // A stale SW is still controlling this page. A plain reload is not
         // enough: the SW may serve a CACHED HTML shell that points at old chunk
         // hashes, so the reload just re-loads stale code (e.g. an old renderer

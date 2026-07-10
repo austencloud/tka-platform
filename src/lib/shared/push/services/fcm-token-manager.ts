@@ -34,13 +34,27 @@ export class FCMTokenManager {
 
 			const messaging = getMessaging(app);
 
-			const swRegistration =
+			let swRegistration =
 				await navigator.serviceWorker.getRegistration("/");
 			if (!swRegistration) {
-				console.debug(
-					"[FCMTokenManager] No service worker registered - push notifications unavailable (expected in dev)",
-				);
-				return null;
+				// Dev mode unregisters the app service worker (HMR protection —
+				// see hooks.client.ts), which made push impossible on the dev
+				// origin. Register the dedicated FCM-only worker instead: it has
+				// no fetch handler and caches nothing, so it can't break HMR.
+				// In production this branch never runs (/sw.js registers at boot).
+				try {
+					swRegistration = await navigator.serviceWorker.register(
+						"/firebase-messaging-sw.js",
+						{ scope: "/" },
+					);
+					await navigator.serviceWorker.ready;
+				} catch (swError) {
+					console.warn(
+						"[FCMTokenManager] Could not register FCM service worker:",
+						swError,
+					);
+					return null;
+				}
 			}
 
 			const token = await getToken(messaging, {
