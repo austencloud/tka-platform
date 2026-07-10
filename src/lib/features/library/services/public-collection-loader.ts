@@ -3,6 +3,14 @@
  *
  * Used by the Browse module and Following Feed to display
  * another user's public collections and favorites.
+ *
+ * INVARIANT: every LibraryCollection returned from this module has
+ * `sequenceCount` equal to the number of PUBLIC members a visitor will
+ * actually see. The stored doc counts the owner's private members too;
+ * letting that raw number escape caused three separate "4 sequences over a
+ * 1-sequence grid" bugs (community cards, foreign detail header, followed
+ * rail). Normalization happens HERE, at the only door foreign collections
+ * enter through — consumers must not re-derive or patch counts.
  */
 
 import {
@@ -20,7 +28,10 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
-import { SYSTEM_COLLECTION_IDS } from "$lib/shared/library/domain/models/collection";
+import {
+  SYSTEM_COLLECTION_IDS,
+  isSmartCollection,
+} from "$lib/shared/library/domain/models/collection";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import {
   getUserCollectionsPath,
@@ -52,19 +63,38 @@ export async function getUserPublicCollections(
     collections.push(mapDocToCollection(docSnap.data(), docSnap.id));
   });
 
-  return collections;
+  return Promise.all(collections.map(toPublicView));
+}
+
+/**
+ * Replace the stored (private-inclusive) sequenceCount with the count a
+ * visitor will actually see. Smart collections derive membership live from
+ * filterSpec (their ids list is unused), so their stored count stands. A
+ * failed count query falls back to the stored count — a slightly-high number
+ * beats a broken card.
+ */
+async function toPublicView(
+  col: LibraryCollection
+): Promise<LibraryCollection> {
+  if (isSmartCollection(col)) return col;
+  const publicCount = await countPublicMembers(col.sequenceIds).catch(
+    () => col.sequenceCount
+  );
+  return publicCount === col.sequenceCount
+    ? col
+    : { ...col, sequenceCount: publicCount };
 }
 
 /**
  * Count how many of the given member ids are actually in the public index.
  *
- * A public collection's `sequenceCount`/`sequenceIds` include the owner's
- * PRIVATE members, which visitors can't see — advertising that number is a lie
- * ("4 sequences" over a 1-sequence grid). `publicSequences` doc ids equal
- * sequence ids, so public visibility = doc existence; aggregate count queries
- * answer it without downloading documents (one count per 30-id `in` chunk).
+ * `publicSequences` doc ids equal sequence ids, so public visibility = doc
+ * existence; aggregate count queries answer it without downloading documents
+ * (one count per 30-id `in` chunk). Module-private on purpose — consumers get
+ * already-normalized collections and must not re-derive counts (see the
+ * module invariant above).
  */
-export async function countPublicMembers(
+async function countPublicMembers(
   sequenceIds: readonly string[]
 ): Promise<number> {
   if (sequenceIds.length === 0) return 0;
@@ -140,7 +170,9 @@ export async function getAllPublicCollections(
     );
   }
 
-  return results;
+  return Promise.all(
+    results.map(async (r) => ({ ...r, collection: await toPublicView(r.collection) }))
+  );
 }
 
 /**
@@ -159,7 +191,7 @@ export async function getPublicCollection(
   if (!snap.exists()) return null;
 
   const data = mapDocToCollection(snap.data(), collectionId);
-  return data.isPublic ? data : null;
+  return data.isPublic ? toPublicView(data) : null;
 }
 
 export async function getUserCollectionSequences(

@@ -268,15 +268,13 @@ instead of showing a ghost.
 		return `${n} ${n === 1 ? "sequence" : "sequences"}`;
 	}
 
-	// Foreign viewers only ever receive the PUBLIC members — counting
-	// sequenceIds would advertise private ones they can't see (e.g. "4
-	// sequences" over a 1-sequence grid). Owners keep the full-id count so the
-	// header doesn't flicker while members stream in.
+	// Foreign collections arrive with sequenceCount already normalized to
+	// PUBLIC members (public-collection-loader module invariant), so the
+	// header shows it immediately — no blank while members stream in. Owners
+	// see their own full-id count.
 	const visibleCount = $derived(
 		foreignOwnerId
-			? loadingMembers
-				? null
-				: members.length
+			? (collection?.sequenceCount ?? null)
 			: (collection?.sequenceIds.length ?? null),
 	);
 </script>
