@@ -26,28 +26,27 @@ retire the Learn Codex tab.
   `bl-clubs`, `bl-buugeng`, `bl-triads`, `bl-fans`, `bl-mini-hoops`) with ONE
   entry: `id: "codex"`, title "Codex", group "1.1". Deep link
   `/learn/guide/codex` (manifest ids are slugs automatically).
-- Composes the Learn codex's real pieces (reuse, don't fork):
-  `CodexSheetPicker`, the variations grid pattern (live `PictographContainer`
-  per variation), `CodexControlPanel` (rotate/mirror/color-swap via
-  `codex-pictograph-updater.ts`, applied to picker + variations together),
-  `SegmentedControl` Diamond/Box, visibility chips (`FilterChipBase`).
-  Data: `letterQueryHandler.getAllPictographVariations(gridMode)` (live app
-  dataset, not letters.json).
-- **Prop selector** (new capability): staff / club / buugeng / triad / fan /
-  mini-hoop / hand — a `SegmentedControl` or chip row mapping to `PropType`
-  values applied to every rendered `PictographData` (motions' `propType`) in
-  picker, variations, and the companion payload. Persisted with the page's
-  view state (localStorage, mirroring codex-explorer-persistence).
-- **Companion = animator**: clicking a variation emits the existing
-  `GuideSequenceClick` with a one-step strip for that variation, `key`
-  `codex-<letter>-<variationIndex>`, and the selected prop. Widen the payload's
-  `propType` from `"hand" | "staff"` to `PropType` (map through the companion →
-  InlineAnimationPlayer chain; existing "hand"/"staff" callers keep working).
-- Unlike artboard pages, this page is NOT print-faithful — it's an interactive
-  app page inside the reader. /print and /book render the existing static
-  codex sheets in its place (keep DoubleStaffCodexT12/36 wired for print-only
-  if trivially possible; otherwise print shows the placeholder — print
-  faithfulness for the codex remains the /guide/codex route's job).
+- **REVISED 2026-07-10 after Austen rejected v1** (v1 put an explorer-style
+  layout + control bar ON the page, gray cells, broken layout): the page IS
+  the printable codex — visually identical to the /guide/codex print sheets
+  (white paper, CodexSheet/CodexBox/CodexCell grid, no on-page controls),
+  serving print and interactive "identically". ALL interactivity lives in the
+  reader's right companion panel, which swaps contextually (as it does for
+  sequence animation): when the active page is the codex, the panel shows the
+  codex controls.
+- **Companion codex controls** (`GuideCodexControls`): prop selector (staff /
+  club / buugeng / triad / fan / mini-hoop / hand), visibility toggles
+  (glyph/grid/TKA/positions/reversals/non-radial), rotate/mirror/color-swap
+  transforms (codex-wide, via `codex-pictograph-updater` semantics — this is
+  how variations are browsed). Shared module-level `$state`
+  (`guide-codex-state.svelte.ts`, localStorage-persisted) drives the sheet
+  live; /print and /book render the same sheets with default state (staff,
+  all layers visible, no transforms) — identical layout, byte-identical
+  /guide/codex print route preserved via optional props with print defaults.
+- **Companion = animator**: clicking a sheet cell emits the existing
+  `GuideSequenceClick` with a one-step strip, key `codex-<letter>-<idx>`, and
+  the selected prop. Payload `propType` widened from `"hand" | "staff"` to
+  `PropType` (existing string callers keep working).
 - Guide overrides do NOT apply to codex variations (dataset is canonical).
 
 ### 2. Learn Codex tab retirement
