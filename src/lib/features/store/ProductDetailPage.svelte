@@ -6,6 +6,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { onMount } from "svelte";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
+  import BookCoverArt from "./components/BookCoverArt.svelte";
   import CardMockupPreview from "./components/CardMockupPreview.svelte";
   import SampleCardCarousel from "./components/SampleCardCarousel.svelte";
   import BuyButton from "./components/BuyButton.svelte";
@@ -60,14 +61,22 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
 
       <div class="detail-layout">
         <div class="preview-column">
-          <CardMockupPreview
-            coverImageUrl={product.coverImageUrl}
-            productName={product.name}
-            morphId={product.id}
-            coverSequence={product.coverSequence}
-            coverCards={product.coverCards}
-            deckId={product.deckId}
-          />
+          {#if product.type === "guide"}
+            <!-- The book has no card art; show its typographic cover instead of
+                 an empty card-mockup box. -->
+            <div class="book-preview">
+              <BookCoverArt width="clamp(200px, 22vw, 300px)" />
+            </div>
+          {:else}
+            <CardMockupPreview
+              coverImageUrl={product.coverImageUrl}
+              productName={product.name}
+              morphId={product.id}
+              coverSequence={product.coverSequence}
+              coverCards={product.coverCards}
+              deckId={product.deckId}
+            />
+          {/if}
         </div>
 
         <div class="info-column">
@@ -122,6 +131,18 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
     grid-template-columns: 1fr 1fr;
     gap: 48px;
     align-items: start;
+  }
+
+  .book-preview {
+    display: grid;
+    place-items: center;
+    min-height: 420px;
+    border-radius: 16px;
+    background: radial-gradient(
+      circle at 50% 42%,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.015)
+    );
   }
 
   @media (max-width: 768px) {

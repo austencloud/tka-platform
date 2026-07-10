@@ -4,11 +4,10 @@
   import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
-  import ProductCard from "./components/ProductCard.svelte";
+  import BookCoverArt from "./components/BookCoverArt.svelte";
   import DeckFanCover from "./components/DeckFanCover.svelte";
   import LoopChips from "./components/LoopChips.svelte";
   import { prewarmCovers } from "./services/cover-front-renderer";
-  import type { ProductType } from "./domain/models/product";
 
   // showDrafts: the admin "play with it" view loads every product including
   // drafts and sold-out. Public buyers get active-only.
@@ -57,20 +56,13 @@
     if (all.length) prewarmCovers(all);
   });
 
-  // Product type -> section for everything that is NOT part of a listing.
-  const SECTIONS: { type: ProductType; label: string }[] = [
-    { type: "physical-deck", label: "More Decks" },
-    { type: "sampler-pack", label: "Sampler Packs" },
-    { type: "guide", label: "Guides" },
-    { type: "material", label: "Props & Materials" },
-    { type: "digital", label: "Digital" },
-  ];
-
-  const groups = $derived(
-    SECTIONS.map((s) => ({
-      ...s,
-      items: state.products.filter((p) => p.type === s.type && !p.listing),
-    })).filter((g) => g.items.length > 0)
+  // The companion book: the only non-deck product on offer. Everything the shop
+  // sells sits above the fold (two deck lines + the book) — no catch-all grid.
+  const book = $derived(
+    state.products.find((p) => p.type === "guide" && p.status === "active") ?? null
+  );
+  const bookPrice = $derived(
+    book ? `$${(book.price / 100).toFixed(0)}` : ""
   );
 </script>
 
@@ -173,6 +165,39 @@
         </section>
       {/if}
 
+      <!-- ============ THE BOOK ============
+           The one non-deck product: the printed guide, front and center with
+           the deck lines. Typographic cover panel, no fake product photo. -->
+      {#if book}
+        <section class="book-band">
+          <a class="book-tile" href="/shop/{book.id}">
+            <div class="book-art" aria-hidden="true">
+              <BookCoverArt />
+            </div>
+            <div class="deck-info">
+              <span class="eyebrow">The guide</span>
+              <h2>{book.name}</h2>
+              {#if book.preorder}
+                <p class="deck-meta">
+                  Preorder{book.shipBy ? ` · ships ${book.shipBy}` : ""}
+                </p>
+              {/if}
+              <p class="deck-desc">{book.description}</p>
+              <p class="deck-desc">
+                The decks teach you sequences. The book teaches you the system
+                behind them, so you can write your own.
+              </p>
+              <div class="deck-buy-row">
+                <span class="deck-price">{bookPrice}</span>
+                <span class="deck-cta">
+                  Preorder the book <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                </span>
+              </div>
+            </div>
+          </a>
+        </section>
+      {/if}
+
       <!-- ============ INFO BANDS ============
            Stacked strips on normal screens; on ultrawide they compose into ONE
            side-by-side band (how / box / story), so the width carries density
@@ -224,20 +249,8 @@
       </section>
       </div>
 
-      <!-- ============ EVERYTHING ELSE ============ -->
-      {#if state.isLoading}
+      {#if state.isLoading && state.products.length === 0}
         <div class="loading">Loading products...</div>
-      {:else}
-        {#each groups as group (group.type)}
-          <section class="product-section">
-            <h2 class="section-title">{group.label}</h2>
-            <div class="product-grid">
-              {#each group.items as product, i (product.id)}
-                <ProductCard {product} index={i} />
-              {/each}
-            </div>
-          </section>
-        {/each}
       {/if}
     {/if}
   </main>
@@ -434,6 +447,51 @@
     }
   }
 
+  /* ---------- the book ---------- */
+  .book-band {
+    margin-bottom: 72px;
+  }
+
+  .book-tile {
+    /* One product, not a full-bleed band: cap and center so ultrawide doesn't
+       leave a half-empty tile trailing off to the right. */
+    max-width: 1240px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(220px, 340px) minmax(0, 1fr);
+    gap: clamp(20px, 3vw, 48px);
+    align-items: center;
+    padding: clamp(20px, 3vw, 40px);
+    border-radius: 24px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: inherit;
+    text-decoration: none;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s;
+  }
+  .book-tile:hover {
+    transform: translateY(-4px);
+    border-color: var(--theme-border-strong, rgba(255, 255, 255, 0.3));
+  }
+
+  .book-art {
+    display: grid;
+    place-items: center;
+    min-height: clamp(240px, 15vw, 360px);
+    border-radius: 16px;
+    background: radial-gradient(
+      circle at 50% 42%,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.015)
+    );
+  }
+
+  @media (max-width: 820px) {
+    .book-tile {
+      grid-template-columns: 1fr;
+    }
+  }
+
   /* ---------- bands ---------- */
   .band {
     margin-bottom: 72px;
@@ -548,17 +606,6 @@
     }
   }
 
-  /* ---------- remaining sections ---------- */
-  .product-section {
-    margin-bottom: 56px;
-  }
-
-  .product-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 28px;
-  }
-
   .loading, .error {
     text-align: center;
     padding: 48px;
@@ -571,11 +618,13 @@
 
   @media (prefers-reduced-motion: reduce) {
     .hero-cta,
-    .deck-tile {
+    .deck-tile,
+    .book-tile {
       transition: none;
     }
     .hero-cta:hover,
-    .deck-tile:hover {
+    .deck-tile:hover,
+    .book-tile:hover {
       transform: none;
     }
   }
