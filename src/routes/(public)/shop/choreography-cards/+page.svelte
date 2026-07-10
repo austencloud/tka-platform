@@ -1,6 +1,27 @@
 <script lang="ts">
   import { browser } from "$app/environment";
+  import { onMount } from "svelte";
+  import type { CoverCard } from "$lib/features/store/domain/models/product";
   import "$lib/shared/landing/styles/public-editorial.css";
+
+  // Real baked card fronts for the deck fan (variety proof under "Every Deck
+  // Is Different"). Loaded client-side only; prerendered HTML stays lean.
+  let fanCards = $state<CoverCard[]>([]);
+
+  onMount(async () => {
+    try {
+      const { loadActiveProducts } = await import(
+        "$lib/features/store/services/product-loader"
+      );
+      const products = await loadActiveProducts();
+      const withCovers = products.find(
+        (p) => (p.coverCards ?? []).filter((c) => c.imageUrl).length >= 4
+      );
+      fanCards = withCovers?.coverCards ?? [];
+    } catch (error) {
+      console.warn("[choreo-cards] deck fan load failed; section stays text-only", error);
+    }
+  });
 
   const DESCRIPTION =
     "Choreo Cards: the newest technology in flow arts notation. Each card holds a sequence. Scan the QR code, visualize it with any prop at any speed, and save it to your catalog.";
@@ -193,6 +214,10 @@
         </div>
       </div>
     </div>
+
+    <p class="qr-live">
+      That QR code is live. Scan it with your phone and this card's sequence opens.
+    </p>
   </section>
 
   <section class="editorial-section narrow" style="--accent: #14b8a6">
@@ -207,6 +232,13 @@
         bought.
       </p>
     </div>
+    {#if browser && fanCards.length}
+      {#await import("$lib/features/store/components/DeckFanCover.svelte") then { default: DeckFanCover }}
+        <div class="deck-fan-wrap">
+          <DeckFanCover cards={fanCards} maxCards={6} cardWidth={104} />
+        </div>
+      {/await}
+    {/if}
     <div class="deck-links">
       {#each decks as deck}
         <a class="deck-link" href={deck.href}>
@@ -228,6 +260,15 @@
       </p>
     </div>
   </section>
+
+  <div class="cta-card narrow">
+    <h3>Ready to create?</h3>
+    <p>TKA Composer is free to use. No download required.</p>
+    <a href="/create" class="cta-button" data-sveltekit-reload>
+      <span>Open TKA Composer</span>
+      <i class="fas fa-arrow-right" aria-hidden="true"></i>
+    </a>
+  </div>
 </div>
 
 <style>
@@ -278,6 +319,17 @@
     color: oklch(0.6 0.02 270);
     font-size: 0.9rem;
     margin: -0.4rem 0 1.5rem;
+  }
+
+  .qr-live {
+    text-align: center;
+    color: oklch(0.72 0.012 270);
+    font-size: 0.95rem;
+    margin: 2rem 0 0;
+  }
+
+  .deck-fan-wrap {
+    margin-top: 1.5rem;
   }
 
   .anatomy-layout {
