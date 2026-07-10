@@ -79,6 +79,22 @@ export default {
     const ua = request.headers.get("user-agent") || "";
     const isCrawler = SOCIAL_CRAWLER_UA.test(ua);
 
+    // Structured scan log — queryable in Workers Observability.
+    // request.cf geo fields are populated by Cloudflare at the edge.
+    const cf = request.cf || {};
+    console.log("scan", {
+      code,
+      isCrawler,
+      country: cf.country || null,
+      region: cf.region || null,
+      city: cf.city || null,
+      timezone: cf.timezone || null,
+      colo: cf.colo || null,
+      asOrganization: cf.asOrganization || null,
+      referer: request.headers.get("referer") || null,
+      ua,
+    });
+
     if (isCrawler && env.SHORTCODES) {
       try {
         const raw = await env.SHORTCODES.get(code);
