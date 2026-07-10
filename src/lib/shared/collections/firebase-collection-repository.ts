@@ -1,0 +1,49 @@
+import { firestoreList, firestoreSet, firestoreDelete } from "$lib/shared/firestore/firestore-crud";
+import type { CollectionEntry } from "./collection-entry";
+
+/** Structural match for firestore-crud's (unexported) SchemaLike — any zod
+ *  schema satisfies it. */
+interface SchemaLike<T> {
+  safeParse(
+    data: unknown,
+  ): { success: true; data: T } | { success: false; error: { issues: unknown[] } };
+}
+
+export interface FirebaseCollectionRepository<T extends CollectionEntry> {
+  load(userId: string): Promise<T[]>;
+  save(userId: string, entry: T): Promise<void>;
+  remove(userId: string, entryId: string): Promise<void>;
+}
+
+/**
+ * Firestore CRUD for a per-user saved-artifact collection living at
+ * `users/{uid}/{collectionName}`. Entries are validated against the feature's
+ * zod schema on load; the `id` field is the doc id (stripped on write).
+ */
+export function createFirebaseCollectionRepository<T extends CollectionEntry>(
+  collectionName: string,
+  // unknown-typed on purpose: zod's inferred output for a feature schema is
+  // structurally looser than the feature's declared interface (optional fields,
+  // z.any camera). The load() cast below mirrors what each per-feature repo did.
+  schema: SchemaLike<unknown>,
+): FirebaseCollectionRepository<T> {
+  const pathFor = (userId: string) => `users/${userId}/${collectionName}`;
+
+  return {
+    async load(userId: string): Promise<T[]> {
+      const results = await firestoreList(pathFor(userId), schema, {
+        orderBy: [{ field: "createdAt", direction: "desc" }],
+      });
+      return results as T[];
+    },
+
+    async save(userId: string, entry: T): Promise<void> {
+      const { id, ...data } = entry;
+      await firestoreSet(pathFor(userId), id, data as Record<string, unknown>);
+    },
+
+    async remove(userId: string, entryId: string): Promise<void> {
+      await firestoreDelete(pathFor(userId), entryId);
+    },
+  };
+}

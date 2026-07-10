@@ -17,8 +17,7 @@ const SCENE_FEATURES_STORAGE_KEY = "tka-scene-features";
  * does NOT open a sequence — it's the "make my next 3D view look like this" path.
  *
  * Rewrites the global `backgroundType`, which also changes the 2D background
- * theme — accepted (documented in the design). Effect toggles are intentionally
- * not applied (the app never persists them).
+ * theme — accepted (documented in the design).
  */
 export function applyScene3DLook(scene: Collected3DScene): void {
   const snap = scene.snapshot;
@@ -45,6 +44,7 @@ export function applyScene3DLook(scene: Collected3DScene): void {
     activeCameraPreset: snap.activeCameraPreset,
     showGridLabels: snap.showGridLabels,
     visiblePlanes: snap.visiblePlanes,
+    effectToggles: snap.effectToggles,
   });
 
   // 2. Scene-feature toggles (a fresh createSceneFeatureState reads this key).

@@ -303,6 +303,9 @@
   }
 
   onMount(() => {
+    // Guest sessions hydrate from localStorage (signed-in boot goes through
+    // auth-boot-orchestrator's init(uid) instead — initLocal no-ops then).
+    mandalaCollectionState.initLocal();
     return () => {
       clearTimeout(deleteTimer);
       meditationSession.dispose();

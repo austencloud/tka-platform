@@ -161,6 +161,9 @@
   }
 
   onMount(() => {
+    // Guest sessions hydrate from localStorage (signed-in boot goes through
+    // auth-boot-orchestrator's init(uid) instead — initLocal no-ops then).
+    tunnelCollectionState.initLocal();
     return () => clearTimeout(deleteTimer);
   });
 </script>

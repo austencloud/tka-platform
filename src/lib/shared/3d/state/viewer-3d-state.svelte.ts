@@ -51,6 +51,8 @@ const STORAGE_KEY_PRESET = "tka-viewer3d-activePreset";
 const STORAGE_KEY_CAM_PRESET = "tka-viewer3d-cameraPreset";
 const STORAGE_KEY_NAV_MODE = "tka-viewer3d-navMode";
 const STORAGE_KEY_GRID_LABELS = "tka-viewer3d-gridLabels";
+const STORAGE_KEY_EFFECT_TOGGLES = "tka-viewer3d-effectToggles";
+const STORAGE_KEY_OCEAN_VARIANT = "tka-viewer3d-oceanVariant";
 
 export type ViewerNavMode = "orbit" | "fly" | "walk";
 
@@ -271,6 +273,41 @@ function migrateLegacyPlanesIfNeeded(): void {
   }
 }
 
+const DEFAULT_EFFECT_TOGGLES: Record<string, boolean> = {
+  fire: false,
+  led: false,
+  trails: false,
+  charcoal: false,
+};
+
+function loadPersistedEffectToggles(): Record<string, boolean> {
+  if (typeof localStorage === "undefined") return { ...DEFAULT_EFFECT_TOGGLES };
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_EFFECT_TOGGLES);
+    if (!raw) return { ...DEFAULT_EFFECT_TOGGLES };
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return { ...DEFAULT_EFFECT_TOGGLES };
+    }
+    const toggles = { ...DEFAULT_EFFECT_TOGGLES };
+    for (const [k, v] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof v === "boolean") toggles[k] = v;
+    }
+    return toggles;
+  } catch {
+    return { ...DEFAULT_EFFECT_TOGGLES };
+  }
+}
+
+function persistEffectToggles(toggles: Record<string, boolean>): void {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.setItem(STORAGE_KEY_EFFECT_TOGGLES, JSON.stringify(toggles));
+  } catch {
+    // Quota exceeded or unavailable
+  }
+}
+
 // ============================================
 // Factory
 // ============================================
@@ -295,7 +332,7 @@ export function createViewer3DState() {
 
   const _persistedOceanVariant = (() => {
     try {
-      return (localStorage.getItem("tka-viewer3d-oceanVariant") ?? "abyss") as OceanVariant;
+      return (localStorage.getItem(STORAGE_KEY_OCEAN_VARIANT) ?? "abyss") as OceanVariant;
     } catch { return "abyss" as OceanVariant; }
   })();
   let oceanVariant = $state<OceanVariant>(_persistedOceanVariant);
@@ -734,12 +771,7 @@ export function createViewer3DState() {
 
   let _currentSequenceData = $state<SequenceData | null>(null);
 
-  const effectToggles = $state<Record<string, boolean>>({
-    fire: false,
-    led: false,
-    trails: false,
-    charcoal: false,
-  });
+  const effectToggles = $state<Record<string, boolean>>(loadPersistedEffectToggles());
   let cameraSnapshot = $state<CameraStateSnapshot | null>(null);
   let navMode = $state<ViewerNavMode>(loadPersistedNavMode());
   let activePreset = $state<string | null>((() => {
@@ -967,6 +999,35 @@ export function createViewer3DState() {
    */
   function toggleEffect(name: string) {
     effectToggles[name] = !effectToggles[name];
+    persistEffectToggles({ ...effectToggles });
+  }
+
+  /**
+   * Snapshot every persistable knob of this viewer state as one typed config.
+   * This is the single capture point for save-a-3D-scene (and any future
+   * "reproduce this viewer" feature) — the inverse of writeViewer3DConfig.
+   */
+  function serialize(): Viewer3DPersistConfig {
+    return {
+      camera: cameraSnapshot ?? _persistedCamera,
+      performers: performerManager.performers.map((p) => ({
+        position: { x: p.position.x, z: p.position.z },
+        facingAngle: p.facingAngle,
+        customBluePlane: p.customBluePlane,
+        customRedPlane: p.customRedPlane,
+        name: p.displayName ?? null,
+      })),
+      selectedPerformerIndex,
+      activeFormation,
+      defaultProp: String(_defaultSettings.prop),
+      oceanVariant: String(oceanVariant),
+      navMode,
+      activePreset,
+      activeCameraPreset,
+      showGridLabels,
+      visiblePlanes: [...visiblePlanes].map(String),
+      effectToggles: { ...effectToggles },
+    };
   }
 
   /**
@@ -1043,7 +1104,7 @@ export function createViewer3DState() {
     },
     setOceanVariant(v: OceanVariant) {
       oceanVariant = v;
-      try { localStorage.setItem("tka-viewer3d-oceanVariant", v); } catch {}
+      try { localStorage.setItem(STORAGE_KEY_OCEAN_VARIANT, v); } catch {}
     },
     get activePopover() {
       return _activePopover;
@@ -1273,6 +1334,7 @@ export function createViewer3DState() {
     get currentSequenceData() {
       return _currentSequenceData;
     },
+    serialize,
     enter3D,
     exit3D,
     toggleEffect,
@@ -1303,6 +1365,9 @@ export interface Viewer3DPersistConfig {
   activeCameraPreset: string;
   showGridLabels: boolean;
   visiblePlanes: string[];
+  /** Named visual-effect toggles (fire/led/trails/…). Optional for configs
+   *  captured before effect persistence existed. */
+  effectToggles?: Record<string, boolean>;
 }
 
 /**
@@ -1328,10 +1393,13 @@ export function writeViewer3DConfig(config: Viewer3DPersistConfig): void {
     config.selectedPerformerIndex === null ? "null" : String(config.selectedPerformerIndex),
   );
   set(STORAGE_KEY_DEFAULT_PROP, config.defaultProp);
-  set("tka-viewer3d-oceanVariant", config.oceanVariant);
+  set(STORAGE_KEY_OCEAN_VARIANT, config.oceanVariant);
   set(STORAGE_KEY_NAV_MODE, config.navMode);
   set(STORAGE_KEY_PRESET, config.activePreset ?? "");
   set(STORAGE_KEY_CAM_PRESET, config.activeCameraPreset);
   set(STORAGE_KEY_GRID_LABELS, String(config.showGridLabels));
   set(STORAGE_KEY_VISIBLE_PLANES, JSON.stringify(config.visiblePlanes));
+  if (config.effectToggles) {
+    set(STORAGE_KEY_EFFECT_TOGGLES, JSON.stringify(config.effectToggles));
+  }
 }

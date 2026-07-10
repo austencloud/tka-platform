@@ -19,51 +19,49 @@ function readSceneFeatures(): Record<string, boolean> {
 }
 
 /**
- * Aggregate the four 3D state owners into one reproducible snapshot:
- * per-mount viewer-3d-state (getters), the global settingsService background +
- * prop types, and the persisted scene-feature toggles. Effect toggles are
- * captured for display but are not restored on open (the app never persists
- * them — see the design's Deferred section).
+ * Build a reproducible snapshot from the viewer's own serialize() plus the two
+ * owners outside it: the global settingsService background + prop types, and
+ * the persisted scene-feature toggles (their context is scoped inside
+ * Viewer3DCanvas, so the persisted key is read directly).
  */
 export function captureScene3DSnapshot(viewer3DState: Viewer3DState): Scene3DSnapshot {
-  const performers: StoredPerformerSnapshot[] = viewer3DState.performerManager.performers.map(
-    (p) => ({
-      position: { x: p.position.x, z: p.position.z },
-      facingAngle: p.facingAngle,
-      customBluePlane: String(p.customBluePlane),
-      customRedPlane: String(p.customRedPlane),
-      name: p.displayName ?? null,
-    }),
-  );
-
+  const cfg = viewer3DState.serialize();
   const d = viewer3DState.defaultSettings;
   const settings = settingsService.settings;
+
+  const performers: StoredPerformerSnapshot[] = cfg.performers.map((p) => ({
+    position: { x: p.position.x, z: p.position.z },
+    facingAngle: p.facingAngle,
+    customBluePlane: String(p.customBluePlane),
+    customRedPlane: String(p.customRedPlane),
+    name: p.name ?? null,
+  }));
 
   return {
     version: 1,
     scene: {
       backgroundType: String(settings.backgroundType),
-      oceanVariant: String(viewer3DState.oceanVariant),
+      oceanVariant: cfg.oceanVariant,
     },
-    camera: viewer3DState.persistedCamera ?? null,
+    camera: cfg.camera,
     performers,
-    selectedPerformerIndex: viewer3DState.selectedPerformerIndex,
-    activeFormation: String(viewer3DState.activeFormation),
+    selectedPerformerIndex: cfg.selectedPerformerIndex,
+    activeFormation: String(cfg.activeFormation),
     propSizeLinked: viewer3DState.propSizeLinked,
     defaultSettings: {
-      prop: String(d.prop),
+      prop: cfg.defaultProp,
       effortId: String(d.effortId),
       planeMode: String(d.planeMode),
       customBluePlane: String(d.customBluePlane),
       customRedPlane: String(d.customRedPlane),
     },
-    visiblePlanes: [...viewer3DState.visiblePlanes].map(String),
-    showGridLabels: viewer3DState.showGridLabels,
-    navMode: viewer3DState.navMode,
-    activePreset: viewer3DState.activePreset,
-    activeCameraPreset: viewer3DState.activeCameraPreset,
+    visiblePlanes: cfg.visiblePlanes,
+    showGridLabels: cfg.showGridLabels,
+    navMode: cfg.navMode,
+    activePreset: cfg.activePreset,
+    activeCameraPreset: cfg.activeCameraPreset,
     stageGroundOffset: viewer3DState.stageGroundOffset,
-    effectToggles: { ...viewer3DState.effectToggles },
+    effectToggles: cfg.effectToggles ?? {},
     sceneFeatures: readSceneFeatures(),
     props: {
       bluePropType: settings.bluePropType ? String(settings.bluePropType) : undefined,

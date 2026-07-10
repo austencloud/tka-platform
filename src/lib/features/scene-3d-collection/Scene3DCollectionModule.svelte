@@ -171,6 +171,9 @@
   }
 
   onMount(() => {
+    // Guest sessions hydrate from localStorage (signed-in boot goes through
+    // auth-boot-orchestrator's init(uid) instead — initLocal no-ops then).
+    scene3dCollectionState.initLocal();
     return () => clearTimeout(deleteTimer);
   });
 </script>
