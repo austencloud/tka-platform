@@ -288,19 +288,20 @@
     height: clamp(400px, 40vw, 480px);
   }
 
-  /* Each layer fills the stage and centers its art. */
+  /* Each layer fills the stage and centers its art vertically. Children
+     STRETCH horizontally: the fan sizes its cards FROM its container width
+     (bind:clientWidth), so a shrink-to-fit container (align-items: center)
+     creates a measure→resize→measure oscillation. Width must flow downward. */
   .preview-inner {
     height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center;
-  }
-  .preview-inner > :global(*) {
-    max-width: 100%;
+    align-items: stretch;
   }
 
   .pile {
+    width: 100%;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: clamp(12px, 1.5vw, 24px);
