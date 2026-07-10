@@ -13,9 +13,12 @@
   import { setStoreContext } from "./context/store-context";
   import DeckFanCover from "./components/DeckFanCover.svelte";
   import BuyButton from "./components/BuyButton.svelte";
+  import PropPicker from "./components/PropPicker.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
   import { prewarmCovers } from "./services/cover-front-renderer";
+  import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   // Named `store`, not `state`: a local binding called `state` collides with the
   // $state rune (svelte store_rune_conflict).
@@ -34,10 +37,13 @@
     volumes.find((p) => p.id === selectedId) ?? volumes[0] ?? null
   );
 
-  // ONE worker seed covering every volume's covers (see cover-front-renderer).
+  let propType = $state<PropType>(DEFAULT_SHOP_PROP);
+
+  // ONE worker seed covering every volume's covers for the picked prop (see
+  // cover-front-renderer). Baked covers skip this; it backs live fallbacks.
   $effect(() => {
     const all = volumes.flatMap((p) => p.coverCards ?? []);
-    if (all.length) prewarmCovers(all);
+    if (all.length) prewarmCovers(all, propType);
   });
 
   const price = $derived(
@@ -80,12 +86,13 @@
         <!-- ============ preview column ============ -->
         <div class="preview-column">
           <div class="preview-box">
-            <Crossfade key={selected.id}>
+            <Crossfade key={`${selected.id}|${propType}`}>
               <div class="preview-inner">
                 <!-- All six element families, always. -->
                 <DeckFanCover
                   cards={selected.coverCards ?? []}
                   deckName={selected.name}
+                  {propType}
                   cardWidth={150}
                   maxCardWidth={280}
                   exactCount={Math.min(6, (selected.coverCards ?? []).length)}
@@ -145,9 +152,14 @@
             </div>
           </div>
 
+          <div class="field">
+            <span class="field-label" id="prop-label">Prop</span>
+            <PropPicker value={propType} onchange={(p) => (propType = p)} />
+          </div>
+
           <p class="price">{price}</p>
 
-          <BuyButton product={selected} />
+          <BuyButton product={selected} {propType} />
           {#if store.checkoutError}
             <p class="checkout-error" role="alert">{store.checkoutError}</p>
           {/if}

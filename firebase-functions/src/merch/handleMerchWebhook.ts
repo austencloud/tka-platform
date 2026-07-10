@@ -60,6 +60,9 @@ export const handleMerchWebhook = functions.https.onRequest(
         items: [{
           productId: session.metadata.productId,
           productName: session.metadata.productName || "",
+          // Buyer's print prop for physical decks; absent = staff (also absent
+          // on pre-prop-picker orders and non-deck items).
+          ...(session.metadata.propType && { propType: session.metadata.propType }),
           quantity: 1,
           // Per-unit product price = the line-item subtotal (single quantity),
           // BEFORE shipping + tax. amount_total includes the flat shipping rate

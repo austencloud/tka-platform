@@ -25,8 +25,12 @@ export interface CoverCard {
   readonly footerCenter?: string;
   /** Baked render of this card front (Firebase Storage URL). When present the
    *  fan loads this image directly instead of running the print pipeline in
-   *  the visitor's browser. Written by the admin cover bake. */
+   *  the visitor's browser. Written by the admin cover bake. Legacy staff-prop
+   *  render; per-prop bakes live in propImageUrls. */
   readonly imageUrl?: string;
+  /** Baked renders keyed by PropType value (staff/club/fan/...), one per
+   *  offered shop prop (see shop-prop-options). Written by the admin bake. */
+  readonly propImageUrls?: Record<string, string>;
 }
 
 export interface Product {
@@ -82,6 +86,9 @@ export interface OrderItem {
   readonly productName: string;
   readonly quantity: number;
   readonly unitPrice: number;
+  /** Buyer's chosen print prop (PropType value, e.g. "club"). Absent on
+   *  pre-prop-picker orders and non-deck items; treat as "staff". */
+  readonly propType?: string;
 }
 
 export interface ShippingAddress {

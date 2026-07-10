@@ -28,6 +28,7 @@ import { getImageComposer } from "$lib/shared/render/get-image-composer";
 import { getQRCodeGenerator } from "$lib/shared/qr/get-qr-code-generator";
 import { prewarmCardPool } from "$lib/shared/render/services/card-pool-prewarm";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { bakedCoverUrl } from "../domain/shop-prop-options";
 import {
   configureShortCodeManager,
   getShortCodeManager,
@@ -39,10 +40,10 @@ import { registerLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-d
 import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
 import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
 
-// Physical decks print with staves; covers show the printed deck, so they
-// don't follow the viewer's prop settings.
-const COVER_BLUE_PROP = PropType.STAFF;
-const COVER_RED_PROP = PropType.STAFF;
+// Covers show the printed deck, so they don't follow the viewer's prop
+// settings — they follow the buyer's shop prop choice (both hands the same
+// prop), defaulting to staves, the canonical TKA prop.
+const DEFAULT_COVER_PROP = PropType.STAFF;
 
 // Browse-cache integration the shortcode manager doesn't need for GENERATING
 // codes (same stub /q uses — see routes/q/[code]/+page.svelte).
@@ -98,11 +99,15 @@ const seedGateWithTimeout = Promise.race([
  * path with arrows/props/glyphs present. Fire-and-forget and idempotent per
  * set; safe to call again when products stream in.
  */
-export function prewarmCovers(cards: readonly CoverCard[]): void {
-  // Baked cards (imageUrl) load as plain images — only unbaked ones need the
-  // worker pipeline seeded.
+export function prewarmCovers(
+  cards: readonly CoverCard[],
+  propType: PropType = DEFAULT_COVER_PROP
+): void {
+  // Baked cards for this prop load as plain images — only unbaked ones need
+  // the worker pipeline seeded. NOTE: the pool holds ONE prop bundle at a time
+  // (prop types are part of the seed signature), so a prop switch re-seeds.
   const sequences = cards
-    .filter((c) => !c.imageUrl)
+    .filter((c) => !bakedCoverUrl(c, propType))
     .map((c) => c.sequence && hydrateCached(c.sequence))
     .filter(Boolean) as SequenceData[];
   if (!sequences.length) return;
@@ -113,8 +118,8 @@ export function prewarmCovers(cards: readonly CoverCard[]): void {
   // instead of seeding the pool empty.
   prewarmCardPool({
     sequences,
-    bluePropType: COVER_BLUE_PROP,
-    redPropType: COVER_RED_PROP,
+    bluePropType: propType,
+    redPropType: propType,
     theme: "cosmic",
     iconPaths,
   });
@@ -176,10 +181,11 @@ function frameElement(card: CoverCard): TnDElement | undefined {
  */
 export function renderCoverFront(
   card: CoverCard,
-  deck: { deckId?: string; deckName?: string } = {}
+  deck: { deckId?: string; deckName?: string; propType?: PropType } = {}
 ): Promise<string> {
   const seq = card.sequence;
-  const key = `${seq.id ?? seq.word ?? "?"}|${card.accentColor ?? "-"}|${card.footerCenter ?? "-"}`;
+  const propType = deck.propType ?? DEFAULT_COVER_PROP;
+  const key = `${seq.id ?? seq.word ?? "?"}|${card.accentColor ?? "-"}|${card.footerCenter ?? "-"}|${propType}`;
   const cached = urlCache.get(key);
   if (cached) return cached;
 
@@ -197,8 +203,8 @@ export function renderCoverFront(
         startPositionLayout: getCatalogLayoutPolicy(stepCount),
         showMandala: true,
         tndElement: frameElement(card),
-        bluePropType: COVER_BLUE_PROP,
-        redPropType: COVER_RED_PROP,
+        bluePropType: propType,
+        redPropType: propType,
         // TnD cards keep their element footer; everything else carries the
         // brand line (the deck identity lives on the card BACK).
         notes: card.footerCenter ?? "The Kinetic Alphabet",

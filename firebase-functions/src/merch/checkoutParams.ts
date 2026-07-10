@@ -20,8 +20,11 @@ export function buildMerchCheckoutParams(opts: {
   product: MerchCheckoutProduct;
   productId: string;
   baseUrl: string;
+  /** Buyer's print prop (validated PropType value). Rides in metadata so the
+   *  webhook writes it onto the order for fulfillment. */
+  propType?: string;
 }): Stripe.Checkout.SessionCreateParams {
-  const { product, productId, baseUrl } = opts;
+  const { product, productId, baseUrl, propType } = opts;
   return {
     mode: "payment",
     line_items: [{ price: product.stripePriceId, quantity: 1 }],
@@ -30,6 +33,10 @@ export function buildMerchCheckoutParams(opts: {
     shipping_options: MERCH_SHIPPING_OPTIONS,
     success_url: `${baseUrl}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${baseUrl}/shop/${productId}`,
-    metadata: { productId, productName: product.name },
+    metadata: {
+      productId,
+      productName: product.name,
+      ...(propType && { propType }),
+    },
   };
 }

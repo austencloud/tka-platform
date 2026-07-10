@@ -11,8 +11,11 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   import SampleCardCarousel from "./components/SampleCardCarousel.svelte";
   import BuyButton from "./components/BuyButton.svelte";
   import LoopChips from "./components/LoopChips.svelte";
+  import PropPicker from "./components/PropPicker.svelte";
   import { captureMorphSource } from "./transitions/shop-morph";
   import type { Product } from "./domain/models/product";
+  import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   interface Props {
     productId: string;
@@ -23,34 +26,36 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
 
   let { productId, initialProduct = null }: Props = $props();
 
-  const state = createStoreState(
+  const store = createStoreState(
     getProductLoader(),
     getMerchCheckoutCreator(),
     initialProduct
   );
 
-  setStoreContext({ state });
+  setStoreContext({ state: store });
+
+  let propType = $state<PropType>(DEFAULT_SHOP_PROP);
 
   let formattedPrice = $derived(
-    state.selectedProduct
-      ? `$${(state.selectedProduct.price / 100).toFixed(2)}`
+    store.selectedProduct
+      ? `$${(store.selectedProduct.price / 100).toFixed(2)}`
       : ""
   );
 
   onMount(() => {
     // Already seeded by the route load(); only fetch if we arrived without it.
-    if (!initialProduct) state.loadProduct(productId);
+    if (!initialProduct) store.loadProduct(productId);
   });
 </script>
 
 <div class="detail-page">
   <main class="detail-content">
-    {#if state.isLoading}
+    {#if store.isLoading}
       <div class="loading">Loading product details...</div>
-    {:else if state.error}
-      <div class="error">{state.error}</div>
-    {:else if state.selectedProduct}
-      {@const product = state.selectedProduct}
+    {:else if store.error}
+      <div class="error">{store.error}</div>
+    {:else if store.selectedProduct}
+      {@const product = store.selectedProduct}
       <a
         href="/shop"
         class="back-button"
@@ -75,6 +80,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
               coverSequence={product.coverSequence}
               coverCards={product.coverCards}
               deckId={product.deckId}
+              {propType}
             />
           {/if}
         </div>
@@ -94,9 +100,18 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
               Pre-order.{product.shipBy ? ` Ships ${product.shipBy}.` : ""} You pay now and it ships once printed.
             </p>
           {/if}
-          <BuyButton {product} />
-          {#if state.checkoutError}
-            <p class="checkout-error" role="alert">{state.checkoutError}</p>
+          {#if product.type === "physical-deck"}
+            <div class="prop-field">
+              <span class="prop-field-label">Prop</span>
+              <PropPicker value={propType} onchange={(p) => (propType = p)} />
+            </div>
+          {/if}
+          <BuyButton
+            {product}
+            propType={product.type === "physical-deck" ? propType : undefined}
+          />
+          {#if store.checkoutError}
+            <p class="checkout-error" role="alert">{store.checkoutError}</p>
           {/if}
         </div>
       </div>
@@ -262,6 +277,21 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
     font-weight: 600;
     color: var(--theme-warning, #f59e0b);
     margin: 0 0 16px;
+  }
+
+  .prop-field {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0 0 20px;
+  }
+
+  .prop-field-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
   }
 
   .checkout-error {

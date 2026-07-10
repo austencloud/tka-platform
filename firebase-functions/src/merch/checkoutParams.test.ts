@@ -38,4 +38,22 @@ describe("buildMerchCheckoutParams", () => {
     );
     expect(params.cancel_url).toBe("https://tkaflowarts.com/shop/doc_1");
   });
+
+  it("omits propType from metadata when the buyer didn't pick one", () => {
+    expect(params.metadata).toEqual({ productId: "doc_1", productName: "Deck" });
+  });
+
+  it("carries the buyer's propType in metadata for the webhook", () => {
+    const withProp = buildMerchCheckoutParams({
+      product: PRODUCT,
+      productId: "doc_1",
+      baseUrl: "https://tkaflowarts.com",
+      propType: "club",
+    });
+    expect(withProp.metadata).toEqual({
+      productId: "doc_1",
+      productName: "Deck",
+      propType: "club",
+    });
+  });
 });

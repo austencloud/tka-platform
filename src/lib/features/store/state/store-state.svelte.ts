@@ -7,7 +7,7 @@ interface ProductLoader {
 }
 
 interface CheckoutCreator {
-  createCheckoutSession(productId: string): Promise<string>;
+  createCheckoutSession(productId: string, propType?: string): Promise<string>;
 }
 
 // Module-level cache (survives component unmount/remount) so navigating from the
@@ -86,11 +86,11 @@ export function createStoreState(
     }
   }
 
-  async function startCheckout(productId: string) {
+  async function startCheckout(productId: string, propType?: string) {
     isCheckingOut = true;
     checkoutError = null;
     try {
-      const url = await checkoutCreator.createCheckoutSession(productId);
+      const url = await checkoutCreator.createCheckoutSession(productId, propType);
       window.location.href = url;
     } catch (e) {
       checkoutError = "Checkout isn't available yet. Try again later.";

@@ -7,13 +7,16 @@
 <script lang="ts">
   import { getStoreContext } from "../context/store-context";
   import type { Product } from "../domain/models/product";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import WaitlistForm from "./WaitlistForm.svelte";
 
   interface Props {
     product: Product;
+    /** Buyer's print-prop pick (decks). Rides into checkout metadata. */
+    propType?: PropType;
   }
 
-  let { product }: Props = $props();
+  let { product, propType }: Props = $props();
   const { state } = getStoreContext();
 
   const available = $derived(Boolean(product.stripePriceId));
@@ -22,7 +25,7 @@
 {#if available}
   <button
     class="buy-button"
-    onclick={() => state.startCheckout(product.id)}
+    onclick={() => state.startCheckout(product.id, propType)}
     disabled={state.isCheckingOut}
   >
     {#if state.isCheckingOut}

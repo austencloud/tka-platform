@@ -14,9 +14,12 @@
   import DeckFanCover from "./components/DeckFanCover.svelte";
   import LoopChips from "./components/LoopChips.svelte";
   import BuyButton from "./components/BuyButton.svelte";
+  import PropPicker from "./components/PropPicker.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { prewarmCovers } from "./services/cover-front-renderer";
+  import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   // Named `store`, not `state`: a local binding called `state` collides with the
   // $state rune (svelte store_rune_conflict).
@@ -35,11 +38,14 @@
     flavors.find((p) => p.id === selectedId) ?? flavors[0] ?? null
   );
 
-  // ONE worker seed covering every flavor's covers, so flavor swaps render
-  // with full arrow/prop assets (see cover-front-renderer).
+  let propType = $state<PropType>(DEFAULT_SHOP_PROP);
+
+  // ONE worker seed covering every flavor's covers for the picked prop, so
+  // flavor swaps render with full arrow/prop assets (see cover-front-renderer).
+  // Baked covers skip this entirely; the seed only matters for live fallbacks.
   $effect(() => {
     const all = flavors.flatMap((p) => p.coverCards ?? []);
-    if (all.length) prewarmCovers(all);
+    if (all.length) prewarmCovers(all, propType);
   });
 
   // Short flavor names for the picker (the SKU name repeats "LOOP Deck").
@@ -82,12 +88,13 @@
         <!-- ============ preview column ============ -->
         <div class="preview-column">
           <div class="preview-box">
-            <Crossfade key={selected.id}>
+            <Crossfade key={`${selected.id}|${propType}`}>
               <div class="preview-inner">
                 <DeckFanCover
                   cards={selected.coverCards ?? []}
                   deckId={selected.deckId}
                   deckName={selected.name}
+                  {propType}
                   cardWidth={168}
                   maxCardWidth={280}
                 />
@@ -127,6 +134,11 @@
           </div>
 
           <div class="field">
+            <span class="field-label" id="prop-label">Prop</span>
+            <PropPicker value={propType} onchange={(p) => (propType = p)} />
+          </div>
+
+          <div class="field">
             <span class="field-label" id="size-label">Size</span>
             <SegmentedControl
               options={[
@@ -154,7 +166,7 @@
 
           <p class="price">{price}</p>
 
-          <BuyButton product={selected} />
+          <BuyButton product={selected} {propType} />
           {#if store.checkoutError}
             <p class="checkout-error" role="alert">{store.checkoutError}</p>
           {/if}

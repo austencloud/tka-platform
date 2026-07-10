@@ -6,19 +6,28 @@
  * (the /shop fan used to render 12+ cards from scratch per fresh session).
  *
  * Admin-only: renders each unbaked cover through the REAL print pipeline
- * (renderCoverFront — pixel-identical to what ships), uploads the PNG to
- * shop-covers/{productId}/{index}.png, and writes the download URL back onto
- * the product doc's coverCards entry. DeckFanCover prefers card.imageUrl and
- * falls back to live rendering, so unbaked/new products keep working.
+ * (renderCoverFront — pixel-identical to what ships), uploads the PNG, and
+ * writes the download URL back onto the product doc's coverCards entry.
+ * DeckFanCover prefers the baked URL and falls back to live rendering, so
+ * unbaked/new products keep working.
  *
- * Re-bake: edit a product's coverCards (the bake only fills cards missing
- * imageUrl), or clear imageUrl fields to force a re-render.
+ * One pass PER SHOP PROP (see shop-prop-options): the composition worker holds
+ * one prop asset bundle at a time, so the bake seeds per prop and renders all
+ * products' cards for that prop before moving on. Storage layout stays flat
+ * under shop-covers/{productId}/ (the storage rule matches a single filename
+ * segment): the legacy staff bake lives at {index}.png, per-prop bakes at
+ * {index}-{prop}.png.
+ *
+ * Re-bake: clear imageUrl / propImageUrls fields to force a re-render (the
+ * bake only fills missing URLs).
  */
 
 import { doc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { getFirestoreInstance, getStorageInstance } from "$lib/shared/auth/firebase";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { Product, CoverCard } from "../domain/models/product";
+import { SHOP_PROP_OPTIONS, bakedCoverUrl } from "../domain/shop-prop-options";
 import { renderCoverFront, prewarmCovers } from "./cover-front-renderer";
 
 export interface BakeProgress {
@@ -28,24 +37,34 @@ export interface BakeProgress {
   readonly errors: string[];
 }
 
-function unbaked(cards: readonly CoverCard[] | undefined): CoverCard[] {
-  return (cards ?? []).filter((c) => !c.imageUrl && c.sequence);
+function unbakedFor(cards: readonly CoverCard[] | undefined, prop: PropType): CoverCard[] {
+  return (cards ?? []).filter((c) => c.sequence && !bakedCoverUrl(c, prop));
 }
 
-/** Count of cover cards across products that still need baking. */
+/** Count of (card, prop) renders across products that still need baking. */
 export function countUnbaked(products: readonly Product[]): number {
-  return products.reduce((n, p) => n + unbaked(p.coverCards).length, 0);
+  return SHOP_PROP_OPTIONS.reduce(
+    (n, prop) => n + products.reduce((m, p) => m + unbakedFor(p.coverCards, prop).length, 0),
+    0
+  );
+}
+
+function storagePath(productId: string, index: number, prop: PropType): string {
+  // Staff keeps the legacy flat name so already-baked files stay canonical.
+  return prop === PropType.STAFF
+    ? `shop-covers/${productId}/${index}.png`
+    : `shop-covers/${productId}/${index}-${prop}.png`;
 }
 
 /**
- * Bake every unbaked cover card across the given products. Sequential per
- * card (the renderer already lane-throttles); progress via callback.
+ * Bake every unbaked (card, prop) combination across the given products.
+ * Sequential per card (the renderer already lane-throttles); one worker seed
+ * per prop; progress via callback.
  */
 export async function bakeCoverImages(
   products: readonly Product[],
   onProgress?: (p: BakeProgress) => void
 ): Promise<BakeProgress> {
-  const targets = products.filter((p) => unbaked(p.coverCards).length > 0);
   const progress: {
     totalCards: number;
     bakedCards: number;
@@ -57,57 +76,77 @@ export async function bakeCoverImages(
     currentProduct: null,
     errors: [],
   };
-  if (!targets.length) return progress;
-
-  // Seed the composition worker once for everything we're about to render.
-  prewarmCovers(targets.flatMap((p) => p.coverCards ?? []));
+  if (progress.totalCards === 0) return progress;
 
   const firestore = await getFirestoreInstance();
   const storage = await getStorageInstance();
 
-  for (const product of targets) {
-    progress.currentProduct = product.name;
-    onProgress?.({ ...progress });
+  // Live card state per product: earlier prop passes update the doc, so later
+  // passes must build their write from THIS map, not the stale `products`
+  // snapshot — spreading a stale card would drop the URLs a prior pass baked.
+  const live = new Map<string, CoverCard[]>(
+    products.map((p) => [p.id, [...(p.coverCards ?? [])]])
+  );
 
-    const cards = product.coverCards ?? [];
-    const updated: CoverCard[] = [];
-    let changed = false;
+  for (const prop of SHOP_PROP_OPTIONS) {
+    const targets = products.filter(
+      (p) => unbakedFor(live.get(p.id), prop).length > 0
+    );
+    if (!targets.length) continue;
 
-    for (const [i, card] of cards.entries()) {
-      if (card.imageUrl || !card.sequence) {
-        updated.push(card);
-        continue;
+    // Seed the composition worker for THIS prop's renders (re-seeds the pool).
+    prewarmCovers(targets.flatMap((p) => live.get(p.id) ?? []), prop);
+
+    for (const product of targets) {
+      progress.currentProduct = `${product.name} · ${prop}`;
+      onProgress?.({ ...progress });
+
+      const cards = live.get(product.id) ?? [];
+      const updated: CoverCard[] = [];
+      let changed = false;
+
+      for (const [i, card] of cards.entries()) {
+        if (!card.sequence || bakedCoverUrl(card, prop)) {
+          updated.push(card);
+          continue;
+        }
+        try {
+          const objectUrl = await renderCoverFront(card, {
+            deckId: product.deckId,
+            deckName: product.name,
+            propType: prop,
+          });
+          const blob = await (await fetch(objectUrl)).blob();
+          const storageRef = ref(storage, storagePath(product.id, i, prop));
+          await uploadBytes(storageRef, blob, {
+            contentType: "image/png",
+            cacheControl: "public,max-age=31536000,immutable",
+          });
+          const downloadUrl = await getDownloadURL(storageRef);
+          updated.push({
+            ...card,
+            ...(prop === PropType.STAFF && !card.imageUrl && { imageUrl: downloadUrl }),
+            propImageUrls: { ...card.propImageUrls, [prop]: downloadUrl },
+          });
+          changed = true;
+          progress.bakedCards++;
+          onProgress?.({ ...progress });
+        } catch (e) {
+          progress.errors.push(`${product.name} card ${i} (${prop}): ${e}`);
+          updated.push(card);
+          onProgress?.({ ...progress });
+        }
       }
-      try {
-        const objectUrl = await renderCoverFront(card, {
-          deckId: product.deckId,
-          deckName: product.name,
-        });
-        const blob = await (await fetch(objectUrl)).blob();
-        const storageRef = ref(storage, `shop-covers/${product.id}/${i}.png`);
-        await uploadBytes(storageRef, blob, {
-          contentType: "image/png",
-          cacheControl: "public,max-age=31536000,immutable",
-        });
-        const downloadUrl = await getDownloadURL(storageRef);
-        updated.push({ ...card, imageUrl: downloadUrl });
-        changed = true;
-        progress.bakedCards++;
-        onProgress?.({ ...progress });
-      } catch (e) {
-        progress.errors.push(`${product.name} card ${i}: ${e}`);
-        updated.push(card);
-        onProgress?.({ ...progress });
-      }
-    }
 
-    if (changed) {
-      try {
-        await updateDoc(doc(firestore, "products", product.id), {
-          coverCards: updated,
-        });
-      } catch (e) {
-        progress.errors.push(`${product.name} doc update: ${e}`);
+      live.set(product.id, updated);
+      if (changed) {
+        try {
+          await updateDoc(doc(firestore, "products", product.id), {
+            coverCards: updated,
+          });
+        } catch (e) {
+          progress.errors.push(`${product.name} doc update: ${e}`);
+        }
       }
     }
   }

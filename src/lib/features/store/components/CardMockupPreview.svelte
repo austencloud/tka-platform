@@ -9,6 +9,7 @@
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import DeckFanCover from "./DeckFanCover.svelte";
   import type { CoverCard } from "../domain/models/product";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   interface Props {
     coverImageUrl?: string;
@@ -24,9 +25,11 @@
     coverCards?: CoverCard[];
     /** QR attribution for the print-path cover renders. */
     deckId?: string;
+    /** Buyer's print-prop pick, forwarded to the fan. */
+    propType?: PropType;
   }
 
-  let { coverImageUrl, productName, morphId, coverSequence, coverCards, deckId }: Props = $props();
+  let { coverImageUrl, productName, morphId, coverSequence, coverCards, deckId, propType }: Props = $props();
 
   let containerEl: HTMLDivElement | undefined = $state();
   // Drives the mandala's render size so it fills the card width responsively.
@@ -57,6 +60,7 @@
         cards={coverCards}
         {deckId}
         deckName={productName}
+        {propType}
         cardWidth={Math.max(96, Math.round((boxW || 280) * 0.34))}
       />
     </div>

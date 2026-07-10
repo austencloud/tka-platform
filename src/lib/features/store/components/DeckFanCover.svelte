@@ -13,13 +13,17 @@
 -->
 <script lang="ts">
   import type { CoverCard } from "../domain/models/product";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { renderCoverFront } from "../services/cover-front-renderer";
+  import { DEFAULT_SHOP_PROP, bakedCoverUrl } from "../domain/shop-prop-options";
 
   interface Props {
     cards: readonly CoverCard[];
     /** QR attribution, same as the print path. */
     deckId?: string;
     deckName?: string;
+    /** Prop the cards render with (the buyer's pick). Defaults to staves. */
+    propType?: PropType;
     /** MINIMUM rest width of one card, px. */
     cardWidth?: number;
     /** Auto-scale ceiling. Defaults to 1.8x cardWidth. */
@@ -36,6 +40,7 @@
     cards,
     deckId,
     deckName,
+    propType = DEFAULT_SHOP_PROP,
     cardWidth = 122,
     maxCardWidth,
     maxCards = 6,
@@ -67,21 +72,25 @@
     shown.length && boxW ? Math.round(Math.min(maxW, fitW(shown.length))) : cardWidth
   );
 
-  // key -> object URL, filled as the print renders land. Session-cached in the
-  // service, so revisits paint instantly.
+  // key -> object URL, filled as the print renders land. Keyed per (card,
+  // prop) so a prop swap keeps earlier props warm for an instant swap back.
+  // Session-cached in the service, so revisits paint instantly.
   let urls = $state<Record<string, string>>({});
-  const cardKey = (c: CoverCard) => c.sequence?.id ?? c.sequence?.word ?? JSON.stringify(c).slice(0, 40);
+  const cardKey = (c: CoverCard) =>
+    `${c.sequence?.id ?? c.sequence?.word ?? JSON.stringify(c).slice(0, 40)}|${propType}`;
 
   $effect(() => {
+    const prop = propType;
     for (const c of shown) {
       const k = cardKey(c);
       if (urls[k]) continue;
       // Baked covers load straight from Storage — no print pipeline.
-      if (c.imageUrl) {
-        urls[k] = c.imageUrl;
+      const baked = bakedCoverUrl(c, prop);
+      if (baked) {
+        urls[k] = baked;
         continue;
       }
-      renderCoverFront(c, { deckId, deckName })
+      renderCoverFront(c, { deckId, deckName, propType: prop })
         .then((url) => {
           urls[k] = url;
         })
