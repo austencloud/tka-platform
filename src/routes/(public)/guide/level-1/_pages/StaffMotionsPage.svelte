@@ -31,6 +31,8 @@
    * 583.1; hairline y 356.3. Text at PROOF_TEXT coords.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
+  import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
   import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
@@ -40,10 +42,18 @@
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { getGuideSequenceClick } from "../_data/guide-data-context";
+  import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_ } = GridLocation;
+
+  // Reader wiring (all null on /print,/book — pages stay pristine).
+  const selection = getSequenceSelection();
+  const activeStep = getGuideActiveStep();
+  const emitSequence = getGuideSequenceClick();
 
   // ── Real single-staff pictographs (red hand only) ───────────────────────────
   const redStaff = (
@@ -142,6 +152,23 @@
   ];
 
   const bareGrids = ["pro-half", "anti-half", "dash-half"].map(bareGrid);
+
+  // ── Reader click-to-animate: the combined pictograph plays Start → motion ────
+  // with the real staff from the in orientation (the same seam as the Negative
+  // Space strips; blue is an invisible placeholder — both-hands step contract).
+  const ROW_KEYS = ["sm-pro", "sm-anti", "sm-dash"];
+  const ROW_WORDS = ["Prospin", "Antispin", "Dash"];
+  const animStep = (data: ReturnType<typeof redStaff>, stepNumber: number): StepData =>
+    ({
+      ...data,
+      id: `${data.id}-anim-${stepNumber}`,
+      stepNumber,
+      motions: {
+        blue: createPlaceholderMotion(MotionColor.BLUE, { location: SO_, orientation: IN }),
+        red: data.motions.red,
+      },
+    }) as unknown as StepData;
+  const rowSteps = (row: RowDef): StepData[] => [animStep(row.start, 0), animStep(row.combined, 1)];
 
   // ── Flow arrows (prospin row only, per the proof) + "=" on every row ────────
   const rowMid = (y: number) => y + SIZE / 2;
@@ -274,9 +301,23 @@
     <div class="mini" style="left:{COLS[2]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
       <PictographContainer pictographData={row.end} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
     </div>
-    <!-- combined: the real motion pictograph (system arrow) -->
-    <div class="mini" style="left:{COLS[3]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
+    <!-- combined: the real motion pictograph (system arrow); in the reader it's
+         clickable and plays Start → motion with the staff in the companion. -->
+    {@const key = ROW_KEYS[ri]!}
+    <div
+      class="mini tka-seq-cell"
+      class:is-hovered={selection?.isHovered(key)}
+      class:is-selected={selection?.isSelected(key)}
+      class:guide-step-active={activeStep?.key === key}
+      style="left:{COLS[3]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px"
+    >
       <PictographContainer pictographData={row.combined} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+      <SelectionHit
+        groupId={key}
+        isGroupStart
+        label={`Animate the ${ROW_WORDS[ri]} motion`}
+        onselect={() => emitSequence?.({ strip: rowSteps(row), word: ROW_WORDS[ri]!, key, propType: "staff" })}
+      />
     </div>
   {/each}
 

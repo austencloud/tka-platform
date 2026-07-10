@@ -274,6 +274,19 @@ LOOP terminology, per existing section filenames already named Loops*.)
   (mid-flight screenshot); console error-free; svelte-check 0/0. Awaiting
   eyeball.
 
+- 2026-07-09: STAFF MOTIONS combined pictographs click-to-animate (Austen: "make
+  the end motion animatable also") — the three combined "=" pictographs
+  (Prospin/Antispin/Dash) each play Start → motion in the companion with the
+  real staff from the in orientation (keys `sm-pro/anti/dash`, propType staff,
+  blue invisible placeholder). Start/halfway/end frames stay display-only.
+  Verified: 3 labelled hits, prospin click → staff animates from S with
+  crossbar toward center + golden ring on the combined box (screenshot).
+  Same-key re-click toggles selection (seam behavior, pre-existing). Also per
+  Austen 2026-07-09: SKIP the prop codex pages (bl-clubs/buugeng/triads/fans/
+  mini-hoops) — they stay placeholders with the double-staff codex until his
+  manual codex direction; full freedom granted to finish the remaining book
+  pages autonomously.
+
 ## Conventions (facelift — supersede the old guide)
 
 - **gamma = lowercase γ** (NOT uppercase Γ). The old artboards + existing guide
