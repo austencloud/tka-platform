@@ -148,7 +148,7 @@
             show="both"
             size={380}
             darkMode={isDarkTheme}
-            pathShape="hybrid"
+            pathShape="arc"
             {bluePropType}
             {redPropType}
           />

@@ -213,7 +213,7 @@ describe("buildBackJob", () => {
     expect(typeof args[3]).toBe("boolean"); // darkMode flag
   });
 
-  it("staff default: motion-aware pathOptions (two tips), standard tip dx", async () => {
+  it("staff default: arc → undefined pathOptions (two tips), standard tip dx", async () => {
     const { deps, calls } = makeFakeDeps();
     await buildBackJob(
       makeSequence(),
@@ -224,13 +224,11 @@ describe("buildBackJob", () => {
     // (steps, bluePropType, redPropType, pathOptions, tipOverride)
     expect(args[1]).toBeUndefined();
     expect(args[2]).toBeUndefined();
-    // Mirrors CardBack.svelte pathShape="hybrid": per-motion shape, no tipEnds
-    // key for a two-tip prop (no prop → staff).
-    expect(args[3]).toEqual({ motionAware: true });
+    expect(args[3]).toBeUndefined(); // no prop → staff → two tips (arc default; motion-aware parked)
     expect(args[4]).toEqual({ dx: 120, dy: 0 });
   });
 
-  it("single-ended prop (club) traces ONE tip: pathOptions { motionAware, tipEnds: 1 }", async () => {
+  it("single-ended prop (club) traces ONE tip: pathOptions { tipEnds: 1 }", async () => {
     const { deps, calls } = makeFakeDeps();
     await buildBackJob(
       makeSequence(),
@@ -247,7 +245,7 @@ describe("buildBackJob", () => {
     const args = calls.calc![0]!;
     expect(args[1]).toBe(PropType.CLUB); // prop types forwarded
     expect(args[2]).toBe(PropType.CLUB);
-    expect(args[3]).toEqual({ motionAware: true, tipEnds: 1 }); // one tip, not the staff's two
+    expect(args[3]).toEqual({ tipEnds: 1 }); // one tip, not the staff's two
     expect(args[4]).toEqual({ dx: 120, dy: 0 });
   });
 

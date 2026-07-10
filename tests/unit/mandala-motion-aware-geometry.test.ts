@@ -1,10 +1,11 @@
 /**
- * Locks the motion-aware ("hybrid") mandala geometry the card backs now render
- * with (feedback 2mHuY6Au): motionAware resolves the hand-path shape PER
- * MOTION — pro traces the arc, anti traces the concave petal — instead of one
- * global shape. The card-back seam (CardBack.svelte pathShape="hybrid" +
- * buildBackJob pathOptions.motionAware) depends on these outputs actually
- * differing for anti motions and matching for pro-only sequences.
+ * Locks the motion-aware ("hybrid") mandala geometry: motionAware resolves the
+ * hand-path shape PER MOTION — pro traces the arc, anti traces the concave
+ * petal — instead of one global shape. Card backs are the intended consumer
+ * (feedback 2mHuY6Au) but currently render arc — the flip to hybrid is parked
+ * (Austen, 2026-07-09). This keeps the calculator behavior proven so the flip
+ * stays a two-line change (CardBack.svelte pathShape + buildBackJob
+ * pathOptions).
  */
 import { describe, it, expect } from "vitest";
 import { calculate } from "$lib/shared/mandala/services/mandala-geometry-calculator";
