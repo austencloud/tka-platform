@@ -1,17 +1,22 @@
 import type { PageServerLoad } from "./$types";
 
-export const load: PageServerLoad = async ({ params, request }) => {
-  const parseCoord = (v: string | null): number | null => {
-    if (!v) return null;
-    const n = Number.parseFloat(v);
+export const load: PageServerLoad = async ({ params, request, platform }) => {
+  const parseCoord = (v: string | number | null | undefined): number | null => {
+    if (v == null) return null;
+    const n = typeof v === "number" ? v : Number.parseFloat(v);
     return Number.isFinite(n) ? n : null;
   };
 
+  // platform.cf is populated by Cloudflare on every Pages request — city/lat/lng
+  // come for free, no managed-transform headers needed. Headers stay as fallback
+  // (cf-ipcity & friends only exist when the zone's visitor-location transform
+  // is on, which it isn't — hence every historical scanEvent has city: null).
+  const cf = (platform as { cf?: Record<string, unknown> } | undefined)?.cf ?? {};
   const geo = {
-    country: request.headers.get("cf-ipcountry") || null,
-    city: request.headers.get("cf-ipcity") || null,
-    lat: parseCoord(request.headers.get("cf-iplatitude")),
-    lng: parseCoord(request.headers.get("cf-iplongitude")),
+    country: (cf.country as string) || request.headers.get("cf-ipcountry") || null,
+    city: (cf.city as string) || request.headers.get("cf-ipcity") || null,
+    lat: parseCoord((cf.latitude as string) ?? request.headers.get("cf-iplatitude")),
+    lng: parseCoord((cf.longitude as string) ?? request.headers.get("cf-iplongitude")),
   };
 
   let meta: {
