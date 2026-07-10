@@ -1,10 +1,10 @@
 <!--
 Learn Tab - Master learning interface
 
-Four learning destinations:
+Learning destinations:
 - Concepts: Progressive concept mastery path
 - Play: Fun games to test your pictograph skills
-- Codex: Browse all letters and pictographs
+- Guide: Level 1 guide (includes interactive codex catalog)
 - TIKA: AI-powered TKA tutor
 
 Navigation via bottom tabs (mobile-first UX pattern)
@@ -19,7 +19,6 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
   import { cubicOut } from "svelte/easing";
   import ConceptPathView from "./components/ConceptPathView.svelte";
   import ConceptDetailView from "./components/ConceptDetailView.svelte";
-  import CodexExplorer from "./codex/components/CodexExplorer.svelte";
   import QuizTab from "./quiz/components/QuizTab.svelte";
   import TikaTab from "$lib/features/tika/TikaModule.svelte";
   import GuideTab from "./guide/GuideTab.svelte";
@@ -36,10 +35,10 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
   import AchievementToast from "$lib/shared/delight/components/AchievementToast.svelte";
   import { getEffectiveUserId } from "$lib/shared/auth/state/auth-state.svelte";
 
-  type LearnMode = "concepts" | "play" | "codex" | "tika" | "guide";
+  type LearnMode = "concepts" | "play" | "tika" | "guide";
 
   // Tab order for determining slide direction
-  const TAB_ORDER: LearnMode[] = ["concepts", "play", "codex", "tika", "guide"];
+  const TAB_ORDER: LearnMode[] = ["concepts", "play", "tika", "guide"];
 
   // Props
   let {
@@ -85,7 +84,8 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
     ) {
       newMode = "play";
     } else if (navMode === "codex") {
-      newMode = "codex";
+      // Retired tab — persisted/legacy saved state falls back to guide.
+      newMode = "guide";
     } else if (navMode === "tika") {
       newMode = "tika";
     } else if (navMode === "guide") {
@@ -129,8 +129,6 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
       }
     } else if (activeMode === "play") {
       header = t("learn_play");
-    } else if (activeMode === "codex") {
-      header = t("learn_letters");
     } else if (activeMode === "tika") {
       header = "TIKA";
     } else if (activeMode === "guide") {
@@ -213,8 +211,6 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
           {/if}
         {:else if isModeActive("play")}
           <QuizTab />
-        {:else if isModeActive("codex")}
-          <CodexExplorer />
         {:else if isModeActive("tika")}
           <TikaTab />
         {:else if isModeActive("guide")}

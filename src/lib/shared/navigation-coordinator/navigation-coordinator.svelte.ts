@@ -368,7 +368,7 @@ const TAB_ORDERS: Record<string, string[]> = {
   ],
   browse: ["gallery", "library", "collections", "hall-of-shame"],
   social: ["community", "connect", "creators"],
-  learn: ["concepts", "play", "codex"],
+  learn: ["concepts", "play"],
   compose: ["arrange", "browse"],
   realm: ["stage", "gallery", "worlds"],
   train: ["drills", "challenges", "progress"],

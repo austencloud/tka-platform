@@ -39,7 +39,6 @@ const ROUTES: RouteNode[] = [
   { label: "compose--arrange", moduleId: "compose", tabId: "arrange", requiresAuth: true },
   // Learn
   { label: "learn--concepts", moduleId: "learn", tabId: "concepts", requiresAuth: true },
-  { label: "learn--codex", moduleId: "learn", tabId: "codex", requiresAuth: true },
   // Train
   { label: "train--practice", moduleId: "train", tabId: "practice", requiresAuth: true },
   // Settings

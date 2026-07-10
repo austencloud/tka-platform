@@ -89,16 +89,6 @@ export const LEARN_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #f472b6 0%, #ec4899 100%)",
   },
   {
-    id: "codex",
-    labelKey: "tab_learn_codex",
-    descKey: "tab_desc_learn_codex",
-    label: "Codex",
-    icon: '<i class="fas fa-book-open" aria-hidden="true"></i>',
-    description: "Browse all letters and pictographs",
-    color: "#a78bfa",
-    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-  },
-  {
     id: "guide",
     labelKey: "tab_learn_guide",
     descKey: "tab_desc_learn_guide",

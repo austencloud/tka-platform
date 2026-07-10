@@ -16,7 +16,7 @@ export const ACTION_CATALOG: ActionDefinition[] = [
     description: "Switch to a tab within the current module",
     validTargets: [
       "construct", "assemble", "generate", "spell",
-      "concepts", "play", "codex",
+      "concepts", "play", "guide",
       "gallery", "collections", "creators",
       "arrange", "browse",
       "practice", "challenges", "progress",

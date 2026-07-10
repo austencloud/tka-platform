@@ -73,8 +73,8 @@ const TAB_ALIASES: Record<string, string> = {
   concept: "concepts",
   games: "play",
   playing: "play",
-  reference: "codex",
-  dictionary: "codex",
+  reference: "guide",
+  dictionary: "guide",
   // Browse module tabs
   sequences: "gallery",
   collection: "collections",

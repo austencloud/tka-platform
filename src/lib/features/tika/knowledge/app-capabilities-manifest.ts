@@ -155,10 +155,10 @@ export const APP_CAPABILITIES: AppCapability[] = [
     id: "learn-codex",
     action: "Look up TKA terms and definitions",
     module: "Learn",
-    tab: "Codex",
+    tab: "Guide",
     keywords: ["codex", "dictionary", "glossary", "reference", "lookup", "definition"],
     instructions:
-      "Go to Learn > Codex. Search or browse the alphabetical list of TKA terms. Each entry has a definition and visual examples.",
+      "Go to Learn > Guide and open the Codex section (deep link /learn/guide/codex). Browse the interactive letter catalog with live pictograph variations.",
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
