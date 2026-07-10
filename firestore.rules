@@ -472,6 +472,14 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
+      // 3D SCENE COLLECTION (Saved 3D viewer configs — scene + camera + performers)
+      // -------------------------------------------------------------------------
+      match /scene-3d-collection/{sceneId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
       // FCM PUSH TOKENS (Device registration for push notifications)
       // -------------------------------------------------------------------------
       match /fcmTokens/{tokenId} {

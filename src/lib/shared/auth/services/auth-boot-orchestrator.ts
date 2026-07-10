@@ -164,4 +164,15 @@ export async function initializeChildServices(
     .catch((error) => {
       console.warn("⚠️ [authState] Tunnel collection sync failed:", error);
     });
+
+  // Initialize 3D scene collection Firebase sync (non-blocking)
+  import("$lib/features/scene-3d-collection/state/scene-3d-collection-state.svelte")
+    .then(async ({ scene3dCollectionState }) => {
+      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+      await scene3dCollectionState.init(user.uid);
+    })
+    .catch((error) => {
+      console.warn("⚠️ [authState] 3D scene collection sync failed:", error);
+    });
 }

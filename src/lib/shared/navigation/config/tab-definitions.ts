@@ -890,6 +890,16 @@ export const PLAYGROUND_TABS: Section[] = [
     color: "#22d3ee",
     gradient: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)",
   },
+  {
+    id: "scenes",
+    labelKey: "tab_playground_scenes",
+    descKey: "tab_desc_playground_scenes",
+    label: "Scenes",
+    icon: '<i class="fas fa-cube" aria-hidden="true"></i>',
+    description: "Save and reload 3D viewer scene setups",
+    color: "#a78bfa",
+    gradient: "linear-gradient(135deg, #c4b5fd 0%, #a78bfa 100%)",
+  },
 ];
 
 // Video module tabs (graduated from Lab Mar 2026)

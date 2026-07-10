@@ -9,7 +9,7 @@ import type { createViewer3DState } from "../state/viewer-3d-state.svelte";
 export type { PopoverId } from "../state/viewer-3d-state.svelte";
 
 const KEY = Symbol("viewer-3d");
-type Viewer3DState = ReturnType<typeof createViewer3DState>;
+export type Viewer3DState = ReturnType<typeof createViewer3DState>;
 
 export function setViewer3DContext(state: Viewer3DState) {
   setContext(KEY, state);

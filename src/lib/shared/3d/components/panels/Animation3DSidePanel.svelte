@@ -10,6 +10,7 @@
   import type { AvatarId } from "@austencloud/scene-3d";
   import EffectsSettingsPanel from "../controls/EffectsSettingsPanel.svelte";
   import EnvironmentSettingsPanel from "../controls/EnvironmentSettingsPanel.svelte";
+  import Save3DSceneButton from "../controls/Save3DSceneButton.svelte";
   import AvatarSettingsPanel from "../controls/AvatarSettingsPanel.svelte";
   import ProportionsPanel from "./ProportionsPanel.svelte";
 
@@ -159,6 +160,9 @@
       {#if expandedSections.has("environment")}
         <div class="section-content">
           <EnvironmentSettingsPanel />
+          <div class="save-scene-slot" style="margin-top: 0.75rem;">
+            <Save3DSceneButton />
+          </div>
         </div>
       {/if}
     </section>

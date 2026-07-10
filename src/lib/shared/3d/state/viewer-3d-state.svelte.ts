@@ -1270,6 +1270,9 @@ export function createViewer3DState() {
     togglePerf() {
       showPerf = !showPerf;
     },
+    get currentSequenceData() {
+      return _currentSequenceData;
+    },
     enter3D,
     exit3D,
     toggleEffect,
@@ -1278,4 +1281,57 @@ export function createViewer3DState() {
     snapCameraTo,
     dispose,
   };
+}
+
+/**
+ * Serializable subset of viewer-3d-state that is backed by the scattered
+ * `tka-viewer3d-*` localStorage keys. The save-a-3D-scene feature captures this
+ * from the live state and re-seeds it before opening a fresh viewer (which reads
+ * these keys at construct / enter3D time) — the same "seed then mount" pattern
+ * open-tunnel-in-viewer uses. Kept in this module so it can reach the private
+ * STORAGE_KEY_* constants.
+ */
+export interface Viewer3DPersistConfig {
+  camera: CameraStateSnapshot | null;
+  performers: StoredPerformerSnapshot[];
+  selectedPerformerIndex: number | null;
+  activeFormation: FormationPreset | "manual";
+  defaultProp: string;
+  oceanVariant: string;
+  navMode: ViewerNavMode;
+  activePreset: string | null;
+  activeCameraPreset: string;
+  showGridLabels: boolean;
+  visiblePlanes: string[];
+}
+
+/**
+ * Seed every localStorage key a freshly-constructed viewer-3d-state reads, plus
+ * force render mode to "3d". Best-effort per key so a single quota failure
+ * doesn't abort the rest. Call BEFORE mounting the viewer.
+ */
+export function writeViewer3DConfig(config: Viewer3DPersistConfig): void {
+  if (typeof localStorage === "undefined") return;
+  const set = (key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // Quota exceeded / unavailable — skip this key, keep going.
+    }
+  };
+  set(STORAGE_KEY_MODE, "3d");
+  if (config.camera) set(STORAGE_KEY_CAMERA, JSON.stringify(config.camera));
+  set(STORAGE_KEY_PERFORMERS, JSON.stringify(config.performers));
+  set(STORAGE_KEY_ACTIVE_FORMATION, config.activeFormation);
+  set(
+    STORAGE_KEY_SELECTED_INDEX,
+    config.selectedPerformerIndex === null ? "null" : String(config.selectedPerformerIndex),
+  );
+  set(STORAGE_KEY_DEFAULT_PROP, config.defaultProp);
+  set("tka-viewer3d-oceanVariant", config.oceanVariant);
+  set(STORAGE_KEY_NAV_MODE, config.navMode);
+  set(STORAGE_KEY_PRESET, config.activePreset ?? "");
+  set(STORAGE_KEY_CAM_PRESET, config.activeCameraPreset);
+  set(STORAGE_KEY_GRID_LABELS, String(config.showGridLabels));
+  set(STORAGE_KEY_VISIBLE_PLANES, JSON.stringify(config.visiblePlanes));
 }

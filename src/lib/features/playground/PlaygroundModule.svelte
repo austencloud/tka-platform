@@ -19,6 +19,7 @@
   const tabComponents: Record<string, () => Promise<TabModule>> = {
     mandala: () => import("$lib/features/mandala/MandalaModule.svelte"),
     tunnels: () => import("$lib/features/tunnel-collection/TunnelCollectionModule.svelte"),
+    scenes: () => import("$lib/features/scene-3d-collection/Scene3DCollectionModule.svelte"),
   };
 
   const activeTab = $derived(navigationState.activeTab || PLAYGROUND_TABS[0]?.id || "mandala");
