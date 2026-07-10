@@ -106,7 +106,7 @@ export const GUIDE_BODY_PAGES: GuidePageEntry[] = [
   // "CAPs" in the old guide — retitled to the app's LOOP terminology.
   { id: "permutations", title: "LOOPs", level: 0, group: "1.2" },
   { id: "reversals", title: "Reversals", level: 0, group: "1.2" },
-  { id: "examples-abc", title: "Examples with A, B, C", level: 0, group: "1.2" },
+  { id: "examples-abc", title: "Examples", level: 0, group: "1.2" },
   { id: "misc-permutations", title: "Misc. Permutation Examples", level: 0, group: "1.2" },
 ];
 

@@ -27,6 +27,7 @@ import Type456LettersPage from "../_pages/Type456LettersPage.svelte";
 import WordsPage from "../_pages/WordsPage.svelte";
 import LoopsPage from "../_pages/LoopsPage.svelte";
 import ReversalsPage from "../_pages/ReversalsPage.svelte";
+import ExamplesPage from "../_pages/ExamplesPage.svelte";
 import DoubleStaffCodexT12Page from "../_pages/DoubleStaffCodexT12Page.svelte";
 import DoubleStaffCodexT36Page from "../_pages/DoubleStaffCodexT36Page.svelte";
 
@@ -53,6 +54,7 @@ export const BUILT: Record<string, Component> = {
   "words": WordsPage,
   "permutations": LoopsPage,
   "reversals": ReversalsPage,
+  "examples-abc": ExamplesPage,
   "bl-double-staff": DoubleStaffCodexT12Page,
   "bl-double-staff-36": DoubleStaffCodexT36Page,
 };
