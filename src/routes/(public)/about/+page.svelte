@@ -1,6 +1,7 @@
 <script lang="ts">
   import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
   import FaqAccordion from "$lib/shared/landing/components/FaqAccordion.svelte";
+  import PositionTrioGrid from "$lib/shared/landing/components/PositionTrioGrid.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   // Position pictograph light/dark mode (default to light to show existing images)
@@ -162,38 +163,7 @@
           {#if section.id === "notation"}
             <p>{section.content[0]}</p>
 
-            <div class="position-grid" class:dark-mode={!positionLightsOn}>
-              <div class="position-item">
-                <div class="position-image-container">
-                  <img
-                    src="/images/position_images/alpha.png"
-                    alt="Alpha position: hands at opposite points on the grid"
-                  />
-                </div>
-                <span class="position-name">Alpha</span>
-                <span class="position-desc">Opposite points</span>
-              </div>
-              <div class="position-item">
-                <div class="position-image-container">
-                  <img
-                    src="/images/position_images/beta.png"
-                    alt="Beta position: hands at the same point on the grid"
-                  />
-                </div>
-                <span class="position-name">Beta</span>
-                <span class="position-desc">Same point</span>
-              </div>
-              <div class="position-item">
-                <div class="position-image-container">
-                  <img
-                    src="/images/position_images/gamma.png"
-                    alt="Gamma position: hands forming a right angle on the grid"
-                  />
-                </div>
-                <span class="position-name">Gamma</span>
-                <span class="position-desc">Right angle</span>
-              </div>
-            </div>
+            <PositionTrioGrid lightsOn={positionLightsOn} />
 
             <p>{section.content[1]}</p>
           {:else}
@@ -233,70 +203,4 @@
     margin-bottom: 1.1rem;
   }
 
-  /* Position pictograph grid (page-specific; renders pictographs on white) */
-  .position-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    margin: 1.6rem 0;
-  }
-  .position-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-  .position-image-container {
-    width: 100%;
-    max-width: 160px;
-    aspect-ratio: 1;
-    background: #ffffff;
-    border-radius: 12px;
-    border: 1px solid oklch(0.4 0.04 270 / 0.15);
-    overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 0.5rem;
-    transition:
-      filter 0.3s ease,
-      background 0.3s ease;
-  }
-  .position-image-container img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-  }
-  /* Dark mode - invert the pictograph images */
-  .position-grid.dark-mode .position-image-container {
-    background: #14142b;
-    filter: invert(1) hue-rotate(180deg);
-  }
-  .position-name {
-    font-weight: 600;
-    font-size: 1rem;
-    color: oklch(0.92 0.01 270);
-    margin-bottom: 0.125rem;
-  }
-  .position-desc {
-    font-size: 0.78rem;
-    color: oklch(0.6 0.02 270);
-  }
-
-  @media (max-width: 768px) {
-    .position-image-container {
-      max-width: 100px;
-    }
-    .position-name {
-      font-size: 0.875rem;
-    }
-  }
-  @media (max-width: 400px) {
-    .position-image-container {
-      max-width: 80px;
-    }
-    .position-desc {
-      font-size: 0.7rem;
-    }
-  }
 </style>

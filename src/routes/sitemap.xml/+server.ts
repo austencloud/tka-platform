@@ -8,6 +8,11 @@ const pages = [
   { url: "shop", priority: "0.9", changefreq: "weekly" },
   { url: "shop/loop-deck", priority: "0.8", changefreq: "monthly" },
   { url: "shop/tnd-trilogy", priority: "0.8", changefreq: "monthly" },
+  { url: "shop/choreography-cards", priority: "0.8", changefreq: "monthly" },
+  // Pillar pages (SEO content roadmap)
+  { url: "notation", priority: "0.9", changefreq: "monthly" },
+  { url: "learn/staff-spinning-choreography", priority: "0.8", changefreq: "monthly" },
+  { url: "learn/poi-choreography", priority: "0.8", changefreq: "monthly" },
   // Marketing
   { url: "about", priority: "0.6", changefreq: "monthly" },
   { url: "support", priority: "0.5", changefreq: "monthly" },
