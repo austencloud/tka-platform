@@ -70,6 +70,7 @@ describe("buildCardMenuSection", () => {
     expect(ids(entries)).toEqual([
       "rerender",
       "separator",
+      "copy-sequence-data",
       "save-image",
       "copy-image",
       "copy-for-claude",
@@ -81,7 +82,23 @@ describe("buildCardMenuSection", () => {
       isAdmin: true,
       sequenceForImageActions: SEQ,
     });
-    expect(ids(entries)).toEqual(["save-image", "copy-image", "copy-for-claude"]);
+    expect(ids(entries)).toEqual([
+      "copy-sequence-data",
+      "save-image",
+      "copy-image",
+      "copy-for-claude",
+    ]);
+  });
+
+  it("copy-sequence-data is admin-gated like the image actions", () => {
+    // Non-admin never sees it, even with a sequence.
+    expect(ids(buildCardMenuSection({ sequenceForImageActions: SEQ }))).not.toContain(
+      "copy-sequence-data",
+    );
+    // Admin + sequence surfaces it first in the admin block.
+    expect(
+      ids(buildCardMenuSection({ isAdmin: true, sequenceForImageActions: SEQ }))[0],
+    ).toBe("copy-sequence-data");
   });
 
   it("column choice action writes through the composition manager", () => {

@@ -15,6 +15,14 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import CardBack from "$lib/features/choreo-card/components/card-back/CardBack.svelte";
   import { computeFrontRegions } from "../services/card-front-regions";
+  import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
+  import type {
+    ContextMenuState,
+    ContextMenuEntry,
+  } from "$lib/shared/components/context-menu/context-menu-types";
+  import { composeMenu } from "$lib/shared/components/context-menu/compose-menu";
+  import { buildCardMenuSection } from "$lib/shared/choreo-card/services/card-menu-section";
+  import { featureFlagService } from "$lib/shared/auth/services/post-hog-feature-flag-service.svelte";
 
   let {
     highlight = null,
@@ -32,6 +40,32 @@
   let shuffling = $state(false);
 
   const frontRegions = $derived(shown ? computeFrontRegions(shown.stepCount) : null);
+
+  // Admin-only right-click → copy the shown card's sequence data (and the rest
+  // of the canonical card admin actions). Non-admins get the native menu. Reuses
+  // the shared ContextMenu primitive + buildCardMenuSection — no bespoke menu.
+  let menuState = $state<ContextMenuState>({ open: false });
+  const menuItems = $derived<ContextMenuEntry[]>(
+    shown
+      ? composeMenu([
+          {
+            header: "Card",
+            entries: buildCardMenuSection({
+              isAdmin: featureFlagService.isAdmin,
+              sequenceForImageActions: shown.sequence,
+            }),
+          },
+        ])
+      : [],
+  );
+
+  function openCardMenu(e: MouseEvent): void {
+    // Only hijack right-click for admins with a card in view; otherwise leave the
+    // browser's native context menu alone.
+    if (!featureFlagService.isAdmin || !shown) return;
+    e.preventDefault();
+    menuState = { open: true, x: e.clientX, y: e.clientY };
+  }
 
   onMount(async () => {
     try {
@@ -198,6 +232,7 @@
         class:dimmable={activeRegion?.face === "front"}
         onpointermove={frontHit}
         onpointerleave={() => onhighlight?.(null)}
+        oncontextmenu={openCardMenu}
       >
         <img src={shown.frontUrl} alt="Front of a real Choreo Card" />
         {@render spotlight("front")}
@@ -213,6 +248,7 @@
         class:dimmable={activeRegion?.face === "back"}
         onpointermove={backHit}
         onpointerleave={() => onhighlight?.(null)}
+        oncontextmenu={openCardMenu}
       >
         <CardBack sequence={shown.sequence} />
         {@render spotlight("back")}
@@ -233,6 +269,8 @@
       </button>
     </div>
   </div>
+
+  <ContextMenu {menuState} items={menuItems} onClose={() => (menuState = { open: false })} />
 {/if}
 
 <style>

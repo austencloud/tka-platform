@@ -113,6 +113,26 @@ export function buildCardMenuSection(deps: CardMenuSectionDeps): ContextMenuEntr
     if (items.length > 0) items.push({ type: "separator" });
     items.push(
       {
+        id: "copy-sequence-data",
+        label: "Copy sequence data",
+        icon: "fa-code",
+        async action() {
+          const { toast } = await import("$lib/shared/toast/state/toast-state.svelte");
+          try {
+            const { copyToClipboard } = await import(
+              "$lib/features/create/shared/services/sequence-json-exporter"
+            );
+            const ok = await copyToClipboard(sequence);
+            toast[ok ? "success" : "error"](
+              ok ? "Sequence data copied" : "Failed to copy sequence data",
+            );
+          } catch (err) {
+            console.error("Copy sequence data failed:", err);
+            toast.error("Failed to copy sequence data");
+          }
+        },
+      },
+      {
         id: "save-image",
         label: "Save image",
         icon: "fa-download",
