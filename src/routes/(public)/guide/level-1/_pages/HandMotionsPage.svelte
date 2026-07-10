@@ -26,19 +26,33 @@
    * matching the original.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
+  import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
+  import {
+    createMotionData,
+    createPlaceholderMotion,
+  } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
     MotionType,
     MotionColor,
+    Orientation,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { LETTER_TYPE_COLORS } from "$lib/shared/pictograph/shared/domain/constants/pictograph-constants";
   import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
+  import { getGuideSequenceClick } from "../_data/guide-data-context";
+  import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
 
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
+
+  // Reader wiring (all null on /print,/book — pages stay pristine).
+  const selection = getSequenceSelection();
+  const activeStep = getGuideActiveStep();
+  const emitSequence = getGuideSequenceClick();
 
   // ── Motion boxes: real single-hand pictographs (blue hand only) ────────────
   // Movers author as PRO/DASH; hand-path mode floats the shifts and the arrow
@@ -61,13 +75,94 @@
 
   // 110pt squares, measured off the proof.
   const SIZE = 110;
-  const boxes = [
+  type DemoBox = { x: number; y: number; word?: string; data: ReturnType<typeof singleHand> };
+  const boxes: DemoBox[] = [
     { x: 60.6, y: 233.1, data: singleHand("start", MotionType.STATIC, W, W) },
-    { x: 298.5, y: 134.9, data: singleHand("shift-cw", MotionType.PRO, W, N) },
-    { x: 429.8, y: 134.9, data: singleHand("shift-ccw", MotionType.PRO, W, SO_) },
-    { x: 298.5, y: 241.1, data: singleHand("dash", MotionType.DASH, W, E) },
-    { x: 298.5, y: 348.6, data: singleHand("static", MotionType.STATIC, W, W) },
+    { x: 298.5, y: 134.9, word: "Shift", data: singleHand("shift-cw", MotionType.PRO, W, N) },
+    { x: 429.8, y: 134.9, word: "Shift", data: singleHand("shift-ccw", MotionType.PRO, W, SO_) },
+    { x: 298.5, y: 241.1, word: "Dash", data: singleHand("dash", MotionType.DASH, W, E) },
+    { x: 298.5, y: 348.6, word: "Static", data: singleHand("static", MotionType.STATIC, W, W) },
   ];
+
+  // ── Reader click-to-animate ─────────────────────────────────────────────────
+  // A demo box plays its single blue-hand motion (the other hand is an invisible
+  // placeholder — the both-hands step contract); a combination cell plays a
+  // canonical two-hand example of exactly what its description says. Every strip
+  // is Start + one step, so the companion opens from the resting pose.
+  const demoStep = (key: string, type: MotionType, from: GridLocation, to: GridLocation, stepNumber: number) =>
+    ({
+      id: `hm-anim-${key}-${stepNumber}`,
+      letter: null,
+      gridMode: GridMode.DIAMOND,
+      stepNumber,
+      motions: {
+        blue: createMotionData({
+          motionType: type,
+          startLocation: from,
+          endLocation: to,
+          color: MotionColor.BLUE,
+          propType: PropType.HAND,
+          gridMode: GridMode.DIAMOND,
+        }),
+        red: createPlaceholderMotion(MotionColor.RED, { location: E, orientation: Orientation.IN }),
+      },
+    }) as unknown as StepData;
+
+  const demoSteps = (key: string, type: MotionType, from: GridLocation, to: GridLocation): StepData[] => [
+    demoStep(key, MotionType.STATIC, from, from, 0),
+    demoStep(key, type, from, to, 1),
+  ];
+
+  // Two-hand combination examples — one per named cell, blue does the first
+  // motion of the description, red the second. Locations keep the ends distinct.
+  type ComboHand = { type: MotionType; from: GridLocation; to: GridLocation };
+  type ComboDemo = { word: string; blue: ComboHand; red: ComboHand };
+  const move = (type: MotionType, from: GridLocation, to: GridLocation): ComboHand => ({ type, from, to });
+  const COMBO_DEMOS: ComboDemo[] = [
+    { word: "Dual-Shift", blue: move(MotionType.PRO, W, N), red: move(MotionType.PRO, E, SO_) },
+    { word: "Shift", blue: move(MotionType.PRO, W, N), red: move(MotionType.STATIC, E, E) },
+    { word: "Cross-Shift", blue: move(MotionType.PRO, W, N), red: move(MotionType.DASH, E, W) },
+    { word: "Dash", blue: move(MotionType.DASH, W, E), red: move(MotionType.STATIC, N, N) },
+    { word: "Dual-Dash", blue: move(MotionType.DASH, W, E), red: move(MotionType.DASH, E, W) },
+    { word: "Static", blue: move(MotionType.STATIC, W, W), red: move(MotionType.STATIC, E, E) },
+  ];
+
+  const comboHand = (color: MotionColor, h: ComboHand) =>
+    createMotionData({
+      motionType: h.type,
+      startLocation: h.from,
+      endLocation: h.to,
+      color,
+      propType: PropType.HAND,
+      gridMode: GridMode.DIAMOND,
+    });
+
+  const comboStep = (ci: number, d: ComboDemo, asStart: boolean): StepData =>
+    ({
+      id: `hm-combo-anim-${ci}-${asStart ? 0 : 1}`,
+      letter: null,
+      gridMode: GridMode.DIAMOND,
+      stepNumber: asStart ? 0 : 1,
+      motions: {
+        blue: comboHand(MotionColor.BLUE, asStart ? move(MotionType.STATIC, d.blue.from, d.blue.from) : d.blue),
+        red: comboHand(MotionColor.RED, asStart ? move(MotionType.STATIC, d.red.from, d.red.from) : d.red),
+      },
+    }) as unknown as StepData;
+
+  const comboSteps = (ci: number, d: ComboDemo): StepData[] => [comboStep(ci, d, true), comboStep(ci, d, false)];
+
+  // Invisible hit regions over the six combination cells (name + description),
+  // bounded by the table's own dividers.
+  const COMBO_CELLS = [0, 1, 2, 3, 4, 5].map((i) => {
+    const rows = [518, 598.5, 695.5, 762];
+    const row = Math.floor(i / 2);
+    return {
+      x: i % 2 === 0 ? 10 : 306,
+      y: rows[row]!,
+      w: 296,
+      h: rows[row + 1]! - rows[row]!,
+    };
+  });
 
   // ── Flowchart (pt) — the proof's thick line + solid arrowheads ─────────────
   // One line leaves the Start box's right edge at its centre and runs straight
@@ -193,10 +288,17 @@
     {/each}
   </svg>
 
-  <!-- 5 real single-hand pictographs (canonical float / dash arrows). -->
+  <!-- 5 real single-hand pictographs (canonical float / dash arrows). In the
+       reader the three motion demos are clickable and play the single blue-hand
+       motion in the companion (the Start box is display-only). -->
   {#each boxes as box (box.data.id)}
+    {@const key = box.data.id}
     <div
       class="mini"
+      class:tka-seq-cell={!!box.word}
+      class:is-hovered={!!box.word && selection?.isHovered(key)}
+      class:is-selected={!!box.word && selection?.isSelected(key)}
+      class:guide-step-active={activeStep?.key === key}
       style="left:{box.x * S}px; top:{box.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px"
     >
       <PictographContainer
@@ -216,6 +318,42 @@
         darkMode={false}
         printMode={true}
         disableTransitions={true}
+      />
+      {#if box.word}
+        {@const m = box.data.motions.blue!}
+        <SelectionHit
+          groupId={key}
+          isGroupStart
+          label={`Animate a ${box.word.toLowerCase()}`}
+          onselect={() =>
+            emitSequence?.({
+              strip: demoSteps(key, m.motionType, m.startLocation, m.endLocation),
+              word: box.word!,
+              key,
+              propType: "hand",
+            })}
+        />
+      {/if}
+    </div>
+  {/each}
+
+  <!-- Combination cells: invisible hit regions over name + description — click
+       plays a canonical two-hand example of that combination. -->
+  {#each COMBO_DEMOS as d, ci (d.word + ci)}
+    {@const key = `hm-combo-${ci}`}
+    {@const cell = COMBO_CELLS[ci]!}
+    <div
+      class="combo-hit tka-seq-cell"
+      class:is-hovered={selection?.isHovered(key)}
+      class:is-selected={selection?.isSelected(key)}
+      class:guide-step-active={activeStep?.key === key}
+      style="left:{cell.x * S}px; top:{cell.y * S}px; width:{cell.w * S}px; height:{cell.h * S}px"
+    >
+      <SelectionHit
+        groupId={key}
+        isGroupStart
+        label={`Animate the ${d.word} combination`}
+        onselect={() => emitSequence?.({ strip: comboSteps(ci, d), word: d.word, key, propType: "hand" })}
       />
     </div>
   {/each}
@@ -328,6 +466,12 @@
     position: absolute;
     border: 1px solid #c4c4cc;
     box-sizing: border-box;
+  }
+
+  /* Invisible hit region spanning a combination cell (name + description). */
+  .combo-hit {
+    position: absolute;
+    border-radius: 8px;
   }
 
   /* Flowchart — thick ink lines + solid arrowheads, proof style. */

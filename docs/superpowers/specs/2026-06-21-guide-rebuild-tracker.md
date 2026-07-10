@@ -253,6 +253,27 @@ LOOP terminology, per existing section filenames already named Loops*.)
   reader deep link `/learn/guide/base-letters` lands parked, click letter A/C →
   companion staff animation + rings live, console clean. Awaiting eyeball.
 
+- 2026-07-09: HAND MOTIONS page reimagined for clickability (Austen directive
+  "let's reimagine it for clickability!") — `_pages/HandMotionsPage.svelte`,
+  reader-only, print/book untouched (SelectionHit renders nothing without the
+  selection scope). TEN click targets through the existing companion seam:
+  - The four motion demo boxes (shift ×2, dash, static — Start box stays
+    display-only) play their single blue-hand motion; the red hand is an
+    invisible placeholder (both-hands step contract, NegativeSpace pattern).
+    Static plays a deliberate hold — teaches the beat.
+  - The six combination cells (name + description, hit region bounded by the
+    table's own dividers) play a canonical two-hand example of EXACTLY what the
+    cell's description says: Dual-Shift blue W→N + red E→S; Shift blue W→N +
+    red static; Cross-Shift blue W→N + red dash E→W; Dash blue dash W→E + red
+    static N; Dual-Dash W↔E swap (the Type-5 canonical swap-through-center);
+    Static both resting. All Start + 1 step, propType "hand" (linear paths via
+    the adapter's hand mode).
+  Selection ring + golden play ring on whichever box/cell is animating.
+  Verified in the reader via DevTools: 10 labelled hits, dash demo click →
+  companion opens; Dual-Shift combo click → both hands travel simultaneously
+  (mid-flight screenshot); console error-free; svelte-check 0/0. Awaiting
+  eyeball.
+
 ## Conventions (facelift — supersede the old guide)
 
 - **gamma = lowercase γ** (NOT uppercase Γ). The old artboards + existing guide
