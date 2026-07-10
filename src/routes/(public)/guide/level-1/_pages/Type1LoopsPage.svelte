@@ -15,15 +15,18 @@
    *   red w→n). Swapped & Rotated. (Corrected 2026-07-10 — the first build
    *   repeated steps 3-4's roles without the swap; Austen caught it.)
    *   KIEC — from α (blue W / red E): the second half swaps the colors' roles
-   *   (step 4's C is blue-pro/red-anti, step 8's is blue-anti/red-pro).
-   *   Swapped & Mirrored.
+   *   on both hybrids (I: step 2 blue-pro/red-anti vs step 6 blue-anti/red-pro;
+   *   C: step 4 blue-pro/red-anti vs step 8 blue-anti/red-pro). Swapped &
+   *   Mirrored. (Step 2's I corrected 2026-07-10 — first build used the
+   *   blue-anti variation, breaking the swap symmetry and spawning bogus
+   *   reversal dots; Austen caught it. Now I[13] per dataset.)
    * All letters MCP-verified (D/J pro, B/E/K anti, I/L/F/C hybrids — hybrids
    * keep their letter under a color swap; L/F re-verified 2026-07-10).
    * Orientations follow the algebra (anti flips, pro keeps).
    * Reversal dots are DERIVED from the motion data via bakeReversals (never
    * hand-authored): DJII flags both hands at step 7 (the mirror point flips
-   * both prop directions), KIEC flags steps 2-3 (the K→I→E retraces), fixed
-   * BBLF flags nothing (both props ride CCW the whole loop).
+   * both prop directions); BBLF and KIEC flag nothing (constant per-hand
+   * rotation sense the whole loop — KIEC blue CCW / red CW).
    *
    * Reader: each LOOP is one clickable strip playing Start + 8 steps.
    *
@@ -158,13 +161,13 @@
       rowYs: [532.4, 622.3],
       steps: [
         st(Letter.K, h(true, W, N), h(true, E, N)),
-        st(Letter.I, h(true, N, W, OUT), h(false, N, W, OUT)),
-        st(Letter.E, h(true, W, N), h(true, W, SO_, OUT)),
-        st(Letter.C, h(false, N, W, OUT), h(true, SO_, E)),
-        st(Letter.K, h(true, W, N, OUT), h(true, E, N, OUT)),
-        st(Letter.I, h(true, N, E), h(false, N, E)),
-        st(Letter.E, h(true, E, SO_, OUT), h(true, E, N)),
-        st(Letter.C, h(true, SO_, W), h(false, N, E, OUT)),
+        st(Letter.I, h(false, N, W, OUT), h(true, N, W, OUT)),
+        st(Letter.E, h(true, W, N, OUT), h(true, W, SO_)),
+        st(Letter.C, h(false, N, W), h(true, SO_, E, OUT)),
+        st(Letter.K, h(true, W, N), h(true, E, N)),
+        st(Letter.I, h(true, N, E, OUT), h(false, N, E, OUT)),
+        st(Letter.E, h(true, E, SO_), h(true, E, N, OUT)),
+        st(Letter.C, h(true, SO_, W, OUT), h(false, N, E)),
       ],
     },
   ];
