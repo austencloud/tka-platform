@@ -65,7 +65,7 @@ the gallery's, and the source is pinned to my-library with no toggle.
 
 	function openViewer(sequence: SequenceData) {
 		openSequenceViewer(sequence, {
-			returnPath: "/browse/collections",
+			returnPath: "/browse/library",
 			returnLabel: "Library",
 			scrollY: browseScrollState.lastScrollY,
 			handPathMode: engine.viewMode.subject === "hands",

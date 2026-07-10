@@ -8,7 +8,7 @@ function setUrl(pathAndQuery: string) {
 
 describe("getCollectionScanTargetFromURL", () => {
 	it("parses a collection deep link with the scan flag", () => {
-		setUrl("/browse/collections/col_abc123?scan=1");
+		setUrl("/browse/library/col_abc123?scan=1");
 		expect(getCollectionScanTargetFromURL()).toEqual({
 			collectionId: "col_abc123",
 			scan: true,
@@ -16,26 +16,38 @@ describe("getCollectionScanTargetFromURL", () => {
 	});
 
 	it("parses a collection deep link without the scan flag", () => {
-		setUrl("/browse/collections/col_abc123");
+		setUrl("/browse/library/col_abc123");
 		expect(getCollectionScanTargetFromURL()).toEqual({
 			collectionId: "col_abc123",
 			scan: false,
 		});
 	});
 
+	it("accepts the legacy /browse/collections/{id} segment (printed QR sheets)", () => {
+		setUrl("/browse/collections/col_abc123?scan=1");
+		expect(getCollectionScanTargetFromURL()).toEqual({
+			collectionId: "col_abc123",
+			scan: true,
+		});
+	});
+
 	it("treats any other scan value as no-scan", () => {
-		setUrl("/browse/collections/col_abc123?scan=0");
+		setUrl("/browse/library/col_abc123?scan=0");
 		expect(getCollectionScanTargetFromURL()?.scan).toBe(false);
 	});
 
 	it("decodes URL-encoded collection ids", () => {
-		setUrl("/browse/collections/a%3Ab?scan=1");
+		setUrl("/browse/library/a%3Ab?scan=1");
 		expect(getCollectionScanTargetFromURL()?.collectionId).toBe("a:b");
 	});
 
 	it("returns null on non-collection paths", () => {
 		setUrl("/browse/creators/user_1");
 		expect(getCollectionScanTargetFromURL()).toBeNull();
+		setUrl("/browse/library");
+		expect(getCollectionScanTargetFromURL()).toBeNull();
+		// Bare /browse/collections is the community Collections TAB url, not a
+		// collection deep link.
 		setUrl("/browse/collections");
 		expect(getCollectionScanTargetFromURL()).toBeNull();
 		setUrl("/browse/gallery");

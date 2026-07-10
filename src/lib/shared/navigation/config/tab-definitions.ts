@@ -111,8 +111,12 @@ export const LEARN_TABS: Section[] = [
 ];
 
 // Browse tabs configuration (browsing sequences, creators, collections)
-// Gallery = pure community discovery. Your saved work lives in Library
-// (id stays "collections" — routes and persisted state reference it).
+// Gallery = pure community discovery. Your saved work lives in Library.
+// Tab ids renamed 2026-07-10 so URLs match labels: "library" (label Library,
+// was id "collections") and "collections" (label Collections, was id
+// "discover"). labelKeys kept as-is to avoid translation churn; legacy URLs
+// and persisted nav state migrate in navigation-coordinator.svelte.ts and
+// browse-navigation-state.svelte.ts.
 export const BROWSE_TABS: Section[] = [
   {
     id: "gallery",
@@ -125,7 +129,7 @@ export const BROWSE_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #c084fc 0%, #a855f7 100%)",
   },
   {
-    id: "collections",
+    id: "library",
     labelKey: "tab_browse_collections",
     descKey: "tab_desc_browse_collections",
     label: "Library",
@@ -135,12 +139,7 @@ export const BROWSE_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #d8b4fe 0%, #c084fc 100%)",
   },
   {
-    // id renamed discover -> community (2026-07-10) so the URL
-    // (/browse/community) matches the "Collections" label's meaning —
-    // community-shared collections, not the user's own (that's "collections"
-    // above, labeled "Library"). labelKey/descKey kept as-is to avoid
-    // translation churn across locale files.
-    id: "community",
+    id: "collections",
     labelKey: "tab_browse_discover",
     descKey: "tab_desc_browse_discover",
     label: "Collections",

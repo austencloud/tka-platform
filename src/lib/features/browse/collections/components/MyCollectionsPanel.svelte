@@ -122,7 +122,7 @@ instead of showing an empty shell.
 	// (Firestore auto-ids + "system_favorites").
 	const detail = $derived.by(() => {
 		const loc = browseNavigationState.currentLocation;
-		if (loc?.tab !== "collections" || loc.view !== "detail" || !loc.contextId) {
+		if (loc?.tab !== "library" || loc.view !== "detail" || !loc.contextId) {
 			return null;
 		}
 		const sep = loc.contextId.indexOf(":");
@@ -156,7 +156,7 @@ instead of showing an empty shell.
 
 	function openForeignCollection(ownerId: string, collectionId: string, name: string, ownerName: string) {
 		browseNavigationState.navigateTo({
-			tab: "collections",
+			tab: "library",
 			view: "detail",
 			contextId: `${ownerId}:${collectionId}`,
 			filter: {

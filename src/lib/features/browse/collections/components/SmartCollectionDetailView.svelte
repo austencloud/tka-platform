@@ -159,7 +159,7 @@ header; "Edit rule" reopens the builder to change it.
 
 	function openViewer(sequence: SequenceData) {
 		openSequenceViewer(sequence, {
-			returnPath: "/browse/collections",
+			returnPath: "/browse/library",
 			returnLabel: collection?.name ?? "Library",
 			scrollY: browseScrollState.lastScrollY,
 			handPathMode: engine?.viewMode.subject === "hands",

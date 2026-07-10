@@ -47,17 +47,16 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     setGalleryViewState,
   } from "../services/gallery-view-persister";
 
-  // "collections" is the Library tab (label renamed 2026-07-02; id frozen —
-  // routes and persisted nav state reference it). "community" is the
-  // community Collections discovery tab (id renamed from "discover" ->
-  // "community" 2026-07-10 so /browse/community reads sensibly; legacy
-  // /browse/discover URLs and persisted "discover" nav state still resolve
-  // here via the redirects in navigation-coordinator.svelte.ts and
-  // browse-navigation-state.svelte.ts).
-  type BrowseModuleType = "gallery" | "collections" | "community" | "hall-of-shame";
+  // Tab ids match tab labels (renamed 2026-07-10): "library" is your saved
+  // work (label Library, was id "collections"); "collections" is community
+  // collection discovery (label Collections, was id "discover"). Legacy URLs
+  // (/browse/discover, /browse/collections/{id} scan links) and persisted nav
+  // state migrate in navigation-coordinator.svelte.ts and
+  // browse-navigation-state.svelte.ts.
+  type BrowseModuleType = "gallery" | "library" | "collections" | "hall-of-shame";
 
   // Tab order for determining slide direction (left-to-right in bottom nav)
-  const TAB_ORDER: BrowseModuleType[] = ["gallery", "collections", "community", "hall-of-shame"];
+  const TAB_ORDER: BrowseModuleType[] = ["gallery", "library", "collections", "hall-of-shame"];
 
   // Transition configuration
   const SLIDE_DISTANCE = 30; // pixels
@@ -196,18 +195,17 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
     const navTab = navigationState.activeTab;
     let newTab: BrowseModuleType = "gallery";
 
-    // Map navigation state to local browse tab
-    // Note: "library" now redirects to "gallery" (Gallery) with scope toggle
-    if (
-      navTab === "gallery" ||
-      navTab === "browse" ||
-      navTab === "library"
-    ) {
+    // Map navigation state to local browse tab. Ids match labels since
+    // 2026-07-10: "library" = Library panel, "collections" = community
+    // Collections panel.
+    if (navTab === "gallery" || navTab === "browse") {
       newTab = "gallery";
-    } else if (navTab === "collections") {
+    } else if (navTab === "library") {
+      newTab = "library";
+    } else if (navTab === "collections" || navTab === "community") {
+      // "community" was the transient 2026-07-10 id between the two renames;
+      // accept it defensively (stale history/persisted state).
       newTab = "collections";
-    } else if (navTab === "community") {
-      newTab = "community";
     } else if (navTab === "hall-of-shame") {
       newTab = "hall-of-shame";
     }
@@ -218,7 +216,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       const browseTab =
         newTab === "gallery"
           ? "gallery"
-          : (newTab as "collections" | "community");
+          : (newTab as "library" | "collections");
       browseNavigationState.navigateTo({ tab: browseTab, view: "list" });
     }
 
@@ -235,7 +233,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
 
   // ✅ SYNC UI FROM NAVIGATION STATE
   // When browseNavigationState.currentLocation changes, mirror the active tab
-  // (gallery / collections / community). Creators now lives in Social.
+  // (gallery / library / collections). Creators now lives in Social.
   $effect(() => {
     const location = browseNavigationState.currentLocation;
     if (!location) return;
@@ -350,7 +348,7 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
       }
     });
 
-    // Collection deep links (/browse/collections/[id]?scan=1) —
+    // Collection deep links (/browse/library/[id]?scan=1) —
     // this is the URL a phone lands on after scanning the desktop scan sheet's
     // handoff QR. The scan flag asks the detail view to open the scanner
     // immediately, so the phone goes from QR scan to camera in one hop.
@@ -541,9 +539,9 @@ import { getOfflineCacheOrchestrator } from "$lib/shared/offline/get-offline-cac
               onSaveSmart={() => (smartSaveOpen = true)}
             />
           {/if}
-        {:else if activeTab === "collections"}
+        {:else if activeTab === "library"}
           <MyCollectionsPanel />
-        {:else if activeTab === "community"}
+        {:else if activeTab === "collections"}
           <CommunityCollectionsPanel />
         {:else if activeTab === "hall-of-shame"}
           <HallOfShameGallery />

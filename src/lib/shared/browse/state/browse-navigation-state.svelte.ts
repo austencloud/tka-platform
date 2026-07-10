@@ -10,8 +10,12 @@
  * this state no longer knows about creator profiles.
  */
 
-// Tab types matching the Browse module structure
-export type BrowseTab = "gallery" | "collections" | "community";
+// Tab types matching the Browse module structure.
+// Tab ids renamed 2026-07-10 so URLs match labels: "library" = your saved
+// work (label Library, was id "collections"); "collections" = community
+// collection discovery (label Collections, was id "discover", briefly
+// "community"). Legacy persisted values migrate in restoreState below.
+export type BrowseTab = "gallery" | "library" | "collections";
 export type BrowseView = "list" | "detail";
 
 /**
@@ -42,7 +46,7 @@ const MAX_HISTORY_SIZE = 50;
 // ============================================================================
 
 /**
- * A collection deep link: /browse/collections/[collectionId], optionally with
+ * A collection deep link: /browse/library/[collectionId], optionally with
  * ?scan=1. This is the URL a phone lands on after scanning the desktop scan
  * sheet's handoff QR — it opens that collection, and the scan flag asks the
  * detail view to open the card scanner immediately.
@@ -62,8 +66,15 @@ export function getCollectionScanTargetFromURL(): CollectionScanTarget | null {
     .replace(/^\/+/, "")
     .split("/")
     .filter(Boolean);
-  // Expect: browse / collections / [collectionId]
-  if (parts[0] === "browse" && parts[1] === "collections" && parts[2]) {
+  // Expect: browse / library / [collectionId]. Legacy segment "collections"
+  // (the Library tab's pre-2026-07-10 id) is still accepted so already-printed
+  // scan-sheet QR codes keep working — the extra [collectionId] segment
+  // disambiguates it from the bare /browse/collections community tab URL.
+  if (
+    parts[0] === "browse" &&
+    (parts[1] === "library" || parts[1] === "collections") &&
+    parts[2]
+  ) {
     const scan =
       new URLSearchParams(window.location.search).get("scan") === "1";
     return { collectionId: decodeURIComponent(parts[2]), scan };
@@ -132,12 +143,18 @@ function createBrowseNavigationState() {
         Array.isArray(data.history) &&
         data.history.length > 0
       ) {
-        // Migrate legacy persisted tab id "discover" -> "community" (renamed
-        // 2026-07-10). Old localStorage entries otherwise carry a tab value
-        // no component matches, silently landing on no panel.
+        // Migrate legacy persisted tab ids (renames of 2026-07-10, when tab
+        // ids were aligned with their labels). Old localStorage entries
+        // otherwise carry tab values no component matches, silently landing
+        // on no panel.
+        //   "collections" (old Library id)            -> "library"
+        //   "discover" / transient "community"        -> "collections"
         for (const loc of data.history) {
-          if ((loc.tab as string) === "discover") {
-            loc.tab = "community";
+          const legacy = loc.tab as string;
+          if (legacy === "collections") {
+            loc.tab = "library";
+          } else if (legacy === "discover" || legacy === "community") {
+            loc.tab = "collections";
           }
         }
         state.history = data.history;
@@ -261,7 +278,7 @@ function createBrowseNavigationState() {
      */
     viewCollectionDetail(collectionId: string, collectionName?: string) {
       this.navigateTo({
-        tab: "collections",
+        tab: "library",
         view: "detail",
         contextId: collectionId,
         filter: collectionName
@@ -307,11 +324,11 @@ function createBrowseNavigationState() {
     },
 
     /**
-     * Navigate to collections list view
+     * Navigate to the Library (your saved collections) list view
      */
     viewCollections() {
       this.navigateTo({
-        tab: "collections",
+        tab: "library",
         view: "list",
       });
     },

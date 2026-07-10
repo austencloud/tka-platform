@@ -366,7 +366,7 @@ const TAB_ORDERS: Record<string, string[]> = {
     "editor",
     "export",
   ],
-  browse: ["gallery", "collections", "hall-of-shame"],
+  browse: ["gallery", "library", "collections", "hall-of-shame"],
   social: ["community", "connect", "creators"],
   learn: ["concepts", "play", "codex"],
   compose: ["arrange", "browse"],
@@ -561,7 +561,7 @@ function replaceHistoryState(moduleId: ModuleId, sectionId?: string) {
   const url = new URL(window.location.href);
   const canonical = buildPath(moduleId, sectionId);
   // Deep links carry more path than the canonical /module/tab —
-  // /browse/collections/{id}?scan=1 (the phone scan handoff) or
+  // /browse/library/{id}?scan=1 (the phone scan handoff) or
   // /browse/creators/{userId}. This runs at boot BEFORE the lazy-loaded
   // module reads the URL, so flattening to the canonical path here would
   // eat those segments and strand the deep link on the tab's list view.
@@ -619,17 +619,39 @@ function parsePathNavigation(): {
     } else if (moduleId === ("dashboard" as unknown)) {
       // Dashboard removed Jan 2026 - Create is now the default landing
       moduleId = "create" as ModuleId;
-    } else if (moduleId === ("browse" as ModuleId) && parts[1] === "discover") {
-      // Browse's community-collections tab id renamed discover -> community
-      // (2026-07-10) so the URL reads sensibly. Old bookmarks/deep links to
-      // /browse/discover land on the same tab under its new id. Scoped to
-      // the browse module only — Festivals also has an unrelated "discover"
-      // tab id and must not be redirected here.
-      sectionId = "community";
-      const rewritten = "/browse/community";
+    } else if (
+      moduleId === ("browse" as ModuleId) &&
+      (parts[1] === "discover" || parts[1] === "community")
+    ) {
+      // Browse's community-collections tab (label "Collections") had id
+      // "discover", then briefly "community"; since 2026-07-10 its id matches
+      // its label: "collections" (/browse/collections). Old bookmarks/deep
+      // links land on the same tab under the new id. Scoped to the browse
+      // module only — Festivals also has an unrelated "discover" tab id and
+      // must not be redirected here.
+      sectionId = "collections";
       const url = new URL(window.location.href);
-      url.pathname = rewritten;
-      svelteKitReplaceState(url, { moduleId: "browse", sectionId: "community" });
+      url.pathname = "/browse/collections";
+      svelteKitReplaceState(url, {
+        moduleId: "browse",
+        sectionId: "collections",
+      });
+    } else if (
+      moduleId === ("browse" as ModuleId) &&
+      parts[1] === "collections" &&
+      parts[2]
+    ) {
+      // Legacy scan-handoff deep link /browse/collections/{id}[?scan=1] —
+      // printed QR sheets carry these. The Library tab's id renamed
+      // collections -> library (2026-07-10), so rewrite to
+      // /browse/library/{id} preserving the query. The extra {id} segment
+      // distinguishes this from the bare /browse/collections community tab
+      // URL. The longer pathname survives replaceHistoryState's
+      // canonical-path flattening because it sits under /browse/library/.
+      sectionId = "library";
+      const url = new URL(window.location.href);
+      url.pathname = `/browse/library/${parts[2]}`;
+      svelteKitReplaceState(url, { moduleId: "browse", sectionId: "library" });
     } else if (moduleId === ("browse" as ModuleId) && parts[1] === "creators") {
       // Creators moved Browse -> Social (2026-07-08). Redirect the module AND
       // rewrite the address bar to /social/creators[/userId] so the deep
@@ -771,10 +793,14 @@ export function initializeNavigationHistory() {
       targetModule = "create" as ModuleId;
       targetSection = undefined;
       needsHistoryUpdate = true;
-    } else if (targetModule === ("browse" as ModuleId) && targetSection === "discover") {
-      // Browse tab id renamed discover -> community (2026-07-10). A history
-      // entry pushed before the rename still carries the old sectionId.
-      targetSection = "community";
+    } else if (
+      targetModule === ("browse" as ModuleId) &&
+      (targetSection === "discover" || targetSection === "community")
+    ) {
+      // Browse's community-collections tab id: discover -> (briefly
+      // community) -> collections (2026-07-10, ids aligned with labels).
+      // History entries pushed before the rename still carry the old ids.
+      targetSection = "collections";
       needsHistoryUpdate = true;
     }
 

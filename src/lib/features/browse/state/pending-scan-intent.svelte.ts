@@ -3,7 +3,7 @@
  *
  * One-shot handoff for "open the card scanner as soon as this collection
  * loads." Set when the app boots from a scan deep link
- * (/browse/collections/[id]?scan=1 — the QR a desktop shows so a phone can
+ * (/browse/library/[id]?scan=1 — the QR a desktop shows so a phone can
  * take over scanning); consumed once by CollectionDetailView. One-shot so a
  * refresh or a later visit to the same collection doesn't reopen the scanner.
  */

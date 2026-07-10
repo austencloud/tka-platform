@@ -97,7 +97,7 @@ the geo dashboard).
 	let cameraChosen = $state(false);
 	const handoffMode = $derived(placement === "right" && !cameraChosen);
 	const handoffUrl = getAppCanonicalURL(
-		`browse/collections/${encodeURIComponent(collectionId)}?scan=1`,
+		`browse/library/${encodeURIComponent(collectionId)}?scan=1`,
 	);
 	let handoffQrDataUrl = $state<string | null>(null);
 	let handoffQrFailed = $state(false);
