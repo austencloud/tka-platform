@@ -1,4 +1,4 @@
-import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { Step } from "@tka/tka-types";
 
 const turnValues = [0, 0.5, 1, 1.5, 2, 2.5, 3];
 
@@ -84,7 +84,7 @@ export function getTurnDescription(turns: number | "fl" | undefined): string {
 }
 
 export function getCurrentTurnValue(
-  stepData: StepData | null,
+  stepData: Step | null,
   color: "blue" | "red"
 ): number | "fl" {
   if (!stepData) return 0;
