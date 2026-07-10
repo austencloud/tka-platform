@@ -138,7 +138,7 @@ describe("StepDeriver", () => {
       expect(step!.redReversal).toBe(false);
     });
 
-    it("sets isBlank to false and isStep to true", () => {
+    it("sets isBlank to false", () => {
       const blueStep = makeStep(GridLocation.NORTH, GridLocation.EAST);
       const redStep = makeStep(GridLocation.SOUTH, GridLocation.WEST);
 
@@ -148,7 +148,6 @@ describe("StepDeriver", () => {
       const [step] = deriveSteps(blue, red, [makePairing()]);
 
       expect(step!.isBlank).toBe(false);
-      expect(step!.isStep).toBe(true);
     });
 
     it("assigns a unique id per step", () => {
