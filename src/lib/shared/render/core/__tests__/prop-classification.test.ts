@@ -38,7 +38,8 @@ describe("isUnilateralProp", () => {
 
 describe("isBuugengFamilyProp", () => {
   it("recognizes the buugeng family", () => {
-    for (const p of ["buugeng", "bigbuugeng", "fractalgeng", "trigeng"]) {
+    // fractalgeng retired 62f821b2 — no longer in the family
+    for (const p of ["buugeng", "bigbuugeng", "trigeng"]) {
       expect(isBuugengFamilyProp(p)).toBe(true);
     }
   });
