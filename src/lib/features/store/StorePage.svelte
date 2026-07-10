@@ -169,6 +169,11 @@
         </section>
       {/if}
 
+      <!-- ============ BOTTOM ZONE ============
+           Book + info bands. Stacked strips normally; on ultrawide they compose
+           into one dense grid (book+story row, how+box row) so a 4K viewport
+           carries density instead of short strips with dead sides. -->
+      <div class="bottom-zone">
       <!-- ============ THE BOOK ============
            The one non-deck product: the printed guide, front and center with
            the deck lines. Typographic cover panel, no fake product photo. -->
@@ -207,7 +212,7 @@
            side-by-side band (how / box / story), so the width carries density
            instead of stretched one-line cards. -->
       <div class="info-bands">
-      <section class="band">
+      <section class="band band-how">
         <h2 class="section-title">How it works</h2>
         <div class="steps-grid">
           <div class="step">
@@ -229,7 +234,7 @@
       </section>
 
       <!-- ============ WHAT'S IN THE BOX ============ -->
-      <section class="band">
+      <section class="band band-box">
         <h2 class="section-title">What's in the box</h2>
         <ul class="box-list">
           <li><i class="fas fa-clone" aria-hidden="true"></i> 54 sequence cards, poker size (2.5" × 3.5")</li>
@@ -240,7 +245,7 @@
       </section>
 
       <!-- ============ BETA RUN STORY ============ -->
-      <section class="band story">
+      <section class="band story band-story">
         <h2 class="section-title">First run, made by hand</h2>
         <div class="story-card">
           <i class="fas fa-scissors" aria-hidden="true"></i>
@@ -251,6 +256,7 @@
           </p>
         </div>
       </section>
+      </div>
       </div>
 
       {#if state.isLoading && state.products.length === 0}
@@ -596,29 +602,55 @@
   }
 
   /* ---------- ultrawide composition (4K+) ----------
-     Don't stretch the strips: recompose them. The three info bands sit
-     side-by-side as columns, each internally stacked, so a 4K viewport shows
-     one dense band instead of three sparse full-width ones. */
+     Don't stretch the strips: recompose them. The book tile spans two thirds
+     with the beta-run story filling the third beside it; below, "how it works"
+     spans two thirds next to "what's in the box". One dense zone, no short
+     strips with dead sides. */
   @media (min-width: 1800px) {
-    .info-bands {
+    .bottom-zone {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-areas:
+        "book book story"
+        "how how box";
       gap: 28px;
-      align-items: start;
+      align-items: stretch;
       margin-bottom: 72px;
     }
-    .info-bands .band {
+    /* Children of .info-bands join the zone grid directly. */
+    .info-bands {
+      display: contents;
+    }
+    .bottom-zone .book-band {
+      grid-area: book;
       margin-bottom: 0;
     }
-    .info-bands .steps-grid {
-      grid-template-columns: 1fr;
-      gap: 14px;
-    }
-    .info-bands .box-list {
-      grid-template-columns: 1fr;
-    }
-    .info-bands .story-card {
+    .bottom-zone .book-tile {
       max-width: none;
+      height: 100%;
+    }
+    .band-how {
+      grid-area: how;
+    }
+    .band-box {
+      grid-area: box;
+    }
+    .band-story {
+      grid-area: story;
+      display: flex;
+      flex-direction: column;
+    }
+    .band-story .story-card {
+      max-width: none;
+      flex: 1;
+      display: grid;
+      align-content: center;
+    }
+    .bottom-zone .band {
+      margin-bottom: 0;
+    }
+    .band-box .box-list {
+      grid-template-columns: 1fr;
     }
   }
 
