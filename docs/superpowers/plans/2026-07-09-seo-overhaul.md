@@ -418,26 +418,24 @@ git commit -m "feat(seo): SSR product pages with meta + Product/Offer JSON-LD" -
 **Files:**
 - Modify: `src/routes/sitemap.xml/+server.ts`
 
-- [ ] **Step 1:** Find the canonical public sequence index: read `docs/architecture/save-paths.md`, grep `publicSequences|public_index|featured` in `src/lib/shared/browse/` and `firebase-functions/src/`. Identify a Firestore collection queryable server-side that marks released-deck or featured sequences, and the URL shape (`/sequence/{id}` vs `/q/{code}`).
+- [x] **Step 1:** Found the canonical curated-sequence source: `publicSequences` (browse gallery cache, `PublicSequencesLoader`) has NO featured/curated flag on `PublicSequenceIndex` — only engagement metrics (forkCount/viewCount/starCount) and tags. The real curated signal is `deckReleases/counter/manifests/{deckNumber}` (`getDeckReleaseManifestsPath()` in `src/lib/shared/library/data/firestore-paths.ts`), written by the deck releaser (`DeckRelease.ts`). Each manifest doc has `sequences: DeckReleaseCard[]`, each card carrying a real `sequenceId`. URL shape confirmed as `/sequence/{sequenceId}` (raw id, not the encoded route form) — used elsewhere at `NearbySyncBanner.svelte:51`, `InboxNotificationItem.svelte:142`, `SequenceMessageCard.svelte:99`.
 
-- [ ] **Step 2:** In the sitemap handler, after the static `pages` block, add an admin-SDK query (dynamic import of `$lib/server/firebaseAdmin`, wrapped in try/catch returning `[]` on failure) fetching AT MOST 200 curated entries (deck-released/featured only, per spec decision), emitting `<url>` entries with `priority 0.6, changefreq monthly`. Keep the existing 1-hour Cache-Control so Firestore isn't hit per-crawl.
+- [x] **Step 2:** Added `getCuratedSequenceUrls()` in `src/routes/sitemap.xml/+server.ts`: dynamic-imports `$lib/server/firebaseAdmin`, queries `deckReleases/counter/manifests`, collects unique `sequenceId`s across all manifest docs (cap 200), maps to `sequence/{id}` with priority 0.6 / changefreq monthly. try/catch returns `[]` on any failure (admin creds absent, network, etc.). Existing 1-hour `Cache-Control` untouched.
 
-- [ ] **Step 3:** Preview curl: `curl -s http://localhost:4173/sitemap.xml | grep -c "<loc>"` — expect static count + curated count; XML validates (`curl -s ... | npx xmllint --noout -` or visually confirm structure).
+- [x] **Step 3:** Preview verified via `npx wrangler pages dev .svelte-kit/cloudflare --port 4173`: `curl -s http://localhost:4173/sitemap.xml` returned 11 `<loc>` entries (the 11 static pages; 0 curated because no admin creds in the local preview environment — expected fallback, confirmed non-fatal). XML structure validated: balanced `<url>`/`</url>` (11/11) and `<urlset>`/`</urlset>` (1/1) tag counts, valid XML declaration.
 
-- [ ] **Step 4:** Commit:
+- [x] **Step 4:** Commit:
 
 ```bash
 git commit -m "feat(seo): curated sequence entries in dynamic sitemap" -- src/routes/sitemap.xml/+server.ts
 ```
-
-If Step 1 finds NO server-queryable curated flag, mark this task `- [~] deferred: no curated index collection exists` in this plan file and report — do not invent a collection.
 
 ### Task 9: Head-tag contract test
 
 **Files:**
 - Create: `tests/unit/seo-head-contract.test.ts`
 
-- [ ] **Step 1:** Static contract test (same style as `tests/unit/sequence-viewer-shell-contract.test.ts` — read it first and mirror its structure/registration):
+- [x] **Step 1:** Static contract test (same style as `tests/unit/sequence-viewer-shell-contract.test.ts` — read it first and mirror its structure/registration). Created `tests/unit/seo-head-contract.test.ts` exactly per the plan's code, no path adjustments needed (all three route files exist as named).
 
 ```ts
 import { describe, it, expect } from "vitest";
@@ -478,9 +476,9 @@ describe("SEO head contract", () => {
 });
 ```
 
-- [ ] **Step 2:** Run: `npx vitest run tests/unit/seo-head-contract.test.ts` — expect PASS (after Tasks 5-7). Confirm the file is picked up by the same vitest config/CI job as the shell contract test.
+- [x] **Step 2:** Ran `npx vitest run tests/unit/seo-head-contract.test.ts` — 5/5 tests PASS. Confirmed same-config pickup by running it alongside `tests/unit/sequence-viewer-shell-contract.test.ts` in one invocation (`npx vitest run tests/unit/seo-head-contract.test.ts tests/unit/sequence-viewer-shell-contract.test.ts`) — both discovered under the default vitest config (no test-file include/exclude override in `vite.config.ts`), 14/16 passed total (this file's 5/5 green; the shell contract's 2 pre-existing failures are unrelated to this task — a `768px` breakpoint mismatch already present before this work, not touched here).
 
-- [ ] **Step 3:** Commit:
+- [x] **Step 3:** Commit:
 
 ```bash
 git commit -m "test(seo): head-tag contract test for share-critical routes" -- tests/unit/seo-head-contract.test.ts
