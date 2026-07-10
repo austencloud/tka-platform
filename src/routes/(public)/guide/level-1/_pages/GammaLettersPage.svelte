@@ -336,7 +336,7 @@
       />
     </div>
     <p class="caption" style="left:{w.x * S}px; top:{462.5 * S}px; width:{CELL * 2 * S}px; font-size:{16 * S}px">
-      <em>{w.word} - {w.phrase}</em>
+      <span class="tka-font">{w.word}</span> - <em>{w.phrase}</em>
     </p>
   {/each}
 

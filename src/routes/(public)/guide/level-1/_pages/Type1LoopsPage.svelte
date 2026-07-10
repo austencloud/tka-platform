@@ -9,14 +9,21 @@
    *   steps 5-6 repeat 1-2 and only the I steps mirror (W side → E side).
    *   A Mirrored LOOP.
    *   BBLF — from α (blue S / red N): the anti lap out (BB), hybrid close
-   *   (L F); the second repetition returns via the W side. Swapped & Rotated.
+   *   (L F). The second half is the swap+half-turn-rotation transform of the
+   *   first, so the closing L/F trade the colors' roles: step 7 is blue-PRO
+   *   n→w + red-ANTI s→w, step 8 continues those motion types home (blue w→s,
+   *   red w→n). Swapped & Rotated. (Corrected 2026-07-10 — the first build
+   *   repeated steps 3-4's roles without the swap; Austen caught it.)
    *   KIEC — from α (blue W / red E): the second half swaps the colors' roles
    *   (step 4's C is blue-pro/red-anti, step 8's is blue-anti/red-pro).
    *   Swapped & Mirrored.
-   * All letters MCP-verified earlier in the run (D/J pro, B/E/K anti, I/L/F/C
-   * hybrids). Orientations follow the algebra (anti flips, pro keeps). The
-   * artboard carries NO reversal marks on this page (its teaching is LOOP
-   * classification) — kept faithful, no flags.
+   * All letters MCP-verified (D/J pro, B/E/K anti, I/L/F/C hybrids — hybrids
+   * keep their letter under a color swap; L/F re-verified 2026-07-10).
+   * Orientations follow the algebra (anti flips, pro keeps).
+   * Reversal dots are DERIVED from the motion data via bakeReversals (never
+   * hand-authored): DJII flags both hands at step 7 (the mirror point flips
+   * both prop directions), KIEC flags steps 2-3 (the K→I→E retraces), fixed
+   * BBLF flags nothing (both props ride CCW the whole loop).
    *
    * Reader: each LOOP is one clickable strip playing Start + 8 steps.
    *
@@ -40,6 +47,7 @@
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { pt, ptDrag, editText, guideEdit, registerEditSource } from "../_data/guide-edit.svelte";
+  import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../_data/guide-data-context";
   import { getGuideActiveStep } from "../_data/guide-active-step.svelte";
 
@@ -135,8 +143,8 @@
         st(Letter.F, h(true, E, SO_, OUT), h(false, E, N)),
         st(Letter.B, h(true, SO_, W), h(true, N, E)),
         st(Letter.B, h(true, W, N, OUT), h(true, E, SO_, OUT)),
-        st(Letter.L, h(true, N, W), h(false, SO_, W)),
-        st(Letter.F, h(true, W, SO_, OUT), h(false, W, N)),
+        st(Letter.L, h(false, N, W), h(true, SO_, W)),
+        st(Letter.F, h(false, W, SO_), h(true, W, N, OUT)),
       ],
     },
     {
@@ -189,7 +197,12 @@
         red: stat(MotionColor.RED, l.startRed),
       },
     }) as unknown as StepData;
-  const loopSteps = (l: LoopDef): StepData[] => [startBox(l), ...l.steps.map((_, i) => stepData(l, i))];
+  // Static authoring — build each LOOP's numbered steps once, with reversal
+  // dots derived from the motions themselves (bakeReversals; never hand-author).
+  const LOOP_STEPS: Record<string, StepData[]> = Object.fromEntries(
+    LOOPS.map((l) => [l.key, bakeReversals(l.steps.map((_, i) => stepData(l, i)))])
+  );
+  const loopSteps = (l: LoopDef): StepData[] => [startBox(l), ...LOOP_STEPS[l.key]!];
 
   // ── Geometry ────────────────────────────────────────────────────────────────
   const CELL = 90;
@@ -234,7 +247,7 @@
     showGrid: true,
     showTKA: true,
     showPositions: false,
-    showReversals: false,
+    showReversals: true,
     showTnD: false,
     showElemental: false,
     showNonRadialPoints: false,
@@ -252,7 +265,9 @@
 
   <!-- Margin word labels (+ the BBLF classification tag). -->
   {#each MARGINS as m (m.t)}
-    <span class="margin-word" style="left:{10 * S}px; top:{m.y * S}px; width:{86 * S}px; font-size:{20 * S}px">{m.t}</span>
+    <span class="margin-word" style="left:{10 * S}px; top:{m.y * S}px; width:{86 * S}px; font-size:{20 * S}px"
+      ><span class="tka-font">{m.t}</span></span
+    >
     {#if m.tagY != null}
       <span class="margin-tag" style="left:{4 * S}px; top:{m.tagY * S}px; width:{96 * S}px; font-size:{13 * S}px">Swapped &amp; Rotated LOOP</span>
     {/if}
@@ -280,14 +295,14 @@
           {...PICTO_FLAGS}
         />
       </div>
-      {#each l.steps as _, i (i)}
+      {#each LOOP_STEPS[l.key]! as sd, i (i)}
         <div
           class="mini"
           class:guide-step-active={activeStep?.key === l.key && activeStep.ringStep === i + 1}
           style="left:{(ROW_X - START_X + (i % 4) * CELL) * S}px; top:{(Math.floor(i / 4) * (l.rowYs[1] - l.rowYs[0])) * S}px; width:{CELL * S}px; height:{CELL * S}px"
         >
           <PictographContainer
-            pictographData={stepData(l, i)}
+            pictographData={sd}
             gridMode={GridMode.DIAMOND}
             bluePropTypeOverride={PropType.STAFF}
             redPropTypeOverride={PropType.STAFF}
@@ -352,6 +367,12 @@
     line-height: 1;
     white-space: nowrap;
     letter-spacing: 0.02em;
+  }
+  /* The word itself renders in the TKA letterforms (still real, selectable
+     text — the webfont). Single-weight font: don't synthesize bold. */
+  .margin-word .tka-font {
+    font-weight: normal;
+    letter-spacing: 0.06em;
   }
   .margin-tag {
     position: absolute;

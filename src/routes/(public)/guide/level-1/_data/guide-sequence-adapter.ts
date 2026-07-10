@@ -7,6 +7,7 @@
  * isStartPosition) plus 1-based `steps`. The page's StepData already carry
  * motions, so the engine plays this directly (ensureMotionData short-circuits).
  */
+import { deriveReversals } from "@tka/sequence-engine";
 import {
   createSequenceData,
   type SequenceData,
@@ -44,6 +45,28 @@ function withLinearPaths<T extends Record<string, unknown>>(box: T): T {
       m && m.propType === PropType.HAND ? { ...m, pathShape: "linear" as const } : m;
   }
   return { ...box, motions: linear };
+}
+
+/**
+ * Bake reversal dots (blueReversal/redReversal) into a strip FROM ITS OWN
+ * MOTION DATA via the canonical engine detector — never hand-author flags on
+ * pages that use this. Dots = the `propReversal` channel only (display policy
+ * 2026-07-05: dots mark prop-direction reversals). Strips read LINEARLY (no
+ * loop wrap): the printed page teaches left-to-right, so the first direction
+ * establishes and mid-strip flips get dots — matching the old guide's R marks.
+ * The start box (stepNumber 0) never flags and never anchors.
+ */
+export function bakeReversals(strip: StepData[]): StepData[] {
+  const flags = deriveReversals(strip);
+  return strip.map((b, i) => {
+    const f = flags[i];
+    if (!f || (!f.blue.propReversal && !f.red.propReversal)) return b;
+    return {
+      ...b,
+      blueReversal: f.blue.propReversal,
+      redReversal: f.red.propReversal,
+    } as StepData;
+  });
 }
 
 export function stripToSequence(
