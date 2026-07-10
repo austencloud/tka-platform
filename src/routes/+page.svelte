@@ -51,12 +51,6 @@
     content="TKA is a notation system for flow arts. Document and share staff, fans, hoop, club, fan, and buugeng choreography. Create sequences, animate them, share with other flow artists."
   />
 
-  <!-- Keywords for search engines and AI systems -->
-  <meta
-    name="keywords"
-    content="flow arts notation, flow arts notation system, dual wielded props, staff notation, staff spinning notation, fan notation, club notation, hoop notation, buugeng notation, prop notation, TKA, The Kinetic Alphabet, TKA flow arts, TKA notation, flow arts choreography, movement notation, dance notation, prop manipulation notation, sequence notation, pictograph notation, flow arts, staff spinning, club manipulation, fan spinning, hoop dance, buugeng, prop manipulation, choreography app, sequence creator"
-  />
-
   <!-- Additional SEO meta tags -->
   <meta
     name="robots"
