@@ -107,7 +107,8 @@ export const GUIDE_BODY_PAGES: GuidePageEntry[] = [
   { id: "permutations", title: "LOOPs", level: 0, group: "1.2" },
   { id: "reversals", title: "Reversals", level: 0, group: "1.2" },
   { id: "examples-abc", title: "Examples", level: 0, group: "1.2" },
-  { id: "misc-permutations", title: "Misc. Permutation Examples", level: 0, group: "1.2" },
+  // "Type 1 CAPs" in the old guide — retitled to the app's LOOP terminology.
+  { id: "misc-permutations", title: "Type 1 LOOPs", level: 0, group: "1.2" },
 ];
 
 /** 1-based page number of an entry id, or undefined if not in the manifest. */
