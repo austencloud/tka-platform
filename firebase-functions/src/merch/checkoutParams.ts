@@ -23,8 +23,17 @@ export function buildMerchCheckoutParams(opts: {
   /** Buyer's print prop (validated PropType value). Rides in metadata so the
    *  webhook writes it onto the order for fulfillment. */
   propType?: string;
+  /** Validated LOOP configurator dials. Stripe metadata is string-only, so
+   *  they flatten to loopLevel/loopLength/loopFlavor (+ loopCustom JSON when
+   *  the advanced panel was touched). */
+  loopConfig?: {
+    level: string;
+    length: string;
+    flavor: string;
+    custom?: Record<string, unknown>;
+  };
 }): Stripe.Checkout.SessionCreateParams {
-  const { product, productId, baseUrl, propType } = opts;
+  const { product, productId, baseUrl, propType, loopConfig } = opts;
   return {
     mode: "payment",
     line_items: [{ price: product.stripePriceId, quantity: 1 }],
@@ -37,6 +46,12 @@ export function buildMerchCheckoutParams(opts: {
       productId,
       productName: product.name,
       ...(propType && { propType }),
+      ...(loopConfig && {
+        loopLevel: loopConfig.level,
+        loopLength: loopConfig.length,
+        loopFlavor: loopConfig.flavor,
+        ...(loopConfig.custom && { loopCustom: JSON.stringify(loopConfig.custom) }),
+      }),
     },
   };
 }

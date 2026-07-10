@@ -1,10 +1,14 @@
 <!-- src/lib/features/store/LoopDeckConfiguratorPage.svelte -->
 <!--
-  The LOOP Deck configurator: ONE listing over the per-flavor backing SKUs
-  (products with listing === "loop-deck"). Buyer picks a flavor (exactly one
-  active), sees the real cards fan + copy swap, and buys the resolved SKU.
-  Size and bundle dials render today (poker / deck-only live; tarot and
-  +guide visible but disabled until they exist).
+  The LOOP Deck configurator v2: dial funnel in the buyer's real decision
+  order — Level (difficulty) → Length (depth) → Flavor (taste) — each with a
+  curated "Mix" option. Flat $30, ONE purchasable SKU (listing
+  "loop-deck-custom"); the configuration rides checkout metadata into the
+  order doc. The 7 per-flavor SKUs stay in Firestore as cover/flavor data
+  sources only. Collapsed advanced panel for power customizers, instrumented
+  so usage decides whether it lives.
+
+  Spec: docs/superpowers/specs/2026-07-10-loop-deck-configurator-v2-design.md
 -->
 <script lang="ts">
   import { getMerchCheckoutCreator } from "$lib/features/store/get-merch-checkout-creator";
@@ -17,8 +21,25 @@
   import PropPicker from "./components/PropPicker.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import { prewarmCovers } from "./services/cover-front-renderer";
   import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
+  import {
+    LOOP_LEVELS,
+    LOOP_LENGTHS,
+    AVAILABLE_LEVELS,
+    AVAILABLE_LENGTHS,
+    availableFlavors,
+    flavorSlugFromComponents,
+    LEVEL_MIX_COPY,
+    LENGTH_MIX_COPY,
+    VARIETY_COPY,
+    type LoopLevel,
+    type LoopLength,
+    type LoopFlavor,
+    type LoopConfig,
+  } from "./domain/loop-config";
+  import { getActivityLogger } from "$lib/shared/analytics/get-activity-logger";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   // Named `store`, not `state`: a local binding called `state` collides with the
@@ -27,49 +48,133 @@
   setStoreContext({ state: store });
   store.loadProducts(false);
 
-  const flavors = $derived(
+  // The ONE purchasable SKU. Flat $30 regardless of dials.
+  const customSku = $derived(
+    store.products.find(
+      (p) => p.listing === "loop-deck-custom" && p.status === "active"
+    ) ?? null
+  );
+
+  // Per-flavor SKUs: cover + flavor-tile data sources (not sold individually).
+  const flavorSkus = $derived(
     store.products
       .filter((p) => p.listing === "loop-deck" && p.status === "active")
       .sort((a, b) => a.sortOrder - b.sortOrder)
   );
-
-  let selectedId = $state<string | null>(null);
-  const selected = $derived(
-    flavors.find((p) => p.id === selectedId) ?? flavors[0] ?? null
+  const skuByFlavor = $derived(
+    new Map(
+      flavorSkus
+        .map((p) => [flavorSlugFromComponents(p.loopComponents ?? []), p] as const)
+        .filter((e): e is [LoopFlavor, (typeof flavorSkus)[number]] => e[0] != null)
+    )
   );
 
+  // ── the dials — page loads buyable untouched: 1 · 8 · Variety ──
+  let level = $state<LoopLevel>("1");
+  let length = $state<LoopLength>("8");
+  let flavor = $state<LoopFlavor>("variety");
   let propType = $state<PropType>(DEFAULT_SHOP_PROP);
 
-  // ONE worker seed covering every flavor's covers for the picked prop, so
-  // flavor swaps render with full arrow/prop assets (see cover-front-renderer).
-  // Baked covers skip this entirely; the seed only matters for live fallbacks.
+  const flavorsForLevel = $derived(availableFlavors(level));
+  // Level change can strand the flavor (Level 2 = variety + rotated only).
   $effect(() => {
-    const all = flavors.flatMap((p) => p.coverCards ?? []);
+    if (!flavorsForLevel.includes(flavor)) flavor = "variety";
+  });
+
+  // ── advanced panel (usage decides whether this survives) ──
+  let advancedOpen = $state(false);
+  let levelBalance = $state<"mostly-1" | "even" | "mostly-spicy">("mostly-1");
+  let excluded = $state<Set<LoopFlavor>>(new Set());
+  let customTouched = $state(false);
+
+  function openAdvanced() {
+    advancedOpen = !advancedOpen;
+    if (advancedOpen)
+      getActivityLogger().logActivity("shop_loop_advanced_opened", "shop");
+  }
+  function customize(key: string, value: string) {
+    customTouched = true;
+    getActivityLogger().logActivity("shop_loop_advanced_customized", "shop", {
+      settingKey: key,
+      newValue: value,
+    });
+  }
+  function toggleExclude(f: LoopFlavor) {
+    const next = new Set(excluded);
+    if (next.has(f)) next.delete(f);
+    else next.add(f);
+    excluded = next;
+    customize("excludeFlavors", [...next].join(",") || "none");
+  }
+
+  const loopConfig = $derived.by<LoopConfig>(() => {
+    const cfg: LoopConfig = { level, length, flavor };
+    if (!customTouched) return cfg;
+    const custom: NonNullable<LoopConfig["custom"]> = {};
+    if (level === "mix") custom.levelBalance = levelBalance;
+    if (flavor === "variety" && excluded.size > 0)
+      custom.excludeFlavors = [...excluded];
+    return Object.keys(custom).length ? { ...cfg, custom } : cfg;
+  });
+
+  // ── preview ──
+  const selectedSku = $derived(
+    flavor === "variety" ? null : (skuByFlavor.get(flavor) ?? null)
+  );
+  // Variety hand: one card per flavor (excludes honored), mixed.
+  const varietyCards = $derived(
+    flavorSkus
+      .filter((p) => {
+        const slug = flavorSlugFromComponents(p.loopComponents ?? []);
+        return slug != null && !excluded.has(slug);
+      })
+      .map((p) => p.coverCards?.[0])
+      .filter((c): c is NonNullable<typeof c> => c != null)
+  );
+  const fanCards = $derived(
+    selectedSku ? (selectedSku.coverCards ?? []) : varietyCards
+  );
+  const previewDesc = $derived(
+    selectedSku ? selectedSku.description : VARIETY_COPY
+  );
+
+  $effect(() => {
+    const all = flavorSkus.flatMap((p) => p.coverCards ?? []);
     if (all.length) prewarmCovers(all, propType);
   });
 
-  // Short flavor names for the picker (the SKU name repeats "LOOP Deck").
   const flavorName = (name: string) => name.replace(/\s*LOOP Deck$/i, "");
-
   const price = $derived(
-    selected ? `$${(selected.price / 100).toFixed(0)}` : "$25"
+    customSku ? `$${(customSku.price / 100).toFixed(0)}` : "$30"
   );
+
+  // Reserved hint slots (no-layout-shift): every dial always renders its hint
+  // line; Mix selections fill it, everything else leaves it blank.
+  const levelHint = $derived(level === "mix" ? LEVEL_MIX_COPY : "");
+  const lengthHint = $derived(length === "mix" ? LENGTH_MIX_COPY : "");
 
   let size = $state<"poker" | "tarot">("poker");
   let bundle = $state<"deck" | "bundle">("deck");
 
-  // Roving radiogroup: arrows move selection, exactly one option tabbable.
-  function onPickerKeydown(e: KeyboardEvent) {
-    if (!selected || flavors.length === 0) return;
-    const idx = flavors.findIndex((f) => f.id === selected.id);
+  // Roving radiogroup for the flavor tiles.
+  const flavorOrder = $derived<LoopFlavor[]>([
+    "variety",
+    ...flavorSkus
+      .map((p) => flavorSlugFromComponents(p.loopComponents ?? []))
+      .filter((s): s is LoopFlavor => s != null),
+  ]);
+  function onFlavorKeydown(e: KeyboardEvent) {
+    const enabled = flavorOrder.filter((f) => flavorsForLevel.includes(f));
+    const idx = enabled.indexOf(flavor);
+    if (idx < 0) return;
     let next = -1;
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (idx + 1) % flavors.length;
-    if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (idx - 1 + flavors.length) % flavors.length;
-    const target = next >= 0 ? flavors[next] : undefined;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (idx + 1) % enabled.length;
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (idx - 1 + enabled.length) % enabled.length;
+    const target = next >= 0 ? enabled[next] : undefined;
     if (!target) return;
     e.preventDefault();
-    selectedId = target.id;
-    document.getElementById(`flavor-${target.id}`)?.focus();
+    flavor = target;
+    document.getElementById(`flavor-${target}`)?.focus();
   }
 </script>
 
@@ -81,24 +186,29 @@
 
     {#if store.error}
       <div class="error">{store.error}</div>
-    {:else if store.isLoading && flavors.length === 0}
+    {:else if store.isLoading && flavorSkus.length === 0}
       <div class="loading">Loading the deck...</div>
-    {:else if selected}
+    {:else if flavorSkus.length > 0}
       <div class="config-layout">
         <!-- ============ preview column ============ -->
         <div class="preview-column">
           <div class="preview-box">
-            <Crossfade key={`${selected.id}|${propType}`}>
+            <!-- fill mode: the stage is the sized box, so config swaps can
+                 never resize it (crossfade-primitive routing). -->
+            <Crossfade key={`${flavor}|${propType}|${excluded.size}`} fill>
               <div class="preview-inner">
                 <DeckFanCover
-                  cards={selected.coverCards ?? []}
-                  deckId={selected.deckId}
-                  deckName={selected.name}
+                  cards={fanCards}
+                  deckId={selectedSku?.deckId}
+                  deckName={selectedSku?.name ?? "Variety Pack"}
                   {propType}
                   cardWidth={168}
                   maxCardWidth={280}
+                  exactCount={flavor === "variety"
+                    ? Math.min(6, fanCards.length)
+                    : undefined}
                 />
-                <p class="preview-desc">{selected.description}</p>
+                <p class="preview-desc">{previewDesc}</p>
               </div>
             </Crossfade>
           </div>
@@ -108,26 +218,71 @@
         <div class="info-column">
           <span class="eyebrow">The deck</span>
           <h1>LOOP Deck</h1>
-          <p class="meta">54 cards · eight counts each · every sequence loops</p>
+          <p class="meta">54 cards · every sequence loops · built to your dials</p>
+
+          <div class="dial-row">
+            <div class="field">
+              <span class="field-label" id="level-label">Level</span>
+              <SegmentedControl
+                options={LOOP_LEVELS.map((l) => ({
+                  value: l,
+                  label: l === "mix" ? "Mix" : l,
+                  disabled: !AVAILABLE_LEVELS.includes(l),
+                }))}
+                value={level}
+                onchange={(v) => (level = v)}
+                color="accent"
+              />
+              <p class="dial-hint">{levelHint}</p>
+            </div>
+
+            <div class="field">
+              <span class="field-label" id="length-label">Length</span>
+              <SegmentedControl
+                options={LOOP_LENGTHS.map((l) => ({
+                  value: l,
+                  label: l === "mix" ? "Mix" : l,
+                  disabled: !AVAILABLE_LENGTHS.includes(l),
+                }))}
+                value={length}
+                onchange={(v) => (length = v)}
+                color="accent"
+              />
+              <p class="dial-hint">{lengthHint}</p>
+            </div>
+          </div>
 
           <div class="field">
             <span class="field-label" id="flavor-label">Flavor</span>
             <div class="flavor-grid" role="radiogroup" aria-labelledby="flavor-label">
-              {#each flavors as flavor (flavor.id)}
-                {@const active = flavor.id === selected.id}
+              <!-- Variety first: the default, the blend. -->
+              {#each flavorOrder as f (f)}
+                {@const sku = f === "variety" ? null : skuByFlavor.get(f)}
+                {@const active = f === flavor}
+                {@const enabled = flavorsForLevel.includes(f)}
                 <button
                   type="button"
-                  id="flavor-{flavor.id}"
+                  id="flavor-{f}"
                   class="flavor-option"
                   class:active
+                  class:gated={!enabled}
                   role="radio"
                   aria-checked={active}
+                  aria-disabled={!enabled}
                   tabindex={active ? 0 : -1}
-                  onclick={() => (selectedId = flavor.id)}
-                  onkeydown={onPickerKeydown}
+                  onclick={() => enabled && (flavor = f)}
+                  onkeydown={onFlavorKeydown}
                 >
-                  <span class="flavor-name">{flavorName(flavor.name)}</span>
-                  <LoopChips components={flavor.loopComponents ?? []} size="sm" />
+                  {#if f === "variety"}
+                    <span class="flavor-name">Variety Pack</span>
+                    <span class="flavor-sub">a curated blend of every flavor</span>
+                  {:else if sku}
+                    <span class="flavor-name">{flavorName(sku.name)}</span>
+                    <LoopChips components={sku.loopComponents ?? []} size="sm" />
+                  {/if}
+                  {#if !enabled}
+                    <span class="flavor-sub">not at this level yet</span>
+                  {/if}
                 </button>
               {/each}
             </div>
@@ -138,8 +293,62 @@
             <PropPicker value={propType} onchange={(p) => (propType = p)} />
           </div>
 
-          <!-- Two-option dials share a row on wide screens: full-width they
-               stretched each segment to ~370px on 4K, which read as broken. -->
+          <!-- Fine-tune disclosure: collapsed by default; opening it and
+               touching anything is instrumented — usage decides its future. -->
+          <div class="advanced">
+            <button
+              type="button"
+              class="advanced-toggle"
+              aria-expanded={advancedOpen}
+              onclick={openAdvanced}
+            >
+              <i
+                class="fas fa-chevron-{advancedOpen ? 'up' : 'down'}"
+                aria-hidden="true"
+              ></i>
+              Fine-tune the blend
+            </button>
+            {#if advancedOpen}
+              <div class="advanced-panel">
+                <div class="field">
+                  <span class="field-label">Level balance (Level Mix)</span>
+                  <SegmentedControl
+                    options={[
+                      { value: "mostly-1", label: "Mostly 1", disabled: level !== "mix" },
+                      { value: "even", label: "Even split", disabled: level !== "mix" },
+                      { value: "mostly-spicy", label: "Mostly spicy", disabled: level !== "mix" },
+                    ]}
+                    value={levelBalance}
+                    onchange={(v) => {
+                      levelBalance = v;
+                      customize("levelBalance", v);
+                    }}
+                    color="accent"
+                    size="sm"
+                  />
+                </div>
+                <div class="field">
+                  <span class="field-label">Variety grab bag</span>
+                  <div class="exclude-row">
+                    {#each flavorOrder.filter((f) => f !== "variety") as f (f)}
+                      {@const sku = skuByFlavor.get(f)}
+                      {#if sku}
+                        <FilterChipBase
+                          label={flavorName(sku.name)}
+                          mode="toggle"
+                          size="sm"
+                          active={!excluded.has(f)}
+                          disabled={flavor !== "variety"}
+                          onclick={() => toggleExclude(f)}
+                        />
+                      {/if}
+                    {/each}
+                  </div>
+                </div>
+              </div>
+            {/if}
+          </div>
+
           <div class="dial-row">
             <div class="field">
               <span class="field-label" id="size-label">Size</span>
@@ -170,13 +379,20 @@
 
           <p class="price">{price}</p>
 
-          <BuyButton product={selected} {propType} />
+          {#if customSku}
+            <BuyButton product={customSku} {propType} {loopConfig} />
+          {:else if flavorSkus[0]}
+            <!-- Custom SKU not seeded/active yet: honest gate via the first
+                 flavor SKU's waitlist (it has no Stripe price either). -->
+            <BuyButton product={flavorSkus[0]} {propType} {loopConfig} />
+          {/if}
           {#if store.checkoutError}
             <p class="checkout-error" role="alert">{store.checkoutError}</p>
           {/if}
 
           <ul class="assurance">
             <li><i class="fas fa-box-open" aria-hidden="true"></i> Explainer card, laminated quick-reference sheet, and deck box included</li>
+            <li><i class="fas fa-gift" aria-hidden="true"></i> 59 cards in a 54-card box. We count generously.</li>
             <li><i class="fas fa-hand-holding-heart" aria-hidden="true"></i> Beta run: printed and cut by hand in Chicago, small batches</li>
           </ul>
         </div>
@@ -238,20 +454,19 @@
     }
   }
 
-  /* Wide screens: the info column runs tall (flavor grid + dials), which left
-     ~600px of dead air under the preview box. Stretch the preview to match and
-     center the fan in it so the left half reads as a full-height stage. */
+  /* Wide screens: stretch the preview stage to the info column's height. */
   @media (min-width: 1400px) {
     .config-layout {
       align-items: stretch;
     }
     .preview-column {
       display: flex;
+      flex-direction: column;
     }
     .preview-box {
       flex: 1;
-      display: grid;
-      align-content: center;
+      height: auto;
+      min-height: clamp(360px, 36vw, 460px);
     }
   }
 
@@ -265,16 +480,21 @@
       rgba(255, 255, 255, 0.015)
     );
     padding: clamp(16px, 2.5vw, 32px);
-    /* Tall enough for the fan + the longest description so flavor swaps
-       crossfade without resizing the box (no-layout-shift) — but scaled down
-       on phones, where a flat 430px reserved dead air. */
-    min-height: clamp(320px, 34vw, 430px);
+    /* FIXED stage height: fill-mode crossfade layers stack absolutely inside,
+       so no config swap can resize the box (no-layout-shift by construction). */
+    height: clamp(360px, 36vw, 460px);
   }
 
+  /* Each layer fills the stage and centers its art vertically. Children
+     STRETCH horizontally — the fan sizes its cards FROM container width, so
+     shrink-to-fit here would oscillate (see starter pack fix). */
   .preview-inner {
+    height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    justify-content: center;
+    align-items: stretch;
+    gap: 12px;
   }
 
   .preview-desc {
@@ -331,6 +551,16 @@
     max-width: 420px;
   }
 
+  /* Reserved hint slot: always present so a Mix pick never shoves the layout. */
+  .dial-hint {
+    margin: 0;
+    line-height: 1.4;
+    min-height: 1.4em;
+    font-size: var(--font-size-compact, 12px);
+    font-style: italic;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.55));
+  }
+
   .field-label {
     font-size: var(--font-size-compact, 12px);
     font-weight: 700;
@@ -360,7 +590,7 @@
     text-align: left;
     transition: border-color 0.15s ease, background 0.15s ease;
   }
-  .flavor-option:hover {
+  .flavor-option:hover:not(.gated) {
     border-color: var(--theme-border-strong, rgba(255, 255, 255, 0.3));
   }
   .flavor-option.active {
@@ -371,10 +601,66 @@
     outline: 2px solid #fff;
     outline-offset: 2px;
   }
+  .flavor-option.gated {
+    opacity: 0.45;
+    cursor: default;
+  }
 
   .flavor-name {
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
+  }
+  .flavor-sub {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+  }
+
+  /* ---------- advanced disclosure ---------- */
+  .advanced {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .advanced-toggle {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.75));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .advanced-toggle:hover {
+    border-color: var(--theme-border-strong, rgba(255, 255, 255, 0.3));
+    color: var(--theme-text, #fff);
+  }
+  .advanced-toggle i {
+    font-size: 0.75em;
+  }
+
+  .advanced-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.025));
+  }
+
+  .exclude-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .price {
@@ -423,7 +709,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .back-button,
-    .flavor-option {
+    .flavor-option,
+    .advanced-toggle {
       transition: none;
     }
   }

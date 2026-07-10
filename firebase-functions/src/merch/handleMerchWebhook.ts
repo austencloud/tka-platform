@@ -63,6 +63,14 @@ export const handleMerchWebhook = functions.https.onRequest(
           // Buyer's print prop for physical decks; absent = staff (also absent
           // on pre-prop-picker orders and non-deck items).
           ...(session.metadata.propType && { propType: session.metadata.propType }),
+          // LOOP configurator dials (flat strings; loopCustom = JSON of the
+          // advanced-panel choices). Absent on non-LOOP items.
+          ...(session.metadata.loopLevel && {
+            loopLevel: session.metadata.loopLevel,
+            loopLength: session.metadata.loopLength || "",
+            loopFlavor: session.metadata.loopFlavor || "",
+            ...(session.metadata.loopCustom && { loopCustom: session.metadata.loopCustom }),
+          }),
           quantity: 1,
           // Per-unit product price = the line-item subtotal (single quantity),
           // BEFORE shipping + tax. amount_total includes the flat shipping rate

@@ -1,4 +1,5 @@
 import type { Product } from "../domain/models/product";
+import type { LoopConfig } from "../domain/loop-config";
 
 interface ProductLoader {
   loadActiveProducts(): Promise<Product[]>;
@@ -7,7 +8,11 @@ interface ProductLoader {
 }
 
 interface CheckoutCreator {
-  createCheckoutSession(productId: string, propType?: string): Promise<string>;
+  createCheckoutSession(
+    productId: string,
+    propType?: string,
+    loopConfig?: LoopConfig
+  ): Promise<string>;
 }
 
 // Module-level cache (survives component unmount/remount) so navigating from the
@@ -86,11 +91,15 @@ export function createStoreState(
     }
   }
 
-  async function startCheckout(productId: string, propType?: string) {
+  async function startCheckout(
+    productId: string,
+    propType?: string,
+    loopConfig?: LoopConfig
+  ) {
     isCheckingOut = true;
     checkoutError = null;
     try {
-      const url = await checkoutCreator.createCheckoutSession(productId, propType);
+      const url = await checkoutCreator.createCheckoutSession(productId, propType, loopConfig);
       window.location.href = url;
     } catch (e) {
       checkoutError = "Checkout isn't available yet. Try again later.";

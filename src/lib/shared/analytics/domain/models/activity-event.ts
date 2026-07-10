@@ -15,7 +15,8 @@ export type ActivityCategory =
   | "share" // Share actions
   | "social" // Follow, like, comment
   | "learn" // Quiz, lessons, tutorials
-  | "settings"; // Settings changes
+  | "settings" // Settings changes
+  | "shop"; // Storefront configurator interactions
 
 /**
  * Specific event types within each category
@@ -56,7 +57,10 @@ export type ActivityEventType =
   // Settings events
   | "setting_change"
   | "prop_type_change"
-  | "theme_change";
+  | "theme_change"
+  // Shop events (usage-gated features: if nobody fires these, the feature goes)
+  | "shop_loop_advanced_opened"
+  | "shop_loop_advanced_customized";
 
 /**
  * Metadata that can be attached to events

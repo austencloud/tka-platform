@@ -43,6 +43,41 @@ describe("buildMerchCheckoutParams", () => {
     expect(params.metadata).toEqual({ productId: "doc_1", productName: "Deck" });
   });
 
+  it("flattens loopConfig into string metadata (Stripe metadata is string-only)", () => {
+    const withLoop = buildMerchCheckoutParams({
+      product: PRODUCT,
+      productId: "doc_1",
+      baseUrl: "https://tkaflowarts.com",
+      propType: "staff",
+      loopConfig: {
+        level: "mix",
+        length: "8",
+        flavor: "variety",
+        custom: { levelBalance: "even" },
+      },
+    });
+    expect(withLoop.metadata).toEqual({
+      productId: "doc_1",
+      productName: "Deck",
+      propType: "staff",
+      loopLevel: "mix",
+      loopLength: "8",
+      loopFlavor: "variety",
+      loopCustom: JSON.stringify({ levelBalance: "even" }),
+    });
+  });
+
+  it("omits loopCustom when the advanced panel was untouched", () => {
+    const withLoop = buildMerchCheckoutParams({
+      product: PRODUCT,
+      productId: "doc_1",
+      baseUrl: "https://tkaflowarts.com",
+      loopConfig: { level: "1", length: "8", flavor: "rotated" },
+    });
+    expect(withLoop.metadata?.loopCustom).toBeUndefined();
+    expect(withLoop.metadata?.loopFlavor).toBe("rotated");
+  });
+
   it("carries the buyer's propType in metadata for the webhook", () => {
     const withProp = buildMerchCheckoutParams({
       product: PRODUCT,

@@ -8,15 +8,18 @@
   import { getStoreContext } from "../context/store-context";
   import type { Product } from "../domain/models/product";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { LoopConfig } from "../domain/loop-config";
   import WaitlistForm from "./WaitlistForm.svelte";
 
   interface Props {
     product: Product;
     /** Buyer's print-prop pick (decks). Rides into checkout metadata. */
     propType?: PropType;
+    /** LOOP configurator dials (level/length/flavor). Rides into metadata. */
+    loopConfig?: LoopConfig;
   }
 
-  let { product, propType }: Props = $props();
+  let { product, propType, loopConfig }: Props = $props();
   const { state } = getStoreContext();
 
   const available = $derived(Boolean(product.stripePriceId));
@@ -25,7 +28,7 @@
 {#if available}
   <button
     class="buy-button"
-    onclick={() => state.startCheckout(product.id, propType)}
+    onclick={() => state.startCheckout(product.id, propType, loopConfig)}
     disabled={state.isCheckingOut}
   >
     {#if state.isCheckingOut}

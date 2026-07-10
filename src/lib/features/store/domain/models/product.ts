@@ -92,6 +92,12 @@ export interface OrderItem {
   /** Buyer's chosen print prop (PropType value, e.g. "club"). Absent on
    *  pre-prop-picker orders and non-deck items; treat as "staff". */
   readonly propType?: string;
+  /** LOOP configurator dials (flat metadata strings). Absent on non-LOOP items. */
+  readonly loopLevel?: string;
+  readonly loopLength?: string;
+  readonly loopFlavor?: string;
+  /** JSON of the advanced-panel choices; present only when it was touched. */
+  readonly loopCustom?: string;
 }
 
 export interface ShippingAddress {

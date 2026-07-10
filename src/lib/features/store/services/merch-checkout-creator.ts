@@ -1,15 +1,21 @@
 import { getFunctions, httpsCallable } from "firebase/functions";
 import { app } from "$lib/shared/auth/firebase";
+import type { LoopConfig } from "../domain/loop-config";
 
 export async function createCheckoutSession(
   productId: string,
-  propType?: string
+  propType?: string,
+  loopConfig?: LoopConfig
 ): Promise<string> {
   const functions = getFunctions(app);
   const createCheckout = httpsCallable<
-    { productId: string; propType?: string },
+    { productId: string; propType?: string; loopConfig?: LoopConfig },
     { url: string }
   >(functions, "createMerchCheckout");
-  const result = await createCheckout(propType ? { productId, propType } : { productId });
+  const result = await createCheckout({
+    productId,
+    ...(propType && { propType }),
+    ...(loopConfig && { loopConfig }),
+  });
   return result.data.url;
 }
