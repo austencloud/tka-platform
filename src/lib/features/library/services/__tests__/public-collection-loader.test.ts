@@ -7,8 +7,9 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const mocks = vi.hoisted(() => ({
   getDoc: vi.fn(),
   getCountFromServer: vi.fn(),
-  // Records the id chunk of each aggregate count query.
+  // Records the id chunk and ownerId filter of each aggregate count query.
   countChunks: [] as string[][],
+  ownerFilters: [] as string[],
 }));
 
 vi.mock("firebase/firestore", () => ({
@@ -21,10 +22,11 @@ vi.mock("firebase/firestore", () => ({
   getDocs: vi.fn(),
   limit: vi.fn(),
   orderBy: vi.fn(),
-  query: vi.fn((_ref: unknown, whereClause: { chunk?: string[] }) => whereClause),
-  where: vi.fn((_field: unknown, _op: string, chunk: string[]) => {
-    mocks.countChunks.push(chunk);
-    return { chunk };
+  query: vi.fn((_ref: unknown, ...clauses: unknown[]) => clauses),
+  where: vi.fn((field: unknown, op: string, value: unknown) => {
+    if (op === "in") mocks.countChunks.push(value as string[]);
+    if (field === "ownerId" && op === "==") mocks.ownerFilters.push(value as string);
+    return { field, op, value };
   }),
 }));
 vi.mock("$lib/shared/auth/firebase", () => ({
@@ -62,6 +64,7 @@ function storedCollection(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.countChunks = [];
+  mocks.ownerFilters = [];
 });
 
 describe("public-collection-loader count normalization", () => {
@@ -74,6 +77,17 @@ describe("public-collection-loader count normalization", () => {
     // Stored 4 (private-inclusive) never escapes; visitor sees 1.
     expect(col?.sequenceCount).toBe(1);
     expect(mocks.countChunks).toEqual([["a", "b", "c", "d"]]);
+  });
+
+  it("scopes the count to the owner (word-derived ids collide across users)", async () => {
+    // Another user's public copy of the same word must not count toward this
+    // owner's collection — the query filters on the mirror's ownerId.
+    mocks.getDoc.mockResolvedValue(docSnap(storedCollection()));
+    mocks.getCountFromServer.mockResolvedValue({ data: () => ({ count: 1 }) });
+
+    await getPublicCollection("o1", "c1");
+
+    expect(mocks.ownerFilters).toEqual(["o1"]);
   });
 
   it("keeps a smart collection's stored count (membership derives from filterSpec)", async () => {

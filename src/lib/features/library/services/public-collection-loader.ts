@@ -63,7 +63,7 @@ export async function getUserPublicCollections(
     collections.push(mapDocToCollection(docSnap.data(), docSnap.id));
   });
 
-  return Promise.all(collections.map(toPublicView));
+  return Promise.all(collections.map((c) => toPublicView(c, userId)));
 }
 
 /**
@@ -72,12 +72,16 @@ export async function getUserPublicCollections(
  * filterSpec (their ids list is unused), so their stored count stands. A
  * failed count query falls back to the stored count — a slightly-high number
  * beats a broken card.
+ *
+ * `ownerId` comes from the caller's authoritative source (the query param or
+ * the doc's Firestore path), never from doc data.
  */
 async function toPublicView(
-  col: LibraryCollection
+  col: LibraryCollection,
+  ownerId: string
 ): Promise<LibraryCollection> {
   if (isSmartCollection(col)) return col;
-  const publicCount = await countPublicMembers(col.sequenceIds).catch(
+  const publicCount = await countPublicMembers(ownerId, col.sequenceIds).catch(
     () => col.sequenceCount
   );
   return publicCount === col.sequenceCount
@@ -86,15 +90,20 @@ async function toPublicView(
 }
 
 /**
- * Count how many of the given member ids are actually in the public index.
+ * Count how many of the given member ids THIS OWNER has in the public index.
  *
  * `publicSequences` doc ids equal sequence ids, so public visibility = doc
- * existence; aggregate count queries answer it without downloading documents
- * (one count per 30-id `in` chunk). Module-private on purpose — consumers get
+ * existence — but ids are word-derived and COLLIDE ACROSS USERS (two users
+ * saving the word "BΨΦ" produce the same id). An existence-only count matched
+ * other users' public copies and inflated the count ("3 sequences" over a
+ * 1-sequence grid), so the query also filters on the mirror's ownerId.
+ * Aggregate count queries answer it without downloading documents (one count
+ * per 30-id `in` chunk). Module-private on purpose — consumers get
  * already-normalized collections and must not re-derive counts (see the
  * module invariant above).
  */
 async function countPublicMembers(
+  ownerId: string,
   sequenceIds: readonly string[]
 ): Promise<number> {
   if (sequenceIds.length === 0) return 0;
@@ -110,7 +119,11 @@ async function countPublicMembers(
   const counts = await Promise.all(
     chunks.map(async (chunk) => {
       const snap = await getCountFromServer(
-        query(publicRef, where(documentId(), "in", chunk))
+        query(
+          publicRef,
+          where("ownerId", "==", ownerId),
+          where(documentId(), "in", chunk)
+        )
       );
       return snap.data().count;
     })
@@ -171,7 +184,7 @@ export async function getAllPublicCollections(
   }
 
   return Promise.all(
-    results.map(async (r) => ({ ...r, collection: await toPublicView(r.collection) }))
+    results.map(async (r) => ({ ...r, collection: await toPublicView(r.collection, r.ownerId) }))
   );
 }
 
@@ -191,7 +204,7 @@ export async function getPublicCollection(
   if (!snap.exists()) return null;
 
   const data = mapDocToCollection(snap.data(), collectionId);
-  return data.isPublic ? toPublicView(data) : null;
+  return data.isPublic ? toPublicView(data, ownerId) : null;
 }
 
 export async function getUserCollectionSequences(

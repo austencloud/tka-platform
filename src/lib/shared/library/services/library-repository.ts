@@ -568,6 +568,22 @@ export class LibraryRepository {
         });
     } else if (finalSequence.visibility === "public" && !this.publicIndexSyncer) {
       console.warn("[LibraryRepository] Sequence is public but publicIndexSyncer is null - it will NOT appear in the public gallery.", { sequenceId: finalSequence.id });
+    } else if (finalSequence.visibility !== "public" && this.publicIndexSyncer) {
+      // A PRIVATE save can land on an id that was previously saved public
+      // (word-derived ids make re-saves overwrite the same doc). Without this,
+      // the old publicSequences mirror survives — a private sequence stays
+      // discoverable in the gallery and inflates public member counts.
+      // removeFromPublicIndex treats an absent mirror as success, so this is a
+      // no-op for first-time private saves.
+      this.publicIndexSyncer.removeFromPublicIndex(finalSequence.id).catch((error) => {
+        this.reportError(
+          "Saved privately, but the old public copy may still be visible in the gallery.",
+          error,
+          "public-index-sync",
+          { sequenceId: finalSequence.id },
+          "warning"
+        );
+      });
     }
 
     return finalSequence;
