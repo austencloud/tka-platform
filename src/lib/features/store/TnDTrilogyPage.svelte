@@ -185,9 +185,11 @@
   }
 
   .config-content {
+    /* Lean vertical padding so the configurator fits a 4K viewport unscrolled
+       (matches LoopDeckConfiguratorPage). */
     max-width: min(1720px, 92vw);
     margin: 0 auto;
-    padding: 40px 24px 80px;
+    padding: 28px 24px 44px;
   }
 
   .back-button {
@@ -221,6 +223,24 @@
   @media (max-width: 860px) {
     .config-layout {
       grid-template-columns: 1fr;
+    }
+  }
+
+  /* Wide screens: stretch the preview stage to the info column's height and
+     center the fan in it — kills the dead air under the preview box. The
+     legend keeps its slot under the stage. */
+  @media (min-width: 1400px) {
+    .config-layout {
+      align-items: stretch;
+    }
+    .preview-column {
+      display: flex;
+      flex-direction: column;
+    }
+    .preview-box {
+      flex: 1;
+      display: grid;
+      align-content: center;
     }
   }
 

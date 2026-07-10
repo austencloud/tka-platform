@@ -138,30 +138,34 @@
             <PropPicker value={propType} onchange={(p) => (propType = p)} />
           </div>
 
-          <div class="field">
-            <span class="field-label" id="size-label">Size</span>
-            <SegmentedControl
-              options={[
-                { value: "poker", label: 'Poker · 2.5" × 3.5"' },
-                { value: "tarot", label: "Tarot · coming soon", disabled: true },
-              ]}
-              value={size}
-              onchange={(v) => (size = v)}
-              color="accent"
-            />
-          </div>
+          <!-- Two-option dials share a row on wide screens: full-width they
+               stretched each segment to ~370px on 4K, which read as broken. -->
+          <div class="dial-row">
+            <div class="field">
+              <span class="field-label" id="size-label">Size</span>
+              <SegmentedControl
+                options={[
+                  { value: "poker", label: 'Poker · 2.5" × 3.5"' },
+                  { value: "tarot", label: "Tarot · coming soon", disabled: true },
+                ]}
+                value={size}
+                onchange={(v) => (size = v)}
+                color="accent"
+              />
+            </div>
 
-          <div class="field">
-            <span class="field-label" id="bundle-label">Bundle</span>
-            <SegmentedControl
-              options={[
-                { value: "deck", label: "Deck only" },
-                { value: "bundle", label: "+ printed guide · coming soon", disabled: true },
-              ]}
-              value={bundle}
-              onchange={(v) => (bundle = v)}
-              color="accent"
-            />
+            <div class="field">
+              <span class="field-label" id="bundle-label">Bundle</span>
+              <SegmentedControl
+                options={[
+                  { value: "deck", label: "Deck only" },
+                  { value: "bundle", label: "+ printed guide · coming soon", disabled: true },
+                ]}
+                value={bundle}
+                onchange={(v) => (bundle = v)}
+                color="accent"
+              />
+            </div>
           </div>
 
           <p class="price">{price}</p>
@@ -193,10 +197,11 @@
 
   .config-content {
     /* Wide fluid band: the preview fan auto-scales into the extra room on 4K
-       instead of the page pinning to a narrow column. */
+       instead of the page pinning to a narrow column. Vertical padding stays
+       lean so the whole configurator fits a 4K viewport without scrolling. */
     max-width: min(1720px, 92vw);
     margin: 0 auto;
-    padding: 40px 24px 80px;
+    padding: 28px 24px 44px;
   }
 
   .back-button {
@@ -230,6 +235,23 @@
   @media (max-width: 860px) {
     .config-layout {
       grid-template-columns: 1fr;
+    }
+  }
+
+  /* Wide screens: the info column runs tall (flavor grid + dials), which left
+     ~600px of dead air under the preview box. Stretch the preview to match and
+     center the fan in it so the left half reads as a full-height stage. */
+  @media (min-width: 1400px) {
+    .config-layout {
+      align-items: stretch;
+    }
+    .preview-column {
+      display: flex;
+    }
+    .preview-box {
+      flex: 1;
+      display: grid;
+      align-content: center;
     }
   }
 
@@ -297,6 +319,16 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
+  }
+
+  .dial-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+  .dial-row .field {
+    flex: 1 1 240px;
+    max-width: 420px;
   }
 
   .field-label {

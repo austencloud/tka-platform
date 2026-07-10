@@ -57,12 +57,16 @@
 
 <style>
   .prop-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(88px, 1fr));
+    /* Compact tiles, left-aligned: 1fr tracks fattened each button to ~150px
+       on wide columns. Wraps on narrow screens. */
+    display: flex;
+    flex-wrap: wrap;
     gap: 10px;
   }
 
   .prop-option {
+    flex: 0 1 104px;
+    min-width: 88px;
     display: flex;
     flex-direction: column;
     align-items: center;
