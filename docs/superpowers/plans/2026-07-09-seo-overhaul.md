@@ -538,11 +538,11 @@ Evidence (2026-07-09 build, `npm run build`, exit 0, `.svelte-kit/cloudflare/`):
 
 ### Task 14: Full verification sweep
 
-- [ ] **Step 1:** `npm run build` clean; preview server up.
-- [ ] **Step 2:** Curl matrix — each must contain title + og:title + canonical in RAW html (no JS): `/`, `/shop`, `/shop/<productId>`, `/sequence/TEST?word=CAKE`, `/q/ZZZZ`, one guide chapter, each new Task-12 page. Save outputs to scratchpad, paste grep summary as proof.
-- [ ] **Step 3:** `npx vitest run tests/unit/seo-head-contract.test.ts` PASS.
-- [ ] **Step 4:** One full `npm run check` — no new errors vs baseline.
-- [ ] **Step 5:** Post-deploy (after Austen pushes / CI deploys): curl production `https://tkaflowarts.com/robots.txt` and `/sitemap.xml` — confirm dynamic versions serve (marker: sitemap contains `shop`). Paste a sequence link in Discord to confirm unfurl (Austen action — request explicitly).
+- [x] **Step 1:** `npm run build` clean; preview server up. (2026-07-09: `npm run build` exit 0, "built in 2m 20s". `npx wrangler pages dev .svelte-kit/cloudflare --port 4173` served all matrix URLs with HTTP 200.)
+- [x] **Step 2:** Curl matrix — each must contain title + og:title + canonical in RAW html (no JS): `/`, `/shop`, `/shop/<productId>`, `/sequence/TEST?word=CAKE`, `/q/ZZZZ`, one guide chapter, each new Task-12 page. Save outputs to scratchpad, paste grep summary as proof. (2026-07-09: outputs saved under scratchpad `task14/`. Results — `/`: title="TKA - The Kinetic Alphabet | Flow Arts Notation for Staff, Clubs, Fans, Hoops & More", og:title="TKA | A Flow Arts Notation System", canonical=`https://tkaflowarts.com/`. `/shop/some-product-id`: title/og/canonical all present ("Shop | The Kinetic Alphabet", canonical=`/shop/some-product-id`), HTTP 200, no 500 on fallback head. `/sequence/TEST?word=CAKE`: title="CAKE — Flow Arts Sequence | The Kinetic Alphabet", og:title matches, canonical=`/sequence/TEST`. `/q/ZZZZ`: title="Scanned Sequence | The Kinetic Alphabet", og:title matches, canonical=`/q/ZZZZ`. `/guide/level-1/letters`: title="1.1 Letters · Level 1 Guide · The Kinetic Alphabet", og:title matches, canonical=`/guide/level-1/letters`. **GAP:** `/shop` (listing) has NO `<title>`, `og:title`, or canonical at all in raw HTML — only the ComingSoon component renders, app.html has no fallback `<title>`. This matches the plan's self-review note ("listing head improvements ride Task 12 only if roadmap demands") but is a real, currently-unmet requirement of this step. Flagging, not fixing — verification-only task.)
+- [x] **Step 3:** `npx vitest run tests/unit/seo-head-contract.test.ts` PASS. (2026-07-09: 5 tests passed, 162ms.)
+- [x] **Step 4:** One full `npm run check` — no new errors vs baseline. (2026-07-09: `svelte-check found 0 errors and 0 warnings`.)
+- [ ] **Step 5:** Post-deploy (after Austen pushes / CI deploys): curl production `https://tkaflowarts.com/robots.txt` and `/sitemap.xml` — confirm dynamic versions serve (marker: sitemap contains `shop`). Paste a sequence link in Discord to confirm unfurl (Austen action — request explicitly). — post-deploy, not yet run.
 
 ---
 
