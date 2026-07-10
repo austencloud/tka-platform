@@ -287,3 +287,18 @@ Guardrail evidence (all run 2026-07-05, post-fix):
   (prop-channel-only per `63a3840053` stands).
 
 **Still open:** Wave 1 (free widening) and Wave 2 (extras retirement) — gated on approval.
+
+---
+
+## 6. WAVE 1 LEDGER — dispatched 2026-07-09 (approved by Austen; Fable-orchestrated per `.claude/rules/fable-routing.md`)
+
+- [x] Render-parity baseline recaptured at pre-wave tree state (360/360, pipeline v2)
+- [x] MotionData census re-enumerated (per-file lists in session scratchpad; 198 candidates, ~30 need engine-local/TIKA false-positive resolution)
+- [x] StepData census re-enumerated (242 files, 6 parallel classifier batches)
+- [x] `sheet-continuity.ts` `oriOf` fixed — param now `MotionData | undefined`; lean Motion no longer structurally passes (`60553621d4`)
+- [x] Unsound casts fixed (`60553621d4`): arrow-quadrant `Pick<>`-narrowed, rewound `createPlaceholderMotion(color)`, VillageLab/museum-village inner casts removed; follow-up `90aab8aecd` replaced the outer `as SequenceData` casts with `createSequenceData` factory (cast removal had surfaced them as the only 2 full-check errors)
+- [x] Widening batches executed: A=2 files (`dabf92ffbe`), B=11 (`5757aa1954`), C=6 (`6e5af92899`) — 19 widened total
+- [~] deferred: ~55 census-widenable slots NOT widened — executors found systematic blockers the field-usage census can't see: (1) loop executors mutate + return the same `StepData[]` reference and spread-construct extras (all 16+2 skipped; fixing needs a factory at the executor boundary, Wave-2 shape); (2) canonical `Motion.color` is `PropColor | undefined` vs app-required `MotionColor` — blocks ALL color-reading code; resolve in @tka/tka-types before more widening; (3) `$state`/shared-interface/serialized-schema files skipped by design. Also deferred: .svelte components (marginal value) + src/lib/shared/pictograph/arrow/** (another session active there).
+- [x] Gates green 2026-07-09: render-parity compare 360/360 0-drift · presence guards 28/28 · full svelte-check 0 errors/0 warnings · jsdom 3,940 passed / 23 failed (identical known pre-existing set, zero new)
+- [x] Scoped commits per batch (`git commit -- <paths>`)
+- [ ] Wave 2 (extras retirement: `isStep`, step `isSelected`, factory consolidation) + prerequisites surfaced by Wave 1: Motion.color optionality fix in types package, executor-boundary factory for loop executors — after Austen review
