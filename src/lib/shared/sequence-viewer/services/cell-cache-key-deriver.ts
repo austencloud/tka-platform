@@ -42,6 +42,11 @@
  *   string - the lsp8 refactor had silently reintroduced the 32-bit hash
  *   collision that lsp3→lsp4 specifically eliminated, causing wrong-arrow
  *   blobs once the cache grew past ~46K entries.
+ * - lsp11-: Added blueReversal/redReversal (reversal dots are baked into the
+ *   blob but were absent from the key — a step rendered WITH reversal dots
+ *   poisoned the cache for an identical-motion step withOUT them) and
+ *   betaSwapped (changes prepared prop geometry; PictographPreparer already
+ *   keyed it, the blob key didn't).
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -75,7 +80,7 @@ export function deriveCacheKey(
       options.browseViewMode ? `vm-${options.browseViewMode.subject}-${options.browseViewMode.granularity}-${options.browseViewMode.color}` : "",
     ];
 
-    return `lsp10-${pictographHash}:${cellParts.join("|")}`;
+    return `lsp11-${pictographHash}:${cellParts.join("|")}`;
   }
 
   /**

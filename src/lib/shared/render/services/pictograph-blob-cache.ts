@@ -3,7 +3,10 @@ import type { PictographBlobCacheStats } from "./types";
 
 const DB_NAME = "pictograph-blob-cache";
 const STORE_NAME = "blobs";
-const DB_VERSION = 8;
+// v9: cell key format lsp10→lsp11 (reversal flags + betaSwapped added) — wipe
+// so poisoned lsp10 blobs (reversal dots baked under dot-free keys) don't
+// linger as unreachable orphans in an unpruned store.
+const DB_VERSION = 9;
 
 interface CachedBlobEntry {
   /** Hash key for the pictograph configuration (includes size) */
@@ -38,7 +41,7 @@ export class PictographBlobCache {
         if (!db.objectStoreNames.contains(STORE_NAME)) {
           const store = db.createObjectStore(STORE_NAME, { keyPath: "key" });
           store.createIndex("timestamp", "timestamp", { unique: false });
-        } else if (oldVersion < 8) {
+        } else if (oldVersion < DB_VERSION) {
           const tx = (event.target as IDBOpenDBRequest).transaction!;
           tx.objectStore(STORE_NAME).clear();
         }

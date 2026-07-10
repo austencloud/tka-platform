@@ -80,9 +80,9 @@ function makeOptions(overrides?: Partial<PreviewCellRenderOptions>): PreviewCell
 }
 
 describe("CellCacheKeyDeriver (lsp8 composition)", () => {
-  it("produces keys starting with lsp10-", () => {
+  it("produces keys starting with lsp11-", () => {
     const key = deriver.deriveCacheKey(makeStartPosition(), undefined, false, makeOptions());
-    expect(key).toMatch(/^lsp10-/);
+    expect(key).toMatch(/^lsp11-/);
   });
 
   describe("motion-intrinsic propType differentiation (the original bug)", () => {
@@ -190,6 +190,54 @@ describe("CellCacheKeyDeriver (lsp8 composition)", () => {
       const lightKey = deriver.deriveCacheKey(data, undefined, false, options);
 
       expect(darkKey).not.toBe(lightKey);
+    });
+  });
+
+  describe("reversal flags differentiation (lsp11)", () => {
+    it("blueReversal true vs false produces different keys when showReversals is on", () => {
+      const plain = makeStartPosition();
+      const reversed = { ...makeStartPosition(), blueReversal: true } as PictographData;
+      const options = makeOptions({ showReversals: true });
+
+      const plainKey = deriver.deriveCacheKey(plain, undefined, false, options);
+      const reversedKey = deriver.deriveCacheKey(reversed, undefined, false, options);
+
+      expect(plainKey).not.toBe(reversedKey);
+    });
+
+    it("redReversal true vs false produces different keys when showReversals is on", () => {
+      const plain = makeStartPosition();
+      const reversed = { ...makeStartPosition(), redReversal: true } as PictographData;
+      const options = makeOptions({ showReversals: true });
+
+      const plainKey = deriver.deriveCacheKey(plain, undefined, false, options);
+      const reversedKey = deriver.deriveCacheKey(reversed, undefined, false, options);
+
+      expect(plainKey).not.toBe(reversedKey);
+    });
+
+    it("reversal flags are neutralized when showReversals is off (no pointless cache split)", () => {
+      const plain = makeStartPosition();
+      const reversed = { ...makeStartPosition(), blueReversal: true, redReversal: true } as PictographData;
+      const options = makeOptions({ showReversals: false });
+
+      const plainKey = deriver.deriveCacheKey(plain, undefined, false, options);
+      const reversedKey = deriver.deriveCacheKey(reversed, undefined, false, options);
+
+      expect(plainKey).toBe(reversedKey);
+    });
+  });
+
+  describe("betaSwapped differentiation (lsp11)", () => {
+    it("betaSwapped true vs false produces different keys", () => {
+      const plain = makeStartPosition();
+      const swapped = { ...makeStartPosition(), betaSwapped: true } as PictographData;
+      const options = makeOptions();
+
+      const plainKey = deriver.deriveCacheKey(plain, undefined, false, options);
+      const swappedKey = deriver.deriveCacheKey(swapped, undefined, false, options);
+
+      expect(plainKey).not.toBe(swappedKey);
     });
   });
 

@@ -21,6 +21,15 @@ interface PictographKeyInput {
   letter: string | undefined;
   blue: MotionKeyData | null;
   red: MotionKeyData | null;
+  // Reversal dots are BAKED into the rendered blob (LayerCompositor reads
+  // stepData.blueReversal/redReversal), so the flags are image identity. The
+  // same letter+motions can carry different reversal flags depending on the
+  // preceding step — omitting them served dotted blobs to dot-free steps.
+  blueReversal: boolean;
+  redReversal: boolean;
+  // betaSwapped changes prepared prop geometry (PictographPreparer keys it);
+  // without it two identical-motion pictographs collide across the swap.
+  betaSwapped: boolean;
   visibility: {
     showTKA: boolean;
     showTnD: boolean;
@@ -62,10 +71,19 @@ export class PictographKeyHasher {
     const resolvedBlueProp = visibility.bluePropType ?? "staff";
     const resolvedRedProp = visibility.redPropType ?? "staff";
 
+    // Flags only affect the image when the reversal layer actually draws;
+    // neutralize them when showReversals is off so a flagged and unflagged
+    // step (identical images) share one cache entry.
+    const reversalsVisible = visibility.showReversals ?? true;
+    const step = data as Partial<StepData>;
+
     return {
       letter: data.letter ?? undefined,
       blue: this.extractMotionKey(motions.blue),
       red: this.extractMotionKey(motions.red),
+      blueReversal: reversalsVisible ? (step.blueReversal ?? false) : false,
+      redReversal: reversalsVisible ? (step.redReversal ?? false) : false,
+      betaSwapped: data.betaSwapped ?? false,
       visibility: {
         showTKA: visibility.showTKA ?? true,
         showTnD: visibility.showTnD ?? false,
