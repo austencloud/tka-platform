@@ -311,12 +311,15 @@ LOOP terminology, per existing section filenames already named Loops*.)
     (facelift from the old gutter "R"); prop-only rule throughout.
   - [x] examples-abc → `ExamplesPage` "Examples" (`6e90109b0b`) — AABB with
     reversals after 2&4 / 1&5 (Mirrored LOOP) / 3&7; steps-not-beats.
-  - [ ] misc-permutations — proof p37 / artboard "1.2 - Type 1 Permutations -
-    DJII, BBLF, KIEC.png". Three 8-step LOOPs already visually decoded at a
-    high level: DJII = Mirrored (steps 5-8 mirror 1-4, from β); BBLF = Swapped
-    & Rotated (from α); KIEC = Swapped & Mirrored (colors swap in second half,
-    from α). Start boxes present. Follow the LoopsPage/ExamplesPage skeleton;
-    decode the 24 cells from artboard crops + set prop-only reversal flags.
+  - [x] misc-permutations → `Type1LoopsPage` "Type 1 LOOPs" (`3ceaa4808b`) —
+    DJII Mirrored / BBLF Swapped & Rotated / KIEC Swapped & Mirrored, 24 cells
+    decoded from artboard crops, all chains close home. NO reversal flags —
+    faithful to the artboard (page teaches LOOP classification; the old guide
+    draws no R here even where props flip at the repetition seam). CDP
+    screenshot vs artboard verified (headless Chrome, ws+CDP recipe — the
+    extension's save_to_disk files were not locatable on disk). THE MANIFEST
+    IS NOW FULLY BUILT except the parked codex pages (bl-*) awaiting Austen's
+    manual direction.
   - [ ] OPTIONAL new entries for unhomed p35/36/38-43 (CCCC, ACAC/BCBC guide
     parts, gamma connect, Type 2 LOOPs, 16-count GθOZ/EΔQY, 8-letter words,
     prop/full-reversal LOOPs) — decide manifest slots, then same recipe.
