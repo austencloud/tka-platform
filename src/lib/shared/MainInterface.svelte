@@ -54,7 +54,6 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
   import { deepLinker } from "./navigation/services/deep-linker";
   import { useDesktopSidebarVisibility } from "./navigation/services/desktop-sidebar-visibility.svelte";
   import { browseScrollState } from "$lib/shared/browse/state/browse-scroll-state.svelte";
-  import { fuseTourState } from "./onboarding/state/fuse-tour-state.svelte";
   import type { ModuleId } from "./navigation/domain/types";
   import { navigationState } from "./navigation/state/navigation-state.svelte";
   import { hasOpenDrawers } from "./foundation/ui/drawer/drawer-stack";
@@ -147,10 +146,8 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
   > | null = null;
   const showDesktopSidebar = $derived(desktopSidebarState.isVisible);
 
-  // Primary navigation visibility - hide during Browse module scroll or Fuse tour
+  // Primary navigation visibility - hide during Browse module scroll
   const isPrimaryNavVisible = $derived(() => {
-    // Fuse tour owns the full viewport - hide nav so nothing peeks through
-    if (fuseTourState.isActive) return false;
     const module = currentModule();
     if (module === "browse") {
       return browseScrollState.isUIVisible;

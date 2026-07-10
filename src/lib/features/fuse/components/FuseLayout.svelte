@@ -10,14 +10,10 @@
 	 * side, notation grids behind per-panel drawer buttons (see FusePanel).
 	 */
 
-	import { onMount } from "svelte";
 	import { Popover } from "bits-ui";
 	import { getFuseContext } from "../context/fuse-context";
 	import FusePanel from "./FusePanel.svelte";
-	import FuseTour from "$lib/shared/onboarding/components/fuse-tour/FuseTour.svelte";
-	import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
 	import BpmQuickPopover from "$lib/shared/animation-engine/components/controls/BpmQuickPopover.svelte";
-	import { fuseTourState } from "$lib/shared/onboarding/state/fuse-tour-state.svelte";
 	import { fuseSequences } from "../services/sequence-fuser";
 	import { deriveLettersForSequence } from "$lib/shared/navigation/services/letter-deriver";
 	import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
@@ -47,10 +43,6 @@
 	const canFuse = $derived(
 		!!leftBrowsingSeq?.blueSoloProp && !!rightBrowsingSeq?.redSoloProp
 	);
-
-	onMount(() => {
-		fuseTourState.triggerIfFirstTime();
-	});
 
 	function selectLength(len: number) {
 		fuseLength = len;
@@ -88,11 +80,6 @@
 		}
 	}
 
-	async function handleTourFuse() {
-		fuseTourState.complete();
-		await handleFuse();
-	}
-
 	function handleKeydown(event: KeyboardEvent) {
 		if (event.key === " " && !hasOpenDrawers()) {
 			event.preventDefault();
@@ -103,7 +90,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-{#snippet panels(tourShuffleGlow: boolean = false)}
+{#snippet panels()}
 	<div class="fuse-panels">
 		<FusePanel
 			side="left"
@@ -113,7 +100,6 @@
 			currentStep={fuseState.currentStep}
 			onCurrentSequenceChange={(seq) => (leftBrowsingSeq = seq)}
 			{compact}
-			{tourShuffleGlow}
 		/>
 		<FusePanel
 			side="right"
@@ -123,68 +109,12 @@
 			currentStep={fuseState.currentStep}
 			onCurrentSequenceChange={(seq) => (rightBrowsingSeq = seq)}
 			{compact}
-			{tourShuffleGlow}
 		/>
 	</div>
 {/snippet}
 
-{#if fuseTourState.isActive}
-	<!-- TOUR MODE: overlay covers the tab content -->
-	<div class="tour-overlay" bind:clientWidth={layoutWidth}>
-		{#if fuseTourState.currentStop === "welcome"}
-			<div class="tour-stop welcome-stop">
-				<FuseTour variant="fullscreen" />
-			</div>
-		{:else if fuseTourState.currentStop === "panels"}
-			<div class="tour-stop">
-				<div class="tour-banner-area">
-					<FuseTour variant="banner" />
-				</div>
-				{@render panels()}
-			</div>
-		{:else if fuseTourState.currentStop === "shuffle"}
-			<div class="tour-stop">
-				{@render panels(true)}
-				<div class="tour-banner-area">
-					<FuseTour variant="banner" />
-				</div>
-			</div>
-		{:else if fuseTourState.currentStop === "fuse"}
-			<div class="tour-stop">
-				<div class="tour-banner-area">
-					<FuseTour variant="banner" />
-				</div>
-				<div class="tour-panels-dimmed">
-					{@render panels()}
-				</div>
-				<div class="tour-fuse-area">
-					<button
-						class="fuse-button tour-fuse-btn"
-						disabled={!canFuse}
-						onclick={handleTourFuse}
-					>
-						<i class="fas fa-fire" aria-hidden="true"></i>
-						<span>Fuse</span>
-					</button>
-				</div>
-			</div>
-		{/if}
-	</div>
-{:else}
-	<!-- NORMAL MODE -->
-	<div class="fuse-layout" bind:clientWidth={layoutWidth}>
-		{@render panels()}
-
-		<!-- Bottom bar: help | length | bpm | play | fuse -->
-		<div class="fuse-bottom">
-			<HelpButton
-				onclick={() => fuseTourState.restart()}
-				ariaLabel="Replay Fuse tour"
-				title="Replay tour"
-				size="compact"
-			/>
-
-			<Popover.Root bind:open={lengthOpen}>
+{#snippet lengthChip()}
+	<Popover.Root bind:open={lengthOpen}>
 				<Popover.Trigger>
 					{#snippet child({ props })}
 						<button
@@ -219,10 +149,12 @@
 							{/each}
 						</div>
 					</Popover.Content>
-				</Popover.Portal>
-			</Popover.Root>
+		</Popover.Portal>
+	</Popover.Root>
+{/snippet}
 
-			<Popover.Root bind:open={bpmOpen}>
+{#snippet bpmChip()}
+	<Popover.Root bind:open={bpmOpen}>
 				<Popover.Trigger>
 					{#snippet child({ props })}
 						<button
@@ -252,25 +184,54 @@
 							onClose={() => (bpmOpen = false)}
 						/>
 					</Popover.Content>
-				</Popover.Portal>
-			</Popover.Root>
+		</Popover.Portal>
+	</Popover.Root>
+{/snippet}
 
+{#snippet playBtn()}
+	<button
+		class="play-btn"
+		onclick={() => fuseState.toggleClock()}
+		aria-label={fuseState.clockRunning ? "Pause" : "Play"}
+	>
+		{#if fuseState.clockRunning}
+			<svg viewBox="0 0 24 24" fill="currentColor">
+				<path d="M6 4h4v16H6zm8 0h4v16h-4z" />
+			</svg>
+		{:else}
+			<svg viewBox="0 0 24 24" fill="currentColor">
+				<path d="M8 5v14l11-7z" />
+			</svg>
+		{/if}
+	</button>
+{/snippet}
+
+<div class="fuse-layout" bind:clientWidth={layoutWidth}>
+	{@render panels()}
+
+	{#if compact}
+		<!-- Phone: Fuse is THE hero action, settings are a quiet row below -->
+		<div class="fuse-actions-compact">
 			<button
-				class="play-btn"
-				onclick={() => fuseState.toggleClock()}
-				aria-label={fuseState.clockRunning ? "Pause" : "Play"}
+				class="fuse-button fuse-hero"
+				disabled={!canFuse}
+				onclick={handleFuse}
 			>
-				{#if fuseState.clockRunning}
-					<svg viewBox="0 0 24 24" fill="currentColor">
-						<path d="M6 4h4v16H6zm8 0h4v16h-4z" />
-					</svg>
-				{:else}
-					<svg viewBox="0 0 24 24" fill="currentColor">
-						<path d="M8 5v14l11-7z" />
-					</svg>
-				{/if}
+				<i class="fas fa-fire" aria-hidden="true"></i>
+				<span>Fuse</span>
 			</button>
-
+			<div class="fuse-settings-row">
+				{@render lengthChip()}
+				{@render bpmChip()}
+				{@render playBtn()}
+			</div>
+		</div>
+	{:else}
+		<!-- Desktop: floating pill dock — length | bpm | play | fuse -->
+		<div class="fuse-bottom">
+			{@render lengthChip()}
+			{@render bpmChip()}
+			{@render playBtn()}
 			<button
 				class="fuse-button"
 				disabled={!canFuse}
@@ -280,14 +241,13 @@
 				<span>Fuse</span>
 			</button>
 		</div>
-	</div>
-{/if}
+	{/if}
+</div>
 
 <style>
 	/* Shared Fuse brand gradient — defined once, referenced by every fuse
 	   accent surface here. */
-	.fuse-layout,
-	.tour-overlay {
+	.fuse-layout {
 		--fuse-gradient: linear-gradient(
 			135deg,
 			var(--fuse-accent-light, #fb923c) 0%,
@@ -322,13 +282,40 @@
 	}
 
 	@container fuse-layout (max-width: 700px) {
+		/* Bottom-anchor the cluster: panels sit right above the hero Fuse
+		   button, in thumb reach. The void (if any) goes to the top. */
 		.fuse-panels {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 			grid-auto-rows: min-content;
-			align-content: center;
+			align-content: end;
 			gap: var(--spacing-sm, 8px);
 			padding: var(--spacing-sm, 8px) var(--spacing-sm, 8px) var(--spacing-xs, 4px);
 		}
+	}
+
+	/* ── Compact actions: hero Fuse + quiet settings row ────────── */
+
+	.fuse-actions-compact {
+		flex-shrink: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: var(--spacing-sm, 8px);
+		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px) var(--spacing-md, 16px);
+	}
+
+	.fuse-hero {
+		width: 100%;
+		max-width: 420px;
+		min-height: 56px;
+		font-size: var(--font-size-md, 16px);
+	}
+
+	.fuse-settings-row {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: var(--spacing-sm, 8px);
 	}
 
 	.fuse-panels > :global(*) {
@@ -541,80 +528,12 @@
 		box-shadow: none;
 	}
 
-	/* ── Tour overlay ───────────────────────────────────────────── */
-
-	/* Fills the sub-tab-content container (which has container-type: size,
-	   trapping position: fixed). Bottom nav is hidden separately via MainInterface. */
-	.tour-overlay {
-		position: absolute;
-		inset: 0;
-		z-index: 10;
-		background: linear-gradient(
-			165deg,
-			var(--theme-bg-elevated, #1a1a2e) 0%,
-			var(--theme-bg, #0f0f23) 40%,
-			var(--theme-bg-tinted, #1a1025) 100%
-		);
-		display: flex;
-		flex-direction: column;
-		overflow: hidden;
-		container-type: inline-size;
-		container-name: fuse-layout;
-	}
-
-	.tour-stop {
-		display: flex;
-		flex-direction: column;
-		flex: 1;
-		min-height: 0;
-	}
-
-	.welcome-stop {
-		align-items: center;
-		justify-content: center;
-	}
-
-	.tour-banner-area {
-		flex-shrink: 0;
-		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-	}
-
-	.tour-panels-dimmed {
-		display: flex;
-		flex-direction: column;
-		flex: 1;
-		min-height: 0;
-		opacity: 0.6;
-	}
-
-	.tour-fuse-area {
-		flex-shrink: 0;
-		display: flex;
-		justify-content: center;
-		padding: var(--spacing-md, 16px);
-	}
-
-	.tour-fuse-btn {
-		animation: tourPulse 2s ease-in-out infinite;
-		font-size: 16px;
-		padding: var(--spacing-md, 16px) var(--spacing-xl, 32px);
-		min-height: 56px;
-	}
-
-	@keyframes tourPulse {
-		0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--fuse-accent, #f97316) 40%, transparent); }
-		50% { box-shadow: 0 0 0 12px color-mix(in srgb, var(--fuse-accent, #f97316) 0%, transparent); }
-	}
-
 	@media (prefers-reduced-motion: reduce) {
 		.chip-trigger,
 		.play-btn,
 		.fuse-button,
 		.length-option {
 			transition: none;
-		}
-		.tour-fuse-btn {
-			animation: none;
 		}
 		:global(.fuse-pop[data-state="open"]) {
 			animation: none;

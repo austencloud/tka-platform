@@ -2,26 +2,28 @@
 	/**
 	 * Fuse Panel
 	 *
-	 * One side of the fuse split view. Owns its shuffle pool (state factory)
-	 * and renders the notation card + live animation + shuffle control.
+	 * One side of the fuse split view. Owns its shuffle pool (state factory).
 	 *
-	 * Regular width: ChoreoCard on top, animation below, shuffle at the bottom.
-	 * Compact width (phones): animation-first — the card moves into a bottom
-	 * drawer behind a grid button, so the two live animations sit side by side.
+	 * The live animation is the hero: a ring-lit square stage on top. Below it
+	 * (regular width) a notation strip - ChoreoCard forced to even columns with
+	 * no start cell, so an 8-count reads as a clean 4x2. Compact width (phones)
+	 * drops the strip behind a grid button that opens a bottom drawer.
+	 *
+	 * Shuffles swap stage + strip through the shared Crossfade primitive; the
+	 * incoming stage content lands with a brief accent ring flash.
 	 */
 
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 	import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
 	import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
+	import Crossfade from "$lib/shared/components/Crossfade.svelte";
 	import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
 	import FuseAnimationPreview from "./FuseAnimationPreview.svelte";
 	import { createFuseShufflePool } from "../state/fuse-shuffle-pool.svelte";
 	import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
 	import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 	import { getFuseContext } from "../context/fuse-context";
-	import { fuseTourState } from "$lib/shared/onboarding/state/fuse-tour-state.svelte";
-
 	let {
 		side,
 		bpm,
@@ -30,7 +32,6 @@
 		length = 8,
 		currentStep = 0,
 		compact = false,
-		tourShuffleGlow = false,
 	}: {
 		side: "left" | "right";
 		bpm: number;
@@ -39,7 +40,6 @@
 		length?: number;
 		currentStep?: number;
 		compact?: boolean;
-		tourShuffleGlow?: boolean;
 	} = $props();
 
 	const { state: fuseState } = getFuseContext();
@@ -55,6 +55,10 @@
 		color: propColor,
 	});
 
+	// Even grid: no start cell, columns that divide the step count cleanly
+	// (every length option is divisible by 4 except 2). 8-count = 4x2.
+	const cardColumns = $derived(length === 2 ? 2 : 4);
+
 	const pool = createFuseShufflePool({
 		browseLoader: getBrowseLoader(),
 		getLength: () => length,
@@ -62,6 +66,7 @@
 	});
 
 	const currentSequence = $derived(pool.currentItem);
+	const seqKey = $derived(currentSequence?.id ?? pool.poolIndex);
 
 	// Kick the shared beat clock once sequences exist to animate
 	$effect(() => {
@@ -77,10 +82,6 @@
 
 	function handleShuffle() {
 		pool.shuffle();
-		if (fuseTourState.isActive && fuseTourState.currentStop === "shuffle") {
-			fuseTourState.completeAction();
-			setTimeout(() => fuseTourState.advance(), 1500);
-		}
 	}
 </script>
 
@@ -90,6 +91,8 @@
 			<ChoreoCard
 				sequence={seq}
 				browseViewMode={viewMode}
+				columnCount={cardColumns}
+				includeStartPosition={false}
 				showWord={false}
 				showStepNumbers={true}
 				showDifficultyLevel={false}
@@ -120,80 +123,74 @@
 	aria-label="{label} prop path"
 	style="--accent: {accentColor};"
 >
-	<div class="content-column">
-		<header class="panel-head">
-			<span class="side-dot" aria-hidden="true"></span>
-			<span class="side-label">{label} path</span>
-		</header>
-
-		{#if !compact}
-			<div class="card-section">
-				{#if pool.loading}
-					<div class="state-msg">
-						<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-						<span>Loading sequences...</span>
-					</div>
-				{:else if !currentSequence}
-					<div class="state-msg">
-						<span>No sequences found for this length.</span>
-						<span class="hint">Try a different step count.</span>
-					</div>
-				{:else}
-					{#key currentSequence.id ?? pool.poolIndex}
-						{@render propCard(currentSequence)}
-					{/key}
-				{/if}
-			</div>
-		{/if}
-
-		<div class="animation-section">
+	<!-- Hero stage: ring-lit square, ambient spotlight behind -->
+	<div class="stage">
+		<div class="stage-box">
 			{#if currentSequence}
-				{#key currentSequence.id ?? currentSequence.word}
-					<FuseAnimationPreview
-						sequence={currentSequence}
-						{bpm}
-						{onControllerReady}
-						{propColor}
-						{currentStep}
-					/>
-				{/key}
-			{:else if pool.loading}
-				<div class="animation-placeholder">
+				<Crossfade key={seqKey} fill>
+					<div class="stage-enter">
+						<FuseAnimationPreview
+							sequence={currentSequence}
+							{bpm}
+							{onControllerReady}
+							{propColor}
+							{currentStep}
+						/>
+					</div>
+				</Crossfade>
+			{:else}
+				<div class="stage-placeholder">
+					{#if pool.loading}
+						<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+					{:else}
+						<i class="fas fa-play-circle" aria-hidden="true"></i>
+					{/if}
+				</div>
+			{/if}
+		</div>
+	</div>
+
+	{#if !compact}
+		<div class="strip">
+			{#if pool.loading}
+				<div class="state-msg">
 					<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+					<span>Loading sequences...</span>
+				</div>
+			{:else if !currentSequence}
+				<div class="state-msg">
+					<span>No sequences found for this length.</span>
+					<span class="hint">Try a different step count.</span>
 				</div>
 			{:else}
-				<div class="animation-placeholder">
-					<i class="fas fa-play-circle" aria-hidden="true"></i>
-				</div>
+				<Crossfade key={seqKey} fill>
+					{@render propCard(currentSequence)}
+				</Crossfade>
 			{/if}
 		</div>
+	{/if}
 
-		<div class="panel-actions">
-			{#if compact}
-				<button
-					class="grid-btn"
-					onclick={() => (cardDrawerOpen = true)}
-					aria-label="Show {label} notation grid"
-					title="Notation grid"
-				>
-					<i class="fas fa-table-cells" aria-hidden="true"></i>
-				</button>
-			{/if}
-
+	<div class="panel-actions">
+		{#if compact}
 			<button
-				class="shuffle-btn"
-				class:glow={tourShuffleGlow}
-				onclick={handleShuffle}
-				disabled={pool.poolSize <= 1}
-				aria-label="Shuffle {label} to next sequence"
+				class="grid-btn"
+				onclick={() => (cardDrawerOpen = true)}
+				aria-label="Show {label} notation grid"
+				title="Notation grid"
 			>
-				<i class="fas fa-shuffle" aria-hidden="true"></i>
-				<span class="shuffle-label">Shuffle</span>
-				{#if pool.poolSize > 0}
-					<span class="shuffle-counter">{pool.poolIndex + 1} / {pool.poolSize}</span>
-				{/if}
+				<i class="fas fa-table-cells" aria-hidden="true"></i>
 			</button>
-		</div>
+		{/if}
+
+		<button
+			class="shuffle-btn"
+			onclick={handleShuffle}
+			disabled={pool.poolSize <= 1}
+			aria-label="Shuffle {label} to next sequence"
+		>
+			<i class="fas fa-shuffle" aria-hidden="true"></i>
+			<span class="shuffle-label">Shuffle</span>
+		</button>
 	</div>
 </div>
 
@@ -205,7 +202,7 @@
 	>
 		<div class="drawer-card">
 			{#if currentSequence}
-				{#key currentSequence.id ?? pool.poolIndex}
+				{#key seqKey}
 					{@render propCard(currentSequence)}
 				{/key}
 			{:else}
@@ -223,6 +220,7 @@
 	   elevation. Sized by the parent grid (FuseLayout centers + caps cells). */
 	.fuse-panel {
 		display: flex;
+		flex-direction: column;
 		background:
 			linear-gradient(
 				180deg,
@@ -239,106 +237,78 @@
 		overflow: hidden;
 	}
 
-	.content-column {
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-		width: 100%;
+	/* ── Hero stage ─────────────────────────────────────────────── */
+
+	/* Fills the space above the strip; centers a square stage box sized to
+	   whichever axis is tighter. The spotlight covers the WHOLE stage area so
+	   leftover space around the square reads as ambience, not void. */
+	.stage {
+		flex: 1 1 auto;
+		min-height: 0;
+		position: relative;
 		container-type: size;
-	}
-
-	/* ── Panel identity header ──────────────────────────────────── */
-
-	.panel-head {
-		flex-shrink: 0;
 		display: flex;
 		align-items: center;
-		gap: var(--spacing-sm, 8px);
-		padding: 12px 16px 10px;
+		justify-content: center;
+		padding: var(--spacing-sm, 8px);
 	}
 
-	.side-dot {
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-		background: var(--accent);
-		box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent);
-	}
-
-	.side-label {
-		font-size: var(--font-size-compact, 12px);
-		font-weight: 600;
-		letter-spacing: 0.09em;
-		text-transform: uppercase;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
-	}
-
-	.card-section {
-		flex: 1;
-		min-height: 0;
-		display: flex;
-		flex-direction: column;
-		overflow: hidden;
-		padding: 0 var(--spacing-sm, 8px);
-	}
-
-	.choreo-card-wrap {
-		flex: 1;
-		min-height: 0;
-		overflow-y: auto;
-		animation: cardIn 240ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
-	}
-
-	@keyframes cardIn {
-		from {
-			opacity: 0;
-			transform: translateY(6px);
-		}
-	}
-
-	/* Square animation stage. Sized against the column's own height so it can
-	   never crush the card above it: no wider than the column, no taller than
-	   half the column. aspect-ratio keeps it square within those bounds. */
-	.animation-section {
-		flex-shrink: 0;
-		width: min(100%, 50cqh);
-		aspect-ratio: 1;
-		align-self: center;
-		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-		position: relative;
-		overflow: hidden;
-	}
-
-	/* Faint accent spotlight behind the moving prop - gives the stage depth
-	   without competing with the animation itself. */
-	.animation-section::before {
+	.stage::before {
 		content: "";
 		position: absolute;
 		inset: 0;
 		background: radial-gradient(
-			ellipse 70% 55% at 50% 45%,
+			ellipse 75% 60% at 50% 45%,
 			color-mix(in srgb, var(--accent) 9%, transparent) 0%,
 			transparent 75%
 		);
 		pointer-events: none;
 	}
 
-	/* Compact: the animation IS the panel. Square stage at full panel width;
-	   the panel wraps to fit (header + stage + actions) and the parent grid
-	   centers the pair vertically - no stretched voids. */
-	.fuse-panel.compact .animation-section {
-		flex: none;
-		width: 100%;
+	.stage-box {
+		width: min(100cqw - 16px, 100cqh - 16px);
 		aspect-ratio: 1;
-		border-top: none;
+		position: relative;
+		border-radius: var(--radius-md, 12px);
+		box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent);
+		overflow: hidden;
 	}
 
-	.fuse-panel.compact .content-column {
-		height: auto;
-		container-type: inline-size;
+	.stage-enter {
+		width: 100%;
+		height: 100%;
+		animation: stageIn 420ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 	}
 
-	.animation-placeholder {
+	/* Incoming shuffle lands with a settle + accent ring flash */
+	@keyframes stageIn {
+		from {
+			opacity: 0.4;
+			transform: scale(0.985);
+		}
+	}
+
+	.stage-enter::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		box-shadow: inset 0 0 28px color-mix(in srgb, var(--accent) 35%, transparent);
+		opacity: 0;
+		animation: ringFlash 600ms ease-out;
+		pointer-events: none;
+	}
+
+	@keyframes ringFlash {
+		0% {
+			opacity: 1;
+		}
+		100% {
+			opacity: 0;
+		}
+	}
+
+	.stage-placeholder {
 		width: 100%;
 		height: 100%;
 		display: flex;
@@ -346,6 +316,31 @@
 		justify-content: center;
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.2));
 		font-size: 2rem;
+	}
+
+	/* Compact: square stage at full panel width; panel wraps to fit and the
+	   parent grid centers the pair vertically - no stretched voids. */
+	.fuse-panel.compact .stage {
+		flex: none;
+		width: 100%;
+		aspect-ratio: 1;
+	}
+
+	/* ── Notation strip (regular width only) ────────────────────── */
+
+	/* Fixed share of the panel so ChoreoCard gets a definite box to size its
+	   grid into (it fits cells to its container). Stage takes the rest. */
+	.strip {
+		flex: 0 0 32%;
+		min-height: 120px;
+		position: relative;
+		padding: 0 var(--spacing-sm, 8px) var(--spacing-xs, 4px);
+	}
+
+	.choreo-card-wrap {
+		width: 100%;
+		height: 100%;
+		overflow-y: auto;
 	}
 
 	/* ── Bottom actions (grid expand + shuffle) ─────────────────── */
@@ -408,37 +403,21 @@
 		background: color-mix(in srgb, var(--accent) 30%, transparent);
 	}
 
+	.shuffle-btn:active:not(:disabled) i {
+		transform: rotate(180deg);
+	}
+
+	.shuffle-btn i {
+		transition: transform 300ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+	}
+
 	.shuffle-btn:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
 
-	.shuffle-btn.glow {
-		background: color-mix(in srgb, var(--accent) 35%, transparent);
-		box-shadow: 0 0 20px color-mix(in srgb, var(--accent) 40%, transparent);
-		animation: shuffleGlow 1.5s ease-in-out infinite;
-	}
-
-	@keyframes shuffleGlow {
-		0%, 100% {
-			box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 30%, transparent);
-			background: color-mix(in srgb, var(--accent) 30%, transparent);
-		}
-		50% {
-			box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 50%, transparent);
-			background: color-mix(in srgb, var(--accent) 45%, transparent);
-		}
-	}
-
 	.shuffle-label {
 		letter-spacing: 0.03em;
-	}
-
-	.shuffle-counter {
-		font-size: var(--font-size-compact, 12px);
-		font-weight: 400;
-		opacity: 0.6;
-		font-variant-numeric: tabular-nums;
 	}
 
 	/* ── Drawer + shared states ─────────────────────────────────── */
@@ -450,6 +429,12 @@
 		padding: var(--spacing-sm, 8px);
 	}
 
+	.drawer-card .choreo-card-wrap {
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+	}
+
 	.state-msg {
 		flex: 1;
 		display: flex;
@@ -457,6 +442,7 @@
 		align-items: center;
 		justify-content: center;
 		gap: 8px;
+		padding: var(--spacing-sm, 8px);
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
 		font-size: var(--font-size-sm, 14px);
 		text-align: center;
@@ -472,8 +458,12 @@
 			transition: none;
 		}
 
-		.shuffle-btn.glow,
-		.choreo-card-wrap {
+		.shuffle-btn i {
+			transition: none;
+		}
+
+		.stage-enter,
+		.stage-enter::after {
 			animation: none;
 		}
 	}
