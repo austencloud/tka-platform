@@ -22,22 +22,22 @@
 - Modify: `svelte.config.js` (exclude list, ~lines 40-41)
 - Delete: `static/robots.txt`, `static/sitemap.xml`
 
-- [ ] **Step 1:** In `svelte.config.js`, delete these two lines from `routes.exclude`:
+- [x] **Step 1:** In `svelte.config.js`, delete these two lines from `routes.exclude`:
 
 ```js
           '/robots.txt',
           '/sitemap.xml',
 ```
 
-- [ ] **Step 2:** Delete the stale static files:
+- [x] **Step 2:** Delete the stale static files:
 
 ```bash
 git rm static/robots.txt static/sitemap.xml
 ```
 
-- [ ] **Step 3:** Verify handlers exist and now route: `ls src/routes/robots.txt/+server.ts src/routes/sitemap.xml/+server.ts` (both must exist).
+- [x] **Step 3:** Verify handlers exist and now route: `ls src/routes/robots.txt/+server.ts src/routes/sitemap.xml/+server.ts` (both must exist).
 
-- [ ] **Step 4:** Commit:
+- [x] **Step 4:** Commit:
 
 ```bash
 git commit -m "fix(seo): serve dynamic robots.txt/sitemap.xml — remove adapter exclusions + stale static copies" -- svelte.config.js static/robots.txt static/sitemap.xml
@@ -48,7 +48,7 @@ git commit -m "fix(seo): serve dynamic robots.txt/sitemap.xml — remove adapter
 **Files:**
 - Modify: `src/routes/robots.txt/+server.ts`
 
-- [ ] **Step 1:** Replace the robots string body with:
+- [x] **Step 1:** Replace the robots string body with:
 
 ```ts
   const robots = `User-agent: *
@@ -81,9 +81,9 @@ Crawl-delay: 1`;
 
 Before finalizing, grep `src/routes` for each disallowed path to confirm it exists as a route and is genuinely non-content (e.g. `ls src/routes | grep -E "1989|coven"`). Drop any Disallow whose route doesn't exist. Check `/render` doesn't shadow a legit content route (`ls src/routes/render*`).
 
-- [ ] **Step 2:** Run `npm run check:fast` — expect no new errors in this file.
+- [x] **Step 2:** Run `npm run check:fast` — expect no new errors in this file.
 
-- [ ] **Step 3:** Commit:
+- [x] **Step 3:** Commit:
 
 ```bash
 git commit -m "fix(seo): robots.txt disallows easter-egg + utility routes" -- src/routes/robots.txt/+server.ts
@@ -94,7 +94,7 @@ git commit -m "fix(seo): robots.txt disallows easter-egg + utility routes" -- sr
 **Files:**
 - Modify: `src/routes/sitemap.xml/+server.ts`
 
-- [ ] **Step 1:** Replace the `pages` array. Remove `create` (app SPA route, `ssr:false` — thin for crawlers) and `profile` (bare `/profile` with no username is not a content page; verify with `ls "src/routes/(public)/profile"` — if it's only `[username]` subroutes, drop the bare entry). Add shop + marketing pages. First verify each route exists: `ls "src/routes/(public)"`.
+- [x] **Step 1:** Replace the `pages` array. Remove `create` (app SPA route, `ssr:false` — thin for crawlers) and `profile` (bare `/profile` with no username is not a content page; verify with `ls "src/routes/(public)/profile"` — if it's only `[username]` subroutes, drop the bare entry). Add shop + marketing pages. First verify each route exists: `ls "src/routes/(public)"`.
 
 ```ts
 const pages = [
@@ -114,9 +114,9 @@ const pages = [
 
 Also check for guide chapters beyond these three: `ls "src/routes/(public)/guide/level-1"` — add any additional chapter routes found (same shape, priority 0.7). Keep `landing`? No — `/landing` duplicates `/`; remove it (canonical is `/`).
 
-- [ ] **Step 2:** `npm run check:fast` — clean.
+- [x] **Step 2:** `npm run check:fast` — clean.
 
-- [ ] **Step 3:** Commit:
+- [x] **Step 3:** Commit:
 
 ```bash
 git commit -m "fix(seo): sitemap lists shop/guide/marketing pages, drops SPA + duplicate entries" -- src/routes/sitemap.xml/+server.ts
@@ -128,13 +128,13 @@ git commit -m "fix(seo): sitemap lists shop/guide/marketing pages, drops SPA + d
 - Delete: `src/lib/shared/foundation/services/seo-manager.ts`
 - Modify: `src/routes/+page.svelte` (keywords meta, ~lines 54-58)
 
-- [ ] **Step 1:** Confirm zero call sites: `grep -rn "seo-manager\|generateMetaTags\|isBotRequest\|handleSEORedirect" src/ --include="*.ts" --include="*.svelte" -l` — only the file itself may match. If anything else matches, STOP and report instead of deleting.
+- [x] **Step 1:** Confirm zero call sites: `grep -rn "seo-manager\|generateMetaTags\|isBotRequest\|handleSEORedirect" src/ --include="*.ts" --include="*.svelte" -l` — only the file itself may match. If anything else matches, STOP and report instead of deleting.
 
-- [ ] **Step 2:** `git rm src/lib/shared/foundation/services/seo-manager.ts`
+- [x] **Step 2:** `git rm src/lib/shared/foundation/services/seo-manager.ts`
 
-- [ ] **Step 3:** In `src/routes/+page.svelte`, delete the `<meta name="keywords" ...>` tag (the 58-term list). Leave every other head tag untouched.
+- [x] **Step 3:** In `src/routes/+page.svelte`, delete the `<meta name="keywords" ...>` tag (the 58-term list). Leave every other head tag untouched.
 
-- [ ] **Step 4:** `npm run check:fast` — clean. Commit:
+- [x] **Step 4:** `npm run check:fast` — clean. Commit:
 
 ```bash
 git commit -m "chore(seo): delete dead seo-manager service + legacy keywords meta" -- src/lib/shared/foundation/services/seo-manager.ts src/routes/+page.svelte
