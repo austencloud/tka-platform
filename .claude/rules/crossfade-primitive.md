@@ -77,10 +77,29 @@ Full boundary + rationale: `docs/architecture/crossfade-primitive.md`.
   CSS on the faded element. Migrating shifts the button's center. Stays.
 - All single enter/exit fades — not crossfades.
 
+## The First-Time Failure (2026-07-10 — check BEFORE wiring any crossfade)
+
+AI-written crossfades get this wrong on the first attempt, every time (Austen:
+"ever since I started coding with AI I always get crossfades incorrectly the
+very first time"). The failure shape: variable-height content in default
+(content-sized) mode inside a visual stage/panel — during and after the fade the
+box resizes to the current layer and shoves everything below it. The checklist:
+
+1. Crossfade inside a visually framed stage/panel/box? → **`fill`** on a
+   fixed-height (or flex-grown) stage. Default grid mode is ONLY for inline
+   content-sized things (labels, icons, words).
+2. Any content identical across keys (descriptions, captions, chrome)? → move
+   it OUTSIDE the crossfade. Only what actually changes crossfades.
+3. After wiring, swap to every key: does anything below or beside the crossfade
+   move? If yes, wrong mode — fix before shipping.
+
 ## Forbidden
 
 - A new crossfade built from two in-flow `transition:fade` siblings when
   `<Crossfade>` fits.
+- Variable-height slides in default (content-sized) mode inside a sized
+  stage/panel — that is `fill`'s job (see The First-Time Failure).
+- Content identical across keys living inside the crossfade.
 - Re-deriving the grid-stack / absolute-stack technique inline instead of using
   the primitive.
 - Wrapping a single enter/exit fade in `<Crossfade>` (semantically wrong).

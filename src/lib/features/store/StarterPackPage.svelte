@@ -88,7 +88,10 @@
         <!-- ============ preview column ============ -->
         <div class="preview-column">
           <div class="preview-box">
-            <Crossfade key={`${slide}|${propType}`}>
+            <!-- fill mode: the stage is the sized box; layers stack absolutely
+                 inside it, so slide swaps can NEVER resize the stage or shove
+                 the picker/description below (crossfade-primitive routing). -->
+            <Crossfade key={`${slide}|${propType}`} fill>
               <div class="preview-inner">
                 {#if slide === "pile"}
                   <!-- Everything together: mixed fan with the book + holder
@@ -137,10 +140,13 @@
                     <SleeveArt width="clamp(170px, 14vw, 230px)" />
                   </div>
                 {/if}
-                <p class="preview-desc">{pack.description}</p>
               </div>
             </Crossfade>
           </div>
+
+          <!-- Static, outside the crossfade: identical on every slide, so it
+               never remounts and never moves. -->
+          <p class="preview-desc">{pack.description}</p>
 
           <div class="slide-picker">
             <SegmentedControl
@@ -260,9 +266,10 @@
       flex-direction: column;
     }
     .preview-box {
+      /* Stage grows to the info column's height; art centers via the layers. */
       flex: 1;
-      display: grid;
-      align-content: center;
+      height: auto;
+      min-height: clamp(400px, 40vw, 480px);
     }
   }
 
@@ -276,14 +283,21 @@
       rgba(255, 255, 255, 0.015)
     );
     padding: clamp(16px, 2.5vw, 32px);
-    /* Reserve for the prop swap (no-layout-shift), scaled down on phones. */
-    min-height: clamp(320px, 34vw, 430px);
+    /* FIXED stage height: fill-mode crossfade layers stack absolutely inside,
+       so no slide can resize the box (no-layout-shift by construction). */
+    height: clamp(400px, 40vw, 480px);
   }
 
+  /* Each layer fills the stage and centers its art. */
   .preview-inner {
+    height: 100%;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    justify-content: center;
+    align-items: center;
+  }
+  .preview-inner > :global(*) {
+    max-width: 100%;
   }
 
   .pile {
@@ -327,10 +341,9 @@
     font-size: var(--font-size-min, 14px);
     line-height: 1.65;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.75));
-    margin: 0;
+    margin: 14px auto 0;
     text-align: center;
     max-width: 56ch;
-    align-self: center;
   }
 
   /* ---------- info ---------- */
