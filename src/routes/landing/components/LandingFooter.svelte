@@ -34,6 +34,7 @@
       <a href="/about">About</a>
       <a href="/roots">Roots</a>
       <a href="/create" data-sveltekit-reload>Open the app</a>
+      <a href="/shop">Shop</a>
       <a href="/create?sheet=auth" data-sveltekit-reload>Sign in</a>
       <a href="/terms" onclick={(e) => handleLegalClick(e, "terms")}>Terms</a>
       <a href="/privacy" onclick={(e) => handleLegalClick(e, "privacy")}>Privacy</a>

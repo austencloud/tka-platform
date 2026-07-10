@@ -4,6 +4,7 @@
   import LazyHowTkaWorksSection from "./landing/components/LazyHowTkaWorksSection.svelte";
   import PlayWithItSection from "./landing/components/PlayWithItSection.svelte";
   import GuidesSection from "./landing/components/GuidesSection.svelte";
+  import ShopCtaSection from "./landing/components/ShopCtaSection.svelte";
   import LandingFooter from "./landing/components/LandingFooter.svelte";
   import FaqAccordion from "$lib/shared/landing/components/FaqAccordion.svelte";
 
@@ -267,6 +268,10 @@
       <hr class="divider" />
       <div class="scroll-reveal">
         <GuidesSection />
+      </div>
+      <hr class="divider" />
+      <div class="scroll-reveal">
+        <ShopCtaSection />
       </div>
       <hr class="divider" />
       <div class="scroll-reveal">

@@ -213,6 +213,18 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: true,
     sections: TRAIN_TABS,
   },
+  {
+    id: "shop",
+    labelKey: "module_shop",
+    descKey: "module_desc_shop",
+    label: "Shop",
+    icon: '<i class="fas fa-store" style="color: #10b981;" aria-hidden="true"></i>',
+    color: "#10b981", // Emerald - storefront
+    description: "Physical Choreo Cards decks",
+    isMain: true,
+    sections: [],
+    linkHref: "/shop", // Plain navigation only — never boots the module shell (see linkHref doc)
+  },
   // REMOVED: Library module - functionality now integrated into Browse > Gallery via scope toggle
   // Removed: inbox module (Messages/notifications accessible via Dashboard widget drawer)
   // Removed: account module (merged into Dashboard - profile widget handles auth)
@@ -413,6 +425,7 @@ const FEATURE_ENABLED: Record<string, boolean> = {
   stage: typeof __FEATURE_STAGE__ !== "undefined" ? __FEATURE_STAGE__ : true,
   mandala: typeof __FEATURE_MANDALA__ !== "undefined" ? __FEATURE_MANDALA__ : true,
   playground: true,
+  shop: true,
   lab: typeof __FEATURE_LAB__ !== "undefined" ? __FEATURE_LAB__ : true,
   settings: typeof __FEATURE_SETTINGS__ !== "undefined" ? __FEATURE_SETTINGS__ : true,
 };

@@ -79,7 +79,8 @@ export type ModuleId =
   | "lab" // Experimental features lab (all experiments consolidated here)
   | "stage" // Stage choreography - multi-performer formation locomotion
   | "mandala" // Mandala creation, collection, meditation, and export
-  | "playground"; // User-facing experimental toys (counterpart to admin Lab); populated one tab at a time
+  | "playground" // User-facing experimental toys (counterpart to admin Lab); populated one tab at a time
+  | "shop"; // Plain link-out to /shop (Choreo Cards store) — never boots the module shell, see `linkHref`
 
 /**
  * Module Definition
@@ -102,6 +103,11 @@ export interface ModuleDefinition {
   disabled?: boolean;
   disabledMessage?: string;
   adminOnly?: boolean;
+  /** When set, this entry renders as a plain `<a href={linkHref}>` in the module
+   *  grid instead of a module-select button — it navigates away rather than
+   *  activating a module. Used for link-out entries (e.g. Shop) that must never
+   *  boot the app shell's module renderer. */
+  linkHref?: string;
 }
 
 export interface ModuleSelectorState {

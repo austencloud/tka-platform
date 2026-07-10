@@ -7,6 +7,7 @@
      admin context menu into the package's slots/callbacks. -->
 <script lang="ts">
   import { onMount } from "svelte";
+  import { goto } from "$app/navigation";
   import { fade } from "svelte/transition";
   import { Sidebar } from "@austencloud/sidebar";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
@@ -125,7 +126,15 @@
   }
 
   // Package calls with plain strings; TKA's onModuleChange wants ModuleId.
+  // Link-out entries (e.g. Shop, `linkHref` set) navigate away instead of
+  // activating a module — the external @austencloud/sidebar package has no
+  // concept of a plain link cell, so this is the seam that intercepts it.
   function handleModuleChange(moduleId: string, targetSection?: string) {
+    const def = modules.find((m: ModuleDefinition) => m.id === moduleId);
+    if (def?.linkHref) {
+      goto(def.linkHref);
+      return;
+    }
     return onModuleChange?.(moduleId as ModuleId, targetSection);
   }
 

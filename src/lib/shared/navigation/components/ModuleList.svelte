@@ -164,40 +164,60 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
       {@const isDisabled = module.disabled ?? false}
       {@const badgeCount = getModuleBadgeCount(module.id)}
 
-      <button
-        class="module-cell"
-        class:active={isActive}
-        class:disabled={isDisabled}
-        class:has-badge={badgeCount > 0}
-        onpointerdown={handlePointerDown}
-        onpointermove={handlePointerMove}
-        onclick={(e) => handleModuleClick(module.id, e, isDisabled)}
-        style="--module-color: {moduleColor}; --stagger-index: {index};"
-        aria-disabled={isDisabled}
-        disabled={isDisabled}
-      >
-        <!-- Premium layered background -->
-        <div class="cell-background"></div>
-        <div class="cell-glow"></div>
+      {#if module.linkHref}
+        <!-- Link-out entry (e.g. Shop): plain navigation, never activates the
+             module renderer. Same cell markup/classes as a module button so it
+             looks and sizes identically (44px+ touch target inherited from
+             .module-cell). -->
+        <a
+          class="module-cell"
+          href={module.linkHref}
+          style="--module-color: {moduleColor}; --stagger-index: {index};"
+        >
+          <div class="cell-background"></div>
+          <div class="cell-glow"></div>
 
-        <!-- Content layer -->
-        <div class="cell-content">
-          <span class="cell-icon">{@html module.icon}</span>
-          <span class="cell-label">{t(module.labelKey)}</span>
+          <div class="cell-content">
+            <span class="cell-icon">{@html module.icon}</span>
+            <span class="cell-label">{t(module.labelKey)}</span>
+          </div>
+        </a>
+      {:else}
+        <button
+          class="module-cell"
+          class:active={isActive}
+          class:disabled={isDisabled}
+          class:has-badge={badgeCount > 0}
+          onpointerdown={handlePointerDown}
+          onpointermove={handlePointerMove}
+          onclick={(e) => handleModuleClick(module.id, e, isDisabled)}
+          style="--module-color: {moduleColor}; --stagger-index: {index};"
+          aria-disabled={isDisabled}
+          disabled={isDisabled}
+        >
+          <!-- Premium layered background -->
+          <div class="cell-background"></div>
+          <div class="cell-glow"></div>
 
-          <!-- Unread badge -->
-          {#if badgeCount > 0}
-            <span class="unread-badge" aria-label="{badgeCount} unread">
-              {formatBadgeCount(badgeCount)}
-            </span>
-          {/if}
+          <!-- Content layer -->
+          <div class="cell-content">
+            <span class="cell-icon">{@html module.icon}</span>
+            <span class="cell-label">{t(module.labelKey)}</span>
 
-          <!-- Disabled badge or active indicator -->
-          {#if isDisabled && module.disabledMessage}
-            <div class="cell-badge">{module.disabledMessage}</div>
-          {/if}
-        </div>
-      </button>
+            <!-- Unread badge -->
+            {#if badgeCount > 0}
+              <span class="unread-badge" aria-label="{badgeCount} unread">
+                {formatBadgeCount(badgeCount)}
+              </span>
+            {/if}
+
+            <!-- Disabled badge or active indicator -->
+            {#if isDisabled && module.disabledMessage}
+              <div class="cell-badge">{module.disabledMessage}</div>
+            {/if}
+          </div>
+        </button>
+      {/if}
     {/each}
   </div>
   {/key}
@@ -323,6 +343,7 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
     background: transparent;
     border: none;
     border-radius: 14px;
+    text-decoration: none; /* anchors (linkHref entries) shouldn't underline */
     color: var(--theme-text, var(--theme-text));
     cursor: pointer;
     text-align: center;
