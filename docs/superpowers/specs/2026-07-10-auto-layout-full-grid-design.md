@@ -83,17 +83,42 @@ per gap to win. This is exactly the missing degree of freedom: it weighs the
 size gain of a gappy shape against its gaps, instead of ranking size and gaps
 lexically.
 
-`GAP_PENALTY_FRACTION = 0.12`. The usable band is ~0.10–0.15, derived from the
-two real cases:
+### The priced gap is a step-region gap, not any empty cell
 
-- **8 + start + QR** (~1.05 container): the gappy 4×3 renders ~25% bigger than
-  the full 5×2 but wastes 2 more cells. Requires `f > 0.10` to reject 4×3.
-- **12 + start + QR** (~0.95 container): the container-filling 4×4 renders enough
-  bigger than the fuller 5×3/3×5 to earn its extra gap. Requires `f < 0.15` to
-  keep 4×4.
+A third real case forced a refinement. In a **portrait** viewer panel (~0.71),
+an 8-count + start + QR picked a 2×5 with the start + QR on a top row. The wider
+3×4 start-**column** renders bigger and fills the panel, but pricing *total*
+`wasted` cells rejected it: its start column carries two structural holes (start
+at top, QR at bottom, mandala lane between), counting as 2 gaps.
 
-0.12 sits mid-band. Result: 8→5×2 (full), 12→4×4 (matches the card-download
-preview), 7→2×5 (no strip), 8-no-start→3×3.
+Those holes are not the defect. The defect Austen flagged is a gap in the **step
+region** — an unfilled last step row (the "upward space"). The start's own lane
+(the full row under row-placement, the full column under column-placement) is
+where the mandala lives; its leftover cells read as structural, not awkward.
+
+So the priced quantity is `stepTrailing` — empty cells in the step grid only:
+
+```
+stepCols = (column placement) ? cols - 1 : cols       // start owns col 1
+stepRows = (row placement)    ? rows - 1 : rows        // start owns row 1
+stepTrailing = stepCols * stepRows - stepCount
+score = cellEdge - GAP_PENALTY_FRACTION * bestEdge * stepTrailing
+```
+
+Total `wasted` (incl. start-lane holes) drops to a tiebreak below cell edge, so
+two equal-size, equal-step-gap shapes prefer fewer holes but a shape is never
+rejected for a structural start-lane hole.
+
+`GAP_PENALTY_FRACTION = 0.12`. The usable band is ~0.10–0.15. Results across the
+three real cases and robustness checks:
+
+- **8 + start + QR** (~0.71 portrait): **3×4 start-column** — full step region,
+  fills the panel width. (The 4×3 with a step-region gap is rejected.)
+- **12 + start + QR** (~0.95): **4×4** — matches the card-download preview.
+- **12 + start + QR** (~0.64 tall): **3×5** — 3 step columns, taller.
+- **7** (prime): a real 3×4/2×5 shape, never a 1-wide strip.
+- **8 no start** (square): **3×3** (one trailing gap, near-square) over the
+  wider full 4×2 — a near-square fills a square container better.
 
 ### Why this is prime-safe
 

@@ -49,9 +49,11 @@ const CELL_EDGE_EPSILON = 0.5;
  * Each empty cell costs this fraction of the best achievable cell edge. A shape
  * with more gaps must render at least this much bigger (per extra gap) to win —
  * so a marginally-bigger-but-gappy grid loses to a full one, while a much-bigger
- * grid can still justify a gap. Tuned against two real cases: an 8-count +
- * start + QR (rejects the 3-gap 4×3 in favor of the full 5×2) and a 12-count +
- * start + QR (keeps the container-filling 4×4 over the skinny full 2×7). The
+ * grid can still justify a gap. The gap it prices is the STEP-REGION trailing
+ * empty (an unfilled last step row), NOT the start's own lane — see
+ * `stepTrailingEmpties`. Tuned against real cases in a portrait viewer panel:
+ * 8 + start + QR → 3×4 start-column (full step region) over the skinnier 2×5;
+ * 12 + start + QR → the container-filling 4×4; 8 no-start (square) → 3×3. The
  * usable band is ~0.10–0.15; 0.12 sits in the middle.
  * See docs/superpowers/specs/2026-07-10-auto-layout-full-grid-design.md.
  */
@@ -89,6 +91,31 @@ function gridShape(
 }
 
 /**
+ * Empty cells in the step region only — the count of unfilled cells in the last
+ * step row. This EXCLUDES the start's own lane (the full row under "row"
+ * placement or full column under "column" placement), whose leftover cells host
+ * the mandala / are the start's dedicated track and read as structural, not as
+ * an awkward gap. A trailing hole in the step grid is the "upward space" defect;
+ * a hole in the start lane is not. The picker prices only this.
+ *
+ * Step grid is `stepCols × stepRows`:
+ *  - none:   cols × rows
+ *  - row:    cols × (rows - 1)   (start owns row 1)
+ *  - column: (cols - 1) × rows   (start owns column 1)
+ */
+function stepTrailingEmpties(
+  cols: number,
+  rows: number,
+  stepCount: number,
+  includeStartPosition: boolean,
+  placement: StartPlacement,
+): number {
+  const stepCols = includeStartPosition && placement === "column" ? cols - 1 : cols;
+  const stepRows = includeStartPosition && placement === "row" ? rows - 1 : rows;
+  return stepCols * stepRows - stepCount;
+}
+
+/**
  * The card's height in cell-units, including the header/footer fractions.
  * Matches the layout state factory's `previewAspectRatio` math so the picker
  * and the renderer agree on the card's aspect ratio.
@@ -110,6 +137,9 @@ interface Candidate {
   rows: number;
   startPlacement: StartPlacement;
   cellEdge: number;
+  /** Unfilled cells in the last STEP row (start lane excluded) — the priced gap. */
+  stepTrailing: number;
+  /** Total empty cells incl. start-lane holes — a soft tiebreak only. */
   wasted: number;
   balance: number;
 }
@@ -119,19 +149,22 @@ interface Candidate {
  * cell edge across all candidates (used to price gaps).
  *
  * Objective (see 2026-07-10-auto-layout-full-grid-design.md): maximize a
- * gap-penalized score — `cellEdge - GAP_PENALTY_FRACTION * bestEdge * wasted`.
- * Each empty cell docks a fixed fraction of the biggest possible cell, so a
- * marginally-bigger-but-gappy grid loses to a full one, while a much-bigger grid
- * can still earn a gap. Ties break on raw cell edge (within CELL_EDGE_EPSILON),
- * then on balance (closest to square).
+ * gap-penalized score — `cellEdge - GAP_PENALTY_FRACTION * bestEdge * stepTrailing`.
+ * Each STEP-region trailing gap docks a fixed fraction of the biggest possible
+ * cell, so a marginally-bigger grid with an unfilled last step row loses to a
+ * full one, while a much-bigger grid can still earn a gap. Start-lane holes are
+ * NOT priced here (they host the mandala / are structural) — only demoted to a
+ * tiebreak via `wasted`. Ties break on raw cell edge (within CELL_EDGE_EPSILON),
+ * then fewer total empties, then balance (closest to square).
  */
 function isBetter(a: Candidate, b: Candidate, bestEdge: number): boolean {
   const penalty = GAP_PENALTY_FRACTION * bestEdge;
-  const scoreA = a.cellEdge - penalty * a.wasted;
-  const scoreB = b.cellEdge - penalty * b.wasted;
+  const scoreA = a.cellEdge - penalty * a.stepTrailing;
+  const scoreB = b.cellEdge - penalty * b.stepTrailing;
   if (Math.abs(scoreA - scoreB) > CELL_EDGE_EPSILON) return scoreA > scoreB;
   if (a.cellEdge > b.cellEdge + CELL_EDGE_EPSILON) return true;
   if (b.cellEdge > a.cellEdge + CELL_EDGE_EPSILON) return false;
+  if (a.wasted !== b.wasted) return a.wasted < b.wasted;
   return a.balance < b.balance;
 }
 
@@ -181,6 +214,7 @@ export function pickBestFitLayout(input: BestFitInput): FitLayout | null {
         rows,
         startPlacement: placement,
         cellEdge,
+        stepTrailing: stepTrailingEmpties(cols, rows, stepCount, includeStartPosition, placement),
         wasted: cols * rows - usedCells,
         balance: Math.abs(cols - rows),
       });

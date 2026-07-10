@@ -2,9 +2,11 @@ import { describe, it, expect } from "vitest";
 import { pickBestFitLayout, type BestFitInput } from "./container-aware-layout";
 
 /**
- * Auto layout picker: gap-penalized size. Prefers full grids over
- * marginally-bigger gappy ones, but keeps a much-bigger grid over a skinny
- * full one. See docs/superpowers/specs/2026-07-10-auto-layout-full-grid-design.md.
+ * Auto layout picker: gap-penalized size, where the priced gap is a STEP-region
+ * trailing empty (an unfilled last step row), NOT the start's own lane. Prefers
+ * shapes with a full step region and the container-filling proportions; keeps a
+ * much-bigger grid over a skinny one.
+ * See docs/superpowers/specs/2026-07-10-auto-layout-full-grid-design.md.
  */
 
 function input(overrides: Partial<BestFitInput>): BestFitInput {
@@ -20,57 +22,53 @@ function input(overrides: Partial<BestFitInput>): BestFitInput {
   };
 }
 
-/** Empty cells in the returned grid. usedCells = steps + (start ? 1 : 0). */
-function wasted(fit: { cols: number; rows: number }, stepCount: number, hasStart: boolean): number {
-  return fit.cols * fit.rows - (stepCount + (hasStart ? 1 : 0));
-}
-
-describe("pickBestFitLayout — gap-penalized size", () => {
-  it("8 + start + QR (squarish): picks the full 5×2, never the 3-gap 4×3", () => {
-    // Container ~1.05 aspect where the gappy 4×3 renders biggest but wastes 3.
-    const fit = pickBestFitLayout(input({ containerWidth: 895, containerHeight: 850 }))!;
+describe("pickBestFitLayout — gap-penalized size (step-region gaps only)", () => {
+  it("8 + start + QR (portrait viewer panel): picks the 3×4 start-column, not the 2×5 start-row", () => {
+    // The reported case: auto chose 2×5 with a start+QR top row; the wider 3×4
+    // start-column fills the panel better and its step region is full.
+    const fit = pickBestFitLayout(input({ containerWidth: 630, containerHeight: 885 }))!;
     expect(fit).not.toBeNull();
-    expect(`${fit.cols}x${fit.rows}`).toBe("5x2");
-    expect(wasted(fit, 8, true)).toBe(1); // only the reserved QR slot
+    expect(`${fit.cols}x${fit.rows}`).toBe("3x4");
+    expect(fit.startPlacement).toBe("column");
   });
 
-  it("12 + start + QR (tall-ish): keeps the container-filling 4×4, not the skinny full 2×7", () => {
-    // The regression case: pure fewest-waste picked 2×7 (skinny, small cells).
+  it("8 + start + QR: a step-region gap (4×3) is rejected for the full-step 3×4", () => {
+    // 4×3 leaves an unfilled last step row ("upward space"); 3×4 does not.
+    const fit = pickBestFitLayout(input({ containerWidth: 630, containerHeight: 885 }))!;
+    expect(`${fit.cols}x${fit.rows}`).not.toBe("4x3");
+  });
+
+  it("12 + start + QR (near-square): keeps the container-filling 4×4", () => {
     const fit = pickBestFitLayout(input({ stepCount: 12, containerWidth: 900, containerHeight: 945 }))!;
-    expect(fit).not.toBeNull();
-    // 3 step columns + start column = 4 wide. NOT the 2-wide skinny grid.
-    expect(fit.cols).toBeGreaterThanOrEqual(3);
-    expect(fit.cols).not.toBe(2);
     expect(`${fit.cols}x${fit.rows}`).toBe("4x4");
+    expect(fit.cols).not.toBe(2); // never the skinny 2-wide grid
   });
 
-  it("12 + start + QR: the skinny 2-wide grid is rejected even though it wastes fewer cells", () => {
-    const fit = pickBestFitLayout(input({ stepCount: 12, containerWidth: 900, containerHeight: 945 }))!;
-    // 2×7 wastes only 1 but renders tiny; the penalty must not let it win.
-    expect(fit.cols).not.toBe(2);
+  it("12 + start + QR (tall): more rows, 3 step-columns, full step region", () => {
+    const fit = pickBestFitLayout(input({ stepCount: 12, containerWidth: 900, containerHeight: 1400 }))!;
+    // start row + 3 step columns × 4 step rows.
+    expect(`${fit.cols}x${fit.rows}`).toBe("3x5");
   });
 
-  it("7 + start + QR (prime): returns a real shape, never a 1-wide strip", () => {
+  it("7 + start + QR (prime): a real shape, never a 1-wide strip", () => {
     const fit = pickBestFitLayout(input({ stepCount: 7 }))!;
     expect(fit).not.toBeNull();
     expect(fit.cols).toBeGreaterThan(1);
-    expect(wasted(fit, 7, true)).toBeLessThanOrEqual(2);
   });
 
   it("8, no start, no QR (square): prefers the near-square 3×3", () => {
     const fit = pickBestFitLayout(
       input({ includeStartPosition: false, showQRCode: false, containerWidth: 800, containerHeight: 800 }),
     )!;
-    // 3×3 (1 gap) fills a square container better than the full 4×2 / 2×4.
     expect(`${fit.cols}x${fit.rows}`).toBe("3x3");
   });
 
-  it("size still decides among comparably-full shapes: wide container favors more columns", () => {
+  it("size still decides among full-step shapes: wide container favors more columns", () => {
     const fit = pickBestFitLayout(input({ containerWidth: 2000, containerHeight: 500 }))!;
     expect(fit.cols).toBeGreaterThan(fit.rows);
   });
 
-  it("size still decides among comparably-full shapes: tall container favors more rows", () => {
+  it("size still decides among full-step shapes: tall container favors more rows", () => {
     const fit = pickBestFitLayout(input({ containerWidth: 400, containerHeight: 2000 }))!;
     expect(fit.rows).toBeGreaterThan(fit.cols);
   });
