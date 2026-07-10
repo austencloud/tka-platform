@@ -1,6 +1,7 @@
 import type { DrawableImage } from "./svg-image-cache";
 import type { PreparedPictographData } from "../../pictograph/shared/domain/models/prepared-pictograph-data";
 import type { DirectRenderOptions } from "./IDirectRenderer";
+import { buildArrowHaloFilter } from "../../pictograph/arrow/rendering/arrow-halo";
 
 const SVG_OVERFLOW_RATIO = 0.15;
 
@@ -21,7 +22,11 @@ export function wrapSvgContent(
   viewBoxWidth: number,
   viewBoxHeight: number,
   expandViewBox: boolean = false,
-  fullViewBox?: string
+  fullViewBox?: string,
+  // When provided (arrows only), bake the shared background-matching halo <filter>
+  // into the wrapped SVG so the composed image matches the live renderer. Props
+  // never pass this — no prop halo. See arrow-halo.ts for the single definition.
+  halo?: { id: string; isDarkMode: boolean }
 ): { svg: string; offsetX: number; offsetY: number; newWidth: number; newHeight: number } {
   let minX = 0, minY = 0;
   if (fullViewBox) {
@@ -30,9 +35,15 @@ export function wrapSvgContent(
     minY = parseFloat(parts[1] || "0") || 0;
   }
 
+  // Wrap the content in a halo-filtered group (filter region is relative to the
+  // group's bbox — the arrow — so the blur tracks the arrow, not the viewBox).
+  const content = halo
+    ? `<defs>${buildArrowHaloFilter(halo.id, halo.isDarkMode)}</defs><g filter="url(#${halo.id})">${innerContent}</g>`
+    : innerContent;
+
   if (!expandViewBox) {
     return {
-      svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${viewBoxWidth} ${viewBoxHeight}" width="${viewBoxWidth}" height="${viewBoxHeight}">${innerContent}</svg>`,
+      svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${minX} ${minY} ${viewBoxWidth} ${viewBoxHeight}" width="${viewBoxWidth}" height="${viewBoxHeight}">${content}</svg>`,
       offsetX: 0,
       offsetY: 0,
       newWidth: viewBoxWidth,
@@ -49,7 +60,7 @@ export function wrapSvgContent(
   const newMinY = minY - expandY;
 
   return {
-    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${newMinX} ${newMinY} ${newWidth} ${newHeight}" width="${newWidth}" height="${newHeight}">${innerContent}</svg>`,
+    svg: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${newMinX} ${newMinY} ${newWidth} ${newHeight}" width="${newWidth}" height="${newHeight}">${content}</svg>`,
     offsetX: expandX,
     offsetY: expandY,
     newWidth,

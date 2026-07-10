@@ -478,6 +478,10 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
 
     const showBlue = options.visibility.showBlueMotion ?? true;
     const showRed = options.visibility.showRedMotion ?? true;
+    // Halo color matches the composed background (same isDarkMode the renderer
+    // uses for the bg fill), so it is invisible against the background and only
+    // shows where the arrow overlaps a same-colored prop. Shared definition.
+    const isDarkMode = options.visibility.darkMode ?? true;
 
     for (const color of ["blue", "red"]) {
       if (color === "blue" && !showBlue) continue;
@@ -494,7 +498,10 @@ export class Canvas2DDirectRenderer implements IDirectRenderer {
         const viewBoxHeight = assets.viewBox.height || 100;
         const fullViewBox = assets.viewBox.fullViewBox;
 
-        const wrapped = wrapSvgContent(assets.imageSrc, viewBoxWidth, viewBoxHeight, true, fullViewBox);
+        const wrapped = wrapSvgContent(assets.imageSrc, viewBoxWidth, viewBoxHeight, true, fullViewBox, {
+          id: `arrow-halo-${color}`,
+          isDarkMode,
+        });
 
         const cacheKey = `arrow_${color}_exp_${this.hashString(wrapped.svg)}`;
         const img = await svgCache.getImage(wrapped.svg, cacheKey);

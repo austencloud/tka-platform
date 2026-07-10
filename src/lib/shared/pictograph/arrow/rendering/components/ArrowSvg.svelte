@@ -13,6 +13,10 @@ even when Svelte recreates the component instance.
   import { getArrowPositionCache, clearArrowPositionCache } from "../arrow-position-cache";
   const arrowPositionCache = getArrowPositionCache();
   export { clearArrowPositionCache };
+
+  // Per-instance unique id source for the halo <filter>, so multiple arrows /
+  // pictographs in one document don't collide on filter ids.
+  let haloIdCounter = 0;
 </script>
 
 <script lang="ts">
@@ -31,6 +35,7 @@ even when Svelte recreates the component instance.
   } from "../../orchestration/domain/arrow-models";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
   import { getAnimationVisibilityManager } from "../../../../animation-engine/state/animation-visibility-state.svelte";
+  import { buildArrowHaloFilter } from "../arrow-halo";
 
   let {
     motionData,
@@ -104,17 +109,12 @@ even when Svelte recreates the component instance.
   );
 
   // Background-matching halo that separates the arrow from a same-color prop
-  // beneath it. The halo is colored to match the pictograph background, so it is
-  // invisible against the background and only renders as a clean gap where the
-  // arrow overlaps a prop (worst with wide props like fans/doublestars).
-  // Dark mode: #0a0a0f halo (matches the dark bg rect in PictographRenderer), medium gap.
-  // Light mode: white halo, same medium gap — light-friendly counterpart, and stays
-  // invisible against print's white background (print renders !isDarkMode).
-  const haloFilter = $derived(
-    isDarkMode
-      ? "drop-shadow(0 0 2px #0a0a0f) drop-shadow(0 0 2px #0a0a0f) drop-shadow(0 0 2px #0a0a0f)"
-      : "drop-shadow(0 0 2px white) drop-shadow(0 0 2px white) drop-shadow(0 0 2px white)"
-  );
+  // beneath it. Defined once in arrow-halo.ts and baked as an SVG <filter> so the
+  // live renderer and the image composition pipeline (Canvas2DDirectRenderer)
+  // apply the identical effect. Applied to the arrow CONTENT group (arrow-intrinsic
+  // units) so the blur radius matches export, which wraps the same content.
+  const haloId = `arrow-halo-${haloIdCounter++}`;
+  const haloFilterMarkup = $derived(buildArrowHaloFilter(haloId, isDarkMode));
 
   // Safe center values - guard against NaN which can occur with empty/static arrow SVGs
   const safeCenter = $derived({
@@ -465,11 +465,18 @@ even when Svelte recreates the component instance.
       transform: translate({displayedX}px, {displayedY}px)
                  rotate({displayedRotation}deg)
                  {shouldMirror ? 'scale(-1, 1)' : ''};
-      {!isSelected ? `filter: ${haloFilter};` : ''}
     "
   >
+    <!-- Background-matching halo filter (shared with the export pipeline via
+         arrow-halo.ts). Suppressed while selected — the accent glow takes over. -->
+    {#if !isSelected}
+      <defs>{@html haloFilterMarkup}</defs>
+    {/if}
     <!-- Position group at calculated coordinates, let SVG handle its own centering -->
-    <g transform="translate({-safeCenter.x}, {-safeCenter.y})">
+    <g
+      transform="translate({-safeCenter.x}, {-safeCenter.y})"
+      filter={!isSelected ? `url(#${haloId})` : undefined}
+    >
       {#if renderPart === "shaft" && arrowAssets.shaftSrc}
         {@html arrowAssets.shaftSrc}
       {:else if renderPart === "tip" && arrowAssets.tipSrc}
