@@ -52,9 +52,7 @@
   }
 
   // Pin id is `${code}-${timestamp}` — recover the code for the open action.
-  // Country-aggregate pins (`country-XX`) carry many scans, no single card.
   function openPin(id: string) {
-    if (id.startsWith("country-")) return;
     const code = id.slice(0, id.lastIndexOf("-"));
     if (code) openCard(code);
   }
@@ -110,7 +108,8 @@
             {:else}
               <p class="muted">No located scans yet.</p>
               <p class="sub">
-                Pins appear once a card is scanned in the wild.
+                Pins appear once a card is scanned in the wild and Cloudflare
+                location headers are on.
                 {#if coordlessCount > 0}<br />{coordlessCount} scan{coordlessCount === 1 ? "" : "s"} recorded without a location.{/if}
               </p>
             {/if}

@@ -41,47 +41,33 @@ function ev(partial: Partial<ScanEventRow>): ScanEventRow {
 }
 
 describe("buildScanMapPins", () => {
-  it("plots exact pins for events with finite coordinates", () => {
+  it("includes only events with a city and finite coordinates", () => {
     const pins = buildScanMapPins([
-      ev({ code: "WOYG", lat: 41.85, lng: -87.65 }),
+      ev({ code: "WOYG", lat: 41.85, lng: -87.65, city: "Chicago" }),
       ev({ code: "XHJP", lat: null, lng: null }),
-      ev({ code: "ZXFV", lat: 51.5, lng: -0.12 }),
+      ev({ code: "QQQQ", lat: 40.7, lng: -74.0 }), // coords but no city — excluded
+      ev({ code: "ZXFV", lat: 51.5, lng: -0.12, city: "London" }),
     ]);
     expect(pins.map((p) => p.id.split("-")[0])).toEqual(["WOYG", "ZXFV"]);
   });
 
-  it("aggregates coordless events with a country into one approx pin per country", () => {
-    const pins = buildScanMapPins([
-      ev({ code: "AAAA", country: "US" }),
-      ev({ code: "BBBB", country: "US" }),
-      ev({ code: "CCCC", country: "GB" }),
-    ]);
-    const approx = pins.filter((p) => p.styleClass === "pin-approx");
-    expect(approx).toHaveLength(2);
-    const us = approx.find((p) => p.id === "country-US");
-    expect(us?.label).toBe("US · 2 scans (country-level)");
-    expect(us?.lat).toBeCloseTo(39.8);
-    expect(us?.lng).toBeCloseTo(-98.6);
-    expect(approx.find((p) => p.id === "country-GB")?.label).toBe(
-      "GB · 1 scan (country-level)"
-    );
-  });
-
-  it("skips coordless events whose country has no centroid", () => {
-    const pins = buildScanMapPins([ev({ code: "AAAA", country: "ZZ" })]);
+  it("excludes country-only events — no centroid approximations", () => {
+    const pins = buildScanMapPins([ev({ code: "AAAA", country: "US" })]);
     expect(pins).toHaveLength(0);
   });
 
-  it("marks the newest located event as pin-new and the rest as pin", () => {
+  it("marks the newest plotted event as pin-new even when newer events were excluded", () => {
     const pins = buildScanMapPins([
-      ev({ code: "WOYG", lat: 41.85, lng: -87.65 }),
-      ev({ code: "ZXFV", lat: 51.5, lng: -0.12 }),
+      ev({ code: "QQQQ", lat: 40.7, lng: -74.0 }), // newest but city-less
+      ev({ code: "WOYG", lat: 41.85, lng: -87.65, city: "Chicago" }),
+      ev({ code: "ZXFV", lat: 51.5, lng: -0.12, city: "London" }),
     ]);
+    expect(pins[0].id.startsWith("WOYG-")).toBe(true);
     expect(pins[0].styleClass).toBe("pin-new");
     expect(pins[1].styleClass).toBe("pin");
   });
 
-  it("labels with the resolved word and place, falling back to the code", () => {
+  it("labels with the resolved word and city, falling back to the code", () => {
     const pins = buildScanMapPins(
       [ev({ code: "WOYG", lat: 41.85, lng: -87.65, city: "Chicago" })],
       (code) => (code === "WOYG" ? "BOOK" : undefined)
@@ -89,12 +75,12 @@ describe("buildScanMapPins", () => {
     expect(pins[0].label).toBe("BOOK · Chicago");
 
     const noWord = buildScanMapPins([
-      ev({ code: "ZXFV", lat: 51.5, lng: -0.12, country: "GB" }),
+      ev({ code: "ZXFV", lat: 51.5, lng: -0.12, city: "London" }),
     ]);
-    expect(noWord[0].label).toBe("ZXFV · GB");
+    expect(noWord[0].label).toBe("ZXFV · London");
   });
 
-  it("excludes everything when no event carries coordinates or a country", () => {
+  it("excludes everything when no event carries a located city", () => {
     const pins = buildScanMapPins([ev({ code: "XHJP" }), ev({ code: "AAAA" })]);
     expect(pins).toHaveLength(0);
   });
