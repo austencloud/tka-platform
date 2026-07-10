@@ -9,6 +9,8 @@ import {
   collection,
   collectionGroup,
   doc,
+  documentId,
+  getCountFromServer,
   getDoc,
   getDocs,
   limit,
@@ -51,6 +53,39 @@ export async function getUserPublicCollections(
   });
 
   return collections;
+}
+
+/**
+ * Count how many of the given member ids are actually in the public index.
+ *
+ * A public collection's `sequenceCount`/`sequenceIds` include the owner's
+ * PRIVATE members, which visitors can't see — advertising that number is a lie
+ * ("4 sequences" over a 1-sequence grid). `publicSequences` doc ids equal
+ * sequence ids, so public visibility = doc existence; aggregate count queries
+ * answer it without downloading documents (one count per 30-id `in` chunk).
+ */
+export async function countPublicMembers(
+  sequenceIds: readonly string[]
+): Promise<number> {
+  if (sequenceIds.length === 0) return 0;
+  const firestore = await getFirestoreInstance();
+  const publicRef = collection(firestore, "publicSequences");
+
+  const IN_LIMIT = 30;
+  const chunks: string[][] = [];
+  for (let i = 0; i < sequenceIds.length; i += IN_LIMIT) {
+    chunks.push([...sequenceIds.slice(i, i + IN_LIMIT)]);
+  }
+
+  const counts = await Promise.all(
+    chunks.map(async (chunk) => {
+      const snap = await getCountFromServer(
+        query(publicRef, where(documentId(), "in", chunk))
+      );
+      return snap.data().count;
+    })
+  );
+  return counts.reduce((sum, n) => sum + n, 0);
 }
 
 /** A public collection paired with the uid of the user who owns it. */

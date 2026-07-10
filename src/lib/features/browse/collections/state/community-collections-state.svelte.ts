@@ -1,6 +1,10 @@
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
+import { isSmartCollection } from "$lib/shared/library/domain/models/collection";
 import { getVisibleOwnerNames } from "$lib/shared/community/services/user-repository";
-import { getAllPublicCollections } from "$lib/features/library/services/public-collection-loader";
+import {
+	getAllPublicCollections,
+	countPublicMembers,
+} from "$lib/features/library/services/public-collection-loader";
 
 /**
  * community-collections-state - everyone's public collections, flattened.
@@ -50,15 +54,29 @@ class CommunityCollectionsState {
 			// moderated or orphaned owner.
 			const names = await getVisibleOwnerNames(withOwners.map((w) => w.ownerId));
 
-			this.items = withOwners
-				.filter((w) => names.has(w.ownerId))
-				.map(
-					({ collection, ownerId }): CommunityCollection => ({
-						collection,
-						ownerId,
-						ownerName: names.get(ownerId) ?? "Someone",
-					}),
-				);
+			const visible = withOwners.filter((w) => names.has(w.ownerId));
+
+			// The stored sequenceCount counts the owner's PRIVATE members too —
+			// visitors only ever see public ones, so the card counts those instead.
+			// One aggregate query per manual collection; smart collections derive
+			// membership live from filterSpec (ids list unused), keep stored count.
+			const publicCounts = await Promise.all(
+				visible.map(({ collection }) =>
+					isSmartCollection(collection)
+						? Promise.resolve(collection.sequenceCount)
+						: countPublicMembers(collection.sequenceIds).catch(
+								() => collection.sequenceCount,
+							),
+				),
+			);
+
+			this.items = visible.map(
+				({ collection, ownerId }, i): CommunityCollection => ({
+					collection: { ...collection, sequenceCount: publicCounts[i]! },
+					ownerId,
+					ownerName: names.get(ownerId) ?? "Someone",
+				}),
+			);
 			this.loaded = true;
 		} catch (err) {
 			console.error("[community-collections] Failed to load:", err);
