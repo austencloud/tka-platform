@@ -1354,6 +1354,11 @@
     // Read effectiveColumns so the effect fires when the composition manager's
     // column override changes (e.g. via the right-click column picker).
     const effCols = effectiveColumns;
+    // Read startPositionLayout so a row↔column flip (autoFit re-picking placement
+    // as the side-by-side container aspect changes) re-runs this effect and
+    // relayouts the cells. Without it, cells keep stale positions while the live
+    // qrGridPosition moves, and the QR overlaps an occupied step cell.
+    const spl = startPositionLayout;
 
     const durationKey = sequence?.steps?.map(s => s.duration ?? 1).join(",") ?? "";
 
@@ -1378,6 +1383,7 @@
       showBlueMotion: sbm,
       showRedMotion: srm,
       includeStartPosition: isp,
+      startPositionLayout: spl,
       effectiveColumns: effCols,
       darkMode: dm,
     });
@@ -1571,6 +1577,7 @@
       showBlueMotion,
       showRedMotion,
       includeStartPosition,
+      startPositionLayout,
       effectiveColumns,
       darkMode,
     });

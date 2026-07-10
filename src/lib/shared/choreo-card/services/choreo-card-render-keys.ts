@@ -18,6 +18,7 @@ export interface ChoreoCardRenderKeyInputs {
   showBlueMotion: boolean;
   showRedMotion: boolean;
   includeStartPosition: boolean;
+  startPositionLayout: "row" | "column";
   effectiveColumns: number;
   darkMode: boolean;
 }
@@ -68,7 +69,14 @@ export function buildChoreoCardRenderKeys(i: ChoreoCardRenderKeyInputs): ChoreoC
 
   const gv = `${i.showTnD ? "1" : "0"}${i.showElemental ? "1" : "0"}${i.showPositions ? "1" : "0"}${i.showGrid ? "1" : "0"}`;
   const imageKey = `${i.sequence?.id ?? ""}-${stepLetters}-${stepCount}-${i.bluePropType}-${i.redPropType}-${i.catDogModeEnabled}-${i.showStepNumbers}-${i.showNonRadial}-${i.handPointVis}-${i.showTKA}-${i.showReversals}-${durationKey}-mv:${i.showBlueMotion ? "1" : "0"}${i.showRedMotion ? "1" : "0"}-gv:${gv}`;
-  const layoutKey = `${i.includeStartPosition}-cols:${i.effectiveColumns}`;
+  // startPositionLayout (row vs column) changes where the start cell sits and
+  // therefore where every step cell AND the QR cell land. It's in the CONTENT
+  // (layout) key but NOT imageKey/gridStableKey/structuralKey: a pure row↔column
+  // flip (autoFit re-picking placement as the container aspect changes) must
+  // re-run the render effect and route to "layout-only" → relayoutCells(), or the
+  // cells keep stale positions while the live qrGridPosition moves — the QR then
+  // overlaps an occupied step cell (the side-by-side "QR flashes over step 1" bug).
+  const layoutKey = `${i.includeStartPosition}-cols:${i.effectiveColumns}-spl:${i.startPositionLayout}`;
   const contentKey = `${imageKey}-${layoutKey}`;
   const gridStableKey = `${stepCount}-${durationKey}-cols:${i.effectiveColumns}-isp:${i.includeStartPosition}`;
   // Geometry-only subset (see interface docs). Deliberately excludes every

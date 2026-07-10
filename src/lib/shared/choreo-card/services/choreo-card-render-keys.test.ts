@@ -24,6 +24,7 @@ const base = {
   showBlueMotion: true,
   showRedMotion: true,
   includeStartPosition: true,
+  startPositionLayout: "row",
   effectiveColumns: 4,
   darkMode: true,
 } as unknown as Parameters<typeof buildChoreoCardRenderKeys>[0];
@@ -53,6 +54,20 @@ describe("buildChoreoCardRenderKeys", () => {
     expect(buildChoreoCardRenderKeys({ ...base, showTKA: false }).gridStableKey).toBe(
       buildChoreoCardRenderKeys({ ...base, showTKA: true }).gridStableKey,
     );
+  });
+
+  it("startPositionLayout flip changes contentKey but NOT imageKey (routes to layout-only relayout)", () => {
+    // A row↔column flip repositions the start/step/QR cells but re-renders no
+    // pictograph. It must change contentKey (so the render effect re-runs and
+    // classifyChange returns "layout-only" → relayoutCells) while leaving imageKey
+    // and gridStableKey stable. Regression guard for the side-by-side
+    // "QR flashes over step 1" bug (stale cell positions vs a live QR position).
+    const row = buildChoreoCardRenderKeys({ ...base, startPositionLayout: "row" });
+    const col = buildChoreoCardRenderKeys({ ...base, startPositionLayout: "column" });
+    expect(row.contentKey).not.toBe(col.contentKey);
+    expect(row.imageKey).toBe(col.imageKey);
+    expect(row.gridStableKey).toBe(col.gridStableKey);
+    expect(row.structuralKey).toBe(col.structuralKey);
   });
 
   it("contentKey embeds imageKey and renderKey embeds contentKey", () => {

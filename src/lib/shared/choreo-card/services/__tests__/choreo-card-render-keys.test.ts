@@ -44,6 +44,7 @@ function baseInputs(): ChoreoCardRenderKeyInputs {
     showBlueMotion: true,
     showRedMotion: true,
     includeStartPosition: true,
+    startPositionLayout: "row",
     effectiveColumns: 4,
     darkMode: false,
   };
