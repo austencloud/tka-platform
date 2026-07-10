@@ -1,5 +1,4 @@
-// The root +layout.ts sets ssr=false, but the @ reset escapes it.
-// Re-declare here so the viewer route doesn't attempt SSR
-// (the DI container and browser APIs don't work server-side).
-export const ssr = false;
+// SSR renders only the thin +page.svelte head shell; the viewer body is
+// browser-gated behind a dynamic import, keeping DI/browser APIs out of SSR.
+export const ssr = true;
 export const prerender = false;
