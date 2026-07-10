@@ -4,9 +4,12 @@
   import type { CoverCard } from "$lib/features/store/domain/models/product";
   import "$lib/shared/landing/styles/public-editorial.css";
 
-  // Real baked card fronts for the deck fan (variety proof under "Every Deck
-  // Is Different"). Loaded client-side only; prerendered HTML stays lean.
-  let fanCards = $state<CoverCard[]>([]);
+  // Real baked card fronts, one fan per deck line (variety proof under
+  // "Every Deck Is Different"). Loaded client-side only; prerendered HTML
+  // stays lean. Same selection logic as the shop grid tiles: LOOP fans one
+  // card per flavor (a varied hand), T&D fans its element families.
+  let loopCards = $state<CoverCard[]>([]);
+  let tndCards = $state<CoverCard[]>([]);
 
   onMount(async () => {
     try {
@@ -14,12 +17,15 @@
         "$lib/features/store/services/product-loader"
       );
       const products = await loadActiveProducts();
-      const withCovers = products.find(
-        (p) => (p.coverCards ?? []).filter((c) => c.imageUrl).length >= 4
-      );
-      fanCards = withCovers?.coverCards ?? [];
+      const loopSkus = products.filter((p) => p.listing === "loop-deck");
+      const tndSkus = products.filter((p) => p.listing === "tnd-trilogy");
+      const perFlavor = loopSkus
+        .map((p) => p.coverCards?.[0])
+        .filter((c): c is CoverCard => c != null);
+      loopCards = perFlavor.length >= 4 ? perFlavor : (loopSkus[0]?.coverCards ?? perFlavor);
+      tndCards = tndSkus[0]?.coverCards ?? [];
     } catch (error) {
-      console.warn("[choreo-cards] deck fan load failed; section stays text-only", error);
+      console.warn("[choreo-cards] deck fan load failed; tiles stay text-only", error);
     }
   });
 
@@ -28,11 +34,13 @@
 
   const decks = [
     {
+      id: "loop",
       name: "LOOP Deck",
       href: "/shop/loop-deck",
       blurb: "Looping sequences that end where they start.",
     },
     {
+      id: "tnd",
       name: "T&D Trilogy",
       href: "/shop/tnd-trilogy",
       blurb: "Three decks organized by timing and direction.",
@@ -232,16 +240,23 @@
         bought.
       </p>
     </div>
-    {#if browser && fanCards.length}
-      {#await import("$lib/features/store/components/DeckFanCover.svelte") then { default: DeckFanCover }}
-        <div class="deck-fan-wrap">
-          <DeckFanCover cards={fanCards} maxCards={6} cardWidth={104} />
-        </div>
-      {/await}
-    {/if}
     <div class="deck-links">
       {#each decks as deck}
+        {@const cards = deck.id === "loop" ? loopCards : tndCards}
         <a class="deck-link" href={deck.href}>
+          {#if browser && cards.length}
+            {#await import("$lib/features/store/components/DeckFanCover.svelte") then { default: DeckFanCover }}
+              <div class="deck-fan-box">
+                <DeckFanCover
+                  cards={cards}
+                  deckName={deck.name}
+                  cardWidth={92}
+                  maxCards={5}
+                  exactCount={deck.id === "tnd" ? Math.min(6, cards.length) : undefined}
+                />
+              </div>
+            {/await}
+          {/if}
           <span class="deck-name">{deck.name}</span>
           <span class="deck-blurb">{deck.blurb}</span>
           <span class="deck-arrow"><i class="fas fa-arrow-right" aria-hidden="true"></i></span>
@@ -326,10 +341,6 @@
     color: oklch(0.72 0.012 270);
     font-size: 0.95rem;
     margin: 2rem 0 0;
-  }
-
-  .deck-fan-wrap {
-    margin-top: 1.5rem;
   }
 
   .anatomy-layout {
@@ -426,17 +437,31 @@
   @media (min-width: 640px) {
     .deck-links {
       grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+    }
+    /* The tiles carry card fans now; give the row more shoulder room than
+       the reading column so the fans render at a legible size. */
+    .deck-links {
+      width: min(100%, 58rem);
+      margin-inline: auto;
+    }
+  }
+  @media (min-width: 1100px) {
+    .deck-links {
+      width: 58rem;
+      margin-left: calc((46rem - 58rem) / 2);
     }
   }
   .deck-link {
     display: grid;
     grid-template-columns: 1fr auto;
     grid-template-areas:
+      "fan fan"
       "name arrow"
       "blurb arrow";
     align-items: center;
     column-gap: 1rem;
-    padding: 1rem 1.25rem;
+    padding: 1rem 1.25rem 1.1rem;
     min-height: 44px;
     border-radius: 12px;
     border: 1px solid oklch(0.4 0.04 270 / 0.25);
@@ -445,6 +470,10 @@
     transition:
       border-color 0.2s ease,
       background 0.2s ease;
+  }
+  .deck-fan-box {
+    grid-area: fan;
+    margin-bottom: 0.5rem;
   }
   .deck-link:hover {
     border-color: var(--accent, #14b8a6);
