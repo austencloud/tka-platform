@@ -115,13 +115,17 @@
 
 <div
 	class="fuse-panel"
-	class:align-end={side === "left"}
-	class:align-start={side === "right"}
 	class:compact
 	role="region"
 	aria-label="{label} prop path"
+	style="--accent: {accentColor};"
 >
 	<div class="content-column">
+		<header class="panel-head">
+			<span class="side-dot" aria-hidden="true"></span>
+			<span class="side-label">{label} path</span>
+		</header>
+
 		{#if !compact}
 			<div class="card-section">
 				{#if pool.loading}
@@ -164,7 +168,7 @@
 			{/if}
 		</div>
 
-		<div class="panel-actions" style="--accent: {accentColor};">
+		<div class="panel-actions">
 			{#if compact}
 				<button
 					class="grid-btn"
@@ -214,22 +218,25 @@
 {/if}
 
 <style>
-	/* The panel fills its grid cell - background, border, rounded corners */
+	/* The panel is a lit stage for one prop path: panel surface with a faint
+	   accent wash falling from the top edge, accent-tinted top border, soft
+	   elevation. Sized by the parent grid (FuseLayout centers + caps cells). */
 	.fuse-panel {
 		display: flex;
-		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: var(--radius-md, 12px);
+		background:
+			linear-gradient(
+				180deg,
+				color-mix(in srgb, var(--accent) 7%, transparent) 0%,
+				transparent 140px
+			),
+			var(--theme-panel-bg, rgba(18, 18, 28, 0.55));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+		border-top-color: color-mix(in srgb, var(--accent) 40%, var(--theme-stroke, rgba(255, 255, 255, 0.08)));
+		border-radius: var(--radius-lg, 16px);
+		box-shadow:
+			0 12px 40px rgba(0, 0, 0, 0.25),
+			inset 0 1px 0 rgba(255, 255, 255, 0.04);
 		overflow: hidden;
-	}
-
-	/* Left panel pushes content right, right panel pushes content left,
-	   so the two panels' content hugs the center gap on wide screens. */
-	.fuse-panel.align-end {
-		justify-content: flex-end;
-	}
-	.fuse-panel.align-start {
-		justify-content: flex-start;
 	}
 
 	.content-column {
@@ -237,16 +244,33 @@
 		flex-direction: column;
 		height: 100%;
 		width: 100%;
-		max-width: 100%;
 		container-type: size;
 	}
 
-	/* On wide panels, cap column width so panels don't stretch
-	   into massive horizontal bars. 500px fits a nice square canvas. */
-	@media (min-width: 1000px) {
-		.fuse-panel:not(.compact) .content-column {
-			max-width: 500px;
-		}
+	/* ── Panel identity header ──────────────────────────────────── */
+
+	.panel-head {
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		gap: var(--spacing-sm, 8px);
+		padding: 12px 16px 10px;
+	}
+
+	.side-dot {
+		width: 8px;
+		height: 8px;
+		border-radius: 50%;
+		background: var(--accent);
+		box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 70%, transparent);
+	}
+
+	.side-label {
+		font-size: var(--font-size-compact, 12px);
+		font-weight: 600;
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
 	}
 
 	.card-section {
@@ -255,12 +279,21 @@
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
+		padding: 0 var(--spacing-sm, 8px);
 	}
 
 	.choreo-card-wrap {
 		flex: 1;
 		min-height: 0;
 		overflow-y: auto;
+		animation: cardIn 240ms var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+	}
+
+	@keyframes cardIn {
+		from {
+			opacity: 0;
+			transform: translateY(6px);
+		}
 	}
 
 	/* Square animation stage. Sized against the column's own height so it can
@@ -271,18 +304,38 @@
 		width: min(100%, 50cqh);
 		aspect-ratio: 1;
 		align-self: center;
-		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
 		position: relative;
 		overflow: hidden;
 	}
 
-	/* Compact: the animation IS the panel - let it take all space above actions */
+	/* Faint accent spotlight behind the moving prop - gives the stage depth
+	   without competing with the animation itself. */
+	.animation-section::before {
+		content: "";
+		position: absolute;
+		inset: 0;
+		background: radial-gradient(
+			ellipse 70% 55% at 50% 45%,
+			color-mix(in srgb, var(--accent) 9%, transparent) 0%,
+			transparent 75%
+		);
+		pointer-events: none;
+	}
+
+	/* Compact: the animation IS the panel. Square stage at full panel width;
+	   the panel wraps to fit (header + stage + actions) and the parent grid
+	   centers the pair vertically - no stretched voids. */
 	.fuse-panel.compact .animation-section {
-		flex: 1;
+		flex: none;
 		width: 100%;
-		aspect-ratio: auto;
-		min-height: 0;
+		aspect-ratio: 1;
 		border-top: none;
+	}
+
+	.fuse-panel.compact .content-column {
+		height: auto;
+		container-type: inline-size;
 	}
 
 	.animation-placeholder {
@@ -297,10 +350,12 @@
 
 	/* ── Bottom actions (grid expand + shuffle) ─────────────────── */
 
+	/* Contained pill controls on padded ground - not an edge-to-edge strip */
 	.panel-actions {
 		flex-shrink: 0;
 		display: flex;
-		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+		gap: var(--spacing-sm, 8px);
+		padding: var(--spacing-sm, 8px) var(--spacing-sm, 8px) 10px;
 	}
 
 	.grid-btn {
@@ -310,17 +365,18 @@
 		justify-content: center;
 		min-width: 48px;
 		min-height: 48px;
-		border: none;
-		border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 999px;
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 		color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
 		font-size: var(--font-size-sm, 14px);
 		cursor: pointer;
-		transition: color 150ms ease, background 150ms ease;
+		transition: color 150ms ease, border-color 150ms ease, background 150ms ease;
 	}
 
 	.grid-btn:hover {
 		background: rgba(255, 255, 255, 0.08);
+		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
 		color: var(--theme-text, #ffffff);
 	}
 
@@ -332,21 +388,24 @@
 		gap: var(--spacing-sm, 8px);
 		min-height: 48px;
 		padding: var(--spacing-sm, 8px) var(--spacing-md, 16px);
-		border: none;
-		background: color-mix(in srgb, var(--accent) 18%, transparent);
+		border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--accent) 14%, transparent);
 		color: var(--theme-text, #ffffff);
 		font-size: var(--font-size-sm, 14px);
 		font-weight: 600;
 		cursor: pointer;
-		transition: background 150ms ease;
+		transition: background 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
 	}
 
 	.shuffle-btn:hover:not(:disabled) {
-		background: color-mix(in srgb, var(--accent) 25%, transparent);
+		background: color-mix(in srgb, var(--accent) 22%, transparent);
+		border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+		box-shadow: 0 2px 16px color-mix(in srgb, var(--accent) 25%, transparent);
 	}
 
 	.shuffle-btn:active:not(:disabled) {
-		background: color-mix(in srgb, var(--accent) 32%, transparent);
+		background: color-mix(in srgb, var(--accent) 30%, transparent);
 	}
 
 	.shuffle-btn:disabled {
@@ -413,7 +472,8 @@
 			transition: none;
 		}
 
-		.shuffle-btn.glow {
+		.shuffle-btn.glow,
+		.choreo-card-wrap {
 			animation: none;
 		}
 	}

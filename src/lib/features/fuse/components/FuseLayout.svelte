@@ -308,14 +308,27 @@
 	}
 
 	/* Panels always sit side by side - blue | red is the tab's identity.
+	   Cells are capped and the pair centered, so panels stay proportioned on
+	   ultrawide instead of leaving dead columns inside stretched boxes.
 	   Below 700px each panel switches itself to animation-first (compact). */
 	.fuse-panels {
 		flex: 1;
 		min-height: 0;
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: var(--spacing-xs, 4px);
-		padding: var(--spacing-xs, 4px);
+		grid-template-columns: repeat(2, minmax(0, 560px));
+		justify-content: center;
+		gap: var(--spacing-md, 16px);
+		padding: var(--spacing-md, 16px) var(--spacing-md, 16px) var(--spacing-sm, 8px);
+	}
+
+	@container fuse-layout (max-width: 700px) {
+		.fuse-panels {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			grid-auto-rows: min-content;
+			align-content: center;
+			gap: var(--spacing-sm, 8px);
+			padding: var(--spacing-sm, 8px) var(--spacing-sm, 8px) var(--spacing-xs, 4px);
+		}
 	}
 
 	.fuse-panels > :global(*) {
@@ -323,22 +336,30 @@
 		min-width: 0;
 	}
 
-	/* ── Bottom bar ─────────────────────────────────────────────── */
+	/* ── Bottom bar: floating control dock ──────────────────────── */
 
 	.fuse-bottom {
 		flex-shrink: 0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: var(--spacing-md, 16px);
-		padding: var(--spacing-xs, 4px) var(--spacing-md, 16px);
-		border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+		gap: var(--spacing-sm, 8px);
+		width: fit-content;
+		max-width: calc(100% - 2 * var(--spacing-sm, 8px));
+		margin: var(--spacing-xs, 4px) auto var(--spacing-sm, 8px);
+		padding: var(--spacing-sm, 8px) var(--spacing-sm, 8px);
+		background: var(--theme-panel-bg, rgba(18, 18, 28, 0.7));
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+		border-radius: 999px;
+		box-shadow:
+			0 12px 32px rgba(0, 0, 0, 0.35),
+			inset 0 1px 0 rgba(255, 255, 255, 0.04);
 	}
 
 	@container fuse-layout (max-width: 480px) {
 		.fuse-bottom {
-			gap: var(--spacing-sm, 8px);
-			padding: var(--spacing-xs, 4px) var(--spacing-sm, 8px);
+			gap: var(--spacing-xs, 4px);
+			padding: 6px;
 		}
 	}
 
@@ -348,18 +369,19 @@
 	.chip-trigger {
 		display: inline-grid;
 		align-items: center;
-		min-height: 44px;
-		padding: 6px 12px;
-		border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-		border-radius: var(--radius-sm, 6px);
+		min-height: 48px;
+		padding: 6px 16px;
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+		border-radius: 999px;
 		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
 		color: var(--theme-text, #ffffff);
 		cursor: pointer;
-		transition: border-color 150ms ease;
+		transition: border-color 150ms ease, background 150ms ease;
 	}
 
 	.chip-trigger:hover {
 		border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+		background: rgba(255, 255, 255, 0.07);
 	}
 
 	.chip-sizer,
@@ -445,10 +467,10 @@
 	}
 
 	.play-btn {
-		width: 52px;
-		height: 52px;
-		min-width: 52px;
-		min-height: 52px;
+		width: 48px;
+		height: 48px;
+		min-width: 48px;
+		min-height: 48px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -487,13 +509,15 @@
 		min-height: 48px;
 		padding: var(--spacing-sm, 8px) var(--spacing-xl, 32px);
 		border: none;
-		border-radius: var(--radius-md, 12px);
+		border-radius: 999px;
 		background: var(--fuse-gradient);
 		color: #ffffff;
 		font-size: var(--font-size-min, 14px);
 		font-weight: 700;
+		letter-spacing: 0.02em;
 		cursor: pointer;
-		transition: opacity 0.15s ease, transform 0.1s ease;
+		box-shadow: 0 4px 20px color-mix(in srgb, var(--fuse-accent, #f97316) 30%, transparent);
+		transition: box-shadow 0.15s ease, filter 0.15s ease, transform 0.1s ease;
 	}
 
 	@container fuse-layout (max-width: 480px) {
@@ -503,7 +527,8 @@
 	}
 
 	.fuse-button:hover:not(:disabled) {
-		opacity: 0.9;
+		filter: brightness(1.08);
+		box-shadow: 0 4px 28px color-mix(in srgb, var(--fuse-accent, #f97316) 45%, transparent);
 	}
 
 	.fuse-button:active:not(:disabled) {
@@ -513,6 +538,7 @@
 	.fuse-button:disabled {
 		opacity: 0.35;
 		cursor: not-allowed;
+		box-shadow: none;
 	}
 
 	/* ── Tour overlay ───────────────────────────────────────────── */
