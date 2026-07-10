@@ -8,7 +8,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { Step } from "@tka/tka-types";
 
 
 // Note: This service will need to be updated to use the new DI pattern
@@ -73,7 +73,7 @@ export class ConstructCoordinator {
     }
   }
 
-  handleStartPositionSet(_startPosition: StepData): void {
+  handleStartPositionSet(_startPosition: Step): void {
     try {
       return;
     } catch (error) {
@@ -82,7 +82,7 @@ export class ConstructCoordinator {
     }
   }
 
-  async handleBeatAdded(stepData: StepData): Promise<void> {
+  async handleBeatAdded(stepData: Step): Promise<void> {
     try {
       // Beat addition is handled by workbench components directly
       // This coordinator just notifies other components of the change

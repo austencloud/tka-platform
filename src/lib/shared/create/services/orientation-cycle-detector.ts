@@ -8,7 +8,7 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { Step } from "@tka/tka-types";
 import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import { calculateEndOrientation } from "$lib/shared/pictograph/prop/services/orientation-calculator";
@@ -126,7 +126,7 @@ function getStartingOrientations(sequence: SequenceData): {
 }
 
 function isStartPositionData(
-  data: StartPositionData | StepData
+  data: StartPositionData | Step
 ): data is StartPositionData {
   return "isStartPosition" in data && data.isStartPosition === true;
 }

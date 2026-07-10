@@ -11,7 +11,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { hydrate } from "$lib/shared/foundation/services/sequence-hydrator";
-import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { Step } from "@tka/tka-types";
 import type { SequenceCreateRequest } from "$lib/shared/create/domain/sequence-models";
 import {
   saveSequence as persistSaveSequence,
@@ -79,7 +79,7 @@ export class SequenceRepository {
   async updateStep(
     sequenceId: string,
     stepIndex: number,
-    stepData: StepData
+    stepData: Step
   ): Promise<void> {
     try {
       // Load the current sequence

@@ -6,7 +6,7 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { Motion } from "@tka/tka-types";
 
 /**
  * Coordinate point in a motion path
@@ -78,7 +78,7 @@ export function countDirectionReversals(
  * Analyze a single motion for reversal patterns using the heuristics from the
  * previous monolithic service implementation.
  */
-function analyzeMotionForReversals(motion: MotionData): number {
+function analyzeMotionForReversals(motion: Motion): number {
   let reversalCount = 0;
 
   // Check motion type for reversal indicators

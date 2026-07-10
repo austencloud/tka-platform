@@ -2,7 +2,7 @@
  * Sequence Metadata — name generation, metadata creation, and word calculation.
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { Step } from "@tka/tka-types";
 import {
   DifficultyLevel,
   type GenerationOptions,
@@ -21,7 +21,7 @@ export function generateSequenceName(options: GenerationOptions): string {
   return `${difficulty} ${options.length}-Step (${timestamp})`;
 }
 
-export function calculateWordFromBeats(steps: StepData[]): string {
+export function calculateWordFromBeats(steps: Step[]): string {
   return steps
     .filter((step) => step.letter)
     .map((step) => step.letter)

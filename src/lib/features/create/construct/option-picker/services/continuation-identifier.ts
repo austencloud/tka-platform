@@ -9,7 +9,7 @@
 
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { Motion } from "@tka/tka-types";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 type ShiftDirection = "cw" | "ccw" | null;
@@ -50,7 +50,7 @@ function getCWOrder(start: GridLocation): GridLocation[] {
  * or null if the motion is not a shift (dash/static) or is ambiguous
  * (opposite-position movement like N->S which is 2 steps in either direction).
  */
-function deriveShiftDirection(motion: MotionData): ShiftDirection {
+function deriveShiftDirection(motion: Motion): ShiftDirection {
   // Dashes and statics don't shift
   if (
     motion.motionType === MotionType.DASH ||

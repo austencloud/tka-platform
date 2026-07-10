@@ -13,7 +13,7 @@
 import type { PictographData as EnginePictographData } from "@tka/sequence-engine/generation";
 import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/data-contracts";
 import type { PictographData as AppPictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-import type { MotionData as AppMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { Motion as AppMotion } from "@tka/tka-types";
 import type { MotionData as EngineMotionData } from "@tka/sequence-engine/generation";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -112,7 +112,7 @@ export class BrowserVariationProvider {
    * Data is trusted (validated via letter CSV + enum constructors upstream).
    */
   private mapMotion(
-    appMotion: AppMotionData,
+    appMotion: AppMotion,
     color: string
   ): EngineMotionData {
     return {

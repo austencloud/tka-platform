@@ -9,6 +9,7 @@
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { Step } from "@tka/tka-types";
 import type { AlignmentResult, AlignedBeatPair, LocalAlignmentResult, CircularAlignmentResult, AlignmentOptions } from "./types";
 import type { StepSignatureGenerator } from "./step-signature-generator";
 import type { SpatialTransformDetector } from "./spatial-transform-detector";
@@ -165,8 +166,8 @@ export class SequenceAligner {
   // ============================================================================
 
   private buildSimilarityMatrix(
-    stepsA: readonly StepData[],
-    stepsB: readonly StepData[],
+    stepsA: readonly Step[],
+    stepsB: readonly Step[],
     opts: Required<AlignmentOptions>
   ): {
     scores: number[][];
@@ -200,8 +201,8 @@ export class SequenceAligner {
   }
 
   private computeBeatSimilarity(
-    stepA: StepData,
-    stepB: StepData,
+    stepA: Step,
+    stepB: Step,
     opts: Required<AlignmentOptions>
   ): { similarity: number; transform: SpatialTransform | null } {
     // Direct comparison
@@ -246,8 +247,8 @@ export class SequenceAligner {
   }
 
   private computeTransformedSimilarity(
-    stepA: StepData,
-    stepB: StepData,
+    stepA: Step,
+    stepB: Step,
     _transform: SpatialTransform
   ): number {
     // For now, we just check if the transform makes them match better
@@ -324,8 +325,8 @@ export class SequenceAligner {
   private tracebackGlobal(
     dpMatrix: number[][],
     traceMatrix: ("diag" | "up" | "left")[][],
-    stepsA: readonly StepData[],
-    stepsB: readonly StepData[],
+    stepsA: readonly Step[],
+    stepsB: readonly Step[],
     simMatrix: { scores: number[][]; transforms: (SpatialTransform | null)[][] },
     _opts: Required<AlignmentOptions>
   ): AlignedBeatPair[] {
@@ -452,8 +453,8 @@ export class SequenceAligner {
   private tracebackLocal(
     dpMatrix: number[][],
     traceMatrix: ("diag" | "up" | "left" | "stop")[][],
-    stepsA: readonly StepData[],
-    stepsB: readonly StepData[],
+    stepsA: readonly Step[],
+    stepsB: readonly Step[],
     simMatrix: { scores: number[][]; transforms: (SpatialTransform | null)[][] },
     maxPos: { i: number; j: number },
     _opts: Required<AlignmentOptions>

@@ -5,7 +5,7 @@
  * A spatial transform is a rotation around the grid center (0-7 steps of 45°).
  */
 
-import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { Step } from "@tka/tka-types";
 import type { SpatialTransform, SpatialTransformResult } from "../domain/models/signatures";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -35,7 +35,7 @@ const ALL_TRANSFORMS: readonly SpatialTransform[] = Array.from({ length: 8 }, (_
 }));
 
 export class SpatialTransformDetector {
-  findTransform(beatA: StepData, beatB: StepData): SpatialTransformResult {
+  findTransform(beatA: Step, beatB: Step): SpatialTransformResult {
     // Try all 8 possible rotations
     for (const transform of ALL_TRANSFORMS) {
       if (this.isRotationOf(beatA, beatB, transform.rotationSteps)) {
@@ -52,7 +52,7 @@ export class SpatialTransformDetector {
     };
   }
 
-  isRotationOf(beatA: StepData, beatB: StepData, rotationSteps: number): boolean {
+  isRotationOf(beatA: Step, beatB: Step, rotationSteps: number): boolean {
     const blueA = beatA.motions[MotionColor.BLUE];
     const redA = beatA.motions[MotionColor.RED];
     const blueB = beatB.motions[MotionColor.BLUE];

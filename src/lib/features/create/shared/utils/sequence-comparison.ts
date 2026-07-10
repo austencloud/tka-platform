@@ -6,8 +6,8 @@
  */
 
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { Step } from "@tka/tka-types";
 
 /**
  * Compare two sequences for deep equality.
@@ -49,8 +49,8 @@ export function areSequencesEqual(
  * Deep compare two beat/pictograph objects
  */
 function areBeatsEqual(
-  step1: StepData | undefined,
-  step2: StepData | undefined
+  step1: Step | undefined,
+  step2: Step | undefined
 ): boolean {
   if (!step1 && !step2) return true;
   if (!step1 || !step2) return false;

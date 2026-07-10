@@ -1,7 +1,7 @@
-import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { Step } from "@tka/tka-types";
 import type { SequenceData } from "../domain/models/sequence-data";
 
-export function deriveWordFromBeats(steps: readonly StepData[]): string {
+export function deriveWordFromBeats(steps: readonly Step[]): string {
   if (!steps || steps.length === 0) return "";
 
   return steps
