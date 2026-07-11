@@ -72,7 +72,12 @@
     {/if}
   </Crossfade>
 {:else}
-  <!-- Mobile: gallery stays put; detail is a swipe-dismissable bottom sheet. -->
+  <!-- Mobile: gallery stays put; detail is a full-height, swipe-dismissable
+       slide-up sheet. Full height (not the default content-sized bottom sheet)
+       so the preview is the hero — a content-sized sheet collapses to its 50vh
+       floor and squeezes the preview's flex:1 down to nothing (the mandala
+       shrank). The sheet's own .drawer-inner scrolls if the controls + hero
+       can't all fit. -->
   {@render gallery()}
   <Drawer
     placement="bottom"
@@ -81,7 +86,23 @@
     {ariaLabel}
     respectLayoutMode={false}
     preventScroll
+    class="collection-detail-sheet"
   >
     {@render detail({ inDrawer: true })}
   </Drawer>
 {/if}
+
+<style>
+  /* Force the slide-up sheet to full height so the hero preview fills the screen
+     instead of the sheet hugging its (collapsed) content. `height: 100%` (not
+     100dvh) because the host modules set `container-type` → `contain: layout`,
+     which makes THEM the containing block for this fixed sheet (and clips it via
+     overflow). So 100% = the module's height = the mobile content area; 100dvh
+     would overrun it and get clipped, hiding the drag handle. `--sheet-max-height`
+     is the Drawer's sanctioned height-cap var (no !important / specificity fight).
+     Global: the class lands on the Drawer's own <dialog>, a different component. */
+  :global(.drawer-content.collection-detail-sheet) {
+    height: 100%;
+    --sheet-max-height: 100%;
+  }
+</style>
