@@ -10,7 +10,9 @@
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import CodexControlPanel from "$lib/features/learn/codex/components/CodexControlPanel.svelte";
+  import PropTurnsControl from "$lib/features/create/shared/components/sequence-actions/PropTurnsControl.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { MotionColor, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { getGuideCodexState } from "../_data/guide-codex-state.svelte";
   import type { GuideCodexVisibility } from "../_data/guide-codex-persistence";
 
@@ -61,6 +63,30 @@
           onclick={() => state.toggleVisibility(chip.key)}
         />
       {/each}
+    </div>
+  </div>
+
+  <div class="group">
+    <span class="group-label">Turns</span>
+    <div class="turns-row">
+      <PropTurnsControl
+        color="blue"
+        turns={state.blueTurns}
+        rotationDirection={RotationDirection.NO_ROTATION}
+        showRotation={false}
+        compact={true}
+        onTurnsChange={(delta) => state.adjustTurns(MotionColor.BLUE, delta)}
+        onRotationChange={() => {}}
+      />
+      <PropTurnsControl
+        color="red"
+        turns={state.redTurns}
+        rotationDirection={RotationDirection.NO_ROTATION}
+        showRotation={false}
+        compact={true}
+        onTurnsChange={(delta) => state.adjustTurns(MotionColor.RED, delta)}
+        onRotationChange={() => {}}
+      />
     </div>
   </div>
 
@@ -117,5 +143,10 @@
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+  }
+  .turns-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 </style>

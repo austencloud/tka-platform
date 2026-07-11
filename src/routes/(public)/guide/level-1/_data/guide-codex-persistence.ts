@@ -9,7 +9,21 @@
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 export const GUIDE_CODEX_STORAGE_KEY = "guide-codex-view-prefs";
-const GUIDE_CODEX_PREFS_VERSION = 2;
+const GUIDE_CODEX_PREFS_VERSION = 3;
+
+/** A turn count applied uniformly to every cell — 0 by default (the canonical
+ *  base codex; letters.json bakes in 1, which the codex normalizes away).
+ *  "fl" is float, matching the option picker's turns model. */
+export type GuideCodexTurns = number | "fl";
+
+/** Clamp/validate a restored turn value to the same range the steppers allow. */
+export function normalizeGuideCodexTurns(v: unknown): GuideCodexTurns {
+  if (v === "fl") return "fl";
+  if (typeof v === "number" && Number.isFinite(v)) {
+    return Math.max(0, Math.min(3, v));
+  }
+  return 0;
+}
 
 /** Prop families that actually render in the codex — see prop-type.ts. */
 export const GUIDE_CODEX_PROP_TYPES = [
@@ -35,6 +49,8 @@ export interface GuideCodexPrefs {
   version: number;
   propType: PropType;
   visibility: GuideCodexVisibility;
+  blueTurns: GuideCodexTurns;
+  redTurns: GuideCodexTurns;
 }
 
 /** Matches the printed sheet's hardcoded defaults exactly (grid + TKA glyph
@@ -57,6 +73,8 @@ export function defaultGuideCodexPrefs(): GuideCodexPrefs {
     version: GUIDE_CODEX_PREFS_VERSION,
     propType: PropType.STAFF,
     visibility: defaultGuideCodexVisibility(),
+    blueTurns: 0,
+    redTurns: 0,
   };
 }
 
@@ -90,5 +108,7 @@ export function restoreGuideCodexPrefs(raw: string | null): GuideCodexPrefs {
     version: GUIDE_CODEX_PREFS_VERSION,
     propType,
     visibility: { ...d.visibility, ...(p.visibility ?? {}) },
+    blueTurns: normalizeGuideCodexTurns(p.blueTurns),
+    redTurns: normalizeGuideCodexTurns(p.redTurns),
   };
 }

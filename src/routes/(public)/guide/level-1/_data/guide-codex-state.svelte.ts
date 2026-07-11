@@ -16,10 +16,11 @@
  * transform is deliberately ephemeral (a "browse variations" scratch state,
  * not a saved preference) and resets on reload.
  */
-import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { MotionColor, RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { applyPendingTurnsToOption } from "$lib/shared/create/services/apply-turns-to-motion";
 import {
   rotateAllPictographs,
   mirrorAllPictographs,
@@ -31,7 +32,9 @@ import {
   defaultGuideCodexPrefs,
   restoreGuideCodexPrefs,
   serializeGuideCodexPrefs,
+  normalizeGuideCodexTurns,
   type GuideCodexVisibility,
+  type GuideCodexTurns,
 } from "./guide-codex-persistence";
 
 export type CodexTransformOp = "rotate" | "mirror" | "colorswap";
@@ -71,9 +74,32 @@ function withPropType(p: PictographData, type: PropType): PictographData {
   };
 }
 
+/** Set each hand's turn count (SETTING, not adding — the canonical option-picker
+ *  path recomputes rotation + end orientation). Spin direction only matters for
+ *  dash/static hands carrying turns; CW matches the option picker's default. */
+function withTurns(p: PictographData, blueTurns: GuideCodexTurns, redTurns: GuideCodexTurns): PictographData {
+  return applyPendingTurnsToOption(
+    p,
+    blueTurns,
+    redTurns,
+    RotationDirection.CLOCKWISE,
+    RotationDirection.CLOCKWISE
+  );
+}
+
+/** The canonical base-codex render for a cell: letters.json bakes in 1 turn, so
+ *  the codex normalizes to 0 turns — used by the static print/book branch, which
+ *  has no live state. The interactive reader applies its own turn state instead. */
+export function codexDataZeroTurns(id: string): PictographData | null {
+  const d = codexData(id);
+  return d ? withTurns(d, 0, 0) : null;
+}
+
 class GuideCodexState {
   propType = $state<PropType>(defaultGuideCodexPrefs().propType);
   visibility = $state<GuideCodexVisibility>(defaultGuideCodexPrefs().visibility);
+  blueTurns = $state<GuideCodexTurns>(defaultGuideCodexPrefs().blueTurns);
+  redTurns = $state<GuideCodexTurns>(defaultGuideCodexPrefs().redTurns);
   #transformed = $state<Map<string, PictographData> | null>(null);
 
   constructor() {
@@ -86,6 +112,8 @@ class GuideCodexState {
       const prefs = restoreGuideCodexPrefs(localStorage.getItem(GUIDE_CODEX_STORAGE_KEY));
       this.propType = prefs.propType;
       this.visibility = prefs.visibility;
+      this.blueTurns = prefs.blueTurns;
+      this.redTurns = prefs.redTurns;
     } catch {
       // private mode / quota — fall back to defaults, not worth surfacing
     }
@@ -97,9 +125,11 @@ class GuideCodexState {
       localStorage.setItem(
         GUIDE_CODEX_STORAGE_KEY,
         serializeGuideCodexPrefs({
-          version: 2,
+          version: 3,
           propType: this.propType,
           visibility: $state.snapshot(this.visibility),
+          blueTurns: this.blueTurns,
+          redTurns: this.redTurns,
         })
       );
     } catch {
@@ -115,6 +145,17 @@ class GuideCodexState {
 
   toggleVisibility(key: keyof GuideCodexVisibility): void {
     this.visibility = { ...this.visibility, [key]: !this.visibility[key] };
+    this.#persist();
+  }
+
+  /** Bump a hand's turns by a signed delta (the stepper's unit), clamped 0..3.
+   *  A "fl" (float) current value is treated as 0 for stepping. */
+  adjustTurns(color: MotionColor, delta: number): void {
+    const cur = color === MotionColor.BLUE ? this.blueTurns : this.redTurns;
+    const base = cur === "fl" ? 0 : cur;
+    const next = normalizeGuideCodexTurns(base + delta);
+    if (color === MotionColor.BLUE) this.blueTurns = next;
+    else this.redTurns = next;
     this.#persist();
   }
 
@@ -148,7 +189,9 @@ class GuideCodexState {
   dataFor(id: string): PictographData | null {
     const base = this.#transformed?.get(id) ?? codexData(id);
     if (!base) return null;
-    return withPropType(base, this.propType);
+    // Turns first (recomputes rotation/orientation off the canonical motion),
+    // then re-skin with the selected prop family.
+    return withPropType(withTurns(base, this.blueTurns, this.redTurns), this.propType);
   }
 }
 

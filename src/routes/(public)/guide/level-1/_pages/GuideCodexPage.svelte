@@ -32,7 +32,7 @@
   import { createMotionData, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { getGuideSequenceClick, getGuidePrintMode } from "../_data/guide-data-context";
   import { bakeReversals } from "../_data/guide-sequence-adapter";
-  import { getGuideCodexState } from "../_data/guide-codex-state.svelte";
+  import { getGuideCodexState, codexDataZeroTurns } from "../_data/guide-codex-state.svelte";
   import CodexSheet from "../../codex/_components/CodexSheet.svelte";
   import { SHEET1, SHEET2, type CodexCellDef } from "../../codex/_data/codex-groups";
 
@@ -111,10 +111,10 @@
        identical content the /guide/codex route renders. -->
   <div class="codex-print">
     <div class="codex-print-sheet">
-      <CodexSheet sheet={SHEET1} embed />
+      <CodexSheet sheet={SHEET1} embed getData={codexDataZeroTurns} />
     </div>
     <div class="codex-print-sheet page-break">
-      <CodexSheet sheet={SHEET2} embed />
+      <CodexSheet sheet={SHEET2} embed getData={codexDataZeroTurns} />
     </div>
   </div>
 {:else}
