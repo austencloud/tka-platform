@@ -49,6 +49,12 @@ export class Autosaver {
     if (this.saving) return;
     this.saving = true;
 
+    // Capture-and-clear the dirty flag up front. A markDirty() that lands while
+    // the write below is awaiting must NOT be erased — clearing before the await
+    // means such an edit re-sets isDirty and still triggers the next interval
+    // save. On failure we re-arm below so the edit is retried, not lost.
+    this.isDirty = false;
+
     try {
       // --- Dexie (local, always) ---
       // Deep-clone via JSON to strip non-cloneable objects (Firestore Timestamps,
@@ -60,16 +66,23 @@ export class Autosaver {
         name: sequenceData.name,
       }));
 
-      await db.userWork.put({
+      // Keep exactly one draft row per (type, tabId). userWork is ++id
+      // auto-increment, so put() with no key INSERTs a fresh row on every
+      // autosave — unbounded growth, and recovery would restore the oldest
+      // near-empty snapshot. Delete existing rows for this key (mirrors
+      // deleteDraft's [type+tabId] query), then add the current one.
+      await db.userWork
+        .where("[type+tabId]")
+        .equals([UserWorkType.SEQUENCE_DRAFT, "create"])
+        .delete();
+
+      await db.userWork.add({
         type: UserWorkType.SEQUENCE_DRAFT,
         tabId: "create",
         data: cloneableData,
         lastModified: new Date(),
         version: 1,
       });
-
-      // Only clear dirty flag after successful Dexie write
-      this.isDirty = false;
 
     // --- Firestore (cloud, fire-and-forget) ---
     const user = getAuthSync().currentUser;
@@ -94,6 +107,11 @@ export class Autosaver {
         );
       });
     }
+    } catch (err) {
+      // Write failed — re-arm the dirty flag so the next interval tick retries
+      // this edit (we cleared it up front for the race fix above).
+      this.isDirty = true;
+      throw err;
     } finally {
       this.saving = false;
     }
@@ -109,10 +127,15 @@ export class Autosaver {
   async loadDraft(sessionId?: string): Promise<DraftSequence | null> {
     // --- Dexie (local, always first) ---
     try {
-      const localDraft = await db.userWork
+      // Return the NEWEST draft. Older damaged DBs may still hold multiple rows
+      // from the pre-fix insert-every-save bug; sort by lastModified and take the
+      // last so recovery restores the most recent autosave, not the oldest
+      // near-empty snapshot. Post-fix there is only ever one row.
+      const drafts = await db.userWork
         .where("[type+tabId]")
         .equals([UserWorkType.SEQUENCE_DRAFT, "create"])
-        .first();
+        .sortBy("lastModified");
+      const localDraft = drafts[drafts.length - 1];
 
       if (localDraft?.data) {
         const data = localDraft.data as {
