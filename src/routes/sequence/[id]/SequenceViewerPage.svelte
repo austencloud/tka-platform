@@ -3,6 +3,7 @@
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
 import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-data-provider";
+import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
   import { viewportFits3D } from "$lib/shared/3d/capabilities/viewport-3d-gate.svelte";
   import { page } from "$app/state";
   import { goto, replaceState } from "$app/navigation";
@@ -668,11 +669,13 @@ import { loadByIdentifier } from "$lib/shared/sequence-viewer/services/sequence-
                       <VideoPreviewPanel
                         blobUrl={ctx.previewBlobUrl}
                         onDismiss={ctx.dismissPreview}
-                        onRedownload={() => {
-                          const a = document.createElement("a");
-                          a.href = ctx.previewBlobUrl!;
-                          a.download = `${ctx.effectiveSequence?.word || "sequence"}.mp4`;
-                          a.click();
+                        onRedownload={async () => {
+                          // Device-gated: native share sheet on mobile, download on
+                          // desktop — the preview panel's label reads "Share" on mobile
+                          // so the behavior must match (not a blind anchor download).
+                          const word = ctx.effectiveSequence?.word || "sequence";
+                          const blob = await fetch(ctx.previewBlobUrl!).then((r) => r.blob());
+                          await shareOrDownloadBlob(blob, `${word}.mp4`, { title: word });
                         }}
                       />
                     {:else}

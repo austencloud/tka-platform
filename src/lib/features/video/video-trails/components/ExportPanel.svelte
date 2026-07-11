@@ -1,6 +1,8 @@
 <script lang="ts">
   import { getVideoTrailsContext } from "../context/video-trails-context";
   import type { ExportConfig } from "../domain/types";
+  import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
+  import { shareTarget, saveActionLabel } from "$lib/shared/mobile/share-action.svelte";
 
   const { state: trailsState } = getVideoTrailsContext();
 
@@ -44,14 +46,14 @@
     });
   }
 
-  function handleDownload() {
+  async function handleDownload() {
     if (trailsState.exportState.phase !== "complete" || !trailsState.exportState.blob) return;
-    const url = URL.createObjectURL(trailsState.exportState.blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `video-trails-export.${format}`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // Device-gated: native share sheet on mobile, download on desktop.
+    await shareOrDownloadBlob(
+      trailsState.exportState.blob,
+      `video-trails-export.${format}`,
+      { title: "Video Trails" },
+    );
   }
 
   function selectFormat(value: "mp4" | "webm") {
@@ -132,8 +134,8 @@
 
   {#if trailsState.exportState.phase === "complete"}
     <button class="download-btn" onclick={handleDownload}>
-      <i class="fas fa-file-video" aria-hidden="true"></i>
-      Download
+      <i class="fas {shareTarget.isMobile ? 'fa-share-nodes' : 'fa-file-video'}" aria-hidden="true"></i>
+      {saveActionLabel()}
     </button>
   {/if}
 

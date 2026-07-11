@@ -6,17 +6,23 @@
 -->
 <script lang="ts">
   import { fade } from "svelte/transition";
+  import { shareTarget } from "$lib/shared/mobile/share-action.svelte";
 
   interface Props {
     blobUrl: string;
     onDismiss: () => void;
     onRedownload: () => void;
-    /** Label for the save/share action. Defaults to "Save Again" (the 2D path
-     *  auto-downloads first); preview-first callers (tunnel) pass "Save". */
+    /** Desktop label for the save/download action. Defaults to "Save Again" (the
+     *  2D path auto-downloads first); preview-first callers (tunnel) pass "Save".
+     *  On mobile the label is always "Share" — the action opens the native share
+     *  sheet (shareOrDownloadBlob), so the desktop copy is overridden there. */
     saveLabel?: string;
   }
 
   let { blobUrl, onDismiss, onRedownload, saveLabel = "Save Again" }: Props = $props();
+
+  // Mobile shares (native sheet); keep each host's desktop copy otherwise.
+  const effectiveSaveLabel = $derived(shareTarget.isMobile ? "Share" : saveLabel);
 
   let videoEl = $state<HTMLVideoElement | null>(null);
   let isPlaying = $state(false);
@@ -113,10 +119,10 @@
       type="button"
       class="action-btn primary"
       onclick={onRedownload}
-      aria-label={saveLabel}
+      aria-label={effectiveSaveLabel}
     >
-      <i class="fas fa-download" aria-hidden="true"></i>
-      {saveLabel}
+      <i class="fas {shareTarget.isMobile ? 'fa-share-nodes' : 'fa-download'}" aria-hidden="true"></i>
+      {effectiveSaveLabel}
     </button>
     <button
       type="button"
