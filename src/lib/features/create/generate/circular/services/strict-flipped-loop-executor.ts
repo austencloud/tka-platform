@@ -35,6 +35,7 @@ import {
   FLIPPED_LOOP_VALIDATION_SET,
 } from "../domain/constants/strict-loop-position-maps";
 import { Period } from "../domain/models/circular-models";
+import { buildStrictQuarters } from "./loop-quarter-guard";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 export class StrictFlippedLOOPExecutor {
@@ -49,28 +50,17 @@ export class StrictFlippedLOOPExecutor {
     }
 
     const partialLength = sequence.length;
-    const periodCount = period === Period.QUARTERED ? 4 : 2;
-    const totalLength = partialLength * periodCount;
-    const beatsToGenerate = totalLength - partialLength;
+    const requestedPeriod = period === Period.QUARTERED ? 4 : 2;
 
-    let lastStep = sequence[sequence.length - 1]!;
-    const firstGeneratedStepNumber = lastStep.stepNumber + 1;
-
-    for (let offset = 0; offset < beatsToGenerate; offset++) {
-      const stepNumber = firstGeneratedStepNumber + offset;
-      const quarterIdx = Math.floor((stepNumber - 1) / partialLength);
-      const sourceStepNumber = ((stepNumber - 1) % partialLength) + 1;
-      const applyFlip = quarterIdx % 2 === 1;
-
-      const sourceStep = sequence[sourceStepNumber - 1]!;
-
-      const newStep = applyFlip
-        ? this._createFlippedEntry(sourceStep, lastStep, stepNumber)
-        : this._createCopiedEntry(sourceStep, lastStep, stepNumber);
-
-      sequence.push(newStep);
-      lastStep = newStep;
-    }
+    // Odd quarters flip, even quarters copy; stop at period 2 when orientation
+    // already closes (see loop-quarter-guard.ts / the YΦΔ×4 defect).
+    buildStrictQuarters(
+      sequence,
+      partialLength,
+      requestedPeriod,
+      (s, p, n) => this._createFlippedEntry(s, p, n),
+      (s, p, n) => this._createCopiedEntry(s, p, n),
+    );
 
     sequence.unshift(startPosition);
     return sequence;

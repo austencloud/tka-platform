@@ -177,3 +177,9 @@ export {
   extendForOrientationCycle,
   type OrientationCycleExtensionResult,
 } from "./extension/OrientationCycleExtender.js";
+
+// Reduction (collapse redundant literal-repeat loops to their minimal form)
+export {
+  reduceToMinimalLoop,
+  type MinimalLoopResult,
+} from "./reduction/minimal-loop-reducer.js";

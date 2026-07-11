@@ -29,6 +29,7 @@ import type { sequenceMetadataManager as SequenceMetadataManagerSingleton } from
 type SequenceMetadataManager = typeof SequenceMetadataManagerSingleton;
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
 import { detectOrientationCycle } from "$lib/shared/create/services/orientation-cycle-detector";
+import { reduceToMinimalLoop } from "@tka/sequence-engine/loop";
 import { PropContinuity } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
@@ -64,7 +65,21 @@ export class BuildResultTransformer {
     }
 
     const startPosition = this.mapStartPosition(startPositionStep);
-    const steps = this.mapSteps(result.sequence.slice(1), options);
+    let steps = this.mapSteps(result.sequence.slice(1), options);
+
+    // Safety net: collapse a redundant literal-repeat loop to its minimal
+    // closing form. A quartered LOOP whose seed already closes at period 2
+    // (zero-turn seeds) over-extends into a byte-identical repeat; the strict
+    // executors guard against emitting it, this catches any path that still
+    // does (the YΦΔ×4 defect, 2026-07-10). Only literal repeats collapse —
+    // genuine transforms and orientation cycles are preserved. Runs before
+    // word/metadata so the stored word reduces too.
+    if (isCircular) {
+      const reduction = reduceToMinimalLoop(steps);
+      if (reduction.reduced) {
+        steps = reduction.steps as StepData[];
+      }
+    }
 
     // Calculate word from the mapped steps
     const word = steps

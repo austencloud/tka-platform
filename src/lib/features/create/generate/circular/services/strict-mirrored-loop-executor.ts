@@ -43,6 +43,7 @@ import {
   MIRRORED_LOOP_VALIDATION_SET,
 } from "../domain/constants/strict-loop-position-maps";
 import { Period } from "../domain/models/circular-models";
+import { buildStrictQuarters } from "./loop-quarter-guard";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
 export class StrictMirroredLOOPExecutor {
@@ -63,32 +64,18 @@ export class StrictMirroredLOOPExecutor {
     }
 
     const partialLength = sequence.length;
-    const periodCount = period === Period.QUARTERED ? 4 : 2;
-    const totalLength = partialLength * periodCount;
-    const beatsToGenerate = totalLength - partialLength;
+    const requestedPeriod = period === Period.QUARTERED ? 4 : 2;
 
-    let lastStep = sequence[sequence.length - 1]!;
-    const firstGeneratedStepNumber = lastStep.stepNumber + 1;
-
-    for (let offset = 0; offset < beatsToGenerate; offset++) {
-      const stepNumber = firstGeneratedStepNumber + offset;
-
-      // Quarter 0 is the partial (already in sequence).
-      // Quarter 1 = mirror of Q1. Quarter 2 = copy of Q1. Quarter 3 = mirror of Q3.
-      // Odd quarters apply the mirror transform; even quarters copy.
-      const quarterIdx = Math.floor((stepNumber - 1) / partialLength);
-      const sourceStepNumber = ((stepNumber - 1) % partialLength) + 1;
-      const applyMirror = quarterIdx % 2 === 1;
-
-      const sourceStep = sequence[sourceStepNumber - 1]!;
-
-      const newStep = applyMirror
-        ? this._createMirroredEntry(sourceStep, lastStep, stepNumber)
-        : this._createCopiedEntry(sourceStep, lastStep, stepNumber);
-
-      sequence.push(newStep);
-      lastStep = newStep;
-    }
+    // Odd quarters mirror, even quarters copy. The builder stops at period 2
+    // when the seed already closes in orientation, so a zero-turn quartered
+    // request never pads into a literal repeat (the YΦΔ×4 defect, 2026-07-10).
+    buildStrictQuarters(
+      sequence,
+      partialLength,
+      requestedPeriod,
+      (s, p, n) => this._createMirroredEntry(s, p, n),
+      (s, p, n) => this._createCopiedEntry(s, p, n),
+    );
 
     sequence.unshift(startPosition);
     return sequence;

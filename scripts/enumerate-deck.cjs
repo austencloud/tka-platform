@@ -747,6 +747,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     const { loopExecutorSelector } = require("../packages/sequence-engine/dist/loop/execution/LOOPExecutorSelector.js");
     const { deriveReversals } = require("../packages/sequence-engine/dist/analysis/deriveReversals.js");
     const { calculateEndOrientation } = require("../packages/sequence-engine/dist/core/orientation/OrientationCalculator.js");
+    const { reduceToMinimalLoop } = require("../packages/sequence-engine/dist/loop/reduction/minimal-loop-reducer.js");
     // Twin transform inputs: the engine's vertical-mirror location map and the
     // rotation-flip fn (reused, not hand-rolled), plus a location->position
     // table built from the same CSV the enumeration walks. The twin module is
@@ -771,6 +772,7 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     let selfTwinSkipped = 0;
     let twinDupSkipped = 0;
     let twinLetterMisses = 0;
+    let redundantSkipped = 0;
     const executor = loopExecutorSelector.getExecutor(loopType);
 
     /**
@@ -1058,6 +1060,15 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         continue;
       }
 
+      // Reject redundant literal-repeat loops: a seed that already closes
+      // before the requested period extends into a shorter closing loop copied
+      // to length (the YΦΔ×4 defect). It does not belong in this target-length
+      // deck — the genuine shorter loop lives in the shorter-length deck.
+      if (reduceToMinimalLoop(fullSteps).reduced) {
+        redundantSkipped++;
+        continue;
+      }
+
       // For continuous decks, reject sequences that contain reversals.
       const beatStepsForReversal = fullSteps.slice(1);
       if (!allowReversals && (!reversalPattern || reversalPattern === 'continuous')) {
@@ -1337,8 +1348,10 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
       }
 
       if (batchCount >= BATCH_SIZE) {
-        await batch.commit();
-        console.log(`  Written ${totalWritten}/${deduped.length} sequences...`);
+        // Guard the mid-loop flush too — without this, --no-write still wrote
+        // every full batch and only spared the final partial one.
+        if (!noWrite) await batch.commit();
+        console.log(`  ${noWrite ? "[no-write] would write" : "Written"} ${totalWritten}/${deduped.length} sequences...`);
         batch = db.batch();
         batchCount = 0;
       }
@@ -1396,6 +1409,9 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     console.log(`  Done! ${totalWritten} sequences written to decks/${deckId}/sequences/`);
     if (totalWritten < deduped.length) {
       console.log(`  Filtered out ${deduped.length - totalWritten} sequences with reversals (continuous deck)`);
+    }
+    if (redundantSkipped > 0) {
+      console.log(`  Skipped ${redundantSkipped} redundant literal-repeat sequence(s) (collapse to a shorter closing loop)`);
     }
     if (twin) {
       console.log(
