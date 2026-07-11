@@ -11,11 +11,26 @@
   // signed-in non-admin) sees Coming Soon. Same URL. Launch later = drop the gate.
   // Chrome (nav + cosmic background) is provided by +layout.svelte.
   import { onMount } from "svelte";
+  import { browser } from "$app/environment";
   import ShopComingSoon from "$lib/features/store/components/ShopComingSoon.svelte";
+  import type { PageData } from "./$types";
 
-  // Seed from the session cache so a return visit renders correctly on frame one.
-  let ready = $state(cachedIsAdmin !== null);
-  let isAdmin = $state(cachedIsAdmin ?? false);
+  let { data }: { data: PageData } = $props();
+
+  // Seed from the session cache first, then the SSR cookie hint (data.presumedAdmin).
+  // Session cache wins when present (it's confirmed truth from this session); the
+  // cookie only decides the very first frame after a full reload, so an admin skips
+  // the ComingSoon flash. A confirmed non-admin in-session (cachedIsAdmin === false)
+  // stays ready+ComingSoon regardless of a stale cookie.
+  let ready = $state(cachedIsAdmin !== null || data.presumedAdmin);
+  let isAdmin = $state(cachedIsAdmin ?? data.presumedAdmin);
+
+  // Keep the SSR cookie in lockstep with the real claim (JS-set, UI-hint only).
+  function syncAdminCookie(admin: boolean) {
+    document.cookie = admin
+      ? "tka_shop_admin=1; path=/; max-age=2592000; samesite=lax"
+      : "tka_shop_admin=; path=/; max-age=0; samesite=lax";
+  }
 
   onMount(async () => {
     try {
@@ -49,6 +64,10 @@
       console.error("[shop] admin check failed:", e);
     } finally {
       ready = true;
+      // Re-sync so the next reload's SSR seed matches reality: set for admins so
+      // they skip ComingSoon, clear for everyone else so a stale cookie can't
+      // leave a non-admin on an empty shell.
+      syncAdminCookie(isAdmin);
     }
   });
 </script>
@@ -76,15 +95,20 @@
   />
 </svelte:head>
 
-<!-- Default to Coming Soon while auth resolves: the common visitor is non-admin,
-     so this avoids a blank flash. Admin briefly sees Coming Soon, then the shop. -->
+<!-- Non-admins (no cookie) get ComingSoon on the server for an instant, SEO-safe
+     paint. Admins (cookie seed) enter this branch, but the StorePage import stays
+     browser-gated so no auth/Firestore code enters the SSR graph (per +page.ts) —
+     the server renders an empty shell (cosmic background), and the client fills it
+     with StorePage's own skeleton. Either way, an admin never sees ComingSoon. -->
 {#if ready && isAdmin}
-  {#await import("$lib/features/store/components/BakeCoversButton.svelte") then { default: BakeCoversButton }}
-    <BakeCoversButton />
-  {/await}
-  {#await import("$lib/features/store/StorePage.svelte") then { default: StorePage }}
-    <StorePage showDrafts />
-  {/await}
+  {#if browser}
+    {#await import("$lib/features/store/components/BakeCoversButton.svelte") then { default: BakeCoversButton }}
+      <BakeCoversButton />
+    {/await}
+    {#await import("$lib/features/store/StorePage.svelte") then { default: StorePage }}
+      <StorePage showDrafts />
+    {/await}
+  {/if}
 {:else}
   <ShopComingSoon />
 {/if}
