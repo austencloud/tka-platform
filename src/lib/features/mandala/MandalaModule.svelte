@@ -14,13 +14,15 @@
   import { createMeditationAudioService } from "./tabs/meditate/services/meditation-audio";
   import { getPatternCycleTime, type BreathingPattern, type AmbientTrack } from "./tabs/meditate/domain/meditation-types";
   import { exportMandalaPNG, downloadBlob } from "./tabs/export/services/mandala-export";
+  import { runMandalaVideoExport } from "./tabs/export/services/mandala-video";
+  import type { MandalaVideoExportHandle } from "$lib/shared/mandala/services/mandala-video-exporter";
   import { mandalaCollectionState } from "./tabs/collection/state/mandala-collection-state.svelte";
   import { DEFAULT_MANDALAS } from "./tabs/meditate/domain/default-mandalas";
   import type { StepLike } from "$lib/shared/mandala/services/types";
   import { onMount } from "svelte";
 
   // ── Phase management ──
-  type Phase = "gallery" | "detail" | "meditate-config" | "meditate-session" | "export";
+  type Phase = "gallery" | "detail" | "meditate-config" | "meditate-session";
   let phase = $state<Phase>("gallery");
 
   // ── All sources ──
@@ -225,37 +227,11 @@
   }
 
   // ── Export ──
-  const RESOLUTIONS = [
-    { label: "1x", size: 540 },
-    { label: "2x", size: 1080 },
-    { label: "4x", size: 2160 },
-  ] as const;
-
-  const BACKGROUNDS = ["transparent", "black", "white"] as const;
-  type Background = (typeof BACKGROUNDS)[number];
-
-  let resolution = $state<number>(1080);
-  let background = $state<Background>("transparent");
-  let strokeWidth = $state(2.5);
+  // v1: two direct-download actions in the detail drawer (no options screen).
+  // PNG exports at a fixed high-res transparent still; video at the seamless-20s
+  // spec (mandala-video.ts). A resolution/background options UI is a later add.
+  const PNG_EXPORT_SIZE = 2160;
   let exporting = $state(false);
-  let exportPreviewEl = $state<HTMLElement | null>(null);
-  let exportPreviewSize = $state(400);
-
-  $effect(() => {
-    if (!exportPreviewEl) return;
-    const ro = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { width, height } = entry.contentRect;
-        exportPreviewSize = Math.min(width, height) * 0.8;
-      }
-    });
-    ro.observe(exportPreviewEl);
-    return () => ro.disconnect();
-  });
-
-  const resolutionLabel = $derived(
-    RESOLUTIONS.find((r) => r.size === resolution)?.label ?? "2x",
-  );
 
   async function handleExport() {
     if (!selectedMandala || exporting) return;
@@ -265,16 +241,62 @@
         selectedMandala.steps,
         selectedMandala.bluePropType,
         selectedMandala.redPropType,
-        { size: resolution, background, strokeWidth },
+        { size: PNG_EXPORT_SIZE, background: "transparent", strokeWidth: 2.5 },
       );
       const safeName = selectedMandala.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-      downloadBlob(blob, `mandala-${safeName}-${resolution}px.png`);
+      downloadBlob(blob, `mandala-${safeName}-${PNG_EXPORT_SIZE}px.png`);
     } catch (err) {
       console.error("[MandalaExport] Export failed:", err);
       toast.error("Couldn't export the mandala. Please try again.");
     } finally {
       exporting = false;
     }
+  }
+
+  // ── Video export (seamless 20s loop; off-thread worker via the shared driver) ──
+  let videoExporting = $state(false);
+  let videoProgress = $state(0); // 0..1
+  let videoPhase = $state<"capturing" | "encoding">("capturing");
+  let videoHandle: MandalaVideoExportHandle | null = null;
+
+  function handleVideoExport() {
+    if (!selectedMandala || videoExporting) return;
+    videoExporting = true;
+    videoProgress = 0;
+    videoPhase = "capturing";
+    const handle = runMandalaVideoExport(
+      {
+        name: selectedMandala.name,
+        steps: selectedMandala.steps,
+        bluePropType: selectedMandala.bluePropType,
+        redPropType: selectedMandala.redPropType,
+      },
+      {
+        onPhase: (p) => { videoPhase = p; },
+        onProgress: (f) => { videoProgress = f; },
+      },
+    );
+    videoHandle = handle;
+    handle.done
+      .then(() => {
+        if (videoHandle !== handle) return;
+        videoExporting = false;
+        videoHandle = null;
+      })
+      .catch((err: unknown) => {
+        if (videoHandle !== handle) return; // cancelled by us
+        console.error("[MandalaExport] Video export failed:", err);
+        toast.error("Couldn't export the video. Please try again.");
+        videoExporting = false;
+        videoHandle = null;
+      });
+  }
+
+  function cancelVideoExport() {
+    const handle = videoHandle;
+    videoHandle = null;
+    handle?.cancel();
+    videoExporting = false;
   }
 
   // ── Navigation ──
@@ -295,12 +317,9 @@
   function backToGallery() {
     meditationSession.stop();
     audioService.stopAmbient();
+    cancelVideoExport();
     selectedMandala = null;
     phase = "gallery";
-  }
-
-  function backToDetail() {
-    phase = "detail";
   }
 
   onMount(() => {
@@ -311,6 +330,7 @@
       clearTimeout(deleteTimer);
       meditationSession.dispose();
       audioService.dispose();
+      cancelVideoExport();
     };
   });
 </script>
@@ -393,109 +413,6 @@
       >
         <i class="fas fa-xmark" aria-hidden="true"></i>
       </button>
-    </div>
-
-  <!-- ═══ EXPORT ═══ -->
-  {:else if phase === "export" && selectedMandala}
-    <div class="export-layout">
-      <div class="export-controls">
-        <button
-          type="button"
-          class="back-btn"
-          onclick={backToDetail}
-          aria-label="Back to mandala"
-        >
-          <i class="fas fa-arrow-left" aria-hidden="true"></i>
-          <span>Back</span>
-        </button>
-
-        <h3 class="export-title">Export Settings</h3>
-
-        <div class="control-group">
-          <span class="control-label">Resolution</span>
-          <div class="chip-row" role="radiogroup" aria-label="Resolution">
-            {#each RESOLUTIONS as res (res.size)}
-              <button
-                type="button"
-                class="chip"
-                class:active={resolution === res.size}
-                role="radio"
-                aria-checked={resolution === res.size}
-                onclick={() => { resolution = res.size; }}
-              >
-                {res.label}
-                <span class="chip-detail">{res.size}px</span>
-              </button>
-            {/each}
-          </div>
-        </div>
-
-        <div class="control-group">
-          <span class="control-label">Background</span>
-          <div class="chip-row" role="radiogroup" aria-label="Background color">
-            {#each BACKGROUNDS as bg (bg)}
-              <button
-                type="button"
-                class="chip"
-                class:active={background === bg}
-                role="radio"
-                aria-checked={background === bg}
-                onclick={() => { background = bg; }}
-              >
-                {#if bg === "transparent"}
-                  <span class="bg-swatch transparent-swatch"></span>
-                {:else}
-                  <span class="bg-swatch" style:background={bg}></span>
-                {/if}
-                {bg}
-              </button>
-            {/each}
-          </div>
-        </div>
-
-        <div class="control-group">
-          <label class="control-label" for="stroke-width">
-            Stroke Width
-            <span class="control-value">{strokeWidth.toFixed(1)}</span>
-          </label>
-          <input
-            id="stroke-width"
-            type="range"
-            min="0.5"
-            max="5"
-            step="0.5"
-            bind:value={strokeWidth}
-            class="range-input"
-          />
-        </div>
-
-        <button
-          type="button"
-          class="download-btn"
-          onclick={handleExport}
-          disabled={exporting}
-        >
-          {#if exporting}
-            <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-            Exporting...
-          {:else}
-            <i class="fas fa-download" aria-hidden="true"></i>
-            Download PNG
-          {/if}
-        </button>
-      </div>
-
-      <div class="export-preview" bind:this={exportPreviewEl}>
-        <SequenceMandala
-          sequence={{ steps: selectedMandala.steps }}
-          size={exportPreviewSize}
-          show="both"
-          bluePropType={selectedMandala.bluePropType}
-          redPropType={selectedMandala.redPropType}
-          strokeWidth={strokeWidth}
-        />
-        <span class="resolution-label">{resolutionLabel} · {resolution}px</span>
-      </div>
     </div>
   {/if}
 
@@ -601,10 +518,33 @@
             <button
               type="button"
               class="action-btn export-btn"
-              onclick={() => { phase = "export"; }}
+              onclick={handleVideoExport}
+              disabled={videoExporting}
             >
-              <i class="fas fa-download" aria-hidden="true"></i>
-              <span>Export PNG</span>
+              {#if videoExporting}
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                <span class="export-progress">
+                  {videoPhase === "encoding" ? "Encoding" : `${Math.round(videoProgress * 100)}%`}
+                </span>
+              {:else}
+                <i class="fas fa-film" aria-hidden="true"></i>
+                <span>Download Video</span>
+              {/if}
+            </button>
+
+            <button
+              type="button"
+              class="action-btn export-btn"
+              onclick={handleExport}
+              disabled={exporting}
+            >
+              {#if exporting}
+                <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                <span>…</span>
+              {:else}
+                <i class="fas fa-image" aria-hidden="true"></i>
+                <span>Download PNG</span>
+              {/if}
             </button>
           </div>
 
@@ -895,6 +835,14 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     color: var(--theme-text, white);
   }
+  .action-btn:disabled {
+    opacity: 0.7;
+    cursor: progress;
+  }
+  /* Tabular figures so the encode % doesn't jitter the button width. */
+  .export-progress {
+    font-variant-numeric: tabular-nums;
+  }
 
   .delete-btn {
     background: transparent;
@@ -993,213 +941,6 @@
     outline-offset: 2px;
   }
 
-  /* ── Export ── */
-  .export-layout {
-    display: flex;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-  }
-
-  .export-controls {
-    width: 300px;
-    flex-shrink: 0;
-    padding: 24px 20px;
-    border-right: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-
-  .export-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--theme-text, white);
-    letter-spacing: 0.02em;
-    margin: 0;
-  }
-
-  .export-preview {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    min-width: 0;
-    padding: 24px;
-  }
-
-  .resolution-label {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    letter-spacing: 0.02em;
-  }
-
-  .control-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .control-label {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .control-value {
-    color: var(--theme-text, rgba(255, 255, 255, 0.7));
-    font-variant-numeric: tabular-nums;
-  }
-
-  .chip-row {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-  }
-
-  .chip {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0 14px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 10px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--duration-fast, 150ms) var(--ease-out, ease);
-    white-space: nowrap;
-  }
-
-  @media (hover: hover) {
-    .chip:hover {
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-      color: var(--theme-text, white);
-    }
-  }
-
-  .chip.active {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 25%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
-    color: white;
-  }
-
-  .chip:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
-    outline-offset: 2px;
-  }
-
-  .chip-detail { font-size: var(--font-size-compact, 12px); opacity: 0.5; }
-
-  .bg-swatch {
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.2));
-    flex-shrink: 0;
-  }
-
-  .transparent-swatch {
-    background: repeating-conic-gradient(
-      rgba(255, 255, 255, 0.15) 0% 25%,
-      rgba(255, 255, 255, 0.05) 0% 50%
-    ) 0 0 / 8px 8px;
-  }
-
-  .range-input {
-    width: 100%;
-    height: var(--min-touch-target, 44px);
-    -webkit-appearance: none;
-    appearance: none;
-    background: transparent;
-    cursor: pointer;
-  }
-
-  .range-input::-webkit-slider-runnable-track {
-    height: 4px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 2px;
-  }
-
-  .range-input::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--theme-accent, #6366f1);
-    border: 2px solid rgba(255, 255, 255, 0.9);
-    margin-top: -7px;
-  }
-
-  .range-input::-moz-range-track {
-    height: 4px;
-    background: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 2px;
-    border: none;
-  }
-
-  .range-input::-moz-range-thumb {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: var(--theme-accent, #6366f1);
-    border: 2px solid rgba(255, 255, 255, 0.9);
-  }
-
-  .range-input:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
-    outline-offset: 2px;
-  }
-
-  .download-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    min-height: 48px;
-    margin-top: auto;
-    background: linear-gradient(135deg, var(--theme-accent, #6366f1), color-mix(in srgb, var(--theme-accent, #6366f1) 80%, #8b5cf6));
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    border-radius: 12px;
-    color: white;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--duration-normal, 200ms) var(--ease-out, ease);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent, #6366f1) 30%, transparent);
-  }
-
-  @media (hover: hover) {
-    .download-btn:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 16px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
-    }
-  }
-
-  .download-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .download-btn:focus-visible {
-    outline: 2px solid color-mix(in srgb, var(--theme-accent, #6366f1) 50%, transparent);
-    outline-offset: 2px;
-  }
-
   /* ── Responsive (container-relative, matching the Tunnels playground so both
         surfaces respond to real available width when nested) ── */
   @container (min-width: 1200px) {
@@ -1263,14 +1004,6 @@
       border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
     }
 
-    .export-layout { flex-direction: column-reverse; }
-    .export-controls {
-      width: 100%;
-      max-height: 55%;
-      border-right: none;
-      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
-    }
-    .export-preview { flex: 1; min-height: 0; padding: 16px; }
   }
 
   @container (max-width: 480px) {
@@ -1283,7 +1016,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .gallery-card, .action-btn, .session-exit-btn, .chip, .download-btn, .back-btn {
+    .gallery-card, .action-btn, .session-exit-btn, .back-btn {
       transition: none !important;
     }
     .gallery-card:hover, .action-btn:active, .session-exit-btn:active {

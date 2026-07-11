@@ -12,16 +12,18 @@ import {
   sampleGradient,
 } from "$lib/shared/mandala/domain/mandala-palette";
 import type { MandalaFrameSpec } from "$lib/shared/mandala/services/mandala-frame-renderer";
-import type { MandalaExportOut, MandalaExportDiag } from "$lib/shared/mandala/workers/mandala-export.worker";
+import type { MandalaExportDiag } from "$lib/shared/mandala/workers/mandala-export.worker";
 import {
   estimateExportTime,
   recordExportThroughput,
   hasDeviceMetrics,
 } from "$lib/shared/animation-panel/state/export-timing-tracker";
 import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
-// Vite emits the compiled export worker and gives back its URL as a string, so
-// we can append a cache-busting version query before instantiating the Worker.
-import exportWorkerUrl from "$lib/shared/mandala/workers/mandala-export.worker.ts?worker&url";
+import {
+  exportMandalaVideo,
+  mandalaBitrateFor,
+  type MandalaVideoExportHandle,
+} from "$lib/shared/mandala/services/mandala-video-exporter";
 
 export type MandalaExportPhase = "idle" | "capturing" | "encoding" | "complete" | "error";
 export type MandalaExportResolution = 720 | 1080 | 2160;
@@ -53,15 +55,6 @@ interface MandalaViewState {
   customRed: string;
   lineWeight: number;
 }
-// A mandala is thin bright strokes on flat black — it compresses to far less
-// than typical video at the same resolution. Lower bitrates cut entropy-coding
-// work (faster encode) with no visible loss; 4K was wastefully high at 40 Mbps.
-const BITRATE_BY_RES: Record<number, number> = {
-  720: 6_000_000,
-  1080: 10_000_000,
-  2160: 20_000_000,
-};
-
 function clampReps(n: number): number {
   return Math.max(1, Math.min(10, Math.round(n)));
 }
@@ -137,9 +130,7 @@ export class MandalaViewerController {
   #sources: MandalaControllerSources;
   #colorPhase = $state(0);
   #colorRafId = 0;
-  #worker: Worker | null = null;
-  #beforeUnload: ((e: BeforeUnloadEvent) => void) | null = null;
-  #cancelRequested = false;
+  #exportHandle: MandalaVideoExportHandle | null = null;
 
   period = $derived(BASE_PERIOD / this.speed);
   rangeMax = $derived(this.depth * 2.5);
@@ -327,12 +318,11 @@ export class MandalaViewerController {
     this.exportProgress = 0;
     this.exportPhase = "capturing";
     this.exporting = true;
-    this.#cancelRequested = false;
 
     const resolution = this.exportResolution;
     const fps = this.exportFps;
     const reps = this.exportReps;
-    const bitrate = BITRATE_BY_RES[resolution] ?? BITRATE_BY_RES[1080]!;
+    const bitrate = mandalaBitrateFor(resolution);
     const startMs = performance.now();
     const totalFrames = Math.max(1, Math.ceil(this.period * fps)) * reps;
 
@@ -357,119 +347,69 @@ export class MandalaViewerController {
       solidPair: isFlow ? null : this.#getPresetPair(),
     };
 
-    this.#beforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-    if (typeof window !== "undefined") window.addEventListener("beforeunload", this.#beforeUnload);
-
-    // Cache-bust the worker entry URL: a SW / HTTP cache (esp. over a tunnel
-    // host) can otherwise serve a stale worker bundle so codec/profile fixes
-    // never take. `?worker&url` (Vite-native) yields the compiled worker's URL
-    // as a string, which we tag with a unique version query before constructing
-    // the Worker — so the browser always refetches the entry. The same-file
-    // query is ignored server-side; only the browser cache key changes.
-    const workerUrl = new URL(exportWorkerUrl, window.location.href);
-    workerUrl.searchParams.set("v", String(Date.now()));
-    const worker = new Worker(workerUrl, { type: "module" });
-    this.#worker = worker;
-
-    worker.onmessage = (e: MessageEvent<MandalaExportOut>) => {
-      const msg = e.data;
-      switch (msg.type) {
-        case "diag": {
-          // Surface where export wall-time goes so a slow export is diagnosable
-          // live (render vs encode-wait vs mux, and whether HW encode engaged).
-          const d = msg;
-          const tag = `[mandala-export ${d.phase}]`;
-          if (d.phase === "config") {
-            console.log(`${tag} codec=${d.codec} hwSupported=${d.hwSupported} encoder=${d.encoder} res=${d.resolution} fps=${d.fps} frames=${d.totalFrames}`);
-          } else {
-            const mp = +((d.resolution * d.resolution) / 1_000_000).toFixed(1);
-            console.log(
-              `${tag} ${d.encodedFrames}/${d.totalFrames} · encode=${d.encodeFps}fps · render=${d.renderMs}ms wait=${d.encodeWaitMs}ms vframe=${d.vfMs}ms mux=${d.muxMs}ms · ${mp}MP/frame codec=${d.codec}` +
-              (d.phase === "done" && d.encodeFps > 0 && d.encodeFps < 24
-                ? `  ⚠ encode-bound — H.264 can't keep up at ${d.resolution}² (${mp}MP). Lower resolution encodes ~(px ratio)× faster.`
-                : ""),
-            );
-          }
-          this.lastExportDiag = d;
-          break;
+    // The shared exporter owns the worker lifecycle (cache-busted construction,
+    // message protocol, beforeunload guard, teardown). The controller keeps its
+    // own state, diagnostics logging, throughput recording, and delivery.
+    const handle = exportMandalaVideo(spec, bitrate, {
+      onPhase: (phase) => {
+        if (phase === "encoding") this.exportPhase = "encoding";
+      },
+      onProgress: (fraction) => {
+        this.exportProgress = fraction;
+      },
+      onDiag: (d) => {
+        // Surface where export wall-time goes so a slow export is diagnosable
+        // live (render vs encode-wait vs mux, and whether HW encode engaged).
+        const tag = `[mandala-export ${d.phase}]`;
+        if (d.phase === "config") {
+          console.log(`${tag} codec=${d.codec} hwSupported=${d.hwSupported} encoder=${d.encoder} res=${d.resolution} fps=${d.fps} frames=${d.totalFrames}`);
+        } else {
+          const mp = +((d.resolution * d.resolution) / 1_000_000).toFixed(1);
+          console.log(
+            `${tag} ${d.encodedFrames}/${d.totalFrames} · encode=${d.encodeFps}fps · render=${d.renderMs}ms wait=${d.encodeWaitMs}ms vframe=${d.vfMs}ms mux=${d.muxMs}ms · ${mp}MP/frame codec=${d.codec}` +
+            (d.phase === "done" && d.encodeFps > 0 && d.encodeFps < 24
+              ? `  ⚠ encode-bound — H.264 can't keep up at ${d.resolution}² (${mp}MP). Lower resolution encodes ~(px ratio)× faster.`
+              : ""),
+          );
         }
-        case "progress":
-          this.exportProgress = msg.frameIndex / msg.totalFrames;
-          break;
-        case "finalizing":
-          this.exportPhase = "encoding";
-          break;
-        case "complete": {
-          recordExportThroughput(resolution, totalFrames, performance.now() - startMs);
-          const blob = new Blob([msg.buffer], { type: "video/mp4" });
-          const filename = `mandala-${this.pathShape}-${this.preset}-${reps}x.mp4`;
-          // Mobile: native share sheet (canShare files). Desktop: anchor download.
-          // shareOrDownloadBlob gates on the DEVICE (detectPlatform), not on
-          // navigator.share existence — desktop Chrome/Edge implement the Web
-          // Share API, so feature detection alone pops the Windows share sheet.
-          void shareOrDownloadBlob(blob, filename, { title: "TKA Mandala" });
-          this.exportPhase = "complete";
-          this.exporting = false;
-          this.#disposeWorker();
-          this.#clearBeforeUnload();
-          window.setTimeout(() => {
-            if (this.exportPhase === "complete") this.exportPhase = "idle";
-          }, 1400);
-          break;
-        }
-        case "error":
-          console.error("Mandala export failed:", msg.error);
-          this.exportError = msg.error;
-          this.exportPhase = "error";
-          this.exporting = false;
-          this.#cancelRequested = true;
-          this.#disposeWorker();
-          this.#clearBeforeUnload();
-          break;
-      }
-    };
-    worker.onerror = (e) => {
-      console.error("Mandala export worker error:", e.message);
-      this.exportError = e.message || "Worker crashed";
-      this.exportPhase = "error";
-      this.exporting = false;
-      this.#cancelRequested = true;
-      this.#disposeWorker();
-      this.#clearBeforeUnload();
-    };
+        this.lastExportDiag = d;
+      },
+    });
+    this.#exportHandle = handle;
 
-    worker.postMessage({ type: "start", spec, bitrate });
+    handle.done
+      .then((blob) => {
+        if (this.#exportHandle !== handle) return; // superseded/cancelled
+        recordExportThroughput(resolution, totalFrames, performance.now() - startMs);
+        const filename = `mandala-${this.pathShape}-${this.preset}-${reps}x.mp4`;
+        // Mobile: native share sheet (canShare files). Desktop: anchor download.
+        // shareOrDownloadBlob gates on the DEVICE (detectPlatform), not on
+        // navigator.share existence — desktop Chrome/Edge implement the Web
+        // Share API, so feature detection alone pops the Windows share sheet.
+        void shareOrDownloadBlob(blob, filename, { title: "TKA Mandala" });
+        this.exportPhase = "complete";
+        this.exporting = false;
+        this.#exportHandle = null;
+        window.setTimeout(() => {
+          if (this.exportPhase === "complete") this.exportPhase = "idle";
+        }, 1400);
+      })
+      .catch((err: unknown) => {
+        if (this.#exportHandle !== handle) return; // cancelled by us; state already reset
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("Mandala export failed:", message);
+        this.exportError = message;
+        this.exportPhase = "error";
+        this.exporting = false;
+        this.#exportHandle = null;
+      });
   }
 
   cancelExport(): void {
-    this.#cancelRequested = true;
-    if (this.#worker) {
-      try {
-        this.#worker.postMessage({ type: "cancel" });
-      } catch {
-        // ignore
-      }
-      this.#disposeWorker();
-    }
-    this.#clearBeforeUnload();
+    const handle = this.#exportHandle;
+    this.#exportHandle = null;
+    handle?.cancel();
     this.#resetExport();
-  }
-
-  #disposeWorker(): void {
-    if (this.#worker) {
-      this.#worker.terminate();
-      this.#worker = null;
-    }
-  }
-
-  #clearBeforeUnload(): void {
-    if (this.#beforeUnload && typeof window !== "undefined") {
-      window.removeEventListener("beforeunload", this.#beforeUnload);
-      this.#beforeUnload = null;
-    }
   }
 
   #resetExport(): void {

@@ -7,9 +7,8 @@
  */
 
 import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
-import { renderMandalaSVG } from "$lib/shared/mandala/services/mandala-renderer";
+import { renderMandalaToCanvas } from "$lib/shared/mandala/services/mandala-renderer";
 import { pairTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
-import type { MandalaRenderOptions } from "$lib/shared/mandala/domain/mandala-types";
 import type { StepLike } from "$lib/shared/mandala/services/types";
 
 export interface ExportOptions {
@@ -39,16 +38,6 @@ export async function exportMandalaPNG(
 		tipEnds === 1 ? { tipEnds: 1 } : undefined,
 	);
 
-	const renderOptions: MandalaRenderOptions = {
-		size: opts.size,
-		style: "stroke",
-		show: "both",
-		strokeWidth: opts.strokeWidth,
-	};
-
-	const svgString = renderMandalaSVG(paths, renderOptions);
-
-	// Render SVG to canvas
 	const canvas = document.createElement("canvas");
 	canvas.width = opts.size;
 	canvas.height = opts.size;
@@ -60,16 +49,19 @@ export async function exportMandalaPNG(
 		ctx.fillRect(0, 0, opts.size, opts.size);
 	}
 
-	// Convert SVG string to data URL and draw to canvas
-	const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
-	const url = URL.createObjectURL(svgBlob);
-
-	try {
-		const img = await loadImage(url);
-		ctx.drawImage(img, 0, 0, opts.size, opts.size);
-	} finally {
-		URL.revokeObjectURL(url);
-	}
+	// Draw the mandala straight to the canvas via the shared canvas renderer.
+	// (The old path rasterized renderMandalaSVG through an <img>, but that SVG is
+	// emitted with width/height="100%" and no intrinsic pixel size, so the <img>
+	// loaded 0-sized and the drawImage produced a blank PNG. renderMandalaToCanvas
+	// is the same primitive the animated frame renderer uses — no SVG round-trip.)
+	renderMandalaToCanvas(ctx, paths, {
+		size: opts.size,
+		style: "stroke",
+		show: "both",
+		strokeWidth: opts.strokeWidth,
+		offsetX: 0,
+		offsetY: 0,
+	});
 
 	return new Promise<Blob>((resolve, reject) => {
 		canvas.toBlob(
@@ -91,13 +83,4 @@ export function downloadBlob(blob: Blob, filename: string): void {
 	a.click();
 	document.body.removeChild(a);
 	URL.revokeObjectURL(url);
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-	return new Promise((resolve, reject) => {
-		const img = new Image();
-		img.onload = () => resolve(img);
-		img.onerror = (e) => reject(new Error(`Failed to load image: ${e}`));
-		img.src = src;
-	});
 }
