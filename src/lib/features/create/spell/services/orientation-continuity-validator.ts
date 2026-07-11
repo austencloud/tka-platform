@@ -51,7 +51,7 @@ export function validateSequence(sequence: SequenceData): OrientationContinuityE
         ? sequence.startPosition
         : sequence.steps[i - 1];
 
-    if (!previousBeat) continue;
+    if (!previousBeat?.motions) continue;
 
     // Validate blue prop orientation continuity
     const blueError = validateColorContinuity(

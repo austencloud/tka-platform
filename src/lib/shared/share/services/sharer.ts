@@ -296,7 +296,4 @@ export class Sharer {
   };
 }
 
-import { sequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
 import type { ImageGenerationProgressCallback } from "./types";
-
-export const sharer = new Sharer(sequenceRenderer);

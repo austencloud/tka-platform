@@ -52,7 +52,6 @@ export class LibraryBatchOperations {
 
     const firestore = await this.getFirestore();
     const userId = this.getUserId();
-    const batch = writeBatch(firestore);
 
     const sequencesRef = collection(firestore, getUserSequencesPath(userId));
     const BATCH_SIZE = 30;
@@ -71,32 +70,50 @@ export class LibraryBatchOperations {
       }
     }
 
+    // Chunk the delete writes so a large multi-select never exceeds Firestore's
+    // 500-op batch limit. Each public sequence costs 2 ops (user doc + public
+    // mirror), so 200 sequences per batch = up to 400 ops, safely under 500.
+    const DELETE_BATCH_SIZE = 200;
+    const idsToDelete = sequenceIds.filter((id) => existingSequences.has(id));
     let deletedCount = 0;
-    for (const sequenceId of sequenceIds) {
-      const existing = existingSequences.get(sequenceId);
-      if (existing) {
-        if (existing.visibility === "public") {
-          batch.delete(doc(firestore, getPublicSequencePath(sequenceId)));
-        }
-        batch.delete(doc(firestore, getUserSequencePath(userId, sequenceId)));
-        deletedCount++;
-      }
-    }
 
-    const userDocRef = deletedCount > 0 ? doc(firestore, `users/${userId}`) : null;
-    if (deletedCount > 0 && userDocRef) {
-      batch.update(userDocRef, {
-        sequenceCount: increment(-deletedCount),
-      });
-    }
+    const userDocRef =
+      idsToDelete.length > 0 ? doc(firestore, `users/${userId}`) : null;
 
     try {
-      await trackWrite(() => batch.commit(), "library");
+      for (let i = 0; i < idsToDelete.length; i += DELETE_BATCH_SIZE) {
+        const chunk = idsToDelete.slice(i, i + DELETE_BATCH_SIZE);
+        const batch = writeBatch(firestore);
 
-      for (const sequenceId of sequenceIds) {
-        if (existingSequences.has(sequenceId)) {
-          notifyLibraryMutated(sequenceId);
+        for (const sequenceId of chunk) {
+          const existing = existingSequences.get(sequenceId);
+          if (!existing) continue;
+          if (existing.visibility === "public") {
+            batch.delete(doc(firestore, getPublicSequencePath(sequenceId)));
+          }
+          batch.delete(
+            doc(firestore, getUserSequencePath(userId, sequenceId))
+          );
+          deletedCount++;
         }
+
+        await trackWrite(() => batch.commit(), "library");
+      }
+
+      // Apply the sequence-count decrement once, after all delete batches land,
+      // rather than duplicating it per chunk.
+      if (userDocRef && deletedCount > 0) {
+        await trackWrite(
+          () =>
+            updateDoc(userDocRef, {
+              sequenceCount: increment(-deletedCount),
+            }),
+          "library"
+        );
+      }
+
+      for (const sequenceId of idsToDelete) {
+        notifyLibraryMutated(sequenceId);
       }
 
       if (userDocRef) {

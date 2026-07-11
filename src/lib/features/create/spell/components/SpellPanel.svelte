@@ -111,6 +111,14 @@ import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
     if (persisted.expandedWord) {
       spellState.setExpandedWord(persisted.expandedWord);
     }
+    // Restore the rest of what the save $effect persists. Without this,
+    // preferences reset to defaults on every reload despite being saved.
+    if (persisted.preferences) {
+      spellState.setPreferences(persisted.preferences);
+    }
+    if (persisted.hasGeneratedOnce) {
+      spellState.markHasGeneratedOnce();
+    }
   });
 
   function handleInputFocusChange(focused: boolean) {

@@ -317,6 +317,12 @@ export function createSpellTabState(
     preferences = { ...DEFAULT_SPELL_PREFERENCES };
   }
 
+  // Bulk-apply persisted preferences (restore on mount). Merge onto defaults so
+  // a missing/legacy persisted shape backfills any absent keys.
+  function setPreferences(prefs: Partial<SpellPreferences>) {
+    preferences = { ...DEFAULT_SPELL_PREFERENCES, ...prefs };
+  }
+
   function setLoopAnalysis(analysis: ExtensionAnalysis | null) {
     loopAnalysis = analysis;
   }
@@ -530,6 +536,7 @@ export function createSpellTabState(
     toggleLetterPalette,
     updatePreference,
     resetPreferences,
+    setPreferences,
     clearSpellState,
     insertLetter,
 

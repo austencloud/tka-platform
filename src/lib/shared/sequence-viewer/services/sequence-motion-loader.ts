@@ -21,7 +21,10 @@ export async function ensureMotionData(
   const galleryId = seq.word || seq.name;
   if (galleryId) {
     try {
-      const loaded = await getBrowseLoader().loadFullSequenceData(galleryId);
+      const loaded = await getBrowseLoader().loadFullSequenceData(
+        galleryId,
+        seq.id
+      );
       if (loaded?.steps?.some((b) => b?.motions?.blue && b?.motions?.red)) {
         return loaded;
       }

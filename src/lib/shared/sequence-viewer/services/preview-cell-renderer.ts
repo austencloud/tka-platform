@@ -258,10 +258,18 @@ export async function renderCell(
  */
 export async function deleteCellCache(
   pictographData: PictographData,
-  stepNumber: number | undefined,
+  _stepNumber: number | undefined,
   isDark: boolean,
   options: PreviewCellRenderOptions
 ): Promise<boolean> {
-  const cacheKey = deriveCacheKey(pictographData, stepNumber, isDark, options);
+  // Blobs are STORED under the NUMBER-FREE key (see renderCell): the base
+  // pictograph is cached with step numbers forced off and the number is
+  // composited on top afterwards. Derive the identical number-free key here so
+  // the delete actually matches the stored entry. Passing the real stepNumber
+  // (or showStepNumbers: true) produced a "none"/"6" cell part that never
+  // matched the stored "nonum" key, so "Force re-render" deleted nothing.
+  const baseOptions: PreviewCellRenderOptions =
+    options.showStepNumbers ? { ...options, showStepNumbers: false } : options;
+  const cacheKey = deriveCacheKey(pictographData, undefined, isDark, baseOptions);
   return pictographBlobCache.delete(cacheKey);
 }

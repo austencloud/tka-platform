@@ -11,6 +11,8 @@ import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
    */
 
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+  import type { ErrorHandler } from "$lib/shared/application/services/error-handler";
   import VideoRecordDrawer from "$lib/shared/video-record/components/VideoRecordDrawer.svelte";
   import SavePromptDialog from "../dialogs/SavePromptDialog.svelte";
   import SaveToLibraryDialog, {
@@ -204,7 +206,17 @@ import { getVideoUploader } from "$lib/shared/share/get-video-uploader";
       panelState.closeVideoRecordPanel();
     } catch (error) {
       logger.error("❌ Failed to save recording:", error);
-      // TODO: Show error toast to user
+      const errorHandler = getErrorHandler() as ErrorHandler;
+      errorHandler.showUserError({
+        message: "Couldn't save your recording",
+        technicalDetails: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error : new Error(String(error)),
+        severity: "error",
+        context: {
+          module: "create",
+          action: "save-recording",
+        },
+      });
     }
   }
 </script>

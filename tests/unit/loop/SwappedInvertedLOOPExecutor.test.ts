@@ -286,5 +286,107 @@ describe("SwappedInvertedLOOPExecutor", () => {
         executor.executeLOOP([...invalidSequence], Period.HALVED);
       }).toThrow(/Invalid position pair for swapped-inverted LOOP/);
     });
+
+    // --- Regression guard: validation set is SWAPPED, not INVERTED ---
+    // The canonical LOOPValidator (packages/sequence-engine) and MCP
+    // validate_loop_options both gate SWAPPED_INVERTED on
+    // SWAPPED_LOOP_VALIDATION_SET (end === swap(start)), NOT
+    // INVERTED_LOOP_VALIDATION_SET (end === start). Real domain data:
+    // Φ- is alpha1→alpha5 (blue s→n dash, red n→s dash) and
+    // swap(alpha1) === alpha5.
+    const staticMotion = (color: MotionColor, loc: GridLocation) => ({
+      motionType: MotionType.STATIC,
+      rotationDirection: RotationDirection.NO_ROTATION,
+      startLocation: loc,
+      endLocation: loc,
+      turns: 0,
+      startOrientation: Orientation.IN,
+      endOrientation: Orientation.IN,
+      color,
+    });
+    const dashMotion = (
+      color: MotionColor,
+      from: GridLocation,
+      to: GridLocation
+    ) => ({
+      motionType: MotionType.DASH,
+      rotationDirection: RotationDirection.NO_ROTATION,
+      startLocation: from,
+      endLocation: to,
+      turns: 0,
+      startOrientation: Orientation.IN,
+      endOrientation: Orientation.IN,
+      color,
+    });
+    const alpha1StartBeat: StepData = {
+      id: "beat-0",
+      stepNumber: 0,
+      duration: 1.0,
+      letter: Letter.ALPHA,
+      startPosition: GridPosition.ALPHA1,
+      endPosition: GridPosition.ALPHA1,
+      motions: {
+        [MotionColor.BLUE]: staticMotion(MotionColor.BLUE, GridLocation.SOUTH),
+        [MotionColor.RED]: staticMotion(MotionColor.RED, GridLocation.NORTH),
+      },
+      blueReversal: false,
+      redReversal: false,
+      isBlank: false,
+    };
+
+    it("accepts a swap-valid partial whose end is swap(start) ≠ start", () => {
+      // alpha1 (blue=S, red=N) → alpha5 (blue=N, red=S) via Φ- (self-inverted).
+      // Under the OLD INVERTED gate this threw; under SWAPPED it is accepted and
+      // the generated half closes back to the start position (alpha1).
+      const partial: StepData[] = [
+        alpha1StartBeat,
+        {
+          id: "beat-1",
+          stepNumber: 1,
+          duration: 1.0,
+          letter: Letter.PHI_DASH,
+          startPosition: GridPosition.ALPHA1,
+          endPosition: GridPosition.ALPHA5,
+          motions: {
+            [MotionColor.BLUE]: dashMotion(
+              MotionColor.BLUE,
+              GridLocation.SOUTH,
+              GridLocation.NORTH
+            ),
+            [MotionColor.RED]: dashMotion(
+              MotionColor.RED,
+              GridLocation.NORTH,
+              GridLocation.SOUTH
+            ),
+          },
+          blueReversal: false,
+          redReversal: false,
+          isBlank: false,
+        },
+      ];
+
+      const result = executor.executeLOOP([...partial], Period.HALVED);
+      expect(result.length).toBe(3);
+      // Generated second half swaps positions, returning to the start (alpha1)
+      expect(result[result.length - 1]!.endPosition).toBe(GridPosition.ALPHA1);
+    });
+
+    it("rejects a start===end partial when swap(start) ≠ start (no longer INVERTED)", () => {
+      // alpha1 → alpha1 satisfies the OLD INVERTED gate but NOT the correct
+      // SWAPPED gate (swap(alpha1) === alpha5), so it must now be rejected.
+      const partial: StepData[] = [
+        alpha1StartBeat,
+        {
+          ...alpha1StartBeat,
+          id: "beat-1",
+          stepNumber: 1,
+          letter: Letter.ALPHA,
+        },
+      ];
+
+      expect(() =>
+        executor.executeLOOP([...partial], Period.HALVED)
+      ).toThrow(/Invalid position pair for swapped-inverted LOOP/);
+    });
   });
 });

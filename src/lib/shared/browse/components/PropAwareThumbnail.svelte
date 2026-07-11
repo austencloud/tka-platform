@@ -296,6 +296,7 @@
         propType: key.propKey as PropType,
         lightMode: key.inputs.lightMode,
         variant: key.inputs.variant,
+        showQRCode: key.inputs.visibility?.showQRCode ?? false,
       });
     }
 
@@ -475,6 +476,7 @@
         propType: key.propKey as PropType,
         lightMode: key.inputs.lightMode,
         variant: key.inputs.variant,
+        showQRCode: key.inputs.visibility?.showQRCode ?? false,
       });
     }
 

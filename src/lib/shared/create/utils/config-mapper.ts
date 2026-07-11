@@ -17,6 +17,7 @@ import type {
   GenerationOptions,
 } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { DifficultyLevel as DifficultyEnum, PropContinuity } from "$lib/shared/foundation/domain/models/generation/generate-models";
+import { LOOPType, ROTATED_LOOP_TYPES } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
 
 /**
@@ -93,27 +94,14 @@ export function uiConfigToGenerationOptions(
   propType: PropType = PropTypeEnum.FAN,
   startEndOptions?: StartEndOptions | null
 ): GenerationOptions {
-  // Force halved mode for LOOP types that only support halved (not quartered)
-  // EXCEPTION: MIRRORED_ROTATED, MIRRORED_INVERTED_ROTATED, and MIRRORED_ROTATED_INVERTED_SWAPPED
-  // support BOTH halved and quartered (rotation determines multiplication)
-  const supportsSliceChoice =
-    uiConfig.loopType === "mirrored_rotated" ||
-    uiConfig.loopType === "mirrored_inverted_rotated" ||
-    uiConfig.loopType === "mirrored_rotated_inverted_swapped";
-
-  const requiresHalved =
-    !supportsSliceChoice &&
-    (uiConfig.loopType.includes("mirrored") ||
-      uiConfig.loopType.includes("swapped") ||
-      uiConfig.loopType.includes("inverted") ||
-      uiConfig.loopType.includes("flipped") ||
-      uiConfig.loopType.includes("rewound"));
-
-  const period = requiresHalved ? "halved" : uiConfig.period;
-
-  if (requiresHalved && uiConfig.period !== "halved") {
-    // Override to halved for this LOOP type
-  }
+  // Period-4 (quartered) viability is authoritative in ROTATED_LOOP_TYPES — the
+  // same set loop-viability-service and card-configurator key off to decide
+  // whether the Quartered card even shows. Base the mapper on that set rather
+  // than substring-matching the loopType name, which drifted out of sync and
+  // silently forced rotated_inverted, rotated_swapped, and mirrored_rotated_swapped
+  // (all quartered-viable) down to halved, discarding the user's Quartered choice.
+  const supportsQuartered = ROTATED_LOOP_TYPES.has(uiConfig.loopType as LOOPType);
+  const period = supportsQuartered ? uiConfig.period : "halved";
 
   // Derive propContinuity from constraintPreset for backwards compat
   const derivedPropContinuity =

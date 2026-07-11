@@ -11,6 +11,15 @@ import type { ILetterQueryHandler } from "$lib/shared/foundation/services/data/d
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+/** Minimal top-level shape guard for the letter-mappings payload. */
+function isLetterMappingsJson(value: unknown): value is LetterMappingsJson {
+  return isRecord(value) && isRecord(value.letters) && isRecord(value.categories);
+}
+
 /**
  * Browser-specific data provider.
  * Uses fetch for letter mappings and ILetterQueryHandler for variations.
@@ -31,10 +40,22 @@ export class BrowserDataProvider {
       throw new Error(`Failed to load letter mappings: ${response.statusText}`);
     }
 
-    const mappings = await response.json();
-    this.letterMappings = mappings;
+    // The endpoint is a trusted first-party static asset
+    // (static/data/learn/letter-mappings.json), so a full schema isn't warranted.
+    // But a malformed shape would otherwise slip through untyped and only blow up
+    // later as a cryptic error inside TransitionGraph.buildGraph (Object.entries on
+    // a missing `letters`). Guard the two top-level keys so a bad payload fails loud
+    // right here at the fetch site instead.
+    const raw: unknown = await response.json();
+    if (!isLetterMappingsJson(raw)) {
+      throw new Error(
+        "Malformed letter mappings: expected `letters` and `categories` objects"
+      );
+    }
+
+    this.letterMappings = raw;
     this.initialized = true;
-    return mappings;
+    return raw;
   }
 
   async loadLetterVariations(letter: string): Promise<LetterVariationData[]> {

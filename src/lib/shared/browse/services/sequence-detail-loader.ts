@@ -23,21 +23,22 @@ export class SequenceDetailLoader {
 
     const sequenceName = sequence.word || sequence.id;
 
-    // Check for in-flight load
-    const existing = this.loadPromises.get(sequenceName);
+    // Dedup by the unique id, not the word — two variations can share a word
+    // but must resolve to their own load.
+    const existing = this.loadPromises.get(sequence.id);
     if (existing) {
       return existing;
     }
 
-    // Start new load
+    // Start new load. Pass the id so the loader can disambiguate same-word variations.
     const loadPromise = this.browseLoader
-      .loadFullSequenceData(sequenceName)
+      .loadFullSequenceData(sequenceName, sequence.id)
       .finally(() => {
         // Clean up after load completes
-        this.loadPromises.delete(sequenceName);
+        this.loadPromises.delete(sequence.id);
       });
 
-    this.loadPromises.set(sequenceName, loadPromise);
+    this.loadPromises.set(sequence.id, loadPromise);
     return loadPromise;
   }
 

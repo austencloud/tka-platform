@@ -605,9 +605,11 @@ export async function addSequencesToCollection(
   collectionId: string,
   sequenceIds: string[]
 ): Promise<void> {
-  for (const sequenceId of sequenceIds) {
-    await addSequenceToCollection(collectionId, sequenceId);
-  }
+  await Promise.all(
+    sequenceIds.map((sequenceId) =>
+      addSequenceToCollection(collectionId, sequenceId)
+    )
+  );
 }
 
 // ============================================================

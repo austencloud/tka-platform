@@ -121,8 +121,10 @@ export class BrowseEventHandler {
       if (!sequence.steps || sequence.steps.length === 0) {
         if (this.loaderService) {
           const sequenceName = sequence.word || sequence.id;
-          const loaded =
-            await this.loaderService.loadFullSequenceData(sequenceName);
+          const loaded = await this.loaderService.loadFullSequenceData(
+            sequenceName,
+            sequence.id
+          );
           if (loaded) {
             fullSequence = loaded;
           }

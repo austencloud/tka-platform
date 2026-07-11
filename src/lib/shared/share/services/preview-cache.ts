@@ -74,12 +74,11 @@ export class PreviewCache {
       startPosition: sequence.startPosition,
     });
 
-    // Simple hash function (FNV-1a)
-    let hash = 2166136261;
+    // FNV-1a hash (Math.imul keeps the multiply overflow-correct in 32-bit)
+    let hash = 0x811c9dc5;
     for (let i = 0; i < beatsJson.length; i++) {
       hash ^= beatsJson.charCodeAt(i);
-      hash +=
-        (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+      hash = Math.imul(hash, 0x01000193);
     }
     return (hash >>> 0).toString(36);
   }

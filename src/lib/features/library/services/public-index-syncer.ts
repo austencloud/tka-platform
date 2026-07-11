@@ -24,7 +24,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import { stripUndefined } from "$lib/shared/firestore";
-import { getPublicSequencePath, getPublicSequencesPath } from "$lib/shared/library/data/firestore-paths";
+import { getPublicSequencePath, getPublicSequencesPath, getUserTagsPath } from "$lib/shared/library/data/firestore-paths";
 import type { LibrarySequence } from "$lib/shared/library/domain/models/library-sequence";
 import type { FlaggedTerm } from "$lib/features/moderation/domain/models/content-moderation-models";
 
@@ -139,6 +139,11 @@ export class PublicIndexSyncer {
         // Non-critical - sequence will still publish, just won't be URL-matchable
       }
 
+      // Resolve human-readable tag names from the sequence's tag ids. Degrades
+      // to whatever resolved on any read failure - publishing never blocks on
+      // tags (same graceful-degradation contract as encoderHash above).
+      const tagNames = await this.resolveTagNames(firestore, userId, sequence);
+
       const publicData = {
         id: sequence.id,
         sourceRef: `users/${userId}/sequences/${sequence.id}`,
@@ -159,7 +164,7 @@ export class PublicIndexSyncer {
         forkCount: sequence.forkCount ?? 0,
         viewCount: sequence.viewCount ?? 0,
         starCount: sequence.starCount ?? 0,
-        tags: [], // TODO: Resolve tag names from tagIds
+        tags: tagNames,
         isForked: sequence.source === "forked",
         originalCreatorId: sequence.forkAttribution?.originalCreatorId,
         originalCreatorName: sequence.forkAttribution?.originalCreatorName,
@@ -228,7 +233,7 @@ export class PublicIndexSyncer {
           isCircular,
           loopType: loopType as SequenceData["loopType"],
           isFavorite: false,
-          tags: [],
+          tags: tagNames,
           metadata: {},
           ownerId: userId,
           ownerDisplayName: (userData["displayName"] as string | undefined) ?? "Unknown",
@@ -378,6 +383,64 @@ export class PublicIndexSyncer {
         setDoc(doc(firestore, a.collectionPath, a.docId), a.data, { merge: true })
       )
     );
+  }
+
+  /**
+   * Resolve human-readable tag names for the sequence being published.
+   *
+   * A SequenceTag (and the legacy tagId) only carries the tag's document ID —
+   * the display name lives on the LibraryTag doc at users/{userId}/tags/{tagId}.
+   * We read the owner's tag collection once and map each applied id to its name,
+   * preferring the structured `sequenceTags` and falling back to legacy
+   * `tagIds`. Missing/unresolvable ids (e.g. a since-deleted tag) are dropped,
+   * and any read failure degrades to whatever resolved so publishing never
+   * blocks on tags.
+   *
+   * We read the collection directly here rather than via tag-manager: those
+   * functions are scoped to the *authenticated* user (authState) and surface
+   * toasts on error, both wrong for a background publish keyed on an explicit
+   * ownerId. The path helper (`getUserTagsPath`) is the shared source of truth.
+   */
+  private async resolveTagNames(
+    firestore: Firestore,
+    userId: string,
+    sequence: LibrarySequence
+  ): Promise<string[]> {
+    // Prefer the structured sequenceTags; fall back to legacy tagIds.
+    const tagIds = sequence.sequenceTags?.length
+      ? sequence.sequenceTags.map((t) => t.tagId)
+      : [...(sequence.tagIds ?? [])];
+
+    if (tagIds.length === 0) return [];
+
+    try {
+      const snapshot = await getDocs(collection(firestore, getUserTagsPath(userId)));
+      const nameById = new Map<string, string>();
+      snapshot.forEach((d) => {
+        const name = d.data()["name"];
+        if (typeof name === "string" && name.length > 0) {
+          nameById.set(d.id, name);
+        }
+      });
+
+      const names: string[] = [];
+      const seen = new Set<string>();
+      for (const id of tagIds) {
+        const name = nameById.get(id);
+        // Skip ids that no longer resolve to a tag doc; dedup by name.
+        if (name && !seen.has(name)) {
+          seen.add(name);
+          names.push(name);
+        }
+      }
+      return names;
+    } catch (error) {
+      console.warn(
+        `[PublicIndexSyncer] Failed to resolve tag names for "${sequence.word}":`,
+        error
+      );
+      return [];
+    }
   }
 
   /**
