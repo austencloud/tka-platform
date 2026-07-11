@@ -8,6 +8,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import { goto } from "$app/navigation";
+  import { shareTarget, saveActionLabel } from "$lib/shared/mobile/share-action.svelte";
   import MotionColorChips from "$lib/shared/components/MotionColorChips.svelte";
 
   interface Props {
@@ -163,9 +164,15 @@
       items.push({ label: remixLabel, icon: "fa-pen-to-square", action: onRemix, className: "remix" });
     }
     if (onDownload) {
+      // Mobile opens the native share sheet, so the item reads "Share" there and
+      // "Download" on desktop — matching shareOrDownloadBlob's actual behavior.
       items.push({
-        label: downloadBusy ? "Preparing…" : "Download",
-        icon: downloadBusy ? "fa-spinner fa-spin" : "fa-download",
+        label: downloadBusy ? "Preparing…" : saveActionLabel(),
+        icon: downloadBusy
+          ? "fa-spinner fa-spin"
+          : shareTarget.isMobile
+            ? "fa-share-nodes"
+            : "fa-download",
         action: onDownload,
       });
     }

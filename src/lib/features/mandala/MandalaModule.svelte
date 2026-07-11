@@ -15,6 +15,7 @@
   import { getPatternCycleTime, type BreathingPattern, type AmbientTrack } from "./tabs/meditate/domain/meditation-types";
   import { exportMandalaPNG } from "./tabs/export/services/mandala-export";
   import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
+  import { saveActionLabel } from "$lib/shared/mobile/share-action.svelte";
   import { runMandalaVideoExport } from "./tabs/export/services/mandala-video";
   import type { MandalaVideoExportHandle } from "$lib/shared/mandala/services/mandala-video-exporter";
   import { mandalaCollectionState } from "./tabs/collection/state/mandala-collection-state.svelte";
@@ -533,7 +534,7 @@
                 </span>
               {:else}
                 <i class="fas fa-film" aria-hidden="true"></i>
-                <span>Download Video</span>
+                <span>{saveActionLabel("Video")}</span>
               {/if}
             </button>
 
@@ -548,7 +549,7 @@
                 <span>…</span>
               {:else}
                 <i class="fas fa-image" aria-hidden="true"></i>
-                <span>Download PNG</span>
+                <span>{saveActionLabel("PNG")}</span>
               {/if}
             </button>
           </div>

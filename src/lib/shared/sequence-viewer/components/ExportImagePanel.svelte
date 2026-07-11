@@ -20,6 +20,7 @@
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { getInfoCellCount, type InfoCellChoice } from "../services/info-cell-display";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { shareTarget, saveActionLabel } from "$lib/shared/mobile/share-action.svelte";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -211,19 +212,12 @@
   ];
   let activeTab = $state<string | null>(null);
 
-  // Touch devices share; desktop downloads. Icon/label reflect the intent;
-  // the consumer's onExport branches (navigator.share with the PNG vs download).
-  let coarsePointer = $state(false);
-  $effect(() => {
-    const mq = window.matchMedia("(pointer: coarse)");
-    coarsePointer = mq.matches;
-    const h = () => (coarsePointer = mq.matches);
-    mq.addEventListener("change", h);
-    return () => mq.removeEventListener("change", h);
-  });
+  // Mobile shares (native sheet), desktop downloads. Icon + label mirror the
+  // actual delivery gate (shareTarget = shareOrDownloadBlob's own gate) so the
+  // copy can't disagree with what tapping it does.
   const dockTrailing = $derived({
-    icon: coarsePointer ? "fa-share-nodes" : "fa-download",
-    label: coarsePointer ? "Share card" : "Download card",
+    icon: shareTarget.isMobile ? "fa-share-nodes" : "fa-download",
+    label: saveActionLabel("Card"),
     onClick: onExport,
     busy: isExporting,
   });

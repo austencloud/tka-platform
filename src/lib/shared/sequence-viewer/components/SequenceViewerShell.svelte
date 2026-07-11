@@ -41,6 +41,7 @@
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import { toExportTakeoverPhase } from "$lib/shared/video-export/services/export-takeover-phase";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import { saveActionVerb } from "$lib/shared/mobile/share-action.svelte";
   import RecordSceneChrome from "./record-scene/RecordSceneChrome.svelte";
   import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -316,7 +317,7 @@
         in:fade|local={{ duration: prefersReducedMotion ? 0 : 150 }}
       >
         {#if isAnyExportActive}
-          {isVideoExportActive ? (ctx.renderMode === '3d' ? "Record Scene" : "Download Animation") : isImageExportActive ? "Download Card" : "Upload Video"}
+          {isVideoExportActive ? (ctx.renderMode === '3d' ? "Record Scene" : `${saveActionVerb()} Animation`) : isImageExportActive ? `${saveActionVerb()} Card` : "Upload Video"}
         {:else}
           Sequence Viewer
         {/if}

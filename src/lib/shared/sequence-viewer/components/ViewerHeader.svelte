@@ -11,6 +11,7 @@
   import type { OrchestratorContext } from "./SequenceViewerOrchestrator.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { saveActionVerb } from "$lib/shared/mobile/share-action.svelte";
   import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
   import MotionVisibilityToggle from "./MotionVisibilityToggle.svelte";
   import ViewerOverflowMenu from "./ViewerOverflowMenu.svelte";
@@ -91,8 +92,8 @@
   {#snippet titleTrigger({ isOpen, hasMenu }: { isOpen: boolean; hasMenu: boolean })}
     {#if editingPane}
       <span class="sequence-title">
-        {#if editingPane === "animation"}Download Animation
-        {:else if editingPane === "image"}Download Card
+        {#if editingPane === "animation"}{saveActionVerb()} Animation
+        {:else if editingPane === "image"}{saveActionVerb()} Card
         {:else}Upload Video{/if}
       </span>
     {:else}
