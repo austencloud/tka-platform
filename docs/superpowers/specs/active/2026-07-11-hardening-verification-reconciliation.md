@@ -30,6 +30,12 @@ current as of 2026-07-11.
 - `b9dec9f` — deleted dead `QuestionGenerator.svelte` (zero importers) + stale hooks import comment.
 - `53ceffe` — public gallery now resolves real tag names on publish (was `tags: []`), + unit test.
 - `45ba5ca` — video-record save failures surfaced to the user (was console-only).
+- `465a043` — `addSequencesToCollection` parallelized (S1).
+- `e649c3a` — FNV-1a preview hash corrected to 32-bit via `Math.imul` (S2).
+- `7b77859` — continuity validator guarded against motions-less start beat (S3).
+- `c6b217a` — letter-mappings payload shape-validated at fetch (S6).
+- `15d1ffb` — eager `sharer` singleton removed; browser-guarded `getSharer()` (S4).
+- `93be9db` — **F1 loop-executor validation sets** fixed + regression tests (was OPEN-FLAGGED; resolved by canonical `LOOPValidator` + UI `loop-validator` grounding + MCP `validate_loop_options` + negative-control tests).
 
 ## Confirmed ALREADY-FIXED (do not re-report as open)
 
@@ -46,7 +52,8 @@ Verified corrected in live code; the source findings docs are stale on these:
 
 ## OPEN-SAFE — autonomous, typecheck/test-verifiable (tonight's fix backlog)
 
-Ranked by real value (skip cosmetic/premature per `feedback_shiny_object_guard`):
+Ranked by real value (skip cosmetic/premature per `feedback_shiny_object_guard`).
+**Status: S1, S2, S3, S4, S6 SHIPPED this session (see commits above). S5, S7 remain.**
 
 | # | Finding | file:line | Fix | Size |
 |---|---|---|---|---|
@@ -68,7 +75,7 @@ reset, `viewport-measurement` dir move, `lineage-tracker` perf, `personality-gen
 High value, but each crosses a gate the agent can't clear autonomously.
 
 ### TKA generation domain (verify vs canonical validation sets / MCP)
-- **F1. Loop-executor wrong validation sets** — `swapped-inverted-loop-executor.ts:109` uses `INVERTED_LOOP_VALIDATION_SET` (should be `SWAPPED_LOOP_VALIDATION_SET`); `rotated-swapped-loop-executor.ts:121-122` uses pure-rotation `QUARTERED_LOOPS/HALVED_LOOPS` (should be `ROTATED_SWAPPED_*_VALIDATION_SET`). UI offers partials the executor then throws on. **Exact one-line fixes identified; S each.** Gate: generation-output correctness.
+- **F1. Loop-executor wrong validation sets** — ✅ SHIPPED `93be9db`. Both executors now gate on the correct sets, verified against canonical `LOOPValidator`/UI `loop-validator` + MCP + regression tests.
 - **F2. `MIRRORED_ROTATED_SWAPPED` unhandled** in `loop-executor-selector.ts` (no case → default throw); enum member + detector still emit it. Wire an executor or coordinate enum removal. M-L.
 - **F3. Float directional-tuple dead branches (90° wrong)** — `directional-tuple-processor.ts:75-94` (diamond) & `:133-153` (box): `indexOf` on wrong-grid `order` returns -1 → every float takes the CCW transform. M. Gate: positioning + visual before/after.
 - **F4. Spell `maxReversals` never enforced** (`variation-constraint-builder.ts:32` + `random-sequence-generator.ts:550-552`); **`highContinuity` no-op** (`:36`, `minContinuityScore` has zero readers). M each. Gate: generation behavior.
