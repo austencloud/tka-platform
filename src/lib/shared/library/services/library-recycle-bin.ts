@@ -170,10 +170,13 @@ export class LibraryRecycleBin {
     const firestore = await this.getFirestore();
     const userId = this.getUserId();
 
-    const BATCH_LIMIT = 500;
+    // Each public sequence costs 2 batch ops (user doc + public mirror), so a
+    // chunk of 250 stays within Firestore's 500-op batch limit even when every
+    // sequence in the chunk is public.
+    const CHUNK_SIZE = 250;
 
-    for (let i = 0; i < deleted.length; i += BATCH_LIMIT) {
-      const chunk = deleted.slice(i, i + BATCH_LIMIT);
+    for (let i = 0; i < deleted.length; i += CHUNK_SIZE) {
+      const chunk = deleted.slice(i, i + CHUNK_SIZE);
       const batch = writeBatch(firestore);
 
       for (const seq of chunk) {
