@@ -58,7 +58,9 @@
     type LoopConfig,
   } from "./domain/loop-config";
   import { getActivityLogger } from "$lib/shared/analytics/get-activity-logger";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   // Named `store`, not `state`: a local binding called `state` collides with the
   // $state rune (svelte store_rune_conflict).
@@ -99,6 +101,45 @@
     if (!flavorsForLevel.includes(flavor)) flavor = "variety";
   });
 
+  // ── reward loop: a haptic tick on every commit (spring lives in BaseCard) ──
+  const haptics = getHapticFeedback();
+  function buzz() {
+    haptics?.trigger("selection");
+  }
+
+  // ── preset decks: one-tap entry for the buyer who won't work the dials.
+  //    The full board stays below for anyone who wants to refine. ──
+  interface Preset {
+    id: string;
+    name: string;
+    sub: string;
+    level: LoopLevel;
+    length: LoopLength;
+    flavor: LoopFlavor;
+    prop: PropType;
+  }
+  const PRESETS: Preset[] = [
+    { id: "beginner", name: "Beginner's Loop", sub: "Level 1 · 8 · Variety", level: "1", length: "8", flavor: "variety", prop: PropTypeEnum.STAFF },
+    { id: "sampler", name: "The Sampler", sub: "Mix levels · 8 · Variety", level: "mix", length: "8", flavor: "variety", prop: PropTypeEnum.STAFF },
+    { id: "deep", name: "Deep Cuts", sub: "Level 2 · 8 · Rotated", level: "2", length: "8", flavor: "rotated", prop: PropTypeEnum.STAFF },
+  ];
+  function applyPreset(p: Preset) {
+    level = p.level;
+    length = p.length;
+    flavor = p.flavor;
+    propType = p.prop;
+    buzz();
+  }
+  const activePreset = $derived(
+    PRESETS.find(
+      (p) =>
+        p.level === level &&
+        p.length === length &&
+        p.flavor === flavor &&
+        p.prop === propType
+    )?.id ?? null
+  );
+
   // ── generate-panel bento palette + LOOP/prop tile gradients (shared with the
   //    deck-releaser LoopBentoBoard so the surfaces match). ──
   const cc = getCardColors(BackgroundType.COSMIC);
@@ -109,8 +150,10 @@
   const PROP_TILE_SHADOW = "275deg 70% 50%";
   // Mix = a bit of every level: baby-blue → silver → gold.
   const MIX_LEVEL_COLOR = "linear-gradient(135deg, #7dd3fc 0%, #cbd5e1 45%, #fbbf24 100%)";
+  // Alpha-gradient with a faint violet bias (not flat opacity-grey — the dark-mode
+  // "cheap tell" the 2026 research flagged).
   const SECONDARY_TILE_COLOR =
-    "linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02))";
+    "linear-gradient(135deg, rgba(139,108,255,0.10), rgba(139,108,255,0.02))";
 
   const LEVEL_DESC: Record<string, string> = {
     "1": "No turns",
@@ -242,6 +285,7 @@
   function pickFlavor(f: LoopFlavor) {
     if (!flavorsForLevel.includes(f)) return;
     flavor = f;
+    buzz();
     showFlavor = false;
   }
   function onFlavorKeydown(e: KeyboardEvent) {
@@ -302,6 +346,23 @@
           <span class="eyebrow">The deck</span>
           <h1>LOOP Deck</h1>
           <p class="meta">54 cards · every sequence loops · built to your dials</p>
+
+          <!-- ── preset decks: one-tap starting points (biggest UX lever per
+               the 2026 research). The board below stays for refining. ── -->
+          <div class="preset-row" role="group" aria-label="Starting points">
+            {#each PRESETS as p (p.id)}
+              <button
+                type="button"
+                class="preset"
+                class:active={activePreset === p.id}
+                aria-pressed={activePreset === p.id}
+                onclick={() => applyPreset(p)}
+              >
+                <span class="preset-name">{p.name}</span>
+                <span class="preset-sub">{p.sub}</span>
+              </button>
+            {/each}
+          </div>
 
           <!-- ── primary bento board ── -->
           <div class="bento-board">
@@ -566,6 +627,7 @@
           value={propType}
           onchange={(p) => {
             propType = p;
+            buzz();
             showProp = false;
           }}
         />
@@ -641,13 +703,16 @@
 
   /* ---------- preview ---------- */
   .preview-box {
+    position: relative;
+    overflow: hidden;
     border-radius: 20px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: radial-gradient(
-      circle at 50% 38%,
-      rgba(255, 255, 255, 0.05),
-      rgba(255, 255, 255, 0.015)
-    );
+    /* Nebula glow painted into the background layers (always behind content, so
+       no z-index fight with the crossfade). Premium dark-mode cue, not a flat box. */
+    background:
+      radial-gradient(56% 48% at 50% 40%, rgba(139, 108, 255, 0.34), transparent 68%),
+      radial-gradient(38% 34% at 68% 66%, rgba(84, 209, 196, 0.12), transparent 70%),
+      radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
     padding: clamp(16px, 2.5vw, 32px);
     /* FIXED stage height: fill-mode crossfade layers stack absolutely inside,
        so no config swap can resize the box (no-layout-shift by construction). */
@@ -702,6 +767,54 @@
     font-size: var(--font-size-min, 14px);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     margin: 0;
+  }
+
+  /* ---------- preset decks ---------- */
+  .preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .preset {
+    flex: 1 1 160px;
+    min-width: 140px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 11px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    background: linear-gradient(135deg, rgba(139, 108, 255, 0.10), rgba(139, 108, 255, 0.02));
+    color: var(--theme-text, #fff);
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+  }
+  .preset:hover {
+    border-color: var(--theme-border-strong, rgba(184, 166, 255, 0.5));
+    background: linear-gradient(135deg, rgba(139, 108, 255, 0.16), rgba(139, 108, 255, 0.04));
+  }
+  .preset:active {
+    transform: scale(0.98);
+  }
+  .preset.active {
+    border-color: #b8a6ff;
+    background: linear-gradient(135deg, rgba(139, 108, 255, 0.26), rgba(139, 108, 255, 0.08));
+  }
+  .preset:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+  .preset-name {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+  }
+  .preset-sub {
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-variant-numeric: tabular-nums;
   }
 
   /* ---------- bento board ---------- */
@@ -1048,7 +1161,8 @@
   @media (prefers-reduced-motion: reduce) {
     .back-button,
     .flavor-option,
-    .advanced-toggle {
+    .advanced-toggle,
+    .preset {
       transition: none;
     }
   }
