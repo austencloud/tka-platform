@@ -86,7 +86,35 @@
   const bookPrice = $derived(
     book ? `$${(book.price / 100).toFixed(0)}` : ""
   );
+
+  // First-load frame ONLY: fetching with nothing to show yet. Cache hits paint
+  // synchronously (products present frame one), so this is true first visit only.
+  // While true, the hero fan + every product band are empty, which lets the
+  // always-rendered info bands float up into the gap (and recompose into the
+  // ultrawide bottom-zone grid). Reserve the region with skeleton tiles that
+  // mirror the real layout so the loading frame matches the loaded one.
+  const firstLoad = $derived(
+    state.isLoading && state.products.length === 0 && !state.error
+  );
 </script>
+
+<!-- Skeleton for one product tile (fan/art box + text lines + buy row). Reused
+     for the starter, both deck lines, and the book during first load. Mirrors the
+     real .deck-tile geometry so swapping to real content shifts nothing. -->
+{#snippet skTile()}
+  <div class="sk-box"></div>
+  <div class="sk-info">
+    <div class="sk-line sk-eyebrow"></div>
+    <div class="sk-line sk-title"></div>
+    <div class="sk-line sk-meta"></div>
+    <div class="sk-line"></div>
+    <div class="sk-line sk-short"></div>
+    <div class="sk-buy">
+      <div class="sk-line sk-price"></div>
+      <div class="sk-pill"></div>
+    </div>
+  </div>
+{/snippet}
 
 <div class="store-page">
   <main class="store-content">
@@ -95,6 +123,12 @@
       <div class="hero-fan" aria-hidden="true">
         {#if heroCards.length}
           <DeckFanCover cards={heroCards} deckName="TKA Shop" cardWidth={148} maxCardWidth={250} />
+        {:else if firstLoad}
+          <div class="sk-hero-fan">
+            {#each [0, 1, 2, 3, 4] as i (i)}
+              <div class="sk-hero-card" style:transform="rotate({-12 + 6 * i}deg)"></div>
+            {/each}
+          </div>
         {/if}
       </div>
       <h1>Choreography you can shuffle</h1>
@@ -118,6 +152,14 @@
       <!-- ============ THE STARTER PACK ============
            Flagship bundle band under the hero: newcomers start here, before
            the individual deck lines. -->
+      {#if firstLoad}
+        <!-- Reserve the starter band so the info bands below stay pinned to the
+             bottom (and the ultrawide bottom-zone grid stays filled). Same
+             geometry as the real tiles → no shift when products land. -->
+        <section class="starter-band">
+          <div class="sk-tile">{@render skTile()}</div>
+        </section>
+      {/if}
       {#if starterPack}
         <section class="starter-band">
           <a class="starter-tile" href="/shop/starter-pack">
@@ -227,6 +269,11 @@
           </div>
           {/if}
         </section>
+      {:else if firstLoad}
+        <section class="deck-listing" id="deck">
+          <div class="tile-shell">{@render skTile()}</div>
+          <div class="tile-shell">{@render skTile()}</div>
+        </section>
       {/if}
 
       <!-- ============ BOTTOM ZONE ============
@@ -237,6 +284,13 @@
       <!-- ============ THE BOOK ============
            The one non-deck product: the printed guide, front and center with
            the deck lines. Typographic cover panel, no fake product photo. -->
+      {#if firstLoad}
+        <!-- Fills the ultrawide bottom-zone "book" grid-area during load so the
+             how/box/story bands don't recompose around an empty slot. -->
+        <section class="book-band">
+          <div class="sk-tile sk-tile--book">{@render skTile()}</div>
+        </section>
+      {/if}
       {#if book}
         <section class="book-band">
           <a class="book-tile" href="/shop/{book.id}">
@@ -804,6 +858,131 @@
     .deck-tile:hover,
     .book-tile:hover {
       transform: none;
+    }
+  }
+
+  /* ---------- first-load skeletons ----------
+     Reserve the hero fan + each product band so the always-rendered info bands
+     stay pinned to the bottom and nothing recomposes while products fetch.
+     Geometry matches the real tiles → zero shift when real content lands. */
+  .sk-hero-fan {
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding: 18px 0 10px;
+  }
+  .sk-hero-card {
+    width: clamp(90px, 9vw, 150px);
+    aspect-ratio: 5 / 7;
+    border-radius: 6px;
+    transform-origin: bottom center;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+  }
+  .sk-hero-card + .sk-hero-card {
+    margin-left: calc(-1 * clamp(45px, 4.5vw, 70px));
+  }
+
+  /* Product-tile skeleton: same grid as .deck-tile (fan/art box + info column). */
+  .sk-tile {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    gap: clamp(20px, 3vw, 48px);
+    align-items: center;
+    padding: clamp(20px, 3vw, 40px);
+    border-radius: 24px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  }
+  .sk-tile--book {
+    grid-template-columns: minmax(220px, 340px) minmax(0, 1fr);
+  }
+  @media (max-width: 820px) {
+    .sk-tile {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .sk-box {
+    min-height: clamp(240px, 15vw, 420px);
+    border-radius: 16px;
+    background: radial-gradient(
+      circle at 50% 42%,
+      rgba(255, 255, 255, 0.05),
+      rgba(255, 255, 255, 0.015)
+    );
+  }
+
+  .sk-info {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .sk-line {
+    height: 14px;
+    border-radius: 6px;
+    background: linear-gradient(
+      110deg,
+      rgba(255, 255, 255, 0.05) 40%,
+      rgba(255, 255, 255, 0.11) 50%,
+      rgba(255, 255, 255, 0.05) 60%
+    );
+    background-size: 220% 100%;
+    animation: sk-shimmer 1.4s linear infinite;
+  }
+  .sk-eyebrow {
+    width: 90px;
+    height: 10px;
+  }
+  .sk-title {
+    width: 60%;
+    height: 30px;
+  }
+  .sk-meta {
+    width: 42%;
+  }
+  .sk-short {
+    width: 78%;
+  }
+  .sk-price {
+    width: 74px;
+    height: 30px;
+  }
+
+  .sk-buy {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 6px;
+  }
+  .sk-pill {
+    width: 160px;
+    height: 44px;
+    border-radius: 999px;
+    background: linear-gradient(
+      110deg,
+      rgba(255, 255, 255, 0.05) 40%,
+      rgba(255, 255, 255, 0.11) 50%,
+      rgba(255, 255, 255, 0.05) 60%
+    );
+    background-size: 220% 100%;
+    animation: sk-shimmer 1.4s linear infinite;
+  }
+
+  @keyframes sk-shimmer {
+    from {
+      background-position: 130% 0;
+    }
+    to {
+      background-position: -90% 0;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sk-line,
+    .sk-pill {
+      animation: none;
     }
   }
 </style>
