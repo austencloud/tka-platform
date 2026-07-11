@@ -87,13 +87,6 @@ function withTurns(p: PictographData, blueTurns: GuideCodexTurns, redTurns: Guid
   );
 }
 
-/** The canonical base-codex render for a cell: letters.json bakes in 1 turn, so
- *  the codex normalizes to 0 turns — used by the static print/book branch, which
- *  has no live state. The interactive reader applies its own turn state instead. */
-export function codexDataZeroTurns(id: string): PictographData | null {
-  const d = codexData(id);
-  return d ? withTurns(d, 0, 0) : null;
-}
 
 class GuideCodexState {
   propType = $state<PropType>(defaultGuideCodexPrefs().propType);

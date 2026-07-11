@@ -34,10 +34,19 @@ export function transitionFor(id: string): string {
  *  Without this, pictograph-preparer's `if (!motion.propPlacementData) return`
  *  guard skips every prop and arrow, leaving grid-only pictographs.
  *
- *  Turns are passed through as-is — they are structural positioning data, NOT
- *  the turn-count glyph.  The glyph is suppressed separately via showTnD={false}
- *  in GuidePictograph.svelte, so zeroing turns here is wrong and corrupts the
- *  special/default placement lookups (which are keyed on the actual turn value). */
+ *  The codex is the base-letter reference, which is canonically 0 turns —
+ *  letters.json happens to bake in 1 turn, so we normalize to 0 here. This is
+ *  the single 0-turns baseline every codex surface shares (this reader page,
+ *  the /guide/codex print route, the poster, and Choreo Card codex printing) so
+ *  the printable and interactive artifacts are identical; the interactive
+ *  reader layers its own live turn state on top.
+ *
+ *  Zeroing is a plain field set (not the heavy canonical apply-turns service):
+ *  this module is imported by prerendered routes and the whole app's codex
+ *  surfaces, so it must stay dependency-light — pulling the create-services
+ *  graph in here wedges the SSR module graph. `createMotionData` recomputes end
+ *  orientation from turns=0, and the pictograph-preparer re-keys placement to
+ *  the turn-0 lookups at render time, so a base radial letter resolves cleanly. */
 export function codexData(id: string): PictographData | null {
   const d = pictographs[id];
   if (!d) return null;
@@ -46,8 +55,8 @@ export function codexData(id: string): PictographData | null {
   return {
     ...d,
     motions: {
-      blue: createMotionData({ ...blue }),
-      red: createMotionData({ ...red }),
+      blue: createMotionData({ ...blue, turns: 0 }),
+      red: createMotionData({ ...red, turns: 0 }),
     },
   };
 }
