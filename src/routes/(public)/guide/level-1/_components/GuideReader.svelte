@@ -571,6 +571,9 @@
       min-width: 0;
       max-height: 92svh;
       height: auto;
+      /* Opaque sheet — without this the page bleeds through the animator and
+         controls, muddying both. Solid app background, not a translucent tint. */
+      background: var(--theme-bg, oklch(0.13 0.015 270));
       border-left: 0;
       border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
       border-radius: 16px 16px 0 0;

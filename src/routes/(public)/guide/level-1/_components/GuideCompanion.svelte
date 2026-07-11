@@ -675,6 +675,17 @@
     justify-content: center;
     width: 100%;
   }
+  /* In the expanded overflow region the BPM control is a full-width settings
+     row, not a small centered chip floating in empty space. */
+  .sheet-scroll .tempo-row {
+    justify-content: stretch;
+  }
+  .sheet-scroll .tempo-row :global(.bpm-btn) {
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 10px 16px;
+  }
   :global(.admin-copy-btn) {
     font-weight: 700;
   }
