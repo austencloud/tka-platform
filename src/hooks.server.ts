@@ -1,4 +1,3 @@
-// import { getRedirectURL, shouldRedirectToPrimary } from "$config/domains"; // TODO: Fix config path
 import { dev } from "$app/environment";
 import type { Handle, HandleServerError } from "@sveltejs/kit";
 import {
