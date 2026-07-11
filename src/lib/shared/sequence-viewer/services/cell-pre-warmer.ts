@@ -194,7 +194,14 @@ export class CellPreWarmer {
 
       this.completedSequences.add(seqId);
     } finally {
-      this.activeWarms.delete(seqId);
+      // Only evict if THIS task's controller is still the registered one. A
+      // superseding higher-priority warm aborts us and registers its own
+      // controller under the same seqId; a blind delete here would drop the
+      // live controller, so cancel could no longer abort it and a duplicate
+      // parallel warm could launch. Identity via the unique signal.
+      if (this.activeWarms.get(seqId)?.signal === signal) {
+        this.activeWarms.delete(seqId);
+      }
     }
   }
 
@@ -212,7 +219,11 @@ export class CellPreWarmer {
         this.completedSequences.add(seqId);
       }
     } finally {
-      this.activeWarms.delete(seqId);
+      // See warmSequential: only evict if this task's controller is still the
+      // registered one, so a superseding warm's controller isn't dropped.
+      if (this.activeWarms.get(seqId)?.signal === signal) {
+        this.activeWarms.delete(seqId);
+      }
     }
   }
 
