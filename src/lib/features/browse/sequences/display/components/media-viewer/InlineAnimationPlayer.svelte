@@ -79,6 +79,7 @@
     redPropType = null,
     externalBpm = null,
     chrome = "full",
+    fill = false,
     onStepChange = undefined,
   }: {
     sequence: SequenceData;
@@ -103,6 +104,15 @@
      * (feedback_minimal_player_chrome). Drive tempo externally via `externalBpm`.
      */
     chrome?: "full" | "minimal";
+    /**
+     * Maximize the canvas: fill the whole container instead of reserving
+     * vertical overhead for a header + progress pill. Minimal chrome hides both
+     * (header off, thin progress LINE not the pill), so that reserved 8.5rem
+     * otherwise shrinks the square for nothing. Opt-in so other minimal hosts
+     * (gallery/showcase) keep their current sizing; the guide companion sets it
+     * to make the animation as large as possible in the panel.
+     */
+    fill?: boolean;
   } = $props();
 
   const minimal = $derived(chrome === "minimal");
@@ -387,6 +397,9 @@
         tapToToggle={minimal}
         progressLine={minimal}
         hoverHint={minimal ? "badge" : "none"}
+        fillContainer={fill}
+        hideHeader={fill}
+        hideProgressBar={fill}
       />
     </div>
 

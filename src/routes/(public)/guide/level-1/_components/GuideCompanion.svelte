@@ -466,6 +466,7 @@
         {sequence}
         autoPlay={true}
         chrome="minimal"
+        fill={true}
         externalBpm={bpm}
         bluePropType={propType}
         redPropType={propType}
