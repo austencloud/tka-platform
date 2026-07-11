@@ -146,7 +146,14 @@ export class ThumbnailRenderQueue {
       const result = await Promise.race([
         task.execute(controller.signal),
         new Promise<never>((_, reject) => {
-          timeoutId = setTimeout(() => reject(new Error("Render timeout")), RENDER_TIMEOUT_MS);
+          timeoutId = setTimeout(() => {
+            // Abort the hung render so it actually stops consuming resources and
+            // can't fire a late completion — mirrors cancelAll(). Without this the
+            // slot is freed while the render keeps running, so real concurrency
+            // can exceed maxConcurrent.
+            controller.abort();
+            reject(new Error("Render timeout"));
+          }, RENDER_TIMEOUT_MS);
         }),
       ]);
       task.resolve(result);

@@ -10,8 +10,9 @@ import { getVideosForSequence } from "$lib/shared/video-collaboration/services/c
 export class VideoCountManager {
   // Cache video counts to avoid repeated Firestore queries
   private countCache = new Map<string, number>();
-  // In-flight requests to prevent duplicate fetches
-  private pendingRequests = new Map<string, Promise<number>>();
+  // In-flight requests to prevent duplicate fetches.
+  // fetchCount signals failure with null, so pending resolves number | null.
+  private pendingRequests = new Map<string, Promise<number | null>>();
 
   constructor() {}
 
@@ -22,10 +23,11 @@ export class VideoCountManager {
       return cached;
     }
 
-    // Check for in-flight request
+    // Check for in-flight request. A failed fetch resolves null; surface it as
+    // 0 for display without caching (the request path below does the caching).
     const pending = this.pendingRequests.get(sequenceId);
     if (pending) {
-      return pending;
+      return pending.then((count) => count ?? 0);
     }
 
     // Fetch and cache
@@ -34,8 +36,13 @@ export class VideoCountManager {
 
     try {
       const count = await request;
-      this.countCache.set(sequenceId, count);
-      return count;
+      // Only cache a successful count. A failed fetch (null) is shown as 0 for
+      // display but NOT cached, so a later call retries instead of pinning 0.
+      if (count !== null) {
+        this.countCache.set(sequenceId, count);
+        return count;
+      }
+      return 0;
     } finally {
       this.pendingRequests.delete(sequenceId);
     }
@@ -51,7 +58,9 @@ export class VideoCountManager {
     this.countCache.delete(sequenceId);
   }
 
-  private async fetchCount(sequenceId: string): Promise<number> {
+  // Returns null on failure so getVideoCount can distinguish a transient error
+  // from a genuine zero and avoid caching the failure.
+  private async fetchCount(sequenceId: string): Promise<number | null> {
     try {
       const videos = await getVideosForSequence(sequenceId);
       return videos.length;
@@ -60,7 +69,7 @@ export class VideoCountManager {
         `[VideoCountManager] Failed to fetch video count for ${sequenceId}:`,
         error
       );
-      return 0;
+      return null;
     }
   }
 }
