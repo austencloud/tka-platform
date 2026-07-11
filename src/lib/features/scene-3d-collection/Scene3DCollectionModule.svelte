@@ -18,7 +18,7 @@
   import type { Collected3DScene } from "./domain/scene-3d-collection-types";
   import { openScene3DInViewer, applyScene3DLook, scene3DHasSteps } from "./services/open-3d-scene";
   import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
-  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import CollectionGalleryDetail from "$lib/shared/modules/CollectionGalleryDetail.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   type Phase = "gallery" | "detail";
@@ -183,8 +183,15 @@
 <div class="scene-module" bind:this={rootEl}>
   <div class="sr-only" aria-live="polite">{announce}</div>
 
-  <Crossfade key={phase} fill>
-    {#if phase === "gallery"}
+  <CollectionGalleryDetail
+    open={phase === "detail" && !!selected}
+    onClose={() => void back()}
+    ariaLabel={selected?.name ?? "Scene"}
+    gallery={galleryView}
+    detail={detailView}
+  />
+
+  {#snippet galleryView()}
       <div class="gallery-view">
         {#if scene3dCollectionState.loading && items.length === 0}
           <div class="loading-state">
@@ -228,19 +235,24 @@
           </div>
         {/if}
       </div>
-    {:else if selected}
+  {/snippet}
+
+  {#snippet detailView({ inDrawer }: { inDrawer: boolean })}
+    {#if selected}
       <div class="detail-layout">
         <div class="detail-preview">
-          <button
-            type="button"
-            class="back-btn"
-            onclick={back}
-            bind:this={backBtnEl}
-            aria-label="Back to gallery"
-          >
-            <i class="fas fa-arrow-left" aria-hidden="true"></i>
-            <span>Gallery</span>
-          </button>
+          {#if !inDrawer}
+            <button
+              type="button"
+              class="back-btn"
+              onclick={back}
+              bind:this={backBtnEl}
+              aria-label="Back to gallery"
+            >
+              <i class="fas fa-arrow-left" aria-hidden="true"></i>
+              <span>Gallery</span>
+            </button>
+          {/if}
           <div class="preview-stage" role="img" aria-label="Saved 3D scene {selected.name}">
             {#if selected.poster}
               <img src={selected.poster} alt={selected.name} />
@@ -335,7 +347,7 @@
         </div>
       </div>
     {/if}
-  </Crossfade>
+  {/snippet}
 </div>
 
 <style>

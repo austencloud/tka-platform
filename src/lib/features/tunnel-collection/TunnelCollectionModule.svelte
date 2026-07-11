@@ -18,7 +18,7 @@
   import { openTunnelInViewer } from "./services/open-tunnel-in-viewer";
   import TunnelDetailPreview from "./components/TunnelDetailPreview.svelte";
   import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
-  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import CollectionGalleryDetail from "$lib/shared/modules/CollectionGalleryDetail.svelte";
   import { imageCount } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
@@ -174,8 +174,15 @@
   <!-- Persistent live region: announces phase changes to screen readers. -->
   <div class="sr-only" aria-live="polite">{announce}</div>
 
-  <Crossfade key={phase} fill>
-    {#if phase === "gallery"}
+  <CollectionGalleryDetail
+    open={phase === "detail" && !!selected}
+    onClose={() => void back()}
+    ariaLabel={selected?.name ?? "Tunnel"}
+    gallery={galleryView}
+    detail={detailView}
+  />
+
+  {#snippet galleryView()}
       <div class="gallery-view">
         {#if tunnelCollectionState.loading && items.length === 0}
           <div class="loading-state">
@@ -219,19 +226,24 @@
           </div>
         {/if}
       </div>
-    {:else if selected}
+  {/snippet}
+
+  {#snippet detailView({ inDrawer }: { inDrawer: boolean })}
+    {#if selected}
       <div class="detail-layout">
         <div class="detail-preview">
-          <button
-            type="button"
-            class="back-btn"
-            onclick={back}
-            bind:this={backBtnEl}
-            aria-label="Back to gallery"
-          >
-            <i class="fas fa-arrow-left" aria-hidden="true"></i>
-            <span>Gallery</span>
-          </button>
+          {#if !inDrawer}
+            <button
+              type="button"
+              class="back-btn"
+              onclick={back}
+              bind:this={backBtnEl}
+              aria-label="Back to gallery"
+            >
+              <i class="fas fa-arrow-left" aria-hidden="true"></i>
+              <span>Gallery</span>
+            </button>
+          {/if}
           {#key selected.id}
             <TunnelDetailPreview tunnel={selected} />
           {/key}
@@ -315,7 +327,7 @@
         </div>
       </div>
     {/if}
-  </Crossfade>
+  {/snippet}
 </div>
 
 <style>

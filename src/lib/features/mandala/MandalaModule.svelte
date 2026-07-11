@@ -6,6 +6,7 @@
   import type { UndulationEasing } from "$lib/shared/mandala/domain/mandala-types";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
+  import CollectionGalleryDetail from "$lib/shared/modules/CollectionGalleryDetail.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import MeditationControls from "./tabs/meditate/components/MeditationControls.svelte";
   import MeditationOverlay from "./tabs/meditate/components/MeditationOverlay.svelte";
@@ -316,130 +317,14 @@
 
 <div class="mandala-module">
   <!-- ═══ GALLERY ═══ -->
-  {#if phase === "gallery"}
-    <div class="gallery-view" bind:this={galleryEl}>
-      {#if mandalaCollectionState.loading && items.length === 0}
-        <div class="loading-state">
-          <PanelSpinner size={12} />
-          <p class="loading-label">Loading your mandalas…</p>
-        </div>
-      {:else if items.length === 0}
-        <div class="empty-state">
-          <i class="fas fa-dharmachakra empty-icon" aria-hidden="true"></i>
-          <p class="empty-title">No mandalas yet</p>
-          <p class="empty-hint">Right-click a mandala in the workspace to save one</p>
-        </div>
-      {:else}
-        <header class="gallery-head">
-          <h2 class="gallery-title">Mandalas</h2>
-          <span class="gallery-count">{items.length}</span>
-        </header>
-        <div class="gallery-grid">
-          {#each items as item (item.id)}
-            <button
-              type="button"
-              class="gallery-card"
-              onclick={() => selectMandala(item)}
-              aria-label="View {item.name}"
-            >
-              <div
-                class="card-thumb"
-                style:width="{cardThumbSize}px"
-                style:height="{cardThumbSize}px"
-              >
-                <SequenceMandala
-                  sequence={{ steps: item.steps }}
-                  size={cardThumbSize}
-                  show={item.variant}
-                  bluePropType={item.bluePropType}
-                  redPropType={item.redPropType}
-                />
-              </div>
-              <div class="card-label">
-                <TKAWordGlyph word={item.name} height={16} darkMode />
-              </div>
-            </button>
-          {/each}
-        </div>
-      {/if}
-    </div>
-
-  <!-- ═══ DETAIL PANEL ═══ -->
-  {:else if phase === "detail" && selectedMandala}
-    <div class="detail-layout">
-      <div class="detail-preview" bind:this={detailPreviewEl}>
-        <button
-          type="button"
-          class="back-btn"
-          onclick={backToGallery}
-          aria-label="Back to gallery"
-        >
-          <i class="fas fa-arrow-left" aria-hidden="true"></i>
-          <span>Gallery</span>
-        </button>
-        <SequenceMandala
-          sequence={{ steps: selectedMandala.steps }}
-          size={detailPreviewSize}
-          show={selectedMandala.variant}
-          animate={true}
-          animateMin={ANIMATE_MIN}
-          animateMax={ANIMATE_MAX}
-          animatePeriod={BASE_PERIOD}
-          animateEasing="sine"
-          animateRotation={mandalaRotation}
-          bluePropType={selectedMandala.bluePropType}
-          redPropType={selectedMandala.redPropType}
-        />
-      </div>
-
-      <div class="detail-panel">
-        <div class="detail-info">
-          <div class="detail-glyphs">
-            <TKAWordGlyph word={selectedMandala.name} height={28} darkMode />
-          </div>
-          {#if selectedMandala.createdAt}
-            <span class="detail-date">{dateLabel}</span>
-          {/if}
-        </div>
-
-        <div class="detail-actions">
-          <button
-            type="button"
-            class="action-btn meditate-btn"
-            onclick={() => { phase = "meditate-config"; }}
-          >
-            <i class="fas fa-spa" aria-hidden="true"></i>
-            <span>Meditate</span>
-          </button>
-
-          <button
-            type="button"
-            class="action-btn export-btn"
-            onclick={() => { phase = "export"; }}
-          >
-            <i class="fas fa-download" aria-hidden="true"></i>
-            <span>Export PNG</span>
-          </button>
-        </div>
-
-        <div class="detail-footer">
-          <button
-            type="button"
-            class="action-btn delete-btn"
-            class:confirming={deleteConfirming}
-            onclick={handleDeleteClick}
-          >
-            {#if deleteConfirming}
-              <i class="fas fa-check" aria-hidden="true"></i>
-              <span>Confirm Delete</span>
-            {:else}
-              <i class="fas fa-trash-alt" aria-hidden="true"></i>
-              <span>Delete</span>
-            {/if}
-          </button>
-        </div>
-      </div>
-    </div>
+  {#if phase === "gallery" || phase === "detail"}
+    <CollectionGalleryDetail
+      open={phase === "detail" && !!selectedMandala}
+      onClose={backToGallery}
+      ariaLabel={selectedMandala?.name ?? "Mandala"}
+      gallery={galleryView}
+      detail={detailView}
+    />
 
   <!-- ═══ MEDITATE CONFIG ═══ -->
   {:else if phase === "meditate-config" && selectedMandala}
@@ -613,6 +498,136 @@
       </div>
     </div>
   {/if}
+
+  {#snippet galleryView()}
+    <div class="gallery-view" bind:this={galleryEl}>
+      {#if mandalaCollectionState.loading && items.length === 0}
+        <div class="loading-state">
+          <PanelSpinner size={12} />
+          <p class="loading-label">Loading your mandalas…</p>
+        </div>
+      {:else if items.length === 0}
+        <div class="empty-state">
+          <i class="fas fa-dharmachakra empty-icon" aria-hidden="true"></i>
+          <p class="empty-title">No mandalas yet</p>
+          <p class="empty-hint">Right-click a mandala in the workspace to save one</p>
+        </div>
+      {:else}
+        <header class="gallery-head">
+          <h2 class="gallery-title">Mandalas</h2>
+          <span class="gallery-count">{items.length}</span>
+        </header>
+        <div class="gallery-grid">
+          {#each items as item (item.id)}
+            <button
+              type="button"
+              class="gallery-card"
+              onclick={() => selectMandala(item)}
+              aria-label="View {item.name}"
+            >
+              <div
+                class="card-thumb"
+                style:width="{cardThumbSize}px"
+                style:height="{cardThumbSize}px"
+              >
+                <SequenceMandala
+                  sequence={{ steps: item.steps }}
+                  size={cardThumbSize}
+                  show={item.variant}
+                  bluePropType={item.bluePropType}
+                  redPropType={item.redPropType}
+                />
+              </div>
+              <div class="card-label">
+                <TKAWordGlyph word={item.name} height={16} darkMode />
+              </div>
+            </button>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  {/snippet}
+
+  {#snippet detailView({ inDrawer }: { inDrawer: boolean })}
+    {#if selectedMandala}
+      <div class="detail-layout">
+        <div class="detail-preview" bind:this={detailPreviewEl}>
+          {#if !inDrawer}
+            <button
+              type="button"
+              class="back-btn"
+              onclick={backToGallery}
+              aria-label="Back to gallery"
+            >
+              <i class="fas fa-arrow-left" aria-hidden="true"></i>
+              <span>Gallery</span>
+            </button>
+          {/if}
+          <SequenceMandala
+            sequence={{ steps: selectedMandala.steps }}
+            size={detailPreviewSize}
+            show={selectedMandala.variant}
+            animate={true}
+            animateMin={ANIMATE_MIN}
+            animateMax={ANIMATE_MAX}
+            animatePeriod={BASE_PERIOD}
+            animateEasing="sine"
+            animateRotation={mandalaRotation}
+            bluePropType={selectedMandala.bluePropType}
+            redPropType={selectedMandala.redPropType}
+          />
+        </div>
+
+        <div class="detail-panel">
+          <div class="detail-info">
+            <div class="detail-glyphs">
+              <TKAWordGlyph word={selectedMandala.name} height={28} darkMode />
+            </div>
+            {#if selectedMandala.createdAt}
+              <span class="detail-date">{dateLabel}</span>
+            {/if}
+          </div>
+
+          <div class="detail-actions">
+            <button
+              type="button"
+              class="action-btn meditate-btn"
+              onclick={() => { phase = "meditate-config"; }}
+            >
+              <i class="fas fa-spa" aria-hidden="true"></i>
+              <span>Meditate</span>
+            </button>
+
+            <button
+              type="button"
+              class="action-btn export-btn"
+              onclick={() => { phase = "export"; }}
+            >
+              <i class="fas fa-download" aria-hidden="true"></i>
+              <span>Export PNG</span>
+            </button>
+          </div>
+
+          <div class="detail-footer">
+            <button
+              type="button"
+              class="action-btn delete-btn"
+              class:confirming={deleteConfirming}
+              onclick={handleDeleteClick}
+            >
+              {#if deleteConfirming}
+                <i class="fas fa-check" aria-hidden="true"></i>
+                <span>Confirm Delete</span>
+              {:else}
+                <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                <span>Delete</span>
+              {/if}
+            </button>
+          </div>
+        </div>
+      </div>
+    {/if}
+  {/snippet}
 </div>
 
 <style>
