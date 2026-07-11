@@ -89,6 +89,7 @@
     stripKey = null,
     pageTitle = "",
     isCodexMode = false,
+    isMobile = false,
   }: {
     sequence: SequenceData | null;
     onClose: () => void;
@@ -108,7 +109,18 @@
      *  renders GuideCodexControls above the player region (or above the "click
      *  a sequence" hint, if nothing's been clicked yet). */
     isCodexMode?: boolean;
+    /** True in the reader's mobile (≤720px container) layout — the companion
+     *  renders as a hero-animator bottom sheet with an overflow region instead
+     *  of the desktop right-panel layout. Owned by GuideReader (single source
+     *  of truth for the 720px cutoff — see reader-mobile.md notes there). */
+    isMobile?: boolean;
   } = $props();
+
+  // Mobile sheet: compact (animator + slim bar) vs expanded (overflow region
+  // with BPM/admin/codex controls revealed above the animator). Local to this
+  // component per spec — the reader learns the sheet's rendered height via a
+  // ResizeObserver on its own wrapper element, not by reading this flag.
+  let overflowOpen = $state(false);
 
   let bpm = $state(60);
   let bpmOpen = $state(false);
@@ -267,208 +279,267 @@
   }
 </script>
 
-<div class="companion">
-  <div class="head">
-    <span class="ttl">{isCodexMode && !sequence ? "Codex" : "Animation"}</span>
-    <div class="head-actions">
-      {#if authState.isAdmin}
+{#snippet editPanel()}
+  <div class="edit-panel">
+    <div class="edit-strip" role="group" aria-label="Staged steps — tap a step to rebuild from there">
+      {#each stagedStrip ?? [] as box, i (box.id ?? i)}
+        {@const stepNumber = box.stepNumber ?? 0}
+        <button
+          type="button"
+          class="edit-cell"
+          class:is-start={stepNumber === 0}
+          onclick={() => handleTruncateAt(stepNumber)}
+          aria-label={stepNumber === 0 ? "Start position" : `Step ${stepNumber} — tap to rebuild from here`}
+        >
+          <PictographContainer
+            pictographData={box}
+            gridMode={editGridMode}
+            bluePropTypeOverride={editPropTypeOverride}
+            redPropTypeOverride={editPropTypeOverride}
+            stepNumberOverride={true}
+          />
+        </button>
+      {/each}
+    </div>
+
+    <div class="edit-picker">
+      <OptionPicker
+        currentSequence={stagedSteps as unknown as PictographData[]}
+        currentGridMode={editGridMode}
+        onOptionSelected={handleEditOptionSelected}
+        hideFilters={true}
+      />
+    </div>
+
+    <div class="edit-actions" role="group" aria-label="Save or cancel editing">
+      <button class="admin-btn" type="button" onclick={cancelEdit} disabled={editSaving}>
+        <i class="fas fa-xmark" aria-hidden="true"></i>
+        <span>Cancel</span>
+      </button>
+      <button class="admin-btn is-primary" type="button" onclick={saveEdit} disabled={editSaving}>
+        <i class="fas fa-check" aria-hidden="true"></i>
+        <span>{editSaving ? "Saving…" : "Save"}</span>
+      </button>
+    </div>
+  </div>
+{/snippet}
+
+{#snippet bpmRow()}
+  <div class="tempo-row">
+    <Popover.Root bind:open={bpmOpen}>
+      <Popover.Trigger>
+        {#snippet child({ props })}
+          <button
+            {...props}
+            class="bpm-btn"
+            type="button"
+            aria-label={`Set tempo, currently ${bpm} BPM`}
+          >
+            <span class="bpm-value">{bpm}</span>
+            <span class="bpm-unit">BPM <i class="fas fa-caret-up" aria-hidden="true"></i></span>
+          </button>
+        {/snippet}
+      </Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content side="top" align="center" sideOffset={12} collisionPadding={12} class="guide-bpm-pop">
+          <BpmQuickPopover {bpm} onBpmChange={(v) => (bpm = v)} onClose={() => (bpmOpen = false)} />
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  </div>
+{/snippet}
+
+{#snippet adminActions(stacked = false, includeCopyForAI = false)}
+  {#if authState.isAdmin && stripKey}
+    <div class="admin-row" class:stacked role="group" aria-label="Edit this guide sequence">
+      {#if includeCopyForAI}
         <CopyForAIButton
-          variant="icon-only"
-          size="sm"
+          variant="icon-text"
+          size="md"
+          fullWidth={true}
           ariaLabel="Copy sequence for AI"
           getData={copyForAIData}
           disabled={!sequence}
+          class="admin-copy-btn"
         />
       {/if}
-      <button class="close" onclick={onClose} aria-label="Close animation">✕</button>
-    </div>
-  </div>
-
-  <div class="body">
-    {#if isCodexMode}
-      <GuideCodexControls />
-    {/if}
-    {#if editing && stagedStrip}
-      <div class="edit-panel">
-        <div class="edit-strip" role="group" aria-label="Staged steps — tap a step to rebuild from there">
-          {#each stagedStrip as box, i (box.id ?? i)}
-            {@const stepNumber = box.stepNumber ?? 0}
-            <button
-              type="button"
-              class="edit-cell"
-              class:is-start={stepNumber === 0}
-              onclick={() => handleTruncateAt(stepNumber)}
-              aria-label={stepNumber === 0 ? "Start position" : `Step ${stepNumber} — tap to rebuild from here`}
-            >
-              <PictographContainer
-                pictographData={box}
-                gridMode={editGridMode}
-                bluePropTypeOverride={editPropTypeOverride}
-                redPropTypeOverride={editPropTypeOverride}
-                stepNumberOverride={true}
-              />
-            </button>
-          {/each}
-        </div>
-
-        <div class="edit-picker">
-          <OptionPicker
-            currentSequence={stagedSteps as unknown as PictographData[]}
-            currentGridMode={editGridMode}
-            onOptionSelected={handleEditOptionSelected}
-            hideFilters={true}
-          />
-        </div>
-
-        <div class="edit-actions" role="group" aria-label="Save or cancel editing">
-          <button class="admin-btn" type="button" onclick={cancelEdit} disabled={editSaving}>
-            <i class="fas fa-xmark" aria-hidden="true"></i>
-            <span>Cancel</span>
-          </button>
-          <button class="admin-btn is-primary" type="button" onclick={saveEdit} disabled={editSaving}>
-            <i class="fas fa-check" aria-hidden="true"></i>
-            <span>{editSaving ? "Saving…" : "Save"}</span>
-          </button>
-        </div>
-      </div>
-    {:else}
-      {#if sequence}
-        {#key sequence.id}
-          <InlineAnimationPlayer
-            {sequence}
-            autoPlay={true}
-            chrome="minimal"
-            externalBpm={bpm}
-            bluePropType={propType}
-            redPropType={propType}
-            onStepChange={onStep}
-          />
-        {/key}
-      {:else}
-        <p class="hint">Click a sequence on the page to animate it.</p>
-      {/if}
-
-      <div class="tempo-row">
-      <Popover.Root bind:open={bpmOpen}>
+      <button class="admin-btn" type="button" onclick={() => (pickerOpen = true)}>
+        <i class="fas fa-right-left" aria-hidden="true"></i>
+        <span>Replace</span>
+      </button>
+      <button
+        class="admin-btn"
+        type="button"
+        disabled={!hasRevisionsCached(stripKey)}
+        onclick={handleRevert}
+      >
+        <i class="fas fa-rotate-left" aria-hidden="true"></i>
+        <span>Revert</span>
+      </button>
+      <button
+        class="admin-btn"
+        type="button"
+        disabled={!hasOverride(stripKey)}
+        onclick={handleReset}
+      >
+        <i class="fas fa-arrow-rotate-right" aria-hidden="true"></i>
+        <span>Reset</span>
+      </button>
+      <Popover.Root bind:open={transformOpen}>
         <Popover.Trigger>
           {#snippet child({ props })}
-            <button
-              {...props}
-              class="bpm-btn"
-              type="button"
-              aria-label={`Set tempo, currently ${bpm} BPM`}
-            >
-              <span class="bpm-value">{bpm}</span>
-              <span class="bpm-unit">BPM <i class="fas fa-caret-up" aria-hidden="true"></i></span>
+            <button {...props} class="admin-btn" type="button" disabled={!sequence || transformBusy}>
+              <i class="fas fa-shuffle" aria-hidden="true"></i>
+              <span>Transform</span>
             </button>
           {/snippet}
         </Popover.Trigger>
         <Popover.Portal>
-          <Popover.Content side="top" align="center" sideOffset={12} collisionPadding={12} class="guide-bpm-pop">
-            <BpmQuickPopover {bpm} onBpmChange={(v) => (bpm = v)} onClose={() => (bpmOpen = false)} />
+          <Popover.Content
+            side="top"
+            align="center"
+            sideOffset={12}
+            collisionPadding={12}
+            class="guide-transform-pop"
+          >
+            <div class="transform-menu" role="menu">
+              <button
+                type="button"
+                role="menuitem"
+                class="transform-item"
+                disabled={transformBusy}
+                onclick={() => runTransform("mirror")}
+              >
+                <i class="fas fa-left-right" aria-hidden="true"></i>
+                <span>Mirror</span>
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                class="transform-item"
+                disabled={transformBusy}
+                onclick={() => runTransform("colorSwap")}
+              >
+                <i class="fas fa-palette" aria-hidden="true"></i>
+                <span>Color Swap</span>
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                class="transform-item"
+                disabled={transformBusy}
+                onclick={() => runTransform("rotateCw")}
+              >
+                <i class="fas fa-rotate-right" aria-hidden="true"></i>
+                <span>Rotate 90° CW</span>
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                class="transform-item"
+                disabled={transformBusy}
+                onclick={() => runTransform("rotateCcw")}
+              >
+                <i class="fas fa-rotate-left" aria-hidden="true"></i>
+                <span>Rotate 90° CCW</span>
+              </button>
+            </div>
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>
+      <button class="admin-btn" type="button" disabled={!sequence} onclick={handleRemix}>
+        <i class="fas fa-pen-to-square" aria-hidden="true"></i>
+        <span>Remix</span>
+      </button>
+      <button class="admin-btn" type="button" disabled={!sequence} onclick={startEdit}>
+        <i class="fas fa-pen" aria-hidden="true"></i>
+        <span>Edit steps</span>
+      </button>
+    </div>
+  {/if}
+{/snippet}
+
+{#snippet animatorOrHint()}
+  {#if sequence}
+    {#key sequence.id}
+      <InlineAnimationPlayer
+        {sequence}
+        autoPlay={true}
+        chrome="minimal"
+        externalBpm={bpm}
+        bluePropType={propType}
+        redPropType={propType}
+        onStepChange={onStep}
+      />
+    {/key}
+  {:else}
+    <p class="hint">Click a sequence on the page to animate it.</p>
+  {/if}
+{/snippet}
+
+<div class="companion" class:mobile={isMobile}>
+  {#if isMobile}
+    <div class="sheet-bar">
+      <button class="grab-handle" type="button" onclick={onClose} aria-label="Close animation"></button>
+      {#if !(editing && stagedStrip)}
+        <button
+          class="overflow-toggle"
+          type="button"
+          onclick={() => (overflowOpen = !overflowOpen)}
+          aria-expanded={overflowOpen}
+          aria-label={overflowOpen ? "Hide animation controls" : "Show animation controls"}
+        >
+          <i class="fas fa-ellipsis" aria-hidden="true"></i>
+        </button>
+      {/if}
     </div>
 
-    {#if authState.isAdmin && stripKey}
-      <div class="admin-row" role="group" aria-label="Edit this guide sequence">
-        <button class="admin-btn" type="button" onclick={() => (pickerOpen = true)}>
-          <i class="fas fa-right-left" aria-hidden="true"></i>
-          <span>Replace</span>
-        </button>
-        <button
-          class="admin-btn"
-          type="button"
-          disabled={!hasRevisionsCached(stripKey)}
-          onclick={handleRevert}
-        >
-          <i class="fas fa-rotate-left" aria-hidden="true"></i>
-          <span>Revert</span>
-        </button>
-        <button
-          class="admin-btn"
-          type="button"
-          disabled={!hasOverride(stripKey)}
-          onclick={handleReset}
-        >
-          <i class="fas fa-arrow-rotate-right" aria-hidden="true"></i>
-          <span>Reset</span>
-        </button>
-        <Popover.Root bind:open={transformOpen}>
-          <Popover.Trigger>
-            {#snippet child({ props })}
-              <button {...props} class="admin-btn" type="button" disabled={!sequence || transformBusy}>
-                <i class="fas fa-shuffle" aria-hidden="true"></i>
-                <span>Transform</span>
-              </button>
-            {/snippet}
-          </Popover.Trigger>
-          <Popover.Portal>
-            <Popover.Content
-              side="top"
-              align="center"
-              sideOffset={12}
-              collisionPadding={12}
-              class="guide-transform-pop"
-            >
-              <div class="transform-menu" role="menu">
-                <button
-                  type="button"
-                  role="menuitem"
-                  class="transform-item"
-                  disabled={transformBusy}
-                  onclick={() => runTransform("mirror")}
-                >
-                  <i class="fas fa-left-right" aria-hidden="true"></i>
-                  <span>Mirror</span>
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  class="transform-item"
-                  disabled={transformBusy}
-                  onclick={() => runTransform("colorSwap")}
-                >
-                  <i class="fas fa-palette" aria-hidden="true"></i>
-                  <span>Color Swap</span>
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  class="transform-item"
-                  disabled={transformBusy}
-                  onclick={() => runTransform("rotateCw")}
-                >
-                  <i class="fas fa-rotate-right" aria-hidden="true"></i>
-                  <span>Rotate 90° CW</span>
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  class="transform-item"
-                  disabled={transformBusy}
-                  onclick={() => runTransform("rotateCcw")}
-                >
-                  <i class="fas fa-rotate-left" aria-hidden="true"></i>
-                  <span>Rotate 90° CCW</span>
-                </button>
-              </div>
-            </Popover.Content>
-          </Popover.Portal>
-        </Popover.Root>
-        <button class="admin-btn" type="button" disabled={!sequence} onclick={handleRemix}>
-          <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-          <span>Remix</span>
-        </button>
-        <button class="admin-btn" type="button" disabled={!sequence} onclick={startEdit}>
-          <i class="fas fa-pen" aria-hidden="true"></i>
-          <span>Edit steps</span>
-        </button>
+    {#if editing && stagedStrip}
+      <div class="sheet-scroll sheet-scroll-edit">
+        {@render editPanel()}
+      </div>
+    {:else}
+      <div class="sheet-scroll" class:expanded={overflowOpen} aria-hidden={!overflowOpen} inert={!overflowOpen}>
+        {#if isCodexMode}
+          <GuideCodexControls />
+        {/if}
+        {@render bpmRow()}
+        {@render adminActions(true, true)}
+      </div>
+      <div class="sheet-animator">
+        {@render animatorOrHint()}
       </div>
     {/if}
-    {/if}
-  </div>
+  {:else}
+    <div class="head">
+      <span class="ttl">{isCodexMode && !sequence ? "Codex" : "Animation"}</span>
+      <div class="head-actions">
+        {#if authState.isAdmin}
+          <CopyForAIButton
+            variant="icon-only"
+            size="sm"
+            ariaLabel="Copy sequence for AI"
+            getData={copyForAIData}
+            disabled={!sequence}
+          />
+        {/if}
+        <button class="close" onclick={onClose} aria-label="Close animation">✕</button>
+      </div>
+    </div>
+
+    <div class="body">
+      {#if isCodexMode}
+        <GuideCodexControls />
+      {/if}
+      {#if editing && stagedStrip}
+        {@render editPanel()}
+      {:else}
+        {@render animatorOrHint()}
+        {@render bpmRow()}
+        {@render adminActions(false, false)}
+      {/if}
+    </div>
+  {/if}
 </div>
 
 <SequencePickerModal open={pickerOpen} onSelect={handleReplace} onClose={() => (pickerOpen = false)} />
@@ -480,6 +551,139 @@
     height: 100%;
     color: var(--theme-text, #e8e6f0);
   }
+
+  /* Mobile hero-animator sheet — the bottom sheet sizes itself off this
+   * layout (sheet-bar + expandable sheet-scroll + fixed-square animator);
+   * GuideReader's aside just anchors it to the bottom and clips overflow.
+   * See scroll-sync in GuideReader (scrollCellIntoBand) which reacts to this
+   * element's rendered height changing. */
+  .companion.mobile {
+    height: auto;
+    gap: 0;
+  }
+  .sheet-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    min-height: var(--min-touch-target, 44px);
+    padding: 6px 10px;
+  }
+  .grab-handle {
+    all: unset;
+    cursor: pointer;
+    display: block;
+    width: 40px;
+    height: var(--min-touch-target, 44px);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .grab-handle::after {
+    content: "";
+    display: block;
+    margin: 18px auto 0;
+    width: 40px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.28));
+  }
+  .grab-handle:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  .overflow-toggle {
+    all: unset;
+    cursor: pointer;
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    min-width: var(--min-touch-target, 44px);
+    min-height: var(--min-touch-target, 44px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: 1.05rem;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .overflow-toggle[aria-expanded="true"] {
+    color: var(--theme-accent, #6366f1);
+  }
+  .overflow-toggle:focus-visible {
+    outline: 2px solid var(--theme-accent, #6366f1);
+    outline-offset: -2px;
+  }
+  /* Expandable region above the animator — always mounted so the height
+   * change is a CSS transition, not a mount/unmount (spec: height/max-height
+   * transition, collapsed under reduced-motion). */
+  .sheet-scroll {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    padding: 0 0.75rem;
+    transition: max-height var(--duration-normal, 260ms) ease, opacity var(--duration-fast, 150ms) ease,
+      padding var(--duration-normal, 260ms) ease;
+  }
+  .sheet-scroll.expanded {
+    max-height: 36svh;
+    opacity: 1;
+    overflow-y: auto;
+    padding: 0.6rem 0.75rem 0.75rem;
+  }
+  .sheet-scroll-edit {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    opacity: 1;
+    overflow: hidden;
+    padding: 0.6rem 0.75rem 0.75rem;
+  }
+  /* The hero — a clean square driven by the smaller of "half the viewport
+   * height" and "the sheet's own width", per spec. */
+  .sheet-animator {
+    flex: 0 0 auto;
+    /* 100% would be indeterminate here — the companion's ancestor chain up
+     * to the sheet is height:auto, so a percentage has nothing definite to
+     * resolve against. 100vw is definite and, on mobile, equal to the
+     * sheet's own width (it spans edge-to-edge), so this still yields "the
+     * smaller of half the viewport height and the sheet's width". */
+    width: min(52svh, 100vw);
+    height: min(52svh, 100vw);
+    margin: 0 auto;
+    display: flex;
+  }
+  .sheet-animator :global(.inline-animation-player) {
+    flex: 1;
+    min-width: 0;
+  }
+  .sheet-animator .hint {
+    margin: auto;
+  }
+  .admin-row.stacked {
+    flex-wrap: nowrap;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .admin-row.stacked .admin-btn {
+    justify-content: center;
+    width: 100%;
+  }
+  :global(.admin-copy-btn) {
+    font-weight: 700;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sheet-scroll {
+      transition: none;
+    }
+  }
+
   .head {
     flex: 0 0 auto;
     display: flex;

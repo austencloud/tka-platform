@@ -10,7 +10,7 @@
    * is the swappable-frame seam: a future reflow frame drops in here without
    * touching nav or companion (see docs/superpowers/specs/2026-07-07-guide-reader-design.md).
    */
-  import { onMount, flushSync } from "svelte";
+  import { onMount, flushSync, tick } from "svelte";
   import { replaceState } from "$app/navigation";
   import "../_styles/guide.css";
   import "../_styles/guide-print.css";
@@ -57,6 +57,20 @@
   let scale = $state(0.5);
   let stageEl = $state<HTMLDivElement>();
   let docWrap = $state<HTMLDivElement>();
+
+  // Mobile detection — owned here (single source of truth for the 720px
+  // cutoff), measured off the reader's own container width so it tracks the
+  // SAME breakpoint the `@container (max-width: 720px)` CSS below uses,
+  // rather than duplicating it as a `matchMedia` viewport check (this reader
+  // sits inside a `container-type: inline-size` ancestor — GuideTab.svelte —
+  // so its container width, not the viewport, is what actually flips the
+  // layout). Passed down to GuideCompanion as a plain prop.
+  const MOBILE_BREAKPOINT_PX = 720;
+  let readerEl = $state<HTMLDivElement>();
+  let isMobile = $state(false);
+  // The mobile companion sheet — observed so the scroll-sync band recomputes
+  // whenever the sheet's rendered height changes (compact <-> overflow-open).
+  let companionEl = $state<HTMLElement>();
 
   let clicked = $state<SequenceData | null>(null);
   let companionOpen = $state(false);
@@ -190,8 +204,63 @@
     const seq = stripToSequence(payload.strip, { word: payload.word });
     clicked = (await ensureMotionData(seq)) ?? seq;
     companionOpen = true;
+    if (isMobile) {
+      // Wait for the DOM to reflect both the new `.is-selected` ring and the
+      // just-opened sheet before measuring — one `tick()` flushes Svelte's
+      // pending updates, then an rAF lets layout (the sheet's height) settle.
+      await tick();
+      requestAnimationFrame(syncMobileScroll);
+    }
   }
   setGuideSequenceClick(handleSequenceClick);
+
+  // Mobile split-view scroll-sync: keeps the clicked (golden-ringed) strip
+  // visible in the band of viewport ABOVE the bottom sheet, so the source
+  // cell and its live animation are on screen together (spec:
+  // 2026-07-11-guide-companion-mobile-design.md). Re-run whenever the sheet's
+  // own height changes (compact <-> overflow-open) via the ResizeObserver
+  // wired up in onMount below.
+  function currentSelectedCell(): HTMLElement | null {
+    return docWrap?.querySelector<HTMLElement>(".tka-seq-cell.is-selected") ?? null;
+  }
+
+  function prefersReducedMotion(): boolean {
+    return (
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true
+    );
+  }
+
+  /** Scroll the doc scroller so `cellEl`'s bounding box lands centered in the
+   *  band of viewport between the top (0) and `bandBottomPx` (the sheet's
+   *  top edge) — the visible strip above the mobile companion sheet. */
+  function scrollCellIntoBand(cellEl: HTMLElement, bandBottomPx: number): void {
+    if (!docWrap) return;
+    const cellRect = cellEl.getBoundingClientRect();
+    const docRect = docWrap.getBoundingClientRect();
+    // Cell's vertical center, expressed in docWrap's own scroll-content
+    // coordinate space (independent of the current scroll position).
+    const cellCenterInContent = cellRect.top - docRect.top + docWrap.scrollTop + cellRect.height / 2;
+    // Where we want that center to land, in the SAME viewport-relative frame
+    // docRect.top already lives in.
+    const bandCenterInViewport = bandBottomPx / 2;
+    const targetScrollTop =
+      cellCenterInContent - (bandCenterInViewport - docRect.top);
+    const maxScroll = Math.max(0, docWrap.scrollHeight - docWrap.clientHeight);
+    docWrap.scrollTo({
+      top: Math.max(0, Math.min(targetScrollTop, maxScroll)),
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+  }
+
+  function syncMobileScroll(): void {
+    if (!isMobile || !companionOpen || !companionEl) return;
+    const cell = currentSelectedCell();
+    if (!cell) return;
+    const sheetHeight = companionEl.getBoundingClientRect().height;
+    const bandBottom = window.innerHeight - sheetHeight;
+    scrollCellIntoBand(cell, bandBottom);
+  }
 
   // Guide overrides load once per reader mount (public read; admin gate lives
   // on the write side). Reactive singleton — pages + companion re-render as
@@ -316,6 +385,29 @@
       if (scrollRaf) cancelAnimationFrame(scrollRaf);
     };
   });
+
+  // Mobile detection off the reader's own container width — tracks the same
+  // 720px cutoff the `@container` CSS below uses.
+  onMount(() => {
+    if (!readerEl) return;
+    const readerRo = new ResizeObserver((entries) => {
+      const width = entries[0]?.contentRect.width ?? readerEl!.clientWidth;
+      isMobile = width <= MOBILE_BREAKPOINT_PX;
+    });
+    readerRo.observe(readerEl);
+    return () => readerRo.disconnect();
+  });
+
+  // Re-observe the sheet element whenever it (re)mounts (companionOpen
+  // toggles `{#if companionOpen}` in the markup, so companionEl's identity
+  // changes) and re-sync immediately so a freshly opened sheet is measured.
+  $effect(() => {
+    const el = companionEl;
+    if (!el || !isMobile) return;
+    const ro = new ResizeObserver(() => syncMobileScroll());
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
 </script>
 
 {#snippet sheetFrame(meta: GuidePageMeta)}
@@ -328,7 +420,7 @@
   </div>
 {/snippet}
 
-<div class="reader">
+<div class="reader" bind:this={readerEl}>
   <aside class="reader-aside">
     <GuidePageNav built={BUILT} {activeIndex} onSelect={go} />
   </aside>
@@ -346,7 +438,13 @@
     </div>
   </div>
 
-  <aside class="reader-companion" class:open={companionOpen} aria-hidden={!companionOpen}>
+  <aside
+    class="reader-companion"
+    class:open={companionOpen}
+    class:mobile={isMobile}
+    aria-hidden={!companionOpen}
+    bind:this={companionEl}
+  >
     {#if companionOpen}
       <GuideCompanion
         sequence={clicked}
@@ -354,6 +452,7 @@
         stripKey={clickedKey}
         pageTitle={clickedPageTitle}
         isCodexMode={isCodexPage}
+        {isMobile}
         onStep={(s) => activeStep.report(s)}
         onClose={() => {
           companionOpen = false;
@@ -453,25 +552,41 @@
     }
   }
 
-  /* Mobile: nav collapses and the companion becomes a full-panel overlay that
-     slides up over the sheet (a 360px push would swallow a phone). */
+  /* Mobile: nav collapses and the companion becomes a bottom sheet — sized by
+     its own content (GuideCompanion's hero-animator layout), NOT a full-panel
+     overlay. The doc scroller stays visible above it and the reader scrolls
+     the clicked cell into the visible band (see scrollCellIntoBand). */
   @container (max-width: 720px) {
     .reader-aside {
       display: none;
     }
-    .reader-companion {
+    .reader-companion.mobile {
       position: absolute;
-      inset: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      top: auto;
+      inset: auto 0 0 0;
       width: auto;
       min-width: 0;
+      max-height: 92svh;
+      height: auto;
       border-left: 0;
+      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.4);
       transform: translateY(100%);
       transition: transform 240ms ease;
     }
-    .reader-companion.open {
+    .reader-companion.mobile.open {
       width: auto;
       min-width: 0;
       transform: translateY(0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .reader-companion.mobile {
+      transition: none;
     }
   }
 </style>
