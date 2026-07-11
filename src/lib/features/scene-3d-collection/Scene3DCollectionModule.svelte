@@ -530,14 +530,27 @@
     align-items: center;
     justify-content: center;
     min-width: 0;
+    min-height: 0;
     padding: 24px;
+    /* Query container so .preview-stage can size to min(100cqw, 100cqh). MUST be
+       `size` (both axes), NOT `inline-size` — the preview's 100cqh (height fit)
+       only resolves against a size container; with inline-size it falls through
+       to the viewport and the square overflows its slot again. contain: layout
+       only (size/layout/style, not paint), so the absolutely-positioned back
+       button isn't clipped. */
+    container-type: size;
   }
 
   .preview-stage {
     position: relative;
-    width: 100%;
-    aspect-ratio: 1;
-    max-width: min(100%, 80vh);
+    /* Fit the square to BOTH the container's width AND height (100cqmin), so it
+       never clips or overflows onto the controls — robust at any aspect ratio
+       (tiny phone, Z Fold near-square, 4K). Replaces max-width: min(100%, 80vh),
+       which ignored the available height and let the square outgrow its slot. */
+    width: min(100cqw, 100cqh);
+    height: min(100cqw, 100cqh);
+    max-width: 100%;
+    max-height: 100%;
     display: flex;
     align-items: center;
     justify-content: center;

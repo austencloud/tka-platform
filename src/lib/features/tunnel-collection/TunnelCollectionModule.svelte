@@ -511,7 +511,15 @@
     align-items: center;
     justify-content: center;
     min-width: 0;
+    min-height: 0;
     padding: 24px;
+    /* Query container so TunnelDetailPreview's .preview-stage can size to
+       min(100cqw, 100cqh). MUST be `size` (both axes), NOT `inline-size` — the
+       preview's 100cqh (height fit) only resolves against a size container; with
+       inline-size it falls through to the viewport and the square overflows its
+       slot again (the exact clip bug this fixed). contain: layout only (not
+       paint), so the absolutely positioned back button isn't clipped. */
+    container-type: size;
   }
 
   .detail-panel {

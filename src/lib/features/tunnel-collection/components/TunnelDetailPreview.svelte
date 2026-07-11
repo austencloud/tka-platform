@@ -136,9 +136,16 @@
 <style>
   .preview-stage {
     position: relative;
-    width: 100%;
-    aspect-ratio: 1;
-    max-width: min(100%, 80vh);
+    /* Fit the square to BOTH the container's width AND height (100cqmin), so the
+       tunnel never clips top/bottom or overflows onto the controls — robust at
+       any aspect ratio (tiny phone, Z Fold near-square, 4K). The host
+       .detail-preview is `container-type: size`. Replaces max-width:
+       min(100%, 80vh), which ignored available height and let the square outgrow
+       its slot on short / near-square viewports. */
+    width: min(100cqw, 100cqh);
+    height: min(100cqw, 100cqh);
+    max-width: 100%;
+    max-height: 100%;
     background: #000;
     border-radius: 12px;
     overflow: hidden;
