@@ -1,7 +1,14 @@
 # LOOP Deck Configurator — Concept B "The Turntable" (Design + Plan)
 
 **Date:** 2026-07-10
-**Status:** Approved design → implementation
+**Status:** REVERTED 2026-07-11 — built + verified, then reverted on Austen's eyes-on call.
+The single spinnable card was theatrically unnecessary and worse for conversion: a deck buyer
+needs to see they're getting *many* cards (the fan says "deck" at a glance; one card doesn't),
+and the Corner Satellites reflow pushed the Buy button below the fold. `/shop/loop-deck`
+restored to Concept A (Refined Bento + fan). The turntable component + harness live in git at
+`a9a1e774a6` if a single-card surface ever wants them. **Lesson:** the AskUserQuestion pick of
+Concept B was reversed once it was on screen — the "don't one-shot, iterate eyes-on" mandate
+also applies to the *concept*, not just its polish.
 **Surface:** `src/lib/features/store/LoopDeckConfiguratorPage.svelte` (`/shop/loop-deck`)
 **Predecessors:** handoff `docs/superpowers/plans/2026-07-10-loop-configurator-concepts-handoff.md`,
 research brief `docs/superpowers/specs/2026-07-10-loop-configurator-reimagining-brief.md`,

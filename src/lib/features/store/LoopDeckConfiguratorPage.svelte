@@ -23,7 +23,6 @@
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
   import DeckFanCover from "./components/DeckFanCover.svelte";
-  import DeckTurntable from "./components/DeckTurntable.svelte";
   import LoopChips from "./components/LoopChips.svelte";
   import BuyButton from "./components/BuyButton.svelte";
   import PropPicker from "./components/PropPicker.svelte";
@@ -60,9 +59,6 @@
   } from "./domain/loop-config";
   import { getActivityLogger } from "$lib/shared/analytics/get-activity-logger";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
-  import { isWebGL2Available } from "$lib/shared/3d/capabilities/webgl-capabilities";
-  import { reducedMotion } from "$lib/shared/transitions/motion";
-  import { onMount } from "svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
@@ -98,19 +94,6 @@
   let length = $state<LoopLength>("8");
   let flavor = $state<LoopFlavor>("variety");
   let propType = $state<PropType>(DEFAULT_SHOP_PROP);
-
-  // The turntable is the hero — one representative card as a real 3D object,
-  // drag to spin, retextures on every dial. It gates on capability: WebGL2 +
-  // motion allowed, and only AFTER mount, so SSR and the first hydration render
-  // paint the static fan (no hydration mismatch) and reduced-motion / no-WebGL
-  // buyers keep the fan as the fallback (spec Step 6).
-  let mounted = $state(false);
-  onMount(() => {
-    mounted = true;
-  });
-  const use3DPreview = $derived(
-    mounted && isWebGL2Available() && !reducedMotion()
-  );
 
   const flavorsForLevel = $derived(availableFlavors(level));
   // Level change can strand the flavor (Level 2 = variety + rotated only).
@@ -167,6 +150,10 @@
   const PROP_TILE_SHADOW = "275deg 70% 50%";
   // Mix = a bit of every level: baby-blue → silver → gold.
   const MIX_LEVEL_COLOR = "linear-gradient(135deg, #7dd3fc 0%, #cbd5e1 45%, #fbbf24 100%)";
+  // Alpha-gradient with a faint violet bias (not flat opacity-grey — the dark-mode
+  // "cheap tell" the 2026 research flagged).
+  const SECONDARY_TILE_COLOR =
+    "linear-gradient(135deg, rgba(139,108,255,0.10), rgba(139,108,255,0.02))";
 
   const LEVEL_DESC: Record<string, string> = {
     "1": "No turns",
@@ -329,155 +316,153 @@
     {:else if store.isLoading && flavorSkus.length === 0}
       <div class="loading">Loading the deck...</div>
     {:else if flavorSkus.length > 0}
-      <div class="turntable-stage">
-        <header class="stage-head">
+      <div class="config-layout">
+        <!-- ============ preview column ============ -->
+        <div class="preview-column">
+          <div class="preview-box">
+            <!-- fill mode: the stage is the sized box, so config swaps can
+                 never resize it (crossfade-primitive routing). -->
+            <Crossfade key={`${flavor}|${propType}|${excluded.size}`} fill>
+              <div class="preview-inner">
+                <DeckFanCover
+                  cards={fanCards}
+                  deckId={selectedSku?.deckId}
+                  deckName={selectedSku?.name ?? "Variety Pack"}
+                  {propType}
+                  cardWidth={210}
+                  maxCardWidth={340}
+                  exactCount={flavor === "variety"
+                    ? Math.min(6, fanCards.length)
+                    : undefined}
+                />
+                <p class="preview-desc">{previewDesc}</p>
+              </div>
+            </Crossfade>
+          </div>
+        </div>
+
+        <!-- ============ choices column ============ -->
+        <div class="info-column">
           <span class="eyebrow">The deck</span>
           <h1>LOOP Deck</h1>
           <p class="meta">54 cards · every sequence loops · built to your dials</p>
-        </header>
 
-        <!-- ── preset decks: one-tap starting points (biggest UX lever per the
-             2026 research). The satellites below stay for refining. ── -->
-        <div class="preset-row" role="group" aria-label="Starting points">
-          {#each PRESETS as p (p.id)}
-            <button
-              type="button"
-              class="preset"
-              class:active={activePreset === p.id}
-              aria-pressed={activePreset === p.id}
-              onclick={() => applyPreset(p)}
-            >
-              <span class="preset-name">{p.name}</span>
-              <span class="preset-sub">{p.sub}</span>
-            </button>
-          {/each}
-        </div>
+          <!-- ── preset decks: one-tap starting points (biggest UX lever per
+               the 2026 research). The board below stays for refining. ── -->
+          <div class="preset-row" role="group" aria-label="Starting points">
+            {#each PRESETS as p (p.id)}
+              <button
+                type="button"
+                class="preset"
+                class:active={activePreset === p.id}
+                aria-pressed={activePreset === p.id}
+                onclick={() => applyPreset(p)}
+              >
+                <span class="preset-name">{p.name}</span>
+                <span class="preset-sub">{p.sub}</span>
+              </button>
+            {/each}
+          </div>
 
-        <!-- ── Corner Satellites: the hero card dead-centre, the four dials
-             pinned to its corners — Prop (TL) → Level (TR) → Length (BL) →
-             Flavor (BR). A named-areas grid so the corners hug the CARD (not the
-             commit stack), the $30 + Buy sit directly under it, and the mobile
-             reflow (card + $30 on top, dials as a 2×2 rail below) is one
-             grid-template swap. DOM order = Prop→Level→Length→Flavor→Buy for
-             tab/reading order. ── -->
-        <div class="stage-grid">
-          <div class="sat prop-tile area-prop">
-            <BaseCard
-              title="Prop"
-              currentValue=""
-              color={PROP_TILE_COLOR}
-              shadowColor={PROP_TILE_SHADOW}
-              gridColumnSpan={2}
-              onClick={() => (showProp = true)}
-            >
-              <div class="prop-tile-inner">
-                <span class="prop-tile-chip">
-                  <img
-                    class="prop-tile-img"
-                    src={shopPropImage(propType)}
-                    alt=""
-                    draggable="false"
-                  />
-                </span>
-                <span class="prop-tile-label">{shopPropLabel(propType)}</span>
+          <!-- ── primary bento board ── -->
+          <div class="bento-board">
+            <div class="tile-row">
+              <div class="tile stepper">
+                <StepperCard
+                  title="Level"
+                  currentValue={levelIdx}
+                  minValue={0}
+                  maxValue={AVAILABLE_LEVELS.length - 1}
+                  formatValue={(i: number) => levelLabel(AVAILABLE_LEVELS[i] as LoopLevel)}
+                  description={levelDesc}
+                  color={levelTileColor}
+                  textColor={levelTileText}
+                  shadowColor="0deg 0% 0%"
+                  gridColumnSpan={2}
+                  onIncrement={() => stepLevel(1)}
+                  onDecrement={() => stepLevel(-1)}
+                />
               </div>
-            </BaseCard>
+              <div class="tile stepper">
+                <StepperCard
+                  title="Length"
+                  currentValue={lengthIdx}
+                  minValue={0}
+                  maxValue={AVAILABLE_LENGTHS.length - 1}
+                  formatValue={(i: number) => lengthLabel(AVAILABLE_LENGTHS[i] as LoopLength)}
+                  description={lengthDesc}
+                  color={cc.length.color}
+                  shadowColor={cc.length.shadowColor}
+                  gridColumnSpan={2}
+                  onIncrement={() => stepLength(1)}
+                  onDecrement={() => stepLength(-1)}
+                />
+              </div>
+            </div>
+
+            <!-- Flavor: the identity choice — a full-width hero tile. -->
+            <div class="tile-row">
+              <div class="tile hero">
+                <BaseCard
+                  title="Flavor"
+                  currentValue={flavorTileValue}
+                  color={LOOP_COLOR}
+                  shadowColor={LOOP_SHADOW}
+                  gridColumnSpan={2}
+                  onClick={() => (showFlavor = true)}
+                />
+              </div>
+            </div>
+
+            <!-- Prop (interactive) + Size / Bundle (fixed this beta run: tarot /
+                 bundle coming soon) three across. Muted non-interactive tiles —
+                 no fake-pickable disabled controls. -->
+            <div class="tile-row trio">
+              <div class="tile prop-tile">
+                <BaseCard
+                  title="Prop"
+                  currentValue=""
+                  color={PROP_TILE_COLOR}
+                  shadowColor={PROP_TILE_SHADOW}
+                  gridColumnSpan={2}
+                  onClick={() => (showProp = true)}
+                >
+                  <div class="prop-tile-inner">
+                    <span class="prop-tile-chip">
+                      <img
+                        class="prop-tile-img"
+                        src={shopPropImage(propType)}
+                        alt=""
+                        draggable="false"
+                      />
+                    </span>
+                    <span class="prop-tile-label">{shopPropLabel(propType)}</span>
+                  </div>
+                </BaseCard>
+              </div>
+              <div class="tile small">
+                <BaseCard
+                  title="Size"
+                  currentValue={'Poker · 2.5" × 3.5"'}
+                  clickable={false}
+                  color={SECONDARY_TILE_COLOR}
+                  shadowColor="0deg 0% 0%"
+                  gridColumnSpan={2}
+                />
+              </div>
+              <div class="tile small">
+                <BaseCard
+                  title="Bundle"
+                  currentValue="Deck only"
+                  clickable={false}
+                  color={SECONDARY_TILE_COLOR}
+                  shadowColor="0deg 0% 0%"
+                  gridColumnSpan={2}
+                />
+              </div>
+            </div>
           </div>
 
-          <div class="sat area-level">
-            <StepperCard
-              title="Level"
-              currentValue={levelIdx}
-              minValue={0}
-              maxValue={AVAILABLE_LEVELS.length - 1}
-              formatValue={(i: number) => levelLabel(AVAILABLE_LEVELS[i] as LoopLevel)}
-              description={levelDesc}
-              color={levelTileColor}
-              textColor={levelTileText}
-              shadowColor="0deg 0% 0%"
-              gridColumnSpan={2}
-              onIncrement={() => stepLevel(1)}
-              onDecrement={() => stepLevel(-1)}
-            />
-          </div>
-
-          <div class="sat area-length">
-            <StepperCard
-              title="Length"
-              currentValue={lengthIdx}
-              minValue={0}
-              maxValue={AVAILABLE_LENGTHS.length - 1}
-              formatValue={(i: number) => lengthLabel(AVAILABLE_LENGTHS[i] as LoopLength)}
-              description={lengthDesc}
-              color={cc.length.color}
-              shadowColor={cc.length.shadowColor}
-              gridColumnSpan={2}
-              onIncrement={() => stepLength(1)}
-              onDecrement={() => stepLength(-1)}
-            />
-          </div>
-
-          <div class="sat flavor-hero area-flavor">
-            <BaseCard
-              title="Flavor"
-              currentValue={flavorTileValue}
-              color={LOOP_COLOR}
-              shadowColor={LOOP_SHADOW}
-              gridColumnSpan={2}
-              onClick={() => (showFlavor = true)}
-            />
-          </div>
-
-          <div class="card-stage area-card">
-            {#if use3DPreview}
-              <DeckTurntable
-                cards={fanCards}
-                deckId={selectedSku?.deckId}
-                deckName={selectedSku?.name ?? "Variety Pack"}
-                {propType}
-                foil={0.5}
-              />
-            {:else}
-              <!-- Fallback (reduced-motion / no WebGL2 / pre-mount SSR): the
-                   static fan, fill-mode crossfade so no swap resizes the box. -->
-              <Crossfade key={`${flavor}|${propType}|${excluded.size}`} fill>
-                <div class="preview-inner">
-                  <DeckFanCover
-                    cards={fanCards}
-                    deckId={selectedSku?.deckId}
-                    deckName={selectedSku?.name ?? "Variety Pack"}
-                    {propType}
-                    cardWidth={170}
-                    maxCardWidth={280}
-                    exactCount={flavor === "variety"
-                      ? Math.min(6, fanCards.length)
-                      : undefined}
-                  />
-                </div>
-              </Crossfade>
-            {/if}
-          </div>
-
-          <!-- commit stack: what the card is + $30 + Buy, directly under the card -->
-          <div class="commit area-commit">
-            <p class="preview-desc">{previewDesc}</p>
-            <p class="price">{price}</p>
-            {#if customSku}
-              <BuyButton product={customSku} {propType} {loopConfig} />
-            {:else if flavorSkus[0]}
-              <!-- Custom SKU not seeded/active yet: honest gate via the first
-                   flavor SKU's waitlist (it has no Stripe price either). -->
-              <BuyButton product={flavorSkus[0]} {propType} {loopConfig} />
-            {/if}
-            {#if store.checkoutError}
-              <p class="checkout-error" role="alert">{store.checkoutError}</p>
-            {/if}
-            <p class="spec-line">Poker · 2.5&quot; × 3.5&quot; · Deck only · 59 cards</p>
-          </div>
-        </div>
-
-        <!-- ── below the stage: fine-tune disclosure + assurance ── -->
-        <div class="below-stage">
           <!-- Fine-tune disclosure: collapsed by default; opening it and
                touching anything is instrumented — usage decides its future. -->
           <div class="advanced">
@@ -533,6 +518,19 @@
               </div>
             {/if}
           </div>
+
+          <p class="price">{price}</p>
+
+          {#if customSku}
+            <BuyButton product={customSku} {propType} {loopConfig} />
+          {:else if flavorSkus[0]}
+            <!-- Custom SKU not seeded/active yet: honest gate via the first
+                 flavor SKU's waitlist (it has no Stripe price either). -->
+            <BuyButton product={flavorSkus[0]} {propType} {loopConfig} />
+          {/if}
+          {#if store.checkoutError}
+            <p class="checkout-error" role="alert">{store.checkoutError}</p>
+          {/if}
 
           <ul class="assurance">
             <li><i class="fas fa-box-open" aria-hidden="true"></i> Explainer card, laminated quick-reference sheet, and deck box included</li>
@@ -677,136 +675,48 @@
     border-color: var(--theme-border-strong, rgba(255, 255, 255, 0.3));
   }
 
-  /* ---------- Corner Satellites layout ---------- */
-  .turntable-stage {
-    display: flex;
-    flex-direction: column;
-    gap: clamp(18px, 2.4vw, 30px);
-  }
-  .stage-head {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    text-align: center;
-  }
-
-  /* Named-areas grid: the card spans rows 1-2 so its four corners get the dials;
-     the commit stack ($30 + Buy) sits in row 3 directly beneath it. Prop/Level
-     pin to the card's TOP corners, Length/Flavor to the BOTTOM — so the dials
-     hug the card, not the tall commit stack. The generate-card type-scale vars
-     live here (every dial tile reads them). */
-  .stage-grid {
+  .config-layout {
     display: grid;
-    grid-template-columns: minmax(196px, 1fr) minmax(320px, 1.5fr) minmax(196px, 1fr);
-    grid-template-areas:
-      "prop   card   level"
-      "length card   flavor"
-      ".      commit .";
-    column-gap: clamp(16px, 2.2vw, 40px);
-    row-gap: 16px;
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: clamp(28px, 4vw, 56px);
     align-items: start;
-    --card-text-size: 22px;
-    --card-text-weight: 800;
-    --card-text-spacing: 0.3px;
-    --card-text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
-  }
-  .area-prop { grid-area: prop; align-self: start; }
-  .area-level { grid-area: level; align-self: start; }
-  .area-length { grid-area: length; align-self: end; }
-  .area-flavor { grid-area: flavor; align-self: end; }
-  .area-card { grid-area: card; }
-  .area-commit { grid-area: commit; }
-
-  .sat {
-    height: 118px;
-  }
-  .sat.prop-tile,
-  .sat.flavor-hero {
-    height: 128px;
-  }
-  .sat > :global(*) {
-    width: 100%;
-    height: 100%;
-  }
-  /* Unify type scale across the dial cards (matches the deck-releaser board). */
-  .stage-grid :global(.value-number),
-  .stage-grid :global(.base-card .card-value) {
-    font-size: 24px !important;
-    line-height: 1.15 !important;
-  }
-  .stage-grid :global(.card-title) {
-    font-size: var(--font-size-compact, 12px) !important;
-    letter-spacing: 0.8px !important;
   }
 
-  /* The 3D stage: a fixed-height framed box so retexture / dial changes never
-     resize it (no-layout-shift by construction), painted with the nebula glow
-     (premium dark-mode cue, not a flat box). */
-  .card-stage {
+  @media (max-width: 860px) {
+    .config-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Wide screens: the info column is taller than the preview, so DON'T stretch
+     the stage to match (that left a big void with the fan floating in it).
+     Keep the box at a hero height and pin it in view as the column scrolls. */
+  @media (min-width: 1200px) {
+    .preview-column {
+      position: sticky;
+      top: 88px;
+    }
+    .preview-box {
+      height: clamp(400px, 46vh, 480px);
+    }
+  }
+
+  /* ---------- preview ---------- */
+  .preview-box {
     position: relative;
-    width: 100%;
     overflow: hidden;
     border-radius: 20px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    /* Nebula glow painted into the background layers (always behind content, so
+       no z-index fight with the crossfade). Premium dark-mode cue, not a flat box. */
     background:
       radial-gradient(56% 48% at 50% 40%, rgba(139, 108, 255, 0.34), transparent 68%),
       radial-gradient(38% 34% at 68% 66%, rgba(84, 209, 196, 0.12), transparent 70%),
       radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
-    height: clamp(360px, 44vh, 500px);
-  }
-
-  /* commit stack under the card: desc → $30 → Buy, centred + width-capped. */
-  .commit {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    max-width: 440px;
-    margin: 0 auto;
-    padding-top: 4px;
-  }
-  .commit > :global(.buy-button),
-  .commit > :global(button) {
-    width: 100%;
-  }
-
-  .spec-line {
-    margin: 2px 0 0;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.55));
-    font-variant-numeric: tabular-nums;
-    text-align: center;
-  }
-
-  .below-stage {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    width: 100%;
-    max-width: 760px;
-    margin: 0 auto;
-  }
-
-  /* ── mobile: card + $30 on top, the four dials as a 2×2 bottom rail
-     (spec Corner Satellites → bottom rail). One grid-template swap. ── */
-  @media (max-width: 860px) {
-    .stage-grid {
-      grid-template-columns: 1fr 1fr;
-      grid-template-areas:
-        "card   card"
-        "commit commit"
-        "prop   level"
-        "length flavor";
-      column-gap: 12px;
-    }
-    .area-prop,
-    .area-level,
-    .area-length,
-    .area-flavor {
-      align-self: stretch;
-    }
+    padding: clamp(16px, 2.5vw, 32px);
+    /* FIXED stage height: fill-mode crossfade layers stack absolutely inside,
+       so no config swap can resize the box (no-layout-shift by construction). */
+    height: clamp(360px, 36vw, 460px);
   }
 
   /* Each layer fills the stage and centers its art vertically. Children
@@ -829,13 +739,13 @@
     text-align: center;
     max-width: 56ch;
     align-self: center;
-    /* Reserve ~3 lines: the copy varies per flavor, so without a floor a
-       longer/shorter description would shove $30 + Buy on every flavor swap
-       (no-layout-shift). Sized to the worst case, centered in the reserve. */
-    min-height: 4.95em;
+  }
+
+  /* ---------- info ---------- */
+  .info-column {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    gap: 18px;
   }
 
   .eyebrow {
@@ -907,6 +817,61 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* ---------- bento board ---------- */
+  .bento-board {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    /* theme vars the real generate cards read for their type scale */
+    --card-text-size: 22px;
+    --card-text-weight: 800;
+    --card-text-spacing: 0.3px;
+    --card-text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  }
+  .tile-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .tile-row > .tile {
+    flex: 1 1 220px;
+    min-width: 180px;
+    height: 118px;
+  }
+  /* Flavor hero: full-width identity tile, a touch taller than the steppers. */
+  .tile-row > .tile.hero {
+    flex: 1 1 100%;
+    height: 132px;
+  }
+  /* Prop + Size + Bundle three across; prop gets a little more room. */
+  .tile-row.trio > .tile {
+    flex: 1 1 150px;
+    min-width: 132px;
+    height: 100px;
+  }
+  .tile-row.trio > .tile.prop-tile {
+    flex: 1.5 1 180px;
+  }
+  .tile > :global(*) {
+    width: 100%;
+    height: 100%;
+  }
+  /* Unify type scale across the cards (matches the deck-releaser board). */
+  .bento-board :global(.value-number),
+  .bento-board :global(.base-card .card-value) {
+    font-size: 24px !important;
+    line-height: 1.15 !important;
+  }
+  .tile.small :global(.base-card .card-value) {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.78)) !important;
+    white-space: normal !important;
+  }
+  .bento-board :global(.card-title) {
+    font-size: var(--font-size-compact, 12px) !important;
+    letter-spacing: 0.8px !important;
+  }
 
   /* Prop tile: hide BaseCard's empty value slot, use the content slot for the
      prop image + label (like LoopBentoBoard's size tile pattern). */
