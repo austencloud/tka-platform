@@ -528,26 +528,32 @@ export class LibraryRepository {
       });
     }
 
-    // Post-write: Tag migration (async, non-blocking)
+    // Post-write: Tag migration. Await the migration so finalSequence carries
+    // the migrated tags BEFORE notifyLibrarySequenceAdded and the public-index
+    // sync run below — those read finalSequence synchronously, so if the
+    // migration only resolved in a later .then() the listeners and public
+    // mirror would receive the tag-less snapshot and the migrated tags would
+    // never reach the gallery. The primary sequence doc write above stays
+    // fire-and-forget, and the tag doc write here stays fire-and-forget, so the
+    // offline-first save path is preserved.
     let finalSequence = libSeq;
     if (!libSeq.sequenceTags || libSeq.sequenceTags.length === 0) {
-      getTagMigrator()(libSeq)
-        .then((migrationResult) => {
-          finalSequence = {
-            ...libSeq,
-            sequenceTags: migrationResult.sequenceTags,
-            tagIds: migrationResult.tagIds,
-          };
-          updateDoc(sequenceDocRef, {
-            sequenceTags: migrationResult.sequenceTags,
-            tagIds: migrationResult.tagIds,
-          }).catch((err) =>
-            console.error("[LibraryRepository] Tag update failed:", err)
-          );
-        })
-        .catch((error) => {
-          console.error("[LibraryRepository] Tag migration failed:", error);
-        });
+      try {
+        const migrationResult = await getTagMigrator()(libSeq);
+        finalSequence = {
+          ...libSeq,
+          sequenceTags: migrationResult.sequenceTags,
+          tagIds: migrationResult.tagIds,
+        };
+        updateDoc(sequenceDocRef, {
+          sequenceTags: migrationResult.sequenceTags,
+          tagIds: migrationResult.tagIds,
+        }).catch((err) =>
+          console.error("[LibraryRepository] Tag update failed:", err)
+        );
+      } catch (error) {
+        console.error("[LibraryRepository] Tag migration failed:", error);
+      }
     }
 
     // Notify listeners (browse gallery, etc.) so they can insert immediately
