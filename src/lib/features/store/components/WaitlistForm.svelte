@@ -23,6 +23,7 @@
   }: Props = $props();
 
   let email = $state("");
+  let inputEl = $state<HTMLInputElement>();
   let status = $state<"idle" | "submitting" | "done" | "error">("idle");
   let errorMessage = $state("");
 
@@ -32,6 +33,10 @@
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
+    // Trust the DOM value: a password manager that fills without firing an
+    // input event leaves `email` state stale but the field populated. Read the
+    // element directly so an autofilled address still submits.
+    if (inputEl && inputEl.value !== email) email = inputEl.value;
     if (!EMAIL_RE.test(email.trim())) {
       status = "error";
       errorMessage = "That email doesn't look right.";
@@ -60,11 +65,16 @@
     <form class="notify" onsubmit={handleSubmit}>
       <label class="sr-only" for={inputId}>Email address</label>
       <input
+        bind:this={inputEl}
         id={inputId}
+        name="email"
         class="text-input"
         type="email"
         inputmode="email"
         autocomplete="email"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
         placeholder="you@email.com"
         bind:value={email}
         aria-invalid={status === "error"}
