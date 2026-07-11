@@ -72,28 +72,28 @@ whitelist. All three concepts are presentation only.
 
 ---
 
-## Concept A — Refined Bento (SAFE EVOLUTION — in progress this session)
+## Concept A — Refined Bento (SAFE EVOLUTION — SHIPPED `d882677301`)
 
 Keep the current shape; fix everything the verdict flagged. Lowest risk, real lift,
-the fallback floor.
+the fallback floor. Built + verified eyes-on this session.
 
 Ledger:
-- [ ] **Preset row** above the bento board: 3 named one-tap builds, each sets all axes.
-  Suggested (stay within availability — levels 1/2/mix, lengths 8/mix, flavors per level):
-  - "Beginner's Loop" — L1 · 8 · Variety · Staff
-  - "The Sampler" — Mix · 8 · Variety · Staff
-  - "Deep Cuts" — L2 · 8 · Rotated · Staff
-  Render as a small horizontal card/chip row; active preset highlights when the current
-  config matches it. Haptic on tap.
-- [ ] **Nebula orb** behind the preview stage (radial glow, faint) + audit for
-  opacity-grey: the Size/Bundle secondary tiles use `rgba(255,255,255,0.06)` fills →
-  swap to an alpha-gradient. No pure black anywhere.
-- [ ] **Reward loop:** haptic (`getHapticFeedback().trigger("selection")`) on preset,
-  flavor, and prop commits. Spring is already in `BaseCard`.
-- [ ] **Reorder axes** to Prop → Level → Length → Flavor (optional polish; currently
-  Level/Length/Flavor/Prop). Keep the hero treatment on Flavor or move it — judge eyes-on.
-- [ ] **Defaults** already forgiving (L1/8/Variety/Staff). Confirm.
-- [ ] Eyes-on verify + `npm run check` 0/0 + commit.
+- [x] **Preset row** — 3 one-tap builds (Beginner's Loop L1·8·Variety, The Sampler
+  Mix·8·Variety, Deep Cuts L2·8·Rotated), each sets all axes + highlights when active.
+  Verified in-browser: applying a preset recolors the level tile, swaps the flavor hero,
+  re-renders the fan. Haptic on tap.
+- [x] **Nebula glow** painted into the preview-box background layers (violet + faint
+  teal) — background-layer approach avoids the crossfade z-index fight. Secondary
+  Size/Bundle tiles moved from opacity-grey to violet alpha-gradient.
+- [x] **Reward loop:** haptic on preset/flavor/prop commits (spring already in `BaseCard`).
+- [~] **Reorder axes** — SKIPPED. The stepper-pair → hero → trio rhythm reads better than
+  leading with the prop drill-down. Revisit only if review disagrees.
+- [x] **Defaults** forgiving (L1/8/Variety/Staff). Confirmed.
+- [x] Eyes-on verify + `npm run check` 0/0 + commit `d882677301`.
+
+Remaining A polish (optional, not blocking): preset-usage instrumentation needs a new
+event type in `activity-event.ts` (skipped to avoid the model edit); faint grain overlay;
+spring on the stepper ± beyond BaseCard's press.
 
 ## Concept B — The Turntable (STRONG CONTENDER — for Fable / next session)
 
