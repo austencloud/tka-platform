@@ -13,7 +13,8 @@
   import { createMeditationSession } from "./tabs/meditate/state/meditation-session.svelte";
   import { createMeditationAudioService } from "./tabs/meditate/services/meditation-audio";
   import { getPatternCycleTime, type BreathingPattern, type AmbientTrack } from "./tabs/meditate/domain/meditation-types";
-  import { exportMandalaPNG, downloadBlob } from "./tabs/export/services/mandala-export";
+  import { exportMandalaPNG } from "./tabs/export/services/mandala-export";
+  import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
   import { runMandalaVideoExport } from "./tabs/export/services/mandala-video";
   import type { MandalaVideoExportHandle } from "$lib/shared/mandala/services/mandala-video-exporter";
   import { mandalaCollectionState } from "./tabs/collection/state/mandala-collection-state.svelte";
@@ -244,7 +245,11 @@
         { size: PNG_EXPORT_SIZE, background: "transparent", strokeWidth: 2.5 },
       );
       const safeName = selectedMandala.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-      downloadBlob(blob, `mandala-${safeName}-${PNG_EXPORT_SIZE}px.png`);
+      // Device-gated: native share sheet on mobile (send via text/social/cloud),
+      // anchor download on desktop — same pattern the video export uses.
+      await shareOrDownloadBlob(blob, `mandala-${safeName}-${PNG_EXPORT_SIZE}px.png`, {
+        title: "TKA Mandala",
+      });
     } catch (err) {
       console.error("[MandalaExport] Export failed:", err);
       toast.error("Couldn't export the mandala. Please try again.");
