@@ -140,8 +140,8 @@ export function buildCardMenuSection(deps: CardMenuSectionDeps): ContextMenuEntr
           try {
             const { toast } = await import("$lib/shared/toast/state/toast-state.svelte");
             const { DEFAULT_SHARE_OPTIONS } = await import("$lib/shared/share/domain/models/share-options");
-            const { sharer } = await import("$lib/shared/share/services/sharer");
-            await sharer.downloadImage(sequence, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
+            const { getSharer } = await import("$lib/shared/share/get-sharer");
+            await getSharer().downloadImage(sequence, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
             toast.success("Image saved");
           } catch (err) {
             console.error("Save image failed:", err);
@@ -158,8 +158,8 @@ export function buildCardMenuSection(deps: CardMenuSectionDeps): ContextMenuEntr
           try {
             const { toast } = await import("$lib/shared/toast/state/toast-state.svelte");
             const { DEFAULT_SHARE_OPTIONS } = await import("$lib/shared/share/domain/models/share-options");
-            const { sharer } = await import("$lib/shared/share/services/sharer");
-            const blob = await sharer.getImageBlob(sequence, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
+            const { getSharer } = await import("$lib/shared/share/get-sharer");
+            const blob = await getSharer().getImageBlob(sequence, { ...DEFAULT_SHARE_OPTIONS, format: "PNG" });
             await navigator.clipboard.write([
               new ClipboardItem({ "image/png": blob }),
             ]);
