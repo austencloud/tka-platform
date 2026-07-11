@@ -113,21 +113,42 @@ SKU `loop-deck-custom`, the Firebase whitelist, `BuyButton`, `createMerchCheckou
 
 ## Implementation ledger (checkbox — durable state across eyes-on rounds)
 
-- [ ] **Step 0** — Baseline screenshot of shipped Concept A at `/shop/loop-deck`. *(eyes-on #1)*
-- [ ] **Step 1** — Create `DeckTurntable.svelte`: Canvas + camera + light rig + env + card
+- [x] **Step 0** — Baseline screenshot of shipped Concept A at `/shop/loop-deck`. *(eyes-on #1)*
+- [x] **Step 1** — Create `DeckTurntable.svelte`: Canvas + camera + light rig + env + card
       body + texture from `renderFront()`. No drag, no foil yet. Render one card static in a
-      `src/routes/test/*` harness. *(eyes-on #2 — reads as lit object, bevel visible on tilt)*
-- [ ] **Step 2** — Drag-to-spin + intro spin + haptic reward loop, driven by `Spring`;
-      `invalidate()` on frames/ticks. *(eyes-on #3 — flick feels thrown; canvas idles to zero)*
-- [ ] **Step 3** — Foil: `iridescence` + `iridescenceMap` mask. *(eyes-on #4 — hue-travel on
-      tilt, masked regions only, not plastic)*
-- [ ] **Step 4** — Retexture-speed verify; lean on existing `prewarmCovers` `$effect`
-      (`:254-257`) if cold swaps miss budget. *(eyes-on #5 — swap flavor/prop < 150ms, no stall)*
-- [ ] **Step 5** — Layout swap in `LoopDeckConfiguratorPage.svelte`: `.preview-box` →
-      `<DeckTurntable>`; kill `.config-layout` grid; corner satellites; reuse all controls;
-      dark ground + nebula. *(eyes-on #6 — single screen, no layout shift on retexture/stepper)*
-- [ ] **Step 6** — Fallback: reduced-motion / no-WebGL → `<DeckFanCover>`.
-      *(eyes-on #7 — static fan renders, no 3D init)*
+      `src/routes/test/*` harness. *(eyes-on #2 ✓ — reads as lit object, bevel visible on tilt;
+      baked cover via blob path = exact fan parity, MPC stripe frame kept)*
+- [x] **Step 2** — Drag-to-spin + intro spin + haptic reward loop, driven by a `useTask` spring
+      integrator (Svelte-Spring's own rAF desynced with on-demand render → froze mid-spin;
+      the integrator self-sustains `invalidate()` and idles to zero on settle). Flick coasts
+      by release velocity then **snaps the landing to the nearest full turn** so the card
+      always rests facing the buyer (edge-on-rest was the first-attempt bug). *(eyes-on #3 ✓ —
+      angled read shows bevel; firm flick spins + settles front)*
+- [x] **Step 3** — Foil **redesigned after eyes-on**: the spec's `iridescence`+mask plan proved
+      invisible (MPC face is ~85% white; thin-film hue-travel doesn't read on white even at max,
+      verified at foil=1.0 grazing). Replaced with a **glossy lamination sweep** — `foil` drives
+      clearcoat (0.35→0.95) + a tightened hotspot (clearcoatRough 0.20→0.03) + env-reflection
+      boost (0.9→2.6), keeping a faint `iridescence` (foil·0.35) for the spectral edge. This is
+      honest to the real laminated product and needs no per-card mask asset. *(eyes-on #4 ✓ —
+      pose-A vs pose-B proved the specular band sweeps across the face on tilt; subtle, not
+      plastic. Final intensity = the `foil` prop, Austen-tunable on the real page.)*
+- [x] **Step 4** — Retexture-speed verified: baked-cover fetch+decode ~6-7ms warm (order of
+      magnitude under budget). Rapid flavor cycling ×3 + prop swap Staff→Fan kept up — card
+      rendered the correct Fan-prop BΦ- art, settled front, no stall/blank; fan parity held
+      through the prop swap. *(eyes-on #5 ✓)*
+- [x] **Step 5** — Layout swapped in `LoopDeckConfiguratorPage.svelte`. Killed the 2-col
+      `.config-layout` grid; built a named-areas **Corner Satellites** grid: hero card spans
+      rows 1-2 so Prop (TL) / Level (TR) / Length (BL) / Flavor (BR) pin to its four corners,
+      `$30` + Buy in row 3 under the card. Reused every wired control (StepperCards, BaseCard
+      drill-to-modal). DOM order Prop→Level→Length→Flavor→Buy = tab/reading order. Kept the
+      nebula stage. `< 860px` reflows via ONE grid-template swap → card + `$30` on top, dials as
+      a 2×2 bottom rail. Flavor description got a `min-height` reserve so it can't shove `$30`.
+      *(eyes-on #6 ✓ — desktop corners hug the card [geometry: dials at card top/bottom edges];
+      mobile 2×2 rail verified at 390px; `$30` y=927 constant across 5 flavor swaps, spread 0)*
+- [x] **Step 6** — Fallback wired via `use3DPreview = mounted && isWebGL2Available() &&
+      !reducedMotion()` (canonical primitives; SSR + first hydration render the fan → no
+      mismatch). *(eyes-on #7 ✓ — forced reduced-motion via matchMedia patch + client-side
+      remount: `hasCanvas:false`, fan renders in the Corner Satellites card slot, no 3D init)*
 - [ ] **Step 7** — Gate: `npm run check` + `npm run build` green. Commit with explicit pathspec.
 
 ## Risk + eyes-on checklist
