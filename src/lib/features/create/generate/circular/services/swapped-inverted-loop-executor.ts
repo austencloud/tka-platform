@@ -10,10 +10,14 @@
  * - Letters are inverted (A↔B, D↔E, etc.)
  * - Motion types are flipped (PRO↔ANTI)
  * - Prop rotation directions are flipped (CW↔CCW)
- * - Locations stay the same (returns to starting position)
+ * - Grid positions are SWAPPED (blue↔red), since inversion does not move
+ *   positions. The position closure is therefore the swap requirement.
  *
  * IMPORTANT: Slice size is ALWAYS halved (no quartering)
- * IMPORTANT: End position must equal start position (returns to start)
+ * IMPORTANT: End position must be the SWAP of the start position
+ *   (end === SWAPPED_POSITION_MAP[start]). This matches the canonical
+ *   LOOPValidator (SWAPPED / SWAPPED_INVERTED both gate on
+ *   SWAPPED_LOOP_VALIDATION_SET) and the UI's loop-validator.
  */
 
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -29,10 +33,11 @@ import {
   updateEndOrientations,
 } from "$lib/shared/pictograph/prop/services/orientation-calculator";
 import {
-  INVERTED_LOOP_VALIDATION_SET,
+  SWAPPED_LOOP_VALIDATION_SET,
   SWAPPED_POSITION_MAP,
   getInvertedLetter,
 } from "../domain/constants/strict-loop-position-maps";
+import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { Period } from "../domain/models/circular-models";
 
 export class SwappedInvertedLOOPExecutor {
@@ -87,7 +92,9 @@ export class SwappedInvertedLOOPExecutor {
 
   /**
    * Validate that the sequence can perform a swapped-inverted LOOP
-   * Requirement: end_position === start_position (returns to start)
+   * Requirement: end_position === SWAPPED(start_position). Inversion flips
+   * letters/motion-types/rotation but does not move positions, so the position
+   * closure is identical to a pure SWAPPED LOOP.
    */
   private _validateSequence(sequence: StepData[]): void {
     if (sequence.length < 2) {
@@ -103,13 +110,15 @@ export class SwappedInvertedLOOPExecutor {
       throw new Error("Sequence steps must have valid start and end positions");
     }
 
-    // Check if the (start, end) pair is valid for swapped-inverted (must return to start)
+    // Check if the (start, end) pair is valid for swapped-inverted
+    // (end must be the SWAP of start — inversion does not move positions)
     const key = `${startPos},${endPos}`;
 
-    if (!INVERTED_LOOP_VALIDATION_SET.has(key)) {
+    if (!SWAPPED_LOOP_VALIDATION_SET.has(key)) {
+      const expectedEnd = SWAPPED_POSITION_MAP[startPos as GridPosition];
       throw new Error(
         `Invalid position pair for swapped-inverted LOOP: ${startPos} → ${endPos}. ` +
-          `For a swapped-inverted LOOP, the sequence must end at the same position it started (${startPos}).`
+          `For a swapped-inverted LOOP from ${startPos}, the sequence must end at ${expectedEnd}.`
       );
     }
   }

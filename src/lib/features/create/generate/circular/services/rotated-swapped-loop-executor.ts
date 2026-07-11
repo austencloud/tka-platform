@@ -33,9 +33,11 @@ import {
 import {
   getHandRotationDirection,
   getLocationMapForHandRotation,
-  HALVED_LOOPS,
-  QUARTERED_LOOPS,
 } from "../domain/constants/circular-position-maps";
+import {
+  ROTATED_SWAPPED_QUARTERED_VALIDATION_SET,
+  ROTATED_SWAPPED_HALVED_VALIDATION_SET,
+} from "../domain/constants/strict-loop-position-maps";
 import { Period } from "../domain/models/circular-models";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 
@@ -116,15 +118,20 @@ export class RotatedSwappedLOOPExecutor {
       throw new Error("Sequence steps must have valid start and end positions");
     }
 
-    // Check if the (start, end) pair is valid for the requested slice size
+    // Check if the (start, end) pair is valid for the requested slice size.
+    // The end position must be SWAPPED(ROTATED(start)) — both the rotation AND
+    // the color swap move the position, so pure-rotation sets are insufficient.
+    // Matches the canonical LOOPValidator and the UI's loop-validator.
     const key = `${startPos},${endPos}`;
     const validationSet =
-      period === Period.QUARTERED ? QUARTERED_LOOPS : HALVED_LOOPS;
+      period === Period.QUARTERED
+        ? ROTATED_SWAPPED_QUARTERED_VALIDATION_SET
+        : ROTATED_SWAPPED_HALVED_VALIDATION_SET;
 
     if (!validationSet.has(key)) {
       throw new Error(
         `Invalid position pair for rotated-swapped ${period} LOOP: ${startPos} → ${endPos}. ` +
-          `The end position must match the ${period} rotation requirement.`
+          `The end position must equal SWAPPED(ROTATED(${startPos})) for the ${period} slice size.`
       );
     }
   }
