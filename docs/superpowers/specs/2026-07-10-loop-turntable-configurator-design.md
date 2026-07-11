@@ -149,7 +149,18 @@ SKU `loop-deck-custom`, the Firebase whitelist, `BuyButton`, `createMerchCheckou
       !reducedMotion()` (canonical primitives; SSR + first hydration render the fan → no
       mismatch). *(eyes-on #7 ✓ — forced reduced-motion via matchMedia patch + client-side
       remount: `hasCanvas:false`, fan renders in the Corner Satellites card slot, no 3D init)*
-- [ ] **Step 7** — Gate: `npm run check` + `npm run build` green. Commit with explicit pathspec.
+- [x] **Step 7** — Gate green: `npm run check` → 0 errors / 0 warnings; `npm run build` → exit 0.
+      (Fixed one type error en route: this project's resolved `ThrelteContext` omits the
+      on-demand `invalidate` method — pulled it via a narrow cast, the sanctioned
+      `ScenePostProcessing` pattern.) Committed `a9a1e774a6` with explicit pathspec (5 files;
+      no in-flight agent work swept in).
+
+## Status: SHIPPED (2026-07-11)
+
+All 7 eyes-on checkpoints passed on the real `/shop/loop-deck` page (chrome-devtools MCP,
+desktop + 390px mobile + forced reduced-motion). Concept B "The Turntable" is live behind the
+capability gate; the fan remains the static fallback. Presentation-only — checkout / `loopConfig`
+/ SKU / Firebase whitelist untouched, as scoped.
 
 ## Risk + eyes-on checklist
 
