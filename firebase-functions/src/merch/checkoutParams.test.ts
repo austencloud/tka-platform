@@ -94,6 +94,29 @@ describe("buildMerchCheckoutParams", () => {
     });
   });
 
+  it("encodes a Deck Architect recipe compactly (metadata 500-char cap)", () => {
+    const withRecipe = buildMerchCheckoutParams({
+      product: PRODUCT,
+      productId: "doc_1",
+      baseUrl: "https://tkaflowarts.com",
+      propType: "club",
+      loopConfig: {
+        recipe: [
+          { count: 27, flavor: "rotated", level: 1, steps: 8 },
+          { count: 14, flavor: "rotated", level: 2, steps: 12, maxTurns: 1 },
+          { count: 13, flavor: "mirrored-swapped", level: 3, steps: 16, maxTurns: 1.5 },
+        ],
+      },
+    });
+    expect(withRecipe.metadata).toEqual({
+      productId: "doc_1",
+      productName: "Deck",
+      propType: "club",
+      loopRecipe: "27:rotated:1:8;14:rotated:2:12:1;13:mirrored-swapped:3:16:1.5",
+    });
+    expect(withRecipe.metadata?.loopLevel).toBeUndefined();
+  });
+
   it("carries the buyer's propType in metadata for the webhook", () => {
     const withProp = buildMerchCheckoutParams({
       product: PRODUCT,

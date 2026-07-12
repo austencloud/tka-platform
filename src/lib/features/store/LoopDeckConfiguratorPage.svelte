@@ -45,12 +45,8 @@
   import { scale, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import { prewarmCovers } from "./services/cover-front-renderer";
-  import {
-    DEFAULT_SHOP_PROP,
-    SHOP_PROP_OPTIONS,
-    shopPropImage,
-    shopPropLabel,
-  } from "./domain/shop-prop-options";
+  import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
+  import ShopPropPicker from "./components/ShopPropPicker.svelte";
   import { loopPreviewCards } from "./services/loop-preview-cards";
   import type { CoverCard } from "./domain/models/product";
   import {
@@ -635,50 +631,30 @@
                   shadowColor="0deg 0% 0%"
                   gridColumnSpan={2}
                 >
-                  <div class="prop-row" role="radiogroup" aria-label="Prop">
-                    {#each SHOP_PROP_OPTIONS as p (p)}
-                      <button
-                        type="button"
-                        class="prop-chip"
-                        class:selected={propType === p}
-                        role="radio"
-                        aria-checked={propType === p}
-                        onclick={() => {
-                          propType = p;
-                          buzz();
-                        }}
-                      >
-                        <img
-                          class="prop-chip-img"
-                          src={shopPropImage(p)}
-                          alt=""
-                          draggable="false"
-                        />
-                        <span class="prop-chip-label">{shopPropLabel(p)}</span>
-                      </button>
-                    {/each}
-                  </div>
+                  <ShopPropPicker
+                    value={propType}
+                    onchange={(p) => {
+                      propType = p;
+                      buzz();
+                    }}
+                  />
                 </BaseCard>
               </div>
             </div>
 
           </div>
 
-          <!-- The escape hatch for hyper-specific buyers (mixed lengths, split
-               props, ratio'd flavors): recipes the dials can't express get
-               hand-built. Each email doubles as the demand signal for a real
-               slice-based recipe builder. -->
+          <!-- The escape hatch for hyper-specific buyers (mixed lengths,
+               ratio'd flavors): the Deck Architect exposes the whole
+               algorithmic space on its own page, keeping this one simple. -->
           {#if pack === null}
             <p class="recipe-line" transition:slide={{ duration: 250, easing: quintOut }}>
               Dials not specific enough?
-              <a
-                class="recipe-mail"
-                href="mailto:tkaflowarts@gmail.com?subject=Custom%20LOOP%20deck%20recipe"
-              >
-                <i class="fas fa-envelope" aria-hidden="true"></i>
-                Email your recipe
+              <a class="recipe-mail" href="/shop/loop-deck/architect">
+                <i class="fas fa-drafting-compass" aria-hidden="true"></i>
+                Open the Deck Architect
               </a>
-              and we'll build it by hand.
+              and design every slice of the deck.
             </p>
           {/if}
 
@@ -1146,72 +1122,6 @@
     justify-content: center;
   }
 
-  /* Prop chips: exactly-one image chips, selected wears the prop purple.
-     One row always — chips shrink fluidly instead of wrapping out of the tile. */
-  .prop-row {
-    display: flex;
-    flex-wrap: nowrap;
-    justify-content: center;
-    gap: clamp(4px, 1vw, 8px);
-    width: 100%;
-    min-width: 0;
-  }
-  .prop-chip {
-    flex: 1 1 0;
-    min-width: 0;
-    max-width: 112px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 8px 4px 7px;
-    border-radius: 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    color: var(--theme-text, #fff);
-    cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
-  }
-  .prop-chip:hover {
-    border-color: rgba(216, 180, 254, 0.55);
-  }
-  .prop-chip:active {
-    transform: scale(0.97);
-  }
-  .prop-chip:focus-visible {
-    outline: 2px solid #fff;
-    outline-offset: 2px;
-  }
-  .prop-chip.selected {
-    border-color: #d8b4fe;
-    background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
-    box-shadow: 0 4px 14px rgba(147, 51, 234, 0.35);
-  }
-  /* The prop art IS the chip content — no inner frame box. One surface
-     (the chip), one image, one label; the box-in-box-in-box layering read
-     as clutter, not depth. */
-  .prop-chip-img {
-    width: 42px;
-    height: 42px;
-    object-fit: contain;
-    pointer-events: none;
-    /* The prop art ships in per-prop stroke colors, several of them dark navy
-       that vanishes on the dark chip. Flatten to a uniform light silhouette so
-       every prop reads equally on both chip states. */
-    filter: brightness(0) invert(0.9) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
-  }
-  .prop-chip.selected .prop-chip-img {
-    filter: brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
-  }
-  .prop-chip-label {
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: var(--font-size-compact, 13px);
-    font-weight: 700;
-  }
 
   /* Fixed specs: reads as information, not as disabled controls. */
   .spec-line {

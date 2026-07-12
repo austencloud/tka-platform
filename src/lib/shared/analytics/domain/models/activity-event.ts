@@ -62,7 +62,8 @@ export type ActivityEventType =
   | "shop_loop_advanced_opened"
   | "shop_loop_advanced_customized"
   | "shop_loop_pack_selected"
-  | "shop_loop_custom_entered";
+  | "shop_loop_custom_entered"
+  | "shop_loop_architect_opened";
 
 /**
  * Metadata that can be attached to events

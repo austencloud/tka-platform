@@ -64,8 +64,11 @@ export const handleMerchWebhook = functions.https.onRequest(
           // on pre-prop-picker orders and non-deck items).
           ...(session.metadata.propType && { propType: session.metadata.propType }),
           // Curated LOOP pack — the recipe id fulfillment resolves against
-          // LOOP_PACKS (client loop-config.ts). Pack XOR dials.
+          // LOOP_PACKS (client loop-config.ts). Pack XOR dials XOR recipe.
           ...(session.metadata.loopPack && { loopPack: session.metadata.loopPack }),
+          // Deck Architect recipe (compact string; parseRecipe in the client's
+          // loop-config.ts decodes it for fulfillment).
+          ...(session.metadata.loopRecipe && { loopRecipe: session.metadata.loopRecipe }),
           // LOOP configurator dials (flat strings; loopCustom = JSON of the
           // advanced-panel choices). Absent on non-LOOP items.
           ...(session.metadata.loopLevel && {

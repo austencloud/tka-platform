@@ -23,7 +23,13 @@ import {
 import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
 import type { CoverCard, Product } from "../domain/models/product";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { LoopFlavor, LoopLength, LoopLevel, LoopPackId } from "../domain/loop-config";
+import type {
+  LoopFlavor,
+  LoopLength,
+  LoopLevel,
+  LoopPackId,
+  RecipeSlice,
+} from "../domain/loop-config";
 import { DEFAULT_MAX_TURNS, loopPack } from "../domain/loop-config";
 import { generateLOOPType } from "$lib/shared/create/services/loop-type-utils";
 import { levelToDifficulty } from "$lib/shared/create/utils/config-mapper";
@@ -203,6 +209,105 @@ async function handCards(
   }
   const seqs = await liveHand(dials, n, offset);
   return seqs.map((sequence) => ({ sequence, ...accent }));
+}
+
+/* ── Deck Architect previews ────────────────────────────────────────────────
+   Slice rows show one live sample each; the hero fan samples 6 slots across
+   the recipe proportionally to slice counts. Same handCards seam (exact
+   catalog at L1, live generation elsewhere), same caches. */
+
+/** One sample card demonstrating a slice's dials. Null on failure. */
+export async function recipeSliceCard(
+  slice: RecipeSlice,
+  propType: PropType,
+  sku: Product | undefined,
+  offset = 0
+): Promise<CoverCard | null> {
+  try {
+    const cats = await getLoopCatalogs();
+    const cards = await handCards(
+      cats,
+      {
+        flavor: slice.flavor,
+        level: slice.level,
+        steps: slice.steps,
+        maxTurns: slice.maxTurns ?? DEFAULT_MAX_TURNS,
+        propType,
+      },
+      1,
+      sku,
+      offset
+    );
+    return cards[0] ?? null;
+  } catch (e) {
+    console.warn("[recipeSliceCard] sample failed:", e);
+    return null;
+  }
+}
+
+/** Hero fan for a whole recipe: FAN_SIZE slots allocated across slices
+ *  proportionally to their counts (every slice gets at least one slot while
+ *  slots remain). */
+export async function recipePreviewCards(
+  slices: RecipeSlice[],
+  propType: PropType,
+  skuByFlavor: ReadonlyMap<LoopFlavor, Product>
+): Promise<CoverCard[] | null> {
+  if (slices.length === 0) return null;
+  try {
+    const cats = await getLoopCatalogs();
+    const total = slices.reduce((n, s) => n + s.count, 0) || 1;
+    // One slot per slice first (recipe order), remainder to the biggest slices.
+    const slots: { slice: RecipeSlice; offset: number }[] = [];
+    for (const slice of slices.slice(0, FAN_SIZE)) slots.push({ slice, offset: 0 });
+    const byWeight = [...slices].sort((a, b) => b.count - a.count);
+    let i = 0;
+    while (slots.length < FAN_SIZE) {
+      const slice = byWeight[i % byWeight.length]!;
+      // Round-robin over the heaviest slices, bounded by proportion.
+      if (slots.filter((s) => s.slice === slice).length <= (slice.count / total) * FAN_SIZE) {
+        slots.push({ slice, offset: slots.filter((s) => s.slice === slice).length });
+      }
+      i++;
+      if (i > FAN_SIZE * 4) {
+        // Proportions exhausted (tiny recipes) — fill from the top.
+        slots.push({ slice: byWeight[0]!, offset: slots.length });
+      }
+    }
+    // Serial, like the variety hand — live hands share one engine.
+    const cards: CoverCard[] = [];
+    for (const { slice, offset } of slots.slice(0, FAN_SIZE)) {
+      const card = await recipeSliceCardWithCats(cats, slice, propType, skuByFlavor.get(slice.flavor), offset);
+      if (card) cards.push(card);
+    }
+    return cards.length ? cards : null;
+  } catch (e) {
+    console.warn("[recipePreviewCards] falling back:", e);
+    return null;
+  }
+}
+
+async function recipeSliceCardWithCats(
+  cats: Catalog[],
+  slice: RecipeSlice,
+  propType: PropType,
+  sku: Product | undefined,
+  offset: number
+): Promise<CoverCard | null> {
+  const cards = await handCards(
+    cats,
+    {
+      flavor: slice.flavor,
+      level: slice.level,
+      steps: slice.steps,
+      maxTurns: slice.maxTurns ?? DEFAULT_MAX_TURNS,
+      propType,
+    },
+    1,
+    sku,
+    offset
+  );
+  return cards[0] ?? null;
 }
 
 export interface PreviewDials {

@@ -29,6 +29,13 @@ export function buildMerchCheckoutParams(opts: {
    *  panel was touched). Pack XOR dials — enforced by createMerchCheckout. */
   loopConfig?: {
     pack?: string;
+    recipe?: Array<{
+      count?: number;
+      flavor?: string;
+      level?: number;
+      steps?: number;
+      maxTurns?: number;
+    }>;
     level?: string;
     length?: string;
     flavor?: string;
@@ -36,6 +43,14 @@ export function buildMerchCheckoutParams(opts: {
   };
 }): Stripe.Checkout.SessionCreateParams {
   const { product, productId, baseUrl, propType, loopConfig } = opts;
+  // Compact wire format (Stripe metadata values cap at 500 chars):
+  // count:flavor:level:steps[:turns] per slice, ";"-joined. Mirrors
+  // encodeRecipe in the client's loop-config.ts.
+  const loopRecipe = loopConfig?.recipe
+    ?.map((s) =>
+      [s.count, s.flavor, s.level, s.steps, ...(s.maxTurns !== undefined ? [s.maxTurns] : [])].join(":")
+    )
+    .join(";");
   return {
     mode: "payment",
     line_items: [{ price: product.stripePriceId, quantity: 1 }],
@@ -49,8 +64,10 @@ export function buildMerchCheckoutParams(opts: {
       productName: product.name,
       ...(propType && { propType }),
       ...(loopConfig?.pack && { loopPack: loopConfig.pack }),
+      ...(loopRecipe && { loopRecipe }),
       ...(loopConfig &&
-        !loopConfig.pack && {
+        !loopConfig.pack &&
+        !loopConfig.recipe && {
           loopLevel: loopConfig.level ?? "",
           loopLength: loopConfig.length ?? "",
           loopFlavor: loopConfig.flavor ?? "",

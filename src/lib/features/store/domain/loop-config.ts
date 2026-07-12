@@ -43,8 +43,11 @@ export type LoopFlavor = (typeof LOOP_FLAVORS)[number];
 
 export interface LoopConfig {
   /** Curated pack id. When present, the pack's recipe drives fulfillment and
-   *  the dial fields are absent — pack XOR dials. */
+   *  the dial fields are absent — pack XOR dials XOR recipe. */
   pack?: LoopPackId;
+  /** Deck Architect recipe: buyer-authored slices summing to DECK_SIZE.
+   *  When present, no pack and no dial fields ride along. */
+  recipe?: RecipeSlice[];
   level?: LoopLevel;
   length?: LoopLength;
   flavor?: LoopFlavor;
@@ -76,6 +79,86 @@ export const LEVEL_MIX_COPY = "Mostly Level 1. A few cards that bite.";
 export const LENGTH_MIX_COPY = "Mostly eight-counts, with a few longer runs.";
 export const VARIETY_COPY =
   "Every flavor in one deck. Rotated makes the cleanest mandalas; the rest get weird.";
+
+/* ── Deck Architect recipes ──────────────────────────────────────────────────
+   A buyer-authored recipe: up to MAX_RECIPE_SLICES slices summing to exactly
+   DECK_SIZE cards. Stripe metadata values cap at 500 chars, so the recipe
+   travels as a compact string (count:flavor:level:steps[:turns] joined by
+   ";") — encodeRecipe/parseRecipe are the round trip; the firebase function
+   validates the structured array before encoding.
+   Spec: docs/superpowers/specs/2026-07-12-deck-architect-design.md */
+
+export const DECK_SIZE = 54;
+export const MAX_RECIPE_SLICES = 8;
+/** Safe generation lengths: quartered needs /4, halved needs /2. */
+export const RECIPE_STEPS = [4, 8, 12, 16] as const;
+
+export interface RecipeSlice {
+  /** Cards this slice contributes (1–DECK_SIZE). */
+  count: number;
+  /** Specific flavor — "variety" is a blend concept, not a slice. */
+  flavor: LoopFlavor;
+  /** Difficulty 1–3. */
+  level: number;
+  /** Steps per card. */
+  steps: number;
+  /** Turn ceiling: absent at level 1, whole 1–3 at level 2, halves at 3. */
+  maxTurns?: number;
+}
+
+/** Human-readable reason a recipe can't check out, or null when valid.
+ *  Mirrors the firebase function's validator — keep in sync. */
+export function recipeProblem(slices: RecipeSlice[]): string | null {
+  if (slices.length === 0) return "Add at least one slice.";
+  if (slices.length > MAX_RECIPE_SLICES)
+    return `Keep it to ${MAX_RECIPE_SLICES} slices.`;
+  for (const s of slices) {
+    if (!Number.isInteger(s.count) || s.count < 1) return "Every slice needs at least 1 card.";
+    if (s.flavor === "variety" || !LOOP_FLAVORS.includes(s.flavor))
+      return "Unknown flavor in a slice.";
+    if (![1, 2, 3].includes(s.level)) return "Slice level must be 1, 2, or 3.";
+    if (!RECIPE_STEPS.includes(s.steps as (typeof RECIPE_STEPS)[number]))
+      return "Slice length must be 4, 8, 12, or 16 steps.";
+    if (s.level === 1 && s.maxTurns !== undefined) return "Level 1 has no turns.";
+    if (s.level >= 2) {
+      const t = s.maxTurns;
+      if (t === undefined || t < 0.5 || t > 3 || (t * 2) % 1 !== 0)
+        return "Level 2+ slices need a turn ceiling between 0.5 and 3.";
+      if (s.level === 2 && t % 1 !== 0) return "Half turns unlock at Level 3.";
+    }
+  }
+  const total = slices.reduce((n, s) => n + s.count, 0);
+  if (total !== DECK_SIZE)
+    return total > DECK_SIZE
+      ? `${total - DECK_SIZE} card${total - DECK_SIZE === 1 ? "" : "s"} over. A deck is exactly ${DECK_SIZE}.`
+      : `${DECK_SIZE - total} card${DECK_SIZE - total === 1 ? "" : "s"} short. A deck is exactly ${DECK_SIZE}.`;
+  return null;
+}
+
+/** Compact wire format for Stripe metadata (500-char value cap). */
+export function encodeRecipe(slices: RecipeSlice[]): string {
+  return slices
+    .map((s) =>
+      [s.count, s.flavor, s.level, s.steps, ...(s.maxTurns !== undefined ? [s.maxTurns] : [])].join(":")
+    )
+    .join(";");
+}
+
+/** Inverse of encodeRecipe (fulfillment-side parse). Throws on malformed input. */
+export function parseRecipe(encoded: string): RecipeSlice[] {
+  return encoded.split(";").map((seg) => {
+    const [count, flavor, level, steps, turns] = seg.split(":");
+    const slice: RecipeSlice = {
+      count: Number(count),
+      flavor: flavor as LoopFlavor,
+      level: Number(level),
+      steps: Number(steps),
+      ...(turns !== undefined ? { maxTurns: Number(turns) } : {}),
+    };
+    if (!Number.isFinite(slice.count) || !slice.flavor) throw new Error(`Bad recipe segment: ${seg}`);
+    return slice;
+  });
+}
 
 /* ── curated packs ───────────────────────────────────────────────────────────
    A pack is a RECIPE: slices of (flavor, level, per-length counts, turn cap)
