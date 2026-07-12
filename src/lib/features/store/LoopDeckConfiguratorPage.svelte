@@ -68,6 +68,9 @@
     TURN_VALUES_WHOLE,
     TURN_VALUES_HALF,
     DEFAULT_MAX_TURNS,
+    LOOP_PACKS,
+    loopPack,
+    type LoopPackId,
     type LoopLevel,
     type LoopLength,
     type LoopFlavor,
@@ -77,7 +80,6 @@
   import { getActivityLogger } from "$lib/shared/analytics/get-activity-logger";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
   // Named `store`, not `state`: a local binding called `state` collides with the
   // $state rune (svelte store_rune_conflict).
@@ -106,17 +108,36 @@
     )
   );
 
-  // ── the dials — page loads buyable untouched: 1 · 8 · Variety ──
+  // ── the packs vs the dials: packs are RECIPES the dials can't express
+  //    (multi-length, multi-level, per-slice turn caps), so the pack selection
+  //    is explicit state, not derived from dial equality. Page loads buyable
+  //    untouched on Mild; touching any dial drops into Custom mode. ──
+  let pack = $state<LoopPackId | null>("mild");
+  function leaveCustom(id: LoopPackId) {
+    pack = id;
+    buzz();
+    getActivityLogger().logActivity("shop_loop_pack_selected", "shop", { pack: id });
+  }
+  function enterCustom() {
+    if (pack !== null) {
+      pack = null;
+      getActivityLogger().logActivity("shop_loop_custom_entered", "shop");
+    }
+  }
+  const activePack = $derived(pack ? loopPack(pack) : null);
+
+  // ── the dials (Custom mode) — default to rotated: the only flavor with
+  //    reliably great mandalas. ──
   let level = $state<LoopLevel>("1");
   let length = $state<LoopLength>("8");
-  let flavor = $state<LoopFlavor>("variety");
+  let flavor = $state<LoopFlavor>("rotated");
   let propType = $state<PropType>(DEFAULT_SHOP_PROP);
 
   const flavorsForLevel = $derived(availableFlavors(level));
   // Level change can strand the flavor (kept as a guard; every flavor is
   // currently generable at every level).
   $effect(() => {
-    if (!flavorsForLevel.includes(flavor)) flavor = "variety";
+    if (!flavorsForLevel.includes(flavor)) flavor = "rotated";
   });
 
   // ── flavor ⇄ LOOP overlay bridge: the picker IS the generate panel's
@@ -167,13 +188,12 @@
     dealNonce++;
     haptics?.trigger("success");
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // The buy button sits below the stage on narrow layouts — bring the
+    // Vertical layout: the buy button always sits below the stage — bring the
     // flourish into view so the payoff isn't playing off-screen.
-    if (window.innerWidth < 1200)
-      previewBoxEl?.scrollIntoView({
-        behavior: reduced ? "auto" : "smooth",
-        block: "center",
-      });
+    previewBoxEl?.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth",
+      block: "center",
+    });
     clearTimeout(payoffTimer);
     // Shimmer + ready-chip once the re-deal settles (gather, deal, last stagger).
     const settle = reduced ? 0 : FAN_GATHER_MS + FAN_DEAL_MS + FAN_DEAL_STAGGER * 5;
@@ -193,50 +213,18 @@
     (window as unknown as Record<string, unknown>).__tkaPayoff = startPayoff;
   }
 
-  // ── preset decks: one-tap entry for the buyer who won't work the dials.
-  //    The full board stays below for anyone who wants to refine. ──
-  interface Preset {
-    id: string;
-    name: string;
-    sub: string;
-    level: LoopLevel;
-    length: LoopLength;
-    flavor: LoopFlavor;
-    prop: PropType;
-  }
-  const PRESETS: Preset[] = [
-    { id: "beginner", name: "Beginner's Loop", sub: "Level 1 · 8 · Variety", level: "1", length: "8", flavor: "variety", prop: PropTypeEnum.STAFF },
-    { id: "sampler", name: "The Sampler", sub: "Mix levels · 8 · Variety", level: "mix", length: "8", flavor: "variety", prop: PropTypeEnum.STAFF },
-    { id: "deep", name: "Deep Cuts", sub: "Level 2 · 8 · Rotated", level: "2", length: "8", flavor: "rotated", prop: PropTypeEnum.STAFF },
-  ];
-  // Each preset wears its level's color — the one-tap row should out-shine the
-  // board it configures, not read as an afterthought above it.
-  function presetBg(p: Preset): string {
-    if (p.level === "mix") return MIX_LEVEL_COLOR;
-    return DIFFICULTY_LEVELS[Number(p.level)]?.cssBg ?? SECONDARY_TILE_COLOR;
-  }
-  function presetText(p: Preset): string {
-    if (p.level === "mix") return "#0b1220";
-    return DIFFICULTY_LEVELS[Number(p.level)]?.text ?? "white";
-  }
-  function applyPreset(p: Preset) {
-    level = p.level;
-    length = p.length;
-    flavor = p.flavor;
-    propType = p.prop;
-    turnIntensity = DEFAULT_MAX_TURNS;
-    buzz();
-  }
-  const activePreset = $derived(
-    PRESETS.find(
-      (p) =>
-        p.level === level &&
-        p.length === length &&
-        p.flavor === flavor &&
-        p.prop === propType &&
-        turnIntensity === DEFAULT_MAX_TURNS
-    )?.id ?? null
-  );
+  // ── pack chips: the primary product tier. Heat ramp (cool → amber → red)
+  //    reads the difficulty ladder at a glance without a legend. ──
+  const PACK_BG: Record<LoopPackId, string> = {
+    mild: "linear-gradient(135deg, #7dd3fc 0%, #38bdf8 50%, #0ea5e9 100%)",
+    medium: "linear-gradient(135deg, #fcd34d 0%, #f59e0b 50%, #d97706 100%)",
+    spicy: "linear-gradient(135deg, #f87171 0%, #ef4444 45%, #b91c1c 100%)",
+  };
+  const PACK_TEXT: Record<LoopPackId, string> = {
+    mild: "#062033",
+    medium: "#2a1602",
+    spicy: "#ffffff",
+  };
 
   // ── bento palette: LOOP/prop tile gradients (shared with the deck-releaser
   //    LoopBentoBoard so the surfaces match). ──
@@ -274,6 +262,7 @@
     level === "mix" ? "#0b1220" : (DIFFICULTY_LEVELS[levelNum]?.text ?? "white")
   );
   function stepLevel(dir: number) {
+    enterCustom();
     if (level === "mix") level = dir > 0 ? "3" : "1";
     else level = String(Math.max(1, Math.min(3, Number(level) + dir))) as LoopLevel;
     buzz();
@@ -281,6 +270,7 @@
   const LENGTH_STEPS = AVAILABLE_LENGTHS.map(Number);
   const lengthNum = $derived(length === "mix" ? 8 : Number(length));
   function stepLength(dir: number) {
+    enterCustom();
     if (length === "mix") {
       length = "8";
     } else {
@@ -310,6 +300,7 @@
       turnIntensity = Math.round(turnIntensity);
   });
   function setTurns(v: number) {
+    enterCustom();
     turnIntensity = v;
     buzz();
   }
@@ -326,6 +317,7 @@
       getActivityLogger().logActivity("shop_loop_advanced_opened", "shop");
   }
   function customize(key: string, value: string) {
+    enterCustom();
     customTouched = true;
     getActivityLogger().logActivity("shop_loop_advanced_customized", "shop", {
       settingKey: key,
@@ -341,6 +333,9 @@
   }
 
   const loopConfig = $derived.by<LoopConfig>(() => {
+    // Pack selected → the pack id IS the order; fulfillment resolves the
+    // recipe from LOOP_PACKS. No dial fields ride along (pack XOR dials).
+    if (pack) return { pack };
     const cfg: LoopConfig = { level, length, flavor };
     const custom: NonNullable<LoopConfig["custom"]> = {};
     // Max turns rides on every Level 2+ order — fulfillment never guesses.
@@ -371,15 +366,33 @@
   // the dials (Deep Cuts shows actual Level 2 rotated sequences, not the
   // level-blind SKU covers). SKU covers stay as the instant fallback while the
   // catalog sample loads or if it fails.
+  // Dial churn must NOT re-deal the fan on every tap (disorienting — the
+  // dealer kept re-dealing mid-decision). Generation starts immediately on
+  // any change, but the stage only COMMITS (remount → one deal) once the
+  // dials have been still for SETTLE_MS and the cards for the current dials
+  // are ready. Until then the previous fan holds steady.
+  const SETTLE_MS = 650;
   let previewCards = $state<CoverCard[] | null>(null);
+  let settledKey = $state("boot");
   let previewToken = 0;
+  let lastDialTouch = 0;
+  const dialKey = $derived(
+    `${pack ?? "custom"}|${level}|${length}|${flavor}|${propType}|${turnIntensity}|${excluded.size}`
+  );
   $effect(() => {
     if (flavorSkus.length === 0) return;
-    const dials = { level, length, flavor, maxTurns: turnIntensity, propType, excluded, skuByFlavor };
+    const key = dialKey;
+    const dials = { pack, level, length, flavor, maxTurns: turnIntensity, propType, excluded, skuByFlavor };
     const token = ++previewToken;
-    previewCards = null; // fall back to SKU covers while the sample loads
+    lastDialTouch = Date.now();
     loopPreviewCards(dials).then((cards) => {
-      if (token === previewToken && cards?.length) previewCards = cards;
+      if (token !== previewToken) return; // superseded by a newer touch
+      const wait = Math.max(0, SETTLE_MS - (Date.now() - lastDialTouch));
+      setTimeout(() => {
+        if (token !== previewToken) return;
+        previewCards = cards?.length ? cards : null;
+        settledKey = key;
+      }, wait);
     });
   });
   const fanCards = $derived(
@@ -396,10 +409,12 @@
   }
   const previewDesc = $derived(
     stageCaption(
-      flavor === "variety"
-        ? VARIETY_COPY
-        : (selectedSku?.description ??
-            generateExplanationText(currentLoopComponents))
+      activePack
+        ? activePack.tagline
+        : flavor === "variety"
+          ? VARIETY_COPY
+          : (selectedSku?.description ??
+              generateExplanationText(currentLoopComponents))
     )
   );
 
@@ -430,11 +445,13 @@
   ]);
 
   function pickLoopType(lt: LOOPType) {
-    flavor = flavorForLoopType(lt) ?? "variety";
+    enterCustom();
+    flavor = flavorForLoopType(lt) ?? "rotated";
     buzz();
     showFlavor = false;
   }
   function pickVariety() {
+    enterCustom();
     flavor = "variety";
     buzz();
     showFlavor = false;
@@ -466,7 +483,9 @@
           >
             <!-- fill mode: the stage is the sized box, so config swaps can
                  never resize it (crossfade-primitive routing). -->
-            <Crossfade key={`${level}|${length}|${flavor}|${propType}|${turnIntensity}|${excluded.size}`} fill>
+            <!-- Keyed on the SETTLED config, not the live dials: the fan holds
+                 through dial churn and re-deals exactly once per decision. -->
+            <Crossfade key={settledKey} fill>
               <div class="preview-inner">
                 <!-- Non-interactive on purpose: the fan sizes against the rest
                      overlap instead of reserving hover-spread width, which buys
@@ -475,11 +494,13 @@
                 <DeckFanCover
                   cards={fanCards}
                   deckId={selectedSku?.deckId}
-                  deckName={selectedSku?.name ?? "Variety Pack"}
+                  deckName={activePack
+                    ? `${activePack.name} pack`
+                    : (selectedSku?.name ?? "LOOP Deck")}
                   {propType}
-                  cardWidth={narrowPreview ? 150 : 210}
+                  cardWidth={narrowPreview ? 150 : previewW >= 1200 ? 280 : 210}
                   maxCardWidth={previewMaxCardW}
-                  exactCount={flavor === "variety"
+                  exactCount={!activePack && flavor === "variety"
                     ? Math.min(narrowPreview ? 4 : 5, fanCards.length)
                     : undefined}
                   interactive={false}
@@ -509,27 +530,36 @@
           <h1>LOOP Deck</h1>
           <p class="meta">54 cards · every sequence loops · built to your dials</p>
 
-          <!-- ── preset decks: one-tap starting points (biggest UX lever per
-               the 2026 research). The board below stays for refining. ── -->
-          <div class="preset-row" role="group" aria-label="Starting points">
-            {#each PRESETS as p (p.id)}
+          <!-- ── the packs: curated recipes, the primary product. The board
+               below is Custom mode — touching it deselects the pack. ── -->
+          <div class="preset-row" role="group" aria-label="Curated packs">
+            {#each LOOP_PACKS as p (p.id)}
               <button
                 type="button"
                 class="preset"
-                class:active={activePreset === p.id}
-                aria-pressed={activePreset === p.id}
-                style:--preset-bg={presetBg(p)}
-                style:--preset-text={presetText(p)}
-                onclick={() => applyPreset(p)}
+                class:active={pack === p.id}
+                aria-pressed={pack === p.id}
+                style:--preset-bg={PACK_BG[p.id]}
+                style:--preset-text={PACK_TEXT[p.id]}
+                onclick={() => leaveCustom(p.id)}
               >
                 <span class="preset-name">{p.name}</span>
                 <span class="preset-sub">{p.sub}</span>
               </button>
             {/each}
           </div>
+          <!-- Composition line: the selected pack's recipe, honestly. Reserved
+               height either way so pack↔custom swaps never shove the board. -->
+          <p class="composition-line" class:custom={!activePack}>
+            {activePack
+              ? activePack.composition
+              : "Custom deck — your dials below drive the order."}
+          </p>
 
-          <!-- ── primary bento board ── -->
-          <div class="bento-board">
+          <!-- ── the bento board = Custom mode. Dimmed (not disabled) while a
+               pack is selected: the first touch on any dial deselects the pack
+               and the board brightens — dials stay live the whole time. ── -->
+          <div class="bento-board" class:pack-active={activePack !== null}>
             <!-- Level / Length: the generate panel's colored StepperCards
                  (LoopBentoBoard blueprint — Level wears DIFFICULTY colors). -->
             <div class="tile-row">
@@ -729,16 +759,16 @@
       class="loop-col"
       transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}
     >
-      <!-- Variety Pack rides above the real LOOP selector: it's the curated
+      <!-- Grab Bag rides above the real LOOP selector: it's the every-flavor
            blend, not a LOOP type, so it can't live inside the overlay grid. -->
       <button
         type="button"
         class="variety-cta"
-        class:active={flavor === "variety"}
+        class:active={!activePack && flavor === "variety"}
         onclick={pickVariety}
       >
-        <span class="variety-name">Variety Pack</span>
-        <span class="variety-sub">a curated blend of every flavor · the default</span>
+        <span class="variety-name">Grab Bag</span>
+        <span class="variety-sub">every flavor in one deck · mandalas get weird</span>
       </button>
       <div class="loop-host">
         <LOOPExpandedOverlay
@@ -790,30 +820,22 @@
     border-color: var(--theme-border-strong, rgba(255, 255, 255, 0.3));
   }
 
+  /* Vertical hero layout: the fan is the star, centered and full-band up
+     top; the controls sit in a centered column beneath it. Kills the 4K
+     side-by-side problems — clipped cards on the left, dead space under the
+     fan, and a stage narrower than the screen deserves. */
   .config-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-    gap: clamp(28px, 4vw, 56px);
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: clamp(20px, 3vh, 36px);
   }
-
-  @media (max-width: 860px) {
-    .config-layout {
-      grid-template-columns: 1fr;
-    }
+  .preview-column {
+    width: 100%;
   }
-
-  /* Wide screens: the info column is taller than the preview, so DON'T stretch
-     the stage to match (that left a big void with the fan floating in it).
-     Keep the box at a hero height and pin it in view as the column scrolls. */
-  @media (min-width: 1200px) {
-    .preview-column {
-      position: sticky;
-      top: 88px;
-    }
-    .preview-box {
-      height: clamp(400px, 46vh, 480px);
-    }
+  .info-column {
+    width: 100%;
+    max-width: 820px;
   }
 
   /* ---------- preview ---------- */
@@ -830,8 +852,9 @@
       radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
     padding: clamp(16px, 2.5vw, 32px);
     /* FIXED stage height: fill-mode crossfade layers stack absolutely inside,
-       so no config swap can resize the box (no-layout-shift by construction). */
-    height: clamp(360px, 36vw, 460px);
+       so no config swap can resize the box (no-layout-shift by construction).
+       Hero-scaled: tracks the viewport so 4K gets a real stage, not a strip. */
+    height: clamp(380px, 48vh, 760px);
   }
 
   /* Each layer fills the stage and centers its art vertically. Children
@@ -1005,11 +1028,33 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* The recipe line under the chips. Always rendered (pack recipe OR the
+     custom-mode note) so pack↔custom swaps never shove the board below. */
+  .composition-line {
+    margin: 8px 0 0;
+    min-height: 1.4em;
+    font-size: var(--font-size-compact, 12px);
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
+  }
+  .composition-line.custom {
+    opacity: 0.6;
+  }
+
   /* ---------- bento board ---------- */
+  /* Pack selected → the board isn't driving the order. Dimmed, NOT disabled:
+     hover previews the wake-up, and the first dial touch enters Custom. */
+  .bento-board.pack-active {
+    opacity: 0.55;
+  }
+  .bento-board.pack-active:hover {
+    opacity: 0.85;
+  }
   .bento-board {
     display: flex;
     flex-direction: column;
     gap: 12px;
+    transition: opacity 0.25s ease;
     /* theme vars the real generate cards read for their type scale */
     --card-text-size: 22px;
     --card-text-weight: 800;
@@ -1351,7 +1396,8 @@
   @media (prefers-reduced-motion: reduce) {
     .back-button,
     .advanced-toggle,
-    .preset {
+    .preset,
+    .bento-board {
       transition: none;
     }
   }

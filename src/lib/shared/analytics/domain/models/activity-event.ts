@@ -60,7 +60,9 @@ export type ActivityEventType =
   | "theme_change"
   // Shop events (usage-gated features: if nobody fires these, the feature goes)
   | "shop_loop_advanced_opened"
-  | "shop_loop_advanced_customized";
+  | "shop_loop_advanced_customized"
+  | "shop_loop_pack_selected"
+  | "shop_loop_custom_entered";
 
 /**
  * Metadata that can be attached to events

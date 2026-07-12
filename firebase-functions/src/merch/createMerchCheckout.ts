@@ -8,9 +8,12 @@ const stripeSecretKey = defineString("STRIPE_SECRET_KEY");
 const appBaseUrl = defineString("APP_BASE_URL", { default: "https://tkaflowarts.com" });
 
 interface LoopConfigRequest {
-  level: string;
-  length: string;
-  flavor: string;
+  /** Curated pack id — when present, the pack recipe drives fulfillment and
+   *  the dial fields are absent (pack XOR dials). */
+  pack?: string;
+  level?: string;
+  length?: string;
+  flavor?: string;
   custom?: {
     /** Max turns per motion, 0–3 in half steps. Rides on every Level 2+ order. */
     maxTurns?: number;
@@ -58,11 +61,21 @@ const LOOP_FLAVORS = [
   "mirrored-rotated-inverted-swapped",
 ] as const;
 const LEVEL_BALANCES = ["mostly-1", "even", "mostly-spicy"] as const;
+// Curated pack ids (recipes live client-side in loop-config.ts LOOP_PACKS;
+// fulfillment resolves the id against those constants).
+const LOOP_PACKS = ["mild", "medium", "spicy"] as const;
 
 function validateLoopConfig(cfg: LoopConfigRequest): void {
   const bad = (msg: string) => {
     throw new functions.https.HttpsError("invalid-argument", msg);
   };
+  if (cfg.pack !== undefined) {
+    // Pack XOR dials: a pack order carries nothing else.
+    if (!LOOP_PACKS.includes(cfg.pack as never)) bad("Unknown loop pack");
+    if (cfg.level !== undefined || cfg.length !== undefined || cfg.flavor !== undefined || cfg.custom !== undefined)
+      bad("Pack orders carry no dial fields");
+    return;
+  }
   if (!LOOP_LEVELS.includes(cfg.level as never)) bad("Unknown loop level");
   if (!LOOP_LENGTHS.includes(cfg.length as never)) bad("Unknown loop length");
   if (!LOOP_FLAVORS.includes(cfg.flavor as never)) bad("Unknown loop flavor");

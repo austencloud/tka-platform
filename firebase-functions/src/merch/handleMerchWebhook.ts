@@ -63,6 +63,9 @@ export const handleMerchWebhook = functions.https.onRequest(
           // Buyer's print prop for physical decks; absent = staff (also absent
           // on pre-prop-picker orders and non-deck items).
           ...(session.metadata.propType && { propType: session.metadata.propType }),
+          // Curated LOOP pack — the recipe id fulfillment resolves against
+          // LOOP_PACKS (client loop-config.ts). Pack XOR dials.
+          ...(session.metadata.loopPack && { loopPack: session.metadata.loopPack }),
           // LOOP configurator dials (flat strings; loopCustom = JSON of the
           // advanced-panel choices). Absent on non-LOOP items.
           ...(session.metadata.loopLevel && {

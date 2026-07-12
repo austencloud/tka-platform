@@ -23,8 +23,8 @@ import {
 import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
 import type { CoverCard, Product } from "../domain/models/product";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { LoopFlavor, LoopLength, LoopLevel } from "../domain/loop-config";
-import { DEFAULT_MAX_TURNS } from "../domain/loop-config";
+import type { LoopFlavor, LoopLength, LoopLevel, LoopPackId } from "../domain/loop-config";
+import { DEFAULT_MAX_TURNS, loopPack } from "../domain/loop-config";
 import { generateLOOPType } from "$lib/shared/create/services/loop-type-utils";
 import { levelToDifficulty } from "$lib/shared/create/utils/config-mapper";
 import { LOOPType, Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
@@ -117,8 +117,10 @@ interface HandDials {
 // Generated hands keyed by their full dial set — dialing away and back is free.
 const liveCache = new Map<string, Promise<SequenceData[]>>();
 
-function liveHand(dials: HandDials, n: number): Promise<SequenceData[]> {
-  const key = `${dials.flavor}|${dials.level}|${dials.steps}|${dials.maxTurns}|${dials.propType}|${n}`;
+function liveHand(dials: HandDials, n: number, offset = 0): Promise<SequenceData[]> {
+  // Offset in the key so repeated identical slots (a pack hand dealing four
+  // 8-counts) each generate their own card instead of sharing one.
+  const key = `${dials.flavor}|${dials.level}|${dials.steps}|${dials.maxTurns}|${dials.propType}|${n}|${offset}`;
   let hit = liveCache.get(key);
   if (!hit) {
     hit = generateHand(dials, n).catch((e) => {
@@ -199,11 +201,14 @@ async function handCards(
       }
     }
   }
-  const seqs = await liveHand(dials, n);
+  const seqs = await liveHand(dials, n, offset);
   return seqs.map((sequence) => ({ sequence, ...accent }));
 }
 
 export interface PreviewDials {
+  /** Curated pack — when set, the fan deals the pack's preview hand and the
+   *  dial fields below are ignored. */
+  pack?: LoopPackId | null;
   level: LoopLevel;
   length: LoopLength;
   flavor: LoopFlavor;
@@ -225,6 +230,7 @@ const VARIETY_POOL: readonly LoopFlavor[] = [
 ];
 
 export async function loopPreviewCards({
+  pack,
   level,
   length,
   flavor,
@@ -235,6 +241,32 @@ export async function loopPreviewCards({
 }: PreviewDials): Promise<CoverCard[] | null> {
   try {
     const cats = await getLoopCatalogs();
+
+    if (pack) {
+      // Pack fan = the recipe's representative hand, one card per slot.
+      // Slots vary per index even when dials repeat (offset staggers the
+      // catalog page so the Mild fan isn't four twins).
+      const slots = loopPack(pack).previewHand;
+      const hands = await Promise.all(
+        slots.map((s, i) =>
+          handCards(
+            cats,
+            {
+              flavor: s.flavor,
+              level: s.level,
+              steps: s.steps,
+              maxTurns: s.maxTurns ?? DEFAULT_MAX_TURNS,
+              propType,
+            },
+            1,
+            skuByFlavor.get(s.flavor),
+            i
+          )
+        )
+      );
+      const cards = hands.flat();
+      return cards.length ? cards.slice(0, FAN_SIZE) : null;
+    }
     const steps = length === "mix" ? 8 : Number(length);
     const turns = maxTurns || DEFAULT_MAX_TURNS;
     const hand = (f: LoopFlavor, lvl: number, n: number, offset = 0) =>

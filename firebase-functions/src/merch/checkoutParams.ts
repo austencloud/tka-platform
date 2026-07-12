@@ -23,13 +23,15 @@ export function buildMerchCheckoutParams(opts: {
   /** Buyer's print prop (validated PropType value). Rides in metadata so the
    *  webhook writes it onto the order for fulfillment. */
   propType?: string;
-  /** Validated LOOP configurator dials. Stripe metadata is string-only, so
-   *  they flatten to loopLevel/loopLength/loopFlavor (+ loopCustom JSON when
-   *  the advanced panel was touched). */
+  /** Validated LOOP configurator selection. Stripe metadata is string-only:
+   *  a pack order writes loopPack; a custom order flattens to
+   *  loopLevel/loopLength/loopFlavor (+ loopCustom JSON when the advanced
+   *  panel was touched). Pack XOR dials — enforced by createMerchCheckout. */
   loopConfig?: {
-    level: string;
-    length: string;
-    flavor: string;
+    pack?: string;
+    level?: string;
+    length?: string;
+    flavor?: string;
     custom?: Record<string, unknown>;
   };
 }): Stripe.Checkout.SessionCreateParams {
@@ -46,12 +48,14 @@ export function buildMerchCheckoutParams(opts: {
       productId,
       productName: product.name,
       ...(propType && { propType }),
-      ...(loopConfig && {
-        loopLevel: loopConfig.level,
-        loopLength: loopConfig.length,
-        loopFlavor: loopConfig.flavor,
-        ...(loopConfig.custom && { loopCustom: JSON.stringify(loopConfig.custom) }),
-      }),
+      ...(loopConfig?.pack && { loopPack: loopConfig.pack }),
+      ...(loopConfig &&
+        !loopConfig.pack && {
+          loopLevel: loopConfig.level ?? "",
+          loopLength: loopConfig.length ?? "",
+          loopFlavor: loopConfig.flavor ?? "",
+          ...(loopConfig.custom && { loopCustom: JSON.stringify(loopConfig.custom) }),
+        }),
     },
   };
 }

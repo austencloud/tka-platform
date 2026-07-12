@@ -78,6 +78,22 @@ describe("buildMerchCheckoutParams", () => {
     expect(withLoop.metadata?.loopFlavor).toBe("rotated");
   });
 
+  it("writes only loopPack for pack orders (pack XOR dials)", () => {
+    const withPack = buildMerchCheckoutParams({
+      product: PRODUCT,
+      productId: "doc_1",
+      baseUrl: "https://tkaflowarts.com",
+      propType: "staff",
+      loopConfig: { pack: "mild" },
+    });
+    expect(withPack.metadata).toEqual({
+      productId: "doc_1",
+      productName: "Deck",
+      propType: "staff",
+      loopPack: "mild",
+    });
+  });
+
   it("carries the buyer's propType in metadata for the webhook", () => {
     const withProp = buildMerchCheckoutParams({
       product: PRODUCT,
