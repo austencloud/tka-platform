@@ -447,6 +447,28 @@ describe("real-loop detector audit (all 5 detectors)", () => {
     lockAllSamples("4-loop-labeler", "rewound", ["rewound"]);
   });
 
+  it("#4 loop-labeler: nested inner rotation is recovered (2026-07-12 fix)", () => {
+    // The former "nested-rotation partials" gap: the inner rotation completes
+    // its full cycle within each half, so seam-pair comparison never saw it.
+    // detectNestedRotation recovers it from the closed first half.
+    lockAllSamples("4-loop-labeler", "mirrored_inverted_rotated", [
+      "inverted",
+      "mirrored",
+      "rotated",
+    ]);
+    // Sample 2 over-detects (pre-existing EXTRA, unrelated) — lock 0 and 1.
+    lock("4-loop-labeler", "mirrored_rotated", 0, ["mirrored", "rotated"]);
+    lock("4-loop-labeler", "mirrored_rotated", 1, ["mirrored", "rotated"]);
+    // Samples 1-2 recover (none) — swap-family generator orientation-parity
+    // issue documented in the 2026-07-05 audit, not a detection gap.
+    lock("4-loop-labeler", "mirrored_rotated_inverted_swapped", 0, [
+      "inverted",
+      "mirrored",
+      "rotated",
+      "swapped",
+    ]);
+  });
+
   it("#5 .cjs labelers: solid coverage stays solid", () => {
     for (const d of ["5a-auto-label", "5b-validate"] as const) {
       lockAllSamples(d, "rotated", ["rotated"]);

@@ -269,6 +269,26 @@ export class LOOPDetector implements ILOOPDetector {
         }
       }
 
+      // Nested rotation recovery. A halved outer transform (mirror / invert /
+      // swap) can wrap an INNER rotating cycle that completes fully within
+      // each half — e.g. mirrored_inverted_rotated: quarters rotate 180°
+      // inside the half, then the whole half mirrors+inverts at the seam.
+      // Index-wise half/quarter pair comparisons can't see that rotation
+      // (across the seam the rotation composes with the outer transform, so
+      // no unanimous "rotated" target exists at either interval). If the
+      // first half closes back to the loop's start, it is itself a circular
+      // loop — detect it independently and merge its rotation. Rotation is
+      // always the innermost layer (no grid position is a rotation fixed
+      // point), so ROTATED is the only component recovered this way.
+      if (!allComponents.includes("rotated")) {
+        const nested = this.detectNestedRotation(steps);
+        if (nested) {
+          allComponents.push("rotated");
+          intervals.rotation = nested.interval;
+          if (!rotationDirection) rotationDirection = nested.direction;
+        }
+      }
+
       const finalPeriod = periodFromIntervals(intervals, true);
 
       return {
@@ -599,6 +619,44 @@ export class LOOPDetector implements ILOOPDetector {
       modularPattern,
       period: periodFromIntervals(intervals, true),
       componentsDetailed: componentsToDetailed(components),
+    };
+  }
+
+  /**
+   * Detect an inner rotating cycle nested inside a halved outer transform.
+   *
+   * Applies only when the first half CLOSES (ends back at the loop's start
+   * position) — then the half is itself a circular loop and the same uniform
+   * pattern detection can run on it in isolation. Returns the rotation's
+   * full-loop interval: an inner halved rotation (180° at the half's own
+   * midpoint) is a quarter of the full loop (4); an inner quartered rotation
+   * is an eighth (8).
+   */
+  private detectNestedRotation(
+    steps: ExtractedStep[]
+  ): { interval: 4 | 8; direction: "cw" | "ccw" | null } | null {
+    const half = Math.floor(steps.length / 2);
+    if (half < 4 || half % 2 !== 0) return null;
+
+    const loopStart = steps[0]?.startPos;
+    const halfSteps = steps.slice(0, half);
+    const halfEnd = halfSteps[half - 1]?.endPos;
+    if (!loopStart || !halfEnd || halfEnd !== loopStart) return null;
+
+    const candidates = detectUniformPattern(
+      halfSteps,
+      this.comparisonOrchestrator
+    );
+    const rotated = candidates.find(
+      (c) =>
+        c.components.includes("rotated") && !c.components.includes("rewound")
+    );
+    if (!rotated) return null;
+
+    const innerInterval = rotated.transformationIntervals?.rotation ?? 2;
+    return {
+      interval: innerInterval >= 4 ? 8 : 4,
+      direction: rotated.rotationDirection ?? null,
     };
   }
 

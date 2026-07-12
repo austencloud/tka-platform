@@ -14,8 +14,10 @@ import type { StepPairRelationship } from "./steppair-models";
  * transformation identity repeats.
  * - 2: transformation applies at midpoint (halved, 180° rotation)
  * - 4: transformation applies every quarter (quartered, 90° rotation)
+ * - 8: nested rotation — an inner rotating cycle that completes within each
+ *      half of a halved outer transform (e.g. mirrored_inverted_rotated)
  */
-export type TransformationInterval = 2 | 4;
+export type TransformationInterval = 2 | 4 | 8;
 
 /**
  * Section grouping patterns - which sections share the same base vs transformed
