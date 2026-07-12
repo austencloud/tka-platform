@@ -20,7 +20,6 @@
   import BuyButton from "./components/BuyButton.svelte";
   import ShopPropPicker from "./components/ShopPropPicker.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import LOOPExpandedOverlay from "$lib/features/create/generate/components/cards/LOOPExpandedOverlay.svelte";
   import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
@@ -28,6 +27,7 @@
     parseLoopComponents,
     generateLOOPType,
   } from "$lib/shared/create/services/loop-type-utils";
+  import { LOOP_COMPONENT_MAP } from "$lib/features/create/generate/shared/domain/constants/loop-constants";
   import { scale, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
@@ -231,17 +231,56 @@
     previewH > 0 ? Math.max(110, Math.round(((previewH - 80) * 5) / 7)) : 200
   );
 
-  const LEVEL_OPTIONS = [
-    { value: "1", label: "1" },
-    { value: "2", label: "2" },
-    { value: "3", label: "3" },
-  ];
-  const STEP_OPTIONS = RECIPE_STEPS.map((s) => ({ value: String(s), label: String(s) }));
-  const TURN_OPTIONS_WHOLE = ["1", "2", "3"].map((v) => ({ value: v, label: `≤${v}` }));
-  const TURN_OPTIONS_HALF = ["0.5", "1", "1.5", "2", "2.5", "3"].map((v) => ({
-    value: v,
-    label: `≤${v}`,
-  }));
+  // ── flavor identity: each LOOP component owns a canonical color
+  //    (LOOP_COMPONENT_MAP — same hues as the picker tiles). Combos don't mix
+  //    colors, they juxtapose them as gradient stops. ──
+  function flavorColors(flavor: LoopFlavor): string[] {
+    const cols = flavor
+      .split("-")
+      .map((c) => LOOP_COMPONENT_MAP.get(c as never)?.color)
+      .filter((c): c is string => Boolean(c));
+    return cols.length ? cols : ["#8b6cff"];
+  }
+  /** Low-opacity wash for the card frame. */
+  function flavorWash(flavor: LoopFlavor): string {
+    const stops = flavorColors(flavor).map(
+      (c, i, a) => `color-mix(in srgb, ${c} 13%, transparent) ${(i / Math.max(1, a.length - 1)) * 55}%`
+    );
+    return stops.length > 1
+      ? `linear-gradient(135deg, ${stops.join(", ")}, transparent 80%)`
+      : `linear-gradient(135deg, ${stops[0]}, transparent 55%)`;
+  }
+  /** Vivid gradient for the flavor pill. */
+  function flavorPillBg(flavor: LoopFlavor): string {
+    const stops = flavorColors(flavor).map((c) => `color-mix(in srgb, ${c} 42%, transparent)`);
+    return stops.length > 1
+      ? `linear-gradient(135deg, ${stops.join(", ")})`
+      : stops[0]!;
+  }
+
+  // ── per-slice steppers (match the count field's language) ──
+  function stepSliceLevel(i: number, dir: number) {
+    const s = slices[i];
+    if (!s) return;
+    setLevel(i, Math.max(1, Math.min(3, s.level + dir)));
+  }
+  function stepSliceSteps(i: number, dir: number) {
+    const s = slices[i];
+    if (!s) return;
+    const idx = RECIPE_STEPS.indexOf(s.steps as (typeof RECIPE_STEPS)[number]);
+    const next = RECIPE_STEPS[Math.max(0, Math.min(RECIPE_STEPS.length - 1, idx + dir))];
+    if (next !== undefined && next !== s.steps) setSteps(i, next);
+  }
+  const TURN_STEPS_WHOLE = [1, 2, 3];
+  const TURN_STEPS_HALF = [0.5, 1, 1.5, 2, 2.5, 3];
+  function stepSliceTurns(i: number, dir: number) {
+    const s = slices[i];
+    if (!s) return;
+    const allowed = s.level === 3 ? TURN_STEPS_HALF : TURN_STEPS_WHOLE;
+    const idx = Math.max(0, allowed.indexOf(s.maxTurns ?? 1));
+    const next = allowed[Math.max(0, Math.min(allowed.length - 1, idx + dir))];
+    if (next !== undefined && next !== s.maxTurns) setTurns(i, next);
+  }
 </script>
 
 <svelte:window onkeydown={onWindowKey} />
@@ -288,14 +327,16 @@
 
             <div class="slice-list">
               {#each slices as slice, i (slice.id)}
-                {@const accent =
-                  skuByFlavor.get(slice.flavor)?.coverCards?.[0]?.accentColor ??
-                  "#8b6cff"}
+                {@const accent = flavorColors(slice.flavor)[0]!}
                 <!-- No row transition: slide outros hung inside the grid
                      (inert ghost rows), and correctness beats choreography.
-                     Each slice wears its flavor's accent — a multi-slice
-                     recipe reads as distinct ingredients at a glance. -->
-                <div class="slice-row" style:--slice-accent={accent}>
+                     Each slice wears its LOOP components' canonical colors
+                     (combos juxtapose as gradient stops, never mixed). -->
+                <div
+                  class="slice-row"
+                  style:--slice-accent={accent}
+                  style:--slice-wash={flavorWash(slice.flavor)}
+                >
                   <div class="slice-sample" aria-hidden="true">
                     {#if sliceCards[i]}
                       <DeckFanCover
@@ -339,6 +380,7 @@
                       <button
                         type="button"
                         class="flavor-btn"
+                        style:background={flavorPillBg(slice.flavor)}
                         onclick={() => (flavorEdit = i)}
                       >
                         {flavorLabel(slice.flavor)}
@@ -358,34 +400,64 @@
                     <div class="slice-dials">
                       <div class="dial">
                         <span class="dial-label">Level</span>
-                        <SegmentedControl
-                          options={LEVEL_OPTIONS}
-                          value={String(slice.level)}
-                          onchange={(v) => setLevel(i, Number(v))}
-                          color="accent"
-                          size="sm"
-                        />
+                        <div class="mini-stepper">
+                          <button
+                            type="button"
+                            class="count-step"
+                            aria-label="Lower level"
+                            disabled={slice.level <= 1}
+                            onclick={() => stepSliceLevel(i, -1)}
+                          >−</button>
+                          <span class="mini-value">{slice.level}</span>
+                          <button
+                            type="button"
+                            class="count-step"
+                            aria-label="Raise level"
+                            disabled={slice.level >= 3}
+                            onclick={() => stepSliceLevel(i, 1)}
+                          >+</button>
+                        </div>
                       </div>
                       <div class="dial">
                         <span class="dial-label">Steps</span>
-                        <SegmentedControl
-                          options={STEP_OPTIONS}
-                          value={String(slice.steps)}
-                          onchange={(v) => setSteps(i, Number(v))}
-                          color="accent"
-                          size="sm"
-                        />
+                        <div class="mini-stepper">
+                          <button
+                            type="button"
+                            class="count-step"
+                            aria-label="Fewer steps"
+                            disabled={slice.steps <= 4}
+                            onclick={() => stepSliceSteps(i, -1)}
+                          >−</button>
+                          <span class="mini-value">{slice.steps}</span>
+                          <button
+                            type="button"
+                            class="count-step"
+                            aria-label="More steps"
+                            disabled={slice.steps >= 16}
+                            onclick={() => stepSliceSteps(i, 1)}
+                          >+</button>
+                        </div>
                       </div>
                       {#if slice.level >= 2}
                         <div class="dial" transition:slide={{ duration: 200, easing: quintOut, axis: "x" }}>
-                          <span class="dial-label">Turns</span>
-                          <SegmentedControl
-                            options={slice.level === 3 ? TURN_OPTIONS_HALF : TURN_OPTIONS_WHOLE}
-                            value={String(slice.maxTurns ?? 1)}
-                            onchange={(v) => setTurns(i, Number(v))}
-                            color="accent"
-                            size="sm"
-                          />
+                          <span class="dial-label">Max turns</span>
+                          <div class="mini-stepper">
+                            <button
+                              type="button"
+                              class="count-step"
+                              aria-label="Fewer turns"
+                              disabled={(slice.maxTurns ?? 1) <= (slice.level === 3 ? 0.5 : 1)}
+                              onclick={() => stepSliceTurns(i, -1)}
+                            >−</button>
+                            <span class="mini-value">≤{slice.maxTurns ?? 1}</span>
+                            <button
+                              type="button"
+                              class="count-step"
+                              aria-label="More turns"
+                              disabled={(slice.maxTurns ?? 1) >= 3}
+                              onclick={() => stepSliceTurns(i, 1)}
+                            >+</button>
+                          </div>
                         </div>
                       {/if}
                     </div>
@@ -668,10 +740,13 @@
     /* Flavor identity: the slice wears its flavor's accent on the frame. */
     border: 1px solid color-mix(in srgb, var(--slice-accent, #8b6cff) 45%, transparent);
     background:
-      linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--slice-accent, #8b6cff) 9%, transparent),
-        transparent 55%
+      var(
+        --slice-wash,
+        linear-gradient(
+          135deg,
+          color-mix(in srgb, var(--slice-accent, #8b6cff) 9%, transparent),
+          transparent 55%
+        )
       ),
       var(--theme-card-bg, rgba(255, 255, 255, 0.03));
     box-shadow: 0 4px 18px color-mix(in srgb, var(--slice-accent, #8b6cff) 14%, transparent);
@@ -731,9 +806,27 @@
     cursor: pointer;
     transition: border-color 0.15s ease, background 0.15s ease;
   }
-  .count-step:hover {
+  .count-step:hover:not(:disabled) {
     border-color: rgba(216, 180, 254, 0.6);
     background: rgba(139, 108, 255, 0.14);
+  }
+  .count-step:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  /* Level/Steps/Turns share the count field's stepper language — one control
+     vocabulary across the whole slice card. */
+  .mini-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .mini-value {
+    min-width: 44px;
+    text-align: center;
+    font-size: 16px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
   }
   .count-input {
     width: 58px;
