@@ -288,16 +288,21 @@
 
             <div class="slice-list">
               {#each slices as slice, i (slice.id)}
+                {@const accent =
+                  skuByFlavor.get(slice.flavor)?.coverCards?.[0]?.accentColor ??
+                  "#8b6cff"}
                 <!-- No row transition: slide outros hung inside the grid
-                     (inert ghost rows), and correctness beats choreography. -->
-                <div class="slice-row">
+                     (inert ghost rows), and correctness beats choreography.
+                     Each slice wears its flavor's accent — a multi-slice
+                     recipe reads as distinct ingredients at a glance. -->
+                <div class="slice-row" style:--slice-accent={accent}>
                   <div class="slice-sample" aria-hidden="true">
                     {#if sliceCards[i]}
                       <DeckFanCover
                         cards={[sliceCards[i]]}
                         deckName={flavorLabel(slice.flavor)}
                         {propType}
-                        cardWidth={96}
+                        cardWidth={150}
                         exactCount={1}
                         interactive={false}
                       />
@@ -656,24 +661,36 @@
   .slice-row {
     position: relative;
     display: flex;
-    gap: 16px;
+    gap: 18px;
     align-items: center;
-    padding: 14px 16px;
+    padding: 16px 18px;
     border-radius: 16px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    /* Flavor identity: the slice wears its flavor's accent on the frame. */
+    border: 1px solid color-mix(in srgb, var(--slice-accent, #8b6cff) 45%, transparent);
+    background:
+      linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--slice-accent, #8b6cff) 9%, transparent),
+        transparent 55%
+      ),
+      var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    box-shadow: 0 4px 18px color-mix(in srgb, var(--slice-accent, #8b6cff) 14%, transparent);
+  }
+  /* An odd straggler in a 2-up grid spans the band instead of orphaning a hole. */
+  .slice-row:last-child:nth-child(odd):not(:first-child) {
+    grid-column: 1 / -1;
   }
   .slice-sample {
-    flex: 0 0 104px;
-    height: 148px;
+    flex: 0 0 160px;
+    height: 226px;
     display: flex;
     align-items: center;
     justify-content: center;
   }
   .sample-skeleton {
-    width: 96px;
+    width: 150px;
     aspect-ratio: 5 / 7;
-    border-radius: 8px;
+    border-radius: 10px;
     background: rgba(255, 255, 255, 0.06);
     animation: pulse 1.4s ease-in-out infinite;
   }
@@ -748,16 +765,19 @@
     min-height: 40px;
     padding: 0 16px;
     border-radius: 999px;
-    border: 1px solid rgba(217, 194, 74, 0.5);
-    background: linear-gradient(135deg, rgba(217, 194, 74, 0.22), rgba(168, 154, 44, 0.12));
-    color: #f4e9a8;
+    /* The pill wears the same accent as its card frame — one identity. */
+    border: 1px solid color-mix(in srgb, var(--slice-accent, #d9c24a) 65%, transparent);
+    background: color-mix(in srgb, var(--slice-accent, #d9c24a) 20%, transparent);
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
     cursor: pointer;
     transition: border-color 0.15s ease, background 0.15s ease;
   }
   .flavor-btn:hover {
-    border-color: rgba(232, 211, 92, 0.85);
+    border-color: color-mix(in srgb, var(--slice-accent, #d9c24a) 95%, white);
+    background: color-mix(in srgb, var(--slice-accent, #d9c24a) 30%, transparent);
   }
   .flavor-btn i {
     font-size: 0.75em;
