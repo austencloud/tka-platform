@@ -26,3 +26,17 @@ export function consumeGuideScanIntent(): GuideScanIntent | null {
   pendingIntent = null;
   return intent;
 }
+
+let codexCellTrigger: ((id: string) => void) | null = null;
+
+/** The Codex page registers how to animate a cell by id while it's mounted. */
+export function registerCodexCellTrigger(fn: ((id: string) => void) | null): void {
+  codexCellTrigger = fn;
+}
+
+/** Fire a codex cell by id if the Codex page is mounted. Returns false if not. */
+export function fireCodexCell(id: string): boolean {
+  if (!codexCellTrigger) return false;
+  codexCellTrigger(id);
+  return true;
+}

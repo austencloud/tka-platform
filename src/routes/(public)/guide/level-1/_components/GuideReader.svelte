@@ -39,6 +39,7 @@
     slugFromPath,
   } from "../_data/guide-page-links";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { consumeGuideScanIntent, fireCodexCell } from "../_data/guide-scan-intent";
   import { BUILT } from "../_data/built-pages";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
@@ -280,7 +281,7 @@
   // Guide overrides load once per reader mount (public read; admin gate lives
   // on the write side). Reactive singleton — pages + companion re-render as
   // soon as this resolves, no manual plumbing needed beyond this one call.
-  onMount(() => {
+  onMount(async () => {
     loadOverrides();
     // Restore a companion left open before a reload / HMR remount. The Codex
     // page opens its own companion (isCodexPage effect), so skip there to avoid
@@ -288,6 +289,29 @@
     if (!isCodexPage) {
       const saved = savedCompanion();
       if (saved) void handleSequenceClick(saved);
+    }
+
+    // One-shot physical-book scan handoff (guide-scan-intent.ts): a QR scan
+    // stashed a request to reproduce what a tap would do once the reader
+    // mounts. Consumed here (after the deep-link slug landing above has set
+    // activeIndex synchronously), guarded by tick()+rAF so the just-mounted
+    // Codex page (which registers its cell trigger in its own onMount — child
+    // onMounts run before this parent one) has settled before we fire.
+    const scanIntent = consumeGuideScanIntent();
+    if (scanIntent) {
+      await tick();
+      requestAnimationFrame(() => {
+        if (scanIntent.cellKey && scanIntent.slug === "codex") {
+          fireCodexCell(scanIntent.cellKey);
+        } else if (scanIntent.sequence) {
+          // TODO(guide-companion word-path): auto-open companion for
+          // multi-letter scans. GuideSequenceClick (guide-data-context.ts)
+          // only accepts a flat StepData[] strip, not a raw SequenceData —
+          // wiring this cleanly needs a `sequence` field added to that type,
+          // which is out of scope for this file set. For now the reader lands
+          // on the target page; the user taps the strip to open the companion.
+        }
+      });
     }
   });
 

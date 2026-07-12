@@ -26,6 +26,7 @@
    * cell does not set a stripKey, so the companion's admin edit row stays
    * hidden for codex cells (unchanged from the previous attempt).
    */
+  import { onMount } from "svelte";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -33,6 +34,7 @@
   import { getGuideSequenceClick, getGuidePrintMode } from "../_data/guide-data-context";
   import { bakeReversals } from "../_data/guide-sequence-adapter";
   import { getGuideCodexState } from "../_data/guide-codex-state.svelte";
+  import { registerCodexCellTrigger } from "../_data/guide-scan-intent";
   import CodexSheet from "../../codex/_components/CodexSheet.svelte";
   import { SHEET1, SHEET2, type CodexCellDef } from "../../codex/_data/codex-groups";
 
@@ -104,6 +106,15 @@
       propType: state.propType,
     });
   }
+
+  // Register this page's cell-select handler so a consumed guide-scan intent
+  // (see guide-scan-intent.ts) can fire a cell by id, reproducing what a tap
+  // would do — only while this interactive branch is mounted (print/book never
+  // register; state is null there).
+  onMount(() => {
+    if (state) registerCodexCellTrigger((id) => handleCellSelect(id));
+    return () => registerCodexCellTrigger(null);
+  });
 </script>
 
 {#if printMode || !state}
