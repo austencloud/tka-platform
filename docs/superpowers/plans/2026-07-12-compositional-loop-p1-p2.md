@@ -1035,11 +1035,16 @@ git commit -m "feat(create): beat-level edits invalidate the loopSpec certificat
 
 ### Task 10: Full gates
 
-- [ ] **Step 1:** `cd packages/sequence-engine && npx vitest run` — engine suite green.
-- [ ] **Step 2:** `npx vitest run tests/unit/loop tests/unit/services --config tests/config/vitest.config.ts` — app loop + services suites green (known-failing unrelated env suites — firestore-helpers/choreo-sheet/animation-engine protobuf — are pre-existing; loop/services scope must be clean).
-- [ ] **Step 3:** ONE full `npm run check > /tmp/check.log 2>&1; grep -icE "error" /tmp/check.log` — 0 errors.
-- [ ] **Step 4:** Re-run fixture audit once more: `npx vitest run tests/unit/loop/real-loop-detector-audit.test.ts --config tests/config/vitest.config.ts` — identical results (zero drift).
-- [ ] **Step 5:** No commit (gates only). Report results.
+- [x] **Step 1:** `cd packages/sequence-engine && npx vitest run` — engine suite green.
+  Actual: **36 test files / 282 tests passed** (0 failed). The "CONFIRMED failures" block in the console output is the fixture-audit test's own printed characterization report, not a vitest failure — the final summary line is all green.
+- [x] **Step 2:** `npx vitest run tests/unit/loop tests/unit/services --config tests/config/vitest.config.ts` — app loop + services suites green.
+  Actual: **28 test files / 170 tests passed** (0 failed), including `real-loop-detector-audit.test.ts`'s locked characterization totals unchanged (`PASS=190 PARTIAL=27 EXTRA=1 FAIL=52`).
+- [x] **Step 3:** ONE full `npm run check > check.log 2>&1; grep -niE "error" check.log`.
+  Actual: **1 pre-existing, unrelated error** — `svelte-check found 1 error and 0 warnings in 1 file`, in `src/lib/features/learn/play/components/previews/OptionPulsePreview.svelte:31:45` ("Object is possibly 'undefined'."). Confirmed via `git status --short` and `git log` that this file is untouched by this session's work (P1/P2 loop-certificate changes) and last modified in prior commit `ef8eb6d0f6`. Not introduced by, and not blocking, this plan's scope — flagging as a known pre-existing gap rather than silently claiming 0 errors.
+- [x] **Step 4:** Re-run fixture audit once more: `npx vitest run tests/unit/loop/real-loop-detector-audit.test.ts --config tests/config/vitest.config.ts` — identical results (zero drift).
+  Actual: `Totals across 270 (type x sample x detector) runs: PASS=190 PARTIAL=27 EXTRA=1 FAIL=52` — identical to Step 2's embedded run. 1 test file / 6 tests passed.
+- [x] **Step 5:** No commit (gates only). Report results.
+  Actual: gates run and reported; this plan-file update is committed separately from any code change per `commit-only-your-own-changes.md`.
 
 ---
 
