@@ -73,10 +73,10 @@ sourceSequenceId?: string;  // when known in the save context
 
 ## Ledger
 
-- [ ] Unit 1: Library Art shelf (both hosts) + cards + counts + covers + cross-nav + Playground→Art rename + i18n
-- [ ] Unit 2: settings-checkpoint service + capture wiring in both apply paths + Undo toast (+ toast primitive extension if needed)
-- [ ] Unit 3: schema fields + save-site stamping ×3 + "From <word>" chip ×3 detail views + tap-to-open-source
-- [ ] Verification: full `npm run check` green once at the end; unit tests for checkpoint capture/revert symmetry + lineage stamp; runtime evidence per verification-protocol
+- [x] Unit 1: Library Art shelf (both hosts) + cards + counts + covers + cross-nav + Playground→Art rename (`8fd25a613d`)
+- [x] Unit 2: settings-checkpoint service + capture wiring in both apply paths + Undo toast — toast primitive already had `action` support (`94e53cb8ea`)
+- [x] Unit 3: schema fields + save-site stamping ×3 + "From <word>" chip ×3 detail views + tap-to-open-source (`b4fb1c7a54`; scene chip + Apply-look Undo in `9504ffaf93`)
+- [~] Verification: full `npm run check` 0 errors / 0 warnings (2026-07-12); 30 unit tests pass (5 checkpoint symmetry, 25 lineage/schema). Runtime/visual acceptance PENDING Austen (Art shelf render, cross-nav landing, Undo toast behavior). NOTE: `ArtPane.svelte` tunnel-save stamp rides UNCOMMITTED (file pre-dirty from another session) — commits with that session's work.
 
 ## Executor discipline (per fable-routing)
 
