@@ -120,8 +120,15 @@ export class FirebaseSettingsPersister {
     const activeProp = settings.bluePropType;
     if (!activeProp || activeProp === this.lastMirroredActiveProp) return;
 
-    const userId = auth.currentUser?.uid;
-    if (!userId) return;
+    const user = auth.currentUser;
+    if (!user) return;
+    // Guests are excluded from Browse Creators, so the badge is useless for
+    // them — and this merge write would MINT a skeleton users/{uid} doc
+    // (activeProp only, no displayName) whenever the real doc doesn't exist
+    // (anonymous dev sessions skip doc creation). Those skeletons render as
+    // "Unknown" in the admin users tab.
+    if (user.isAnonymous) return;
+    const userId = user.uid;
 
     try {
       const firestore = await getFirestoreInstance();

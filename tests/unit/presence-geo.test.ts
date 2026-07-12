@@ -36,6 +36,32 @@ describe("parseCloudflareGeo", () => {
     expect(geo?.lat).toBeNull();
     expect(geo?.lng).toBeNull();
   });
+
+  it("prefers platform.cf over headers (cf carries city, headers country-only)", () => {
+    const geo = parseCloudflareGeo(h({ "cf-ipcountry": "DE" }), {
+      country: "US",
+      city: "Chicago",
+      latitude: "41.85",
+      longitude: "-87.65",
+    });
+    expect(geo).toEqual({ country: "US", city: "Chicago", lat: 41.85, lng: -87.65 });
+  });
+
+  it("falls back to headers per-field when cf is partial", () => {
+    const geo = parseCloudflareGeo(h({ "cf-ipcountry": "US" }), { city: "Chicago" });
+    expect(geo).toEqual({ country: "US", city: "Chicago", lat: null, lng: null });
+  });
+
+  it("accepts numeric cf coords", () => {
+    const geo = parseCloudflareGeo(h({}), {
+      country: "US",
+      city: "Chicago",
+      latitude: 41.85,
+      longitude: -87.65,
+    });
+    expect(geo?.lat).toBe(41.85);
+    expect(geo?.lng).toBe(-87.65);
+  });
 });
 
 describe("formatLocationLabel", () => {

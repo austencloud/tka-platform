@@ -19,17 +19,28 @@ export interface PresenceLocation {
   lng: number | null;
 }
 
-/** Parse Cloudflare edge geo headers into a PresenceLocation, or null if none present. */
-export function parseCloudflareGeo(headers: Headers): PresenceLocation | null {
-  const parseCoord = (v: string | null): number | null => {
-    if (!v) return null;
-    const n = Number.parseFloat(v);
+/**
+ * Parse Cloudflare edge geo into a PresenceLocation, or null if none present.
+ *
+ * `cf` is `platform.cf` — populated by Cloudflare on every Pages request, and
+ * the only source that carries city/lat/lng. The `cf-ip*` headers are a
+ * fallback that only exists when the zone's visitor-location transform is on
+ * (it isn't); by default Cloudflare sends just `cf-ipcountry`, which is why
+ * header-only parsing yields country-only locations.
+ */
+export function parseCloudflareGeo(
+  headers: Headers,
+  cf?: Record<string, unknown>
+): PresenceLocation | null {
+  const parseCoord = (v: string | number | null | undefined): number | null => {
+    if (v == null) return null;
+    const n = typeof v === "number" ? v : Number.parseFloat(v);
     return Number.isFinite(n) ? n : null;
   };
-  const country = headers.get("cf-ipcountry") || null;
-  const city = headers.get("cf-ipcity") || null;
-  const lat = parseCoord(headers.get("cf-iplatitude"));
-  const lng = parseCoord(headers.get("cf-iplongitude"));
+  const country = (cf?.country as string) || headers.get("cf-ipcountry") || null;
+  const city = (cf?.city as string) || headers.get("cf-ipcity") || null;
+  const lat = parseCoord((cf?.latitude as string) ?? headers.get("cf-iplatitude"));
+  const lng = parseCoord((cf?.longitude as string) ?? headers.get("cf-iplongitude"));
   const hasGeo = !!(country || city || (lat !== null && lng !== null));
   return hasGeo ? { city, country, lat, lng } : null;
 }
