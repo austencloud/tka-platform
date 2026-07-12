@@ -480,6 +480,7 @@ import type { SheetType } from "../../navigation/services/types";
     <BackgroundHost
       backgroundType={settings.backgroundType || BackgroundType.COSMIC}
       backgroundColor={settings.backgroundColor}
+      pauseDuringPlayback={true}
       {...settings.gradientColors
         ? { gradientColors: settings.gradientColors }
         : {}}

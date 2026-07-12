@@ -18,6 +18,7 @@
 		midiToFreq
 	} from '$lib/shared/3d/environments/scenes/ocean/runtime/fauna/jellyfish/jellyfish-chime';
 	import { isBackgroundSuppressed } from '../state/background-suppression.svelte';
+	import { sharedAnimationState } from '$lib/shared/animation-engine/state/shared-animation-state.svelte';
 	import { shouldReduceBackgroundResolution } from '$lib/shared/platform/network-conditions';
 
 	const {
@@ -26,6 +27,7 @@
 		gradientColors,
 		gradientDirection,
 		thumbnailMode = false,
+		pauseDuringPlayback = false,
 		onReady
 	} = $props<{
 		backgroundType?: BackgroundType;
@@ -33,6 +35,14 @@
 		gradientColors?: string[];
 		gradientDirection?: number;
 		thumbnailMode?: boolean;
+		/** Pause the background's rAF while any animation player is playing
+		 *  (sharedAnimationState.isPlaying). The background loop repaints a
+		 *  viewport-sized canvas every frame, and its bursty entities (cosmic
+		 *  comets/UFOs, ocean fish) steal enough main thread to visibly stutter
+		 *  playback — measured 37.9fps/40.7% hitch frames vs 59.9fps/0.1% with
+		 *  the loop stopped. The app shell opts in; marketing surfaces
+		 *  (MarketingChrome, shop) keep their backdrop alive. */
+		pauseDuringPlayback?: boolean;
 		onReady?: () => void;
 	}>();
 
@@ -281,10 +291,16 @@
 	$effect(() => {
 		if (!mounted || !controller || !containerRef) return;
 
-		// Pause when a fullscreen-opaque scene is occluding us, or when the tab is
-		// hidden — in both cases the rAF would otherwise burn CPU painting pixels
-		// nobody can see. unmount() stops the loop; the branch below remounts it.
-		if (isBackgroundSuppressed.current || pageHidden) {
+		// Pause when a fullscreen-opaque scene is occluding us, when the tab is
+		// hidden, or (opt-in) while an animation player is playing — in all three
+		// cases the rAF would otherwise burn main-thread time the user either
+		// can't see or actively needs for smooth playback. unmount() stops the
+		// loop; the branch below remounts it.
+		if (
+			isBackgroundSuppressed.current ||
+			pageHidden ||
+			(pauseDuringPlayback && sharedAnimationState.isPlaying)
+		) {
 			if (controller.isReady()) controller.unmount();
 			return;
 		}
