@@ -965,7 +965,7 @@ git commit -m "feat(create): generated sequences carry their loopSpec certificat
 
 Do NOT hook `sequence-core-state.setCurrentSequence` itself — it also receives loads and generation results, which must KEEP their spec. Only mutations clear it.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -987,9 +987,13 @@ describe("withLoopCertificateCleared", () => {
 });
 ```
 
-- [ ] **Step 2: Verify failure.**
+- [x] **Step 2: Verify failure.**
 
-- [ ] **Step 3: Implement**
+Run: `npx vitest run tests/unit/services/loop-certificate.test.ts --config tests/config/vitest.config.ts`
+
+Actual: FAILED for the right reason — `Error: Failed to resolve import "$lib/shared/create/services/loop-certificate"` (module doesn't exist yet).
+
+- [x] **Step 3: Implement**
 
 `loop-certificate.ts`:
 
@@ -1011,12 +1015,20 @@ export function withLoopCertificateCleared(sequence: SequenceData): SequenceData
 
 In `sequence-step-operations.ts`: wrap every `coreState.setCurrentSequence(updatedSequence)` in the mutation methods as `coreState.setCurrentSequence(withLoopCertificateCleared(updatedSequence))`. In `step-operator.ts` line ~212 same wrap. Also clear the display cache for the sequence id after mutation (`clearLoopDisplayCache` — check its signature; if it clears globally, call it as-is) so a card doesn't keep rendering the dead certificate.
 
-- [ ] **Step 4: Run tests** — new test green + `npx vitest run tests/unit/loop --config tests/config/vitest.config.ts` green.
+**Deviation (file location, factual correction):** `step-operator.ts` itself has NO direct `setCurrentSequence` call — it is a thin facade class (`StepOperator`) that delegates every method to a handler file under `src/lib/features/create/shared/services/step-operations/`. Grepping `setCurrentSequence` across that directory found the turns/orientation/duration call sites at `turns-handler.ts:212` (the plan's stated line number — it belonged to this file, not `step-operator.ts`), `orientation-handler.ts:165`, and `duration-handler.ts:91`. All three were wrapped instead of a nonexistent line in `step-operator.ts`. The other handler files in that directory (`rotation-direction-handler.ts`, `prop-type-handler.ts`, `beta-swap-handler.ts`, `path-shape-handler.ts`, `batch-edit-handler.ts`, `arrow-adjustment-handler.ts`, `step-removal-handler.ts`) also call `setCurrentSequence` but are outside this task's literal scope ("turns/orientation/duration path" only) — left un-wrapped and flagged here as a known gap for a future task, not silently expanded into.
 
-- [ ] **Step 5: Commit**
+**Deviation (scope, additive):** `clearSequence()` in `sequence-step-operations.ts` was also wrapped even though the plan's file-header parenthetical list (`addStep, removeStep, removeStepWithAnimation, removeStepAndSubsequent(WithAnimation), updateStep, insertStep`) doesn't name it. It calls `coreState.setCurrentSequence` in the same file at the same chokepoint, and clearing all beats to `[]` makes any stored `loopSpec` (period/components describing a now-nonexistent sequence) immediately nonsensical — leaving it un-wrapped would have been a known bug adjacent to the one this task fixes, in the exact file already being edited.
+
+**Deviation (cache-clear mechanism — the flagged layering question):** Traced `resolveLoopDisplay`'s cache: `cacheKey = getSequenceId(input) = input.id` (`loop-display-resolver.ts:93-95`), and the id does NOT change across a beat mutation (same sequence, edited in place) — so the plan's escape hatch ("if the cache key includes something that changes on edit, document that no clear is needed and skip it") does NOT apply here; a stale cache entry would genuinely outlive the certificate strip. Confirmed a live consumer: `ChoreoCard.svelte:427-430` calls `tryGetLoopDisplayResolver()` reactively (`$derived.by`) keyed off the same `sequence` object shown while editing, so a stale cache entry would keep a card rendering the dead certificate's components/period exactly as the task worried. A direct import of `clearLoopDisplayCache` from `features/loop-labeler/services/loop-display-resolver.ts` into the create module would violate the create→features/loop-labeler layering boundary the codebase already avoids via the DI seam at `src/lib/shared/loop-labeler/get-loop-display-resolver.ts` (which registers `resolveLoopDisplay` from `composition-root/index.ts` for the same reason). Extended that existing seam with a parallel pair — `registerLoopDisplayCacheClearer` / `tryGetLoopDisplayCacheClearer` — rather than adding a new import path or duplicating the resolver-registration pattern. `composition-root/index.ts` now also registers `clearLoopDisplayCache` alongside `resolveLoopDisplay`. `loop-certificate.ts` gained a second export, `invalidateLoopDisplayCache()`, which calls `tryGetLoopDisplayCacheClearer()?.()` (a no-op before bootstrap, e.g. in unit tests) — kept separate from the pure, unit-tested `withLoopCertificateCleared` so that function's tested contract (pure strip, `toBe(seq)` no-op passthrough) stays exactly as specified with no side effect folded in. Every wrapped call site invokes both: `coreState.setCurrentSequence(withLoopCertificateCleared(updatedSequence)); invalidateLoopDisplayCache();`.
+
+- [x] **Step 4: Run tests** — new test green + `npx vitest run tests/unit/loop --config tests/config/vitest.config.ts` green.
+
+Actual: `loop-certificate.test.ts` 2/2 passed. Full `npx vitest run tests/unit/loop tests/unit/services --config tests/config/vitest.config.ts`: **28 files / 170 tests passed** (0 failed), including `real-loop-detector-audit.test.ts`'s locked characterization totals unchanged (`PASS=190 PARTIAL=27 EXTRA=1 FAIL=52`) — zero drift.
+
+- [x] **Step 5: Commit**
 
 ```bash
-git commit -m "feat(create): beat-level edits invalidate the loopSpec certificate" -- src/lib/shared/create/services/loop-certificate.ts src/lib/features/create/shared/state/operations/sequence-step-operations.ts src/lib/features/create/shared/services/step-operator.ts tests/unit/services/loop-certificate.test.ts
+git commit -m "feat(create): beat-level edits invalidate the loopSpec certificate" -- src/lib/shared/create/services/loop-certificate.ts src/lib/features/create/shared/state/operations/sequence-step-operations.ts src/lib/features/create/shared/services/step-operations/turns-handler.ts src/lib/features/create/shared/services/step-operations/orientation-handler.ts src/lib/features/create/shared/services/step-operations/duration-handler.ts src/lib/shared/loop-labeler/get-loop-display-resolver.ts src/lib/shared/composition-root/index.ts tests/unit/services/loop-certificate.test.ts
 ```
 
 ---

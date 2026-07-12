@@ -43,3 +43,20 @@ export function getLoopDisplayResolver(): ResolveLoopDisplayFn {
 export function tryGetLoopDisplayResolver(): ResolveLoopDisplayFn | null {
   return resolver;
 }
+
+let cacheClearer: (() => void) | null = null;
+
+/**
+ * Register the resolveLoopDisplay cache-eviction function. Called once from
+ * bootstrap.ts alongside registerLoopDisplayResolver, for the same reason:
+ * avoids a create-module -> features/loop-labeler reverse import. The
+ * resolver's cache is keyed by sequence id, which does not change across a
+ * beat mutation, so a stale entry survives a loopSpec strip unless evicted.
+ */
+export function registerLoopDisplayCacheClearer(fn: () => void): void {
+  cacheClearer = fn;
+}
+
+export function tryGetLoopDisplayCacheClearer(): (() => void) | null {
+  return cacheClearer;
+}

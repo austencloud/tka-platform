@@ -8,6 +8,10 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { ICreateModuleState } from "../../types/create-module-types";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { getStepDataFromState, START_POSITION_BEAT_NUMBER } from "./step-data-helpers";
+import {
+  withLoopCertificateCleared,
+  invalidateLoopDisplayCache,
+} from "$lib/shared/create/services/loop-certificate";
 
 const logger = createComponentLogger("DurationHandler");
 
@@ -88,5 +92,8 @@ export function updateStepDuration(
 
   logger.log(`Updated beat ${stepNumber} duration to ${roundedDuration}`);
 
-  createModuleState.sequenceState.setCurrentSequence(updatedSequence);
+  createModuleState.sequenceState.setCurrentSequence(
+    withLoopCertificateCleared(updatedSequence)
+  );
+  invalidateLoopDisplayCache();
 }

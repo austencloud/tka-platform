@@ -27,6 +27,10 @@ import {
   START_POSITION_BEAT_NUMBER,
 } from "./step-data-helpers";
 import { calculatePropagatedSteps } from "./orientation-handler";
+import {
+  withLoopCertificateCleared,
+  invalidateLoopDisplayCache,
+} from "$lib/shared/create/services/loop-certificate";
 
 const logger = createComponentLogger("TurnsHandler");
 
@@ -209,7 +213,10 @@ export function updateStepTurns(
     // Reversal service is optional - continue without reversal processing
   }
 
-  createModuleState.sequenceState.setCurrentSequence(updatedSequence);
+  createModuleState.sequenceState.setCurrentSequence(
+    withLoopCertificateCleared(updatedSequence)
+  );
+  invalidateLoopDisplayCache();
 }
 
 export function findPreviousRotationDirection(

@@ -17,6 +17,10 @@ import type { SequenceAnimationState } from "../animation/sequence-animation-sta
 import type { SequenceCoreState } from "../core/sequence-core-state.svelte";
 import type { SequenceSelectionState } from "../selection/sequence-selection-state.svelte";
 import type { ReversalDetector } from "$lib/shared/create/services/reversal-detector";
+import {
+  withLoopCertificateCleared,
+  invalidateLoopDisplayCache,
+} from "$lib/shared/create/services/loop-certificate";
 
 export interface StepOperationsConfig {
   coreState: SequenceCoreState;
@@ -137,7 +141,8 @@ export function createSequenceBeatOperations(config: StepOperationsConfig) {
         if (ReversalDetector) {
           updatedSequence = ReversalDetector.processReversals(updatedSequence);
         }
-        coreState.setCurrentSequence(updatedSequence);
+        coreState.setCurrentSequence(withLoopCertificateCleared(updatedSequence));
+        invalidateLoopDisplayCache();
         coreState.clearError();
       } catch (error) {
         handleError("Failed to add beat", error);
@@ -156,7 +161,8 @@ export function createSequenceBeatOperations(config: StepOperationsConfig) {
         if (ReversalDetector) {
           updatedSequence = ReversalDetector.processReversals(updatedSequence);
         }
-        coreState.setCurrentSequence(updatedSequence);
+        coreState.setCurrentSequence(withLoopCertificateCleared(updatedSequence));
+        invalidateLoopDisplayCache();
         selectionState.adjustSelectionForRemovedStep(stepIndex);
         coreState.clearError();
         onSave?.().catch((err) =>
@@ -186,7 +192,8 @@ export function createSequenceBeatOperations(config: StepOperationsConfig) {
             updatedSequence =
               ReversalDetector.processReversals(updatedSequence);
           }
-          coreState.setCurrentSequence(updatedSequence);
+          coreState.setCurrentSequence(withLoopCertificateCleared(updatedSequence));
+          invalidateLoopDisplayCache();
           selectionState.adjustSelectionForRemovedStep(stepIndex);
           coreState.clearError();
           onSave?.().catch((err) =>
@@ -217,7 +224,8 @@ export function createSequenceBeatOperations(config: StepOperationsConfig) {
         if (ReversalDetector) {
           updatedSequence = ReversalDetector.processReversals(updatedSequence);
         }
-        coreState.setCurrentSequence(updatedSequence);
+        coreState.setCurrentSequence(withLoopCertificateCleared(updatedSequence));
+        invalidateLoopDisplayCache();
         selectionState.clearSelection();
         coreState.clearError();
         onSave?.().catch((err) =>
@@ -259,7 +267,8 @@ export function createSequenceBeatOperations(config: StepOperationsConfig) {
             updatedSequence =
               ReversalDetector.processReversals(updatedSequence);
           }
-          coreState.setCurrentSequence(updatedSequence);
+          coreState.setCurrentSequence(withLoopCertificateCleared(updatedSequence));
+          invalidateLoopDisplayCache();
           // NOTE: Don't clear selection here - the onComplete callback will select the appropriate next beat
           // This prevents the mobile Beat Editor controls from disappearing during the animation
           coreState.clearError();
@@ -292,7 +301,8 @@ export function createSequenceBeatOperations(config: StepOperationsConfig) {
         if (ReversalDetector) {
           updatedSequence = ReversalDetector.processReversals(updatedSequence);
         }
-        coreState.setCurrentSequence(updatedSequence);
+        coreState.setCurrentSequence(withLoopCertificateCleared(updatedSequence));
+        invalidateLoopDisplayCache();
         coreState.clearError();
       } catch (error) {
         handleError("Failed to update beat", error);
@@ -312,7 +322,8 @@ export function createSequenceBeatOperations(config: StepOperationsConfig) {
         if (ReversalDetector) {
           updatedSequence = ReversalDetector.processReversals(updatedSequence);
         }
-        coreState.setCurrentSequence(updatedSequence);
+        coreState.setCurrentSequence(withLoopCertificateCleared(updatedSequence));
+        invalidateLoopDisplayCache();
         selectionState.adjustSelectionForInsertedStep(stepIndex);
         coreState.clearError();
       } catch (error) {
@@ -325,7 +336,8 @@ export function createSequenceBeatOperations(config: StepOperationsConfig) {
 
       try {
         const updatedSequence = clearSequenceBeats(coreState.currentSequence);
-        coreState.setCurrentSequence(updatedSequence);
+        coreState.setCurrentSequence(withLoopCertificateCleared(updatedSequence));
+        invalidateLoopDisplayCache();
         selectionState.clearSelection();
         coreState.clearError();
       } catch (error) {

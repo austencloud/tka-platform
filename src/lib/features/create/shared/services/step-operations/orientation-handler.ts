@@ -20,6 +20,10 @@ import {
   getStepDataFromState,
   START_POSITION_BEAT_NUMBER,
 } from "./step-data-helpers";
+import {
+  withLoopCertificateCleared,
+  invalidateLoopDisplayCache,
+} from "$lib/shared/create/services/loop-certificate";
 
 const logger = createComponentLogger("OrientationHandler");
 
@@ -162,7 +166,10 @@ export function updateStepOrientation(
     };
   }
 
-  createModuleState.sequenceState.setCurrentSequence(updatedSequence);
+  createModuleState.sequenceState.setCurrentSequence(
+    withLoopCertificateCleared(updatedSequence)
+  );
+  invalidateLoopDisplayCache();
 }
 
 /**

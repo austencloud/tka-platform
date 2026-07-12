@@ -20,8 +20,14 @@ import { getBrowseLoader } from "$lib/shared/browse/get-browse-loader";
 import { registerLoopDetector } from "../create/get-loop-detector";
 import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
 
-import { registerLoopDisplayResolver } from "../loop-labeler/get-loop-display-resolver";
-import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
+import {
+  registerLoopDisplayResolver,
+  registerLoopDisplayCacheClearer,
+} from "../loop-labeler/get-loop-display-resolver";
+import {
+  resolveLoopDisplay,
+  clearLoopDisplayCache,
+} from "$lib/features/loop-labeler/services/loop-display-resolver";
 
 import { isBootProfileVerbose } from "../analytics/boot-profiler";
 
@@ -32,6 +38,7 @@ if (typeof window !== 'undefined') {
   configureShortCodeManager(getBrowseLoader());
   registerLoopDetector(loopDetector);
   registerLoopDisplayResolver(resolveLoopDisplay);
+  registerLoopDisplayCacheClearer(clearLoopDisplayCache);
 }
 
 if (typeof window !== 'undefined' && isBootProfileVerbose()) {
