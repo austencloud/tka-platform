@@ -1,5 +1,6 @@
 <script lang="ts">
   import CodexCell from "./CodexCell.svelte";
+  import CodexTransitionGlyph from "./CodexTransitionGlyph.svelte";
   import type { CodexBoxDef } from "../_data/codex-groups";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { GuideCodexVisibility } from "../../level-1/_data/guide-codex-persistence";
@@ -25,11 +26,11 @@
 <div class="codex-box" class:full={box.full}>
   {#if box.header || box.mode}
     <div class="box-head">
-      {#if box.header}<span class="box-transition">{box.header}</span>{/if}
+      {#if box.header}<span class="box-transition"><CodexTransitionGlyph text={box.header} /></span>{/if}
       {#if box.mode}<span class="box-mode">{box.mode}</span>{/if}
     </div>
   {/if}
-  <div class="box-cells" style:--cols={box.cells.length}>
+  <div class="box-cells">
     {#each box.cells as cell (cell.id)}
       <CodexCell
         {cell}
@@ -79,13 +80,18 @@
     color: #888;
   }
 
+  /* No box frame of its own: the row's outline is formed by the cells'
+     pictograph borders sitting flush (shared 1px walls, collapsed below) — the
+     original guide's table look. Headers above and names below the cells stay
+     outside the bordered area, exactly like the OG sheets. */
   .box-cells {
-    display: grid;
-    grid-template-columns: repeat(var(--cols), 1fr);
-    gap: 2px;
-    padding: 4px 5px 3px;
-    border: 1.25px solid #2b2b2b;
-    border-radius: 3px;
+    display: flex;
+    justify-content: center;
     background: #fff;
+  }
+
+  /* Collapse the shared wall between adjacent pictograph borders. */
+  .box-cells :global(.codex-cell + .codex-cell) {
+    margin-left: -1px;
   }
 </style>

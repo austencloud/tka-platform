@@ -112,6 +112,16 @@ function cbox(cells: CodexCellDef[], full?: boolean): CodexBoxDef {
   return { full, cells: cells.map((c) => ({ ...c, top: transitionFor(c.id) })) };
 }
 
+/** Static box (Type 6): the position never changes, so each cell's header is
+ *  the single position glyph ("α"), not a degenerate "α→α" transition —
+ *  matching the original guide sheet. */
+function sbox(cells: CodexCellDef[], full?: boolean): CodexBoxDef {
+  return {
+    full,
+    cells: cells.map((c) => ({ ...c, top: transitionFor(c.id).split("→")[0] ?? "" })),
+  };
+}
+
 const c = (id: string, label: string, name?: string): CodexCellDef => ({ id, label, name });
 
 export const SHEET1: CodexSheetDef = {
@@ -188,7 +198,7 @@ export const SHEET2: CodexSheetDef = {
       segs: [{ t: "Static", c: ORANGE }],
       divider: true,
       boxes: [
-        cbox(
+        sbox(
           [c("α-0", "α", "Alpha"), c("β-0", "β", "Beta"), c("γ-0", "γ", "Gamma")],
           true,
         ),

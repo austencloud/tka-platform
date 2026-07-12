@@ -15,6 +15,7 @@
    * the printable white-paper look is preserved.
    */
   import GuidePictograph from "../../level-1/_components/GuidePictograph.svelte";
+  import CodexTransitionGlyph from "./CodexTransitionGlyph.svelte";
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
   import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -54,7 +55,7 @@
 
 {#snippet cellBody()}
   {#if cell.top}
-    <span class="cell-top">{cell.top}</span>
+    <span class="cell-top"><CodexTransitionGlyph text={cell.top} /></span>
   {/if}
   <div class="picto">
     <GuidePictograph
@@ -104,9 +105,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1px;
+    gap: 2px;
     min-width: 0;
-    overflow: hidden;
   }
 
   .cell-top {
@@ -116,20 +116,24 @@
     line-height: 1.1;
   }
 
-  /* Fill the grid track. Each box lays its cells out as `repeat(N, 1fr)`, so the
-     picto grows to its share of the box width (~1in per cell on the letter-sized
-     sheet) — matching the original printed guide, where pictographs fill their
-     boxes rather than sitting tiny inside them. aspect-ratio keeps it square so
-     the async pictograph swap never reflows neighbors. NO max-width cap: a cap
-     is what shrank every pictograph to a 64px stamp regardless of the room the
-     box gave it. */
+  /* ONE fixed pictograph size across the whole codex (both pages, every type) —
+     never sized off the row's leftover space, which made 4-cell/full-width rows
+     render bigger pictographs than 3-cell rows. Each pictograph carries its own
+     plain 1px border and sits flush against its neighbors (CodexBox collapses
+     the shared walls), reproducing the original guide's table look — no inset
+     floating squares. The pictograph's dark-mode outline (--pictograph-border)
+     is suppressed so the only frame is this border. aspect-ratio keeps the box
+     square so the async pictograph swap never reflows neighbors. */
   .picto {
-    width: 100%;
+    width: var(--codex-picto-size, 100px);
     aspect-ratio: 1;
+    box-sizing: border-box;
+    border: 1px solid #2b2b2b;
     display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    --pictograph-border: none;
   }
 
   /* Force the whole pictograph (wrapper + SVG) to fill the 64px box. The
