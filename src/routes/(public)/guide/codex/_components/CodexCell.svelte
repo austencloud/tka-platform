@@ -116,12 +116,15 @@
     line-height: 1.1;
   }
 
-  /* Reserve a square so the async pictograph swap never reflows neighbors.
-     overflow:hidden clips any pictograph that resolves larger than its box so
-     it can never spill into adjacent cells (no `bordered` clip on codex cells). */
+  /* Fill the grid track. Each box lays its cells out as `repeat(N, 1fr)`, so the
+     picto grows to its share of the box width (~1in per cell on the letter-sized
+     sheet) — matching the original printed guide, where pictographs fill their
+     boxes rather than sitting tiny inside them. aspect-ratio keeps it square so
+     the async pictograph swap never reflows neighbors. NO max-width cap: a cap
+     is what shrank every pictograph to a 64px stamp regardless of the room the
+     box gave it. */
   .picto {
     width: 100%;
-    max-width: 64px;
     aspect-ratio: 1;
     display: flex;
     align-items: center;
