@@ -52,6 +52,10 @@
   // navigating away and back — sessionStorage, restored after the first fit()
   // lays the pages out. Keyed per-reader (one reader today; keep it explicit).
   const SCROLL_KEY = "guide-reader-scroll";
+  // Persist the open companion (clicked strip) so a reload / HMR remount keeps
+  // the animation drawer up instead of collapsing it and forcing a re-click.
+  // Cleared on explicit close, so it only restores a drawer left open.
+  const COMPANION_KEY = "guide-reader-companion";
 
   let activeIndex = $state(0); // highlighted page — driven by scroll position
   let scale = $state(0.5);
@@ -213,6 +217,8 @@
     const seq = stripToSequence(payload.strip, { word: payload.word });
     clicked = (await ensureMotionData(seq)) ?? seq;
     companionOpen = true;
+    // Remember the open drawer so a reload / HMR restores it (see onMount).
+    persistCompanion(payload);
     if (isMobile) {
       // Wait for the DOM to reflect both the new `.is-selected` ring and the
       // just-opened sheet before measuring — one `tick()` flushes Svelte's
@@ -276,6 +282,13 @@
   // soon as this resolves, no manual plumbing needed beyond this one call.
   onMount(() => {
     loadOverrides();
+    // Restore a companion left open before a reload / HMR remount. The Codex
+    // page opens its own companion (isCodexPage effect), so skip there to avoid
+    // fighting it; otherwise re-run the click to reopen the animation drawer.
+    if (!isCodexPage) {
+      const saved = savedCompanion();
+      if (saved) void handleSequenceClick(saved);
+    }
   });
 
   // Live URL sync: the address bar always carries the active page's deep link
@@ -317,6 +330,32 @@
       return Number.isFinite(v) && v > 0 ? v : 0;
     } catch {
       return 0;
+    }
+  }
+
+  // Companion (clicked strip) persistence — mirror of the scroll restore. The
+  // click payload is plain serializable data (strip StepData[], word, key,
+  // propType), so it round-trips through sessionStorage.
+  function persistCompanion(payload: GuideSequenceClick): void {
+    try {
+      sessionStorage.setItem(COMPANION_KEY, JSON.stringify(payload));
+    } catch {
+      // private mode / quota — the drawer just won't survive a reload
+    }
+  }
+  function clearCompanion(): void {
+    try {
+      sessionStorage.removeItem(COMPANION_KEY);
+    } catch {
+      // ignore
+    }
+  }
+  function savedCompanion(): GuideSequenceClick | null {
+    try {
+      const raw = sessionStorage.getItem(COMPANION_KEY);
+      return raw ? (JSON.parse(raw) as GuideSequenceClick) : null;
+    } catch {
+      return null;
     }
   }
 
@@ -468,6 +507,7 @@
           companionOpen = false;
           activeStep.clear();
           selection.clear();
+          clearCompanion();
         }}
       />
     {/if}
