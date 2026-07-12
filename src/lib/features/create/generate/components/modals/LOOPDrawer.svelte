@@ -10,6 +10,12 @@
   import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import type { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
 
+  type RhythmValue = {
+    rotationInterval: 2 | 4;
+    inversionInterval: 2 | 4;
+    inversionMode: "expand" | "overlay";
+  };
+
   let {
     isOpen,
     currentType,
@@ -17,6 +23,9 @@
     onChange,
     onClose,
     onLoopDisable,
+    rhythm,
+    sequenceLength,
+    onRhythmChange,
   }: {
     isOpen: boolean;
     currentType: LOOPType | null;
@@ -24,6 +33,10 @@
     onChange: ((loopType: LOOPType) => void) | null;
     onClose: () => void;
     onLoopDisable?: () => void;
+    /** Rhythm tier plumbing — optional; absent hides the tier (see LOOPExpandedOverlay). */
+    rhythm?: RhythmValue;
+    sequenceLength?: number;
+    onRhythmChange?: (updates: Partial<RhythmValue>) => void;
   } = $props();
 </script>
 
@@ -46,6 +59,9 @@
           {onChange}
           {onClose}
           {onLoopDisable}
+          {rhythm}
+          {sequenceLength}
+          {onRhythmChange}
           layout="list"
         />
       {/if}

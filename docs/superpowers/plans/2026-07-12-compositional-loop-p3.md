@@ -355,12 +355,12 @@ export function gateRhythm(
    - `onRhythmChange={(u) => configState.updateConfig({ ...(u.rotationInterval ? { period: u.rotationInterval === 4 ? Period.QUARTERED : Period.HALVED } : {}), ...(u.inversionInterval ? { inversionInterval: u.inversionInterval } : {}), ...(u.inversionMode ? { inversionMode: u.inversionMode } : {}) })}`
    (match `GeneratePanel`'s actual config-state accessor names — read the file; `onLoopDisable` wiring shows the pattern.)
 
-- [ ] **Step 1: Write the failing gating test** (`tests/unit/services/loop-rhythm-gating.test.ts`): cases — valid halved MIR at 16 (ok, seed 4, mult 4); MIR at 18 (not divisible); rotated+inverted expand at length equal to multiplier (seed 1 → too short); overlay inversion never affects divisibility (rot:2+mir:2+inv overlay@4 at 16 → ok, seed 4, mult 4); unmapped combo → reason string.
-- [ ] **Step 2: Run to verify failure.**
-- [ ] **Step 3: Implement** `loop-rhythm-gating.ts`, then the overlay tier, then the plumbing (read each file first; the overlay's existing structure/style conventions are the template — extend, don't restructure).
-- [ ] **Step 4: Run** the gating test + `npx vitest run tests/unit/services --config tests/config/vitest.config.ts` (all green) + `npm run check:fast` (no problems).
-- [ ] **Step 5: Grep-proof the UI rules:** `grep -n "type=\"checkbox\"" src/lib/features/create/generate/components/cards/LOOPExpandedOverlay.svelte` (must be empty); confirm SegmentedControl used for all three choices.
-- [ ] **Step 6: Commit**
+- [x] **Step 1: Write the failing gating test** (`tests/unit/services/loop-rhythm-gating.test.ts`): cases — valid halved MIR at 16 (ok, seed 4, mult 4); MIR at 18 (not divisible); rotated+inverted expand at length equal to multiplier (seed 1 → too short); overlay inversion never affects divisibility (rot:2+mir:2+inv overlay@4 at 16 → ok, seed 4, mult 4); unmapped combo → reason string.
+- [x] **Step 2: Run to verify failure.**
+- [x] **Step 3: Implement** `loop-rhythm-gating.ts`, then the overlay tier, then the plumbing (read each file first; the overlay's existing structure/style conventions are the template — extend, don't restructure).
+- [x] **Step 4: Run** the gating test + `npx vitest run tests/unit/services --config tests/config/vitest.config.ts` (all green) + `npm run check:fast` (no problems).
+- [x] **Step 5: Grep-proof the UI rules:** `grep -n "type=\"checkbox\"" src/lib/features/create/generate/components/cards/LOOPExpandedOverlay.svelte` (must be empty); confirm SegmentedControl used for all three choices.
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -m "feat(generate): Rhythm tier — rotation/inversion intervals, overlay mode, word math, block timeline" -- src/lib/features/create/generate/components/cards/LOOPExpandedOverlay.svelte src/lib/features/create/generate/components/modals/LOOPDrawer.svelte src/lib/features/create/generate/components/GeneratePanel.svelte src/lib/shared/create/services/loop-rhythm-gating.ts tests/unit/services/loop-rhythm-gating.test.ts

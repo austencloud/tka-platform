@@ -38,6 +38,7 @@ Card-based architecture with integrated Generate button:
   } from "$lib/shared/create/state/generator-voice-ref.svelte";
   import { uiConfigToGenerationOptions } from "../shared/utils/config-mapper";
   import type { GenerationOptions } from "../shared/domain/models/generate-models";
+  import { Period } from "../circular/domain/models/circular-models";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
@@ -239,6 +240,20 @@ Card-based architecture with integrated Generate button:
       panelState.closeLOOPPanel();
       configState.updateConfig({ loopEnabled: false });
     }}
+    rhythm={{
+      rotationInterval: configState.config.period === Period.QUARTERED ? 4 : 2,
+      inversionInterval: configState.config.inversionInterval ?? 2,
+      inversionMode: configState.config.inversionMode ?? "expand",
+    }}
+    sequenceLength={configState.config.length}
+    onRhythmChange={(u) =>
+      configState.updateConfig({
+        ...(u.rotationInterval
+          ? { period: u.rotationInterval === 4 ? Period.QUARTERED : Period.HALVED }
+          : {}),
+        ...(u.inversionInterval ? { inversionInterval: u.inversionInterval } : {}),
+        ...(u.inversionMode ? { inversionMode: u.inversionMode } : {}),
+      })}
   />
 
   <CustomizeDrawer
