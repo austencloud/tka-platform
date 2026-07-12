@@ -41,6 +41,10 @@
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { consumeGuideScanIntent, fireCodexCell } from "../_data/guide-scan-intent";
   import { isCodexSlug } from "../_data/guide-content-index";
+  import {
+    suppressBackground,
+    releaseBackground,
+  } from "$lib/shared/background/shared/state/background-suppression.svelte";
   import { BUILT } from "../_data/built-pages";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
@@ -284,6 +288,19 @@
   // Guide overrides load once per reader mount (public read; admin gate lives
   // on the write side). Reactive singleton — pages + companion re-render as
   // soon as this resolves, no manual plumbing needed beyond this one call.
+  // Pause the global animated background while the reader is open. Its rAF
+  // repaints a viewport-sized canvas every frame behind the (near-fully
+  // opaque) pages, and its bursty entities (cosmic comets/UFOs, ocean fish)
+  // stole enough main thread to stutter the companion's playback — measured
+  // 37.9fps / 40.7% hitch frames with the background on vs 59.9fps / 0.1%
+  // with it off, same page, same playing strip. Museum precedent; see
+  // background-suppression.svelte.ts. Sync onMount on purpose: an async
+  // onMount's return value is a Promise, so its cleanup would never register.
+  onMount(() => {
+    suppressBackground("guide-reader");
+    return () => releaseBackground("guide-reader");
+  });
+
   onMount(async () => {
     loadOverrides();
     // Restore a companion left open before a reload / HMR remount. The Codex
