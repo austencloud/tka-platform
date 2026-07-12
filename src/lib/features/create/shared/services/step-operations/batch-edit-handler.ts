@@ -9,6 +9,10 @@ import type {
 } from "../../types/create-module-types";
 import { UndoOperationType } from "../undo-manager";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import {
+  withLoopCertificateCleared,
+  invalidateLoopDisplayCache,
+} from "$lib/shared/create/services/loop-certificate";
 
 const logger = createComponentLogger("BatchEdit");
 
@@ -60,10 +64,16 @@ export function applyBatchChanges(
     };
   });
 
-  createModuleState.sequenceState.setCurrentSequence({
-    ...currentSequence,
-    steps: updatedSteps,
-  });
+  // D4: BatchEditChanges = Partial<StepData>, so a batch edit can carry
+  // `motions` (turns, rotationDirection, etc.) across many steps at once —
+  // a beat-level motion mutation, so invalidate the certificate.
+  createModuleState.sequenceState.setCurrentSequence(
+    withLoopCertificateCleared({
+      ...currentSequence,
+      steps: updatedSteps,
+    })
+  );
+  invalidateLoopDisplayCache();
 
   logger.success(`Applied batch changes to ${selectedStepNumbers.size} steps`);
 }

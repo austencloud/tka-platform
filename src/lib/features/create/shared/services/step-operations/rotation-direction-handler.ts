@@ -36,6 +36,10 @@ import {
   updateSequenceWord,
 } from "./step-data-helpers";
 import { calculatePropagatedSteps } from "./orientation-handler";
+import {
+  withLoopCertificateCleared,
+  invalidateLoopDisplayCache,
+} from "$lib/shared/create/services/loop-certificate";
 
 const logger = createComponentLogger("RotationDirectionHandler");
 
@@ -208,7 +212,12 @@ export function updateRotationDirection(
   }
 
   // Call setCurrentSequence ONCE with the fully updated sequence
-  createModuleState.sequenceState.setCurrentSequence(updatedSequence);
+  // D4: rotation direction flips motionType (PRO<->ANTI) and endOrientation —
+  // a beat-level motion mutation, so the loopSpec certificate must invalidate.
+  createModuleState.sequenceState.setCurrentSequence(
+    withLoopCertificateCleared(updatedSequence)
+  );
+  invalidateLoopDisplayCache();
 }
 
 /**
@@ -264,11 +273,16 @@ async function recalculateLetterAsync(
             .join("")
             .toUpperCase();
 
-          createModuleState.sequenceState.setCurrentSequence({
-            ...currentSeq,
-            steps: stepsWithLetter,
-            word,
-          });
+          // D4: letter is derived from the (now-flipped) motion configuration —
+          // still a motion-consequential mutation, so invalidate the certificate.
+          createModuleState.sequenceState.setCurrentSequence(
+            withLoopCertificateCleared({
+              ...currentSeq,
+              steps: stepsWithLetter,
+              word,
+            })
+          );
+          invalidateLoopDisplayCache();
         }
       }
     }

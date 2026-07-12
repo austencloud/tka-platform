@@ -78,6 +78,8 @@ export function updateArrowAdjustment(
       startingPosition: updatedStartPosition ?? undefined,
     };
 
+    // D4 skip: manualAdjustmentX/Y are visual arrow-placement offsets, not
+    // motion structure — no certificate invalidation needed.
     createModuleState.sequenceState.setCurrentSequence(updatedSequence);
     logger.success(
       `Updated start position ${color} arrow adjustment to (${adjustmentX}, ${adjustmentY})`
@@ -93,6 +95,8 @@ export function updateArrowAdjustment(
       steps: updatedSteps,
     };
 
+    // D4 skip: manualAdjustmentX/Y are visual arrow-placement offsets, not
+    // motion structure — no certificate invalidation needed.
     createModuleState.sequenceState.setCurrentSequence(updatedSequence);
     logger.success(
       `Updated beat ${stepNumber} ${color} arrow adjustment to (${adjustmentX}, ${adjustmentY})`
@@ -141,6 +145,8 @@ export function persistBeatWithAdjustments(
       startingPosition: updatedStartPosition,
     };
 
+    // D4 skip: persists accumulated manual arrow-placement offsets, not
+    // motion structure — no certificate invalidation needed.
     createModuleState.sequenceState.setCurrentSequence(updatedSequence);
     logger.success(`Persisted start position arrow adjustments`);
   } else {
@@ -154,6 +160,8 @@ export function persistBeatWithAdjustments(
       steps: updatedSteps,
     };
 
+    // D4 skip: persists accumulated manual arrow-placement offsets, not
+    // motion structure — no certificate invalidation needed.
     createModuleState.sequenceState.setCurrentSequence(updatedSequence);
     logger.success(`Persisted beat ${stepNumber} arrow adjustments`);
   }

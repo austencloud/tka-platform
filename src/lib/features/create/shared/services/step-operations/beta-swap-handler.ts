@@ -51,5 +51,8 @@ export function toggleBetaSwap(
 
   logger.log(`Toggled beta swap on step ${stepNumber} to ${!stepData.betaSwapped}`);
 
+  // D4 skip: betaSwapped only flips which hand renders on which side of a
+  // beta-offset overlap — a rendering disambiguation flag, not motion
+  // structure — no certificate invalidation needed.
   createModuleState.sequenceState.setCurrentSequence(updatedSequence);
 }

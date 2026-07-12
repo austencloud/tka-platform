@@ -129,6 +129,9 @@ export function bulkUpdatePropType(
       steps: updatedSteps,
     };
 
+    // D4 skip: propType is prop-identity data, not motion structure
+    // (motionType/rotationDirection/locations/orientations/turns) — no
+    // certificate invalidation needed.
     createModuleState.sequenceState.setCurrentSequence(updatedSequence);
     logger.log(
       `Updated ${updatedSteps.length} steps: ${color} prop type to ${propType}`

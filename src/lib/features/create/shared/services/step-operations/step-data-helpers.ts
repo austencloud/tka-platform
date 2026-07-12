@@ -48,5 +48,11 @@ export function updateSequenceWord(
     word,
   };
 
+  // D4 skip: only recomputes the `word` display string from existing step
+  // letters — not a motion mutation itself. Its only caller
+  // (rotation-direction-handler's recalculateLetterForBeat) already invalidated
+  // the certificate via the preceding (already-wrapped) `updateStep`/
+  // `setCurrentSequence` call in the same tick, so `withLoopCertificateCleared`
+  // would be a no-op here regardless.
   createModuleState.sequenceState.setCurrentSequence(updatedSequence);
 }

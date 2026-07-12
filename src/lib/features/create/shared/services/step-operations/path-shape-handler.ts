@@ -62,6 +62,8 @@ export function setPathShape(
   updatedSteps[arrayIndex] = updatedStepData;
 
   logger.log(`Set beat ${stepNumber} ${color} pathShape to ${shape}`);
+  // D4 skip: pathShape is the drawn curve style (arc/linear/concave) of an
+  // existing motion, not motion structure itself — no certificate invalidation.
   createModuleState.sequenceState.setCurrentSequence({
     ...currentSequence,
     steps: updatedSteps,
@@ -103,6 +105,8 @@ export function clearPathShape(
   updatedSteps[arrayIndex] = updatedStepData;
 
   logger.log(`Cleared beat ${stepNumber} ${color} pathShape override`);
+  // D4 skip: pathShape is the drawn curve style, not motion structure — see
+  // setPathShape above for the same reasoning.
   createModuleState.sequenceState.setCurrentSequence({
     ...currentSequence,
     steps: updatedSteps,
