@@ -37,6 +37,7 @@
  *   node scripts/release.js --changelog file.json - Use custom changelog entries (user-friendly)
  *   node scripts/release.js --highlights 1,3,4   - Select highlight indices (comma-separated, or "none")
  *   node scripts/release.js --from-main        - Release directly from main (skip branch workflow)
+ *   node scripts/release.js --auto-gate        - Drop commits behind a dark flag (unreleased modules) from the changelog; without it the gate is advisory-only
  *   node scripts/release.js --skip-jargon-check - Bypass jargon detection (use with caution)
  *   node scripts/release.js --update-notes 0.7.11 --changelog notes.json - Update existing release notes
  */
@@ -46,6 +47,11 @@ import { readFileSync, writeFileSync, existsSync } from "fs";
 import { execSync } from "child_process";
 import * as readline from "readline";
 import config from "../config/feedback.config.js";
+import {
+  loadProductionModules,
+  collectCommits,
+  gateCommits,
+} from "./lib/release-module-gate.mjs";
 
 // Load service account key
 const serviceAccount = JSON.parse(
@@ -418,6 +424,64 @@ function generateChangelogFromGitHistory() {
     console.error("Warning: Could not read git history:", error.message);
     return [];
   }
+}
+
+/**
+ * Run the module gate over the git range and reconcile it with the generated
+ * changelog. Flags commits whose module (or dark sub-feature) is not released,
+ * so they don't leak into the user-facing changelog.
+ *
+ * @param {Array} changelog - entries from generateChangelogFromGitHistory (each has `.commit` = subject)
+ * @param {string} range - git range, e.g. "v0.28.1..HEAD"
+ * @param {boolean} autoGate - when true, drop flagged entries from the changelog
+ * @returns {{ changelog: Array, flagged: Array }}
+ */
+function applyModuleGate(changelog, range, autoGate) {
+  let flagged;
+  try {
+    const productionModules = loadProductionModules();
+    const commits = collectCommits(range);
+    ({ flagged } = gateCommits(commits, { productionModules }));
+  } catch (error) {
+    console.log(`   ⚠️  Module gate skipped (non-fatal): ${error.message}\n`);
+    return { changelog, flagged: [] };
+  }
+
+  if (flagged.length === 0) {
+    console.log("✓ Module gate: no commits behind a dark flag\n");
+    return { changelog, flagged };
+  }
+
+  // Group flagged commits by their reason for a readable report.
+  const byReason = new Map();
+  for (const c of flagged) {
+    const key = c.darkReason || "not released";
+    if (!byReason.has(key)) byReason.set(key, []);
+    byReason.get(key).push(c);
+  }
+
+  console.log("\n" + "═".repeat(70));
+  console.log("🚧 BEHIND A DARK FLAG — these commits belong to unreleased work:");
+  console.log("═".repeat(70) + "\n");
+  for (const [reason, commits] of byReason) {
+    console.log(`  ${reason}:`);
+    commits.forEach((c) => console.log(`     - ${c.subject}`));
+    console.log("");
+  }
+  console.log("─".repeat(70));
+  if (autoGate) {
+    console.log("  --auto-gate: dropping these from the changelog.\n");
+  } else {
+    console.log("  Advisory only. Exclude these when you write the final");
+    console.log("  changelog, or re-run with --auto-gate to drop them.\n");
+  }
+  console.log("═".repeat(70) + "\n");
+
+  if (!autoGate) return { changelog, flagged };
+
+  const flaggedSubjects = new Set(flagged.map((c) => c.subject));
+  const gated = changelog.filter((e) => !flaggedSubjects.has(e.commit));
+  return { changelog: gated, flagged };
 }
 
 /**
@@ -964,6 +1028,7 @@ async function main() {
   const highlightsArg =
     highlightsIndex >= 0 ? args[highlightsIndex + 1] : null;
   const fromMain = args.includes("--from-main");
+  const autoGate = args.includes("--auto-gate");
   const updateNotesIndex = args.indexOf("--update-notes");
   const updateNotesVersion =
     updateNotesIndex >= 0 ? args[updateNotesIndex + 1] : null;
@@ -1081,6 +1146,12 @@ async function main() {
 
     useGitHistory = true;
     console.log(`✓ Found ${changelog.length} commits since last release\n`);
+
+    // Gate out commits that belong to not-yet-released modules / dark
+    // sub-features so they don't leak into the user changelog.
+    const latestTag = getLatestTag();
+    const range = latestTag ? `v${latestTag}..HEAD` : "HEAD";
+    ({ changelog } = applyModuleGate(changelog, range, autoGate));
   } else {
     const { userFacing, developerNotes } =
       generateChangelogFromFeedback(feedbackItems);
