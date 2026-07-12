@@ -126,6 +126,12 @@
   // ResizeObserver on its own wrapper element, not by reading this flag.
   let overflowOpen = $state(false);
 
+  // Respect the OS reduced-motion setting: don't auto-start playback for those
+  // users — they get the player paused with a visible play control instead.
+  const prefersReducedMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   let bpm = $state(60);
   let pickerOpen = $state(false);
   let transformOpen = $state(false);
@@ -448,7 +454,7 @@
     {#key sequence.id}
       <InlineAnimationPlayer
         {sequence}
-        autoPlay={true}
+        autoPlay={!prefersReducedMotion}
         chrome="minimal"
         fill={true}
         externalBpm={bpm}
