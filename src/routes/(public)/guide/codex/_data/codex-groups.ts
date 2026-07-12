@@ -107,6 +107,12 @@ function gbox(cells: CodexCellDef[], mode?: CellMode, full?: boolean): CodexBoxD
   return { header: transitionFor(cells[0]!.id), mode, full, cells };
 }
 
+/** Same grouped box, no header — the OG sheet labels a repeated transition
+ *  (γ→γ) only on the row's first box and leaves the rest unlabeled. */
+function gboxUnlabeled(cells: CodexCellDef[], mode?: CellMode, full?: boolean): CodexBoxDef {
+  return { mode, full, cells };
+}
+
 /** Per-cell box: each cell carries its own derived transition header. */
 function cbox(cells: CodexCellDef[], full?: boolean): CodexBoxDef {
   return { full, cells: cells.map((c) => ({ ...c, top: transitionFor(c.id) })) };
@@ -140,8 +146,10 @@ export const SHEET1: CodexSheetDef = {
         gbox([c("G-0", "G"), c("H-0", "H"), c("I-0", "I")]),
         gbox([c("J-0", "J"), c("K-0", "K"), c("L-0", "L")]),
         gbox([c("M-0", "M"), c("N-0", "N"), c("O-0", "O")]),
-        gbox([c("P-0", "P"), c("Q-0", "Q"), c("R-0", "R")]),
-        gbox([c("S-0", "S"), c("T-0", "T"), c("U-0", "U"), c("V-0", "V")], undefined, true),
+        // OG parity: γ→γ is labeled once (on M/N/O); the same-transition P/Q/R
+        // box and the full-width S-V box carry no label.
+        gboxUnlabeled([c("P-0", "P"), c("Q-0", "Q"), c("R-0", "R")]),
+        gboxUnlabeled([c("S-0", "S"), c("T-0", "T"), c("U-0", "U"), c("V-0", "V")], undefined, true),
       ],
     },
     {

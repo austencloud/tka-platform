@@ -42,7 +42,17 @@
       </h2>
       <div class="type-boxes">
         {#each type.boxes as box, i (i)}
-          <CodexBox {box} {propType} {visibility} {getData} {onCellSelect} />
+          <!-- Boxes alternate left/right down the 2-column sheet grid; the side
+               pins each transition glyph to its OUTER corner (OG parity).
+               Full-width boxes have no side — their header (if any) centers. -->
+          <CodexBox
+            {box}
+            side={box.full ? undefined : i % 2 === 0 ? "left" : "right"}
+            {propType}
+            {visibility}
+            {getData}
+            {onCellSelect}
+          />
         {/each}
       </div>
     </div>

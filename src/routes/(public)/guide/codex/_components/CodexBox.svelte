@@ -8,12 +8,18 @@
 
   let {
     box,
+    side,
     propType,
     visibility,
     getData,
     onCellSelect,
   }: {
     box: CodexBoxDef;
+    /** Which sheet column this box sits in. The OG sheets pin each box's
+     *  transition glyph to the OUTER corner — top-left for left-column boxes,
+     *  top-right for right-column ones — with the OPEN/CLOSE mode word centered.
+     *  Undefined (full-width boxes) centers the header. */
+    side?: "left" | "right";
     /** Interactive-reader overrides — undefined for print/card callers, which
      *  keeps this component's default (canonical) rendering untouched. */
     propType?: PropType;
@@ -25,7 +31,7 @@
 
 <div class="codex-box" class:full={box.full}>
   {#if box.header || box.mode}
-    <div class="box-head">
+    <div class="box-head" class:corner-left={side === "left"} class:corner-right={side === "right"}>
       {#if box.header}<span class="box-transition"><CodexTransitionGlyph text={box.header} /></span>{/if}
       {#if box.mode}<span class="box-mode">{box.mode}</span>{/if}
     </div>
@@ -60,17 +66,37 @@
     justify-self: center;
   }
 
+  /* Header row: the mode word (OPEN/CLOSE) is always centered; the transition
+     glyph is pinned to the box's OUTER corner when the box has a sheet side
+     (absolute, so it never shoves the centered mode word) — matching the OG,
+     where α→α hangs off the top-left of left boxes and β→α off the top-right
+     of right boxes. min-height keeps the row from collapsing when the glyph is
+     the only child (it's absolutely positioned). */
   .box-head {
+    position: relative;
     display: flex;
     align-items: baseline;
     justify-content: center;
     gap: 6px;
+    min-height: 15px;
   }
 
   .box-transition {
     font-size: 0.8rem;
     font-weight: 700;
     color: #1a1a1a;
+  }
+
+  .box-head.corner-left .box-transition {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+  }
+
+  .box-head.corner-right .box-transition {
+    position: absolute;
+    right: 0;
+    bottom: 0;
   }
 
   .box-mode {
