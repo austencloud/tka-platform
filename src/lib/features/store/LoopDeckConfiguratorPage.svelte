@@ -646,17 +646,16 @@
 
           <!-- The escape hatch for hyper-specific buyers (mixed lengths,
                ratio'd flavors): the Deck Architect exposes the whole
-               algorithmic space on its own page, keeping this one simple. -->
-          {#if pack === null}
-            <p class="recipe-line" transition:slide={{ duration: 250, easing: quintOut }}>
-              Dials not specific enough?
-              <a class="recipe-mail" href="/shop/loop-deck/architect">
-                <i class="fas fa-drafting-compass" aria-hidden="true"></i>
-                Open the Deck Architect
-              </a>
-              and design every slice of the deck.
-            </p>
-          {/if}
+               algorithmic space on its own page, keeping this one simple.
+               Always visible — hiding it behind Custom made it unfindable. -->
+          <p class="recipe-line">
+            Want every card on your terms?
+            <a class="recipe-mail" href="/shop/loop-deck/architect">
+              <i class="fas fa-drafting-compass" aria-hidden="true"></i>
+              Open the Deck Architect
+            </a>
+            and design the deck slice by slice.
+          </p>
 
           </div>
 
