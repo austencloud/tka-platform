@@ -25,7 +25,6 @@ import {
   ARCHIVE_TABS,
   LEVELS_TABS,
   HAND_PATH_TABS,
-  PLAYGROUND_TABS,
   VIDEO_TABS,
   SOCIAL_TABS,
   STAGE_TABS,
@@ -54,10 +53,13 @@ const MODULE_ID_MIGRATIONS: Record<string, ModuleId> = {
   // of the walkable museum that the museum module superseded on a different engine.
   // Old /archive deep links redirect to museum (both are "The Kinetic Archive").
   archive: "museum",
-  // Mandala graduated into the Playground module (one-at-a-time, 2026-06-30)
-  "mandala-generator": "playground",
-  "mandala-collection": "playground",
-  mandala: "playground",
+  // Mandala graduated into Playground (2026-06-30); Playground/Art module
+  // dissolved into the Library's Art shelf (2026-07-12) — old deep links land
+  // on Browse, where the Library tab hosts the Art galleries.
+  "mandala-generator": "browse",
+  "mandala-collection": "browse",
+  mandala: "browse",
+  playground: "browse",
   "background-builder": "lab",
   "landing-preview": "lab",
   // ml-training removed (Mar 2026)
@@ -168,22 +170,9 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     isMain: true,
     sections: COMPOSE_TABS, // TODO: Rename to COMPOSE_TABS
   },
-  {
-    // id + PLAYGROUND_TABS stay frozen (routes/analytics). The module has no
-    // nav presence of its own — its only front door is the Library's Art
-    // shelf (navHidden). See
-    // docs/superpowers/specs/2026-07-12-art-in-library-design.md.
-    id: "playground",
-    labelKey: "module_playground",
-    descKey: "module_desc_playground",
-    label: "Art",
-    icon: '<i class="fas fa-palette" style="color: #d946ef;" aria-hidden="true"></i>',
-    color: "#d946ef",
-    description: "Your saved tunnels, 3D scenes, and mandalas — the gallery for what you make",
-    isMain: true,
-    navHidden: true,
-    sections: PLAYGROUND_TABS,
-  },
+  // Playground/Art module dissolved 2026-07-12: the tunnel/scene/mandala
+  // galleries now mount inside the Library's Art shelf detail pane
+  // (MyCollectionsPanel). PLAYGROUND_TABS survives as their metadata source.
   {
     id: "watch",
     labelKey: "module_watch",
@@ -429,7 +418,6 @@ const FEATURE_ENABLED: Record<string, boolean> = {
   video: typeof __FEATURE_VIDEO__ !== "undefined" ? __FEATURE_VIDEO__ : true,
   stage: typeof __FEATURE_STAGE__ !== "undefined" ? __FEATURE_STAGE__ : true,
   mandala: typeof __FEATURE_MANDALA__ !== "undefined" ? __FEATURE_MANDALA__ : true,
-  playground: true,
   shop: true,
   lab: typeof __FEATURE_LAB__ !== "undefined" ? __FEATURE_LAB__ : true,
   settings: typeof __FEATURE_SETTINGS__ !== "undefined" ? __FEATURE_SETTINGS__ : true,

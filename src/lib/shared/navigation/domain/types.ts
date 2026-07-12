@@ -79,7 +79,6 @@ export type ModuleId =
   | "lab" // Experimental features lab (all experiments consolidated here)
   | "stage" // Stage choreography - multi-performer formation locomotion
   | "mandala" // Mandala creation, collection, meditation, and export
-  | "playground" // User-facing experimental toys (counterpart to admin Lab); populated one tab at a time
   | "shop"; // Plain link-out to /shop (Choreo Cards store) — never boots the module shell, see `linkHref`
 
 /**
@@ -108,11 +107,6 @@ export interface ModuleDefinition {
    *  activating a module. Used for link-out entries (e.g. Shop) that must never
    *  boot the app shell's module renderer. */
   linkHref?: string;
-  /** Hidden from all nav surfaces (module grid, sidebar, switcher) but still
-   *  fully navigable via handleModuleChange / deep links. Used for modules whose
-   *  only front door lives elsewhere in the app (e.g. the Art module, entered
-   *  through the Library's Art shelf). */
-  navHidden?: boolean;
 }
 
 export interface ModuleSelectorState {

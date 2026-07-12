@@ -134,7 +134,6 @@ export const PRODUCTION_MODULES: Record<ModuleId, boolean> = {
   "personal-museum": false, // Personal Museum - saved sequences on the walls (WIP, Tasks 11/12 pending)
   stage: false, // Stage choreography - multi-performer formation locomotion (unreleased)
   mandala: false, // Mandala creation, collection, meditation, export (unreleased)
-  playground: false, // Playground - user-facing experimental toys (not production-released yet)
   lab: false, // Experimental features lab (admin-only) - consolidates skewlab, poi-lab, background-builder, landing-preview, ml-training
   shop: true, // Shop - plain link-out to /shop (Choreo Cards store)
 };

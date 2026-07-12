@@ -22,13 +22,12 @@ Signed out, a library has nowhere to live, so the tab explains itself
 instead of showing an empty shell.
 -->
 <script lang="ts">
-	import { onMount } from "svelte";
+	import { onMount, type Component } from "svelte";
 	import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 	import { collectionsState } from "$lib/features/library/state/collections-state.svelte";
 	import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
 	import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
 	import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
-	import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
 	import { PLAYGROUND_TABS } from "$lib/shared/navigation/config/tab-definitions";
 	import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
 	import { scene3dCollectionState } from "$lib/features/scene-3d-collection/state/scene-3d-collection-state.svelte";
@@ -148,6 +147,11 @@ instead of showing an empty shell.
 				ownerName: loc.filter?.displayName,
 			};
 		}
+		// Art categories work signed OUT too (guest saves live in localStorage),
+		// so they bypass the signed-in gate below.
+		if (isArtId(loc.contextId)) {
+			return { id: loc.contextId, ownerId: null, ownerName: undefined };
+		}
 		// Your own collection needs you signed in; a stale restore while signed
 		// out falls through to the list (which shows the sign-in prompt).
 		if (!signedIn) return null;
@@ -187,12 +191,42 @@ instead of showing an empty shell.
 	}
 
 	// ── "Art" shelf ──────────────────────────────────────────────────────────
-	// Indexes the three Playground/Art collections (tunnels, 3D scenes,
-	// mandalas) as category cards — a count + latest-poster cover per category,
-	// not one card per saved entry. Tapping jumps to the Art module's matching
-	// tab; browsing/restoring individual saves stays inside that module.
-	// Display-only: no browseNavigationState detail write, matching the "All"
-	// synthetic shelf above.
+	// The three Art collections (tunnels, 3D scenes, mandalas) as category
+	// cards — a count + latest-poster cover per category. Selecting one opens
+	// its gallery IN the detail pane, exactly like a sequence collection: same
+	// nav-detail seam (back/forward + restore free), same rail highlight. The
+	// gallery components are the former Playground tabs, lazy-mounted here.
+	const ART_DETAIL: Record<
+		string,
+		{ label: string; load: () => Promise<{ default: Component }> }
+	> = {
+		art_tunnels: {
+			label: "Tunnels",
+			load: () => import("$lib/features/tunnel-collection/TunnelCollectionModule.svelte"),
+		},
+		art_scenes: {
+			label: "3D Scenes",
+			load: () => import("$lib/features/scene-3d-collection/Scene3DCollectionModule.svelte"),
+		},
+		art_mandala: {
+			label: "Mandalas",
+			load: () => import("$lib/features/mandala/MandalaModule.svelte"),
+		},
+	};
+
+	function isArtId(id: string): boolean {
+		return id in ART_DETAIL;
+	}
+
+	function openArtDetail(id: string) {
+		browseNavigationState.viewCollectionDetail(id, ART_DETAIL[id]?.label ?? "Art");
+	}
+
+	// Call sites are gated by isArtId, so the lookup can't miss.
+	function artLoad(id: string): Promise<{ default: Component }> {
+		return ART_DETAIL[id]!.load();
+	}
+
 	function playgroundTabColor(tabId: string): string {
 		return PLAYGROUND_TABS.find((t) => t.id === tabId)?.color ?? "var(--theme-accent)";
 	}
@@ -255,15 +289,6 @@ instead of showing an empty shell.
 
 	function unitLabel(n: number, singular: string, plural: string): string {
 		return `${n} ${n === 1 ? singular : plural}`;
-	}
-
-	function openArtTab(tabId: string) {
-		// Cross-module jumps must go through the coordinator: it switches the
-		// RENDERED module (module-state's switchModule) and pushes history, not
-		// just the nav-chrome state. Raw navigationState.setCurrentModule leaves
-		// BrowseModule mounted, which then misreads the foreign tab id and falls
-		// back to the gallery drill.
-		void handleModuleChange("playground", tabId);
 	}
 
 	// ── New collection (inline, same interaction as the picker's add tile) ──
@@ -375,25 +400,57 @@ instead of showing an empty shell.
 	</button>
 {/snippet}
 
-{#snippet artShelf()}
+{#snippet artShelf(sel: { id: string; ownerId: string | null } | null)}
 	<CollectionCard
 		collection={tunnelsArtCard}
 		readonly
+		selected={!!sel && !sel.ownerId && sel.id === "art_tunnels"}
 		countLabel={unitLabel(tunnelsArtCard.sequenceCount, "tunnel", "tunnels")}
-		onOpen={() => openArtTab("tunnels")}
+		onOpen={() => openArtDetail("art_tunnels")}
 	/>
 	<CollectionCard
 		collection={scenesArtCard}
 		readonly
+		selected={!!sel && !sel.ownerId && sel.id === "art_scenes"}
 		countLabel={unitLabel(scenesArtCard.sequenceCount, "3D scene", "3D scenes")}
-		onOpen={() => openArtTab("scenes")}
+		onOpen={() => openArtDetail("art_scenes")}
 	/>
 	<CollectionCard
 		collection={mandalaArtCard}
 		readonly
+		selected={!!sel && !sel.ownerId && sel.id === "art_mandala"}
 		countLabel={unitLabel(mandalaArtCard.sequenceCount, "mandala", "mandalas")}
-		onOpen={() => openArtTab("mandala")}
+		onOpen={() => openArtDetail("art_mandala")}
 	/>
+{/snippet}
+
+{#snippet artDetail(artId: string, showBack: boolean)}
+	<!-- The former Playground gallery, lazy-mounted inside the Library the same
+	     way the other detail views fill this space. Phone (stacked) flow gets a
+	     back bar; the desktop split has the rail right there. -->
+	<div class="art-detail">
+		{#if showBack}
+			<header class="art-detail-bar">
+				<button type="button" class="art-back" onclick={backToList}>
+					<i class="fas fa-arrow-left" aria-hidden="true"></i>
+					<span>Library</span>
+				</button>
+				<span class="art-detail-title">{ART_DETAIL[artId]?.label}</span>
+			</header>
+		{/if}
+		<div class="art-detail-body">
+			{#await artLoad(artId)}
+				<div class="art-detail-loading" aria-hidden="true">
+					<i class="fas fa-circle-notch fa-spin"></i>
+				</div>
+			{:then mod}
+				{@const ArtGallery = mod.default}
+				<ArtGallery />
+			{:catch}
+				<div class="art-detail-loading">Couldn't load this gallery.</div>
+			{/await}
+		</div>
+	</div>
 {/snippet}
 
 {#snippet followedShelves(sel: { id: string; ownerId: string | null } | null)}
@@ -437,7 +494,7 @@ instead of showing an empty shell.
 
 				<h3 class="shelf-heading">Art</h3>
 				<div class="rail-cards">
-					{@render artShelf()}
+					{@render artShelf(railSelection)}
 				</div>
 
 				<h3 class="shelf-heading">TKA Originals</h3>
@@ -457,6 +514,10 @@ instead of showing an empty shell.
 		<section class="detail-pane">
 			{#if railSelection.id === "all" && !railSelection.ownerId}
 				<AllLibraryView />
+			{:else if !railSelection.ownerId && isArtId(railSelection.id)}
+				{#key railSelection.id}
+					{@render artDetail(railSelection.id, false)}
+				{/key}
 			{:else if isOwnSmart(railSelection.id, railSelection.ownerId) || isFoundingId(railSelection.id)}
 				{#key railSelection.id}
 					<SmartCollectionDetailView
@@ -479,6 +540,10 @@ instead of showing an empty shell.
 {:else if detail}
 	{#if detail.id === "all" && !detail.ownerId}
 		<AllLibraryView onBack={backToList} />
+	{:else if !detail.ownerId && isArtId(detail.id)}
+		{#key detail.id}
+			{@render artDetail(detail.id, true)}
+		{/key}
 	{:else if isOwnSmart(detail.id, detail.ownerId) || isFoundingId(detail.id)}
 		{#key detail.id}
 			<SmartCollectionDetailView collectionId={detail.id} onBack={backToList} />
@@ -522,7 +587,7 @@ instead of showing an empty shell.
 
 				<h3 class="shelf-heading">Art</h3>
 				<div class="card-grid">
-					{@render artShelf()}
+					{@render artShelf(null)}
 				</div>
 
 				<h3 class="shelf-heading">TKA Originals</h3>
@@ -576,6 +641,71 @@ instead of showing an empty shell.
 		min-height: 0;
 		height: 100%;
 		overflow: hidden;
+	}
+
+	/* ── Embedded Art gallery (tunnels / scenes / mandalas) ──────────── */
+
+	.art-detail {
+		display: flex;
+		flex-direction: column;
+		height: 100%;
+		min-height: 0;
+	}
+
+	/* Fixed-height bar: content below never shifts as the title changes. */
+	.art-detail-bar {
+		flex: 0 0 auto;
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		height: 48px;
+		padding: 0 12px;
+		border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+	}
+
+	.art-back {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		min-height: 44px;
+		padding: 0 14px;
+		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+		border-radius: 999px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+		color: var(--theme-text, rgba(255, 255, 255, 0.9));
+		font-size: 14px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 0.15s ease;
+	}
+
+	.art-back:hover {
+		background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
+	}
+
+	.art-detail-title {
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+		font-size: 14px;
+		font-weight: 600;
+	}
+
+	.art-detail-body {
+		flex: 1;
+		min-height: 0;
+		overflow: hidden;
+	}
+
+	.art-detail-loading {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		height: 100%;
+		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+		font-size: 14px;
+	}
+
+	.art-detail-loading i {
+		font-size: 24px;
 	}
 
 	/* ── Phone list ─────────────────────────────────────────────────── */
