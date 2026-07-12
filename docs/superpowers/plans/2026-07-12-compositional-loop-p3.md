@@ -198,7 +198,7 @@ git commit -m "feat(create): blockSignatures — per-block transform signatures 
 
 Renders `BlockTimelineModel`: a fixed-height row of equal-width cells; each cell shows tiny FontAwesome icons for its signature components (colors from the icon-strip palette — copy the hex values used in `LOOPIconStrip.svelte`'s `primitiveIcons`: mirrored `#6F2DA8`, flipped `#e91e63`, swapped `#2ecc71`, inverted `#eb7d00`); base cells show a faint neutral dot. When `rotation` is present, a thin continuous ribbon (accent `#36c3ff`, arrow glyph at the end) runs under the cells with a caption slot for the interval.
 
-- [ ] **Step 1: Implement**
+- [x] **Step 1: Implement**
 
 ```svelte
 <!--
@@ -276,9 +276,9 @@ Renders `BlockTimelineModel`: a fixed-height row of equal-width cells; each cell
 </style>
 ```
 
-- [ ] **Step 2: Verify it compiles** — `npm run check:fast` (report the "No problems found" line; ignore its known converter noise).
+- [x] **Step 2: Verify it compiles** — `npm run check:fast` (report the "No problems found" line; ignore its known converter noise).
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git commit -m "feat(shared): LoopBlockTimeline — block-signature strip with rotation ribbon" -- src/lib/shared/components/LoopBlockTimeline.svelte
