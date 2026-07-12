@@ -664,6 +664,24 @@
 
           </div>
 
+          <!-- The escape hatch for hyper-specific buyers (mixed lengths, split
+               props, ratio'd flavors): recipes the dials can't express get
+               hand-built. Each email doubles as the demand signal for a real
+               slice-based recipe builder. -->
+          {#if pack === null}
+            <p class="recipe-line" transition:slide={{ duration: 250, easing: quintOut }}>
+              Dials not specific enough?
+              <a
+                class="recipe-mail"
+                href="mailto:tkaflowarts@gmail.com?subject=Custom%20LOOP%20deck%20recipe"
+              >
+                <i class="fas fa-envelope" aria-hidden="true"></i>
+                Email your recipe
+              </a>
+              and we'll build it by hand.
+            </p>
+          {/if}
+
           </div>
 
           <aside class="buy-rail">
@@ -1267,6 +1285,43 @@
   .variety-sub {
     font-size: var(--font-size-compact, 12px);
     opacity: 0.85;
+  }
+
+  /* Hyper-specific escape hatch: quiet prose, but the action itself is a
+     real pill button (clickables look like buttons, not faint hyperlinks). */
+  .recipe-line {
+    margin: 2px 0 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: var(--font-size-min, 14px);
+    color: rgba(255, 255, 255, 0.85);
+  }
+  .recipe-mail {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.18));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    color: var(--theme-text, #fff);
+    text-decoration: none;
+    font-weight: 700;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .recipe-mail:hover {
+    border-color: rgba(216, 180, 254, 0.6);
+    background: rgba(139, 108, 255, 0.14);
+  }
+  .recipe-mail:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+  .recipe-mail i {
+    color: #b8a6ff;
   }
 
   .price {
