@@ -13,6 +13,10 @@ describe("buildMerchCheckoutParams", () => {
     expect(params.automatic_tax).toEqual({ enabled: true });
   });
 
+  it("requests card payments explicitly (account has no dashboard defaults)", () => {
+    expect(params.payment_method_types).toEqual(["card"]);
+  });
+
   it("uses the product's stripePriceId as the single line item", () => {
     expect(params.line_items).toEqual([{ price: "price_123", quantity: 1 }]);
   });

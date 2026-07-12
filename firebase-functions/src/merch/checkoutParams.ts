@@ -53,6 +53,10 @@ export function buildMerchCheckoutParams(opts: {
     .join(";");
   return {
     mode: "payment",
+    // Explicit: the live account has no dashboard-default payment methods
+    // configured, and Checkout refuses a session with none ("No valid
+    // payment method types"). Card is universally enabled.
+    payment_method_types: ["card"],
     line_items: [{ price: product.stripePriceId, quantity: 1 }],
     automatic_tax: { enabled: true },
     shipping_address_collection: { allowed_countries: SHIPPING_COUNTRIES },
