@@ -10,7 +10,7 @@ Dark mode: Controlled via prop (for preview isolation) or falls back to :root.da
 Supports letter highlighting during animation playback.
 -->
 <script lang="ts">
-  import { simplifyAndTruncate } from "$lib/shared/foundation/utils/word-simplifier";
+  import { simplifyAndTruncate, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { untrack } from "svelte";
   import DifficultyBadge from "$lib/shared/components/DifficultyBadge.svelte";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
@@ -152,6 +152,19 @@ Supports letter highlighting during animation playback.
     displayedWord ? simplifyAndTruncate(displayedWord, 12) : null
   );
 
+  // Compressed-segment display: repeated runs collapse to their pattern with a
+  // faded dot between segments (e.g. BΦ-BΦ-BΦ-BΦ-AΦ-AΦ-AΦ-AΦ- → BΦ- · AΦ-).
+  // Matches TKAWordGlyph and the export renderHeader path. Null → fall back to
+  // the simplifyAndTruncate display above.
+  const compressedSegments = $derived.by(() => {
+    if (!displayedWord) return null;
+    const segments = compressWord(displayedWord);
+    if (!segments.some((s) => s.repeat > 1)) return null;
+    const letterCount = segments.reduce((n, s) => n + s.tokens.length, 0);
+    if (letterCount > 12) return null;
+    return segments;
+  });
+
   // Computed: Whether animation highlighting is active
   const hasActiveHighlighting = $derived(
     activeStepNumber !== null && activeStepNumber >= 1
@@ -177,11 +190,47 @@ Supports letter highlighting during animation playback.
     return letters;
   });
 
+  type DisplayUnit =
+    | { kind: "letter"; letter: string; letterIdx: number }
+    | { kind: "dot" };
+
+  const displayUnits = $derived.by((): DisplayUnit[] => {
+    if (compressedSegments) {
+      const units: DisplayUnit[] = [];
+      let letterIdx = 0;
+      compressedSegments.forEach((seg, si) => {
+        if (si > 0) units.push({ kind: "dot" });
+        for (const token of seg.tokens) {
+          units.push({ kind: "letter", letter: token, letterIdx: letterIdx++ });
+        }
+      });
+      return units;
+    }
+    return parsedLetters.map((letter, i) => ({ kind: "letter" as const, letter, letterIdx: i }));
+  });
+
   /**
-   * Active letter index with wrapping for circular sequences (0-indexed)
+   * Active letter index with wrapping for circular sequences (0-indexed).
+   * With compressed segments, the step number walks the EXPANDED word
+   * (each segment spans tokens.length × repeat steps) and maps back to the
+   * segment's displayed tokens, so the highlight cycles within the pattern.
    */
   const activeLetterIndex = $derived.by(() => {
-    if (!hasActiveHighlighting || parsedLetters.length === 0) return -1;
+    if (!hasActiveHighlighting) return -1;
+    if (compressedSegments) {
+      const total = compressedSegments.reduce((n, s) => n + s.tokens.length * s.repeat, 0);
+      if (total === 0) return -1;
+      let s0 = (activeStepNumber! - 1) % total;
+      let offset = 0;
+      for (const seg of compressedSegments) {
+        const span = seg.tokens.length * seg.repeat;
+        if (s0 < span) return offset + (s0 % seg.tokens.length);
+        s0 -= span;
+        offset += seg.tokens.length;
+      }
+      return -1;
+    }
+    if (parsedLetters.length === 0) return -1;
     // activeStepNumber is 1-indexed, modulo to wrap around
     return (activeStepNumber! - 1) % parsedLetters.length;
   });
@@ -189,7 +238,7 @@ Supports letter highlighting during animation playback.
 
 </script>
 
-{#if visible && displayText}
+{#if visible && displayUnits.length > 0}
   <div
     class="word-header"
     class:dark-mode={darkMode}
@@ -202,34 +251,48 @@ Supports letter highlighting during animation playback.
     {/if}
 
     <span class="word-text">
-      {#if hasActiveHighlighting && parsedLetters.length > 0 && animationPhase === "idle"}
-        {#each parsedLetters as letter, index (index)}
-          {@const url = getGlyphUrl(letter)}
-          <span
-            class="letter"
-            class:active={activeLetterIndex === index}
-          >
-            {#if url}
-              <img src={url} alt={letter} class="glyph-img" class:alpha-baseline={isAlphaGlyph(letter)} draggable="false" />
-              {#if isDashLetter(letter)}<span class="dash-bar"></span>{/if}
-            {:else}{letter}{/if}
-          </span>
+      {#if hasActiveHighlighting && displayUnits.length > 0 && animationPhase === "idle"}
+        {#each displayUnits as unit, index (index)}
+          {#if unit.kind === "dot"}
+            <span class="group-dot"></span>
+          {:else}
+            {@const url = getGlyphUrl(unit.letter)}
+            <span
+              class="letter"
+              class:active={activeLetterIndex === unit.letterIdx}
+            >
+              {#if url}
+                <img src={url} alt={unit.letter} class="glyph-img" class:alpha-baseline={isAlphaGlyph(unit.letter)} draggable="false" />
+                {#if isDashLetter(unit.letter)}<span class="dash-bar"></span>{/if}
+              {:else}{unit.letter}{/if}
+            </span>
+          {/if}
         {/each}
       {:else}
-        {#each parsedLetters as letter, index (index)}
-          {@const url = getGlyphUrl(letter)}
-          <span
-            class="letter animated"
-            class:entering={animationPhase === "entering"}
-            class:exiting={animationPhase === "exiting"}
-            class:visible={animationPhase === "idle"}
-            style="--letter-index: {index}; --total-letters: {parsedLetters.length}; --reverse-index: {parsedLetters.length - 1 - index}"
-          >
-            {#if url}
-              <img src={url} alt={letter} class="glyph-img" class:alpha-baseline={isAlphaGlyph(letter)} draggable="false" />
-              {#if isDashLetter(letter)}<span class="dash-bar"></span>{/if}
-            {:else}{letter}{/if}
-          </span>
+        {#each displayUnits as unit, index (index)}
+          {#if unit.kind === "dot"}
+            <span
+              class="group-dot animated"
+              class:entering={animationPhase === "entering"}
+              class:exiting={animationPhase === "exiting"}
+              class:visible={animationPhase === "idle"}
+              style="--letter-index: {index}; --total-letters: {displayUnits.length}; --reverse-index: {displayUnits.length - 1 - index}"
+            ></span>
+          {:else}
+            {@const url = getGlyphUrl(unit.letter)}
+            <span
+              class="letter animated"
+              class:entering={animationPhase === "entering"}
+              class:exiting={animationPhase === "exiting"}
+              class:visible={animationPhase === "idle"}
+              style="--letter-index: {index}; --total-letters: {displayUnits.length}; --reverse-index: {displayUnits.length - 1 - index}"
+            >
+              {#if url}
+                <img src={url} alt={unit.letter} class="glyph-img" class:alpha-baseline={isAlphaGlyph(unit.letter)} draggable="false" />
+                {#if isDashLetter(unit.letter)}<span class="dash-bar"></span>{/if}
+              {:else}{unit.letter}{/if}
+            </span>
+          {/if}
         {/each}
       {/if}
     </span>
@@ -354,27 +417,71 @@ Supports letter highlighting during animation playback.
     filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
   }
 
-  .letter.animated {
-    display: inline-flex;
+  /* Segment separator for compressed words (BΦ- · AΦ-). Matches TKAWordGlyph. */
+  .group-dot {
+    display: inline-block;
+    width: 0.15em;
+    height: 0.15em;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.4;
+    margin: 0 0.1em;
+    flex-shrink: 0;
+  }
+
+  .letter.animated,
+  .group-dot.animated {
     opacity: 0;
     transform: translateY(8px) scale(0.8);
   }
 
-  .letter.animated.entering {
+  .letter.animated {
+    display: inline-flex;
+  }
+
+  .letter.animated.entering,
+  .group-dot.animated.entering {
     animation: letterEnter var(--duration-emphasis) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     animation-delay: calc(var(--letter-index) * (180ms / max(var(--total-letters), 4)));
   }
 
-  .letter.animated.exiting {
+  .letter.animated.exiting,
+  .group-dot.animated.exiting {
     opacity: 1;
     transform: translateY(0) scale(1);
     animation: letterExit var(--duration-normal) cubic-bezier(0.4, 0, 1, 1) forwards;
     animation-delay: calc(var(--letter-index) * (120ms / max(var(--total-letters), 4)));
   }
 
-  .letter.animated.visible {
+  .letter.animated.visible,
+  .group-dot.animated.visible {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+
+  /* The dot rests at 0.4 opacity, so its enter/exit keyframes target that
+     instead of letterEnter/letterExit's fill-forwards opacity of 1. */
+  .group-dot.animated.entering {
+    animation-name: dotEnter;
+  }
+
+  .group-dot.animated.exiting {
+    opacity: 0.4;
+    animation-name: dotExit;
+  }
+
+  .group-dot.animated.visible {
+    opacity: 0.4;
+  }
+
+  @keyframes dotEnter {
+    from { opacity: 0; transform: translateY(8px) scale(0.8); }
+    to { opacity: 0.4; transform: translateY(0) scale(1); }
+  }
+
+  @keyframes dotExit {
+    from { opacity: 0.4; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(-6px) scale(0.85); }
   }
 
   @keyframes letterEnter {
@@ -394,6 +501,15 @@ Supports letter highlighting during animation playback.
     .letter.animated.visible {
       animation: none;
       opacity: 1;
+      transform: none;
+    }
+
+    .group-dot.animated,
+    .group-dot.animated.entering,
+    .group-dot.animated.exiting,
+    .group-dot.animated.visible {
+      animation: none;
+      opacity: 0.4;
       transform: none;
     }
   }
