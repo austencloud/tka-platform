@@ -69,7 +69,7 @@ sourceSequenceId?: string;  // when known in the save context
 - Public/shared art — collections stay private; sharing gets its own spec after this lands.
 - Bidirectional lineage ("Art made from this" on sequence cards) — v2; needs reverse lookup and is an empty affordance for most sequences today.
 - BrowseEngine / smart collections over art — pipeline is sequence-typed; not forcing it.
-- ~~Retiring the Art (playground) module from main nav~~ — DONE 2026-07-12 per Austen's direction (`d991754454`): `ModuleDefinition.navHidden` hides it from all nav surfaces; Library's Art shelf is the only front door; PlaygroundModule gained a "← Library" header bar as the visible exit.
+- ~~Retiring the Art (playground) module from main nav~~ — SUPERSEDED same day. Austen's actual intent: art galleries are **embedded in the Library detail pane**, not a place you get sent to. Final state (`09829ce608`): Art shelf cards select into the pane via the nav-detail seam (contextId `art_tunnels`/`art_scenes`/`art_mandala`, colon-free so foreign parsing untouched; art bypasses the signed-in gate for guest saves), galleries lazy-mount in the pane (phone flow gets a back bar), and the playground module is fully dissolved (def, renderer, ModuleId, env flags, shell file; `MODULE_ID_MIGRATIONS` maps `playground`→`browse`). The interim nav-hide (`d991754454`) and coordinator-routing fix (`3d039e53fd`) were stepping stones; `navHidden` was reverted unused.
 
 ## Ledger
 
