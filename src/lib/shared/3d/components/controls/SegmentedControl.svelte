@@ -79,8 +79,10 @@
   .segmented-control {
     display: flex;
     position: relative;
-    background: var(--theme-card-bg);
-    border: 1px solid var(--theme-stroke);
+    /* Fallbacks: this control also renders on marketing-chrome pages (shop
+       configurator) where the app theme pipeline may not have run. */
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 8px;
     padding: 3px;
     gap: 2px;
@@ -94,7 +96,7 @@
     left: calc(3px + (100% - 6px) / var(--count) * var(--index));
     width: calc((100% - 6px) / var(--count) - 2px);
     border-radius: 6px;
-    transition: left var(--duration-normal) ease;
+    transition: left var(--duration-normal, 200ms) ease;
     z-index: 0;
   }
 
@@ -107,12 +109,12 @@
   }
 
   .accent .indicator {
-    background: var(--theme-accent);
+    background: var(--theme-accent, #8b6cff);
   }
 
   .segment {
     flex: 1;
-    min-height: var(--min-touch-target); /* WCAG AA touch target */
+    min-height: var(--min-touch-target, 44px); /* WCAG AA touch target */
     min-width: 0;
     padding: 0.5rem 0.5rem;
     background: none;

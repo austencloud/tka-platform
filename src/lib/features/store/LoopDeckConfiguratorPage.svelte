@@ -29,20 +29,17 @@
   } from "./components/DeckFanCover.svelte";
   import LoopChips from "./components/LoopChips.svelte";
   import BuyButton from "./components/BuyButton.svelte";
-  import PropPicker from "./components/PropPicker.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import BaseCard from "$lib/features/create/generate/components/cards/BaseCard.svelte";
-  import StepperCard from "$lib/features/create/generate/components/cards/StepperCard/StepperCard.svelte";
-  import { getCardColors } from "$lib/shared/create/domain/card-colors";
-  import { BackgroundType } from "@austencloud/backgrounds";
   import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
   import { scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import { prewarmCovers } from "./services/cover-front-renderer";
   import {
     DEFAULT_SHOP_PROP,
+    SHOP_PROP_OPTIONS,
     shopPropImage,
     shopPropLabel,
   } from "./domain/shop-prop-options";
@@ -212,9 +209,8 @@
     )?.id ?? null
   );
 
-  // ── generate-panel bento palette + LOOP/prop tile gradients (shared with the
-  //    deck-releaser LoopBentoBoard so the surfaces match). ──
-  const cc = getCardColors(BackgroundType.COSMIC);
+  // ── bento palette: LOOP/prop tile gradients (shared with the deck-releaser
+  //    LoopBentoBoard so the surfaces match). ──
   // LOOP identity gold, brightened off the drab olive so the hero tile reads warm.
   const LOOP_COLOR = "linear-gradient(135deg, #d9c24a 0%, #a89a2c 48%, #6f6318 100%)";
   const LOOP_SHADOW = "50deg 60% 42%";
@@ -233,37 +229,25 @@
     "3": "Half turns",
   };
 
-  // ── Level stepper: index over the AVAILABLE (seeded) values, so the range
-  //    grows automatically as Level 3's decks seed — no code change. ──
-  const levelIdx = $derived(Math.max(0, AVAILABLE_LEVELS.indexOf(level)));
+  // ── Level / Length are segmented picks, not steppers: with options like
+  //    [1, 2, Mix] a ± stepper lies about ordinality (Mix is a peer choice,
+  //    not "one above Level 2", and +1 from 8 steps landing on Mix reads as a
+  //    bug). Options derive from the AVAILABLE lists, so the rows grow as
+  //    Level 3 / longer lengths seed — no code change. ──
   const levelLabel = (l: LoopLevel) => (l === "mix" ? "Mix" : l);
-  function stepLevel(dir: number) {
-    const i = Math.max(0, Math.min(AVAILABLE_LEVELS.length - 1, levelIdx + dir));
-    level = AVAILABLE_LEVELS[i] as LoopLevel;
-  }
-  const levelTileColor = $derived(
-    level === "mix"
-      ? MIX_LEVEL_COLOR
-      : (DIFFICULTY_LEVELS[Number(level)]?.cssBg ?? cc.level.color)
-  );
-  const levelTileText = $derived(
-    level === "mix"
-      ? "#0b1220"
-      : (DIFFICULTY_LEVELS[Number(level)]?.text ?? "white")
-  );
+  const levelOptions = AVAILABLE_LEVELS.map((l) => ({
+    value: l,
+    label: levelLabel(l),
+  }));
+  const lengthOptions = AVAILABLE_LENGTHS.map((l) => ({
+    value: l,
+    label: l === "mix" ? "Mix" : `${l} steps`,
+  }));
   const levelDesc = $derived(
     level === "mix" ? LEVEL_MIX_COPY : (LEVEL_DESC[level] ?? "")
   );
-
-  // ── Length stepper: same index-over-available pattern. ──
-  const lengthIdx = $derived(Math.max(0, AVAILABLE_LENGTHS.indexOf(length)));
-  const lengthLabel = (l: LoopLength) => (l === "mix" ? "Mix" : l);
-  function stepLength(dir: number) {
-    const i = Math.max(0, Math.min(AVAILABLE_LENGTHS.length - 1, lengthIdx + dir));
-    length = AVAILABLE_LENGTHS[i] as LoopLength;
-  }
   const lengthDesc = $derived(
-    length === "mix" ? LENGTH_MIX_COPY : `${length} steps`
+    length === "mix" ? LENGTH_MIX_COPY : `${length} steps, every card`
   );
 
   // ── advanced panel (usage decides whether this survives) ──
@@ -362,13 +346,11 @@
     customSku ? `$${(customSku.price / 100).toFixed(0)}` : "$30"
   );
 
-  // ── drill-down modals ──
+  // ── drill-down modal (flavor only — prop picks inline) ──
   let showFlavor = $state(false);
-  let showProp = $state(false);
   function onWindowKey(e: KeyboardEvent) {
     if (e.key !== "Escape") return;
     if (showFlavor) showFlavor = false;
-    if (showProp) showProp = false;
   }
 
   // Roving radiogroup for the flavor tiles (inside the modal).
@@ -488,37 +470,33 @@
 
           <!-- ── primary bento board ── -->
           <div class="bento-board">
-            <div class="tile-row">
-              <div class="tile stepper">
-                <StepperCard
-                  title="Level"
-                  currentValue={levelIdx}
-                  minValue={0}
-                  maxValue={AVAILABLE_LEVELS.length - 1}
-                  formatValue={(i: number) => levelLabel(AVAILABLE_LEVELS[i] as LoopLevel)}
-                  description={levelDesc}
-                  color={levelTileColor}
-                  textColor={levelTileText}
-                  shadowColor="0deg 0% 0%"
-                  gridColumnSpan={2}
-                  onIncrement={() => stepLevel(1)}
-                  onDecrement={() => stepLevel(-1)}
+            <!-- Level / Length: segmented picks (peer options, no fake ± order). -->
+            <div class="seg-row">
+              <div class="seg-panel">
+                <span class="seg-title">Level</span>
+                <SegmentedControl
+                  options={levelOptions}
+                  value={level}
+                  onchange={(v) => {
+                    level = v;
+                    buzz();
+                  }}
+                  color="accent"
                 />
+                <span class="seg-desc">{levelDesc}</span>
               </div>
-              <div class="tile stepper">
-                <StepperCard
-                  title="Length"
-                  currentValue={lengthIdx}
-                  minValue={0}
-                  maxValue={AVAILABLE_LENGTHS.length - 1}
-                  formatValue={(i: number) => lengthLabel(AVAILABLE_LENGTHS[i] as LoopLength)}
-                  description={lengthDesc}
-                  color={cc.length.color}
-                  shadowColor={cc.length.shadowColor}
-                  gridColumnSpan={2}
-                  onIncrement={() => stepLength(1)}
-                  onDecrement={() => stepLength(-1)}
+              <div class="seg-panel">
+                <span class="seg-title">Length</span>
+                <SegmentedControl
+                  options={lengthOptions}
+                  value={length}
+                  onchange={(v) => {
+                    length = v;
+                    buzz();
+                  }}
+                  color="accent"
                 />
+                <span class="seg-desc">{lengthDesc}</span>
               </div>
             </div>
 
@@ -536,53 +514,38 @@
               </div>
             </div>
 
-            <!-- Prop (interactive) + Size / Bundle (fixed this beta run: tarot /
-                 bundle coming soon) three across. Muted non-interactive tiles —
-                 no fake-pickable disabled controls. -->
-            <div class="tile-row trio">
-              <div class="tile prop-tile">
-                <BaseCard
-                  title="Prop"
-                  currentValue=""
-                  color={PROP_TILE_COLOR}
-                  shadowColor={PROP_TILE_SHADOW}
-                  gridColumnSpan={2}
-                  onClick={() => (showProp = true)}
-                >
-                  <div class="prop-tile-inner">
-                    <span class="prop-tile-chip">
-                      <img
-                        class="prop-tile-img"
-                        src={shopPropImage(propType)}
-                        alt=""
-                        draggable="false"
-                      />
+            <!-- Prop: inline exactly-one chips, no drill-down modal. Hand-built
+                 per chip-primitives' keep-separate clause — SegmentedControl
+                 can't carry the prop images (FontAwesome-only icon slot). -->
+            <div class="seg-panel prop-panel">
+              <span class="seg-title">Prop</span>
+              <div class="prop-row" role="radiogroup" aria-label="Prop">
+                {#each SHOP_PROP_OPTIONS as p (p)}
+                  <button
+                    type="button"
+                    class="prop-chip"
+                    class:selected={propType === p}
+                    role="radio"
+                    aria-checked={propType === p}
+                    onclick={() => {
+                      propType = p;
+                      buzz();
+                    }}
+                  >
+                    <span class="prop-chip-frame">
+                      <img src={shopPropImage(p)} alt="" draggable="false" />
                     </span>
-                    <span class="prop-tile-label">{shopPropLabel(propType)}</span>
-                  </div>
-                </BaseCard>
-              </div>
-              <div class="tile small">
-                <BaseCard
-                  title="Size"
-                  currentValue={'Poker · 2.5" × 3.5"'}
-                  clickable={false}
-                  color={SECONDARY_TILE_COLOR}
-                  shadowColor="0deg 0% 0%"
-                  gridColumnSpan={2}
-                />
-              </div>
-              <div class="tile small">
-                <BaseCard
-                  title="Bundle"
-                  currentValue="Deck only"
-                  clickable={false}
-                  color={SECONDARY_TILE_COLOR}
-                  shadowColor="0deg 0% 0%"
-                  gridColumnSpan={2}
-                />
+                    <span class="prop-chip-label">{shopPropLabel(p)}</span>
+                  </button>
+                {/each}
               </div>
             </div>
+
+            <!-- Fixed specs this beta run — information, not dead buttons. -->
+            <p class="spec-line">
+              Poker size · 2.5" × 3.5" <span class="spec-sep">•</span> Deck only
+              <span class="spec-sep">•</span> Tarot size and bundles coming soon
+            </p>
           </div>
 
           <!-- Fine-tune disclosure: collapsed by default; opening it and
@@ -721,40 +684,6 @@
         </div>
       </div>
       <button class="po-done" onclick={() => (showFlavor = false)}>Done</button>
-    </div>
-  </div>
-{/if}
-
-<!-- ============ Prop drill-down modal ============ -->
-{#if showProp}
-  <div
-    class="modal-backdrop"
-    role="presentation"
-    onclick={(e) => {
-      if (e.target === e.currentTarget) showProp = false;
-    }}
-  >
-    <div
-      class="picker-overlay prop-overlay"
-      transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}
-    >
-      <div class="po-header">
-        <h3>Prop</h3>
-        <button class="po-close" aria-label="Close" onclick={() => (showProp = false)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
-      <div class="po-body">
-        <PropPicker
-          value={propType}
-          onchange={(p) => {
-            propType = p;
-            buzz();
-            showProp = false;
-          }}
-        />
-      </div>
-      <button class="po-done" onclick={() => (showProp = false)}>Done</button>
     </div>
   </div>
 {/if}
@@ -1033,19 +962,10 @@
     min-width: 180px;
     height: 118px;
   }
-  /* Flavor hero: full-width identity tile, a touch taller than the steppers. */
+  /* Flavor hero: full-width identity tile, a touch taller than the seg panels. */
   .tile-row > .tile.hero {
     flex: 1 1 100%;
     height: 132px;
-  }
-  /* Prop + Size + Bundle three across; prop gets a little more room. */
-  .tile-row.trio > .tile {
-    flex: 1 1 150px;
-    min-width: 132px;
-    height: 100px;
-  }
-  .tile-row.trio > .tile.prop-tile {
-    flex: 1.5 1 180px;
   }
   .tile > :global(*) {
     width: 100%;
@@ -1057,59 +977,118 @@
     font-size: 24px !important;
     line-height: 1.15 !important;
   }
-  .tile.small :global(.base-card .card-value) {
-    font-size: 14px !important;
-    font-weight: 700 !important;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.78)) !important;
-    white-space: normal !important;
-  }
   .bento-board :global(.card-title) {
     font-size: var(--font-size-compact, 12px) !important;
     letter-spacing: 0.8px !important;
   }
 
-  /* Prop tile: hide BaseCard's empty value slot, use the content slot for the
-     prop image + label (like LoopBentoBoard's size tile pattern). */
-  .prop-tile :global(.card-value) {
-    display: none;
-  }
-  .prop-tile :global(.card-content) {
-    margin-top: 0;
-    flex: 1;
+  /* ---------- segmented panels (Level / Length / Prop) ---------- */
+  .seg-row {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
   }
-  /* Single centered row — a small framed image chip + the prop name. A thin
-     prop (staff) reads clearly inside the chip; nothing overflows the tile. */
-  .prop-tile-inner {
+  .seg-row > .seg-panel {
+    flex: 1 1 240px;
+    min-width: 200px;
+  }
+  .seg-panel {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
     gap: 9px;
+    padding: 12px 14px 11px;
+    border-radius: 14px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
-  .prop-tile-chip {
+  .seg-title {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.65));
+    text-align: center;
+  }
+  .seg-desc {
+    min-height: 1.3em; /* reserved — copy length varies per pick (no shift) */
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    text-align: center;
+  }
+
+  /* Prop chips: exactly-one image chips, selected wears the prop purple. */
+  .prop-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+  .prop-chip {
+    flex: 1 1 92px;
+    max-width: 132px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 10px 8px 9px;
+    border-radius: 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    color: var(--theme-text, #fff);
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+  }
+  .prop-chip:hover {
+    border-color: rgba(216, 180, 254, 0.55);
+  }
+  .prop-chip:active {
+    transform: scale(0.97);
+  }
+  .prop-chip:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+  .prop-chip.selected {
+    border-color: #d8b4fe;
+    background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
+    box-shadow: 0 4px 14px rgba(147, 51, 234, 0.35);
+  }
+  .prop-chip-frame {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
-    flex-shrink: 0;
-    border-radius: 9px;
-    background: rgba(255, 255, 255, 0.16);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
   }
-  .prop-tile-img {
-    width: 24px;
-    height: 24px;
+  .prop-chip.selected .prop-chip-frame {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  .prop-chip-frame img {
+    width: 26px;
+    height: 26px;
     object-fit: contain;
     pointer-events: none;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
   }
-  .prop-tile-label {
-    font-size: var(--font-size-min, 15px);
-    font-weight: 800;
-    text-shadow: var(--card-text-shadow);
+  .prop-chip-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+  }
+
+  /* Fixed specs: reads as information, not as disabled controls. */
+  .spec-line {
+    margin: 0;
+    font-size: var(--font-size-compact, 12px);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    text-align: center;
+  }
+  .spec-sep {
+    margin: 0 6px;
+    opacity: 0.5;
   }
 
   .field {
@@ -1292,9 +1271,6 @@
     border: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
     box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
     overflow: hidden;
-  }
-  .picker-overlay.prop-overlay {
-    width: min(560px, 94vw);
   }
   .po-header {
     display: flex;
