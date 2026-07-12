@@ -227,6 +227,13 @@ export class HapticFeedback {
 
     const host = document.createElement("div");
     host.setAttribute("aria-hidden", "true");
+    // The programmatic label.click() below fires real DOM click/change events.
+    // Without this class PostHog autocapture records them, and rapid haptics
+    // register as $rageclick on an element no finger can reach — 95% of all
+    // rage-click events were this phantom before it was excluded.
+    host.className = "ph-no-capture";
+    input.classList.add("ph-no-capture");
+    label.classList.add("ph-no-capture");
     host.style.cssText =
       "position:fixed;top:-100px;left:-100px;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;";
     input.tabIndex = -1;

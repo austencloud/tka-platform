@@ -44,23 +44,29 @@ export async function initPostHog(): Promise<void> {
     return;
   }
 
+  // Dev sessions poisoned the project: 80% of $exception volume was localhost
+  // Vite HMR noise, and dev clicks/pageviews skewed every user metric. In dev,
+  // keep PostHog alive for feature flags but capture nothing.
+  const captureEnabled = !import.meta.env.DEV;
+
   posthog.init(env.PUBLIC_POSTHOG_KEY, {
     api_host: env.PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
 
-    // Capture pageviews automatically
-    capture_pageview: true,
-    capture_pageleave: true,
+    // Capture pageviews automatically (prod only)
+    capture_pageview: captureEnabled,
+    capture_pageleave: captureEnabled,
 
     // Session recording sends large payloads that trigger 413 errors on
     // localhost (CORS + Content Too Large). Only record in production.
     disable_session_recording: import.meta.env.DEV,
 
-    // Autocapture clicks, form submissions, etc.
-    autocapture: true,
+    // Autocapture clicks, form submissions, etc. (prod only)
+    autocapture: captureEnabled,
 
     // Error tracking: capture every uncaught error, unhandled rejection, and
     // console.error as $exception events, tied to the identified user.
-    capture_exceptions: {
+    // Prod only — in dev this hoovered up HMR errors and mid-edit states.
+    capture_exceptions: captureEnabled && {
       capture_unhandled_errors: true,
       capture_unhandled_rejections: true,
       capture_console_errors: true,
@@ -148,18 +154,19 @@ export function captureException(
   error: unknown,
   properties?: Record<string, unknown>
 ): void {
-  if (!browser || !initialized) return;
+  if (!browser || !initialized || import.meta.env.DEV) return;
   posthog.captureException(error, properties);
 }
 
 /**
- * Capture a custom event.
+ * Capture a custom event. No-op in dev — localhost sessions were polluting
+ * every product metric (sequence_save, session_start, module_view).
  */
 export function captureEvent(
   eventName: string,
   properties?: Record<string, unknown>
 ): void {
-  if (!browser || !initialized) return;
+  if (!browser || !initialized || import.meta.env.DEV) return;
   posthog.capture(eventName, properties);
 }
 
