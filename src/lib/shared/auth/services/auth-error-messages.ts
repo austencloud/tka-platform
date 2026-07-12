@@ -23,7 +23,6 @@ export function mapAuthError(error: unknown): string | null {
     case "auth/popup-blocked":
       return "Popup was blocked. Please allow popups for this site.";
     case "auth/popup-closed-by-user":
-      return "Sign-in cancelled. Please try again.";
     case "auth/cancelled-popup-request":
       // Silent - user just clicked away, or a second popup superseded this one.
       return null;
