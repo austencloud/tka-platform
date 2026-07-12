@@ -124,7 +124,10 @@
   const currentLoopType = $derived(
     flavor === "variety"
       ? LOOPType.ROTATED
-      : generateLOOPType(new Set(flavor.split("-") as unknown as LOOPComponent[]))
+      : (generateLOOPType(new Set(flavor.split("-") as unknown as LOOPComponent[])) ??
+          // Every LOOP_FLAVORS slug maps to an implemented type; this guard
+          // only matters if the checkout whitelist ever drifts ahead of the engine.
+          LOOPType.ROTATED)
   );
   const currentLoopComponents = $derived(parseLoopComponents(currentLoopType));
 
@@ -372,7 +375,7 @@
   let previewToken = 0;
   $effect(() => {
     if (flavorSkus.length === 0) return;
-    const dials = { level, length, flavor, excluded, skuByFlavor };
+    const dials = { level, length, flavor, maxTurns: turnIntensity, propType, excluded, skuByFlavor };
     const token = ++previewToken;
     previewCards = null; // fall back to SKU covers while the sample loads
     loopPreviewCards(dials).then((cards) => {
@@ -463,7 +466,7 @@
           >
             <!-- fill mode: the stage is the sized box, so config swaps can
                  never resize it (crossfade-primitive routing). -->
-            <Crossfade key={`${level}|${length}|${flavor}|${propType}|${excluded.size}`} fill>
+            <Crossfade key={`${level}|${length}|${flavor}|${propType}|${turnIntensity}|${excluded.size}`} fill>
               <div class="preview-inner">
                 <!-- Non-interactive on purpose: the fan sizes against the rest
                      overlap instead of reserving hover-spread width, which buys

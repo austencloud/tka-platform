@@ -1,11 +1,16 @@
 /**
  * Live preview cards for the LOOP configurator.
  *
- * The per-flavor SKUs carry fixed curated covers, which are level-blind — a
- * buyer dialing Level 2 kept seeing Level 1 cards, so the preview lied about
- * the product. This service samples REAL sequences from the enumerated
- * catalogs matching the dials (catalog docs carry level/loopType/stepCount),
- * so what the fan shows is what the deck builder would actually draw from.
+ * The fan must DEMONSTRATE the dials. Enumerated catalogs only cover a slice
+ * of the config space (Level 1 hands at 8 steps, plus rotated at 12/16), so
+ * catalog sampling alone silently fell back to Level 1 eight-counts when the
+ * buyer dialed Level 2 · 12 — the preview lied about the product.
+ *
+ * Now the preview runs the SAME engine fulfillment runs (generationOrchestrator,
+ * CIRCULAR mode — see DeckReleaserTab.generateLiveDeck): when an enumerated
+ * catalog exactly matches the dials we sample it (instant, and it IS the
+ * printed pool), otherwise we live-generate real sequences at the dialed
+ * level/length/turns. Hands are cached per dial key so toggling back is instant.
  *
  * Returns null on any failure — the caller falls back to the SKU covers.
  */
@@ -19,6 +24,16 @@ import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
 import type { CoverCard, Product } from "../domain/models/product";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { LoopFlavor, LoopLength, LoopLevel } from "../domain/loop-config";
+import { DEFAULT_MAX_TURNS } from "../domain/loop-config";
+import { generateLOOPType } from "$lib/shared/create/services/loop-type-utils";
+import { levelToDifficulty } from "$lib/shared/create/utils/config-mapper";
+import { LOOPType, Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import {
+  GenerationMode,
+  type GenerationOptions,
+  type LOOPComponent,
+} from "$lib/shared/foundation/domain/models/generation/generate-models";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const FAN_SIZE = 6;
 
@@ -45,28 +60,28 @@ function sampleSequences(catalogId: string): Promise<SequenceData[]> {
 }
 
 /** Flavor slug ("mirrored-swapped") → catalog loopType ("mirrored_swapped"). */
-const toLoopType = (f: LoopFlavor) => f.replace(/-/g, "_");
+const toCatalogLoopType = (f: LoopFlavor) => f.replace(/-/g, "_");
 
-function pickCatalog(
+/** Catalog that matches the dials EXACTLY (level + step count) — the only
+ *  kind the preview may sample; anything looser lies about the product. */
+function exactCatalog(
   cats: Catalog[],
   flavor: LoopFlavor,
   level: number,
   wantSteps: number
 ): Catalog | null {
-  const loopType = toLoopType(flavor);
+  const loopType = toCatalogLoopType(flavor);
   const candidates = cats.filter(
     (c) =>
       c.collection === "LOOPs" &&
       !c.asymmetric && // asymmetric enumerations store no sequences of their own
       c.loopType === loopType &&
-      c.level === level
+      c.level === level &&
+      c.stepCount === wantSteps
   );
-  if (candidates.length === 0) return null;
-  // Prefer the buyer's step count, then the curated 54-card decks (the printed
-  // product), then the biggest pool.
+  // Prefer the curated 54-card decks (the printed product), then the biggest pool.
   candidates.sort(
     (a, b) =>
-      Number(b.stepCount === wantSteps) - Number(a.stepCount === wantSteps) ||
       Number(b.id.includes("-c54")) - Number(a.id.includes("-c54")) ||
       b.totalSequences - a.totalSequences
   );
@@ -86,57 +101,119 @@ function accentFrom(sku: Product | undefined): Omit<CoverCard, "sequence"> {
   };
 }
 
-async function flavorCards(
-  cats: Catalog[],
-  flavor: LoopFlavor,
-  level: number,
-  n: number,
-  sku: Product | undefined,
-  offset = 0,
-  wantSteps = 8
-): Promise<CoverCard[]> {
-  const catalog = pickCatalog(cats, flavor, level, wantSteps);
-  if (!catalog) return [];
-  const seqs = await sampleSequences(catalog.id);
-  if (seqs.length === 0) return [];
-  const accent = accentFrom(sku);
-  // Offset staggers WHICH sequence each flavor leads with — flavor catalogs
-  // share words (same doc ids), so offset 0 across the board deals near-twins.
-  const start = offset % seqs.length;
-  const picked = [...seqs.slice(start), ...seqs.slice(0, start)].slice(0, n);
-  return picked.map((sequence) => ({ sequence, ...accent }));
+/* ── live generation ─────────────────────────────────────────────────────────
+   One engine call per card, dials mapped exactly the way fulfillment maps them
+   (DeckReleaserTab.generateLiveDeck): CIRCULAR mode, difficulty from level,
+   LOOPType from the flavor's component set, turn ceiling from the dial. */
+
+interface HandDials {
+  flavor: LoopFlavor;
+  level: number;
+  steps: number;
+  maxTurns: number;
+  propType: PropType;
 }
 
-/** Sample at the wanted level, falling downward when that level has no
- *  enumerated pool — decks are GENERATED live at fulfillment, so a Level 3
- *  pick is real product; the preview approximates it with the closest
- *  enumerated cards until L3 bakes exist. */
-async function flavorCardsAtBestLevel(
+// Generated hands keyed by their full dial set — dialing away and back is free.
+const liveCache = new Map<string, Promise<SequenceData[]>>();
+
+function liveHand(dials: HandDials, n: number): Promise<SequenceData[]> {
+  const key = `${dials.flavor}|${dials.level}|${dials.steps}|${dials.maxTurns}|${dials.propType}|${n}`;
+  let hit = liveCache.get(key);
+  if (!hit) {
+    hit = generateHand(dials, n).catch((e) => {
+      liveCache.delete(key); // don't cache a failure
+      throw e;
+    });
+    liveCache.set(key, hit);
+  }
+  return hit;
+}
+
+async function generateHand(dials: HandDials, n: number): Promise<SequenceData[]> {
+  const components = new Set(dials.flavor.split("-") as unknown as LOOPComponent[]);
+  const loopType = generateLOOPType(components);
+  if (!loopType) return [];
+
+  // Same seam fulfillment uses; dynamic so the shop route doesn't pull the
+  // whole generation engine into its initial chunk.
+  const { generationOrchestrator } = await import(
+    "$lib/shared/create/services/generation-orchestrator"
+  );
+
+  const options: GenerationOptions = {
+    mode: GenerationMode.CIRCULAR,
+    length: dials.steps,
+    gridMode: "diamond" as GenerationOptions["gridMode"],
+    propType: dials.propType,
+    difficulty: levelToDifficulty(dials.level),
+    loopType,
+    // Rotated quartered is the printed-deck canon; combos seed halved.
+    period: loopType === LOOPType.ROTATED ? Period.QUARTERED : Period.HALVED,
+    constraintPreset: "smooth",
+    turnIntensity: dials.level >= 2 ? dials.maxTurns : 0,
+  };
+
+  const out: SequenceData[] = [];
+  const seenWords = new Set<string>();
+  // Engine is unseeded — each call yields a fresh sequence. A few extra
+  // attempts absorb duplicate words so the fan isn't twins.
+  const maxAttempts = n * 3;
+  for (let i = 0; i < maxAttempts && out.length < n; i++) {
+    try {
+      const s = await generationOrchestrator.generateSequence(options);
+      const word = s.word ?? `#${i}`;
+      if (seenWords.has(word)) continue;
+      seenWords.add(word);
+      out.push(s);
+    } catch (e) {
+      console.warn("[loopPreviewCards] live generation attempt failed:", e);
+    }
+  }
+  return out;
+}
+
+/** One hand of n cards honoring the dials: exact catalog when one exists at
+ *  Level 1 defaults (instant, printed pool), live generation for everything
+ *  else — Level 2+ always generates so the turn ceiling shows on the cards. */
+async function handCards(
   cats: Catalog[],
-  flavor: LoopFlavor,
-  level: number,
+  dials: HandDials,
   n: number,
   sku: Product | undefined,
-  offset = 0,
-  wantSteps = 8
+  offset = 0
 ): Promise<CoverCard[]> {
-  for (let l = level; l >= 1; l--) {
-    const cards = await flavorCards(cats, flavor, l, n, sku, offset, wantSteps);
-    if (cards.length) return cards;
+  const accent = accentFrom(sku);
+  // Catalogs are turn-blind, so only Level 1 (no turns by definition) may
+  // sample one — and only at the exact step count.
+  if (dials.level === 1) {
+    const catalog = exactCatalog(cats, dials.flavor, 1, dials.steps);
+    if (catalog) {
+      const seqs = await sampleSequences(catalog.id);
+      if (seqs.length) {
+        // Offset staggers WHICH sequence each flavor leads with — flavor
+        // catalogs share words (same doc ids), so offset 0 deals near-twins.
+        const start = offset % seqs.length;
+        const picked = [...seqs.slice(start), ...seqs.slice(0, start)].slice(0, n);
+        return picked.map((sequence) => ({ sequence, ...accent }));
+      }
+    }
   }
-  return [];
+  const seqs = await liveHand(dials, n);
+  return seqs.map((sequence) => ({ sequence, ...accent }));
 }
 
 export interface PreviewDials {
   level: LoopLevel;
   length: LoopLength;
   flavor: LoopFlavor;
+  maxTurns: number;
+  propType: PropType;
   excluded: ReadonlySet<LoopFlavor>;
   skuByFlavor: ReadonlyMap<LoopFlavor, Product>;
 }
 
-/** SKU-backed flavors, i.e. the ones with enumerated catalogs to sample —
- *  the variety grab bag draws from these. */
+/** SKU-backed flavors — the variety grab bag draws from these. */
 const VARIETY_POOL: readonly LoopFlavor[] = [
   "rotated",
   "mirrored",
@@ -151,21 +228,28 @@ export async function loopPreviewCards({
   level,
   length,
   flavor,
+  maxTurns,
+  propType,
   excluded,
   skuByFlavor,
 }: PreviewDials): Promise<CoverCard[] | null> {
   try {
     const cats = await getLoopCatalogs();
-    const wantSteps = length === "mix" ? 8 : Number(length);
+    const steps = length === "mix" ? 8 : Number(length);
+    const turns = maxTurns || DEFAULT_MAX_TURNS;
+    const hand = (f: LoopFlavor, lvl: number, n: number, offset = 0) =>
+      handCards(
+        cats,
+        { flavor: f, level: lvl, steps, maxTurns: turns, propType },
+        n,
+        skuByFlavor.get(f),
+        offset
+      );
 
     if (flavor !== "variety") {
-      const sku = skuByFlavor.get(flavor);
       if (level === "mix") {
         // "Mostly Level 1. A few cards that bite."
-        const [l1, l2] = await Promise.all([
-          flavorCards(cats, flavor, 1, FAN_SIZE, sku, 0, wantSteps),
-          flavorCards(cats, flavor, 2, 2, sku, 0, wantSteps),
-        ]);
+        const [l1, l2] = await Promise.all([hand(flavor, 1, FAN_SIZE), hand(flavor, 2, 2)]);
         if (l1.length === 0) return null;
         if (l2.length === 0) return l1;
         // Tuck the bite cards into the middle of the hand.
@@ -174,32 +258,26 @@ export async function loopPreviewCards({
         if (l2[1]) mixed.splice(4, 0, l2[1]);
         return mixed.slice(0, FAN_SIZE);
       }
-      const cards = await flavorCardsAtBestLevel(
-        cats,
-        flavor,
-        Number(level),
-        FAN_SIZE,
-        sku,
-        0,
-        wantSteps
-      );
+      const cards = await hand(flavor, Number(level), FAN_SIZE);
       return cards.length ? cards : null;
     }
 
-    // Variety: one card per enumerated flavor (exclusions honored), rotated
-    // leading — the grab bag the copy promises.
+    // Variety: one card per grab-bag flavor (exclusions honored), rotated
+    // leading — each generated at the dialed level/length/turns.
     const pool = VARIETY_POOL.filter((f) => !excluded.has(f));
     if (pool.length === 0) return null;
     const perFlavorLevel = level === "mix" ? 1 : Number(level);
-    const hands = await Promise.all(
-      pool.map((f, i) =>
-        flavorCardsAtBestLevel(cats, f, perFlavorLevel, 1, skuByFlavor.get(f), i, wantSteps)
-      )
-    );
+    const hands: CoverCard[][] = [];
+    // Sequential, not Promise.all — live hands share one engine, and serial
+    // keeps the first cards arriving instead of thrashing.
+    for (let i = 0; i < pool.length && hands.flat().length < FAN_SIZE; i++) {
+      const f = pool[i]!;
+      hands.push(await hand(f, perFlavorLevel, 1, i));
+    }
     const cards = hands.flat();
     if (level === "mix") {
       // Swap one card for an L2 rotated bite when the pool has one.
-      const bite = await flavorCards(cats, "rotated", 2, 1, skuByFlavor.get("rotated"));
+      const bite = await hand("rotated", 2, 1);
       if (bite[0] && cards.length > 2) cards.splice(2, 1, bite[0]);
     }
     return cards.length ? cards.slice(0, FAN_SIZE) : null;
