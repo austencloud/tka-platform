@@ -1,0 +1,944 @@
+# Compositional LOOP System — P1 (Engine) + P2 (Generation & Lifecycle) Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Execute per-component-period LOOP specs (expand + overlay modes, canonical nesting) end-to-end: engine execution → generation plumbing → spec lifecycle (write on generate, clear on edit) → spec-first display resolution.
+
+**Architecture:** Extend `ComponentSpec` with `mode`, fix the fused-stage ordering to the canonical law, add an in-place overlay-inversion stage, wire the dormant `options.loopSpec` through `SequenceBuilder`, store the wire-form spec on `SequenceData`, clear it at the two beat-mutation chokepoints, and teach the display resolver periods/mismatch-flagging. Spec: `docs/superpowers/specs/2026-07-12-compositional-loop-spec-design.md`.
+
+**Tech Stack:** TypeScript, vitest (engine has its own config: `cd packages/sequence-engine && npx vitest run`; app: `npx vitest run --config tests/config/vitest.config.ts <file>`), pnpm workspaces (`@tka/sequence-engine`), Svelte 5 app side.
+
+**Execution rules (every task):**
+- Re-read this plan file at task start. The plan is authority, not memory.
+- Commit with explicit pathspec: `git commit -m "..." -- <files>`. NEVER bare `git commit`, never `git add -A`. The index is shared with other agents.
+- Prove completion with tool output (test run). Claims without output are rejected.
+- Engine rebuild after engine src changes so app-side tests see it: `npm run build:packages` (root).
+- Commit messages end with:
+  `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`
+  `Claude-Session: https://claude.ai/code/session_01LyTZ3ZYsAdJGH6ibqSnjEj`
+
+---
+
+## Canonical law (reference for all tasks)
+
+- Stage order inside `executeSymmetricSpec`: **ROTATED stage → fused expand-groups (groups containing mirror/flip/swap before invert-only groups; ascending period within each class) → overlay stages last**.
+- Same-period fuseables stay fused in ONE group (load-bearing: fused mirror+invert cancels rotation-direction flips; sequential application would change semantics AND length). The legacy path (`loopSpecFromLegacy`, one period for all) therefore hits exactly one fused group and is bit-for-bit unaffected by the reordering.
+- Overlay v1: INVERTED only. Overlay = partition final letter beats into `period` equal blocks; on ODD block indices flip `motionType` pro↔anti and `rotationDirection` cw↔ccw in place (dash/static motionType untouched, but rotation still flips only for pro/anti — leave dash/static rotation as-is); then recompute the orientation chain from the start position forward via `updateStepOrientations`. Letters are NOT re-derived by the engine stage (callers own letter re-derivation, as SequenceBuilder already does).
+
+---
+
+## P1 — Engine
+
+### Task 1: `mode` field on ComponentSpec + wire + validation rule
+
+**Files:**
+- Modify: `packages/sequence-engine/src/loop/loop-spec.ts`
+- Test: `packages/sequence-engine/tests/loop/spec/loop-spec-mode.test.ts` (create; mirror the existing test layout under `packages/sequence-engine/tests/loop/`)
+
+- [ ] **Step 1: Write the failing test**
+
+```ts
+import { describe, expect, it } from "vitest";
+import {
+  LOOPComponent,
+  loopSpecToWire,
+  loopSpecFromWire,
+  validateLOOPSpec,
+  type LOOPSpec,
+} from "../../../src/loop/loop-spec.js";
+
+function symmetric(components: Array<[LOOPComponent, { period: number; mode?: "expand" | "overlay" }]>): LOOPSpec {
+  const map = new Map(components);
+  return { blue: { components: map }, red: { components: map } };
+}
+
+describe("ComponentSpec.mode", () => {
+  it("round-trips mode through wire format", () => {
+    const spec = symmetric([
+      [LOOPComponent.ROTATED, { period: 2 }],
+      [LOOPComponent.INVERTED, { period: 4, mode: "overlay" }],
+    ]);
+    const back = loopSpecFromWire(loopSpecToWire(spec));
+    expect(back.blue!.components.get(LOOPComponent.INVERTED)!.mode).toBe("overlay");
+    expect(back.blue!.components.get(LOOPComponent.ROTATED)!.mode).toBeUndefined();
+  });
+
+  it("accepts overlay on INVERTED", () => {
+    const spec = symmetric([[LOOPComponent.INVERTED, { period: 4, mode: "overlay" }]]);
+    expect(validateLOOPSpec(spec)).toEqual([]);
+  });
+
+  it("rejects overlay on location-moving components", () => {
+    const spec = symmetric([[LOOPComponent.MIRRORED, { period: 2, mode: "overlay" }]]);
+    const errors = validateLOOPSpec(spec);
+    expect(errors.some((e) => e.rule === "overlay_legality")).toBe(true);
+  });
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `cd packages/sequence-engine && npx vitest run tests/loop/spec/loop-spec-mode.test.ts`
+Expected: FAIL (mode not carried through wire; no overlay_legality rule).
+
+- [ ] **Step 3: Implement**
+
+In `loop-spec.ts`:
+
+```ts
+/** How a component is applied: expand multiplies length by `period`;
+ *  overlay applies in place over the final sequence (x1 length).
+ *  Absent = "expand" (all pre-existing specs unchanged). */
+export type ComponentMode = "expand" | "overlay";
+
+export interface ComponentSpec {
+  readonly period: number;
+  readonly domain?: LOOPDomain;
+  readonly mode?: ComponentMode;
+}
+
+export interface ComponentSpecWire {
+  period: number;
+  domain?: LOOPDomain;
+  mode?: ComponentMode;
+}
+```
+
+In `propSpecToWire`: after the existing period/domain copy, add `if (value.mode !== undefined) entry.mode = value.mode;`. In `propSpecFromWire`: carry `mode` back the same way.
+
+In `validateLOOPSpec`, inside the per-component loop, add:
+
+```ts
+if (compSpec.mode === "overlay" && comp !== LOOPComponent.INVERTED) {
+  errors.push({
+    rule: "overlay_legality",
+    message: `${propName}.${comp}: overlay mode is only supported for INVERTED (location-preserving)`,
+  });
+}
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `cd packages/sequence-engine && npx vitest run tests/loop/spec/loop-spec-mode.test.ts`
+Expected: PASS (3 tests).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat(engine): ComponentSpec.mode — expand vs overlay, wire round-trip, overlay_legality validation" -- packages/sequence-engine/src/loop/loop-spec.ts packages/sequence-engine/tests/loop/spec/loop-spec-mode.test.ts
+```
+
+---
+
+### Task 2: Canonical fused-stage order in executeSymmetricSpec
+
+**Files:**
+- Modify: `packages/sequence-engine/src/loop/execution/spec-executor.ts` (replace the descending sort in `groupFuseableByPeriod`, line ~137)
+- Test: `packages/sequence-engine/tests/loop/execution/canonical-stage-order.test.ts` (create)
+
+- [ ] **Step 1: Write the failing test**
+
+The test pins the observable consequence: `{mir:2, inv:4}` must run mirror FIRST (mirror innermost), producing 16 beats shaped `[X(4), I(X)(4), X(4), I(X)(4)]` where X = seed(2)+mirrored(2) — i.e. beats 5–8 are the pro↔anti flip of beats 1–4 at the same block positions. Under the old descending order, invert ran first and the shape was `[s, I(s), s, I(s), M(...)]` (beats 5–8 equal to beats 1–4 in letters but NOT type-flipped).
+
+```ts
+import { describe, expect, it } from "vitest";
+import { executeSymmetricSpec } from "../../../src/loop/execution/spec-executor.js";
+import { LOOPComponent, type PropLOOPSpec } from "../../../src/loop/loop-spec.js";
+import type { SequenceStep } from "../../../src/core/types/sequence-engine-types.js";
+
+// Minimal 2-beat closed-under-mirror seed: startPos + 2 letter steps whose
+// motions are pro/anti (so inversion is observable). Build hand-rolled steps
+// with the fields the executors touch (motions, positions, stepNumber, letter).
+function step(n: number, letter: string, sp: string, ep: string, blue: any, red: any): SequenceStep {
+  return { stepNumber: n, letter, startPosition: sp, endPosition: ep, motions: { blue, red } } as unknown as SequenceStep;
+}
+const m = (motionType: string, rotationDirection: string, startLocation: string, endLocation: string) => ({
+  motionType, rotationDirection, startLocation, endLocation,
+  startOrientation: "in", endOrientation: "in", turns: 0, color: "blue",
+});
+
+function makeSeed(): SequenceStep[] {
+  return [
+    step(0, "", "gamma13", "gamma13", m("static", "noRotation", "w", "w"), m("static", "noRotation", "s", "s")),
+    step(1, "Z", "gamma13", "beta5", m("anti", "cw", "w", "s"), m("static", "noRotation", "s", "s")),
+    step(2, "Θ", "beta5", "gamma5", m("pro", "ccw", "s", "e"), m("static", "noRotation", "s", "s")),
+  ];
+}
+
+function spec(entries: Array<[LOOPComponent, { period: number; mode?: "expand" | "overlay" }]>): PropLOOPSpec {
+  return { components: new Map(entries) };
+}
+
+describe("canonical stage order", () => {
+  it("runs mirror/flip/swap groups before invert-only groups", () => {
+    const result = executeSymmetricSpec(makeSeed(), spec([
+      [LOOPComponent.MIRRORED, { period: 2 }],
+      [LOOPComponent.INVERTED, { period: 4 }],
+    ]));
+    const beats = result.slice(1);
+    expect(beats).toHaveLength(16);
+    // Canonical: mirror first (2->4 = block X), then invert@4 alternates blocks
+    // of 4. Beats 5-8 must be the motionType-flip of beats 1-4.
+    for (let i = 0; i < 4; i++) {
+      const base = beats[i]!.motions.blue.motionType;
+      const inv = beats[i + 4]!.motions.blue.motionType;
+      if (base === "pro") expect(inv).toBe("anti");
+      if (base === "anti") expect(inv).toBe("pro");
+    }
+  });
+
+  it("keeps same-period components fused in one group (legacy smear unaffected)", () => {
+    const result = executeSymmetricSpec(makeSeed(), spec([
+      [LOOPComponent.MIRRORED, { period: 2 }],
+      [LOOPComponent.INVERTED, { period: 2 }],
+    ]));
+    // One fused group => x2 only: 2 seed beats -> 4 beats.
+    expect(result.slice(1)).toHaveLength(4);
+  });
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `cd packages/sequence-engine && npx vitest run tests/loop/execution/canonical-stage-order.test.ts`
+Expected: first test FAILS (descending order runs invert innermost); second PASSES (guards against overcorrection).
+
+- [ ] **Step 3: Implement**
+
+In `spec-executor.ts`, replace the return of `groupFuseableByPeriod`:
+
+```ts
+  // Canonical stage order: groups containing MIRROR/FLIP/SWAP run before
+  // invert-only groups (inversion is the outermost layer); ascending period
+  // within each class. Same-period components remain fused in one group —
+  // fused mirror+invert cancels rotation flips, which sequential stages
+  // would not (and the legacy one-period-for-all path depends on it).
+  return new Map(
+    [...groups.entries()].sort(([pa, fa], [pb, fb]) => {
+      const invOnlyA = fa.invert && !fa.mirror && !fa.flip && !fa.swap ? 1 : 0;
+      const invOnlyB = fb.invert && !fb.mirror && !fb.flip && !fb.swap ? 1 : 0;
+      if (invOnlyA !== invOnlyB) return invOnlyA - invOnlyB;
+      return pa - pb;
+    }),
+  ) as Map<number, FusedTransformFlags>;
+```
+
+Also in `groupFuseableByPeriod`'s component loop, skip overlay components (they are handled by Task 3's stage): `if (cSpec.mode === "overlay") continue;`
+
+- [ ] **Step 4: Run tests**
+
+Run: `cd packages/sequence-engine && npx vitest run tests/loop/execution/canonical-stage-order.test.ts && npx vitest run`
+Expected: new tests PASS; full engine suite green (the reorder cannot affect single-group legacy paths — if any existing test fails, STOP and investigate before proceeding).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat(engine): canonical fused-stage order — mirror/flip/swap before invert-only, ascending period" -- packages/sequence-engine/src/loop/execution/spec-executor.ts packages/sequence-engine/tests/loop/execution/canonical-stage-order.test.ts
+```
+
+---
+
+### Task 3: Overlay-inversion stage
+
+**Files:**
+- Create: `packages/sequence-engine/src/loop/execution/overlay-inversion.ts`
+- Modify: `packages/sequence-engine/src/loop/execution/spec-executor.ts` (run overlays last)
+- Modify: `packages/sequence-engine/src/loop/index.ts` (export `applyOverlayInversion`)
+- Test: `packages/sequence-engine/tests/loop/execution/overlay-inversion.test.ts` (create)
+
+- [ ] **Step 1: Write the failing test**
+
+```ts
+import { describe, expect, it } from "vitest";
+import { executeSymmetricSpec } from "../../../src/loop/execution/spec-executor.js";
+import { LOOPComponent, type PropLOOPSpec } from "../../../src/loop/loop-spec.js";
+// reuse makeSeed/step/m/spec helpers exactly as in canonical-stage-order.test.ts
+// (copy them into this file — tests must be independently readable)
+
+describe("overlay inversion", () => {
+  it("applies inversion in place: same positions, motion types flipped on odd blocks", () => {
+    const base = executeSymmetricSpec(makeSeed(), spec([
+      [LOOPComponent.ROTATED, { period: 2 }],
+      [LOOPComponent.MIRRORED, { period: 2 }],
+    ]));
+    const overlaid = executeSymmetricSpec(makeSeed(), spec([
+      [LOOPComponent.ROTATED, { period: 2 }],
+      [LOOPComponent.MIRRORED, { period: 2 }],
+      [LOOPComponent.INVERTED, { period: 4, mode: "overlay" }],
+    ]));
+
+    expect(overlaid).toHaveLength(base.length); // x1 — no expansion
+    const blockSize = (base.length - 1) / 4;
+    for (let i = 1; i < base.length; i++) {
+      // positions identical everywhere
+      expect(overlaid[i]!.startPosition).toBe(base[i]!.startPosition);
+      expect(overlaid[i]!.endPosition).toBe(base[i]!.endPosition);
+      const odd = Math.floor((i - 1) / blockSize) % 2 === 1;
+      const b = base[i]!.motions.blue.motionType;
+      const o = overlaid[i]!.motions.blue.motionType;
+      if (!odd || b === "dash" || b === "static") expect(o).toBe(b);
+      else expect(o).toBe(b === "pro" ? "anti" : "pro");
+    }
+  });
+
+  it("keeps the orientation chain continuous after overlay", () => {
+    const overlaid = executeSymmetricSpec(makeSeed(), spec([
+      [LOOPComponent.MIRRORED, { period: 2 }],
+      [LOOPComponent.INVERTED, { period: 2, mode: "overlay" }],
+    ]));
+    for (let i = 2; i < overlaid.length; i++) {
+      expect(overlaid[i]!.motions.blue.startOrientation).toBe(overlaid[i - 1]!.motions.blue.endOrientation);
+      expect(overlaid[i]!.motions.red.startOrientation).toBe(overlaid[i - 1]!.motions.red.endOrientation);
+    }
+  });
+
+  it("throws when letter count is not divisible by the overlay period", () => {
+    expect(() =>
+      executeSymmetricSpec(makeSeed(), spec([
+        [LOOPComponent.MIRRORED, { period: 2 }], // 2 -> 4 beats
+        [LOOPComponent.INVERTED, { period: 8, mode: "overlay" }], // 4 % 8 != 0
+      ]))
+    ).toThrow(/divisible/);
+  });
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `cd packages/sequence-engine && npx vitest run tests/loop/execution/overlay-inversion.test.ts`
+Expected: FAIL (overlay components currently treated as expand → length differs).
+
+- [ ] **Step 3: Implement `overlay-inversion.ts`**
+
+```ts
+/**
+ * Overlay inversion — applies INVERTED in place over a completed sequence.
+ *
+ * Partition the letter beats into `period` equal blocks; on odd blocks flip
+ * motionType pro<->anti and rotationDirection cw<->ccw. Hand locations are
+ * untouched by construction, so positions and closure are preserved. The
+ * orientation chain is recomputed forward from the start position. Letters
+ * are NOT re-derived here — callers (SequenceBuilder) own letter lookup.
+ *
+ * Verified semantics: variant E, 2026-07-12 spec.
+ */
+import type { SequenceStep } from "../../core/types/sequence-engine-types.js";
+import { updateStepOrientations } from "./orientation-helpers.js";
+
+export function applyOverlayInversion(
+  sequence: SequenceStep[],
+  period: number,
+): SequenceStep[] {
+  const letterCount = sequence.length - 1; // index 0 = start position
+  if (letterCount <= 0) return sequence;
+  if (letterCount % period !== 0) {
+    throw new Error(
+      `Overlay inversion requires the beat count (${letterCount}) to be divisible by the period (${period}).`,
+    );
+  }
+  const blockSize = letterCount / period;
+
+  const invertType = (t: string) => (t === "pro" ? "anti" : t === "anti" ? "pro" : t);
+  const flipRot = (d: string) => (d === "cw" ? "ccw" : d === "ccw" ? "cw" : d);
+
+  const out = sequence.map((s) => ({
+    ...s,
+    motions: { blue: { ...s.motions.blue }, red: { ...s.motions.red } },
+  }));
+
+  for (let i = 1; i < out.length; i++) {
+    const blockIdx = Math.floor((i - 1) / blockSize);
+    if (blockIdx % 2 !== 1) continue;
+    for (const color of ["blue", "red"] as const) {
+      const motion = out[i]!.motions[color];
+      if (motion.motionType === "pro" || motion.motionType === "anti") {
+        motion.motionType = invertType(motion.motionType) as typeof motion.motionType;
+        motion.rotationDirection = flipRot(motion.rotationDirection) as typeof motion.rotationDirection;
+      }
+    }
+  }
+
+  for (let i = 1; i < out.length; i++) {
+    out[i] = updateStepOrientations(out[i]!, out[i - 1]!);
+  }
+  return out;
+}
+```
+
+In `executeSymmetricSpec` (spec-executor.ts), after the fused-group loop:
+
+```ts
+  // Overlay stages run last, in place (x1 length).
+  for (const [comp, cSpec] of spec.components) {
+    if (cSpec.mode !== "overlay") continue;
+    if (comp !== LOOPComponent.INVERTED) {
+      throw new Error(`Overlay mode is not supported for ${comp}`);
+    }
+    result = applyOverlayInversion(result, cSpec.period);
+  }
+```
+
+(plus `import { applyOverlayInversion } from "./overlay-inversion.js";`). Also confirm Task 2's `continue` keeps overlay components out of fused groups, and add the same skip to the ROTATED stage guard (`spec.components.get(ROTATED)` — rotation cannot be overlay; validation already rejects it).
+
+Export from `packages/sequence-engine/src/loop/index.ts`:
+
+```ts
+export { applyOverlayInversion } from "./execution/overlay-inversion.js";
+```
+
+- [ ] **Step 4: Run tests**
+
+Run: `cd packages/sequence-engine && npx vitest run tests/loop/execution/overlay-inversion.test.ts && npx vitest run`
+Expected: new tests PASS; full suite green.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat(engine): overlay-inversion stage — in-place block inversion, x1 length, orientation chain recompute" -- packages/sequence-engine/src/loop/execution/overlay-inversion.ts packages/sequence-engine/src/loop/execution/spec-executor.ts packages/sequence-engine/src/loop/index.ts packages/sequence-engine/tests/loop/execution/overlay-inversion.test.ts
+```
+
+---
+
+### Task 4: SequenceBuilder honors `options.loopSpec`
+
+**Files:**
+- Modify: `packages/sequence-engine/src/generation/builder/SequenceBuilder.ts`
+- Test: `packages/sequence-engine/tests/generation/loop-spec-build.test.ts` (create — follow the CSV-provider pattern from existing generation tests / `scripts/generate-loop-audit-fixtures.mjs`; the diamond CSV lives at `static/data/pictographs/DiamondPictographDataframe.csv` relative to repo root)
+
+Current state: `options.loopSpec?: LOOPSpec` is declared (~line 190) and never read; LOOP extension goes through `extendWithLOOP(result, options.loop, gridMode)` (~line 883) → legacy `loopExecutorSelector.getExecutor(type).executeLOOP(steps, period)`.
+
+- [ ] **Step 1: Write the failing test**
+
+```ts
+import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { SequenceBuilder } from "../../src/generation/index.js";
+import { LOOPType, Period } from "../../src/loop/loop-types.js";
+import { LOOPComponent, type LOOPSpec } from "../../src/loop/loop-spec.js";
+import { isSequenceCircular } from "../../src/loop/detection/LOOPDetector.js";
+
+// loadVariations + CsvVariationProvider: copy verbatim from
+// scripts/generate-loop-audit-fixtures.mjs (lines 45-97) — same CSV columns.
+// CSV path: path.resolve(__dirname, "../../../../static/data/pictographs/DiamondPictographDataframe.csv")
+
+function symmetric(entries: Array<[LOOPComponent, { period: number; mode?: "expand" | "overlay" }]>): LOOPSpec {
+  const map = new Map(entries);
+  return { blue: { components: map }, red: { components: map } };
+}
+
+describe("SequenceBuilder loopSpec path", () => {
+  it("builds a rot:2+mir:2 loop with inv:4 overlaid — 16 beats, closed, block-inverted", () => {
+    const builder = new SequenceBuilder(new CsvVariationProvider(loadVariations(CSV_PATH)));
+    const spec = symmetric([
+      [LOOPComponent.ROTATED, { period: 2 }],
+      [LOOPComponent.MIRRORED, { period: 2 }],
+      [LOOPComponent.INVERTED, { period: 4, mode: "overlay" }],
+    ]);
+    // Retry loop: beam search is stochastic; accept first success in 40 attempts.
+    let result: any = null;
+    for (let i = 0; i < 40 && !result; i++) {
+      try {
+        const r = builder.build({
+          length: 4, gridMode: "diamond", level: 1,
+          loop: { type: LOOPType.MIRRORED_ROTATED, period: Period.HALVED, useTargetedGeneration: true },
+          loopSpec: spec,
+        });
+        if (isSequenceCircular(r.sequence)) result = r;
+      } catch { /* retry */ }
+    }
+    expect(result).not.toBeNull();
+    const beats = result.sequence.slice(1);
+    expect(beats).toHaveLength(16); // 4 seed x2 rot x2 mir, overlay x1
+    // Overlay signature: blocks of 4; beats 5-8 are the pro/anti flip of 1-4
+    for (let i = 0; i < 4; i++) {
+      const b = beats[i].motions.blue.motionType;
+      const o = beats[i + 4].motions.blue.motionType;
+      if (b === "pro") expect(o).toBe("anti");
+      if (b === "anti") expect(o).toBe("pro");
+      expect(beats[i + 4].startPosition).toBe(/* rotated+mirrored structure preserved */ beats[i + 4].startPosition);
+    }
+    // Letters re-derived: no beat keeps a letter inconsistent with its motions
+    expect(beats.every((s: any) => s.letter)).toBe(true);
+  });
+});
+```
+
+Note for the implementer: the legacy `loop` option is passed ALONGSIDE `loopSpec` in this test because seam targeting reuses the legacy machinery (see Step 3). The builder must treat `loopSpec` as authoritative for EXECUTION and derive targeting from it.
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `cd packages/sequence-engine && npx vitest run tests/generation/loop-spec-build.test.ts`
+Expected: FAIL — beats.length is 32 (legacy smear treats inv:4 as an expander) or motion flips absent.
+
+- [ ] **Step 3: Implement**
+
+In `SequenceBuilder.extendWithLOOP` (~line 883), branch on spec:
+
+```ts
+  private extendWithLOOP(result: BuildResult, loopOptions: LoopOptions, gridMode: string): BuildResult {
+    const loopSpec = this.currentLoopSpec; // stored from options in build()
+    const extendedSteps = loopSpec
+      ? loopExecutorSelector.executeSpec(result.sequence.map((s) => ({ ...s })), loopSpec)
+      : loopExecutorSelector.getExecutor(loopOptions.type)
+          .executeLOOP(result.sequence.map((s) => ({ ...s })), loopOptions.period);
+    // ... existing letter re-derivation + metadata code unchanged, except:
+    // orientationCycleMultiplier — for spec path use the product of expander periods:
+    const orientationCycleMultiplier = loopSpec
+      ? expanderMultiplier(loopSpec)
+      : loopOptions.period === Period.QUARTERED ? 4 : 2;
+```
+
+Add module-level helper in SequenceBuilder.ts:
+
+```ts
+function expanderMultiplier(spec: LOOPSpec): number {
+  let mult = 1;
+  const seen = new Set<number>(); // same-period fuseables share one stage
+  const prop = spec.blue ?? spec.red;
+  if (!prop) return 1;
+  const rot = prop.components.get(CanonicalLOOPComponent.ROTATED);
+  if (rot && rot.mode !== "overlay") mult *= rot.period;
+  for (const [comp, cSpec] of prop.components) {
+    if (comp === CanonicalLOOPComponent.ROTATED || comp === CanonicalLOOPComponent.REWOUND) continue;
+    if (cSpec.mode === "overlay") continue;
+    if (!seen.has(cSpec.period)) { seen.add(cSpec.period); mult *= cSpec.period; }
+  }
+  return mult;
+}
+```
+
+(import `LOOPComponent as CanonicalLOOPComponent` from `../../loop/loop-spec.js` — matching the existing import style in `LOOPEndPositionSelector.ts`.)
+
+In `build()`: stash `this.currentLoopSpec = options.loopSpec ?? null;` at entry (clear in a finally). Validate early: `const errors = validateLOOPSpec(options.loopSpec); if (errors.length) throw new Error(...)`. Seam targeting: KEEP the legacy `options.loop` type+period requirement when `loopSpec` is present (caller derives them from the spec — documented contract; `determineEndPositionForSpec` unification is P4+ work). Guard: if `loopSpec` present but `options.loop` absent, throw with a clear message.
+
+- [ ] **Step 4: Run tests + rebuild**
+
+Run: `cd packages/sequence-engine && npx vitest run && cd ../.. && npm run build:packages`
+Expected: engine suite green incl. new test; packages build clean.
+
+- [ ] **Step 5: Run the app-side production fixture audit (zero-drift proof)**
+
+Run: `npx vitest run tests/unit/loop/real-loop-detector-audit.test.ts --config tests/config/vitest.config.ts`
+Expected: PASS — identical cell results to before P1 (legacy paths untouched). If any cell changed, STOP and investigate.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git commit -m "feat(engine): SequenceBuilder executes options.loopSpec via spec-executor (per-component periods + overlay)" -- packages/sequence-engine/src/generation/builder/SequenceBuilder.ts packages/sequence-engine/tests/generation/loop-spec-build.test.ts
+```
+
+---
+
+## P2 — App: generation plumbing, lifecycle, resolver
+
+### Task 5: `SequenceData.loopSpec` switches to wire form; resolver derives periods + mismatch flag
+
+**Files:**
+- Modify: `src/lib/shared/foundation/domain/models/sequence-data.ts` (line 24 import, line 111 field, line ~220 createSequenceData passthrough)
+- Modify: `src/lib/features/loop-labeler/services/loop-display-resolver.ts` (spec branch, line ~122-144)
+- Test: `tests/unit/loop/loop-display-resolver-spec.test.ts` (create)
+
+Rationale (locked in spec): nothing writes `loopSpec` today, so changing its type from the runtime-Map `LOOPSpec` to the JSON-safe `LOOPSpecWire` is free and makes Firestore persistence automatic.
+
+- [ ] **Step 1: Write the failing test**
+
+```ts
+import { describe, expect, it } from "vitest";
+import {
+  resolveLoopDisplay,
+  clearLoopDisplayCache,
+} from "$lib/features/loop-labeler/services/loop-display-resolver";
+import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
+import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+
+describe("resolveLoopDisplay — wire-form loopSpec", () => {
+  it("derives components + per-component periods from a wire spec", () => {
+    clearLoopDisplayCache();
+    const display = resolveLoopDisplay({
+      id: "spec-wire-test",
+      loopSpec: {
+        blue: {
+          rotated: { period: 2 },
+          mirrored: { period: 2 },
+          inverted: { period: 4, mode: "overlay" },
+        },
+        red: {
+          rotated: { period: 2 },
+          mirrored: { period: 2 },
+          inverted: { period: 4, mode: "overlay" },
+        },
+      },
+    } as any);
+
+    expect(display.components).toContain(LOOPComponent.ROTATED);
+    expect(display.components).toContain(LOOPComponent.MIRRORED);
+    expect(display.components).toContain(LOOPComponent.INVERTED);
+    expect(display.rotationPeriod).toBe(Period.HALVED);
+    expect(display.inversionPeriod).toBe(Period.QUARTERED);
+  });
+});
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run: `npx vitest run tests/unit/loop/loop-display-resolver-spec.test.ts --config tests/config/vitest.config.ts`
+Expected: FAIL — spec branch iterates `prop.components` as a Map; wire Record has no entries iterator; rotationPeriod/inversionPeriod not derived.
+
+- [ ] **Step 3: Implement**
+
+`sequence-data.ts`: change import to `import type { LOOPSpecWire } from "@tka/sequence-engine/loop";` and field to `readonly loopSpec?: LOOPSpecWire;`. In `createSequenceData`, add passthrough next to componentDomains (line ~220): `...(data.loopSpec !== undefined && { loopSpec: data.loopSpec }),`.
+
+`loop-display-resolver.ts` spec branch — replace the Map iteration with wire-Record iteration and derive periods:
+
+```ts
+  if (input.loopSpec) {
+    const components = new Set<LOOPComponent>();
+    const componentDomains = new Map<LOOPComponent, LOOPDomain>();
+    let maxPeriod = 1;
+    let rotationInterval: number | undefined;
+    let inversionInterval: number | undefined;
+
+    for (const prop of [input.loopSpec.blue, input.loopSpec.red]) {
+      if (!prop) continue;
+      for (const [compKey, cSpec] of Object.entries(prop)) {
+        const comp = compKey as LOOPComponent;
+        if (RESERVED_ORIENTATION_PRIMITIVES.has(comp)) continue;
+        components.add(comp);
+        if (cSpec.domain) componentDomains.set(comp, cSpec.domain);
+        else if (cSpec.mode === "overlay") componentDomains.set(comp, "orientation");
+        maxPeriod = Math.max(maxPeriod, cSpec.period);
+        if (comp === LOOPComponent.ROTATED) rotationInterval = cSpec.period;
+        if (comp === LOOPComponent.INVERTED) inversionInterval = cSpec.period;
+      }
+    }
+
+    return {
+      components,
+      period: maxPeriod,
+      componentDomains: Object.fromEntries(componentDomains) as Partial<Record<LOOPComponent, LOOPDomain>>,
+      rotationPeriod: rotationInterval === 4 ? Period.QUARTERED : rotationInterval === 2 ? Period.HALVED : undefined,
+      inversionPeriod: inversionInterval === 4 ? Period.QUARTERED : inversionInterval === 2 ? Period.HALVED : undefined,
+    };
+  }
+```
+
+Mismatch flag (same file): after the spec branch computes `components`, when the input also has enough steps, run detection in a `try` and compare sets; on difference call a module-level hook:
+
+```ts
+export type LoopDisplayMismatch = { sequenceId: string | null; specComponents: string[]; detectedComponents: string[] };
+let mismatchHandler: ((m: LoopDisplayMismatch) => void) | null = null;
+export function onLoopDisplayMismatch(handler: (m: LoopDisplayMismatch) => void) { mismatchHandler = handler; }
+```
+
+Fire it (and a `console.debug` in dev) but ALWAYS return the spec-derived display — spec wins, disagreement is telemetry (D3). Guard the detection call so a detection throw never breaks display.
+
+- [ ] **Step 4: Run tests**
+
+Run: `npx vitest run tests/unit/loop/loop-display-resolver-spec.test.ts tests/unit/loop/nested-rotation-detection.test.ts --config tests/config/vitest.config.ts`
+Expected: both PASS (nested-rotation regression must stay green — it exercises the detection path with no spec present).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat(loop): SequenceData.loopSpec in wire form; resolver derives per-component periods + mismatch hook" -- src/lib/shared/foundation/domain/models/sequence-data.ts src/lib/features/loop-labeler/services/loop-display-resolver.ts tests/unit/loop/loop-display-resolver-spec.test.ts
+```
+
+---
+
+### Task 6: `buildLoopSpec` in loop-type-utils
+
+**Files:**
+- Modify: `src/lib/shared/create/services/loop-type-utils.ts`
+- Test: `tests/unit/services/loop-type-utils.test.ts` (extend — file exists with 8 tests)
+
+- [ ] **Step 1: Write failing tests** (append to existing describe block)
+
+```ts
+import { buildLoopSpec, expanderMultiplier } from "$lib/shared/create/services/loop-type-utils";
+
+describe("buildLoopSpec", () => {
+  it("defaults reproduce today's behavior: rotation at the chosen interval, all other components at interval 2, expand mode", () => {
+    const wire = buildLoopSpec(new Set([LOOPComponent.ROTATED, LOOPComponent.MIRRORED, LOOPComponent.INVERTED]), { rotationInterval: 4 });
+    expect(wire).not.toBeNull();
+    expect(wire!.blue!.rotated).toEqual({ period: 4 });
+    expect(wire!.blue!.mirrored).toEqual({ period: 2 });
+    expect(wire!.blue!.inverted).toEqual({ period: 2 });
+    expect(wire!.red).toEqual(wire!.blue);
+  });
+
+  it("carries inversion rhythm + overlay mode", () => {
+    const wire = buildLoopSpec(new Set([LOOPComponent.MIRRORED, LOOPComponent.INVERTED]), {
+      inversionInterval: 4,
+      inversionMode: "overlay",
+    });
+    expect(wire!.blue!.inverted).toEqual({ period: 4, mode: "overlay" });
+  });
+
+  it("returns null for unmapped combos (same gate as generateLOOPType)", () => {
+    const wire = buildLoopSpec(new Set([LOOPComponent.MIRRORED, LOOPComponent.FLIPPED, LOOPComponent.REWOUND]), {});
+    expect(wire).toBeNull();
+  });
+
+  it("expanderMultiplier: overlay does not multiply", () => {
+    const wire = buildLoopSpec(new Set([LOOPComponent.ROTATED, LOOPComponent.MIRRORED, LOOPComponent.INVERTED]), {
+      rotationInterval: 2, inversionInterval: 4, inversionMode: "overlay",
+    })!;
+    expect(expanderMultiplier(wire)).toBe(4); // rot x2 * mir x2; overlay inversion contributes x1
+  });
+});
+```
+
+- [ ] **Step 2: Run to verify failure**
+
+Run: `npx vitest run tests/unit/services/loop-type-utils.test.ts --config tests/config/vitest.config.ts`
+Expected: FAIL — exports missing.
+
+- [ ] **Step 3: Implement** (in `loop-type-utils.ts`)
+
+```ts
+import type { LOOPSpecWire, PropLOOPSpecWire } from "@tka/sequence-engine/loop";
+
+export interface LoopRhythm {
+  rotationInterval?: 2 | 4;   // default 2
+  inversionInterval?: 2 | 4;  // default 2
+  inversionMode?: "expand" | "overlay"; // default "expand"
+}
+
+/**
+ * Build a symmetric wire-form LOOPSpec from the UI component set + rhythm.
+ * Returns null for combos with no implemented mapping (same gate as
+ * generateLOOPType — the combo overlay's gating stays the single source
+ * of truth for which component SETS are allowed).
+ */
+export function buildLoopSpec(
+  components: Set<LOOPComponent>,
+  rhythm: LoopRhythm,
+): LOOPSpecWire | null {
+  if (generateLOOPType(components) === null && components.size > 0) return null;
+  if (components.size === 0) return null;
+
+  const prop: PropLOOPSpecWire = {};
+  for (const comp of components) {
+    if (comp === LOOPComponent.ROTATED) {
+      prop.rotated = { period: rhythm.rotationInterval ?? 2 };
+    } else if (comp === LOOPComponent.INVERTED) {
+      prop.inverted = {
+        period: rhythm.inversionInterval ?? 2,
+        ...(rhythm.inversionMode === "overlay" ? { mode: "overlay" as const } : {}),
+      };
+    } else {
+      prop[comp] = { period: 2 };
+    }
+  }
+  return { blue: prop, red: prop };
+}
+
+/** Product of expander intervals (overlay contributes x1). Seed length = total / this. */
+export function expanderMultiplier(wire: LOOPSpecWire): number {
+  const prop = wire.blue ?? wire.red;
+  if (!prop) return 1;
+  let mult = 1;
+  const seenPeriods = new Set<number>();
+  const rot = prop.rotated;
+  if (rot && rot.mode !== "overlay") mult *= rot.period;
+  for (const [comp, cSpec] of Object.entries(prop)) {
+    if (comp === "rotated" || comp === "rewound") continue;
+    if (cSpec.mode === "overlay") continue;
+    if (!seenPeriods.has(cSpec.period)) { seenPeriods.add(cSpec.period); mult *= cSpec.period; }
+  }
+  return mult;
+}
+```
+
+(Fix the first test's expectation text when writing it for real — defaults: rotation at chosen interval, everything else period 2.)
+
+- [ ] **Step 4: Run tests** — expect all loop-type-utils tests PASS (old 8 + new 4).
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat(create): buildLoopSpec + expanderMultiplier — UI component set + rhythm to wire spec" -- src/lib/shared/create/services/loop-type-utils.ts tests/unit/services/loop-type-utils.test.ts
+```
+
+---
+
+### Task 7: Generation options + orchestrator seed solver + spec pass-through
+
+**Files:**
+- Modify: `src/lib/shared/create/utils/config-mapper.ts` (`uiConfigToGenerationOptions`, ~lines 92-135)
+- Modify: `src/lib/shared/create/services/generation-orchestrator.ts` (`generateCircularSequence`, lines 114-157)
+- Modify: the `GenerationOptions` type (declared where config-mapper imports it — follow the import)
+- Test: `tests/unit/services/generation-orchestrator-loopspec.test.ts` (create; mock the builder)
+
+- [ ] **Step 1: Write the failing test** — assert three behaviors without running a real build (inject a stub `SequenceBuilder` or spy on `build`):
+
+```ts
+// 1. Seed solver: options.length 16 + spec {rot:2, mir:2, inv overlay:4}
+//    -> builder.build called with length 4 (16 / expanderMultiplier(4)).
+// 2. loopSpec passed to builder options as the RUNTIME form (loopSpecFromWire).
+// 3. Non-divisible length (e.g. 18 with multiplier 4) -> typed error
+//    (orchestrator throws Error with message matching /divisible/),
+//    and degenerate guard: computed seed length 1 with an inversion
+//    component whose mode is "expand" -> error matching /too short/.
+```
+
+Write it against the orchestrator's public `generateSequence(options)` with `loopSpecWire` set on options. Follow the existing test-mocking conventions in `tests/unit/services/` (look at neighboring orchestrator/service tests for the DI pattern; `GenerationOrchestrator` takes its variation provider via constructor — construct it directly with a stub provider and stub the `SequenceBuilder` module via `vi.mock("@tka/sequence-engine/generation")`).
+
+- [ ] **Step 2: Run to verify failure.**
+
+- [ ] **Step 3: Implement**
+
+`GenerationOptions` gains `loopSpecWire?: LOOPSpecWire;` and `loopRhythm?: LoopRhythm;` (rhythm kept for provenance/UI echo). `uiConfigToGenerationOptions`: build it —
+
+```ts
+const loopSpecWire = uiConfig.loopEnabled && uiConfig.loopType
+  ? buildLoopSpec(componentsFromConfig(uiConfig), {
+      rotationInterval: uiConfig.period === Period.QUARTERED ? 4 : 2,
+      inversionInterval: uiConfig.inversionInterval ?? 2,
+      inversionMode: uiConfig.inversionMode ?? "expand",
+    }) ?? undefined
+  : undefined;
+```
+
+(`componentsFromConfig` = parse `uiConfig.loopType` through the existing `parseLoopComponents`/`IMPLEMENTED_COMBOS` reverse mapping in loop-type-utils — add a small exported helper `componentsForLoopType(loopType): Set<LOOPComponent> | null` next to `IMPLEMENTED_COMBOS`.) `UIGenerationConfig` gains optional `inversionInterval?: 2 | 4` and `inversionMode?: "expand" | "overlay"` (P3 UI will set them; absent = today's behavior).
+
+`generation-orchestrator.ts` `generateCircularSequence`:
+
+```ts
+const multiplier = options.loopSpecWire
+  ? expanderMultiplier(options.loopSpecWire)
+  : (period === EnginePeriod.QUARTERED ? 4 : 2);
+if (options.loopSpecWire && options.length % multiplier !== 0) {
+  throw new Error(`A ${options.length}-beat sequence is not divisible by this combo's expansion (${multiplier}).`);
+}
+const seedLength = Math.max(1, Math.floor(options.length / multiplier));
+const wire = options.loopSpecWire;
+const hasExpandInversion = !!wire && Object.values(wire.blue ?? {}).some((c, i) =>
+  Object.keys(wire.blue ?? {})[i] === "inverted" && c.mode !== "overlay");
+if (wire && hasExpandInversion && seedLength < 2) {
+  throw new Error("Seed too short for an inversion combo — one-beat half seeds are dash-only, so inversion would be invisible.");
+}
+// builder.build({ ..., loop: {...existing...}, ...(wire ? { loopSpec: loopSpecFromWire(wire) } : {}) })
+```
+
+(Clean up that `hasExpandInversion` expression to a readable helper — `specHasExpandInversion(wire)` in loop-type-utils, one Object.entries loop.)
+
+- [ ] **Step 4: Run tests** — new orchestrator test + `npx vitest run tests/unit/services --config tests/config/vitest.config.ts` green.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat(create): generation solves seed length from expander multiplier and passes loopSpec to the builder" -- src/lib/shared/create/utils/config-mapper.ts src/lib/shared/create/services/generation-orchestrator.ts tests/unit/services/generation-orchestrator-loopspec.test.ts <plus the GenerationOptions/UIGenerationConfig type files touched>
+```
+
+---
+
+### Task 8: BuildResultTransformer writes the spec certificate
+
+**Files:**
+- Modify: `src/lib/shared/create/services/build-result-transformer.ts` (`convertToSequenceData`, lines ~59-128)
+- Test: `tests/unit/services/build-result-transformer-loopspec.test.ts` (create; the transformer is pure — no mocking needed)
+
+- [ ] **Step 1: Failing test** — `convertToSequenceData(result, options)` with `options.loopSpecWire` set returns SequenceData with `loopSpec` === that wire object AND the derived legacy `loopType` still set; without `loopSpecWire`, `loopSpec` is absent (legacy behavior byte-identical).
+
+- [ ] **Step 2: Verify failure.**
+
+- [ ] **Step 3: Implement** — in the `createSequenceData({...})` call add:
+
+```ts
+...(isCircular && options.loopSpecWire ? { loopSpec: options.loopSpecWire } : {}),
+```
+
+- [ ] **Step 4: Tests green.**
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat(create): generated sequences carry their loopSpec certificate" -- src/lib/shared/create/services/build-result-transformer.ts tests/unit/services/build-result-transformer-loopspec.test.ts
+```
+
+---
+
+### Task 9: Clear-on-edit (spec invalidation)
+
+**Files:**
+- Modify: `src/lib/features/create/shared/state/operations/sequence-step-operations.ts` (all beat mutations: `addStep`, `removeStep`, `removeStepWithAnimation`, `removeStepAndSubsequent(WithAnimation)`, `updateStep`, `insertStep`)
+- Modify: `src/lib/features/create/shared/services/step-operator.ts` (turns/orientation/duration path, `setCurrentSequence` call ~line 212)
+- Create: `src/lib/shared/create/services/loop-certificate.ts` (single helper)
+- Test: `tests/unit/services/loop-certificate.test.ts`
+
+Do NOT hook `sequence-core-state.setCurrentSequence` itself — it also receives loads and generation results, which must KEEP their spec. Only mutations clear it.
+
+- [ ] **Step 1: Failing test**
+
+```ts
+import { describe, expect, it } from "vitest";
+import { withLoopCertificateCleared } from "$lib/shared/create/services/loop-certificate";
+
+describe("withLoopCertificateCleared", () => {
+  it("strips loopSpec on a mutated sequence", () => {
+    const seq: any = { id: "x", steps: [], loopSpec: { blue: { rotated: { period: 2 } } }, loopType: "rotated" };
+    const out = withLoopCertificateCleared(seq);
+    expect(out.loopSpec).toBeUndefined();
+    expect(out.loopType).toBe("rotated"); // legacy display string survives; only the certificate dies
+    expect(out).not.toBe(seq);
+  });
+
+  it("is a no-op passthrough when no certificate present", () => {
+    const seq: any = { id: "x", steps: [] };
+    expect(withLoopCertificateCleared(seq)).toBe(seq);
+  });
+});
+```
+
+- [ ] **Step 2: Verify failure.**
+
+- [ ] **Step 3: Implement**
+
+`loop-certificate.ts`:
+
+```ts
+/**
+ * Spec lifecycle (2026-07-12 compositional-loop spec, D4): the stored
+ * loopSpec is a proof certificate written by generation. Any beat-level
+ * mutation invalidates it — detection takes over for display. The legacy
+ * loopType string is kept (it is display provenance, not a certificate).
+ */
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+
+export function withLoopCertificateCleared(sequence: SequenceData): SequenceData {
+  if (sequence.loopSpec === undefined) return sequence;
+  const { loopSpec: _dropped, ...rest } = sequence;
+  return rest as SequenceData;
+}
+```
+
+In `sequence-step-operations.ts`: wrap every `coreState.setCurrentSequence(updatedSequence)` in the mutation methods as `coreState.setCurrentSequence(withLoopCertificateCleared(updatedSequence))`. In `step-operator.ts` line ~212 same wrap. Also clear the display cache for the sequence id after mutation (`clearLoopDisplayCache` — check its signature; if it clears globally, call it as-is) so a card doesn't keep rendering the dead certificate.
+
+- [ ] **Step 4: Run tests** — new test green + `npx vitest run tests/unit/loop --config tests/config/vitest.config.ts` green.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git commit -m "feat(create): beat-level edits invalidate the loopSpec certificate" -- src/lib/shared/create/services/loop-certificate.ts src/lib/features/create/shared/state/operations/sequence-step-operations.ts src/lib/features/create/shared/services/step-operator.ts tests/unit/services/loop-certificate.test.ts
+```
+
+---
+
+### Task 10: Full gates
+
+- [ ] **Step 1:** `cd packages/sequence-engine && npx vitest run` — engine suite green.
+- [ ] **Step 2:** `npx vitest run tests/unit/loop tests/unit/services --config tests/config/vitest.config.ts` — app loop + services suites green (known-failing unrelated env suites — firestore-helpers/choreo-sheet/animation-engine protobuf — are pre-existing; loop/services scope must be clean).
+- [ ] **Step 3:** ONE full `npm run check > /tmp/check.log 2>&1; grep -icE "error" /tmp/check.log` — 0 errors.
+- [ ] **Step 4:** Re-run fixture audit once more: `npx vitest run tests/unit/loop/real-loop-detector-audit.test.ts --config tests/config/vitest.config.ts` — identical results (zero drift).
+- [ ] **Step 5:** No commit (gates only). Report results.
+
+---
+
+## Deferred to P3/P4 (explicitly NOT in this plan)
+
+- Rhythm UI in `LOOPExpandedOverlay` (interval controls, word-math line, block timeline) — P3.
+- `LOOPIconStrip` nesting order + overlay dot — P3.
+- Detection completeness (canonical peel + overlay check in labeler/engine), fixtures from the variant script, mismatch review queue — P4.
+- MCP tool spec params + engine redeploy — post-P2.
