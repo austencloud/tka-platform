@@ -436,6 +436,14 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
+      // PLAY PROGRESS (Arcade Personal Bests, Stars, Level Unlocks)
+      // -------------------------------------------------------------------------
+      match /playProgress/{docId} {
+        allow read, create, update: if isOwner(userId);
+        allow delete: if isOwner(userId) || isAdmin();
+      }
+
+      // -------------------------------------------------------------------------
       // QUIZ HISTORY (Append-only Quiz Attempts)
       // -------------------------------------------------------------------------
       match /quizHistory/{attemptId} {
