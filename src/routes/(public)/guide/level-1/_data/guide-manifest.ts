@@ -83,7 +83,10 @@ export const GUIDE_BODY_PAGES: GuidePageEntry[] = [
   // prop switch); on /print and /book (which share this same manifest + BUILT
   // registry) GuideCodexPage itself branches on getGuidePrintMode() to render
   // the faithful static Double-Staff sheets instead — see GuideCodexPage.svelte.
+  // The Codex spans two letter-sized pages — Types 1-2 (Double Staff) on `codex`,
+  // Types 3-6 on `codex-2` — one printed sheet each (see CodexPageBody.svelte).
   { id: "codex", title: "Codex", level: 0, group: "1.1" },
+  { id: "codex-2", title: "Codex (cont.)", level: 1, group: "1.1" },
   // (letters-type1 removed 2026-07-09 — base-letters carries the Type 1 head.)
   { id: "lt1-abc-ghi", title: "Alpha/Beta Words", level: 1, group: "1.1" },
   { id: "lt1-dj-ek-fl", title: "Compound Letters", level: 1, group: "1.1" },

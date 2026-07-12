@@ -40,6 +40,7 @@
   } from "../_data/guide-page-links";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { consumeGuideScanIntent, fireCodexCell } from "../_data/guide-scan-intent";
+  import { isCodexSlug } from "../_data/guide-content-index";
   import { BUILT } from "../_data/built-pages";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
@@ -83,7 +84,9 @@
   // id "codex"). The companion auto-opens to host its controls (prop family,
   // visibility, transforms) even before any cell is clicked — see
   // GuideCodexControls.svelte / guide-codex-state.svelte.ts.
-  const isCodexPage = $derived(GUIDE_BODY_PAGES[activeIndex - FRONT_MATTER_COUNT]?.id === "codex");
+  const isCodexPage = $derived(
+    isCodexSlug(GUIDE_BODY_PAGES[activeIndex - FRONT_MATTER_COUNT]?.id ?? "")
+  );
   $effect(() => {
     if (isCodexPage) {
       companionOpen = true;
@@ -301,7 +304,7 @@
     if (scanIntent) {
       await tick();
       requestAnimationFrame(() => {
-        if (scanIntent.cellKey && scanIntent.slug === "codex") {
+        if (scanIntent.cellKey && isCodexSlug(scanIntent.slug)) {
           fireCodexCell(scanIntent.cellKey);
         } else if (scanIntent.sequence) {
           // TODO(guide-companion word-path): auto-open companion for

@@ -30,6 +30,7 @@ import ReversalsPage from "../_pages/ReversalsPage.svelte";
 import ExamplesPage from "../_pages/ExamplesPage.svelte";
 import Type1LoopsPage from "../_pages/Type1LoopsPage.svelte";
 import GuideCodexPage from "../_pages/GuideCodexPage.svelte";
+import GuideCodexPage2 from "../_pages/GuideCodexPage2.svelte";
 
 export const BUILT: Record<string, Component> = {
   "the-grid": TheGridPage,
@@ -57,4 +58,5 @@ export const BUILT: Record<string, Component> = {
   "examples-abc": ExamplesPage,
   "misc-permutations": Type1LoopsPage,
   "codex": GuideCodexPage,
+  "codex-2": GuideCodexPage2,
 };
