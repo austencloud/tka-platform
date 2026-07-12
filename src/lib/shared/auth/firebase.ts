@@ -532,57 +532,44 @@ if (typeof window !== "undefined") {
 }
 
 // ============================================================================
-// HMR LIFECYCLE - ZERO-DOWNTIME ROTATION
+// HMR LIFECYCLE - STABLE APP (NO ROTATION)
 // ============================================================================
-
+//
+// Prod builds strip `import.meta.hot`, so none of this runs in production —
+// where the app is the stable "[DEFAULT]" app anyway.
+//
+// We deliberately do NOT rotate the Firebase app or terminate Firestore on HMR.
+// Firebase Auth persists the signed-in user in IndexedDB under a key that embeds
+// the app NAME: `firebase:authUser:<apiKey>:<appName>` (see @firebase/auth
+// _persistenceKeyName). The old app-rotation scheme gave every HMR cycle a new
+// app name ("tka-app-hmr-N"), so the fresh auth instance read an EMPTY
+// persistence namespace and silently signed the user out on every hot reload —
+// and the next full refresh (reading the original "tka-app-0" key, now stale)
+// stayed signed out too. `transferAuthState`'s premise that "Firebase
+// auto-restores the user on the new app instance" is false across differing app
+// names: persistence is keyed per app name.
+//
+// Rotation only ever existed to escape Firestore's terminate()/IndexedDB
+// corruption (getFirestore(app) returns the terminated instance after
+// terminate()). But in dev, Firestore uses an in-memory cache (see
+// initializeFirestore) — there is no IndexedDB state to corrupt and nothing to
+// terminate. So we keep the app stable and self-accept: the re-evaluated module
+// reuses the same "tka-app-0" app (getApps match), the same auth instance (with
+// the live signed-in user, via getAuth's already-initialized path), and the same
+// live Firestore (getFirestore returns the non-terminated instance). The auth
+// persistence key never changes, so the user stays signed in across HMR and
+// across full refreshes.
 if (import.meta.hot) {
-  import.meta.hot.dispose(async () => {
-    debug.info("HMR dispose: Preparing for rotation...");
-
-    // Let HMR manager handle cleanup
-    await hmrManager.onHMRDispose();
-
-    // Clear local instance references
-    firestoreInstance = null;
-    firestoreInitPromise = null;
-    databaseInstance = null;
-    databaseInitPromise = null;
-    authInstance = null;
-    authInitPromise = null;
-    _cachedDatabase = null;
+  import.meta.hot.dispose(() => {
+    // Intentionally no-op: no terminate(), no rotation. Keeping the app, auth,
+    // and memory-cache Firestore alive is what preserves the session. Module
+    // locals are discarded with the old module and rebound (to the same reused
+    // instances) when the new module evaluates.
   });
 
-  import.meta.hot.accept(async () => {
-    debug.info("HMR accept: Rotating Firebase App...");
-
-    try {
-      // Rotate to new app instance
-      await hmrManager.onHMRAccept(firebaseConfig, initializeApp, getAuth);
-
-      // Get new instances from manager
-      const newApp = hmrManager.getApp();
-      if (newApp) {
-        app = newApp;
-      }
-
-      const newAuth = hmrManager.getAuth();
-      if (newAuth) {
-        authInstance = newAuth;
-      }
-
-      // Re-initialize lazy services with new app
-      await Promise.all([
-        getFirestoreInstance(),
-        getDatabaseInstance(),
-      ]);
-
-      debug.success("HMR rotation complete - no page reload needed!");
-    } catch (error) {
-      debug.error("HMR rotation failed:", error);
-      debug.warn("Falling back to page reload");
-      window.location.reload();
-    }
-  });
+  // Self-accept so an edit to this module (or its deps) hot-swaps in place
+  // instead of bubbling up to a full page reload.
+  import.meta.hot.accept();
 }
 
 // ============================================================================
