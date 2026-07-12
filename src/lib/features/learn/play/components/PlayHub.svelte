@@ -1,0 +1,334 @@
+<!--
+  PlayHub — the Play arcade front door and the ONLY phase router.
+
+  Owns the arcade session: creates the engine, wraps every user-driven phase
+  change in the View Transitions API, and sets the (wrapped) session into
+  context for LevelPicker / GameShell / ArcadeResults. Engine-internal
+  transitions (submitAnswer → complete) stay unwrapped — snapshotting the
+  whole page on every answered question would make each answer stutter.
+
+  Also owns ALL results-phase side effects, so ArcadeResults stays pure
+  presentation: records the result to the progress store exactly once per
+  completed session, persists the attempt to quiz history with the engine's
+  REAL score (this replaces QuizTab's persistQuizAttempt), and fires confetti
+  on a new best or a 3-star clear. The recording runs in $effect.pre so
+  isNewBest is known before the results screen ever paints.
+-->
+<script lang="ts">
+  import { onDestroy } from "svelte";
+  import { browser } from "$app/environment";
+  import { GAME_REGISTRY } from "../domain/game-registry";
+  import { emptyGameProgress } from "../domain/progression";
+  import type {
+    ArcadeSessionResult,
+    GameDefinition,
+    GameId,
+    GameProgress,
+  } from "../domain/arcade-types";
+  import {
+    createArcadeSession,
+    setArcadeSessionContext,
+    type ArcadeSession,
+  } from "../state/arcade-session-state.svelte";
+  import { withViewTransition } from "../state/view-transition";
+  import { getPlayProgressStore } from "../get-play-progress-store";
+  import { getEffectiveUserId } from "$lib/shared/auth/state/auth-state.svelte";
+  import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestrator";
+  import * as quizHistoryRecorder from "$lib/features/learn/services/quiz-history-recorder";
+  import * as letterToConceptMapper from "$lib/features/learn/services/letter-to-concept-mapper";
+  import GameCard from "./GameCard.svelte";
+  import GameShell from "./GameShell.svelte";
+  import LevelPicker from "./LevelPicker.svelte";
+  import ArcadeResults from "./ArcadeResults.svelte";
+
+  // ==========================================================================
+  // Session: engine + view-transitioned navigation seam
+  // ==========================================================================
+
+  const engine = createArcadeSession();
+
+  /* Children get THIS object from context. Navigation methods crossfade the
+     screen via the View Transitions API (skipped automatically under reduced
+     motion by the wrapper); everything else passes straight through. */
+  const session: ArcadeSession = {
+    get phase() {
+      return engine.phase;
+    },
+    get score() {
+      return engine.score;
+    },
+    get streak() {
+      return engine.streak;
+    },
+    get longestStreak() {
+      return engine.longestStreak;
+    },
+    get misses() {
+      return engine.misses;
+    },
+    get records() {
+      return engine.records;
+    },
+    get questionIndex() {
+      return engine.questionIndex;
+    },
+    get timeRemaining() {
+      return engine.timeRemaining;
+    },
+    get accuracy() {
+      return engine.accuracy;
+    },
+    selectGame: (game) => withViewTransition(() => engine.selectGame(game)),
+    startLevel: (game, level) =>
+      withViewTransition(() => engine.startLevel(game, level)),
+    quitToHub: () => withViewTransition(() => engine.quitToHub()),
+    backToLevels: () => withViewTransition(() => engine.backToLevels()),
+    markQuestionShown: engine.markQuestionShown,
+    submitAnswer: engine.submitAnswer,
+    complete: engine.complete,
+    destroy: engine.destroy,
+  };
+  setArcadeSessionContext(session);
+
+  onDestroy(() => engine.destroy());
+
+  // ==========================================================================
+  // Progress reads (store is non-reactive; bump the version after writes)
+  // ==========================================================================
+
+  let progressVersion = $state(0);
+
+  function gameProgress(id: GameId): GameProgress {
+    void progressVersion; // template reads re-run when a result lands
+    if (!browser) return emptyGameProgress();
+    return getPlayProgressStore().getGameProgress(id);
+  }
+
+  /* Signed-in users get their Firestore-synced bests merged in; guests stay
+     on localStorage (the store getter is browser-only, effects are too). */
+  $effect(() => {
+    const userId = getEffectiveUserId();
+    if (!userId || userId === "anonymous") return;
+    getPlayProgressStore()
+      .initializeForUser(userId)
+      .then(() => {
+        progressVersion += 1;
+      })
+      .catch((err) => {
+        console.warn("[PlayHub] Play progress sync failed:", err);
+      });
+  });
+
+  // ==========================================================================
+  // Results-phase side effects — exactly once per completed session
+  // ==========================================================================
+
+  let resultsOutcome = $state<{
+    progress: GameProgress;
+    isNewBest: boolean;
+  } | null>(null);
+  /* Identity guard, deliberately non-reactive: the engine builds a fresh
+     result object per completed session, so reference equality is the
+     "already recorded" check that survives effect re-runs. */
+  let recordedResult: ArcadeSessionResult | null = null;
+
+  /* $effect.pre runs before the DOM updates for the results phase, so the
+     store write happens and isNewBest is real BEFORE ArcadeResults paints. */
+  $effect.pre(() => {
+    const phase = engine.phase;
+    if (phase.name !== "results") return;
+    if (recordedResult === phase.result) return;
+    recordedResult = phase.result;
+
+    const outcome = getPlayProgressStore().recordResult(phase.result);
+    resultsOutcome = outcome;
+    progressVersion += 1;
+
+    persistPlayAttempt(phase.game, phase.result);
+
+    if (outcome.isNewBest || phase.result.starsEarned === 3) {
+      getDelightOrchestrator().celebrate("perfect-quiz");
+    }
+  });
+
+  /* QuizTab's persistQuizAttempt, ported: same guest guard, same wrong-answer
+     shape for gap detection — but score/counts/duration are the engine's real
+     values instead of the old coin-flip session's. Fire-and-forget. */
+  function persistPlayAttempt(game: GameDefinition, result: ArcadeSessionResult) {
+    const userId = getEffectiveUserId();
+    if (!userId || userId === "anonymous") return;
+
+    const conceptId =
+      letterToConceptMapper.getConceptId("A") ?? String(game.quizType);
+
+    const wrongAnswers = engine.records
+      .filter((r) => !r.event.isCorrect)
+      .map((r) => ({
+        selectedContent: r.event.selectedContent,
+        correctContent: r.event.correctContent,
+        quizType: String(r.event.quizType),
+        answeredAt: r.event.answeredAt.toISOString(),
+      }));
+
+    quizHistoryRecorder
+      .recordAttempt(userId, {
+        conceptId,
+        quizType: String(game.quizType),
+        score: result.accuracyPercentage,
+        correctCount: result.correctCount,
+        totalCount: result.totalCount,
+        timeSpentSeconds: Math.round(result.durationSeconds),
+        timestamp: result.completedAt,
+        wrongAnswers: wrongAnswers.length > 0 ? wrongAnswers : undefined,
+      })
+      .catch((err) => {
+        console.warn("[PlayHub] Failed to persist play attempt:", err);
+      });
+  }
+
+  const hasNextLevel = $derived.by(() => {
+    if (engine.phase.name !== "results" || !resultsOutcome) return false;
+    const { game, level } = engine.phase;
+    return (
+      level.levelNumber < game.levels.length &&
+      resultsOutcome.progress.levelsUnlocked > level.levelNumber
+    );
+  });
+
+  // ==========================================================================
+  // One shared IntersectionObserver pauses offscreen preview loops
+  // ==========================================================================
+
+  let pauseObserver: IntersectionObserver | null = null;
+
+  /* Applied to each grid slot. content-visibility already skips offscreen
+     PAINT, but CSS animations keep ticking — this stops the ticking too. */
+  function pauseWhenOffscreen(node: HTMLElement) {
+    pauseObserver ??= new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        entry.target.toggleAttribute("data-paused", !entry.isIntersecting);
+      }
+    });
+    pauseObserver.observe(node);
+    return {
+      destroy() {
+        pauseObserver?.unobserve(node);
+      },
+    };
+  }
+
+  onDestroy(() => {
+    pauseObserver?.disconnect();
+    pauseObserver = null;
+  });
+</script>
+
+{#if session.phase.name === "hub"}
+  <div class="play-hub themed-scrollbar">
+    <header class="hub-hero">
+      <h2 class="hero-title">Play</h2>
+      <p class="hero-sub">Six games. Your best scores are waiting.</p>
+    </header>
+
+    <ul class="game-grid">
+      {#each GAME_REGISTRY as game, index (game.id)}
+        <li class="card-slot" use:pauseWhenOffscreen>
+          <GameCard
+            {game}
+            progress={gameProgress(game.id)}
+            {index}
+            onSelect={() => session.selectGame(game)}
+          />
+        </li>
+      {/each}
+    </ul>
+  </div>
+{:else if session.phase.name === "level-select"}
+  <LevelPicker
+    game={session.phase.game}
+    progress={gameProgress(session.phase.game.id)}
+  />
+{:else if session.phase.name === "playing"}
+  <GameShell />
+{:else if session.phase.name === "results" && resultsOutcome}
+  <ArcadeResults
+    result={session.phase.result}
+    progress={resultsOutcome.progress}
+    isNewBest={resultsOutcome.isNewBest}
+    {hasNextLevel}
+  />
+{/if}
+
+<style>
+  .play-hub {
+    /* The hub is its own container so the grid answers to the space the
+       Learn tab actually gives it, not the viewport. */
+    container-type: inline-size;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-md);
+  }
+
+  .hub-hero {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    max-width: 1280px;
+    margin: 0 auto;
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-xs) 0;
+  }
+
+  .hero-title {
+    margin: 0;
+    font-size: var(--font-size-3xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--theme-text, #ffffff);
+  }
+
+  .hero-sub {
+    margin: 0;
+    font-size: var(--font-size-base);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+  }
+
+  .game-grid {
+    list-style: none;
+    margin: 0 auto;
+    padding: 0 0 var(--spacing-xl);
+    max-width: 1280px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  @container (min-width: 640px) {
+    .game-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @container (min-width: 1024px) {
+    .game-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  .card-slot {
+    min-width: 0;
+  }
+
+  /* The shared observer marks offscreen slots; every preview keyframe under
+     one freezes. animation-play-state doesn't touch transitions, so entrance
+     and hover stay live. The inner part must be :global — the attribute is
+     toggled at runtime, and Svelte prunes selectors it can't see in markup. */
+  .game-grid :global(.card-slot[data-paused] *) {
+    animation-play-state: paused;
+  }
+</style>
