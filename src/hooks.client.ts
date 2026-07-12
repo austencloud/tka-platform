@@ -169,15 +169,28 @@ if (browser && dev) {
 if (browser && !dev) {
   window.addEventListener("vite:preloadError", (event) => {
     event.preventDefault();
-    const reloaded = sessionStorage.getItem("tka-chunk-reload");
-    if (!reloaded) {
-      sessionStorage.setItem("tka-chunk-reload", "1");
-      window.location.reload();
-    }
+    // Time-based guard, NOT cleared on boot: the old clear-on-load guard could
+    // loop (fail → reload → boot clears guard → fail → reload …) when the SW
+    // kept serving the same stale shell — one user logged 74 of these in a row.
+    const last = Number(sessionStorage.getItem("tka-chunk-reload") || 0);
+    if (Date.now() - last < 60_000) return;
+    sessionStorage.setItem("tka-chunk-reload", String(Date.now()));
+    // Cache-bust the navigation: a plain reload can re-serve the identical
+    // SW-cached HTML shell with the same dead chunk hashes (same trick as the
+    // dev SW-escape above). The unique query forces the HTML from network.
+    const url = new URL(window.location.href);
+    url.searchParams.set("fresh", String(Date.now()));
+    window.location.replace(url.toString());
   });
 
-  // Clear the reload guard on successful page load (no stale chunks)
-  sessionStorage.removeItem("tka-chunk-reload");
+  // Tidy the one-shot cache-bust param after a successful recovery boot.
+  {
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("fresh")) {
+      url.searchParams.delete("fresh");
+      window.history.replaceState(null, "", url.toString());
+    }
+  }
 
   // Report unhandled promise rejections to error telemetry
   window.addEventListener("unhandledrejection", (event) => {
@@ -188,6 +201,9 @@ if (browser && !dev) {
     if (
       message.includes("ResizeObserver loop") ||
       message.includes("Failed to fetch dynamically imported module") ||
+      // Safari's phrasing of the same stale-chunk failure the vite:preloadError
+      // handler above already recovers from.
+      message.includes("Importing a module script failed") ||
       message.includes("MIME type")
     ) {
       return;
