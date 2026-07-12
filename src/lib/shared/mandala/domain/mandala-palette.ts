@@ -7,14 +7,34 @@ import type { MandalaPalette, MandalaPresetId } from "./mandala-types";
 
 export const PRESET_COLORS: Record<
 	Exclude<MandalaPresetId, "custom">,
-	{ pair: [string, string]; morph: string[] }
+	{ pair: [string, string]; morph: string[]; bg: string; fillAlpha?: number }
 > = {
-	aurora: { pair: ["#00e5ff", "#76ff03"], morph: ["#00e5ff", "#76ff03", "#7c4dff", "#ff4081", "#00e5ff"] },
-	neon: { pair: ["#ff0099", "#00ddff"], morph: ["#ff0099", "#7928ca", "#0055ff", "#00ddff", "#ff0099"] },
-	ember: { pair: ["#ff3d00", "#ffd600"], morph: ["#ff3d00", "#ff9100", "#ffd600", "#ff6d00", "#ff3d00"] },
-	twilight: { pair: ["#aa00ff", "#f50057"], morph: ["#311b92", "#aa00ff", "#f50057", "#ff6d00", "#311b92"] },
-	ice: { pair: ["#4dd0e1", "#b388ff"], morph: ["#e0f7fa", "#4dd0e1", "#1a237e", "#b388ff", "#e0f7fa"] },
-	solar: { pair: ["#ffab00", "#dd2c00"], morph: ["#ffab00", "#ff6d00", "#dd2c00", "#ffea00", "#ffab00"] },
+	aurora: { pair: ["#00e5ff", "#76ff03"], morph: ["#00e5ff", "#76ff03", "#7c4dff", "#ff4081", "#00e5ff"], bg: "#000000" },
+	neon: { pair: ["#ff0099", "#00ddff"], morph: ["#ff0099", "#7928ca", "#0055ff", "#00ddff", "#ff0099"], bg: "#000000" },
+	ember: { pair: ["#ff3d00", "#ffd600"], morph: ["#ff3d00", "#ff9100", "#ffd600", "#ff6d00", "#ff3d00"], bg: "#000000" },
+	twilight: { pair: ["#aa00ff", "#f50057"], morph: ["#311b92", "#aa00ff", "#f50057", "#ff6d00", "#311b92"], bg: "#000000" },
+	ice: { pair: ["#4dd0e1", "#b388ff"], morph: ["#e0f7fa", "#4dd0e1", "#1a237e", "#b388ff", "#e0f7fa"], bg: "#000000" },
+	solar: { pair: ["#ffab00", "#dd2c00"], morph: ["#ffab00", "#ff6d00", "#dd2c00", "#ffea00", "#ffab00"], bg: "#000000" },
+	// Art-grade presets (2026-07-11) — chosen by Austen from a 9-candidate
+	// comparison at /test/mandala-palettes. Each ships its own stage bg so the
+	// palette reads correctly (ink needs light parchment, not black).
+	ink: {
+		pair: ["#1e2749", "#b33a2e"],
+		morph: ["#1e2749", "#44496e", "#b33a2e", "#7a3a4e", "#1e2749"],
+		bg: "#f4ecdc",
+		fillAlpha: 0.12,
+	},
+	gilded: {
+		pair: ["#d4af37", "#b8722c"],
+		morph: ["#d4af37", "#e8c96a", "#b8722c", "#8a5a24", "#d4af37"],
+		bg: "#16161c",
+	},
+	abyss: {
+		pair: ["#35e0c8", "#e05a9a"],
+		morph: ["#35e0c8", "#4a9ae8", "#8a7ae8", "#e05a9a", "#35e0c8"],
+		bg: "#04101c",
+		fillAlpha: 0.18,
+	},
 };
 
 export function hexToRgb(hex: string): [number, number, number] {

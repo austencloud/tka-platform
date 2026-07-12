@@ -9,7 +9,17 @@ export interface SVGPathData {
 export type MandalaColorMode = "solid" | "flow";
 
 /** Named color presets for the mandala viewer (+ "custom" two-color picker). */
-export type MandalaPresetId = "aurora" | "neon" | "ember" | "twilight" | "ice" | "solar" | "custom";
+export type MandalaPresetId =
+	| "aurora"
+	| "neon"
+	| "ember"
+	| "twilight"
+	| "ice"
+	| "solar"
+	| "ink"
+	| "gilded"
+	| "abyss"
+	| "custom";
 
 export interface MandalaPaths {
 	blue: SVGPathData[];

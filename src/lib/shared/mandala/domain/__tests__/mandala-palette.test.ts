@@ -9,9 +9,26 @@ import {
 
 describe("mandala-palette", () => {
 	it("PRESET_COLORS exposes the named presets with pair + morph", () => {
-		for (const id of ["aurora", "neon", "ember", "twilight", "ice", "solar"] as const) {
+		for (const id of [
+			"aurora",
+			"neon",
+			"ember",
+			"twilight",
+			"ice",
+			"solar",
+			"ink",
+			"gilded",
+			"abyss",
+		] as const) {
 			expect(PRESET_COLORS[id].pair).toHaveLength(2);
 			expect(PRESET_COLORS[id].morph.length).toBeGreaterThanOrEqual(2);
+		}
+	});
+
+	it("every preset ships a valid #rrggbb background", () => {
+		const hex6 = /^#[0-9a-f]{6}$/i;
+		for (const id of Object.keys(PRESET_COLORS) as (keyof typeof PRESET_COLORS)[]) {
+			expect(PRESET_COLORS[id].bg).toMatch(hex6);
 		}
 	});
 

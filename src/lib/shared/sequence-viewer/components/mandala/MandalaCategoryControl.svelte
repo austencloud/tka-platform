@@ -15,6 +15,7 @@
   import { cubicOut } from "svelte/easing";
   import type { MandalaViewerController } from "../../state/mandala-viewer-controller.svelte";
   import type { MandalaPathShape, MandalaPresetId } from "$lib/shared/mandala/domain/mandala-types";
+  import { PRESET_COLORS } from "$lib/shared/mandala/domain/mandala-palette";
 
   /** "download" holds the export config (loops / fidelity / fps + estimate). */
   export type MandalaCategory =
@@ -63,12 +64,12 @@
     { value: 2.5, label: "Normal" },
     { value: 4, label: "Thick" },
   ];
-  const PRESETS: { id: MandalaPresetId; label: string }[] = [
-    { id: "aurora", label: "Aurora" },
-    { id: "neon", label: "Neon" },
-    { id: "ember", label: "Ember" },
-    { id: "ice", label: "Ice" },
-  ];
+  // Derived from PRESET_COLORS (the single source of truth) so a preset added
+  // there is automatically selectable here — no second list to drift out of
+  // sync (this list previously hardcoded a stale 4-of-6 subset).
+  const PRESETS: { id: MandalaPresetId; label: string }[] = (
+    Object.keys(PRESET_COLORS) as Exclude<MandalaPresetId, "custom">[]
+  ).map((id) => ({ id, label: id.charAt(0).toUpperCase() + id.slice(1) }));
   const presetLabel = $derived(PRESETS.find((p) => p.id === ctrl.preset)?.label ?? "Custom");
 
   const FIDELITIES: { value: 720 | 1080 | 2160; label: string }[] = [
@@ -236,7 +237,9 @@
   .palette-chip { width: 28px; height: 18px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25); }
   .palette-name { font-size: 12px; font-weight: 600; }
   .palette-toggle i { font-size: 10px; opacity: 0.55; }
-  .preset-row { display: flex; gap: 8px; }
+  /* 10 swatches (9 presets + custom) no longer fit one row at tray widths —
+     wrap instead of shrinking below the 44px touch-target floor. */
+  .preset-row { display: flex; flex-wrap: wrap; gap: 8px; }
   .custom-flow { display: flex; flex-direction: column; gap: 10px; }
   .flow-preview {
     display: block;
@@ -327,8 +330,8 @@
   }
 
   .swatch {
-    flex: 1;
-    min-width: 0;
+    flex: 1 1 64px;
+    min-width: 64px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -432,6 +435,11 @@
   .tray-chips > *:nth-child(4),
   .preset-row > *:nth-child(4) { animation-delay: 135ms; }
   .preset-row > *:nth-child(5) { animation-delay: 180ms; }
+  .preset-row > *:nth-child(6) { animation-delay: 225ms; }
+  .preset-row > *:nth-child(7) { animation-delay: 270ms; }
+  .preset-row > *:nth-child(8) { animation-delay: 315ms; }
+  .preset-row > *:nth-child(9) { animation-delay: 360ms; }
+  .preset-row > *:nth-child(10) { animation-delay: 405ms; }
   .custom-flow > *:nth-child(2) { animation-delay: 60ms; }
   @keyframes popIn {
     from { opacity: 0; transform: translateY(10px) scale(0.96); }

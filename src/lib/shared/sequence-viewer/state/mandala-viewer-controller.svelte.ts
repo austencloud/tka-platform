@@ -37,7 +37,8 @@ export interface MandalaControllerSources {
 
 const BASE_PERIOD = 5;
 const COLOR_CYCLE_BREATHS = 3;
-const BG_COLOR = "#000000";
+const DEFAULT_BG_COLOR = "#000000";
+const DEFAULT_FILL_ALPHA = 0.15;
 
 const EXPORT_STORAGE_KEY = "tka_mandala_export";
 // The mandala's *look* (shape/spin/speed/colors/weight/depth), persisted apart
@@ -125,7 +126,10 @@ export class MandalaViewerController {
   /** Last export diagnostic (render/encode/mux split, HW status) — logged live. */
   lastExportDiag = $state<MandalaExportDiag | null>(null);
 
-  readonly bgColor = BG_COLOR;
+  /** The active preset's stage background (custom preset falls back to black). */
+  bgColor = $derived(
+    this.preset === "custom" ? DEFAULT_BG_COLOR : PRESET_COLORS[this.preset].bg,
+  );
 
   #sources: MandalaControllerSources;
   #colorPhase = $state(0);
@@ -243,14 +247,21 @@ export class MandalaViewerController {
     return PRESET_COLORS[this.preset].morph;
   }
 
+  /** The active preset's fill alpha for blue/red strokes (custom → default). */
+  #getFillAlpha(): number {
+    if (this.preset === "custom") return DEFAULT_FILL_ALPHA;
+    return PRESET_COLORS[this.preset].fillAlpha ?? DEFAULT_FILL_ALPHA;
+  }
+
   palette = $derived.by((): MandalaPalette => {
+    const fillAlpha = this.#getFillAlpha();
     if (this.colorMode === "solid") {
       const [c1, c2] = this.#getPresetPair();
       const mix = mixColors(c1, c2);
       return {
-        blueStroke: c1, blueFill: withAlpha(c1, 0.15),
-        redStroke: c2, redFill: withAlpha(c2, 0.15),
-        purpleStroke: mix, purpleFill: withAlpha(mix, 0.2),
+        blueStroke: c1, blueFill: withAlpha(c1, fillAlpha),
+        redStroke: c2, redFill: withAlpha(c2, fillAlpha),
+        purpleStroke: mix, purpleFill: withAlpha(mix, fillAlpha + 0.05),
       };
     }
     const morphColors = this.#getPresetMorph();
@@ -258,9 +269,9 @@ export class MandalaViewerController {
     const c2 = sampleGradient(morphColors, (this.#colorPhase + 0.4) % 1);
     const mix = mixColors(c1, c2);
     return {
-      blueStroke: c1, blueFill: withAlpha(c1, 0.15),
-      redStroke: c2, redFill: withAlpha(c2, 0.15),
-      purpleStroke: mix, purpleFill: withAlpha(mix, 0.2),
+      blueStroke: c1, blueFill: withAlpha(c1, fillAlpha),
+      redStroke: c2, redFill: withAlpha(c2, fillAlpha),
+      purpleStroke: mix, purpleFill: withAlpha(mix, fillAlpha + 0.05),
     };
   });
 
