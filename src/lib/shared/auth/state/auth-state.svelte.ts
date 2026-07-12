@@ -109,6 +109,28 @@ if (import.meta.hot) {
   });
 }
 
+// HMR re-eval re-wire. The preserved auth listener is a closure over the
+// PREVIOUS module instance's `_state` — components that re-evaluated alongside
+// this module read THIS instance's `_state`, which that old listener never
+// touches. Left alone, the tab splits into two auth realities: sign-ins land
+// on the dead instance while the UI freezes on the restored snapshot (a
+// signed-out nudge no popup can dismiss; "User not authenticated" from
+// services bound to the new instance). Tear the preserved listeners down and
+// re-attach against this instance. The Firebase auth object itself is stable
+// across HMR (firebase.ts no longer rotates the app), so re-attaching is
+// cheap and the fresh listener fires immediately with the real user.
+if (hmrAuthData?.cleanupAuthListener) {
+  cleanupAuthListener?.();
+  cleanupAuthListener = null;
+  cleanupSubscriptionListener?.();
+  cleanupSubscriptionListener = null;
+  void initializeAuthListener().then(() => {
+    // The role/subscription listener is normally created only inside the
+    // one-time child-services init; re-create it here for the signed-in case.
+    if (_state.user) void initializeSubscriptionListener(_state.user);
+  });
+}
+
 /**
  * Get the effective user ID (previewed user or actual)
  */
