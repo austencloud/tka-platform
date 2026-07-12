@@ -14,20 +14,9 @@
   transform/box-shadow only (compositor).
 -->
 <script lang="ts">
-  import type { Component } from "svelte";
-  import type {
-    GameDefinition,
-    GameId,
-    GameProgress,
-    Grade,
-  } from "../domain/arcade-types";
+  import type { GameDefinition, GameProgress, Grade } from "../domain/arcade-types";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import PictographShufflePreview from "./previews/PictographShufflePreview.svelte";
-  import OptionPulsePreview from "./previews/OptionPulsePreview.svelte";
-  import SequenceFlowPreview from "./previews/SequenceFlowPreview.svelte";
-  import PerformerPulsePreview from "./previews/PerformerPulsePreview.svelte";
-  import LetterStreamPreview from "./previews/LetterStreamPreview.svelte";
-  import MandalaBloomPreview from "./previews/MandalaBloomPreview.svelte";
+  import { getGamePreview } from "./previews/preview-map";
 
   let {
     game,
@@ -41,19 +30,10 @@
     onSelect: () => void;
   } = $props();
 
-  /* Each game gets a preview that acts out its own mechanic. The two letter
-     games are adjacent in the grid, so they deliberately get different
-     previews (glyphs dealt vs an option grid being scanned) — twin cards
-     would read as a rendering bug on the magnet surface. */
-  const PREVIEWS: Record<GameId, Component<{ accent: string }>> = {
-    "pictograph-to-letter": PictographShufflePreview,
-    "letter-to-pictograph": OptionPulsePreview,
-    "valid-next": SequenceFlowPreview,
-    "performer-word": PerformerPulsePreview,
-    "speed-blitz": LetterStreamPreview,
-    "mandala-match": MandalaBloomPreview,
-  };
-  const Preview = $derived(PREVIEWS[game.id]);
+  /* The id→preview mapping lives in previews/preview-map.ts, shared with
+     LevelPicker's game-detail screen so both surfaces show the same preview
+     per game. */
+  const Preview = $derived(getGamePreview(game.id));
 
   const totalStars = $derived(
     Object.values(progress.starsByLevel).reduce<number>((sum, s) => sum + s, 0)

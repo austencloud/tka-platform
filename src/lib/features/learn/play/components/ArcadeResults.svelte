@@ -436,21 +436,38 @@ heavier 400ms beat on the last one → best line → stats → actions.
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
 
-  /* 4K-native tier — the results column stops reading as a phone-width card
-     floating in the middle of a 3840px screen. clamp()s keep growth
-     continuous from 1920 through 3840 rather than jumping to one more fixed
-     px number. */
-  @media (min-width: 1920px) {
+  /* Composed-panel tier — the results column anchors against the starfield
+     instead of floating on it, same treatment as LevelPicker's game-detail
+     panel. Austen's 4K monitor runs Windows display scaling, so this starts
+     at 1024 rather than waiting for a 2560 gate that may never fire for him. */
+  @media (min-width: 1024px) {
     .arcade-results {
-      max-width: clamp(620px, 22vw, 720px);
+      padding: clamp(2rem, 2.5vw, 3rem);
+      background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+      border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+      border-radius: 24px;
+      box-shadow:
+        0 32px 80px -32px color-mix(in srgb, var(--game-accent) 32%, transparent),
+        0 2px 0 0 color-mix(in srgb, var(--game-accent) 12%, transparent) inset;
+    }
+  }
+
+  /* Type/size growth tier — previously gated at 1920 (a threshold that may
+     never fire once Windows display scaling divides his 4K panel down to a
+     ~1920-2000 CSS viewport). Moved to 1200 with the clamp floors/vw rates
+     rescaled so growth stays continuous rather than jumping straight to the
+     old max the moment the tier activates. */
+  @media (min-width: 1200px) {
+    .arcade-results {
+      max-width: clamp(560px, 42vw, 760px);
     }
 
     .grade-hero {
-      height: clamp(6rem, 15vw, 9.5rem);
+      height: clamp(5rem, 11vw, 9.5rem);
     }
 
     .grade-letter {
-      font-size: clamp(5rem, 12vw, 8rem);
+      font-size: clamp(4rem, 9vw, 8rem);
     }
 
     .stars-row {
@@ -458,8 +475,8 @@ heavier 400ms beat on the last one → best line → stats → actions.
     }
 
     .result-star {
-      width: clamp(44px, 3.2vw, 60px);
-      height: clamp(44px, 3.2vw, 60px);
+      width: clamp(40px, 3vw, 60px);
+      height: clamp(40px, 3vw, 60px);
     }
 
     .best-line {
@@ -472,7 +489,7 @@ heavier 400ms beat on the last one → best line → stats → actions.
     }
 
     .stat-value {
-      font-size: var(--font-size-2xl, 1.5rem);
+      font-size: clamp(var(--font-size-lg, 1.125rem), 1.6vw, var(--font-size-2xl, 1.5rem));
     }
 
     .stat-label {

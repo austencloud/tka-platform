@@ -5,21 +5,58 @@ Rendered by PlayHub at phase "level-select". Pure presentation: every phase
 mutation goes through the arcade session (startLevel / quitToHub) — PlayHub
 owns the view-transition wrapping. Locked levels stay real buttons
 (aria-disabled) so they remain discoverable; they just refuse the click.
+
+Below 1024px this is the original stacked list: back + title/tagline + best
+badge in one header row, then the ladder. At 1024px+ it becomes a composed
+game-detail screen — a bordered/glowing panel with the game's live preview,
+title, tagline and stats in a left identity column, and a beefed-up ladder in
+a right column — so it reads as a screen built for a big display instead of a
+skinny mobile list floating on the starfield. The identity column's title
+(<h2 class="identity-title">) and the header's title (<h2 class="game-title">)
+are the same information rendered twice on purpose, one hidden per
+breakpoint: display:none removes the inactive one from the accessibility
+tree, so exactly one heading is ever announced.
 -->
 <script lang="ts">
   import type {
     GameDefinition,
     GameProgress,
+    Grade,
     LevelDefinition,
     LevelMode,
   } from "../domain/arcade-types";
   import { getArcadeSession } from "../state/arcade-session-state.svelte";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import { getGamePreview } from "./previews/preview-map";
 
   let { game, progress }: { game: GameDefinition; progress: GameProgress } =
     $props();
 
   const session = getArcadeSession();
+
+  const Preview = $derived(getGamePreview(game.id));
+
+  const totalStars = $derived(
+    Object.values(progress.starsByLevel).reduce<number>((sum, s) => sum + s, 0)
+  );
+  const maxStars = $derived(game.levels.length * 3);
+
+  /* Same grade palette as GameCard / Train's PersonalBests+SessionHistory so
+     a grade letter means the same color everywhere in the app. */
+  function gradeColor(grade: Grade): string {
+    switch (grade) {
+      case "S":
+        return "#fbbf24";
+      case "A":
+        return "#22c55e";
+      case "B":
+        return "#3b82f6";
+      case "C":
+        return "#f59e0b";
+      case "D":
+        return "#ef4444";
+    }
+  }
 
   function modeSummary(mode: LevelMode): string {
     switch (mode.kind) {
@@ -113,6 +150,30 @@ owns the view-transition wrapping. Locked levels stay real buttons
     </div>
   </header>
 
+  <div class="identity-column">
+    <div class="preview-stage" aria-hidden="true">
+      <Preview accent={game.accentColor} />
+    </div>
+    <h2 class="identity-title">{game.title}</h2>
+    <p class="identity-tagline">{game.tagline}</p>
+    <div class="stats-block">
+      <div class="best-stat">
+        <span class="best-stat-label">Best</span>
+        <span class="best-stat-value">
+          {progress.totalPlays > 0 ? progress.bestScore.toLocaleString() : "—"}
+        </span>
+        {#if progress.bestGrade}
+          <span
+            class="grade-chip"
+            style="--grade-color: {gradeColor(progress.bestGrade)}"
+            >{progress.bestGrade}</span
+          >
+        {/if}
+      </div>
+      <div class="stars-stat">★ {totalStars} / {maxStars}</div>
+    </div>
+  </div>
+
   <div class="level-ladder">
     {#each game.levels as level (level.levelNumber)}
       {@const locked = isLocked(level)}
@@ -182,6 +243,12 @@ owns the view-transition wrapping. Locked levels stay real buttons
     margin-inline: auto;
     margin-block: auto;
     padding: var(--spacing-lg, 1rem);
+  }
+
+  /* Identity column (preview + title + tagline + stats) only exists as a
+     composed left column at 1024px+ — mobile keeps the header-only intro. */
+  .identity-column {
+    display: none;
   }
 
   /* Header */
@@ -358,28 +425,145 @@ owns the view-transition wrapping. Locked levels stay real buttons
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
-  @media (min-width: 1920px) {
+  /* ── Composed game-detail screen (1024px+) ─────────────────────────────
+     Austen's 4K monitor runs Windows display scaling, so the CSS viewport
+     is likely ~1920-2000px, not 3840 — growth starts here and scales
+     fluidly via clamp()/vw so it doesn't wait for a 2560+ gate that may
+     never fire for him. */
+  @media (min-width: 1024px) {
     .level-picker {
-      max-width: clamp(680px, 24vw, 760px);
-      gap: var(--spacing-xl, 2rem);
+      max-width: clamp(900px, 72vw, 1500px);
+      gap: clamp(1.5rem, 2vw, 2rem);
+      padding: clamp(2rem, 2.5vw, 3rem);
+      background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+      border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+      border-radius: 24px;
+      box-shadow:
+        0 32px 80px -32px color-mix(in srgb, var(--game-accent) 32%, transparent),
+        0 2px 0 0 color-mix(in srgb, var(--game-accent) 12%, transparent) inset;
+      display: grid;
+      grid-template-columns: clamp(320px, 26vw, 480px) 1fr;
+      grid-template-areas:
+        "header header"
+        "identity ladder";
+      column-gap: clamp(2.5rem, 3vw, 3rem);
+      row-gap: clamp(1.5rem, 2vw, 2rem);
+      align-items: start;
     }
 
-    .game-title {
-      font-size: var(--font-size-2xl, 1.5rem);
+    .picker-header {
+      grid-area: header;
     }
 
-    .game-tagline {
+    /* The header keeps only the back button once the identity column takes
+       over title/tagline/best duty below. */
+    .header-text,
+    .best-badge {
+      display: none;
+    }
+
+    .identity-column {
+      grid-area: identity;
+      display: flex;
+      flex-direction: column;
+      gap: var(--spacing-sm, 0.5rem);
+    }
+
+    .preview-stage {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      border-radius: var(--radius-2026-lg, 18px);
+      overflow: hidden;
+      background:
+        radial-gradient(
+          120% 85% at 50% 112%,
+          color-mix(in srgb, var(--game-accent) 26%, transparent),
+          transparent 62%
+        ),
+        linear-gradient(180deg, rgba(12, 14, 22, 0.6), rgba(7, 9, 15, 0.82));
+      border: 1px solid color-mix(in srgb, var(--game-accent) 15%, transparent);
+      margin-bottom: 0.5rem;
+    }
+
+    .identity-title {
+      margin: 0;
+      font-size: clamp(1.75rem, 2.2vw, 2.75rem);
+      font-weight: 800;
+      letter-spacing: -0.01em;
+      color: var(--theme-text, #ffffff);
+    }
+
+    .identity-tagline {
+      margin: 0;
       font-size: var(--font-size-base, 1rem);
+      color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     }
 
-    .best-value {
-      font-size: var(--font-size-xl, 1.25rem);
+    .stats-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     }
 
+    .best-stat {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      min-height: 2.25rem;
+    }
+
+    .best-stat-label {
+      font-size: var(--font-size-compact, 12px);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    }
+
+    .best-stat-value {
+      font-size: clamp(1.5rem, 2vw, 2rem);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: var(--game-accent);
+    }
+
+    .grade-chip {
+      align-self: center;
+      font-size: var(--font-size-compact, 12px);
+      font-weight: 800;
+      line-height: 1;
+      padding: 4px 8px;
+      border-radius: 6px;
+      color: var(--grade-color);
+      border: 1px solid color-mix(in srgb, var(--grade-color) 55%, transparent);
+      background: color-mix(in srgb, var(--grade-color) 14%, transparent);
+    }
+
+    .stars-stat {
+      font-size: var(--font-size-base, 1rem);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--theme-text-dim, rgba(255, 255, 255, 0.8));
+    }
+
+    .level-ladder {
+      grid-area: ladder;
+      gap: clamp(0.5rem, 0.8vw, 0.75rem);
+    }
+
+    /* Rows read as a real ladder on a big display, not a cramped mobile
+       list: taller rows, bigger number badge and star glyphs, fluid via
+       clamp()/vw so growth is continuous instead of jumping at 2560. */
     .level-row {
-      min-height: calc(var(--min-touch-target, 44px) + 24px);
-      padding: var(--spacing-md, 0.75rem) var(--spacing-lg, 1rem);
+      min-height: clamp(76px, 5vw, 92px);
+      padding: clamp(0.75rem, 1vw, 1.25rem) clamp(1rem, 1.5vw, 1.5rem);
       border-radius: 14px;
+      gap: clamp(0.75rem, 1.2vw, 1.25rem);
     }
 
     .level-number {
@@ -389,16 +573,29 @@ owns the view-transition wrapping. Locked levels stay real buttons
     }
 
     .level-title {
-      font-size: var(--font-size-lg, 1.125rem);
+      font-size: clamp(1.125rem, 1vw, 1.375rem);
     }
 
     .level-mode {
       font-size: var(--font-size-sm, 0.875rem);
     }
 
+    .level-status {
+      min-width: 100px;
+    }
+
+    .star-row {
+      gap: 0.25rem;
+    }
+
     .star {
-      width: 20px;
-      height: 20px;
+      width: clamp(22px, 1.4vw, 28px);
+      height: clamp(22px, 1.4vw, 28px);
+    }
+
+    .lock-glyph {
+      width: 22px;
+      height: 22px;
     }
   }
 
