@@ -49,6 +49,7 @@ import {
   periodToNumber,
 } from "../../loop/loop-types.js";
 import type { LOOPSpec } from "../../loop/loop-spec.js";
+import { validateLOOPSpec } from "../../loop/loop-spec.js";
 import { loopExecutorSelector } from "../../loop/execution/LOOPExecutorSelector.js";
 import { findLetterByMotions } from "../../loop/LetterLookup.js";
 import { loopEndPositionSelector } from "../../loop/targeting/LOOPEndPositionSelector.js";
@@ -885,7 +886,21 @@ export class SequenceBuilder {
     loopOptions: LoopOptions,
     gridMode: string,
   ): BuildResult {
-    const executor = loopExecutorSelector.getExecutor(loopOptions.type);
+    // Compositional path: options.loop.loopSpec (declared on LoopOptions,
+    // populated today by the MCP adapter via loopSpecFromLegacy for every
+    // request) is preferred over type+period execution when present. The
+    // legacy type+period is still required alongside it — seam targeting
+    // (LOOPEndPositionSelector, constrainStartForLoopType) reads
+    // loopOptions.type/period directly and is unaffected by this branch.
+    const loopSpec = loopOptions.loopSpec;
+    if (loopSpec) {
+      const errors = validateLOOPSpec(loopSpec);
+      if (errors.length > 0) {
+        throw new Error(
+          `Invalid LOOPSpec: ${errors.map((e) => `${e.rule}: ${e.message}`).join("; ")}`,
+        );
+      }
+    }
 
     // Build the seed word from non-start-position, non-bridge letters
     const seedWord = result.sequence
@@ -897,9 +912,11 @@ export class SequenceBuilder {
     // Copy the sequence so the executor's mutations don't affect the original
     const inputSteps = result.sequence.map((s) => ({ ...s }));
 
-    // Execute the LOOP transformation. The executor returns the complete
+    // Execute the LOOP transformation. Both paths return the complete
     // circular sequence (start position + seed beats + derived beats).
-    const extendedSteps = executor.executeLOOP(inputSteps, loopOptions.period);
+    const extendedSteps = loopSpec
+      ? loopExecutorSelector.executeSpec(inputSteps, loopSpec)
+      : loopExecutorSelector.getExecutor(loopOptions.type).executeLOOP(inputSteps, loopOptions.period);
 
     // The executors carry the SOURCE beat's letter onto each derived beat
     // (they spread `...sourceStep`). For rewound — and any executor whose
@@ -908,9 +925,21 @@ export class SequenceBuilder {
     // letter is wrong. Re-derive each derived beat's letter from its own
     // resulting motions against the pictograph data. This mirrors the app-side
     // SequenceExtender, which already re-derives letters after LOOP execution.
+    //
+    // The spec path re-derives EVERY letter beat, not just beats beyond the
+    // original seed: an overlay stage (e.g. inverted, mode "overlay") applies
+    // in place over the FULLY EXPANDED sequence, partitioned into `period`
+    // equal blocks — which can flip beats that fall within what would
+    // otherwise be the "seed" range whenever the overlay's period doesn't
+    // line up with the seed length. Re-deriving an unchanged beat's letter
+    // from its own (unchanged) motions is a no-op, so this is safe for the
+    // legacy path's beats too, but we keep the legacy path's original bounds
+    // untouched (zero-drift guarantee) and only widen the range on the spec
+    // path where the overlay stage genuinely can reach into it.
     const seedStepCountForLetters = result.sequence.length;
+    const letterRederiveStart = loopSpec ? 1 : seedStepCountForLetters;
     const allPictographs = this.variationProvider.getAllVariations(gridMode);
-    for (let i = seedStepCountForLetters; i < extendedSteps.length; i++) {
+    for (let i = letterRederiveStart; i < extendedSteps.length; i++) {
       const step = extendedSteps[i]!;
       const derivedLetter = findLetterByMotions(
         step.motions.blue,
@@ -940,10 +969,21 @@ export class SequenceBuilder {
 
     const derivedWord = derivedLetters.join("");
 
-    // The orientation cycle multiplier tells the renderer how many
-    // times the orientation pattern repeats. For halved it's 2, quartered is 4.
-    const orientationCycleMultiplier =
-      loopOptions.period === Period.QUARTERED ? 4 : 2;
+    // The orientation cycle multiplier tells the renderer how many times the
+    // orientation pattern repeats. For the legacy type+period path it's a
+    // direct function of the period (halved = 2, quartered = 4). For the
+    // spec path, per-component periods with independent expand/overlay modes
+    // make that formula unreliable (e.g. a fuseable component sharing
+    // ROTATED's period is absorbed into ROTATED's implicit rotation rather
+    // than multiplying again — see executeSymmetricSpec's fuseableAtSamePeriod
+    // branch) — so derive it empirically from the actual expansion the
+    // spec-executor just produced, which is correct by construction and
+    // never drifts from whatever grouping/overlay rules spec-executor uses.
+    const orientationCycleMultiplier = loopSpec
+      ? Math.round((extendedSteps.length - 1) / Math.max(1, seedStepCount - 1))
+      : loopOptions.period === Period.QUARTERED
+        ? 4
+        : 2;
 
     // Build the component labels (seed + derived segments)
     const components = [seedWord];

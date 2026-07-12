@@ -407,7 +407,7 @@ git commit -m "feat(engine): overlay-inversion stage — in-place block inversio
 
 Current state: `options.loopSpec?: LOOPSpec` is declared (~line 190) and never read; LOOP extension goes through `extendWithLOOP(result, options.loop, gridMode)` (~line 883) → legacy `loopExecutorSelector.getExecutor(type).executeLOOP(steps, period)`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -466,12 +466,16 @@ describe("SequenceBuilder loopSpec path", () => {
 
 Note for the implementer: the legacy `loop` option is passed ALONGSIDE `loopSpec` in this test because seam targeting reuses the legacy machinery (see Step 3). The builder must treat `loopSpec` as authoritative for EXECUTION and derive targeting from it.
 
-- [ ] **Step 2: Run test to verify it fails**
+**Deviation (structural, not just line drift):** `loopSpec` is NOT a sibling top-level `BuildOptions` field — it is declared on `LoopOptions` (nested: `options.loop.loopSpec`), confirmed by the field's own doc-comment ("Compositional LOOPSpec. When present, preferred over type+period by new execution paths.") and by the MCP adapter (`mcp-server/src/core/engine-generation-adapter.ts:201`), which already populates `options.loop.loopSpec = loopSpecFromLegacy(...)` for every LOOP request today. The test therefore passes `loopSpec` nested inside the `loop:` object, not as a sibling of it. This also means the plan's Step 3 guard ("if loopSpec present but options.loop absent, throw") is structurally unreachable — loopSpec can only exist when `options.loop` exists — so it was not added.
+
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd packages/sequence-engine && npx vitest run tests/generation/loop-spec-build.test.ts`
 Expected: FAIL — beats.length is 32 (legacy smear treats inv:4 as an expander) or motion flips absent.
 
-- [ ] **Step 3: Implement**
+Actual: FAILED for the right reason — 16 beats produced (legacy path coincidentally matches length since ROTATED_MIRRORED already doubles twice), but `beats[i+4]` motionType was NOT flipped (overlay ignored): `AssertionError: expected 'anti' to be 'pro'`.
+
+- [x] **Step 3: Implement**
 
 In `SequenceBuilder.extendWithLOOP` (~line 883), branch on spec:
 
@@ -510,19 +514,27 @@ function expanderMultiplier(spec: LOOPSpec): number {
 
 (import `LOOPComponent as CanonicalLOOPComponent` from `../../loop/loop-spec.js` — matching the existing import style in `LOOPEndPositionSelector.ts`.)
 
-In `build()`: stash `this.currentLoopSpec = options.loopSpec ?? null;` at entry (clear in a finally). Validate early: `const errors = validateLOOPSpec(options.loopSpec); if (errors.length) throw new Error(...)`. Seam targeting: KEEP the legacy `options.loop` type+period requirement when `loopSpec` is present (caller derives them from the spec — documented contract; `determineEndPositionForSpec` unification is P4+ work). Guard: if `loopSpec` present but `options.loop` absent, throw with a clear message.
+**Deviation:** implemented without a stashed `this.currentLoopSpec` instance field or the `expanderMultiplier(spec)` module helper above. `extendWithLOOP` already receives `loopOptions` (containing `.loopSpec`) as a direct parameter from both call sites (`buildByWord` ~line 360, `buildByLength` ~line 639) — no re-plumbing through `build()` was needed; branching on `loopOptions.loopSpec` directly is simpler and avoids adding mutable instance state. `validateLOOPSpec(loopSpec)` is called inside `extendWithLOOP` when `loopSpec` is present, throwing a joined `rule: message` error on failure. Seam targeting already reads `loopOptions.type`/`loopOptions.period` directly and is untouched by this branch — no explicit "keep legacy targeting" wiring was needed since nothing about targeting changed.
 
-- [ ] **Step 4: Run tests + rebuild**
+The `expanderMultiplier` product-of-periods formula was NOT ported into SequenceBuilder.ts: it undercounts/overcounts `orientationCycleMultiplier` for specs where a fuseable component (e.g. INVERTED) shares ROTATED's period with no MIRROR/FLIP present — `executeSymmetricSpec`'s `fuseableAtSamePeriod` branch then absorbs ROTATED's rotation into that ONE fused group (x-period once), not a separate stage, so multiplying `rot.period * cSpec.period` double-counts (e.g. `rotated_inverted` at period 2 would compute 4, but the actual expansion is x2 — verified by tracing `loopSpecFromLegacy("rotated_inverted", 2)` → `{rotated:2, inverted:2}` through `executeSymmetricSpec`). Since `extendWithLOOP` already computes both `seedStepCount` and the post-execution `extendedSteps.length`, `orientationCycleMultiplier` for the spec path is instead derived empirically as `Math.round((extendedSteps.length - 1) / (seedStepCount - 1))` — correct by construction for whatever grouping/overlay rules `executeSymmetricSpec` actually applied, with no duplicated logic to drift out of sync. The legacy type+period formula is preserved unchanged for the non-spec path (zero drift).
+
+Also widened the letter re-derivation loop: on the spec path only, re-derive letters for ALL letter beats (`i = 1..end`), not just beats beyond the original seed. An overlay stage applies over the fully-expanded sequence partitioned into `period` equal blocks, which can flip beats that fall within the nominal "seed" range whenever the overlay period doesn't divide the seed length evenly — re-deriving an unaffected beat's letter from its own (unchanged) motions is a no-op, so this is safe. The legacy path's original bounds (`i >= seedStepCountForLetters`) are untouched.
+
+- [x] **Step 4: Run tests + rebuild**
 
 Run: `cd packages/sequence-engine && npx vitest run && cd ../.. && npm run build:packages`
 Expected: engine suite green incl. new test; packages build clean.
 
-- [ ] **Step 5: Run the app-side production fixture audit (zero-drift proof)**
+Actual: 282/282 engine tests passed (36 files). `npm run build:packages` → `tsc --build packages/tsconfig.build.json` succeeded, no output (clean).
+
+- [x] **Step 5: Run the app-side production fixture audit (zero-drift proof)**
 
 Run: `npx vitest run tests/unit/loop/real-loop-detector-audit.test.ts --config tests/config/vitest.config.ts`
 Expected: PASS — identical cell results to before P1 (legacy paths untouched). If any cell changed, STOP and investigate.
 
-- [ ] **Step 6: Commit**
+Actual: 6/6 tests passed. Locked characterization totals unchanged: "Totals across 270 (type x sample x detector) runs: PASS=190 PARTIAL=27 EXTRA=1 FAIL=52" — identical to the pre-existing locked assertions, confirming zero drift.
+
+- [x] **Step 6: Commit**
 
 ```bash
 git commit -m "feat(engine): SequenceBuilder executes options.loopSpec via spec-executor (per-component periods + overlay)" -- packages/sequence-engine/src/generation/builder/SequenceBuilder.ts packages/sequence-engine/tests/generation/loop-spec-build.test.ts
