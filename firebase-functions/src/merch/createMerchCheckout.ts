@@ -12,6 +12,8 @@ interface LoopConfigRequest {
   length: string;
   flavor: string;
   custom?: {
+    /** Max turns per motion, 0–3 in half steps. Rides on every Level 2+ order. */
+    maxTurns?: number;
     levelBalance?: string;
     excludeFlavors?: string[];
   };
@@ -65,6 +67,11 @@ function validateLoopConfig(cfg: LoopConfigRequest): void {
   if (!LOOP_LENGTHS.includes(cfg.length as never)) bad("Unknown loop length");
   if (!LOOP_FLAVORS.includes(cfg.flavor as never)) bad("Unknown loop flavor");
   if (cfg.custom) {
+    if (cfg.custom.maxTurns !== undefined) {
+      const t = cfg.custom.maxTurns;
+      if (typeof t !== "number" || t < 0 || t > 3 || (t * 2) % 1 !== 0)
+        bad("Unknown max turns");
+    }
     if (
       cfg.custom.levelBalance !== undefined &&
       !LEVEL_BALANCES.includes(cfg.custom.levelBalance as never)

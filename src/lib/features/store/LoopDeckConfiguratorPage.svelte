@@ -65,11 +65,15 @@
     LEVEL_MIX_COPY,
     LENGTH_MIX_COPY,
     VARIETY_COPY,
+    TURN_VALUES_WHOLE,
+    TURN_VALUES_HALF,
+    DEFAULT_MAX_TURNS,
     type LoopLevel,
     type LoopLength,
     type LoopFlavor,
     type LoopConfig,
   } from "./domain/loop-config";
+  import TurnIntensityCard from "$lib/features/create/generate/components/cards/TurnIntensityCard.svelte";
   import { getActivityLogger } from "$lib/shared/analytics/get-activity-logger";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -217,6 +221,7 @@
     length = p.length;
     flavor = p.flavor;
     propType = p.prop;
+    turnIntensity = DEFAULT_MAX_TURNS;
     buzz();
   }
   const activePreset = $derived(
@@ -225,7 +230,8 @@
         p.level === level &&
         p.length === length &&
         p.flavor === flavor &&
-        p.prop === propType
+        p.prop === propType &&
+        turnIntensity === DEFAULT_MAX_TURNS
     )?.id ?? null
   );
 
@@ -288,6 +294,23 @@
     length === "mix" ? LENGTH_MIX_COPY : "STEPS PER CARD"
   );
 
+  // ── Max turns: only exists at Level 2+ (Level 1 IS no turns) — the tile
+  //    morphs in exactly like the deck releaser's. Defaults to 1: the
+  //    "don't go over 1 if you're new" recommendation, baked in as the
+  //    default instead of a warning label. Half steps unlock at Level 3. ──
+  let turnIntensity = $state(DEFAULT_MAX_TURNS);
+  const showTurns = $derived(level !== "1");
+  const turnAllowed = $derived(level === "3" ? TURN_VALUES_HALF : TURN_VALUES_WHOLE);
+  // Dropping from L3 snaps a fractional ceiling onto the whole-turn scale.
+  $effect(() => {
+    if (level !== "3" && (turnIntensity * 1) % 1 !== 0)
+      turnIntensity = Math.round(turnIntensity);
+  });
+  function setTurns(v: number) {
+    turnIntensity = v;
+    buzz();
+  }
+
   // ── advanced panel (usage decides whether this survives) ──
   let advancedOpen = $state(false);
   let levelBalance = $state<"mostly-1" | "even" | "mostly-spicy">("mostly-1");
@@ -316,11 +339,14 @@
 
   const loopConfig = $derived.by<LoopConfig>(() => {
     const cfg: LoopConfig = { level, length, flavor };
-    if (!customTouched) return cfg;
     const custom: NonNullable<LoopConfig["custom"]> = {};
-    if (level === "mix") custom.levelBalance = levelBalance;
-    if (flavor === "variety" && excluded.size > 0)
-      custom.excludeFlavors = [...excluded];
+    // Max turns rides on every Level 2+ order — fulfillment never guesses.
+    if (level !== "1") custom.maxTurns = turnIntensity;
+    if (customTouched) {
+      if (level === "mix") custom.levelBalance = levelBalance;
+      if (flavor === "variety" && excluded.size > 0)
+        custom.excludeFlavors = [...excluded];
+    }
     return Object.keys(custom).length ? { ...cfg, custom } : cfg;
   });
 
@@ -533,6 +559,17 @@
                   gridColumnSpan={2}
                   onIncrement={() => stepLength(1)}
                   onDecrement={() => stepLength(-1)}
+                />
+              </div>
+              <!-- Max turns exists only once turns exist (Level 2+): the tile
+                   morphs in from the right, exactly like the deck releaser's. -->
+              <div class="tile turns" class:collapsed={!showTurns} aria-hidden={!showTurns}>
+                <TurnIntensityCard
+                  currentIntensity={turnIntensity}
+                  allowedValues={[...turnAllowed]}
+                  onIntensityChange={setTurns}
+                  shadowColor="140deg 70% 45%"
+                  gridColumnSpan={2}
                 />
               </div>
             </div>
@@ -1004,6 +1041,30 @@
   .bento-board :global(.card-title) {
     font-size: var(--font-size-compact, 12px) !important;
     letter-spacing: 0.8px !important;
+  }
+
+  /* Turn-intensity morph (deck-releaser pattern): at Level 1 the tile
+     collapses to zero width; at Level 2+ it slides in. Animated flex (not an
+     {#if}) so the row reflows smoothly. margin cancels the empty tile's gap. */
+  .tile-row > .tile.turns {
+    min-width: 0;
+    overflow: hidden;
+    transition:
+      flex-basis 340ms cubic-bezier(0.4, 0, 0.2, 1),
+      flex-grow 340ms cubic-bezier(0.4, 0, 0.2, 1),
+      margin-left 340ms cubic-bezier(0.4, 0, 0.2, 1),
+      opacity 240ms ease;
+  }
+  .tile-row > .tile.turns.collapsed {
+    flex: 0 0 0;
+    opacity: 0;
+    pointer-events: none;
+    margin-left: -12px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tile-row > .tile.turns {
+      transition-duration: 0.001ms;
+    }
   }
 
   /* ---------- prop tile (BaseCard shell + image chips) ---------- */

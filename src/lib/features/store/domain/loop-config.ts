@@ -45,14 +45,23 @@ export interface LoopConfig {
   level: LoopLevel;
   length: LoopLength;
   flavor: LoopFlavor;
-  /** Present ONLY when the advanced panel was touched. */
   custom?: {
-    /** Blend balance for level "mix". */
+    /** Max turns per motion (Level 2+ only; defaults to 1 — gentle). Rides on
+     *  every L2+ order so fulfillment never guesses. */
+    maxTurns?: number;
+    /** Blend balance for level "mix". Present only when fine-tune touched. */
     levelBalance?: "mostly-1" | "even" | "mostly-spicy";
-    /** Flavors excluded from the variety grab bag. */
+    /** Flavors excluded from the variety grab bag. Present only when touched. */
     excludeFlavors?: LoopFlavor[];
   };
 }
+
+/** Turn ceilings per level — half turns unlock at Level 3, mirroring the
+ *  generator. Level 1 has no turns by definition (no dial shown). */
+export const TURN_VALUES_WHOLE: readonly number[] = [0, 1, 2, 3];
+export const TURN_VALUES_HALF: readonly number[] = [0, 0.5, 1, 1.5, 2, 2.5, 3];
+/** "Don't go over 1 if you're new" — the recommendation, baked in as default. */
+export const DEFAULT_MAX_TURNS = 1;
 
 /** Page loads buyable untouched: Level 1 · 8-count · Variety. */
 export const DEFAULT_LOOP_CONFIG: LoopConfig = {
