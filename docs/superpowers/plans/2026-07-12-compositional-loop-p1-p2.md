@@ -670,7 +670,7 @@ git commit -m "feat(loop): SequenceData.loopSpec in wire form; resolver derives 
 - Modify: `src/lib/shared/create/services/loop-type-utils.ts`
 - Test: `tests/unit/services/loop-type-utils.test.ts` (extend — file exists with 8 tests)
 
-- [ ] **Step 1: Write failing tests** (append to existing describe block)
+- [x] **Step 1: Write failing tests** (append to existing describe block)
 
 ```ts
 import { buildLoopSpec, expanderMultiplier } from "$lib/shared/create/services/loop-type-utils";
@@ -731,12 +731,14 @@ describe("buildLoopSpec", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `npx vitest run tests/unit/services/loop-type-utils.test.ts --config tests/config/vitest.config.ts`
 Expected: FAIL — exports missing.
 
-- [ ] **Step 3: Implement** (in `loop-type-utils.ts`)
+Actual: FAILED for the right reason — `TypeError: buildLoopSpec is not a function` on all 6 new tests; the pre-existing 8 tests still passed (8 passed / 6 failed).
+
+- [x] **Step 3: Implement** (in `loop-type-utils.ts`)
 
 ```ts
 import type { LOOPSpecWire, PropLOOPSpecWire } from "@tka/sequence-engine/loop";
@@ -817,9 +819,11 @@ export function expanderMultiplier(wire: LOOPSpecWire): number {
 }
 ```
 
-- [ ] **Step 4: Run tests** — expect all loop-type-utils tests PASS (old 8 + new 6).
+- [x] **Step 4: Run tests** — expect all loop-type-utils tests PASS (old 8 + new 6).
 
-- [ ] **Step 5: Commit**
+Actual: 14/14 tests passed.
+
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(create): buildLoopSpec + expanderMultiplier — UI component set + rhythm to wire spec" -- src/lib/shared/create/services/loop-type-utils.ts tests/unit/services/loop-type-utils.test.ts

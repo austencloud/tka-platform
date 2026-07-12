@@ -4,6 +4,8 @@ import {
   parseLoopComponents,
   isImplementedCombo,
   canExtendCombo,
+  buildLoopSpec,
+  expanderMultiplier,
 } from "$lib/shared/create/services/loop-type-utils";
 import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
@@ -111,5 +113,60 @@ describe("canExtendCombo", () => {
     ]) {
       expect(canExtendCombo(new Set(), component)).toBe(true);
     }
+  });
+});
+
+describe("buildLoopSpec", () => {
+  it("defaults reproduce today's behavior: rotation at the chosen interval, all other components at interval 2, expand mode", () => {
+    const wire = buildLoopSpec(new Set([C.ROTATED, C.MIRRORED, C.INVERTED]), { rotationInterval: 4 });
+    expect(wire).not.toBeNull();
+    expect(wire!.blue!.rotated).toEqual({ period: 4 });
+    expect(wire!.blue!.mirrored).toEqual({ period: 2 });
+    expect(wire!.blue!.inverted).toEqual({ period: 2 });
+    expect(wire!.red).toEqual(wire!.blue);
+  });
+
+  it("carries inversion rhythm + overlay mode", () => {
+    const wire = buildLoopSpec(new Set([C.MIRRORED, C.INVERTED]), {
+      inversionInterval: 4,
+      inversionMode: "overlay",
+    });
+    expect(wire!.blue!.inverted).toEqual({ period: 4, mode: "overlay" });
+  });
+
+  it("returns null for unmapped combos (same gate as generateLOOPType)", () => {
+    const wire = buildLoopSpec(new Set([C.MIRRORED, C.FLIPPED, C.REWOUND]), {});
+    expect(wire).toBeNull();
+  });
+
+  it("expanderMultiplier: overlay does not multiply", () => {
+    const wire = buildLoopSpec(new Set([C.ROTATED, C.MIRRORED, C.INVERTED]), {
+      rotationInterval: 2, inversionInterval: 4, inversionMode: "overlay",
+    })!;
+    expect(expanderMultiplier(wire)).toBe(4); // rot x2 * mir x2; overlay inversion contributes x1
+  });
+
+  it("expanderMultiplier: rotation absorbed when it shares a period with swap/invert only (engine fuseableAtSamePeriod rule)", () => {
+    // ROTATED_INVERTED, both at period 2: the engine's FusedExecutor absorbs
+    // the rotation into the single fused stage (spec-executor.ts), so the
+    // total multiplier is 2, NOT 4. (Task 4 discovered this — the naive
+    // product-of-periods formula double-counts.)
+    const wire = buildLoopSpec(new Set([C.ROTATED, C.INVERTED]), {
+      rotationInterval: 2,
+    })!;
+    expect(expanderMultiplier(wire)).toBe(2);
+  });
+
+  it("expanderMultiplier: rotation stays a separate stage when mirror/flip shares its period", () => {
+    // rot:2 + mir:2 + inv:2 (today's halved MIR): rotate stage x2, fused group x2 = 4.
+    const wire = buildLoopSpec(new Set([C.ROTATED, C.MIRRORED, C.INVERTED]), {
+      rotationInterval: 2,
+    })!;
+    expect(expanderMultiplier(wire)).toBe(4);
+    // rot:2 + mir:2 + inv:4 (full triple, independent inversion): x2 * x2 * x4 = 16.
+    const triple = buildLoopSpec(new Set([C.ROTATED, C.MIRRORED, C.INVERTED]), {
+      rotationInterval: 2, inversionInterval: 4,
+    })!;
+    expect(expanderMultiplier(triple)).toBe(16);
   });
 });
