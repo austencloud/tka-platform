@@ -411,15 +411,20 @@ Animates forward in z-axis and expands to fill the container space
       {/if}
     </div>
 
-    <!-- Apply button -->
-    <button
-      class="apply-button"
-      class:disabled={selectionCount === 0 || !isImplemented || (rhythmGate !== null && !rhythmGate.ok)}
-      onclick={handleConfirm}
-      disabled={selectionCount === 0 || !isImplemented || (rhythmGate !== null && !rhythmGate.ok)}
-    >
-      {buttonText}
-    </button>
+    <!-- Apply button: sticky dock so confirm stays on screen even when the
+         combo stack (grid + rhythm + timeline + explanation) overflows a
+         short viewport — the mobile bottom sheet caps at 85dvh and the rest
+         of the content scrolls underneath. -->
+    <div class="apply-dock">
+      <button
+        class="apply-button"
+        class:disabled={selectionCount === 0 || !isImplemented || (rhythmGate !== null && !rhythmGate.ok)}
+        onclick={handleConfirm}
+        disabled={selectionCount === 0 || !isImplemented || (rhythmGate !== null && !rhythmGate.ok)}
+      >
+        {buttonText}
+      </button>
+    </div>
   {/if}
 </div>
 
@@ -651,6 +656,28 @@ Animates forward in z-axis and expands to fill the container space
 
   .word-math-sizer {
     visibility: hidden;
+  }
+
+  /* Sticky confirm dock. Sticks to the nearest scrollport bottom (the
+     overlay itself in-card, drawer-inner inside LOOPDrawer). Negative side
+     margins + own padding span the overlay's 12px gutter so the solid
+     background fully covers content scrolling underneath. */
+  .apply-dock {
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    flex-shrink: 0;
+    margin: 0 -12px -12px;
+    padding: 8px 12px 12px;
+    background: color-mix(in srgb, var(--theme-accent-strong, #6366f1) 20%, #1a1a2e);
+  }
+
+  /* Below the side-by-side breakpoint the bottom nav overlaps the sheet's
+     foot (the drawer content reserves clearance for it) — stick above it. */
+  @media (max-width: 767px) {
+    .apply-dock {
+      bottom: calc(var(--nav-min-height, 64px) + env(safe-area-inset-bottom, 0px));
+    }
   }
 
   .apply-button {
