@@ -17,9 +17,19 @@
     propType?: PropType;
     /** LOOP configurator dials (level/length/flavor). Rides into metadata. */
     loopConfig?: LoopConfig;
+    /** CTA text ("Preorder now" for preorder listings). */
+    label?: string;
+    /** Waitlist framing while the product has no Stripe price yet. */
+    waitlistText?: string;
   }
 
-  let { product, propType, loopConfig }: Props = $props();
+  let {
+    product,
+    propType,
+    loopConfig,
+    label = "Buy Now",
+    waitlistText = "Not on sale yet. Leave an email and you'll hear the moment it is.",
+  }: Props = $props();
   const { state } = getStoreContext();
 
   const available = $derived(Boolean(product.stripePriceId));
@@ -35,14 +45,14 @@
       <span class="spinner" aria-hidden="true"></span>
       Opening checkout...
     {:else}
-      Buy Now
+      {label}
     {/if}
   </button>
 {:else}
   <div class="unavailable">
     <p class="unavailable-line">
       <i class="fas fa-hourglass-half" aria-hidden="true"></i>
-      Not on sale yet. Leave an email and you'll hear the moment it is.
+      {waitlistText}
     </p>
     <WaitlistForm
       source="shop-product-{product.id}"

@@ -328,7 +328,10 @@
   }
 
   .inner {
-    max-width: 1200px;
+    /* One width treatment across the site: the header band matches the widest
+       content band (the shop configurator's fluid 4K band), so the logo lines
+       up with page content instead of floating in from a narrower column. */
+    max-width: min(1720px, 92vw);
     margin: 0 auto;
     padding: 0 1.4rem;
     height: 64px;

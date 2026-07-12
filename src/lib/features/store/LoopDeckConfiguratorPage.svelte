@@ -582,8 +582,8 @@
                Reserved height so pack↔custom swaps never shove the board. -->
           <p class="composition-line" class:custom={!activePack}>
             {activePack
-              ? `${activePack.name} — ${activePack.composition}`
-              : "Custom — the dials below drive your order."}
+              ? `${activePack.name}: ${activePack.composition}`
+              : "Custom: the dials below drive your order."}
           </p>
 
           <!-- ── the bento board. The custom dials exist ONLY in Custom mode
@@ -638,11 +638,9 @@
                   gridColumnSpan={2}
                 />
               </div>
-            </div>
-
-            <!-- Flavor: the identity choice — Custom mode only. -->
-            <div class="tile-row">
-              <div class="tile hero">
+              <!-- Flavor: one tile among peers — the full-width gold hero gave
+                   one dial the whole board's weight. -->
+              <div class="tile">
                 <BaseCard
                   title="Flavor"
                   currentValue={flavorTileValue}
@@ -681,9 +679,12 @@
                           buzz();
                         }}
                       >
-                        <span class="prop-chip-frame">
-                          <img src={shopPropImage(p)} alt="" draggable="false" />
-                        </span>
+                        <img
+                          class="prop-chip-img"
+                          src={shopPropImage(p)}
+                          alt=""
+                          draggable="false"
+                        />
                         <span class="prop-chip-label">{shopPropLabel(p)}</span>
                       </button>
                     {/each}
@@ -763,20 +764,32 @@
           </p>
 
           {#if customSku}
-            <BuyButton product={customSku} {propType} {loopConfig} />
+            <BuyButton
+              product={customSku}
+              {propType}
+              {loopConfig}
+              label="Preorder now"
+              waitlistText="Preorders open soon. Leave an email and you'll hear the moment they do."
+            />
           {:else if flavorSkus[0]}
             <!-- Custom SKU not seeded/active yet: honest gate via the first
                  flavor SKU's waitlist (it has no Stripe price either). -->
-            <BuyButton product={flavorSkus[0]} {propType} {loopConfig} />
+            <BuyButton
+              product={flavorSkus[0]}
+              {propType}
+              {loopConfig}
+              label="Preorder now"
+              waitlistText="Preorders open soon. Leave an email and you'll hear the moment they do."
+            />
           {/if}
           {#if store.checkoutError}
             <p class="checkout-error" role="alert">{store.checkoutError}</p>
           {/if}
 
           <ul class="assurance">
+            <li><i class="fas fa-calendar-check" aria-hidden="true"></i> Preorder now. Decks ship October 1.</li>
             <li><i class="fas fa-box-open" aria-hidden="true"></i> Explainer card, laminated quick-reference sheet, and deck box included</li>
-            <li><i class="fas fa-gift" aria-hidden="true"></i> 59 cards in a 54-card box. We count generously.</li>
-            <li><i class="fas fa-hand-holding-heart" aria-hidden="true"></i> Beta run: printed and cut by hand in Chicago, small batches</li>
+            <li><i class="fas fa-hand-holding-heart" aria-hidden="true"></i> Printed and cut by hand in Chicago, small batches</li>
           </ul>
           </aside>
         </div>
@@ -897,6 +910,16 @@
     gap: 14px;
     min-width: 0;
   }
+  /* The rail is a purchase CARD, not loose text floating in dead space:
+     one bounded surface holds price → specs → buy → assurances, so the
+     right column reads as a unit with its own header (the price). */
+  .buy-rail {
+    padding: 22px 24px;
+    border-radius: 18px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    align-self: start;
+  }
   @media (min-width: 1360px) {
     /* The rail's price+buy block lines up with the board, not the H1. */
     .buy-rail {
@@ -936,12 +959,14 @@
   }
 
   .preview-desc {
-    font-size: var(--font-size-min, 14px);
+    font-size: var(--font-size-base, 16px);
     line-height: 1.65;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.75));
+    color: rgba(255, 255, 255, 0.88);
     margin: 0;
     text-align: center;
-    max-width: 56ch;
+    /* No width choke: with a whole band of room, a short caption stays on one
+       line instead of wrapping mid-phrase. Padding is the only guard. */
+    padding: 0 16px;
     align-self: center;
     transition: opacity 250ms ease;
   }
@@ -1021,8 +1046,8 @@
   }
 
   .meta {
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.82);
     margin: 0;
   }
 
@@ -1084,8 +1109,8 @@
     letter-spacing: 0.1px;
   }
   .preset-sub {
-    font-size: var(--font-size-compact, 12px);
-    opacity: 0.78;
+    font-size: 13px;
+    opacity: 0.92;
     font-variant-numeric: tabular-nums;
   }
   /* The "you are here" mark — selection must survive a squint. */
@@ -1101,12 +1126,12 @@
   .composition-line {
     margin: 8px 0 0;
     min-height: 1.4em;
-    font-size: var(--font-size-compact, 12px);
+    font-size: var(--font-size-min, 14px);
     font-variant-numeric: tabular-nums;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.72));
+    color: rgba(255, 255, 255, 0.85);
   }
   .composition-line.custom {
-    opacity: 0.6;
+    opacity: 0.85;
   }
 
   /* ---------- bento board ---------- */
@@ -1137,11 +1162,6 @@
     flex: 1 1 220px;
     min-width: 180px;
     height: 118px;
-  }
-  /* Flavor hero: full-width identity tile (Custom mode only). */
-  .tile-row > .tile.hero {
-    flex: 1 1 100%;
-    height: 132px;
   }
   .tile > :global(*) {
     width: 100%;
@@ -1184,7 +1204,7 @@
 
   /* ---------- prop tile (BaseCard shell + image chips) ---------- */
   .tile-row > .tile.prop-shell {
-    height: 132px; /* matches the flavor hero across the duo row */
+    height: 132px; /* room for the 42px prop art + label inside the shell */
   }
   .prop-shell :global(.card-value) {
     display: none;
@@ -1239,40 +1259,36 @@
     background: linear-gradient(135deg, #a855f7 0%, #9333ea 50%, #7e22ce 100%);
     box-shadow: 0 4px 14px rgba(147, 51, 234, 0.35);
   }
-  .prop-chip-frame {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 9px;
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
-  }
-  .prop-chip.selected .prop-chip-frame {
-    background: rgba(255, 255, 255, 0.2);
-  }
-  .prop-chip-frame img {
-    width: 22px;
-    height: 22px;
+  /* The prop art IS the chip content — no inner frame box. One surface
+     (the chip), one image, one label; the box-in-box-in-box layering read
+     as clutter, not depth. */
+  .prop-chip-img {
+    width: 42px;
+    height: 42px;
     object-fit: contain;
     pointer-events: none;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
+    /* The prop art ships in per-prop stroke colors, several of them dark navy
+       that vanishes on the dark chip. Flatten to a uniform light silhouette so
+       every prop reads equally on both chip states. */
+    filter: brightness(0) invert(0.9) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
+  }
+  .prop-chip.selected .prop-chip-img {
+    filter: brightness(0) invert(1) drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
   }
   .prop-chip-label {
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 11px;
+    font-size: var(--font-size-compact, 13px);
     font-weight: 700;
   }
 
   /* Fixed specs: reads as information, not as disabled controls. */
   .spec-line {
     margin: 0;
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-min, 14px);
+    color: rgba(255, 255, 255, 0.82);
     text-align: center;
   }
   .spec-sep {
@@ -1431,8 +1447,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    font-size: var(--font-size-min, 14px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.66));
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.85);
   }
   .assurance i {
     color: #8b6cff;

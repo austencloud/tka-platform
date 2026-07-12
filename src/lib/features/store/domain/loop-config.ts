@@ -126,7 +126,7 @@ export const LOOP_PACKS: LoopPack[] = [
     name: "Mild",
     sub: "Level 1 · pure mandalas",
     tagline:
-      "Every card a mandala. Rotated loops at Level 1 — eight-counts plus a few longer runs.",
+      "Every card is a mandala. Rotated loops at Level 1, mostly eight-counts with a few longer runs.",
     composition: "38× 8-count · 8× 12 · 8× 16 · all rotated · Level 1",
     slices: [{ flavor: "rotated", level: 1, lengths: { 8: 38, 12: 8, 16: 8 } }],
     previewHand: [
