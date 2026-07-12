@@ -18,6 +18,13 @@
 	import type { StaffPose3D, TrackConfidence } from '../domain/notation-3d';
 	import { zeroTrackConfidence } from '../domain/notation-3d';
 	import NotationReviewPanel from './NotationReviewPanel.svelte';
+	import {
+		IntensityStaffTracker,
+		detectBlobs,
+		fitStaffs,
+		DEFAULT_INTENSITY_CONFIG,
+		type IntensityConfig
+	} from '../services/intensity-staff-tracker';
 
 	let videoFile = $state<File | null>(null);
 	let videoUrl = $state<string | null>(null);
@@ -37,6 +44,36 @@
 
 	let extractionCanvas: HTMLCanvasElement | null = null;
 	let extractionCtx: CanvasRenderingContext2D | null = null;
+
+	// Live preview while tracking runs — shows each processed frame + the tracked box.
+	let previewCanvas = $state<HTMLCanvasElement | null>(null);
+
+	function drawTrackingPreview(frame: TrackedFrame) {
+		if (!previewCanvas || !extractionCanvas) return;
+		if (previewCanvas.width !== videoWidth) {
+			previewCanvas.width = videoWidth;
+			previewCanvas.height = videoHeight;
+		}
+		const ctx = previewCanvas.getContext('2d');
+		if (!ctx) return;
+		ctx.drawImage(extractionCanvas, 0, 0);
+		if (frame.propBox) {
+			ctx.strokeStyle = '#10b981';
+			ctx.lineWidth = Math.max(2, videoWidth / 400);
+			ctx.strokeRect(
+				frame.propBox.x * videoWidth,
+				frame.propBox.y * videoHeight,
+				frame.propBox.width * videoWidth,
+				frame.propBox.height * videoHeight
+			);
+		}
+		if (frame.tip) {
+			ctx.fillStyle = '#f43f5e';
+			ctx.beginPath();
+			ctx.arc(frame.tip.x * videoWidth, frame.tip.y * videoHeight, Math.max(4, videoWidth / 250), 0, Math.PI * 2);
+			ctx.fill();
+		}
+	}
 
 	const tracker = new SimplePropTracker();
 
@@ -110,6 +147,7 @@
 		const firstTrackedFrame = await tracker.initialize(firstFrameData, initialBox);
 		trackedFrames = [firstTrackedFrame];
 		trackingProgress = 1 / totalFrames;
+		drawTrackingPreview(firstTrackedFrame);
 
 		for (let i = 1; i < totalFrames; i++) {
 			const timestamp = i * frameDuration;
@@ -122,6 +160,7 @@
 			const trackedFrame = await tracker.trackFrame(frameData, i, timestamp);
 			trackedFrames = [...trackedFrames, trackedFrame];
 			trackingProgress = (i + 1) / totalFrames;
+			drawTrackingPreview(trackedFrame);
 
 			if (i % 10 === 0) {
 				await new Promise(resolve => setTimeout(resolve, 0));
@@ -154,6 +193,63 @@
 	let redColor = $state<ColorTarget>({ r: 255, g: 0, b: 0, tolerance: 60 });
 	// Click mode for sampling: null | 'center' | 'radius' | 'blue' | 'red'.
 	let calibMode = $state<null | 'center' | 'radius' | 'blue' | 'red'>(null);
+
+	// Tracker mode: 'intensity' = colorless LED detection (real color-cycling
+	// staffs on dark footage); 'color' = legacy fixed-color sampling.
+	let trackerMode = $state<'intensity' | 'color'>('intensity');
+	let intensityConfig = $state<IntensityConfig>({ ...DEFAULT_INTENSITY_CONFIG });
+	// Which detected staff slot maps to the blue hand (swap if mislabeled).
+	let swapStaffs = $state(false);
+	// Live overlay canvas during notation / detection preview.
+	let notateCanvas = $state<HTMLCanvasElement | null>(null);
+
+	function grabFrame(): ImageData | null {
+		if (!videoElement) return null;
+		extractionCanvas ??= document.createElement('canvas');
+		extractionCanvas.width = videoWidth;
+		extractionCanvas.height = videoHeight;
+		extractionCtx ??= extractionCanvas.getContext('2d', { willReadFrequently: true });
+		if (!extractionCtx) return null;
+		extractionCtx.drawImage(videoElement, 0, 0);
+		return extractionCtx.getImageData(0, 0, videoWidth, videoHeight);
+	}
+
+	// Draw detection overlay (blobs + fitted staff lines) for one frame.
+	function drawDetectionOverlay(frame: ImageData) {
+		if (!notateCanvas) return;
+		if (notateCanvas.width !== videoWidth) {
+			notateCanvas.width = videoWidth;
+			notateCanvas.height = videoHeight;
+		}
+		const ctx = notateCanvas.getContext('2d');
+		if (!ctx || !extractionCanvas) return;
+		ctx.drawImage(extractionCanvas, 0, 0);
+		const blobs = detectBlobs(frame, intensityConfig);
+		const staffs = fitStaffs(blobs, intensityConfig, videoHeight);
+		ctx.lineWidth = Math.max(2, videoWidth / 500);
+		for (const b of blobs) {
+			ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+			ctx.strokeRect(b.x - 4, b.y - 4, 8, 8);
+		}
+		staffs.forEach((s, i) => {
+			ctx.strokeStyle = i === 0 ? '#22d3ee' : '#f43f5e';
+			ctx.beginPath();
+			ctx.moveTo(s.p0.x, s.p0.y);
+			ctx.lineTo(s.p1.x, s.p1.y);
+			ctx.stroke();
+			for (const p of [s.p0, s.p1]) {
+				ctx.fillStyle = ctx.strokeStyle;
+				ctx.beginPath();
+				ctx.arc(p.x, p.y, Math.max(4, videoWidth / 300), 0, Math.PI * 2);
+				ctx.fill();
+			}
+		});
+	}
+
+	function previewDetection() {
+		const frame = grabFrame();
+		if (frame) drawDetectionOverlay(frame);
+	}
 
 	function reviewVideoClick(ev: MouseEvent) {
 		if (!calibMode || !videoElement) return;
@@ -214,11 +310,39 @@
 			return;
 		}
 
+		const intensityTracker = new IntensityStaffTracker(intensityConfig);
+
 		for (let i = 0; i < total; i++) {
 			video.currentTime = (i * dt) / 1000;
 			await waitForSeek(video);
 			extractionCtx.drawImage(video, 0, 0);
 			const frame = extractionCtx.getImageData(0, 0, videoWidth, videoHeight);
+
+			if (trackerMode === 'intensity') {
+				const result = intensityTracker.track(frame);
+				drawDetectionOverlay(frame);
+				const bPair = swapStaffs ? result.pairs[1] : result.pairs[0];
+				const rPair = swapStaffs ? result.pairs[0] : result.pairs[1];
+				if (bPair) {
+					lastBlue = endpointPairToPose(bPair, cal);
+					blueConf.push(bPair.confidence);
+					blueDetail.push(bPair.detail);
+				} else {
+					blueConf.push(0);
+					blueDetail.push(zeroTrackConfidence());
+				}
+				if (lastBlue) blueFrames.push(lastBlue);
+				if (rPair) {
+					lastRed = endpointPairToPose(rPair, cal);
+					redConf.push(rPair.confidence);
+					redDetail.push(rPair.detail);
+				} else {
+					redConf.push(0);
+					redDetail.push(zeroTrackConfidence());
+				}
+				if (lastRed) redFrames.push(lastRed);
+				continue;
+			}
 
 			const bluePair = blueTracker.track(frame, blueColor);
 			if (bluePair) {
@@ -355,19 +479,26 @@
 				drawnBox={initialBox}
 			/>
 
-			{#if initialBox}
-				<div class="action-bar">
+			<div class="action-bar">
+				{#if initialBox}
 					<button class="btn-primary" onclick={startTracking}>
 						<i class="fa fa-play" aria-hidden="true"></i>
 						Start Tracking
 					</button>
-				</div>
-			{/if}
+				{/if}
+				<button class="btn-secondary" onclick={() => (phase = 'review')}>
+					<i class="fa fa-bolt" aria-hidden="true"></i>
+					Skip to notation (LED auto)
+				</button>
+			</div>
 		</div>
 
 	{:else if phase === 'tracking'}
 		<!-- PHASE 3: Tracking in Progress -->
 		<div class="tracking-section">
+			<div class="tracking-preview">
+				<canvas bind:this={previewCanvas} class="preview-canvas"></canvas>
+			</div>
 			<div class="progress-card">
 				<h2>Tracking Prop...</h2>
 				<div class="progress-bar">
@@ -377,7 +508,7 @@
 					></div>
 				</div>
 				<p>{Math.round(trackingProgress * 100)}% complete</p>
-				<p class="frame-count">{trackedFrames.length} frames processed</p>
+				<p class="frame-count">{trackedFrames.length} frames processed · confidence {((trackedFrames[trackedFrames.length - 1]?.confidence ?? 0) * 100).toFixed(0)}%</p>
 			</div>
 		</div>
 
@@ -417,6 +548,7 @@
 				{/if}
 			</div>
 
+			{#if trackedFrames.length > 0}
 			<ControlBar
 				{currentFrameIndex}
 				totalFrames={trackedFrames.length}
@@ -430,6 +562,43 @@
 				onToggleKeyframe={markCurrentAsKeyframe}
 				onSeek={seekToFrame}
 			/>
+			{/if}
+
+			<div class="detect-panel">
+				<div class="detect-row">
+					<button class:active={trackerMode === 'intensity'} onclick={() => (trackerMode = 'intensity')}>
+						LED intensity (auto)
+					</button>
+					<button class:active={trackerMode === 'color'} onclick={() => (trackerMode = 'color')}>
+						Fixed colors
+					</button>
+					{#if trackerMode === 'intensity'}
+						<button class:active={swapStaffs} onclick={() => (swapStaffs = !swapStaffs)}>
+							Swap hands
+						</button>
+						<button onclick={previewDetection}>Preview detection</button>
+					{/if}
+				</div>
+				{#if trackerMode === 'intensity'}
+					<div class="detect-row sliders">
+						<label>
+							Brightness {intensityConfig.lumaThreshold}
+							<input type="range" min="80" max="250" bind:value={intensityConfig.lumaThreshold} oninput={previewDetection} />
+						</label>
+						<label>
+							LED peak {intensityConfig.peakMin}
+							<input type="range" min="120" max="255" bind:value={intensityConfig.peakMin} oninput={previewDetection} />
+						</label>
+						<label>
+							Line snap {intensityConfig.lineTolerancePx}px
+							<input type="range" min="4" max="40" bind:value={intensityConfig.lineTolerancePx} oninput={previewDetection} />
+						</label>
+					</div>
+					<div class="detect-preview">
+						<canvas bind:this={notateCanvas} class="detect-canvas"></canvas>
+					</div>
+				{/if}
+			</div>
 
 			<div class="stats-panel">
 				<div class="stat">
@@ -577,6 +746,7 @@
 	/* Draw Phase */
 	.draw-section {
 		flex: 1;
+		min-height: 0;
 		display: flex;
 		flex-direction: column;
 		gap: 1rem;
@@ -625,17 +795,39 @@
 	/* Tracking Phase */
 	.tracking-section {
 		flex: 1;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 1rem;
+	}
+
+	.tracking-preview {
+		position: relative;
+		flex: 1;
+		min-height: 0;
+		width: 100%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		background: black;
+		border-radius: 12px;
+		overflow: hidden;
+	}
+
+	.preview-canvas {
+		max-width: 100%;
+		max-height: 100%;
+		object-fit: contain;
 	}
 
 	.progress-card {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 1rem;
-		padding: 3rem;
+		gap: 0.75rem;
+		padding: 1rem 2rem;
 		background: var(--theme-card-bg);
 		border-radius: 16px;
 		min-width: 300px;
@@ -674,14 +866,16 @@
 
 	.video-container {
 		position: relative;
-		flex: 1;
-		min-height: 0;
+		flex: 0 0 auto;
+		height: min(45vh, 520px);
 		background: black;
 		border-radius: 12px;
 		overflow: hidden;
 	}
 
 	.review-video {
+		position: absolute;
+		inset: 0;
 		width: 100%;
 		height: 100%;
 		object-fit: contain;
@@ -760,6 +954,81 @@
 		font-size: var(--font-size-compact);
 		opacity: 0.7;
 		font-variant-numeric: tabular-nums;
+	}
+
+	.btn-secondary {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 1rem 2rem;
+		background: var(--theme-card-bg);
+		color: var(--theme-text);
+		border: 1px solid var(--theme-stroke);
+		border-radius: 12px;
+		font-size: 1rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: transform 0.2s, border-color 0.15s;
+	}
+
+	.btn-secondary:hover {
+		border-color: var(--theme-accent);
+		transform: translateY(-1px);
+	}
+
+	.detect-panel {
+		display: flex;
+		flex-direction: column;
+		gap: 0.5rem;
+		padding: 0.5rem;
+		background: var(--theme-card-bg);
+		border-radius: 8px;
+	}
+
+	.detect-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
+	.detect-row button {
+		padding: 0.375rem 0.75rem;
+		background: var(--theme-stroke);
+		color: var(--theme-text);
+		border: 1px solid transparent;
+		border-radius: 6px;
+		font-size: var(--font-size-compact);
+		cursor: pointer;
+	}
+
+	.detect-row button.active {
+		background: var(--theme-accent);
+		color: white;
+	}
+
+	.detect-row.sliders label {
+		display: flex;
+		flex-direction: column;
+		gap: 0.25rem;
+		font-size: var(--font-size-compact);
+		opacity: 0.85;
+		min-width: 140px;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.detect-preview {
+		display: flex;
+		justify-content: center;
+		background: black;
+		border-radius: 8px;
+		overflow: hidden;
+	}
+
+	.detect-canvas {
+		max-width: 100%;
+		max-height: 40vh;
+		object-fit: contain;
 	}
 
 	.notation-actions {
