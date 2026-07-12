@@ -19,6 +19,10 @@ export function mapStripeProductToDoc(product: Stripe.Product): Record<string, u
   };
   if (meta.cardCount) doc.cardCount = Number(meta.cardCount);
   if (meta.deckId) doc.deckId = meta.deckId;
+  // Storefront listing key (e.g. "loop-deck-architect") — lets a product
+  // created in the Stripe Dashboard slot into the right page without a
+  // manual Firestore edit.
+  if (meta.listing) doc.listing = meta.listing;
   if (meta.preorder === "true") doc.preorder = true;
   if (meta.shipBy) doc.shipBy = meta.shipBy;
   return doc;

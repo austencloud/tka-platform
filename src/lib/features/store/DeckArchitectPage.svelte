@@ -57,10 +57,22 @@
   store.loadProducts(false);
   getActivityLogger().logActivity("shop_loop_architect_opened", "shop");
 
-  const customSku = $derived(
+  // Architect orders carry a premium over the $30 packs/dials deck: a bespoke
+  // recipe costs more to cut and pack until fulfillment is dropshipped. The
+  // page prefers a dedicated architect SKU (listing "loop-deck-architect",
+  // created in Stripe and mirrored by the product-sync webhook) and falls back
+  // to the shared custom SKU while that price doesn't exist yet.
+  const architectSku = $derived(
     store.products.find(
-      (p) => p.listing === "loop-deck-custom" && p.status === "active"
+      (p) => p.listing === "loop-deck-architect" && p.status === "active"
     ) ?? null
+  );
+  const customSku = $derived(
+    architectSku ??
+      store.products.find(
+        (p) => p.listing === "loop-deck-custom" && p.status === "active"
+      ) ??
+      null
   );
   const flavorSkus = $derived(
     store.products
