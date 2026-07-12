@@ -35,7 +35,7 @@
 - Modify: `packages/sequence-engine/src/loop/loop-spec.ts`
 - Test: `packages/sequence-engine/tests/loop/spec/loop-spec-mode.test.ts` (create; mirror the existing test layout under `packages/sequence-engine/tests/loop/`)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -76,12 +76,12 @@ describe("ComponentSpec.mode", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd packages/sequence-engine && npx vitest run tests/loop/spec/loop-spec-mode.test.ts`
 Expected: FAIL (mode not carried through wire; no overlay_legality rule).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `loop-spec.ts`:
 
@@ -117,12 +117,12 @@ if (compSpec.mode === "overlay" && comp !== LOOPComponent.INVERTED) {
 }
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `cd packages/sequence-engine && npx vitest run tests/loop/spec/loop-spec-mode.test.ts`
 Expected: PASS (3 tests).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(engine): ComponentSpec.mode — expand vs overlay, wire round-trip, overlay_legality validation" -- packages/sequence-engine/src/loop/loop-spec.ts packages/sequence-engine/tests/loop/spec/loop-spec-mode.test.ts

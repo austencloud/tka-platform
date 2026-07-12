@@ -64,6 +64,11 @@ export const RESERVED_ORIENTATION_PRIMITIVES = new Set<LOOPComponent>([
 // RUNTIME TYPES
 // ============================================================
 
+/** How a component is applied: expand multiplies length by `period`;
+ *  overlay applies in place over the final sequence (x1 length).
+ *  Absent = "expand" (all pre-existing specs unchanged). */
+export type ComponentMode = "expand" | "overlay";
+
 /**
  * A single component active on a prop, paired with its operating domain
  * and the period (number of passes) at which this component cycles.
@@ -73,6 +78,7 @@ export const RESERVED_ORIENTATION_PRIMITIVES = new Set<LOOPComponent>([
 export interface ComponentSpec {
   readonly period: number;
   readonly domain?: LOOPDomain;
+  readonly mode?: ComponentMode;
 }
 
 /**
@@ -108,6 +114,7 @@ export interface LOOPSpec {
 export interface ComponentSpecWire {
   period: number;
   domain?: LOOPDomain;
+  mode?: ComponentMode;
 }
 
 /**
@@ -137,6 +144,9 @@ function propSpecToWire(spec: PropLOOPSpec): PropLOOPSpecWire {
     if (value.domain !== undefined) {
       entry.domain = value.domain;
     }
+    if (value.mode !== undefined) {
+      entry.mode = value.mode;
+    }
     wire[key] = entry;
   }
   return wire;
@@ -148,6 +158,7 @@ function propSpecFromWire(wire: PropLOOPSpecWire): PropLOOPSpec {
     const spec: ComponentSpec = {
       period: value.period,
       ...(value.domain !== undefined ? { domain: value.domain } : {}),
+      ...(value.mode !== undefined ? { mode: value.mode } : {}),
     };
     components.set(key as LOOPComponent, spec);
   }
@@ -386,6 +397,13 @@ export function validateLOOPSpec(spec: LOOPSpec): LOOPSpecValidationError[] {
         errors.push({
           rule: "minimum_period",
           message: `${propName}.${comp}: period must be >= 2, got ${compSpec.period}`,
+        });
+      }
+
+      if (compSpec.mode === "overlay" && comp !== LOOPComponent.INVERTED) {
+        errors.push({
+          rule: "overlay_legality",
+          message: `${propName}.${comp}: overlay mode is only supported for INVERTED (location-preserving)`,
         });
       }
     }
