@@ -446,7 +446,7 @@
     <nav>
       <a href="/about">About</a>
       <a href="/roots">Roots</a>
-      <a href="/create">Open the app</a>
+      <a href="/create">Open Flow Arts Composer</a>
       <a href="/terms">Terms</a>
       <a href="/privacy">Privacy</a>
     </nav>

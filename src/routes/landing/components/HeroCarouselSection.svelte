@@ -440,7 +440,7 @@
   <nav class="hero-links" aria-label="Get started">
     <a class="hero-link primary" href="/create" data-sveltekit-reload>
       <i class="fas fa-rocket" aria-hidden="true"></i>
-      <span>Open the app</span>
+      <span>Open Flow Arts Composer</span>
     </a>
   </nav>
 </section>
@@ -454,7 +454,7 @@
     gap: 0;
     /* dvh tracks the *real* visible viewport as the browser's tab strip + URL bar
        (and a foldable unfold) show/hide — 100vh would size to the chrome-retracted
-       height, pushing the "Open the app" link below the fold. vh is the fallback. */
+       height, pushing the "Open Flow Arts Composer" link below the fold. vh is the fallback. */
     min-height: 100vh;
     min-height: 100dvh;
     box-sizing: border-box;
@@ -800,7 +800,7 @@
     transform: translateY(-1px);
   }
 
-  /* Primary = Open the app */
+  /* Primary = Open Flow Arts Composer */
   .hero-link.primary {
     color: #fff;
     background: linear-gradient(135deg, #6f8cff, #8b6cff);

@@ -237,7 +237,7 @@
       {:else}
         <button type="button" class="signin auth-slot" onclick={openSignIn}>Sign in</button>
       {/if}
-      <a class="cta" href="/create" data-sveltekit-reload>Open the app</a>
+      <a class="cta" href="/create" data-sveltekit-reload>Open Flow Arts Composer</a>
     </nav>
 
     <button
@@ -279,7 +279,7 @@
     <div class="m-actions" style="--i:{NAV.length}">
       <a class="m-cta" href="/create" data-sveltekit-reload onclick={close}>
         <i class="fas fa-rocket" aria-hidden="true"></i>
-        <span>Open the app</span>
+        <span>Open Flow Arts Composer</span>
       </a>
       {#if authReady && isFullAccount}
         <div class="m-identity">
