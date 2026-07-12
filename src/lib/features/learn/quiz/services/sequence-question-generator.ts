@@ -84,14 +84,25 @@ export async function initialize(): Promise<void> {
   isInitialized = true;
 }
 
+/**
+ * Optional constraints for sequence-based questions, used by the Play arcade
+ * (Read the Performer, Mandala Match).
+ */
+export interface SequenceQuestionOptions {
+  /** Soft filter: prefer sequences whose simplified word is this length;
+   *  falls back to the unfiltered pool if fewer than 4 candidates match. */
+  wordLength?: number;
+}
+
 export async function generateSequenceToWordQuestion(
-  questionId: string
+  questionId: string,
+  options: SequenceQuestionOptions = {}
 ): Promise<QuizQuestionData> {
   if (!isInitialized) {
     await initialize();
   }
 
-  const correctSequence = pickRandomSequence();
+  const correctSequence = pickRandomSequence(options.wordLength);
   const correctWord = simplifyRepeatedWord(correctSequence.word);
 
   const distractorWords = pickDistractorWords(correctSequence.word, 3);
@@ -126,7 +137,7 @@ export function resetState(): void {
   isInitialized = false;
 }
 
-function pickRandomSequence(): SequenceData {
+function pickRandomSequence(wordLength?: number): SequenceData {
   let candidates = sequencePool.filter(
     (s) => !recentWords.includes(s.word)
   );
@@ -134,6 +145,18 @@ function pickRandomSequence(): SequenceData {
   if (candidates.length < 4) {
     candidates = sequencePool;
     recentWords.length = 0;
+  }
+
+  // Soft length filter: prefer sequences whose simplified word matches the
+  // requested length, but never starve the question generator over it — fall
+  // back to the unfiltered candidate pool when too few match.
+  if (wordLength !== undefined) {
+    const lengthMatches = candidates.filter(
+      (s) => simplifyRepeatedWord(s.word).length === wordLength
+    );
+    if (lengthMatches.length >= 4) {
+      candidates = lengthMatches;
+    }
   }
 
   return candidates[Math.floor(Math.random() * candidates.length)]!;

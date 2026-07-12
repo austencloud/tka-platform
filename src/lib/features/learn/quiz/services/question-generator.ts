@@ -74,6 +74,9 @@ export interface GenerationOptions {
   letters?: string[];
   /** Total answer options including the correct one (default 4). */
   optionCount?: number;
+  /** Word length for sequence-based questions (soft filter — see
+   *  sequence-question-generator's pickRandomSequence). */
+  wordLength?: number;
 }
 
 /**
@@ -113,7 +116,9 @@ export async function generateQuestion(
     case QuizType.VALID_NEXT_PICTOGRAPH:
       return generateValidNextPictographQuestion(questionId, optionCount);
     case QuizType.SEQUENCE_TO_WORD:
-      return SequenceQuestionGenerator.generateSequenceToWordQuestion(questionId);
+      return SequenceQuestionGenerator.generateSequenceToWordQuestion(questionId, {
+        wordLength: options.wordLength,
+      });
     default:
       throw new Error(`Unsupported quiz type: ${quizType}`);
   }
