@@ -1,7 +1,7 @@
 # StepData → Step Migration — Scope + Plan (Sibling Unification Phase 2)
 
 **Date:** 2026-06-30
-**Status:** Scoped, ready for implementation (sub-migration A)
+**Status:** SUPERSEDED 2026-07-05 by `2026-07-05-stepdata-migration-checkpoint-package.md` (the 2026-07-02 subtype redefinition falsified the A/B split premise; Option C executed instead). Migration closed DONE 2026-07-11.
 **Parent spec:** `docs/superpowers/specs/active/2026-04-20-sequence-engine-unification-design.md`
 **Parent plan:** `docs/superpowers/plans/active/2026-04-20-sequence-engine-unification-plan.md` (Phase 2 — paths stale; this doc re-grounds them)
 

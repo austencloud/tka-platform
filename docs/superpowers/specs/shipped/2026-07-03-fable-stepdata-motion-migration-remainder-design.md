@@ -1,6 +1,6 @@
 # Fable Spec 4 — StepData→Step + MotionData→Motion Migration Remainder
 
-**Date:** 2026-07-03 · **Autonomy: CHECKPOINT** (highest-blast-radius, most regression-prone subsystem) · Index: `2026-07-03-fable-dispatch-index.md`
+**Date:** 2026-07-03 · **Status: DONE 2026-07-11** — W0 2026-07-05 (`cd2b8ee349`), W1+W2 2026-07-09, remaining slices closed as not-worth-executing 2026-07-11; full record in `2026-07-05-stepdata-migration-checkpoint-package.md` §5-6 · **Autonomy: CHECKPOINT** (highest-blast-radius, most regression-prone subsystem) · Index: `2026-07-03-fable-dispatch-index.md`
 
 > Dispatch context: root cause **B** — this is the migration that has to keep identity/derivation invariants intact across the whole corpus while replacing the core step/motion types. A wrong invariant here silently corrupts letters, dedup verdicts, and hashes; the compiler cannot flag it.
 

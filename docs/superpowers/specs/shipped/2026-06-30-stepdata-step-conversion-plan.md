@@ -1,5 +1,7 @@
 # StepData → lean Step Conversion Plan (sub-migration A: TYPE migration)
 
+> **SUPERSEDED 2026-07-05** by `2026-07-05-stepdata-migration-checkpoint-package.md` — the 2026-07-02 subtype redefinition (`StepData extends Step`) made this plan's waves 1-6 and assignability analysis obsolete. Kept for lineage. Migration closed DONE 2026-07-11 under Option C.
+
 **Date:** 2026-06-30
 **Scope:** Replace the app's `StepData` (`src/lib/shared/foundation/domain/models/step-data.ts`, `extends PictographData`) with the canonical lean `Step` from `@tka/tka-types`, **type-only**. Reversal-logic, render-cache authoring, and serialization-shape unification are explicitly **deferred** to later sub-projects (migration B).
 **Inventory:** 235 files touched / flagged. 111 landmine findings.
