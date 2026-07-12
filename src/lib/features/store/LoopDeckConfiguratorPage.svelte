@@ -366,14 +366,15 @@
   // the dials (Deep Cuts shows actual Level 2 rotated sequences, not the
   // level-blind SKU covers). SKU covers stay as the instant fallback while the
   // catalog sample loads or if it fails.
-  // Dial churn must NOT re-deal the fan on every tap (disorienting — the
-  // dealer kept re-dealing mid-decision). Generation starts immediately on
-  // any change, but the stage only COMMITS (remount → one deal) once the
-  // dials have been still for SETTLE_MS and the cards for the current dials
-  // are ready. Until then the previous fan holds steady.
+  // Re-dealing is reserved for MAJOR changes — picking a pack (or dropping
+  // out of one). Dial changes swap the card faces IN PLACE: generation starts
+  // immediately on any change and commits once the dials have been still for
+  // SETTLE_MS, but the fan itself never re-deals for a dial tweak.
   const SETTLE_MS = 650;
   let previewCards = $state<CoverCard[] | null>(null);
-  let settledKey = $state("boot");
+  // Drives the Crossfade remount (= the deal). Changes ONLY across pack↔pack
+  // and pack↔custom transitions, never on dial or prop tweaks.
+  let settledFanKey = $state("boot");
   let previewToken = 0;
   let lastDialTouch = 0;
   const dialKey = $derived(
@@ -381,7 +382,8 @@
   );
   $effect(() => {
     if (flavorSkus.length === 0) return;
-    const key = dialKey;
+    void dialKey; // any dial change re-runs the fetch
+    const fanKey = pack ? `pack:${pack}` : "custom";
     const dials = { pack, level, length, flavor, maxTurns: turnIntensity, propType, excluded, skuByFlavor };
     const token = ++previewToken;
     lastDialTouch = Date.now();
@@ -391,7 +393,7 @@
       setTimeout(() => {
         if (token !== previewToken) return;
         previewCards = cards?.length ? cards : null;
-        settledKey = key;
+        settledFanKey = fanKey;
       }, wait);
     });
   });
@@ -483,9 +485,9 @@
           >
             <!-- fill mode: the stage is the sized box, so config swaps can
                  never resize it (crossfade-primitive routing). -->
-            <!-- Keyed on the SETTLED config, not the live dials: the fan holds
-                 through dial churn and re-deals exactly once per decision. -->
-            <Crossfade key={settledKey} fill>
+            <!-- Keyed on pack identity only: picking a pack (or leaving one)
+                 re-deals; dial tweaks swap the card faces in place. -->
+            <Crossfade key={settledFanKey} fill>
               <div class="preview-inner">
                 <!-- Non-interactive on purpose: the fan sizes against the rest
                      overlap instead of reserving hover-spread width, which buys
@@ -524,8 +526,11 @@
           </div>
         </div>
 
-        <!-- ============ choices column ============ -->
+        <!-- ============ choices band: controls left, buy rail right on wide
+             screens — the whole page fits one viewport instead of scrolling
+             past a narrow single column. ============ -->
         <div class="info-column">
+          <div class="info-main">
           <span class="eyebrow">The deck</span>
           <h1>LOOP Deck</h1>
           <p class="meta">54 cards · every sequence loops · built to your dials</p>
@@ -607,8 +612,9 @@
               </div>
             </div>
 
-            <!-- Flavor: the identity choice — a full-width hero tile. -->
-            <div class="tile-row">
+            <!-- Flavor + Prop share a row on wide screens (each still wraps to
+                 full width on narrow) — one less row to scroll past. -->
+            <div class="tile-row duo">
               <div class="tile hero">
                 <BaseCard
                   title="Flavor"
@@ -619,11 +625,6 @@
                   onClick={() => (showFlavor = true)}
                 />
               </div>
-            </div>
-
-            <!-- Prop: a real bento tile (BaseCard shell, size-tile content-slot
-                 pattern) holding the exactly-one image chips — one tap, no modal. -->
-            <div class="tile-row">
               <div class="tile prop-shell">
                 <BaseCard
                   title="Prop"
@@ -657,11 +658,6 @@
               </div>
             </div>
 
-            <!-- Fixed specs this beta run — information, not dead buttons. -->
-            <p class="spec-line">
-              Poker size · 2.5" × 3.5" <span class="spec-sep">•</span> Deck only
-              <span class="spec-sep">•</span> Tarot size and bundles coming soon
-            </p>
           </div>
 
           <!-- Fine-tune disclosure: collapsed by default; opening it and
@@ -719,8 +715,15 @@
               </div>
             {/if}
           </div>
+          </div>
 
+          <aside class="buy-rail">
           <p class="price">{price}</p>
+          <!-- Fixed specs this beta run — information, not dead buttons. -->
+          <p class="spec-line">
+            Poker size · 2.5" × 3.5" <span class="spec-sep">•</span> Deck only
+            <span class="spec-sep">•</span> Tarot size and bundles coming soon
+          </p>
 
           {#if customSku}
             <BuyButton product={customSku} {propType} {loopConfig} />
@@ -738,6 +741,7 @@
             <li><i class="fas fa-gift" aria-hidden="true"></i> 59 cards in a 54-card box. We count generously.</li>
             <li><i class="fas fa-hand-holding-heart" aria-hidden="true"></i> Beta run: printed and cut by hand in Chicago, small batches</li>
           </ul>
+          </aside>
         </div>
       </div>
     {:else}
@@ -796,7 +800,7 @@
        lean so the whole configurator fits a 4K viewport without scrolling. */
     max-width: min(1720px, 92vw);
     margin: 0 auto;
-    padding: 28px 24px 44px;
+    padding: 12px 24px 20px;
   }
 
   .back-button {
@@ -828,14 +832,39 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: clamp(20px, 3vh, 36px);
+    gap: clamp(16px, 2.2vh, 28px);
   }
   .preview-column {
     width: 100%;
   }
+  /* Full-band controls: no max-width choke. Wide screens split into the
+     controls (left) and a buy rail (right) so hero + everything below fits
+     one viewport without scrolling. */
   .info-column {
     width: 100%;
-    max-width: 820px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+    align-items: start;
+  }
+  @media (min-width: 1360px) {
+    .info-column {
+      grid-template-columns: minmax(0, 1.6fr) minmax(360px, 1fr);
+      column-gap: clamp(36px, 4vw, 72px);
+    }
+  }
+  .info-main,
+  .buy-rail {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-width: 0;
+  }
+  @media (min-width: 1360px) {
+    /* The rail's price+buy block lines up with the board, not the H1. */
+    .buy-rail {
+      margin-top: 92px;
+    }
   }
 
   /* ---------- preview ---------- */
@@ -853,8 +882,8 @@
     padding: clamp(16px, 2.5vw, 32px);
     /* FIXED stage height: fill-mode crossfade layers stack absolutely inside,
        so no config swap can resize the box (no-layout-shift by construction).
-       Hero-scaled: tracks the viewport so 4K gets a real stage, not a strip. */
-    height: clamp(380px, 48vh, 760px);
+       Hero-scaled but budgeted: stage + controls band must share one viewport. */
+    height: clamp(340px, 38vh, 600px);
   }
 
   /* Each layer fills the stage and centers its art vertically. Children
@@ -939,12 +968,6 @@
   }
 
   /* ---------- info ---------- */
-  .info-column {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-  }
-
   .eyebrow {
     font-size: var(--font-size-compact, 12px);
     font-weight: 700;
@@ -1071,9 +1094,14 @@
     min-width: 180px;
     height: 118px;
   }
-  /* Flavor hero: full-width identity tile, a touch taller than the seg panels. */
+  /* Flavor hero: identity tile. Shares a row with Prop on wide screens (the
+     duo row); each wraps to full width when the band narrows. */
   .tile-row > .tile.hero {
     flex: 1 1 100%;
+    height: 132px;
+  }
+  .tile-row.duo > .tile {
+    flex: 1 1 340px;
     height: 132px;
   }
   .tile > :global(*) {
@@ -1117,7 +1145,7 @@
 
   /* ---------- prop tile (BaseCard shell + image chips) ---------- */
   .tile-row > .tile.prop-shell {
-    height: 128px;
+    height: 132px; /* matches the flavor hero across the duo row */
   }
   .prop-shell :global(.card-value) {
     display: none;
