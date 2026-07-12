@@ -39,6 +39,12 @@ export function sampleTunnelProps(
     let beat = (currentStep - 1) * speed + offset;
     beat = ((beat % length) + length) % length;
     effStep = beat + 1;
+  } else if (currentStep - 1 >= length) {
+    // Base arm (1×) riding the live tunnel's UNBOUNDED playhead: the shared clock
+    // no longer resets each base loop (so per-Speed arms can drift), so wrap whole
+    // cycles here to keep the base looping. Sub-1 currentStep (the start position)
+    // is left untouched — the plain sample must not wrap the start to the end.
+    effStep = ((currentStep - 1) % length) + 1;
   }
   const { idx, progress } = stepToIndexProgress(effStep, length);
   const step = steps[idx];

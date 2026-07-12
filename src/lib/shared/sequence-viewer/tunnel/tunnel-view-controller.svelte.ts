@@ -276,6 +276,19 @@ export class TunnelViewController {
   }
   /** True when any performer runs at a non-1× rate (drives the Reset affordance). */
   hasSpeedOverrides = $derived(Object.keys(this.speedOverrides).length > 0);
+  /** Base loops the shared playhead must span before every performer returns to
+   *  its home phase together. A ¼× arm needs 4 base loops, a ½× arm 2; with no
+   *  sub-1× arm it's 1 (the classic single loop). The live clock wraps at
+   *  `stepCount × loopCycles` so slow arms DRIFT through the base loop — the ring
+   *  keeps evolving into fresh kaleidoscopes and only re-homes at this boundary,
+   *  instead of every arm snapping back to the start each base cycle. */
+  loopCycles = $derived.by(() => {
+    const slowest = Object.values(this.speedOverrides).reduce(
+      (m, r) => Math.min(m, r),
+      1,
+    );
+    return slowest >= 1 ? 1 : Math.round(1 / slowest);
+  });
   /** Toggle the spotlight selection for a performer (click again to clear). */
   selectPerformer(arm: number): void {
     this.selectedArm = this.selectedArm === arm ? null : arm;

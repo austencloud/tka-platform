@@ -60,12 +60,18 @@
   const gridMode = $derived(seq?.gridMode);
   const stepCount = $derived(seq?.steps?.length ?? 0);
 
-  // Self-driven playhead (1-indexed fractional, matching the controller's
-  // step convention). Driven by the global tempo so the sidebar's tempo selector
-  // controls the kaleidoscope: beats/sec = bpm/60 (60 BPM = 1 beat/sec, matching
-  // the 2D engine's speed convention).
-  let step = $state(1);
+  // Self-driven playhead — a MONOTONIC 0-indexed beat accumulator. It does NOT
+  // reset every base loop; it wraps at `loopSteps` (a whole number of base
+  // cycles). That lets per-performer Speed arms drift across the base loop
+  // instead of snapping home with the 1× base — a ¼× arm is only a quarter of
+  // the way through when the base completes, so playback follows through into a
+  // fresh kaleidoscope and the whole ring re-homes together only at the loop
+  // boundary. Driven by the global tempo: beats/sec = bpm/60 (60 BPM = 1 beat/s).
+  let phase = $state(0);
   const speed = $derived(Math.max(0, bpm) / 60);
+  // One base loop = stepCount; slow arms need more loops to return home, so the
+  // shared clock spans `controller.loopCycles` of them (¼× → 4, ½× → 2, else 1).
+  const loopSteps = $derived(Math.max(1, stepCount) * controller.loopCycles);
 
   // Honor the OS motion preference on the self-clock itself (the controller
   // already caps copy DENSITY under reduced motion; this damps the MOTION —
@@ -92,8 +98,7 @@
       const dt = (now - last) / 1000;
       last = now;
       if (stepCount > 0 && playing) {
-        const beat = (step - 1 + dt * effSpeed) % stepCount;
-        step = beat + 1;
+        phase = (phase + dt * effSpeed) % loopSteps;
       }
       raf = requestAnimationFrame(tick);
     };
@@ -101,8 +106,14 @@
     return () => cancelAnimationFrame(raf);
   });
 
-  const base = $derived(controller.basePropsAt(step));
-  const additionalLayers = $derived(controller.additionalLayersAt(step));
+  // Unbounded-within-loop playhead (1-indexed) for the kaleidoscope sampling —
+  // the controller wraps it per-arm so drift works.
+  const samplingStep = $derived(phase + 1);
+  // Base-cycle-wrapped playhead for the canvas's own step bookkeeping (word-header
+  // underline / glyph highlight expect a value inside one sequence length).
+  const displayStep = $derived((stepCount > 0 ? phase % stepCount : 0) + 1);
+  const base = $derived(controller.basePropsAt(samplingStep));
+  const additionalLayers = $derived(controller.additionalLayersAt(samplingStep));
 
   // Reuse the sidebar's chosen effect, applied uniformly across every layer.
   const activeEffect = $derived(effectsConfig?.activeEffect ?? "none");
@@ -133,7 +144,7 @@
         {bluePropType}
         {redPropType}
         sequenceData={seq}
-        currentStep={step}
+        currentStep={displayStep}
         isPlaying={playing}
         tapToToggle={true}
         hoverHint="badge"
