@@ -79,15 +79,21 @@
   const buzz = () => haptics?.trigger("selection");
 
   // ── the recipe. Seeded valid (the whole deck in one rotated L1 slice) so
-  //    the page never opens in an error state. ──
-  let slices = $state<RecipeSlice[]>([
-    { count: DECK_SIZE, flavor: "rotated", level: 1, steps: 8 },
+  //    the page never opens in an error state. Rows carry a stable local id —
+  //    index-keyed each blocks misbind rows across splices (a remove was
+  //    editing the wrong slice). The id never leaves the page. ──
+  type SliceRow = RecipeSlice & { id: number };
+  let uid = 0;
+  let slices = $state<SliceRow[]>([
+    { id: ++uid, count: DECK_SIZE, flavor: "rotated", level: 1, steps: 8 },
   ]);
   let propType = $state<PropType>(DEFAULT_SHOP_PROP);
 
   const total = $derived(slices.reduce((n, s) => n + s.count, 0));
   const problem = $derived(recipeProblem(slices));
-  const loopConfig = $derived<LoopConfig>({ recipe: slices });
+  const loopConfig = $derived<LoopConfig>({
+    recipe: slices.map(({ id: _id, ...s }) => s),
+  });
   const price = $derived(
     customSku ? `$${(customSku.price / 100).toFixed(0)}` : "$30"
   );
@@ -98,14 +104,20 @@
     const startTotal = total;
     if (startTotal < DECK_SIZE) {
       // Room in the deck — the new slice takes exactly the shortfall.
-      slices.push({ count: DECK_SIZE - startTotal, flavor: "rotated", level: 1, steps: 8 });
+      slices.push({
+        id: ++uid,
+        count: DECK_SIZE - startTotal,
+        flavor: "rotated",
+        level: 1,
+        steps: 8,
+      });
     } else {
       // Full (or over): donate cards from the biggest slice so a valid
       // recipe stays valid across the add.
       const biggest = slices.reduce((a, b) => (b.count > a.count ? b : a), slices[0]!);
       const give = Math.min(6, Math.max(1, biggest.count - 1));
       biggest.count -= give;
-      slices.push({ count: give, flavor: "rotated", level: 1, steps: 8 });
+      slices.push({ id: ++uid, count: give, flavor: "rotated", level: 1, steps: 8 });
     }
     buzz();
   }
@@ -275,8 +287,10 @@
             </div>
 
             <div class="slice-list">
-              {#each slices as slice, i (i)}
-                <div class="slice-row" transition:slide={{ duration: 220, easing: quintOut }}>
+              {#each slices as slice, i (slice.id)}
+                <!-- No row transition: slide outros hung inside the grid
+                     (inert ghost rows), and correctness beats choreography. -->
+                <div class="slice-row">
                   <div class="slice-sample" aria-hidden="true">
                     {#if sliceCards[i]}
                       <DeckFanCover
@@ -634,7 +648,9 @@
      width scales with slice count instead of leaving sparse full-width rows. */
   .slice-list {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(440px, 100%), 1fr));
+    /* auto-FIT, not auto-fill: empty tracks collapse, so one slice spans the
+       whole band instead of sitting beside a reserved hole. */
+    grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr));
     gap: 12px;
   }
   .slice-row {
