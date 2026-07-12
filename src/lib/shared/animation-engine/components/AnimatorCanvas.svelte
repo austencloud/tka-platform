@@ -75,6 +75,7 @@ Last audit: 2025-12-27
     previewDarkMode = null,
     hideTkaGlyph = false,
     hideStepNumbers = false,
+    positionGlyphVisible = false,
     hidePathLines = false,
     hideProgressBar = false,
     hideHeader = false,
@@ -131,6 +132,9 @@ Last audit: 2025-12-27
     previewDarkMode?: boolean | null;
     hideTkaGlyph?: boolean;
     hideStepNumbers?: boolean;
+    /** Show the α/β/γ start→end position indicator centered at the top. Educational
+     *  overlay for the guide's hand-path exploration; off by default everywhere else. */
+    positionGlyphVisible?: boolean;
     /** Force-hide the dotted prop-center path lines regardless of the visibility
      *  manager (e.g. the Tunnel art view, which never wants path overlays). */
     hidePathLines?: boolean;
@@ -562,6 +566,7 @@ Last audit: 2025-12-27
       {virtualTime}
       {hideTkaGlyph}
       {hideStepNumbers}
+      {positionGlyphVisible}
       {darkModeEnabled}
       {effectiveTkaGlyphVisible}
       {effectiveBeatNumbersVisible}

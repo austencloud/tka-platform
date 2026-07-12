@@ -16,9 +16,12 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   import { cubicOut } from "svelte/easing";
   import type { Letter } from "$lib/shared/foundation/domain/models/letter";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import TKAGlyph from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
   import TurnsColumn from "$lib/shared/pictograph/tka-glyph/components/TurnsColumn.svelte";
   import StepNumber from "$lib/shared/pictograph/shared/components/StepNumber.svelte";
+  import PositionGlyph from "$lib/shared/pictograph/shared/components/PositionGlyph.svelte";
   import { getLetterDimensions } from "$lib/shared/pictograph/tka-glyph/components/TKAGlyph.svelte";
 
   let {
@@ -33,6 +36,9 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     // Visibility
     tkaGlyphVisible = true,
     stepNumbersVisible = true,
+    // Start→end position indicator (α/β/γ) centered at the top. Educational
+    // overlay for the guide's hand-path exploration; off elsewhere.
+    positionGlyphVisible = false,
     // Dark mode - when provided, overrides global state (for preview isolation)
     darkMode = false,
     // Start position indicator - shows "Start" in top-left when at start position
@@ -48,6 +54,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     stepData?: PictographData | null;
     tkaGlyphVisible?: boolean;
     stepNumbersVisible?: boolean;
+    positionGlyphVisible?: boolean;
     darkMode?: boolean;
     isAtStartPosition?: boolean;
     isAtEndPosition?: boolean;
@@ -102,6 +109,23 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
   const stepKey = $derived(
     isAtStartPosition ? "start" : isAtEndPosition ? "end" : displayedStepNumber?.toString() ?? null
   );
+
+  // Current step's start/end grid positions (α/β/γ) for the PositionGlyph.
+  // StepData carries both; StartPositionData/PictographData without them just
+  // suppress the glyph (PositionGlyph.shouldRender needs both present).
+  const stepStartPosition = $derived(
+    (stepData as StepData | null)?.startPosition ?? null
+  );
+  const stepEndPosition = $derived(
+    (stepData as StepData | null)?.endPosition ?? null
+  );
+  // Key the position cross-fade on the transition itself so each step swap
+  // fades like the letter glyph and the step number.
+  const positionKey = $derived(
+    stepStartPosition && stepEndPosition
+      ? `${stepStartPosition}->${stepEndPosition}`
+      : null
+  );
 </script>
 
 <div class="glyph-overlay" class:dark-mode={darkMode} data-controlled="true">
@@ -142,6 +166,18 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
           />
         </g>
       {/key}
+    {/if}
+
+    <!-- Start→end position (α/β/γ) centered at top. Stays put between steps;
+         PositionGlyph's own pulse reacts only when the positions actually change. -->
+    {#if positionGlyphVisible && positionKey && !isAtStartPosition}
+      <PositionGlyph
+        startPosition={stepStartPosition as GridPosition}
+        endPosition={stepEndPosition as GridPosition}
+        {letter}
+        visible={true}
+        centerX={475}
+      />
     {/if}
 
     <!-- Step number with cross-fade -->

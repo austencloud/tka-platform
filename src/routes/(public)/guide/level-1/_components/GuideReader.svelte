@@ -192,6 +192,10 @@
   // ("Guide: Level 1 › <page title> › <word>").
   let clickedKey = $state<string | null>(null);
   let clickedPageTitle = $state("");
+  // Whether the companion shows the α/β/γ position indicator for the clicked
+  // strip. Defaults to on for hand renders (the early hand-path chapters), off
+  // for staff/letter/word strips; a strip can override via payload.
+  let clickedShowPositionGlyph = $state(false);
 
   async function handleSequenceClick(payload: GuideSequenceClick) {
     // Ring the clicked strip's Start box immediately (before motion data even
@@ -199,6 +203,11 @@
     activeStep.begin(payload.key ?? "");
     selection.select(payload.key ?? ""); // persist the accent ring on the active strip
     clickedPropType = payload.propType ?? "hand";
+    // Hand renders are the hand-path chapters → position glyph on by default;
+    // any strip can override via payload.showPositionGlyph. PropType.HAND === "hand",
+    // so the string compare covers both the "hand" literal and the enum.
+    const isHandStrip = String(clickedPropType).toLowerCase() === "hand";
+    clickedShowPositionGlyph = payload.showPositionGlyph ?? isHandStrip;
     clickedKey = payload.key ?? null;
     clickedPageTitle = GUIDE_BODY_PAGES[activeIndex - FRONT_MATTER_COUNT]?.title ?? "";
     const seq = stripToSequence(payload.strip, { word: payload.word });
@@ -451,6 +460,7 @@
         propType={clickedPropType}
         stripKey={clickedKey}
         pageTitle={clickedPageTitle}
+        showPositionGlyph={clickedShowPositionGlyph}
         isCodexMode={isCodexPage}
         {isMobile}
         onStep={(s) => activeStep.report(s)}

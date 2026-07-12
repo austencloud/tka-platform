@@ -71,6 +71,25 @@
     return null;
   }
 
+  /**
+   * Greek letter (α, β, γ) for the FINAL held position — mirror of
+   * getStartPositionLetter for the end-hold phase. At the End the hand isn't
+   * mid-letter; it holds the last step's end position, so the glyph should read
+   * that position, not the previous step's letter.
+   */
+  function getEndPositionLetter(): Letter | null {
+    const steps = sequence?.steps;
+    const lastStep = steps?.[steps.length - 1];
+    const endPos = lastStep?.endPosition || (lastStep as any)?.endPos;
+    if (endPos && typeof endPos === "string") {
+      const posLower = endPos.toLowerCase();
+      if (posLower.startsWith("alpha")) return Letter.ALPHA;
+      if (posLower.startsWith("beta")) return Letter.BETA;
+      if (posLower.startsWith("gamma")) return Letter.GAMMA;
+    }
+    return null;
+  }
+
   let {
     sequence,
     autoPlay = true,
@@ -80,6 +99,7 @@
     externalBpm = null,
     chrome = "full",
     fill = false,
+    showPositionGlyph = false,
     onStepChange = undefined,
   }: {
     sequence: SequenceData;
@@ -104,6 +124,12 @@
      * (feedback_minimal_player_chrome). Drive tempo externally via `externalBpm`.
      */
     chrome?: "full" | "minimal";
+    /**
+     * Show the α/β/γ start→end position indicator centered at the top of the
+     * canvas. Educational overlay the guide turns on for hand-path exploration;
+     * off by default so gallery/Arena embeds are unaffected.
+     */
+    showPositionGlyph?: boolean;
     /**
      * Maximize the canvas: fill the whole container instead of reserving
      * vertical overhead for a header + progress pill. Minimal chrome hides both
@@ -165,6 +191,14 @@
     // At start position phase (before beat 1) - show Greek letter (α, β, γ)
     if (currentStep < 1) {
       return getStartPositionLetter();
+    }
+
+    // At the end-hold (freeform sequences pause on the final position before
+    // looping) - show the held position's Greek letter, not the last step's
+    // letter. Loopable sequences wrap before reaching here so this stays inert.
+    const stepCount = animationState.sequenceData.steps?.length ?? 0;
+    if (stepCount > 0 && currentStep >= stepCount + 0.99) {
+      return getEndPositionLetter();
     }
 
     if (animationState.sequenceData.steps?.length > 0) {
@@ -394,6 +428,7 @@
         trailSettings={animationSettings.trail}
         {bluePropType}
         {redPropType}
+        positionGlyphVisible={showPositionGlyph}
         tapToToggle={minimal}
         progressLine={minimal}
         hoverHint={minimal ? "badge" : "none"}

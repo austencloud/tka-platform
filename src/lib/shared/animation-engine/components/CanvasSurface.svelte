@@ -92,6 +92,7 @@ captureEffectDiagnostics to the context menu.
     darkModeEnabled = false,
     effectiveTkaGlyphVisible = false,
     effectiveBeatNumbersVisible = false,
+    positionGlyphVisible = false,
     bluePathLinesVisible = false,
     redPathLinesVisible = false,
     suppress2DOverlays = false,
@@ -141,6 +142,8 @@ captureEffectDiagnostics to the context menu.
     darkModeEnabled?: boolean;
     effectiveTkaGlyphVisible?: boolean;
     effectiveBeatNumbersVisible?: boolean;
+    /** Show the α/β/γ start→end position indicator (guide hand-path exploration). */
+    positionGlyphVisible?: boolean;
     bluePathLinesVisible?: boolean;
     redPathLinesVisible?: boolean;
     suppress2DOverlays?: boolean;
@@ -440,6 +443,7 @@ captureEffectDiagnostics to the context menu.
       {stepData}
       tkaGlyphVisible={effectiveTkaGlyphVisible}
       stepNumbersVisible={effectiveBeatNumbersVisible}
+      {positionGlyphVisible}
       darkMode={darkModeEnabled}
       isAtStartPosition={!hideStepNumbers && currentStep < 1 && sequenceData !== null}
       isAtEndPosition={

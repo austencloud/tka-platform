@@ -63,6 +63,11 @@ export type GuideSequenceClick = {
   word?: string;
   key?: string;
   propType?: "hand" | "staff" | PropType;
+  /** Show the α/β/γ start→end position indicator on the companion animator for
+   *  this strip. Defaults (when omitted) to on for hand renders — the early
+   *  hand-path chapters — and off for staff/letter/word strips. Set explicitly
+   *  to force it for a given example. */
+  showPositionGlyph?: boolean;
 };
 
 /** The reader registers a handler; pages call it to open the animation companion. */

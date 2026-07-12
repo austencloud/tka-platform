@@ -90,6 +90,7 @@
     pageTitle = "",
     isCodexMode = false,
     isMobile = false,
+    showPositionGlyph = false,
   }: {
     sequence: SequenceData | null;
     onClose: () => void;
@@ -114,6 +115,9 @@
      *  of the desktop right-panel layout. Owned by GuideReader (single source
      *  of truth for the 720px cutoff — see reader-mobile.md notes there). */
     isMobile?: boolean;
+    /** Show the α/β/γ start→end position indicator on the animator for the
+     *  clicked strip (guide hand-path exploration; resolved by GuideReader). */
+    showPositionGlyph?: boolean;
   } = $props();
 
   // Mobile sheet: compact (animator + slim bar) vs expanded (overflow region
@@ -470,6 +474,7 @@
         externalBpm={bpm}
         bluePropType={propType}
         redPropType={propType}
+        {showPositionGlyph}
         onStepChange={onStep}
       />
     {/key}
