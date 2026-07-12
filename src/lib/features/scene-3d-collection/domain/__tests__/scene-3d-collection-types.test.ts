@@ -5,6 +5,7 @@ import {
   isGroupSaved,
   type Scene3DSnapshot,
 } from "../scene-3d-collection-types";
+import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
 const snapshot: Scene3DSnapshot = {
   version: 1,
@@ -114,5 +115,36 @@ describe("Collected3DSceneSchema", () => {
   it("rejects an entry with no id", () => {
     const entry = { id: "", name: "x", poster: "", createdAt: 0, snapshot };
     expect(Collected3DSceneSchema.safeParse(entry).success).toBe(false);
+  });
+
+  // Unit 3 (lineage stamp): old entries lack sourceWord/sourceSequenceId
+  // entirely — the schema must still accept them.
+  it("accepts an entry with no lineage stamp (old entries)", () => {
+    const entry = { id: "abc", name: "Forest stage", poster: "x", createdAt: 1, snapshot };
+    expect(Collected3DSceneSchema.safeParse(entry).success).toBe(true);
+  });
+
+  it("accepts an entry stamped with a simplified source word + id", () => {
+    // The stamp always goes through simplifyRepeatedWord at save time — a
+    // repeating word like "FΨFΨFΨFΨ" is stored as its shortest form "FΨ",
+    // never the raw repeated string (rule: simplified-word-display).
+    const sourceWord = simplifyRepeatedWord("FΨFΨFΨFΨ");
+    expect(sourceWord).toBe("FΨ");
+
+    const stamped = {
+      id: "abc",
+      name: "Forest stage",
+      poster: "x",
+      createdAt: 1,
+      snapshot,
+      sourceWord,
+      sourceSequenceId: "seq-123",
+    };
+    const result = Collected3DSceneSchema.safeParse(stamped);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.sourceWord).toBe("FΨ");
+      expect(result.data.sourceSequenceId).toBe("seq-123");
+    }
   });
 });

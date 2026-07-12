@@ -11,6 +11,11 @@ export interface CollectedMandala {
 	redPropType: string;
 	createdAt: number;
 	source?: "studio" | "sequence" | "default";
+	/** Lineage stamp — the source sequence's simplified word (never a raw
+	 *  repeated word; see simplifyRepeatedWord) and, when known at save time,
+	 *  its library id. Optional: old entries simply lack them. */
+	sourceWord?: string;
+	sourceSequenceId?: string;
 }
 
 export const CollectedMandalaSchema = z.object({
@@ -23,6 +28,8 @@ export const CollectedMandalaSchema = z.object({
 	createdAt: z.any(),
 	updatedAt: z.any().optional(),
 	source: z.enum(["studio", "sequence", "default"]).optional(),
+	sourceWord: z.string().optional(),
+	sourceSequenceId: z.string().optional(),
 });
 
 export const MANDALA_COLLECTION_STORAGE_KEY = "tka:mandala-collection";

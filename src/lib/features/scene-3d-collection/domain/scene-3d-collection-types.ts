@@ -80,6 +80,11 @@ export interface Collected3DScene {
   /** Present → opening reproduces the exact performance in the scene. Absent →
    *  the entry is a reusable "look" applied to whatever sequence is opened. */
   steps?: StepData[];
+  /** Lineage stamp — the source sequence's simplified word (never a raw
+   *  repeated word; see simplifyRepeatedWord) and, when known at save time,
+   *  its library id. Optional: old entries simply lack them. */
+  sourceWord?: string;
+  sourceSequenceId?: string;
 }
 
 // External-enum fields (camera vectors, planes, formation, backgroundType) are
@@ -149,6 +154,8 @@ export const Collected3DSceneSchema = z.object({
   updatedAt: z.any().optional(),
   snapshot: Scene3DSnapshotSchema,
   steps: z.array(StepDataSchema).optional(),
+  sourceWord: z.string().optional(),
+  sourceSequenceId: z.string().optional(),
 });
 
 export const SCENE_3D_COLLECTION_STORAGE_KEY = "tka:scene-3d-collection";

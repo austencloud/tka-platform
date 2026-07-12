@@ -19,8 +19,11 @@
   import TunnelDetailPreview from "./components/TunnelDetailPreview.svelte";
   import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
   import CollectionGalleryDetail from "$lib/shared/modules/CollectionGalleryDetail.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import { imageCount } from "$lib/shared/sequence-viewer/tunnel/tunnel-config";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { openLineageSource, hasLineageSource } from "$lib/shared/collections/open-lineage-source";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
   type Phase = "gallery" | "detail";
   let phase = $state<Phase>("gallery");
@@ -286,6 +289,16 @@
                 {chip.label}
               </span>
             {/each}
+            {#if hasLineageSource(selected)}
+              <FilterChipBase
+                mode="action"
+                size="sm"
+                icon="fa-arrow-up-right-from-square"
+                label={`From ${simplifyRepeatedWord(selected.sourceWord ?? "")}`}
+                chipColor="var(--theme-accent, #22d3ee)"
+                onclick={() => void openLineageSource(selected!)}
+              />
+            {/if}
           </div>
 
           <div class="detail-actions">

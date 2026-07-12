@@ -21,6 +21,10 @@
   import { mandalaCollectionState } from "./tabs/collection/state/mandala-collection-state.svelte";
   import { DEFAULT_MANDALAS } from "./tabs/meditate/domain/default-mandalas";
   import type { StepLike } from "$lib/shared/mandala/services/types";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import { openLineageSource, hasLineageSource } from "$lib/shared/collections/open-lineage-source";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { onMount } from "svelte";
 
   // ── Phase management ──
@@ -37,6 +41,10 @@
     redPropType: string;
     createdAt: number;
     group: "curated" | "collection";
+    /** Lineage stamp — see docs/superpowers/specs/2026-07-12-art-in-library-design.md
+     *  Unit 3. Absent for curated mandalas (not user-collected). */
+    sourceWord?: string;
+    sourceSequenceId?: string;
   }
 
   // The selected mandala drives detail/meditate/export. Everything downstream
@@ -63,6 +71,8 @@
       redPropType: m.redPropType,
       createdAt: m.createdAt,
       group: "collection",
+      sourceWord: m.sourceWord,
+      sourceSequenceId: m.sourceSequenceId,
     }));
     return [...curated, ...collected];
   });
@@ -315,6 +325,8 @@
       bluePropType: item.bluePropType,
       redPropType: item.redPropType,
       createdAt: item.createdAt,
+      sourceWord: item.sourceWord,
+      sourceSequenceId: item.sourceSequenceId,
     };
     deleteConfirming = false;
     phase = "detail";
@@ -510,6 +522,27 @@
               <span class="detail-date">{dateLabel}</span>
             {/if}
           </div>
+
+          {#if hasLineageSource(selectedMandala)}
+            <div class="meta-chips">
+              <FilterChipBase
+                mode="action"
+                size="sm"
+                icon="fa-arrow-up-right-from-square"
+                label={`From ${simplifyRepeatedWord(selectedMandala.sourceWord ?? "")}`}
+                chipColor="var(--theme-accent, #6366f1)"
+                onclick={() =>
+                  void openLineageSource({
+                    sourceWord: selectedMandala!.sourceWord,
+                    sourceSequenceId: selectedMandala!.sourceSequenceId,
+                    // selectedMandala.steps is typed StepLike (rendering-only
+                    // subset) but is always the original CollectedMandala's
+                    // StepData[] under the hood — safe to widen back here.
+                    steps: selectedMandala!.steps as unknown as StepData[],
+                  })}
+              />
+            </div>
+          {/if}
 
           <div class="detail-actions">
             <button
@@ -789,6 +822,12 @@
   .detail-date {
     font-size: 13px;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  }
+
+  .meta-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
   .detail-actions {

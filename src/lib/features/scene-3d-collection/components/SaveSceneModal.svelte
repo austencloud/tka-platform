@@ -185,11 +185,18 @@
       const steps =
         enabled.performance && hasSteps ? (seq?.steps as StepData[] | undefined) : undefined;
 
+      // Lineage stamp: link back to the raw source sequence (spec:
+      // 2026-07-12-art-in-library-design.md Unit 3). Recomputed from the live
+      // `seq` here rather than reusing the modal-open-time `name` field, since
+      // the user may have edited `name` before saving.
+      const sourceWord = simplifyRepeatedWord(seq?.word || seq?.name || "");
+
       await scene3dCollectionState.add({
         name: name.trim() || "3D scene",
         poster,
         snapshot,
         ...(steps && steps.length > 0 ? { steps } : {}),
+        ...(sourceWord ? { sourceWord, ...(seq?.id ? { sourceSequenceId: seq.id } : {}) } : {}),
       });
       toast.success("Scene saved to your collection");
       open = false;

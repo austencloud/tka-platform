@@ -235,15 +235,19 @@
       label: "Save to Collection",
       icon: "fa-bookmark",
       action: () => {
-        const name =
-          simplifyRepeatedWord(sequenceWord) ||
-          `Mandala #${mandalaCollectionState.count + 1}`;
+        const simplifiedWord = simplifyRepeatedWord(sequenceWord);
+        const name = simplifiedWord || `Mandala #${mandalaCollectionState.count + 1}`;
         mandalaCollectionState.add({
           name,
           steps: [...steps],
           variant: mandalaMenuVariant,
           bluePropType: effectiveBluePropType,
           redPropType: effectiveRedPropType,
+          // Lineage stamp: link back to the raw source sequence (spec:
+          // 2026-07-12-art-in-library-design.md Unit 3). No sequence id here —
+          // the compose canvas doesn't carry a library id for the in-progress
+          // sequence being edited.
+          ...(simplifiedWord ? { sourceWord: simplifiedWord } : {}),
         });
         toast.success(`Saved "${name}" to collection`);
       },

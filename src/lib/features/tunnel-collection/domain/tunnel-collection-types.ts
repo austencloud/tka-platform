@@ -11,6 +11,11 @@ export interface CollectedTunnel {
   poster: string; // ~200px WebP data URL
   createdAt: number;
   source?: "viewer" | "default";
+  /** Lineage stamp — the source sequence's simplified word (never a raw
+   *  repeated word; see simplifyRepeatedWord) and, when known at save time,
+   *  its library id. Optional: old entries simply lack them. */
+  sourceWord?: string;
+  sourceSequenceId?: string;
 }
 
 export const CollectedTunnelSchema = z.object({
@@ -25,6 +30,8 @@ export const CollectedTunnelSchema = z.object({
   createdAt: z.number(),
   updatedAt: z.any().optional(),
   source: z.enum(["viewer", "default"]).optional(),
+  sourceWord: z.string().optional(),
+  sourceSequenceId: z.string().optional(),
 });
 
 export const TUNNEL_COLLECTION_STORAGE_KEY = "tka:tunnel-collection";
