@@ -15,6 +15,7 @@ even when Svelte recreates the component instance.
 </script>
 
 <script lang="ts">
+  import { onDestroy } from "svelte";
   import {
     Orientation,
     MotionColor,
@@ -57,7 +58,15 @@ even when Svelte recreates the component instance.
   $effect(() => {
     const currentSrc = propAssets?.imageSrc;
     if (previousImageSrc !== null && currentSrc !== previousImageSrc) {
-      // SVG content changed (prop type swap) - trigger fade
+      // SVG content actually changed (prop type swap) - trigger a brief fade.
+      // Schedule the reset ONLY inside this branch. Do NOT clear the pending
+      // reset from the effect teardown: this effect re-runs whenever the parent
+      // hands down a new propAssets object, even when imageSrc is byte-identical
+      // (regeneration). If the teardown cleared the timeout on such a re-run,
+      // the `if` above would be skipped (same src) and no new reset would be
+      // scheduled, stranding propFading = true and leaving the prop at opacity
+      // 0.15 permanently. Keeping the timer alive lets it reset the fade even
+      // across unrelated re-runs.
       propFading = true;
       if (fadeTimeoutId !== null) clearTimeout(fadeTimeoutId);
       fadeTimeoutId = setTimeout(() => {
@@ -66,10 +75,11 @@ even when Svelte recreates the component instance.
       }, 150);
     }
     previousImageSrc = currentSrc ?? null;
+  });
 
-    return () => {
-      if (fadeTimeoutId !== null) clearTimeout(fadeTimeoutId);
-    };
+  // Unmount cleanup only. Deliberately not the effect teardown (see above).
+  onDestroy(() => {
+    if (fadeTimeoutId !== null) clearTimeout(fadeTimeoutId);
   });
 
   let {
