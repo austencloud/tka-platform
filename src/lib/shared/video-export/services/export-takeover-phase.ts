@@ -9,8 +9,7 @@
  * Pure + i18n-agnostic: returns an i18n KEY for the phase label so the consumer
  * resolves it with the reactive `t()` (keeps this unit-testable without i18n).
  */
-import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
-import type { ExportPhase } from "$lib/shared/video-export/components/ExportTakeover.svelte";
+import type { ExportPhase, VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
 import type { TranslationKey } from "$lib/shared/i18n/i18n-types.js";
 
 export interface ExportTakeoverView {

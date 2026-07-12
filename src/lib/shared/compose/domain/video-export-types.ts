@@ -4,6 +4,14 @@ import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/t
 
 export type VideoExportFormat = "webm" | "mp4";
 
+/**
+ * Export-takeover UI phase. Lives here (not in ExportTakeover.svelte) so both
+ * the component and the pure `export-takeover-phase` mapper can import it as a
+ * named type — svelte-fast-check can't resolve named type exports from a
+ * `*.svelte` module.
+ */
+export type ExportPhase = "idle" | "capturing" | "encoding" | "complete" | "error";
+
 export interface VideoExportProgress {
   progress: number;
   stage: "capturing" | "encoding" | "complete" | "error";

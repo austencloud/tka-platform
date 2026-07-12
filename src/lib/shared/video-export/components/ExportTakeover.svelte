@@ -2,8 +2,7 @@
   import { fade, fly } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import type { Snippet } from "svelte";
-
-  export type ExportPhase = "idle" | "capturing" | "encoding" | "complete" | "error";
+  import type { ExportPhase } from "$lib/shared/compose/domain/video-export-types";
 
   interface Props {
     phase: ExportPhase;
