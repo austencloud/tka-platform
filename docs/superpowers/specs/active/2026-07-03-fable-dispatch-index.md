@@ -31,7 +31,7 @@ Chosen from a six-pillar scout of the codebase (real-flow, practice, create, man
 
 | Spec | Kind | Autonomy | Why Fable |
 |---|---|---|---|
-| [Real-flow notation — validate + robust perception core](2026-07-03-fable-real-flow-notation-validation-design.md) | Moonshot / differentiator | Full auto on code; **checkpoint** for real-clip validation | Reasoning-limited inference with no ground truth (sign conventions, correspondence aliasing, out-of-plane) |
+| [Real-flow notation — validate + robust perception core](2026-07-03-fable-real-flow-notation-validation-design.md) | Moonshot / differentiator | Code half ✅ 2026-07-05 (82/82 tests); **real-clip validation PARKED 2026-07-11 per Austen ("pass on 5 for now")** — active prop-tracking-lab session continues separately | Reasoning-limited inference with no ground truth (sign conventions, correspondence aliasing, out-of-plane) |
 | [Practice judgment loop](2026-07-03-fable-practice-judgment-loop-design.md) | Retention pillar | Full auto; **checkpoint** on game-feel | CV judgment + calibration + non-gameable game-feel design |
 | [Mandala signature identity](2026-07-03-fable-mandala-signature-identity-design.md) | Facelift / virality | Full auto; **checkpoint** on aesthetic direction | Taste-heavy beauty on a rigorous substrate; the shareable-art pillar |
 
