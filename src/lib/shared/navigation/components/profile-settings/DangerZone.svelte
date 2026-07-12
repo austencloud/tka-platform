@@ -13,7 +13,7 @@
   const ctx = getProfileSettingsContext();
 
   let { onDeleteAccount, hapticService, userIdentifier, providerIds, isAdmin } = $props<{
-    onDeleteAccount: (reauth: DeleteReauth) => Promise<void>;
+    onDeleteAccount: (reauth: DeleteReauth, reason?: string) => Promise<void>;
     hapticService: HapticFeedback | null;
     userIdentifier: string;
     providerIds: string[];
@@ -23,6 +23,7 @@
   let isExpanded = $state(false);
   let confirmationText = $state("");
   let deletePassword = $state("");
+  let deleteReason = $state("");
   let deleteError = $state("");
   let isDeleting = $state(false);
 
@@ -49,7 +50,7 @@
     isDeleting = true;
     deleteError = "";
     try {
-      await onDeleteAccount(reauth);
+      await onDeleteAccount(reauth, deleteReason.trim() || undefined);
     } catch (e: unknown) {
       deleteError = e instanceof Error ? e.message : "Failed to delete account";
       hapticService?.trigger("error");
@@ -65,6 +66,7 @@
       ctx.ui.showDeleteConfirmation = false;
       confirmationText = "";
       deletePassword = "";
+      deleteReason = "";
       deleteError = "";
     }
   }
@@ -79,6 +81,7 @@
     ctx.ui.showDeleteConfirmation = false;
     confirmationText = "";
     deletePassword = "";
+    deleteReason = "";
     deleteError = "";
   }
 
@@ -141,6 +144,21 @@
               autocomplete="off"
               spellcheck="false"
             />
+          </div>
+
+          <div class="confirmation-input-section">
+            <label for="delete-reason" class="confirmation-label">
+              Why are you leaving? (optional)
+            </label>
+            <textarea
+              id="delete-reason"
+              class="confirmation-input reason-input"
+              placeholder="Your feedback helps us improve"
+              bind:value={deleteReason}
+              maxlength="500"
+              rows="2"
+              disabled={isDeleting}
+            ></textarea>
           </div>
 
           {#if hasOAuth}
@@ -353,6 +371,13 @@
   .confirmation-input::placeholder {
     color: rgba(255, 255, 255, 0.5); /* Improved contrast for WCAG AAA */
     font-family: inherit;
+  }
+
+  .reason-input {
+    font-family: inherit;
+    letter-spacing: normal;
+    resize: vertical;
+    min-height: var(--min-touch-target);
   }
 
   .confirmation-input:focus {

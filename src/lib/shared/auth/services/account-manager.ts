@@ -5,7 +5,7 @@ import {
   reauthenticateWithCredential,
   deleteUser,
 } from "firebase/auth";
-import { doc, deleteDoc } from "firebase/firestore";
+import { doc, deleteDoc, setDoc } from "firebase/firestore";
 import { auth, getFirestoreInstance } from "../firebase";
 import { nuclearCacheClear } from "../utils/nuclear-cache-clear";
 import {
@@ -78,7 +78,7 @@ export class AccountManager {
     this.haptics.trigger("success");
   }
 
-  async deleteAccount(reauth: DeleteReauth): Promise<void> {
+  async deleteAccount(reauth: DeleteReauth, reason?: string): Promise<void> {
     this.haptics.trigger("warning");
 
     const user = auth.currentUser;
@@ -141,7 +141,28 @@ export class AccountManager {
       throw new Error("Authentication failed");
     }
 
-    // Best-effort cleanup: delete the user's Firestore document
+    // Optional exit reason for the deletion tombstone, written BEFORE auth
+    // deletion while the user is still authed (firestore.rules only allows
+    // the owner to write it). The Auth onDelete trigger merge-writes the
+    // identity fields over this doc afterward, so the reason survives.
+    // Best-effort — a rules failure here must never block account deletion.
+    const trimmedReason = reason?.trim();
+    if (trimmedReason) {
+      try {
+        const firestore = await getFirestoreInstance();
+        await setDoc(
+          doc(firestore, "accountDeletions", user.uid),
+          { uid: user.uid, reason: trimmedReason.slice(0, 500) },
+          { merge: true }
+        );
+      } catch {
+        console.warn("Could not save account deletion reason");
+      }
+    }
+
+    // Best-effort cleanup: delete the user's Firestore document. The Auth
+    // onDelete trigger is the real cleanup (recursively removes users/{uid}
+    // and all subcollections) — this is belt and suspenders.
     try {
       const firestore = await getFirestoreInstance();
       const userDocRef = doc(firestore, "users", user.uid);

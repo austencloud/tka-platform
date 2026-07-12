@@ -163,6 +163,9 @@
         <p>
           To delete your account and all associated data, visit the <a href="/delete-account">account deletion page</a>.
         </p>
+        <p>
+          When you delete your account, a minimal record is kept for 12 months: your name, email, the deletion date, and any reason you choose to provide. This record exists solely to document and audit the deletion itself, as required under data protection law. After 12 months it is permanently removed.
+        </p>
       </section>
 
       <section id="cookies">

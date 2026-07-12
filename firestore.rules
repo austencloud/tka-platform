@@ -1358,6 +1358,29 @@ service cloud.firestore {
     }
 
     // ============================================================================
+    // ACCOUNT DELETIONS (Tombstone — GDPR Art. 17(3) audit record)
+    // ============================================================================
+
+    // One doc per deleted account, 12-month retention (purged by a scheduled
+    // function). The Auth onDelete trigger writes the identity fields via the
+    // Admin SDK (bypasses these rules). The only client write is the optional
+    // exit reason, made BEFORE deletion while the user is still authed — the
+    // trigger merge-writes over it, so the reason survives.
+    match /accountDeletions/{uid} {
+      allow read: if isAdmin();
+
+      allow create, update: if isOwner(uid)
+        && request.resource.data.keys().hasOnly(['uid', 'reason'])
+        && request.resource.data.uid == uid
+        && (!('reason' in request.resource.data)
+            || (request.resource.data.reason is string
+                && request.resource.data.reason.size() <= 500));
+
+      // Purge is Admin SDK only.
+      allow delete: if false;
+    }
+
+    // ============================================================================
     // ERROR TELEMETRY (Passive Error Reporting)
     // ============================================================================
 

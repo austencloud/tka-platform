@@ -190,10 +190,10 @@
     }
   }
 
-  async function handleDeleteAccount(reauth: DeleteReauth) {
+  async function handleDeleteAccount(reauth: DeleteReauth, reason?: string) {
     if (!accountManager) return;
 
-    await accountManager.deleteAccount(reauth);
+    await accountManager.deleteAccount(reauth, reason);
   }
 
   // Opens the themed confirmation; the destructive clear runs on confirm.

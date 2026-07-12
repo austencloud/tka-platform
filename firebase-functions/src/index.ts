@@ -66,6 +66,8 @@ export { createMerchCheckout } from "./merch/createMerchCheckout";
 export { handleMerchWebhook } from "./merch/handleMerchWebhook";
 export { createDonationCheckout } from "./donation/createDonationCheckout";
 export { purgeOneCountSequences, adminDeleteSequence } from "./adminPurgeOneCount";
+export { onAuthUserDeleted } from "./accountDeletions/onAuthUserDeleted";
+export { purgeExpiredTombstones } from "./accountDeletions/purgeExpiredTombstones";
 
 const db = admin.firestore();
 
