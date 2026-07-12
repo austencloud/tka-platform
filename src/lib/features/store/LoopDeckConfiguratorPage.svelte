@@ -45,7 +45,7 @@
   import { getCardColors } from "$lib/shared/create/domain/card-colors";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
-  import { scale } from "svelte/transition";
+  import { scale, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import { prewarmCovers } from "./services/cover-front-renderer";
   import {
@@ -225,6 +225,9 @@
     medium: "#2a1602",
     spicy: "#ffffff",
   };
+  // The 4th chip: Custom. Violet (the app accent family) so it reads as a
+  // sibling option, not a heat level.
+  const CUSTOM_BG = "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #6d28d9 100%)";
 
   // ── bento palette: LOOP/prop tile gradients (shared with the deck-releaser
   //    LoopBentoBoard so the surfaces match). ──
@@ -535,9 +538,10 @@
           <h1>LOOP Deck</h1>
           <p class="meta">54 cards · every sequence loops · built to your dials</p>
 
-          <!-- ── the packs: curated recipes, the primary product. The board
-               below is Custom mode — touching it deselects the pack. ── -->
-          <div class="preset-row" role="group" aria-label="Curated packs">
+          <!-- ── one visible 4-way choice: three packs + Custom. Custom is a
+               real chip, not an invisible fallback state — a newcomer reads
+               "which of these four is checked" at a glance. ── -->
+          <div class="preset-row" role="group" aria-label="Deck options">
             {#each LOOP_PACKS as p (p.id)}
               <button
                 type="button"
@@ -550,21 +554,45 @@
               >
                 <span class="preset-name">{p.name}</span>
                 <span class="preset-sub">{p.sub}</span>
+                {#if pack === p.id}
+                  <i class="fas fa-check-circle preset-check" aria-hidden="true"></i>
+                {/if}
               </button>
             {/each}
+            <button
+              type="button"
+              class="preset"
+              class:active={pack === null}
+              aria-pressed={pack === null}
+              style:--preset-bg={CUSTOM_BG}
+              style:--preset-text="#ffffff"
+              onclick={() => {
+                enterCustom();
+                buzz();
+              }}
+            >
+              <span class="preset-name">Custom</span>
+              <span class="preset-sub">your dials, your deck</span>
+              {#if pack === null}
+                <i class="fas fa-check-circle preset-check" aria-hidden="true"></i>
+              {/if}
+            </button>
           </div>
-          <!-- Composition line: the selected pack's recipe, honestly. Reserved
-               height either way so pack↔custom swaps never shove the board. -->
+          <!-- Composition line: names the selected option and its recipe.
+               Reserved height so pack↔custom swaps never shove the board. -->
           <p class="composition-line" class:custom={!activePack}>
             {activePack
-              ? activePack.composition
-              : "Custom deck — your dials below drive the order."}
+              ? `${activePack.name} — ${activePack.composition}`
+              : "Custom — the dials below drive your order."}
           </p>
 
-          <!-- ── the bento board = Custom mode. Dimmed (not disabled) while a
-               pack is selected: the first touch on any dial deselects the pack
-               and the board brightens — dials stay live the whole time. ── -->
-          <div class="bento-board" class:pack-active={activePack !== null}>
+          <!-- ── the bento board. The custom dials exist ONLY in Custom mode
+               (disclosure kills decision anxiety — a pack buyer sees three
+               packs and a prop, nothing else). Prop is NOT a customization:
+               it stays out here and never deselects the pack. ── -->
+          <div class="bento-board">
+            {#if pack === null}
+            <div class="custom-dials" transition:slide={{ duration: 250, easing: quintOut }}>
             <!-- Level / Length: the generate panel's colored StepperCards
                  (LoopBentoBoard blueprint — Level wears DIFFICULTY colors). -->
             <div class="tile-row">
@@ -612,9 +640,8 @@
               </div>
             </div>
 
-            <!-- Flavor + Prop share a row on wide screens (each still wraps to
-                 full width on narrow) — one less row to scroll past. -->
-            <div class="tile-row duo">
+            <!-- Flavor: the identity choice — Custom mode only. -->
+            <div class="tile-row">
               <div class="tile hero">
                 <BaseCard
                   title="Flavor"
@@ -625,6 +652,13 @@
                   onClick={() => (showFlavor = true)}
                 />
               </div>
+            </div>
+            </div>
+            {/if}
+
+            <!-- Prop: always visible, pack or custom — picking your prop is
+                 giving us your order, not customizing the recipe. -->
+            <div class="tile-row">
               <div class="tile prop-shell">
                 <BaseCard
                   title="Prop"
@@ -660,9 +694,11 @@
 
           </div>
 
-          <!-- Fine-tune disclosure: collapsed by default; opening it and
-               touching anything is instrumented — usage decides its future. -->
-          <div class="advanced">
+          <!-- Fine-tune disclosure: Custom mode only; collapsed by default.
+               Opening it and touching anything is instrumented — usage
+               decides its future. -->
+          {#if pack === null}
+          <div class="advanced" transition:slide={{ duration: 250, easing: quintOut }}>
             <button
               type="button"
               class="advanced-toggle"
@@ -715,6 +751,7 @@
               </div>
             {/if}
           </div>
+          {/if}
           </div>
 
           <aside class="buy-rail">
@@ -996,6 +1033,7 @@
     gap: 10px;
   }
   .preset {
+    position: relative;
     flex: 1 1 160px;
     min-width: 140px;
     display: flex;
@@ -1050,6 +1088,13 @@
     opacity: 0.78;
     font-variant-numeric: tabular-nums;
   }
+  /* The "you are here" mark — selection must survive a squint. */
+  .preset-check {
+    position: absolute;
+    top: 9px;
+    right: 11px;
+    font-size: 15px;
+  }
 
   /* The recipe line under the chips. Always rendered (pack recipe OR the
      custom-mode note) so pack↔custom swaps never shove the board below. */
@@ -1065,13 +1110,12 @@
   }
 
   /* ---------- bento board ---------- */
-  /* Pack selected → the board isn't driving the order. Dimmed, NOT disabled:
-     hover previews the wake-up, and the first dial touch enters Custom. */
-  .bento-board.pack-active {
-    opacity: 0.55;
-  }
-  .bento-board.pack-active:hover {
-    opacity: 0.85;
+  /* The custom dials live in a disclosure (rendered only in Custom mode);
+     inside it, rows keep the board rhythm. */
+  .custom-dials {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
   }
   .bento-board {
     display: flex;
@@ -1094,14 +1138,9 @@
     min-width: 180px;
     height: 118px;
   }
-  /* Flavor hero: identity tile. Shares a row with Prop on wide screens (the
-     duo row); each wraps to full width when the band narrows. */
+  /* Flavor hero: full-width identity tile (Custom mode only). */
   .tile-row > .tile.hero {
     flex: 1 1 100%;
-    height: 132px;
-  }
-  .tile-row.duo > .tile {
-    flex: 1 1 340px;
     height: 132px;
   }
   .tile > :global(*) {
