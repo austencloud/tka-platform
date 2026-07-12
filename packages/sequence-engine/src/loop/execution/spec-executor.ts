@@ -118,6 +118,7 @@ function groupFuseableByPeriod(
 
   for (const [comp, cSpec] of spec.components) {
     if (!FUSEABLE.has(comp)) continue;
+    if (cSpec.mode === "overlay") continue;
 
     if (!groups.has(cSpec.period)) {
       groups.set(cSpec.period, {
@@ -134,7 +135,17 @@ function groupFuseableByPeriod(
     if (comp === LOOPComponent.INVERTED) flags.invert = true;
   }
 
+  // Canonical stage order: groups containing MIRROR/FLIP/SWAP run before
+  // invert-only groups (inversion is the outermost layer); ascending period
+  // within each class. Same-period components remain fused in one group —
+  // fused mirror+invert cancels rotation flips, which sequential stages
+  // would not (and the legacy one-period-for-all path depends on it).
   return new Map(
-    [...groups.entries()].sort(([a], [b]) => b - a),
+    [...groups.entries()].sort(([pa, fa], [pb, fb]) => {
+      const invOnlyA = fa.invert && !fa.mirror && !fa.flip && !fa.swap ? 1 : 0;
+      const invOnlyB = fb.invert && !fb.mirror && !fb.flip && !fb.swap ? 1 : 0;
+      if (invOnlyA !== invOnlyB) return invOnlyA - invOnlyB;
+      return pa - pb;
+    }),
   ) as Map<number, FusedTransformFlags>;
 }

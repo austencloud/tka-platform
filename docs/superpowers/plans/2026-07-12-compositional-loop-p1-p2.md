@@ -136,7 +136,7 @@ git commit -m "feat(engine): ComponentSpec.mode — expand vs overlay, wire roun
 - Modify: `packages/sequence-engine/src/loop/execution/spec-executor.ts` (replace the descending sort in `groupFuseableByPeriod`, line ~137)
 - Test: `packages/sequence-engine/tests/loop/execution/canonical-stage-order.test.ts` (create)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 The test pins the observable consequence: `{mir:2, inv:4}` must run mirror FIRST (mirror innermost), producing 16 beats shaped `[X(4), I(X)(4), X(4), I(X)(4)]` where X = seed(2)+mirrored(2) — i.e. beats 5–8 are the pro↔anti flip of beats 1–4 at the same block positions. Under the old descending order, invert ran first and the shape was `[s, I(s), s, I(s), M(...)]` (beats 5–8 equal to beats 1–4 in letters but NOT type-flipped).
 
@@ -198,12 +198,12 @@ describe("canonical stage order", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd packages/sequence-engine && npx vitest run tests/loop/execution/canonical-stage-order.test.ts`
 Expected: first test FAILS (descending order runs invert innermost); second PASSES (guards against overcorrection).
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `spec-executor.ts`, replace the return of `groupFuseableByPeriod`:
 
@@ -225,12 +225,12 @@ In `spec-executor.ts`, replace the return of `groupFuseableByPeriod`:
 
 Also in `groupFuseableByPeriod`'s component loop, skip overlay components (they are handled by Task 3's stage): `if (cSpec.mode === "overlay") continue;`
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `cd packages/sequence-engine && npx vitest run tests/loop/execution/canonical-stage-order.test.ts && npx vitest run`
 Expected: new tests PASS; full engine suite green (the reorder cannot affect single-group legacy paths — if any existing test fails, STOP and investigate before proceeding).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(engine): canonical fused-stage order — mirror/flip/swap before invert-only, ascending period" -- packages/sequence-engine/src/loop/execution/spec-executor.ts packages/sequence-engine/tests/loop/execution/canonical-stage-order.test.ts
