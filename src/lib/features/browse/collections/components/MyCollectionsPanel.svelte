@@ -28,7 +28,7 @@ instead of showing an empty shell.
 	import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
 	import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
 	import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
-	import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+	import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
 	import { PLAYGROUND_TABS } from "$lib/shared/navigation/config/tab-definitions";
 	import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
 	import { scene3dCollectionState } from "$lib/features/scene-3d-collection/state/scene-3d-collection-state.svelte";
@@ -258,7 +258,12 @@ instead of showing an empty shell.
 	}
 
 	function openArtTab(tabId: string) {
-		navigationState.setCurrentModule("playground", tabId);
+		// Cross-module jumps must go through the coordinator: it switches the
+		// RENDERED module (module-state's switchModule) and pushes history, not
+		// just the nav-chrome state. Raw navigationState.setCurrentModule leaves
+		// BrowseModule mounted, which then misreads the foreign tab id and falls
+		// back to the gallery drill.
+		void handleModuleChange("playground", tabId);
 	}
 
 	// ── New collection (inline, same interaction as the picker's add tile) ──
