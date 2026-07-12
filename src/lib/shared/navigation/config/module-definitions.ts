@@ -169,13 +169,16 @@ export const MODULE_DEFINITIONS: ModuleDefinition[] = [
     sections: COMPOSE_TABS, // TODO: Rename to COMPOSE_TABS
   },
   {
+    // id + PLAYGROUND_TABS stay frozen (routes/analytics) — this is a label
+    // rename only, the module's public release under a new name. See
+    // docs/superpowers/specs/2026-07-12-art-in-library-design.md Unit 1.
     id: "playground",
     labelKey: "module_playground",
     descKey: "module_desc_playground",
-    label: "Playground",
-    icon: '<i class="fas fa-shapes" style="color: #d946ef;" aria-hidden="true"></i>',
+    label: "Art",
+    icon: '<i class="fas fa-palette" style="color: #d946ef;" aria-hidden="true"></i>',
     color: "#d946ef",
-    description: "Experimental toys and projects you can play with",
+    description: "Your saved tunnels, 3D scenes, and mandalas — the gallery for what you make",
     isMain: true,
     sections: PLAYGROUND_TABS,
   },

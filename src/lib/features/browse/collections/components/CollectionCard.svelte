@@ -30,6 +30,7 @@ first and only removes the folder — the sequences inside stay in the library.
 		readonly: isReadonly = false,
 		onUnfollow,
 		selected = false,
+		countLabel: countLabelOverride,
 	}: {
 		collection: LibraryCollection;
 		onOpen: () => void;
@@ -41,6 +42,9 @@ first and only removes the folder — the sequences inside stay in the library.
 		onUnfollow?: () => void;
 		/** Desktop rail: this card is the collection currently showing in the detail pane. */
 		selected?: boolean;
+		/** Overrides the default "N sequences" text — e.g. the Art shelf's
+		 *  "N tunnels" / "N 3D scenes" / "N mandalas". */
+		countLabel?: string;
 	} = $props();
 
 	const isSystem = $derived(isSystemCollection(collection));
@@ -167,7 +171,7 @@ first and only removes the folder — the sequences inside stay in the library.
 		if (ok && collection.isPublic) communityCollectionsState.invalidate();
 	}
 
-	function countLabel(n: number): string {
+	function defaultCountLabel(n: number): string {
 		return `${n} ${n === 1 ? "sequence" : "sequences"}`;
 	}
 </script>
@@ -201,13 +205,17 @@ first and only removes the folder — the sequences inside stay in the library.
 			}}
 			oncontextmenu={handleContextMenu}
 		>
-			<span class="tile-icon">
-				<i class={`fas ${collection.icon ?? "fa-folder"}`} aria-hidden="true"></i>
+			<span class="tile-icon" class:has-cover={!!collection.coverImageUrl}>
+				{#if collection.coverImageUrl}
+					<img class="tile-cover-img" src={collection.coverImageUrl} alt="" />
+				{:else}
+					<i class={`fas ${collection.icon ?? "fa-folder"}`} aria-hidden="true"></i>
+				{/if}
 			</span>
 			<span class="tile-text">
 				<span class="tile-name">{collection.name}</span>
 				<span class="tile-count">
-					{countLabel(collection.sequenceCount)}{#if isSmart}
+					{countLabelOverride ?? defaultCountLabel(collection.sequenceCount)}{#if isSmart}
 						· <i class="fas fa-wand-magic-sparkles smart-badge" aria-hidden="true"></i> Smart{/if}{#if !isReadonly && collection.isPublic}
 						· <i class="fas fa-globe public-globe" aria-hidden="true"></i> Public{/if}
 				</span>
@@ -307,6 +315,25 @@ first and only removes the folder — the sequences inside stay in the library.
 		background: color-mix(in srgb, var(--tile-color) 20%, transparent);
 		color: var(--tile-color);
 		font-size: 17px;
+	}
+
+	/* Art cards (Tunnels / 3D Scenes) carry a poster thumbnail instead of a
+	   folder icon — the framed ring + tighter radius reads as "a piece" rather
+	   than "a container", the visual split the Library Art shelf is meant to
+	   teach (raw sequence folders vs. saved expressions of that data). */
+	.tile-icon.has-cover {
+		padding: 0;
+		border-radius: 10px;
+		background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+		box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--tile-color) 55%, transparent);
+		overflow: hidden;
+	}
+
+	.tile-cover-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		border-radius: inherit;
 	}
 
 	.tile-text {

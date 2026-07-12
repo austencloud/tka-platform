@@ -18,6 +18,7 @@ export class CollectionState<T extends CollectionEntry> {
   loading = $state(false);
   private userId: string | null = null;
   private localLoaded = false;
+  private startedFor: string | null = null;
 
   constructor(
     private readonly repo: FirebaseCollectionRepository<T>,
@@ -26,6 +27,7 @@ export class CollectionState<T extends CollectionEntry> {
 
   async init(userId: string): Promise<void> {
     this.userId = userId;
+    this.startedFor = userId;
     this.loading = true;
     try {
       const firebaseEntries = await this.repo.load(userId);
@@ -34,6 +36,18 @@ export class CollectionState<T extends CollectionEntry> {
     } finally {
       this.loading = false;
     }
+  }
+
+  /**
+   * Idempotently kick off Firestore hydration for this user. A no-op once
+   * already started (or starting) for the current uid, so a lazy consumer
+   * (e.g. the Library Art shelf) never races or duplicates the boot-time
+   * `init()` auth-boot-orchestrator already triggered. Mirrors
+   * collections-state.svelte.ts's `ensureStarted()`.
+   */
+  ensureStarted(userId: string): void {
+    if (this.startedFor === userId) return;
+    void this.init(userId);
   }
 
   /** Guest-mode boot: hydrate from localStorage without a Firestore read. */
@@ -60,6 +74,7 @@ export class CollectionState<T extends CollectionEntry> {
     this.loading = false;
     this.userId = null;
     this.localLoaded = false;
+    this.startedFor = null;
   }
 
   async add(entry: Omit<T, "id" | "createdAt">): Promise<T> {

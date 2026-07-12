@@ -28,6 +28,11 @@ instead of showing an empty shell.
 	import { followedCollectionsState } from "$lib/features/library/state/followed-collections-state.svelte";
 	import { browseNavigationState } from "$lib/shared/browse/state/browse-navigation-state.svelte";
 	import { responsiveLayoutManager } from "$lib/shared/create/services/responsive-layout-manager";
+	import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+	import { PLAYGROUND_TABS } from "$lib/shared/navigation/config/tab-definitions";
+	import { tunnelCollectionState } from "$lib/features/tunnel-collection/state/tunnel-collection-state.svelte";
+	import { scene3dCollectionState } from "$lib/features/scene-3d-collection/state/scene-3d-collection-state.svelte";
+	import { mandalaCollectionState } from "$lib/features/mandala/tabs/collection/state/mandala-collection-state.svelte";
 	import CollectionCard from "./CollectionCard.svelte";
 	import CollectionDetailView from "./CollectionDetailView.svelte";
 	import SmartCollectionDetailView from "./SmartCollectionDetailView.svelte";
@@ -47,6 +52,16 @@ instead of showing an empty shell.
 		if (signedIn) {
 			collectionsState.ensureStarted();
 			followedCollectionsState.ensureStarted();
+		}
+		const uid = authState.user?.uid;
+		if (uid) {
+			// The Art shelf's three singletons are also started at auth boot
+			// (auth-boot-orchestrator), but a fast Library visit can beat that
+			// non-blocking chain — ensureStarted() is idempotent per uid, so
+			// this becomes a no-op once boot's own init() has already fired.
+			tunnelCollectionState.ensureStarted(uid);
+			scene3dCollectionState.ensureStarted(uid);
+			mandalaCollectionState.ensureStarted(uid);
 		}
 	});
 
@@ -171,6 +186,81 @@ instead of showing an empty shell.
 		browseNavigationState.viewCollections();
 	}
 
+	// ── "Art" shelf ──────────────────────────────────────────────────────────
+	// Indexes the three Playground/Art collections (tunnels, 3D scenes,
+	// mandalas) as category cards — a count + latest-poster cover per category,
+	// not one card per saved entry. Tapping jumps to the Art module's matching
+	// tab; browsing/restoring individual saves stays inside that module.
+	// Display-only: no browseNavigationState detail write, matching the "All"
+	// synthetic shelf above.
+	function playgroundTabColor(tabId: string): string {
+		return PLAYGROUND_TABS.find((t) => t.id === tabId)?.color ?? "var(--theme-accent)";
+	}
+
+	function artCollection(
+		id: string,
+		name: string,
+		icon: string,
+		tabId: string,
+		sequenceCount: number,
+		coverImageUrl?: string,
+	): LibraryCollection {
+		return {
+			id,
+			name,
+			ownerId: authState.user?.uid ?? "",
+			sequenceIds: [],
+			sequenceCount,
+			coverImageUrl,
+			color: playgroundTabColor(tabId),
+			icon,
+			isPublic: false,
+			sortOrder: 0,
+			createdAt: new Date(0),
+			updatedAt: new Date(0),
+		};
+	}
+
+	const tunnelsArtCard = $derived(
+		artCollection(
+			"art_tunnels",
+			"Tunnels",
+			"fa-fan",
+			"tunnels",
+			tunnelCollectionState.collection.length,
+			tunnelCollectionState.collection[0]?.poster,
+		),
+	);
+	const scenesArtCard = $derived(
+		artCollection(
+			"art_scenes",
+			"3D Scenes",
+			"fa-cube",
+			"scenes",
+			scene3dCollectionState.collection.length,
+			scene3dCollectionState.collection[0]?.poster,
+		),
+	);
+	const mandalaArtCard = $derived(
+		// Mandalas have no poster field — the card falls back to icon + color.
+		artCollection(
+			"art_mandala",
+			"Mandalas",
+			"fa-dharmachakra",
+			"mandala",
+			mandalaCollectionState.collection.length,
+			undefined,
+		),
+	);
+
+	function unitLabel(n: number, singular: string, plural: string): string {
+		return `${n} ${n === 1 ? singular : plural}`;
+	}
+
+	function openArtTab(tabId: string) {
+		navigationState.setCurrentModule("playground", tabId);
+	}
+
 	// ── New collection (inline, same interaction as the picker's add tile) ──
 	let showInput = $state(false);
 	let newName = $state("");
@@ -280,6 +370,27 @@ instead of showing an empty shell.
 	</button>
 {/snippet}
 
+{#snippet artShelf()}
+	<CollectionCard
+		collection={tunnelsArtCard}
+		readonly
+		countLabel={unitLabel(tunnelsArtCard.sequenceCount, "tunnel", "tunnels")}
+		onOpen={() => openArtTab("tunnels")}
+	/>
+	<CollectionCard
+		collection={scenesArtCard}
+		readonly
+		countLabel={unitLabel(scenesArtCard.sequenceCount, "3D scene", "3D scenes")}
+		onOpen={() => openArtTab("scenes")}
+	/>
+	<CollectionCard
+		collection={mandalaArtCard}
+		readonly
+		countLabel={unitLabel(mandalaArtCard.sequenceCount, "mandala", "mandalas")}
+		onOpen={() => openArtTab("mandala")}
+	/>
+{/snippet}
+
 {#snippet followedShelves(sel: { id: string; ownerId: string | null } | null)}
 	{#each followedCollectionsState.items as item (item.ownerId + item.collection.id)}
 		<CollectionCard
@@ -317,6 +428,11 @@ instead of showing an empty shell.
 				<h3 class="shelf-heading">My Collections</h3>
 				<div class="rail-cards">
 					{@render ownShelves(railSelection)}
+				</div>
+
+				<h3 class="shelf-heading">Art</h3>
+				<div class="rail-cards">
+					{@render artShelf()}
 				</div>
 
 				<h3 class="shelf-heading">TKA Originals</h3>
@@ -397,6 +513,11 @@ instead of showing an empty shell.
 				<h3 class="shelf-heading">My Collections</h3>
 				<div class="card-grid">
 					{@render ownShelves(null)}
+				</div>
+
+				<h3 class="shelf-heading">Art</h3>
+				<div class="card-grid">
+					{@render artShelf()}
 				</div>
 
 				<h3 class="shelf-heading">TKA Originals</h3>
