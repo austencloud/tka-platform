@@ -11,6 +11,14 @@
   auto-scale UP from cardWidth to fill the container (ultrawide screens get a
   properly big fan), capped by maxCardWidth.
 -->
+<script lang="ts" module>
+  /* Deal timing, exported so hosts can sequence follow-up flourishes (the
+     configurator's shimmer + ready-chip fire after the re-deal settles). */
+  export const DEAL_MS = 620;
+  export const DEAL_STAGGER = 70;
+  export const GATHER_MS = 240;
+</script>
+
 <script lang="ts">
   import type { CoverCard } from "../domain/models/product";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -35,6 +43,12 @@
     exactCount?: number;
     /** Disable hover spread/lift (e.g. tiny tiles). */
     interactive?: boolean;
+    /** Deal-in choreography: cards mount as a stacked pile and sweep into the
+        fan with a staggered spring (opt-in — grid/hero fans stay static). */
+    deal?: boolean;
+    /** Bump to re-deal: cards gather back to the pile, then deal out again.
+        The payoff flourish on the configurator's Buy click. */
+    dealNonce?: number;
   }
   let {
     cards,
@@ -46,6 +60,8 @@
     maxCards = 6,
     exactCount,
     interactive = true,
+    deal = false,
+    dealNonce = 0,
   }: Props = $props();
 
   let boxW = $state(0);
@@ -66,6 +82,44 @@
   });
   const shown = $derived(cards.slice(0, count));
   const tilt = (i: number, n: number) => (n <= 1 ? 0 : -12 + (24 * i) / (n - 1));
+
+  // ── deal choreography (only when `deal`) ─────────────────────────────────
+  // Timing lives outside the DURATION scale on purpose: this is a one-shot
+  // flourish (approved "Spring" personality from the payoff prototype), not a
+  // standard UI transition. Gather is quick and unison; the deal is a
+  // staggered overshoot spring.
+  const DEAL_EASE = "cubic-bezier(0.34, 1.56, 0.64, 1)";
+  const GATHER_EASE = "cubic-bezier(0.45, 0, 0.65, 0.4)";
+  // Fixed per-slot jitter so the pile reads physical, not procedural.
+  const PILE_JITTER = [-1.6, 1.1, -0.7, 1.8, -1.2, 0.5];
+
+  const reducedMotion =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  let dealt = $state(!deal);
+  $effect(() => {
+    if (!deal) return;
+    if (reducedMotion) {
+      dealt = true;
+      return;
+    }
+    const isRedeal = dealNonce > 0;
+    dealt = false;
+    // First mount: one settled frame in the pile, then deal. Re-deal (nonce
+    // bump): gather animates back first, then the cards sweep out again.
+    const t = setTimeout(() => (dealt = true), isRedeal ? GATHER_MS + 40 : 60);
+    return () => clearTimeout(t);
+  });
+
+  // Flex pitch between card lefts is cardW minus the 52% overlap; translating
+  // each slot by its pitch-distance from the middle collapses the fan into
+  // one centered pile.
+  const pileDx = (i: number, n: number) => -(i - (n - 1) / 2) * (cardW * 0.48);
+  const slotTransform = (i: number, n: number) =>
+    dealt
+      ? `rotate(${tilt(i, n)}deg)`
+      : `translate(${pileDx(i, n)}px, 10px) rotate(${PILE_JITTER[i % PILE_JITTER.length]}deg)`;
 
   const maxW = $derived(maxCardWidth ?? Math.round(cardWidth * 1.8));
   const cardW = $derived(
@@ -102,6 +156,7 @@
 <div
   class="fan"
   class:interactive
+  class:dealing={deal && !reducedMotion}
   bind:clientWidth={boxW}
   inert
   aria-hidden="true"
@@ -110,7 +165,13 @@
 >
   {#each shown as card, i (cardKey(card))}
     <div class="fan-slot">
-      <div class="fan-tilt" style:transform="rotate({tilt(i, shown.length)}deg)">
+      <div
+        class="fan-tilt"
+        style:transform={slotTransform(i, shown.length)}
+        style:transition-duration={deal ? `${dealt ? DEAL_MS : GATHER_MS}ms` : undefined}
+        style:transition-timing-function={deal ? (dealt ? DEAL_EASE : GATHER_EASE) : undefined}
+        style:transition-delay={deal && dealt ? `${i * DEAL_STAGGER}ms` : undefined}
+      >
         <div class="card-box" style:width="{cardW}px">
           {#if urls[cardKey(card)]}
             <img class="card-img" src={urls[cardKey(card)]} alt="" draggable="false" />
@@ -151,6 +212,12 @@
 
   .fan-tilt {
     transform-origin: bottom center;
+  }
+  /* Deal-in: the inline styles above drive per-card duration/ease/stagger;
+     the property registration lives here so non-dealing fans never animate. */
+  .fan.dealing .fan-tilt {
+    transition-property: transform;
+    will-change: transform;
   }
 
   /* Trimmed-card box: the render is the full MPC canvas WITH bleed; cover-fit

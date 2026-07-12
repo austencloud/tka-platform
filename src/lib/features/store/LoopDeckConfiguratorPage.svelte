@@ -22,7 +22,11 @@
   import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
-  import DeckFanCover from "./components/DeckFanCover.svelte";
+  import DeckFanCover, {
+    DEAL_MS as FAN_DEAL_MS,
+    DEAL_STAGGER as FAN_DEAL_STAGGER,
+    GATHER_MS as FAN_GATHER_MS,
+  } from "./components/DeckFanCover.svelte";
   import LoopChips from "./components/LoopChips.svelte";
   import BuyButton from "./components/BuyButton.svelte";
   import PropPicker from "./components/PropPicker.svelte";
@@ -105,6 +109,52 @@
   const haptics = getHapticFeedback();
   function buzz() {
     haptics?.trigger("selection");
+  }
+
+  // ── Buy payoff: building the checkout session costs 1–3s of network anyway,
+  //    so fill the dead time with the deal-and-spread flourish (approved via
+  //    the payoff prototype). Purely reactive to isCheckingOut — no change to
+  //    the checkout call itself. On checkout error the flags reset clean. ──
+  let dealNonce = $state(0);
+  let payoffShown = $state(false);
+  let shineRun = $state(false);
+  let payoffTimer: ReturnType<typeof setTimeout> | undefined;
+  let previewBoxEl = $state<HTMLDivElement | null>(null);
+  let wasCheckingOut = false;
+  $effect(() => {
+    const checking = store.isCheckingOut;
+    if (checking && !wasCheckingOut) startPayoff();
+    else if (!checking && wasCheckingOut) resetPayoff();
+    wasCheckingOut = checking;
+  });
+  function startPayoff() {
+    dealNonce++;
+    haptics?.trigger("success");
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // The buy button sits below the stage on narrow layouts — bring the
+    // flourish into view so the payoff isn't playing off-screen.
+    if (window.innerWidth < 1200)
+      previewBoxEl?.scrollIntoView({
+        behavior: reduced ? "auto" : "smooth",
+        block: "center",
+      });
+    clearTimeout(payoffTimer);
+    // Shimmer + ready-chip once the re-deal settles (gather, deal, last stagger).
+    const settle = reduced ? 0 : FAN_GATHER_MS + FAN_DEAL_MS + FAN_DEAL_STAGGER * 5;
+    payoffTimer = setTimeout(() => {
+      shineRun = true;
+      payoffShown = true;
+    }, settle);
+  }
+  function resetPayoff() {
+    clearTimeout(payoffTimer);
+    payoffShown = false;
+    shineRun = false;
+  }
+  // Dev-only: lets the flourish be exercised (and eyeballed) without creating
+  // a real Stripe checkout session.
+  if (import.meta.env.DEV && typeof window !== "undefined") {
+    (window as unknown as Record<string, unknown>).__tkaPayoff = startPayoff;
   }
 
   // ── preset decks: one-tap entry for the buyer who won't work the dials.
@@ -319,7 +369,7 @@
       <div class="config-layout">
         <!-- ============ preview column ============ -->
         <div class="preview-column">
-          <div class="preview-box">
+          <div class="preview-box" class:payoff-active={payoffShown} bind:this={previewBoxEl}>
             <!-- fill mode: the stage is the sized box, so config swaps can
                  never resize it (crossfade-primitive routing). -->
             <Crossfade key={`${flavor}|${propType}|${excluded.size}`} fill>
@@ -334,10 +384,23 @@
                   exactCount={flavor === "variety"
                     ? Math.min(6, fanCards.length)
                     : undefined}
+                  deal
+                  {dealNonce}
                 />
                 <p class="preview-desc">{previewDesc}</p>
               </div>
             </Crossfade>
+            <!-- Buy payoff overlays: one foil sweep + the ready chip, both
+                 absolutely stacked so nothing in the stage reflows. -->
+            <div class="payoff-shine" class:run={shineRun} aria-hidden="true"></div>
+            {#if payoffShown}
+              <div
+                class="payoff-chip"
+                transition:scale={{ duration: 300, easing: quintOut, start: 0.85 }}
+              >
+                Your deck is ready · 54 cards · {price}
+              </div>
+            {/if}
           </div>
         </div>
 
@@ -739,6 +802,65 @@
     text-align: center;
     max-width: 56ch;
     align-self: center;
+    transition: opacity 250ms ease;
+  }
+  /* While the ready chip is up it owns the stage: the description fades but
+     keeps its space (visibility trick, no layout shift). */
+  .preview-box.payoff-active .preview-desc {
+    opacity: 0;
+  }
+
+  /* ---------- buy payoff (shine sweep + ready chip) ---------- */
+  .payoff-shine {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      115deg,
+      transparent 42%,
+      rgba(255, 255, 255, 0.13) 50%,
+      transparent 58%
+    );
+    transform: translateX(-120%);
+    opacity: 0;
+    z-index: 2;
+  }
+  .payoff-shine.run {
+    animation: payoff-sweep 950ms ease-out forwards;
+  }
+  @keyframes payoff-sweep {
+    from {
+      opacity: 1;
+      transform: translateX(-120%);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(120%);
+    }
+  }
+
+  .payoff-chip {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(14px, 3vw, 26px);
+    transform: translateX(-50%);
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 20px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: var(--font-size-min, 14px);
+    color: #171204;
+    background: linear-gradient(135deg, #e8d35c 0%, #d9c24a 45%, #a89a2c 100%);
+    box-shadow: 0 4px 18px rgba(217, 194, 74, 0.3);
+    white-space: nowrap;
+    z-index: 3;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .payoff-shine {
+      display: none;
+    }
   }
 
   /* ---------- info ---------- */

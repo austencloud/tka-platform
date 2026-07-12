@@ -111,7 +111,30 @@ Basic spec:
 - Effort ●●●○○ · Risk ●●○○○ · Distinct ●●●●○. Expect several eyes-on rounds to make the
   card feel physical.
 
-## Concept C — The Dealing Table (THE SWING — for Fable, high effort)
+## Deal & Spread payoff (SHIPPED 2026-07-11 — C's honest 10%)
+
+Austen judged the physics-diorama version of C a rabbit-hole risk, then approved a
+zero-physics model of just the payoff moment (interactive prototype:
+`static/sketches/2026-07-11-deal-spread-payoff.html`, Spring personality
+620ms/70ms stagger) and said "go ham." Shipped into the real page:
+
+- `DeckFanCover` grew opt-in `deal` + `dealNonce` props: cards mount as a
+  jittered pile and sweep into the fan (rotation around the existing bottom
+  origin + pile-collapse translate; pure CSS transitions, inline per-card
+  duration/ease/stagger). Timing consts exported from the module script.
+- Every flavor/prop change re-deals for free (the keyed Crossfade remounts the
+  fan) — the "riffle" feel with zero physics.
+- Buy payoff: reacts to `store.isCheckingOut` (checkout logic untouched) —
+  re-deal, foil shine sweep, gold "Your deck is ready · 54 cards · $30" chip,
+  success haptic; description fades (opacity, no layout shift) while the chip
+  owns the stage. Masks the 1–3s checkout-session network wait.
+- Dev hook `window.__tkaPayoff` (DEV only) exercises the flourish without a
+  real Stripe session.
+- Eyes-on verified: mid-deal frames captured, inline transition styles +
+  chip/shine sequencing confirmed via JS sampling; chip/description collision
+  found and fixed in-session. Check 0/0.
+
+## Concept C — The Dealing Table (PARKED — superseded by the payoff above)
 
 Configuration as play. The deck lives in a reactive cosmic diorama; picking a flavor
 riffles the stack; finishing deals into a spread (the "here is your deck" payoff).

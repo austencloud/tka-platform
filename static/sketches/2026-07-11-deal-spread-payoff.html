@@ -1,0 +1,331 @@
+<title>Deal &amp; Spread — Payoff Model</title>
+<style>
+  :root {
+    --ground: #0d0b1a;
+    --surface: #171430;
+    --violet: #8b6cff;
+    --teal: #54d1c4;
+    --gold: #d9c24a;
+    --gold-deep: #a89a2c;
+    --text: #e8e5f4;
+    --muted: #9a94b8;
+    --card-w: clamp(72px, 17vmin, 118px);
+    --dur: 620ms;
+    --ease: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  /* Single-theme by design: this prototypes a dark cosmic shop surface.
+     Judging the payoff on a light ground would be judging the wrong thing. */
+  html, body { margin: 0; padding: 0; background: var(--ground); color: var(--text); }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+    background:
+      radial-gradient(52% 40% at 50% 30%, rgba(139,108,255,0.16), transparent 68%),
+      radial-gradient(36% 30% at 72% 72%, rgba(84,209,196,0.07), transparent 70%),
+      var(--ground);
+  }
+
+  header {
+    width: min(560px, 92vw);
+    padding: 28px 0 4px;
+    text-align: center;
+  }
+  header h1 {
+    font-size: clamp(1.15rem, 3.4vw, 1.5rem);
+    font-weight: 750;
+    letter-spacing: 0.01em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  header p {
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    margin: 0;
+    text-wrap: balance;
+  }
+  header strong { color: var(--text); font-weight: 600; }
+
+  /* ---- Stage ---- */
+  .stage {
+    position: relative;
+    width: min(640px, 96vw);
+    height: clamp(300px, 52vmin, 430px);
+    flex: none;
+  }
+  .card {
+    position: absolute;
+    left: 50%;
+    top: 52%;
+    width: var(--card-w);
+    aspect-ratio: 5 / 7;
+    margin-left: calc(var(--card-w) / -2);
+    margin-top: calc(var(--card-w) * -0.7);
+    border-radius: 9px;
+    transform-origin: 50% calc(var(--card-w) * 3.4);
+    transition: transform var(--dur) var(--ease);
+    background:
+      radial-gradient(120% 90% at 30% 10%, rgba(255,255,255,0.10), transparent 55%),
+      linear-gradient(158deg, #2c2456 0%, #1a1440 55%, #120e30 100%);
+    border: 1px solid rgba(217,194,74,0.34);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.06) inset,
+      0 10px 26px rgba(0,0,0,0.45);
+    display: grid;
+    place-items: center;
+    will-change: transform;
+  }
+  .card::before {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(139,108,255,0.30);
+  }
+  .glyph {
+    width: 34%;
+    aspect-ratio: 1;
+    transform: rotate(45deg);
+    border-radius: 14%;
+    background: linear-gradient(135deg, var(--gold) 0%, var(--gold-deep) 60%, #6f6318 100%);
+    box-shadow: 0 0 14px rgba(217,194,74,0.35);
+  }
+
+  /* one-time foil sweep across the settled fan */
+  .shine {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(115deg, transparent 42%, rgba(255,255,255,0.14) 50%, transparent 58%);
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+  .shine.run {
+    animation: sweep 950ms ease-out forwards;
+  }
+  @keyframes sweep {
+    0%   { opacity: 1; transform: translateX(-120%); }
+    100% { opacity: 0; transform: translateX(120%); }
+  }
+
+  /* ---- Payoff caption ---- */
+  .payoff {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    min-height: 84px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 420ms ease, transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .payoff.show { opacity: 1; transform: translateY(0); }
+  .payoff .line { font-size: 1.02rem; font-weight: 650; letter-spacing: 0.01em; }
+  .price-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-weight: 750;
+    font-size: 0.98rem;
+    color: #171204;
+    background: linear-gradient(135deg, #e8d35c 0%, var(--gold) 45%, var(--gold-deep) 100%);
+    box-shadow: 0 4px 18px rgba(217,194,74,0.30);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Controls ---- */
+  .controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 6px 0 40px;
+    width: min(560px, 92vw);
+  }
+  button {
+    font: inherit;
+    cursor: pointer;
+    border-radius: 12px;
+    border: 1px solid rgba(139,108,255,0.35);
+    background: linear-gradient(135deg, rgba(139,108,255,0.14), rgba(139,108,255,0.04));
+    color: var(--text);
+    min-height: 44px;
+    padding: 0 18px;
+    font-weight: 600;
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+  button:active { transform: scale(0.97); }
+  button:focus-visible { outline: 2px solid var(--violet); outline-offset: 2px; }
+
+  .deal-btn {
+    min-width: 200px;
+    min-height: 52px;
+    font-size: 1.05rem;
+    font-weight: 750;
+    color: #171204;
+    border: none;
+    background: linear-gradient(135deg, #e8d35c 0%, var(--gold) 45%, var(--gold-deep) 100%);
+    box-shadow: 0 6px 22px rgba(217,194,74,0.28);
+  }
+
+  .variants { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .variants button.active {
+    border-color: var(--gold);
+    background: linear-gradient(135deg, rgba(217,194,74,0.22), rgba(217,194,74,0.06));
+    color: #f3e9b0;
+  }
+  .readout {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-size: 0.78rem;
+    color: var(--muted);
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .note {
+    color: var(--muted);
+    font-size: 0.85rem;
+    line-height: 1.55;
+    text-align: center;
+    max-width: 46ch;
+    margin: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none !important; }
+    .shine { display: none; }
+    .payoff { transition: none; }
+  }
+</style>
+
+<header>
+  <h1>Deal &amp; Spread — payoff model</h1>
+  <p>The add-to-cart confirmation moment, isolated. Tap <strong>Deal my deck</strong>.
+     Judge one thing: does the settle feel worth building for real?</p>
+</header>
+
+<div class="stage" id="stage">
+  <div class="shine" id="shine"></div>
+</div>
+
+<div class="payoff" id="payoff">
+  <div class="line">Your deck is ready</div>
+  <div class="price-chip"><span>8 cards</span> · <span>$30</span></div>
+</div>
+
+<div class="controls">
+  <button class="deal-btn" id="dealBtn">Deal my deck</button>
+  <div class="variants" id="variants" role="group" aria-label="Timing personality">
+    <button data-v="crisp">Crisp</button>
+    <button data-v="spring" class="active">Spring</button>
+    <button data-v="cascade">Cascade</button>
+  </div>
+  <div class="readout" id="readout">spring · 620ms/card · 70ms stagger · settles in 1.11s</div>
+  <p class="note">Pure CSS transforms, no physics engine. The arc comes from a low
+     rotation pivot — each card sweeps into place along a real arc. The full build
+     would add card faces, sound-free haptic, and the cosmic ground behind it.</p>
+</div>
+
+<script>
+  const N = 8;
+  const stage = document.getElementById("stage");
+  const shine = document.getElementById("shine");
+  const payoff = document.getElementById("payoff");
+  const dealBtn = document.getElementById("dealBtn");
+  const variantsEl = document.getElementById("variants");
+  const readout = document.getElementById("readout");
+
+  const VARIANTS = {
+    crisp:   { dur: 320, stagger: 55,  ease: "cubic-bezier(0.22, 1, 0.36, 1)" },
+    spring:  { dur: 620, stagger: 70,  ease: "cubic-bezier(0.34, 1.56, 0.64, 1)" },
+    cascade: { dur: 820, stagger: 110, ease: "cubic-bezier(0.25, 0.8, 0.25, 1)" },
+  };
+  let variant = "spring";
+  let spread = false;
+  let settleTimer = null;
+
+  // fixed jitter so the stack looks physical, not procedural
+  const JITTER = [-1.6, 1.1, -0.7, 1.8, -1.2, 0.5, -1.9, 1.4];
+
+  const cards = [];
+  for (let i = 0; i < N; i++) {
+    const c = document.createElement("div");
+    c.className = "card";
+    c.innerHTML = '<div class="glyph"></div>';
+    c.style.zIndex = i + 1;
+    stage.insertBefore(c, shine);
+    cards.push(c);
+  }
+
+  const fanAngle = (i) => -35 + i * (70 / (N - 1));
+  const stackTransform = (i) => `rotate(${JITTER[i]}deg) translateY(${i * -1.5}px)`;
+
+  function applyVariant() {
+    const v = VARIANTS[variant];
+    document.documentElement.style.setProperty("--dur", v.dur + "ms");
+    document.documentElement.style.setProperty("--ease", v.ease);
+    const settle = (v.dur + v.stagger * (N - 1)) / 1000;
+    readout.textContent =
+      `${variant} · ${v.dur}ms/card · ${v.stagger}ms stagger · settles in ${settle.toFixed(2)}s`;
+  }
+
+  function deal() {
+    const v = VARIANTS[variant];
+    cards.forEach((c, i) => {
+      c.style.transitionDelay = i * v.stagger + "ms";
+      c.style.transform = `rotate(${fanAngle(i)}deg)`;
+    });
+    const total = v.dur + v.stagger * (N - 1);
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => {
+      shine.classList.remove("run");
+      void shine.offsetWidth; // restart the sweep
+      shine.classList.add("run");
+      payoff.classList.add("show");
+      if (navigator.vibrate) navigator.vibrate(12);
+    }, total);
+    spread = true;
+    dealBtn.textContent = "Reset";
+  }
+
+  function reset(instant) {
+    const v = VARIANTS[variant];
+    clearTimeout(settleTimer);
+    payoff.classList.remove("show");
+    shine.classList.remove("run");
+    cards.forEach((c, i) => {
+      c.style.transitionDelay = instant ? "0ms" : (N - 1 - i) * (v.stagger * 0.4) + "ms";
+      if (instant) {
+        c.style.transitionDuration = "0ms";
+        c.style.transform = stackTransform(i);
+        void c.offsetWidth;
+        c.style.transitionDuration = "";
+      } else {
+        c.style.transform = stackTransform(i);
+      }
+    });
+    spread = false;
+    dealBtn.textContent = "Deal my deck";
+  }
+
+  dealBtn.addEventListener("click", () => (spread ? reset(false) : deal()));
+
+  variantsEl.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-v]");
+    if (!b) return;
+    variant = b.dataset.v;
+    variantsEl.querySelectorAll("button").forEach((x) => x.classList.toggle("active", x === b));
+    applyVariant();
+    // feel it immediately: snap back, re-deal in the new personality
+    if (spread) { reset(true); requestAnimationFrame(() => requestAnimationFrame(deal)); }
+  });
+
+  reset(true);
+  applyVariant();
+</script>
