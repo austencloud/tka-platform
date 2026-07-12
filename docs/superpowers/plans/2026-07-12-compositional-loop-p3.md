@@ -396,11 +396,15 @@ git commit -m "feat(loop): overlay components render after a faded dot in the ic
 
 ### Task 5: Gates
 
-- [ ] **Step 1:** `npx vitest run tests/unit/loop tests/unit/services --config tests/config/vitest.config.ts` — report counts (fixture-audit totals must stay PASS=190 PARTIAL=27 EXTRA=1 FAIL=52).
-- [ ] **Step 2:** `cd packages/sequence-engine && npx vitest run` — 282+ green.
-- [ ] **Step 3:** ONE full `npm run check > check-p3.log 2>&1; grep -iE "svelte-check found" check-p3.log` — report the summary line (1 pre-existing OptionPulsePreview error is known/out-of-scope; anything else must be fixed).
-- [ ] **Step 4:** `npm run build:fast` — succeeds.
-- [ ] **Step 5:** Commit the plan file alone: `docs(plan): compositional LOOP P3 gates green`.
+- [x] **Step 1:** `npx vitest run tests/unit/loop tests/unit/services --config tests/config/vitest.config.ts` — report counts (fixture-audit totals must stay PASS=190 PARTIAL=27 EXTRA=1 FAIL=52).
+  Actual: 30 files / 182 tests passed; totals `PASS=190 PARTIAL=27 EXTRA=1 FAIL=52` — locked.
+- [x] **Step 2:** `cd packages/sequence-engine && npx vitest run` — 282+ green.
+  Actual: 36 files / 282 tests passed.
+- [x] **Step 3:** ONE full `npm run check > check-p3.log 2>&1; grep -iE "svelte-check found" check-p3.log` — report the summary line (1 pre-existing OptionPulsePreview error is known/out-of-scope; anything else must be fixed).
+  Actual: `svelte-check found 0 errors and 0 warnings` (the OptionPulsePreview error was fixed by its owning session in the interim).
+- [x] **Step 4:** `npm run build:fast` — succeeds.
+  Actual: exit 0.
+- [x] **Step 5:** Commit the plan file alone: `docs(plan): compositional LOOP P3 gates green`.
 
 ---
 
