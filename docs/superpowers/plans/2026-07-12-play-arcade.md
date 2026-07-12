@@ -1147,8 +1147,11 @@ grep -rn '\.word' src/lib/features/learn/play/ | grep -v simplifyRepeatedWord | 
 ```bash
 npm run check > /tmp/check.log 2>&1
 grep -ciE "error" /tmp/check.log   # expect 0 errors (grep the log, don't re-run)
-npx vitest run tests/unit/play/
+npx vitest run tests/unit/play/ --config tests/config/vitest.config.ts
 ```
+
+(The `--config` flag is required — bare `npx vitest run` misses the jsdom
+setup and falsely fails the store test on missing localStorage.)
 
 Fix anything red. Repeat the single check only after fixes if errors were
 found.
@@ -1163,16 +1166,29 @@ git commit -m "test(play): coin-flip regression component test + contract greps 
 
 ## Ledger
 
-- [ ] Task 1 — domain modules + registry + generator constraints
-- [ ] Task 2 — session engine
-- [ ] Task 3 — progress store + rules
-- [ ] Task 4 — GameShell + 4 ports
-- [ ] Task 5 — PlayHub + cards + previews
-- [ ] Task 6 — ArcadeResults + LevelPicker
-- [ ] Task 7 — LearnTab wiring + deletions
-- [ ] Task 8 — Speed Blitz
-- [ ] Task 9 — Mandala Match
-- [ ] Task 10 — regression test + verification
+- [x] Task 1 — domain modules + registry + generator constraints (c91695a774; Component import dropped as unused)
+- [x] Task 2 — session engine (552f2d6513; $derived accuracy → computeAccuracy() plain fn, real recompute bug repro'd; bestCombo = longestStreak placeholder; test stays plain .test.ts — tests/unit excludes .svelte.test.ts)
+- [x] Task 3 — progress store + rules (67bbd75cfe; getter at play/get-play-progress-store.ts; rules mirror learningProgress exactly incl. its delete clause; agent commit perms rejected → orchestrator committed staged work)
+- [x] Task 4 — GameShell + 4 ports (7e4bdbd584; Crossfade keyed on playing-phase object NOT questionIndex — index increments synchronously at answer, keying it would remount mid-feedback; wordLength threaded through question-generator too; six-branch routing incl. placeholder branches for T8/T9)
+- [x] Task 5 — PlayHub + cards + previews (d301337d77; wrapped-session context = view transitions on phase mutations only; results side effects in $effect.pre w/ identity guard; OptionPulsePreview kept for letter-to-pictograph; :global pause rule in PlayHub — Svelte prunes unmatched selectors)
+- [x] Task 6 — ArcadeResults + LevelPicker (6beac42b7d; side-effect-free per pin; inline SVG stars — no shared star primitive exists; third action = "Back to levels" matching backToLevels(); old importers left broken-on-purpose for Task 7 deletion)
+- [x] Task 7 — LearnTab wiring + deletions (899ca28d29; 26 files/-6819 lines; DEVIATION: quiz-repo-manager.ts + get-quiz-repo-manager.ts KEPT — load-bearing for Codex/Guide (get-codex.ts imports getQuizRepoManager); 9 extra orphans deleted w/ grep evidence incl. pre-port game originals)
+- [x] Task 8 — Speed Blitz (13e3a87b2b; drift-corrected rAF drain bar, timeout = synthetic wrong-answer event so QuizLetterButton renders correct-letter state for free; no MisconceptionHint — 5s read time incompatible with 500ms blitz pause)
+- [x] Task 9 — Mandala Match (0760099805; agent hit session limit pre-commit, orchestrator verified — compile smoke + 36/36 tests — and committed; calls sequence generator directly (dispatcher lacks optionCount/similarDistractors threading); ResizeObserver stage sizing per MandalaPane technique)
+- [x] Task 10 — regression test + verification (331d3f5255 component test via GameShellTestHarness — GameShell renders nothing in results phase, harness renders raw engine truth; 1/1 in Chromium, component suite 35/35; contract greps clean; full svelte-check 0 errors 0 warnings)
+
+## Post-plan additions (Austen, 2026-07-12)
+
+- [x] 4K survival pass (5a636794bf) — 1920/2560 media tiers across games, hub, shell, shared kit
+- [x] 4K-native layout pass (df50b7c1d1) — vertical centering (margin-block auto shells), fluid top-end scaling (clamp/cqi), type scale, drain-track widened; check green after
+- Browser verification at 3840×2160 (pre-native-pass): hub + Name That Pictograph + Mandala Match render; scoring verified live (correct answer → exactly BASE_POINTS 100, 1/10→2/10); full 8-question Mandala run → results (D, 100, "New best!", 13% accuracy = 1/8) → hub card "Best 100 D" → localStorage record correct. Austen does the visual pass on the native layout.
+
+## Known follow-ups (not in this plan's scope)
+
+1. **firestore.rules deploy** — playProgress rule exists locally only; production sync fails w/ permission warn (localStorage fallback works). Deploy rules before release.
+2. **A11y answer leak** — pictograph alt text names the letter ("Letter E, beta to alpha...") on quiz questions; screen readers get the answer. Shared kit tradeoff; needs a quiz-context alt suppression.
+3. **Transient hub-bounce** — one unreproduced fall-back-to-hub after level-select during automated clicking mid-view-transition; zero console errors; watch for it in manual testing.
+4. Phase 2 per spec: leaderboards endpoint + rules + indexes, Memory Pairs, Sequence Builder.
 
 ## Out of scope (phase 2 — do NOT build)
 
