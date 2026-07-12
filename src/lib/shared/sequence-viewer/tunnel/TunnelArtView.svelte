@@ -148,6 +148,7 @@
         isPlaying={playing}
         tapToToggle={true}
         hoverHint="badge"
+        cornerToggle={true}
         onPlaybackToggle={() => (playing = !playing)}
         {gridMode}
         {trailSettings}

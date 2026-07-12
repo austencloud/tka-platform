@@ -516,6 +516,7 @@ Last audit: 2025-12-27
   data-hover-hint={hoverHint !== "none" ? hoverHint : undefined}
   data-tap-toggle={tapToToggle || undefined}
   data-corner-toggle={cornerToggle || undefined}
+  data-playing={isPlaying || undefined}
   data-view={viewState}
   oncontextmenu={handleContextMenu}
   onpointerdown={handlePointerDown}
@@ -900,6 +901,17 @@ Last audit: 2025-12-27
       opacity 140ms ease,
       transform 150ms ease; /* exit: quick, no overshoot */
     -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Persistent PAUSED indicator — always visible on every pointer type
+     (including touch, which has no hover). A stray tap that pauses the tunnel
+     must leave an unmissable, tappable way to resume; the hover-only reveal
+     above never shows on touch, so this rule is NOT gated to
+     (hover: hover)/(pointer: fine) and instead keys off data-playing. */
+  .animation-container[data-corner-toggle]:not([data-playing]) .corner-toggle {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    pointer-events: auto;
   }
 
   /* Keyboard focus reveals + arms on any device (not gated to hover). */
