@@ -19,7 +19,7 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
   import { cubicOut } from "svelte/easing";
   import ConceptPathView from "./components/ConceptPathView.svelte";
   import ConceptDetailView from "./components/ConceptDetailView.svelte";
-  import QuizTab from "./quiz/components/QuizTab.svelte";
+  import PlayHub from "./play/components/PlayHub.svelte";
   import TikaTab from "$lib/features/tika/TikaModule.svelte";
   import GuideTab from "./guide/GuideTab.svelte";
   import type { LearnConcept } from "./domain/types";
@@ -210,7 +210,7 @@ import { getDelightOrchestrator } from "$lib/shared/delight/get-delight-orchestr
             <ConceptPathView onConceptClick={handleConceptClick} />
           {/if}
         {:else if isModeActive("play")}
-          <QuizTab />
+          <PlayHub />
         {:else if isModeActive("tika")}
           <TikaTab />
         {:else if isModeActive("guide")}
