@@ -69,7 +69,8 @@ function validateLoopConfig(cfg: LoopConfigRequest): void {
   if (cfg.custom) {
     if (cfg.custom.maxTurns !== undefined) {
       const t = cfg.custom.maxTurns;
-      if (typeof t !== "number" || t < 0 || t > 3 || (t * 2) % 1 !== 0)
+      // Floor excludes 0: a Level 2+ deck capped at 0 turns is a Level 1 deck.
+      if (typeof t !== "number" || t < 0.5 || t > 3 || (t * 2) % 1 !== 0)
         bad("Unknown max turns");
     }
     if (

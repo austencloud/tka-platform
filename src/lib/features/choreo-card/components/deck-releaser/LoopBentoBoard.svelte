@@ -154,8 +154,9 @@
           : "—",
   );
   // Max turn intensity follows the generator model (single scalar). Half-turns
-  // unlock at Level 3, mirroring the Generate panel.
-  const turnAllowed = $derived(currentLevel >= 3 ? [0, 0.5, 1, 1.5, 2, 2.5, 3] : [0, 1, 2, 3]);
+  // unlock at Level 3, mirroring the Generate panel. Floors exclude 0: a
+  // Level 2+ deck capped at 0 turns is just a Level 1 deck.
+  const turnAllowed = $derived(currentLevel >= 3 ? [0.5, 1, 1.5, 2, 2.5, 3] : [1, 2, 3]);
   const ORI_LABEL: Record<string, string> = { radial: "Radial", nonradial: "Nonradial", split: "Mixed" };
   const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
   const transformSummary = $derived(

@@ -57,9 +57,10 @@ export interface LoopConfig {
 }
 
 /** Turn ceilings per level — half turns unlock at Level 3, mirroring the
- *  generator. Level 1 has no turns by definition (no dial shown). */
-export const TURN_VALUES_WHOLE: readonly number[] = [0, 1, 2, 3];
-export const TURN_VALUES_HALF: readonly number[] = [0, 0.5, 1, 1.5, 2, 2.5, 3];
+ *  generator. Level 1 has no turns by definition (no dial shown), and the
+ *  floors exclude 0: a Level 2 deck capped at 0 turns IS a Level 1 deck. */
+export const TURN_VALUES_WHOLE: readonly number[] = [1, 2, 3];
+export const TURN_VALUES_HALF: readonly number[] = [0.5, 1, 1.5, 2, 2.5, 3];
 /** "Don't go over 1 if you're new" — the recommendation, baked in as default. */
 export const DEFAULT_MAX_TURNS = 1;
 
