@@ -23,6 +23,7 @@
   import { upgradeAnonymousWithGoogle } from "$lib/shared/auth/services/anonymous-upgrade";
   import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
   import { FACEBOOK_LOGIN_ENABLED } from "$lib/shared/auth/services/auth-providers.config";
+  import { mapAuthError, getAuthErrorCode } from "$lib/shared/auth/services/auth-error-messages";
 
   let { mode = "signin", onFacebookAuth } = $props<{
     mode: "signin" | "signup";
@@ -74,7 +75,7 @@
         await signInWithPopup(auth, provider);
       }
     } catch (error: unknown) {
-      const errorCode = (error as { code?: string })?.code;
+      const errorCode = getAuthErrorCode(error);
 
       // Log the full error so we can see the stack in devtools. Firebase
       // swallows a lot of context inside FirebaseError; the stack is the
@@ -86,18 +87,7 @@
         stack: error instanceof Error ? error.stack : undefined,
       });
 
-      // Provide user-friendly error messages
-      if (errorCode === "auth/popup-blocked") {
-        googleError = "Popup was blocked. Please allow popups for this site.";
-      } else if (errorCode === "auth/popup-closed-by-user") {
-        googleError = "Sign-in cancelled. Please try again.";
-      } else if (errorCode === "auth/cancelled-popup-request") {
-        googleError = null; // Silent - user just clicked away
-      } else if (errorCode === "auth/account-exists-with-different-credential") {
-        googleError = "An account already exists with this email using a different sign-in method.";
-      } else {
-        googleError = error instanceof Error ? error.message : "Google sign-in failed. Please try again.";
-      }
+      googleError = mapAuthError(error);
     } finally {
       isLoading = false;
     }

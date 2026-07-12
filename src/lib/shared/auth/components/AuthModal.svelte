@@ -17,6 +17,12 @@
   import SocialAuthCompact from "./SocialAuthCompact.svelte";
   import EmailAuthTabs from "./EmailAuthTabs.svelte";
   import { signInWithFacebook } from "$lib/shared/auth/services/authenticator";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+
+  function handleGoogleOneTapError(error: Error) {
+    console.error("[AuthModal] Google One Tap sign-in failed", error);
+    toast.error("Google sign-in failed. Please try again.");
+  }
 
   interface Props {
     open: boolean;
@@ -126,7 +132,7 @@
     {/if}
 
     <!-- Google One Tap (renders its own prompt UI) -->
-    <GoogleOneTap autoPrompt={open} />
+    <GoogleOneTap autoPrompt={open} onError={handleGoogleOneTapError} />
 
     <!-- Social auth buttons -->
     <SocialAuthCompact mode={authMode} onFacebookAuth={handleFacebookAuth} />

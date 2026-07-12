@@ -222,6 +222,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import type { PendingActionType } from "$lib/shared/sequence-viewer/services/pending-action-queue";
   import SignInSheet from "./SignInSheet.svelte";
   import GoogleOneTap from "$lib/shared/auth/components/GoogleOneTap.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   import type { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
   import type { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
@@ -1221,7 +1222,16 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   onDismiss={() => authQueue.closeSignInSheet()}
 />
 
-<GoogleOneTap autoPrompt={false} />
+<GoogleOneTap
+  autoPrompt={false}
+  onError={(error) => {
+    console.error(
+      "[SequenceViewerOrchestrator] Google One Tap sign-in failed",
+      error
+    );
+    toast.error("Google sign-in failed. Please try again.");
+  }}
+/>
 
 <style>
   .sr-only {

@@ -3,6 +3,11 @@
 
 import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { signInWithGoogle } from "$lib/shared/auth/services/authenticator";
+  import { upgradeAnonymousWithGoogle } from "$lib/shared/auth/services/anonymous-upgrade";
+  import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
+  import { mapAuthError } from "$lib/shared/auth/services/auth-error-messages";
+  import { getAuthInstance } from "$lib/shared/auth/firebase";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { authState } from "../../../auth/state/auth-state.svelte";
   import { whatsNewState } from "../../../settings/state/whats-new-state.svelte";
   import type { HapticFeedback } from "../../../application/services/haptic-feedback";
@@ -112,9 +117,19 @@ import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
     // app on return - no double-update flash.
     onClose();
     try {
-      await signInWithGoogle();
-    } catch {
-      // Sign-in failure handled by auth UI
+      const auth = await getAuthInstance();
+      if (auth.currentUser?.isAnonymous) {
+        const result = await upgradeAnonymousWithGoogle();
+        if (result.status === "collision-signed-in") {
+          promptAnonymousImport(result.importable ?? []);
+        }
+      } else {
+        await signInWithGoogle();
+      }
+    } catch (error: unknown) {
+      console.error("[AccountPopover] Google sign-in failed", error);
+      const message = mapAuthError(error);
+      if (message) toast.error(message);
     }
   }
 
