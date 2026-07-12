@@ -129,9 +129,21 @@
     overflow: hidden;
   }
 
+  /* Force the whole pictograph (wrapper + SVG) to fill the 64px box. The
+     size-sm wrapper otherwise keeps its own ~120px intrinsic size (max-width
+     140px + its own aspect-ratio) and ignores this box, so it overflowed —
+     spilling into neighbors, or cropped once the box clipped it. The SVG
+     viewBox is a clean square, so filling the box shows the whole pictograph
+     at cell size: no overflow, no crop. */
   .picto :global(.guide-pictograph) {
     width: 100%;
+    height: 100%;
     gap: 0;
+  }
+  .picto :global(.pictograph-wrapper) {
+    width: 100%;
+    height: 100%;
+    max-width: none;
   }
 
   .cell-name {
