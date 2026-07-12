@@ -510,6 +510,12 @@ export function getModuleDefinitions() {
       return false;
     }
 
+    // Nav-hidden modules (e.g. Art) are navigable but have no nav entry of
+    // their own — their front door lives elsewhere (Library's Art shelf).
+    if (module.navHidden) {
+      return false;
+    }
+
     // If auth/feature flags not initialized, show core modules optimistically
     // This prevents layout shifts while waiting for auth
     if (!isAuthInitialized || !isFeatureFlagsInitialized) {

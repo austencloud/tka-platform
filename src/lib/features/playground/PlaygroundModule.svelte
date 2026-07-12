@@ -12,6 +12,7 @@
   import type { Component } from "svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import { PLAYGROUND_TABS } from "$lib/shared/navigation/config/tab-definitions";
+  import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
 
   type TabModule = { default: Component };
 
@@ -23,6 +24,17 @@
   };
 
   const activeTab = $derived(navigationState.activeTab || PLAYGROUND_TABS[0]?.id || "mandala");
+  const activeTabLabel = $derived(
+    PLAYGROUND_TABS.find((t) => t.id === activeTab)?.label ?? "",
+  );
+
+  // The Art module has no nav entry of its own (navHidden) — users arrive via
+  // the Library's Art shelf, so this bar is their visible way back. Routed
+  // through the coordinator (real module switch + history push), same as the
+  // shelf cards on the way in.
+  function backToLibrary() {
+    void handleModuleChange("browse", "library");
+  }
 
   let TabComponent = $state<Component | null>(null);
   let loadError = $state<string | null>(null);
@@ -51,6 +63,13 @@
 </script>
 
 <div class="playground-module">
+  <header class="art-bar">
+    <button type="button" class="back-to-library" onclick={backToLibrary}>
+      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      <span>Library</span>
+    </button>
+    <span class="art-bar-title">{activeTabLabel}</span>
+  </header>
   {#if loadError}
     <div class="playground-error">
       <i class="fas fa-exclamation-triangle"></i>
@@ -71,6 +90,44 @@
     display: flex;
     flex-direction: column;
     height: 100%;
+  }
+
+  /* Fixed-height bar: content below never shifts as tab labels change. */
+  .art-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 48px;
+    padding: 0 12px;
+    background: var(--theme-panel-bg, rgba(255, 255, 255, 0.04));
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .back-to-library {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 14px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: 999px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    color: var(--theme-text, rgba(255, 255, 255, 0.9));
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .back-to-library:hover {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
+  }
+
+  .art-bar-title {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+    font-size: 14px;
+    font-weight: 600;
   }
 
   .playground-loading,

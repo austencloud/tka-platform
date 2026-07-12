@@ -108,6 +108,11 @@ export interface ModuleDefinition {
    *  activating a module. Used for link-out entries (e.g. Shop) that must never
    *  boot the app shell's module renderer. */
   linkHref?: string;
+  /** Hidden from all nav surfaces (module grid, sidebar, switcher) but still
+   *  fully navigable via handleModuleChange / deep links. Used for modules whose
+   *  only front door lives elsewhere in the app (e.g. the Art module, entered
+   *  through the Library's Art shelf). */
+  navHidden?: boolean;
 }
 
 export interface ModuleSelectorState {
