@@ -248,10 +248,11 @@
   class={isEntryAnimating ? "tka-sidebar-entry" : ""}
 >
   <!-- Wordmark in the brand hero face (Fraunces italic 700), matching the
-       landing SiteHeader .logo-text so both "TKA"s read as one brand. Both
-       words share the treatment to preserve the package's slide-reveal morph. -->
-  {#snippet brandLead()}<span class="brand-wordmark">TKA</span>{/snippet}
-  {#snippet brandRest()}<span class="brand-wordmark">{" Composer"}</span>{/snippet}
+       landing SiteHeader wordmark so both read as one brand. Both words share
+       the treatment to preserve the package's slide-reveal morph: the rail
+       face shows "Flow", expanding reveals " Arts Composer". -->
+  {#snippet brandLead()}<span class="brand-wordmark">Flow</span>{/snippet}
+  {#snippet brandRest()}<span class="brand-wordmark">{" Arts Composer"}</span>{/snippet}
 
   {#snippet beforeTree(expanded)}
     {#if isInSettings}
@@ -342,7 +343,12 @@
     font-family: "Fraunces", Georgia, serif;
     font-style: italic;
     font-weight: 700;
-    letter-spacing: 0.04em;
+    /* "Flow Arts Composer" must clear the absolutely-placed pin toggle inside
+       the 220px expanded sidebar (~160px of text room). The package's 1.05rem
+       overflows; 0.9rem + tighter tracking fits with margin. Both words share
+       the size so the slide-reveal morph never changes font mid-transition. */
+    font-size: 0.9rem;
+    letter-spacing: 0.01em;
   }
 
   /* ============================================================================
