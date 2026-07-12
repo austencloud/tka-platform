@@ -35,6 +35,7 @@ animations, exactly as the legacy quizzes did.
   import LetterToPictographGame from "../games/LetterToPictographGame.svelte";
   import ValidNextGame from "../games/ValidNextGame.svelte";
   import PerformerWordGame from "../games/PerformerWordGame.svelte";
+  import SpeedBlitzGame from "../games/SpeedBlitzGame.svelte";
 
   const session = getArcadeSession();
 
@@ -173,8 +174,7 @@ animations, exactly as the legacy quizzes did.
         {:else if playing.game.id === "performer-word"}
           <PerformerWordGame constraints={playing.level.constraints} />
         {:else if playing.game.id === "speed-blitz"}
-          <!-- Task 8 replaces this branch body with SpeedBlitzGame -->
-          <div class="coming-online">Speed Blitz is coming online.</div>
+          <SpeedBlitzGame constraints={playing.level.constraints} />
         {:else if playing.game.id === "mandala-match"}
           <!-- Task 9 replaces this branch body with MandalaMatchGame -->
           <div class="coming-online">Mandala Match is coming online.</div>
