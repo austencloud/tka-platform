@@ -97,7 +97,6 @@ export interface CodexSheetDef {
 
 // Type-name accent colors (matched to the reference artboards).
 const TEAL = "#22b8cf";
-const NAVY = "#1c3f8f";
 const GREEN = "#2f9e44";
 const PURPLE = "#7048b6";
 const ORANGE = "#e8590c";
@@ -138,7 +137,7 @@ export const SHEET1: CodexSheetDef = {
       word: "Type 1: ",
       segs: [
         { t: "Dual", c: TEAL },
-        { t: "-Shift", c: NAVY },
+        { t: "-Shift", c: PURPLE },
       ],
       boxes: [
         gbox([c("A-0", "A"), c("B-0", "B"), c("C-0", "C")]),
@@ -155,7 +154,7 @@ export const SHEET1: CodexSheetDef = {
     {
       n: 2,
       word: "Type 2: ",
-      segs: [{ t: "Shift", c: NAVY }],
+      segs: [{ t: "Shift", c: PURPLE }],
       divider: true,
       boxes: [
         gbox([c("W-0", "W"), c("X-0", "X")], "OPEN"),

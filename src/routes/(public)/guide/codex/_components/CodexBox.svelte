@@ -30,7 +30,11 @@
 </script>
 
 <div class="codex-box" class:full={box.full}>
-  {#if box.header || box.mode}
+  <!-- Column boxes ALWAYS render the header row, even when unlabeled (P/Q/R),
+       so every box in a sheet row starts its cells at the same height — an
+       unlabeled box must not sit higher than its labeled row-mate. Full-width
+       boxes only render it when there's something to show. -->
+  {#if side || box.header || box.mode}
     <div class="box-head" class:corner-left={side === "left"} class:corner-right={side === "right"}>
       {#if box.header}<span class="box-transition"><CodexTransitionGlyph text={box.header} /></span>{/if}
       {#if box.mode}<span class="box-mode">{box.mode}</span>{/if}

@@ -64,7 +64,9 @@
     width: 8.5in;
     min-height: 11in;
     box-sizing: border-box;
-    padding: 0.45in 0.5in 0.6in;
+    /* Tight vertical padding: the 110px cells + two type sections use nearly
+       the whole 11in — fat margins here push the sheet onto a second page. */
+    padding: 0.25in 0.5in 0.25in;
     background: #fff;
     color: #111;
     display: flex;
@@ -86,7 +88,7 @@
     font-weight: 500;
     font-size: 2.6rem;
     letter-spacing: 0.01em;
-    margin: 0 0 0.1in;
+    margin: 0 0 0.02in;
     color: #1a1a1a;
   }
 
@@ -94,7 +96,7 @@
     width: 100%;
     border: none;
     border-top: 2px solid #111;
-    margin: 0.18in 0 0.05in;
+    margin: 0.12in 0 0.03in;
   }
 
   .type-block {
@@ -102,15 +104,18 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 0.12in;
+    margin-bottom: 0.08in;
   }
 
+  /* Tight head margins: vertical room goes to the pictographs, not the type
+     headings — the sheet has to fit two types (sheet 1) / four types (sheet 2)
+     on one letter page with 110px cells. */
   .type-head {
     font-family: Georgia, "Times New Roman", serif;
     font-style: italic;
     font-weight: 600;
     font-size: 1.5rem;
-    margin: 0.06in 0 0.12in;
+    margin: 0.02in 0 0.05in;
     text-align: center;
   }
 

@@ -125,7 +125,7 @@
      is suppressed so the only frame is this border. aspect-ratio keeps the box
      square so the async pictograph swap never reflows neighbors. */
   .picto {
-    width: var(--codex-picto-size, 100px);
+    width: var(--codex-picto-size, 110px);
     aspect-ratio: 1;
     box-sizing: border-box;
     border: 1px solid #2b2b2b;
