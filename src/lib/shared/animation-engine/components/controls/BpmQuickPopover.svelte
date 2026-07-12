@@ -9,6 +9,11 @@
   third hand-rolled copy of the inline popovers in TempoControl / BpmChips.
 -->
 <script lang="ts">
+  import {
+    PLAYBACK_MIN_BPM,
+    PLAYBACK_MAX_BPM,
+  } from "$lib/shared/animation-engine/domain/constants/timing";
+
   const PRESETS = [15, 30, 60, 90, 120, 150] as const;
   const TAP_TIMEOUT_MS = 2000;
   const MAX_TAP_HISTORY = 8;
@@ -22,7 +27,7 @@
     onClose?: () => void;
   }
 
-  let { bpm, min = 5, max = 300, onBpmChange, onClose }: Props = $props();
+  let { bpm, min = PLAYBACK_MIN_BPM, max = PLAYBACK_MAX_BPM, onBpmChange, onClose }: Props = $props();
 
   function clamp(v: number): number {
     return Math.max(min, Math.min(max, v));

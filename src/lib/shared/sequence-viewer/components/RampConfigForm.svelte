@@ -9,6 +9,10 @@
 -->
 <script lang="ts">
   import type { TempoPracticeConfig } from "../services/tempo-practice-orchestrator";
+  import {
+    PLAYBACK_MIN_BPM,
+    PLAYBACK_MAX_BPM,
+  } from "$lib/shared/animation-engine/domain/constants/timing";
 
   interface Props {
     config: Partial<TempoPracticeConfig>;
@@ -23,14 +27,14 @@
   let roundsPerLevel = $derived(config.roundsPerLevel ?? 1);
   let targetBpm = $derived(config.targetBpm ?? 60);
   let targetEnabled = $derived(config.targetEnabled ?? false);
-  let maxBpm = $derived(config.maxBpm ?? 300);
+  let maxBpm = $derived(config.maxBpm ?? PLAYBACK_MAX_BPM);
 
   function clamp(v: number, min: number, max: number) {
     return Math.max(min, Math.min(max, v));
   }
 
   function setStartBpm(next: number) {
-    onUpdate({ startBpm: clamp(next, 5, 120) });
+    onUpdate({ startBpm: clamp(next, PLAYBACK_MIN_BPM, 120) });
   }
   function setIncrement(next: number) {
     onUpdate({ increment: clamp(next, 1, 30) });

@@ -6,6 +6,7 @@
  */
 
 import { frameStatsRecorder } from "./frame-stats-recorder";
+import { PLAYBACK_MIN_SPEED, PLAYBACK_MAX_SPEED } from "../domain/constants/timing";
 
 export class AnimationLoop {
   private animationFrameId: number | null = null;
@@ -17,12 +18,12 @@ export class AnimationLoop {
     if (this.animationFrameId !== null) {
       // Already running, just update callback and speed
       this.onUpdateCallback = onUpdate;
-      this.speed = Math.max(0.1, Math.min(3.0, speed));
+      this.speed = Math.max(PLAYBACK_MIN_SPEED, Math.min(PLAYBACK_MAX_SPEED, speed));
       return;
     }
 
     this.onUpdateCallback = onUpdate;
-    this.speed = Math.max(0.1, Math.min(3.0, speed));
+    this.speed = Math.max(PLAYBACK_MIN_SPEED, Math.min(PLAYBACK_MAX_SPEED, speed));
     this.lastTimestamp = null;
     this.animationFrameId = requestAnimationFrame(this.loop);
   }
@@ -41,7 +42,7 @@ export class AnimationLoop {
   }
 
   setSpeed(speed: number): void {
-    this.speed = Math.max(0.1, Math.min(3.0, speed));
+    this.speed = Math.max(PLAYBACK_MIN_SPEED, Math.min(PLAYBACK_MAX_SPEED, speed));
   }
 
   getSpeed(): number {

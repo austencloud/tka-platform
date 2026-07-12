@@ -9,6 +9,10 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
+import {
+  PLAYBACK_MIN_SPEED,
+  PLAYBACK_MAX_SPEED,
+} from "$lib/shared/animation-engine/domain/constants/timing";
 
 // ============================================================================
 // TYPES
@@ -291,7 +295,7 @@ export function createAnimationPanelState(
     },
 
     setSpeed: (newSpeed: number) => {
-      const clamped = Math.max(0.1, Math.min(3.0, newSpeed));
+      const clamped = Math.max(PLAYBACK_MIN_SPEED, Math.min(PLAYBACK_MAX_SPEED, newSpeed));
       speed = clamped;
       notify("speed", clamped);
     },

@@ -15,6 +15,10 @@
 -->
 <script lang="ts">
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
+  import {
+    PLAYBACK_MIN_BPM,
+    PLAYBACK_MAX_BPM,
+  } from "$lib/shared/animation-engine/domain/constants/timing";
 
   const PRESETS = [
     { label: "Slow", bpm: 15 },
@@ -24,8 +28,10 @@
 
   const NUMERIC_PRESETS = [15, 30, 60, 90, 120, 150] as const;
 
-  const BPM_MIN = 5;
-  const BPM_MAX = 300;
+  // Engine-derived: offering a BPM the playback clamp rejects makes the
+  // buttons silent no-ops (readout freezes at the real ceiling).
+  const BPM_MIN = PLAYBACK_MIN_BPM;
+  const BPM_MAX = PLAYBACK_MAX_BPM;
   const STEP_NORMAL = 5;
   const STEP_FAST = 10;
   const HOLD_DELAY_MS = 500;

@@ -20,6 +20,11 @@
  *   still work while held, so "drive it entirely by hand" needs no extra mode.
  */
 
+import {
+  PLAYBACK_MIN_BPM,
+  PLAYBACK_MAX_BPM,
+} from "$lib/shared/animation-engine/domain/constants/timing";
+
 export interface TempoPracticeConfig {
   /** Starting BPM (default: 15) */
   startBpm: number;
@@ -27,7 +32,7 @@ export interface TempoPracticeConfig {
   increment: number;
   /** X — full sequence loops between speed-ups (default: 1 = creep every loop) */
   roundsPerLevel: number;
-  /** Hard maximum BPM cap (default: 300) */
+  /** Hard maximum BPM cap (default: the engine's playback ceiling) */
   maxBpm: number;
   /** Goal BPM when targetEnabled — climb stops here and celebrates (default: 60) */
   targetBpm: number;
@@ -76,10 +81,24 @@ const DEFAULT_CONFIG: TempoPracticeConfig = {
   startBpm: 15,
   increment: 1,
   roundsPerLevel: 1,
-  maxBpm: 300,
+  maxBpm: PLAYBACK_MAX_BPM,
   targetBpm: 60,
   targetEnabled: false,
 };
+
+/**
+ * Keep the practice domain inside the playback engine's speed clamp. A ceiling
+ * above PLAYBACK_MAX_BPM is unreachable: the engine re-clamps every setSpeed,
+ * the readout freezes, and Faster becomes a silent no-op that never disables.
+ */
+function sanitizeConfig(config: TempoPracticeConfig): TempoPracticeConfig {
+  const maxBpm = Math.min(config.maxBpm, PLAYBACK_MAX_BPM);
+  const startBpm = Math.max(PLAYBACK_MIN_BPM, Math.min(config.startBpm, maxBpm));
+  // targetBpm stays raw: goalBpm is documented as the raw configured goal
+  // (shown in the stepper), and effectiveCeiling() clamps it to the
+  // engine-capped maxBpm at use time.
+  return { ...config, maxBpm, startBpm };
+}
 
 export class TempoPracticeOrchestrator {
   private config: TempoPracticeConfig = { ...DEFAULT_CONFIG };
@@ -90,7 +109,7 @@ export class TempoPracticeOrchestrator {
   private held = false;
 
   start(partialConfig?: Partial<TempoPracticeConfig>): number {
-    this.config = { ...DEFAULT_CONFIG, ...partialConfig };
+    this.config = sanitizeConfig({ ...DEFAULT_CONFIG, ...partialConfig });
     this.active = true;
     this.currentBpm = this.config.startBpm;
     this.currentRound = 0;
@@ -113,7 +132,7 @@ export class TempoPracticeOrchestrator {
   /** Merge live config changes from the bar's inline controls without
    *  restarting (loops X, step Y, goal, target on/off). Preserves currentBpm. */
   patchConfig(patch: Partial<TempoPracticeConfig>): void {
-    this.config = { ...this.config, ...patch };
+    this.config = sanitizeConfig({ ...this.config, ...patch });
     if (patch.targetBpm !== undefined) {
       this.config.targetBpm = Math.max(
         this.config.startBpm + 1,
@@ -209,7 +228,7 @@ export class TempoPracticeOrchestrator {
   /** Fine-trim BPM directly (the bar's small ±1). Restarts the step's reps. */
   adjustBpm(newBpm: number): void {
     if (!this.active) return;
-    this.currentBpm = Math.min(Math.max(newBpm, 1), this.config.maxBpm);
+    this.currentBpm = Math.min(Math.max(newBpm, PLAYBACK_MIN_BPM), this.config.maxBpm);
     this.currentRound = 0;
   }
 

@@ -26,6 +26,7 @@ import {
   TAIL_LENGTH_MIN,
   TAIL_LENGTH_MAX,
 } from "../domain/types/trail-types";
+import { PLAYBACK_MAX_BPM } from "../domain/constants/timing";
 
 // Re-export for convenience
 export { TrailMode, TrackingMode, TrailEffect };
@@ -213,7 +214,7 @@ export function createAnimationSettingsState(
 
     // Playback setters
     setBpm: (bpm: number) => {
-      settings = { ...settings, bpm: Math.max(30, Math.min(300, bpm)) };
+      settings = { ...settings, bpm: Math.max(30, Math.min(PLAYBACK_MAX_BPM, bpm)) };
     },
 
     setShouldLoop: (loop: boolean) => {

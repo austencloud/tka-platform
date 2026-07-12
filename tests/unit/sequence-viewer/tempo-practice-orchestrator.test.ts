@@ -33,8 +33,8 @@ describe("TempoPracticeOrchestrator", () => {
 
   it("stops when the climb reaches maxBpm", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 299, increment: 1, roundsPerLevel: 1, maxBpm: 300 });
-    expect(o.onLoopComplete()).toBe(300);
+    o.start({ startBpm: 179, increment: 1, roundsPerLevel: 1, maxBpm: 180 });
+    expect(o.onLoopComplete()).toBe(180);
     expect(o.isActive()).toBe(true);
     expect(o.onLoopComplete()).toBeNull(); // capped -> stop
     expect(o.isActive()).toBe(false);
@@ -109,7 +109,7 @@ describe("TempoPracticeOrchestrator", () => {
 
   it("advanceLevel at the cap stops the session", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 300, increment: 5, roundsPerLevel: 1, maxBpm: 300 });
+    o.start({ startBpm: 180, increment: 5, roundsPerLevel: 1, maxBpm: 180 });
     expect(o.advanceLevel()).toBeNull();
     expect(o.isActive()).toBe(false);
   });
@@ -154,8 +154,8 @@ describe("TempoPracticeOrchestrator", () => {
 
   it("progress.targetBpm reflects the cap when no goal is set", () => {
     const o = new TempoPracticeOrchestrator();
-    o.start({ startBpm: 20, maxBpm: 200, targetEnabled: false });
-    expect(o.getProgress().targetBpm).toBe(200);
+    o.start({ startBpm: 20, maxBpm: 150, targetEnabled: false });
+    expect(o.getProgress().targetBpm).toBe(150);
     expect(o.getProgress().reachedTarget).toBe(false);
   });
 
@@ -182,5 +182,47 @@ describe("TempoPracticeOrchestrator", () => {
     expect(o.getProgress().targetBpm).toBe(100); // clamped to maxBpm
     o.patchConfig({ targetBpm: 5 });
     expect(o.getProgress().targetBpm).toBe(21); // clamped to startBpm + 1
+  });
+
+  // The 2026-07 tempo rage-click bug: the practice domain offered BPMs the
+  // playback engine silently re-clamps to 180 (speed 3.0 x 60), so past 180 the
+  // readout froze and Faster never disabled. The orchestrator must never step
+  // outside the engine's reachable range.
+  describe("engine playback clamp", () => {
+    it("caps maxBpm at the engine ceiling (180) on start", () => {
+      const o = new TempoPracticeOrchestrator();
+      o.start({ startBpm: 20, maxBpm: 300 });
+      expect(o.getProgress().maxBpm).toBe(180);
+      expect(o.getProgress().targetBpm).toBe(180); // cap-as-ceiling
+    });
+
+    it("Faster reaches the engine ceiling and stops there instead of climbing into a dead zone", () => {
+      const o = new TempoPracticeOrchestrator();
+      o.start({ startBpm: 179, increment: 5, roundsPerLevel: 1, maxBpm: 300 });
+      expect(o.advanceLevel()).toBe(180); // clamped step lands ON the ceiling
+      expect(o.advanceLevel()).toBeNull(); // at ceiling -> null, session ends
+      expect(o.isActive()).toBe(false);
+    });
+
+    it("raises startBpm to the engine floor (6)", () => {
+      const o = new TempoPracticeOrchestrator();
+      const start = o.start({ startBpm: 2, maxBpm: 100 });
+      expect(start).toBe(6);
+      expect(o.getProgress().startBpm).toBe(6);
+    });
+
+    it("patchConfig cannot lift the ceiling past the engine max", () => {
+      const o = new TempoPracticeOrchestrator();
+      o.start({ startBpm: 20, maxBpm: 100 });
+      o.patchConfig({ maxBpm: 500 });
+      expect(o.getProgress().maxBpm).toBe(180);
+    });
+
+    it("adjustBpm fine-trim clamps to the engine floor", () => {
+      const o = new TempoPracticeOrchestrator();
+      o.start({ startBpm: 20, maxBpm: 100 });
+      o.adjustBpm(1);
+      expect(o.getProgress().currentBpm).toBe(6);
+    });
   });
 });
