@@ -93,7 +93,8 @@ const LOOP_TYPE_DISPLAY: Record<string, string> = {
   mirrored_inverted: "Mirrored / Inverted",
   rotated_swapped: "Rotated / Swapped",
   mirrored_rotated: "Mirrored / Rotated",
-  mirrored_inverted_rotated: "Mir / Comp / Rot",
+  mirrored_inverted_rotated: "Mir / Inv / Rot",
+  mirrored_swapped_inverted: "Mir / Swap / Inv",
   mirrored_rotated_inverted_swapped: "All Four",
   strict_rewound: "Rewound",
 };
