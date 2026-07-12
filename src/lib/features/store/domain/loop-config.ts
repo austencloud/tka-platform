@@ -17,17 +17,27 @@ export type LoopLevel = (typeof LOOP_LEVELS)[number];
 export const LOOP_LENGTHS = ["8", "12", "16", "mix"] as const;
 export type LoopLength = (typeof LOOP_LENGTHS)[number];
 
-/** "variety" + the flavor SKU listing slugs (derived from live products at
- *  runtime for display; this list is the checkout whitelist). */
+/** "variety" + every LOOP type the generation engine implements (the buyer
+ *  picks through the generate panel's LOOP overlay, which exposes them all).
+ *  This list is the checkout whitelist — the firebase function mirrors it. */
 export const LOOP_FLAVORS = [
   "variety",
   "rotated",
   "mirrored",
+  "flipped",
   "swapped",
   "inverted",
+  "rewound",
   "mirrored-swapped",
   "mirrored-inverted",
+  "mirrored-rotated",
+  "rotated-swapped",
+  "rotated-inverted",
+  "swapped-inverted",
   "mirrored-swapped-inverted",
+  "mirrored-inverted-rotated",
+  "mirrored-rotated-swapped",
+  "mirrored-rotated-inverted-swapped",
 ] as const;
 export type LoopFlavor = (typeof LOOP_FLAVORS)[number];
 
@@ -58,17 +68,16 @@ export const VARIETY_COPY =
   "Mostly rotated quartered LOOPs, with a grab bag of the other flavors.";
 
 /**
- * Inventory gating, derived from what's actually enumerated today:
- * Level 1 fully stocked; Level 2 exists for rotated only; Level 3 and the
- * 12/16 lengths have no enumerated decks yet. Mix chips stay live — their
- * recipes draw from stocked pools.
+ * The full range is open: decks are GENERATED live at fulfillment (same engine
+ * as the deck releaser — "live generation makes any length at any level"), so
+ * there is no enumerated-pool restriction. Level "mix" stays a preset/advanced
+ * concept, not a stepper stop.
  */
-export const AVAILABLE_LEVELS: readonly LoopLevel[] = ["1", "2", "mix"];
-export const AVAILABLE_LENGTHS: readonly LoopLength[] = ["8", "mix"];
+export const AVAILABLE_LEVELS: readonly LoopLevel[] = ["1", "2", "3"];
+export const AVAILABLE_LENGTHS: readonly LoopLength[] = ["8", "12", "16"];
 
-/** Flavors purchasable at a given level (Level 2 enumeration = rotated only). */
-export function availableFlavors(level: LoopLevel): readonly LoopFlavor[] {
-  if (level === "2") return ["variety", "rotated"];
+/** Every flavor is generable at every level. */
+export function availableFlavors(_level: LoopLevel): readonly LoopFlavor[] {
   return LOOP_FLAVORS;
 }
 
@@ -80,4 +89,25 @@ export function flavorSlugFromComponents(components: string[]): LoopFlavor | nul
     (f) => f !== "variety" && [...f.split("-")].sort().join("-") === slug
   );
   return match ?? null;
+}
+
+/* ── flavor ⇄ LOOPType bridge ─────────────────────────────────────────────
+   The shop's flavor picker IS the generate panel's LOOP overlay, which speaks
+   LOOPType. Flavors stay the checkout vocabulary; these convert both ways. */
+
+/** LOOPType selected in the overlay → checkout flavor slug. */
+export function flavorForLoopType(loopType: string): LoopFlavor | null {
+  const parts = ["rotated", "mirrored", "flipped", "swapped", "inverted", "rewound"].filter(
+    (c) => loopType.includes(c)
+  );
+  return flavorSlugFromComponents(parts);
+}
+
+/** Human label for a flavor slug ("mirrored-swapped" → "Mirrored / Swapped"). */
+export function flavorLabel(flavor: LoopFlavor): string {
+  if (flavor === "variety") return "Variety Pack";
+  return flavor
+    .split("-")
+    .map((c) => c.charAt(0).toUpperCase() + c.slice(1))
+    .join(" / ");
 }

@@ -40,11 +40,20 @@ const LOOP_FLAVORS = [
   "variety",
   "rotated",
   "mirrored",
+  "flipped",
   "swapped",
   "inverted",
+  "rewound",
   "mirrored-swapped",
   "mirrored-inverted",
+  "mirrored-rotated",
+  "rotated-swapped",
+  "rotated-inverted",
+  "swapped-inverted",
   "mirrored-swapped-inverted",
+  "mirrored-inverted-rotated",
+  "mirrored-rotated-swapped",
+  "mirrored-rotated-inverted-swapped",
 ] as const;
 const LEVEL_BALANCES = ["mostly-1", "even", "mostly-spicy"] as const;
 

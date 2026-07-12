@@ -18,11 +18,7 @@ import {
 import type { Catalog } from "$lib/features/choreo-card/domain/models/Catalog";
 import type { CoverCard, Product } from "../domain/models/product";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import {
-  availableFlavors,
-  type LoopFlavor,
-  type LoopLevel,
-} from "../domain/loop-config";
+import type { LoopFlavor, LoopLength, LoopLevel } from "../domain/loop-config";
 
 const FAN_SIZE = 6;
 
@@ -51,7 +47,12 @@ function sampleSequences(catalogId: string): Promise<SequenceData[]> {
 /** Flavor slug ("mirrored-swapped") → catalog loopType ("mirrored_swapped"). */
 const toLoopType = (f: LoopFlavor) => f.replace(/-/g, "_");
 
-function pickCatalog(cats: Catalog[], flavor: LoopFlavor, level: number): Catalog | null {
+function pickCatalog(
+  cats: Catalog[],
+  flavor: LoopFlavor,
+  level: number,
+  wantSteps: number
+): Catalog | null {
   const loopType = toLoopType(flavor);
   const candidates = cats.filter(
     (c) =>
@@ -61,9 +62,11 @@ function pickCatalog(cats: Catalog[], flavor: LoopFlavor, level: number): Catalo
       c.level === level
   );
   if (candidates.length === 0) return null;
-  // Prefer the curated 54-card decks (the printed product), then the biggest pool.
+  // Prefer the buyer's step count, then the curated 54-card decks (the printed
+  // product), then the biggest pool.
   candidates.sort(
     (a, b) =>
+      Number(b.stepCount === wantSteps) - Number(a.stepCount === wantSteps) ||
       Number(b.id.includes("-c54")) - Number(a.id.includes("-c54")) ||
       b.totalSequences - a.totalSequences
   );
@@ -89,9 +92,10 @@ async function flavorCards(
   level: number,
   n: number,
   sku: Product | undefined,
-  offset = 0
+  offset = 0,
+  wantSteps = 8
 ): Promise<CoverCard[]> {
-  const catalog = pickCatalog(cats, flavor, level);
+  const catalog = pickCatalog(cats, flavor, level, wantSteps);
   if (!catalog) return [];
   const seqs = await sampleSequences(catalog.id);
   if (seqs.length === 0) return [];
@@ -103,29 +107,64 @@ async function flavorCards(
   return picked.map((sequence) => ({ sequence, ...accent }));
 }
 
+/** Sample at the wanted level, falling downward when that level has no
+ *  enumerated pool — decks are GENERATED live at fulfillment, so a Level 3
+ *  pick is real product; the preview approximates it with the closest
+ *  enumerated cards until L3 bakes exist. */
+async function flavorCardsAtBestLevel(
+  cats: Catalog[],
+  flavor: LoopFlavor,
+  level: number,
+  n: number,
+  sku: Product | undefined,
+  offset = 0,
+  wantSteps = 8
+): Promise<CoverCard[]> {
+  for (let l = level; l >= 1; l--) {
+    const cards = await flavorCards(cats, flavor, l, n, sku, offset, wantSteps);
+    if (cards.length) return cards;
+  }
+  return [];
+}
+
 export interface PreviewDials {
   level: LoopLevel;
+  length: LoopLength;
   flavor: LoopFlavor;
   excluded: ReadonlySet<LoopFlavor>;
   skuByFlavor: ReadonlyMap<LoopFlavor, Product>;
 }
 
+/** SKU-backed flavors, i.e. the ones with enumerated catalogs to sample —
+ *  the variety grab bag draws from these. */
+const VARIETY_POOL: readonly LoopFlavor[] = [
+  "rotated",
+  "mirrored",
+  "swapped",
+  "inverted",
+  "mirrored-swapped",
+  "mirrored-inverted",
+  "mirrored-swapped-inverted",
+];
+
 export async function loopPreviewCards({
   level,
+  length,
   flavor,
   excluded,
   skuByFlavor,
 }: PreviewDials): Promise<CoverCard[] | null> {
   try {
     const cats = await getLoopCatalogs();
+    const wantSteps = length === "mix" ? 8 : Number(length);
 
     if (flavor !== "variety") {
       const sku = skuByFlavor.get(flavor);
       if (level === "mix") {
-        // "Mostly Level 1. A few cards that bite." — L2 exists for rotated only.
+        // "Mostly Level 1. A few cards that bite."
         const [l1, l2] = await Promise.all([
-          flavorCards(cats, flavor, 1, FAN_SIZE, sku),
-          flavorCards(cats, flavor, 2, 2, sku),
+          flavorCards(cats, flavor, 1, FAN_SIZE, sku, 0, wantSteps),
+          flavorCards(cats, flavor, 2, 2, sku, 0, wantSteps),
         ]);
         if (l1.length === 0) return null;
         if (l2.length === 0) return l1;
@@ -135,22 +174,26 @@ export async function loopPreviewCards({
         if (l2[1]) mixed.splice(4, 0, l2[1]);
         return mixed.slice(0, FAN_SIZE);
       }
-      const cards = await flavorCards(cats, flavor, Number(level), FAN_SIZE, sku);
+      const cards = await flavorCardsAtBestLevel(
+        cats,
+        flavor,
+        Number(level),
+        FAN_SIZE,
+        sku,
+        0,
+        wantSteps
+      );
       return cards.length ? cards : null;
     }
 
-    // Variety: one card per flavor available at this level (exclusions
-    // honored), rotated leading — the grab bag the copy promises.
-    const pool = availableFlavors(level).filter(
-      (f): f is Exclude<LoopFlavor, "variety"> => f !== "variety" && !excluded.has(f)
-    );
+    // Variety: one card per enumerated flavor (exclusions honored), rotated
+    // leading — the grab bag the copy promises.
+    const pool = VARIETY_POOL.filter((f) => !excluded.has(f));
     if (pool.length === 0) return null;
-    const perFlavorLevel = level === "2" ? 2 : 1;
-    // Level 2 variety = rotated only today; show a full L2 hand instead of one card.
-    const perFlavorCount = pool.length === 1 ? FAN_SIZE : 1;
+    const perFlavorLevel = level === "mix" ? 1 : Number(level);
     const hands = await Promise.all(
       pool.map((f, i) =>
-        flavorCards(cats, f, perFlavorLevel, perFlavorCount, skuByFlavor.get(f), i)
+        flavorCardsAtBestLevel(cats, f, perFlavorLevel, 1, skuByFlavor.get(f), i, wantSteps)
       )
     );
     const cards = hands.flat();

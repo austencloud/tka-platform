@@ -33,6 +33,17 @@
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import BaseCard from "$lib/features/create/generate/components/cards/BaseCard.svelte";
+  import StepperCard from "$lib/features/create/generate/components/cards/StepperCard/StepperCard.svelte";
+  import LOOPExpandedOverlay from "$lib/features/create/generate/components/cards/LOOPExpandedOverlay.svelte";
+  import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
+  import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
+  import {
+    parseLoopComponents,
+    generateLOOPType,
+  } from "$lib/shared/create/services/loop-type-utils";
+  import { generateExplanationText } from "$lib/features/create/generate/shared/services/loop-explanation-text-generator";
+  import { getCardColors } from "$lib/shared/create/domain/card-colors";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
   import { scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
@@ -46,12 +57,11 @@
   import { loopPreviewCards } from "./services/loop-preview-cards";
   import type { CoverCard } from "./domain/models/product";
   import {
-    LOOP_LEVELS,
-    LOOP_LENGTHS,
-    AVAILABLE_LEVELS,
     AVAILABLE_LENGTHS,
     availableFlavors,
     flavorSlugFromComponents,
+    flavorForLoopType,
+    flavorLabel,
     LEVEL_MIX_COPY,
     LENGTH_MIX_COPY,
     VARIETY_COPY,
@@ -99,10 +109,20 @@
   let propType = $state<PropType>(DEFAULT_SHOP_PROP);
 
   const flavorsForLevel = $derived(availableFlavors(level));
-  // Level change can strand the flavor (Level 2 = variety + rotated only).
+  // Level change can strand the flavor (kept as a guard; every flavor is
+  // currently generable at every level).
   $effect(() => {
     if (!flavorsForLevel.includes(flavor)) flavor = "variety";
   });
+
+  // ── flavor ⇄ LOOP overlay bridge: the picker IS the generate panel's
+  //    LOOPExpandedOverlay; it speaks LOOPType, checkout speaks flavor slugs.
+  const currentLoopType = $derived(
+    flavor === "variety"
+      ? LOOPType.ROTATED
+      : generateLOOPType(new Set(flavor.split("-") as unknown as LOOPComponent[]))
+  );
+  const currentLoopComponents = $derived(parseLoopComponents(currentLoopType));
 
   // ── reward loop: a haptic tick on every commit (spring lives in BaseCard) ──
   const haptics = getHapticFeedback();
@@ -211,6 +231,7 @@
 
   // ── bento palette: LOOP/prop tile gradients (shared with the deck-releaser
   //    LoopBentoBoard so the surfaces match). ──
+  const cc = getCardColors(BackgroundType.COSMIC);
   // LOOP identity gold, brightened off the drab olive so the hero tile reads warm.
   const LOOP_COLOR = "linear-gradient(135deg, #d9c24a 0%, #a89a2c 48%, #6f6318 100%)";
   const LOOP_SHADOW = "50deg 60% 42%";
@@ -229,25 +250,42 @@
     "3": "Half turns",
   };
 
-  // ── Level / Length are segmented picks, not steppers: with options like
-  //    [1, 2, Mix] a ± stepper lies about ordinality (Mix is a peer choice,
-  //    not "one above Level 2", and +1 from 8 steps landing on Mix reads as a
-  //    bug). Options derive from the AVAILABLE lists, so the rows grow as
-  //    Level 3 / longer lengths seed — no code change. ──
-  const levelLabel = (l: LoopLevel) => (l === "mix" ? "Mix" : l);
-  const levelOptions = AVAILABLE_LEVELS.map((l) => ({
-    value: l,
-    label: levelLabel(l),
-  }));
-  const lengthOptions = AVAILABLE_LENGTHS.map((l) => ({
-    value: l,
-    label: l === "mix" ? "Mix" : `${l} steps`,
-  }));
+  // ── Level / Length: the generate panel's colored StepperCards, straight from
+  //    the LoopBentoBoard blueprint. Steppers are honest here because the
+  //    ranges are genuinely ordinal (1→3, 8→16); "mix" is never a stepper stop —
+  //    it exists only via the Sampler preset / fine-tune panel, and any ±
+  //    press from a mix state snaps back onto the scale. ──
+  const levelNum = $derived(level === "mix" ? 2 : Number(level));
+  const levelTileColor = $derived(
+    level === "mix"
+      ? MIX_LEVEL_COLOR
+      : (DIFFICULTY_LEVELS[levelNum]?.cssBg ?? SECONDARY_TILE_COLOR)
+  );
+  const levelTileText = $derived(
+    level === "mix" ? "#0b1220" : (DIFFICULTY_LEVELS[levelNum]?.text ?? "white")
+  );
+  function stepLevel(dir: number) {
+    if (level === "mix") level = dir > 0 ? "3" : "1";
+    else level = String(Math.max(1, Math.min(3, Number(level) + dir))) as LoopLevel;
+    buzz();
+  }
+  const LENGTH_STEPS = AVAILABLE_LENGTHS.map(Number);
+  const lengthNum = $derived(length === "mix" ? 8 : Number(length));
+  function stepLength(dir: number) {
+    if (length === "mix") {
+      length = "8";
+    } else {
+      const i = LENGTH_STEPS.indexOf(Number(length));
+      const next = LENGTH_STEPS[Math.max(0, Math.min(LENGTH_STEPS.length - 1, i + dir))];
+      length = String(next) as LoopLength;
+    }
+    buzz();
+  }
   const levelDesc = $derived(
     level === "mix" ? LEVEL_MIX_COPY : (LEVEL_DESC[level] ?? "")
   );
   const lengthDesc = $derived(
-    length === "mix" ? LENGTH_MIX_COPY : `${length} steps, every card`
+    length === "mix" ? LENGTH_MIX_COPY : "STEPS PER CARD"
   );
 
   // ── advanced panel (usage decides whether this survives) ──
@@ -308,7 +346,7 @@
   let previewToken = 0;
   $effect(() => {
     if (flavorSkus.length === 0) return;
-    const dials = { level, flavor, excluded, skuByFlavor };
+    const dials = { level, length, flavor, excluded, skuByFlavor };
     const token = ++previewToken;
     previewCards = null; // fall back to SKU covers while the sample loads
     loopPreviewCards(dials).then((cards) => {
@@ -328,7 +366,12 @@
     return cut.slice(0, cut.lastIndexOf(" ")) + "…";
   }
   const previewDesc = $derived(
-    stageCaption(selectedSku ? selectedSku.description : VARIETY_COPY)
+    stageCaption(
+      flavor === "variety"
+        ? VARIETY_COPY
+        : (selectedSku?.description ??
+            generateExplanationText(currentLoopComponents))
+    )
   );
 
   $effect(() => {
@@ -337,11 +380,7 @@
   });
 
   const flavorName = (name: string) => name.replace(/\s*LOOP Deck$/i, "");
-  const flavorTileValue = $derived(
-    flavor === "variety"
-      ? "Variety Pack"
-      : (skuByFlavor.get(flavor) ? flavorName(skuByFlavor.get(flavor)!.name) : "—")
-  );
+  const flavorTileValue = $derived(flavorLabel(flavor));
   const price = $derived(
     customSku ? `$${(customSku.price / 100).toFixed(0)}` : "$30"
   );
@@ -353,31 +392,23 @@
     if (showFlavor) showFlavor = false;
   }
 
-  // Roving radiogroup for the flavor tiles (inside the modal).
+  // SKU-backed flavor slugs (drives the advanced panel's exclude chips).
   const flavorOrder = $derived<LoopFlavor[]>([
     "variety",
     ...flavorSkus
       .map((p) => flavorSlugFromComponents(p.loopComponents ?? []))
       .filter((s): s is LoopFlavor => s != null),
   ]);
-  function pickFlavor(f: LoopFlavor) {
-    if (!flavorsForLevel.includes(f)) return;
-    flavor = f;
+
+  function pickLoopType(lt: LOOPType) {
+    flavor = flavorForLoopType(lt) ?? "variety";
     buzz();
     showFlavor = false;
   }
-  function onFlavorKeydown(e: KeyboardEvent) {
-    const enabled = flavorOrder.filter((f) => flavorsForLevel.includes(f));
-    const idx = enabled.indexOf(flavor);
-    if (idx < 0) return;
-    let next = -1;
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (idx + 1) % enabled.length;
-    if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (idx - 1 + enabled.length) % enabled.length;
-    const target = next >= 0 ? enabled[next] : undefined;
-    if (!target) return;
-    e.preventDefault();
-    flavor = target;
-    document.getElementById(`flavor-${target}`)?.focus();
+  function pickVariety() {
+    flavor = "variety";
+    buzz();
+    showFlavor = false;
   }
 </script>
 
@@ -406,7 +437,7 @@
           >
             <!-- fill mode: the stage is the sized box, so config swaps can
                  never resize it (crossfade-primitive routing). -->
-            <Crossfade key={`${level}|${flavor}|${propType}|${excluded.size}`} fill>
+            <Crossfade key={`${level}|${length}|${flavor}|${propType}|${excluded.size}`} fill>
               <div class="preview-inner">
                 <!-- Non-interactive on purpose: the fan sizes against the rest
                      overlap instead of reserving hover-spread width, which buys
@@ -470,33 +501,39 @@
 
           <!-- ── primary bento board ── -->
           <div class="bento-board">
-            <!-- Level / Length: segmented picks (peer options, no fake ± order). -->
-            <div class="seg-row">
-              <div class="seg-panel">
-                <span class="seg-title">Level</span>
-                <SegmentedControl
-                  options={levelOptions}
-                  value={level}
-                  onchange={(v) => {
-                    level = v;
-                    buzz();
-                  }}
-                  color="accent"
+            <!-- Level / Length: the generate panel's colored StepperCards
+                 (LoopBentoBoard blueprint — Level wears DIFFICULTY colors). -->
+            <div class="tile-row">
+              <div class="tile">
+                <StepperCard
+                  title="Level"
+                  currentValue={levelNum}
+                  minValue={1}
+                  maxValue={3}
+                  formatValue={(v: number) => (level === "mix" ? "Mix" : String(v))}
+                  description={levelDesc}
+                  color={levelTileColor}
+                  textColor={levelTileText}
+                  shadowColor="0deg 0% 0%"
+                  gridColumnSpan={2}
+                  onIncrement={() => stepLevel(1)}
+                  onDecrement={() => stepLevel(-1)}
                 />
-                <span class="seg-desc">{levelDesc}</span>
               </div>
-              <div class="seg-panel">
-                <span class="seg-title">Length</span>
-                <SegmentedControl
-                  options={lengthOptions}
-                  value={length}
-                  onchange={(v) => {
-                    length = v;
-                    buzz();
-                  }}
-                  color="accent"
+              <div class="tile">
+                <StepperCard
+                  title="Length"
+                  currentValue={lengthNum}
+                  minValue={8}
+                  maxValue={16}
+                  formatValue={(v: number) => (length === "mix" ? "Mix" : String(v))}
+                  description={lengthDesc}
+                  color={cc.length.color}
+                  shadowColor={cc.length.shadowColor}
+                  gridColumnSpan={2}
+                  onIncrement={() => stepLength(1)}
+                  onDecrement={() => stepLength(-1)}
                 />
-                <span class="seg-desc">{lengthDesc}</span>
               </div>
             </div>
 
@@ -514,30 +551,39 @@
               </div>
             </div>
 
-            <!-- Prop: inline exactly-one chips, no drill-down modal. Hand-built
-                 per chip-primitives' keep-separate clause — SegmentedControl
-                 can't carry the prop images (FontAwesome-only icon slot). -->
-            <div class="seg-panel prop-panel">
-              <span class="seg-title">Prop</span>
-              <div class="prop-row" role="radiogroup" aria-label="Prop">
-                {#each SHOP_PROP_OPTIONS as p (p)}
-                  <button
-                    type="button"
-                    class="prop-chip"
-                    class:selected={propType === p}
-                    role="radio"
-                    aria-checked={propType === p}
-                    onclick={() => {
-                      propType = p;
-                      buzz();
-                    }}
-                  >
-                    <span class="prop-chip-frame">
-                      <img src={shopPropImage(p)} alt="" draggable="false" />
-                    </span>
-                    <span class="prop-chip-label">{shopPropLabel(p)}</span>
-                  </button>
-                {/each}
+            <!-- Prop: a real bento tile (BaseCard shell, size-tile content-slot
+                 pattern) holding the exactly-one image chips — one tap, no modal. -->
+            <div class="tile-row">
+              <div class="tile prop-shell">
+                <BaseCard
+                  title="Prop"
+                  currentValue=""
+                  clickable={false}
+                  color={SECONDARY_TILE_COLOR}
+                  shadowColor="0deg 0% 0%"
+                  gridColumnSpan={2}
+                >
+                  <div class="prop-row" role="radiogroup" aria-label="Prop">
+                    {#each SHOP_PROP_OPTIONS as p (p)}
+                      <button
+                        type="button"
+                        class="prop-chip"
+                        class:selected={propType === p}
+                        role="radio"
+                        aria-checked={propType === p}
+                        onclick={() => {
+                          propType = p;
+                          buzz();
+                        }}
+                      >
+                        <span class="prop-chip-frame">
+                          <img src={shopPropImage(p)} alt="" draggable="false" />
+                        </span>
+                        <span class="prop-chip-label">{shopPropLabel(p)}</span>
+                      </button>
+                    {/each}
+                  </div>
+                </BaseCard>
               </div>
             </div>
 
@@ -640,50 +686,28 @@
     }}
   >
     <div
-      class="picker-overlay"
+      class="loop-col"
       transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}
     >
-      <div class="po-header">
-        <h3>Flavor</h3>
-        <button class="po-close" aria-label="Close" onclick={() => (showFlavor = false)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
+      <!-- Variety Pack rides above the real LOOP selector: it's the curated
+           blend, not a LOOP type, so it can't live inside the overlay grid. -->
+      <button
+        type="button"
+        class="variety-cta"
+        class:active={flavor === "variety"}
+        onclick={pickVariety}
+      >
+        <span class="variety-name">Variety Pack</span>
+        <span class="variety-sub">a curated blend of every flavor · the default</span>
+      </button>
+      <div class="loop-host">
+        <LOOPExpandedOverlay
+          currentType={currentLoopType}
+          selectedComponents={currentLoopComponents}
+          onChange={(lt: LOOPType) => pickLoopType(lt)}
+          onClose={() => (showFlavor = false)}
+        />
       </div>
-      <div class="po-body">
-        <div class="flavor-grid" role="radiogroup" aria-label="Flavor">
-          <!-- Variety first: the default, the blend. -->
-          {#each flavorOrder as f (f)}
-            {@const sku = f === "variety" ? null : skuByFlavor.get(f)}
-            {@const active = f === flavor}
-            {@const enabled = flavorsForLevel.includes(f)}
-            <button
-              type="button"
-              id="flavor-{f}"
-              class="flavor-option"
-              class:active
-              class:gated={!enabled}
-              role="radio"
-              aria-checked={active}
-              aria-disabled={!enabled}
-              tabindex={active ? 0 : -1}
-              onclick={() => pickFlavor(f)}
-              onkeydown={onFlavorKeydown}
-            >
-              {#if f === "variety"}
-                <span class="flavor-name">Variety Pack</span>
-                <span class="flavor-sub">a curated blend of every flavor</span>
-              {:else if sku}
-                <span class="flavor-name">{flavorName(sku.name)}</span>
-                <LoopChips components={sku.loopComponents ?? []} size="sm" />
-              {/if}
-              {#if !enabled}
-                <span class="flavor-sub">not at this level yet</span>
-              {/if}
-            </button>
-          {/each}
-        </div>
-      </div>
-      <button class="po-done" onclick={() => (showFlavor = false)}>Done</button>
     </div>
   </div>
 {/if}
@@ -982,56 +1006,41 @@
     letter-spacing: 0.8px !important;
   }
 
-  /* ---------- segmented panels (Level / Length / Prop) ---------- */
-  .seg-row {
+  /* ---------- prop tile (BaseCard shell + image chips) ---------- */
+  .tile-row > .tile.prop-shell {
+    height: 128px;
+  }
+  .prop-shell :global(.card-value) {
+    display: none;
+  }
+  .prop-shell :global(.card-content) {
+    margin-top: 0;
+    flex: 1;
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .seg-row > .seg-panel {
-    flex: 1 1 240px;
-    min-width: 200px;
-  }
-  .seg-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
-    padding: 12px 14px 11px;
-    border-radius: 14px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-  }
-  .seg-title {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    letter-spacing: 0.8px;
-    text-transform: uppercase;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.65));
-    text-align: center;
-  }
-  .seg-desc {
-    min-height: 1.3em; /* reserved — copy length varies per pick (no shift) */
-    font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-    text-align: center;
+    align-items: center;
+    justify-content: center;
   }
 
-  /* Prop chips: exactly-one image chips, selected wears the prop purple. */
+  /* Prop chips: exactly-one image chips, selected wears the prop purple.
+     One row always — chips shrink fluidly instead of wrapping out of the tile. */
   .prop-row {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
-    gap: 8px;
+    gap: clamp(4px, 1vw, 8px);
+    width: 100%;
+    min-width: 0;
   }
   .prop-chip {
-    flex: 1 1 92px;
-    max-width: 132px;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 112px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     min-height: var(--min-touch-target, 44px);
-    padding: 10px 8px 9px;
+    padding: 8px 4px 7px;
     border-radius: 12px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
@@ -1058,9 +1067,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 38px;
-    height: 38px;
-    border-radius: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
     background: rgba(255, 255, 255, 0.1);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
   }
@@ -1068,14 +1077,18 @@
     background: rgba(255, 255, 255, 0.2);
   }
   .prop-chip-frame img {
-    width: 26px;
-    height: 26px;
+    width: 22px;
+    height: 22px;
     object-fit: contain;
     pointer-events: none;
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
   }
   .prop-chip-label {
-    font-size: var(--font-size-compact, 12px);
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
     font-weight: 700;
   }
 
@@ -1105,51 +1118,66 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
   }
 
-  /* ---------- flavor grid (inside modal) ---------- */
-  .flavor-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
-  }
-
-  .flavor-option {
+  /* ---------- flavor modal: variety CTA + the real LOOP overlay ---------- */
+  .loop-col {
+    width: min(1000px, 94vw);
+    max-height: 92vh;
     display: flex;
     flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 12px 14px;
-    border-radius: 12px;
-    border: 2px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
-    color: var(--theme-text, #fff);
+    gap: 12px;
+  }
+  .loop-host {
+    position: relative;
+    min-height: 0;
+    overflow: hidden;
+    border-radius: 18px;
+  }
+  .loop-host :global(.loop-expanded-overlay) {
+    position: relative !important;
+    inset: auto !important;
+    width: 100%;
+    max-height: 76vh;
+  }
+  .loop-host :global(.grid-container) {
+    flex: 0 0 auto;
+  }
+  .variety-cta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-height: 56px;
+    padding: 10px 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: linear-gradient(135deg, #d9c24a 0%, #a89a2c 48%, #6f6318 100%);
+    color: #fff;
     cursor: pointer;
-    text-align: left;
-    transition: border-color 0.15s ease, background 0.15s ease;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+    transition: transform 0.1s ease, box-shadow 0.15s ease, filter 0.15s ease;
   }
-  .flavor-option:hover:not(.gated) {
-    border-color: var(--theme-border-strong, rgba(255, 255, 255, 0.3));
+  .variety-cta:not(.active) {
+    filter: saturate(0.8) brightness(0.88);
   }
-  .flavor-option.active {
-    border-color: #8b6cff;
-    background: rgba(139, 108, 255, 0.12);
+  .variety-cta:hover {
+    filter: none;
+    transform: translateY(-1px);
   }
-  .flavor-option:focus-visible {
+  .variety-cta.active {
+    border-color: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+  }
+  .variety-cta:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 2px;
   }
-  .flavor-option.gated {
-    opacity: 0.45;
-    cursor: default;
+  .variety-name {
+    font-size: var(--font-size-min, 15px);
+    font-weight: 800;
   }
-
-  .flavor-name {
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-  }
-  .flavor-sub {
+  .variety-sub {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    opacity: 0.85;
   }
 
   /* ---------- advanced disclosure ---------- */
@@ -1256,82 +1284,8 @@
     background: rgba(4, 7, 14, 0.62);
     backdrop-filter: blur(5px);
   }
-  .picker-overlay {
-    width: min(720px, 94vw);
-    max-height: min(840px, 90vh);
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
-    background: linear-gradient(135deg,
-      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 25%, #1a1a2e) 0%,
-      color-mix(in srgb, var(--theme-accent, #818cf8) 15%, #1a1a2e) 50%,
-      color-mix(in srgb, var(--theme-accent-strong, #6366f1) 20%, #1a1a2e) 100%);
-    border-radius: 18px;
-    border: 2px solid color-mix(in srgb, var(--theme-accent) 50%, transparent);
-    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
-    overflow: hidden;
-  }
-  .po-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-shrink: 0;
-  }
-  .po-header h3 {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 700;
-    color: #fff;
-  }
-  .po-close {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    color: #fff;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    padding: 8px;
-  }
-  .po-close svg {
-    width: 20px;
-    height: 20px;
-  }
-  .po-close:hover {
-    background: rgba(255, 255, 255, 0.15);
-  }
-  .po-body {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-    overscroll-behavior: contain;
-  }
-  .po-done {
-    flex-shrink: 0;
-    width: 100%;
-    padding: 12px 20px;
-    min-height: 44px;
-    background: color-mix(in srgb, var(--theme-accent) 30%, transparent);
-    border: 2px solid var(--theme-accent);
-    border-radius: 10px;
-    color: #fff;
-    font-size: 16px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-  }
-  .po-done:hover {
-    background: color-mix(in srgb, var(--theme-accent) 45%, transparent);
-  }
-
   @media (prefers-reduced-motion: reduce) {
     .back-button,
-    .flavor-option,
     .advanced-toggle,
     .preset {
       transition: none;
