@@ -9,6 +9,12 @@ import { createSequenceData, type SequenceData } from "$lib/shared/foundation/do
 import { BackgroundType } from "@austencloud/backgrounds";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { ViewerNavMode } from "$lib/shared/3d/state/viewer-3d-state.svelte";
+import {
+  captureSettingsCheckpoint,
+  revertSettingsCheckpoint,
+} from "$lib/shared/collections/settings-checkpoint.svelte";
+import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+import { closeSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
 
 const SCENE_FEATURES_STORAGE_KEY = "tka-scene-features";
 
@@ -25,10 +31,17 @@ export const SCENE_BPM_INTENT_KEY = "tka_scene_bpm";
  *
  * Rewrites the global `backgroundType` when the scene group is saved, which
  * also changes the 2D background theme — accepted (documented in the design).
+ *
+ * Every write below overwrites settings the user configured for themselves.
+ * `captureSettingsCheckpoint` snapshots the pre-apply state as the very first
+ * act so a caller can offer Undo afterward (see `openScene3DInViewer` below
+ * and `Scene3DCollectionModule`'s standalone "Apply look" action).
  */
 export function applyScene3DLook(scene: Collected3DScene): void {
   const snap = scene.snapshot;
   const saved = (g: Parameters<typeof isGroupSaved>[1]) => isGroupSaved(snap, g);
+
+  captureSettingsCheckpoint(scene.name);
 
   // 1. Viewer-3d persistence keys, filtered by group. Per-performer cascade
   //    overrides are split across groups: strip the fields whose group is off
@@ -113,6 +126,10 @@ function filterPerformerSettings(
  * Reproduce a saved scene AS A PERFORMANCE: apply the look, then open the viewer
  * overlay with the stored sequence in 3D. Only meaningful when the performance
  * group was saved with steps; the module gates "Open in Viewer" on that.
+ *
+ * This is the one call site where an apply is immediately followed by opening
+ * the viewer, so the Undo toast's action undoes the whole gesture — settings
+ * AND the overlay it opened — not just the settings.
  */
 export function openScene3DInViewer(scene: Collected3DScene): void {
   applyScene3DLook(scene);
@@ -139,6 +156,19 @@ export function openScene3DInViewer(scene: Collected3DScene): void {
   });
 
   openSequenceOverlay(sequence);
+
+  showToast({
+    message: `Viewer now using "${scene.name}"`,
+    type: "success",
+    duration: 8000,
+    action: {
+      label: "Undo",
+      onClick: () => {
+        revertSettingsCheckpoint();
+        closeSequenceOverlay();
+      },
+    },
+  });
 }
 
 /** Whether this saved scene carries a reproducible performance. */

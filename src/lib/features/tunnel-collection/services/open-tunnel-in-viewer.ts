@@ -11,6 +11,12 @@ import { saveTunnelViewState } from "$lib/shared/sequence-viewer/tunnel/tunnel-v
 import { persistViewerMode } from "$lib/shared/sequence-viewer/services/viewer-state-persistence";
 import { EFFECTS_CONFIG_STORAGE_KEY } from "$lib/shared/effects/state/effects-config-state.svelte";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import {
+  captureSettingsCheckpoint,
+  revertSettingsCheckpoint,
+} from "$lib/shared/collections/settings-checkpoint.svelte";
+import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+import { closeSequenceOverlay } from "$lib/shared/sequence-viewer/state/sequence-viewer-overlay-state.svelte";
 
 /**
  * Reproduce a saved tunnel in the real sequence viewer: apply the snapshot's
@@ -33,6 +39,13 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-typ
  *    pre-seed those localStorage keys BEFORE calling `openSequenceOverlay`.
  *    `openSequenceOverlay` flips reactive state; the fresh mount runs in a later
  *    microtask, after these synchronous writes have landed.
+ *
+ * Every one of these writes overwrites settings the user configured for
+ * themselves, with no prior warning. So the very first thing this function
+ * does is snapshot the pre-apply state (`captureSettingsCheckpoint`), and
+ * once the tunnel is open it shows a toast with an Undo button that puts
+ * everything back (`revertSettingsCheckpoint`) and closes the viewer this
+ * call opened — undoing the whole gesture, not just the settings.
  */
 /** Session key: ArtPane consumes this once on mount and auto-fires the tunnel
  *  video export as soon as the playback controller is ready. sessionStorage so
@@ -44,6 +57,10 @@ export function openTunnelInViewer(
   options: { autoExport?: boolean } = {},
 ): void {
   const snap = tunnel.snapshot;
+
+  // First act, before any global gets touched — see the settings-checkpoint
+  // paragraph above.
+  captureSettingsCheckpoint(tunnel.name);
 
   if (options.autoExport && typeof sessionStorage !== "undefined") {
     try {
@@ -116,4 +133,17 @@ export function openTunnelInViewer(
   });
 
   openSequenceOverlay(sequence, { initialBpm: snap.playback.bpm });
+
+  showToast({
+    message: `Viewer now using "${tunnel.name}"`,
+    type: "success",
+    duration: 8000,
+    action: {
+      label: "Undo",
+      onClick: () => {
+        revertSettingsCheckpoint();
+        closeSequenceOverlay();
+      },
+    },
+  });
 }
