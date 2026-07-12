@@ -9,8 +9,7 @@
 
   Flat $30, ONE purchasable SKU (listing "loop-deck-custom"); the config rides
   checkout metadata into the order doc. The 7 per-flavor SKUs stay in Firestore
-  as cover/flavor data sources only. Collapsed advanced panel for power
-  customizers, instrumented so usage decides whether it lives.
+  as cover/flavor data sources only.
 
   Presentation-only redesign of v2. No change to the SKU, loopConfig metadata,
   firebase whitelist, or domain model.
@@ -30,8 +29,6 @@
   import LoopChips from "./components/LoopChips.svelte";
   import BuyButton from "./components/BuyButton.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
-  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import BaseCard from "$lib/features/create/generate/components/cards/BaseCard.svelte";
   import StepperCard from "$lib/features/create/generate/components/cards/StepperCard/StepperCard.svelte";
   import LOOPExpandedOverlay from "$lib/features/create/generate/components/cards/LOOPExpandedOverlay.svelte";
@@ -308,47 +305,19 @@
     buzz();
   }
 
-  // ── advanced panel (usage decides whether this survives) ──
-  let advancedOpen = $state(false);
-  let levelBalance = $state<"mostly-1" | "even" | "mostly-spicy">("mostly-1");
-  let excluded = $state<Set<LoopFlavor>>(new Set());
-  let customTouched = $state(false);
-
-  function openAdvanced() {
-    advancedOpen = !advancedOpen;
-    if (advancedOpen)
-      getActivityLogger().logActivity("shop_loop_advanced_opened", "shop");
-  }
-  function customize(key: string, value: string) {
-    enterCustom();
-    customTouched = true;
-    getActivityLogger().logActivity("shop_loop_advanced_customized", "shop", {
-      settingKey: key,
-      newValue: value,
-    });
-  }
-  function toggleExclude(f: LoopFlavor) {
-    const next = new Set(excluded);
-    if (next.has(f)) next.delete(f);
-    else next.add(f);
-    excluded = next;
-    customize("excludeFlavors", [...next].join(",") || "none");
-  }
+  // Fine-tune panel removed 2026-07-12: levelBalance/excludeFlavors couldn't
+  // express what a power customizer actually wants (multi-slice recipes), and
+  // the panel dragged the visual bar down. Domain + checkout still accept the
+  // fields; a slice-based recipe builder is the real successor if demand shows.
 
   const loopConfig = $derived.by<LoopConfig>(() => {
     // Pack selected → the pack id IS the order; fulfillment resolves the
     // recipe from LOOP_PACKS. No dial fields ride along (pack XOR dials).
     if (pack) return { pack };
     const cfg: LoopConfig = { level, length, flavor };
-    const custom: NonNullable<LoopConfig["custom"]> = {};
     // Max turns rides on every Level 2+ order — fulfillment never guesses.
-    if (level !== "1") custom.maxTurns = turnIntensity;
-    if (customTouched) {
-      if (level === "mix") custom.levelBalance = levelBalance;
-      if (flavor === "variety" && excluded.size > 0)
-        custom.excludeFlavors = [...excluded];
-    }
-    return Object.keys(custom).length ? { ...cfg, custom } : cfg;
+    if (level !== "1") return { ...cfg, custom: { maxTurns: turnIntensity } };
+    return cfg;
   });
 
   // ── preview ──
@@ -360,7 +329,7 @@
     flavorSkus
       .filter((p) => {
         const slug = flavorSlugFromComponents(p.loopComponents ?? []);
-        return slug != null && !excluded.has(slug);
+        return slug != null;
       })
       .map((p) => p.coverCards?.[0])
       .filter((c): c is NonNullable<typeof c> => c != null)
@@ -381,13 +350,22 @@
   let previewToken = 0;
   let lastDialTouch = 0;
   const dialKey = $derived(
-    `${pack ?? "custom"}|${level}|${length}|${flavor}|${propType}|${turnIntensity}|${excluded.size}`
+    `${pack ?? "custom"}|${level}|${length}|${flavor}|${propType}|${turnIntensity}`
   );
   $effect(() => {
     if (flavorSkus.length === 0) return;
     void dialKey; // any dial change re-runs the fetch
     const fanKey = pack ? `pack:${pack}` : "custom";
-    const dials = { pack, level, length, flavor, maxTurns: turnIntensity, propType, excluded, skuByFlavor };
+    const dials = {
+      pack,
+      level,
+      length,
+      flavor,
+      maxTurns: turnIntensity,
+      propType,
+      excluded: new Set<LoopFlavor>(),
+      skuByFlavor,
+    };
     const token = ++previewToken;
     lastDialTouch = Date.now();
     loopPreviewCards(dials).then((cards) => {
@@ -428,7 +406,6 @@
     if (all.length) prewarmCovers(all, propType);
   });
 
-  const flavorName = (name: string) => name.replace(/\s*LOOP Deck$/i, "");
   const flavorTileValue = $derived(flavorLabel(flavor));
   const price = $derived(
     customSku ? `$${(customSku.price / 100).toFixed(0)}` : "$30"
@@ -440,14 +417,6 @@
     if (e.key !== "Escape") return;
     if (showFlavor) showFlavor = false;
   }
-
-  // SKU-backed flavor slugs (drives the advanced panel's exclude chips).
-  const flavorOrder = $derived<LoopFlavor[]>([
-    "variety",
-    ...flavorSkus
-      .map((p) => flavorSlugFromComponents(p.loopComponents ?? []))
-      .filter((s): s is LoopFlavor => s != null),
-  ]);
 
   function pickLoopType(lt: LOOPType) {
     enterCustom();
@@ -695,64 +664,6 @@
 
           </div>
 
-          <!-- Fine-tune disclosure: Custom mode only; collapsed by default.
-               Opening it and touching anything is instrumented — usage
-               decides its future. -->
-          {#if pack === null}
-          <div class="advanced" transition:slide={{ duration: 250, easing: quintOut }}>
-            <button
-              type="button"
-              class="advanced-toggle"
-              aria-expanded={advancedOpen}
-              onclick={openAdvanced}
-            >
-              <i
-                class="fas fa-chevron-{advancedOpen ? 'up' : 'down'}"
-                aria-hidden="true"
-              ></i>
-              Fine-tune the blend
-            </button>
-            {#if advancedOpen}
-              <div class="advanced-panel">
-                <div class="field">
-                  <span class="field-label">Level balance (Level Mix)</span>
-                  <SegmentedControl
-                    options={[
-                      { value: "mostly-1", label: "Mostly 1", disabled: level !== "mix" },
-                      { value: "even", label: "Even split", disabled: level !== "mix" },
-                      { value: "mostly-spicy", label: "Mostly spicy", disabled: level !== "mix" },
-                    ]}
-                    value={levelBalance}
-                    onchange={(v) => {
-                      levelBalance = v;
-                      customize("levelBalance", v);
-                    }}
-                    color="accent"
-                    size="sm"
-                  />
-                </div>
-                <div class="field">
-                  <span class="field-label">Variety grab bag</span>
-                  <div class="exclude-row">
-                    {#each flavorOrder.filter((f) => f !== "variety") as f (f)}
-                      {@const sku = skuByFlavor.get(f)}
-                      {#if sku}
-                        <FilterChipBase
-                          label={flavorName(sku.name)}
-                          mode="toggle"
-                          size="sm"
-                          active={!excluded.has(f)}
-                          disabled={flavor !== "variety"}
-                          onclick={() => toggleExclude(f)}
-                        />
-                      {/if}
-                    {/each}
-                  </div>
-                </div>
-              </div>
-            {/if}
-          </div>
-          {/if}
           </div>
 
           <aside class="buy-rail">
@@ -1296,20 +1207,6 @@
     opacity: 0.5;
   }
 
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .field-label {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-  }
-
   /* ---------- flavor modal: variety CTA + the real LOOP overlay ---------- */
   .loop-col {
     width: min(1000px, 94vw);
@@ -1372,54 +1269,6 @@
     opacity: 0.85;
   }
 
-  /* ---------- advanced disclosure ---------- */
-  .advanced {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .advanced-toggle {
-    align-self: flex-start;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0 16px;
-    border-radius: 999px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.75));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    transition: border-color 0.15s ease, color 0.15s ease;
-  }
-  .advanced-toggle:hover {
-    border-color: var(--theme-border-strong, rgba(255, 255, 255, 0.3));
-    color: var(--theme-text, #fff);
-  }
-  .advanced-toggle i {
-    font-size: 0.75em;
-  }
-
-  .advanced-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding: 16px;
-    border-radius: 14px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.025));
-  }
-
-  .exclude-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
   .price {
     font-size: 2rem;
     font-weight: 800;
@@ -1478,7 +1327,6 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .back-button,
-    .advanced-toggle,
     .preset,
     .bento-board {
       transition: none;
