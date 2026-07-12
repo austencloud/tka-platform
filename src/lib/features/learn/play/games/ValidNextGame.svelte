@@ -258,4 +258,16 @@ owns back-navigation chrome — the legacy QuizBackButton is gone.
       gap: 1.5rem;
     }
   }
+
+  @media (min-width: 1920px) {
+    .quiz-content {
+      max-width: 680px;
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .quiz-content {
+      max-width: 820px;
+    }
+  }
 </style>

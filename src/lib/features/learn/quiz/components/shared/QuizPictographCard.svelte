@@ -135,6 +135,32 @@ QuizPictographCard - Question pictograph display
     }
   }
 
+  @media (min-width: 1920px) {
+    .pictograph-card {
+      width: 360px;
+      height: 360px;
+      border-radius: 22px;
+    }
+
+    .arrow-indicator svg {
+      width: 32px;
+      height: 32px;
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .pictograph-card {
+      width: 440px;
+      height: 440px;
+      border-radius: 24px;
+    }
+
+    .arrow-indicator svg {
+      width: 36px;
+      height: 36px;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .pictograph-section,
     .arrow-indicator {

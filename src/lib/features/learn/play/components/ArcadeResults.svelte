@@ -419,6 +419,12 @@ heavier 400ms beat on the last one → best line → stats → actions.
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
 
+  @media (min-width: 1920px) {
+    .arcade-results {
+      max-width: 620px;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .reveal,
     .result-star,

@@ -329,7 +329,7 @@ observer's first callback.
   .mandala-stage {
     position: relative;
     aspect-ratio: 1;
-    inline-size: min(60cqh, 90cqw, 420px);
+    inline-size: min(60cqh, 90cqw, 560px);
     min-inline-size: 160px;
     border-radius: 20px;
     overflow: hidden;
@@ -409,6 +409,42 @@ observer's first callback.
 
     .answer-grid {
       gap: 1rem;
+    }
+  }
+
+  @media (min-width: 1920px) {
+    .quiz-content {
+      max-width: 1440px;
+    }
+
+    .stage-column {
+      min-height: 560px;
+    }
+
+    .mandala-stage {
+      inline-size: min(65cqh, 90cqw, 640px);
+    }
+
+    .answer-section {
+      flex: 0 0 420px;
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .quiz-content {
+      max-width: 1680px;
+    }
+
+    .stage-column {
+      min-height: 680px;
+    }
+
+    .mandala-stage {
+      inline-size: min(65cqh, 90cqw, 760px);
+    }
+
+    .answer-section {
+      flex: 0 0 460px;
     }
   }
 

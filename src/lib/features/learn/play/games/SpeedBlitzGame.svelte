@@ -439,6 +439,26 @@ correct letter" for free).
     }
   }
 
+  @media (min-width: 1920px) {
+    .quiz-content {
+      max-width: 680px;
+    }
+
+    .answer-grid {
+      grid-template-columns: repeat(2, minmax(120px, 170px));
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .quiz-content {
+      max-width: 820px;
+    }
+
+    .answer-grid {
+      grid-template-columns: repeat(2, minmax(140px, 200px));
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .quiz-content.flash-correct,
     .quiz-content.flash-wrong {

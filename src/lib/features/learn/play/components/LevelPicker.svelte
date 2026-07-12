@@ -343,6 +343,12 @@ owns the view-transition wrapping. Locked levels stay real buttons
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
+  @media (min-width: 1920px) {
+    .level-picker {
+      max-width: 680px;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .back-button,
     .level-row {

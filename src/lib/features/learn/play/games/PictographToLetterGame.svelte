@@ -292,4 +292,24 @@ depends on.
       grid-template-columns: repeat(2, minmax(100px, 140px));
     }
   }
+
+  @media (min-width: 1920px) {
+    .quiz-content {
+      max-width: 680px;
+    }
+
+    .answer-grid {
+      grid-template-columns: repeat(2, minmax(120px, 170px));
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .quiz-content {
+      max-width: 820px;
+    }
+
+    .answer-grid {
+      grid-template-columns: repeat(2, minmax(140px, 200px));
+    }
+  }
 </style>

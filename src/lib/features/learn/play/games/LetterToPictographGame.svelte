@@ -265,4 +265,24 @@ depends on.
       gap: 1.5rem;
     }
   }
+
+  @media (min-width: 1920px) {
+    .quiz-content {
+      max-width: 780px;
+    }
+
+    .answer-grid {
+      grid-template-columns: repeat(2, 260px);
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .quiz-content {
+      max-width: 940px;
+    }
+
+    .answer-grid {
+      grid-template-columns: repeat(2, 320px);
+    }
+  }
 </style>

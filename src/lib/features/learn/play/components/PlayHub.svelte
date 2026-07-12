@@ -320,6 +320,19 @@
     }
   }
 
+  /* Large-display tier — the grid stays 3 columns; cards get more room to
+     grow into instead of the hub capping out at 1280px on a 4K monitor. */
+  @container (min-width: 1600px) {
+    .hub-hero,
+    .game-grid {
+      max-width: 1680px;
+    }
+
+    .hero-title {
+      font-size: clamp(var(--font-size-3xl), 2cqi, 2.5rem);
+    }
+  }
+
   .card-slot {
     min-width: 0;
   }

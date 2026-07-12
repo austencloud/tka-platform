@@ -173,6 +173,18 @@ QuizPictographButton - Answer button containing a pictograph
     }
   }
 
+  @media (min-width: 1920px) {
+    .answer-btn {
+      border-radius: 20px;
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .answer-btn {
+      border-radius: 22px;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .answer-btn.correct,
     .answer-btn.incorrect,

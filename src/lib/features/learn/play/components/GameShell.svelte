@@ -97,70 +97,72 @@ animations, exactly as the legacy quizzes did.
 {#if playing}
   <div class="game-shell" style="--game-accent: {playing.game.accentColor}">
     <header class="top-bar">
-      <button
-        type="button"
-        class="back-button"
-        onclick={handleBack}
-        aria-label="Back to level select"
-      >
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
+      <div class="top-bar-inner">
+        <button
+          type="button"
+          class="back-button"
+          onclick={handleBack}
+          aria-label="Back to level select"
         >
-          <path d="M19 12H5M12 19l-7-7 7-7" />
-        </svg>
-      </button>
-
-      <div class="level-label">
-        <span class="game-title">{playing.game.title}</span>
-        <span class="level-title">{playing.level.title}</span>
-      </div>
-
-      <div class="bar-status">
-        {#if playing.level.mode.kind === "fixed"}
-          <!-- Ghost-sizer reserves the widest readout so 9→10 never shifts -->
-          <span class="q-progress" aria-label="Question {questionNumber} of {questionCount}">
-            <span class="q-sizer" aria-hidden="true">{questionCount}/{questionCount}</span>
-            <span class="q-live">{questionNumber}/{questionCount}</span>
-          </span>
-        {:else if playing.level.mode.kind === "survival"}
-          <div
-            class="miss-pips"
-            role="img"
-            aria-label="{session.misses} of {maxMisses} misses"
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
           >
-            {#each Array(maxMisses) as _, i (i)}
-              <span class="pip" class:missed={i < session.misses}></span>
-            {/each}
-          </div>
-        {:else if playing.level.mode.kind === "countdown"}
-          <div class="timer">
-            <ProgressRing
-              percent={timerPercent}
-              size={32}
-              strokeWidth={3}
-              color="var(--game-accent)"
-            />
-            <span class="timer-text">{formatTime(session.timeRemaining)}</span>
-          </div>
-        {/if}
-      </div>
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+        </button>
 
-      <!-- Streak flame: slot is always reserved; visibility flips at 3+ -->
-      <div class="streak" class:lit={streakLit} aria-hidden={!streakLit}>
-        <span class="flame" aria-hidden="true">🔥</span>
-        <span class="streak-count">{session.streak}</span>
-      </div>
+        <div class="level-label">
+          <span class="game-title">{playing.game.title}</span>
+          <span class="level-title">{playing.level.title}</span>
+        </div>
 
-      <div class="score" aria-label="Score {session.score}">
-        <span class="score-value">{displayedScore}</span>
+        <div class="bar-status">
+          {#if playing.level.mode.kind === "fixed"}
+            <!-- Ghost-sizer reserves the widest readout so 9→10 never shifts -->
+            <span class="q-progress" aria-label="Question {questionNumber} of {questionCount}">
+              <span class="q-sizer" aria-hidden="true">{questionCount}/{questionCount}</span>
+              <span class="q-live">{questionNumber}/{questionCount}</span>
+            </span>
+          {:else if playing.level.mode.kind === "survival"}
+            <div
+              class="miss-pips"
+              role="img"
+              aria-label="{session.misses} of {maxMisses} misses"
+            >
+              {#each Array(maxMisses) as _, i (i)}
+                <span class="pip" class:missed={i < session.misses}></span>
+              {/each}
+            </div>
+          {:else if playing.level.mode.kind === "countdown"}
+            <div class="timer">
+              <ProgressRing
+                percent={timerPercent}
+                size={32}
+                strokeWidth={3}
+                color="var(--game-accent)"
+              />
+              <span class="timer-text">{formatTime(session.timeRemaining)}</span>
+            </div>
+          {/if}
+        </div>
+
+        <!-- Streak flame: slot is always reserved; visibility flips at 3+ -->
+        <div class="streak" class:lit={streakLit} aria-hidden={!streakLit}>
+          <span class="flame" aria-hidden="true">🔥</span>
+          <span class="streak-count">{session.streak}</span>
+        </div>
+
+        <div class="score" aria-label="Score {session.score}">
+          <span class="score-value">{displayedScore}</span>
+        </div>
       </div>
     </header>
 
@@ -208,13 +210,23 @@ animations, exactly as the legacy quizzes did.
 
   .top-bar {
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    justify-content: center;
     /* Fixed height: nothing inside may resize the bar */
     height: 56px;
     flex-shrink: 0;
     padding: 0 0.75rem;
     border-bottom: 1px solid var(--theme-stroke);
+  }
+
+  /* Large displays: the bar itself stays full-width (border spans edge to
+     edge), but its contents center in a bounded row so score/timer don't
+     end up meters apart on a 4K monitor. */
+  .top-bar-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 1800px;
   }
 
   .back-button {
