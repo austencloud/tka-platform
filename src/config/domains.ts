@@ -47,7 +47,6 @@ const PUBLIC_PATH_PREFIXES = [
   // then boots in landing mode — no Firebase, no auth listener — so signed-in
   // users see guest chips and popup sign-in completes with no UI reaction.
   // Any future (public)/learn/* pillar page gets its own exact entry here.
-  "/learn/poi-choreography",
   "/learn/staff-spinning-choreography",
   "/notation",
   "/privacy",
