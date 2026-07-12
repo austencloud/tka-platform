@@ -19,7 +19,11 @@
   import { openScene3DInViewer, applyScene3DLook, scene3DHasSteps } from "./services/open-3d-scene";
   import PanelSpinner from "$lib/shared/components/panel/PanelSpinner.svelte";
   import CollectionGalleryDetail from "$lib/shared/modules/CollectionGalleryDetail.svelte";
-  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import { toast, showToast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { openLineageSource, hasLineageSource } from "$lib/shared/collections/open-lineage-source";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { revertSettingsCheckpoint } from "$lib/shared/collections/settings-checkpoint.svelte";
 
   type Phase = "gallery" | "detail";
   let phase = $state<Phase>("gallery");
@@ -126,8 +130,20 @@
 
   function handleApplyLook() {
     if (!selected) return;
+    // applyScene3DLook captures its own settings checkpoint before writing
+    // anything, so the Undo here just replays it — no overlay to close since
+    // "Apply look" (unlike "Open in Viewer") never opens one.
+    const name = selected.name;
     applyScene3DLook(selected);
-    toast.success("Scene look applied — open any sequence in 3D");
+    showToast({
+      message: `Viewer now using "${name}"`,
+      type: "success",
+      duration: 8000,
+      action: {
+        label: "Undo",
+        onClick: () => revertSettingsCheckpoint(),
+      },
+    });
   }
 
   function startRename() {
@@ -299,6 +315,16 @@
                 {chip.label}
               </span>
             {/each}
+            {#if hasLineageSource(selected)}
+              <FilterChipBase
+                mode="action"
+                size="sm"
+                icon="fa-arrow-up-right-from-square"
+                label={`From ${simplifyRepeatedWord(selected.sourceWord ?? "")}`}
+                chipColor="var(--theme-accent, #22d3ee)"
+                onclick={() => void openLineageSource(selected!)}
+              />
+            {/if}
           </div>
 
           <div class="detail-actions">
