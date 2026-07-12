@@ -698,6 +698,30 @@ describe("buildLoopSpec", () => {
     })!;
     expect(expanderMultiplier(wire)).toBe(4); // rot x2 * mir x2; overlay inversion contributes x1
   });
+
+  it("expanderMultiplier: rotation absorbed when it shares a period with swap/invert only (engine fuseableAtSamePeriod rule)", () => {
+    // ROTATED_INVERTED, both at period 2: the engine's FusedExecutor absorbs
+    // the rotation into the single fused stage (spec-executor.ts), so the
+    // total multiplier is 2, NOT 4. (Task 4 discovered this — the naive
+    // product-of-periods formula double-counts.)
+    const wire = buildLoopSpec(new Set([LOOPComponent.ROTATED, LOOPComponent.INVERTED]), {
+      rotationInterval: 2,
+    })!;
+    expect(expanderMultiplier(wire)).toBe(2);
+  });
+
+  it("expanderMultiplier: rotation stays a separate stage when mirror/flip shares its period", () => {
+    // rot:2 + mir:2 + inv:2 (today's halved MIR): rotate stage x2, fused group x2 = 4.
+    const wire = buildLoopSpec(new Set([LOOPComponent.ROTATED, LOOPComponent.MIRRORED, LOOPComponent.INVERTED]), {
+      rotationInterval: 2,
+    })!;
+    expect(expanderMultiplier(wire)).toBe(4);
+    // rot:2 + mir:2 + inv:4 (full triple, independent inversion): x2 * x2 * x4 = 16.
+    const triple = buildLoopSpec(new Set([LOOPComponent.ROTATED, LOOPComponent.MIRRORED, LOOPComponent.INVERTED]), {
+      rotationInterval: 2, inversionInterval: 4,
+    })!;
+    expect(expanderMultiplier(triple)).toBe(16);
+  });
 });
 ```
 
@@ -746,26 +770,48 @@ export function buildLoopSpec(
   return { blue: prop, red: prop };
 }
 
-/** Product of expander intervals (overlay contributes x1). Seed length = total / this. */
+/**
+ * Total length multiplier of the spec's EXPANDER stages (overlay contributes
+ * x1). Seed length = total / this.
+ *
+ * Mirrors the engine's stage semantics in spec-executor.ts exactly — the
+ * naive product-of-periods formula is WRONG (Task 4 finding):
+ *  - Fuseable expanders (mirrored/flipped/swapped/inverted) grouped by
+ *    period run as ONE FusedExecutor stage per period group (x period once
+ *    per group, not per component).
+ *  - ROTATED runs as a separate stage ONLY when no fuseable group shares
+ *    its period, OR a mirror/flip shares its period. When only swap/invert
+ *    share rotation's period, FusedExecutor absorbs the rotation
+ *    (fuseableAtSamePeriod branch) — rotation contributes x1.
+ */
 export function expanderMultiplier(wire: LOOPSpecWire): number {
   const prop = wire.blue ?? wire.red;
   if (!prop) return 1;
-  let mult = 1;
-  const seenPeriods = new Set<number>();
-  const rot = prop.rotated;
-  if (rot && rot.mode !== "overlay") mult *= rot.period;
-  for (const [comp, cSpec] of Object.entries(prop)) {
-    if (comp === "rotated" || comp === "rewound") continue;
-    if (cSpec.mode === "overlay") continue;
-    if (!seenPeriods.has(cSpec.period)) { seenPeriods.add(cSpec.period); mult *= cSpec.period; }
+
+  const FUSEABLE = ["mirrored", "flipped", "swapped", "inverted"] as const;
+  const groups = new Map<number, { hasMirrorOrFlip: boolean }>();
+  for (const comp of FUSEABLE) {
+    const cSpec = prop[comp];
+    if (!cSpec || cSpec.mode === "overlay") continue;
+    const group = groups.get(cSpec.period) ?? { hasMirrorOrFlip: false };
+    if (comp === "mirrored" || comp === "flipped") group.hasMirrorOrFlip = true;
+    groups.set(cSpec.period, group);
   }
+
+  let mult = 1;
+  const rot = prop.rotated;
+  if (rot && rot.mode !== "overlay") {
+    const sharing = groups.get(rot.period);
+    if (!sharing || sharing.hasMirrorOrFlip) mult *= rot.period;
+    // else: rotation absorbed into the fused stage — x1
+  }
+  for (const period of groups.keys()) mult *= period;
+  if (prop.rewound) mult *= prop.rewound.period;
   return mult;
 }
 ```
 
-(Fix the first test's expectation text when writing it for real — defaults: rotation at chosen interval, everything else period 2.)
-
-- [ ] **Step 4: Run tests** — expect all loop-type-utils tests PASS (old 8 + new 4).
+- [ ] **Step 4: Run tests** — expect all loop-type-utils tests PASS (old 8 + new 6).
 
 - [ ] **Step 5: Commit**
 
