@@ -69,7 +69,7 @@ sourceSequenceId?: string;  // when known in the save context
 - Public/shared art — collections stay private; sharing gets its own spec after this lands.
 - Bidirectional lineage ("Art made from this" on sequence cards) — v2; needs reverse lookup and is an empty affordance for most sequences today.
 - BrowseEngine / smart collections over art — pipeline is sequence-typed; not forcing it.
-- Retiring the Art (playground) module from main nav — revisit after usage.
+- ~~Retiring the Art (playground) module from main nav~~ — DONE 2026-07-12 per Austen's direction (`d991754454`): `ModuleDefinition.navHidden` hides it from all nav surfaces; Library's Art shelf is the only front door; PlaygroundModule gained a "← Library" header bar as the visible exit.
 
 ## Ledger
 
