@@ -82,7 +82,7 @@
           <section>
             <h3>2. Description of Service</h3>
             <p>
-              TKA Composer is an educational platform for learning, creating,
+              Flow Arts Composer is an educational platform for learning, creating,
               and sharing TKA sequences. Some features require a paid
               subscription.
             </p>
@@ -100,7 +100,7 @@
             <h3>4. User Content (Including Videos)</h3>
             <p>
               You retain ownership of sequences, videos, images, and other
-              content you upload. You grant TKA Composer the rights needed
+              content you upload. You grant Flow Arts Composer the rights needed
               to host, display, transcode, back up, and deliver your content
               through the service, including sublicensing those rights to
               service providers (CDNs, storage). See the full terms for the
@@ -144,8 +144,8 @@
           <section>
             <h3>8. Intellectual Property</h3>
             <p>
-              The TKA Composer application is licensed under the Elastic
-              License 2.0. "The Kinetic Alphabet", "TKA", and "TKA Composer"
+              The Flow Arts Composer application is licensed under the Elastic
+              License 2.0. "The Kinetic Alphabet", "TKA", and "Flow Arts Composer"
               are trademarks of Austen Cloud. The TKA notation system is an
               open standard under CC BY-SA 4.0.
             </p>
@@ -180,7 +180,7 @@
           <section>
             <h3>11. Disclaimers &amp; Liability</h3>
             <p>
-              TKA Composer is provided "as is" without warranties of any kind.
+              Flow Arts Composer is provided "as is" without warranties of any kind.
               Total liability shall not exceed the amount you paid in the
               twelve months preceding the claim.
             </p>
@@ -208,7 +208,7 @@
           <section>
             <h3>1. Information We Collect</h3>
             <p>
-              When you use TKA Composer, we may collect the following types of
+              When you use Flow Arts Composer, we may collect the following types of
               information:
             </p>
             <ul>
@@ -240,7 +240,7 @@
             <h3>2. How We Use Your Information</h3>
             <p>We use the information we collect to:</p>
             <ul>
-              <li>Provide and maintain the TKA Composer service</li>
+              <li>Provide and maintain the Flow Arts Composer service</li>
               <li>Personalize your experience and save your preferences</li>
               <li>Enable community features like sharing sequences</li>
               <li>Improve and optimize the application</li>
@@ -300,7 +300,7 @@
           <section>
             <h3>7. Cookies and Local Storage</h3>
             <p>
-              TKA Composer uses local storage and cookies to maintain your
+              Flow Arts Composer uses local storage and cookies to maintain your
               session and remember your preferences. These are essential for
               the application to function properly.
             </p>
@@ -326,7 +326,7 @@
           <section>
             <h3>9. Children's Privacy</h3>
             <p>
-              TKA Composer is not intended for children under 13 years of age. We
+              Flow Arts Composer is not intended for children under 13 years of age. We
               do not knowingly collect personal information from children under
               13.
             </p>

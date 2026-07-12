@@ -1,6 +1,6 @@
 <script lang="ts">
   const steps = [
-    "Sign in to TKA Composer",
+    "Sign in to Flow Arts Composer",
     "Tap profile icon → Settings",
     "Account → Delete Account",
     "Confirm deletion",
@@ -23,10 +23,10 @@
 </script>
 
 <svelte:head>
-  <title>Delete Account - TKA Composer</title>
+  <title>Delete Account - Flow Arts Composer</title>
   <meta
     name="description"
-    content="How to delete your TKA Composer account and data"
+    content="How to delete your Flow Arts Composer account and data"
   />
 </svelte:head>
 
@@ -41,7 +41,7 @@
       <div class="header-content">
         <div class="logo">TKA</div>
         <h1>Delete Your Account</h1>
-        <p class="subtitle">Account deletion for TKA Composer</p>
+        <p class="subtitle">Account deletion for Flow Arts Composer</p>
       </div>
     </header>
 
@@ -93,7 +93,7 @@
 
     <footer>
       <a href="/" class="cta-button">
-        <span>Open TKA Composer</span>
+        <span>Open Flow Arts Composer</span>
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </a>
       <p class="help">

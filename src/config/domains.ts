@@ -127,11 +127,11 @@ export const LANDING_SEO_CONFIG = {
  * App SEO config
  */
 export const APP_SEO_CONFIG = {
-  siteName: "TKA Composer",
+  siteName: "Flow Arts Composer",
   description:
-    "Create, animate, and share flow arts sequences with TKA Composer - the free choreography app for staff, clubs, fans, hoops, buugeng, and swords.",
+    "Create, animate, and share flow arts sequences with Flow Arts Composer - the free choreography app for staff, clubs, fans, hoops, buugeng, and swords.",
   keywords:
-    "TKA Composer, TKA app, TKA flow arts, flow arts app, sequence creator, staff choreography, club manipulation, fan spinning, buugeng patterns",
+    "Flow Arts Composer, TKA app, TKA flow arts, flow arts app, sequence creator, staff choreography, club manipulation, fan spinning, buugeng patterns",
   author: "Austen Cloud",
   language: "en",
   type: "website",

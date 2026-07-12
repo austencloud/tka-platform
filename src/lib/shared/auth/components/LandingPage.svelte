@@ -111,7 +111,7 @@
       <div class="logo-container">
         <i class="fas fa-infinity logo-icon" aria-hidden="true"></i>
       </div>
-      <h1>TKA Composer</h1>
+      <h1>Flow Arts Composer</h1>
       <p class="tagline">Notation for flow arts</p>
     </header>
 

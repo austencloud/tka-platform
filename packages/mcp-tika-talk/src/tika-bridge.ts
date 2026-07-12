@@ -581,7 +581,7 @@ function buildTools(container: TikaServerContainer) {
     }),
 
     find_app_feature: tool({
-      description: "Find how to do something in TKA Composer.",
+      description: "Find how to do something in Flow Arts Composer.",
       inputSchema: jsonSchema<{ query: string }>({
         type: "object",
         properties: { query: { type: "string" } },

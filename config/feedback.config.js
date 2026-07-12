@@ -219,7 +219,7 @@ export const MESSAGE_TEMPLATES = {
 
   // When feedback is included in a release
   released: (version) =>
-    `Your feedback was included in version ${version}! Thank you for helping improve TKA Composer.`,
+    `Your feedback was included in version ${version}! Thank you for helping improve Flow Arts Composer.`,
 
   // When feedback is archived without release
   archived: (notes) =>

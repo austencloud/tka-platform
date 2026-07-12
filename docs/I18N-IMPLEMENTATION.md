@@ -1,6 +1,6 @@
 # i18n Implementation Guide
 
-This document consolidates the practical implementation details for TKA Composer's internationalization system.
+This document consolidates the practical implementation details for Flow Arts Composer's internationalization system.
 
 ---
 
@@ -254,7 +254,7 @@ npm run i18n:coverage      # Check adoption rate
 
 ```svelte
 <!-- DON'T -->
-<h1>Welcome to TKA Composer</h1>
+<h1>Welcome to Flow Arts Composer</h1>
 
 <!-- DO -->
 <h1>{t("app_welcome_title")}</h1>

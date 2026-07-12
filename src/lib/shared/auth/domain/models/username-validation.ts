@@ -2,7 +2,7 @@
  * Username Validation Domain Models
  *
  * Defines validation rules, reserved usernames, and helper functions
- * for enforcing unique usernames across TKA Composer.
+ * for enforcing unique usernames across Flow Arts Composer.
  */
 
 export interface UsernameValidationResult {

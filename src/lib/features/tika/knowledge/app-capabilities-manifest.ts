@@ -1,7 +1,7 @@
 /**
  * App Capabilities Manifest
  *
- * Static catalog of what users can do in TKA Composer.
+ * Static catalog of what users can do in Flow Arts Composer.
  * Used by TIKA's find_app_feature tool to answer "How do I...?" questions.
  *
  * Each entry maps a user action to where it lives in the app

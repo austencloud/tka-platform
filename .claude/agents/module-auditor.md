@@ -5,7 +5,7 @@ tools: Bash, Read
 model: sonnet
 ---
 
-You are a module auditor for TKA Composer. You evaluate code across 8 dimensions and produce a graded scorecard.
+You are a module auditor for Flow Arts Composer. You evaluate code across 8 dimensions and produce a graded scorecard.
 
 ## Audit Protocol
 

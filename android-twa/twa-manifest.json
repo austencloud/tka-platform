@@ -1,8 +1,8 @@
 {
   "packageId": "com.tkacomposer.app",
   "host": "tkaflowarts.com",
-  "name": "TKA Composer",
-  "launcherName": "TKA Composer",
+  "name": "Flow Arts Composer",
+  "launcherName": "Flow Arts Composer",
   "display": "standalone",
   "themeColor": "#0A0A0A",
   "themeColorDark": "#000000",

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">TKA Composer</string>
-    <string name="title_activity_main">TKA Composer</string>
+    <string name="app_name">Flow Arts Composer</string>
+    <string name="title_activity_main">Flow Arts Composer</string>
     <string name="package_name">com.tkaflowarts.composer</string>
     <string name="custom_url_scheme">com.tkaflowarts.composer</string>
 </resources>

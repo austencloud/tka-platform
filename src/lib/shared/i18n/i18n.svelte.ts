@@ -297,7 +297,7 @@ async function loadLocaleMessages(locale: Locale): Promise<Messages> {
  *                 Current usage is safe (module IDs, Firebase Auth usernames).
  *
  * @example
- * t("app_name") // "TKA Composer"
+ * t("app_name") // "Flow Arts Composer"
  * t("dashboard_viewing_as", { name: "John" }) // "Viewing as John"
  * t("invalid_key") // TypeScript error!
  */

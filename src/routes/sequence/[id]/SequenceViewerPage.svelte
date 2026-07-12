@@ -116,7 +116,7 @@ import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downlo
   const ogDesc = $derived(
     ogCreator
       ? `Flow sequence by ${ogCreator}${data?.meta?.stepCount ? ` • ${data.meta.stepCount} beats` : ""}${data?.meta?.difficulty ? ` • Level ${data.meta.difficulty}` : ""}`
-      : "View this flow sequence in TKA Composer"
+      : "View this flow sequence in Flow Arts Composer"
   );
   const ogImage = $derived(data?.meta?.thumbnailUrl || "https://tkaflowarts.com/og-default.png");
   const ogUrl = $derived(`https://tkaflowarts.com/sequence/${sequenceId}`);
@@ -470,15 +470,15 @@ import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downlo
 </script>
 
 <svelte:head>
-  <title>{ogWord} - TKA Composer</title>
+  <title>{ogWord} - Flow Arts Composer</title>
   <meta name="description" content={ogDesc} />
   <meta property="og:type" content="article" />
-  <meta property="og:title" content="{ogWord} - TKA Composer" />
+  <meta property="og:title" content="{ogWord} - Flow Arts Composer" />
   <meta property="og:description" content={ogDesc} />
   <meta property="og:image" content={ogImage} />
   <meta property="og:url" content={ogUrl} />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="{ogWord} - TKA Composer" />
+  <meta name="twitter:title" content="{ogWord} - Flow Arts Composer" />
   <meta name="twitter:description" content={ogDesc} />
   <meta name="twitter:image" content={ogImage} />
 </svelte:head>

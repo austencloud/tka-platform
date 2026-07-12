@@ -155,7 +155,7 @@
       <h3>Browse TKA</h3>
       <p>See how these ideas come together in practice.</p>
       <a href="/create" class="cta-button" data-sveltekit-reload>
-        <span>Open TKA Composer</span>
+        <span>Open Flow Arts Composer</span>
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </a>
     </div>

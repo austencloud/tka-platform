@@ -17,7 +17,7 @@
     <div class="auth-icon-wrapper">
       <i class="fas fa-user-astronaut" aria-hidden="true"></i>
     </div>
-    <h2 class="auth-title">Sign In to TKA Composer</h2>
+    <h2 class="auth-title">Sign In to Flow Arts Composer</h2>
     <p class="auth-subtitle">
       Save your progress, sync across devices, and access your creations.
     </p>

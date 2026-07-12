@@ -69,7 +69,7 @@ The following packages are also MIT-licensed to enable community tooling:
 These provide platform-agnostic calculation and rendering primitives.
 
 
-3. TKA Composer Application (Elastic License 2.0)
+3. Flow Arts Composer Application (Elastic License 2.0)
 ---------------------------------------------------
 
 Everything in src/ and the following packages are licensed under the
@@ -275,7 +275,7 @@ in the Community Fallback mechanism above.
 8. Trademarks
 --------------
 
-"The Kinetic Alphabet", "TKA", "TKA Composer", and associated logos
+"The Kinetic Alphabet", "TKA", "Flow Arts Composer", and associated logos
 are trademarks of Austen Cloud. Nothing in any of the licenses above
 (MIT, ELv2, or CC BY-SA 4.0) grants permission to use these
 trademarks. You may not use these names or marks to:

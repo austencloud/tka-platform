@@ -1,6 +1,6 @@
 {
   "identifier": "default",
-  "description": "TKA Composer desktop capabilities",
+  "description": "Flow Arts Composer desktop capabilities",
   "windows": ["main"],
   "permissions": [
     "core:default",

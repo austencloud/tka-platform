@@ -76,13 +76,13 @@
 {#if isInAppBrowser && !dismissed && !isInstalledPWA}
   {#if isSequenceRoute}
     <!-- Non-blocking bottom banner for sequence viewer -->
-    <div class="iab-banner" role="status" aria-label="Open in TKA Composer for the best experience">
+    <div class="iab-banner" role="status" aria-label="Open in Flow Arts Composer for the best experience">
       <div class="banner-icon">
         <i class="fas fa-mobile-alt" aria-hidden="true"></i>
       </div>
       <div class="banner-body">
         <span class="banner-text">
-          Open in TKA Composer
+          Open in Flow Arts Composer
         </span>
         {#if canOpenExternal}
           <a href={externalUrl} class="banner-signup-link">
@@ -119,11 +119,11 @@
           <i class="fas fa-mobile-alt" aria-hidden="true"></i>
         </div>
 
-        <h2 id="iab-title">Open in TKA Composer</h2>
+        <h2 id="iab-title">Open in Flow Arts Composer</h2>
 
         <p id="iab-desc">
           {browserName ? `${browserName}'s` : "This"} built-in browser doesn't support sign-in.
-          Open this link in the TKA Composer app, or install it for the best experience.
+          Open this link in the Flow Arts Composer app, or install it for the best experience.
         </p>
 
         <div class="actions">

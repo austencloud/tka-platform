@@ -1,6 +1,6 @@
 # Performance Tests
 
-Performance and memory leak tests for TKA Composer.
+Performance and memory leak tests for Flow Arts Composer.
 
 ## Tests
 

@@ -46,7 +46,7 @@ messaging.onBackgroundMessage((payload) => {
     return;
   }
 
-  const title = notification.title || data.title || "TKA Composer";
+  const title = notification.title || data.title || "Flow Arts Composer";
   const body = notification.body || data.body || "";
 
   self.registration.showNotification(title, {

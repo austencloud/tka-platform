@@ -31,7 +31,7 @@ export function buildVoiceCommandPrompt(
   const actions = getAllActionsWithContext(currentModule, currentTab);
   const actionBlock = formatActions(actions);
 
-  let prompt = `You are a voice command interpreter for TKA Composer, a flow arts choreography notation app.
+  let prompt = `You are a voice command interpreter for Flow Arts Composer, a flow arts choreography notation app.
 Convert the user's spoken command into one or more structured actions.
 
 ## Current State

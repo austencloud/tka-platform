@@ -355,13 +355,13 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "grid"
   },
   "centric": {
-    definition: "A grid mode introduced in Level 4 where at least one hand is at the center grid point. Creates tau and terra positions. Not yet implemented in TKA Composer.",
+    definition: "A grid mode introduced in Level 4 where at least one hand is at the center grid point. Creates tau and terra positions. Not yet implemented in Flow Arts Composer.",
     examples: ["One hand at center, one at N (tau position)", "Both hands at center (terra position)"],
     relatedTerms: ["diamond", "box", "skewed", "tau", "terra"],
     category: "grid"
   },
   "center": {
-    definition: "The 9th grid point, located at the center of the grid. Introduced in Level 4 with centric grid mode. Not yet implemented in TKA Composer.",
+    definition: "The 9th grid point, located at the center of the grid. Introduced in Level 4 with centric grid mode. Not yet implemented in Flow Arts Composer.",
     examples: ["Tau position: one hand at center", "Terra position: both hands at center"],
     relatedTerms: ["centric", "tau", "terra", "cardinal", "intercardinal"],
     category: "grid"

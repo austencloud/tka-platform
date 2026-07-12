@@ -152,9 +152,9 @@
 
   <div class="cta-card">
     <h3>Ready to create?</h3>
-    <p>TKA Composer is free to use. No download required.</p>
+    <p>Flow Arts Composer is free to use. No download required.</p>
     <a href="/create" class="cta-button" data-sveltekit-reload>
-      <span>Open TKA Composer</span>
+      <span>Open Flow Arts Composer</span>
       <i class="fas fa-arrow-right" aria-hidden="true"></i>
     </a>
   </div>

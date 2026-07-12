@@ -169,7 +169,7 @@
       type="text"
       class="notes-input"
       value={customNotesText}
-      placeholder="Created using TKA Composer"
+      placeholder="Created using Flow Arts Composer"
       oninput={handleNotesInput}
     />
   </div>

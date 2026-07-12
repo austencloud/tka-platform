@@ -18,5 +18,5 @@ pub fn run() {
             Ok(())
         })
         .run(tauri::generate_context!())
-        .expect("error while running TKA Composer");
+        .expect("error while running Flow Arts Composer");
 }

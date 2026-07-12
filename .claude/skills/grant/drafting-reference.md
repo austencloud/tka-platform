@@ -13,7 +13,7 @@
 **STEP 5:** Pull relevant context. Depending on the section, read from:
 - `docs/museum/story-bible.md` — for project description, narrative concept
 - `docs/grants/grant-tracker.md` — for framing notes
-- The codebase itself — for technical description of what TKA Composer does
+- The codebase itself — for technical description of what Flow Arts Composer does
 - Previous approved drafts in `docs/grants/drafts/` — for consistency
 
 **STEP 6:** Draft the section. Follow the drafting rules below.
@@ -33,7 +33,7 @@
 
 1. **Sound like Austen, not like a grant writer.** Direct, confident, no art-speak. Apply every rule from the AI-isms section of CLAUDE.md. If a sentence could appear in any grant application for any project, rewrite it until it couldn't.
 
-2. **Be specific about what exists.** TKA Composer is a working web application. The notation system has defined letter forms, position classifications, and rotation tracking. The museum game has a 350-line story bible. Say what's real.
+2. **Be specific about what exists.** Flow Arts Composer is a working web application. The notation system has defined letter forms, position classifications, and rotation tracking. The museum game has a 350-line story bible. Say what's real.
 
 3. **Don't overclaim.** TKA is for dual-wielded rigid gripped props. Not all flow arts. Not all movement. Not dance notation. Be precise about scope.
 

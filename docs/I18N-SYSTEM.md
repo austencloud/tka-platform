@@ -1,4 +1,4 @@
-# TKA Composer i18n System: Complete Guide
+# Flow Arts Composer i18n System: Complete Guide
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@
 
 ## Overview
 
-**TKA Composer uses a lightweight, JSON-based i18n system that replaced Paraglide in January 2025.**
+**Flow Arts Composer uses a lightweight, JSON-based i18n system that replaced Paraglide in January 2025.**
 
 **Key features:**
 - Type-safe translations with IDE autocomplete
@@ -76,7 +76,7 @@ Load ONE file per locale using native dynamic imports:
 ```typescript
 // messages/en.json - all English translations in one file
 {
-  "app_name": "TKA Composer",
+  "app_name": "Flow Arts Composer",
   "dashboard_welcome": "Welcome, {name}!"
 }
 
@@ -140,7 +140,7 @@ Paraglide stored translations in `messages/{locale}.js` with this structure:
 
 ```javascript
 // messages/en.js (Paraglide)
-export const app_name = () => "TKA Composer";
+export const app_name = () => "Flow Arts Composer";
 export const nav_create = () => "Create";
 ```
 
@@ -148,7 +148,7 @@ Convert to JSON:
 
 ```json
 {
-  "app_name": "TKA Composer",
+  "app_name": "Flow Arts Composer",
   "nav_create": "Create"
 }
 ```
@@ -351,7 +351,7 @@ IDE autocomplete shows all 1,398 keys.
 </script>
 
 <h1>{t("app_name")}</h1>
-<!-- Output: "TKA Composer" -->
+<!-- Output: "Flow Arts Composer" -->
 ```
 
 ### With Parameters
@@ -664,7 +664,7 @@ import { t, setLocale } from "$lib/shared/i18n/i18n.svelte.ts";
 
 describe("i18n", () => {
   it("translates basic keys", () => {
-    expect(t("app_name")).toBe("TKA Composer");
+    expect(t("app_name")).toBe("Flow Arts Composer");
   });
 
   it("translates nav keys", () => {
@@ -673,7 +673,7 @@ describe("i18n", () => {
 
   it("switches locales", async () => {
     await setLocale("es");
-    expect(t("app_name")).toBe("TKA Composer"); // Spanish translation
+    expect(t("app_name")).toBe("Flow Arts Composer"); // Spanish translation
   });
 });
 ```

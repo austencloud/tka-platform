@@ -194,8 +194,8 @@ export async function exportHomePrintPDF(
 	if (meta?.title) pdfDoc.setTitle(meta.title);
 	if (meta?.subject) pdfDoc.setSubject(meta.subject);
 	if (meta?.keywords?.length) pdfDoc.setKeywords(meta.keywords);
-	pdfDoc.setCreator('TKA Composer');
-	pdfDoc.setProducer('TKA Composer');
+	pdfDoc.setCreator('Flow Arts Composer');
+	pdfDoc.setProducer('Flow Arts Composer');
 
 	const pdfBytes = await pdfDoc.save();
 	return new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });

@@ -1,5 +1,5 @@
 /**
- * TKA Composer - Complete Learning Path for The Kinetic Alphabet
+ * Flow Arts Composer - Complete Learning Path for The Kinetic Alphabet
  *
  * This file defines the complete progression of concepts from the TKA Level 1 curriculum.
  * Concepts are organized into categories and unlock sequentially to guide learners

@@ -268,7 +268,7 @@
     if (!version) return "";
     const lines: string[] = [];
 
-    lines.push(`TKA Composer v${version.version}`);
+    lines.push(`Flow Arts Composer v${version.version}`);
     lines.push(
       `Released ${version.releasedAt.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}`
     );

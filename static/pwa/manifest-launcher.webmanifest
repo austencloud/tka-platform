@@ -1,7 +1,7 @@
 {
-  "name": "TKA Composer Launcher",
+  "name": "Flow Arts Composer Launcher",
   "short_name": "TKA Launcher",
-  "description": "Advanced version management and development launcher for TKA Composer",
+  "description": "Advanced version management and development launcher for Flow Arts Composer",
   "version": "2.0.0",
   "start_url": "/",
   "display": "standalone",

@@ -147,7 +147,7 @@ TKA is not a replacement for these systems. VTG's timing/direction classificatio
 
 ### Current State
 
-TKA Composer is the digital implementation: a free, browser-based application for creating, browsing, and sharing notated sequences. It includes:
+Flow Arts Composer is the digital implementation: a free, browser-based application for creating, browsing, and sharing notated sequences. It includes:
 
 - A sequence builder for composing choreography beat by beat
 - A constrained generator that produces valid sequences from the letter system

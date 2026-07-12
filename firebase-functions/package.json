@@ -1,7 +1,7 @@
 {
   "name": "tka-composer-functions",
   "version": "1.0.0",
-  "description": "Firebase Cloud Functions for TKA Composer",
+  "description": "Firebase Cloud Functions for Flow Arts Composer",
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc && npm run copy-templates",

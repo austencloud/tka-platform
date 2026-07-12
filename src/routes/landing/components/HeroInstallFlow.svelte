@@ -107,7 +107,7 @@ import {  } from '$lib/shared/mobile/services/types';
         <span>App Installed!</span>
       </div>
       <p class="installed-instruction">
-        Open <strong>TKA Composer</strong> from your home screen
+        Open <strong>Flow Arts Composer</strong> from your home screen
       </p>
       <a href="/create" class="link-secondary"> Or continue in browser → </a>
     </div>
@@ -133,7 +133,7 @@ import {  } from '$lib/shared/mobile/services/types';
       rel="noopener"
     >
       <i class="fab fa-google-play" aria-hidden="true"></i>
-      <span>Get TKA Composer</span>
+      <span>Get Flow Arts Composer</span>
     </a>
   {:else if installState === "ios-non-safari"}
     <!-- iOS but not Safari -->

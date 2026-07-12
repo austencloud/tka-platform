@@ -217,7 +217,7 @@ export class Sharer {
         darkMode: shareOptions.darkMode,
       },
 
-      userName: shareOptions.userName || "TKA Composer User",
+      userName: shareOptions.userName || "Flow Arts Composer User",
       exportDate: dateToUse
         .toLocaleDateString("en-US", {
           year: "numeric",
@@ -225,7 +225,7 @@ export class Sharer {
           day: "numeric",
         })
         .replace(/\//g, "-"),
-      notes: shareOptions.customNotesText || shareOptions.notes || "Created with TKA Composer",
+      notes: shareOptions.customNotesText || shareOptions.notes || "Created with Flow Arts Composer",
 
       showCreatorName: shareOptions.showCreatorName,
       showNotes: shareOptions.showNotes,
@@ -258,7 +258,7 @@ export class Sharer {
         darkMode: shareOptions.darkMode,
       },
 
-      userName: shareOptions.userName || "TKA Composer User",
+      userName: shareOptions.userName || "Flow Arts Composer User",
       exportDate: new Date()
         .toLocaleDateString("en-US", {
           year: "numeric",
@@ -266,7 +266,7 @@ export class Sharer {
           day: "numeric",
         })
         .replace(/\//g, "-"),
-      notes: shareOptions.customNotesText || shareOptions.notes || "Created with TKA Composer",
+      notes: shareOptions.customNotesText || shareOptions.notes || "Created with Flow Arts Composer",
 
       showCreatorName: shareOptions.showCreatorName,
       showNotes: shareOptions.showNotes,

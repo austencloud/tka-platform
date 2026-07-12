@@ -4,7 +4,7 @@
 
 <section class="features" id="features">
   <div class="container">
-    <h2>Meet TKA Composer</h2>
+    <h2>Meet Flow Arts Composer</h2>
     <p class="section-intro">
       The free web app for The Kinetic Alphabet.
     </p>

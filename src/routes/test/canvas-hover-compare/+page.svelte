@@ -67,7 +67,7 @@
 </script>
 
 <svelte:head>
-  <title>Canvas Hover Affordance Compare — TKA Composer</title>
+  <title>Canvas Hover Affordance Compare — Flow Arts Composer</title>
 </svelte:head>
 
 <div class="page">

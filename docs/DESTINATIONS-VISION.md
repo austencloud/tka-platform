@@ -1,6 +1,6 @@
 # 3D Destinations: Design Vision
 
-This document defines the purpose, UX model, and future direction for each 3D destination in TKA Composer.
+This document defines the purpose, UX model, and future direction for each 3D destination in Flow Arts Composer.
 
 ---
 

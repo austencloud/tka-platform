@@ -1,5 +1,5 @@
 /**
- * Firebase Cloud Functions for TKA Composer
+ * Firebase Cloud Functions for Flow Arts Composer
  *
  * Handles subscription-related background tasks like role sync,
  * custom email delivery via Brevo, and feedback claim management.

@@ -3,7 +3,7 @@
 </script>
 
 <svelte:head>
-  <title>Terms of Service | TKA Composer</title>
+  <title>Terms of Service | Flow Arts Composer</title>
   <meta
     name="description"
     content="Terms of Service for The Kinetic Alphabet (TKA) application."
@@ -39,7 +39,7 @@
       <section id="description">
         <h2>2. Description of Service</h2>
         <p>
-          TKA Composer is an educational platform that provides tools for
+          Flow Arts Composer is an educational platform that provides tools for
           learning, creating, and sharing TKA (The Kinetic Alphabet) sequences.
           The service includes sequence building tools, learning modules, and
           community features. Some features require a paid subscription.
@@ -60,8 +60,8 @@
         <h2>4. User Content (Including Videos)</h2>
         <p>
           You retain ownership of any sequences, videos, images, audio, or
-          other content you create, upload, or share using TKA Composer. By
-          uploading or sharing content through the service, you grant TKA
+          other content you create, upload, or share using Flow Arts Composer. By
+          uploading or sharing content through the service, you grant Flow Arts
           Composer a non-exclusive, worldwide, royalty-free, sublicensable
           license to:
         </p>
@@ -77,15 +77,15 @@
         </ul>
         <p>
           This license is granted solely for the purpose of providing the
-          TKA Composer service and is limited to uses reasonably necessary
+          Flow Arts Composer service and is limited to uses reasonably necessary
           to host, display, and deliver your content to the users and
-          audiences you choose. TKA Composer will not use your private
+          audiences you choose. Flow Arts Composer will not use your private
           content for promotional purposes without your explicit consent.
         </p>
         <p>
           If you share content publicly (for example, in browse galleries,
           community features, or public profiles), you grant an additional
-          license for TKA Composer to display that content to other users
+          license for Flow Arts Composer to display that content to other users
           and in promotional materials referencing the service. This
           public-sharing license continues after account deletion for
           content that has already been shared publicly, but you may
@@ -116,7 +116,7 @@
           <li>Harass, threaten, or harm other users</li>
         </ul>
         <p>
-          TKA Composer reserves the right, but is not obligated, to remove,
+          Flow Arts Composer reserves the right, but is not obligated, to remove,
           restrict, or refuse to display any content that violates these
           Terms or that we determine, in our sole discretion, to be harmful,
           inappropriate, or incompatible with the purpose of the service.
@@ -153,7 +153,7 @@
         <p>
           You may not use the service, its source code, or data obtained
           through the service to build, operate, or contribute to a product
-          or service that competes with TKA Composer. This includes hosting
+          or service that competes with Flow Arts Composer. This includes hosting
           a substantially similar application as a service for others.
         </p>
         <p>
@@ -166,13 +166,13 @@
       <section id="intellectual-property">
         <h2>8. Intellectual Property and Trademarks</h2>
         <p>
-          The TKA Composer application, including its design, features, and
+          The Flow Arts Composer application, including its design, features, and
           underlying technology, is protected by applicable intellectual
           property laws and licensed under the Elastic License 2.0. The
           source code is available for inspection but is not open source.
         </p>
         <p>
-          "The Kinetic Alphabet", "TKA", "TKA Composer", and associated
+          "The Kinetic Alphabet", "TKA", "Flow Arts Composer", and associated
           logos are trademarks of Austen Cloud. You may not use these names
           to imply endorsement, name a competing product, or create
           confusion about the origin of your work. Fair use for attribution
@@ -188,10 +188,10 @@
       <section id="dmca">
         <h2>9. Copyright and DMCA Notice &amp; Takedown</h2>
         <p>
-          TKA Composer respects the intellectual property rights of others
+          Flow Arts Composer respects the intellectual property rights of others
           and expects its users to do the same. If you are a copyright owner
           (or authorized to act on behalf of one) and you believe that
-          content hosted on TKA Composer infringes your copyright, please
+          content hosted on Flow Arts Composer infringes your copyright, please
           send a written notice to our designated agent that includes the
           information required by 17 U.S.C. § 512(c)(3):
         </p>
@@ -221,7 +221,7 @@
           Subject line: "DMCA Takedown Notice"
         </p>
         <p>
-          Upon receipt of a valid notice, TKA Composer will expeditiously
+          Upon receipt of a valid notice, Flow Arts Composer will expeditiously
           remove or disable access to the allegedly infringing material and
           take reasonable steps to notify the user who uploaded it.
         </p>
@@ -248,7 +248,7 @@
         </ol>
         <p>
           <strong>Repeat Infringers.</strong> In accordance with the DMCA
-          and other applicable law, TKA Composer will, in appropriate
+          and other applicable law, Flow Arts Composer will, in appropriate
           circumstances, terminate the accounts of users who are determined
           to be repeat infringers of copyright.
         </p>
@@ -314,7 +314,7 @@
       <section id="disclaimers">
         <h2>12. Disclaimers</h2>
         <p>
-          TKA Composer is provided "as is" without warranties of any kind,
+          Flow Arts Composer is provided "as is" without warranties of any kind,
           express or implied, including but not limited to warranties of
           merchantability, fitness for a particular purpose, and
           non-infringement. There is no guarantee that the service will be
@@ -325,7 +325,7 @@
       <section id="liability">
         <h2>13. Limitation of Liability</h2>
         <p>
-          TKA Composer and its developer shall not be liable for any
+          Flow Arts Composer and its developer shall not be liable for any
           indirect, incidental, special, consequential, or punitive damages
           arising from your use of the service, including but not limited to
           loss of data, loss of profits, or interruption of service. To the

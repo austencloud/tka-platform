@@ -74,7 +74,7 @@ export const POSITION_DEFINITIONS: Record<PositionName, PositionDefinition> = {
     name: "Tau (τ)",
     symbol: "τ",
     angle: "variable",
-    description: "One hand is at the center grid point, the other at a non-center point. Introduced in Level 4 with centric grid mode. Not yet implemented in TKA Composer.",
+    description: "One hand is at the center grid point, the other at a non-center point. Introduced in Level 4 with centric grid mode. Not yet implemented in Flow Arts Composer.",
     gridDescription: "The center point is the 9th grid location. Tau positions have one hand there and one at any of the 8 outer points.",
     examples: [
       "One hand at center, one at N",
@@ -87,7 +87,7 @@ export const POSITION_DEFINITIONS: Record<PositionName, PositionDefinition> = {
     name: "Terra",
     symbol: "⊕",
     angle: "0° (both at center)",
-    description: "Both hands are at the center grid point. Introduced in Level 4 with centric grid mode. Not yet implemented in TKA Composer.",
+    description: "Both hands are at the center grid point. Introduced in Level 4 with centric grid mode. Not yet implemented in Flow Arts Composer.",
     gridDescription: "Both props stacked at the center of the grid. Similar to beta (both at same point) but at the unique center location.",
     examples: [
       "Both hands at center",

@@ -45,7 +45,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'TKA Composer ${{ github.ref_name }}'
+          releaseName: 'Flow Arts Composer ${{ github.ref_name }}'
           releaseBody: 'Desktop release — see web changelog for details.'
           releaseDraft: true
           prerelease: false

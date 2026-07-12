@@ -24,7 +24,7 @@ try {
   emailTemplate = `
     <html>
       <body style="font-family: sans-serif; padding: 40px; text-align: center;">
-        <h1>Sign in to TKA Composer</h1>
+        <h1>Sign in to Flow Arts Composer</h1>
         <p><a href="{{MAGIC_LINK}}" style="display: inline-block; padding: 12px 24px; background: #8b5cf6; color: white; text-decoration: none; border-radius: 8px;">Sign In</a></p>
         <p style="color: #666; font-size: 12px;">Didn't request this? Ignore it.</p>
       </body>
@@ -81,7 +81,7 @@ export const sendMagicLink = functions.https.onCall(
 
     // Get sender email from environment (with fallback)
     const senderEmail = process.env.BREVO_SENDER_EMAIL || "noreply@tkaflowarts.com";
-    const senderName = process.env.BREVO_SENDER_NAME || "TKA Composer";
+    const senderName = process.env.BREVO_SENDER_NAME || "Flow Arts Composer";
 
     try {
       // Generate the magic link using Firebase Admin SDK
@@ -98,14 +98,14 @@ export const sendMagicLink = functions.https.onCall(
       const htmlContent = emailTemplate.replace(/\{\{MAGIC_LINK\}\}/g, magicLink);
 
       // Plain text fallback
-      const textContent = `Sign in to TKA Composer
+      const textContent = `Sign in to Flow Arts Composer
 
 Click the link below to sign in (expires in 1 hour):
 ${magicLink}
 
 Didn't request this? Just ignore it.
 
-- TKA Composer
+- Flow Arts Composer
 https://tkaflowarts.com`;
 
       // Send via Brevo transactional email API
@@ -119,7 +119,7 @@ https://tkaflowarts.com`;
         body: JSON.stringify({
           sender: { name: senderName, email: senderEmail },
           to: [{ email }],
-          subject: "Sign in to TKA Composer",
+          subject: "Sign in to Flow Arts Composer",
           htmlContent,
           textContent,
         }),

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Deep Linking system allows users to create shareable URLs that open TKA Composer with a specific sequence pre-loaded in any module (Create, Animate, or Browse). This enables easy sharing of sequences without requiring database storage.
+The Deep Linking system allows users to create shareable URLs that open Flow Arts Composer with a specific sequence pre-loaded in any module (Create, Animate, or Browse). This enables easy sharing of sequences without requiring database storage.
 
 ## How It Works
 

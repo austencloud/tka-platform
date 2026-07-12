@@ -76,7 +76,7 @@ async function sendReleaseMessage(userId, feedbackId, feedbackTitle, version) {
 
     // Create the message
     const messagesRef = conversationRef.collection("messages");
-    const messageContent = `🚀 Your feedback was included in version ${version}! Thank you for helping improve TKA Composer.`;
+    const messageContent = `🚀 Your feedback was included in version ${version}! Thank you for helping improve Flow Arts Composer.`;
 
     const messageData = {
       senderId: ADMIN_USER_ID,

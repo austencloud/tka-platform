@@ -35,14 +35,14 @@ export const FAQ_ITEMS: FaqItem[] = [
       "Each beat becomes a pictograph that captures hand positions on a grid, the motion type (pro, anti, static, dash), direction, and number of turns. TKA is built for double staff and works with any dual-wielded prop you grip directly, like clubs, fans, hoops, mini hoops, and buugeng, each rendered with proper rotations and hand positions.",
   },
   {
-    question: "Is TKA Composer free?",
+    question: "Is Flow Arts Composer free?",
     answer:
       "Yes. Building sequences, animating them, and browsing the community library are free, and the core stays free. A premium tier is planned down the line to help sustain the project, but it isn't live yet.",
   },
   {
     question: "How do I learn flow arts with The Kinetic Alphabet?",
     answer:
-      "TKA Composer includes progressive lessons, from grid basics to advanced LOOPs. Interactive quizzes reinforce each idea, and daily challenges help you keep a streak going.",
+      "Flow Arts Composer includes progressive lessons, from grid basics to advanced LOOPs. Interactive quizzes reinforce each idea, and daily challenges help you keep a streak going.",
   },
   {
     question: "Can I share my sequences with other flow artists?",

@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, Manager};
 
 const LANDING_HTML: &str = r##"<!DOCTYPE html>
-<html><head><title>TKA Composer</title>
+<html><head><title>Flow Arts Composer</title>
 <style>
 body{font-family:system-ui;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#1a1a2e;color:#e0e0e0}
 .card{text-align:center;padding:2rem;border-radius:12px;background:#16213e;box-shadow:0 4px 20px rgba(0,0,0,.3)}
@@ -31,7 +31,7 @@ if (idToken) {
     .then(function() {
       document.getElementById("icon").className = "spinner done";
       document.getElementById("title").textContent = "Signed In!";
-      document.getElementById("msg").textContent = "Returning to TKA Composer...";
+      document.getElementById("msg").textContent = "Returning to Flow Arts Composer...";
       setTimeout(function() { try { window.close(); } catch(e) {} }, 1500);
     });
 } else {

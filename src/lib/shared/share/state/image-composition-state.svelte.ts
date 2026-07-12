@@ -28,7 +28,7 @@ export interface ImageCompositionSettings {
   showCreatorName: boolean; // Bottom-left: creator name
   showNotes: boolean; // Bottom-center: notes text
   showBirthday: boolean; // Bottom-right: birthday date
-  customNotesText: string; // Custom text for notes (default: "Created using TKA Composer")
+  customNotesText: string; // Custom text for notes (default: "Created using Flow Arts Composer")
 
   // QR code in empty cell under start position
   showQRCode: boolean;
@@ -69,13 +69,13 @@ const DEFAULT_SETTINGS: ImageCompositionSettings = {
   showLoopGlyph: true,
 
   // Footer defaults. Creator name + birthday show by default; the center notes
-  // lane is OFF by default — the "Created using TKA Composer" branding watermark
+  // lane is OFF by default — the "Created using Flow Arts Composer" branding watermark
   // doesn't earn its slot on every card. Notes are opt-in; customNotesText is the
   // text used once a user turns the lane on.
   showCreatorName: true,
   showNotes: false,
   showBirthday: true,
-  customNotesText: "Created using TKA Composer",
+  customNotesText: "Created using Flow Arts Composer",
 
   // QR code - shown by default in the empty cell under start position
   showQRCode: true,
@@ -183,7 +183,7 @@ class ImageCompositionStateManager {
     }
     if (cleaned) this.saveToStorage();
 
-    // One-time: retire the "Created using TKA Composer" branding note as a
+    // One-time: retire the "Created using Flow Arts Composer" branding note as a
     // default. Flips ONLY users who never customized the note (text is still the
     // branding default) and have the lane on — a real typed note is never
     // touched. Guarded by a localStorage marker so it runs once and won't fight
@@ -193,7 +193,7 @@ class ImageCompositionStateManager {
       if (!localStorage.getItem(NOTES_MIGRATION_KEY)) {
         if (
           this.settings.showNotes &&
-          this.settings.customNotesText === "Created using TKA Composer"
+          this.settings.customNotesText === "Created using Flow Arts Composer"
         ) {
           this.settings.showNotes = false;
           this.saveToStorage();

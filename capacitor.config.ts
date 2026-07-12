@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.tkaflowarts.composer',
-  appName: 'TKA Composer',
+  appName: 'Flow Arts Composer',
   webDir: 'build',
   server: {
     androidScheme: 'https'

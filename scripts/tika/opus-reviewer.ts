@@ -163,7 +163,7 @@ const OPUS_TOOLS: Anthropic.Tool[] = [
 	{
 		name: 'read_codebase_file',
 		description:
-			'Read a file from the TKA Composer codebase to verify domain rules or implementation details.',
+			'Read a file from the Flow Arts Composer codebase to verify domain rules or implementation details.',
 		input_schema: {
 			type: 'object' as const,
 			properties: {

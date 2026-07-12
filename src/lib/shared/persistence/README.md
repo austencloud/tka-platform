@@ -1,6 +1,6 @@
 # TKA Persistence Layer with Dexie.js
 
-This document explains how TKA Composer uses Dexie.js for robust, enterprise-grade data persistence.
+This document explains how Flow Arts Composer uses Dexie.js for robust, enterprise-grade data persistence.
 
 ## 🎯 What is Dexie?
 
@@ -282,4 +282,4 @@ this.version(2)
 
 ---
 
-**🎉 You now have enterprise-grade persistence in TKA Composer!**
+**🎉 You now have enterprise-grade persistence in Flow Arts Composer!**

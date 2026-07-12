@@ -146,7 +146,7 @@
     browseViewMode,
     darkMode = false,
     userName = "",
-    customNotesText = "Created using TKA Composer",
+    customNotesText = "Created using Flow Arts Composer",
     bluePropType,
     redPropType,
     catDogModeEnabled = false,

@@ -148,7 +148,7 @@ import type { SheetType } from "../../navigation/services/types";
     const mod = MODULE_DEFINITIONS.find(
       (m) => m.id === navigationState.currentModule
     );
-    return mod ? `${mod.label} | TKA Composer` : "TKA Composer";
+    return mod ? `${mod.label} | Flow Arts Composer` : "Flow Arts Composer";
   });
 
   // Global prop drawer (P key shortcut + PropIndicatorButton)
@@ -469,7 +469,7 @@ import type { SheetType } from "../../navigation/services/types";
   <title>{pageTitle()}</title>
   <meta
     name="description"
-    content="TKA Composer is a flow arts choreography toolbox for staves, fans, and other props. Create, learn, and share movement sequences using The Kinetic Alphabet notation system."
+    content="Flow Arts Composer is a flow arts choreography toolbox for staves, fans, and other props. Create, learn, and share movement sequences using The Kinetic Alphabet notation system."
   />
 </svelte:head>
 

@@ -1,10 +1,10 @@
-# World-Class Offline-First Architecture for TKA Composer
+# World-Class Offline-First Architecture for Flow Arts Composer
 
 **Feedback ID:** `HrimAyPGCzzbz1yIazCt`
 
 ## Goal
 
-Transform TKA Composer into the gold standard for offline-first web apps - users should never know or care whether they're online.
+Transform Flow Arts Composer into the gold standard for offline-first web apps - users should never know or care whether they're online.
 
 ---
 

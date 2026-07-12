@@ -58,7 +58,7 @@
     content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"
   />
   <meta name="author" content="The Kinetic Alphabet" />
-  <meta name="application-name" content="TKA Composer" />
+  <meta name="application-name" content="Flow Arts Composer" />
   <meta name="generator" content="SvelteKit" />
 
   <!-- Geographic targeting (global, but origin matters for trust) -->
@@ -80,7 +80,7 @@
   />
   <meta
     property="og:image:alt"
-    content="TKA Composer - Flow arts choreography app showing staff sequence animation"
+    content="Flow Arts Composer - Flow arts choreography app showing staff sequence animation"
   />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -101,7 +101,7 @@
   />
   <meta
     name="twitter:image:alt"
-    content="TKA Composer - Flow arts notation app showing staff sequence animation"
+    content="Flow Arts Composer - Flow arts notation app showing staff sequence animation"
   />
 
   <!-- Canonical URL -->
@@ -113,7 +113,7 @@
 		"@context": "https://schema.org",
 		"@type": "WebSite",
 		"name": "TKA - The Kinetic Alphabet",
-		"alternateName": ["The Kinetic Alphabet", "TKA Composer", "Kinetic Alphabet", "TKA", "Flow Arts Notation"],
+		"alternateName": ["The Kinetic Alphabet", "Flow Arts Composer", "Kinetic Alphabet", "TKA", "Flow Arts Notation"],
 		"url": "https://tkaflowarts.com/",
 		"description": "TKA is a notation system for flow arts. Document and share staff, fans, hoop, club, fan, and buugeng choreography.",
 		"inLanguage": "en-US",
@@ -156,7 +156,7 @@
 	{
 		"@context": "https://schema.org",
 		"@type": "SoftwareApplication",
-		"name": "TKA Composer",
+		"name": "Flow Arts Composer",
 		"alternateName": "The Kinetic Alphabet Composer",
 		"description": "Create, animate, and share staff, clubs, fans, hoops, buugeng, and sword sequences. A notation system for flow arts.",
 		"url": "https://tkaflowarts.com/create",
@@ -200,7 +200,7 @@
 	{
 		"@context": "https://schema.org",
 		"@type": "HowTo",
-		"name": "How to Create Flow Arts Choreography with TKA Composer",
+		"name": "How to Create Flow Arts Choreography with Flow Arts Composer",
 		"description": "Learn to create, animate, and share staff, clubs, fans, and hoop sequences using TKA notation.",
 		"image": "https://tkaflowarts.com/branding/og-image.png",
 		"totalTime": "PT10M",
@@ -214,7 +214,7 @@
 			{
 				"@type": "HowToStep",
 				"position": 1,
-				"name": "Open TKA Composer",
+				"name": "Open Flow Arts Composer",
 				"text": "Visit tkaflowarts.com/create to launch the free web application.",
 				"url": "https://tkaflowarts.com/create",
 				"image": "https://tkaflowarts.com/branding/og-image.png"

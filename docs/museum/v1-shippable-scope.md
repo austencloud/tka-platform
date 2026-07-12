@@ -70,7 +70,7 @@ Almost pure writing + existing rendering. The domain package's position→letter
 ## The Handoff = the Ending (already built)
 
 No three-room Scrooge sequence in v1. The codex reveal **is** the climax and hands off directly:
-- A museum pamphlet beat, then a **deep-link into the actual TKA Composer with the decoded sequence pre-loaded.**
+- A museum pamphlet beat, then a **deep-link into the actual Flow Arts Composer with the decoded sequence pre-loaded.**
 - This is the MVP integration the bible already specifies (L348: deep-link handoff with URL parameters).
 - The game stops being a game and becomes the tool, in one click, using shipped capability.
 

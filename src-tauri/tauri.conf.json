@@ -1,6 +1,6 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicbarker/tauri-v2-json-schema/main/schema.json",
-  "productName": "TKA Composer",
+  "productName": "Flow Arts Composer",
   "version": "0.1.0",
   "identifier": "com.tkaflowarts.composer.desktop",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "TKA Composer",
+        "title": "Flow Arts Composer",
         "width": 1280,
         "height": 800,
         "minWidth": 800,

@@ -24,7 +24,7 @@ function question(query) {
 }
 
 async function setup() {
-  console.log("\n🚀 TKA Composer - Release Workflow Setup\n");
+  console.log("\n🚀 Flow Arts Composer - Release Workflow Setup\n");
   console.log(
     "This will configure your local environment for the automated release workflow.\n"
   );

@@ -67,7 +67,7 @@ export function getInstallInstructions(
  */
 const INSTRUCTIONS_MAP: Record<string, InstallInstructions> = {
   "ios-safari": {
-    title: "Install TKA Composer on iPhone/iPad",
+    title: "Install Flow Arts Composer on iPhone/iPad",
     icon: "fab fa-apple",
     steps: [
       {
@@ -86,7 +86,7 @@ const INSTRUCTIONS_MAP: Record<string, InstallInstructions> = {
         image: null, // TODO: Add screenshot to /static/images/install-guides/ios-safari-step3.png
       },
       {
-        text: "Find TKA Composer on your home screen and tap to launch",
+        text: "Find Flow Arts Composer on your home screen and tap to launch",
         icon: "fas fa-mobile-alt",
         image: null,
       },
@@ -99,7 +99,7 @@ const INSTRUCTIONS_MAP: Record<string, InstallInstructions> = {
   },
 
   "ios-other": {
-    title: "Install TKA Composer on iPhone/iPad",
+    title: "Install Flow Arts Composer on iPhone/iPad",
     icon: "fab fa-apple",
     steps: [
       {
@@ -126,7 +126,7 @@ const INSTRUCTIONS_MAP: Record<string, InstallInstructions> = {
   },
 
   "android-chrome": {
-    title: "Install TKA Composer on Android",
+    title: "Install Flow Arts Composer on Android",
     icon: "fab fa-android",
     steps: [
       {
@@ -145,7 +145,7 @@ const INSTRUCTIONS_MAP: Record<string, InstallInstructions> = {
         image: null, // TODO: Add screenshot to /static/images/install-guides/android-chrome-step3.png
       },
       {
-        text: "Launch TKA Composer from your home screen or app drawer",
+        text: "Launch Flow Arts Composer from your home screen or app drawer",
         icon: "fas fa-rocket",
         image: null,
       },
@@ -158,7 +158,7 @@ const INSTRUCTIONS_MAP: Record<string, InstallInstructions> = {
   },
 
   "android-samsung": {
-    title: "Install TKA Composer on Android (Samsung Internet)",
+    title: "Install Flow Arts Composer on Android (Samsung Internet)",
     icon: "fab fa-android",
     steps: [
       {
@@ -177,7 +177,7 @@ const INSTRUCTIONS_MAP: Record<string, InstallInstructions> = {
         image: null,
       },
       {
-        text: "Launch TKA Composer from your home screen",
+        text: "Launch Flow Arts Composer from your home screen",
         icon: "fas fa-mobile-alt",
         image: null,
       },
@@ -190,7 +190,7 @@ const INSTRUCTIONS_MAP: Record<string, InstallInstructions> = {
   },
 
   "desktop-chrome": {
-    title: "Install TKA Composer on Desktop",
+    title: "Install Flow Arts Composer on Desktop",
     icon: "fas fa-desktop",
     steps: [
       {
@@ -204,12 +204,12 @@ const INSTRUCTIONS_MAP: Record<string, InstallInstructions> = {
         image: null, // TODO: Add screenshot to /static/images/install-guides/desktop-chrome-step2.png
       },
       {
-        text: 'Or open the menu (⋮) and select <strong>"Install TKA Composer"</strong>',
+        text: 'Or open the menu (⋮) and select <strong>"Install Flow Arts Composer"</strong>',
         icon: "fas fa-ellipsis-v",
         image: null,
       },
       {
-        text: "Launch TKA Composer from your desktop, taskbar, or start menu",
+        text: "Launch Flow Arts Composer from your desktop, taskbar, or start menu",
         icon: "fas fa-window-maximize",
         image: null,
       },

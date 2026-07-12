@@ -1,4 +1,4 @@
-# TKA Composer — Project Instructions
+# Flow Arts Composer — Project Instructions
 
 ## Philosophy
 

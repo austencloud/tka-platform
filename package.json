@@ -5,7 +5,7 @@
   "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "packageManager": "pnpm@10.28.0",
-  "description": "TKA Composer - Browser-based sequence editor for flow arts",
+  "description": "Flow Arts Composer - Browser-based sequence editor for flow arts",
   "scripts": {
     "pictograph": "tsx scripts/pictograph-cli.ts",
     "dev": "vite --host 0.0.0.0",

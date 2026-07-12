@@ -228,7 +228,7 @@ async function submitFeedback(params) {
     }
 
     console.log("");
-    console.log(`   🔗 View in Kanban: Open TKA Composer → Feedback Manage tab`);
+    console.log(`   🔗 View in Kanban: Open Flow Arts Composer → Feedback Manage tab`);
 
     process.exit(0);
   } catch (error) {

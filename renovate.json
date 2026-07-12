@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Automated dependency management for TKA Composer",
+  "description": "Automated dependency management for Flow Arts Composer",
   "extends": [
     "config:recommended",
     ":preserveSemverRanges",
