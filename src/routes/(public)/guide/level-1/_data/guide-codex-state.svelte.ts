@@ -94,6 +94,13 @@ class GuideCodexState {
   blueTurns = $state<GuideCodexTurns>(defaultGuideCodexPrefs().blueTurns);
   redTurns = $state<GuideCodexTurns>(defaultGuideCodexPrefs().redTurns);
   #transformed = $state<Map<string, PictographData> | null>(null);
+  /** The cell the companion is currently animating (ephemeral, like the
+   *  transform). Shared here because the codex spans two reader pages: the
+   *  page whose sheet contains the cell re-emits the animation strip whenever
+   *  this selection OR anything dataFor() reads (turns/prop/transform)
+   *  changes — so a turn adjustment restyles the playing animation live, not
+   *  just the static cells (see CodexPageBody's emit effect). */
+  selectedCellId = $state<string | null>(null);
 
   constructor() {
     this.#restore();

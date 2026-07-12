@@ -27,6 +27,7 @@
    */
   import { onMount } from "svelte";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { createMotionData, type MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
@@ -72,10 +73,34 @@
     });
   }
 
+  // Cell ids on THIS page's sheet — the emit effect below only fires for
+  // selections this page owns, so with both codex pages mounted exactly one
+  // of them (the one rendering the cell) emits the animation strip.
+  const SHEET_IDS: Set<string> = new Set(
+    sheet.types.flatMap((type) => type.boxes.flatMap((box) => box.cells.map((c) => c.id)))
+  );
+
+  // Selecting a cell (tap or scan intent) only records the selection; the
+  // $effect below builds and emits the strip. Because the effect re-runs when
+  // anything dataFor() reads changes (turns, prop family, rotate/mirror/swap),
+  // adjusting a turn while the companion is playing re-emits the strip and the
+  // animation updates live — not just the static cells.
   function handleCellSelect(id: string) {
+    if (!state) return;
+    state.selectedCellId = id;
+  }
+
+  $effect(() => {
     if (!emitSequence || !state) return;
+    const id = state.selectedCellId;
+    if (!id || !SHEET_IDS.has(id)) return;
     const data = state.dataFor(id);
     if (!data) return;
+    emitStrip(id, data);
+  });
+
+  function emitStrip(id: string, data: PictographData) {
+    if (!emitSequence || !state) return;
     const cellDef = CELLS_BY_ID.get(id);
     const blue = data.motions?.[MotionColor.BLUE];
     const red = data.motions?.[MotionColor.RED];
