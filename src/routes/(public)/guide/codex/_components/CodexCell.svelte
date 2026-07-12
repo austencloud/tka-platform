@@ -106,6 +106,7 @@
     align-items: center;
     gap: 1px;
     min-width: 0;
+    overflow: hidden;
   }
 
   .cell-top {
@@ -115,7 +116,9 @@
     line-height: 1.1;
   }
 
-  /* Reserve a square so the async pictograph swap never reflows neighbors. */
+  /* Reserve a square so the async pictograph swap never reflows neighbors.
+     overflow:hidden clips any pictograph that resolves larger than its box so
+     it can never spill into adjacent cells (no `bordered` clip on codex cells). */
   .picto {
     width: 100%;
     max-width: 64px;
@@ -123,6 +126,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
   }
 
   .picto :global(.guide-pictograph) {
