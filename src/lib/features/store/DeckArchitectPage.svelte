@@ -214,8 +214,9 @@
 
   let previewW = $state(0);
   let previewH = $state(0);
+  // Rail stage is compact: card height budget = stage minus caption + gaps.
   const previewMaxCardW = $derived(
-    previewH > 0 ? Math.max(150, Math.round(((previewH - 150) * 5) / 7)) : 340
+    previewH > 0 ? Math.max(110, Math.round(((previewH - 80) * 5) / 7)) : 200
   );
 
   const LEVEL_OPTIONS = [
@@ -245,30 +246,6 @@
       <div class="loading">Loading the machine...</div>
     {:else if flavorSkus.length > 0}
       <div class="layout">
-        <!-- hero fan -->
-        <div
-          class="preview-box"
-          bind:clientWidth={previewW}
-          bind:clientHeight={previewH}
-        >
-          <Crossfade key={settledFanKey} fill>
-            <div class="preview-inner">
-              <DeckFanCover
-                cards={previewCards ?? []}
-                deckName="Your recipe"
-                {propType}
-                cardWidth={previewW >= 1200 ? 280 : 210}
-                maxCardWidth={previewMaxCardW}
-                interactive={false}
-                deal
-              />
-              <p class="preview-desc">
-                Sampled live from your recipe. Every card is generated, never repeated.
-              </p>
-            </div>
-          </Crossfade>
-        </div>
-
         <div class="info-column">
           <div class="info-main">
             <span class="eyebrow">The Deck Architect</span>
@@ -279,15 +256,22 @@
               engine can generate.
             </p>
 
-            <!-- total meter: the one invariant, always visible -->
-            <div
-              class="total-meter"
-              class:ok={problem === null}
-              role="status"
-              aria-live="polite"
-            >
-              <span class="total-count">{total} / {DECK_SIZE}</span>
-              <span class="total-note">{problem ?? "Recipe complete. Deal it."}</span>
+            <!-- workbench bar: the one invariant + the one action, always visible -->
+            <div class="workbench-bar">
+              <div
+                class="total-meter"
+                class:ok={problem === null}
+                role="status"
+                aria-live="polite"
+              >
+                <span class="total-count">{total} / {DECK_SIZE}</span>
+                <span class="total-note">{problem ?? "Recipe complete. Deal it."}</span>
+              </div>
+              {#if slices.length < MAX_RECIPE_SLICES}
+                <button type="button" class="add-slice" onclick={addSlice}>
+                  <i class="fas fa-plus" aria-hidden="true"></i> Add a slice
+                </button>
+              {/if}
             </div>
 
             <div class="slice-list">
@@ -391,12 +375,6 @@
               {/each}
             </div>
 
-            {#if slices.length < MAX_RECIPE_SLICES}
-              <button type="button" class="add-slice" onclick={addSlice}>
-                <i class="fas fa-plus" aria-hidden="true"></i> Add a slice
-              </button>
-            {/if}
-
             <!-- prop: one per deck (v1) -->
             <div class="prop-panel">
               <span class="dial-label">Prop</span>
@@ -411,6 +389,25 @@
           </div>
 
           <aside class="buy-rail">
+            <!-- Live deck preview lives IN the rail: the recipe stays visible
+                 while you edit, and the purchase column never dies below the
+                 buy block. Fill-mode crossfade — the stage never resizes. -->
+            <div class="rail-stage" bind:clientWidth={previewW} bind:clientHeight={previewH}>
+              <Crossfade key={settledFanKey} fill>
+                <div class="preview-inner">
+                  <DeckFanCover
+                    cards={previewCards ?? []}
+                    deckName="Your recipe"
+                    {propType}
+                    cardWidth={150}
+                    maxCardWidth={previewMaxCardW}
+                    interactive={false}
+                    deal
+                  />
+                  <p class="preview-desc">Sampled live from your recipe.</p>
+                </div>
+              </Crossfade>
+            </div>
             <p class="price">{price}</p>
             <p class="spec-line">
               Poker size · 2.5" × 3.5" <span class="spec-sep">•</span> Deck only
@@ -517,17 +514,18 @@
     gap: clamp(16px, 2.2vh, 28px);
   }
 
-  .preview-box {
+  /* The live preview is a rail panel, not a page hero — the slices are the
+     show; the fan is the running receipt. */
+  .rail-stage {
     position: relative;
     overflow: hidden;
-    border-radius: 20px;
+    border-radius: 16px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     background:
-      radial-gradient(56% 48% at 50% 40%, rgba(139, 108, 255, 0.34), transparent 68%),
-      radial-gradient(38% 34% at 68% 66%, rgba(84, 209, 196, 0.12), transparent 70%),
+      radial-gradient(70% 60% at 50% 40%, rgba(139, 108, 255, 0.3), transparent 70%),
       radial-gradient(circle at 50% 38%, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015));
-    padding: clamp(16px, 2.5vw, 32px);
-    height: clamp(300px, 34vh, 540px);
+    padding: 14px;
+    height: 280px;
   }
   .preview-inner {
     height: 100%;
@@ -535,15 +533,14 @@
     flex-direction: column;
     justify-content: center;
     align-items: stretch;
-    gap: 12px;
+    gap: 10px;
   }
   .preview-desc {
-    font-size: var(--font-size-base, 16px);
-    line-height: 1.65;
+    font-size: var(--font-size-min, 14px);
+    line-height: 1.5;
     color: rgba(255, 255, 255, 0.88);
     margin: 0;
     text-align: center;
-    padding: 0 16px;
     align-self: center;
   }
 
@@ -574,11 +571,9 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     align-self: start;
   }
-  @media (min-width: 1360px) {
-    .buy-rail {
-      margin-top: 92px;
-    }
-  }
+  /* Rail top-aligns with the header block — no offset hack; on this page
+     there's no chip row to line up against, so an offset just reads as
+     floating in dead space. */
 
   .eyebrow {
     font-size: var(--font-size-compact, 12px);
@@ -600,7 +595,16 @@
     max-width: 62ch;
   }
 
-  /* ---------- total meter ---------- */
+  /* ---------- workbench bar (meter + add) ---------- */
+  .workbench-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .workbench-bar .total-meter {
+    flex: 1 1 320px;
+  }
   .total-meter {
     display: flex;
     align-items: center;
@@ -625,13 +629,16 @@
     color: rgba(255, 255, 255, 0.85);
   }
 
-  /* ---------- slice rows ---------- */
+  /* ---------- slice cards ---------- */
+  /* Grid of slice cards: the recipe reads as a hand you're assembling, and
+     width scales with slice count instead of leaving sparse full-width rows. */
   .slice-list {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(440px, 100%), 1fr));
     gap: 12px;
   }
   .slice-row {
+    position: relative;
     display: flex;
     gap: 16px;
     align-items: center;
@@ -671,6 +678,8 @@
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
+    /* Clearance for the pinned remove button. */
+    padding-right: 32px;
   }
   .count-field {
     display: inline-flex;
@@ -739,7 +748,9 @@
     opacity: 0.8;
   }
   .remove-btn {
-    margin-left: auto;
+    position: absolute;
+    top: 8px;
+    right: 8px;
     width: 36px;
     height: 36px;
     border-radius: 10px;
