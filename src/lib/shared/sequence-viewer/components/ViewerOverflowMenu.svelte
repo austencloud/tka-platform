@@ -56,6 +56,11 @@
     openAppLabel?: string;
     onCopyData?: () => void;
     copyDataFeedback?: boolean;
+    /** "See it in the Guide" action — maps the sequence to a guide destination
+     *  and navigates there (QR scan → codex/chapter handoff). */
+    onGuideAction?: () => void;
+    /** Label for the onGuideAction item. Defaults to "See it in the Guide". */
+    guideActionLabel?: string;
     /** When set, a "View in coven hub" item deep-links to /coven?seq=<id>. */
     sequenceId?: string;
     /** When set, a Left/Right motion-visibility chip row renders atop the menu. */
@@ -94,6 +99,8 @@
     openAppLabel = "Open TKA",
     onCopyData,
     copyDataFeedback = false,
+    onGuideAction,
+    guideActionLabel = "See it in the Guide",
     sequenceId,
     motionVisibility,
   }: Props = $props();
@@ -190,6 +197,14 @@
         icon: copyDataFeedback ? "fa-check" : "fa-terminal",
         action: onCopyData,
         className: copyDataFeedback ? "copied" : undefined,
+      });
+    }
+    if (onGuideAction) {
+      items.push({
+        label: guideActionLabel,
+        icon: "fa-book-open",
+        action: onGuideAction,
+        dividerBefore: items.length > 0,
       });
     }
     if (onPracticeToggle) {

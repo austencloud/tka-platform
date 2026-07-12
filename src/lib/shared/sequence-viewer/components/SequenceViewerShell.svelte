@@ -88,6 +88,9 @@
     /** One-shot reset to the split view on mount (scan first impression). */
     startInSplit?: boolean;
     exportOverrides?: ExportOverrides;
+    /** Optional "See it in the Guide" action — host supplies the handler; the
+     *  shell renders it in the overflow menu. Omitted → not shown. */
+    guideAction?: { label: string; onSelect: () => void } | null;
   }
 
   let {
@@ -99,6 +102,7 @@
     openAppHref,
     startInSplit = false,
     exportOverrides,
+    guideAction = null,
   }: Props = $props();
 
   // Reduced-motion gate for the practice/scene transitions below.
@@ -348,6 +352,8 @@
     onUnpublish={headerActions.onUnpublish}
     onDeleteRequest={headerActions.onDeleteRequest}
     onOpenApp={openAppHref ? handleOpenApp : undefined}
+    onGuideAction={guideAction?.onSelect}
+    guideActionLabel={guideAction?.label}
     motionVisibility={includeMotion
       ? {
           showBlue: ctx.viewerVisibility.blueMotion,
@@ -525,6 +531,7 @@
               isExporting={videoBusy}
               bpm={ctx.bpmLocal}
               onBpmChange={ctx.handleBpmChange}
+              onPropChange={ctx.handlePropTypeChange}
               playback={ctx.splitPanePlayback}
               imageComposition={isImageExportActive
                 ? {

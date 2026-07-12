@@ -49,6 +49,8 @@
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
   import type { OrchestratorContext } from "$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte";
   import { setScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
+  import { guideTargetForLetter, GUIDE_CODEX_SLUG } from "../../(public)/guide/level-1/_data/guide-content-index";
+  import { setGuideScanIntent } from "../../(public)/guide/level-1/_data/guide-scan-intent";
   import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
   import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
   import { sequenceModalExporter } from "$lib/shared/sequence-viewer/services/sequence-modal-exporter.svelte";
@@ -370,6 +372,25 @@
       sequence_word: seqWord,
     });
     void goto("/create/construct?sheet=auth");
+  }
+
+  // ── See it in the Guide (physical book companion) ──
+  // Non-destructive: maps the scanned sequence to a guide destination and
+  // navigates there. A single-step sequence is a lone base letter — land on
+  // its codex cell and auto-animate it. Anything longer (a word) lands on the
+  // codex with the full sequence for the companion to play.
+  function seeInGuide(): void {
+    const seq = resolvedSeq;
+    if (!seq) return;
+    const label = seq.steps?.length === 1 ? (seq.word ?? "").trim() : "";
+    const target = label ? guideTargetForLetter(label) : null;
+    if (target?.cellKey) {
+      setGuideScanIntent({ slug: target.slug, cellKey: target.cellKey });
+      void goto(`/learn/guide/${target.slug}`);
+    } else {
+      setGuideScanIntent({ slug: GUIDE_CODEX_SLUG, sequence: seq });
+      void goto(`/learn/guide/${GUIDE_CODEX_SLUG}`);
+    }
   }
 
   // Unique base letters for a word, reusing the renderer's own tokenization so
@@ -716,6 +737,7 @@
             onClose={() => goto(`/browse/gallery?from=scan&code=${shortCode}`)}
             onRemix={openInComposer}
             openAppHref={`/browse/gallery?from=scan&code=${shortCode}`}
+            guideAction={{ label: "See it in the Guide", onSelect: seeInGuide }}
             exportOverrides={{
               onVideoExport: () => requestGatedExport(ctx, "video"),
               onCardExport: () => requestGatedExport(ctx, "card"),
