@@ -97,4 +97,14 @@ Features:
 			font-size: 1.25rem;
 		}
 	}
+
+	@media (min-width: 1920px) {
+		.value {
+			font-size: 4rem;
+		}
+
+		.suffix {
+			font-size: 2rem;
+		}
+	}
 </style>

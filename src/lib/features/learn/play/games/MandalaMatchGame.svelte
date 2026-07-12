@@ -432,19 +432,24 @@ observer's first callback.
 
   @media (min-width: 2560px) {
     .quiz-content {
-      max-width: 1680px;
+      max-width: clamp(1680px, 62vw, 1900px);
+      gap: 3.5rem;
     }
 
     .stage-column {
-      min-height: 680px;
+      min-height: 760px;
     }
 
     .mandala-stage {
-      inline-size: min(65cqh, 90cqw, 760px);
+      inline-size: min(68cqh, 90cqw, 900px);
     }
 
     .answer-section {
-      flex: 0 0 460px;
+      flex: 0 0 520px;
+    }
+
+    .answer-grid {
+      gap: 1.25rem;
     }
   }
 

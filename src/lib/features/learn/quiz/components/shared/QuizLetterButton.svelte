@@ -181,6 +181,38 @@ QuizLetterButton - Answer button for quiz
     }
   }
 
+  @media (min-width: 1920px) {
+    .answer-btn {
+      padding: 0.875rem;
+      border-radius: 20px;
+    }
+
+    .letter {
+      font-size: 3.75rem;
+    }
+
+    .result-icon {
+      font-size: 1.125rem;
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .answer-btn {
+      padding: 1.125rem;
+      border-radius: 22px;
+    }
+
+    .letter {
+      font-size: 4.5rem;
+    }
+
+    .result-icon {
+      font-size: 1.25rem;
+      top: 10px;
+      right: 10px;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .answer-btn.correct,
     .answer-btn.incorrect,

@@ -155,6 +155,14 @@
     .word-text { font-size: 2.5rem; }
   }
 
+  @media (min-width: 2560px) {
+    .word-btn {
+      padding: 2.25rem 2.75rem;
+      border-radius: 24px;
+    }
+    .word-text { font-size: 2.75rem; letter-spacing: 0.12em; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .word-btn.correct, .word-btn.incorrect, .result-icon {
       animation: none;

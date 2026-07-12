@@ -150,14 +150,14 @@ QuizPictographCard - Question pictograph display
 
   @media (min-width: 2560px) {
     .pictograph-card {
-      width: 440px;
-      height: 440px;
-      border-radius: 24px;
+      width: clamp(440px, 30vw, 560px);
+      height: clamp(440px, 30vw, 560px);
+      border-radius: 26px;
     }
 
     .arrow-indicator svg {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
     }
   }
 

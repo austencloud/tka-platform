@@ -225,23 +225,25 @@
 
 {#if session.phase.name === "hub"}
   <div class="play-hub themed-scrollbar">
-    <header class="hub-hero">
-      <h2 class="hero-title">Play</h2>
-      <p class="hero-sub">Six games. Your best scores are waiting.</p>
-    </header>
+    <div class="hub-content">
+      <header class="hub-hero">
+        <h2 class="hero-title">Play</h2>
+        <p class="hero-sub">Six games. Your best scores are waiting.</p>
+      </header>
 
-    <ul class="game-grid">
-      {#each GAME_REGISTRY as game, index (game.id)}
-        <li class="card-slot" use:pauseWhenOffscreen>
-          <GameCard
-            {game}
-            progress={gameProgress(game.id)}
-            {index}
-            onSelect={() => session.selectGame(game)}
-          />
-        </li>
-      {/each}
-    </ul>
+      <ul class="game-grid">
+        {#each GAME_REGISTRY as game, index (game.id)}
+          <li class="card-slot" use:pauseWhenOffscreen>
+            <GameCard
+              {game}
+              progress={gameProgress(game.id)}
+              {index}
+              onSelect={() => session.selectGame(game)}
+            />
+          </li>
+        {/each}
+      </ul>
+    </div>
   </div>
 {:else if session.phase.name === "level-select"}
   <LevelPicker
@@ -269,8 +271,21 @@
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-lg);
     padding: var(--spacing-md);
+  }
+
+  /* Hero + grid move as one unit. margin-block: auto is the flex
+     "center only if there's spare room" trick: on a tall/4K viewport where
+     the content is shorter than the scroll box, the auto margins absorb the
+     extra space and the block centers vertically. On a short viewport where
+     content already exceeds the box height, the auto margins resolve to 0
+     and it behaves exactly as before (top-anchored, scrolls). */
+  .hub-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    width: 100%;
+    margin-block: auto;
   }
 
   .hub-hero {
@@ -330,6 +345,25 @@
 
     .hero-title {
       font-size: clamp(var(--font-size-3xl), 2cqi, 2.5rem);
+    }
+  }
+
+  /* 4K-native tier — this is where "designed for 4K" actually shows up: the
+     hub stops looking like a stretched 1600px layout and claims the extra
+     real estate. cqi keeps the growth continuous from 2000 through 3840
+     instead of jumping to another fixed px number. */
+  @container (min-width: 2000px) {
+    .hub-hero,
+    .game-grid {
+      max-width: 2200px;
+    }
+
+    .hero-title {
+      font-size: clamp(2.5rem, 1.8cqi, 3.5rem);
+    }
+
+    .hero-sub {
+      font-size: clamp(var(--font-size-base), 0.6cqi, 1.375rem);
     }
   }
 

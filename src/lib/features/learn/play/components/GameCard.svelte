@@ -319,6 +319,58 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
   }
 
+  /* 4K-native tier — the card stops reading as a stretched phone card:
+     interior breathing room grows and the ladder ring scales with it.
+     transform:scale on the ring is deliberate (compositor-only, no reflow of
+     ProgressRing's own SVG geometry) rather than threading a container-aware
+     size prop through. */
+  @container (min-width: 2000px) {
+    .game-card {
+      contain-intrinsic-size: auto 420px;
+    }
+
+    .card-inner {
+      padding: var(--spacing-md);
+      gap: var(--spacing-md);
+    }
+
+    .preview-stage {
+      border-radius: var(--radius-2026-lg, 18px);
+    }
+
+    .card-stats {
+      min-height: 44px;
+    }
+
+    .ladder :global(.progress-ring) {
+      transform: scale(1.2);
+    }
+  }
+
+  @container (min-width: 2560px) {
+    .card-title {
+      font-size: 1.5rem;
+    }
+
+    .card-tagline {
+      font-size: var(--font-size-base);
+    }
+
+    .best-score {
+      font-size: var(--font-size-lg);
+    }
+
+    .stars-text,
+    .level-text {
+      font-size: var(--font-size-base);
+    }
+
+    .card-copy {
+      gap: 4px;
+      padding: 0 var(--spacing-sm);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .game-card {
       transition: none;

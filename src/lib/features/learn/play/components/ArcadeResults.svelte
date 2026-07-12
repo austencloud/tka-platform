@@ -134,6 +134,7 @@ heavier 400ms beat on the last one → best line → stats → actions.
   }
 </script>
 
+<div class="results-shell">
 <div class="arcade-results" style="--game-accent: {accent}">
   <!-- 1. Grade: spring scale-in. Transform only — the hero box is fixed, zero layout shift. -->
   <div class="grade-hero" role="img" aria-label="Grade {result.grade}">
@@ -230,8 +231,23 @@ heavier 400ms beat on the last one → best line → stats → actions.
     </div>
   </div>
 </div>
+</div>
 
 <style>
+  /* Scroll owner: fills whatever the mode panel gives it. On a tall/4K
+     viewport where the results column is shorter than the box, the
+     margin-block: auto on .arcade-results below absorbs the spare height and
+     the whole column centers. On a short viewport where content already
+     exceeds the box, the auto margins resolve to 0 and it scrolls exactly as
+     before. */
+  .results-shell {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
   .arcade-results {
     display: flex;
     flex-direction: column;
@@ -239,7 +255,8 @@ heavier 400ms beat on the last one → best line → stats → actions.
     gap: var(--spacing-md, 0.75rem);
     width: 100%;
     max-width: 480px;
-    margin: 0 auto;
+    margin-inline: auto;
+    margin-block: auto;
     padding: var(--spacing-lg, 1rem);
   }
 
@@ -419,9 +436,53 @@ heavier 400ms beat on the last one → best line → stats → actions.
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
   }
 
+  /* 4K-native tier — the results column stops reading as a phone-width card
+     floating in the middle of a 3840px screen. clamp()s keep growth
+     continuous from 1920 through 3840 rather than jumping to one more fixed
+     px number. */
   @media (min-width: 1920px) {
     .arcade-results {
-      max-width: 620px;
+      max-width: clamp(620px, 22vw, 720px);
+    }
+
+    .grade-hero {
+      height: clamp(6rem, 15vw, 9.5rem);
+    }
+
+    .grade-letter {
+      font-size: clamp(5rem, 12vw, 8rem);
+    }
+
+    .stars-row {
+      gap: var(--spacing-md, 0.75rem);
+    }
+
+    .result-star {
+      width: clamp(44px, 3.2vw, 60px);
+      height: clamp(44px, 3.2vw, 60px);
+    }
+
+    .best-line {
+      font-size: var(--font-size-base, 1rem);
+    }
+
+    .stat {
+      padding: var(--spacing-md, 0.75rem);
+      border-radius: 14px;
+    }
+
+    .stat-value {
+      font-size: var(--font-size-2xl, 1.5rem);
+    }
+
+    .stat-label {
+      font-size: var(--font-size-sm, 0.875rem);
+    }
+
+    .action-button {
+      min-height: 52px;
+      padding: 0 var(--spacing-xl, 1.5rem);
+      font-size: var(--font-size-base, 1rem);
     }
   }
 

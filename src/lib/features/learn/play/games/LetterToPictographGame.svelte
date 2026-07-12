@@ -278,11 +278,13 @@ depends on.
 
   @media (min-width: 2560px) {
     .quiz-content {
-      max-width: 940px;
+      max-width: clamp(940px, 60vw, 1160px);
+      gap: 3rem;
     }
 
     .answer-grid {
-      grid-template-columns: repeat(2, 320px);
+      grid-template-columns: repeat(2, clamp(320px, 20vw, 380px));
+      gap: 1.75rem;
     }
   }
 </style>

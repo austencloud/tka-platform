@@ -107,6 +107,17 @@ Features:
     }
   }
 
+  @media (min-width: 2560px) {
+    .feedback-banner {
+      padding: 1.125rem 2rem;
+      border-radius: 16px;
+    }
+
+    .feedback-text {
+      font-size: 1.25rem;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .feedback-banner {
       animation: none;

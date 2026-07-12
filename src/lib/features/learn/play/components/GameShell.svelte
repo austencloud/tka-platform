@@ -391,4 +391,37 @@ animations, exactly as the legacy quizzes did.
     position: relative;
   }
 
+  /* 4K-native tier — the bar is a per-viewport constant (never resizes
+     mid-session, so this can't shift anything a running level depends on).
+     Typography steps up one notch and the bar gains a little more height so
+     it doesn't read as a thin phone strip stretched across a 3840px chrome. */
+  @media (min-width: 2560px) {
+    .top-bar {
+      height: 72px;
+    }
+
+    .top-bar-inner {
+      max-width: 2200px;
+      gap: 1rem;
+    }
+
+    .game-title {
+      font-size: var(--font-size-base);
+    }
+
+    .level-title {
+      font-size: var(--font-size-sm);
+    }
+
+    .q-progress,
+    .timer-text,
+    .streak-count {
+      font-size: var(--font-size-base);
+    }
+
+    .score-value {
+      font-size: var(--font-size-2xl);
+    }
+  }
+
 </style>

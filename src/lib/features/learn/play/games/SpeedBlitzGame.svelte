@@ -415,6 +415,10 @@ correct letter" for free).
       grid-template-columns: repeat(2, minmax(70px, 100px));
       gap: 0.875rem;
     }
+
+    .drain-track {
+      max-width: 240px;
+    }
   }
 
   @media (min-width: 900px) {
@@ -427,6 +431,10 @@ correct letter" for free).
       grid-template-columns: repeat(2, minmax(90px, 120px));
       gap: 1rem;
     }
+
+    .drain-track {
+      max-width: 280px;
+    }
   }
 
   @media (min-width: 1200px) {
@@ -436,6 +444,10 @@ correct letter" for free).
 
     .answer-grid {
       grid-template-columns: repeat(2, minmax(100px, 140px));
+    }
+
+    .drain-track {
+      max-width: 320px;
     }
   }
 
@@ -447,15 +459,28 @@ correct letter" for free).
     .answer-grid {
       grid-template-columns: repeat(2, minmax(120px, 170px));
     }
+
+    .drain-track {
+      max-width: 360px;
+      height: 8px;
+    }
   }
 
   @media (min-width: 2560px) {
     .quiz-content {
-      max-width: 820px;
+      max-width: clamp(820px, 55vw, 1000px);
+      gap: 2.25rem;
     }
 
     .answer-grid {
-      grid-template-columns: repeat(2, minmax(140px, 200px));
+      grid-template-columns: repeat(2, minmax(170px, 240px));
+      gap: 1.25rem;
+    }
+
+    .drain-track {
+      max-width: clamp(440px, 30vw, 560px);
+      height: 9px;
+      border-radius: 4px;
     }
   }
 

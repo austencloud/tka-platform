@@ -44,7 +44,16 @@ QuizPrompt - Subtle prompt text for quizzes
 
   @media (min-width: 1920px) {
     .quiz-prompt {
-      font-size: 1.5rem;
+      font-size: 1.75rem;
+      margin-bottom: 2.25rem;
+    }
+  }
+
+  @media (min-width: 2560px) {
+    .quiz-prompt {
+      font-size: 2rem;
+      margin-bottom: 2.5rem;
+      padding: 0 6rem;
     }
   }
 </style>

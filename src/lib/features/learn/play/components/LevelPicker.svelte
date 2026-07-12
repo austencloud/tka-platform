@@ -78,6 +78,7 @@ owns the view-transition wrapping. Locked levels stay real buttons
   </svg>
 {/snippet}
 
+<div class="picker-shell">
 <div class="level-picker" style="--game-accent: {game.accentColor}">
   <header class="picker-header">
     <button
@@ -157,15 +158,29 @@ owns the view-transition wrapping. Locked levels stay real buttons
     {/each}
   </div>
 </div>
+</div>
 
 <style>
+  /* Scroll owner: fills whatever the mode panel gives it. margin-block: auto
+     on .level-picker below centers the ladder vertically only when there's
+     spare height (4K); on a short viewport the auto margins resolve to 0
+     and it scrolls exactly as before. */
+  .picker-shell {
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
   .level-picker {
     display: flex;
     flex-direction: column;
     gap: var(--spacing-lg, 1rem);
     width: 100%;
     max-width: 560px;
-    margin: 0 auto;
+    margin-inline: auto;
+    margin-block: auto;
     padding: var(--spacing-lg, 1rem);
   }
 
@@ -345,7 +360,45 @@ owns the view-transition wrapping. Locked levels stay real buttons
 
   @media (min-width: 1920px) {
     .level-picker {
-      max-width: 680px;
+      max-width: clamp(680px, 24vw, 760px);
+      gap: var(--spacing-xl, 2rem);
+    }
+
+    .game-title {
+      font-size: var(--font-size-2xl, 1.5rem);
+    }
+
+    .game-tagline {
+      font-size: var(--font-size-base, 1rem);
+    }
+
+    .best-value {
+      font-size: var(--font-size-xl, 1.25rem);
+    }
+
+    .level-row {
+      min-height: calc(var(--min-touch-target, 44px) + 24px);
+      padding: var(--spacing-md, 0.75rem) var(--spacing-lg, 1rem);
+      border-radius: 14px;
+    }
+
+    .level-number {
+      width: 44px;
+      height: 44px;
+      font-size: var(--font-size-lg, 1.125rem);
+    }
+
+    .level-title {
+      font-size: var(--font-size-lg, 1.125rem);
+    }
+
+    .level-mode {
+      font-size: var(--font-size-sm, 0.875rem);
+    }
+
+    .star {
+      width: 20px;
+      height: 20px;
     }
   }
 
