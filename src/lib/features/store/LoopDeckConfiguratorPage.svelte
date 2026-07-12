@@ -46,6 +46,8 @@
     shopPropImage,
     shopPropLabel,
   } from "./domain/shop-prop-options";
+  import { loopPreviewCards } from "./services/loop-preview-cards";
+  import type { CoverCard } from "./domain/models/product";
   import {
     LOOP_LEVELS,
     LOOP_LENGTHS,
@@ -120,6 +122,16 @@
   let shineRun = $state(false);
   let payoffTimer: ReturnType<typeof setTimeout> | undefined;
   let previewBoxEl = $state<HTMLDivElement | null>(null);
+  // Narrow stage (phones): fewer, bigger cards — the forced 6-card variety fan
+  // rendered thumbnail-size cards in a mostly-empty box.
+  let previewW = $state(0);
+  let previewH = $state(0);
+  const narrowPreview = $derived(previewW > 0 && previewW < 640);
+  // Card height ceiling from the fixed stage: card (5:7) + description + gaps
+  // must fit inside the box, so cards grow into tall stages without clipping.
+  const previewMaxCardW = $derived(
+    previewH > 0 ? Math.max(150, Math.round(((previewH - 150) * 5) / 7)) : 340
+  );
   let wasCheckingOut = false;
   $effect(() => {
     const checking = store.isCheckingOut;
@@ -173,6 +185,16 @@
     { id: "sampler", name: "The Sampler", sub: "Mix levels · 8 · Variety", level: "mix", length: "8", flavor: "variety", prop: PropTypeEnum.STAFF },
     { id: "deep", name: "Deep Cuts", sub: "Level 2 · 8 · Rotated", level: "2", length: "8", flavor: "rotated", prop: PropTypeEnum.STAFF },
   ];
+  // Each preset wears its level's color — the one-tap row should out-shine the
+  // board it configures, not read as an afterthought above it.
+  function presetBg(p: Preset): string {
+    if (p.level === "mix") return MIX_LEVEL_COLOR;
+    return DIFFICULTY_LEVELS[Number(p.level)]?.cssBg ?? SECONDARY_TILE_COLOR;
+  }
+  function presetText(p: Preset): string {
+    if (p.level === "mix") return "#0b1220";
+    return DIFFICULTY_LEVELS[Number(p.level)]?.text ?? "white";
+  }
   function applyPreset(p: Preset) {
     level = p.level;
     length = p.length;
@@ -294,11 +316,35 @@
       .map((p) => p.coverCards?.[0])
       .filter((c): c is NonNullable<typeof c> => c != null)
   );
+  // Level-aware hand sampled from the real catalogs — the fan must DEMONSTRATE
+  // the dials (Deep Cuts shows actual Level 2 rotated sequences, not the
+  // level-blind SKU covers). SKU covers stay as the instant fallback while the
+  // catalog sample loads or if it fails.
+  let previewCards = $state<CoverCard[] | null>(null);
+  let previewToken = 0;
+  $effect(() => {
+    if (flavorSkus.length === 0) return;
+    const dials = { level, flavor, excluded, skuByFlavor };
+    const token = ++previewToken;
+    previewCards = null; // fall back to SKU covers while the sample loads
+    loopPreviewCards(dials).then((cards) => {
+      if (token === previewToken && cards?.length) previewCards = cards;
+    });
+  });
   const fanCards = $derived(
-    selectedSku ? (selectedSku.coverCards ?? []) : varietyCards
+    previewCards ?? (selectedSku ? (selectedSku.coverCards ?? []) : varietyCards)
   );
+  // Stage caption stays short: whole sentences up to ~160 chars. The full
+  // flavor copy lives in the flavor modal — the stage is for the cards.
+  function stageCaption(text: string): string {
+    if (text.length <= 160) return text;
+    const cut = text.slice(0, 160);
+    const lastSentence = Math.max(cut.lastIndexOf(". "), cut.lastIndexOf(": "));
+    if (lastSentence > 60) return cut.slice(0, lastSentence + 1);
+    return cut.slice(0, cut.lastIndexOf(" ")) + "…";
+  }
   const previewDesc = $derived(
-    selectedSku ? selectedSku.description : VARIETY_COPY
+    stageCaption(selectedSku ? selectedSku.description : VARIETY_COPY)
   );
 
   $effect(() => {
@@ -369,21 +415,32 @@
       <div class="config-layout">
         <!-- ============ preview column ============ -->
         <div class="preview-column">
-          <div class="preview-box" class:payoff-active={payoffShown} bind:this={previewBoxEl}>
+          <div
+            class="preview-box"
+            class:payoff-active={payoffShown}
+            bind:this={previewBoxEl}
+            bind:clientWidth={previewW}
+            bind:clientHeight={previewH}
+          >
             <!-- fill mode: the stage is the sized box, so config swaps can
                  never resize it (crossfade-primitive routing). -->
-            <Crossfade key={`${flavor}|${propType}|${excluded.size}`} fill>
+            <Crossfade key={`${level}|${flavor}|${propType}|${excluded.size}`} fill>
               <div class="preview-inner">
+                <!-- Non-interactive on purpose: the fan sizes against the rest
+                     overlap instead of reserving hover-spread width, which buys
+                     ~20% bigger cards. maxCardWidth caps against the stage
+                     height so a tall card can never clip the fixed box. -->
                 <DeckFanCover
                   cards={fanCards}
                   deckId={selectedSku?.deckId}
                   deckName={selectedSku?.name ?? "Variety Pack"}
                   {propType}
-                  cardWidth={210}
-                  maxCardWidth={340}
+                  cardWidth={narrowPreview ? 150 : 210}
+                  maxCardWidth={previewMaxCardW}
                   exactCount={flavor === "variety"
-                    ? Math.min(6, fanCards.length)
+                    ? Math.min(narrowPreview ? 4 : 5, fanCards.length)
                     : undefined}
+                  interactive={false}
                   deal
                   {dealNonce}
                 />
@@ -419,6 +476,8 @@
                 class="preset"
                 class:active={activePreset === p.id}
                 aria-pressed={activePreset === p.id}
+                style:--preset-bg={presetBg(p)}
+                style:--preset-text={presetText(p)}
                 onclick={() => applyPreset(p)}
               >
                 <span class="preset-name">{p.name}</span>
@@ -904,26 +963,39 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 3px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 11px 14px;
-    border-radius: 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    background: linear-gradient(135deg, rgba(139, 108, 255, 0.10), rgba(139, 108, 255, 0.02));
-    color: var(--theme-text, #fff);
+    min-height: 56px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    /* Each preset wears its level color — the one-tap row is the headline act. */
+    background: var(--preset-bg, linear-gradient(135deg, rgba(139, 108, 255, 0.10), rgba(139, 108, 255, 0.02)));
+    color: var(--preset-text, var(--theme-text, #fff));
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
     cursor: pointer;
     text-align: left;
-    transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease, filter 0.15s ease;
   }
   .preset:hover {
-    border-color: var(--theme-border-strong, rgba(184, 166, 255, 0.5));
-    background: linear-gradient(135deg, rgba(139, 108, 255, 0.16), rgba(139, 108, 255, 0.04));
+    border-color: rgba(255, 255, 255, 0.55);
+    filter: none;
+    transform: translateY(-1px);
   }
   .preset:active {
     transform: scale(0.98);
   }
+  /* Inactive presets sit back a step; the active one is at full color with a
+     ring — selection reads at a glance without any of them going grey. */
+  .preset:not(.active) {
+    filter: saturate(0.72) brightness(0.82);
+  }
+  .preset:not(.active):hover {
+    filter: none;
+  }
   .preset.active {
-    border-color: #b8a6ff;
-    background: linear-gradient(135deg, rgba(139, 108, 255, 0.26), rgba(139, 108, 255, 0.08));
+    border-color: rgba(255, 255, 255, 0.85);
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.35),
+      0 6px 18px rgba(0, 0, 0, 0.4);
   }
   .preset:focus-visible {
     outline: 2px solid #fff;
@@ -931,11 +1003,12 @@
   }
   .preset-name {
     font-size: var(--font-size-min, 14px);
-    font-weight: 700;
+    font-weight: 800;
+    letter-spacing: 0.1px;
   }
   .preset-sub {
     font-size: var(--font-size-compact, 12px);
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    opacity: 0.78;
     font-variant-numeric: tabular-nums;
   }
 

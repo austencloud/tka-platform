@@ -72,7 +72,10 @@
   // floor overflowed the 390px configurator. Card count drops (min 3) while a
   // card would fall below cardWidth; at 3 cards they shrink instead.
   // exactCount skips the count reduction and always shrinks to fit.
-  const fitW = (n: number) => boxW / ((1 + 0.82 * (n - 1)) * 1.05);
+  // Non-interactive fans have no hover spread, so they size against the REST
+  // overlap (0.48 pitch) instead — touch layouts get ~20% bigger cards.
+  const spreadPitch = $derived(interactive ? 0.82 : 0.48);
+  const fitW = (n: number) => boxW / ((1 + spreadPitch * (n - 1)) * 1.05);
   const count = $derived.by(() => {
     const avail = cards.length;
     if (exactCount) return Math.max(1, Math.min(exactCount, avail));
@@ -163,7 +166,10 @@
   style:--overlap="{-Math.round(cardW * 0.52)}px"
   style:--overlap-open="{-Math.round(cardW * 0.18)}px"
 >
-  {#each shown as card, i (cardKey(card))}
+  <!-- Key carries the slot index: catalog sequence ids repeat across flavor
+       catalogs, so a sampled variety hand can hold two cards with the same
+       sequence id (each_key_duplicate crash without this). -->
+  {#each shown as card, i (`${cardKey(card)}|${i}`)}
     <div class="fan-slot">
       <div
         class="fan-tilt"
