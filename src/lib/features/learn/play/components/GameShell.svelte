@@ -37,6 +37,8 @@ animations, exactly as the legacy quizzes did.
   import PerformerWordGame from "../games/PerformerWordGame.svelte";
   import SpeedBlitzGame from "../games/SpeedBlitzGame.svelte";
   import MandalaMatchGame from "../games/MandalaMatchGame.svelte";
+  import CardToMandalaGame from "../games/CardToMandalaGame.svelte";
+  import MotionToMandalaGame from "../games/MotionToMandalaGame.svelte";
 
   const session = getArcadeSession();
 
@@ -180,6 +182,10 @@ animations, exactly as the legacy quizzes did.
           <SpeedBlitzGame constraints={playing.level.constraints} />
         {:else if playing.game.id === "mandala-match"}
           <MandalaMatchGame constraints={playing.level.constraints} />
+        {:else if playing.game.id === "card-to-mandala"}
+          <CardToMandalaGame constraints={playing.level.constraints} />
+        {:else if playing.game.id === "motion-to-mandala"}
+          <MotionToMandalaGame constraints={playing.level.constraints} />
         {/if}
       </Crossfade>
     </div>

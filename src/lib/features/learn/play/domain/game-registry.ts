@@ -77,13 +77,37 @@ export const GAME_REGISTRY: GameDefinition[] = [
   {
     id: "mandala-match",
     title: "Mandala Match",
-    tagline: "One mandala. One word made it. Find it.",
+    tagline: "One mandala. Pick the card that made it.",
     accentColor: "#fbbf24",
-    quizType: QuizType.SEQUENCE_TO_WORD,
+    quizType: QuizType.MANDALA_TO_CARD,
     levels: [
-      { levelNumber: 1, title: "Four Choices", mode: { kind: "fixed", questionCount: 8 }, constraints: { optionCount: 4 }, stars: { one: 500, two: 800, three: 1100 } },
-      { levelNumber: 2, title: "Six Choices", mode: { kind: "fixed", questionCount: 10 }, constraints: { optionCount: 6 }, stars: { one: 650, two: 1050, three: 1450 } },
-      { levelNumber: 3, title: "Lookalikes", mode: { kind: "fixed", questionCount: 10 }, constraints: { optionCount: 6 }, stars: { one: 700, two: 1150, three: 1600 } },
+      { levelNumber: 1, title: "Four Cards", mode: { kind: "fixed", questionCount: 8 }, constraints: { optionCount: 4, stepCount: 8 }, stars: { one: 500, two: 800, three: 1100 } },
+      { levelNumber: 2, title: "Six Cards", mode: { kind: "fixed", questionCount: 10 }, constraints: { optionCount: 6, stepCount: 8 }, stars: { one: 650, two: 1050, three: 1450 } },
+      { levelNumber: 3, title: "Lookalikes", mode: { kind: "fixed", questionCount: 10 }, constraints: { optionCount: 6, stepCount: 8 }, stars: { one: 700, two: 1150, three: 1600 } },
+    ],
+  },
+  {
+    id: "card-to-mandala",
+    title: "Trace the Card",
+    tagline: "Read the card. Pick the mandala it traces.",
+    accentColor: "#2dd4bf",
+    quizType: QuizType.CARD_TO_MANDALA,
+    levels: [
+      { levelNumber: 1, title: "Four Blooms", mode: { kind: "fixed", questionCount: 8 }, constraints: { optionCount: 4, stepCount: 8 }, stars: { one: 500, two: 800, three: 1100 } },
+      { levelNumber: 2, title: "Six Blooms", mode: { kind: "fixed", questionCount: 10 }, constraints: { optionCount: 6, stepCount: 8 }, stars: { one: 650, two: 1050, three: 1450 } },
+      { levelNumber: 3, title: "Lookalikes", mode: { kind: "fixed", questionCount: 10 }, constraints: { optionCount: 6, stepCount: 8 }, stars: { one: 700, two: 1150, three: 1600 } },
+    ],
+  },
+  {
+    id: "motion-to-mandala",
+    title: "Watch It Bloom",
+    tagline: "Watch the flow. Pick the mandala it leaves.",
+    accentColor: "#c084fc",
+    quizType: QuizType.MOTION_TO_MANDALA,
+    levels: [
+      { levelNumber: 1, title: "Four Blooms", mode: { kind: "fixed", questionCount: 6 }, constraints: { optionCount: 4, stepCount: 8 }, stars: { one: 350, two: 600, three: 850 } },
+      { levelNumber: 2, title: "Six Blooms", mode: { kind: "fixed", questionCount: 8 }, constraints: { optionCount: 6, stepCount: 8 }, stars: { one: 500, two: 800, three: 1100 } },
+      { levelNumber: 3, title: "Lookalikes", mode: { kind: "fixed", questionCount: 8 }, constraints: { optionCount: 6, stepCount: 8 }, stars: { one: 550, two: 900, three: 1250 } },
     ],
   },
 ];

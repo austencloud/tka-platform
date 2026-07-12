@@ -15,7 +15,9 @@ export type GameId =
   | "valid-next"
   | "performer-word"
   | "speed-blitz"
-  | "mandala-match";
+  | "mandala-match"
+  | "card-to-mandala"
+  | "motion-to-mandala";
 
 /** Win condition: answer N questions, or survive a countdown clock. */
 export type LevelMode =
@@ -33,6 +35,8 @@ export interface QuestionConstraints {
   /** Escalation curve for speed-blitz: seconds allowed per question at start/end. */
   paceStartSeconds?: number;
   paceEndSeconds?: number;
+  /** Sequence length for the mandala game family (8-count to start; raise for harder tiers). */
+  stepCount?: number;
 }
 
 export interface StarThresholds {

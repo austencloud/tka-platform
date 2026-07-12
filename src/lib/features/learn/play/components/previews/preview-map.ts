@@ -13,6 +13,8 @@ import SequenceFlowPreview from "./SequenceFlowPreview.svelte";
 import PerformerPulsePreview from "./PerformerPulsePreview.svelte";
 import LetterStreamPreview from "./LetterStreamPreview.svelte";
 import MandalaBloomPreview from "./MandalaBloomPreview.svelte";
+import CardToMandalaPreview from "./CardToMandalaPreview.svelte";
+import MotionToMandalaPreview from "./MotionToMandalaPreview.svelte";
 
 /* The two letter games are adjacent in the hub grid, so they deliberately
    get different previews (glyphs dealt vs an option grid being scanned) —
@@ -24,6 +26,8 @@ const GAME_PREVIEWS: Record<GameId, Component<{ accent: string }>> = {
   "performer-word": PerformerPulsePreview,
   "speed-blitz": LetterStreamPreview,
   "mandala-match": MandalaBloomPreview,
+  "card-to-mandala": CardToMandalaPreview,
+  "motion-to-mandala": MotionToMandalaPreview,
 };
 
 export function getGamePreview(id: GameId): Component<{ accent: string }> {

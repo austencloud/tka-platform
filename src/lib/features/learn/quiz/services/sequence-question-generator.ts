@@ -140,6 +140,103 @@ export async function generateSequenceToWordQuestion(
   };
 }
 
+/**
+ * Options for whole-sequence matching questions (the mandala game family):
+ * every answer option is a full SequenceData — rendered by the caller as a
+ * choreo card or a mandala — instead of a word string.
+ */
+export interface SequenceMatchOptions {
+  /** Total answer options including the correct one (default 4). */
+  optionCount?: number;
+  /** Prefer distractor sequences whose words share letters with the target
+   *  (lookalike mandalas/cards). */
+  similarDistractors?: boolean;
+  /** Soft filter: prefer sequences with exactly this many steps (the games
+   *  start at 8-count); falls back to the whole pool when too few match. */
+  stepCount?: number;
+  /** Which mandala-family game this question belongs to (stamped on the
+   *  question for history/analytics; content shape is identical). */
+  lessonType: QuizType;
+}
+
+/**
+ * One target sequence + N-1 distinct-word distractor sequences, all from the
+ * same catalog pool. `questionContent` and every option's `content` are
+ * SequenceData; `correctAnswer` is the target's sequence id.
+ */
+export async function generateSequenceMatchQuestion(
+  questionId: string,
+  options: SequenceMatchOptions
+): Promise<QuizQuestionData> {
+  if (!isInitialized) {
+    await initialize();
+  }
+
+  const optionCount = options.optionCount ?? 4;
+
+  let pool = sequencePool;
+  if (options.stepCount !== undefined) {
+    const stepMatches = sequencePool.filter(
+      (s) => s.steps.length === options.stepCount
+    );
+    // Soft constraint: never starve the generator — need enough for the
+    // correct answer plus distinct-word distractors.
+    if (stepMatches.length >= optionCount) {
+      pool = stepMatches;
+    }
+  }
+
+  let candidates = pool.filter((s) => !recentWords.includes(s.word));
+  if (candidates.length < optionCount) {
+    candidates = pool;
+    recentWords.length = 0;
+  }
+  const correctSequence =
+    candidates[Math.floor(Math.random() * candidates.length)]!;
+  const correctWord = simplifyRepeatedWord(correctSequence.word);
+
+  // Distractors: one sequence per distinct simplified word, target excluded.
+  const seen = new Set<string>([correctWord]);
+  const distractorPool: SequenceData[] = [];
+  for (const seq of pool) {
+    const word = simplifyRepeatedWord(seq.word);
+    if (seen.has(word)) continue;
+    seen.add(word);
+    distractorPool.push(seq);
+  }
+
+  shuffleArray(distractorPool);
+  if (options.similarDistractors) {
+    distractorPool.sort(
+      (a, b) =>
+        sharedLetterCount(simplifyRepeatedWord(b.word), correctWord) -
+        sharedLetterCount(simplifyRepeatedWord(a.word), correctWord)
+    );
+  }
+
+  const chosen = [correctSequence, ...distractorPool.slice(0, optionCount - 1)];
+  shuffleArray(chosen);
+
+  const answerOptions: QuizAnswerOption[] = chosen.map((seq) => ({
+    id: generateOptionId(),
+    content: seq,
+    isCorrect: seq.id === correctSequence.id,
+  }));
+
+  trackRecentWord(correctSequence.word);
+
+  return {
+    questionId,
+    questionContent: correctSequence,
+    answerOptions,
+    correctAnswer: correctSequence.id,
+    questionType: QuizQuestionFormat.SEQUENCE_3D,
+    answerType: QuizAnswerFormat.PICTOGRAPH,
+    lessonType: options.lessonType,
+    generationTimestamp: new Date().toISOString(),
+  };
+}
+
 export function resetState(): void {
   recentWords.length = 0;
   sequencePool = [];

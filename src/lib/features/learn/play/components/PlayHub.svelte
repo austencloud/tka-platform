@@ -335,6 +335,14 @@
     }
   }
 
+  /* Eight games: 4×2 from 1280 up keeps the whole arcade on one screen —
+     3 columns would push a third row below the fold. */
+  @container (min-width: 1280px) {
+    .game-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
   /* Large-display tier — the grid stays 3 columns; cards get more room to
      grow into instead of the hub capping out at 1280px on a 4K monitor.
      Gaps tighten and the trailing padding drops so hero + two full rows fit
