@@ -640,17 +640,35 @@ export function subscribeToCollections(
           callback(collections);
         },
         (error) => {
+          if (error.code === "permission-denied") {
+            // Expected during the anonymous->Google uid swap and on sign-out:
+            // Firestore kills the stale listener before the auth-reactive
+            // resubscribe (bound to the new uid) takes over. Self-heals; not
+            // actionable by the user, so don't toast.
+            console.warn(
+              "[CollectionManager] Subscription permission-denied (uid swap or sign-out in progress):",
+              error
+            );
+            return;
+          }
           console.error("[CollectionManager] Subscription error:", error);
-          toast.error("Failed to connect to collections.");
+          toast.error("Couldn't load collections. Check your connection.");
         }
       );
     })
     .catch((error) => {
+      if (error.code === "permission-denied") {
+        console.warn(
+          "[CollectionManager] Collections init permission-denied (uid swap or sign-out in progress):",
+          error
+        );
+        return;
+      }
       console.error(
         "[CollectionManager] Failed to initialize collections subscription:",
         error
       );
-      toast.error("Failed to connect to collections.");
+      toast.error("Couldn't load collections. Check your connection.");
     });
 
   return () => {
@@ -684,20 +702,34 @@ export function subscribeToCollection(
           }
         },
         (error) => {
+          if (error.code === "permission-denied") {
+            console.warn(
+              "[CollectionManager] Collection subscription permission-denied (uid swap or sign-out in progress):",
+              error
+            );
+            return;
+          }
           console.error(
             "[CollectionManager] Collection subscription error:",
             error
           );
-          toast.error("Failed to connect to collection.");
+          toast.error("Couldn't load collection. Check your connection.");
         }
       );
     })
     .catch((error) => {
+      if (error.code === "permission-denied") {
+        console.warn(
+          "[CollectionManager] Collection init permission-denied (uid swap or sign-out in progress):",
+          error
+        );
+        return;
+      }
       console.error(
         "[CollectionManager] Failed to initialize collection subscription:",
         error
       );
-      toast.error("Failed to connect to collection.");
+      toast.error("Couldn't load collection. Check your connection.");
     });
 
   return () => {
