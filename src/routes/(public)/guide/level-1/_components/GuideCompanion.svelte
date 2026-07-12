@@ -46,7 +46,7 @@
   import { Popover } from "bits-ui";
   import { goto } from "$app/navigation";
   import InlineAnimationPlayer from "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte";
-  import BpmQuickPopover from "$lib/shared/animation-engine/components/controls/BpmQuickPopover.svelte";
+  import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
   import CopyForAIButton from "$lib/shared/foundation/ui/CopyForAIButton.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import { getClaudeCodeCopier } from "$lib/shared/browse/get-claude-code-copier";
@@ -127,7 +127,6 @@
   let overflowOpen = $state(false);
 
   let bpm = $state(60);
-  let bpmOpen = $state(false);
   let pickerOpen = $state(false);
   let transformOpen = $state(false);
   let transformBusy = $state(false);
@@ -330,26 +329,7 @@
 
 {#snippet bpmRow()}
   <div class="tempo-row">
-    <Popover.Root bind:open={bpmOpen}>
-      <Popover.Trigger>
-        {#snippet child({ props })}
-          <button
-            {...props}
-            class="bpm-btn"
-            type="button"
-            aria-label={`Set tempo, currently ${bpm} BPM`}
-          >
-            <span class="bpm-value">{bpm}</span>
-            <span class="bpm-unit">BPM <i class="fas fa-caret-up" aria-hidden="true"></i></span>
-          </button>
-        {/snippet}
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content side="top" align="center" sideOffset={12} collisionPadding={12} class="guide-bpm-pop">
-          <BpmQuickPopover {bpm} onBpmChange={(v) => (bpm = v)} onClose={() => (bpmOpen = false)} />
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
+    <BpmChips bind:bpm variant="full" onBpmChange={(v) => (bpm = v)} />
   </div>
 {/snippet}
 
@@ -673,24 +653,12 @@
     margin: auto;
   }
   .admin-row.stacked {
-    flex-wrap: nowrap;
+    display: flex;
     flex-direction: column;
     align-items: stretch;
   }
   .admin-row.stacked .admin-btn {
-    justify-content: center;
     width: 100%;
-  }
-  /* In the expanded overflow region the BPM control is a full-width settings
-     row, not a small centered chip floating in empty space. */
-  .sheet-scroll .tempo-row {
-    justify-content: stretch;
-  }
-  .sheet-scroll .tempo-row :global(.bpm-btn) {
-    width: 100%;
-    flex-direction: row;
-    justify-content: space-between;
-    padding: 10px 16px;
   }
   :global(.admin-copy-btn) {
     font-weight: 700;
@@ -763,61 +731,12 @@
     text-align: center;
   }
 
-  /* Tempo — a small button below the animator, not a top-of-panel strip. */
+  /* Tempo — the full BpmChips (big tap-tempo number + preset chips), below the
+     animator. Fills the panel width. */
   .tempo-row {
     flex: 0 0 auto;
     display: flex;
-    justify-content: center;
-  }
-  .bpm-btn {
-    all: unset;
-    cursor: pointer;
-    display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    min-height: var(--min-touch-target, 44px);
-    min-width: var(--min-touch-target, 44px);
-    padding: 6px 16px;
-    border-radius: 12px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    -webkit-tap-highlight-color: transparent;
-    transition: background var(--duration-fast, 150ms) ease, border-color var(--duration-fast, 150ms) ease;
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .bpm-btn:hover {
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
-    }
-  }
-  .bpm-btn:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-  .bpm-value {
-    font-size: 1.05rem;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    min-width: 2.5ch;
-    text-align: center;
-    color: var(--theme-text, #fff);
-  }
-  .bpm-unit {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.6px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-  }
-  .bpm-unit i {
-    font-size: 9px;
-    opacity: 0.8;
-  }
-  :global(.guide-bpm-pop) {
-    z-index: var(--z-dropdown, 1000);
   }
   :global(.guide-transform-pop) {
     z-index: var(--z-dropdown, 1000);
@@ -866,12 +785,12 @@
     cursor: not-allowed;
   }
 
-  /* Admin edit actions — same button styling family as .bpm-btn, in a row. */
+  /* Admin edit actions — an even 3-column grid so N buttons form clean rows
+     (was flex-wrap, which stranded a lone button on its own row). */
   .admin-row {
     flex: 0 0 auto;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
     padding-top: 0.4rem;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.06));
@@ -881,6 +800,7 @@
     cursor: pointer;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
     min-height: var(--min-touch-target, 44px);
     padding: 8px 14px;
