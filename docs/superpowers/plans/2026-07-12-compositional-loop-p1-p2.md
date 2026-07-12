@@ -925,19 +925,29 @@ git commit -m "feat(create): generation solves seed length from expander multipl
 - Modify: `src/lib/shared/create/services/build-result-transformer.ts` (`convertToSequenceData`, lines ~59-128)
 - Test: `tests/unit/services/build-result-transformer-loopspec.test.ts` (create; the transformer is pure — no mocking needed)
 
-- [ ] **Step 1: Failing test** — `convertToSequenceData(result, options)` with `options.loopSpecWire` set returns SequenceData with `loopSpec` === that wire object AND the derived legacy `loopType` still set; without `loopSpecWire`, `loopSpec` is absent (legacy behavior byte-identical).
+- [x] **Step 1: Failing test** — `convertToSequenceData(result, options)` with `options.loopSpecWire` set returns SequenceData with `loopSpec` === that wire object AND the derived legacy `loopType` still set; without `loopSpecWire`, `loopSpec` is absent (legacy behavior byte-identical).
 
-- [ ] **Step 2: Verify failure.**
+Actual test file: `tests/unit/services/build-result-transformer-loopspec.test.ts` — 3 tests, constructed directly against the real `sequenceMetadataManager`/`reversalDetector` singletons (no mocking, per the transformer being pure) with a hand-built minimal `BuildResult` (2-step engine sequence) and `GenerationOptions`: (1) circular result + `loopSpecWire` set → `loopSpec` === the wire object, `loopType` still set; (2) circular result, no `loopSpecWire` → `loopSpec` absent, `loopType` still set (legacy control); (3) non-circular result + `loopSpecWire` set → `loopSpec` still absent (proves the `isCircular` gate, not just presence of the option).
 
-- [ ] **Step 3: Implement** — in the `createSequenceData({...})` call add:
+- [x] **Step 2: Verify failure.**
+
+Run: `npx vitest run tests/unit/services/build-result-transformer-loopspec.test.ts --config tests/config/vitest.config.ts`
+
+Actual: FAILED for the right reason — test 1 (`writes SequenceData.loopSpec...`) got `expected undefined to be { blue: {...}, red: {...} }` (certificate not yet written); tests 2 and 3 passed trivially (they assert absence, already true pre-implementation) — confirming they're true regression controls, not tautologies.
+
+- [x] **Step 3: Implement** — in the `createSequenceData({...})` call add:
 
 ```ts
 ...(isCircular && options.loopSpecWire ? { loopSpec: options.loopSpecWire } : {}),
 ```
 
-- [ ] **Step 4: Tests green.**
+Implemented exactly as planned, no deviation.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 4: Tests green.**
+
+Actual: `build-result-transformer-loopspec.test.ts` 3/3 passed. Full `tests/unit/services` suite: **11 files / 88 tests passed** (0 failed) — up from the Task 7 baseline of 10 files/85 tests by exactly this task's 1 file/3 tests. Same pre-existing env-noise stderr in `SequenceHydrator.test.ts`/`DeviceIdService.test.ts` as noted in Task 7 — not a regression.
+
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(create): generated sequences carry their loopSpec certificate" -- src/lib/shared/create/services/build-result-transformer.ts tests/unit/services/build-result-transformer-loopspec.test.ts

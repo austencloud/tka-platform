@@ -123,6 +123,7 @@ export class BuildResultTransformer {
       isFavorite: false,
       isCircular,
       ...(appLoopType && { loopType: appLoopType }),
+      ...(isCircular && options.loopSpecWire ? { loopSpec: options.loopSpecWire } : {}),
       tags,
       metadata,
     });
