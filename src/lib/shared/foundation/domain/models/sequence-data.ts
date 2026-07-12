@@ -21,7 +21,7 @@ import type {
   LOOPComponent,
   LOOPDomain,
 } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import type { LOOPSpec } from "@tka/sequence-engine/loop";
+import type { LOOPSpecWire } from "@tka/sequence-engine/loop";
 import type { SoloPropData } from "./solo-prop-data";
 import type { StepPairingData } from "./step-pairing-data";
 
@@ -108,7 +108,7 @@ export interface SequenceData {
    * "both" = detected in both spaces.
    */
   readonly componentDomains?: Partial<Record<LOOPComponent, LOOPDomain>>;
-  readonly loopSpec?: LOOPSpec;
+  readonly loopSpec?: LOOPSpecWire;
   readonly difficultyLevel?: string;
   /**
    * Reversal pattern id (from REVERSAL_PATTERNS): "continuous", "book",
@@ -220,6 +220,7 @@ export function createSequenceData(
     ...(data.componentDomains !== undefined && {
       componentDomains: data.componentDomains,
     }),
+    ...(data.loopSpec !== undefined && { loopSpec: data.loopSpec }),
     tags: data.tags ?? [],
     metadata: data.metadata ?? {},
     ...(data.sequenceLength !== undefined && {

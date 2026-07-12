@@ -6,7 +6,7 @@ import {
   RESERVED_ORIENTATION_PRIMITIVES,
   type LOOPDomain,
 } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import type { LOOPSpec } from "@tka/sequence-engine/loop";
+import type { LOOPSpecWire } from "@tka/sequence-engine/loop";
 import {
   Period,
   type LOOPType,
@@ -35,7 +35,29 @@ export interface LoopDisplay {
   inversionPeriod?: Period;
 }
 
-export type LoopDisplayInput = (SequenceData | SequenceEntry) & { loopSpec?: LOOPSpec };
+export type LoopDisplayInput = (SequenceData | SequenceEntry) & { loopSpec?: LOOPSpecWire };
+
+/**
+ * Telemetry payload fired when the stored loopSpec certificate's component
+ * set disagrees with what live detection would find on the same steps.
+ * The spec ALWAYS wins for display — this is observation only (D3).
+ */
+export type LoopDisplayMismatch = {
+  sequenceId: string | null;
+  specComponents: string[];
+  detectedComponents: string[];
+};
+
+let mismatchHandler: ((m: LoopDisplayMismatch) => void) | null = null;
+
+/**
+ * Register a hook fired when resolveLoopDisplay detects the spec/detection
+ * disagreement described above. Does not affect what resolveLoopDisplay
+ * returns.
+ */
+export function onLoopDisplayMismatch(handler: (m: LoopDisplayMismatch) => void): void {
+  mismatchHandler = handler;
+}
 
 function toLoopComponent(id: ComponentId): LOOPComponent | null {
   switch (id) {
@@ -119,27 +141,85 @@ export function resolveLoopDisplay(input: LoopDisplayInput): LoopDisplay {
   return result;
 }
 
+/**
+ * Compare the spec-derived component set against live detection on the same
+ * steps and fire the mismatch hook when they disagree. Telemetry only — the
+ * spec-derived display always wins (D3); a detection throw here must never
+ * propagate and break display.
+ */
+function reportSpecDetectionMismatch(
+  input: LoopDisplayInput,
+  specComponents: Set<LOOPComponent>
+): void {
+  try {
+    if (!hasEnoughSteps(input)) return;
+    const entry = toSequenceEntry(input);
+    const detection = loopDetector.detectLOOP(entry);
+
+    const detectedComponents = new Set<LOOPComponent>();
+    const detailed = detection.componentsDetailed ?? [];
+    if (detailed.length > 0) {
+      for (const d of detailed) {
+        if (!RESERVED_ORIENTATION_PRIMITIVES.has(d.component)) detectedComponents.add(d.component);
+      }
+    } else {
+      for (const id of detection.components) {
+        const mapped = toLoopComponent(id);
+        if (mapped && !RESERVED_ORIENTATION_PRIMITIVES.has(mapped)) detectedComponents.add(mapped);
+      }
+    }
+
+    const specSorted = [...specComponents].sort();
+    const detectedSorted = [...detectedComponents].sort();
+    const agree =
+      specSorted.length === detectedSorted.length &&
+      specSorted.every((c, i) => c === detectedSorted[i]);
+    if (agree) return;
+
+    const mismatch: LoopDisplayMismatch = {
+      sequenceId: getSequenceId(input) ?? null,
+      specComponents: specSorted,
+      detectedComponents: detectedSorted,
+    };
+    if (import.meta.env?.DEV) {
+      console.debug("[loop-display-resolver] spec/detection mismatch", mismatch);
+    }
+    mismatchHandler?.(mismatch);
+  } catch {
+    // Detection failure must never break spec-derived display.
+  }
+}
+
 function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
   if (input.loopSpec) {
     const components = new Set<LOOPComponent>();
     const componentDomains = new Map<LOOPComponent, LOOPDomain>();
     let maxPeriod = 1;
+    let rotationInterval: number | undefined;
+    let inversionInterval: number | undefined;
 
     for (const prop of [input.loopSpec.blue, input.loopSpec.red]) {
       if (!prop) continue;
-      for (const [comp, cSpec] of prop.components) {
-        if (!RESERVED_ORIENTATION_PRIMITIVES.has(comp as unknown as LOOPComponent)) {
-          components.add(comp as unknown as LOOPComponent);
-          if (cSpec.domain) componentDomains.set(comp as unknown as LOOPComponent, cSpec.domain);
-          maxPeriod = Math.max(maxPeriod, cSpec.period);
-        }
+      for (const [compKey, cSpec] of Object.entries(prop)) {
+        const comp = compKey as LOOPComponent;
+        if (RESERVED_ORIENTATION_PRIMITIVES.has(comp)) continue;
+        components.add(comp);
+        if (cSpec.domain) componentDomains.set(comp, cSpec.domain);
+        else if (cSpec.mode === "overlay") componentDomains.set(comp, "orientation");
+        maxPeriod = Math.max(maxPeriod, cSpec.period);
+        if (comp === LOOPComponent.ROTATED) rotationInterval = cSpec.period;
+        if (comp === LOOPComponent.INVERTED) inversionInterval = cSpec.period;
       }
     }
+
+    reportSpecDetectionMismatch(input, components);
 
     return {
       components,
       period: maxPeriod,
       componentDomains: Object.fromEntries(componentDomains) as Partial<Record<LOOPComponent, LOOPDomain>>,
+      rotationPeriod: mapRotationInterval(rotationInterval),
+      inversionPeriod: mapRotationInterval(inversionInterval),
     };
   }
 

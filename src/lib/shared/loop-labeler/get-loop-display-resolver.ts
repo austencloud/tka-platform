@@ -1,6 +1,6 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceEntry } from "$lib/shared/loop-labeler/domain/sequence-models";
-import type { LOOPSpec } from "@tka/sequence-engine/loop";
+import type { LOOPSpecWire } from "@tka/sequence-engine/loop";
 import type { LOOPComponent, LOOPDomain } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
 
@@ -17,7 +17,7 @@ export interface LoopDisplay {
   inversionPeriod?: Period;
 }
 
-export type LoopDisplayInput = (SequenceData | SequenceEntry) & { loopSpec?: LOOPSpec };
+export type LoopDisplayInput = (SequenceData | SequenceEntry) & { loopSpec?: LOOPSpecWire };
 
 export type ResolveLoopDisplayFn = (input: LoopDisplayInput) => LoopDisplay;
 

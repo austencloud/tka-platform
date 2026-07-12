@@ -553,7 +553,7 @@ git commit -m "feat(engine): SequenceBuilder executes options.loopSpec via spec-
 
 Rationale (locked in spec): nothing writes `loopSpec` today, so changing its type from the runtime-Map `LOOPSpec` to the JSON-safe `LOOPSpecWire` is free and makes Firestore persistence automatic.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -592,12 +592,14 @@ describe("resolveLoopDisplay — wire-form loopSpec", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run tests/unit/loop/loop-display-resolver-spec.test.ts --config tests/config/vitest.config.ts`
 Expected: FAIL — spec branch iterates `prop.components` as a Map; wire Record has no entries iterator; rotationPeriod/inversionPeriod not derived.
 
-- [ ] **Step 3: Implement**
+Actual: FAILED for the right reason — `TypeError: prop.components is not iterable` at `loop-display-resolver.ts:130` (the Map-iteration line), thrown from inside `resolveLoopDisplay`.
+
+- [x] **Step 3: Implement**
 
 `sequence-data.ts`: change import to `import type { LOOPSpecWire } from "@tka/sequence-engine/loop";` and field to `readonly loopSpec?: LOOPSpecWire;`. In `createSequenceData`, add passthrough next to componentDomains (line ~220): `...(data.loopSpec !== undefined && { loopSpec: data.loopSpec }),`.
 
@@ -645,12 +647,16 @@ export function onLoopDisplayMismatch(handler: (m: LoopDisplayMismatch) => void)
 
 Fire it (and a `console.debug` in dev) but ALWAYS return the spec-derived display — spec wins, disagreement is telemetry (D3). Guard the detection call so a detection throw never breaks display.
 
-- [ ] **Step 4: Run tests**
+**Deviation (scope, mechanical):** `src/lib/shared/loop-labeler/get-loop-display-resolver.ts` is a second, independent declaration of `LoopDisplayInput`/`ResolveLoopDisplayFn` (kept separate from `loop-display-resolver.ts` deliberately, to avoid a shared→features reverse import at the DI registration seam — `registerLoopDisplayResolver(resolveLoopDisplay)` is called from `composition-root/index.ts`, `cover-front-renderer.ts`, and `QScanPage.svelte`). It imported the same runtime-Map `LOOPSpec` for its own copy of `LoopDisplayInput`. Left unchanged, `resolveLoopDisplay`'s new parameter type (`loopSpec?: LOOPSpecWire`, inherited from `SequenceData`) would no longer satisfy `ResolveLoopDisplayFn`'s parameter type (`loopSpec?: LOOPSpec`), breaking `registerLoopDisplayResolver(resolveLoopDisplay)` at the type level everywhere it's called. This is the "something else references the old runtime-Map typing" case flagged by the executor's discipline checklist — not a behavioral conflict (grep confirmed no file actually iterates `.components` as a Map through this seam, per the `no matches` greps for `loopSpec|LoopDisplayInput` in every file that calls `registerLoopDisplayResolver`/`tryGetLoopDisplayResolver`), just a duplicate type declaration that must track the same rename. Fixed by swapping `LOOPSpec` → `LOOPSpecWire` in that file's import and `LoopDisplayInput` alias (2-line change, no logic difference).
+
+- [x] **Step 4: Run tests**
 
 Run: `npx vitest run tests/unit/loop/loop-display-resolver-spec.test.ts tests/unit/loop/nested-rotation-detection.test.ts --config tests/config/vitest.config.ts`
 Expected: both PASS (nested-rotation regression must stay green — it exercises the detection path with no spec present).
 
-- [ ] **Step 5: Commit**
+Actual: both PASS (3 tests: 1 new + 2 nested-rotation). Full `tests/unit/loop` suite re-run afterward: 16 files / 80 tests passed, including `real-loop-detector-audit.test.ts`'s locked characterization totals unchanged (`PASS=190 PARTIAL=27 EXTRA=1 FAIL=52`) — zero drift.
+
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(loop): SequenceData.loopSpec in wire form; resolver derives per-component periods + mismatch hook" -- src/lib/shared/foundation/domain/models/sequence-data.ts src/lib/features/loop-labeler/services/loop-display-resolver.ts tests/unit/loop/loop-display-resolver-spec.test.ts
