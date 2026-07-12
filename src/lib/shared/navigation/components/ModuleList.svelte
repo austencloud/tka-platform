@@ -278,10 +278,13 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
     flex-direction: column;
   }
 
-  /* Main modules section fills available space */
+  /* Main modules section fills available space, but never shrinks below its
+     natural height — shrinking is what collapsed the grid and made non-shrinkable
+     cells overflow/overlap on narrow (2-col) portrait. flex-grow fills extra
+     space for few-module layouts; flex-shrink:0 forces the scroll container to
+     scroll instead of overlapping when rows exceed the viewport. */
   .module-section:first-child {
-    flex: 1;
-    min-height: 0;
+    flex: 1 0 auto;
   }
 
   .module-section:last-child {
@@ -309,8 +312,9 @@ import { inboxState } from "$lib/shared/inbox/state/inbox-state.svelte";
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px; /* Compact spacing to fit more modules */
-    flex: 1;
-    min-height: 0;
+    /* grow to fill, never shrink below row-track total — see .module-section
+       note above. Shrinking collapsed the box under non-shrinkable cells. */
+    flex: 1 0 auto;
     align-content: start; /* Align content to top to allow scrolling */
     grid-auto-rows: minmax(72px, auto); /* Min row height with auto expansion */
   }
