@@ -380,11 +380,11 @@ git commit -m "feat(generate): Rhythm tier — rotation/inversion intervals, ove
 
 Semantics: icons stay in the existing innermost-first `DISPLAY_ORDER`; components whose mode is overlay render LAST (after all expand components) separated by one faded dot — same segment grammar as `TKAWordGlyph`/`WordHeader`'s group-dot. When `overlayComponents` is absent/empty, output is pixel-identical to today.
 
-- [ ] **Step 1: Failing resolver test** — spec branch input with `inverted: { period: 4, mode: "overlay" }` → `display.overlayComponents` contains INVERTED; input without overlay → `overlayComponents` undefined or empty.
-- [ ] **Step 2: Verify failure.**
-- [ ] **Step 3: Implement** resolver + Svelte strip + package renderer + header pass-through + consumer plumbing. For the export path: `renderHeader` callers (`text-renderer.ts`, `canvas-renderer.ts`) receive loop data from their orchestrators — trace each caller's source for loop components; where the source has the sequence's `loopSpec` or `LoopDisplay` available, plumb `overlayComponents`; where it doesn't (worker bundles without the resolver), passing undefined is acceptable and documented with a one-line comment (dot absent = degraded, not wrong).
-- [ ] **Step 4: Run** resolver tests + `cd packages/sequence-engine && cd ../render-composition && npx vitest run` if that package has tests (check for a vitest config; if none, `npm run build:packages` type-gate suffices) + `npm run build:packages` + `npm run check:fast`.
-- [ ] **Step 5: Commit**
+- [x] **Step 1: Failing resolver test** — spec branch input with `inverted: { period: 4, mode: "overlay" }` → `display.overlayComponents` contains INVERTED; input without overlay → `overlayComponents` undefined or empty.
+- [x] **Step 2: Verify failure.**
+- [x] **Step 3: Implement** resolver + Svelte strip + package renderer + header pass-through + consumer plumbing. For the export path: `renderHeader` callers (`text-renderer.ts`, `canvas-renderer.ts`) receive loop data from their orchestrators — trace each caller's source for loop components; where the source has the sequence's `loopSpec` or `LoopDisplay` available, plumb `overlayComponents`; where it doesn't (worker bundles without the resolver), passing undefined is acceptable and documented with a one-line comment (dot absent = degraded, not wrong).
+- [x] **Step 4: Run** resolver tests + `cd packages/sequence-engine && cd ../render-composition && npx vitest run` if that package has tests (check for a vitest config; if none, `npm run build:packages` type-gate suffices) + `npm run build:packages` + `npm run check:fast`.
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(loop): overlay components render after a faded dot in the icon strip (app + export)" -- packages/render-composition/src/loop-icons.ts packages/render-composition/src/header-renderer.ts src/lib/shared/components/LOOPIconStrip.svelte src/lib/features/loop-labeler/services/loop-display-resolver.ts src/lib/shared/sequence-viewer/components/CardHeader.svelte src/lib/shared/animation-engine/components/layers/WordHeader.svelte tests/unit/loop/loop-display-resolver-spec.test.ts

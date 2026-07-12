@@ -1,6 +1,6 @@
 import type { LOOPComponentId } from "./types.js";
 import { drawSvgPath } from "./svg-path-painter.js";
-import { LOOP_ICON_GAP_SCALE } from "./dimensions.js";
+import { LOOP_ICON_GAP_SCALE, LOOP_ICON_DOT_SIZE_SCALE, LOOP_ICON_DOT_OPACITY } from "./dimensions.js";
 
 /**
  * Rotation period for the rotated LOOP icon.
@@ -122,6 +122,10 @@ export const LOOP_ICON_COLORS: Record<LOOPComponentId | "freeform", string> = {
  * @param showFreeformWhenEmpty - Draw the freeform icon when the set is empty
  * @param rotationPeriod    - "quartered" swaps rotated → fa-arrows-spin
  * @param inversionPeriod   - "quartered" swaps inverted → checkerboard circle
+ * @param overlayComponents - Components rendered LAST, after one faded
+ *                            separator dot — same segment grammar as the
+ *                            word display's group-dot. Absent/empty is
+ *                            pixel-identical to the pre-overlay strip.
  * @returns                    The total rendered width in canvas pixels
  */
 export function renderLoopIconStrip(
@@ -133,7 +137,8 @@ export function renderLoopIconStrip(
   darkMode: boolean,
   showFreeformWhenEmpty: boolean = false,
   rotationPeriod?: LoopRotationPeriod,
-  inversionPeriod?: LoopInversionPeriod
+  inversionPeriod?: LoopInversionPeriod,
+  overlayComponents?: Set<LOOPComponentId>
 ): { totalWidth: number } {
   const active = DISPLAY_ORDER.filter((c) => components.has(c));
 
@@ -145,21 +150,99 @@ export function renderLoopIconStrip(
   }
 
   const gap = Math.max(2, Math.round(iconSize * LOOP_ICON_GAP_SCALE));
-  const totalWidth = active.length * iconSize + (active.length - 1) * gap;
-  let currentX = centerX - totalWidth / 2 + iconSize / 2;
+  const items = buildStripItems(active, overlayComponents);
+  const totalWidth = stripWidthFromItems(items, iconSize, gap);
+  let currentX = centerX - totalWidth / 2;
 
-  for (const component of active) {
-    const pathKey =
-      component === "rotated" && rotationPeriod === "quartered"
-        ? "rotated-quartered"
-        : component === "inverted" && inversionPeriod === "quartered"
-          ? "inverted-quartered"
-          : component;
-    drawLoopIcon(ctx, pathKey, currentX, centerY, iconSize, LOOP_ICON_COLORS[component], darkMode);
-    currentX += iconSize + gap;
+  for (const item of items) {
+    const itemSize = item.kind === "dot" ? iconSize * LOOP_ICON_DOT_SIZE_SCALE : iconSize;
+    const itemCenterX = currentX + itemSize / 2;
+
+    if (item.kind === "dot") {
+      drawLoopIconDot(ctx, itemCenterX, centerY, itemSize, darkMode);
+    } else {
+      const component = item.component;
+      const pathKey =
+        component === "rotated" && rotationPeriod === "quartered"
+          ? "rotated-quartered"
+          : component === "inverted" && inversionPeriod === "quartered"
+            ? "inverted-quartered"
+            : component;
+      drawLoopIcon(ctx, pathKey, itemCenterX, centerY, iconSize, LOOP_ICON_COLORS[component], darkMode);
+    }
+
+    currentX += itemSize + gap;
   }
 
   return { totalWidth };
+}
+
+/** One rendered slot in the icon strip: either an active component's icon, or the overlay separator dot. */
+type StripItem = { kind: "icon"; component: LOOPComponentId } | { kind: "dot" };
+
+/**
+ * Partition active components into expand-mode (rendered first, in
+ * DISPLAY_ORDER) and overlay-mode (rendered last, in DISPLAY_ORDER),
+ * inserting one separator dot between the two groups when both are
+ * non-empty. When overlayComponents is absent/empty, this returns exactly
+ * the original active-icon sequence with no dot — pixel-identical to the
+ * pre-overlay strip.
+ */
+function buildStripItems(
+  active: LOOPComponentId[],
+  overlayComponents?: Set<LOOPComponentId>
+): StripItem[] {
+  const overlaySet = overlayComponents ?? new Set<LOOPComponentId>();
+  const expandActive = active.filter((c) => !overlaySet.has(c));
+  const overlayActive = active.filter((c) => overlaySet.has(c));
+  const hasSeparator = expandActive.length > 0 && overlayActive.length > 0;
+
+  return [
+    ...expandActive.map((component): StripItem => ({ kind: "icon", component })),
+    ...(hasSeparator ? ([{ kind: "dot" }] as StripItem[]) : []),
+    ...overlayActive.map((component): StripItem => ({ kind: "icon", component })),
+  ];
+}
+
+function stripWidthFromItems(items: StripItem[], iconSize: number, gap: number): number {
+  if (items.length === 0) return 0;
+  const dotSize = iconSize * LOOP_ICON_DOT_SIZE_SCALE;
+  const sum = items.reduce((total, item) => total + (item.kind === "dot" ? dotSize : iconSize), 0);
+  return sum + (items.length - 1) * gap;
+}
+
+/**
+ * Compute the total rendered width of the icon strip WITHOUT drawing it.
+ * Callers (e.g. header-renderer.ts) use this to center the strip before
+ * calling renderLoopIconStrip — must stay in exact sync with the width
+ * renderLoopIconStrip itself produces, including the overlay separator dot.
+ */
+export function computeLoopIconStripWidth(
+  components: Set<LOOPComponentId>,
+  iconSize: number,
+  overlayComponents?: Set<LOOPComponentId>
+): number {
+  const active = DISPLAY_ORDER.filter((c) => components.has(c));
+  if (active.length === 0) return 0;
+  const gap = Math.max(2, Math.round(iconSize * LOOP_ICON_GAP_SCALE));
+  const items = buildStripItems(active, overlayComponents);
+  return stripWidthFromItems(items, iconSize, gap);
+}
+
+function drawLoopIconDot(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number,
+  darkMode: boolean
+): void {
+  ctx.save();
+  ctx.globalAlpha = LOOP_ICON_DOT_OPACITY;
+  ctx.fillStyle = darkMode ? "#ffffff" : "#1f2937";
+  ctx.beginPath();
+  ctx.arc(x, y, size / 2, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.restore();
 }
 
 function drawLoopIcon(

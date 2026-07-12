@@ -315,6 +315,12 @@ export async function paintCardFrontChrome(
 
   const loopTypeOverride = options.loopType;
   let loopComponents: Set<LOOPComponent> | undefined;
+  // Only the resolver branch (`display`) carries overlay-mode info — a bare
+  // LOOPType shortcode (the fallback branch below, used when the resolver
+  // hasn't been registered, e.g. inside composition.worker.ts) has no way to
+  // recover which components are overlay vs expand. Degraded, not wrong: the
+  // icon strip just omits the separator dot in that case.
+  let overlayComponents: Set<LOOPComponent> | undefined;
 
   const resolver = tryGetLoopDisplayResolver();
   const display = resolver?.(sequence);
@@ -324,6 +330,7 @@ export async function paintCardFrontChrome(
 
   if (display && display.components.size > 0) {
     loopComponents = display.components;
+    overlayComponents = display.overlayComponents;
   } else if (loopTypeOverride) {
     const parsed = parseLoopComponents(loopTypeOverride);
     const filtered = new Set<LOOPComponent>();
@@ -395,6 +402,7 @@ export async function paintCardFrontChrome(
       borderColor: options.deckCard && !options.accentColor ? DECK_BORDER_COLOR : undefined,
       rotationPeriod: showLoopGlyph ? periodForRender : undefined,
       inversionPeriod: showLoopGlyph ? inversionForRender : undefined,
+      overlayComponents: showLoopGlyph ? overlayComponents : undefined,
       accentColor: options.accentColor,
       accentTintOpacity: options.accentTintOpacity,
     });

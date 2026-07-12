@@ -2,7 +2,7 @@
 export * from "./types.js";
 export * from "./difficulty-config.js";
 export { drawSvgPath, drawPathCommands, parsePathData, type PathCommand } from "./svg-path-painter.js";
-export { renderLoopIconStrip, LOOP_ICON_COLORS, type LoopRotationPeriod, type LoopInversionPeriod } from "./loop-icons.js";
+export { renderLoopIconStrip, computeLoopIconStripWidth, LOOP_ICON_COLORS, type LoopRotationPeriod, type LoopInversionPeriod } from "./loop-icons.js";
 export { getLayout, calculateImageDimensions, BASE_STEP_SIZE } from "./layout-tables.js";
 export {
   calculateHeaderHeight, calculateFooterHeight, narrowGridScale,
@@ -10,6 +10,7 @@ export {
   BADGE_SIZE_SCALE, BADGE_PADDING_SCALE, BADGE_NUMBER_FONT_SCALE, BADGE_BORDER_WIDTH_DIVISOR,
   HEADER_WORD_FONT_SCALE, HEADER_WORD_FONT_MIN_SCALE,
   LOOP_ICON_SIZE_SCALE, LOOP_ICON_GAP_SCALE, LOOP_ICON_STRIP_OFFSET_SCALE,
+  LOOP_ICON_DOT_SIZE_SCALE, LOOP_ICON_DOT_OPACITY,
   FOOTER_FONT_SCALE, FOOTER_MARGIN_SCALE, FOOTER_TEXT_Y_SCALE, FOOTER_GAP_SCALE,
   STEP_NUMBER_FONT_RATIO, STEP_LABEL_FONT_RATIO, STEP_NUMBER_OFFSET_RATIO, STEP_NUMBER_FONT_MAX,
 } from "./dimensions.js";

@@ -52,6 +52,17 @@ export const LOOP_ICON_GAP_SCALE = 0.15;
 /** Rightward inset of the icon strip center as fraction of icon size */
 export const LOOP_ICON_STRIP_OFFSET_SCALE = 0.2;
 
+/**
+ * Overlay-separator dot diameter as fraction of icon size. Matches the word
+ * display's group-dot ratio (TKAWordGlyph.svelte DOT_SIZE_RATIO / WordHeader's
+ * DOT_SIZE_SCALE) so the "faded dot between segments" grammar reads the same
+ * everywhere it appears.
+ */
+export const LOOP_ICON_DOT_SIZE_SCALE = 0.15;
+
+/** Overlay-separator dot opacity. Matches the word display's group-dot. */
+export const LOOP_ICON_DOT_OPACITY = 0.4;
+
 // ── Footer text layout ──────────────────────────────────────────────────
 
 /** Font size as fraction of footer height */

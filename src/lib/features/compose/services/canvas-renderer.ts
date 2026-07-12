@@ -117,7 +117,8 @@ export function renderWordHeaderToCanvas(
   difficultyLevel: number | null = null,
   loopComponents: Set<string> | null = null,
   rotationPeriod?: Period,
-  inversionPeriod?: Period
+  inversionPeriod?: Period,
+  overlayComponents: Set<string> | null = null
 ): void {
   drawWordHeader(
     ctx,
@@ -128,7 +129,8 @@ export function renderWordHeaderToCanvas(
     difficultyLevel,
     loopComponents,
     rotationPeriod,
-    inversionPeriod
+    inversionPeriod,
+    overlayComponents
   );
 }
 
@@ -339,7 +341,8 @@ function drawWordHeader(
   difficultyLevel: number | null,
   loopComponents: Set<string> | null,
   rotationPeriod: Period | undefined,
-  inversionPeriod: Period | undefined
+  inversionPeriod: Period | undefined,
+  overlayComponents: Set<string> | null = null
 ): void {
   if (!word || word.trim() === "") return;
 
@@ -401,6 +404,9 @@ function drawWordHeader(
       | undefined,
     rotationPeriod: periodForRender,
     inversionPeriod: inversionForRender,
+    overlayComponents: (overlayComponents ?? undefined) as
+      | Set<LOOPComponentId>
+      | undefined,
     darkMode,
     letterStyles,
     glyphImages: glyphImages.size > 0 ? glyphImages : undefined,

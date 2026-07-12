@@ -2,10 +2,10 @@ import type { LOOPComponentId, LetterStyle, GlyphImageData, CompressedSegment } 
 import {
   BADGE_SIZE_SCALE, BADGE_PADDING_SCALE, BADGE_NUMBER_FONT_SCALE, BADGE_BORDER_WIDTH_DIVISOR,
   HEADER_WORD_FONT_SCALE,
-  LOOP_ICON_SIZE_SCALE, LOOP_ICON_GAP_SCALE, LOOP_ICON_STRIP_OFFSET_SCALE,
+  LOOP_ICON_SIZE_SCALE, LOOP_ICON_STRIP_OFFSET_SCALE,
 } from "./dimensions.js";
 import { DIFFICULTY_LEVELS, DEFAULT_DIFFICULTY_STYLE, DIFFICULTY_FONT_FAMILY, applyGradientStops } from "./difficulty-config.js";
-import { renderLoopIconStrip, type LoopRotationPeriod, type LoopInversionPeriod } from "./loop-icons.js";
+import { renderLoopIconStrip, computeLoopIconStripWidth, type LoopRotationPeriod, type LoopInversionPeriod } from "./loop-icons.js";
 
 export interface HeaderOptions {
   canvasWidth: number;
@@ -18,6 +18,12 @@ export interface HeaderOptions {
   rotationPeriod?: LoopRotationPeriod;
   /** When inverted is active, picks checkerboard circle (quartered) vs circle-half-stroke (halved) */
   inversionPeriod?: LoopInversionPeriod;
+  /**
+   * Components rendered LAST in the icon strip, after one faded separator
+   * dot — same segment grammar as the word display's group-dot. Absent or
+   * empty renders pixel-identical to before this option existed.
+   */
+  overlayComponents?: Set<LOOPComponentId>;
   darkMode?: boolean;
   letterStyles?: LetterStyle[];
   /** Override header background color */
@@ -231,7 +237,7 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
   const {
     canvasWidth, headerHeight, word,
     difficultyLevel = 1, showDifficultyBadge = true,
-    loopComponents, rotationPeriod, inversionPeriod, darkMode = true, letterStyles,
+    loopComponents, rotationPeriod, inversionPeriod, overlayComponents, darkMode = true, letterStyles,
     backgroundColor, borderColor, accentColor, accentTintOpacity, glyphImages, compressedSegments,
   } = options;
 
@@ -272,12 +278,10 @@ export function renderHeader(ctx: CanvasRenderingContext2D, options: HeaderOptio
   const hasLoop = loopComponents && loopComponents.size > 0;
   if (hasLoop) {
     const iconSize = badgeSize * LOOP_ICON_SIZE_SCALE;
-    const gap = Math.max(2, Math.round(iconSize * LOOP_ICON_GAP_SCALE));
-    const activeCount = loopComponents.size;
-    const stripWidth = activeCount * iconSize + (activeCount - 1) * gap;
+    const stripWidth = computeLoopIconStripWidth(loopComponents, iconSize, overlayComponents);
     const rightEdge = canvasWidth - badgePadding;
     const stripCenterX = rightEdge - stripWidth / 2 - iconSize * LOOP_ICON_STRIP_OFFSET_SCALE;
-    renderLoopIconStrip(ctx, loopComponents, stripCenterX, headerHeight / 2, iconSize, darkMode, false, rotationPeriod, inversionPeriod);
+    renderLoopIconStrip(ctx, loopComponents, stripCenterX, headerHeight / 2, iconSize, darkMode, false, rotationPeriod, inversionPeriod, overlayComponents);
   }
 
   // Word text (center)

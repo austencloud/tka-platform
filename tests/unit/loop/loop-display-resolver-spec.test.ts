@@ -32,3 +32,41 @@ describe("resolveLoopDisplay — wire-form loopSpec", () => {
     expect(display.inversionPeriod).toBe(Period.QUARTERED);
   });
 });
+
+describe("resolveLoopDisplay — overlayComponents", () => {
+  it("populates overlayComponents from spec components whose mode is overlay", () => {
+    clearLoopDisplayCache();
+    const display = resolveLoopDisplay({
+      id: "overlay-wire-test",
+      loopSpec: {
+        blue: {
+          mirrored: { period: 2 },
+          inverted: { period: 4, mode: "overlay" },
+        },
+        red: {
+          mirrored: { period: 2 },
+          inverted: { period: 4, mode: "overlay" },
+        },
+      },
+    } as any);
+
+    expect(display.overlayComponents).toBeDefined();
+    expect(display.overlayComponents!.has(LOOPComponent.INVERTED)).toBe(true);
+    expect(display.overlayComponents!.has(LOOPComponent.MIRRORED)).toBe(false);
+  });
+
+  it("leaves overlayComponents undefined/empty when nothing is in overlay mode", () => {
+    clearLoopDisplayCache();
+    const display = resolveLoopDisplay({
+      id: "no-overlay-wire-test",
+      loopSpec: {
+        blue: { rotated: { period: 2 }, mirrored: { period: 2 } },
+        red: { rotated: { period: 2 }, mirrored: { period: 2 } },
+      },
+    } as any);
+
+    expect(
+      display.overlayComponents === undefined || display.overlayComponents!.size === 0
+    ).toBe(true);
+  });
+});

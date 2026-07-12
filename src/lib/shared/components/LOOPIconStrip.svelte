@@ -23,7 +23,7 @@ Used in:
 <script lang="ts">
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
-  import { LOOP_ICON_GAP_SCALE } from "@tka/render-composition";
+  import { LOOP_ICON_GAP_SCALE, LOOP_ICON_DOT_SIZE_SCALE, LOOP_ICON_DOT_OPACITY } from "@tka/render-composition";
   import CheckerboardCircleIcon from "$lib/shared/icons/CheckerboardCircleIcon.svelte";
 
   interface Props {
@@ -36,6 +36,13 @@ Used in:
      */
     rotationPeriod?: Period;
     inversionPeriod?: Period;
+    /**
+     * Components rendered LAST, after one faded separator dot — same
+     * segment grammar as the word display's group-dot (TKAWordGlyph /
+     * WordHeader). Absent or empty renders pixel-identical to before this
+     * prop existed.
+     */
+    overlayComponents?: Set<LOOPComponent>;
     size?: number;
     darkMode?: boolean;
     showFreeformWhenEmpty?: boolean;
@@ -45,6 +52,7 @@ Used in:
     activeComponents,
     rotationPeriod,
     inversionPeriod,
+    overlayComponents,
     size = 16,
     darkMode = true,
     showFreeformWhenEmpty = true,
@@ -116,6 +124,16 @@ Used in:
     displayOrder.filter(comp => activeComponents.has(comp))
   );
 
+  // Split into expand-mode (rendered first) and overlay-mode (rendered
+  // last, after a faded separator dot) — same segment grammar as the word
+  // display's group-dot. Absent/empty overlayComponents puts everything in
+  // expandList and renders no dot, i.e. pixel-identical to before.
+  const overlaySet = $derived(overlayComponents ?? new Set<LOOPComponent>());
+  const expandList = $derived(activeList.filter((c) => !overlaySet.has(c)));
+  const overlayList = $derived(activeList.filter((c) => overlaySet.has(c)));
+  const showOverlayDot = $derived(expandList.length > 0 && overlayList.length > 0);
+  const dotSize = $derived(size * LOOP_ICON_DOT_SIZE_SCALE);
+
   // Show freeform icon if no components active and flag is set
   const showFreeform = $derived(
     showFreeformWhenEmpty && activeList.length === 0
@@ -185,26 +203,40 @@ Used in:
       title="Freeform"
     ></i>
   {:else}
-    {#each activeList as component}
-      {@const icon = iconFor(component)}
-      {#if icon}
-        <span class="icon-cell" style="width: {size}px; height: {size}px;" title={icon.label}>
-          {#if icon.customSvg === "checkerboard"}
-            <span class="custom-icon" style="filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));">
-              <CheckerboardCircleIcon size="{size}px" color={icon.color} />
-            </span>
-          {:else}
-            <i
-              class={icon.faClass}
-              style="font-size: {size}px; color: {icon.color};"
-              aria-hidden="true"
-            ></i>
-          {/if}
-        </span>
-      {/if}
+    {#each expandList as component}
+      {@render iconCell(component)}
+    {/each}
+    {#if showOverlayDot}
+      <span
+        class="overlay-dot"
+        style="width: {dotSize}px; height: {dotSize}px; opacity: {LOOP_ICON_DOT_OPACITY};"
+        aria-hidden="true"
+      ></span>
+    {/if}
+    {#each overlayList as component}
+      {@render iconCell(component)}
     {/each}
   {/if}
 </div>
+
+{#snippet iconCell(component: LOOPComponent)}
+  {@const icon = iconFor(component)}
+  {#if icon}
+    <span class="icon-cell" style="width: {size}px; height: {size}px;" title={icon.label}>
+      {#if icon.customSvg === "checkerboard"}
+        <span class="custom-icon" style="filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));">
+          <CheckerboardCircleIcon size="{size}px" color={icon.color} />
+        </span>
+      {:else}
+        <i
+          class={icon.faClass}
+          style="font-size: {size}px; color: {icon.color};"
+          aria-hidden="true"
+        ></i>
+      {/if}
+    </span>
+  {/if}
+{/snippet}
 
 <style>
   .loop-icon-strip {
@@ -234,5 +266,14 @@ Used in:
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Overlay separator dot — same grammar as the word display's group-dot
+     (TKAWordGlyph.svelte / WordHeader.svelte): currentColor, faded, round. */
+  .overlay-dot {
+    display: inline-block;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
   }
 </style>

@@ -34,6 +34,11 @@ export interface WordHeaderOptions {
   borderColor?: string;
   rotationPeriod?: LoopRotationPeriod;
   inversionPeriod?: LoopInversionPeriod;
+  /**
+   * Components rendered LAST in the icon strip, after one faded separator
+   * dot. Absent/empty renders pixel-identical to before this option existed.
+   */
+  overlayComponents?: Set<LOOPComponent>;
   accentColor?: string;
   accentTintOpacity?: number;
 }
@@ -230,6 +235,14 @@ export class TextRenderer {
       }
     }
 
+    let packageOverlayComponents: Set<LOOPComponentId> | undefined;
+    if (opts.overlayComponents && opts.overlayComponents.size > 0) {
+      packageOverlayComponents = new Set<LOOPComponentId>();
+      for (const c of opts.overlayComponents) {
+        packageOverlayComponents.add(c as unknown as LOOPComponentId);
+      }
+    }
+
     const glyphImages = this.buildGlyphMap(opts.word ?? "");
     const segments = opts.word ? compressWord(opts.word) : undefined;
     const hasCompression =
@@ -244,6 +257,7 @@ export class TextRenderer {
       loopComponents: packageComponents,
       rotationPeriod: opts.rotationPeriod,
       inversionPeriod: opts.inversionPeriod,
+      overlayComponents: packageOverlayComponents,
       darkMode: opts.darkMode ?? false,
       backgroundColor: opts.backgroundColor,
       borderColor: opts.borderColor,

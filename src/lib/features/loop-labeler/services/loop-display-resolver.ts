@@ -22,6 +22,13 @@ export interface LoopDisplay {
    */
   componentDomains?: Partial<Record<LOOPComponent, LOOPDomain>>;
   /**
+   * Components whose wire spec declares mode "overlay" (applied in place
+   * over the fully-expanded sequence, rather than expanding its length).
+   * Icon-strip renderers show these LAST, after a faded separator dot.
+   * Absent/empty when nothing is in overlay mode (the common case).
+   */
+  overlayComponents?: Set<LOOPComponent>;
+  /**
    * Integer LOOP period: 1, 2, 4, or 8.
    */
   period: number;
@@ -194,6 +201,7 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
   if (input.loopSpec) {
     const components = new Set<LOOPComponent>();
     const componentDomains = new Map<LOOPComponent, LOOPDomain>();
+    const overlayComponents = new Set<LOOPComponent>();
     let maxPeriod = 1;
     let rotationInterval: number | undefined;
     let inversionInterval: number | undefined;
@@ -206,6 +214,7 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
         components.add(comp);
         if (cSpec.domain) componentDomains.set(comp, cSpec.domain);
         else if (cSpec.mode === "overlay") componentDomains.set(comp, "orientation");
+        if (cSpec.mode === "overlay") overlayComponents.add(comp);
         maxPeriod = Math.max(maxPeriod, cSpec.period);
         if (comp === LOOPComponent.ROTATED) rotationInterval = cSpec.period;
         if (comp === LOOPComponent.INVERTED) inversionInterval = cSpec.period;
@@ -218,6 +227,7 @@ function computeLoopDisplay(input: LoopDisplayInput): LoopDisplay {
       components,
       period: maxPeriod,
       componentDomains: Object.fromEntries(componentDomains) as Partial<Record<LOOPComponent, LOOPDomain>>,
+      overlayComponents: overlayComponents.size > 0 ? overlayComponents : undefined,
       rotationPeriod: mapRotationInterval(rotationInterval),
       inversionPeriod: mapRotationInterval(inversionInterval),
     };

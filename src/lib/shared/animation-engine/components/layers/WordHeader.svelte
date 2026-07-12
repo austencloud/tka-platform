@@ -42,6 +42,7 @@ Supports letter highlighting during animation playback.
     loopComponents = null,
     rotationPeriod,
     inversionPeriod,
+    overlayComponents,
   }: {
     word?: string | null;
     visible?: boolean;
@@ -51,6 +52,11 @@ Supports letter highlighting during animation playback.
     loopComponents?: Set<LOOPComponent> | null;
     rotationPeriod?: Period;
     inversionPeriod?: Period;
+    /**
+     * Components rendered LAST in the icon strip, after one faded separator
+     * dot — same segment grammar as the group-dot in the word text above.
+     */
+    overlayComponents?: Set<LOOPComponent> | null;
   } = $props();
 
   // Animation state machine: "idle" | "exiting" | "entering"
@@ -303,6 +309,7 @@ Supports letter highlighting during animation playback.
           activeComponents={loopComponents}
           {rotationPeriod}
           {inversionPeriod}
+          overlayComponents={overlayComponents ?? undefined}
           size={20}
           darkMode={darkMode}
           showFreeformWhenEmpty={false}

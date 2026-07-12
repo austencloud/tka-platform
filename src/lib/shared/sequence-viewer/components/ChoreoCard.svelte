@@ -441,6 +441,7 @@
   });
   const loopRotationPeriod = $derived(loopDisplay.rotationPeriod);
   const loopInversionPeriod = $derived(loopDisplay.inversionPeriod);
+  const loopOverlayComponents = $derived(loopDisplay.overlayComponents);
 
   // Solo mode: hide dual-prop metadata (word, letters, difficulty, LOOP)
   // When browseViewMode has granularity "solo", we're showing one prop/hand only.
@@ -1698,6 +1699,7 @@
         {loopComponents}
         {loopRotationPeriod}
         {loopInversionPeriod}
+        {loopOverlayComponents}
         {scaledHeaderHeight}
         {badgeSize}
         {badgePadding}

@@ -139,6 +139,11 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
       loopDisplayForExport?.rotationPeriod;
     const inversionPeriod: Period | undefined =
       loopDisplayForExport?.inversionPeriod;
+    const overlayComponents: Set<string> | null =
+      loopDisplayForExport?.overlayComponents &&
+      loopDisplayForExport.overlayComponents.size > 0
+        ? (loopDisplayForExport.overlayComponents as unknown as Set<string>)
+        : null;
 
     // Resolve FPS early - used by both encoder paths and frame calculations
     const fps = options.fps ?? VIDEO_EXPORT_FPS;
@@ -497,6 +502,7 @@ export class VideoExportOrchestrator implements IVideoExportOrchestrator {
         loopComponents,
         rotationPeriod,
         inversionPeriod,
+        overlayComponents,
         showBluePathLines,
         showRedPathLines,
         sequenceSteps: steps,

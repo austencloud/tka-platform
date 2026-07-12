@@ -454,6 +454,7 @@ Last audit: 2025-12-27
     inversionPeriod: undefined as
       | import("$lib/shared/foundation/domain/models/generation/circular-models").Period
       | undefined,
+    overlayComponents: undefined as Set<LOOPComponent> | undefined,
     period: 1,
   };
   const loopDisplay = $derived.by(() => {
@@ -466,6 +467,7 @@ Last audit: 2025-12-27
   );
   const computedRotationPeriod = $derived(loopDisplay.rotationPeriod);
   const computedInversionPeriod = $derived(loopDisplay.inversionPeriod);
+  const computedOverlayComponents = $derived(loopDisplay.overlayComponents);
 
   // Word-header underline follows the parent's stepData attribution (identity
   // lookup) so it always agrees with the glyph letter — including step-playback
@@ -536,6 +538,7 @@ Last audit: 2025-12-27
         loopComponents={computedLoopComponents}
         rotationPeriod={computedRotationPeriod}
         inversionPeriod={computedInversionPeriod}
+        overlayComponents={computedOverlayComponents}
       />
     </div>
 

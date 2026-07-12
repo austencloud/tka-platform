@@ -10,6 +10,12 @@ import type { Period } from "$lib/shared/foundation/domain/models/generation/cir
 export interface LoopDisplay {
   components: Set<LOOPComponent>;
   componentDomains?: Partial<Record<LOOPComponent, LOOPDomain>>;
+  /**
+   * Components whose wire spec declares mode "overlay". Icon-strip renderers
+   * show these LAST, after a faded separator dot. See the full doc on the
+   * canonical LoopDisplay in loop-display-resolver.ts.
+   */
+  overlayComponents?: Set<LOOPComponent>;
   period: number;
   /** @deprecated Use `period` instead. */
   rotationPeriod?: Period;
