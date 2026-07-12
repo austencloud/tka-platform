@@ -5,6 +5,8 @@
  * Provides clean abstraction over browser animation APIs.
  */
 
+import { frameStatsRecorder } from "./frame-stats-recorder";
+
 export class AnimationLoop {
   private animationFrameId: number | null = null;
   private lastTimestamp: number | null = null;
@@ -65,7 +67,11 @@ export class AnimationLoop {
 
     // Apply speed multiplier and invoke callback
     const adjustedDeltaTime = deltaTime * this.speed;
+    const updateStart = performance.now();
     this.onUpdateCallback(adjustedDeltaTime);
+    // Dev-only smoothness instrumentation: raw rAF gap (total frame cost) +
+    // update-callback duration (engine cost). No-op when disabled.
+    frameStatsRecorder.record(deltaTime, performance.now() - updateStart);
 
     // Continue loop if still running
     if (this.animationFrameId !== null) {
