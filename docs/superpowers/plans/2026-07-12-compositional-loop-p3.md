@@ -35,7 +35,7 @@
 
 The function mirrors the engine's stage semantics (same rules as `expanderMultiplier` — read its doc comment in `loop-type-utils.ts`) to produce per-block transform signatures for display.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -82,12 +82,12 @@ describe("blockSignatures", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `npx vitest run tests/unit/services/loop-block-signatures.test.ts --config tests/config/vitest.config.ts`
 Expected: FAIL — module missing.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```ts
 /**
@@ -180,9 +180,9 @@ function lcm(a: number, b: number): number {
 }
 ```
 
-- [ ] **Step 4: Run tests** — all 5 PASS.
+- [x] **Step 4: Run tests** — all 5 PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(create): blockSignatures — per-block transform signatures for the LOOP timeline" -- src/lib/shared/create/services/loop-block-signatures.ts tests/unit/services/loop-block-signatures.test.ts
