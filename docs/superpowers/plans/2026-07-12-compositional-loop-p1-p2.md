@@ -246,7 +246,7 @@ git commit -m "feat(engine): canonical fused-stage order — mirror/flip/swap be
 - Modify: `packages/sequence-engine/src/loop/index.ts` (export `applyOverlayInversion`)
 - Test: `packages/sequence-engine/tests/loop/execution/overlay-inversion.test.ts` (create)
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { describe, expect, it } from "vitest";
@@ -303,12 +303,12 @@ describe("overlay inversion", () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `cd packages/sequence-engine && npx vitest run tests/loop/execution/overlay-inversion.test.ts`
 Expected: FAIL (overlay components currently treated as expand → length differs).
 
-- [ ] **Step 3: Implement `overlay-inversion.ts`**
+- [x] **Step 3: Implement `overlay-inversion.ts`**
 
 ```ts
 /**
@@ -386,12 +386,12 @@ Export from `packages/sequence-engine/src/loop/index.ts`:
 export { applyOverlayInversion } from "./execution/overlay-inversion.js";
 ```
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `cd packages/sequence-engine && npx vitest run tests/loop/execution/overlay-inversion.test.ts && npx vitest run`
 Expected: new tests PASS; full suite green.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git commit -m "feat(engine): overlay-inversion stage — in-place block inversion, x1 length, orientation chain recompute" -- packages/sequence-engine/src/loop/execution/overlay-inversion.ts packages/sequence-engine/src/loop/execution/spec-executor.ts packages/sequence-engine/src/loop/index.ts packages/sequence-engine/tests/loop/execution/overlay-inversion.test.ts

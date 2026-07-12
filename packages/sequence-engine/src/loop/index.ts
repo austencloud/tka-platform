@@ -143,6 +143,7 @@ export { RewoundExecutor, rewoundExecutor } from "./execution/RewoundExecutor.js
 
 // Spec-based execution
 export { executeLOOPSpec, executeSymmetricSpec } from "./execution/spec-executor.js";
+export { applyOverlayInversion } from "./execution/overlay-inversion.js";
 export { FusedExecutor, type FusedTransformFlags } from "./execution/FusedExecutor.js";
 
 // LOOP executor selector

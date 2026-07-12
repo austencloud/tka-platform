@@ -10,6 +10,7 @@ import { Period } from "../loop-types.js";
 import { strictRotatedExecutor } from "./StrictRotatedExecutor.js";
 import { rewoundExecutor } from "./RewoundExecutor.js";
 import { FusedExecutor, type FusedTransformFlags } from "./FusedExecutor.js";
+import { applyOverlayInversion } from "./overlay-inversion.js";
 
 const FUSEABLE = new Set([
   LOOPComponent.MIRRORED,
@@ -67,6 +68,16 @@ export function executeSymmetricSpec(
     result = executor.execute(result, period);
   }
 
+  // Overlay stages run last, in place (x1 length) — inversion is applied
+  // over the fully-expanded result, not folded into the fused-expand groups.
+  for (const [comp, cSpec] of spec.components) {
+    if (cSpec.mode !== "overlay") continue;
+    if (comp !== LOOPComponent.INVERTED) {
+      throw new Error(`Overlay mode is not supported for ${comp}`);
+    }
+    result = applyOverlayInversion(result, cSpec.period);
+  }
+
   return result;
 }
 
@@ -87,17 +98,27 @@ export function executeLOOPSpec(
   );
 }
 
-/** True when at least one FUSEABLE component exists at the given period. */
+/**
+ * True when at least one FUSEABLE component exists at the given period.
+ * Overlay-mode components are excluded — they never join a fused-expand
+ * group (they run as a separate in-place stage after everything else), so
+ * they must not influence whether ROTATED needs its own expand stage.
+ */
 function hasFuseableAtPeriod(spec: PropLOOPSpec, period: number): boolean {
   for (const [comp, cSpec] of spec.components) {
+    if (cSpec.mode === "overlay") continue;
     if (FUSEABLE.has(comp) && cSpec.period === period) return true;
   }
   return false;
 }
 
-/** True when MIRRORED or FLIPPED exists at the given period. */
+/**
+ * True when MIRRORED or FLIPPED exists at the given period.
+ * Overlay-mode components are excluded (see hasFuseableAtPeriod).
+ */
 function hasMirrorOrFlipAtPeriod(spec: PropLOOPSpec, period: number): boolean {
   for (const [comp, cSpec] of spec.components) {
+    if (cSpec.mode === "overlay") continue;
     if (
       (comp === LOOPComponent.MIRRORED || comp === LOOPComponent.FLIPPED) &&
       cSpec.period === period
