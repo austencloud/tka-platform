@@ -14,6 +14,7 @@
   import { TunnelViewController } from "../tunnel/tunnel-view-controller.svelte";
   import { MandalaViewerController } from "../state/mandala-viewer-controller.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { ViewerPlaybackState } from "../domain/viewer-prop-groups";
   import type {
     PlaybackMode,
@@ -45,6 +46,7 @@
     playbackMode = "continuous",
     onPlaybackModeChange = () => {},
     onPlaybackToggle = () => {},
+    onPropChange,
     onArtExport,
   }: {
     sequence: SequenceData;
@@ -62,6 +64,9 @@
     playbackMode?: PlaybackMode;
     onPlaybackModeChange?: (mode: PlaybackMode) => void;
     onPlaybackToggle?: () => void;
+    /** Change the art view's prop type (routes through the viewer's shared
+     *  handlePropTypeChange). Surfaces the Props rail section in the tunnel. */
+    onPropChange?: (propType: PropType) => void;
     /**
      * Resolved viewer export entry. When the type is "tunnel" the caller MUST
      * thread `additionalLayersForBeat` + the all-false `overlayOverrides`
@@ -210,7 +215,8 @@
     // Composite ALL stage layers (props + trails + effect overlays), not just the
     // first canvas, so the saved thumbnail matches the live look.
     const poster = capturePosterFromContainer(artBodyEl);
-    const name = simplifyRepeatedWord(seq.word || "") || `Tunnel #${tunnelCollectionState.count + 1}`;
+    const simplifiedWord = simplifyRepeatedWord(seq.word || "");
+    const name = simplifiedWord || `Tunnel #${tunnelCollectionState.count + 1}`;
     try {
       await tunnelCollectionState.add({
         name,
@@ -218,6 +224,9 @@
         snapshot,
         poster,
         source: "viewer",
+        // Lineage stamp: link back to the raw source sequence (spec:
+        // 2026-07-12-art-in-library-design.md Unit 3).
+        ...(simplifiedWord ? { sourceWord: simplifiedWord, sourceSequenceId: seq.id } : {}),
       });
       toast.success("Tunnel saved to your collection");
     } catch (error) {
@@ -296,6 +305,7 @@
     {onPlaybackToggle}
     bluePropType={bluePropType ?? null}
     redPropType={redPropType ?? null}
+    {onPropChange}
     exporting={artType === "tunnel" && exportState.isExporting}
   />
 </div>

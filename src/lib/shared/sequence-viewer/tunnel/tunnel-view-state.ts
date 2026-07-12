@@ -18,7 +18,7 @@ export interface TunnelViewState {
    *  spectrum; off = layers inherit the base/preset colors. */
   spectrum: boolean;
   /** Active rail section in the Art settings panel. */
-  section: "tunnel" | "speed" | "effects" | "effort" | "playback";
+  section: "tunnel" | "props" | "speed" | "effects" | "effort" | "playback";
 }
 
 const STORAGE_KEY = "tka_tunnel_view_state";
@@ -108,6 +108,7 @@ export function loadTunnelViewState(): TunnelViewState {
     // A stored "appearance" (the retired Cast tab) falls through to "tunnel".
     const section =
       p.section === "tunnel" ||
+      p.section === "props" ||
       p.section === "speed" ||
       p.section === "effects" ||
       p.section === "effort" ||

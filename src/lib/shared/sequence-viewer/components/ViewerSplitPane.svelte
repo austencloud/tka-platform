@@ -98,6 +98,9 @@
     renderMode?: '2d' | '3d';
     bpm?: number;
     onBpmChange?: (bpm: number) => void;
+    /** Change the prop type from the tunnel/mandala Props rail. Threaded down to
+     *  ArtPane → ArtSettingsPanel. */
+    onPropChange?: (propType: import("$lib/shared/pictograph/prop/domain/enums/prop-type").PropType) => void;
     onRenderProgress?: (loaded: number, total: number) => void;
     onFocusPane: (pane: "animation" | "image") => void;
     onUnfocusPane: () => void;
@@ -168,6 +171,7 @@
     layout,
     bpm = 60,
     onBpmChange = () => {},
+    onPropChange,
     onRenderProgress,
     onUnfocusPane,
     onStepClick,
@@ -566,6 +570,7 @@
           {onPlaybackModeChange}
           onPlaybackToggle={onPlaybackToggle ?? (() => {})}
           layout={layout.isMobile ? "bottom" : "sidebar"}
+          {onPropChange}
           {onArtExport}
         />
       </div>
@@ -584,6 +589,7 @@
           {onPlaybackModeChange}
           onPlaybackToggle={onPlaybackToggle ?? (() => {})}
           layout={layout.isMobile ? "bottom" : "sidebar"}
+          {onPropChange}
           {onArtExport}
         />
       </div>
@@ -727,6 +733,7 @@
             {onPlaybackModeChange}
             onPlaybackToggle={onPlaybackToggle ?? (() => {})}
             layout={layout.isMobile ? "bottom" : "sidebar"}
+            {onPropChange}
             {onArtExport}
           />
         </div>
@@ -745,6 +752,7 @@
             {onPlaybackModeChange}
             onPlaybackToggle={onPlaybackToggle ?? (() => {})}
             layout={layout.isMobile ? "bottom" : "sidebar"}
+            {onPropChange}
             {onArtExport}
           />
         </div>

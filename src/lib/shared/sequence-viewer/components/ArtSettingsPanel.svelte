@@ -26,6 +26,8 @@
   import PathShapePanel from "$lib/shared/animation-engine/components/settings-panels/PathShapePanel.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
+  import BentoPropGrid from "$lib/shared/settings/components/tabs/prop-type/BentoPropGrid.svelte";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import MandalaCategoryControl, {
     type MandalaCategory,
   } from "./mandala/MandalaCategoryControl.svelte";
@@ -54,7 +56,7 @@
 
   type ArtType = "mandala" | "tunnel";
   // Tunnel rail sections (own id union — not the Download panel's PillId).
-  type TunnelRailId = "tunnel" | "speed" | "effects" | "effort" | "playback";
+  type TunnelRailId = "tunnel" | "props" | "speed" | "effects" | "effort" | "playback";
   // Mandala rail sections — same ids + order as the bottom dock's category bar.
   type MandalaRailId = MandalaCategory;
 
@@ -77,6 +79,7 @@
     onPlaybackToggle = () => {},
     bluePropType = null,
     redPropType = null,
+    onPropChange,
     exporting = false,
   }: {
     sequence: SequenceData;
@@ -100,6 +103,10 @@
     onPlaybackToggle?: () => void;
     bluePropType?: string | null;
     redPropType?: string | null;
+    /** Change the tunnel's prop type (blue + red together, matching the 2D
+     *  Download panel's Props section). Routes through the viewer's shared
+     *  handlePropTypeChange so settings + URL params stay in sync. */
+    onPropChange?: (propType: PropType) => void;
     /** Freeze the rail while a tunnel export runs — changing look/spectrum
      *  mid-export would desync the live config from the offscreen engine's
      *  pre-loaded layer textures. Cancel lives on the canvas overlay, not here. */
@@ -107,14 +114,26 @@
   } = $props();
 
   // ── Tunnel rail ──
-  const tunnelRail: { id: TunnelRailId; icon?: string; label: string; accentColor?: string }[] = [
-    { id: "tunnel", icon: "fa-fan", label: "Tunnel" },
+  // Props tab only appears when a change handler is wired (the interactive viewer
+  // supplies it; static hosts like the QR landing don't). Mirrors the 2D Download
+  // panel, which likewise gates its Props pill on onPropChange.
+  const tunnelRail = $derived<
+    { id: TunnelRailId; icon?: string; label: string; accentColor?: string }[]
+  >([
+    { id: "tunnel", icon: "fa-shapes", label: "Look" },
+    ...(onPropChange ? [{ id: "props" as const, icon: "fa-paintbrush", label: "Props" }] : []),
     { id: "speed", icon: "fa-gauge-high", label: "Speed" },
     { id: "effects", icon: "fa-wand-magic-sparkles", label: "Effects" },
     // Effort uses an accent dot (no icon), matching the Download panel's Effort pill.
     { id: "effort", label: "Effort", accentColor: "#94a3b8" },
     { id: "playback", icon: "fa-play", label: "Playback" },
-  ];
+  ]);
+
+  // The active prop for the Props grid's highlight. Tunnel uses a single prop for
+  // both hands (like the 2D Download panel), so blue is the source of truth.
+  const selectedPropType = $derived<PropType>(
+    (bluePropType as PropType | null) ?? PropType.STAFF,
+  );
   // Active section lives on the controller so it persists with the rest of the
   // tunnel view state (load/save in TunnelViewController).
   const tunnelSection = $derived<TunnelRailId>(controller.section);
@@ -218,7 +237,7 @@
     return () => mq.removeEventListener("change", onChange);
   });
   // Track switch direction so sections fly in from the side the rail moved.
-  const tunnelOrder = tunnelRail.map((p) => p.id);
+  const tunnelOrder = $derived(tunnelRail.map((p) => p.id));
   let flyDir = $state(1);
   function selectTunnel(id: TunnelRailId): void {
     const prev = tunnelOrder.indexOf(tunnelSection);
@@ -524,6 +543,20 @@
 
       {#if controller.heavyLoad}
         <p class="warn">Dense stack ({controller.propCount} props): a heavy effect may drop frames on weaker devices.</p>
+      {/if}
+    </div>
+  {:else if id === "props"}
+    <!-- Prop selection — the same BentoPropGrid the 2D Download panel uses. The
+         chosen prop flows through the viewer's shared handlePropTypeChange, so it
+         updates both hands, settings, and the URL in lockstep with the 2D view. -->
+    <div class="section-pad props-pad">
+      {#if onPropChange}
+        <BentoPropGrid
+          {selectedPropType}
+          onSelect={onPropChange}
+          variant="inline"
+          flat={dense}
+        />
       {/if}
     </div>
   {:else if id === "speed"}
