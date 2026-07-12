@@ -83,28 +83,37 @@ async function pingAdmins(user: UserRecord, reason: string | null): Promise<void
 export const onAuthUserDeleted = functionsV1.auth
   .user()
   .onDelete(async (user: UserRecord) => {
-    let reason: string | null = null;
-    try {
-      const existing = await admin
-        .firestore()
-        .collection("accountDeletions")
-        .doc(user.uid)
-        .get();
-      reason = (existing.data()?.reason as string | undefined) ?? null;
-    } catch (err) {
-      functionsV1.logger.error(
-        "onAuthUserDeleted: failed to read pre-existing tombstone reason",
-        { uid: user.uid, err }
-      );
-    }
+    // Anonymous accounts (no linked provider) are deleted in bulk by the
+    // daily cleanupStaleAnonymousAccounts sweep. Tombstoning them is noise
+    // (no email/name to remember) and would ping admins once per swept
+    // account. Cascade cleanup below still runs — a guest can leave a
+    // users/{uid} subtree and a presence node behind.
+    const isAnonymous = !user.providerData || user.providerData.length === 0;
 
-    try {
-      await writeTombstone(user);
-    } catch (err) {
-      functionsV1.logger.error("onAuthUserDeleted: failed to write tombstone", {
-        uid: user.uid,
-        err,
-      });
+    let reason: string | null = null;
+    if (!isAnonymous) {
+      try {
+        const existing = await admin
+          .firestore()
+          .collection("accountDeletions")
+          .doc(user.uid)
+          .get();
+        reason = (existing.data()?.reason as string | undefined) ?? null;
+      } catch (err) {
+        functionsV1.logger.error(
+          "onAuthUserDeleted: failed to read pre-existing tombstone reason",
+          { uid: user.uid, err }
+        );
+      }
+
+      try {
+        await writeTombstone(user);
+      } catch (err) {
+        functionsV1.logger.error("onAuthUserDeleted: failed to write tombstone", {
+          uid: user.uid,
+          err,
+        });
+      }
     }
 
     try {
@@ -125,13 +134,15 @@ export const onAuthUserDeleted = functionsV1.auth
       });
     }
 
-    try {
-      await pingAdmins(user, reason);
-    } catch (err) {
-      functionsV1.logger.error("onAuthUserDeleted: failed to notify admins", {
-        uid: user.uid,
-        err,
-      });
+    if (!isAnonymous) {
+      try {
+        await pingAdmins(user, reason);
+      } catch (err) {
+        functionsV1.logger.error("onAuthUserDeleted: failed to notify admins", {
+          uid: user.uid,
+          err,
+        });
+      }
     }
 
     return null;
