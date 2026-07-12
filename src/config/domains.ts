@@ -42,7 +42,13 @@ const PUBLIC_PATH_PREFIXES = [
   "/shop",
   "/about",
   "/delete-account",
-  "/learn",
+  // Exact pillar-page paths only. A bare "/learn" prefix would also catch the
+  // Learn APP module (/learn/guide/*, served by the [...appPath] shell), which
+  // then boots in landing mode — no Firebase, no auth listener — so signed-in
+  // users see guest chips and popup sign-in completes with no UI reaction.
+  // Any future (public)/learn/* pillar page gets its own exact entry here.
+  "/learn/poi-choreography",
+  "/learn/staff-spinning-choreography",
   "/notation",
   "/privacy",
   "/render",
