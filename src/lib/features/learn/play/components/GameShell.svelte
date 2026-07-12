@@ -36,6 +36,7 @@ animations, exactly as the legacy quizzes did.
   import ValidNextGame from "../games/ValidNextGame.svelte";
   import PerformerWordGame from "../games/PerformerWordGame.svelte";
   import SpeedBlitzGame from "../games/SpeedBlitzGame.svelte";
+  import MandalaMatchGame from "../games/MandalaMatchGame.svelte";
 
   const session = getArcadeSession();
 
@@ -176,8 +177,7 @@ animations, exactly as the legacy quizzes did.
         {:else if playing.game.id === "speed-blitz"}
           <SpeedBlitzGame constraints={playing.level.constraints} />
         {:else if playing.game.id === "mandala-match"}
-          <!-- Task 9 replaces this branch body with MandalaMatchGame -->
-          <div class="coming-online">Mandala Match is coming online.</div>
+          <MandalaMatchGame constraints={playing.level.constraints} />
         {/if}
       </Crossfade>
     </div>
@@ -379,12 +379,4 @@ animations, exactly as the legacy quizzes did.
     position: relative;
   }
 
-  .coming-online {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: var(--theme-text-dim);
-    font-size: var(--font-size-base);
-  }
 </style>

@@ -92,6 +92,12 @@ export interface SequenceQuestionOptions {
   /** Soft filter: prefer sequences whose simplified word is this length;
    *  falls back to the unfiltered pool if fewer than 4 candidates match. */
   wordLength?: number;
+  /** Total answer options including the correct one (default 4). */
+  optionCount?: number;
+  /** Prefer distractor words that share more letters with the target word
+   *  (lookalikes), ranked by shared-letter count descending. Mandala Match's
+   *  "Lookalikes" level (3) is the only caller that sets this. */
+  similarDistractors?: boolean;
 }
 
 export async function generateSequenceToWordQuestion(
@@ -105,7 +111,11 @@ export async function generateSequenceToWordQuestion(
   const correctSequence = pickRandomSequence(options.wordLength);
   const correctWord = simplifyRepeatedWord(correctSequence.word);
 
-  const distractorWords = pickDistractorWords(correctSequence.word, 3);
+  const distractorWords = pickDistractorWords(
+    correctSequence.word,
+    (options.optionCount ?? 4) - 1,
+    options.similarDistractors ?? false
+  );
 
   const allWords = [correctWord, ...distractorWords];
   shuffleArray(allWords);
@@ -162,7 +172,11 @@ function pickRandomSequence(wordLength?: number): SequenceData {
   return candidates[Math.floor(Math.random() * candidates.length)]!;
 }
 
-function pickDistractorWords(correctRawWord: string, count: number): string[] {
+function pickDistractorWords(
+  correctRawWord: string,
+  count: number,
+  preferSimilar = false
+): string[] {
   const correctSimplified = simplifyRepeatedWord(correctRawWord);
   const uniqueWords = [
     ...new Set(
@@ -172,8 +186,33 @@ function pickDistractorWords(correctRawWord: string, count: number): string[] {
     ),
   ];
 
+  // Distinct-word guarantee preserved either way — uniqueWords is already
+  // deduped above. Shuffle first so a shared-letter-count tie doesn't always
+  // resolve to the same catalog order.
   shuffleArray(uniqueWords);
+
+  if (preferSimilar) {
+    uniqueWords.sort(
+      (a, b) => sharedLetterCount(b, correctSimplified) - sharedLetterCount(a, correctSimplified)
+    );
+  }
+
   return uniqueWords.slice(0, count);
+}
+
+/**
+ * Rough "how similar do these look" signal for the lookalike-distractor mode:
+ * count of distinct letters `a` shares with `b` (order-insensitive, each
+ * letter counted once). Not a TKA-domain claim — just a difficulty knob for
+ * ranking candidate distractor words.
+ */
+function sharedLetterCount(a: string, b: string): number {
+  const bLetters = new Set(b);
+  let count = 0;
+  for (const letter of new Set(a)) {
+    if (bLetters.has(letter)) count++;
+  }
+  return count;
 }
 
 function trackRecentWord(word: string): void {
