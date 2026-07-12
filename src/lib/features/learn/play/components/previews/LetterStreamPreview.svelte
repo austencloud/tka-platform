@@ -1,80 +1,90 @@
 <!--
-  LetterStreamPreview — hub-card preview for Speed Blitz.
-
-  Two rows of Kinetic Alphabet letters streaming leftward, the lower row
-  faster — the blitz promise ("the letters come faster") made literal. Each
-  row holds its run twice and slides -50% for a seamless marquee loop; a mask
-  fades the edges so letters materialize and vanish instead of clipping.
-  Transform-only keyframes. Reduced-motion shows the letters at rest.
+  Speed Blitz — hub preview. The letters ARE the game, so they're REAL now:
+  Kinetic Alphabet glyphs in the actual TKA Letters webfont, two marquee rows
+  streaming leftward with the lower row faster ("the letters come faster"
+  made literal), sized with container units so the stream fills the stage.
+  Transform-only marquee; [data-paused] and reduced-motion freeze it.
 -->
 <script lang="ts">
   let { accent }: { accent: string } = $props();
+
+  /* Doubled sets make the -50% translate loop seamless. Arbitrary letter
+     sample — visual, not a domain statement. */
+  const ROW_A = ["E", "G", "K", "M", "P", "S", "A", "C"];
+  const ROW_B = ["B", "D", "F", "J", "L", "N", "Q", "T"];
 </script>
 
-<div class="preview" style="--accent: {accent}">
-  <div class="row row-a">
-    <span class="run tka-font">A C E G K M P S</span>
-    <span class="run tka-font" aria-hidden="true">A C E G K M P S</span>
+<div class="stage" style="--accent: {accent}" aria-hidden="true">
+  <div class="row slow">
+    <div class="track">
+      {#each [...ROW_A, ...ROW_A] as letter, i (i)}
+        <span class="tka-font">{letter}</span>
+      {/each}
+    </div>
   </div>
-  <div class="row row-b">
-    <span class="run tka-font">B D F J L N Q T</span>
-    <span class="run tka-font" aria-hidden="true">B D F J L N Q T</span>
+  <div class="row fast">
+    <div class="track">
+      {#each [...ROW_B, ...ROW_B] as letter, i (i)}
+        <span class="tka-font">{letter}</span>
+      {/each}
+    </div>
   </div>
 </div>
 
 <style>
-  .preview {
+  .stage {
     position: absolute;
     inset: 0;
+    container-type: size;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 16px;
+    gap: 6cqh;
     overflow: hidden;
-    mask-image: linear-gradient(
-      90deg,
-      transparent,
-      black 14%,
-      black 86%,
-      transparent
-    );
   }
 
   .row {
-    display: flex;
-    width: max-content;
-    animation: stream 13s linear infinite;
-  }
-
-  .row-b {
-    animation-duration: 7.5s;
-    opacity: 0.65;
-  }
-
-  .run {
-    display: block;
-    padding-right: 28px;
+    overflow: hidden;
     white-space: nowrap;
-    font-size: 30px;
+  }
+
+  .track {
+    display: inline-flex;
+    gap: 7cqi;
+    padding-inline: 3.5cqi;
+    animation: stream var(--speed, 16s) linear infinite;
+    will-change: transform;
+  }
+
+  .row.slow {
+    --speed: 18s;
+  }
+
+  .row.fast {
+    --speed: 9s;
+  }
+
+  span {
+    font-family: "TKA Letters", var(--font-sans, sans-serif);
+    font-feature-settings: "liga" 1, "dlig" 1;
+    font-size: 30cqh;
     line-height: 1;
-    letter-spacing: 16px;
     color: var(--accent);
     text-shadow: 0 0 16px color-mix(in srgb, var(--accent) 45%, transparent);
+    opacity: 0.92;
   }
 
-  /* The row holds its run twice, so -50% is exactly one run width:
-     the loop restart lands on identical pixels. */
+  .row.fast span {
+    opacity: 0.62;
+  }
+
   @keyframes stream {
-    from {
-      transform: translateX(0);
-    }
-    to {
-      transform: translateX(-50%);
-    }
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .row {
+    .track {
       animation: none;
     }
   }

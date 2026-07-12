@@ -1,118 +1,153 @@
 <!--
-  SequenceFlowPreview — hub-card preview for What Comes Next (valid-next).
-
-  Two settled steps, then a dashed open slot with two candidates hovering
-  above and below it. Each candidate takes a turn sliding into the slot and
-  retreating — the game's question ("which pictograph can legally follow?")
-  told in pure shapes. Transform/opacity keyframes only. Reduced-motion shows
-  the resting question: filled, filled, open slot flanked by both candidates.
+  What Comes Next — hub preview. A real sequence-reading moment: two REAL
+  pictographs settled in a row, and the third slot auditioning two REAL
+  candidates (stacked, crossfading) until the accent ring lands. Same
+  PictographContainer + CSV data as the game itself. Pure CSS motion.
 -->
 <script lang="ts">
+  import { onMount } from "svelte";
+  import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import { loadPreviewPictographs } from "./preview-pictographs";
+
   let { accent }: { accent: string } = $props();
+
+  /* First two = the settled sequence; last two = the auditioning candidates. */
+  const LETTERS = ["C", "H", "M", "S"];
+  let pictos = $state<PictographData[]>([]);
+
+  onMount(() => {
+    loadPreviewPictographs(LETTERS).then((loaded) => {
+      pictos = loaded;
+    });
+  });
+
+  const settled = $derived(pictos.slice(0, 2));
+  const candidates = $derived(pictos.slice(2));
 </script>
 
-<div class="preview" style="--accent: {accent}">
-  <div class="row">
-    <span class="slot filled"></span>
-    <span class="slot filled"></span>
-    <span class="slot open">
-      <span class="candidate up"></span>
-      <span class="candidate down"></span>
-    </span>
-  </div>
+<div class="stage" style="--accent: {accent}" aria-hidden="true">
+  {#if pictos.length >= 3}
+    <div class="strip">
+      {#each settled as picto (String(picto.letter))}
+        <div class="tile">
+          <PictographContainer
+            pictographData={picto}
+            disableTransitions
+            showTKA={false}
+            showReversals={false}
+            showNonRadialPoints={false}
+            showTnD={false}
+            showElemental={false}
+            showPositions={false}
+            showHandPoints={false}
+          />
+        </div>
+      {/each}
+
+      <span class="arrow">→</span>
+
+      <div class="tile candidate-slot">
+        {#each candidates as picto, i (String(picto.letter))}
+          <div class="candidate" style="--cand: {i}">
+            <PictographContainer
+              pictographData={picto}
+              disableTransitions
+              showTKA={false}
+              showReversals={false}
+              showNonRadialPoints={false}
+              showTnD={false}
+              showElemental={false}
+              showPositions={false}
+              showHandPoints={false}
+            />
+          </div>
+        {/each}
+        <span class="ring"></span>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
-  .preview {
+  .stage {
     position: absolute;
     inset: 0;
-    display: grid;
-    place-items: center;
-  }
-
-  .row {
+    container-type: size;
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: center;
   }
 
-  .slot {
-    width: 36px;
-    height: 36px;
-    border-radius: 9px;
+  .strip {
+    display: flex;
+    align-items: center;
+    gap: 3.5cqi;
   }
 
-  .filled {
-    background: color-mix(in srgb, var(--accent) 22%, rgba(255, 255, 255, 0.05));
-    border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
-  }
-
-  .open {
+  .tile {
     position: relative;
-    border: 1.5px dashed color-mix(in srgb, var(--accent) 60%, transparent);
+    height: 58cqh;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(10, 10, 15, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
+  .arrow {
+    font-size: 16cqh;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
+  }
+
+  /* The open slot auditions two real candidates. */
   .candidate {
     position: absolute;
-    inset: 3px;
-    border-radius: 7px;
-    background: var(--accent);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent);
+    inset: 0;
+    opacity: 0;
+    animation: audition 6s ease-in-out infinite;
+    animation-delay: calc(var(--cand) * 3s);
   }
 
-  /* Base transforms double as the reduced-motion static frame: both
-     candidates visibly waiting above/below the open slot. */
-  .up {
-    transform: translateY(-26px) scale(0.85);
-    opacity: 0.55;
-    animation: offer-up 4.5s ease-in-out infinite;
+  .ring {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    opacity: 0;
+    animation: ring-land 6s linear infinite;
+    pointer-events: none;
   }
 
-  .down {
-    transform: translateY(26px) scale(0.85);
-    opacity: 0.55;
-    animation: offer-down 4.5s ease-in-out infinite;
+  @keyframes audition {
+    0% { opacity: 0; }
+    8% { opacity: 1; }
+    46% { opacity: 1; }
+    54% { opacity: 0; }
+    100% { opacity: 0; }
   }
 
-  @keyframes offer-up {
-    0%,
-    8% {
-      transform: translateY(-26px) scale(0.85);
-      opacity: 0.55;
-    }
-    18%,
-    32% {
-      transform: translateY(0) scale(1);
-      opacity: 1;
-    }
-    42%,
-    100% {
-      transform: translateY(-26px) scale(0.85);
-      opacity: 0.55;
-    }
-  }
-
-  @keyframes offer-down {
-    0%,
-    58% {
-      transform: translateY(26px) scale(0.85);
-      opacity: 0.55;
-    }
-    68%,
-    82% {
-      transform: translateY(0) scale(1);
-      opacity: 1;
-    }
-    92%,
-    100% {
-      transform: translateY(26px) scale(0.85);
-      opacity: 0.55;
-    }
+  /* Ring lands as each candidate settles, releases during the swap. */
+  @keyframes ring-land {
+    0%, 20% { opacity: 0; }
+    32%, 42% { opacity: 1; }
+    50%, 70% { opacity: 0; }
+    82%, 92% { opacity: 1; }
+    100% { opacity: 0; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .candidate {
+    .candidate,
+    .ring {
       animation: none;
+    }
+
+    .candidate[style*="--cand: 0"] {
+      opacity: 1;
+    }
+
+    .ring {
+      opacity: 1;
     }
   }
 </style>

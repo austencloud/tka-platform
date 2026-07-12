@@ -336,11 +336,22 @@
   }
 
   /* Large-display tier — the grid stays 3 columns; cards get more room to
-     grow into instead of the hub capping out at 1280px on a 4K monitor. */
+     grow into instead of the hub capping out at 1280px on a 4K monitor.
+     Gaps tighten and the trailing padding drops so hero + two full rows fit
+     a ~1000px-tall desktop viewport without scrolling. */
   @container (min-width: 1600px) {
     .hub-hero,
     .game-grid {
       max-width: 1680px;
+    }
+
+    .game-grid {
+      gap: clamp(14px, 1cqi, 22px);
+      padding-bottom: var(--spacing-md);
+    }
+
+    .hub-content {
+      gap: var(--spacing-md);
     }
 
     .hero-title {
@@ -355,7 +366,9 @@
   @container (min-width: 2000px) {
     .hub-hero,
     .game-grid {
-      max-width: 2200px;
+      /* 2000, not 2200: with 21/10 stages, three 650px cards + gaps is the
+         density where all six machines and the hero share one screen. */
+      max-width: 2000px;
     }
 
     .hero-title {

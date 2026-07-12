@@ -1,101 +1,116 @@
 <!--
-  PerformerPulsePreview — hub-card preview for Read the Performer.
-
-  A minimal stick-figure silhouette with two accent prop-tips orbiting it in
-  opposite directions — the game asks you to read a moving performer, so the
-  card shows exactly that. Orbits are the classic zero-size-pivot trick: a
-  0×0 wrapper centered on the figure rotates (its own center is the pivot)
-  and carries a translated dot. Transform-only. Reduced-motion freezes the
-  dots at rest beside the figure.
+  Read the Performer — hub preview. The props are the story, not the figure:
+  a dim, slim silhouette holds a short two-ended staff in each hand, and the
+  staff tips sweep blue/red trail arcs — the REAL motion palette
+  (mandala-constants, the same stroke colors the app's mandalas and motions
+  render with), not decorative colors. Staffs spin slowly (transform-only);
+  trails are stroked arcs with fading tails.
 -->
 <script lang="ts">
+  import {
+    DARK_MOTION_BLUE_STROKE,
+    DARK_MOTION_RED_STROKE,
+  } from "$lib/shared/mandala/domain/mandala-constants";
+
   let { accent }: { accent: string } = $props();
 </script>
 
-<div class="preview" style="--accent: {accent}">
-  <svg
-    class="figure"
-    viewBox="0 0 100 100"
-    fill="none"
-    stroke="currentColor"
-    stroke-width="3"
-    stroke-linecap="round"
-  >
-    <circle cx="50" cy="20" r="8" />
-    <path d="M50 28 L50 58" />
-    <path d="M50 38 L31 28 M50 38 L69 28" />
-    <path d="M50 58 L38 82 M50 58 L62 82" />
+<div class="stage" style="--accent: {accent}" aria-hidden="true">
+  <svg viewBox="0 0 200 125" preserveAspectRatio="xMidYMid meet">
+    <!-- dim figure: head, torso, legs — deliberately quiet -->
+    <g class="figure" stroke="rgba(255,255,255,0.28)" stroke-width="3" fill="none" stroke-linecap="round">
+      <circle cx="100" cy="34" r="9" />
+      <line x1="100" y1="43" x2="100" y2="82" />
+      <line x1="100" y1="82" x2="88" y2="112" />
+      <line x1="100" y1="82" x2="112" y2="112" />
+      <!-- arms out to the prop hands -->
+      <line x1="100" y1="52" x2="64" y2="62" />
+      <line x1="100" y1="52" x2="136" y2="62" />
+    </g>
+
+    <!-- blue hand: staff + tip trail, real motion blue -->
+    <g class="prop blue" style="--tip: {DARK_MOTION_BLUE_STROKE}">
+      <circle class="trail" cx="64" cy="62" r="26" />
+      <g class="staff">
+        <line x1="64" y1="36" x2="64" y2="88" />
+        <circle cx="64" cy="36" r="3.4" fill="var(--tip)" stroke="none" />
+        <circle cx="64" cy="88" r="3.4" fill="var(--tip)" stroke="none" />
+      </g>
+    </g>
+
+    <!-- red hand: staff + tip trail, real motion red, counter-rotating -->
+    <g class="prop red" style="--tip: {DARK_MOTION_RED_STROKE}">
+      <circle class="trail" cx="136" cy="62" r="26" />
+      <g class="staff">
+        <line x1="136" y1="36" x2="136" y2="88" />
+        <circle cx="136" cy="36" r="3.4" fill="var(--tip)" stroke="none" />
+        <circle cx="136" cy="88" r="3.4" fill="var(--tip)" stroke="none" />
+      </g>
+    </g>
   </svg>
-  <span class="orbit orbit-a"><span class="dot"></span></span>
-  <span class="orbit orbit-b"><span class="dot dot-b"></span></span>
 </div>
 
 <style>
-  .preview {
+  .stage {
     position: absolute;
     inset: 0;
-    display: grid;
-    place-items: center;
-    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .figure {
-    height: 74%;
-    opacity: 0.6;
+  svg {
+    width: 92%;
+    height: 92%;
   }
 
-  .orbit {
-    position: absolute;
-    left: 50%;
-    top: 48%;
-    width: 0;
-    height: 0;
-    animation: spin 4.2s linear infinite;
+  .prop line {
+    stroke: rgba(255, 255, 255, 0.55);
+    stroke-width: 3.2;
+    stroke-linecap: round;
   }
 
-  .orbit-b {
-    animation: spin-rev 6.4s linear infinite;
-  }
-
-  .dot {
-    position: absolute;
-    left: -5px;
-    top: -5px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: var(--accent);
-    box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 60%, transparent);
-    transform: translateX(40px);
-  }
-
-  .dot-b {
-    width: 8px;
-    height: 8px;
+  /* Tip trail: the circle the staff ends carve, drawn as a partial arc that
+     chases the spin. r=26 → circumference ≈ 163: one-third lit, two-thirds
+     gap, offset animated a full lap per staff revolution. */
+  .trail {
+    fill: none;
+    stroke: var(--tip);
+    stroke-width: 2.4;
+    stroke-linecap: round;
     opacity: 0.8;
-    transform: translateX(-31px);
+    stroke-dasharray: 55 110;
+    stroke-dashoffset: 0;
+    animation: trail-chase 3.2s linear infinite;
+  }
+
+  .staff {
+    animation: spin 3.2s linear infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .prop.red .staff {
+    animation-direction: reverse;
+  }
+
+  .prop.red .trail {
+    animation-direction: reverse;
   }
 
   @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
-  @keyframes spin-rev {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(-360deg);
-    }
+  @keyframes trail-chase {
+    from { stroke-dashoffset: 0; }
+    to { stroke-dashoffset: -165; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .orbit {
+    .staff,
+    .trail {
       animation: none;
     }
   }

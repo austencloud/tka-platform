@@ -1,116 +1,83 @@
 <!--
-  MandalaBloomPreview — hub-card preview for Mandala Match.
-
-  Concentric dashed rings counter-rotating at different speeds around a
-  center point, the whole group breathing — evokes a sequence mandala without
-  mounting the real SequenceMandala (too costly for a hub card, per the
-  plan). SVG dash patterns make the rotation visible; only transforms
-  animate. Reduced-motion shows the still rings.
+  Mandala Match — hub preview. What a sequence mandala actually is: smooth
+  overlapping stroked loci in the REAL motion palette (mandala-constants —
+  the exact stroke colors SequenceMandala renders with), slowly
+  counter-rotating around a shared center with a soft accent bloom. Replaces
+  the old dotted concentric rings, which read as generic sci-fi, not TKA.
 -->
 <script lang="ts">
+  import {
+    DARK_MOTION_BLUE_STROKE,
+    DARK_MOTION_RED_STROKE,
+  } from "$lib/shared/mandala/domain/mandala-constants";
+
   let { accent }: { accent: string } = $props();
 </script>
 
-<div class="preview" style="--accent: {accent}">
-  <svg viewBox="0 0 200 125" aria-hidden="true">
-    <g class="bloom">
-      <circle class="core" cx="100" cy="62.5" r="3" />
-      <circle class="ring r1" cx="100" cy="62.5" r="17" />
-      <circle class="ring r2" cx="100" cy="62.5" r="29" />
-      <circle class="ring r3" cx="100" cy="62.5" r="41" />
-      <circle class="ring r4" cx="100" cy="62.5" r="51" />
+<div class="stage" style="--accent: {accent}" aria-hidden="true">
+  <svg viewBox="0 0 120 120" preserveAspectRatio="xMidYMid meet">
+    <!-- soft accent bloom behind the figure -->
+    <circle cx="60" cy="60" r="30" class="bloom" />
+
+    <!-- blue locus pair: two offset circles orbiting the shared center,
+         the way a staff's two ends trace paired loops -->
+    <g class="locus blue" style="--stroke: {DARK_MOTION_BLUE_STROKE}">
+      <circle cx="60" cy="47" r="26" />
+      <circle cx="60" cy="73" r="26" />
+    </g>
+
+    <!-- red locus pair, counter-rotating -->
+    <g class="locus red" style="--stroke: {DARK_MOTION_RED_STROKE}">
+      <circle cx="47" cy="60" r="26" />
+      <circle cx="73" cy="60" r="26" />
     </g>
   </svg>
 </div>
 
 <style>
-  .preview {
+  .stage {
     position: absolute;
     inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   svg {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  .core {
-    fill: var(--accent);
-  }
-
-  .ring {
-    fill: none;
-    stroke: var(--accent);
-    transform-box: view-box;
-    transform-origin: 100px 62.5px;
-  }
-
-  .r1 {
-    stroke-width: 2;
-    stroke-dasharray: 6 8;
-    opacity: 0.8;
-    animation: spin 14s linear infinite;
-  }
-
-  .r2 {
-    stroke-width: 1.5;
-    stroke-dasharray: 2 10;
-    opacity: 0.55;
-    animation: spin-rev 22s linear infinite;
-  }
-
-  .r3 {
-    stroke-width: 2;
-    stroke-dasharray: 14 12;
-    opacity: 0.4;
-    animation: spin 30s linear infinite;
-  }
-
-  .r4 {
-    stroke-width: 1;
-    stroke-dasharray: 1 7;
-    opacity: 0.3;
-    animation: spin-rev 40s linear infinite;
+    height: 94%;
+    aspect-ratio: 1;
   }
 
   .bloom {
+    fill: color-mix(in srgb, var(--accent) 16%, transparent);
+    filter: blur(6px);
+  }
+
+  .locus circle {
+    fill: none;
+    stroke: var(--stroke);
+    stroke-width: 1.6;
+    opacity: 0.85;
+  }
+
+  .locus {
     transform-box: view-box;
-    transform-origin: 100px 62.5px;
-    animation: breathe 9s ease-in-out infinite alternate;
+    transform-origin: 50% 50%;
+    animation: turn 14s linear infinite;
   }
 
-  @keyframes spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
+  .locus.red {
+    animation-direction: reverse;
+    animation-duration: 18s;
   }
 
-  @keyframes spin-rev {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(-360deg);
-    }
-  }
-
-  @keyframes breathe {
-    from {
-      transform: scale(0.94);
-    }
-    to {
-      transform: scale(1.04);
-    }
+  @keyframes turn {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .ring,
-    .bloom {
+    .locus {
       animation: none;
     }
   }

@@ -192,6 +192,9 @@
     display: block;
     width: 100%;
     aspect-ratio: 16 / 10;
+    /* The stage is a size container so previews scale their contents with
+       cq units instead of fixed px — the fix for tiny art lost in a big cell. */
+    container-type: size;
     border-radius: var(--radius-2026-md, 14px);
     overflow: hidden;
     background:
@@ -299,6 +302,30 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
   }
 
+  /* Desktop density: 3-up rows must fit two-high in a ~1000px-tall viewport
+     (hero + 2 rows, no scroll), so the stage goes shorter as the hub widens.
+     16/10 is the phone/tablet shape; 2/1 → 21/10 keeps rows short enough at
+     3 columns. Queries resolve against the PlayHub inline-size container. */
+  @container (min-width: 1024px) {
+    .preview-stage {
+      aspect-ratio: 2 / 1;
+    }
+
+    .game-card {
+      contain-intrinsic-size: auto 330px;
+    }
+  }
+
+  @container (min-width: 1600px) {
+    .preview-stage {
+      aspect-ratio: 21 / 10;
+    }
+
+    .game-card {
+      contain-intrinsic-size: auto 380px;
+    }
+  }
+
   /* 4K-native tier — the card stops reading as a stretched phone card:
      interior breathing room grows and the ladder ring scales with it.
      transform:scale on the ring is deliberate (compositor-only, no reflow of
@@ -306,7 +333,14 @@
      size prop through. */
   @container (min-width: 2000px) {
     .game-card {
-      contain-intrinsic-size: auto 420px;
+      contain-intrinsic-size: auto 430px;
+    }
+
+    /* The interior padding below grows at this tier, so the stage flattens a
+       step further to keep hero + two rows inside a ~1000px-tall viewport:
+       621px-wide stage / 2.3 ≈ 270px tall → 432px card → 884px for two rows. */
+    .preview-stage {
+      aspect-ratio: 23 / 10;
     }
 
     .card-inner {
