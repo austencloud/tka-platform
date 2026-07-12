@@ -839,7 +839,7 @@ git commit -m "feat(create): buildLoopSpec + expanderMultiplier — UI component
 - Modify: the `GenerationOptions` type (declared where config-mapper imports it — follow the import)
 - Test: `tests/unit/services/generation-orchestrator-loopspec.test.ts` (create; mock the builder)
 
-- [ ] **Step 1: Write the failing test** — assert three behaviors without running a real build (inject a stub `SequenceBuilder` or spy on `build`):
+- [x] **Step 1: Write the failing test** — assert three behaviors without running a real build (inject a stub `SequenceBuilder` or spy on `build`):
 
 ```ts
 // 1. Seed solver: options.length 16 + spec {rot:2, mir:2, inv overlay:4}
@@ -853,9 +853,18 @@ git commit -m "feat(create): buildLoopSpec + expanderMultiplier — UI component
 
 Write it against the orchestrator's public `generateSequence(options)` with `loopSpecWire` set on options. Follow the existing test-mocking conventions in `tests/unit/services/` (look at neighboring orchestrator/service tests for the DI pattern; `GenerationOrchestrator` takes its variation provider via constructor — construct it directly with a stub provider and stub the `SequenceBuilder` module via `vi.mock("@tka/sequence-engine/generation")`).
 
-- [ ] **Step 2: Run to verify failure.**
+Actual test file: `tests/unit/services/generation-orchestrator-loopspec.test.ts` — 4 tests: seed-length solve + `loop.loopSpec` pass-through, `/divisible/` throw, `/too short/` throw, and a legacy-path (no `loopSpecWire`) control asserting byte-identical division + no `loop.loopSpec` key.
 
-- [ ] **Step 3: Implement**
+**Deviation (mechanical):** the mocked `SequenceBuilder` must be a `class`/`function`, not `vi.fn().mockImplementation(() => ({...}))` — the orchestrator calls it with `new SequenceBuilder(...)`, and a `mockImplementation` arrow function is not a valid constructor (`TypeError: ... is not a constructor`). Fixed by mocking a real `class SequenceBuilder { build(...args) { return buildMock(...args); } }` inside the `vi.mock` factory.
+
+- [x] **Step 2: Run to verify failure.**
+
+Run: `npx vitest run tests/unit/services/generation-orchestrator-loopspec.test.ts --config tests/config/vitest.config.ts`
+Expected: FAIL — `loopSpecWire`/`loopRhythm` not yet on `GenerationOptions`, orchestrator ignores `options.loopSpecWire` entirely.
+
+Actual: FAILED for the right reason once the constructor-mock issue above was fixed — the "solves seed length" test got `callArg.length === 8` (legacy `period`-based halved divide) instead of `4` (expanderMultiplier-based); the `/divisible/` and `/too short/` tests resolved instead of rejecting (no guards existed yet). The legacy-path control test passed immediately (nothing to change there), confirming it as a true regression control rather than a tautology.
+
+- [x] **Step 3: Implement**
 
 `GenerationOptions` gains `loopSpecWire?: LOOPSpecWire;` and `loopRhythm?: LoopRhythm;` (rhythm kept for provenance/UI echo). `uiConfigToGenerationOptions`: build it —
 
@@ -870,6 +879,8 @@ const loopSpecWire = uiConfig.loopEnabled && uiConfig.loopType
 ```
 
 (`componentsFromConfig` = parse `uiConfig.loopType` through the existing `parseLoopComponents`/`IMPLEMENTED_COMBOS` reverse mapping in loop-type-utils — add a small exported helper `componentsForLoopType(loopType): Set<LOOPComponent> | null` next to `IMPLEMENTED_COMBOS`.) `UIGenerationConfig` gains optional `inversionInterval?: 2 | 4` and `inversionMode?: "expand" | "overlay"` (P3 UI will set them; absent = today's behavior).
+
+**Deviation:** no new `componentsForLoopType` helper was added. `parseLoopComponents(loopType)` (already in `loop-type-utils.ts`, grepped per the executor brief's instruction to check first) IS `componentsForLoopType` — same signature shape (`LOOPType | string | null | undefined -> Set<LOOPComponent>`), same substring-parsing semantics against the same 6 primitives. Adding a second reverse-mapping function next to it would have been a duplicate, forbidden by `never-hand-roll.md`. `uiConfigToGenerationOptions` calls `parseLoopComponents(uiConfig.loopType)` directly as `componentsFromConfig`.
 
 `generation-orchestrator.ts` `generateCircularSequence`:
 
@@ -892,12 +903,18 @@ if (wire && hasExpandInversion && seedLength < 2) {
 
 (Clean up that `hasExpandInversion` expression to a readable helper — `specHasExpandInversion(wire)` in loop-type-utils, one Object.entries loop.)
 
-- [ ] **Step 4: Run tests** — new orchestrator test + `npx vitest run tests/unit/services --config tests/config/vitest.config.ts` green.
+Implemented `specHasExpandInversion(wire)` as `!!wire.blue?.inverted && wire.blue.inverted.mode !== "overlay"` (falls back to `wire.red`) rather than the plan's `Object.values(...).some((c, i) => Object.keys(...)[i] === "inverted" ...)` sketch — reads directly off the `inverted` key instead of index-matching parallel `Object.values`/`Object.keys` arrays (fragile if key order ever changed), same semantics.
 
-- [ ] **Step 5: Commit**
+`GenerationOptions` (`generate-models.ts`) gained `loopSpecWire?: LOOPSpecWire` and `loopRhythm?: LoopRhythm` (the latter via `import type { LoopRhythm } from "$lib/shared/create/services/loop-type-utils"` — type-only, erased at compile time, so it does not create a runtime cycle with `loop-type-utils.ts`'s existing `import { LOOPComponent } from "...generate-models"`).
+
+- [x] **Step 4: Run tests** — new orchestrator test + `npx vitest run tests/unit/services --config tests/config/vitest.config.ts` green.
+
+Actual: `generation-orchestrator-loopspec.test.ts` 4/4 passed. Full `tests/unit/services` suite: **10 files / 85 tests passed** (0 failed). Pre-existing unrelated stderr noise in `DeviceIdService.test.ts` (Firestore mock warning) and `SequenceHydrator.test.ts` (jsdom has no IndexedDB, CSV fetch fails in node) — both tests still pass; this is pre-existing test-environment noise, not a regression from this task.
+
+- [x] **Step 5: Commit**
 
 ```bash
-git commit -m "feat(create): generation solves seed length from expander multiplier and passes loopSpec to the builder" -- src/lib/shared/create/utils/config-mapper.ts src/lib/shared/create/services/generation-orchestrator.ts tests/unit/services/generation-orchestrator-loopspec.test.ts <plus the GenerationOptions/UIGenerationConfig type files touched>
+git commit -m "feat(create): generation solves seed length from expander multiplier and passes loopSpec to the builder" -- src/lib/shared/create/utils/config-mapper.ts src/lib/shared/create/services/generation-orchestrator.ts src/lib/shared/create/services/loop-type-utils.ts src/lib/shared/foundation/domain/models/generation/generate-models.ts tests/unit/services/generation-orchestrator-loopspec.test.ts tests/unit/services/loop-type-utils.test.ts
 ```
 
 ---

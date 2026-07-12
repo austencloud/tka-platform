@@ -19,6 +19,7 @@ import type {
 import { DifficultyLevel as DifficultyEnum, PropContinuity } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { LOOPType, ROTATED_LOOP_TYPES } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
+import { buildLoopSpec, parseLoopComponents, type LoopRhythm } from "$lib/shared/create/services/loop-type-utils";
 
 /**
  * Map difficulty level number to DifficultyLevel enum
@@ -69,6 +70,11 @@ export interface UIGenerationConfig {
   period: string; // "halved" | "quartered"
   loopType: string; // LOOP type when loopEnabled=true
 
+  // Per-component rhythm overrides (P3 UI sets these; absent = today's
+  // behavior — rotation at `period`'s interval, inversion halved, expand mode).
+  inversionInterval?: 2 | 4;
+  inversionMode?: "expand" | "overlay";
+
   // 3-axis constraint system (replaces binary propContinuity)
   constraintPreset: "smooth" | "mixed" | "choppy"; // Prop reversal frequency
   handPathMode: "smooth" | "mixed" | "choppy"; // Hand path reversal frequency
@@ -110,6 +116,22 @@ export function uiConfigToGenerationOptions(
   // When loop is enabled, use the circular generation pipeline; otherwise freeform
   const effectiveMode = uiConfig.loopEnabled ? "circular" : "freeform";
 
+  // Compositional wire-form spec: only built when a loop is active AND a
+  // loopType is chosen. `buildLoopSpec` returns null for combos with no
+  // implemented mapping (same gate as generateLOOPType) — those fall back to
+  // the legacy type+period path in the orchestrator, unchanged.
+  const loopRhythm: LoopRhythm | undefined = uiConfig.loopEnabled
+    ? {
+        rotationInterval: period === "quartered" ? 4 : 2,
+        inversionInterval: uiConfig.inversionInterval ?? 2,
+        inversionMode: uiConfig.inversionMode ?? "expand",
+      }
+    : undefined;
+  const loopSpecWire =
+    uiConfig.loopEnabled && uiConfig.loopType && loopRhythm
+      ? (buildLoopSpec(parseLoopComponents(uiConfig.loopType), loopRhythm) ?? undefined)
+      : undefined;
+
   const options: GenerationOptions = {
     length: uiConfig.length,
     gridMode: uiConfig.gridMode,
@@ -127,6 +149,8 @@ export function uiConfigToGenerationOptions(
     loopType: uiConfig.loopType
       ? (uiConfig.loopType as GenerationOptions["loopType"])
       : undefined,
+    loopSpecWire,
+    loopRhythm,
 
     // 3-axis constraint system
     constraintPreset: uiConfig.constraintPreset ?? undefined,
@@ -178,5 +202,7 @@ export function generationOptionsToUIConfig(
     motionTypeFilter: options.motionTypeFilter ?? null,
     durationTemplateId: null,
     spellTargetLength: null,
+    inversionInterval: options.loopRhythm?.inversionInterval,
+    inversionMode: options.loopRhythm?.inversionMode,
   };
 }

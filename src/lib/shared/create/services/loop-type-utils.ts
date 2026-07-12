@@ -209,6 +209,22 @@ export function expanderMultiplier(wire: LOOPSpecWire): number {
 }
 
 /**
+ * True when the wire spec declares INVERTED in "expand" mode (mode absent or
+ * "expand") rather than "overlay". Used by the orchestrator's degenerate-seed
+ * guard: an expand-mode inversion multiplies length by its period, so a
+ * 1-beat half-seed carries no visible pro/anti flip for it to invert (a
+ * single beat is dash-only at the seed boundary). Overlay-mode inversion
+ * applies in place over the fully-expanded sequence and has no such
+ * constraint, so it does not trigger the guard.
+ */
+export function specHasExpandInversion(wire: LOOPSpecWire): boolean {
+  const prop = wire.blue ?? wire.red;
+  if (!prop) return false;
+  const inverted = prop.inverted;
+  return !!inverted && inverted.mode !== "overlay";
+}
+
+/**
  * Format a LOOPType string for human-readable UI display.
  */
 export function formatLOOPTypeForDisplay(loopType: LOOPType | string): string {

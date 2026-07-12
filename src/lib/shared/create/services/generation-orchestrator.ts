@@ -21,7 +21,7 @@ import type { sequenceMetadataManager as SequenceMetadataManagerSingleton } from
 type SequenceMetadataManager = typeof SequenceMetadataManagerSingleton;
 import { SequenceBuilder } from "@tka/sequence-engine/generation";
 import type { ConstraintOptions } from "@tka/sequence-engine/generation";
-import { LOOPType, Period as EnginePeriod } from "@tka/sequence-engine/loop";
+import { LOOPType, Period as EnginePeriod, loopSpecFromWire } from "@tka/sequence-engine/loop";
 import {
   TransitionGraph as EngineTransitionGraph,
   setLetterTransitionGraph,
@@ -29,6 +29,7 @@ import {
 } from "@tka/sequence-engine";
 import { BrowserDataProvider } from "$lib/shared/sequence-engine/data/browser-data-provider";
 import { letterQueryHandler as globalLetterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
+import { expanderMultiplier, specHasExpandInversion } from "$lib/shared/create/services/loop-type-utils";
 
 // The engine's word-based generation path reads from a global transition
 // graph singleton (mirrors mcp-server/src/shared/server-context.ts which
@@ -127,13 +128,34 @@ export class GenerationOrchestrator {
     const engineLoopType = this.mapLoopTypeToEngine(options.loopType);
     const period = this.mapPeriod(options.period);
 
-    // The UI's length is the TOTAL output length. The seed is a fraction:
-    // halved = length / 2, quartered = length / 4. The LOOP executor
-    // extends the seed back to the full length.
-    // For word-based spell-LOOP, the word itself is the seed - no length
+    // The UI's length is the TOTAL output length. The seed is a fraction —
+    // the engine extends it back to the full length. Legacy path (no
+    // loopSpecWire): halved = length / 2, quartered = length / 4. Spec path:
+    // the fraction is the spec's expanderMultiplier (per-component periods,
+    // fused-stage rules — see loop-type-utils.expanderMultiplier). For
+    // word-based spell-LOOP, the word itself is the seed - no length
     // division is applied because the user's word IS the pattern.
-    const periodMultiplier = period === EnginePeriod.QUARTERED ? 4 : 2;
-    const seedLength = Math.max(1, Math.floor(options.length / periodMultiplier));
+    const wire = options.loopSpecWire;
+    const multiplier = wire
+      ? expanderMultiplier(wire)
+      : period === EnginePeriod.QUARTERED
+        ? 4
+        : 2;
+
+    if (!options.word && wire && options.length % multiplier !== 0) {
+      throw new Error(
+        `A ${options.length}-beat sequence is not divisible by this combo's expansion (${multiplier}).`
+      );
+    }
+
+    const seedLength = Math.max(1, Math.floor(options.length / multiplier));
+
+    if (!options.word && wire && specHasExpandInversion(wire) && seedLength < 2) {
+      throw new Error(
+        "Seed too short for an inversion combo — one-beat half seeds are dash-only, so inversion would be invisible."
+      );
+    }
+
     const result = builder.build({
       ...(options.word ? { word: options.word } : { length: seedLength }),
       gridMode: String(options.gridMode),
@@ -150,6 +172,7 @@ export class GenerationOrchestrator {
         type: engineLoopType,
         period,
         useTargetedGeneration: true,
+        ...(wire ? { loopSpec: loopSpecFromWire(wire) } : {}),
       },
     });
 

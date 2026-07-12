@@ -12,7 +12,8 @@ import type {
   LOOPType,
   Period,
 } from "./circular-models";
-import type { LOOPSpec } from "@tka/sequence-engine/loop";
+import type { LOOPSpec, LOOPSpecWire } from "@tka/sequence-engine/loop";
+import type { LoopRhythm } from "$lib/shared/create/services/loop-type-utils";
 
 // Re-export LOOPType for convenience
 export type { LOOPType };
@@ -44,6 +45,16 @@ export interface GenerationOptions {
   period?: Period | undefined; // For circular generation
   loopType?: LOOPType | undefined; // LOOP type for circular generation
   loopSpec?: LOOPSpec | undefined;
+  /**
+   * Compositional wire-form LOOP spec (per-component periods + overlay mode).
+   * When present, the orchestrator derives the seed length from
+   * `expanderMultiplier` instead of the legacy halved/quartered period split,
+   * and threads the runtime form through to the engine at `loop.loopSpec`.
+   * Absent ⇒ byte-identical legacy behavior.
+   */
+  loopSpecWire?: LOOPSpecWire | undefined;
+  /** Rhythm the UI used to build `loopSpecWire` — kept for provenance/UI echo. */
+  loopRhythm?: LoopRhythm | undefined;
 
   // 3-axis constraint system
   constraintPreset?: "smooth" | "mixed" | "choppy" | undefined;

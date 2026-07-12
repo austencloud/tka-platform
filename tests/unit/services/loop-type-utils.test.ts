@@ -6,6 +6,7 @@ import {
   canExtendCombo,
   buildLoopSpec,
   expanderMultiplier,
+  specHasExpandInversion,
 } from "$lib/shared/create/services/loop-type-utils";
 import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
@@ -168,5 +169,25 @@ describe("buildLoopSpec", () => {
       rotationInterval: 2, inversionInterval: 4,
     })!;
     expect(expanderMultiplier(triple)).toBe(16);
+  });
+});
+
+describe("specHasExpandInversion", () => {
+  it("is true when INVERTED is present with no mode (default expand)", () => {
+    const wire = buildLoopSpec(new Set([C.ROTATED, C.INVERTED]), { rotationInterval: 2 })!;
+    expect(specHasExpandInversion(wire)).toBe(true);
+  });
+
+  it("is false when INVERTED is overlay mode", () => {
+    const wire = buildLoopSpec(new Set([C.MIRRORED, C.INVERTED]), {
+      inversionInterval: 4,
+      inversionMode: "overlay",
+    })!;
+    expect(specHasExpandInversion(wire)).toBe(false);
+  });
+
+  it("is false when INVERTED is absent entirely", () => {
+    const wire = buildLoopSpec(new Set([C.ROTATED, C.MIRRORED]), { rotationInterval: 2 })!;
+    expect(specHasExpandInversion(wire)).toBe(false);
   });
 });
