@@ -68,6 +68,9 @@ export class LOOPExecutorSelector {
       case LOOPType.MIRRORED_INVERTED_ROTATED:
         return this.mirroredRotatedInvertedExecutor;
 
+      case LOOPType.MIRRORED_SWAPPED_INVERTED:
+        return this.mirroredSwappedInvertedExecutor;
+
       case LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED:
         return this.mirroredRotatedInvertedSwappedExecutor;
 
@@ -80,7 +83,7 @@ export class LOOPExecutorSelector {
             `Currently supported: ROTATED, MIRRORED, FLIPPED, SWAPPED, ` +
             `INVERTED, MIRRORED_SWAPPED, SWAPPED_INVERTED, MIRRORED_INVERTED, ` +
             `ROTATED_SWAPPED, ROTATED_INVERTED, MIRRORED_ROTATED, MIRRORED_INVERTED_ROTATED, ` +
-            `MIRRORED_ROTATED_INVERTED_SWAPPED, REWOUND`
+            `MIRRORED_SWAPPED_INVERTED, MIRRORED_ROTATED_INVERTED_SWAPPED, REWOUND`
         );
     }
   }
@@ -102,6 +105,7 @@ export class LOOPExecutorSelector {
       LOOPType.ROTATED_INVERTED,
       LOOPType.MIRRORED_ROTATED,
       LOOPType.MIRRORED_INVERTED_ROTATED,
+      LOOPType.MIRRORED_SWAPPED_INVERTED,
       LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
       LOOPType.STRICT_REWOUND,
     ].includes(loopType);

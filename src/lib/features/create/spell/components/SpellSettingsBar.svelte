@@ -155,6 +155,7 @@ Container-aware responsive design (2-tier):
   function isRoundTripValid(components: Set<LOOPComponent>): boolean {
     if (components.size === 0) return true;
     const type = generateLOOPType(components);
+    if (type === null) return false; // no implemented LOOP type for this combo
     const parsed = parseLoopComponents(type);
     if (parsed.size !== components.size) return false;
     for (const c of components) {
@@ -178,10 +179,9 @@ Container-aware responsive design (2-tier):
       onPreferenceChange("selectedLOOPType", null);
       isValidLoopCombo = true;
     } else {
-      const valid = isRoundTripValid(newSet);
-      isValidLoopCombo = valid;
-      if (valid) {
-        const newType = generateLOOPType(newSet);
+      const newType = isRoundTripValid(newSet) ? generateLOOPType(newSet) : null;
+      isValidLoopCombo = newType !== null;
+      if (newType !== null) {
         onPreferenceChange("makeCircular", true);
         onPreferenceChange("selectedLOOPType", newType);
       }

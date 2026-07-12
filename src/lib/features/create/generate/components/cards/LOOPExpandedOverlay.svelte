@@ -7,9 +7,15 @@ Animates forward in z-axis and expands to fill the container space
   import { scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
-  import { generateLOOPType } from "$lib/shared/create/services/loop-type-utils";
+  import {
+    generateLOOPType,
+    canExtendCombo,
+  } from "$lib/shared/create/services/loop-type-utils";
   import { onMount } from "svelte";
-  import { LOOPComponent } from "$lib/features/create/generate/shared/domain/constants/loop-components";
+  import {
+    LOOP_COMPONENTS,
+    LOOPComponent,
+  } from "$lib/features/create/generate/shared/domain/constants/loop-components";
   import { generateExplanationText } from "$lib/features/create/generate/shared/services/loop-explanation-text-generator";
   import { LOOPType } from "../../circular/domain/models/circular-models";
   import LOOPComponentGrid from "../modals/LOOPComponentGrid.svelte";
@@ -49,8 +55,28 @@ Animates forward in z-axis and expands to fill the container space
     generateExplanationText(localSelectedComponents)
   );
 
-  // All component combinations are now implemented
-  const isImplemented = $derived(true);
+  // Does the current selection map to a real, generatable LOOP type?
+  // (Intermediate states on the way to a bigger combo can be unmapped —
+  // those disable Apply but keep compatible components selectable.)
+  const isImplemented = $derived(
+    generateLOOPType(localSelectedComponents) !== null
+  );
+
+  // Combo mode gating: a component is out of play when no implemented combo
+  // contains it together with everything already selected. Selected
+  // components always stay enabled so they can be deselected.
+  const disabledComponents = $derived.by(() => {
+    if (!isMultiSelectMode) return null;
+    const disabled = new Set<LOOPComponent>();
+    for (const info of LOOP_COMPONENTS) {
+      const component = info.component as LOOPComponent;
+      if (localSelectedComponents.has(component)) continue;
+      if (!canExtendCombo(localSelectedComponents, component)) {
+        disabled.add(component);
+      }
+    }
+    return disabled;
+  });
 
   // Derive selection count
   const selectionCount = $derived(localSelectedComponents.size);
@@ -58,7 +84,7 @@ Animates forward in z-axis and expands to fill the container space
   // Button text for combo mode
   const buttonText = $derived.by(() => {
     if (selectionCount === 0) return "Select Components";
-    if (!isImplemented) return "Coming Soon!";
+    if (!isImplemented) return "Combo Not Supported";
     if (selectionCount === 1) {
       const component = Array.from(localSelectedComponents)[0] as LOOPComponent;
       const formatted = component.charAt(0) + component.slice(1).toLowerCase();
@@ -96,12 +122,13 @@ Animates forward in z-axis and expands to fill the container space
     if (selectionCount === 0) return;
 
     const newLoopType = generateLOOPType(localSelectedComponents);
+    if (newLoopType === null) return; // unmapped combo — Apply is disabled anyway
     onChange(newLoopType);
     onClose();
   }
 
   function handleConfirm() {
-    if (selectionCount === 0) return;
+    if (selectionCount === 0 || !isImplemented) return;
     hapticService?.trigger("selection");
     applyAndClose();
   }
@@ -167,6 +194,7 @@ Animates forward in z-axis and expands to fill the container space
   <div class="grid-container">
     <LOOPComponentGrid
       selectedComponents={localSelectedComponents}
+      {disabledComponents}
       {isMultiSelectMode}
       {layout}
       onToggleComponent={handleToggle}
@@ -179,7 +207,7 @@ Animates forward in z-axis and expands to fill the container space
       <p class="explanation-text">{explanationText}</p>
       {#if !isImplemented && selectionCount > 0}
         <div class="coming-soon-badge">
-          This combination is under development
+          No LOOP type matches this exact combination — add or remove a component
         </div>
       {/if}
     </div>
@@ -187,9 +215,9 @@ Animates forward in z-axis and expands to fill the container space
     <!-- Apply button -->
     <button
       class="apply-button"
-      class:disabled={selectionCount === 0}
+      class:disabled={selectionCount === 0 || !isImplemented}
       onclick={handleConfirm}
-      disabled={selectionCount === 0}
+      disabled={selectionCount === 0 || !isImplemented}
     >
       {buttonText}
     </button>

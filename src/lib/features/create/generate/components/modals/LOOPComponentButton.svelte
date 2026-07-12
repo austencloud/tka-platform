@@ -11,12 +11,14 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     componentInfo,
     isMultiSelectMode = false,
     isSelected = false,
+    isDisabled = false,
     showDescription = false,
     onClick,
   } = $props<{
     componentInfo: LOOPComponentInfo;
     isMultiSelectMode?: boolean;
     isSelected?: boolean;
+    isDisabled?: boolean;
     showDescription?: boolean;
     onClick: () => void;
   }>();
@@ -34,8 +36,13 @@ Shows description in Quick Apply mode, compact in Build Combo mode
   class:multi-select={isMultiSelectMode}
   class:with-description={showDescription}
   onclick={onClick}
+  disabled={isDisabled}
   style="--component-color: {color};"
-  aria-label="{label} - {description} - {isSelected ? 'selected' : 'not selected'}"
+  aria-label="{label} - {description} - {isDisabled
+    ? 'not compatible with current selection'
+    : isSelected
+      ? 'selected'
+      : 'not selected'}"
 >
   <div class="button-content">
     <div class="loop-component-icon">
@@ -89,6 +96,20 @@ Shows description in Quick Apply mode, compact in Build Combo mode
   .loop-component-button:focus-visible {
     outline: 2px solid var(--theme-accent, rgba(139, 92, 246, 0.8));
     outline-offset: 2px;
+  }
+
+  /* No implemented combo contains this component alongside the current
+     selection — visibly out of play, no hover invitation. */
+  .loop-component-button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    filter: saturate(0.3);
+  }
+
+  .loop-component-button:disabled:hover {
+    background: color-mix(in srgb, var(--component-color) 15%, rgba(30, 30, 50, 0.9));
+    border-color: color-mix(in srgb, var(--component-color) 50%, transparent);
+    transform: none;
   }
 
   /* Strong, unmistakable selected state. Border stays 2px (no layout shift);

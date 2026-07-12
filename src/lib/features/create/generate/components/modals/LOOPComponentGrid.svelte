@@ -12,11 +12,14 @@ LOOPComponentGrid.svelte - Layout for LOOP component selection buttons
 
   let {
     selectedComponents,
+    disabledComponents = null,
     isMultiSelectMode = false,
     layout = "grid",
     onToggleComponent,
   } = $props<{
     selectedComponents: Set<LOOPComponent>;
+    /** Components that can't join the current selection (combo mode gating). */
+    disabledComponents?: Set<LOOPComponent> | null;
     isMultiSelectMode?: boolean;
     layout?: "grid" | "list";
     onToggleComponent: (component: LOOPComponent) => void;
@@ -36,6 +39,7 @@ LOOPComponentGrid.svelte - Layout for LOOP component selection buttons
       {componentInfo}
       {isMultiSelectMode}
       isSelected={selectedComponents.has(componentInfo.component)}
+      isDisabled={disabledComponents?.has(componentInfo.component) ?? false}
       showDescription={showDescriptions}
       onClick={() => onToggleComponent(componentInfo.component)}
     />

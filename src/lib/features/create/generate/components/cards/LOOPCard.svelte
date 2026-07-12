@@ -74,6 +74,7 @@ Always opens selector panel when clicked
         [LOOPType.ROTATED_SWAPPED]: t("generator_loop_rotated_swapped"),
         [LOOPType.MIRRORED_ROTATED]: t("generator_loop_mirrored_rotated"),
         [LOOPType.MIRRORED_INVERTED_ROTATED]: t("generator_loop_mir_comp_rot"),
+        [LOOPType.MIRRORED_SWAPPED_INVERTED]: t("generator_loop_mirrored_swapped") + " + " + t("generator_loop_inverted"),
         [LOOPType.MIRRORED_ROTATED_SWAPPED]: t("generator_loop_mirrored_rotated") + " + " + t("generator_loop_swapped"),
         [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED]: t("generator_loop_all_four"),
         [LOOPType.STRICT_REWOUND]: t("generator_loop_rewound"),
