@@ -145,7 +145,8 @@
       <p>
         Start with the <a href="/learn/guide">guide</a>: it introduces all the concepts.
         Then the <a href="/shop/choreography-cards">cards</a>: accessible ways to use those
-        concepts. Then the app: everything else you might possibly ever want to do.
+        concepts. Then <a href="/composer">Flow Arts Composer</a>: everything else you
+        might possibly ever want to do.
       </p>
     </div>
   </section>

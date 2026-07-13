@@ -1,0 +1,1337 @@
+{
+ "id": "composer-demo",
+ "name": "CΨΩXCΨΩXCΨΩXCΨΩX",
+ "word": "CΨΩXCΨΩX",
+ "steps": [
+  {
+   "isBeat": true,
+   "id": "2a62085f-2c71-4c86-8ccb-2100ef66e3fa",
+   "letter": "C",
+   "motions": {
+    "blue": {
+     "motionType": "anti",
+     "rotationDirection": "ccw",
+     "startLocation": "s",
+     "endLocation": "w",
+     "turns": 0,
+     "startOrientation": "in",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "sw",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 290,
+      "positionY": 660,
+      "rotationAngle": 180,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "pro",
+     "rotationDirection": "cw",
+     "startLocation": "n",
+     "endLocation": "e",
+     "turns": 1,
+     "startOrientation": "in",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "ne",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 590,
+      "positionY": 310,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 1,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  },
+  {
+   "isBeat": true,
+   "id": "56385910-78fb-4128-99c2-9c381937f800",
+   "letter": "Ψ",
+   "motions": {
+    "blue": {
+     "motionType": "dash",
+     "rotationDirection": "noRotation",
+     "startLocation": "w",
+     "endLocation": "e",
+     "turns": 0,
+     "startOrientation": "out",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "n",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 475,
+      "positionY": 325,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "static",
+     "rotationDirection": "noRotation",
+     "startLocation": "e",
+     "endLocation": "e",
+     "turns": 0,
+     "startOrientation": "out",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "e",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 625,
+      "positionY": 475,
+      "rotationAngle": 270,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 2,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  },
+  {
+   "isBeat": true,
+   "id": "15fa27d0-12fa-4261-a4ce-c72a6afa88d0",
+   "letter": "Ω",
+   "motions": {
+    "blue": {
+     "motionType": "anti",
+     "rotationDirection": "ccw",
+     "startLocation": "e",
+     "endLocation": "s",
+     "turns": 0,
+     "startOrientation": "in",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "se",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 660,
+      "positionY": 660,
+      "rotationAngle": 90,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "static",
+     "rotationDirection": "cw",
+     "startLocation": "e",
+     "endLocation": "e",
+     "turns": 1,
+     "startOrientation": "out",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "e",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 625,
+      "positionY": 405,
+      "rotationAngle": 270,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 3,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  },
+  {
+   "isBeat": true,
+   "id": "4a873982-8b2f-44bb-96ab-f9ea7f5037a1",
+   "letter": "X",
+   "motions": {
+    "blue": {
+     "motionType": "anti",
+     "rotationDirection": "ccw",
+     "startLocation": "s",
+     "endLocation": "w",
+     "turns": 0,
+     "startOrientation": "out",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "sw",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 290,
+      "positionY": 660,
+      "rotationAngle": 180,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "static",
+     "rotationDirection": "cw",
+     "startLocation": "e",
+     "endLocation": "e",
+     "turns": 1,
+     "startOrientation": "in",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "e",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 625,
+      "positionY": 545,
+      "rotationAngle": 90,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 4,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  },
+  {
+   "isBeat": true,
+   "id": "beat-5",
+   "letter": "C",
+   "motions": {
+    "blue": {
+     "motionType": "anti",
+     "rotationDirection": "ccw",
+     "startLocation": "w",
+     "endLocation": "n",
+     "turns": 0,
+     "startOrientation": "in",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "sw",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 290,
+      "positionY": 660,
+      "rotationAngle": 180,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "pro",
+     "rotationDirection": "cw",
+     "startLocation": "e",
+     "endLocation": "s",
+     "turns": 1,
+     "startOrientation": "out",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "ne",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 590,
+      "positionY": 310,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 5,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  },
+  {
+   "isBeat": true,
+   "id": "beat-6",
+   "letter": "Ψ",
+   "motions": {
+    "blue": {
+     "motionType": "dash",
+     "rotationDirection": "noRotation",
+     "startLocation": "n",
+     "endLocation": "s",
+     "turns": 0,
+     "startOrientation": "out",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "n",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 475,
+      "positionY": 325,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "static",
+     "rotationDirection": "noRotation",
+     "startLocation": "s",
+     "endLocation": "s",
+     "turns": 0,
+     "startOrientation": "in",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "e",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 625,
+      "positionY": 475,
+      "rotationAngle": 270,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 6,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  },
+  {
+   "isBeat": true,
+   "id": "beat-7",
+   "letter": "Ω",
+   "motions": {
+    "blue": {
+     "motionType": "anti",
+     "rotationDirection": "ccw",
+     "startLocation": "s",
+     "endLocation": "w",
+     "turns": 0,
+     "startOrientation": "in",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "se",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 660,
+      "positionY": 660,
+      "rotationAngle": 90,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "static",
+     "rotationDirection": "cw",
+     "startLocation": "s",
+     "endLocation": "s",
+     "turns": 1,
+     "startOrientation": "in",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "e",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 625,
+      "positionY": 405,
+      "rotationAngle": 270,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 7,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  },
+  {
+   "isBeat": true,
+   "id": "beat-8",
+   "letter": "X",
+   "motions": {
+    "blue": {
+     "motionType": "anti",
+     "rotationDirection": "ccw",
+     "startLocation": "w",
+     "endLocation": "n",
+     "turns": 0,
+     "startOrientation": "out",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "sw",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 290,
+      "positionY": 660,
+      "rotationAngle": 180,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "static",
+     "rotationDirection": "cw",
+     "startLocation": "s",
+     "endLocation": "s",
+     "turns": 1,
+     "startOrientation": "out",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "e",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 625,
+      "positionY": 545,
+      "rotationAngle": 90,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 8,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  },
+  {
+   "isBeat": true,
+   "id": "beat-9",
+   "letter": "C",
+   "motions": {
+    "blue": {
+     "motionType": "anti",
+     "rotationDirection": "ccw",
+     "startLocation": "n",
+     "endLocation": "e",
+     "turns": 0,
+     "startOrientation": "in",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "sw",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 290,
+      "positionY": 660,
+      "rotationAngle": 180,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "pro",
+     "rotationDirection": "cw",
+     "startLocation": "s",
+     "endLocation": "w",
+     "turns": 1,
+     "startOrientation": "in",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "ne",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 590,
+      "positionY": 310,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 9,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  },
+  {
+   "isBeat": true,
+   "id": "beat-10",
+   "letter": "Ψ",
+   "motions": {
+    "blue": {
+     "motionType": "dash",
+     "rotationDirection": "noRotation",
+     "startLocation": "e",
+     "endLocation": "w",
+     "turns": 0,
+     "startOrientation": "out",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "n",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 475,
+      "positionY": 325,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "static",
+     "rotationDirection": "noRotation",
+     "startLocation": "w",
+     "endLocation": "w",
+     "turns": 0,
+     "startOrientation": "out",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "e",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 625,
+      "positionY": 475,
+      "rotationAngle": 270,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 10,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  },
+  {
+   "isBeat": true,
+   "id": "beat-11",
+   "letter": "Ω",
+   "motions": {
+    "blue": {
+     "motionType": "anti",
+     "rotationDirection": "ccw",
+     "startLocation": "w",
+     "endLocation": "n",
+     "turns": 0,
+     "startOrientation": "in",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "se",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 660,
+      "positionY": 660,
+      "rotationAngle": 90,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "static",
+     "rotationDirection": "cw",
+     "startLocation": "w",
+     "endLocation": "w",
+     "turns": 1,
+     "startOrientation": "out",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "e",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 625,
+      "positionY": 405,
+      "rotationAngle": 270,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 11,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  },
+  {
+   "isBeat": true,
+   "id": "beat-12",
+   "letter": "X",
+   "motions": {
+    "blue": {
+     "motionType": "anti",
+     "rotationDirection": "ccw",
+     "startLocation": "n",
+     "endLocation": "e",
+     "turns": 0,
+     "startOrientation": "out",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "sw",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 290,
+      "positionY": 660,
+      "rotationAngle": 180,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "static",
+     "rotationDirection": "cw",
+     "startLocation": "w",
+     "endLocation": "w",
+     "turns": 1,
+     "startOrientation": "in",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "e",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 625,
+      "positionY": 545,
+      "rotationAngle": 90,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 12,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  },
+  {
+   "isBeat": true,
+   "id": "beat-13",
+   "letter": "C",
+   "motions": {
+    "blue": {
+     "motionType": "anti",
+     "rotationDirection": "ccw",
+     "startLocation": "e",
+     "endLocation": "s",
+     "turns": 0,
+     "startOrientation": "in",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "sw",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 290,
+      "positionY": 660,
+      "rotationAngle": 180,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "pro",
+     "rotationDirection": "cw",
+     "startLocation": "w",
+     "endLocation": "n",
+     "turns": 1,
+     "startOrientation": "out",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "ne",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 590,
+      "positionY": 310,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 13,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  },
+  {
+   "isBeat": true,
+   "id": "beat-14",
+   "letter": "Ψ",
+   "motions": {
+    "blue": {
+     "motionType": "dash",
+     "rotationDirection": "noRotation",
+     "startLocation": "s",
+     "endLocation": "n",
+     "turns": 0,
+     "startOrientation": "out",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "n",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 475,
+      "positionY": 325,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "static",
+     "rotationDirection": "noRotation",
+     "startLocation": "n",
+     "endLocation": "n",
+     "turns": 0,
+     "startOrientation": "in",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "e",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 625,
+      "positionY": 475,
+      "rotationAngle": 270,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 14,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  },
+  {
+   "isBeat": true,
+   "id": "beat-15",
+   "letter": "Ω",
+   "motions": {
+    "blue": {
+     "motionType": "anti",
+     "rotationDirection": "ccw",
+     "startLocation": "n",
+     "endLocation": "e",
+     "turns": 0,
+     "startOrientation": "in",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "se",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 660,
+      "positionY": 660,
+      "rotationAngle": 90,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "static",
+     "rotationDirection": "cw",
+     "startLocation": "n",
+     "endLocation": "n",
+     "turns": 1,
+     "startOrientation": "in",
+     "endOrientation": "out",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "e",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 625,
+      "positionY": 405,
+      "rotationAngle": 270,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 15,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  },
+  {
+   "isBeat": true,
+   "id": "beat-16",
+   "letter": "X",
+   "motions": {
+    "blue": {
+     "motionType": "anti",
+     "rotationDirection": "ccw",
+     "startLocation": "e",
+     "endLocation": "s",
+     "turns": 0,
+     "startOrientation": "out",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "sw",
+     "color": "blue",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 290,
+      "positionY": 660,
+      "rotationAngle": 180,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    },
+    "red": {
+     "motionType": "static",
+     "rotationDirection": "cw",
+     "startLocation": "n",
+     "endLocation": "n",
+     "turns": 1,
+     "startOrientation": "out",
+     "endOrientation": "in",
+     "isVisible": true,
+     "propType": "staff",
+     "arrowLocation": "e",
+     "color": "red",
+     "gridMode": "diamond",
+     "arrowPlacementData": {
+      "positionX": 625,
+      "positionY": 545,
+      "rotationAngle": 90,
+      "coordinates": null,
+      "svgCenter": null,
+      "svgMirrored": false,
+      "manualAdjustmentX": 0,
+      "manualAdjustmentY": 0
+     },
+     "propPlacementData": {
+      "positionX": 0,
+      "positionY": 0,
+      "rotationAngle": 0,
+      "coordinates": null,
+      "svgCenter": null
+     },
+     "prefloatMotionType": null,
+     "prefloatRotationDirection": null
+    }
+   },
+   "beatNumber": 16,
+   "duration": 1,
+   "blueReversal": false,
+   "redReversal": false,
+   "isBlank": false
+  }
+ ],
+ "startPosition": {
+  "id": "derived-start-alpha1",
+  "motions": {
+   "blue": {
+    "motionType": "static",
+    "rotationDirection": "noRotation",
+    "startLocation": "s",
+    "endLocation": "s",
+    "turns": 0,
+    "startOrientation": "in",
+    "endOrientation": "in",
+    "isVisible": true,
+    "propType": "staff",
+    "arrowLocation": "s",
+    "color": "blue",
+    "gridMode": "diamond",
+    "arrowPlacementData": {
+     "positionX": 0,
+     "positionY": 0,
+     "rotationAngle": 0,
+     "coordinates": null,
+     "svgCenter": null,
+     "svgMirrored": false,
+     "manualAdjustmentX": 0,
+     "manualAdjustmentY": 0
+    },
+    "propPlacementData": {
+     "positionX": 0,
+     "positionY": 0,
+     "rotationAngle": 0,
+     "coordinates": null,
+     "svgCenter": null
+    },
+    "handPath": null,
+    "skewSteps": null,
+    "skewDir": null
+   },
+   "red": {
+    "motionType": "static",
+    "rotationDirection": "noRotation",
+    "startLocation": "n",
+    "endLocation": "n",
+    "turns": 0,
+    "startOrientation": "in",
+    "endOrientation": "in",
+    "isVisible": true,
+    "propType": "staff",
+    "arrowLocation": "n",
+    "color": "red",
+    "gridMode": "diamond",
+    "arrowPlacementData": {
+     "positionX": 0,
+     "positionY": 0,
+     "rotationAngle": 0,
+     "coordinates": null,
+     "svgCenter": null,
+     "svgMirrored": false,
+     "manualAdjustmentX": 0,
+     "manualAdjustmentY": 0
+    },
+    "propPlacementData": {
+     "positionX": 0,
+     "positionY": 0,
+     "rotationAngle": 0,
+     "coordinates": null,
+     "svgCenter": null
+    },
+    "handPath": null,
+    "skewSteps": null,
+    "skewDir": null
+   }
+  },
+  "letter": "α",
+  "startPosition": "alpha1",
+  "endPosition": "alpha1",
+  "isStartPosition": true,
+  "gridPosition": "alpha1"
+ },
+ "gridMode": "diamond",
+ "isCircular": true,
+ "loopType": "rotated",
+ "thumbnails": []
+}

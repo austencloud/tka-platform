@@ -10,6 +10,7 @@ const pages = [
   { url: "shop/tnd-trilogy", priority: "0.8", changefreq: "monthly" },
   { url: "shop/choreography-cards", priority: "0.8", changefreq: "monthly" },
   // Pillar pages (SEO content roadmap)
+  { url: "composer", priority: "0.9", changefreq: "monthly" },
   { url: "notation", priority: "0.9", changefreq: "monthly" },
   { url: "learn/staff-spinning-choreography", priority: "0.8", changefreq: "monthly" },
   // Marketing
