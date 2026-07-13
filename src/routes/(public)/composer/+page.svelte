@@ -5,8 +5,6 @@
   import ComposerGenerateDemo from "./_components/ComposerGenerateDemo.svelte";
   import ComposerQrDemo from "./_components/ComposerQrDemo.svelte";
   import ComposerGalleryDemo from "./_components/ComposerGalleryDemo.svelte";
-  import GuidePictograph from "../guide/level-1/_components/GuidePictograph.svelte";
-  import { DEMO_LETTER_BEATS } from "./_data/demo-beats";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   const DESCRIPTION =
@@ -35,8 +33,10 @@
       return { destroy: () => io.disconnect() };
     };
   }
+  let choreoCardsActive = $state(false);
   const activateTunnelWhenNear = activateWhenNear(() => (tunnelActive = true));
   const activatePlayWithItWhenNear = activateWhenNear(() => (playWithItActive = true));
+  const activateChoreoCardsWhenNear = activateWhenNear(() => (choreoCardsActive = true));
 
 
   const ROADMAP = [
@@ -264,20 +264,40 @@
         flashcards. You never have to memorize a single letter to use any of it.
       </p>
     </div>
-    <div class="letter-row">
-      {#each DEMO_LETTER_BEATS as beat}
-        <div class="letter-cell">
-          <GuidePictograph data={beat} size="md" bordered />
-          <span class="tka-font letter-label">{beat.letter}</span>
-        </div>
-      {/each}
-    </div>
     <div class="prose">
       <p>
         The Kinetic Alphabet maps the whole territory of grid-based prop movement, so your
         skills don't develop holes. The app splits that territory into levels. Work at
         level 1 if that's where you are, or push into the weirder corners as you climb.
       </p>
+    </div>
+
+    <div class="cards-block">
+      <h3 class="cards-heading">The alphabet leaves the screen</h3>
+      <div class="cards-fan" use:activateChoreoCardsWhenNear>
+        <LazyMount
+          loader={() => import("./_components/ComposerChoreoCardsDemo.svelte")}
+          active={choreoCardsActive}
+        />
+      </div>
+      <div class="prose">
+        <p>
+          Choreo Cards put a sequence on a physical card: the word, every step, the
+          mandalas, and a QR that opens it in Composer with any prop at any speed. Shuffle a
+          deck and the same osmosis happens away from the app, one card in your hand at a
+          time. Every card the app builds can print, and the decks in the shop are already
+          composed and ready to spin.
+        </p>
+      </div>
+      <div class="hero-ctas">
+        <a href="/shop/choreography-cards" class="cta-button">
+          <span>See how Choreo Cards work</span>
+          <i class="fas fa-arrow-right" aria-hidden="true"></i>
+        </a>
+        <a href="/shop" class="cta-secondary">
+          <span>Browse the decks</span>
+        </a>
+      </div>
     </div>
   </section>
 
@@ -541,22 +561,19 @@
     color: oklch(0.68 0.015 270);
   }
 
-  .letter-row {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 1.1rem;
-    margin: 1.6rem 0;
+  .cards-block {
+    margin-top: 2rem;
   }
-  .letter-cell {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.45rem;
+  .cards-heading {
+    margin: 0 0 0.4rem;
+    text-align: center;
+    font-size: 1.15rem;
+    font-weight: 650;
+    color: oklch(0.92 0.02 270);
   }
-  .letter-label {
-    font-size: 1.25rem;
-    color: oklch(0.9 0.02 270);
+  .cards-fan {
+    margin: 0.4rem auto 1.4rem;
+    max-width: 40rem;
   }
 
   .viewer3d-figure {
