@@ -165,7 +165,7 @@
   // Card height ceiling from the fixed stage: card (5:7) + description + gaps
   // must fit inside the box, so cards grow into tall stages without clipping.
   const previewMaxCardW = $derived(
-    previewH > 0 ? Math.max(150, Math.round(((previewH - 150) * 5) / 7)) : 340
+    previewH > 0 ? Math.max(110, Math.round(((previewH - 110) * 5) / 7)) : 340
   );
   let wasCheckingOut = false;
   $effect(() => {
@@ -468,7 +468,7 @@
                     ? `${activePack.name} pack`
                     : (selectedSku?.name ?? "LOOP Deck")}
                   {propType}
-                  cardWidth={narrowPreview ? 150 : previewW >= 1200 ? 280 : 210}
+                  cardWidth={narrowPreview ? 110 : previewW >= 1200 ? 280 : 210}
                   maxCardWidth={previewMaxCardW}
                   exactCount={!activePack && flavor === "variety"
                     ? Math.min(narrowPreview ? 4 : 5, fanCards.length)
@@ -1141,6 +1141,55 @@
 
   /* ---------- mobile ---------- */
   @media (max-width: 720px) {
+    /* The decision is the difficulty pick, not the beauty shot. Shrink the
+       hero (smaller fan cards + tighter padding absorb it) so the bubble strip
+       clears the fold with barely a scroll, fan + caption still uncropped. */
+    .preview-box {
+      height: 256px;
+      padding: 10px;
+    }
+    .preview-desc {
+      font-size: var(--font-size-min, 14px);
+      line-height: 1.35;
+      padding: 0 8px;
+    }
+    /* Bubbles go side by side (4-across), not stacked tall — every tier is
+       one tap away and reads as a ladder at a glance. The level-range sub is
+       dropped here (the recipe line below already spells the pick out); the
+       numeral bubble + name carry it. */
+    .preset-row {
+      flex-wrap: nowrap;
+      gap: 8px;
+    }
+    .preset {
+      flex: 1 1 0;
+      min-width: 0;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 6px;
+      min-height: 92px;
+    }
+    .preset-body {
+      align-items: center;
+    }
+    .preset-name {
+      text-align: center;
+    }
+    .preset-sub {
+      display: none;
+    }
+    .preset-num {
+      width: 36px;
+      height: 36px;
+      font-size: 18px;
+    }
+    /* The check would collide with the centered stack — tuck it to the corner. */
+    .preset-check {
+      top: 6px;
+      right: 6px;
+      font-size: 13px;
+    }
     /* The rail's purchase block centers on phones — a left-hung $30 in a
        full-width card reads as dead space to its right. */
     .price {
