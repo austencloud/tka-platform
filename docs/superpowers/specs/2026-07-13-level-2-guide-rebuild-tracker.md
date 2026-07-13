@@ -72,7 +72,10 @@ and the artboard exports under `D:\_THE KINETIC ALPHABET\_GUIDE\artboard-exports
       halfway = bare grid + staff SVG (StaffMotionsPage technique, arrows-in-frames
       dropped per the level-1 facelift convention). Click-to-animate wired.
       Screenshot-verified vs original.
-- [ ] p4 Turns: dashes + static — linear extension note, static vs shift arrow contrast
+- [x] p4 Turns: dashes + static — dash = DASH s→n turns=1 in→in (halfway horizontal at
+      grid center); static = STATIC E turns=1 in→out CCW (renderer draws the over-staff
+      arrow; halfway vertical at E hand point). Static-vs-Shift arrow compare boxes are
+      real pictographs. Screenshot-verified.
 - [ ] p5 Glyphs/PADS — high/low slots, PADS order, hybrid table (Type 1–4 + left/right)
 - [ ] p6 Type 1 Dual-Shift — A¹/B¹ breakdowns, C¹ vs C₁ (pro-high/anti-low)
 - [ ] p7 S and T — leading/following, S¹/S₁/T¹/T₁ breakdowns
