@@ -19,6 +19,7 @@ import { MirroredRotatedInvertedLOOPExecutor } from './services/mirrored-rotated
 import { MirroredSwappedInvertedLOOPExecutor } from './services/mirrored-swapped-inverted-loop-executor';
 import { MirroredRotatedInvertedSwappedLOOPExecutor } from './services/mirrored-rotated-inverted-swapped-loop-executor';
 import { RewoundLOOPExecutor } from './services/rewound-loop-executor';
+import { RotatedSwappedInvertedLOOPExecutor } from './services/rotated-swapped-inverted-loop-executor';
 import { LOOPExecutorSelector } from './services/loop-executor-selector';
 
 // Basic executors (orientationCalculator only)
@@ -37,6 +38,7 @@ let _rotatedSwapped: RotatedSwappedLOOPExecutor | null = null;
 let _mirroredInverted: MirroredInvertedLOOPExecutor | null = null;
 let _rotatedInverted: RotatedInvertedLOOPExecutor | null = null;
 let _mirroredSwappedInverted: MirroredSwappedInvertedLOOPExecutor | null = null;
+let _rotatedSwappedInverted: RotatedSwappedInvertedLOOPExecutor | null = null;
 
 // Composite executors
 let _mirroredRotated: MirroredRotatedLOOPExecutor | null = null;
@@ -103,6 +105,10 @@ export function getMirroredSwappedInvertedLOOPExecutor() {
 	_check();
 	return _mirroredSwappedInverted ??= new MirroredSwappedInvertedLOOPExecutor(getLOOPParameterProvider());
 }
+export function getRotatedSwappedInvertedLOOPExecutor() {
+	_check();
+	return _rotatedSwappedInverted ??= new RotatedSwappedInvertedLOOPExecutor(getLOOPParameterProvider());
+}
 
 // Composite executors
 export function getMirroredRotatedLOOPExecutor() {
@@ -136,6 +142,7 @@ export function getLOOPExecutorSelector(): LOOPExecutorSelector {
 		getMirroredRotatedInvertedLOOPExecutor(),
 		getMirroredSwappedInvertedLOOPExecutor(),
 		getMirroredRotatedInvertedSwappedLOOPExecutor(),
-		getRewoundLOOPExecutor()
+		getRewoundLOOPExecutor(),
+		getRotatedSwappedInvertedLOOPExecutor()
 	);
 }
