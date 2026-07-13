@@ -1027,10 +1027,24 @@ export class SequenceBuilder {
       return betaPositions[Math.floor(Math.random() * betaPositions.length)];
     }
 
+    // Mirror+swap combos need starts that are fixed points of BOTH mirror and
+    // swap: beta1/beta5 only (domain fixed-point theorem; 25-run audits
+    // 2026-07-13). From alpha the vertical mirror manifests as a flip
+    // (flipped+inverted+swapped content — an unimplemented combo), from other
+    // betas likewise, from gamma nothing coherent survives.
+    if (
+      loopType === LOOPType.MIRRORED_SWAPPED_INVERTED ||
+      loopType === LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED
+    ) {
+      if (currentStartPosition === "beta1" || currentStartPosition === "beta5") {
+        return undefined;
+      }
+      return Math.random() < 0.5 ? "beta1" : "beta5";
+    }
+
     const MIRRORED_ROTATED_TYPES = new Set([
       LOOPType.MIRRORED_ROTATED,
       LOOPType.MIRRORED_INVERTED_ROTATED,
-      LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
     ]);
 
     if (!MIRRORED_ROTATED_TYPES.has(loopType)) return undefined;
@@ -1093,6 +1107,16 @@ export class SequenceBuilder {
       (loopType === LOOPType.ROTATED_SWAPPED ||
         loopType === LOOPType.ROTATED_SWAPPED_INVERTED) &&
       !startPosition.startsWith("beta")
+    ) {
+      return positions;
+    }
+
+    // Mirror+swap combos: fixed points of both mirror and swap — beta1/beta5.
+    if (
+      (loopType === LOOPType.MIRRORED_SWAPPED_INVERTED ||
+        loopType === LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED) &&
+      startPosition !== "beta1" &&
+      startPosition !== "beta5"
     ) {
       return positions;
     }

@@ -80,11 +80,17 @@ export class LOOPEndPositionSelector {
         if (!startPosition.startsWith("beta")) return null;
         return this.rotatedSelector.determineRotatedEndPosition(period, startPosition);
 
+      // All Four: mirror+swap need a start fixed under both — beta1/beta5 only
+      // (elsewhere the mirror degrades to a flip and detection finds
+      // flipped+inverted+rotated+swapped, an unimplemented combo).
+      case LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED:
+        if (startPosition !== "beta1" && startPosition !== "beta5") return null;
+        return this.rotatedSelector.determineRotatedEndPosition(period, startPosition);
+
       // Combined LOOP types with ROTATED (rotation takes precedence)
       case LOOPType.ROTATED_INVERTED:
       case LOOPType.MIRRORED_ROTATED:
       case LOOPType.MIRRORED_INVERTED_ROTATED:
-      case LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED:
         return this.rotatedSelector.determineRotatedEndPosition(period, startPosition);
 
       // Combined LOOP types with MIRRORED
@@ -105,8 +111,11 @@ export class LOOPEndPositionSelector {
       case LOOPType.SWAPPED_INVERTED:
         return SWAPPED_POSITION_MAP[startPosition] ?? null;
 
-      // Mirrored + Swapped + Inverted: inverted takes precedence — return to start
+      // Mirrored + Swapped + Inverted: inverted takes precedence — return to
+      // start. Start must be a fixed point of both mirror and swap
+      // (beta1/beta5); elsewhere the mirror degrades to a flip.
       case LOOPType.MIRRORED_SWAPPED_INVERTED:
+        if (startPosition !== "beta1" && startPosition !== "beta5") return null;
         return startPosition;
 
       // Rewound has no position constraint — reversed steps return to start naturally

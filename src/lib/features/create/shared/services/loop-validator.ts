@@ -233,8 +233,16 @@ export class LOOPValidator {
       // Compound LOOPs containing ROTATED - need BOTH mirror AND rotation validation
       case LOOPType.MIRRORED_ROTATED:
       case LOOPType.MIRRORED_INVERTED_ROTATED:
+        return (
+          MIRRORED_LOOP_VALIDATION_SET.has(positionPair) &&
+          rotationSet.has(positionPair)
+        );
+
+      // All Four: additionally restricted to starts fixed under both mirror
+      // and swap (beta1/beta5) — elsewhere the mirror degrades to a flip
       case LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED:
         return (
+          (positionPair.startsWith("beta1,") || positionPair.startsWith("beta5,")) &&
           MIRRORED_LOOP_VALIDATION_SET.has(positionPair) &&
           rotationSet.has(positionPair)
         );
@@ -249,9 +257,13 @@ export class LOOPValidator {
         return INVERTED_LOOP_VALIDATION_SET.has(positionPair);
 
       // Mirrored + Swapped + Inverted: inverted dominates positionally —
-      // the sequence must return to its start (same rule its executor enforces)
+      // return to start — but the start must be fixed under both mirror and
+      // swap (beta1/beta5); elsewhere the mirror degrades to a flip
       case LOOPType.MIRRORED_SWAPPED_INVERTED:
-        return INVERTED_LOOP_VALIDATION_SET.has(positionPair);
+        return (
+          (positionPair.startsWith("beta1,") || positionPair.startsWith("beta5,")) &&
+          INVERTED_LOOP_VALIDATION_SET.has(positionPair)
+        );
 
       // Rotated + Swapped + Inverted: positionally identical to
       // Rotated + Swapped (inversion is position-free) — beta starts only
