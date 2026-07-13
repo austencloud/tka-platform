@@ -22,7 +22,7 @@
 <script lang="ts">
   import type { CoverCard } from "../domain/models/product";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import { renderCoverFront } from "../services/cover-front-renderer";
+  import { renderCoverFront, renderCoverBack } from "../services/cover-front-renderer";
   import { DEFAULT_SHOP_PROP, bakedCoverUrl } from "../domain/shop-prop-options";
 
   interface Props {
@@ -49,6 +49,9 @@
     /** Bump to re-deal: cards gather back to the pile, then deal out again.
         The payoff flourish on the configurator's Buy click. */
     dealNonce?: number;
+    /** Which card face to render. Backs skip the baked-URL shortcut (bakes are
+        fronts only) and render through the live back pipeline. */
+    face?: "front" | "back";
   }
   let {
     cards,
@@ -62,6 +65,7 @@
     interactive = true,
     deal = false,
     dealNonce = 0,
+    face = "front",
   }: Props = $props();
 
   let boxW = $state(0);
@@ -140,20 +144,24 @@
   // Session-cached in the service, so revisits paint instantly.
   let urls = $state<Record<string, string>>({});
   const cardKey = (c: CoverCard) =>
-    `${c.sequence?.id ?? c.sequence?.word ?? JSON.stringify(c).slice(0, 40)}|${propType}`;
+    `${c.sequence?.id ?? c.sequence?.word ?? JSON.stringify(c).slice(0, 40)}|${propType}|${face}`;
 
   $effect(() => {
     const prop = propType;
     for (const c of shown) {
       const k = cardKey(c);
       if (urls[k]) continue;
-      // Baked covers load straight from Storage — no print pipeline.
-      const baked = bakedCoverUrl(c, prop);
+      // Baked covers load straight from Storage — no print pipeline. Fronts only.
+      const baked = face === "front" ? bakedCoverUrl(c, prop) : undefined;
       if (baked) {
         urls[k] = baked;
         continue;
       }
-      renderCoverFront(c, { deckId, deckName, propType: prop })
+      const render =
+        face === "back"
+          ? renderCoverBack(c, { propType: prop })
+          : renderCoverFront(c, { deckId, deckName, propType: prop });
+      render
         .then((url) => {
           urls[k] = url;
         })
@@ -249,6 +257,9 @@
 
   .card-img {
     position: absolute;
+    /* Global reset sets img { max-width: 100% }, which clamps the overscan
+       and leaves a bleed-wide white strip on the right. */
+    max-width: none;
     width: 109.6%;
     height: 106.857%;
     left: -4.8%;

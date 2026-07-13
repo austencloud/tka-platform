@@ -40,7 +40,7 @@
   import { getCardColors } from "$lib/shared/create/domain/card-colors";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
-  import { scale, slide } from "svelte/transition";
+  import { scale, slide, fly } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import { prewarmCovers } from "./services/cover-front-renderer";
   import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
@@ -402,12 +402,33 @@
     if (all.length) prewarmCovers(all, propType);
   });
 
+  // ── mobile checkout dock (same pattern as the Deck Architect): while the
+  //    buy rail is off screen on phones, a fixed dock keeps price + Preorder
+  //    in reach. IntersectionObserver hides it once the real rail shows. ──
+  let railEl = $state<HTMLElement | null>(null);
+  let railInView = $state(false);
+  $effect(() => {
+    if (!railEl) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        railInView = entries[0]?.isIntersecting ?? false;
+      },
+      { threshold: 0.2 }
+    );
+    io.observe(railEl);
+    return () => io.disconnect();
+  });
+  let pageW = $state(0);
+  const narrow = $derived(pageW > 0 && pageW < 720);
+
   const flavorTileValue = $derived(flavorLabel(flavor));
   const price = $derived(
     customSku ? `$${(customSku.price / 100).toFixed(0)}` : "$30"
   );
 
 </script>
+
+<svelte:window bind:innerWidth={pageW} />
 
 <div class="config-page">
   <main class="config-content">
@@ -555,7 +576,7 @@
 
           </div>
 
-          <aside class="buy-rail">
+          <aside class="buy-rail" bind:this={railEl}>
           <p class="price">{price}</p>
           <!-- Fixed specs this beta run — information, not dead buttons. -->
           <p class="spec-line">
@@ -599,6 +620,23 @@
     {/if}
   </main>
 </div>
+
+{#if narrow && !railInView && customSku?.stripePriceId && flavorSkus.length > 0 && !store.error}
+  <div class="checkout-dock" transition:fly={{ y: 72, duration: 220, easing: quintOut }}>
+    <div class="dock-meter">
+      <span class="dock-pack">{activePack ? activePack.name : "Custom"}</span>
+      <span class="dock-price">{price}</span>
+    </div>
+    <button
+      type="button"
+      class="dock-buy"
+      disabled={store.isCheckingOut}
+      onclick={() => store.startCheckout(customSku.id, propType, loopConfig)}
+    >
+      {store.isCheckingOut ? "Opening..." : "Preorder now"}
+    </button>
+  </div>
+{/if}
 
 <style>
   .config-page {
@@ -896,6 +934,9 @@
     font-size: var(--font-size-min, 14px);
     font-variant-numeric: tabular-nums;
     color: rgba(255, 255, 255, 0.85);
+    /* Long pack recipes wrap on phones — balance the break so two lines read
+       as a deliberate block, not an orphaned word. */
+    text-wrap: balance;
   }
   .composition-line.custom {
     opacity: 0.85;
@@ -1013,10 +1054,79 @@
     color: var(--semantic-error, #ef4444);
   }
 
+  /* ---------- mobile checkout dock (same chrome as the Deck Architect) ---------- */
+  .checkout-dock {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: rgba(10, 12, 22, 0.86);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+  }
+  .dock-meter {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 4px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(139, 108, 255, 0.45);
+    background: rgba(139, 108, 255, 0.12);
+  }
+  .dock-pack {
+    font-size: 15px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .dock-price {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    color: var(--theme-accent, #a78bfa);
+  }
+  .dock-buy {
+    flex: 1;
+    min-height: var(--min-touch-target, 44px);
+    border: none;
+    border-radius: 12px;
+    background: var(--theme-accent-strong, #7c6cf5);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+  .dock-buy:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  /* ---------- mobile ---------- */
+  @media (max-width: 720px) {
+    /* The rail's purchase block centers on phones — a left-hung $30 in a
+       full-width card reads as dead space to its right. */
+    .price {
+      text-align: center;
+    }
+    .buy-rail {
+      text-align: center;
+    }
+    .assurance li {
+      text-align: left;
+    }
+    .composition-line {
+      text-align: center;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .back-button,
     .preset,
-    .bento-board {
+    .bento-board,
+    .checkout-dock {
       transition: none;
     }
   }

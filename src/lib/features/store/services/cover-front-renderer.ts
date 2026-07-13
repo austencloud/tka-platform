@@ -228,3 +228,50 @@ export function renderCoverFront(
   work.catch(() => urlCache.delete(key));
   return work;
 }
+
+// LOOP decks ship with the rainbow back today (deck-releaser-state theme
+// getter). When back-theme choice lands, thread the buyer's pick through here.
+const SHOP_BACK_THEME = "rainbow";
+
+const backUrlCache = new Map<string, Promise<string>>();
+
+/**
+ * Render one cover card BACK (same MPC canvas + bleed as the front, so the
+ * fan's guillotine overscan applies unchanged). Backs never bake — they're
+ * only requested one at a time from the card viewer.
+ */
+export function renderCoverBack(
+  card: CoverCard,
+  deck: { propType?: PropType } = {}
+): Promise<string> {
+  const seq = card.sequence;
+  const propType = deck.propType ?? DEFAULT_COVER_PROP;
+  const key = `${seq.id ?? seq.word ?? "?"}|${propType}|${SHOP_BACK_THEME}`;
+  const cached = backUrlCache.get(key);
+  if (cached) return cached;
+
+  const work = (async () => {
+    await ensureCardPipeline();
+    await acquireLane();
+    try {
+      const hydrated = hydrateCached(seq);
+      const canvas = await getPrintCardRenderer().renderBack(hydrated, {
+        includeStartPosition: true,
+        theme: SHOP_BACK_THEME,
+        bluePropType: propType,
+        redPropType: propType,
+      });
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/png")
+      );
+      if (!blob) throw new Error("cover back toBlob returned null");
+      return URL.createObjectURL(blob);
+    } finally {
+      releaseLane();
+    }
+  })();
+
+  backUrlCache.set(key, work);
+  work.catch(() => backUrlCache.delete(key));
+  return work;
+}

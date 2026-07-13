@@ -333,6 +333,11 @@
   // ── sample lightbox: tap a slice's card to read it full size, and re-deal
   //    for another draw from the same slice. ──
   let sampleView = $state<number | null>(null);
+  // Two faces share the lightbox width: cap per-face card size so front+back
+  // fit side by side down to phone widths.
+  const lightboxFaceW = $derived(
+    Math.min(300, Math.max(140, Math.floor((pageW - 120) / 2)))
+  );
   let rerolling = $state(false);
   async function rerollSample(i: number) {
     const s = slices[i];
@@ -625,15 +630,34 @@
       class="sample-lightbox"
       transition:scale={{ start: 0.92, duration: 220, easing: quintOut }}
     >
-      <DeckFanCover
-        cards={[sliceCards[sampleView]!]}
-        deckName={flavorLabel(slices[sampleView]?.flavor ?? "rotated")}
-        {propType}
-        cardWidth={Math.min(360, pageW - 88)}
-        maxCardWidth={Math.min(360, pageW - 88)}
-        exactCount={1}
-        interactive={false}
-      />
+      <!-- Front AND back, side by side — the full physical card, both faces. -->
+      <div class="lightbox-faces">
+        <div class="lightbox-face" style:width="{lightboxFaceW}px">
+          <DeckFanCover
+            cards={[sliceCards[sampleView]!]}
+            deckName={flavorLabel(slices[sampleView]?.flavor ?? "rotated")}
+            {propType}
+            cardWidth={lightboxFaceW}
+            maxCardWidth={lightboxFaceW}
+            exactCount={1}
+            interactive={false}
+          />
+          <span class="face-label">Front</span>
+        </div>
+        <div class="lightbox-face" style:width="{lightboxFaceW}px">
+          <DeckFanCover
+            cards={[sliceCards[sampleView]!]}
+            deckName={flavorLabel(slices[sampleView]?.flavor ?? "rotated")}
+            {propType}
+            cardWidth={lightboxFaceW}
+            maxCardWidth={lightboxFaceW}
+            exactCount={1}
+            interactive={false}
+            face="back"
+          />
+          <span class="face-label">Back</span>
+        </div>
+      </div>
       <p class="lightbox-caption">
         One draw from this slice. Every deck deals fresh cards.
       </p>
@@ -1125,7 +1149,27 @@
     border-radius: 18px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
     background: rgba(14, 16, 28, 0.92);
-    max-width: min(440px, 94vw);
+    max-width: min(720px, 94vw);
+  }
+  .lightbox-faces {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  .lightbox-face {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+  }
+  .face-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.6);
   }
   .lightbox-caption {
     margin: 0;
@@ -1224,8 +1268,9 @@
   /* ---------- mobile ---------- */
   @media (max-width: 720px) {
     .architect-content {
-      /* Bottom padding clears the fixed checkout dock. */
-      padding: 8px 14px 96px;
+      /* The dock hides itself once the rail scrolls into view, so the page
+         bottom doesn't need to clear it — a 96px runway read as dead space. */
+      padding: 8px 14px 24px;
     }
     /* Phone slice card: the (bigger, tappable) sample centered up top, the
        uniform tile board below. The × keeps its pinned corner. */
