@@ -809,56 +809,52 @@
     /* Clearance for the pinned remove button. */
     padding-right: 32px;
   }
-  .count-field {
+  /* Steppers read as ONE control (a joined pill), not three floating boxes —
+     the scattered-slab look was the main mobile quality complaint. */
+  .count-field,
+  .mini-stepper {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    border-radius: 12px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    background: rgba(0, 0, 0, 0.25);
+    overflow: hidden;
   }
   .count-step {
     width: var(--min-touch-target, 44px);
     height: var(--min-touch-target, 44px);
-    border-radius: 10px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    border: none;
+    background: transparent;
     color: #fff;
     font-size: 18px;
     font-weight: 700;
     cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease;
+    transition: background 0.15s ease;
   }
   .count-step:hover:not(:disabled) {
-    border-color: rgba(216, 180, 254, 0.6);
-    background: rgba(139, 108, 255, 0.14);
+    background: rgba(139, 108, 255, 0.18);
   }
   .count-step:disabled {
     opacity: 0.35;
     cursor: default;
   }
-  /* Level/Steps/Turns share the count field's stepper language — one control
-     vocabulary across the whole slice card. */
-  .mini-stepper {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
   .mini-value {
-    min-width: 44px;
+    min-width: 40px;
     text-align: center;
     font-size: 16px;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
   }
   .count-input {
-    width: 58px;
+    width: 52px;
     height: var(--min-touch-target, 44px);
     text-align: center;
     font-size: 16px;
     font-weight: 800;
     font-variant-numeric: tabular-nums;
     color: #fff;
-    background: rgba(0, 0, 0, 0.25);
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    border-radius: 10px;
+    background: transparent;
+    border: none;
     -moz-appearance: textfield;
     appearance: textfield;
   }
@@ -870,6 +866,7 @@
   .count-label {
     font-size: var(--font-size-min, 14px);
     color: rgba(255, 255, 255, 0.8);
+    padding: 0 14px 0 4px;
   }
   .flavor-btn {
     display: inline-flex;
@@ -1068,22 +1065,86 @@
     .architect-content {
       padding: 8px 14px 24px;
     }
-    /* Sample stays a compact sidecar; controls keep the rest of the row.
-       (Stacking to a column let the fan balloon to page width.) */
+    /* Sample stays a compact sidecar beside the count/flavor block, and the
+       dials break out to full card width below — beside the sample they only
+       get ~184px, which clips the steppers. display:contents lets the grid
+       place slice-top and slice-dials directly. */
     .slice-row {
+      display: grid;
+      grid-template-columns: 96px minmax(0, 1fr);
       gap: 12px;
       padding: 12px;
-      align-items: flex-start;
+      align-items: center;
     }
     .slice-sample {
-      flex: 0 0 96px;
+      grid-row: 1;
+      grid-column: 1;
+      flex: none;
       height: 140px;
     }
     .sample-skeleton {
       width: 92px;
     }
+    .slice-controls {
+      display: contents;
+    }
+    /* At 375px the unit label + pinned remove button can't share the count
+       row: the label goes (the 54/54 meter already says "cards") and the
+       remove button joins the count row at the far end. Explicit grid — flex
+       wrap kept orphaning the remove button onto a dead row. */
+    .slice-top {
+      grid-row: 1;
+      grid-column: 2;
+      align-self: center;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      padding-right: 0;
+      align-items: center;
+    }
+    .count-label {
+      display: none;
+    }
+    .count-field {
+      justify-self: start;
+    }
+    .remove-btn {
+      position: static;
+      /* DOM order is count → flavor → remove; pin the remove into the count
+         row's spare corner instead of letting auto-placement orphan it. */
+      grid-row: 1;
+      grid-column: 2;
+      justify-self: end;
+    }
+    .flavor-btn {
+      grid-column: 1 / -1;
+      justify-content: space-between;
+    }
+    /* Dials become settings rows (label left, stepper right) across the full
+       card width: two side-by-side columns clipped the + button at 375px. */
     .slice-dials {
-      gap: 12px;
+      grid-row: 2;
+      grid-column: 1 / -1;
+      display: flex;
+      flex-direction: column;
+      /* Base rule's align-items:flex-end is the desktop cross-axis; in a
+         column it right-shrinks every row. Rows stretch edge to edge here. */
+      align-items: stretch;
+      gap: 8px;
+    }
+    .dial {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    /* "Max turns" wrapped to two lines and shoved its stepper past the card
+       edge — one nowrap line fits the row fine. */
+    .dial .dial-label {
+      white-space: nowrap;
+    }
+    .dial .mini-stepper {
+      flex: 0 0 auto;
     }
     .rail-stage {
       height: 240px;
@@ -1093,6 +1154,10 @@
     }
     .workbench-bar .total-meter {
       flex-basis: 100%;
+    }
+    .add-slice {
+      flex: 1 1 100%;
+      justify-content: center;
     }
   }
 
