@@ -17,9 +17,16 @@ QuizContainer - Shared container layout for quizzes
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    /* `safe center`: centers when content fits, but degrades to start-aligned
+       when it overflows — plain `center` overflows BOTH edges and makes the
+       top half unreachable even with scrolling. Paired with overflow-y so a
+       question taller than the stage (small/foldable screens, 6-card answer
+       grids) scrolls instead of clipping. */
+    justify-content: safe center;
     width: 100%;
     height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
     padding: 1rem;
     box-sizing: border-box;
     padding-bottom: 2rem;
