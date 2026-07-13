@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EditorialNav from "$lib/shared/landing/components/EditorialNav.svelte";
   import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
   import PositionTrioGrid from "$lib/shared/landing/components/PositionTrioGrid.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
@@ -58,6 +59,8 @@
   }
   </script>`}
 </svelte:head>
+
+<EditorialNav />
 
 <div class="editorial">
   <header class="editorial-header">

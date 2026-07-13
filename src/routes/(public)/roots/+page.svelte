@@ -1,4 +1,5 @@
 <script lang="ts">
+  import EditorialNav from "$lib/shared/landing/components/EditorialNav.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   const externalLinks = {
@@ -10,25 +11,62 @@
     siteswapTutorial: "https://www.juggle.org/siteswap-tutorial/",
     siteswapWiki: "https://en.wikipedia.org/wiki/Siteswap",
   };
+
+  const TITLE = "Roots of The Kinetic Alphabet | VTG, Siteswap & Music Theory";
+  const DESCRIPTION =
+    "TKA synthesizes juggling notation, music theory, and flow arts vocabulary into a visual notation system for dual wielded props. Learn about the influences behind The Kinetic Alphabet.";
 </script>
 
 <svelte:head>
-  <title>Roots | The Kinetic Alphabet</title>
-  <meta
-    name="description"
-    content="TKA synthesizes juggling notation, music theory, and flow arts vocabulary into a visual notation system for dual wielded props. Learn about the influences behind The Kinetic Alphabet."
-  />
+  <title>{TITLE}</title>
+  <meta name="description" content={DESCRIPTION} />
   <meta
     name="keywords"
     content="flow arts theory, VTG, Vulcan Tech Gospel, Siteswap, juggling notation, music theory, flow arts notation, dual wielded props, TKA influences"
   />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&display=swap"
-    rel="stylesheet"
-  />
+  <link rel="canonical" href="https://tkaflowarts.com/roots" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://tkaflowarts.com/roots" />
+  <meta property="og:title" content={TITLE} />
+  <meta property="og:description" content={DESCRIPTION} />
+  <meta property="og:image" content="https://tkaflowarts.com/branding/og-image.png" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={TITLE} />
+  <meta name="twitter:description" content={DESCRIPTION} />
+  <meta name="twitter:image" content="https://tkaflowarts.com/branding/og-image.png" />
+
+  {@html `<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Roots of The Kinetic Alphabet",
+    "url": "https://tkaflowarts.com/roots",
+    "description": "${DESCRIPTION}",
+    "inLanguage": "en-US",
+    "author": { "@type": "Person", "name": "Austen Cloud", "url": "https://tkaflowarts.com/about" },
+    "publisher": {
+      "@type": "Organization",
+      "name": "The Kinetic Alphabet",
+      "url": "https://tkaflowarts.com/"
+    }
+  }
+  </script>`}
+
+  {@html `<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://tkaflowarts.com/" },
+      { "@type": "ListItem", "position": 2, "name": "Roots", "item": "https://tkaflowarts.com/roots" }
+    ]
+  }
+  </script>`}
 </svelte:head>
+
+<EditorialNav />
 
 <div class="editorial">
     <header class="editorial-header">
@@ -152,10 +190,10 @@
 
     <!-- CTA -->
     <div class="cta-card">
-      <h3>Browse TKA</h3>
-      <p>See how these ideas come together in practice.</p>
-      <a href="/create" class="cta-button" data-sveltekit-reload>
-        <span>Open Flow Arts Composer</span>
+      <h3>See what the roots grew into</h3>
+      <p>Flow Arts Composer turns this theory into something you can play with.</p>
+      <a href="/composer" class="cta-button">
+        <span>Explore Flow Arts Composer</span>
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </a>
     </div>

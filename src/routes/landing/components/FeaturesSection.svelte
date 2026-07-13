@@ -6,7 +6,7 @@
   <div class="container">
     <h2>Meet Flow Arts Composer</h2>
     <p class="section-intro">
-      The free web app for The Kinetic Alphabet.
+      The free web app for <a href="/notation">The Kinetic Alphabet</a>.
     </p>
 
     <div class="features-grid">
@@ -45,6 +45,15 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     max-width: 700px;
     margin: 0 auto 3rem;
+  }
+
+  .section-intro a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .section-intro a:hover {
+    text-decoration: underline;
   }
 
   .features-grid {

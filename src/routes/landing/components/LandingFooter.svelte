@@ -32,6 +32,7 @@
     {/if}
     <nav class="footer-links">
       <a href="/about">About</a>
+      <a href="/notation">Notation</a>
       <a href="/roots">Roots</a>
       <a href="/composer">Flow Arts Composer</a>
       <a href="/shop">Shop</a>

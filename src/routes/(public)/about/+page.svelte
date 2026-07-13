@@ -1,11 +1,7 @@
 <script lang="ts">
-  import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
+  import EditorialNav from "$lib/shared/landing/components/EditorialNav.svelte";
   import FaqAccordion from "$lib/shared/landing/components/FaqAccordion.svelte";
-  import PositionTrioGrid from "$lib/shared/landing/components/PositionTrioGrid.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
-
-  // Position pictograph light/dark mode (default to light to show existing images)
-  let positionLightsOn = $state(true);
 
   const sections = [
     {
@@ -60,7 +56,7 @@
 </script>
 
 <svelte:head>
-  <title>About The Kinetic Alphabet | Flow Arts Composer</title>
+  <title>About The Kinetic Alphabet</title>
   <meta
     name="description"
     content="The Kinetic Alphabet (TKA) is a notation system for flow arts. Learn what TKA is, how it works, and why it exists."
@@ -83,13 +79,6 @@
     content="The Kinetic Alphabet (TKA) is a notation system for flow arts. Learn what TKA is, how it works, and why it exists."
   />
   <meta name="twitter:image" content="https://tkaflowarts.com/branding/og-image.png" />
-
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&display=swap"
-    rel="stylesheet"
-  />
 
   <!-- JSON-LD: AboutPage identifies this page and its subject (the TKA system) -->
   {@html `<script type="application/ld+json">
@@ -140,6 +129,8 @@
        from the canonical FAQ_ITEMS so schema and visible answers never drift. -->
 </svelte:head>
 
+<EditorialNav />
+
 <div class="editorial">
     <header class="editorial-header">
       <h1 class="page-title">The Kinetic Alphabet</h1>
@@ -148,28 +139,17 @@
 
     {#each sections as section}
       <section class="editorial-section" style="--accent: {section.color}">
-        <div class="section-head">
-          <h2 class="section-title">{section.title}</h2>
-          {#if section.id === "notation"}
-            <LightsToggleButton
-              lightsOn={positionLightsOn}
-              onToggle={() => (positionLightsOn = !positionLightsOn)}
-              size="small"
-            />
-          {/if}
-        </div>
+        <h2 class="section-title">{section.title}</h2>
 
         <div class="prose">
+          {#each section.content as paragraph}
+            <p>{paragraph}</p>
+          {/each}
           {#if section.id === "notation"}
-            <p>{section.content[0]}</p>
-
-            <PositionTrioGrid lightsOn={positionLightsOn} />
-
-            <p>{section.content[1]}</p>
-          {:else}
-            {#each section.content as paragraph}
-              <p>{paragraph}</p>
-            {/each}
+            <p>
+              Want the full breakdown, with the positions rendered live? Read the
+              <a href="/notation">notation page</a>.
+            </p>
           {/if}
         </div>
       </section>
@@ -190,17 +170,3 @@
     </div>
     <p class="creator-credit">Created by Austen Cloud • 2022–present</p>
   </div>
-
-<style>
-  /* section header carries the lights toggle inline on the notation section */
-  .section-head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-  .section-head .section-title {
-    margin-bottom: 1.1rem;
-  }
-
-</style>
