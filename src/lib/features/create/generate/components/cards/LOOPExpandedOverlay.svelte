@@ -131,12 +131,14 @@ Animates forward in z-axis and expands to fill the container space
   // ===== Rhythm tier (combo mode only; hidden entirely when `rhythm` is absent) =====
   const hasRhythmTier = $derived(!!rhythm);
 
-  // Quarter-turn rotation only produces a genuine loop for PURE rotation.
-  // Every rotation+something combo (swap, invert, mirror) fails to close as a
-  // real quartered loop in the engine — only halved does. So the Half/Quarter
+  // 90° rotation slices only produce a genuine loop for PURE rotation. Every
+  // rotation+something combo (swap, invert, mirror) fails to close as a real
+  // quartered loop in the engine — only halved (180°) does. So the 180°/90°
   // rotation choice is offered only when ROTATED is the sole component; any
-  // combo forces half turns. (Empirical: quartered-combo generation audit,
+  // combo forces 180°. (Empirical: quartered-combo generation audit,
   // 2026-07-13 — 0 genuine for every combo, 15/15 for pure rotated.)
+  // NB: "turns" is reserved for prop/body turns in TKA — never use it for the
+  // rotation slice; this is a 180°-vs-90° position rotation.
   const rotationSupportsQuarter = $derived(
     localSelectedComponents.size === 1 &&
       localSelectedComponents.has(LOOPComponent.ROTATED)
@@ -146,8 +148,8 @@ Animates forward in z-axis and expands to fill the container space
     rotationSupportsQuarter || localSelectedComponents.has(LOOPComponent.INVERTED)
   );
 
-  // Guard: if the user set quarter turns then extended the combo, snap the
-  // rotation interval back to half so the spec stays buildable.
+  // Guard: if the user set 90° slices then extended the combo, snap the
+  // rotation interval back to 180° so the spec stays buildable.
   $effect(() => {
     if (!rotationSupportsQuarter && localRhythm.rotationInterval === 4) {
       localRhythm = { ...localRhythm, rotationInterval: 2 };
@@ -416,8 +418,8 @@ Animates forward in z-axis and expands to fill the container space
                 <span class="rhythm-label">Rotation</span>
                 <SegmentedControl
                   options={[
-                    { value: "2", label: "Half turns" },
-                    { value: "4", label: "Quarter turns" },
+                    { value: "2", label: "180°" },
+                    { value: "4", label: "90°" },
                   ]}
                   value={String(localRhythm.rotationInterval)}
                   onchange={(v) =>

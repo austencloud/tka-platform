@@ -36,7 +36,7 @@
     {/each}
   </div>
   {#if model.rotation}
-    <div class="ribbon" title="Rotates continuously ({model.rotation.interval === 4 ? 'quarter turns' : 'half turns'})">
+    <div class="ribbon" title="Rotates continuously ({model.rotation.interval === 4 ? '90° slices' : '180° slices'})">
       <span class="ribbon-line"></span>
       <i class="fas fa-rotate" aria-hidden="true"></i>
     </div>

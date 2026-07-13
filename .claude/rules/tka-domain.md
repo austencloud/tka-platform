@@ -86,6 +86,7 @@ When users use incorrect TKA terminology, **explicitly correct it** before answe
 - Types classify by hand path FAMILY (shift, dash, static), not by position.
 - "Both hands move" is NOT what makes Type 1 unique. Multiple types have both hands moving. Type 1 = both **shift**.
 - 1 turn = 180 degrees additional rotation (not 360).
+- **"Turn" is reserved for PROP turns and BODY turns only.** Never use "turns" for anything else — especially not for a LOOP's rotation slice. A loop that rotates its positions 180° or 90° per repeat is "180°"/"90°" (or halved/quartered rotation), NOT "half turns"/"quarter turns". That misnomer collides with prop/body turns and is banned in UI, copy, and comments. (Austen, 2026-07-13: *"'Turns' have a specific meaning in TKA... Body turns and prop turns are the only times we use turns."*)
 - The per-hand learning model (VTG) is not "early learning" or "backwards" — it's a different cognitive preference.
 - The 6-Element Model maps VTG categories + gamma patterns to elements. Use `get_domain_topic("elemental-model")` for full details.
 - Same-direction elements (Earth, Water, Sun) are grid-mode invariant. Opposite-direction elements (Air, Fire, Moon) permute between diamond and box mode.
