@@ -75,6 +75,35 @@
     return () => observer.disconnect();
   });
 
+  /* Deterministic card sizing (mirrors MandalaOptionGrid): each card is the
+     largest 2.5:3.5 that fits its grid cell, capped so it sits at a natural
+     size and centers rather than stretching to fill the column (which left
+     giant white voids inside each card). */
+  const cardCols = $derived((constraints.optionCount ?? 4) > 4 ? 3 : 2);
+  let cardGridEl = $state<HTMLDivElement | undefined>();
+  let cardWidth = $state(170);
+  const CARD_GAP = 12; // px — matches gap in CSS
+  const CARD_RATIO = 3.5 / 2.5; // height / width
+
+  $effect(() => {
+    if (!cardGridEl) return;
+    const cols = cardCols;
+    const rows = Math.ceil((constraints.optionCount ?? 4) / cols);
+    const measure = () => {
+      if (!cardGridEl) return;
+      const w = cardGridEl.clientWidth;
+      const h = cardGridEl.clientHeight;
+      const byWidth = (w - (cols - 1) * CARD_GAP) / cols;
+      const byHeight =
+        h > 0 ? (h - (rows - 1) * CARD_GAP) / rows / CARD_RATIO : Infinity;
+      cardWidth = Math.max(96, Math.min(byWidth, byHeight, 210) | 0);
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(cardGridEl);
+    measure();
+    return () => ro.disconnect();
+  });
+
   let currentSequence = $derived(
     questionData?.questionContent as SequenceData | null
   );
@@ -208,7 +237,12 @@
         {/if}
       </div>
 
-      <div class="card-grid" class:six-up={(constraints.optionCount ?? 4) > 4}>
+      <div
+        class="card-grid"
+        class:six-up={(constraints.optionCount ?? 4) > 4}
+        style="--cols: {cardCols}; --cardw: {cardWidth}px"
+        bind:this={cardGridEl}
+      >
         {#each questionData.answerOptions as option (option.id)}
           <div class="card-slot state-{cardState(option)}">
             <ChoreoCard
@@ -224,23 +258,25 @@
 {/if}
 
 <style>
+  /* Stacked (foldable/tablet/phone): mandala over cards, both at natural
+     height and centered together as a group — no growing flex regions that
+     leave a dead band between them. */
   .quiz-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.25rem;
+    justify-content: center;
+    gap: clamp(1rem, 3svh, 2rem);
     width: 100%;
-    max-width: 480px;
+    max-width: 560px;
     flex: 1;
     min-height: 0;
   }
 
   .stage-column {
-    container-type: size;
     position: relative;
     width: 100%;
-    flex: 1;
-    min-height: 180px;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -251,7 +287,7 @@
   .mandala-stage {
     position: relative;
     aspect-ratio: 1;
-    inline-size: min(52cqh, 80cqw, 380px);
+    inline-size: min(44svh, 86vw, 320px);
     min-inline-size: 140px;
     border-radius: 20px;
     display: flex;
@@ -264,38 +300,32 @@
     );
   }
 
-  /* Height-filling grid: rows share the available height (1fr) and each card
-     slot is the largest 2.5:3.5 card that fits its cell, so a 2×2 (or 3×2)
-     block of tall choreo cards shrinks to fit instead of running off the
-     bottom of the screen. Parent must be height-bounded (portrait flex below /
-     desktop stretch) for this to clamp. */
+  /* Cards sized in JS (--cardw) to the largest natural 2.5:3.5 that fits the
+     cell, then the block is centered. Bounded height comes from the flex
+     parent (portrait) or stretch (desktop) so JS can shrink cards when the
+     screen is short; it never stretches them to fill. */
   .card-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 0.75rem;
+    grid-template-columns: repeat(var(--cols, 2), var(--cardw, 170px));
+    gap: 12px;
     width: 100%;
-    height: 100%;
     min-height: 0;
     place-content: center;
-    flex: 1 1 auto;
-  }
-
-  .card-grid.six-up {
-    grid-template-columns: repeat(3, 1fr);
+    flex: 0 1 auto;
   }
 
   /* Feedback grammar on whole cards: accent ring on the answer, red ring on
      a wrong pick, the rest fall back. ChoreoCard is its own button; the slot
      paints state around it without touching its internals. */
+  /* Natural card aspect (wordcard renders to its own image ratio) — forcing a
+     2.5:3.5 poker shape left big white voids above/below the content. Width is
+     JS-sized to fit; height follows the content. */
   .card-slot {
     position: relative;
-    aspect-ratio: 2.5 / 3.5;
-    max-width: 100%;
-    max-height: 100%;
-    height: 100%;
-    margin: auto;
+    width: var(--cardw, 170px);
+    height: fit-content;
     border-radius: 14px;
+    overflow: hidden;
     transition:
       opacity var(--duration-normal, 200ms) ease,
       box-shadow var(--duration-normal, 200ms) ease;
@@ -315,18 +345,28 @@
     opacity: 0.4;
   }
 
-  /* Desktop: mandala left, cards right. */
-  @media (min-width: 768px) {
+  /* Desktop / foldable: mandala and card cluster centered together as a unit,
+     not shoved to opposite edges. stage-column hugs the mandala (flex:0 1 auto)
+     and the mandala height tracks the card-cluster height (66cqb) so the two
+     read as a matched pair. */
+  @media (min-width: 1024px) {
     .quiz-content {
       flex-direction: row;
       align-items: stretch;
-      max-width: 1000px;
-      gap: 2rem;
+      justify-content: center;
+      max-width: 860px;
+      gap: clamp(1.5rem, 5vw, 3.5rem);
     }
 
     .stage-column {
-      flex: 1;
+      flex: 0 1 auto;
+      width: auto;
       min-height: 340px;
+    }
+
+    /* Row mode: mandala sized to the viewport height, capped. */
+    .mandala-stage {
+      inline-size: min(52svh, 340px);
     }
 
     .card-grid {

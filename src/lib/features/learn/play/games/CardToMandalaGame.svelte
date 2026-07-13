@@ -180,16 +180,15 @@
 {/if}
 
 <style>
-  /* Portrait: card on top, mandalas below, sharing the height so it all fits
-     without scrolling. Options column is height-bounded so MandalaOptionGrid
-     shrinks its tiles to fit; the question card is capped by viewport height. */
+  /* Stacked (foldable/tablet/phone): card on top, mandalas below, both at
+     natural size and centered together as a group. Row split only at ≥1024. */
   .quiz-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    gap: clamp(1rem, 3svh, 2rem);
     width: 100%;
-    max-width: 460px;
+    max-width: 560px;
     flex: 1;
     min-height: 0;
   }
@@ -200,46 +199,46 @@
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
-    width: min(70cqw, 300px, 100%);
-    flex: 0 1 auto;
+    width: min(74vw, 300px);
+    flex: 0 0 auto;
     min-height: 0;
   }
 
+  /* Natural card aspect (wordcard renders to its own ratio) — forcing 2.5:3.5
+     left white voids above/below the content. */
   .question-card {
     width: 100%;
-    max-height: 40svh;
-    aspect-ratio: 2.5 / 3.5;
+    height: fit-content;
   }
 
+  /* Fills the space under the card; MandalaOptionGrid reads this bounded
+     height and sizes its tiles to fit (capped, centered). */
   .options-column {
     width: 100%;
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-height: 0;
     display: flex;
     align-items: stretch;
     justify-content: center;
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 1024px) {
     .quiz-content {
       flex-direction: row;
-      align-items: stretch;
+      align-items: center;
+      justify-content: center;
       max-width: 1000px;
       gap: 2.5rem;
     }
 
     .card-column {
-      flex: 0 0 340px;
+      flex: 0 0 320px;
       width: auto;
       justify-content: center;
     }
 
-    .question-card {
-      max-height: none;
-    }
-
     .options-column {
-      flex: 1;
+      flex: 0 1 auto;
       max-width: 520px;
     }
   }

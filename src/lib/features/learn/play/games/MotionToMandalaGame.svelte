@@ -188,17 +188,15 @@
 {/if}
 
 <style>
-  /* Portrait: stage on top, options below, both sharing the available height
-     so the whole game fits without scrolling. The options column is height-
-     bounded (flex + min-height:0) so MandalaOptionGrid's two-axis sizing can
-     shrink its tiles to fit. */
+  /* Stacked (foldable/tablet/phone): 3D stage on top, mandalas below, both at
+     natural size and centered together as a group. Row split only at ≥1024. */
   .quiz-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1rem;
+    gap: clamp(1rem, 3svh, 2rem);
     width: 100%;
-    max-width: 460px;
+    max-width: 560px;
     flex: 1;
     min-height: 0;
   }
@@ -210,41 +208,46 @@
     align-items: center;
     gap: 0.5rem;
     width: 100%;
-    flex: 0 1 auto;
+    flex: 0 0 auto;
     min-height: 0;
   }
 
   .performer-stage {
-    width: 100%;
+    width: min(74vw, 420px);
     aspect-ratio: 4 / 3;
     max-height: 40svh;
     border-radius: 16px;
     overflow: hidden;
   }
 
+  /* Fills the space under the stage; MandalaOptionGrid reads this bounded
+     height and sizes its tiles to fit (capped, centered). */
   .options-column {
     width: 100%;
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-height: 0;
     display: flex;
     align-items: stretch;
     justify-content: center;
   }
 
-  @media (min-width: 768px) {
+  @media (min-width: 1024px) {
     .quiz-content {
       flex-direction: row;
-      align-items: stretch;
+      align-items: center;
+      justify-content: center;
       max-width: 1050px;
       gap: 2.5rem;
     }
 
     .stage-column {
-      flex: 1;
+      flex: 0 1 auto;
+      width: auto;
       justify-content: center;
     }
 
     .performer-stage {
+      width: 460px;
       min-height: 340px;
       max-height: none;
     }

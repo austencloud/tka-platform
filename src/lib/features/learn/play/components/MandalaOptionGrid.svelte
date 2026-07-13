@@ -46,7 +46,12 @@
       const h = gridEl.clientHeight;
       const byWidth = (w - (cols - 1) * GAP) / cols;
       const byHeight = h > 0 ? (h - (rows - 1) * GAP) / rows : Infinity;
-      tileSize = Math.max(72, Math.floor(Math.min(byWidth, byHeight)));
+      /* MAX caps the tile at a natural size so a tall/wide answer column keeps
+         the mandalas readable and centered (place-content) instead of
+         ballooning to fill every pixel; byHeight only pulls it SMALLER when the
+         screen is genuinely short. */
+      const MAX = 240;
+      tileSize = Math.max(72, Math.min(byWidth, byHeight, MAX) | 0);
     };
     const observer = new ResizeObserver(measure);
     observer.observe(gridEl);
