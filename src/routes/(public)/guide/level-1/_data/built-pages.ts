@@ -29,6 +29,14 @@ import LoopsPage from "../_pages/LoopsPage.svelte";
 import ReversalsPage from "../_pages/ReversalsPage.svelte";
 import ExamplesPage from "../_pages/ExamplesPage.svelte";
 import Type1LoopsPage from "../_pages/Type1LoopsPage.svelte";
+import HybridReversalsPage from "../_pages/HybridReversalsPage.svelte";
+import MixedWordsPage from "../_pages/MixedWordsPage.svelte";
+import GammaLoopsPage from "../_pages/GammaLoopsPage.svelte";
+import Type2LoopsPage from "../_pages/Type2LoopsPage.svelte";
+import SixteenCountPage from "../_pages/SixteenCountPage.svelte";
+import EightLetterWordsPage from "../_pages/EightLetterWordsPage.svelte";
+import PropReversalLoopsPage from "../_pages/PropReversalLoopsPage.svelte";
+import FullReversalLoopsPage from "../_pages/FullReversalLoopsPage.svelte";
 import GuideCodexPage from "../_pages/GuideCodexPage.svelte";
 import GuideCodexPage2 from "../_pages/GuideCodexPage2.svelte";
 
@@ -56,7 +64,15 @@ export const BUILT: Record<string, Component> = {
   "permutations": LoopsPage,
   "reversals": ReversalsPage,
   "examples-abc": ExamplesPage,
+  "examples-cccc": HybridReversalsPage,
+  "examples-acac": MixedWordsPage,
   "misc-permutations": Type1LoopsPage,
+  "gamma-loops": GammaLoopsPage,
+  "type2-loops": Type2LoopsPage,
+  "sixteen-count": SixteenCountPage,
+  "eight-letter-words": EightLetterWordsPage,
+  "prop-reversal-loops": PropReversalLoopsPage,
+  "full-reversal-loops": FullReversalLoopsPage,
   "codex": GuideCodexPage,
   "codex-2": GuideCodexPage2,
 };

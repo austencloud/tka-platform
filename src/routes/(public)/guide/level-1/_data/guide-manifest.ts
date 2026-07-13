@@ -109,8 +109,24 @@ export const GUIDE_BODY_PAGES: GuidePageEntry[] = [
   { id: "permutations", title: "LOOPs", level: 0, group: "1.2" },
   { id: "reversals", title: "Reversals", level: 0, group: "1.2" },
   { id: "examples-abc", title: "Examples", level: 0, group: "1.2" },
+  // Old p35 "Guide pt. 2" — CCCC hybrid reversal variants.
+  { id: "examples-cccc", title: "Hybrid Reversals - CCCC", level: 1, group: "1.2" },
+  // Old p36 "Guide pt. 3" — mixing hybrids with non-hybrids.
+  { id: "examples-acac", title: "Mixed Words - ACAC, BCBC", level: 1, group: "1.2" },
   // "Type 1 CAPs" in the old guide — retitled to the app's LOOP terminology.
   { id: "misc-permutations", title: "Type 1 LOOPs", level: 0, group: "1.2" },
+  // Old p38 "Type 1 Gamma Permutations" — SOTR, VPUQ, MVNU Rotated LOOPs.
+  { id: "gamma-loops", title: "Gamma LOOPs", level: 1, group: "1.2" },
+  // Old p39 "Type 2 CAPs" — BΣTX, EΔUZ, OYHθ Rotated LOOPs.
+  { id: "type2-loops", title: "Type 2 LOOPs", level: 0, group: "1.2" },
+  // Old p40 — GθOZ, EΔQY repeated ×4 into 16-count sequences.
+  { id: "sixteen-count", title: "16-Count Sequences", level: 0, group: "1.2" },
+  // Old p41 — IIΩXKEΣY, CΣNZIθVW repeated twice.
+  { id: "eight-letter-words", title: "8-Letter Words", level: 0, group: "1.2" },
+  // Old p42 "Prop-reversal CAPs" — EΣQY, TWKθ, BΔMX.
+  { id: "prop-reversal-loops", title: "Prop-Reversal LOOPs", level: 0, group: "1.2" },
+  // Old p43 "Full-reversal CAPs" — CCKE, FLII, DAK.
+  { id: "full-reversal-loops", title: "Full-Reversal LOOPs", level: 0, group: "1.2" },
 ];
 
 /** 1-based page number of an entry id, or undefined if not in the manifest. */

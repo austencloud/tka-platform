@@ -320,9 +320,21 @@ LOOP terminology, per existing section filenames already named Loops*.)
     extension's save_to_disk files were not locatable on disk). THE MANIFEST
     IS NOW FULLY BUILT except the parked codex pages (bl-*) awaiting Austen's
     manual direction.
-  - [ ] OPTIONAL new entries for unhomed p35/36/38-43 (CCCC, ACAC/BCBC guide
-    parts, gamma connect, Type 2 LOOPs, 16-count GθOZ/EΔQY, 8-letter words,
-    prop/full-reversal LOOPs) — decide manifest slots, then same recipe.
+  - [x] Unhomed p35/36/38-43 ALL BUILT (2026-07-13 Fable run) — 8 new manifest
+    entries + pages, every step matched to `list_letter_variations` indices,
+    reversal dots derived via bakeReversals (land exactly on the artboard's R
+    marks), print-route screenshots verified vs artboards:
+    `examples-cccc` HybridReversalsPage (AABB rev-after-2nd-B + CCCC
+    hand/prop/full rows) · `examples-acac` MixedWordsPage (ACAC ×2 + BCBC) ·
+    `gamma-loops` GammaLoopsPage (SOTR/VPUQ/MVNU Rotated) · `type2-loops`
+    Type2LoopsPage (BΣTX/EΔUZ/OYHΘ Rotated) · `sixteen-count` SixteenCountPage
+    (GθOZ ×4, EΔQY ×4) · `eight-letter-words` EightLetterWordsPage (IIΩXKEΣY +
+    CΣNZIΘUW; LANDSCAPE original reflowed to portrait Start+4×4; word 2's 7th
+    letter is U not V — dataset U[8]/U[5] are what keep both hands continuous,
+    Austen caught the initial V misread) · `prop-reversal-loops`
+    PropReversalLoopsPage (EΣQY/TWKΘ/BΔMX) · `full-reversal-loops`
+    FullReversalLoopsPage (CCKE/FLII/DAK×4). Convention learned: the TKA
+    webfont cmaps UPPERCASE Greek only (Θ not θ) — tka-font runs must use Θ.
   RUN END 2026-07-09: 10 pages built+committed this run (lt1-abc-ghi through
   examples-abc) + Staff Motions/Hand Motions/Base Letters interactivity.
   Verification caveat for the run's later pages: dev server 5173 went down
