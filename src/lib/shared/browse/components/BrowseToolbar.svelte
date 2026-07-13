@@ -466,6 +466,29 @@
   </div>
   {/if}
 
+  <!-- 4b. Grid zoom (fine pointers only — touch users pinch). Makes the
+       hidden Ctrl+scroll density control discoverable on desktop. -->
+  <div class="zoom-control" role="group" aria-label="Grid density" title="Grid density (Ctrl+scroll also works)">
+    <button
+      type="button"
+      class="zoom-btn"
+      onclick={() => engine.zoomOut()}
+      disabled={!engine.canZoomOut}
+      aria-label="Larger cards (fewer columns)"
+    >
+      <i class="fas fa-magnifying-glass-plus" aria-hidden="true"></i>
+    </button>
+    <button
+      type="button"
+      class="zoom-btn"
+      onclick={() => engine.zoomIn()}
+      disabled={!engine.canZoomIn}
+      aria-label="Smaller cards (more columns)"
+    >
+      <i class="fas fa-magnifying-glass-minus" aria-hidden="true"></i>
+    </button>
+  </div>
+
   <!-- 5. ExpandableSearchBar -->
   {#if !hideSearch}
     <div class="search-slot">
@@ -910,6 +933,57 @@
   @container gallery (min-width: 900px) {
     .inline-filters { display: flex; }
     .toolbar-divider { display: block; }
+  }
+
+  /* ---- Grid zoom (fine pointers only) ---- */
+  .zoom-control {
+    display: none;
+    align-items: center;
+    background: var(--theme-card-bg);
+    border: 1px solid var(--theme-stroke);
+    border-radius: var(--border-radius-md, 10px);
+    padding: 2px;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .zoom-control {
+      display: flex;
+    }
+  }
+
+  .zoom-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: calc(var(--min-touch-target, 48px) - 8px);
+    min-height: 32px;
+    background: transparent;
+    border: none;
+    border-radius: var(--border-radius-sm, 6px);
+    color: var(--theme-text-dim);
+    font-size: var(--font-size-compact, 12px);
+    cursor: pointer;
+    transition:
+      background var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease;
+  }
+
+  .zoom-btn:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--theme-text) 8%, transparent);
+    color: var(--theme-text);
+  }
+
+  .zoom-btn:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .zoom-btn:focus-visible {
+    outline: 2px solid var(--theme-accent);
+    outline-offset: 1px;
   }
 
   /* ---- Search slot ---- */
