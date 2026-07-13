@@ -48,12 +48,17 @@ and the artboard exports under `D:\_THE KINETIC ALPHABET\_GUIDE\artboard-exports
 
 ## Ledger
 
-### Phase 0 — Infrastructure
-- [ ] `level-2/_data/guide-manifest.ts` (34 entries, groups 2.0/2.1/2.2 per below)
-- [ ] `level-2/_data/built-pages.ts` registry
-- [ ] `level-2/print/+page@(public).svelte` + `level-2/book/+page@(public).svelte`
-      reusing level-1 GuideDocument/print CSS (import, don't fork)
-- [ ] Placeholder-page fallback for unbuilt manifest entries (as level-1 had)
+### Phase 0 — Infrastructure ✅ 2026-07-13
+- [x] `level-2/_data/guide-manifest.ts` — 33 body entries, groups 2.0 (1-Turns) / 2.1 (2-Turns)
+- [x] `level-2/_data/built-pages.ts` — BUILT2 registry (empty; pages register as built)
+- [x] `level-2/_components/Level2Document.svelte` — cover + body sequence (no L1-style
+      front matter; original has none). Interim text cover until tracker p1 builds.
+- [x] `level-2/print/+page@(public).svelte` — stacked sheets, shared L1 styles/print mode
+- [x] `level-2/book/+page@(public).svelte` — compare (old v0.5 PDF via pdf.js, offset 0)
+      + flip book; proof at `static/guides/_proof/level-2-v05.pdf`
+- [x] Placeholder fallback (shared L1 PagePlaceholder)
+- Verified: /print renders 34 sheets (cover + 33 body), manifest titles paint,
+  selfTitled suppressed, 33 placeholders (headless Chrome DOM query).
 
 ### Phase 1 — Front + 1-turn pedagogy (original p1–16)
 - [ ] p1 cover — pictograph diamond ring + "The Kinetic Alphabet 2" (level-1 cover pattern)
