@@ -182,14 +182,16 @@ Based on legacy start_to_end_pos_glyph.py implementation.
   // together during playback.
   const PULSE_MS = 400;
 
-  let prevStartPosition = $state<GridPosition | null | undefined>(undefined);
-  let prevEndPosition = $state<GridPosition | null | undefined>(undefined);
-  let prevPulseKey = $state<string | number | null | undefined>(undefined);
+  // Plain lets, NOT $state: the effect both reads and writes these. As $state
+  // the write retriggered the effect, whose cleanup cleared the reset timeout,
+  // leaving isAnimating stuck true — the pulse then played once and never again.
+  let prevStartPosition: GridPosition | null | undefined = undefined;
+  let prevEndPosition: GridPosition | null | undefined = undefined;
+  let prevPulseKey: string | number | null | undefined = undefined;
+  let pulseTimeout: ReturnType<typeof setTimeout> | undefined;
   let isAnimating = $state(false);
 
   $effect(() => {
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-
     // With a pulseKey, beat on every key change (every step). Without one,
     // fall back to pulsing only when the position pair changes.
     const changed =
@@ -199,16 +201,19 @@ Based on legacy start_to_end_pos_glyph.py implementation.
           (prevEndPosition !== undefined && endPosition !== prevEndPosition);
 
     if (changed && (startPosition !== null || endPosition !== null)) {
-      isAnimating = true;
-      timeout = setTimeout(() => { isAnimating = false; }, PULSE_MS);
+      clearTimeout(pulseTimeout);
+      // Drop the class for a frame so a pulse already in flight restarts.
+      isAnimating = false;
+      requestAnimationFrame(() => { isAnimating = true; });
+      pulseTimeout = setTimeout(() => { isAnimating = false; }, PULSE_MS);
     }
 
     prevStartPosition = startPosition;
     prevEndPosition = endPosition;
     prevPulseKey = pulseKey;
-
-    return () => { if (timeout) clearTimeout(timeout); };
   });
+
+  $effect(() => () => clearTimeout(pulseTimeout));
 </script>
 
 {#if shouldRender}

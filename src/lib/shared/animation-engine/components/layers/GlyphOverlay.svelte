@@ -126,6 +126,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
       ? `${stepStartPosition}->${stepEndPosition}`
       : null
   );
+
 </script>
 
 <div class="glyph-overlay" class:dark-mode={darkMode} data-controlled="true">
@@ -177,7 +178,6 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
         {letter}
         visible={true}
         centerX={475}
-        pulseKey={displayedStepNumber}
       />
     {/if}
 
@@ -228,6 +228,20 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     transition: filter var(--duration-fast) ease-out !important;
   }
 
+  /* Beat pulse on the step number: the group remounts on every step (keyed on
+     stepKey), so this mount animation replays at every seam — in time with the
+     golden step ring (same 400ms as guideStepRingIn). */
+  .beat-number-group {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: step-number-pulse 400ms ease-out;
+  }
+  @keyframes step-number-pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(0.91); }
+    100% { transform: scale(1); }
+  }
+
   /* Dark-mode glyph recoloring is handled INSIDE TKAGlyph by swapping the
      letter's <image> source to a white-recolored SVG data URL (driven by its
      darkMode prop) — no filter. A CSS `filter: invert()` here is both
@@ -239,6 +253,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
     .glyph-group,
     .beat-number-group {
       transition: none !important;
+      animation: none !important;
     }
   }
 </style>
