@@ -3,12 +3,8 @@
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import ComposerHeroDemo from "./_components/ComposerHeroDemo.svelte";
   import ComposerGenerateDemo from "./_components/ComposerGenerateDemo.svelte";
-  import ComposerPropSwitcherDemo from "./_components/ComposerPropSwitcherDemo.svelte";
-  import ComposerMicroGameDemo from "./_components/ComposerMicroGameDemo.svelte";
-  import ComposerPracticeStepperDemo from "./_components/ComposerPracticeStepperDemo.svelte";
   import ComposerQrDemo from "./_components/ComposerQrDemo.svelte";
   import ComposerGalleryDemo from "./_components/ComposerGalleryDemo.svelte";
-  import ComposerExportDemo from "./_components/ComposerExportDemo.svelte";
   import GuidePictograph from "../guide/level-1/_components/GuidePictograph.svelte";
   import { DEMO_LETTER_BEATS } from "./_data/demo-beats";
   import "$lib/shared/landing/styles/public-editorial.css";
@@ -315,26 +311,10 @@
     <span class="section-kicker">Features</span>
     <h2 class="section-title">Also in the app today</h2>
     <div class="prose">
-      <p>Every one of these is live. Most of them you can poke right here.</p>
+      <p>Every one of these is live in the app today.</p>
     </div>
     <div class="breakout">
       <div class="bento">
-        <div class="bento-cell">
-          <ComposerPropSwitcherDemo />
-          <div class="bento-text">
-            <strong>Props</strong>
-            <span>the same sequence, any prop. Eleven supported, five to try here</span>
-          </div>
-        </div>
-
-        <div class="bento-cell">
-          <ComposerMicroGameDemo />
-          <div class="bento-text">
-            <strong>Games</strong>
-            <span>an arcade built from the alphabet. This is one round of one of them</span>
-          </div>
-        </div>
-
         <div class="bento-cell">
           <ComposerGalleryDemo />
           <div class="bento-text">
@@ -344,10 +324,15 @@
         </div>
 
         <div class="bento-cell">
-          <ComposerExportDemo />
+          <div
+            class="bento-media"
+            style:background-image={`url(/marketing/export-render.webp)`}
+            role="img"
+            aria-label="An exported sequence card: the full CΨΩX pictograph grid with credits"
+          ></div>
           <div class="bento-text">
-            <strong>Image export</strong>
-            <span>the app's actual export pipeline, rendering in your browser</span>
+            <strong>Image and video export</strong>
+            <span>this is an actual export of the sequence above, rendered by the app</span>
           </div>
         </div>
 
@@ -356,14 +341,6 @@
           <div class="bento-text">
             <strong>QR share links</strong>
             <span>every export carries one</span>
-          </div>
-        </div>
-
-        <div class="bento-cell">
-          <ComposerPracticeStepperDemo />
-          <div class="bento-text">
-            <strong>Practice modes</strong>
-            <span>drill sequences step by step</span>
           </div>
         </div>
 
@@ -377,6 +354,27 @@
           <div class="bento-text">
             <strong>Library</strong>
             <span>collections and smart collections for everything you save. Yours needs an account, so here is a peek at ours</span>
+          </div>
+        </div>
+
+        <div class="bento-cell text-only">
+          <div class="bento-text">
+            <strong>Props</strong>
+            <span>eleven supported: staff, fan, hoop, buugeng, triad, club, sword, double star, eight rings, guitar, quiad</span>
+          </div>
+        </div>
+
+        <div class="bento-cell text-only">
+          <div class="bento-text">
+            <strong>Games</strong>
+            <span>an arcade built from the alphabet, with best scores to chase</span>
+          </div>
+        </div>
+
+        <div class="bento-cell text-only">
+          <div class="bento-text">
+            <strong>Practice modes</strong>
+            <span>drill sequences step by step</span>
           </div>
         </div>
 
