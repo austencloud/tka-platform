@@ -10,6 +10,7 @@ import TurnsPage from "../_pages/TurnsPage.svelte";
 import DashStaticTurnsPage from "../_pages/DashStaticTurnsPage.svelte";
 import GlyphsPadsPage from "../_pages/GlyphsPadsPage.svelte";
 import Type1DualShiftPage from "../_pages/Type1DualShiftPage.svelte";
+import SAndTPage from "../_pages/SAndTPage.svelte";
 
 export const BUILT2: Record<string, Component> = {
   // Pages register here as they are built (see the level-2 rebuild tracker).
@@ -18,4 +19,5 @@ export const BUILT2: Record<string, Component> = {
   "turns-dash-static": DashStaticTurnsPage,
   "glyphs-pads": GlyphsPadsPage,
   "t1-dual-shift": Type1DualShiftPage,
+  "s-and-t": SAndTPage,
 };
