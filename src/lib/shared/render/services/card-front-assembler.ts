@@ -151,8 +151,20 @@ export function computeCardFrontLayout(
   const gridOffsetY = options.deckCard
     ? headerHeight + Math.floor((canvasHeight - headerHeight - footerHeight - gridHeight) / 2)
     : headerHeight;
+  // Optical centering for print cards: pictograph annotations (step number
+  // and TKA letter at x=50, reversal dots at x≈71 in the 950-unit viewbox)
+  // all anchor near each cell's LEFT edge, while the right edge is bare grid
+  // circle ending at x=775. Centering the geometric cell grid therefore
+  // leaves ~2.5x more blank margin on the right of the card than the left
+  // (measured 35px vs 57px on a 678px content). Shift the grid right by half
+  // the per-cell ink-inset difference so the INK centers, not the cells.
+  const INK_INSET_LEFT_UNITS = 50; // tightest left anchor (step number / letter)
+  const INK_INSET_RIGHT_UNITS = 175; // 950 - grid outer point at x=775
+  const opticalShiftX = options.deckCard
+    ? Math.round(((INK_INSET_RIGHT_UNITS - INK_INSET_LEFT_UNITS) / 950) * stepSize / 2)
+    : 0;
   const gridOffsetX = options.deckCard
-    ? Math.floor((canvasWidth - gridWidth) / 2)
+    ? Math.floor((canvasWidth - gridWidth) / 2) + opticalShiftX
     : 0;
 
   const layoutMode = options.startPositionLayout ?? "row";
