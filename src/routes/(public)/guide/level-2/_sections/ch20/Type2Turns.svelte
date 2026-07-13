@@ -8,7 +8,7 @@
   </p>
 
   <p>
-    For Type 2, high = shift and low = static. This includes W, X, Y, Z, Σ, Δ, θ, and Ω.
+    For Type 2, high = shift and low = static. This includes W, X, Y, Z, Σ, Δ, Θ, and Ω.
   </p>
 
   <!-- TODO: add diagram — W-High-One (static hand is still, should be simple to execute) -->

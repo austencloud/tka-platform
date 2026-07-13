@@ -22,8 +22,8 @@
   />
 
   <GuideDiagram
-    src="/guide/level-1/images/type-2-caps/OYHθ.png"
-    alt="OYHθ: Rotated LOOP"
+    src="/guide/level-1/images/type-2-caps/OYHΘ.png"
+    alt="OYHΘ: Rotated LOOP"
     caption="OYH&#x3B8;: Rotated LOOP"
   />
 </GuideSection>

@@ -117,13 +117,13 @@ export const GUIDE_BODY_PAGES: GuidePageEntry[] = [
   { id: "misc-permutations", title: "Type 1 LOOPs", level: 0, group: "1.2" },
   // Old p38 "Type 1 Gamma Permutations" — SOTR, VPUQ, MVNU Rotated LOOPs.
   { id: "gamma-loops", title: "Gamma LOOPs", level: 1, group: "1.2" },
-  // Old p39 "Type 2 CAPs" — BΣTX, EΔUZ, OYHθ Rotated LOOPs.
+  // Old p39 "Type 2 CAPs" — BΣTX, EΔUZ, OYHΘ Rotated LOOPs.
   { id: "type2-loops", title: "Type 2 LOOPs", level: 0, group: "1.2" },
-  // Old p40 — GθOZ, EΔQY repeated ×4 into 16-count sequences.
+  // Old p40 — GΘOZ, EΔQY repeated ×4 into 16-count sequences.
   { id: "sixteen-count", title: "16-Count Sequences", level: 0, group: "1.2" },
-  // Old p41 — IIΩXKEΣY, CΣNZIθVW repeated twice.
+  // Old p41 — IIΩXKEΣY, CΣNZIΘVW repeated twice.
   { id: "eight-letter-words", title: "8-Letter Words", level: 0, group: "1.2" },
-  // Old p42 "Prop-reversal CAPs" — EΣQY, TWKθ, BΔMX.
+  // Old p42 "Prop-reversal CAPs" — EΣQY, TWKΘ, BΔMX.
   { id: "prop-reversal-loops", title: "Prop-Reversal LOOPs", level: 0, group: "1.2" },
   // Old p43 "Full-reversal CAPs" — CCKE, FLII, DAK.
   { id: "full-reversal-loops", title: "Full-Reversal LOOPs", level: 0, group: "1.2" },

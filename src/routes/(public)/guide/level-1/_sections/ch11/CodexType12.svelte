@@ -26,7 +26,7 @@
 
   <h3 class="type-shift">Type 2: Shift</h3>
   <div class="codex-grid codex-grid--type2">
-    {#each ["W", "X", "Y", "Z", "Σ", "Δ", "θ", "Ω"] as letter}
+    {#each ["W", "X", "Y", "Z", "Σ", "Δ", "Θ", "Ω"] as letter}
       <figure class="codex-cell">
         <img
           src="/guide/level-1/images/double-staff-codex/{letter}.webp"

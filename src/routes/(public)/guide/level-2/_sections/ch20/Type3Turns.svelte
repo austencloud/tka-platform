@@ -8,7 +8,7 @@
   </p>
 
   <p>
-    For Type 3, high = shift and low = dash. This includes W-, X-, Y-, Z-, Σ-, Δ-, θ-, and Ω-.
+    For Type 3, high = shift and low = dash. This includes W-, X-, Y-, Z-, Σ-, Δ-, Θ-, and Ω-.
   </p>
 
   <!-- TODO: add diagram — Z-Dash High-One (affects the shift only) -->

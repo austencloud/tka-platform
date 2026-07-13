@@ -11,8 +11,8 @@
     This means it will take 4 repetitions to return to home. (Rotated+Swapped LOOP)
   </p>
   <GuideDiagram
-    src="/guide/level-1/images/16-count-sequences/GθOZ.png"
-    alt="GθOZ: 16-count Rotated+Swapped LOOP"
+    src="/guide/level-1/images/16-count-sequences/GΘOZ.png"
+    alt="GΘOZ: 16-count Rotated+Swapped LOOP"
     caption="G&#x3B8;OZ: Rotated+Swapped LOOP"
   />
 

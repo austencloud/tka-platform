@@ -2255,7 +2255,7 @@ export const PROOF_TEXT: Record<string, ProofRun[]> = {
       "w": 558,
       "fs": 16,
       "s": "regular",
-      "t": "When we arrange them in continuous motions, we get the words WΣYθ and XΔZΩ."
+      "t": "When we arrange them in continuous motions, we get the words WΣYΘ and XΔZΩ."
     },
     {
       "x": 93.2,

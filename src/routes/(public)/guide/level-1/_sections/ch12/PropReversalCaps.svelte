@@ -15,8 +15,8 @@
   />
 
   <GuideDiagram
-    src="/guide/level-1/images/prop-rev-caps/TWKθ.png"
-    alt="TWKθ: Rotated LOOP with prop-reversal"
+    src="/guide/level-1/images/prop-rev-caps/TWKΘ.png"
+    alt="TWKΘ: Rotated LOOP with prop-reversal"
     caption="TWK&#x3B8;: Rotated LOOP"
   />
 

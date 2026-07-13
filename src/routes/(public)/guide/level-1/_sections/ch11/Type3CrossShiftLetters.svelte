@@ -21,7 +21,7 @@
         { data: p("Z--0"), label: "Z-" },
         { data: p("Σ--0"), label: "Σ-" },
         { data: p("Δ--0"), label: "Δ-" },
-        { data: p("Θ--0"), label: "θ-" },
+        { data: p("Θ--0"), label: "Θ-" },
         { data: p("Ω--0"), label: "Ω-" },
       ],
     },

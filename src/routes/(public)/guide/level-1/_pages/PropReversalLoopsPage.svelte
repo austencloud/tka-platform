@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
    * Prop-Reversal LOOPs — body page (manifest `prop-reversal-loops`), faithful
-   * to "1.2 - Prop-Reversal Permutations, EΣQY, TWKθ, BΔMX" artboard (old p42;
+   * to "1.2 - Prop-Reversal Permutations, EΣQY, TWKΘ, BΔMX" artboard (old p42;
    * "Prop-reversal CAPs" — CAP→LOOP facelift).
    *
    * Three 8-step Rotated LOOPs that each REQUIRE prop-reversals (Start + 2
@@ -10,7 +10,7 @@
    *   EΣQY — red R on 2, 3, 6, 7 (the pro Σ/Q corners flip red's rotation);
    *   blue rides CCW with statics between. E[6] Σ[7] Q[5] Y[2] / E[5] Σ[4]
    *   Q[6] Y[0].
-   *   TWKθ — blue R on 2 and 8, red R on 4 and 6, both on 5. T[8] W[10] K[1]
+   *   TWKΘ — blue R on 2 and 8, red R on 4 and 6, both on 5. T[8] W[10] K[1]
    *   Θ[2] / T[3] W[0] K[6] Θ[8].
    *   BΔMX — red R on 3, 5, 7; red stops (static) on 2, 4, 6, 8 and still
    *   reverses across the stop, which is the page's teaching point. B Δ[10]
@@ -127,7 +127,7 @@
       ],
     },
     {
-      // TWKθ ×2 — blue R on 2 and 8, red R on 4 and 6, both on 5.
+      // TWKΘ ×2 — blue R on 2 and 8, red R on 4 and 6, both on 5.
       key: "prl-twkt",
       word: "TWKΘ Rotated",
       startLetter: Letter.GAMMA,

@@ -5,7 +5,7 @@
 <GuideSection id="codex-type-3-6" title="Codex: Types 3–6">
   <h3 class="type-cross-shift">Type 3: Cross-Shift</h3>
   <div class="codex-grid">
-    {#each ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "θ-", "Ω-"] as letter}
+    {#each ["W-", "X-", "Y-", "Z-", "Σ-", "Δ-", "Θ-", "Ω-"] as letter}
       <figure class="codex-cell">
         <img
           src="/guide/level-1/images/double-staff-codex/{letter}.webp"

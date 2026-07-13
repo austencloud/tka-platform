@@ -1,12 +1,12 @@
 <script lang="ts">
   /**
    * 16-Count Sequences — body page (manifest `sixteen-count`), faithful to
-   * "1.2 - 16-count sequences - GθOZ, EΔQY" artboard (old p40; CAP→LOOP
+   * "1.2 - 16-count sequences - GΘOZ, EΔQY" artboard (old p40; CAP→LOOP
    * facelift).
    *
    * Two 4-letter words repeated 4 times → 16-count sequences (Start + 4 rows
    * of 4, real staff pictographs):
-   *   GθOZ — each repetition ends in a β 90° from its start, so 4 repetitions
+   *   GΘOZ — each repetition ends in a β 90° from its start, so 4 repetitions
    *   return home. Rotated + Swapped LOOP. Variations G[6] Θ[15] O[8] Z[1] /
    *   G[4] Θ[6] O[7] Z[10] / G[5] Θ[4] O[6] Z[11] / G[7] Θ[13] O[11] Z[0].
    *   Blue and red props both CCW throughout.
@@ -21,7 +21,7 @@
    * Reader: each sequence is one clickable strip playing Start + 16 steps.
    *
    * Geometry off the artboard scan (20px/pt): 82pt cells; Start x 193.3, step
-   * rows x 275.3; GθOZ rows y 107.8 (82pt pitch), EΔQY rows y 459; heavy rules
+   * rows x 275.3; GΘOZ rows y 107.8 (82pt pitch), EΔQY rows y 459; heavy rules
    * y 92.2/447.7; side text in the left column.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
@@ -105,9 +105,9 @@
   };
   const SEQS: SeqDef[] = [
     {
-      // GθOZ ×4 — Rotated + Swapped LOOP; both props CCW throughout.
+      // GΘOZ ×4 — Rotated + Swapped LOOP; both props CCW throughout.
       key: "sc-gtoz",
-      word: "GθOZ ×4",
+      word: "GΘOZ ×4",
       rowY: 107.8,
       steps: [
         st(G, h(false, SO_, E), h(false, SO_, E)),
@@ -201,7 +201,7 @@
   const ROW_X = 275.3;
   const RULES = [92.2, 447.7];
   const MARGINS = [
-    { t: "GθOZ", y: 146 },
+    { t: "GΘOZ", y: 146 },
     { t: "EΔQY", y: 499 },
   ];
 
