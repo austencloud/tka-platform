@@ -180,11 +180,14 @@
 {/if}
 
 <style>
+  /* Portrait: card on top, mandalas below, sharing the height so it all fits
+     without scrolling. Options column is height-bounded so MandalaOptionGrid
+     shrinks its tiles to fit; the question card is capped by viewport height. */
   .quiz-content {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.25rem;
+    gap: 1rem;
     width: 100%;
     max-width: 460px;
     flex: 1;
@@ -198,22 +201,29 @@
     align-items: center;
     gap: 0.5rem;
     width: min(70cqw, 300px, 100%);
+    flex: 0 1 auto;
+    min-height: 0;
   }
 
   .question-card {
     width: 100%;
+    max-height: 40svh;
+    aspect-ratio: 2.5 / 3.5;
   }
 
   .options-column {
     width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
-    align-items: center;
+    align-items: stretch;
+    justify-content: center;
   }
 
   @media (min-width: 768px) {
     .quiz-content {
       flex-direction: row;
-      align-items: center;
+      align-items: stretch;
       max-width: 1000px;
       gap: 2.5rem;
     }
@@ -221,6 +231,11 @@
     .card-column {
       flex: 0 0 340px;
       width: auto;
+      justify-content: center;
+    }
+
+    .question-card {
+      max-height: none;
     }
 
     .options-column {

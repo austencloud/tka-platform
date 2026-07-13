@@ -25,18 +25,28 @@
   } = $props();
 
   let gridEl = $state<HTMLElement | undefined>();
-  let tileSize = $state(160);
+  let tileSize = $state(120);
 
-  /* Tiles are equal square tracks, so measuring the first one sizes all of
-     them. Observing the grid (not a looped element) keeps the markup free of
-     conditional bind gymnastics. */
+  const GAP = 12; // px — must match the `gap` in CSS below
+  const cols = $derived(options.length > 4 ? 3 : 2);
+  const rows = $derived(Math.ceil(options.length / cols));
+
+  /* Two-axis sizing: the tile is the largest square that fits BOTH the width
+     each column gets AND the height each row gets. Width-only sizing (the old
+     approach) let a 2×N square block grow taller than the viewport, so the
+     answers fell below the fold on short/foldable screens. Reading the grid's
+     own clientHeight (it fills a height-bounded parent) lets the tiles shrink
+     to fit instead of overflowing. No feedback loop: the grid is sized by its
+     parent, not by its tile content, so setting --tile doesn't resize it. */
   $effect(() => {
     if (!gridEl) return;
     const measure = () => {
-      const tile = gridEl?.querySelector(".mandala-holder");
-      if (!tile) return;
-      const rect = tile.getBoundingClientRect();
-      tileSize = Math.max(72, Math.floor(Math.min(rect.width, rect.height)));
+      if (!gridEl) return;
+      const w = gridEl.clientWidth;
+      const h = gridEl.clientHeight;
+      const byWidth = (w - (cols - 1) * GAP) / cols;
+      const byHeight = h > 0 ? (h - (rows - 1) * GAP) / rows : Infinity;
+      tileSize = Math.max(72, Math.floor(Math.min(byWidth, byHeight)));
     };
     const observer = new ResizeObserver(measure);
     observer.observe(gridEl);
@@ -52,7 +62,12 @@
   }
 </script>
 
-<div class="mandala-options" class:six-up={options.length > 4} bind:this={gridEl}>
+<div
+  class="mandala-options"
+  class:six-up={options.length > 4}
+  style="--cols: {cols}; --tile: {tileSize}px"
+  bind:this={gridEl}
+>
   {#each options as option, i (option.id)}
     <button
       type="button"
@@ -73,20 +88,23 @@
 </div>
 
 <style>
+  /* Fills a height-bounded parent and centers the sized tile block; columns
+     and tile edge come from JS (two-axis fit) so the block never taller than
+     the space it's given. gap here must equal GAP in the script. */
   .mandala-options {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: clamp(0.5rem, 1.2vw, 1rem);
+    grid-template-columns: repeat(var(--cols, 2), var(--tile, 120px));
+    grid-auto-rows: var(--tile, 120px);
+    gap: 12px;
     width: 100%;
-  }
-
-  .mandala-options.six-up {
-    grid-template-columns: repeat(3, 1fr);
+    height: 100%;
+    place-content: center;
   }
 
   .tile {
     position: relative;
-    aspect-ratio: 1;
+    width: var(--tile, 120px);
+    height: var(--tile, 120px);
     min-width: var(--min-touch-target);
     min-height: var(--min-touch-target);
     padding: clamp(4px, 0.8vw, 10px);

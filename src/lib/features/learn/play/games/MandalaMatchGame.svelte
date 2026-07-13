@@ -264,11 +264,21 @@
     );
   }
 
+  /* Height-filling grid: rows share the available height (1fr) and each card
+     slot is the largest 2.5:3.5 card that fits its cell, so a 2×2 (or 3×2)
+     block of tall choreo cards shrinks to fit instead of running off the
+     bottom of the screen. Parent must be height-bounded (portrait flex below /
+     desktop stretch) for this to clamp. */
   .card-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
     gap: 0.75rem;
     width: 100%;
+    height: 100%;
+    min-height: 0;
+    place-content: center;
+    flex: 1 1 auto;
   }
 
   .card-grid.six-up {
@@ -280,6 +290,11 @@
      paints state around it without touching its internals. */
   .card-slot {
     position: relative;
+    aspect-ratio: 2.5 / 3.5;
+    max-width: 100%;
+    max-height: 100%;
+    height: 100%;
+    margin: auto;
     border-radius: 14px;
     transition:
       opacity var(--duration-normal, 200ms) ease,
