@@ -12,6 +12,7 @@ import GlyphsPadsPage from "../_pages/GlyphsPadsPage.svelte";
 import Type1DualShiftPage from "../_pages/Type1DualShiftPage.svelte";
 import SAndTPage from "../_pages/SAndTPage.svelte";
 import Type2ShiftPage from "../_pages/Type2ShiftPage.svelte";
+import Type3CrossShiftPage from "../_pages/Type3CrossShiftPage.svelte";
 
 export const BUILT2: Record<string, Component> = {
   // Pages register here as they are built (see the level-2 rebuild tracker).
@@ -22,4 +23,5 @@ export const BUILT2: Record<string, Component> = {
   "t1-dual-shift": Type1DualShiftPage,
   "s-and-t": SAndTPage,
   "t2-shift": Type2ShiftPage,
+  "t3-cross-shift": Type3CrossShiftPage,
 };
