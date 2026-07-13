@@ -168,10 +168,6 @@ Based on legacy start_to_end_pos_glyph.py implementation.
   // Use centerX prop for horizontal centering (supports expanded timeline cells)
   const groupX = $derived(centerX - totalWidth / 2);
 
-  // Center point for scale animation
-  const animCenterX = $derived(groupX + totalWidth / 2);
-  const animCenterY = Y_POSITION + scaledLetterHeight / 2;
-
   // ============================================================================
   // POSITION CHANGE ANIMATION
   // ============================================================================
@@ -205,9 +201,7 @@ Based on legacy start_to_end_pos_glyph.py implementation.
     class:visible
     class:preview-mode={previewMode}
     class:interactive={onToggle !== undefined}
-    class:animating={isAnimating}
     transform="translate({groupX}, {Y_POSITION})"
-    style="transform-origin: {animCenterX}px {animCenterY}px"
     onclick={onToggle}
     {...onToggle
       ? {
@@ -217,6 +211,10 @@ Based on legacy start_to_end_pos_glyph.py implementation.
         }
       : {}}
   >
+    <!-- Pulse runs on this inner group: CSS transform animations override the
+         SVG transform attribute, so animating the outer <g> would wipe its
+         centering translate and park the glyph at the left edge mid-pulse. -->
+    <g class="pulse-target" class:animating={isAnimating}>
     <!-- Start position letter -->
     {#if startSvgPath}
       <image
@@ -250,6 +248,7 @@ Based on legacy start_to_end_pos_glyph.py implementation.
         aria-label={`End position: ${endGroup}`}
       />
     {/if}
+    </g>
   </g>
 {/if}
 
@@ -305,13 +304,15 @@ Based on legacy start_to_end_pos_glyph.py implementation.
     }
   }
 
-  .position-glyph.animating {
+  .pulse-target.animating {
+    transform-box: fill-box;
+    transform-origin: center;
     animation: position-pulse 180ms ease-in-out;
   }
 
   /* Respect reduced motion preference */
   @media (prefers-reduced-motion: reduce) {
-    .position-glyph.animating {
+    .pulse-target.animating {
       animation: none;
     }
   }
