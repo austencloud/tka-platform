@@ -8,6 +8,10 @@
 
 **Tech Stack:** TypeScript, Svelte 5, Three.js math (Vector3/Quaternion only — no scene graph in scan code), vitest, tsx for scripts.
 
+> **STATUS 2026-07-13:** Tasks 1,2,3,5,6,7,10 SHIPPED (branch `feat/wall-plane-feasibility`). Task 4 (visual gate) pending Austen. **Tasks 8, 9, 11 PAUSED.**
+>
+> **Finding from Task 10:** in-plane concavity alone does NOT clear collisions — pulling `concaveDepth k`→1 moves the staff toward grid center = toward the torso, so `prop-through-torso` depth rises. 13+ synthetic ANTI configs: none collided at k=0 and cleared at k=1. The real cheat is COUPLED to per-hand depth (z-offset off the wall plane, under the shoulder). Concavity (in-plane radius) and depth are not separable as the original phasing assumed. Decision (Austen): pause 8/9/11 and re-spec Phase 3 as a JOINT solver over `(k, zBlue, zRed)` before wiring detection. New spec supersedes Tasks 8-11 here. See `reference_concavity_needs_depth_coupling` in memory.
+
 **Ledger discipline (fable-routing):** mark each step `- [x]` as completed, `- [~] reason` if deferred. Executors: re-read this plan at the start of each task; commit with explicit pathspec (`git commit -m "..." -- <files>`); prove completion with test/grep output.
 
 **Known trap:** `scripts/scan-collision-lab.ts` imports stale pre-extraction paths (`.../services/implementations/StanceSimulator`, `src/lib/shared/3d/domain/enums/Plane`) that no longer exist. Do NOT copy its imports. Live paths are `src/lib/features/lab/tabs/collision-lab/services/stance-simulator.ts` (class `StanceSimulator`, `restPoseFromHeight`), `.../services/types.ts` (`SimPropTarget`, `SimResult`), and `Plane` from `@austencloud/scene-3d`.
