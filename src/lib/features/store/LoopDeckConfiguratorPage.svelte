@@ -168,9 +168,12 @@
   // hidden, so the fan claims almost the whole stage (bigger, prettier beauty
   // shot); desktop keeps room for the descriptive line beneath the fan.
   const previewMaxCardW = $derived.by(() => {
+    // Mobile stage is content-sized (hugs the fan), so capping by previewH
+    // would be circular. Use a fixed ceiling; the fan is width-limited on a
+    // phone anyway, so this only guards ultrawide-in-narrow edge cases.
+    if (narrowPreview) return 168;
     if (previewH <= 0) return 340;
-    const reserve = narrowPreview ? 24 : 110;
-    return Math.max(110, Math.round(((previewH - reserve) * 5) / 7));
+    return Math.max(110, Math.round(((previewH - 110) * 5) / 7));
   });
   let wasCheckingOut = false;
   $effect(() => {
@@ -425,6 +428,16 @@
   });
   let pageW = $state(0);
   const narrow = $derived(pageW > 0 && pageW < 720);
+  // Mobile stage height = the fan's width-limited card height + chrome, so the
+  // stage hugs the fan instead of standing tall with dead space. The fan is
+  // width-driven on a phone (3 cards must share the stage width): card width =
+  // stageW / ((1 + restPitch*(n-1)) * tiltSlack) = stageW / 2.313 at n=3, cap
+  // 168; card height = width * 7/5; + ~62 for fan/stage padding and tilt lift.
+  const mobileStageH = $derived.by(() => {
+    if (previewW <= 0) return 0;
+    const cardW = Math.min(168, previewW / 2.313);
+    return Math.round(cardW * 1.4) + 30;
+  });
 
   const flavorTileValue = $derived(flavorLabel(flavor));
   const price = $derived(
@@ -455,9 +468,12 @@
             bind:this={previewBoxEl}
             bind:clientWidth={previewW}
             bind:clientHeight={previewH}
+            style:height={narrow && mobileStageH ? `${mobileStageH}px` : undefined}
           >
-            <!-- fill mode: the stage is the sized box, so config swaps can
-                 never resize it (crossfade-primitive routing). -->
+            <!-- fill mode keeps the fan at full stage WIDTH (content-sizing
+                 collapses it to min-content). The stage HEIGHT is driven to
+                 the fan's width-limited height on mobile (see mobileStageH),
+                 so the box hugs the fan with no dead gradient above/below. -->
             <!-- Keyed on pack identity only: picking a pack (or leaving one)
                  re-deals; dial tweaks swap the card faces in place. -->
             <Crossfade key={settledFanKey} fill>
@@ -1179,8 +1195,10 @@
     .preview-desc {
       display: none;
     }
+    /* Stage padding trims on mobile; the height itself is set inline from
+       mobileStageH so the box hugs the width-limited fan (no dead gradient),
+       which also lifts the picker clear of the dock. */
     .preview-box {
-      height: 264px;
       padding: 10px;
     }
     /* Tighter vertical rhythm so the title lockup + bubbles sit high, not
