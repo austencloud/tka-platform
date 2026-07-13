@@ -8,10 +8,12 @@ import type { Component } from "svelte";
 import DividerOneTurnsPage from "../_pages/DividerOneTurnsPage.svelte";
 import TurnsPage from "../_pages/TurnsPage.svelte";
 import DashStaticTurnsPage from "../_pages/DashStaticTurnsPage.svelte";
+import GlyphsPadsPage from "../_pages/GlyphsPadsPage.svelte";
 
 export const BUILT2: Record<string, Component> = {
   // Pages register here as they are built (see the level-2 rebuild tracker).
   "divider-1-turns": DividerOneTurnsPage,
   "turns-shifts": TurnsPage,
   "turns-dash-static": DashStaticTurnsPage,
+  "glyphs-pads": GlyphsPadsPage,
 };

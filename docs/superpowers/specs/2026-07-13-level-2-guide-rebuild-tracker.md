@@ -76,7 +76,9 @@ and the artboard exports under `D:\_THE KINETIC ALPHABET\_GUIDE\artboard-exports
       grid center); static = STATIC E turns=1 in→out CCW (renderer draws the over-staff
       arrow; halfway vertical at E hand point). Static-vs-Shift arrow compare boxes are
       real pictographs. Screenshot-verified.
-- [ ] p5 Glyphs/PADS — high/low slots, PADS order, hybrid table (Type 1–4 + left/right)
+- [x] p5 Glyphs/PADS — high/low slots (big A), PADS priority arrow + Shifts brace, five
+      hybrid example pictographs (all MCP-verified: Type1 C[11], S/T S[8], Type2 W[9],
+      Type3 Σ-[9], Type4 Φ[4]) + left/right same-type example A[3]. Screenshot-verified.
 - [ ] p6 Type 1 Dual-Shift — A¹/B¹ breakdowns, C¹ vs C₁ (pro-high/anti-low)
 - [ ] p7 S and T — leading/following, S¹/S₁/T¹/T₁ breakdowns
 - [ ] p8 Type 2 Shift — W¹, Ẇ₁ (same) vs W̥₁ (opp), same/opp dots introduced
