@@ -46,8 +46,8 @@ import {
   SWAPPED_LOOP_VALIDATION_SET,
   INVERTED_LOOP_VALIDATION_SET,
   MIRRORED_SWAPPED_VALIDATION_SET,
-  ROTATED_SWAPPED_BETA_QUARTERED_VALIDATION_SET,
-  ROTATED_SWAPPED_BETA_HALVED_VALIDATION_SET,
+  ROTATED_SWAPPED_NONDEGENERATE_QUARTERED_VALIDATION_SET,
+  ROTATED_SWAPPED_NONDEGENERATE_HALVED_VALIDATION_SET,
 } from "$lib/features/create/generate/circular/domain/constants/strict-loop-position-maps";
 
 /**
@@ -199,13 +199,13 @@ export class LOOPValidator {
       period === Period.QUARTERED ? QUARTERED_LOOPS : HALVED_LOOPS;
 
     // Rotated+Swapped LOOPs need composed validation (rotation THEN swap),
-    // restricted to beta starts — the only positions where the combo is
-    // non-degenerate (alpha: rotate+swap cancel per-hand; gamma: unsupported
-    // by the generation seam). Matches the engine-side gate.
+    // excluding alpha starts, where rotate+swap cancel per-hand and the
+    // combo degenerates. Beta and gamma are genuine. Matches the engine-side
+    // composed swap(rotate(start)) seam gate.
     const rotatedSwappedSet =
       period === Period.QUARTERED
-        ? ROTATED_SWAPPED_BETA_QUARTERED_VALIDATION_SET
-        : ROTATED_SWAPPED_BETA_HALVED_VALIDATION_SET;
+        ? ROTATED_SWAPPED_NONDEGENERATE_QUARTERED_VALIDATION_SET
+        : ROTATED_SWAPPED_NONDEGENERATE_HALVED_VALIDATION_SET;
 
     switch (loopType) {
       // Pure rotation-based LOOPs (no swap component)

@@ -69,16 +69,22 @@ export class LOOPEndPositionSelector {
         // Inverted LOOP returns to start position (same position)
         return startPosition;
 
-      // Rotated + Swapped (± Inverted): rotation and swap cancel per-hand from
-      // alpha starts (hands already sit at each other's 180° image), and the
-      // rotate-only seam mistargets gamma starts (correct target is
-      // swap(rotate(start))). Beta starts are the proven non-degenerate set —
-      // both hands share a point, so swap is positionally invisible and the
-      // rotation survives intact. Empirical: 25-run audits, 2026-07-13.
+      // Rotated + Swapped (± Inverted): seed must end at swap(rotate(start)).
+      // Alpha starts are degenerate — the hands already sit at each other's
+      // 180° image, so rotate-then-swap is the per-hand identity and the
+      // rotation vanishes. Beta (swap positionally invisible: same point) and
+      // gamma (right angle) are genuine. Empirical: forced-start audits
+      // 2026-07-13 — gamma 16/16, beta 25/25 exact-type detection.
       case LOOPType.ROTATED_SWAPPED:
-      case LOOPType.ROTATED_SWAPPED_INVERTED:
-        if (!startPosition.startsWith("beta")) return null;
-        return this.rotatedSelector.determineRotatedEndPosition(period, startPosition);
+      case LOOPType.ROTATED_SWAPPED_INVERTED: {
+        if (startPosition.startsWith("alpha")) return null;
+        const rotatedEnd = this.rotatedSelector.determineRotatedEndPosition(
+          period,
+          startPosition
+        );
+        if (!rotatedEnd) return null;
+        return SWAPPED_POSITION_MAP[rotatedEnd] ?? null;
+      }
 
       // All Four: mirror+swap need a start fixed under both — beta1/beta5 only
       // (elsewhere the mirror degrades to a flip and detection finds

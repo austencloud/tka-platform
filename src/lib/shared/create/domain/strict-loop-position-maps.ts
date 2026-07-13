@@ -775,25 +775,24 @@ export const ROTATED_SWAPPED_HALVED_VALIDATION_SET = new Set<string>(
 );
 
 /**
- * Beta-restricted variants of the rotated-swapped sets.
+ * Non-degenerate variants of the rotated-swapped sets (alpha starts removed).
  *
- * Swap+rotate combos (ROTATED_SWAPPED, ROTATED_SWAPPED_INVERTED) are only
- * non-degenerate from beta starts: at alpha the hands already sit at each
- * other's 180° image, so rotate-then-swap is the per-hand identity and the
- * "rotation" vanishes; at beta both hands share a grid point, so swap is
- * positionally invisible and the rotation survives intact. (Gamma is
- * theoretically valid but the generation seam doesn't support it yet.)
- * Mirrors the engine-side gate in LOOPEndPositionSelector. Empirical basis:
- * 25-run generation audits, 2026-07-13.
+ * Swap+rotate combos (ROTATED_SWAPPED, ROTATED_SWAPPED_INVERTED) degenerate
+ * from alpha starts: the hands already sit at each other's 180° image, so
+ * rotate-then-swap is the per-hand identity and the "rotation" vanishes.
+ * Beta (both hands share a point — swap positionally invisible) and gamma
+ * (right angle) are genuine. Mirrors the engine-side composed
+ * swap(rotate(start)) seam gate in LOOPEndPositionSelector. Empirical basis:
+ * forced-start generation audits, 2026-07-13.
  */
-function betaOnly(pairs: Set<string>): Set<string> {
-  return new Set([...pairs].filter((pair) => pair.startsWith("beta")));
+function excludeAlphaStarts(pairs: Set<string>): Set<string> {
+  return new Set([...pairs].filter((pair) => !pair.startsWith("alpha")));
 }
 
-export const ROTATED_SWAPPED_BETA_QUARTERED_VALIDATION_SET = betaOnly(
+export const ROTATED_SWAPPED_NONDEGENERATE_QUARTERED_VALIDATION_SET = excludeAlphaStarts(
   ROTATED_SWAPPED_QUARTERED_VALIDATION_SET
 );
 
-export const ROTATED_SWAPPED_BETA_HALVED_VALIDATION_SET = betaOnly(
+export const ROTATED_SWAPPED_NONDEGENERATE_HALVED_VALIDATION_SET = excludeAlphaStarts(
   ROTATED_SWAPPED_HALVED_VALIDATION_SET
 );

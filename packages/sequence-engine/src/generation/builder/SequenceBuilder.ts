@@ -1015,14 +1015,20 @@ export class SequenceBuilder {
     loopType: LOOPType,
     currentStartPosition?: string
   ): string | undefined {
-    // Swap+rotate combos are only non-degenerate from beta starts (rotate and
-    // swap cancel per-hand at alpha; the rotate-only seam mistargets gamma) —
-    // force a random beta start unless the caller already picked one.
+    // Swap+rotate combos degenerate from alpha starts (rotate and swap cancel
+    // per-hand). Beta and gamma are genuine with the composed
+    // swap(rotate(start)) seam. Unspecified/alpha starts get a random beta —
+    // always present in both grid modes (gamma availability varies).
     if (
       loopType === LOOPType.ROTATED_SWAPPED ||
       loopType === LOOPType.ROTATED_SWAPPED_INVERTED
     ) {
-      if (currentStartPosition?.startsWith("beta")) return undefined;
+      if (
+        currentStartPosition &&
+        !currentStartPosition.startsWith("alpha")
+      ) {
+        return undefined; // beta or gamma — non-degenerate
+      }
       const betaPositions = Array.from({ length: 8 }, (_, i) => `beta${i + 1}`);
       return betaPositions[Math.floor(Math.random() * betaPositions.length)];
     }
@@ -1106,7 +1112,7 @@ export class SequenceBuilder {
     if (
       (loopType === LOOPType.ROTATED_SWAPPED ||
         loopType === LOOPType.ROTATED_SWAPPED_INVERTED) &&
-      !startPosition.startsWith("beta")
+      startPosition.startsWith("alpha")
     ) {
       return positions;
     }
