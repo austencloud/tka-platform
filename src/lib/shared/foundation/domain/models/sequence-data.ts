@@ -24,6 +24,7 @@ import type {
 import type { LOOPSpecWire } from "@tka/sequence-engine/loop";
 import type { SoloPropData } from "./solo-prop-data";
 import type { StepPairingData } from "./step-pairing-data";
+import type { WallFeasibilityMetadata } from "$lib/shared/3d/domain/models/wall-feasibility";
 
 export interface SequenceData {
   readonly id: string;
@@ -123,8 +124,12 @@ export interface SequenceData {
    * Known keys:
    * - `pathShape`: "arc" | "linear" | "concave" - creator's intended path shape for shift interpolation.
    *   Absent or "arc" = default arc behavior. "linear" = straight-line shifts. "concave" = inward-curving astroid.
+   * - `wallFeasibility`: {@link WallFeasibilityMetadata} - written offline by the wall-plane
+   *   feasibility scanner. Absent = unscanned; viewer makes no wall-plane claims.
    */
-  readonly metadata: Record<string, unknown>;
+  readonly metadata: Record<string, unknown> & {
+    wallFeasibility?: WallFeasibilityMetadata;
+  };
 
   // Equivalence detection fields
   /** Computed hash identifying the motion pattern (rotation-invariant) */
