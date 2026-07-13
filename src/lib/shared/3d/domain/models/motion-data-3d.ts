@@ -40,6 +40,12 @@ export interface MotionConfig3D {
   rotationPlane?: Plane;
   /** Per-step path shape override. Absent = use global setting. */
   pathShape?: "arc" | "linear" | "concave";
+  /**
+   * Concavity depth for concave paths, 0..1. 0 = natural shallow dip
+   * (legacy reflection depth), 1 = dip traces the center. Absent = 0.
+   * Written by the wall-plane feasibility solver as a per-step override.
+   */
+  concaveDepth?: number;
 }
 
 /**
