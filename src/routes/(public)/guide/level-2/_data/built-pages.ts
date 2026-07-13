@@ -5,7 +5,9 @@
  * level-1/_data/built-pages.ts).
  */
 import type { Component } from "svelte";
+import DividerOneTurnsPage from "../_pages/DividerOneTurnsPage.svelte";
 
 export const BUILT2: Record<string, Component> = {
   // Pages register here as they are built (see the level-2 rebuild tracker).
+  "divider-1-turns": DividerOneTurnsPage,
 };

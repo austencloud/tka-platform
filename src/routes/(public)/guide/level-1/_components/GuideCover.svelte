@@ -19,7 +19,7 @@
   import type { MandalaPalette } from "$lib/shared/mandala/domain/mandala-types";
   import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
 
-  let { theme = "navy" }: { theme?: "navy" | "light" } = $props();
+  let { theme = "navy", level = "1" }: { theme?: "navy" | "light"; level?: "1" | "2" } = $props();
 
   let w = $state(0);
   const emblemSize = $derived(w ? Math.round(w * 0.44) : 0);
@@ -134,7 +134,7 @@
       style={tf(OFF.level)}
       use:ptDrag={pt("cover-level", "Level badge", OFF.level)}
     >
-      <span class="lvl-word">Level</span><span class="lvl-badge">1</span>
+      <span class="lvl-word">Level</span><span class="lvl-badge">{level}</span>
     </div>
   </header>
 

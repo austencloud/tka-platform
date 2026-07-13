@@ -10,6 +10,7 @@
    * placeholder. Back matter is parked per the rebuild tracker.
    */
   import type { Snippet, Component } from "svelte";
+  import GuideCover from "../../level-1/_components/GuideCover.svelte";
   import PagePlaceholder from "../../level-1/_components/PagePlaceholder.svelte";
   import type { GuidePageMeta } from "../../level-1/_data/guide-manifest";
   import { LEVEL2_BODY_PAGES } from "../_data/guide-manifest";
@@ -24,16 +25,10 @@
   } = $props();
 </script>
 
+<!-- Same locked cover design as Level 1, with the Level 2 badge (facelift —
+     the original v0.5 pictograph-diamond cover is superseded, as Level 1's was). -->
 {#snippet coverContent()}
-  {@const Cover = built["cover"]}
-  {#if Cover}
-    <div class="cover-fill"><Cover /></div>
-  {:else}
-    <div class="cover-fill cover-pending">
-      <p class="cover-title">The<br />Kinetic<br />Alphabet</p>
-      <p class="cover-num">2</p>
-    </div>
-  {/if}
+  <div class="cover-fill"><GuideCover theme="navy" level="2" /></div>
 {/snippet}
 
 <!-- Front matter (unnumbered cover), then the numbered body pages. -->
@@ -57,30 +52,5 @@
   .cover-fill {
     width: 100%;
     aspect-ratio: 8.5 / 11;
-  }
-  /* Interim cover until the pictograph-ring cover page is built (tracker p1). */
-  .cover-pending {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4in;
-    background: #fff;
-  }
-  .cover-title {
-    font-family: "Tangerine", cursive;
-    font-weight: 700;
-    font-size: 5.2rem;
-    line-height: 0.9;
-    text-align: center;
-    color: #14142b;
-    margin: 0;
-  }
-  .cover-num {
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-weight: 700;
-    font-size: 4rem;
-    color: #14142b;
-    margin: 0;
   }
 </style>

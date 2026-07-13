@@ -61,8 +61,11 @@ and the artboard exports under `D:\_THE KINETIC ALPHABET\_GUIDE\artboard-exports
   selfTitled suppressed, 33 placeholders (headless Chrome DOM query).
 
 ### Phase 1 — Front + 1-turn pedagogy (original p1–16)
-- [ ] p1 cover — pictograph diamond ring + "The Kinetic Alphabet 2" (level-1 cover pattern)
-- [ ] p2 divider "2.0 — 1-Turns" (level-1 divider pattern)
+- [x] p1 cover — Level 1's locked cover design with a Level 2 badge (GuideCover gained a
+      `level` prop; facelift supersedes the old pictograph-diamond cover, as Level 1's did)
+- [x] p2 divider "2.0 — 1-Turns" — structure faithful (row · 2.0 · rule · 1-Turns · rule ·
+      row); art facelift: SequenceMandala forms (iso/anti/dash/hybrid, cover family)
+      instead of stroke-decoding the original hand-composited overlays. Screenshot-verified.
 - [ ] p3 Turns: shifts — pro/anti 1-turn breakdowns (start/halfway/end strips), thumb-switch counts
 - [ ] p4 Turns: dashes + static — linear extension note, static vs shift arrow contrast
 - [ ] p5 Glyphs/PADS — high/low slots, PADS order, hybrid table (Type 1–4 + left/right)
