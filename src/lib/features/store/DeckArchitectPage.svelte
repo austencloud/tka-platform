@@ -382,7 +382,7 @@
               <span class="eyebrow">The Deck Architect</span>
               <p class="page-orient">
                 A deck is {DECK_SIZE} cards. Each slice below is a recipe for a
-                stack of them — tweak, add, or remove slices until the meter reads
+                stack of them. Tweak, add, or remove slices until the meter reads
                 {DECK_SIZE}.
               </p>
             </div>
@@ -685,7 +685,7 @@
         />
       </div>
       <p class="lightbox-caption">
-        One draw from this slice — watch it loop. Every deck deals fresh cards.
+        One draw from this slice. Watch it loop. Every deck deals fresh cards.
       </p>
       <div class="lightbox-actions">
         <button
