@@ -20,6 +20,7 @@
   import BuyButton from "./components/BuyButton.svelte";
   import ShopPropPicker from "./components/ShopPropPicker.svelte";
   import StepperCard from "$lib/shared/components/stepper-card/StepperCard.svelte";
+  import BaseCard from "$lib/features/create/generate/components/cards/BaseCard.svelte";
   import TurnIntensityCard from "$lib/features/create/generate/components/cards/TurnIntensityCard.svelte";
   import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
   import { getCardColors } from "$lib/shared/create/domain/card-colors";
@@ -291,12 +292,18 @@
       ? `linear-gradient(135deg, ${stops.join(", ")}, transparent 80%)`
       : `linear-gradient(135deg, ${stops[0]}, transparent 55%)`;
   }
-  /** Vivid gradient for the flavor pill. */
-  function flavorPillBg(flavor: LoopFlavor): string {
-    const stops = flavorColors(flavor).map((c) => `color-mix(in srgb, ${c} 42%, transparent)`);
-    return stops.length > 1
-      ? `linear-gradient(135deg, ${stops.join(", ")})`
-      : stops[0]!;
+  /** Full-strength gradient for the flavor tile (bento language: tiles are
+      solid, saturated surfaces — combos juxtapose their components' hues). */
+  function flavorTileBg(flavor: LoopFlavor): string {
+    const cols = flavorColors(flavor);
+    const stops =
+      cols.length > 1
+        ? cols.map((c) => `color-mix(in srgb, ${c} 82%, #10121f)`)
+        : [
+            `color-mix(in srgb, ${cols[0]} 88%, white)`,
+            `color-mix(in srgb, ${cols[0]} 72%, #10121f)`,
+          ];
+    return `linear-gradient(135deg, ${stops.join(", ")})`;
   }
 
   // ── per-slice dials: the generate panel's colored StepperCards — the same
@@ -429,54 +436,41 @@
                     </div>
                   {/if}
                   <div class="slice-controls">
-                    <div class="slice-top">
-                      <label class="count-field">
-                        <button
-                          type="button"
-                          class="count-step"
-                          aria-label="Fewer cards"
-                          onclick={() => setCount(i, slice.count - 1)}
-                        >−</button>
-                        <input
-                          class="count-input"
-                          type="number"
-                          min="1"
-                          max={DECK_SIZE}
-                          value={slice.count}
-                          aria-label="Cards in this slice"
-                          oninput={(e) => setCount(i, Number(e.currentTarget.value))}
-                        />
-                        <button
-                          type="button"
-                          class="count-step"
-                          aria-label="More cards"
-                          onclick={() => setCount(i, slice.count + 1)}
-                        >+</button>
-                        <span class="count-label">cards</span>
-                      </label>
+                    {#if slices.length > 1}
                       <button
                         type="button"
-                        class="flavor-btn"
-                        style:background={flavorPillBg(slice.flavor)}
-                        onclick={() => (flavorEdit = i)}
+                        class="remove-btn"
+                        aria-label="Remove slice"
+                        onclick={() => removeSlice(i)}
                       >
-                        {flavorLabel(slice.flavor)}
-                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                        <i class="fas fa-times" aria-hidden="true"></i>
                       </button>
-                      {#if slices.length > 1}
-                        <button
-                          type="button"
-                          class="remove-btn"
-                          aria-label="Remove slice"
-                          onclick={() => removeSlice(i)}
-                        >
-                          <i class="fas fa-times" aria-hidden="true"></i>
-                        </button>
-                      {/if}
-                    </div>
-                    <!-- The listing page's bento tiles, one per dial — colored,
-                         obviously pressable, same control language everywhere. -->
-                    <div class="tile-row">
+                    {/if}
+                    <!-- ONE control language: every dial is a bento tile (the
+                         listing page's exact components) — no pill/tile mix. -->
+                    <div class="tile-grid" class:has-turns={slice.level >= 2}>
+                      <div class="tile">
+                        <StepperCard
+                          title="Cards"
+                          currentValue={slice.count}
+                          minValue={1}
+                          maxValue={DECK_SIZE}
+                          description="THIS SLICE"
+                          color="linear-gradient(135deg, #a78bfa 0%, #8b5cf6 50%, #6d28d9 100%)"
+                          shadowColor="262deg 60% 45%"
+                          onIncrement={() => setCount(i, slice.count + 1)}
+                          onDecrement={() => setCount(i, slice.count - 1)}
+                        />
+                      </div>
+                      <div class="tile">
+                        <BaseCard
+                          title="Flavor"
+                          currentValue={flavorLabel(slice.flavor)}
+                          color={flavorTileBg(slice.flavor)}
+                          shadowColor="0deg 0% 0%"
+                          onClick={() => (flavorEdit = i)}
+                        />
+                      </div>
                       <div class="tile">
                         <StepperCard
                           title="Level"
@@ -497,7 +491,7 @@
                           currentValue={slice.steps}
                           minValue={4}
                           maxValue={16}
-                          description="STEPS PER CARD"
+                          description="PER CARD"
                           color={cc.length.color}
                           shadowColor={cc.length.shadowColor}
                           onIncrement={() => stepSliceSteps(i, 1)}
@@ -505,7 +499,7 @@
                         />
                       </div>
                       {#if slice.level >= 2}
-                        <div class="tile" transition:slide={{ duration: 200, easing: quintOut, axis: narrow ? "y" : "x" }}>
+                        <div class="tile turns-tile" transition:slide={{ duration: 200, easing: quintOut, axis: "y" }}>
                           <TurnIntensityCard
                             currentIntensity={slice.maxTurns ?? 1}
                             allowedValues={slice.level === 3 ? TURN_STEPS_HALF : TURN_STEPS_WHOLE}
@@ -922,91 +916,6 @@
     flex-direction: column;
     gap: 12px;
   }
-  .slice-top {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-    /* Clearance for the pinned remove button. */
-    padding-right: 32px;
-  }
-  /* Stepper reads as ONE control (a joined pill), not three floating boxes.
-     Border sits brighter than theme-stroke so it reads pressable on the
-     dark card. */
-  .count-field {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.28);
-    background: rgba(255, 255, 255, 0.06);
-    overflow: hidden;
-  }
-  .count-step {
-    width: var(--min-touch-target, 44px);
-    height: var(--min-touch-target, 44px);
-    border: none;
-    background: transparent;
-    color: #fff;
-    font-size: 18px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: background 0.15s ease;
-  }
-  .count-step:hover:not(:disabled) {
-    background: rgba(139, 108, 255, 0.18);
-  }
-  .count-step:disabled {
-    opacity: 0.35;
-    cursor: default;
-  }
-  .count-input {
-    width: 52px;
-    height: var(--min-touch-target, 44px);
-    text-align: center;
-    font-size: 16px;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    color: #fff;
-    background: transparent;
-    border: none;
-    -moz-appearance: textfield;
-    appearance: textfield;
-  }
-  .count-input::-webkit-outer-spin-button,
-  .count-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-  }
-  .count-label {
-    font-size: var(--font-size-min, 14px);
-    color: rgba(255, 255, 255, 0.8);
-    padding: 0 14px 0 4px;
-  }
-  .flavor-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0 16px;
-    border-radius: 999px;
-    /* The pill wears the same accent as its card frame — one identity. */
-    border: 1px solid color-mix(in srgb, var(--slice-accent, #d9c24a) 65%, transparent);
-    background: color-mix(in srgb, var(--slice-accent, #d9c24a) 20%, transparent);
-    color: #fff;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 700;
-    cursor: pointer;
-    transition: border-color 0.15s ease, background 0.15s ease;
-  }
-  .flavor-btn:hover {
-    border-color: color-mix(in srgb, var(--slice-accent, #d9c24a) 95%, white);
-    background: color-mix(in srgb, var(--slice-accent, #d9c24a) 30%, transparent);
-  }
-  .flavor-btn i {
-    font-size: 0.75em;
-    opacity: 0.8;
-  }
   .remove-btn {
     position: absolute;
     top: 4px;
@@ -1024,21 +933,30 @@
     color: #ff8a8a;
     border-color: rgba(255, 138, 138, 0.4);
   }
-  /* The listing page's bento tiles (generate-panel StepperCards). The type
+  /* The listing page's bento tiles (generate-panel StepperCards + BaseCard).
+     A fixed 2-column grid so every slice card carries the identical board:
+     Cards | Flavor / Level | Steps / Turns spanning when it exists. The type
      vars feed the real card components' internal scale. */
-  .tile-row {
-    display: flex;
-    flex-wrap: wrap;
+  .tile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
     --card-text-size: 20px;
     --card-text-weight: 800;
     --card-text-spacing: 0.3px;
     --card-text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
   }
-  .tile-row > .tile {
-    flex: 1 1 150px;
-    min-width: 140px;
+  .tile {
     height: 112px;
+    min-width: 0;
+  }
+  .turns-tile {
+    grid-column: 1 / -1;
+  }
+  /* The pinned remove button gets its own lane — without it the Flavor
+     tile's corner sits under the ×. */
+  .slice-row:has(.remove-btn) .tile-grid {
+    margin-top: 36px;
   }
   .tile > :global(*) {
     width: 100%;
@@ -1294,19 +1212,16 @@
       /* Bottom padding clears the fixed checkout dock. */
       padding: 8px 14px 96px;
     }
-    /* Phone slice card: count row up top, the (bigger, tappable) sample
-       centered on its own band, colored dial tiles full width below. */
+    /* Phone slice card: the (bigger, tappable) sample centered up top, the
+       uniform tile board below. The × keeps its pinned corner. */
     .slice-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
+      flex-direction: column;
+      align-items: stretch;
       gap: 12px;
       padding: 12px;
-      align-items: center;
     }
     .slice-sample {
-      grid-row: 2;
-      grid-column: 1;
-      justify-self: center;
+      align-self: center;
       flex: none;
       /* The fan sizes from its container — a shrink-to-fit button gives it
          nothing to measure. */
@@ -1315,50 +1230,12 @@
     .sample-skeleton {
       width: 148px;
     }
-    .slice-controls {
-      display: contents;
-    }
-    /* The unit label goes (the 54/54 meter already says "cards") and the
-       remove button joins the count row. Explicit grid — flex wrap kept
-       orphaning the remove button onto a dead row. */
-    .slice-top {
-      grid-row: 1;
-      grid-column: 1;
-      align-self: center;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 10px;
-      padding-right: 0;
-      align-items: center;
-    }
-    .count-label {
-      display: none;
-    }
-    .count-field {
-      justify-self: start;
-    }
-    .remove-btn {
-      position: static;
-      /* DOM order is count → flavor → remove; pin the remove into the count
-         row's spare corner instead of letting auto-placement orphan it. */
-      grid-row: 1;
-      grid-column: 2;
-      justify-self: end;
-    }
-    .flavor-btn {
-      grid-column: 1 / -1;
-      justify-content: space-between;
-    }
-    .tile-row {
-      grid-row: 3;
-      grid-column: 1;
-    }
-    /* Two tiles share a row on phones (Level + Steps); Turns wraps below
-       full width. */
-    .tile-row > .tile {
-      flex: 1 1 130px;
-      min-width: 126px;
+    .tile {
       height: 104px;
+    }
+    /* The sample band clears the pinned × on its own — no extra lane. */
+    .slice-row:has(.remove-btn) .tile-grid {
+      margin-top: 0;
     }
     .rail-stage {
       height: 240px;
@@ -1377,8 +1254,6 @@
 
   @media (prefers-reduced-motion: reduce) {
     .back-button,
-    .count-step,
-    .flavor-btn,
     .add-slice {
       transition: none;
     }
