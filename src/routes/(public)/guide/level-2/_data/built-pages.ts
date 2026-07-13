@@ -17,6 +17,7 @@ import Type4DashPage from "../_pages/Type4DashPage.svelte";
 import OpeningClosingPage from "../_pages/OpeningClosingPage.svelte";
 import Type5DualDashPage from "../_pages/Type5DualDashPage.svelte";
 import Type6StaticPage from "../_pages/Type6StaticPage.svelte";
+import OneOneType1Page from "../_pages/OneOneType1Page.svelte";
 
 export const BUILT2: Record<string, Component> = {
   // Pages register here as they are built (see the level-2 rebuild tracker).
@@ -32,4 +33,5 @@ export const BUILT2: Record<string, Component> = {
   "opening-closing": OpeningClosingPage,
   "t5-dual-dash": Type5DualDashPage,
   "t6-static": Type6StaticPage,
+  "one-one-t1": OneOneType1Page,
 };
