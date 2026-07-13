@@ -43,6 +43,11 @@
     exactCount?: number;
     /** Disable hover spread/lift (e.g. tiny tiles). */
     interactive?: boolean;
+    /** Decorative fans are `inert` so the host link/button owns pointer
+        events and a11y. Set false for a standalone fan that should respond to
+        hover itself — the fan then plays its own pick-a-card lift/spread (the
+        marketing page's Choreo Card flourish). */
+    inert?: boolean;
     /** Deal-in choreography: cards mount as a stacked pile and sweep into the
         fan with a staggered spring (opt-in — grid/hero fans stay static). */
     deal?: boolean;
@@ -63,6 +68,7 @@
     maxCards = 6,
     exactCount,
     interactive = true,
+    inert = true,
     deal = false,
     dealNonce = 0,
     face = "front",
@@ -175,7 +181,7 @@
   class:interactive
   class:dealing={deal && !reducedMotion}
   bind:clientWidth={boxW}
-  inert
+  inert={inert || undefined}
   aria-hidden="true"
   style:--overlap="{-Math.round(cardW * 0.52)}px"
   style:--overlap-open="{-Math.round(cardW * 0.18)}px"

@@ -51,7 +51,14 @@
 
 <div class="cards-stage">
   {#if cards.length}
-    <DeckFanCover {cards} deckName="TKA Shop" cardWidth={128} maxCardWidth={210} deal />
+    <DeckFanCover
+      {cards}
+      deckName="TKA Shop"
+      cardWidth={128}
+      maxCardWidth={210}
+      deal
+      inert={false}
+    />
   {:else if failed}
     <p class="quiet-note">The decks are loading. Open the shop to see the full fan.</p>
   {:else}
