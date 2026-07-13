@@ -1,5 +1,5 @@
 /**
- * Derives strip/pictograph demo data for the /composer marketing page from the
+ * Derives pictograph demo data for the /composer marketing page from the
  * baked CΨΩX fixture (see demo-sequence.json — one real released rotated LOOP).
  *
  * The guide's pictograph components take PictographData; the fixture's steps
@@ -17,9 +17,10 @@ type RawStep = {
   motions: Record<string, unknown>;
 };
 
-/** First 8 beats (two CΨΩX cycles) — enough strip to read, not a wall. */
-export const DEMO_BEATS: PictographData[] = (demoJson.steps as unknown as RawStep[])
-  .slice(0, 8)
+/** One of each letter in the demo word (C Ψ Ω X), for the Learn section's
+ *  letter-pairing row. */
+export const DEMO_LETTER_BEATS: PictographData[] = (demoJson.steps as unknown as RawStep[])
+  .slice(0, 4)
   .map(
     (step) =>
       ({
@@ -29,6 +30,3 @@ export const DEMO_BEATS: PictographData[] = (demoJson.steps as unknown as RawSte
         gridMode: demoJson.gridMode,
       }) as unknown as PictographData
   );
-
-/** One of each letter in the demo word, for the letter-pairing (Learn) row. */
-export const DEMO_LETTER_BEATS: PictographData[] = DEMO_BEATS.slice(0, 4);

@@ -2,7 +2,6 @@
   import EditorialNav from "$lib/shared/landing/components/EditorialNav.svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import ComposerHeroDemo from "./_components/ComposerHeroDemo.svelte";
-  import ComposerConstructDemo from "./_components/ComposerConstructDemo.svelte";
   import ComposerGenerateDemo from "./_components/ComposerGenerateDemo.svelte";
   import GuidePictograph from "../guide/level-1/_components/GuidePictograph.svelte";
   import { DEMO_LETTER_BEATS } from "./_data/demo-beats";
@@ -11,26 +10,31 @@
   const DESCRIPTION =
     "Flow Arts Composer is a free web app for building flow arts choreography. Construct sequences beat by beat, generate them from parameters, animate them, and share them. Supports staff, fans, clubs, hoops, buugeng, and more.";
 
-  // The tunnel stack is heavy canvas machinery — mount it only when the
-  // section approaches the viewport.
+  // The tunnel and play-with-it stacks are heavy canvas machinery — mount
+  // each only when its section approaches the viewport.
   let tunnelActive = $state(false);
-  function activateTunnelWhenNear(node: HTMLElement) {
-    if (typeof IntersectionObserver === "undefined") {
-      tunnelActive = true;
-      return;
-    }
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          tunnelActive = true;
-          io.disconnect();
-        }
-      },
-      { rootMargin: "400px" }
-    );
-    io.observe(node);
-    return { destroy: () => io.disconnect() };
+  let playWithItActive = $state(false);
+  function activateWhenNear(activate: () => void) {
+    return (node: HTMLElement) => {
+      if (typeof IntersectionObserver === "undefined") {
+        activate();
+        return;
+      }
+      const io = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((e) => e.isIntersecting)) {
+            activate();
+            io.disconnect();
+          }
+        },
+        { rootMargin: "400px" }
+      );
+      io.observe(node);
+      return { destroy: () => io.disconnect() };
+    };
   }
+  const activateTunnelWhenNear = activateWhenNear(() => (tunnelActive = true));
+  const activatePlayWithItWhenNear = activateWhenNear(() => (playWithItActive = true));
 
   const TODAY = [
     { label: "Library", detail: "collections and smart collections for everything you save" },
@@ -209,6 +213,24 @@
     </a>
   </div>
 
+  <section class="editorial-section" style="--accent: #38bdf8">
+    <span class="section-kicker">Try it</span>
+    <h2 class="section-title">Play with it right here</h2>
+    <div class="prose">
+      <p>
+        This is the app in miniature, running live. Swap effects, props, and tempo with
+        the same controls the real thing gives you. The strip along the bottom is the
+        sequence's notation, keeping time with the animation.
+      </p>
+    </div>
+    <div class="breakout playwithit-slot" use:activatePlayWithItWhenNear>
+      <LazyMount
+        loader={() => import("../../landing/components/PlayWithItInner.svelte")}
+        active={playWithItActive}
+      />
+    </div>
+  </section>
+
   <section class="editorial-section" style="--accent: #6366f1">
     <span class="section-kicker">Construct</span>
     <h2 class="section-title">Build it beat by beat</h2>
@@ -219,11 +241,6 @@
         option: the app tracks what's physically possible so you don't have to. You create,
         then approve or reject what you made.
       </p>
-    </div>
-    <div class="breakout">
-      <ComposerConstructDemo />
-    </div>
-    <div class="prose">
       <p>
         Before this existed, notating a sequence meant writing it out with red and blue
         pens and checking every transition by hand. Composer does the bookkeeping. You do
@@ -411,6 +428,12 @@
     width: var(--breakout-width);
     margin-inline: calc((100% - var(--breakout-width)) / 2);
     margin-block: 0.4rem 1.4rem;
+  }
+
+  /* Reserve the showcase's footprint before the lazy chunk mounts so the
+     sections below don't jump (no-layout-shift). */
+  .playwithit-slot {
+    min-height: min(34rem, 80vh);
   }
 
   .letter-row {
