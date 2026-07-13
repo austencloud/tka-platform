@@ -1015,6 +1015,18 @@ export class SequenceBuilder {
     loopType: LOOPType,
     currentStartPosition?: string
   ): string | undefined {
+    // Swap+rotate combos are only non-degenerate from beta starts (rotate and
+    // swap cancel per-hand at alpha; the rotate-only seam mistargets gamma) —
+    // force a random beta start unless the caller already picked one.
+    if (
+      loopType === LOOPType.ROTATED_SWAPPED ||
+      loopType === LOOPType.ROTATED_SWAPPED_INVERTED
+    ) {
+      if (currentStartPosition?.startsWith("beta")) return undefined;
+      const betaPositions = Array.from({ length: 8 }, (_, i) => `beta${i + 1}`);
+      return betaPositions[Math.floor(Math.random() * betaPositions.length)];
+    }
+
     const MIRRORED_ROTATED_TYPES = new Set([
       LOOPType.MIRRORED_ROTATED,
       LOOPType.MIRRORED_INVERTED_ROTATED,
@@ -1073,6 +1085,17 @@ export class SequenceBuilder {
     period: Period,
   ): Set<string> {
     const positions = new Set<string>();
+
+    // Swap+rotate combos are only non-degenerate from beta starts (see
+    // LOOPEndPositionSelector.determineEndPosition) — enforce it here too
+    // because the quartered fast path below bypasses the selector.
+    if (
+      (loopType === LOOPType.ROTATED_SWAPPED ||
+        loopType === LOOPType.ROTATED_SWAPPED_INVERTED) &&
+      !startPosition.startsWith("beta")
+    ) {
+      return positions;
+    }
 
     // For rotated LOOP types with quartered slice, both CW and CCW are valid
     if (period === Period.QUARTERED && ROTATED_LOOP_TYPES.has(loopType)) {

@@ -46,8 +46,8 @@ import {
   SWAPPED_LOOP_VALIDATION_SET,
   INVERTED_LOOP_VALIDATION_SET,
   MIRRORED_SWAPPED_VALIDATION_SET,
-  ROTATED_SWAPPED_QUARTERED_VALIDATION_SET,
-  ROTATED_SWAPPED_HALVED_VALIDATION_SET,
+  ROTATED_SWAPPED_BETA_QUARTERED_VALIDATION_SET,
+  ROTATED_SWAPPED_BETA_HALVED_VALIDATION_SET,
 } from "$lib/features/create/generate/circular/domain/constants/strict-loop-position-maps";
 
 /**
@@ -198,11 +198,14 @@ export class LOOPValidator {
     const rotationSet =
       period === Period.QUARTERED ? QUARTERED_LOOPS : HALVED_LOOPS;
 
-    // Rotated+Swapped LOOPs need composed validation (rotation THEN swap)
+    // Rotated+Swapped LOOPs need composed validation (rotation THEN swap),
+    // restricted to beta starts — the only positions where the combo is
+    // non-degenerate (alpha: rotate+swap cancel per-hand; gamma: unsupported
+    // by the generation seam). Matches the engine-side gate.
     const rotatedSwappedSet =
       period === Period.QUARTERED
-        ? ROTATED_SWAPPED_QUARTERED_VALIDATION_SET
-        : ROTATED_SWAPPED_HALVED_VALIDATION_SET;
+        ? ROTATED_SWAPPED_BETA_QUARTERED_VALIDATION_SET
+        : ROTATED_SWAPPED_BETA_HALVED_VALIDATION_SET;
 
     switch (loopType) {
       // Pure rotation-based LOOPs (no swap component)
@@ -248,11 +251,12 @@ export class LOOPValidator {
       // Mirrored + Swapped + Inverted: inverted dominates positionally —
       // the sequence must return to its start (same rule its executor enforces)
       case LOOPType.MIRRORED_SWAPPED_INVERTED:
-      // Rotated + Swapped + Inverted: inverted dominates positionally too —
-      // all beta positions are swap fixed points and rotation is inner, so
-      // the same return-to-start rule its executor enforces applies here
-      case LOOPType.ROTATED_SWAPPED_INVERTED:
         return INVERTED_LOOP_VALIDATION_SET.has(positionPair);
+
+      // Rotated + Swapped + Inverted: positionally identical to
+      // Rotated + Swapped (inversion is position-free) — beta starts only
+      case LOOPType.ROTATED_SWAPPED_INVERTED:
+        return rotatedSwappedSet.has(positionPair);
 
       // Rewound LOOP - always valid (works on any sequence regardless of positions)
       case LOOPType.STRICT_REWOUND:

@@ -69,10 +69,19 @@ export class LOOPEndPositionSelector {
         // Inverted LOOP returns to start position (same position)
         return startPosition;
 
-      // Combined LOOP types with ROTATED (rotation takes precedence)
-      case LOOPType.ROTATED_INVERTED:
+      // Rotated + Swapped (± Inverted): rotation and swap cancel per-hand from
+      // alpha starts (hands already sit at each other's 180° image), and the
+      // rotate-only seam mistargets gamma starts (correct target is
+      // swap(rotate(start))). Beta starts are the proven non-degenerate set —
+      // both hands share a point, so swap is positionally invisible and the
+      // rotation survives intact. Empirical: 25-run audits, 2026-07-13.
       case LOOPType.ROTATED_SWAPPED:
       case LOOPType.ROTATED_SWAPPED_INVERTED:
+        if (!startPosition.startsWith("beta")) return null;
+        return this.rotatedSelector.determineRotatedEndPosition(period, startPosition);
+
+      // Combined LOOP types with ROTATED (rotation takes precedence)
+      case LOOPType.ROTATED_INVERTED:
       case LOOPType.MIRRORED_ROTATED:
       case LOOPType.MIRRORED_INVERTED_ROTATED:
       case LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED:
