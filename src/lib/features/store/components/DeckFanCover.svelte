@@ -75,7 +75,13 @@
   // Non-interactive fans have no hover spread, so they size against the REST
   // overlap (0.48 pitch) instead — touch layouts get ~20% bigger cards.
   const spreadPitch = $derived(interactive ? 0.82 : 0.48);
-  const fitW = (n: number) => boxW / ((1 + spreadPitch * (n - 1)) * 1.05);
+  // Tilt slack: at ±12° a 5:7 card's rotated bounding box is ~27% wider than
+  // the card (w·cos12° + 1.4w·sin12°). Short rest-pitch fans carry few cards,
+  // so that overhang is a big fraction of the total span and 1.05 let the
+  // outer corners clip on the stage's overflow edge. Wide interactive fans
+  // amortize it across 6 cards — 1.05 stays right there.
+  const tiltSlack = $derived(interactive ? 1.05 : 1.18);
+  const fitW = (n: number) => boxW / ((1 + spreadPitch * (n - 1)) * tiltSlack);
   const count = $derived.by(() => {
     const avail = cards.length;
     if (exactCount) return Math.max(1, Math.min(exactCount, avail));
@@ -226,10 +232,14 @@
     will-change: transform;
   }
 
-  /* Trimmed-card box: the render is the full MPC canvas WITH bleed; cover-fit
-     into the 5:7 box crops the bleed the way the guillotine does, so the fan
-     shows the cut card. */
+  /* Trimmed-card box: the render is the full MPC canvas WITH bleed
+     (822×1122, 36px bleed → 750×1050 cut, exactly 5:7). object-fit: cover
+     only trims the tiny aspect difference (~2.5%), which left the hatched
+     bleed frame visible and the corners looking chopped. Overscan the image
+     by the exact bleed fractions instead — the guillotine cut, for real:
+     822/750 = 109.6% wide, 1122/1050 = 106.857% tall, offset by one bleed. */
   .card-box {
+    position: relative;
     aspect-ratio: 5 / 7;
     border-radius: 6px;
     overflow: hidden;
@@ -238,9 +248,11 @@
   }
 
   .card-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    position: absolute;
+    width: 109.6%;
+    height: 106.857%;
+    left: -4.8%;
+    top: -3.4286%;
     display: block;
     animation: card-in 220ms ease both;
   }

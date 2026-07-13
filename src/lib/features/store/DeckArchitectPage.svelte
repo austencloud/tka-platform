@@ -462,7 +462,14 @@
                           onDecrement={() => setCount(i, slice.count - 1)}
                         />
                       </div>
-                      <div class="tile">
+                      <div
+                        class="tile flavor-tile"
+                        style:--flavor-size={flavorLabel(slice.flavor).length > 28
+                          ? "12px"
+                          : flavorLabel(slice.flavor).length > 14
+                            ? "15px"
+                            : "22px"}
+                      >
                         <BaseCard
                           title="Flavor"
                           currentValue={flavorLabel(slice.flavor)}
@@ -952,6 +959,14 @@
   }
   .turns-tile {
     grid-column: 1 / -1;
+  }
+  /* Combo flavors ("Mirrored / Swapped / Inverted") overflow the tile at the
+     stock 20px+nowrap value type — long labels wrap and step down. */
+  .flavor-tile :global(.base-card .card-value) {
+    font-size: var(--flavor-size, 22px) !important;
+    white-space: normal !important;
+    line-height: 1.25 !important;
+    padding: 0 8px;
   }
   /* The pinned remove button gets its own lane — without it the Flavor
      tile's corner sits under the ×. */

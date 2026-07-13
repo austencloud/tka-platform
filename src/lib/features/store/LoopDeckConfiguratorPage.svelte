@@ -30,8 +30,6 @@
   import BuyButton from "./components/BuyButton.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import BaseCard from "$lib/features/create/generate/components/cards/BaseCard.svelte";
-  import StepperCard from "$lib/features/create/generate/components/cards/StepperCard/StepperCard.svelte";
-  import LOOPExpandedOverlay from "$lib/features/create/generate/components/cards/LOOPExpandedOverlay.svelte";
   import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import {
@@ -69,7 +67,6 @@
     type LoopFlavor,
     type LoopConfig,
   } from "./domain/loop-config";
-  import TurnIntensityCard from "$lib/features/create/generate/components/cards/TurnIntensityCard.svelte";
   import { getActivityLogger } from "$lib/shared/analytics/get-activity-logger";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -341,8 +338,11 @@
   const SETTLE_MS = 650;
   let previewCards = $state<CoverCard[] | null>(null);
   // Drives the Crossfade remount (= the deal). Changes ONLY across pack↔pack
-  // and pack↔custom transitions, never on dial or prop tweaks.
-  let settledFanKey = $state("boot");
+  // and pack↔custom transitions, never on dial or prop tweaks. Seeded with
+  // the key the first settle will produce ("pack:mild") — a "boot" seed made
+  // the fan deal twice on page enter: once on mount with the SKU fallback,
+  // then again when the first catalog sample landed and flipped the key.
+  let settledFanKey = $state(pack ? `pack:${pack}` : "custom");
   let previewToken = 0;
   let lastDialTouch = 0;
   const dialKey = $derived(
@@ -407,28 +407,7 @@
     customSku ? `$${(customSku.price / 100).toFixed(0)}` : "$30"
   );
 
-  // ── drill-down modal (flavor only — prop picks inline) ──
-  let showFlavor = $state(false);
-  function onWindowKey(e: KeyboardEvent) {
-    if (e.key !== "Escape") return;
-    if (showFlavor) showFlavor = false;
-  }
-
-  function pickLoopType(lt: LOOPType) {
-    enterCustom();
-    flavor = flavorForLoopType(lt) ?? "rotated";
-    buzz();
-    showFlavor = false;
-  }
-  function pickVariety() {
-    enterCustom();
-    flavor = "variety";
-    buzz();
-    showFlavor = false;
-  }
 </script>
-
-<svelte:window onkeydown={onWindowKey} />
 
 <div class="config-page">
   <main class="config-content">
@@ -501,7 +480,7 @@
           <div class="info-main">
           <span class="eyebrow">The deck</span>
           <h1>LOOP Deck</h1>
-          <p class="meta">54 cards · every sequence loops · built to your dials</p>
+          <p class="meta">54 cards · every sequence loops · pick a pack or go custom</p>
 
           <!-- ── one visible 4-way choice: three packs + Custom. Custom is a
                real chip, not an invisible fallback state — a newcomer reads
@@ -524,24 +503,19 @@
                 {/if}
               </button>
             {/each}
-            <button
-              type="button"
+            <!-- Custom hands off to the Deck Architect — its slice builder
+                 outgrew the inline dials, so the listing stays a dead-simple
+                 pack-and-prop choice. -->
+            <a
               class="preset"
-              class:active={pack === null}
-              aria-pressed={pack === null}
+              href="/shop/loop-deck/architect"
               style:--preset-bg={CUSTOM_BG}
               style:--preset-text="#ffffff"
-              onclick={() => {
-                enterCustom();
-                buzz();
-              }}
             >
               <span class="preset-name">Custom</span>
-              <span class="preset-sub">your dials, your deck</span>
-              {#if pack === null}
-                <i class="fas fa-check-circle preset-check" aria-hidden="true"></i>
-              {/if}
-            </button>
+              <span class="preset-sub">open the Deck Architect</span>
+              <i class="fas fa-arrow-right preset-check" aria-hidden="true"></i>
+            </a>
           </div>
           <!-- Composition line: names the selected option and its recipe.
                Reserved height so pack↔custom swaps never shove the board. -->
@@ -551,74 +525,9 @@
               : "Custom: the dials below drive your order."}
           </p>
 
-          <!-- ── the bento board. The custom dials exist ONLY in Custom mode
-               (disclosure kills decision anxiety — a pack buyer sees three
-               packs and a prop, nothing else). Prop is NOT a customization:
-               it stays out here and never deselects the pack. ── -->
+          <!-- ── the bento board. Custom dials moved to the Deck Architect —
+               a pack buyer sees three packs and a prop, nothing else. ── -->
           <div class="bento-board">
-            {#if pack === null}
-            <div class="custom-dials" transition:slide={{ duration: 250, easing: quintOut }}>
-            <!-- Level / Length: the generate panel's colored StepperCards
-                 (LoopBentoBoard blueprint — Level wears DIFFICULTY colors). -->
-            <div class="tile-row">
-              <div class="tile">
-                <StepperCard
-                  title="Level"
-                  currentValue={levelNum}
-                  minValue={1}
-                  maxValue={3}
-                  formatValue={(v: number) => (level === "mix" ? "Mix" : String(v))}
-                  description={levelDesc}
-                  color={levelTileColor}
-                  textColor={levelTileText}
-                  shadowColor="0deg 0% 0%"
-                  gridColumnSpan={2}
-                  onIncrement={() => stepLevel(1)}
-                  onDecrement={() => stepLevel(-1)}
-                />
-              </div>
-              <div class="tile">
-                <StepperCard
-                  title="Length"
-                  currentValue={lengthNum}
-                  minValue={8}
-                  maxValue={16}
-                  formatValue={(v: number) => (length === "mix" ? "Mix" : String(v))}
-                  description={lengthDesc}
-                  color={cc.length.color}
-                  shadowColor={cc.length.shadowColor}
-                  gridColumnSpan={2}
-                  onIncrement={() => stepLength(1)}
-                  onDecrement={() => stepLength(-1)}
-                />
-              </div>
-              <!-- Max turns exists only once turns exist (Level 2+): the tile
-                   morphs in from the right, exactly like the deck releaser's. -->
-              <div class="tile turns" class:collapsed={!showTurns} aria-hidden={!showTurns}>
-                <TurnIntensityCard
-                  currentIntensity={turnIntensity}
-                  allowedValues={[...turnAllowed]}
-                  onIntensityChange={setTurns}
-                  shadowColor="140deg 70% 45%"
-                  gridColumnSpan={2}
-                />
-              </div>
-              <!-- Flavor: one tile among peers — the full-width gold hero gave
-                   one dial the whole board's weight. -->
-              <div class="tile">
-                <BaseCard
-                  title="Flavor"
-                  currentValue={flavorTileValue}
-                  color={LOOP_COLOR}
-                  shadowColor={LOOP_SHADOW}
-                  gridColumnSpan={2}
-                  onClick={() => (showFlavor = true)}
-                />
-              </div>
-            </div>
-            </div>
-            {/if}
-
             <!-- Prop: always visible, pack or custom — picking your prop is
                  giving us your order, not customizing the recipe. -->
             <div class="tile-row">
@@ -643,19 +552,6 @@
             </div>
 
           </div>
-
-          <!-- The escape hatch for hyper-specific buyers (mixed lengths,
-               ratio'd flavors): the Deck Architect exposes the whole
-               algorithmic space on its own page, keeping this one simple.
-               Always visible — hiding it behind Custom made it unfindable. -->
-          <p class="recipe-line">
-            Want every card on your terms?
-            <a class="recipe-mail" href="/shop/loop-deck/architect">
-              <i class="fas fa-drafting-compass" aria-hidden="true"></i>
-              Open the Deck Architect
-            </a>
-            and design the deck slice by slice.
-          </p>
 
           </div>
 
@@ -703,42 +599,6 @@
     {/if}
   </main>
 </div>
-
-<!-- ============ Flavor drill-down modal ============ -->
-{#if showFlavor}
-  <div
-    class="modal-backdrop"
-    role="presentation"
-    onclick={(e) => {
-      if (e.target === e.currentTarget) showFlavor = false;
-    }}
-  >
-    <div
-      class="loop-col"
-      transition:scale={{ start: 0.95, duration: 250, easing: quintOut }}
-    >
-      <!-- Grab Bag rides above the real LOOP selector: it's the every-flavor
-           blend, not a LOOP type, so it can't live inside the overlay grid. -->
-      <button
-        type="button"
-        class="variety-cta"
-        class:active={!activePack && flavor === "variety"}
-        onclick={pickVariety}
-      >
-        <span class="variety-name">Grab Bag</span>
-        <span class="variety-sub">every flavor in one deck · mandalas get weird</span>
-      </button>
-      <div class="loop-host">
-        <LOOPExpandedOverlay
-          currentType={currentLoopType}
-          selectedComponents={currentLoopComponents}
-          onChange={(lt: LOOPType) => pickLoopType(lt)}
-          onClose={() => (showFlavor = false)}
-        />
-      </div>
-    </div>
-  </div>
-{/if}
 
 <style>
   .config-page {
@@ -964,6 +824,9 @@
   .preset {
     position: relative;
     flex: 1 1 160px;
+    /* The Custom chip is an <a> now — keep it visually identical to the
+       pack buttons. */
+    text-decoration: none;
     min-width: 140px;
     display: flex;
     flex-direction: column;
@@ -1039,13 +902,6 @@
   }
 
   /* ---------- bento board ---------- */
-  /* The custom dials live in a disclosure (rendered only in Custom mode);
-     inside it, rows keep the board rhythm. */
-  .custom-dials {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
   .bento-board {
     display: flex;
     flex-direction: column;
@@ -1082,29 +938,6 @@
     letter-spacing: 0.8px !important;
   }
 
-  /* Turn-intensity morph (deck-releaser pattern): at Level 1 the tile
-     collapses to zero width; at Level 2+ it slides in. Animated flex (not an
-     {#if}) so the row reflows smoothly. margin cancels the empty tile's gap. */
-  .tile-row > .tile.turns {
-    min-width: 0;
-    overflow: hidden;
-    transition:
-      flex-basis 340ms cubic-bezier(0.4, 0, 0.2, 1),
-      flex-grow 340ms cubic-bezier(0.4, 0, 0.2, 1),
-      margin-left 340ms cubic-bezier(0.4, 0, 0.2, 1),
-      opacity 240ms ease;
-  }
-  .tile-row > .tile.turns.collapsed {
-    flex: 0 0 0;
-    opacity: 0;
-    pointer-events: none;
-    margin-left: -12px;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .tile-row > .tile.turns {
-      transition-duration: 0.001ms;
-    }
-  }
 
   /* ---------- prop tile (BaseCard shell + image chips) ---------- */
   .tile-row > .tile.prop-shell {
@@ -1134,104 +967,7 @@
     opacity: 0.5;
   }
 
-  /* ---------- flavor modal: variety CTA + the real LOOP overlay ---------- */
-  .loop-col {
-    width: min(1000px, 94vw);
-    max-height: 92vh;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-  }
-  .loop-host {
-    position: relative;
-    min-height: 0;
-    overflow: hidden;
-    border-radius: 18px;
-  }
-  .loop-host :global(.loop-expanded-overlay) {
-    position: relative !important;
-    inset: auto !important;
-    width: 100%;
-    max-height: 76vh;
-  }
-  .loop-host :global(.grid-container) {
-    flex: 0 0 auto;
-  }
-  .variety-cta {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    min-height: 56px;
-    padding: 10px 18px;
-    border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    background: linear-gradient(135deg, #d9c24a 0%, #a89a2c 48%, #6f6318 100%);
-    color: #fff;
-    cursor: pointer;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
-    transition: transform 0.1s ease, box-shadow 0.15s ease, filter 0.15s ease;
-  }
-  .variety-cta:not(.active) {
-    filter: saturate(0.8) brightness(0.88);
-  }
-  .variety-cta:hover {
-    filter: none;
-    transform: translateY(-1px);
-  }
-  .variety-cta.active {
-    border-color: rgba(255, 255, 255, 0.85);
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
-  }
-  .variety-cta:focus-visible {
-    outline: 2px solid #fff;
-    outline-offset: 2px;
-  }
-  .variety-name {
-    font-size: var(--font-size-min, 15px);
-    font-weight: 800;
-  }
-  .variety-sub {
-    font-size: var(--font-size-compact, 12px);
-    opacity: 0.85;
-  }
 
-  /* Hyper-specific escape hatch: quiet prose, but the action itself is a
-     real pill button (clickables look like buttons, not faint hyperlinks). */
-  .recipe-line {
-    margin: 2px 0 0;
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    font-size: var(--font-size-min, 14px);
-    color: rgba(255, 255, 255, 0.85);
-  }
-  .recipe-mail {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0 16px;
-    border-radius: 999px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.18));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
-    color: var(--theme-text, #fff);
-    text-decoration: none;
-    font-weight: 700;
-    transition: border-color 0.15s ease, background 0.15s ease;
-  }
-  .recipe-mail:hover {
-    border-color: rgba(216, 180, 254, 0.6);
-    background: rgba(139, 108, 255, 0.14);
-  }
-  .recipe-mail:focus-visible {
-    outline: 2px solid #fff;
-    outline-offset: 2px;
-  }
-  .recipe-mail i {
-    color: #b8a6ff;
-  }
 
   .price {
     font-size: 2rem;
@@ -1277,18 +1013,6 @@
     color: var(--semantic-error, #ef4444);
   }
 
-  /* ---------- drill-down modals (match the deck-releaser LoopBentoBoard) ---------- */
-  .modal-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: clamp(16px, 4vh, 48px);
-    background: rgba(4, 7, 14, 0.62);
-    backdrop-filter: blur(5px);
-  }
   @media (prefers-reduced-motion: reduce) {
     .back-button,
     .preset,
