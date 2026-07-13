@@ -97,7 +97,11 @@ and the artboard exports under `D:\_THE KINETIC ALPHABET\_GUIDE\artboard-exports
 - [x] p10 Type 4 Dash — Φ¹ (dash turn) + Φ₁ (static turn). Φ variation [3] (blue s→s
       static, red s→n dash). One prop rotates per strip → no same/opp, no dots.
       Screenshot-verified.
-- [ ] p11 Opening/Closing — Λ¹ open/close, Λ₁ open/close, continuation panels
+- [x] p11 Opening/Closing — Λ¹ open/close + Λ₁ open/close, with a right Continuation
+      column (W=alpha opening, Y=beta closing) behind a vertical divider. Λ variation
+      [14] (blue w→w static, red s→n dash). Λ¹ turns dash (cw=opening/ccw=closing),
+      Λ₁ turns static. Screenshot-verified. (Accuracy pass TODO: confirm op/cl arc
+      directions + Λ₁ static-spin rotation against original at zoom.)
       **Domain grounding (MCP `get_domain_topic("glyph-anatomy")`, gathered 2026-07-13):**
       Λ/Λ-/Γ use opening/closing INSTEAD of same/opp (gamma's right-angle geometry
       breaks the same/opp distinction). Opening = extrapolating the rotating hand's
@@ -113,11 +117,29 @@ and the artboard exports under `D:\_THE KINETIC ALPHABET\_GUIDE\artboard-exports
       the variation + turn rotation and screenshot-verify continuation resolves to W/Y.
       HRULES: y=290.9 (heavy, top group), y=578.9 (heavy, mid), y=750.1 (footnote);
       vertical divider separates the continuation column (~x655 in the 1.4x render).
-- [ ] p12 Type 5 Dual-Dash — Ψ-¹, Λ-₁ open/close
-- [ ] p13 Type 6 Static — α₁, Γ₁ open/close, continuation panels
-- [ ] p14 1|1 Turns Type 1 — D/I/N/V one-one breakdowns
-- [ ] p15 1|1 Type 2+3 — Ẋ/X̥, Θ- same/opp, Δ- same/opp
-- [ ] p16 1|1 Type 4/5/6 — Φ, Ψ-, Γ same/opp one-one
+- [x] p12 Type 5 Dual-Dash — Ψ-¹ (var [1], both n→s, turn high/left blue) + Λ-¹
+      opening/closing (var [7], blue w→e / red s→n, turn low/right red) with continuation
+      column (opening→W alpha, closing→Y beta). Two column layouts. Screenshot-verified.
+      (Accuracy pass TODO: confirm Λ-¹ dash arc rotation cw/ccw vs original.)
+- [x] p13 Type 6 Static — α¹ (var [0], both static, turn red) + Γ¹ opening/closing
+      (gamma static blue@S/red@W, turn red) with continuation (opening→W, closing→Y).
+      Static-with-turn spins in place. Screenshot-verified.
+- [x] p14 1|1 Turns Type 1 — D[3]/I[0]/N[2]/V[1] one-one strips, turns=1 both hands.
+      Screenshot-verified. (Accuracy pass: N hand positions may be mirror of original.)
+- [x] p15 1|1 Type 2+3 — X same/opp (X[3]), Θ- same/opp (Θ-[3]), Δ- same/opp (Δ-[3]);
+      both hands turns=1, same-dot above / opp-dot below the letter, glyph slot
+      order red-over-blue. `one-one-t23` → OneOneType23Page. Screenshot-verified.
+      (Accuracy pass: confirm same/opp rotation-direction cw/ccw assignments and
+      combined rotation-arrow prominence; Θ-/Δ- dash glyph is a short hyphen.)
+- [x] p16 1|1 Type 4/5/6 — Φ same/opp (Φ[1]), Ψ- same/opp (Ψ-[1]), Γ open/close
+      (γ[0]); both hands turns=1, glyph slot order BLUE-over-RED (reverse of p15,
+      matches artboard). Gamma start orientation OUT for OPEN / IN for CLOSE.
+      `one-one-t456` → OneOneType456Page. Screenshot-verified. (Accuracy pass:
+      confirm Gamma OPEN-vs-CLOSE rotation directions against original halfway
+      trajectory; Psi dual-dash end computes both-IN vs original "mixed" caption;
+      omitted the stray small "Γ" annotation near the CLOSE row.)
+
+**Phase 1 complete (p1–p16).** All 1-turn pedagogy pages built + screenshot-verified.
 
 ### Phase 2 — 1-turn codex (original p17–22, landscape→portrait reflow)
 - [ ] p17 Codex 1|0 Type 1 (landscape → 6-col portrait)
