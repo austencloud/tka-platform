@@ -19,6 +19,11 @@
   import DeckFanCover from "./components/DeckFanCover.svelte";
   import BuyButton from "./components/BuyButton.svelte";
   import ShopPropPicker from "./components/ShopPropPicker.svelte";
+  import StepperCard from "$lib/shared/components/stepper-card/StepperCard.svelte";
+  import TurnIntensityCard from "$lib/features/create/generate/components/cards/TurnIntensityCard.svelte";
+  import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
+  import { getCardColors } from "$lib/shared/create/domain/card-colors";
+  import { BackgroundType } from "@austencloud/backgrounds";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import LOOPExpandedOverlay from "$lib/features/create/generate/components/cards/LOOPExpandedOverlay.svelte";
   import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
@@ -185,7 +190,9 @@
     flavorEdit = null;
   }
   function onWindowKey(e: KeyboardEvent) {
-    if (e.key === "Escape" && flavorEdit !== null) flavorEdit = null;
+    if (e.key !== "Escape") return;
+    if (flavorEdit !== null) flavorEdit = null;
+    else if (sampleView !== null) sampleView = null;
   }
 
   // ── per-slice sample cards: one live card each, token-guarded so stale
@@ -259,7 +266,7 @@
   // Phone layout: samples shrink to sidecar size (CSS pairs at 720px).
   let pageW = $state(0);
   const narrow = $derived(pageW > 0 && pageW < 720);
-  const sampleCardW = $derived(narrow ? 92 : 150);
+  const sampleCardW = $derived(narrow ? 148 : 180);
   // Rail stage is compact: card height budget = stage minus caption + gaps.
   const previewMaxCardW = $derived(
     previewH > 0 ? Math.max(110, Math.round(((previewH - 80) * 5) / 7)) : 200
@@ -292,7 +299,15 @@
       : stops[0]!;
   }
 
-  // ── per-slice steppers (match the count field's language) ──
+  // ── per-slice dials: the generate panel's colored StepperCards — the same
+  //    bento tiles the listing page uses, so the two LOOP surfaces share one
+  //    control language (Level wears DIFFICULTY colors). ──
+  const cc = getCardColors(BackgroundType.COSMIC);
+  const LEVEL_DESC: Record<number, string> = {
+    1: "No turns",
+    2: "Whole turns",
+    3: "Half turns",
+  };
   function stepSliceLevel(i: number, dir: number) {
     const s = slices[i];
     if (!s) return;
@@ -307,13 +322,28 @@
   }
   const TURN_STEPS_WHOLE = [1, 2, 3];
   const TURN_STEPS_HALF = [0.5, 1, 1.5, 2, 2.5, 3];
-  function stepSliceTurns(i: number, dir: number) {
+
+  // ── sample lightbox: tap a slice's card to read it full size, and re-deal
+  //    for another draw from the same slice. ──
+  let sampleView = $state<number | null>(null);
+  let rerolling = $state(false);
+  async function rerollSample(i: number) {
     const s = slices[i];
-    if (!s) return;
-    const allowed = s.level === 3 ? TURN_STEPS_HALF : TURN_STEPS_WHOLE;
-    const idx = Math.max(0, allowed.indexOf(s.maxTurns ?? 1));
-    const next = allowed[Math.max(0, Math.min(allowed.length - 1, idx + dir))];
-    if (next !== undefined && next !== s.maxTurns) setTurns(i, next);
+    if (!s || rerolling) return;
+    rerolling = true;
+    const token = sliceToken;
+    try {
+      const card = await recipeSliceCard(
+        { ...s },
+        propType,
+        skuByFlavor.get(s.flavor),
+        // A fresh serial so the generator doesn't hand back the same card.
+        i + slices.length + Math.floor(Math.random() * 1000)
+      );
+      if (token === sliceToken && card) sliceCards[i] = card;
+    } finally {
+      rerolling = false;
+    }
   }
 </script>
 
@@ -333,13 +363,11 @@
       <div class="layout">
         <div class="info-column">
           <div class="info-main">
-            <span class="eyebrow">The Deck Architect</span>
-            <h1>Build every card</h1>
-            <p class="meta">
-              You want every card on your terms. Good. Here's the whole machine:
-              up to {MAX_RECIPE_SLICES} slices, {DECK_SIZE} cards, any recipe the
-              engine can generate.
-            </p>
+            <!-- Header stays minimal: the eyebrow names the page, the meter
+                 states the one rule. No pitch — buyers here already chose this. -->
+            <div class="page-head">
+              <span class="eyebrow">The Deck Architect</span>
+            </div>
 
             <!-- workbench bar: the one invariant + the one action, always visible -->
             <div class="workbench-bar">
@@ -371,11 +399,17 @@
                   style:--slice-accent={accent}
                   style:--slice-wash={flavorWash(slice.flavor)}
                 >
-                  <div class="slice-sample" aria-hidden="true">
-                    {#if sliceCards[i]}
-                      <!-- maxCardWidth pins the sample: the fan sizes from its
-                           container, and on narrow screens an uncapped card
-                           ballooned to full page width. -->
+                  {#if sliceCards[i]}
+                    <!-- The sample is a real card — tap it to read it full
+                         size. maxCardWidth pins it: the fan sizes from its
+                         container, and an uncapped card ballooned to page
+                         width on phones. -->
+                    <button
+                      type="button"
+                      class="slice-sample"
+                      aria-label="View this sample card full size"
+                      onclick={() => (sampleView = i)}
+                    >
                       <DeckFanCover
                         cards={[sliceCards[i]]}
                         deckName={flavorLabel(slice.flavor)}
@@ -385,10 +419,15 @@
                         exactCount={1}
                         interactive={false}
                       />
-                    {:else}
+                      <span class="sample-hint" aria-hidden="true">
+                        <i class="fas fa-magnifying-glass-plus"></i>
+                      </span>
+                    </button>
+                  {:else}
+                    <div class="slice-sample" aria-hidden="true">
                       <div class="sample-skeleton"></div>
-                    {/if}
-                  </div>
+                    </div>
+                  {/if}
                   <div class="slice-controls">
                     <div class="slice-top">
                       <label class="count-field">
@@ -435,69 +474,44 @@
                         </button>
                       {/if}
                     </div>
-                    <div class="slice-dials">
-                      <div class="dial">
-                        <span class="dial-label">Level</span>
-                        <div class="mini-stepper">
-                          <button
-                            type="button"
-                            class="count-step"
-                            aria-label="Lower level"
-                            disabled={slice.level <= 1}
-                            onclick={() => stepSliceLevel(i, -1)}
-                          >−</button>
-                          <span class="mini-value">{slice.level}</span>
-                          <button
-                            type="button"
-                            class="count-step"
-                            aria-label="Raise level"
-                            disabled={slice.level >= 3}
-                            onclick={() => stepSliceLevel(i, 1)}
-                          >+</button>
-                        </div>
+                    <!-- The listing page's bento tiles, one per dial — colored,
+                         obviously pressable, same control language everywhere. -->
+                    <div class="tile-row">
+                      <div class="tile">
+                        <StepperCard
+                          title="Level"
+                          currentValue={slice.level}
+                          minValue={1}
+                          maxValue={3}
+                          description={LEVEL_DESC[slice.level] ?? ""}
+                          color={DIFFICULTY_LEVELS[slice.level]?.cssBg ?? cc.level.color}
+                          textColor={DIFFICULTY_LEVELS[slice.level]?.text ?? "white"}
+                          shadowColor="0deg 0% 0%"
+                          onIncrement={() => stepSliceLevel(i, 1)}
+                          onDecrement={() => stepSliceLevel(i, -1)}
+                        />
                       </div>
-                      <div class="dial">
-                        <span class="dial-label">Steps</span>
-                        <div class="mini-stepper">
-                          <button
-                            type="button"
-                            class="count-step"
-                            aria-label="Fewer steps"
-                            disabled={slice.steps <= 4}
-                            onclick={() => stepSliceSteps(i, -1)}
-                          >−</button>
-                          <span class="mini-value">{slice.steps}</span>
-                          <button
-                            type="button"
-                            class="count-step"
-                            aria-label="More steps"
-                            disabled={slice.steps >= 16}
-                            onclick={() => stepSliceSteps(i, 1)}
-                          >+</button>
-                        </div>
+                      <div class="tile">
+                        <StepperCard
+                          title="Steps"
+                          currentValue={slice.steps}
+                          minValue={4}
+                          maxValue={16}
+                          description="STEPS PER CARD"
+                          color={cc.length.color}
+                          shadowColor={cc.length.shadowColor}
+                          onIncrement={() => stepSliceSteps(i, 1)}
+                          onDecrement={() => stepSliceSteps(i, -1)}
+                        />
                       </div>
                       {#if slice.level >= 2}
-                        <!-- Axis follows the dial layout: horizontal strip on
-                             desktop, stacked settings rows on phones. -->
-                        <div class="dial" transition:slide={{ duration: 200, easing: quintOut, axis: narrow ? "y" : "x" }}>
-                          <span class="dial-label">Max turns</span>
-                          <div class="mini-stepper">
-                            <button
-                              type="button"
-                              class="count-step"
-                              aria-label="Fewer turns"
-                              disabled={(slice.maxTurns ?? 1) <= (slice.level === 3 ? 0.5 : 1)}
-                              onclick={() => stepSliceTurns(i, -1)}
-                            >−</button>
-                            <span class="mini-value">≤{slice.maxTurns ?? 1}</span>
-                            <button
-                              type="button"
-                              class="count-step"
-                              aria-label="More turns"
-                              disabled={(slice.maxTurns ?? 1) >= 3}
-                              onclick={() => stepSliceTurns(i, 1)}
-                            >+</button>
-                          </div>
+                        <div class="tile" transition:slide={{ duration: 200, easing: quintOut, axis: narrow ? "y" : "x" }}>
+                          <TurnIntensityCard
+                            currentIntensity={slice.maxTurns ?? 1}
+                            allowedValues={slice.level === 3 ? TURN_STEPS_HALF : TURN_STEPS_WHOLE}
+                            onIntensityChange={(v: number) => setTurns(i, v)}
+                            shadowColor="140deg 70% 45%"
+                          />
                         </div>
                       {/if}
                     </div>
@@ -598,6 +612,48 @@
   </div>
 {/if}
 
+{#if sampleView !== null && sliceCards[sampleView]}
+  <div
+    class="modal-backdrop"
+    role="presentation"
+    onclick={(e) => {
+      if (e.target === e.currentTarget) sampleView = null;
+    }}
+  >
+    <div
+      class="sample-lightbox"
+      transition:scale={{ start: 0.92, duration: 220, easing: quintOut }}
+    >
+      <DeckFanCover
+        cards={[sliceCards[sampleView]!]}
+        deckName={flavorLabel(slices[sampleView]?.flavor ?? "rotated")}
+        {propType}
+        cardWidth={Math.min(360, pageW - 88)}
+        maxCardWidth={Math.min(360, pageW - 88)}
+        exactCount={1}
+        interactive={false}
+      />
+      <p class="lightbox-caption">
+        One draw from this slice. Every deck deals fresh cards.
+      </p>
+      <div class="lightbox-actions">
+        <button
+          type="button"
+          class="lightbox-redeal"
+          disabled={rerolling}
+          onclick={() => rerollSample(sampleView!)}
+        >
+          <i class="fas fa-shuffle" aria-hidden="true"></i>
+          {rerolling ? "Dealing..." : "Deal another"}
+        </button>
+        <button type="button" class="lightbox-close" onclick={() => (sampleView = null)}>
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
 {#if flavorEdit !== null}
   <div
     class="modal-backdrop"
@@ -633,9 +689,13 @@
     max-width: min(1720px, 92vw);
     margin: 0 auto;
     padding: 12px 24px 32px;
+    display: flex;
+    flex-direction: column;
   }
 
   .back-button {
+    /* Top block is centered — the back pill sits with it, not ragged left. */
+    align-self: center;
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -723,35 +783,28 @@
      there's no chip row to line up against, so an offset just reads as
      floating in dead space. */
 
+  .page-head {
+    display: flex;
+    justify-content: center;
+  }
   .eyebrow {
-    font-size: var(--font-size-compact, 12px);
+    font-size: var(--font-size-min, 14px);
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #b8a6ff;
-  }
-  h1 {
-    font-size: clamp(1.8rem, 3vw, 2.4rem);
-    font-weight: 800;
-    margin: 0;
-    letter-spacing: -0.01em;
-  }
-  .meta {
-    font-size: 15px;
-    color: rgba(255, 255, 255, 0.82);
-    margin: 0;
-    max-width: 62ch;
   }
 
   /* ---------- workbench bar (meter + add) ---------- */
   .workbench-bar {
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 12px;
     flex-wrap: wrap;
   }
   .workbench-bar .total-meter {
-    flex: 1 1 320px;
+    flex: 0 1 480px;
   }
   .total-meter {
     display: flex;
@@ -813,14 +866,45 @@
     grid-column: 1 / -1;
   }
   .slice-sample {
-    flex: 0 0 160px;
-    height: 226px;
+    position: relative;
+    flex: 0 0 200px;
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Button reset — the sample IS a button (tap to read it full size). */
+    border: none;
+    background: none;
+    padding: 0;
+    color: inherit;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: transform 0.18s ease;
+  }
+  button.slice-sample:hover {
+    transform: scale(1.03);
+  }
+  button.slice-sample:hover .sample-hint {
+    opacity: 1;
+  }
+  .sample-hint {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    background: rgba(10, 12, 22, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 12px;
+    opacity: 0.65;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
   }
   .sample-skeleton {
-    width: 150px;
+    width: 180px;
     aspect-ratio: 5 / 7;
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.06);
@@ -846,15 +930,15 @@
     /* Clearance for the pinned remove button. */
     padding-right: 32px;
   }
-  /* Steppers read as ONE control (a joined pill), not three floating boxes —
-     the scattered-slab look was the main mobile quality complaint. */
-  .count-field,
-  .mini-stepper {
+  /* Stepper reads as ONE control (a joined pill), not three floating boxes.
+     Border sits brighter than theme-stroke so it reads pressable on the
+     dark card. */
+  .count-field {
     display: inline-flex;
     align-items: center;
     border-radius: 12px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
-    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.06);
     overflow: hidden;
   }
   .count-step {
@@ -874,13 +958,6 @@
   .count-step:disabled {
     opacity: 0.35;
     cursor: default;
-  }
-  .mini-value {
-    min-width: 40px;
-    text-align: center;
-    font-size: 16px;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
   }
   .count-input {
     width: 52px;
@@ -947,17 +1024,25 @@
     color: #ff8a8a;
     border-color: rgba(255, 138, 138, 0.4);
   }
-  .slice-dials {
+  /* The listing page's bento tiles (generate-panel StepperCards). The type
+     vars feed the real card components' internal scale. */
+  .tile-row {
     display: flex;
-    gap: 18px;
     flex-wrap: wrap;
-    align-items: flex-end;
+    gap: 10px;
+    --card-text-size: 20px;
+    --card-text-weight: 800;
+    --card-text-spacing: 0.3px;
+    --card-text-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
   }
-  .dial {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
+  .tile-row > .tile {
+    flex: 1 1 150px;
+    min-width: 140px;
+    height: 112px;
+  }
+  .tile > :global(*) {
+    width: 100%;
+    height: 100%;
   }
   .dial-label {
     font-size: var(--font-size-compact, 12px);
@@ -1097,6 +1182,57 @@
     flex: 0 0 auto;
   }
 
+  /* ---------- sample lightbox ---------- */
+  .sample-lightbox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 20px;
+    border-radius: 18px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    background: rgba(14, 16, 28, 0.92);
+    max-width: min(440px, 94vw);
+  }
+  .lightbox-caption {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
+    color: rgba(255, 255, 255, 0.85);
+    text-align: center;
+  }
+  .lightbox-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
+  .lightbox-redeal,
+  .lightbox-close {
+    flex: 1;
+    min-height: var(--min-touch-target, 44px);
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .lightbox-redeal {
+    border: none;
+    background: var(--theme-accent-strong, #7c6cf5);
+    color: #fff;
+  }
+  .lightbox-redeal:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+  .lightbox-close {
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+  }
+
   /* ---------- mobile checkout dock ---------- */
   .checkout-dock {
     position: fixed;
@@ -1158,38 +1294,36 @@
       /* Bottom padding clears the fixed checkout dock. */
       padding: 8px 14px 96px;
     }
-    /* Sample stays a compact sidecar beside the count/flavor block, and the
-       dials break out to full card width below — beside the sample they only
-       get ~184px, which clips the steppers. display:contents lets the grid
-       place slice-top and slice-dials directly. */
+    /* Phone slice card: count row up top, the (bigger, tappable) sample
+       centered on its own band, colored dial tiles full width below. */
     .slice-row {
       display: grid;
-      grid-template-columns: 96px minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr);
       gap: 12px;
       padding: 12px;
       align-items: center;
     }
     .slice-sample {
-      grid-row: 1;
+      grid-row: 2;
       grid-column: 1;
+      justify-self: center;
       flex: none;
-      /* Content-sized: a fixed 140px left dead space under the count/flavor
-         block whenever the sample ran taller than the controls. */
-      height: auto;
+      /* The fan sizes from its container — a shrink-to-fit button gives it
+         nothing to measure. */
+      width: 172px;
     }
     .sample-skeleton {
-      width: 92px;
+      width: 148px;
     }
     .slice-controls {
       display: contents;
     }
-    /* At 375px the unit label + pinned remove button can't share the count
-       row: the label goes (the 54/54 meter already says "cards") and the
-       remove button joins the count row at the far end. Explicit grid — flex
-       wrap kept orphaning the remove button onto a dead row. */
+    /* The unit label goes (the 54/54 meter already says "cards") and the
+       remove button joins the count row. Explicit grid — flex wrap kept
+       orphaning the remove button onto a dead row. */
     .slice-top {
       grid-row: 1;
-      grid-column: 2;
+      grid-column: 1;
       align-self: center;
       display: grid;
       grid-template-columns: 1fr auto;
@@ -1215,31 +1349,16 @@
       grid-column: 1 / -1;
       justify-content: space-between;
     }
-    /* Dials become settings rows (label left, stepper right) across the full
-       card width: two side-by-side columns clipped the + button at 375px. */
-    .slice-dials {
-      grid-row: 2;
-      grid-column: 1 / -1;
-      display: flex;
-      flex-direction: column;
-      /* Base rule's align-items:flex-end is the desktop cross-axis; in a
-         column it right-shrinks every row. Rows stretch edge to edge here. */
-      align-items: stretch;
-      gap: 8px;
+    .tile-row {
+      grid-row: 3;
+      grid-column: 1;
     }
-    .dial {
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-    }
-    /* "Max turns" wrapped to two lines and shoved its stepper past the card
-       edge — one nowrap line fits the row fine. */
-    .dial .dial-label {
-      white-space: nowrap;
-    }
-    .dial .mini-stepper {
-      flex: 0 0 auto;
+    /* Two tiles share a row on phones (Level + Steps); Turns wraps below
+       full width. */
+    .tile-row > .tile {
+      flex: 1 1 130px;
+      min-width: 126px;
+      height: 104px;
     }
     .rail-stage {
       height: 240px;
