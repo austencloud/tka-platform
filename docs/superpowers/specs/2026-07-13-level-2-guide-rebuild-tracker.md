@@ -79,12 +79,40 @@ and the artboard exports under `D:\_THE KINETIC ALPHABET\_GUIDE\artboard-exports
 - [x] p5 Glyphs/PADS — high/low slots (big A), PADS priority arrow + Shifts brace, five
       hybrid example pictographs (all MCP-verified: Type1 C[11], S/T S[8], Type2 W[9],
       Type3 Σ-[9], Type4 Φ[4]) + left/right same-type example A[3]. Screenshot-verified.
-- [ ] p6 Type 1 Dual-Shift — A¹/B¹ breakdowns, C¹ vs C₁ (pro-high/anti-low)
-- [ ] p7 S and T — leading/following, S¹/S₁/T¹/T₁ breakdowns
-- [ ] p8 Type 2 Shift — W¹, Ẇ₁ (same) vs W̥₁ (opp), same/opp dots introduced
-- [ ] p9 Type 3 Cross-Shift — Z-¹, Ż-₁ same, Z-₁ opp, halfway-position teaching
-- [ ] p10 Type 4 Dash — Φ¹, Φ₁
+- [x] p6 Type 1 Dual-Shift — A¹/B¹/C¹/C₁ breakdown strips; real start/end statics +
+      engine-interpolated halfway staff poses (halfway-pose.ts) + combined variations
+      with turns on the correct hand (renderer draws turn arrows). Coords calibrated to
+      original PDF text layer. Screenshot-verified vs original.
+- [x] p7 S and T — leading/following hybrids. S¹/S₁/T¹/T₁ strips from variation [6]
+      (blue w→s leads, red s→e follows; S pro / T anti, MCP-verified). Leading strip
+      turns blue, following turns red. Slot glyphs flip (high=red, low=blue); thin
+      within-group rules + heavy S↔T divider; U/V carve-out note. Screenshot-verified.
+- [x] p8 Type 2 Shift — W¹ (shift turn) + W-Same/W-Opp Low-One (static-hand turn, cw=same
+      dot-above / ccw=opp dot-below). W variation [3] (blue w→w static, red n→e pro cw).
+      Renderer draws opposite static-spin arrows so same/opp read distinctly. Θ uppercase.
+      Screenshot-verified (incl. zoomed same-vs-opp arrow check).
+- [x] p9 Type 3 Cross-Shift — Z-¹ (shift turn) + Z-Same/Opp Low-One (dash-hand turn,
+      cw=same/ccw=opp). Z- variation [7] (blue s→n dash, red e→n anti cw). Dash through
+      center = centric halfway. Θ- uppercase. Screenshot-verified.
+- [x] p10 Type 4 Dash — Φ¹ (dash turn) + Φ₁ (static turn). Φ variation [3] (blue s→s
+      static, red s→n dash). One prop rotates per strip → no same/opp, no dots.
+      Screenshot-verified.
 - [ ] p11 Opening/Closing — Λ¹ open/close, Λ₁ open/close, continuation panels
+      **Domain grounding (MCP `get_domain_topic("glyph-anatomy")`, gathered 2026-07-13):**
+      Λ/Λ-/Γ use opening/closing INSTEAD of same/opp (gamma's right-angle geometry
+      breaks the same/opp distinction). Opening = extrapolating the rotating hand's
+      trajectory into a pro-shift resolves toward ALPHA (opposite pts, "open") →
+      the page's continuation pictograph is **W**. Closing = resolves toward BETA
+      (same pt, "closed") → continuation is **Y**. Op/cl is per-hand. Λ is Type 4
+      (dash high, static low). 4 strips: Λ¹ opening + Λ¹ closing (turn on dash),
+      Λ₁ opening + Λ₁ closing (turn on static). NEW structural element vs p6–p10: a
+      right "Continuation" column (5th pictograph = W or Y) behind a VERTICAL divider
+      rule. Λ variations (MCP list_letter_variations Λ): dash+static at gamma→gamma
+      (e.g. [5] blue n→s dash, red e→e static). Opening vs closing = dash rotationDirection
+      (cw vs ccw); renderer/PropRotationStateTracker resolves the op/cl arrow, so pick
+      the variation + turn rotation and screenshot-verify continuation resolves to W/Y.
+      HRULES: y=290.9 (heavy, top group), y=578.9 (heavy, mid), y=750.1 (footnote);
+      vertical divider separates the continuation column (~x655 in the 1.4x render).
 - [ ] p12 Type 5 Dual-Dash — Ψ-¹, Λ-₁ open/close
 - [ ] p13 Type 6 Static — α₁, Γ₁ open/close, continuation panels
 - [ ] p14 1|1 Turns Type 1 — D/I/N/V one-one breakdowns
