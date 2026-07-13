@@ -119,8 +119,9 @@ export interface AppSettings {
   preferredShowCenter?: boolean; // Last-used center toggle in assemble
 
   // Browse Grid Settings
-  gridZoomLevel?: number; // User's DESIRED column density (pinch / zoom buttons). Clamped to the width's max at render, never overwritten by a width clamp.
-  gridColumnsExplicit?: boolean; // True only once the user deliberately sets density. Gates width auto-adaptation so a narrow-viewport clamp is never mistaken for a preference.
+  gridZoomLevel?: number; // DEPRECATED (2026-07-13): global density let a phone pinch pin desktops at 2 columns. Superseded by gridZoomByBucket; no longer read.
+  gridColumnsExplicit?: boolean; // DEPRECATED (2026-07-13): global explicit-choice flag; superseded by gridZoomByBucket; no longer read.
+  gridZoomByBucket?: Record<string, number>; // Chosen column density per width bucket (key = getWidthBucketKey). Widths without a choice auto-adapt to the bucket default.
 
   // Image Export Settings
   imageExport?: {

@@ -36,6 +36,16 @@ export function getDefaultColumnsForWidth(width: number): number {
 }
 
 /**
+ * Bucket key for persisting a chosen density per viewport class. A pinch on a
+ * phone must never pin a desktop at 2 huge columns (and vice versa), so the
+ * stored choice is scoped to the width bucket it was made in. Buckets follow
+ * the same boundaries as the max-columns table above, keyed by that max.
+ */
+export function getWidthBucketKey(width: number): string {
+	return String(getMaxColumnsForWidth(width));
+}
+
+/**
  * Effective render column count = the user's DESIRED density clamped to what
  * the current width allows. Purely derived — it must NEVER be written back over
  * `desired`. That separation is the whole fix for the "4K stuck at 2 huge

@@ -114,7 +114,7 @@ export interface BrowseEngineConfig {
 		label: string;
 	}>;
 
-	/** Initial column count. Defaults to settings.gridZoomLevel ?? 2. */
+	/** Pins the column count and skips width auto-adaptation. Test harnesses only. */
 	initialColumns?: number;
 
 	/** Minimum grid columns. Defaults to 2. */

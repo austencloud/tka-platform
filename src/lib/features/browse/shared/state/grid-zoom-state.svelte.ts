@@ -5,7 +5,9 @@
  * - Pinch gestures on touch devices
  * - +/- buttons in the top bar (for dev tools / non-touch)
  *
- * Persists to settings automatically.
+ * Density is scoped per width bucket (getWidthBucketKey): a choice made on a
+ * phone never pins a desktop at 2 huge columns. Widths without a stored choice
+ * auto-adapt to the bucket default (dense on 4K, readable on phones).
  * Preserves state across HMR updates.
  */
 
@@ -13,6 +15,8 @@ import { settingsService } from "$lib/shared/settings/state/settings-state.svelt
 import {
 	MIN_COLUMNS,
 	getMaxColumnsForWidth,
+	getDefaultColumnsForWidth,
+	getWidthBucketKey,
 } from "$lib/shared/browse/services/grid-column-breakpoints";
 
 // Preserve state across HMR
@@ -21,8 +25,8 @@ function getInitialColumns(): number {
 	if (import.meta.hot?.data?.gridColumns !== undefined) {
 		return import.meta.hot.data.gridColumns;
 	}
-	// Fall back to settings
-	return settingsService.settings.gridZoomLevel ?? 2;
+	// Min until the first width measurement adapts it to the bucket density.
+	return MIN_COLUMNS;
 }
 
 class GridZoomManager {
@@ -48,20 +52,23 @@ class GridZoomManager {
 
 	/**
 	 * Called by BrowseGrid when it measures its container.
-	 * Re-clamps the current column count if the new max is lower.
+	 * Adopts the density for this width's bucket: the user's stored choice for
+	 * this viewport class if any, else the bucket default. Never persists —
+	 * only a deliberate setColumns writes, so a transient clamp can't
+	 * masquerade as a preference.
 	 */
 	updateContainerWidth(width: number) {
 		if (width <= 0 || width === this._containerWidth) return;
 		this._containerWidth = width;
 
-		// Re-clamp the in-memory count for any live consumer, but NEVER persist a
-		// width-driven clamp. Writing the narrow-viewport count to the shared
-		// gridZoomLevel setting is what pinned wide monitors at 2 huge columns
-		// after the F12 mobile simulator (or opening a collection on a phone).
-		// A clamp is transient display adaptation, not a chosen preference.
-		const max = this.maxColumns;
-		if (this.columns > max) {
-			this.columns = max;
+		const chosen =
+			settingsService.settings.gridZoomByBucket?.[getWidthBucketKey(width)];
+		const target = Math.max(
+			MIN_COLUMNS,
+			Math.min(this.maxColumns, chosen ?? getDefaultColumnsForWidth(width))
+		);
+		if (target !== this.columns) {
+			this.columns = target;
 		}
 	}
 
@@ -105,16 +112,6 @@ class GridZoomManager {
 		return this.columns > MIN_COLUMNS;
 	}
 
-	/**
-	 * Initialize from settings (call on mount)
-	 */
-	initFromSettings() {
-		const saved = settingsService.settings.gridZoomLevel;
-		if (saved !== undefined && saved !== this.columns) {
-			this.columns = Math.max(MIN_COLUMNS, Math.min(this.maxColumns, saved));
-		}
-	}
-
 	private triggerTransition() {
 		this.isTransitioning = true;
 
@@ -129,13 +126,15 @@ class GridZoomManager {
 	}
 
 	private persistToSettings() {
-		// Only reached via setColumns — a deliberate gesture. Flag the choice so
-		// the browse engine trusts the stored density instead of width-adapting.
-		if (settingsService.settings.gridColumnsExplicit !== true) {
-			settingsService.updateSetting("gridColumnsExplicit", true);
-		}
-		if (this.columns !== settingsService.settings.gridZoomLevel) {
-			settingsService.updateSetting("gridZoomLevel", this.columns);
+		// Only reached via setColumns — a deliberate gesture. Scope the choice to
+		// the current width bucket so other viewport classes keep auto-adapting.
+		const key = getWidthBucketKey(this._containerWidth);
+		const buckets = settingsService.settings.gridZoomByBucket ?? {};
+		if (buckets[key] !== this.columns) {
+			settingsService.updateSetting("gridZoomByBucket", {
+				...buckets,
+				[key]: this.columns,
+			});
 		}
 	}
 }

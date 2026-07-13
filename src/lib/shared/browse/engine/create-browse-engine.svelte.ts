@@ -55,6 +55,7 @@ import {
 	MIN_COLUMNS as MIN_COLUMNS_DEFAULT,
 	getMaxColumnsForWidth,
 	getDefaultColumnsForWidth,
+	getWidthBucketKey,
 	clampColumnsToWidth,
 } from "$lib/shared/browse/services/grid-column-breakpoints";
 
@@ -180,23 +181,17 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 	);
 
 	// Layout state.
-	// Has the user DELIBERATELY picked a column count (pinch / zoom buttons)?
-	// Only an explicit gesture counts — NOT the mere presence of a stored
-	// gridZoomLevel, because a narrow-viewport clamp (e.g. opening the F12 mobile
-	// simulator) used to write its clamped count to that setting. Trusting a
-	// stored value as a "choice" is exactly what pinned 4K monitors at 2 huge
-	// columns. `gridColumnsExplicit` is set only by setColumns, so existing
-	// corrupted users (flag absent) fall back to width auto-adaptation and heal.
-	let userHasChosenColumns =
-		settingsService.settings.gridColumnsExplicit === true ||
-		config.initialColumns !== undefined;
-	// Seed value: the last desired density if any, else the min until the first
-	// width measurement adapts it (for non-choosers).
+	// Density is scoped per width BUCKET (see getWidthBucketKey): a pinch made on
+	// a phone stores a phone choice and must never pin a desktop at 2 huge
+	// columns. The old global gridZoomLevel/gridColumnsExplicit pair did exactly
+	// that and is no longer read — widths without a stored choice auto-adapt to
+	// the bucket default (dense on 4K, readable on phones).
+	// config.initialColumns pins the count entirely (test harnesses).
+	const columnsPinned = config.initialColumns !== undefined;
+	// Seed value: pinned count, else last persisted session count, else the min
+	// until the first width measurement adapts it.
 	let columns = $state<number>(
-		config.initialColumns ??
-			settingsService.settings.gridZoomLevel ??
-			persisted?.columns ??
-			MIN_COLUMNS_DEFAULT
+		config.initialColumns ?? persisted?.columns ?? MIN_COLUMNS_DEFAULT
 	);
 	let containerWidth = $state(0);
 	let isTransitioning = $state(false);
@@ -514,13 +509,13 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 	}
 
 	function persistColumns(cols: number): void {
-		// A write here always follows a deliberate setColumns — mark the choice so
-		// future sessions trust the stored density instead of width-adapting.
-		if (settingsService.settings.gridColumnsExplicit !== true) {
-			settingsService.updateSetting("gridColumnsExplicit", true);
-		}
-		if (cols !== settingsService.settings.gridZoomLevel) {
-			settingsService.updateSetting("gridZoomLevel", cols);
+		// A write here always follows a deliberate setColumns. Store the choice
+		// under the CURRENT width bucket only — other viewport classes keep
+		// auto-adapting to their own defaults.
+		const key = getWidthBucketKey(containerWidth);
+		const buckets = settingsService.settings.gridZoomByBucket ?? {};
+		if (buckets[key] !== cols) {
+			settingsService.updateSetting("gridZoomByBucket", { ...buckets, [key]: cols });
 		}
 	}
 
@@ -764,8 +759,6 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 
 		// --- Layout ---
 		setColumns(newColumns: number): void {
-			// Any direct set is an explicit user choice — stop auto-adapting to width.
-			userHasChosenColumns = true;
 			const max = getMaxColumnsForWidth(containerWidth);
 			const clamped = Math.max(minColumns, Math.min(max, newColumns));
 			if (clamped !== columns) {
@@ -779,21 +772,21 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			if (width <= 0 || width === containerWidth) return;
 			containerWidth = width;
 
-			// Guest / no explicit choice: adapt the count to the container width so
-			// a 4K monitor opens dense instead of stuck at the minimum. Don't write
-			// it to settings — leave gridZoomLevel unset so it keeps adapting.
-			if (!userHasChosenColumns) {
-				const target = Math.max(minColumns, getDefaultColumnsForWidth(width));
-				if (target !== columns) {
-					columns = target;
-				}
-				return;
-			}
+			if (columnsPinned) return;
 
-			// Explicit chooser: a narrow width does NOT rewrite their desired count.
-			// `columnCount` already clamps the render to maxColumns for this width,
-			// so on a phone their 6 shows as 2 and, back on a wide screen, expands
-			// to 6 again — the stored intent is never clobbered by a transient clamp.
+			// Resolve density for THIS width's bucket: the user's stored choice for
+			// this viewport class if they made one, else the bucket default (dense
+			// on 4K, readable on phones). Never persisted here — only a deliberate
+			// setColumns writes, so transient clamps can't masquerade as choices.
+			const key = getWidthBucketKey(width);
+			const chosen = settingsService.settings.gridZoomByBucket?.[key];
+			const target = Math.max(
+				minColumns,
+				chosen ?? getDefaultColumnsForWidth(width)
+			);
+			if (target !== columns) {
+				columns = target;
+			}
 		},
 
 		zoomIn(): void {
