@@ -3,8 +3,6 @@
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import ComposerHeroDemo from "./_components/ComposerHeroDemo.svelte";
   import ComposerGenerateDemo from "./_components/ComposerGenerateDemo.svelte";
-  import ComposerQrDemo from "./_components/ComposerQrDemo.svelte";
-  import ComposerGalleryDemo from "./_components/ComposerGalleryDemo.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   const DESCRIPTION =
@@ -34,9 +32,11 @@
     };
   }
   let choreoCardsActive = $state(false);
+  let viewer3DActive = $state(false);
   const activateTunnelWhenNear = activateWhenNear(() => (tunnelActive = true));
   const activatePlayWithItWhenNear = activateWhenNear(() => (playWithItActive = true));
   const activateChoreoCardsWhenNear = activateWhenNear(() => (choreoCardsActive = true));
+  const activate3DWhenNear = activateWhenNear(() => (viewer3DActive = true));
 
 
   const ROADMAP = [
@@ -307,20 +307,16 @@
     <div class="prose">
       <p>
         Any sequence plays back in a full 3D scene: a performer spinning your choreography
-        on a stage you can orbit, with environments to choose from and effects on the prop
-        tips. The 2D notation is the score. The 3D viewer is the performance.
+        on a stage you can orbit. The one below is running live. Drag to look around, drop it
+        into a different environment, or multiply it into a ring performing in unison. The 2D
+        notation is the score. The 3D viewer is the performance.
       </p>
     </div>
-    <div class="breakout">
-      <figure class="viewer3d-figure">
-        <img
-          src="/marketing/viewer-3d.webp"
-          alt="Flow Arts Composer's 3D viewer: a performer mid-sequence on a 3D stage"
-          width="1200"
-          height="675"
-          loading="lazy"
-        />
-      </figure>
+    <div class="breakout" use:activate3DWhenNear>
+      <LazyMount
+        loader={() => import("./_components/Composer3DViewerDemo.svelte")}
+        active={viewer3DActive}
+      />
     </div>
     <div class="resource-row">
       <a href="/create" class="resource-chip" data-sveltekit-reload>Open a sequence in 3D</a>
@@ -335,45 +331,31 @@
     </div>
     <div class="breakout">
       <div class="bento">
-        <div class="bento-cell">
-          <ComposerGalleryDemo />
+        <div class="bento-cell text-only">
           <div class="bento-text">
             <strong>Community gallery</strong>
-            <span>real public sequences, loaded live from the gallery</span>
+            <span>real public sequences shared across the community, filterable by level</span>
           </div>
         </div>
 
-        <div class="bento-cell">
-          <div
-            class="bento-media"
-            style:background-image={`url(/marketing/export-render.webp)`}
-            role="img"
-            aria-label="An exported sequence card: the full CΨΩX pictograph grid with credits"
-          ></div>
+        <div class="bento-cell text-only">
           <div class="bento-text">
             <strong>Image and video export</strong>
-            <span>this is an actual export of the sequence above, rendered by the app</span>
+            <span>render any sequence as an image or a video, straight from the viewer</span>
           </div>
         </div>
 
-        <div class="bento-cell">
-          <ComposerQrDemo />
+        <div class="bento-cell text-only">
           <div class="bento-text">
             <strong>QR share links</strong>
-            <span>every export carries one</span>
+            <span>every export carries a scan code that opens the sequence on any phone</span>
           </div>
         </div>
 
-        <div class="bento-cell">
-          <div
-            class="bento-media"
-            style:background-image={`url(/marketing/library.webp)`}
-            role="img"
-            aria-label="The library: collections sidebar beside a grid of saved sequence cards"
-          ></div>
+        <div class="bento-cell text-only">
           <div class="bento-text">
             <strong>Library</strong>
-            <span>collections and smart collections for everything you save. Yours needs an account, so here is a peek at ours</span>
+            <span>collections and smart collections for everything you save</span>
           </div>
         </div>
 
@@ -517,8 +499,8 @@
   }
 
   /* ── feature bento ──
-     Real app screenshots per feature. Media boxes are fixed-aspect
-     backgrounds (no <img> reflow); text-only cells share the card shape. */
+     Uniform text cards, one per feature. The 3D section carries the visuals;
+     these stay lean so nothing depends on a screenshot going stale. */
   .bento {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
@@ -531,12 +513,6 @@
     overflow: hidden;
     background: oklch(0.16 0.018 270 / 0.45);
     border: 1px solid oklch(0.4 0.04 270 / 0.14);
-  }
-  .bento-media {
-    aspect-ratio: 16 / 10;
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: center top;
   }
   .bento-text {
     display: flex;
@@ -574,20 +550,6 @@
   .cards-fan {
     margin: 0.4rem auto 1.4rem;
     max-width: 40rem;
-  }
-
-  .viewer3d-figure {
-    margin: 0;
-  }
-  .viewer3d-figure img {
-    display: block;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 16 / 9;
-    object-fit: cover;
-    border-radius: 18px;
-    border: 1px solid oklch(0.4 0.04 270 / 0.18);
-    background: oklch(0.16 0.018 270 / 0.45);
   }
 
   @media (prefers-reduced-motion: reduce) {
