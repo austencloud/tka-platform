@@ -138,7 +138,9 @@
 
 
   /* Override LOOPExpandedOverlay's absolute positioning when inside drawer;
-     fill the full drawer height like CustomizeDrawer does. */
+     fill the full drawer height like CustomizeDrawer does. On desktop the
+     overlay stays its own scroller (it is height-constrained, so the sticky
+     Apply dock binds to it and works). */
   .loop-drawer-content > :global(.loop-expanded-overlay) {
     position: static;
     flex: 1;
@@ -222,6 +224,15 @@
     .loop-drawer-content :global(.loop-component-grid.list) {
       height: auto !important;
       grid-auto-rows: minmax(64px, auto) !important;
+    }
+
+    /* Load-bearing for the sticky Apply dock: the overlay's own
+       overflow-y: auto would become the dock's containing scrollport, and
+       on mobile the overlay is content-height (nothing overflows it), so
+       the dock would never float. Making the overlay overflow-visible here
+       lets the dock bind to drawer-inner — the sheet's one real scroller. */
+    .loop-drawer-content > :global(.loop-expanded-overlay) {
+      overflow: visible !important;
     }
   }
 
