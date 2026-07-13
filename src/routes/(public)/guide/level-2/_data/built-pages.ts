@@ -15,6 +15,7 @@ import Type2ShiftPage from "../_pages/Type2ShiftPage.svelte";
 import Type3CrossShiftPage from "../_pages/Type3CrossShiftPage.svelte";
 import Type4DashPage from "../_pages/Type4DashPage.svelte";
 import OpeningClosingPage from "../_pages/OpeningClosingPage.svelte";
+import Type5DualDashPage from "../_pages/Type5DualDashPage.svelte";
 
 export const BUILT2: Record<string, Component> = {
   // Pages register here as they are built (see the level-2 rebuild tracker).
@@ -28,4 +29,5 @@ export const BUILT2: Record<string, Component> = {
   "t3-cross-shift": Type3CrossShiftPage,
   "t4-dash": Type4DashPage,
   "opening-closing": OpeningClosingPage,
+  "t5-dual-dash": Type5DualDashPage,
 };
