@@ -57,3 +57,38 @@ export function codexTurnData(letter: string, highTurns: number, lowTurns: numbe
 export function codexSlotData(letter: string, slot: Slot, turns = 1): PictographData | null {
   return codexTurnData(letter, slot === "high" ? turns : 0, slot === "low" ? turns : 0);
 }
+
+const flipDir = (d: RotationDirection) =>
+  d === RotationDirection.CLOCKWISE ? RotationDirection.COUNTER_CLOCKWISE : RotationDirection.CLOCKWISE;
+
+export type Rel = "same" | "opp";
+
+/**
+ * Same/Opp-aware codex cell (Type 2–6 pages). When one hand is a shift (pro/anti)
+ * and the other carries a turn (static/dash), the two props' rotational
+ * relationship is Same or Opp. The shift keeps its intrinsic spin direction; the
+ * turning hand's direction is set to MATCH (same) or OPPOSE (opp) it. Shifts
+ * ignore the direction arg, so only the turning (static/dash) hand is steered.
+ *
+ * Accuracy-pass flag: the same↔CW / opp↔CCW mapping here assumes the shift's stored
+ * `rotationDirection` is the correct reference sense; confirm against the artboard.
+ */
+export function codexRelData(
+  letter: string,
+  highTurns: number,
+  lowTurns: number,
+  rel: Rel
+): PictographData | null {
+  const base = codexData(`${letter}-0`);
+  if (!base) return null;
+  const high = highSlotColor(base);
+  const highIsBlue = high === MotionColor.BLUE;
+  const highMotion = highIsBlue ? base.motions?.blue : base.motions?.red;
+  const highDir = highMotion?.rotationDirection ?? CW;
+  const lowDir = rel === "opp" ? flipDir(highDir) : highDir;
+  const blueTurns = highIsBlue ? highTurns : lowTurns;
+  const redTurns = highIsBlue ? lowTurns : highTurns;
+  const blueDir = highIsBlue ? highDir : lowDir;
+  const redDir = highIsBlue ? lowDir : highDir;
+  return applyPendingTurnsToOption(base, blueTurns, redTurns, blueDir, redDir);
+}
