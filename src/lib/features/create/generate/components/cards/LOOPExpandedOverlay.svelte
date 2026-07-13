@@ -13,6 +13,7 @@ Animates forward in z-axis and expands to fill the container space
     buildLoopSpec,
   } from "$lib/shared/create/services/loop-type-utils";
   import { gateRhythm } from "$lib/shared/create/services/loop-rhythm-gating";
+  import { guestLoopGate, type GuestLoopLock } from "$lib/shared/create/services/loop-guest-gate";
   import { blockSignatures } from "$lib/shared/create/services/loop-block-signatures";
   import { onMount } from "svelte";
   import {
@@ -41,6 +42,8 @@ Animates forward in z-axis and expands to fill the container space
     rhythm,
     sequenceLength,
     onRhythmChange,
+    guestMaxLength,
+    onRequestSignup,
   } = $props<{
     currentType: LOOPType;
     selectedComponents: Set<LOOPComponent>;
@@ -52,15 +55,26 @@ Animates forward in z-axis and expands to fill the container space
     rhythm?: RhythmValue;
     sequenceLength?: number;
     onRhythmChange?: (updates: Partial<RhythmValue>) => void;
+    /** Guest beat cap. Set (by guest-facing hosts) turns on guest LOOP gating;
+        absent = no gating (deck/store/admin hosts unaffected). */
+    guestMaxLength?: number;
+    /** Called with the lock reason when a guest taps a gated LOOP. */
+    onRequestSignup?: (reason: string) => void;
   }>();
 
   let hapticService: HapticFeedback | null = null;
-  let isMultiSelectMode = $state(false);
+  // A reopened multi-component combo lands on the Combo screen it was applied
+  // from, not back on Single (the overlay remounts per open — props are nulled
+  // on close — so mount-time init is the reopen path).
+  let isMultiSelectMode = $state(selectedComponents.size > 1);
   let localSelectedComponents = $state(new Set<LOOPComponent>());
 
   // Sync local state with prop changes
   $effect(() => {
     localSelectedComponents = new Set<LOOPComponent>(selectedComponents);
+    if (selectedComponents.size > 1) {
+      isMultiSelectMode = true;
+    }
   });
 
   // Rhythm tier: LOCAL until Apply, synced from the prop the same way
@@ -117,10 +131,28 @@ Animates forward in z-axis and expands to fill the container space
   // ===== Rhythm tier (combo mode only; hidden entirely when `rhythm` is absent) =====
   const hasRhythmTier = $derived(!!rhythm);
 
-  const hasRhythmKnobs = $derived(
-    localSelectedComponents.has(LOOPComponent.ROTATED) ||
-      localSelectedComponents.has(LOOPComponent.INVERTED)
+  // Quarter-turn rotation only produces a genuine loop for PURE rotation.
+  // Every rotation+something combo (swap, invert, mirror) fails to close as a
+  // real quartered loop in the engine — only halved does. So the Half/Quarter
+  // rotation choice is offered only when ROTATED is the sole component; any
+  // combo forces half turns. (Empirical: quartered-combo generation audit,
+  // 2026-07-13 — 0 genuine for every combo, 15/15 for pure rotated.)
+  const rotationSupportsQuarter = $derived(
+    localSelectedComponents.size === 1 &&
+      localSelectedComponents.has(LOOPComponent.ROTATED)
   );
+
+  const hasRhythmKnobs = $derived(
+    rotationSupportsQuarter || localSelectedComponents.has(LOOPComponent.INVERTED)
+  );
+
+  // Guard: if the user set quarter turns then extended the combo, snap the
+  // rotation interval back to half so the spec stays buildable.
+  $effect(() => {
+    if (!rotationSupportsQuarter && localRhythm.rotationInterval === 4) {
+      localRhythm = { ...localRhythm, rotationInterval: 2 };
+    }
+  });
 
   // Wire-form spec for the CURRENT selection + rhythm — same helper the
   // generation orchestrator uses. Null when the combo isn't implemented
@@ -133,6 +165,37 @@ Animates forward in z-axis and expands to fill the container space
   const rhythmGate = $derived.by(() => {
     if (sequenceLength === undefined || !specWire) return null;
     return gateRhythm(localSelectedComponents, localRhythm, sequenceLength);
+  });
+
+  // ===== Guest LOOP gating (active only when guestMaxLength is set) =====
+  // Lock for the CURRENT selection (drives combo-mode Apply).
+  const guestLock = $derived.by<GuestLoopLock>(() => {
+    if (guestMaxLength === undefined || localSelectedComponents.size === 0) {
+      return { locked: false };
+    }
+    return guestLoopGate(
+      generateLOOPType(localSelectedComponents),
+      buildLoopSpec(localSelectedComponents, localRhythm),
+      guestMaxLength,
+    );
+  });
+
+  // Per-component lock for single-select mode: each component evaluated as if it
+  // were the sole selection, so the grid can badge the gated ones up front.
+  const lockedComponents = $derived.by(() => {
+    if (guestMaxLength === undefined || isMultiSelectMode) return null;
+    const locked = new Set<LOOPComponent>();
+    for (const info of LOOP_COMPONENTS) {
+      const component = info.component as LOOPComponent;
+      const one = new Set<LOOPComponent>([component]);
+      const gate = guestLoopGate(
+        generateLOOPType(one),
+        buildLoopSpec(one, localRhythm),
+        guestMaxLength,
+      );
+      if (gate.locked) locked.add(component);
+    }
+    return locked;
   });
 
   const wordMathText = $derived.by(() => {
@@ -163,6 +226,7 @@ Animates forward in z-axis and expands to fill the container space
   const buttonText = $derived.by(() => {
     if (selectionCount === 0) return "Select Components";
     if (!isImplemented) return "Combo Not Supported";
+    if (guestLock.locked) return "Sign Up to Unlock";
     if (selectionCount === 1) {
       const component = Array.from(localSelectedComponents)[0] as LOOPComponent;
       const formatted = component.charAt(0) + component.slice(1).toLowerCase();
@@ -176,6 +240,18 @@ Animates forward in z-axis and expands to fill the container space
 
     // Single-select mode: Apply immediately
     if (!isMultiSelectMode) {
+      // Guest-gated single pick routes to sign-up instead of applying.
+      if (guestMaxLength !== undefined) {
+        const gate = guestLoopGate(
+          generateLOOPType(new Set([component])),
+          buildLoopSpec(new Set([component]), localRhythm),
+          guestMaxLength,
+        );
+        if (gate.locked) {
+          onRequestSignup?.(gate.reason);
+          return;
+        }
+      }
       localSelectedComponents = new Set([component]);
       applyAndClose();
       return;
@@ -237,6 +313,12 @@ Animates forward in z-axis and expands to fill the container space
 
   function handleConfirm() {
     if (selectionCount === 0 || !isImplemented) return;
+    // Guest-gated combo routes to sign-up instead of applying.
+    if (guestLock.locked) {
+      hapticService?.trigger("selection");
+      onRequestSignup?.(guestLock.reason);
+      return;
+    }
     if (rhythmGate && !rhythmGate.ok) return;
     hapticService?.trigger("selection");
     applyAndClose();
@@ -304,6 +386,7 @@ Animates forward in z-axis and expands to fill the container space
     <LOOPComponentGrid
       selectedComponents={localSelectedComponents}
       {disabledComponents}
+      {lockedComponents}
       {isMultiSelectMode}
       {layout}
       onToggleComponent={handleToggle}
@@ -328,7 +411,7 @@ Animates forward in z-axis and expands to fill the container space
 
         {#if isRhythmOpen}
           <div class="rhythm-rows">
-            {#if localSelectedComponents.has(LOOPComponent.ROTATED)}
+            {#if rotationSupportsQuarter}
               <div class="rhythm-row">
                 <span class="rhythm-label">Rotation</span>
                 <SegmentedControl
@@ -406,6 +489,8 @@ Animates forward in z-axis and expands to fill the container space
         <div class="coming-soon-badge">
           No LOOP type matches this exact combination — add or remove a component
         </div>
+      {:else if guestLock.locked}
+        <div class="signup-badge">{guestLock.reason}</div>
       {:else if rhythmGate && !rhythmGate.ok}
         <div class="coming-soon-badge">{rhythmGate.reason}</div>
       {/if}
@@ -418,9 +503,10 @@ Animates forward in z-axis and expands to fill the container space
     <div class="apply-dock">
       <button
         class="apply-button"
-        class:disabled={selectionCount === 0 || !isImplemented || (rhythmGate !== null && !rhythmGate.ok)}
+        class:locked={guestLock.locked}
+        class:disabled={selectionCount === 0 || !isImplemented || (!guestLock.locked && rhythmGate !== null && !rhythmGate.ok)}
         onclick={handleConfirm}
-        disabled={selectionCount === 0 || !isImplemented || (rhythmGate !== null && !rhythmGate.ok)}
+        disabled={selectionCount === 0 || !isImplemented || (!guestLock.locked && rhythmGate !== null && !rhythmGate.ok)}
       >
         {buttonText}
       </button>
@@ -562,6 +648,17 @@ Animates forward in z-axis and expands to fill the container space
     border-radius: 6px;
     padding: 6px 10px;
     color: var(--semantic-warning);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    text-align: center;
+  }
+
+  .signup-badge {
+    background: color-mix(in srgb, var(--theme-accent) 18%, transparent);
+    border: 1px solid color-mix(in srgb, var(--theme-accent) 55%, transparent);
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: var(--theme-text, white);
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     text-align: center;
@@ -709,6 +806,13 @@ Animates forward in z-axis and expands to fill the container space
   .apply-button.disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+
+  /* Guest-locked Apply reads as a call-to-action, not a dead disabled button. */
+  .apply-button.locked {
+    opacity: 1;
+    cursor: pointer;
+    background: color-mix(in srgb, var(--theme-accent) 55%, transparent);
   }
 
   /* Reduced motion */

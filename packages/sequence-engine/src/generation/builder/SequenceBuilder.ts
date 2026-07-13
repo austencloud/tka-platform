@@ -57,7 +57,7 @@ import {
   QUARTER_POSITION_MAP_CW,
   QUARTER_POSITION_MAP_CCW,
 } from "../../loop/position-maps/circular-position-maps.js";
-import { VERTICAL_MIRROR_POSITION_MAP } from "../../loop/position-maps/strict-loop-position-maps.js";
+import { VERTICAL_MIRROR_POSITION_MAP, SWAPPED_POSITION_MAP } from "../../loop/position-maps/strict-loop-position-maps.js";
 import { PositionReachabilityAnalyzer, type ReachabilityResult } from "../reachability/PositionReachabilityAnalyzer.js";
 
 /**
@@ -1016,18 +1016,17 @@ export class SequenceBuilder {
     currentStartPosition?: string
   ): string | undefined {
     // Swap+rotate combos degenerate from alpha starts (rotate and swap cancel
-    // per-hand). Beta and gamma are genuine with the composed
-    // swap(rotate(start)) seam. Unspecified/alpha starts get a random beta —
-    // always present in both grid modes (gamma availability varies).
+    // per-hand); beta is the reliable non-degenerate start (halved 25/25). Pin
+    // a random beta unless the caller already chose a non-alpha start. Quarter
+    // turns for these combos are gated off in the UI (no quartered combo
+    // produces a genuine loop — only pure rotation does), so the halved path is
+    // the only one reached here and it is always feasible from beta.
     if (
       loopType === LOOPType.ROTATED_SWAPPED ||
       loopType === LOOPType.ROTATED_SWAPPED_INVERTED
     ) {
-      if (
-        currentStartPosition &&
-        !currentStartPosition.startsWith("alpha")
-      ) {
-        return undefined; // beta or gamma — non-degenerate
+      if (currentStartPosition && !currentStartPosition.startsWith("alpha")) {
+        return undefined; // beta or gamma — keep
       }
       const betaPositions = Array.from({ length: 8 }, (_, i) => `beta${i + 1}`);
       return betaPositions[Math.floor(Math.random() * betaPositions.length)];
@@ -1127,12 +1126,20 @@ export class SequenceBuilder {
       return positions;
     }
 
-    // For rotated LOOP types with quartered slice, both CW and CCW are valid
+    // For rotated LOOP types with quartered slice, both CW and CCW are valid.
+    // Swap+rotate combos need the composed seam: end = swap(rotate90(start)).
+    // (For beta the swap is positionally invisible, so this matches rotate-only;
+    // it matters for gamma starts.)
     if (period === Period.QUARTERED && ROTATED_LOOP_TYPES.has(loopType)) {
+      const isSwapRotate =
+        loopType === LOOPType.ROTATED_SWAPPED ||
+        loopType === LOOPType.ROTATED_SWAPPED_INVERTED;
       const cw = QUARTER_POSITION_MAP_CW[startPosition];
       const ccw = QUARTER_POSITION_MAP_CCW[startPosition];
-      if (cw) positions.add(cw);
-      if (ccw) positions.add(ccw);
+      const cwEnd = isSwapRotate && cw ? SWAPPED_POSITION_MAP[cw] : cw;
+      const ccwEnd = isSwapRotate && ccw ? SWAPPED_POSITION_MAP[ccw] : ccw;
+      if (cwEnd) positions.add(cwEnd);
+      if (ccwEnd) positions.add(ccwEnd);
     } else {
       // For all other types, delegate to the standard selector
       const endPos = loopEndPositionSelector.determineEndPosition(
