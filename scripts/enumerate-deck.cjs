@@ -294,8 +294,11 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         // for halved, QUARTERED_LOOPS_CW for quartered (rotation is the base constraint)
         return sl === "quartered" ? QUARTERED_LOOPS_CW : HALVED_LOOPS;
       case "mirrored_swapped_inverted":
-        // Mirror + swap + invert: the three position transformations cancel out,
-        // so the net position constraint is identity (start == end).
+        // Mirror + swap + invert: inversion forces return-to-start (identity
+        // end), but the mirror only composes cleanly from starts fixed under
+        // both mirror and swap (beta1/beta5 — enforced via START_OVERRIDES).
+        // From other starts the mirror degrades to a flip and the loop is not
+        // actually MSI (fixed-point theorem).
         return INVERTED_LOOP_VALIDATION_SET;
       default:
         console.error(`No validation set for LOOP type "${lt}"`);
@@ -305,11 +308,25 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
 
   const validationSet = getValidationSet(loopType, slice);
 
-  // Determine valid start positions and their required end positions
+  // Determine valid start positions and their required end positions.
+  // Most types sample one representative per family (alpha1/beta5/gamma11).
+  // Some combos are degenerate outside specific fixed points (LOOP fixed-point
+  // theorem — see reference_loop_builder_seam_divergence): enumerating them
+  // from the generic starts produces sequences whose declared transformation
+  // isn't actually present (the c54 MSI deck shipped 40/54 unclassifiable this
+  // way, 2026-07-13). Restrict those to their mathematically valid starts.
   const DEFAULT_STARTS = ["alpha1", "beta5", "gamma11"];
+  const START_OVERRIDES = {
+    // Mirror+swap need starts fixed under BOTH mirror and swap: beta1/beta5.
+    // (Plain mirrored_swapped tolerates more starts empirically, but the
+    // inverted variant degrades to a flip elsewhere.) MRIS uses the rotation
+    // end (beta1↔beta5) with the same start restriction.
+    mirrored_swapped_inverted: ["beta1", "beta5"],
+    mirrored_rotated_inverted_swapped: ["beta1", "beta5"],
+  };
   const requestedStarts = startPositionsArg
     ? startPositionsArg.split(",").map(s => s.trim())
-    : DEFAULT_STARTS;
+    : (START_OVERRIDES[loopType] ?? DEFAULT_STARTS);
 
   // Build start -> requiredEnds map from validation set.
   // A start position may have multiple valid endpoints (e.g. CW and CCW rotations).
@@ -748,6 +765,19 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
     const { deriveReversals } = require("../packages/sequence-engine/dist/analysis/deriveReversals.js");
     const { calculateEndOrientation } = require("../packages/sequence-engine/dist/core/orientation/OrientationCalculator.js");
     const { reduceToMinimalLoop } = require("../packages/sequence-engine/dist/loop/reduction/minimal-loop-reducer.js");
+    const { loopDetectorClass } = require("../packages/sequence-engine/dist/loop/detection/LOOPDetector.js");
+    // A printed deck card must unambiguously BE its declared LOOP type. Detection
+    // is the round-trip check: execute the seed, then confirm the full sequence
+    // classifies back as `loopType`. Rejects sequences that alias to a sibling
+    // type or are unclassifiable (the MSI deck shipped 40/54 such cards). Applied
+    // in the curation pre-pass so curation only ever samples genuine cards.
+    const detectsAsTarget = (fullSteps) => {
+      try {
+        return loopDetectorClass.detectLOOPType(fullSteps)?.loopType === loopType;
+      } catch {
+        return false;
+      }
+    };
     // Twin transform inputs: the engine's vertical-mirror location map and the
     // rotation-flip fn (reused, not hand-rolled), plus a location->position
     // table built from the same CSV the enumeration walks. The twin module is
@@ -970,6 +1000,8 @@ console.log(`Adjacency map: ${Object.keys(adjacency).length} positions\n`);
         if (!allowReversals && (!reversalPattern || reversalPattern === "continuous") && hasReversals(ppFull.slice(1))) {
           continue;
         }
+        if (reduceToMinimalLoop(ppFull).reduced) continue; // literal-repeat
+        if (!detectsAsTarget(ppFull)) continue; // must round-trip as loopType
         survivors.push(item);
       }
 
