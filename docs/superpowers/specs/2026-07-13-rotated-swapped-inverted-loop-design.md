@@ -53,6 +53,22 @@ path `determineEndPositionForSpec` — generic over the component set. Only the 
 - [x] Grep confirm guest gating needs nothing per-type
 
 ### Verification (Fable, main loop)
-- [x] Engine test suite green (vitest run in packages/sequence-engine — 187 files / 3419 tests pass)
-- [x] One full `npm run check` green (0 errors, 21 pre-existing a11y warnings)
-- [x] Runtime proof: generate a rotated_swapped_inverted sequence via local engine build (2/4/8-beat, beta seeds, detector round-trips all three)
+- [x] Engine test suite green (vitest run in packages/sequence-engine — 36 files / 282 tests pass)
+- [x] App unit tests green (12 files / 146 tests via vitest: loop-type-utils, loop-labeler, loop-viability)
+- [x] Full `npm run check`: zero errors in this change's files (2 remaining errors are in ComposerTunnelDemo.svelte — unrelated in-flight composer work from another session)
+- [x] Runtime proof: production builder generated 12/12 halved samples; every beta-start sample detector round-trips as `rotated_swapped_inverted` with components {inverted, rotated, swapped}
+
+## Known behavior parity (pre-existing, NOT introduced here)
+
+Baseline run of shipped ROTATED_SWAPPED shows identical characteristics, so the
+new type matches its sibling exactly:
+- beta starts: correct loop + correct detection (both types)
+- alpha starts: rotation+swap cancel per-hand → degenerate loop detected as the
+  swap/invert remainder (both types)
+- gamma starts: builder's rotate-only seam target yields unclassifiable loops
+  (both types — builder `determineEndPosition` targets rotate(start), app
+  validator expects swap(rotate(start)); divergence predates this change)
+- quartered: 0 samples in 80-120 attempts (both types)
+
+Fixing alpha/gamma targeting for swap+rotate combos would change shipped
+ROTATED_SWAPPED behavior too — separate project, flagged to Austen.
