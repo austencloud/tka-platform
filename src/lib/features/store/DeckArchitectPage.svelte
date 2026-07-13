@@ -238,6 +238,10 @@
 
   let previewW = $state(0);
   let previewH = $state(0);
+  // Phone layout: samples shrink to sidecar size (CSS pairs at 720px).
+  let pageW = $state(0);
+  const narrow = $derived(pageW > 0 && pageW < 720);
+  const sampleCardW = $derived(narrow ? 92 : 150);
   // Rail stage is compact: card height budget = stage minus caption + gaps.
   const previewMaxCardW = $derived(
     previewH > 0 ? Math.max(110, Math.round(((previewH - 80) * 5) / 7)) : 200
@@ -295,7 +299,7 @@
   }
 </script>
 
-<svelte:window onkeydown={onWindowKey} />
+<svelte:window onkeydown={onWindowKey} bind:innerWidth={pageW} />
 
 <div class="architect-page">
   <main class="architect-content">
@@ -351,11 +355,15 @@
                 >
                   <div class="slice-sample" aria-hidden="true">
                     {#if sliceCards[i]}
+                      <!-- maxCardWidth pins the sample: the fan sizes from its
+                           container, and on narrow screens an uncapped card
+                           ballooned to full page width. -->
                       <DeckFanCover
                         cards={[sliceCards[i]]}
                         deckName={flavorLabel(slice.flavor)}
                         {propType}
-                        cardWidth={150}
+                        cardWidth={sampleCardW}
+                        maxCardWidth={sampleCardW}
                         exactCount={1}
                         interactive={false}
                       />
@@ -807,8 +815,8 @@
     gap: 6px;
   }
   .count-step {
-    width: 36px;
-    height: 36px;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
     border-radius: 10px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
@@ -842,7 +850,7 @@
   }
   .count-input {
     width: 58px;
-    height: 36px;
+    height: var(--min-touch-target, 44px);
     text-align: center;
     font-size: 16px;
     font-weight: 800;
@@ -867,7 +875,7 @@
     display: inline-flex;
     align-items: center;
     gap: 10px;
-    min-height: 40px;
+    min-height: var(--min-touch-target, 44px);
     padding: 0 16px;
     border-radius: 999px;
     /* The pill wears the same accent as its card frame — one identity. */
@@ -890,10 +898,10 @@
   }
   .remove-btn {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 36px;
-    height: 36px;
+    top: 4px;
+    right: 4px;
+    width: var(--min-touch-target, 44px);
+    height: var(--min-touch-target, 44px);
     border-radius: 10px;
     border: 1px solid transparent;
     background: none;
@@ -1055,13 +1063,36 @@
     flex: 0 0 auto;
   }
 
+  /* ---------- mobile ---------- */
   @media (max-width: 720px) {
+    .architect-content {
+      padding: 8px 14px 24px;
+    }
+    /* Sample stays a compact sidecar; controls keep the rest of the row.
+       (Stacking to a column let the fan balloon to page width.) */
     .slice-row {
-      flex-direction: column;
-      align-items: stretch;
+      gap: 12px;
+      padding: 12px;
+      align-items: flex-start;
     }
     .slice-sample {
-      flex-basis: auto;
+      flex: 0 0 96px;
+      height: 140px;
+    }
+    .sample-skeleton {
+      width: 92px;
+    }
+    .slice-dials {
+      gap: 12px;
+    }
+    .rail-stage {
+      height: 240px;
+    }
+    .buy-rail {
+      padding: 16px;
+    }
+    .workbench-bar .total-meter {
+      flex-basis: 100%;
     }
   }
 
