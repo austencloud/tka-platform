@@ -329,7 +329,11 @@
     }
   }
 
-  @container (min-width: 1024px) {
+  /* 768 not 1024: an unfolded foldable / portrait tablet (~800–880 CSS px
+     container) has room for three columns. Holding 3-col back to 1024 left
+     that whole class of screens at 2 sparse columns. Cards shrink into the
+     third column via their own container units — smaller inside, not larger. */
+  @container (min-width: 768px) {
     .game-grid {
       grid-template-columns: repeat(3, 1fr);
     }
