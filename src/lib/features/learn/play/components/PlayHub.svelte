@@ -319,29 +319,20 @@
     max-width: 1280px;
     width: 100%;
     display: grid;
-    grid-template-columns: 1fr;
+    /* Intrinsic auto-fit instead of hardcoded px breakpoints: the column
+       count derives from how many ~208px cards actually fit the container,
+       so foldables/tablets (whose CSS widths don't line up with laptop
+       breakpoints) pack 3 columns without us guessing their exact width.
+       min(100%, …) keeps a single card from overflowing a very narrow phone.
+       Explicit overrides below still curate the count on large displays. */
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
     gap: var(--spacing-md);
   }
 
-  @container (min-width: 640px) {
-    .game-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  /* 768 not 1024: an unfolded foldable / portrait tablet (~800–880 CSS px
-     container) has room for three columns. Holding 3-col back to 1024 left
-     that whole class of screens at 2 sparse columns. Cards shrink into the
-     third column via their own container units — smaller inside, not larger. */
-  @container (min-width: 768px) {
-    .game-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-
-  /* Eight games: 4×2 from 1280 up keeps the whole arcade on one screen —
-     3 columns would push a third row below the fold. */
-  @container (min-width: 1280px) {
+  /* Cap at 4 columns from 1024 up. Without this, a ~208px auto-fit min would
+     pack 5–6 tiny cards on a mid-size laptop (1024–1279). 4×2 also keeps the
+     whole 8-game arcade on one screen up here. */
+  @container (min-width: 1024px) {
     .game-grid {
       grid-template-columns: repeat(4, 1fr);
     }
