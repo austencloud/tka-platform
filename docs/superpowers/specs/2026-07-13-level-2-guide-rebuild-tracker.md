@@ -142,12 +142,45 @@ and the artboard exports under `D:\_THE KINETIC ALPHABET\_GUIDE\artboard-exports
 **Phase 1 complete (p1–p16).** All 1-turn pedagogy pages built + screenshot-verified.
 
 ### Phase 2 — 1-turn codex (original p17–22, landscape→portrait reflow)
-- [ ] p17 Codex 1|0 Type 1 (landscape → 6-col portrait)
-- [ ] p18 Codex 0/1 Type 2+3 same/opp (landscape → stacked portrait)
-- [ ] p19 Codex 1/0 Type 2+3 + 1|0/0|1 Type 4/5/6 (landscape → stacked portrait)
-- [ ] p20 Codex 1|1 Type 1 (already portrait)
-- [ ] p21 Codex 1/1 Type 2+3 same/opp (landscape → stacked portrait)
-- [ ] p22 Codex 1|1 Type 4/5/6 (already portrait)
+
+**Codex engine established (reusable across ALL codex pages, Phase 2 + 3):**
+- `_data/codex-turns.ts` — turn-annotated cell data via the LIVE codex path:
+  `codexData("<letter>-0")` (canonical 0-turn home orientation, same source as
+  `/guide/codex`) → `applyPendingTurnsToOption(...)` (correct end orientation +
+  correct `*_N.0.svg` turn arrows). Exports: `codexSlotData(letter, "high"|"low")`
+  (1|0 pages), `codexTurnData(letter, hi, lo)`, `codexRelData(letter, hi, lo,
+  "same"|"opp")` (steers turning hand's spin dir vs the shift). PADS decides
+  high/low slot from motion types.
+- `_components/CodexGridPage.svelte` — portrait-reflowed 8×4 grid. Two header
+  modes: `subParts` (single centered, p17) or `leftHeader`+`rightHeader` (split
+  with vertical divider, p18). Per-cell `dot: "same"|"opp"`, `names` row-0 captions.
+- **Reflow decision: keep the original 8-col × 4-row structure, scale to portrait
+  width (8×70pt = 560 fits 612). Preserves VTG/type row grouping; no awkward 4×8.**
+- **Known accuracy-pass flags (ALL codex pages):** (1) cells use app-canonical `-0`
+  orientation — differs from artboard per-letter rotation; ONE-LINE global switch
+  in codex-turns.ts if artboard-exact wanted. (2) same/opp cw-ccw mapping assumes
+  shift's stored `rotationDirection` is the reference sense. (3) header mandala
+  rosette icons omitted. (4) S/T high slot treated as blue, not leader.
+
+- [x] p17 Codex 1|0 Type 1 — 32 cells (12 pure ¹, 10 hybrid/quarter ¹+₁), portrait
+      8×4, `codex-1-0-t1` → CodexOneZeroType1Page. selfTitled. Screenshot-verified.
+- [x] p18 Codex 0/1 Type 2+3 same/opp — split-column (T2 shift | T3 cross-shift),
+      vertical divider, low-slot ₁ turn, same-dot rows 1–2 / opp-dot rows 3–4.
+      `codex-0-1-t23` → CodexZeroOneType23Page. Screenshot-verified.
+- [ ] p19 Codex 1/0 Type 2+3 + 1|0/0|1 Type 4/5/6 — **4-QUADRANT bespoke page**
+      (not a plain CodexGridPage): TL=Type2 1/0 (¹), TR=Type3 1/0 (¹),
+      BL=Type4 1/0 (¹) stacked over Type4 0/1 (₁), BR=Type5 1/0 (¹) stacked over
+      Type6 static (¹). Needs Λ/Λ-/Γ **open/close** codex cells — NOT YET in
+      codex-turns (add `codexOpenCloseData(letter, hi, lo, "open"|"close")` that
+      sets the turning hand's rot dir to produce open [→alpha] vs close [→beta];
+      mirror the pedagogy p11/p16 open/close logic). Two heavy dividers (2×2).
+- [ ] p20 Codex 1|1 Type 1 — 22-letter grid, both hands turn 1 → same/opp dots.
+      Original already portrait. Reuse CodexGridPage + `codexRelData(l,1,1,rel)`.
+      Set manifest `selfTitled: true` on `codex-1-1-t1`.
+- [ ] p21 Codex 1/1 Type 2+3 same/opp — like p18 split-column but hi=1,lo=1.
+      Reuse CodexGridPage split + `codexRelData(l,1,1,rel)`.
+- [ ] p22 Codex 1|1 Type 4/5/6 — Φ/Ψ/Λ, Φ-/Ψ-/Λ-, α/β/Γ with 1|1 + open/close.
+      Original already portrait. Needs the open/close codex helper (see p19).
 
 ### Phase 3 — 2-turn pedagogy + codex (original p23–34)
 - [ ] p23 2-Turns: shifts — pro/anti double-turn breakdowns (thirds decomposition)
