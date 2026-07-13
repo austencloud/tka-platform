@@ -3,6 +3,12 @@
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import ComposerHeroDemo from "./_components/ComposerHeroDemo.svelte";
   import ComposerGenerateDemo from "./_components/ComposerGenerateDemo.svelte";
+  import ComposerPropSwitcherDemo from "./_components/ComposerPropSwitcherDemo.svelte";
+  import ComposerMicroGameDemo from "./_components/ComposerMicroGameDemo.svelte";
+  import ComposerPracticeStepperDemo from "./_components/ComposerPracticeStepperDemo.svelte";
+  import ComposerQrDemo from "./_components/ComposerQrDemo.svelte";
+  import ComposerGalleryDemo from "./_components/ComposerGalleryDemo.svelte";
+  import ComposerExportDemo from "./_components/ComposerExportDemo.svelte";
   import GuidePictograph from "../guide/level-1/_components/GuidePictograph.svelte";
   import { DEMO_LETTER_BEATS } from "./_data/demo-beats";
   import "$lib/shared/landing/styles/public-editorial.css";
@@ -36,19 +42,6 @@
   const activateTunnelWhenNear = activateWhenNear(() => (tunnelActive = true));
   const activatePlayWithItWhenNear = activateWhenNear(() => (playWithItActive = true));
 
-  const TODAY = [
-    { label: "Library", detail: "collections and smart collections for everything you save" },
-    { label: "Community gallery", detail: "browse and share public sequences" },
-    { label: "Image and video export", detail: "with effects, ready for wherever you post" },
-    { label: "Practice modes", detail: "drill sequences step by step" },
-    { label: "Word games", detail: "an arcade built from the alphabet" },
-    { label: "QR share links", detail: "hand a sequence to anyone via tka.run" },
-    { label: "Installable", detail: "works as an app on your phone, no app store" },
-    {
-      label: "11 props",
-      detail: "staff, fan, hoop, buugeng, triad, club, sword, double star, eight rings, guitar, quiad",
-    },
-  ];
 
   const ROADMAP = [
     {
@@ -213,24 +206,6 @@
     </a>
   </div>
 
-  <section class="editorial-section" style="--accent: #38bdf8">
-    <span class="section-kicker">Try it</span>
-    <h2 class="section-title">Play with it right here</h2>
-    <div class="prose">
-      <p>
-        This is the app in miniature, running live. Swap effects, props, and tempo with
-        the same controls the real thing gives you. The strip along the bottom is the
-        sequence's notation, keeping time with the animation.
-      </p>
-    </div>
-    <div class="breakout playwithit-slot" use:activatePlayWithItWhenNear>
-      <LazyMount
-        loader={() => import("../../landing/components/PlayWithItInner.svelte")}
-        active={playWithItActive}
-      />
-    </div>
-  </section>
-
   <section class="editorial-section" style="--accent: #6366f1">
     <span class="section-kicker">Construct</span>
     <h2 class="section-title">Build it beat by beat</h2>
@@ -339,11 +314,80 @@
   <section class="editorial-section" style="--accent: #22c55e">
     <span class="section-kicker">Features</span>
     <h2 class="section-title">Also in the app today</h2>
-    <ul class="bullet-list">
-      {#each TODAY as item}
-        <li><strong>{item.label}</strong>: {item.detail}</li>
-      {/each}
-    </ul>
+    <div class="prose">
+      <p>Every one of these is live. Most of them you can poke right here.</p>
+    </div>
+    <div class="breakout">
+      <div class="bento">
+        <div class="bento-cell">
+          <ComposerPropSwitcherDemo />
+          <div class="bento-text">
+            <strong>Props</strong>
+            <span>the same sequence, any prop. Eleven supported, five to try here</span>
+          </div>
+        </div>
+
+        <div class="bento-cell">
+          <ComposerMicroGameDemo />
+          <div class="bento-text">
+            <strong>Games</strong>
+            <span>an arcade built from the alphabet. This is one round of one of them</span>
+          </div>
+        </div>
+
+        <div class="bento-cell">
+          <ComposerGalleryDemo />
+          <div class="bento-text">
+            <strong>Community gallery</strong>
+            <span>real public sequences, loaded live from the gallery</span>
+          </div>
+        </div>
+
+        <div class="bento-cell">
+          <ComposerExportDemo />
+          <div class="bento-text">
+            <strong>Image export</strong>
+            <span>the app's actual export pipeline, rendering in your browser</span>
+          </div>
+        </div>
+
+        <div class="bento-cell">
+          <ComposerQrDemo />
+          <div class="bento-text">
+            <strong>QR share links</strong>
+            <span>every export carries one</span>
+          </div>
+        </div>
+
+        <div class="bento-cell">
+          <ComposerPracticeStepperDemo />
+          <div class="bento-text">
+            <strong>Practice modes</strong>
+            <span>drill sequences step by step</span>
+          </div>
+        </div>
+
+        <div class="bento-cell">
+          <div
+            class="bento-media"
+            style:background-image={`url(/marketing/library.webp)`}
+            role="img"
+            aria-label="The library: collections sidebar beside a grid of saved sequence cards"
+          ></div>
+          <div class="bento-text">
+            <strong>Library</strong>
+            <span>collections and smart collections for everything you save. Yours needs an account, so here is a peek at ours</span>
+          </div>
+        </div>
+
+        <div class="bento-cell text-only">
+          <div class="bento-text">
+            <strong>Installable</strong>
+            <span>works as an app on your phone, no app store</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="editorial-section" style="--accent: #a3e635">
@@ -371,6 +415,24 @@
       <a href="/notation" class="resource-chip">Read about the notation</a>
       <a href="/roots" class="resource-chip">Where it came from</a>
       <a href="/about" class="resource-chip">About the project</a>
+    </div>
+  </section>
+
+  <section class="editorial-section" style="--accent: #38bdf8">
+    <span class="section-kicker">Try it</span>
+    <h2 class="section-title">Play with it right here</h2>
+    <div class="prose">
+      <p>
+        This is the app in miniature, running live. Swap effects, props, and tempo with
+        the same controls the real thing gives you. The strip along the bottom is the
+        sequence's notation, keeping time with the animation.
+      </p>
+    </div>
+    <div class="breakout playwithit-slot" use:activatePlayWithItWhenNear>
+      <LazyMount
+        loader={() => import("../../landing/components/PlayWithItInner.svelte")}
+        active={playWithItActive}
+      />
     </div>
   </section>
 
@@ -434,6 +496,51 @@
      sections below don't jump (no-layout-shift). */
   .playwithit-slot {
     min-height: min(34rem, 80vh);
+  }
+
+  /* ── feature bento ──
+     Real app screenshots per feature. Media boxes are fixed-aspect
+     backgrounds (no <img> reflow); text-only cells share the card shape. */
+  .bento {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
+    gap: 1rem;
+  }
+  .bento-cell {
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px;
+    overflow: hidden;
+    background: oklch(0.16 0.018 270 / 0.45);
+    border: 1px solid oklch(0.4 0.04 270 / 0.14);
+  }
+  .bento-media {
+    aspect-ratio: 16 / 10;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center top;
+  }
+  .bento-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.9rem 1.1rem 1.1rem;
+    margin-top: auto;
+  }
+  .bento-cell.text-only .bento-text {
+    justify-content: center;
+    flex: 1;
+    min-height: 6.5rem;
+  }
+  .bento-text strong {
+    font-size: 1rem;
+    font-weight: 650;
+    color: oklch(0.92 0.02 270);
+  }
+  .bento-text span {
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: oklch(0.68 0.015 270);
   }
 
   .letter-row {
