@@ -76,14 +76,18 @@
   });
 
   /* Deterministic card sizing (mirrors MandalaOptionGrid): each card is the
-     largest 2.5:3.5 that fits its grid cell, capped so it sits at a natural
-     size and centers rather than stretching to fill the column (which left
-     giant white voids inside each card). */
+     largest that fits its grid cell, capped so it sits at a natural size and
+     centers rather than stretching to fill the column (which left giant white
+     voids inside each card). The height/width ratio is MEASURED from the first
+     rendered card (the wordcard renders to its natural image aspect — with no
+     start-position row it's landscape, not poker portrait), so byHeight stops
+     under-sizing the cards. Ratio-from-measurement converges: it's a constant
+     of the card content, not of the chosen width. */
   const cardCols = $derived((constraints.optionCount ?? 4) > 4 ? 3 : 2);
   let cardGridEl = $state<HTMLDivElement | undefined>();
   let cardWidth = $state(170);
+  let cardRatio = $state(0.75); // height / width — refined by measurement
   const CARD_GAP = 12; // px — matches gap in CSS
-  const CARD_RATIO = 3.5 / 2.5; // height / width
 
   $effect(() => {
     if (!cardGridEl) return;
@@ -91,17 +95,40 @@
     const rows = Math.ceil((constraints.optionCount ?? 4) / cols);
     const measure = () => {
       if (!cardGridEl) return;
+      const slot = cardGridEl.querySelector<HTMLElement>(".card-slot");
+      if (slot && slot.clientWidth > 0 && slot.clientHeight > 0) {
+        const r = slot.clientHeight / slot.clientWidth;
+        if (Math.abs(r - cardRatio) > 0.02) cardRatio = r;
+      }
       const w = cardGridEl.clientWidth;
       const h = cardGridEl.clientHeight;
       const byWidth = (w - (cols - 1) * CARD_GAP) / cols;
       const byHeight =
-        h > 0 ? (h - (rows - 1) * CARD_GAP) / rows / CARD_RATIO : Infinity;
-      cardWidth = Math.max(96, Math.min(byWidth, byHeight, 210) | 0);
+        h > 0 ? (h - (rows - 1) * CARD_GAP) / rows / cardRatio : Infinity;
+      cardWidth = Math.max(96, Math.min(byWidth, byHeight, 240) | 0);
     };
     const ro = new ResizeObserver(measure);
     ro.observe(cardGridEl);
+    /* Also watch the first slot: its height changes when the card image
+       finishes loading (async), which never resizes the grid itself — without
+       this the measured ratio goes stale and the cards overflow. */
+    let observedSlot: HTMLElement | null = null;
+    const watchSlot = () => {
+      const slot = cardGridEl?.querySelector<HTMLElement>(".card-slot") ?? null;
+      if (slot && slot !== observedSlot) {
+        if (observedSlot) ro.unobserve(observedSlot);
+        ro.observe(slot);
+        observedSlot = slot;
+      }
+    };
+    const mo = new MutationObserver(() => watchSlot());
+    mo.observe(cardGridEl, { childList: true });
+    watchSlot();
     measure();
-    return () => ro.disconnect();
+    return () => {
+      ro.disconnect();
+      mo.disconnect();
+    };
   });
 
   let currentSequence = $derived(
@@ -248,6 +275,7 @@
             <ChoreoCard
               sequence={option.content as SequenceData}
               showQRCodes={false}
+              includeStartPosition={false}
               onSelect={() => handleCardPick(option)}
             />
           </div>
@@ -311,7 +339,10 @@
     width: 100%;
     min-height: 0;
     place-content: center;
-    flex: 0 1 auto;
+    /* Fill the space under the mandala so clientHeight is the space AVAILABLE
+       (bounded by the parent), not the grid's own content — content-sized
+       height made the JS byHeight measurement self-referential. */
+    flex: 1 1 0;
   }
 
   /* Feedback grammar on whole cards: accent ring on the answer, red ring on

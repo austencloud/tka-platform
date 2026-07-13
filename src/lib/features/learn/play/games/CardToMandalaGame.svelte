@@ -150,7 +150,11 @@
     <div class="quiz-content">
       <div class="card-column">
         <div class="question-card">
-          <ChoreoCard sequence={currentSequence} showQRCodes={false} />
+          <ChoreoCard
+            sequence={currentSequence}
+            showQRCodes={false}
+            includeStartPosition={false}
+          />
         </div>
         <ScorePopAnimation
           visible={showScorePop}
