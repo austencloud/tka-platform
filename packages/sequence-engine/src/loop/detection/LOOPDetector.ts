@@ -112,6 +112,8 @@ function deriveLoopTypeFromComponents(components: Set<LOOPComponent>): LOOPType 
       return LOOPType.MIRRORED_ROTATED_SWAPPED;
     if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.SWAPPED) && has(LOOPComponent.INVERTED))
       return LOOPType.MIRRORED_SWAPPED_INVERTED;
+    if (has(LOOPComponent.ROTATED) && has(LOOPComponent.SWAPPED) && has(LOOPComponent.INVERTED))
+      return LOOPType.ROTATED_SWAPPED_INVERTED;
   }
   if (size === 4) {
     if (has(LOOPComponent.MIRRORED) && has(LOOPComponent.ROTATED) && has(LOOPComponent.INVERTED) && has(LOOPComponent.SWAPPED))

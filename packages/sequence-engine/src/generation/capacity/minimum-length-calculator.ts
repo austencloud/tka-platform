@@ -168,6 +168,7 @@ function basePatternMinimum(loopType: LOOPType, _level: number): number {
     // Compound types take the max of their constituents.
     case LOOPType.ROTATED_INVERTED:
     case LOOPType.ROTATED_SWAPPED:
+    case LOOPType.ROTATED_SWAPPED_INVERTED:
     case LOOPType.MIRRORED_ROTATED:
     case LOOPType.MIRRORED_INVERTED_ROTATED:
     case LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED:

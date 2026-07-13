@@ -72,6 +72,7 @@ export class LOOPEndPositionSelector {
       // Combined LOOP types with ROTATED (rotation takes precedence)
       case LOOPType.ROTATED_INVERTED:
       case LOOPType.ROTATED_SWAPPED:
+      case LOOPType.ROTATED_SWAPPED_INVERTED:
       case LOOPType.MIRRORED_ROTATED:
       case LOOPType.MIRRORED_INVERTED_ROTATED:
       case LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED:
