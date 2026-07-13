@@ -43,6 +43,18 @@
   // readback; acceptable trade for the real backdrop over a static gradient.
 </script>
 
+<svelte:head>
+  <!-- Inter is the marketing/editorial typeface (public-editorial.css asks for
+       it). Loaded here so every page wrapped in this chrome gets the same
+       typography by construction. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&display=swap"
+    rel="stylesheet"
+  />
+</svelte:head>
+
 <div class="mkt-shell">
   <div class="mkt-fallback" aria-hidden="true"></div>
   <div class="mkt-bg">

@@ -1,5 +1,4 @@
 <script lang="ts">
-  import EditorialNav from "$lib/shared/landing/components/EditorialNav.svelte";
   import FaqAccordion from "$lib/shared/landing/components/FaqAccordion.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
@@ -128,8 +127,6 @@
   <!-- FAQPage JSON-LD is emitted by <FaqAccordion emitSchema> below, generated
        from the canonical FAQ_ITEMS so schema and visible answers never drift. -->
 </svelte:head>
-
-<EditorialNav />
 
 <div class="editorial">
     <header class="editorial-header">

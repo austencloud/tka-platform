@@ -1,5 +1,4 @@
 <script lang="ts">
-  import EditorialNav from "$lib/shared/landing/components/EditorialNav.svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import ComposerHeroDemo from "./_components/ComposerHeroDemo.svelte";
   import ComposerGenerateDemo from "./_components/ComposerGenerateDemo.svelte";
@@ -171,13 +170,11 @@
   </script>`}
 </svelte:head>
 
-<EditorialNav />
-
 <div class="editorial">
   <header class="editorial-header">
     <h1 class="page-title">Flow Arts Composer</h1>
     <p class="page-subtitle">
-      The choreography app built on <a href="/notation">The Kinetic Alphabet</a>
+      The flow arts choreography app built on <a href="/notation">The Kinetic Alphabet</a>
     </p>
   </header>
 

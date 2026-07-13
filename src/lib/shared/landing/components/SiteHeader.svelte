@@ -125,11 +125,13 @@
   });
 
   const NAV = [
-    { label: "About", href: "/about", icon: "fa-circle-info" },
+    { label: "Notation", href: "/notation", icon: "fa-language" },
+    { label: "Composer", href: "/composer", icon: "fa-wand-magic-sparkles" },
     { label: "Roots", href: "/roots", icon: "fa-seedling" },
     { label: "Guide", href: "/guide", icon: "fa-book-open" },
-    { label: "Support", href: "/support", icon: "fa-heart" },
+    { label: "About", href: "/about", icon: "fa-circle-info" },
     { label: "Shop", href: "/shop", icon: "fa-bag-shopping" },
+    { label: "Support", href: "/support", icon: "fa-heart" },
   ];
 
   function isActive(href: string): boolean {
@@ -363,7 +365,7 @@
 
   .desktop-nav {
     display: flex;
-    gap: 1.4rem;
+    gap: 1.1rem;
     align-items: center;
   }
   .desktop-nav a {
@@ -732,7 +734,9 @@
     }
   }
 
-  @media (max-width: 900px) {
+  /* Seven top-level links + auth + CTA need more room; drop to the mobile
+     drawer earlier so the desktop row never crowds. */
+  @media (max-width: 1024px) {
     .desktop-nav {
       display: none;
     }

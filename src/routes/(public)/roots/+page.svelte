@@ -1,5 +1,4 @@
 <script lang="ts">
-  import EditorialNav from "$lib/shared/landing/components/EditorialNav.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   const externalLinks = {
@@ -65,8 +64,6 @@
   }
   </script>`}
 </svelte:head>
-
-<EditorialNav />
 
 <div class="editorial">
     <header class="editorial-header">
