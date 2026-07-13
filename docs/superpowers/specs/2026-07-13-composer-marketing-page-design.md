@@ -114,3 +114,32 @@ is progressive enhancement.
   SSR output.
 - Sitemap output contains `/composer`.
 - Homepage no longer emits SoftwareApplication/HowTo schema.
+
+---
+
+## Addendum (2026-07-13, round 2): editorial consistency + visual upgrade
+
+Approved conversationally after audit + interview.
+
+### Decisions
+1. **Mini pillar nav (option A)** on all four editorial pages: shared sticky
+   header component (brand wordmark → `/`, links Notation · Composer · Roots ·
+   About, compact "Open Composer" button). One component = no drift.
+2. **/about vs /notation role split:** /notation = the system (keeps
+   PositionTrioGrid); /about = project + human + FAQ (PositionTrioGrid removed,
+   links to /notation instead).
+3. **/composer visual plan (all approved):** hero player stays; Construct gets
+   live GuideSequencePlayer strip; Generate gets an interactive
+   generationOrchestrator-backed "generate" demo + animated SequenceMandala;
+   Tunnel gets lazy live preview (TunnelDetailPreview sandbox pattern); Learn
+   gets GuidePictographs with letters; NEW 3D viewer section with still + deep
+   link; feature bullet list shrinks to items without their own section.
+   Generate demo params stay minimal (single action, no recipe UI).
+4. **Breakout media pattern:** prose stays 46rem; visual bands widen (~70rem)
+   on desktop. No change to mobile.
+5. **Consistency pass:** Inter font loaded on all four (via shared nav
+   component's head); title conventions unified; /roots gets canonical + OG +
+   JSON-LD + breadcrumb; /roots CTA label/target fixed; homepage body/footer
+   gain /notation links.
+6. Screenshots captured from running app (browser control approved) for 3D
+   viewer + Library.
