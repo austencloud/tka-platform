@@ -28,7 +28,7 @@
     generateLOOPType,
   } from "$lib/shared/create/services/loop-type-utils";
   import { LOOP_COMPONENT_MAP } from "$lib/features/create/generate/shared/domain/constants/loop-constants";
-  import { scale, slide } from "svelte/transition";
+  import { fly, scale, slide } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
   import {
@@ -238,6 +238,24 @@
 
   let previewW = $state(0);
   let previewH = $state(0);
+
+  // ── mobile checkout dock: the rail lives at the page bottom on phones, so
+  //    while it's off screen a fixed dock keeps the running total + Preorder
+  //    in reach. IntersectionObserver hides the dock once the real rail
+  //    scrolls into view — two Preorder buttons on screen reads as a glitch. ──
+  let railEl = $state<HTMLElement | null>(null);
+  let railInView = $state(false);
+  $effect(() => {
+    if (!railEl) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        railInView = entries[0]?.isIntersecting ?? false;
+      },
+      { threshold: 0.2 }
+    );
+    io.observe(railEl);
+    return () => io.disconnect();
+  });
   // Phone layout: samples shrink to sidecar size (CSS pairs at 720px).
   let pageW = $state(0);
   const narrow = $derived(pageW > 0 && pageW < 720);
@@ -459,7 +477,9 @@
                         </div>
                       </div>
                       {#if slice.level >= 2}
-                        <div class="dial" transition:slide={{ duration: 200, easing: quintOut, axis: "x" }}>
+                        <!-- Axis follows the dial layout: horizontal strip on
+                             desktop, stacked settings rows on phones. -->
+                        <div class="dial" transition:slide={{ duration: 200, easing: quintOut, axis: narrow ? "y" : "x" }}>
                           <span class="dial-label">Max turns</span>
                           <div class="mini-stepper">
                             <button
@@ -499,7 +519,7 @@
             </div>
           </div>
 
-          <aside class="buy-rail">
+          <aside class="buy-rail" bind:this={railEl}>
             <!-- Live deck preview lives IN the rail: the recipe stays visible
                  while you edit, and the purchase column never dies below the
                  buy block. Fill-mode crossfade — the stage never resizes. -->
@@ -560,6 +580,23 @@
     {/if}
   </main>
 </div>
+
+{#if narrow && !railInView && customSku?.stripePriceId && flavorSkus.length > 0 && !store.error}
+  <div class="checkout-dock" transition:fly={{ y: 72, duration: 220, easing: quintOut }}>
+    <div class="dock-meter" class:ok={problem === null}>
+      <span class="dock-count">{total} / {DECK_SIZE}</span>
+      <span class="dock-price">{price}</span>
+    </div>
+    <button
+      type="button"
+      class="dock-buy"
+      disabled={problem !== null || store.isCheckingOut}
+      onclick={() => store.startCheckout(customSku.id, propType, loopConfig)}
+    >
+      {store.isCheckingOut ? "Opening..." : "Preorder now"}
+    </button>
+  </div>
+{/if}
 
 {#if flavorEdit !== null}
   <div
@@ -1060,10 +1097,66 @@
     flex: 0 0 auto;
   }
 
+  /* ---------- mobile checkout dock ---------- */
+  .checkout-dock {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: rgba(10, 12, 22, 0.86);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+  }
+  .dock-meter {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding: 4px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(245, 158, 11, 0.45);
+    background: rgba(245, 158, 11, 0.1);
+  }
+  .dock-meter.ok {
+    border-color: rgba(74, 222, 128, 0.45);
+    background: rgba(74, 222, 128, 0.09);
+  }
+  .dock-count {
+    font-size: 15px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .dock-price {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    color: var(--theme-accent, #a78bfa);
+  }
+  .dock-buy {
+    flex: 1;
+    min-height: var(--min-touch-target, 44px);
+    border: none;
+    border-radius: 12px;
+    background: var(--theme-accent-strong, #7c6cf5);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+  .dock-buy:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
   /* ---------- mobile ---------- */
   @media (max-width: 720px) {
     .architect-content {
-      padding: 8px 14px 24px;
+      /* Bottom padding clears the fixed checkout dock. */
+      padding: 8px 14px 96px;
     }
     /* Sample stays a compact sidecar beside the count/flavor block, and the
        dials break out to full card width below — beside the sample they only
@@ -1080,7 +1173,9 @@
       grid-row: 1;
       grid-column: 1;
       flex: none;
-      height: 140px;
+      /* Content-sized: a fixed 140px left dead space under the count/flavor
+         block whenever the sample ran taller than the controls. */
+      height: auto;
     }
     .sample-skeleton {
       width: 92px;
