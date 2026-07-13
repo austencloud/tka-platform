@@ -34,6 +34,7 @@ import {
   periodToNumber,
 } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { loopViabilityService } from "$lib/features/create/generate/shared/services/loop-viability-service";
+import { guestLoopGate } from "$lib/shared/create/services/loop-guest-gate";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -41,6 +42,7 @@ import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
+import { generateCircularExactLength } from "$lib/features/create/generate/circular/services/exact-length-loop-generator";
 
 import { applyPattern as dpApplyPattern } from "$lib/features/create/shared/services/duration-pattern-manager";
 import { getVariationExplorationOrchestrator } from "$lib/features/create/spell/get-variation-exploration-orchestrator";
@@ -103,12 +105,50 @@ export function createGenerationActionsState(
         }
       }
 
+      // Guest LOOP safety net: the selector gates most configs up front, but a
+      // guest can still push a rotated LOOP past their beat cap by switching
+      // Period to Quartered afterward. Catch it here with a sign-up toast
+      // instead of the raw "seed too short / not divisible" engine error.
+      if (options.loopType && options.mode === GenerationMode.CIRCULAR) {
+        const guestTier = resolveAccessTier(
+          authState.isAuthenticated,
+          authState.isAnonymous,
+          isPremiumOrAbove(authState.role)
+        );
+        if (guestTier === "guest") {
+          const lock = guestLoopGate(
+            options.loopType,
+            options.loopSpecWire ?? null,
+            getMaxBeats("guest")
+          );
+          if (lock.locked) {
+            generationError = lock.reason;
+            toast.info(lock.reason, 6000);
+            isGenerating = false;
+            return;
+          }
+        }
+      }
+
       if (!orchestrationService) {
         orchestrationService = generationOrchestrator;
       }
 
-      let generatedSequence =
-        await orchestrationService.generateSequence(options);
+      const exactResult = await generateCircularExactLength(options, {
+        generate: (o) => orchestrationService!.generateSequence(o),
+        extend: (s) => orientationCycleExtender.extendIfNeeded(s),
+      });
+      let generatedSequence = exactResult.sequence;
+      if (
+        exactResult.extendedPastRequest &&
+        options.mode === GenerationMode.CIRCULAR &&
+        !options.word
+      ) {
+        toast.info(
+          `Doubled to ${generatedSequence.steps.length} beats so the props return home.`,
+          5000
+        );
+      }
 
       // Apply duration rhythm template if configured
       const config = getConfig?.();
@@ -158,10 +198,11 @@ export function createGenerationActionsState(
       });
 
       // Auto-close orientation cycle so the user never sees a "Complete
-      // Cycle" button. If the generated sequence's orientations don't
-      // return to start after one pass, extend it here via the same
-      // extender that previously backed the Complete Cycle button -
-      // silent, atomic, no extra click.
+      // Cycle" button. generateCircularExactLength already closes circular
+      // sequences above (re-rolling or extending the orientation-seeded
+      // half), so for circular mode this is now a no-op safety net. It stays
+      // load-bearing for freeform/spell paths, which don't go through the
+      // exact-length generator.
       if ((generatedSequence.orientationCycleCount ?? 1) > 1) {
         generatedSequence =
           orientationCycleExtender.extendIfNeeded(generatedSequence);
