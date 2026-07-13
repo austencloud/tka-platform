@@ -53,6 +53,18 @@ async function getLoopCatalogs(): Promise<Catalog[]> {
   return catalogsPromise;
 }
 
+/** Catalogs are an OPTIMIZATION (instant L1 sampling from the printed pool),
+ *  never a requirement: shop visitors are signed out and Firestore denies
+ *  them catalog reads. Any failure degrades to live generation. */
+async function safeCatalogs(): Promise<Catalog[]> {
+  try {
+    return await getLoopCatalogs();
+  } catch {
+    catalogsPromise = null; // don't cache the rejection
+    return [];
+  }
+}
+
 // First fan-sized page of each catalog, fetched once per session — a variety
 // hand (1 card) and a full flavor hand (6) share the same cached page.
 const seqCache = new Map<string, Promise<SequenceData[]>>();
@@ -224,7 +236,7 @@ export async function recipeSliceCard(
   offset = 0
 ): Promise<CoverCard | null> {
   try {
-    const cats = await getLoopCatalogs();
+    const cats = await safeCatalogs();
     const cards = await handCards(
       cats,
       {
@@ -255,7 +267,7 @@ export async function recipePreviewCards(
 ): Promise<CoverCard[] | null> {
   if (slices.length === 0) return null;
   try {
-    const cats = await getLoopCatalogs();
+    const cats = await safeCatalogs();
     const total = slices.reduce((n, s) => n + s.count, 0) || 1;
     // One slot per slice first (recipe order), remainder to the biggest slices.
     const slots: { slice: RecipeSlice; offset: number }[] = [];
@@ -345,7 +357,7 @@ export async function loopPreviewCards({
   skuByFlavor,
 }: PreviewDials): Promise<CoverCard[] | null> {
   try {
-    const cats = await getLoopCatalogs();
+    const cats = await safeCatalogs();
 
     if (pack) {
       // Pack fan = the recipe's representative hand, one card per slot.
