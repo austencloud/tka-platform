@@ -20,6 +20,7 @@ Based on legacy start_to_end_pos_glyph.py implementation.
     animateVisibility = false,
     onToggle = undefined,
     centerX = 475,
+    pulseKey = undefined,
   } = $props<{
     /** Start position */
     startPosition?: GridPosition | null;
@@ -39,6 +40,10 @@ Based on legacy start_to_end_pos_glyph.py implementation.
     onToggle?: () => void;
     /** Center X position for horizontal centering (expandedWidth / 2) */
     centerX?: number;
+    /** When set, the pulse fires on every change of this key (e.g. the step
+     *  number) instead of only when the position pair changes — keeps the
+     *  glyph beating in time with the golden step ring during playback. */
+    pulseKey?: string | number | null;
   }>();
 
   // Static letters that don't show position glyph
@@ -173,23 +178,34 @@ Based on legacy start_to_end_pos_glyph.py implementation.
   // ============================================================================
   // Track when start/end positions change to trigger a subtle scale-pulse animation.
 
+  // Matches the golden step ring's guideStepRingIn duration so the two beat
+  // together during playback.
+  const PULSE_MS = 400;
+
   let prevStartPosition = $state<GridPosition | null | undefined>(undefined);
   let prevEndPosition = $state<GridPosition | null | undefined>(undefined);
+  let prevPulseKey = $state<string | number | null | undefined>(undefined);
   let isAnimating = $state(false);
 
   $effect(() => {
     let timeout: ReturnType<typeof setTimeout> | undefined;
+
+    // With a pulseKey, beat on every key change (every step). Without one,
+    // fall back to pulsing only when the position pair changes.
     const changed =
-      (prevStartPosition !== undefined && startPosition !== prevStartPosition) ||
-      (prevEndPosition !== undefined && endPosition !== prevEndPosition);
+      pulseKey !== undefined
+        ? prevPulseKey !== undefined && pulseKey !== prevPulseKey
+        : (prevStartPosition !== undefined && startPosition !== prevStartPosition) ||
+          (prevEndPosition !== undefined && endPosition !== prevEndPosition);
 
     if (changed && (startPosition !== null || endPosition !== null)) {
       isAnimating = true;
-      timeout = setTimeout(() => { isAnimating = false; }, 180);
+      timeout = setTimeout(() => { isAnimating = false; }, PULSE_MS);
     }
 
     prevStartPosition = startPosition;
     prevEndPosition = endPosition;
+    prevPulseKey = pulseKey;
 
     return () => { if (timeout) clearTimeout(timeout); };
   });
@@ -307,7 +323,7 @@ Based on legacy start_to_end_pos_glyph.py implementation.
   .pulse-target.animating {
     transform-box: fill-box;
     transform-origin: center;
-    animation: position-pulse 180ms ease-in-out;
+    animation: position-pulse 400ms ease-out;
   }
 
   /* Respect reduced motion preference */

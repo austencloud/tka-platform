@@ -177,6 +177,7 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
         {letter}
         visible={true}
         centerX={475}
+        pulseKey={displayedStepNumber}
       />
     {/if}
 
