@@ -164,9 +164,14 @@
   const narrowPreview = $derived(previewW > 0 && previewW < 640);
   // Card height ceiling from the fixed stage: card (5:7) + description + gaps
   // must fit inside the box, so cards grow into tall stages without clipping.
-  const previewMaxCardW = $derived(
-    previewH > 0 ? Math.max(110, Math.round(((previewH - 110) * 5) / 7)) : 340
-  );
+  // Height reserved for the stage caption + gaps: on phones the caption is
+  // hidden, so the fan claims almost the whole stage (bigger, prettier beauty
+  // shot); desktop keeps room for the descriptive line beneath the fan.
+  const previewMaxCardW = $derived.by(() => {
+    if (previewH <= 0) return 340;
+    const reserve = narrowPreview ? 24 : 110;
+    return Math.max(110, Math.round(((previewH - reserve) * 5) / 7));
+  });
   let wasCheckingOut = false;
   $effect(() => {
     const checking = store.isCheckingOut;
@@ -468,7 +473,7 @@
                     ? `${activePack.name} pack`
                     : (selectedSku?.name ?? "LOOP Deck")}
                   {propType}
-                  cardWidth={narrowPreview ? 110 : previewW >= 1200 ? 280 : 210}
+                  cardWidth={narrowPreview ? 150 : previewW >= 1200 ? 280 : 210}
                   maxCardWidth={previewMaxCardW}
                   exactCount={!activePack && flavor === "variety"
                     ? Math.min(narrowPreview ? 4 : 5, fanCards.length)
@@ -499,14 +504,21 @@
              past a narrow single column. ============ -->
         <div class="info-column">
           <div class="info-main">
-          <span class="eyebrow">The deck</span>
-          <h1>LOOP Deck</h1>
-          <p class="meta">54 cards · every sequence loops · pick a difficulty</p>
+          <!-- Title lockup: eyebrow rides the h1's baseline (one line, not a
+               stacked throat-clear), meta is a single thin line. The
+               "pick a difficulty" instruction moves down onto the bubble row
+               where it's an actual label, not a third stacked sentence. -->
+          <div class="title-lockup">
+            <span class="eyebrow">The deck</span>
+            <h1>LOOP Deck</h1>
+          </div>
+          <p class="meta">54 cards · every sequence loops</p>
 
           <!-- ── one visible 4-way choice: three difficulty tiers + Custom.
                The big numeral is the "achievable bubble" a newcomer reads
                first (1 → 2 → 3, easy to hard); the pack name + range sit under
                it so the personality survives. Custom is the 4th bubble. ── -->
+          <span class="picker-label">Pick a difficulty</span>
           <div class="preset-row" role="group" aria-label="Deck difficulty">
             {#each LOOP_PACKS as p, i (p.id)}
               <button
@@ -841,6 +853,13 @@
   }
 
   /* ---------- info ---------- */
+  /* Eyebrow + h1 read as one lockup: the small label sits just above the
+     title instead of claiming its own stacked row of vertical space. */
+  .title-lockup {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
   .eyebrow {
     font-size: var(--font-size-compact, 12px);
     font-weight: 700;
@@ -854,12 +873,24 @@
     font-weight: 800;
     margin: 0;
     letter-spacing: -0.01em;
+    line-height: 1.05;
   }
 
   .meta {
     font-size: 15px;
     color: rgba(255, 255, 255, 0.82);
     margin: 0;
+  }
+
+  /* The instruction that sits on the bubble strip — quiet label, not a third
+     stacked sentence competing with the title. */
+  .picker-label {
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(184, 166, 255, 0.9);
+    margin-top: 2px;
   }
 
   /* ---------- preset decks ---------- */
@@ -1141,17 +1172,36 @@
 
   /* ---------- mobile ---------- */
   @media (max-width: 720px) {
-    /* The decision is the difficulty pick, not the beauty shot. Shrink the
-       hero (smaller fan cards + tighter padding absorb it) so the bubble strip
-       clears the fold with barely a scroll, fan + caption still uncropped. */
+    /* The first screen is the beauty shot + the choice, nothing else. The
+       descriptive caption is prose that competes with the fan — drop it on
+       mobile (the recipe line below still spells the pick out), which lets
+       the fan grow to fill the whole stage and reads as pure imagery. */
+    .preview-desc {
+      display: none;
+    }
     .preview-box {
-      height: 256px;
+      height: 264px;
       padding: 10px;
     }
-    .preview-desc {
-      font-size: var(--font-size-min, 14px);
-      line-height: 1.35;
-      padding: 0 8px;
+    /* Tighter vertical rhythm so the title lockup + bubbles sit high, not
+       floating in a half-screen of text. */
+    .config-layout {
+      gap: 12px;
+    }
+    .info-main {
+      gap: 10px;
+    }
+    .back-button {
+      margin-bottom: 12px;
+    }
+    /* Center the title lockup + label over the (centered) bubble strip. */
+    .title-lockup,
+    .meta,
+    .picker-label {
+      text-align: center;
+    }
+    .title-lockup {
+      align-items: center;
     }
     /* Bubbles go side by side (4-across), not stacked tall — every tier is
        one tap away and reads as a ladder at a glance. The level-range sub is
