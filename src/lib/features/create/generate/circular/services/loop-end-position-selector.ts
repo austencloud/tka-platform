@@ -54,6 +54,7 @@ export function determineEndPosition(
 
     case LOOPType.ROTATED_INVERTED:
     case LOOPType.ROTATED_SWAPPED:
+    case LOOPType.ROTATED_SWAPPED_INVERTED:
       return determineRotatedEndPosition(period, startPosition);
 
     case LOOPType.MIRRORED_ROTATED:
@@ -84,7 +85,7 @@ export function determineEndPosition(
         `LOOP type "${loopType}" is not yet implemented. ` +
           `Currently supported: ROTATED, MIRRORED, FLIPPED, SWAPPED, ` +
           `INVERTED, MIRRORED_INVERTED, MIRRORED_SWAPPED, ` +
-          `ROTATED_INVERTED, ROTATED_SWAPPED, SWAPPED_INVERTED, MIRRORED_ROTATED, ` +
+          `ROTATED_INVERTED, ROTATED_SWAPPED, ROTATED_SWAPPED_INVERTED, SWAPPED_INVERTED, MIRRORED_ROTATED, ` +
           `MIRRORED_INVERTED_ROTATED, MIRRORED_ROTATED_INVERTED_SWAPPED`
       );
   }

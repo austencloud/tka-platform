@@ -23,7 +23,7 @@ describe("generateLOOPType", () => {
     expect(generateLOOPType(new Set([C.REWOUND]))).toBe(LOOPType.STRICT_REWOUND);
   });
 
-  it("maps the implemented triples, including mirrored+swapped+inverted", () => {
+  it("maps the implemented triples, including mirrored+swapped+inverted and rotated+swapped+inverted", () => {
     expect(
       generateLOOPType(new Set([C.MIRRORED, C.INVERTED, C.ROTATED]))
     ).toBe(LOOPType.MIRRORED_INVERTED_ROTATED);
@@ -33,6 +33,11 @@ describe("generateLOOPType", () => {
     expect(
       generateLOOPType(new Set([C.MIRRORED, C.SWAPPED, C.INVERTED]))
     ).toBe(LOOPType.MIRRORED_SWAPPED_INVERTED);
+    // The former sole gap in the combo builder — every subset of
+    // {MIRRORED, ROTATED, SWAPPED, INVERTED} is now implemented.
+    expect(
+      generateLOOPType(new Set([C.ROTATED, C.SWAPPED, C.INVERTED]))
+    ).toBe(LOOPType.ROTATED_SWAPPED_INVERTED);
   });
 
   it("returns null for unmapped combos instead of silently coercing to ROTATED", () => {
@@ -43,10 +48,6 @@ describe("generateLOOPType", () => {
     // flipped and rewound combine with nothing
     expect(generateLOOPType(new Set([C.FLIPPED, C.MIRRORED]))).toBeNull();
     expect(generateLOOPType(new Set([C.REWOUND, C.ROTATED]))).toBeNull();
-    // rotated+inverted+swapped has no implemented type (only as part of All Four)
-    expect(
-      generateLOOPType(new Set([C.ROTATED, C.INVERTED, C.SWAPPED]))
-    ).toBeNull();
   });
 
   it("keeps the legacy ROTATED default for the empty set", () => {
@@ -70,6 +71,7 @@ describe("generateLOOPType", () => {
       [C.MIRRORED, C.INVERTED, C.ROTATED],
       [C.MIRRORED, C.ROTATED, C.SWAPPED],
       [C.MIRRORED, C.SWAPPED, C.INVERTED],
+      [C.ROTATED, C.SWAPPED, C.INVERTED],
       [C.MIRRORED, C.ROTATED, C.INVERTED, C.SWAPPED],
     ];
 
@@ -92,15 +94,22 @@ describe("canExtendCombo", () => {
   });
 
   it("allows building toward All Four through unmapped intermediates", () => {
-    // {rotated, inverted, swapped} maps to nothing itself, but is a subset of
-    // All Four — the builder must allow passing through it.
+    // {rotated, inverted, mirrored, swapped} (All Four) is reachable by adding
+    // MIRRORED to the now-implemented {rotated, inverted, swapped} triple.
     expect(canExtendCombo(new Set([C.ROTATED, C.INVERTED]), C.SWAPPED)).toBe(true);
     expect(
       isImplementedCombo(new Set([C.ROTATED, C.INVERTED, C.SWAPPED]))
-    ).toBe(false);
+    ).toBe(true);
     expect(
       canExtendCombo(new Set([C.ROTATED, C.INVERTED, C.SWAPPED]), C.MIRRORED)
     ).toBe(true);
+  });
+
+  it("rotated+swapped+inverted is a real destination, not just a pass-through intermediate", () => {
+    expect(canExtendCombo(new Set([C.ROTATED, C.SWAPPED]), C.INVERTED)).toBe(true);
+    expect(
+      generateLOOPType(new Set([C.ROTATED, C.SWAPPED, C.INVERTED]))
+    ).toBe(LOOPType.ROTATED_SWAPPED_INVERTED);
   });
 
   it("allows every component from an empty selection", () => {

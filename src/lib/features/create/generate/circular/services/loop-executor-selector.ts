@@ -24,7 +24,8 @@ export class LOOPExecutorSelector {
     private readonly mirroredRotatedInvertedExecutor: ILOOPExecutor,
     private readonly mirroredSwappedInvertedExecutor: ILOOPExecutor,
     private readonly mirroredRotatedInvertedSwappedExecutor: ILOOPExecutor,
-    private readonly rewoundLOOPExecutor: ILOOPExecutor
+    private readonly rewoundLOOPExecutor: ILOOPExecutor,
+    private readonly rotatedSwappedInvertedExecutor: ILOOPExecutor
   ) {}
 
   /**
@@ -71,6 +72,9 @@ export class LOOPExecutorSelector {
       case LOOPType.MIRRORED_SWAPPED_INVERTED:
         return this.mirroredSwappedInvertedExecutor;
 
+      case LOOPType.ROTATED_SWAPPED_INVERTED:
+        return this.rotatedSwappedInvertedExecutor;
+
       case LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED:
         return this.mirroredRotatedInvertedSwappedExecutor;
 
@@ -83,7 +87,7 @@ export class LOOPExecutorSelector {
             `Currently supported: ROTATED, MIRRORED, FLIPPED, SWAPPED, ` +
             `INVERTED, MIRRORED_SWAPPED, SWAPPED_INVERTED, MIRRORED_INVERTED, ` +
             `ROTATED_SWAPPED, ROTATED_INVERTED, MIRRORED_ROTATED, MIRRORED_INVERTED_ROTATED, ` +
-            `MIRRORED_SWAPPED_INVERTED, MIRRORED_ROTATED_INVERTED_SWAPPED, REWOUND`
+            `MIRRORED_SWAPPED_INVERTED, ROTATED_SWAPPED_INVERTED, MIRRORED_ROTATED_INVERTED_SWAPPED, REWOUND`
         );
     }
   }
@@ -106,6 +110,7 @@ export class LOOPExecutorSelector {
       LOOPType.MIRRORED_ROTATED,
       LOOPType.MIRRORED_INVERTED_ROTATED,
       LOOPType.MIRRORED_SWAPPED_INVERTED,
+      LOOPType.ROTATED_SWAPPED_INVERTED,
       LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
       LOOPType.STRICT_REWOUND,
     ].includes(loopType);
@@ -130,6 +135,7 @@ import { mirroredRotatedInvertedLOOPExecutor } from "./mirrored-rotated-inverted
 import { mirroredSwappedInvertedLOOPExecutor } from "./mirrored-swapped-inverted-loop-executor";
 import { mirroredRotatedInvertedSwappedLOOPExecutor } from "./mirrored-rotated-inverted-swapped-loop-executor";
 import { rewoundLOOPExecutor } from "./rewound-loop-executor";
+import { rotatedSwappedInvertedLOOPExecutor } from "./rotated-swapped-inverted-loop-executor";
 
 export const loopExecutorSelector = new LOOPExecutorSelector(
   strictRotatedLOOPExecutor,
@@ -146,5 +152,6 @@ export const loopExecutorSelector = new LOOPExecutorSelector(
   mirroredRotatedInvertedLOOPExecutor,
   mirroredSwappedInvertedLOOPExecutor,
   mirroredRotatedInvertedSwappedLOOPExecutor,
-  rewoundLOOPExecutor
+  rewoundLOOPExecutor,
+  rotatedSwappedInvertedLOOPExecutor
 );

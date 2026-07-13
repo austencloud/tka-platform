@@ -40,6 +40,18 @@ export function formatSingleTransformation(raw: string): string {
     "ROTATED_180+INVERTED"
   );
   formatted = formatted.replace(
+    /ROTATED_90_CCW_SWAPPED_INVERTED/,
+    "ROTATED_90_CCW+SWAPPED+INVERTED"
+  );
+  formatted = formatted.replace(
+    /ROTATED_90_CW_SWAPPED_INVERTED/,
+    "ROTATED_90_CW+SWAPPED+INVERTED"
+  );
+  formatted = formatted.replace(
+    /ROTATED_180_SWAPPED_INVERTED/,
+    "ROTATED_180+SWAPPED+INVERTED"
+  );
+  formatted = formatted.replace(
     /ROTATED_90_CCW_SWAPPED/,
     "ROTATED_90_CCW+SWAPPED"
   );

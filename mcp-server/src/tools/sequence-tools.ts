@@ -473,6 +473,7 @@ export function registerSequenceTools(server: McpServer): void {
     "rotated", "mirrored", "flipped", "swapped", "inverted",
     "swapped_inverted", "rotated_inverted", "mirrored_swapped", "mirrored_inverted", "rotated_swapped",
     "mirrored_rotated", "mirrored_inverted_rotated", "mirrored_swapped_inverted",
+    "rotated_swapped_inverted",
     "mirrored_rotated_inverted_swapped", "strict_rewound", "rewound",
   ] as const;
 

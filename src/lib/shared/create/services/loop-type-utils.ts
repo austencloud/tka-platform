@@ -39,7 +39,11 @@ export function parseLoopComponents(loopType: LOOPType | string | null | undefin
  * Combos absent from this table are absent for a reason, not an oversight:
  * FLIPPED and REWOUND compose with nothing today (mirror+flip has no fixed
  * points at L1–L4 — it degenerates to a 180° rotation — and rewound combos
- * have no designed semantics yet).
+ * have no designed semantics yet). Every subset of {MIRRORED, ROTATED,
+ * SWAPPED, INVERTED} is now implemented; ROTATED_SWAPPED_INVERTED (the
+ * former sole gap) is valid per MCP compositional LOOP theory: ROTATE is
+ * inner, SWAP/INVERT compose as outer, and all beta positions are swap
+ * fixed points (inversion is position-free).
  */
 const IMPLEMENTED_COMBOS: ReadonlyArray<readonly [ReadonlySet<LOOPComponent>, LOOPType]> = [
   [new Set([LOOPComponent.ROTATED]), LOOPType.ROTATED],
@@ -65,6 +69,10 @@ const IMPLEMENTED_COMBOS: ReadonlyArray<readonly [ReadonlySet<LOOPComponent>, LO
   [
     new Set([LOOPComponent.MIRRORED, LOOPComponent.SWAPPED, LOOPComponent.INVERTED]),
     LOOPType.MIRRORED_SWAPPED_INVERTED,
+  ],
+  [
+    new Set([LOOPComponent.ROTATED, LOOPComponent.SWAPPED, LOOPComponent.INVERTED]),
+    LOOPType.ROTATED_SWAPPED_INVERTED,
   ],
   [
     new Set([

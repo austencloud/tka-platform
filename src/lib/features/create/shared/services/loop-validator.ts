@@ -110,6 +110,10 @@ const LOOP_OPTION_CONFIG: Record<
     icon: "fa-arrows-spin",
     description: "Mirror, swap colors, and invert motion",
   },
+  [LOOPType.ROTATED_SWAPPED_INVERTED]: {
+    icon: "fa-arrows-spin",
+    description: "Rotate, swap colors, and invert motion",
+  },
   [LOOPType.MIRRORED_ROTATED_SWAPPED]: {
     icon: "fa-object-group",
     description: "Mirror, rotate, and swap colors",
@@ -139,6 +143,7 @@ const ALL_LOOP_TYPES = [
   LOOPType.MIRRORED_ROTATED,
   LOOPType.MIRRORED_INVERTED_ROTATED,
   LOOPType.MIRRORED_SWAPPED_INVERTED,
+  LOOPType.ROTATED_SWAPPED_INVERTED,
   LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED,
   LOOPType.STRICT_REWOUND,
 ];
@@ -243,6 +248,10 @@ export class LOOPValidator {
       // Mirrored + Swapped + Inverted: inverted dominates positionally —
       // the sequence must return to its start (same rule its executor enforces)
       case LOOPType.MIRRORED_SWAPPED_INVERTED:
+      // Rotated + Swapped + Inverted: inverted dominates positionally too —
+      // all beta positions are swap fixed points and rotation is inner, so
+      // the same return-to-start rule its executor enforces applies here
+      case LOOPType.ROTATED_SWAPPED_INVERTED:
         return INVERTED_LOOP_VALIDATION_SET.has(positionPair);
 
       // Rewound LOOP - always valid (works on any sequence regardless of positions)

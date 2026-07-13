@@ -75,6 +75,7 @@ Always opens selector panel when clicked
         [LOOPType.MIRRORED_ROTATED]: t("generator_loop_mirrored_rotated"),
         [LOOPType.MIRRORED_INVERTED_ROTATED]: t("generator_loop_mir_comp_rot"),
         [LOOPType.MIRRORED_SWAPPED_INVERTED]: t("generator_loop_mirrored_swapped") + " + " + t("generator_loop_inverted"),
+        [LOOPType.ROTATED_SWAPPED_INVERTED]: t("generator_loop_rotated_swapped") + " + " + t("generator_loop_inverted"),
         [LOOPType.MIRRORED_ROTATED_SWAPPED]: t("generator_loop_mirrored_rotated") + " + " + t("generator_loop_swapped"),
         [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED]: t("generator_loop_all_four"),
         [LOOPType.STRICT_REWOUND]: t("generator_loop_rewound"),
@@ -169,6 +170,17 @@ Always opens selector panel when clicked
     text-shadow:
       0 1px 2px var(--theme-shadow),
       0 2px 4px color-mix(in srgb, var(--theme-shadow) 20%, transparent);
+  }
+
+  /* Multi-component LOOP labels ("Mirrored / Inverted / Rotated") are wider than
+     one line. BaseCard's default nowrap + card overflow:visible let the text
+     spill past the card edges. Wrap and clip so every selected component stays
+     inside the button. */
+  .loop-card-wrapper :global(.base-card .card-value) {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    overflow: hidden;
   }
 
   /* Maintain hover effects - only on hover-capable devices */

@@ -59,6 +59,7 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
       [LOOPType.MIRRORED_ROTATED]: t("generator_loop_mirrored_rotated"),
       [LOOPType.MIRRORED_INVERTED_ROTATED]: t("generator_loop_mir_comp_rot"),
       [LOOPType.MIRRORED_SWAPPED_INVERTED]: t("generator_loop_mirrored_swapped") + " + " + t("generator_loop_inverted"),
+      [LOOPType.ROTATED_SWAPPED_INVERTED]: t("generator_loop_rotated_swapped") + " + " + t("generator_loop_inverted"),
       [LOOPType.MIRRORED_ROTATED_SWAPPED]: t("generator_loop_mirrored_rotated") + " + " + t("generator_loop_swapped"),
       [LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED]: t("generator_loop_all_four"),
       [LOOPType.STRICT_REWOUND]: t("generator_loop_rewound"),
@@ -251,9 +252,13 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
     display: flex;
     align-items: center;
     justify-content: center;
-    white-space: nowrap;
+    /* Multi-component labels ("Mirrored / Inverted / Rotated") are wider than one
+       line. nowrap + the wrapper's overflow:visible let them spill past the card
+       edges (see screenshot). Wrap and clip to the card so every selected
+       component stays inside the button. */
+    white-space: normal;
+    overflow-wrap: anywhere;
     overflow: hidden;
-    text-overflow: ellipsis;
     width: 100%;
     margin: clamp(2px, 0.5cqh, 4px) 0;
     position: relative;
