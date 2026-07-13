@@ -18,6 +18,7 @@
   import { setStoreContext } from "./context/store-context";
   import DeckFanCover from "./components/DeckFanCover.svelte";
   import BuyButton from "./components/BuyButton.svelte";
+  import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import ShopPropPicker from "./components/ShopPropPicker.svelte";
   import StepperCard from "$lib/shared/components/stepper-card/StepperCard.svelte";
   import BaseCard from "$lib/features/create/generate/components/cards/BaseCard.svelte";
@@ -379,6 +380,11 @@
                  states the one rule. No pitch — buyers here already chose this. -->
             <div class="page-head">
               <span class="eyebrow">The Deck Architect</span>
+              <p class="page-orient">
+                A deck is {DECK_SIZE} cards. Each slice below is a recipe for a
+                stack of them — tweak, add, or remove slices until the meter reads
+                {DECK_SIZE}.
+              </p>
             </div>
 
             <!-- workbench bar: the one invariant + the one action, always visible -->
@@ -390,7 +396,7 @@
                 aria-live="polite"
               >
                 <span class="total-count">{total} / {DECK_SIZE}</span>
-                <span class="total-note">{problem ?? "Recipe complete. Deal it."}</span>
+                <span class="total-note">{problem ?? "Ready to preorder."}</span>
               </div>
               {#if slices.length < MAX_RECIPE_SLICES}
                 <button type="button" class="add-slice" onclick={addSlice}>
@@ -658,8 +664,28 @@
           <span class="face-label">Back</span>
         </div>
       </div>
+      <!-- Live animation: the card shows the notation, this shows what the
+           notation MEANS — the props moving. A newcomer reads the payoff here,
+           not from the pictographs. Lazy: the engine chunk is heavy. -->
+      <div class="lightbox-anim">
+        <LazyMount
+          loader={() =>
+            import(
+              "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
+            )}
+          active={sampleView !== null}
+          props={{
+            sequence: sliceCards[sampleView]!.sequence,
+            autoPlay: true,
+            chrome: "minimal",
+            fill: true,
+            bluePropType: propType,
+            redPropType: propType,
+          }}
+        />
+      </div>
       <p class="lightbox-caption">
-        One draw from this slice. Every deck deals fresh cards.
+        One draw from this slice — watch it loop. Every deck deals fresh cards.
       </p>
       <div class="lightbox-actions">
         <button
@@ -810,7 +836,9 @@
 
   .page-head {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
   }
   .eyebrow {
     font-size: var(--font-size-min, 14px);
@@ -818,6 +846,17 @@
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #b8a6ff;
+  }
+  /* One-sentence orientation — kills the "wait, what do I do here" beat for a
+     newcomer who lands on the Architect without reading the listing first. */
+  .page-orient {
+    margin: 0;
+    max-width: 42ch;
+    text-align: center;
+    text-wrap: balance;
+    font-size: var(--font-size-base, 15px);
+    line-height: 1.55;
+    color: rgba(255, 255, 255, 0.72);
   }
 
   /* ---------- workbench bar (meter + add) ---------- */
@@ -1150,12 +1189,31 @@
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
     background: rgba(14, 16, 28, 0.92);
     max-width: min(720px, 94vw);
+    /* Front + back + animation stage can exceed a short phone viewport —
+       scroll inside the modal instead of overflowing it. */
+    max-height: 92vh;
+    overflow-y: auto;
   }
   .lightbox-faces {
     display: flex;
     justify-content: center;
     align-items: flex-start;
     gap: 4px;
+  }
+  /* Square animation stage: the fixed aspect-ratio reserves its space before
+     the lazy engine mounts (no-layout-shift), sized to the two faces beside
+     it so the modal reads as one balanced block. */
+  .lightbox-anim {
+    position: relative;
+    /* flex column + scroll would shrink an aspect-ratio box off-square;
+       pin it so it keeps its height and the modal scrolls instead. */
+    flex: 0 0 auto;
+    aspect-ratio: 1;
+    width: min(100%, 300px);
+    border-radius: 16px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
   .lightbox-face {
     display: flex;

@@ -501,13 +501,14 @@
           <div class="info-main">
           <span class="eyebrow">The deck</span>
           <h1>LOOP Deck</h1>
-          <p class="meta">54 cards · every sequence loops · pick a pack or go custom</p>
+          <p class="meta">54 cards · every sequence loops · pick a difficulty</p>
 
-          <!-- ── one visible 4-way choice: three packs + Custom. Custom is a
-               real chip, not an invisible fallback state — a newcomer reads
-               "which of these four is checked" at a glance. ── -->
-          <div class="preset-row" role="group" aria-label="Deck options">
-            {#each LOOP_PACKS as p (p.id)}
+          <!-- ── one visible 4-way choice: three difficulty tiers + Custom.
+               The big numeral is the "achievable bubble" a newcomer reads
+               first (1 → 2 → 3, easy to hard); the pack name + range sit under
+               it so the personality survives. Custom is the 4th bubble. ── -->
+          <div class="preset-row" role="group" aria-label="Deck difficulty">
+            {#each LOOP_PACKS as p, i (p.id)}
               <button
                 type="button"
                 class="preset"
@@ -517,8 +518,11 @@
                 style:--preset-text={PACK_TEXT[p.id]}
                 onclick={() => leaveCustom(p.id)}
               >
-                <span class="preset-name">{p.name}</span>
-                <span class="preset-sub">{p.sub}</span>
+                <span class="preset-num" aria-hidden="true">{i + 1}</span>
+                <span class="preset-body">
+                  <span class="preset-name">{p.name}</span>
+                  <span class="preset-sub">{p.sub}</span>
+                </span>
                 {#if pack === p.id}
                   <i class="fas fa-check-circle preset-check" aria-hidden="true"></i>
                 {/if}
@@ -526,15 +530,20 @@
             {/each}
             <!-- Custom hands off to the Deck Architect — its slice builder
                  outgrew the inline dials, so the listing stays a dead-simple
-                 pack-and-prop choice. -->
+                 pick-a-difficulty choice. -->
             <a
-              class="preset"
+              class="preset preset-custom"
               href="/shop/loop-deck/architect"
               style:--preset-bg={CUSTOM_BG}
               style:--preset-text="#ffffff"
             >
-              <span class="preset-name">Custom</span>
-              <span class="preset-sub">open the Deck Architect</span>
+              <span class="preset-num" aria-hidden="true">
+                <i class="fas fa-sliders"></i>
+              </span>
+              <span class="preset-body">
+                <span class="preset-name">Custom</span>
+                <span class="preset-sub">open the Deck Architect</span>
+              </span>
               <i class="fas fa-arrow-right preset-check" aria-hidden="true"></i>
             </a>
           </div>
@@ -867,9 +876,9 @@
     text-decoration: none;
     min-width: 140px;
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 3px;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
     min-height: 56px;
     padding: 12px 14px;
     border-radius: 14px;
@@ -907,6 +916,32 @@
   .preset:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 2px;
+  }
+  /* The achievable bubble: a big round numeral (1/2/3) that reads as the
+     difficulty ladder before any word does. Custom wears a sliders glyph. */
+  .preset-num {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.16);
+    border: 1.5px solid rgba(255, 255, 255, 0.4);
+    font-size: 20px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  .preset-custom .preset-num {
+    font-size: 16px;
+  }
+  .preset-body {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    min-width: 0;
   }
   .preset-name {
     font-size: var(--font-size-min, 14px);
