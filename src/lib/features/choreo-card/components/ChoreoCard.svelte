@@ -30,6 +30,10 @@
     handPathMode?: boolean;
     /** Use 5:7 playing card layout for physical card export (different from printMode) */
     cardMode?: boolean;
+    /** Show the notes footer line (FireDrums banner / custom notes) */
+    showNotes?: boolean;
+    /** Show the LOOP transform icon strip in the card header */
+    showLoopGlyph?: boolean;
     /** Override the notes text in the card footer (e.g. TnD description) */
     customNotesText?: string;
     /** Pre-rendered image URL - displays this instead of rendering via PropAwareThumbnail */
@@ -53,6 +57,8 @@
     startPositionLayout = "row",
     handPathMode = false,
     cardMode = false,
+    showNotes = true,
+    showLoopGlyph = true,
     customNotesText = "🔥 FireDrums 2026 🔥",
     preRenderedImageUrl: preRenderedImageUrlProp,
     showMandala = false,
@@ -147,7 +153,8 @@
         {startPositionLayout}
         showBirthday={false}
         showCreatorName={false}
-        showNotes={true}
+        {showNotes}
+        {showLoopGlyph}
         userName={sequence.author ?? ""}
         visibility={visibilitySettings}
         {cardMode}

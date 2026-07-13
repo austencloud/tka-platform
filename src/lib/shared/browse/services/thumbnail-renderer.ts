@@ -169,7 +169,7 @@ export class ThumbnailRenderer {
         ...renderOptions,
         birthday,
         loopType: resolvedLoopType ?? undefined,
-        showLoopGlyph: undefined,
+        showLoopGlyph: input.showLoopGlyph,
         // Card mode: use 5:7 playing card layout for physical card export
         cardMode: input.cardMode ?? false,
       },

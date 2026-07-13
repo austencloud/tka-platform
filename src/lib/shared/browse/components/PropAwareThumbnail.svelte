@@ -52,6 +52,8 @@
     showNotes?: boolean;
     showBirthday?: boolean;
     customNotesText?: string;
+    /** Show the LOOP transform icon strip in the card header (default true) */
+    showLoopGlyph?: boolean;
     // Visibility overrides (grid, hand points, glyphs)
     visibility?: ThumbnailVisibilitySettings;
     // Render as hand-path visualization (float arrows for shifts, zero-turn dash for dashes)
@@ -87,6 +89,7 @@
     showNotes,
     showBirthday,
     customNotesText,
+    showLoopGlyph,
     visibility,
     handPathMode = false,
     showBlueMotion = true,
@@ -178,6 +181,7 @@
       showNotes,
       showBirthday,
       customNotesText,
+      showLoopGlyph,
       visibility,
       handPathMode,
       showBlueMotion,

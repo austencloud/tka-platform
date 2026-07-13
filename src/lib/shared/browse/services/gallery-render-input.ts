@@ -62,6 +62,8 @@ export interface BuildGalleryRenderInputParams {
   showNotes?: boolean;
   showBirthday?: boolean;
   customNotesText?: string;
+  /** Show the LOOP transform icon strip in the card header (default true) */
+  showLoopGlyph?: boolean;
   // Visibility overrides
   visibility?: ThumbnailVisibilitySettings;
   handPathMode?: boolean;
@@ -179,6 +181,7 @@ export function buildGalleryRenderInput(
     showNotes,
     showBirthday,
     customNotesText,
+    showLoopGlyph,
     cardMode = false,
     compositionManager,
   } = p;
@@ -198,6 +201,7 @@ export function buildGalleryRenderInput(
     lightMode,
     variant,
     loopType: sequence.loopType ?? null,
+    showLoopGlyph,
     addWord,
     addStepNumbers,
     includeStartPosition,

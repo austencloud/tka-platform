@@ -292,6 +292,9 @@
               sequence={option.content as SequenceData}
               showQRCodes={false}
               includeStartPosition={false}
+              showWord={false}
+              showNotes={false}
+              showLoopGlyph={false}
               onSelect={() => handleCardPick(option)}
             />
           </div>

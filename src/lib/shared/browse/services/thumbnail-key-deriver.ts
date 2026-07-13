@@ -44,6 +44,8 @@ export interface ThumbnailRenderInput {
 
   // LOOP badge
   loopType?: string | null;
+  /** Show the LOOP transform icons in the header strip (default true) */
+  showLoopGlyph?: boolean;
 
   // Composition overrides (undefined = use variant defaults)
   addWord?: boolean;
@@ -224,6 +226,8 @@ function checkInputUsesDefaults(
     return false;
   // Any custom text means not using defaults
   if (input.customNotesText !== undefined) return false;
+  // LOOP glyph strip is on by default; hiding it is a non-default render
+  if (input.showLoopGlyph !== undefined && input.showLoopGlyph !== true) return false;
   // userName only matters if addUserInfo is enabled (otherwise it's not displayed)
   const userInfoEnabled = input.addUserInfo ?? defaults.addUserInfo;
   if (userInfoEnabled && input.userName !== undefined && input.userName !== "")
@@ -319,6 +323,7 @@ function buildFullHashInput(input: ThumbnailRenderInput): object {
     showRedMotion: input.visibility?.showRedMotion,
     // LOOP badge
     loop: input.loopType ?? null,
+    showLoopGlyph: input.showLoopGlyph,
     // EXCLUDED: showTKA, showReversals - these are canonical (always ON)
   };
 }
