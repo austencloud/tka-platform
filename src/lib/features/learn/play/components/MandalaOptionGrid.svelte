@@ -26,32 +26,38 @@
 
   let gridEl = $state<HTMLElement | undefined>();
   let tileSize = $state(120);
+  let cols = $state(2);
 
   const GAP = 12; // px — must match the `gap` in CSS below
-  const cols = $derived(options.length > 4 ? 3 : 2);
-  const rows = $derived(Math.ceil(options.length / cols));
+  const MAX = 300;
 
-  /* Two-axis sizing: the tile is the largest square that fits BOTH the width
-     each column gets AND the height each row gets. Width-only sizing (the old
-     approach) let a 2×N square block grow taller than the viewport, so the
-     answers fell below the fold on short/foldable screens. Reading the grid's
-     own clientHeight (it fills a height-bounded parent) lets the tiles shrink
-     to fit instead of overflowing. No feedback loop: the grid is sized by its
-     parent, not by its tile content, so setting --tile doesn't resize it. */
+  /* Adaptive two-axis sizing: for every possible column count, compute the
+     largest square tile that fits BOTH the width each column gets AND the
+     height each row gets (the grid fills a height-bounded parent), then keep
+     whichever column count yields the biggest tile. Narrow screens land on
+     fewer columns, wide short screens on one row — no breakpoint forks. No
+     feedback loop: the grid is sized by its parent, not by tile content. */
   $effect(() => {
     if (!gridEl) return;
+    const n = options.length;
     const measure = () => {
       if (!gridEl) return;
       const w = gridEl.clientWidth;
       const h = gridEl.clientHeight;
-      const byWidth = (w - (cols - 1) * GAP) / cols;
-      const byHeight = h > 0 ? (h - (rows - 1) * GAP) / rows : Infinity;
-      /* MAX caps the tile at a natural size so a tall/wide answer column keeps
-         the mandalas readable and centered (place-content) instead of
-         ballooning to fill every pixel; byHeight only pulls it SMALLER when the
-         screen is genuinely short. */
-      const MAX = 240;
-      tileSize = Math.max(72, Math.min(byWidth, byHeight, MAX) | 0);
+      let best = 0;
+      let bestCols = Math.min(2, n);
+      for (let c = 1; c <= n; c++) {
+        const rows = Math.ceil(n / c);
+        const byWidth = (w - (c - 1) * GAP) / c;
+        const byHeight = h > 0 ? (h - (rows - 1) * GAP) / rows : Infinity;
+        const candidate = Math.min(byWidth, byHeight, MAX);
+        if (candidate > best + 0.5) {
+          best = candidate;
+          bestCols = c;
+        }
+      }
+      cols = bestCols;
+      tileSize = Math.max(72, best | 0);
     };
     const observer = new ResizeObserver(measure);
     observer.observe(gridEl);

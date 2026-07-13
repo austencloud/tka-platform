@@ -83,16 +83,17 @@
      start-position row it's landscape, not poker portrait), so byHeight stops
      under-sizing the cards. Ratio-from-measurement converges: it's a constant
      of the card content, not of the chosen width. */
-  const cardCols = $derived((constraints.optionCount ?? 4) > 4 ? 3 : 2);
+  const cardCount = $derived(constraints.optionCount ?? 4);
   let cardGridEl = $state<HTMLDivElement | undefined>();
   let cardWidth = $state(170);
+  let cardCols = $state(2);
   let cardRatio = $state(0.75); // height / width — refined by measurement
   const CARD_GAP = 12; // px — matches gap in CSS
+  const CARD_MAX = 380;
 
   $effect(() => {
     if (!cardGridEl) return;
-    const cols = cardCols;
-    const rows = Math.ceil((constraints.optionCount ?? 4) / cols);
+    const n = cardCount;
     const measure = () => {
       if (!cardGridEl) return;
       const slot = cardGridEl.querySelector<HTMLElement>(".card-slot");
@@ -102,10 +103,25 @@
       }
       const w = cardGridEl.clientWidth;
       const h = cardGridEl.clientHeight;
-      const byWidth = (w - (cols - 1) * CARD_GAP) / cols;
-      const byHeight =
-        h > 0 ? (h - (rows - 1) * CARD_GAP) / rows / cardRatio : Infinity;
-      cardWidth = Math.max(96, Math.min(byWidth, byHeight, 240) | 0);
+      /* Adaptive columns: try every column count and keep whichever yields
+         the biggest card. A narrow phone lands on 1 column (wide cards
+         stacked), a folded Fold on 2×2, a desktop on a single 4-across row —
+         no per-breakpoint layout forks. */
+      let bestW = 0;
+      let bestCols = Math.min(2, n);
+      for (let cols = 1; cols <= n; cols++) {
+        const rows = Math.ceil(n / cols);
+        const byWidth = (w - (cols - 1) * CARD_GAP) / cols;
+        const byHeight =
+          h > 0 ? (h - (rows - 1) * CARD_GAP) / rows / cardRatio : Infinity;
+        const candidate = Math.min(byWidth, byHeight, CARD_MAX);
+        if (candidate > bestW + 0.5) {
+          bestW = candidate;
+          bestCols = cols;
+        }
+      }
+      cardCols = bestCols;
+      cardWidth = Math.max(96, bestW | 0);
     };
     const ro = new ResizeObserver(measure);
     ro.observe(cardGridEl);
@@ -289,6 +305,10 @@
   /* Stacked (foldable/tablet/phone): mandala over cards, both at natural
      height and centered together as a group — no growing flex regions that
      leave a dead band between them. */
+  /* One layout everywhere: big mandala on top, cards below. The card grid's
+     column count adapts in JS to whatever space is left, so there is no
+     desktop row-split fork — a wide screen just gets one 4-across card row
+     under a large mandala. */
   .quiz-content {
     display: flex;
     flex-direction: column;
@@ -296,7 +316,7 @@
     justify-content: center;
     gap: clamp(1rem, 3svh, 2rem);
     width: 100%;
-    max-width: 560px;
+    max-width: 1600px;
     flex: 1;
     min-height: 0;
   }
@@ -315,7 +335,7 @@
   .mandala-stage {
     position: relative;
     aspect-ratio: 1;
-    inline-size: min(44svh, 86vw, 320px);
+    inline-size: min(46svh, 86vw, 620px);
     min-inline-size: 140px;
     border-radius: 20px;
     display: flex;
@@ -357,6 +377,7 @@
     height: fit-content;
     border-radius: 14px;
     overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.14);
     transition:
       opacity var(--duration-normal, 200ms) ease,
       box-shadow var(--duration-normal, 200ms) ease;
@@ -376,72 +397,12 @@
     opacity: 0.4;
   }
 
-  /* Desktop / foldable: mandala and card cluster centered together as a unit,
-     not shoved to opposite edges. stage-column hugs the mandala (flex:0 1 auto)
-     and the mandala height tracks the card-cluster height (66cqb) so the two
-     read as a matched pair. */
-  @media (min-width: 1024px) {
-    .quiz-content {
-      flex-direction: row;
-      align-items: stretch;
-      justify-content: center;
-      max-width: 860px;
-      gap: clamp(1.5rem, 5vw, 3.5rem);
-    }
-
-    .stage-column {
-      flex: 0 1 auto;
-      width: auto;
-      min-height: 340px;
-    }
-
-    /* Row mode: mandala sized to the viewport height, capped. */
-    .mandala-stage {
-      inline-size: min(52svh, 340px);
-    }
-
-    .card-grid {
-      flex: 0 0 380px;
-      align-content: center;
-    }
-
-    .card-grid.six-up {
-      flex-basis: 480px;
-    }
-  }
-
-  @media (min-width: 1440px) {
-    .quiz-content {
-      max-width: 1300px;
-      gap: 2.5rem;
-    }
-
-    .card-grid {
-      flex-basis: 460px;
-    }
-
-    .card-grid.six-up {
-      flex-basis: 580px;
-    }
-  }
-
-  @media (min-width: 2560px) {
-    .quiz-content {
-      max-width: clamp(1300px, 55vw, 1700px);
-    }
-
-    .mandala-stage {
-      inline-size: min(56cqh, 80cqw, 560px);
-    }
-
-    .card-grid {
-      flex-basis: 560px;
-      gap: 1rem;
-    }
-
-    .card-grid.six-up {
-      flex-basis: 700px;
-    }
+  /* The choreo card paints a white print background + border (paper face);
+     inside the game the rendered image is dark, so the white shows as a hard
+     frame around every option. Neutralize it — the slot owns the border. */
+  .card-slot :global(.choreo-card) {
+    --print-bg: transparent;
+    border: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
