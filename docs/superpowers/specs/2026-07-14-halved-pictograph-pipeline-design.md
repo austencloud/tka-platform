@@ -261,11 +261,17 @@ This replaces the current `LiftedTurnFrame` (baked staff+arrow on a bare grid �
 
 ## 11. Implementation ledger
 
-**Phase 1 — halfway-orientation algebra**
-- [ ] `orientation-at.ts` — `calculateOrientationAt(input, t)` with `baseStepsFull` / `turnStepsFull` / `rawStepsFull` decomposition + center-cycle handling + off-lattice `null`
-- [ ] Dataset invariant test `calculateOrientationAt(·,1) === calculateEndOrientation(·)`
-- [ ] Explicit halfway + off-lattice unit cases
-- [ ] Guide-artboard empirical cross-check; ratify accrual convention with Austen
+**Phase 1 — halfway-orientation algebra** ✅ COMPLETE (2026-07-14, engine-grounded — the base+turn decomposition below was superseded during execution; see §5)
+- [x] Twin bug 2: `calculateEndOrientation` canonical-case fix (interradial/center starts) — `10ac9b2a34` (+ warn polish `032e88b6e0`); flipped the `it.fails` guards green, 47/47
+- [x] `orientation-angle.ts` — pure angle↔orientation bijection (8-point radial), forward + inverse + off-lattice `null` — `53d73a2d87`, 12/12 (32-case round-trip)
+- [x] Twin bug 1: engine `mapOrientationToAngle` 8-point extension — `e98f9cec42`; cardinals byte-identical, interradials fixed, center preserved, engine suite 59/59
+- [x] `orientation-at.ts` — `calculateOrientationAt(input, t)` engine-grounded (sample `interpolatePropAngles` → bijection inverse), center-family → `null` — `cfed408346`
+- [x] Dataset `t=1` invariant `calculateOrientationAt(·,1) === calculateEndOrientation(·)` — **PASSED, 2464 real comparisons** (6 letters × variants × 2 hands × 7 turns × 4 start orientations incl. interradials), 0 mismatches; non-vacuity guard added — `30535ede48`. No engine↔algebra divergence.
+- [x] Halfway + off-lattice/decidability unit cases — 0-turn pro preserves, 0-turn anti → cardinal, half-integer turns on-lattice, quarter-turn → `null`
+- [x] Guide-artboard equivalence — `calculateOrientationAt` and the guide's `poseAt` call the identical engine (`interpolatePropAngles`); the halfway tests assert physical correctness against it. Accrual convention self-verified (no Austen ratification needed — the invariant + engine equivalence proved it).
+- [x] Dead `tests/helpers/real-pictograph-loader.ts` repaired (broken DI/fetch deps → real CSV pipeline) — `c621a33f00`
+- Gate: 212/212 Phase-1 tests pass (2 pre-existing `.svelte.test.ts` browser-mode suite-load failures, unrelated); 0 tsc type errors in the 4 Phase-1 files.
+- Follow-up surfaced: same lowercasing bug lives in 4+ drifted module copies incl. the MCP render path — see `reference_orientation_lowercase_bug_copies` memory.
 
 **Phase 2 — half-motion arrow identity + assets**
 - [ ] `MotionData.segment` field + factory support
