@@ -110,7 +110,7 @@
 		"@context": "https://schema.org",
 		"@type": "WebSite",
 		"name": "TKA - The Kinetic Alphabet",
-		"alternateName": ["The Kinetic Alphabet", "Kinetic Alphabet", "TKA", "Flow Arts Notation"],
+		"alternateName": ["The Kinetic Alphabet", "Kinetic Alphabet", "TKA"],
 		"url": "https://tkaflowarts.com/",
 		"description": "TKA is a notation system for flow arts. Document and share staff, fans, hoop, club, fan, and buugeng choreography.",
 		"inLanguage": "en-US",
@@ -131,14 +131,15 @@
 		"@context": "https://schema.org",
 		"@type": "Organization",
 		"name": "TKA - The Kinetic Alphabet",
-		"alternateName": ["The Kinetic Alphabet", "TKA", "Flow Arts Notation"],
+		"alternateName": ["The Kinetic Alphabet", "TKA"],
 		"url": "https://tkaflowarts.com/",
 		"logo": "https://tkaflowarts.com/pwa/icons/icon-512x512.png",
 		"description": "TKA is a notation system for flow arts. Document and share staff, fans, hoop, club, fan, and buugeng choreography.",
-		"foundingDate": "2024",
+		"foundingDate": "2022-03-27",
 		"sameAs": [
 			"https://instagram.com/tkaflowarts",
-			"https://facebook.com/tkaflowarts"
+			"https://facebook.com/tkaflowarts",
+			"https://www.youtube.com/@TheKineticAlphabet"
 		],
 		"contactPoint": {
 			"@type": "ContactPoint",

@@ -19,10 +19,6 @@
 <svelte:head>
   <title>{TITLE}</title>
   <meta name="description" content={DESCRIPTION} />
-  <meta
-    name="keywords"
-    content="flow arts theory, VTG, Vulcan Tech Gospel, Siteswap, juggling notation, music theory, flow arts notation, dual wielded props, TKA influences"
-  />
   <link rel="canonical" href="https://tkaflowarts.com/roots" />
 
   <meta property="og:type" content="article" />

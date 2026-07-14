@@ -1,16 +1,21 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { page } from "$app/state";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
   let { data } = $props();
 
   const word = $derived(data.meta?.word ?? null);
+  // Display words always go through the repeat-simplifier: a LOOP word like
+  // "FΨFΨFΨFΨ" must read as "FΨ" in the title and SERP result, never expanded.
+  // (simplified-word-display rule.) The raw `word` stays for the thumbnail key.
+  const displayWord = $derived(word ? simplifyRepeatedWord(word) : null);
   const title = $derived(
-    word ? `${word} — Flow Arts Sequence | The Kinetic Alphabet` : "Flow Arts Sequence | The Kinetic Alphabet"
+    displayWord ? `${displayWord} — Flow Arts Sequence | The Kinetic Alphabet` : "Flow Arts Sequence | The Kinetic Alphabet"
   );
   const description = $derived(
-    word
-      ? `Watch and practice "${word}", a flow arts choreography sequence${data.meta?.creator ? ` by ${data.meta.creator}` : ""}${data.meta?.stepCount ? ` (${data.meta.stepCount} steps)` : ""} — animated notation, practice mode, and printable cards.`
+    displayWord
+      ? `Watch and practice "${displayWord}", a flow arts choreography sequence${data.meta?.creator ? ` by ${data.meta.creator}` : ""}${data.meta?.stepCount ? ` (${data.meta.stepCount} steps)` : ""} — animated notation, practice mode, and printable cards.`
       : "Watch and practice a flow arts choreography sequence with animated notation."
   );
   const canonical = $derived(`https://tkaflowarts.com/sequence/${page.params.id}`);
