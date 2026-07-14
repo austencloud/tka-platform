@@ -1,0 +1,94 @@
+/**
+ * calculateOrientationAt(motion, t) — the keystone for halving pictographs.
+ *
+ * A halfway orientation is a PHYSICAL fact (where the staff actually is at
+ * fraction t along a motion), so this samples the production animation
+ * engine (`interpolatePropAngles`) for the staff angle at t and inverts it
+ * through the pure angle<->orientation bijection
+ * (`orientation-angle.ts`'s `staffAngleToOrientation`) over the 8-point
+ * radial cycle.
+ *
+ * Radial orientations only (cardinal + interradial). Center-family ("spun",
+ * L4) orientations return null — deferred to the physical-pose fallback,
+ * out of scope for this phase. The bijection itself also returns null when
+ * the sampled staff angle lands off the 45deg lattice (no legal orientation
+ * exists at that t — e.g. halving an L6 quarter-turn).
+ *
+ * At t=1 this must equal the shipped discrete algebra `calculateEndOrientation`
+ * — pinned by a dataset-wide invariant test across real pictograph data.
+ *
+ * Built by mirroring the proven engine-sampling pattern in `poseAt`
+ * (src/routes/(public)/guide/level-2/_data/halfway-pose.ts:55-90).
+ */
+import { interpolatePropAngles } from "$lib/shared/animation-engine/services/prop-interpolator";
+import { staffAngleToOrientation } from "$lib/shared/render/core/calculations/orientation-angle";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  MotionType,
+  MotionColor,
+  Orientation,
+  RotationDirection,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { GridMode, type GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+
+export type OrientationAtInput = {
+  motionType: MotionType;
+  rotationDirection: RotationDirection;
+  startLocation: GridLocation;
+  endLocation: GridLocation;
+  startOrientation: Orientation;
+  endOrientation: Orientation;
+  turns?: number;
+};
+
+function isCenterOrientation(ori: string): boolean {
+  return ori.startsWith("center");
+}
+
+/** Force the arc/linear path so the interpolator never reads global visibility
+ *  state — same rationale as `poseAt`/`halfwayPose`. */
+function pathShapeFor(type: MotionType): "arc" | "linear" {
+  return type === MotionType.DASH ? "linear" : "arc";
+}
+
+/**
+ * The prop's orientation at fraction t in [0,1] along a motion, or null when the
+ * physical staff angle lands off the 45deg lattice (no legal orientation exists
+ * at that t — e.g. halving an L6 quarter-turn) or the motion is a center/"spun"
+ * orientation (deferred, Phase 1 scope). At t=1 this equals calculateEndOrientation.
+ */
+export function calculateOrientationAt(
+  m: OrientationAtInput,
+  t: number,
+  color: MotionColor = MotionColor.RED
+): Orientation | null {
+  if (isCenterOrientation(m.startOrientation)) return null; // center-family deferred
+
+  const motion = createMotionData({
+    motionType: m.motionType,
+    rotationDirection: m.rotationDirection,
+    startLocation: m.startLocation,
+    endLocation: m.endLocation,
+    startOrientation: m.startOrientation,
+    endOrientation: m.endOrientation,
+    turns: m.turns ?? 0,
+    color,
+    propType: PropType.STAFF,
+    gridMode: GridMode.DIAMOND,
+    pathShape: pathShapeFor(m.motionType),
+  });
+  const step = {
+    id: "orientation-at",
+    letter: null,
+    gridMode: GridMode.DIAMOND,
+    motions: { [color === MotionColor.BLUE ? "blue" : "red"]: motion },
+  } as unknown as StepData;
+
+  const result = interpolatePropAngles(step, t);
+  const angles = color === MotionColor.BLUE ? result.blueAngles : result.redAngles;
+  if (!angles) return null;
+
+  return staffAngleToOrientation(angles.staffRotationAngle, angles.centerPathAngle);
+}
