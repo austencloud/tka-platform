@@ -1163,6 +1163,13 @@ export default defineConfig(({ mode }) => ({
         "**/node_modules/**",
         "**/.git/**",
         "**/.svelte-kit/**",
+        // Git worktrees: never watch a nested worktree's files. Policy is to
+        // place worktrees as siblings OUTSIDE the checkout (see
+        // .claude/rules/worktree-workflow.md), but .gitignore historically
+        // pointed them at .claude/worktrees/ — ignore both so a nested one
+        // can't reintroduce cross-session HMR churn or handle bloat.
+        "**/.claude/**",
+        "**/.worktrees/**",
         // "apps" exists inside src/ (retro/win95/components/apps/) so we
         // match only the root-level apps/ dir using an absolute path.
         path.resolve(dirname, "apps") + "/**",
