@@ -52,14 +52,20 @@ export async function calculateArrowPoint(
       pictographData
     );
 
-    const adjustment = await arrowAdjustmentCalculator.calculateAdjustment(
-      pictographData,
-      motion,
-      pictographData.letter || "A",
-      location,
-      motion.color,
-      soloMode
-    );
+    // Half-motion frames are letterless by construction; route them AROUND the
+    // letter-based adjustment tiers (Special/Global calibrated for real letters —
+    // a "A" default would mis-adjust). Baseline nudge is {0,0}; authored _half
+    // default-tier nudges arrive in Phase 2b.
+    const adjustment = motion.segment
+      ? { x: 0, y: 0 }
+      : await arrowAdjustmentCalculator.calculateAdjustment(
+          pictographData,
+          motion,
+          pictographData.letter || "A",
+          location,
+          motion.color,
+          soloMode
+        );
 
     const [adjustmentX, adjustmentY] = extractAdjustmentValues(adjustment);
 
