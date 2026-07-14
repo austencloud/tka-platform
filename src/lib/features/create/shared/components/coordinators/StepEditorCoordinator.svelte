@@ -20,6 +20,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import StepEditorPanel from "../sequence-actions/StepEditorPanel.svelte";
   import BatchStepEditor from "../sequence-actions/BatchStepEditor.svelte";
+  import StepControlsZone from "../sequence-actions/StepControlsZone.svelte";
   import CreatePanelDrawer from "../CreatePanelDrawer.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
@@ -49,7 +50,8 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
 
   // Get context
   const ctx = getCreateModuleContext();
-  const { CreateModuleState, panelState } = ctx;
+  const { CreateModuleState, panelState, layout } = ctx;
+  const isSideBySideLayout = $derived(layout.shouldUseSideBySideLayout);
 
   // Services
   const hapticService: HapticFeedback = getHapticFeedback();
@@ -456,10 +458,11 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
 </script>
 
 <!--
-  ONE persistent drawer shell hosts both the single-step editor and the batch
-  editor. Switching multi ↔ single crossfades the body in place (Crossfade keyed
-  on selectionMode, fill) so the drawer never closes and reopens. The drawer's
-  own close routes to whichever editor is active.
+  ONE persistent drawer shell hosts both editors. The TOP zone (header + preview
+  vs header + grid) crossfades on a single ↔ multi switch. The BOTTOM zone
+  (blue/red turn controls) is rendered ONCE below the crossfade, so its colored
+  frames persist and MORPH their inner control instead of being rebuilt. The
+  drawer's own close routes to whichever editor is active.
 -->
 <CreatePanelDrawer
   {isOpen}
@@ -472,42 +475,53 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   ariaLabel="Step editor panel"
   onClose={handleActiveClose}
 >
-  <div class="editor-swap">
-    <Crossfade key={selectionMode} fill duration={DURATION.fast}>
-      {#if isMultiSelect}
-        <BatchStepEditor
-          steps={batchSteps}
-          stepNumbers={batchStepNumbers}
-          {totalBeats}
-          bluePropTypeOverride={bluePropType}
-          redPropTypeOverride={redPropType}
-          onBatchTurnsChange={handleBatchTurnsChange}
-          onClose={handleBatchClose}
-          onSelectAll={handleBatchSelectAll}
-        />
-      {:else}
-        <StepEditorPanel
-          {isOpen}
-          {selectedStepNumber}
-          {selectedStepData}
-          {sequence}
-          {removingStepIndices}
-          onClose={handleClose}
-          onTurnsChange={handleTurnsChange}
-          onRotationChange={handleRotationChange}
-          onOrientationChange={handleOrientationChange}
-          onStepSelect={handleStepSelect}
-          onDelete={handleStepDelete}
-          onOpenPropSheet={handleOpenPropSheet}
-          onStepDataUpdate={handleStepBeatDataUpdate}
-          onPushUndoSnapshot={handlePushUndoSnapshot}
-          onDurationChange={handleDurationChange}
-          onPathShapeChange={handlePathShapeChange}
-          onPathShapeClear={handlePathShapeClear}
-          onBetaSwapToggle={handleBetaSwapToggle}
-        />
-      {/if}
-    </Crossfade>
+  <div class="editor-body">
+    <div class="top-zone">
+      <Crossfade key={selectionMode} fill duration={DURATION.fast}>
+        {#if isMultiSelect}
+          <BatchStepEditor
+            steps={batchSteps}
+            stepNumbers={batchStepNumbers}
+            {totalBeats}
+            bluePropTypeOverride={bluePropType}
+            redPropTypeOverride={redPropType}
+            onClose={handleBatchClose}
+            onSelectAll={handleBatchSelectAll}
+          />
+        {:else}
+          <StepEditorPanel
+            {isOpen}
+            {selectedStepNumber}
+            {selectedStepData}
+            {sequence}
+            {removingStepIndices}
+            onClose={handleClose}
+            onOrientationChange={handleOrientationChange}
+            onStepSelect={handleStepSelect}
+            onDelete={handleStepDelete}
+            onStepDataUpdate={handleStepBeatDataUpdate}
+            onPushUndoSnapshot={handlePushUndoSnapshot}
+            onDurationChange={handleDurationChange}
+            onBetaSwapToggle={handleBetaSwapToggle}
+          />
+        {/if}
+      </Crossfade>
+    </div>
+
+    <!-- Persistent, morphing blue/red turn controls (single ↔ multi). -->
+    <StepControlsZone
+      {selectionMode}
+      stacked={!isSideBySideLayout}
+      compact={!isSideBySideLayout}
+      stepData={selectedStepNumber === 0 ? null : selectedStepData}
+      onTurnsChange={handleTurnsChange}
+      onRotationChange={handleRotationChange}
+      onOpenPropSheet={handleOpenPropSheet}
+      onPathShapeChange={handlePathShapeChange}
+      onPathShapeClear={handlePathShapeClear}
+      batchSteps={batchSteps}
+      onBatchTurnsChange={handleBatchTurnsChange}
+    />
   </div>
 </CreatePanelDrawer>
 
@@ -521,12 +535,19 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
 />
 
 <style>
-  /* Fills the drawer body so the Crossfade (fill mode) has a sized parent; both
-     editor bodies are height:100% and stack absolutely during the transition. */
-  .editor-swap {
+  /* Drawer body = crossfading top zone (grows) + persistent bottom controls. */
+  .editor-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  /* Sized parent for the Crossfade (fill mode); both editor tops are height:100%
+     and stack absolutely during the transition. */
+  .top-zone {
     flex: 1 1 auto;
     min-height: 0;
-    height: 100%;
     position: relative;
   }
 </style>
