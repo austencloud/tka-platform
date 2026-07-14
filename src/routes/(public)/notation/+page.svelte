@@ -148,6 +148,10 @@
         concepts. Then <a href="/composer">Flow Arts Composer</a>: everything else you
         might possibly ever want to do.
       </p>
+      <p>
+        Want a specific term? The <a href="/glossary">full lexicon</a> defines every position,
+        letter type, motion, and piece of notation vocabulary.
+      </p>
     </div>
   </section>
 

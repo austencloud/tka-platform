@@ -14,6 +14,7 @@ const pages = [
   // Pillar pages (SEO content roadmap)
   { url: "composer", priority: "0.9", changefreq: "monthly" },
   { url: "notation", priority: "0.9", changefreq: "monthly" },
+  { url: "glossary", priority: "0.8", changefreq: "monthly" },
   { url: "learn/staff-spinning-choreography", priority: "0.8", changefreq: "monthly" },
   { url: "roots", priority: "0.8", changefreq: "monthly" },
   // Marketing
