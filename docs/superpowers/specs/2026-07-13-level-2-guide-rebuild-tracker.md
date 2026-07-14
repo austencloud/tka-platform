@@ -167,20 +167,21 @@ and the artboard exports under `D:\_THE KINETIC ALPHABET\_GUIDE\artboard-exports
 - [x] p18 Codex 0/1 Type 2+3 same/opp — split-column (T2 shift | T3 cross-shift),
       vertical divider, low-slot ₁ turn, same-dot rows 1–2 / opp-dot rows 3–4.
       `codex-0-1-t23` → CodexZeroOneType23Page. Screenshot-verified.
-- [ ] p19 Codex 1/0 Type 2+3 + 1|0/0|1 Type 4/5/6 — **4-QUADRANT bespoke page**
-      (not a plain CodexGridPage): TL=Type2 1/0 (¹), TR=Type3 1/0 (¹),
-      BL=Type4 1/0 (¹) stacked over Type4 0/1 (₁), BR=Type5 1/0 (¹) stacked over
-      Type6 static (¹). Needs Λ/Λ-/Γ **open/close** codex cells — NOT YET in
-      codex-turns (add `codexOpenCloseData(letter, hi, lo, "open"|"close")` that
-      sets the turning hand's rot dir to produce open [→alpha] vs close [→beta];
-      mirror the pedagogy p11/p16 open/close logic). Two heavy dividers (2×2).
-- [ ] p20 Codex 1|1 Type 1 — 22-letter grid, both hands turn 1 → same/opp dots.
-      Original already portrait. Reuse CodexGridPage + `codexRelData(l,1,1,rel)`.
-      Set manifest `selfTitled: true` on `codex-1-1-t1`.
-- [ ] p21 Codex 1/1 Type 2+3 same/opp — like p18 split-column but hi=1,lo=1.
-      Reuse CodexGridPage split + `codexRelData(l,1,1,rel)`.
-- [ ] p22 Codex 1|1 Type 4/5/6 — Φ/Ψ/Λ, Φ-/Ψ-/Λ-, α/β/Γ with 1|1 + open/close.
-      Original already portrait. Needs the open/close codex helper (see p19).
+- [x] p19 Codex 1/0 Type 2+3 + 1|0/0|1 Type 4/5/6 — 4-quadrant bespoke page,
+      heavy H+V dividers. Added full-PADS `highSlotColor` (pro>anti>dash>static)
+      and `codexOpenCloseData(letter, hi, lo, "open"|"close")` (CW=open/CCW=close
+      convention). `codex-1-0-t23-456` → CodexOneZeroType23And456Page. Verified.
+- [x] p20 Codex 1|1 Type 1 — 22-letter 6-col grid, both hands turn (`¹₁` stacked
+      red/blue), NO same/opp dot (dual-shift relationship is intrinsic). Added
+      variable `cols` + "both" slot to CodexGridPage. `codex-1-1-t1` (selfTitled).
+- [x] p21 Codex 1/1 Type 2+3 same/opp — p18 split layout, `codexRelData(l,1,1,rel)`,
+      `¹₁` labels. `codex-1-1-t23` → CodexOneOneType23Page. Verified.
+- [x] p22 Codex 1|1 Type 4/5/6 — 3 stacked sections, Same/Opp rows + Λ/Γ Open/Close.
+      `codex-1-1-t456` → CodexOneOneType456Page. Verified. (Accuracy: exact 1|1
+      dual-hand open/close combos [op/op…cl/cl] approximated.)
+
+**Phase 2 complete (p17–p22).** All 1-turn codex pages built + screenshot-verified,
+portrait reflow confirmed by Austen.
 
 ### Phase 3 — 2-turn pedagogy + codex (original p23–34)
 - [ ] p23 2-Turns: shifts — pro/anti double-turn breakdowns (thirds decomposition)
