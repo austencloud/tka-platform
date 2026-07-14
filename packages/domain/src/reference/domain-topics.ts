@@ -108,7 +108,11 @@ Each quarter turn = 1 step. Direction rule:
 
 ### Float Orientation
 
-Float holds absolute spatial angle. As the hand arcs, the center-relative orientation changes by an amount determined by arc length and direction. For a standard single-segment shift: a CW arc shifts orientation one position CW in the radial cycle; a CCW arc shifts one position CCW. Float only changes orientation for CW/CCW hand paths; a dash/static hand path with float would preserve orientation (but float doesn't apply to those).`,
+Float holds absolute spatial angle. As the hand arcs, the center-relative orientation changes by an amount determined by arc length and direction. For a standard single-segment shift: a CW arc shifts orientation one position CW in the radial cycle; a CCW arc shifts one position CCW. Float only changes orientation for CW/CCW hand paths; a dash/static hand path with float would preserve orientation (but float doesn't apply to those).
+
+### Orientation and LOOP Closure
+
+These parity rules set a LOOP's **orientation period** (see LOOP System → Type vs Length). Over one position period, sum each hand's reversals: anti/dash/hash bases + odd whole turns each flip orientation (in↔out / clock↔counter); half-turns step 90°, quarters 45°. If the net per-hand delta is the identity, the LOOP closes at its position period. Otherwise it repeats until the orientation wheel returns home, multiplying length by that orientation period. Position-moving LOOPs (rotated/mirrored/flipped/swapped) usually close orientation trivially; the multiplier appears when the motion/turn content drifts. Inverted LOOPs (and the narrow case of a Swapped LOOP whose entire seed stays in beta) are the pure form — positions pinned, so the orientation cycle IS the LOOP.`,
   },
 
   "combinatorial-space": {
@@ -395,6 +399,20 @@ A **LOOP** is a sequence that returns to its starting position (circular) and fo
 | **Inverted** | Pro<->Anti motion types swap |
 | **Rewound** | Second half plays in reverse (temporal, not geometric) |
 
+### Transformation Domains: Position vs Orientation
+
+A component is **orientation-domain** only if it is the identity on position space — it never moves any beat's grid position. By the fixed-point sets, exactly ONE qualifies:
+
+- **Inverted** — position-identity at ALL positions. \`applyOverlayInversion\` flips motionType (pro↔anti) and rotationDirection and leaves hand locations untouched on every beat, so an Inverted LOOP repeats its positions identically each pass; only the prop's orientation cycles. The unique **pure orientation-domain** transform (verified: inverted seeds through gamma/alpha still pin).
+- **Rotated / Mirrored / Flipped / Swapped** are all **position-moving**, each the identity only on a subset:
+  - Rotated — no L1–L4 fixed point (always the inner layer).
+  - Mirrored — fixed at alpha1/alpha5/beta1/beta5.
+  - Flipped — fixed at alpha3/alpha7/beta3/beta7.
+  - Swapped — fixed at beta (+terra1); it reflects via hand identity (\`SWAPPED_POSITION_MAP\`: alpha7↔alpha3, gamma9↔gamma3), so it MOVES any non-beta beat.
+- **Rewound** — temporal (second half reversed), neither space.
+
+A LOOP is positionally PINNED (a "pure orientation LOOP", where the prop's orientation sweep IS the content) only when its transform is the identity on EVERY beat it touches: **always for Inverted**, and for Swapped ONLY when the entire seed stays within beta (e.g. \`GIGI\`, beta1↔beta7). A beta-STARTED swap loop that wanders to alpha/gamma is NOT pinned — swap moves those beats (\`DLDL\`: a beta1→alpha7 beat becomes beta1→alpha3 in the second pass). Pinning is per-beat, not per-start-position.
+
 ---
 
 ## Compositional LOOP Theory (Feb 2026)
@@ -411,6 +429,19 @@ The LOOP algebra operates on a reduced space of:
 \`\`\`
 Performed Sequence = LOOP Skeleton + Turn Assignment
 \`\`\`
+
+### Type vs Length: The Two-Period Model
+
+Turn/orientation independence applies to the **type label**, not the **realized length**. A LOOP has TWO periods:
+
+- **Position period** — passes for the grid positions to return to start (set by the position-domain transform: 2 for halved, 4 for quartered).
+- **Orientation period** — passes for both props' orientations to return to start.
+
+Realized length = seed × **LCM(position period, orientation period)**.
+
+The orientation period is driven by per-pass orientation reversals, NOT just turns. Each **anti / dash / hash** motion reverses orientation at its base (even at 0 turns); odd whole turns reverse; half-turns step 90°; quarters 45°. If a hand accumulates a net non-identity orientation delta over one position period, the LOOP must run extra passes until the orientation wheel closes.
+
+This is why one LOOP type renders at two lengths (mirrored+swapped as 4 OR 8): the position skeleton is identical, but the orientation period — a function of the motion/turn content the type label ignores — differs. A zero-turn seed does NOT guarantee the short form: a seed full of anti/dash motions drifts in orientation with no turns at all.
 
 ### Compositional Notation
 
@@ -502,7 +533,7 @@ For ROTATE as INNER, the seed goes S -> ROTATE(S), which is always a different p
 2. **Beta is the universal connector.** All beta positions are SWAP fixed points. beta1/beta5 support MIRROR as outer. beta3/beta7 support FLIP as outer.
 3. **ROTATE is always the innermost layer.** Mathematical proof: no L1-L4 position is a 180deg rotation fixed point.
 4. **INVERTED is always free.** No positional constraint. Can be added to any outer transform via / without restricting valid starting positions.
-5. **Flat detection loses information.** The same component set can correspond to different compositional structures depending on starting position and construction order.`,
+5. **Flat detection loses information.** The same component set can correspond to different compositional structures depending on starting position and construction order. Confirmed live: the flat loop type \`mirrored_swapped\` builds from BOTH beta1→beta1 (the MIRROR/SWAP simultaneous \`/\` composition) AND alpha1→alpha5 (the SWAP+MIRROR sequential \`+\` composition) — one label, two distinct constructions. Conversely, one built sequence can satisfy several component descriptions at once (a pure Rotated halved LOOP is also detectable as Rotated + Mirrored + Swapped, since 180° rotation ≡ mirror∘flip and, under hand symmetry, ≡ mirror+swap). The component labels are NOT orthogonal.`,
   },
 
   "caps-vs-loops": {
