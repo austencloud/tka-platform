@@ -9,7 +9,6 @@
   Desktop: Side panel with pictograph preview, horizontal controls
 -->
 <script lang="ts">
-  import CreatePanelDrawer from "../CreatePanelDrawer.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import TurnsEditMode from "./TurnsEditMode.svelte";
   import StartPositionEditMode from "./StartPositionEditMode.svelte";
@@ -68,7 +67,7 @@
   }
 
   let {
-    isOpen = $bindable(),
+    isOpen,
     selectedStepNumber,
     selectedStepData,
     sequence = null,
@@ -336,18 +335,7 @@
   }
 </script>
 
-<CreatePanelDrawer
-  bind:isOpen
-  panelName="step-editor"
-  fullHeightOnMobile={true}
-  showHandle={true}
-  closeOnBackdrop={false}
-  focusTrap={false}
-  autoFocus={false}
-  ariaLabel="Step editor panel"
-  onClose={handleClose}
->
-  <div class="editor-panel" class:desktop={isSideBySideLayout} class:tour-active={stepEditorTourState.isActive}>
+<div class="editor-panel" class:desktop={isSideBySideLayout} class:tour-active={stepEditorTourState.isActive}>
     <!-- Step Editor Tour overlay -->
     <StepEditorTour />
 
@@ -519,7 +507,6 @@
       {/if}
     </div>
   </div>
-</CreatePanelDrawer>
 
 <!-- Inspect Modal (admin-only). Guard on a valid step + admin so a persisted
      open flag can't restore an empty modal or surface it to non-admins. -->

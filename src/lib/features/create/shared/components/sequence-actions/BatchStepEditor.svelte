@@ -1,20 +1,21 @@
 <!--
   BatchStepEditor.svelte
 
-  Multi-select batch editor. Opens (in the same drawer shell as StepEditorPanel)
-  when 2+ beats are selected in the workspace. Shows every selected pictograph in
-  a grid and edits their per-hand turns together.
+  Multi-select batch editor BODY. Rendered inside the coordinator's shared
+  CreatePanelDrawer (same shell as StepEditorPanel) when 2+ beats are selected,
+  so switching single↔multi crossfades in place instead of closing/reopening a
+  drawer. Shows every selected pictograph in a grid and edits their per-hand
+  turns together.
 
   Mixed values: when the selected steps disagree on a hand's turns, the control
   offers two modes (SegmentedControl):
-    - "Set all"  → shows "Mixed"; stepping writes one absolute value to every step.
+    - "Set all"  → value palette; tapping writes one absolute value to every step.
     - "Adjust"   → shows the min–max range; stepping nudges each step by ±0.5,
                     preserving their differences.
-  The grid caption under each pictograph always shows that step's own turns, so
-  the spread is visible at all times.
+  Each pictograph renders its own beat number + per-hand turns, so the spread is
+  visible at all times without an extra caption.
 -->
 <script lang="ts">
-  import CreatePanelDrawer from "../CreatePanelDrawer.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
@@ -31,7 +32,6 @@
   type BatchMode = "set" | "adjust";
 
   interface Props {
-    isOpen: boolean;
     steps: StepData[];
     stepNumbers: number[];
     totalBeats: number;
@@ -47,7 +47,6 @@
   }
 
   let {
-    isOpen = $bindable(),
     steps,
     stepNumbers,
     totalBeats,
@@ -127,13 +126,7 @@
   }
 </script>
 
-<CreatePanelDrawer
-  bind:isOpen
-  panelName="batch-edit"
-  ariaLabel="Edit {count} beats"
-  onClose={onClose}
->
-  <div class="batch-editor">
+<div class="batch-editor">
     <!-- Header -->
     <header class="batch-header">
       <button
@@ -198,7 +191,6 @@
       )}
     </div>
   </div>
-</CreatePanelDrawer>
 
 {#snippet handCard(
   colorName: "blue" | "red",

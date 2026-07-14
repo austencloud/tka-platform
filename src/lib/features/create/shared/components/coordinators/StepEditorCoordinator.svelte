@@ -20,6 +20,10 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import StepEditorPanel from "../sequence-actions/StepEditorPanel.svelte";
   import BatchStepEditor from "../sequence-actions/BatchStepEditor.svelte";
+  import CreatePanelDrawer from "../CreatePanelDrawer.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
   import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
@@ -143,6 +147,13 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   });
   const totalBeats = $derived(sequence?.steps?.length ?? 0);
 
+  // Discriminator for the shared-drawer crossfade: single-step editor vs batch
+  // editor. Both bodies live in ONE persistent CreatePanelDrawer, so switching
+  // modes crossfades the content in place instead of closing/reopening a drawer.
+  const selectionMode = $derived<"single" | "multi">(
+    isMultiSelect ? "multi" : "single"
+  );
+
   // Re-open the editor panel when a multi-selection becomes active. Covers the
   // HMR/refresh restore path: the persisted multi set comes back but
   // selectedStepNumber is null in multi mode, so the single-step auto-open
@@ -179,9 +190,21 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   // Event handlers
   function handleClose() {
     logger.log("StepEditorCoordinator closing step editor panel");
+    // Clear any selected arrow (parity with the old in-panel drawer close, which
+    // ran StepEditorPanel.handleClose → selectedArrowState.clearSelection()).
+    selectedArrowState.clearSelection();
     panelState.closeStepEditorPanel();
     // Clear step selection when closing the Step Editor
     activeSequenceState.clearSelection();
+  }
+
+  // The single shared drawer routes its close to the active editor's handler.
+  function handleActiveClose() {
+    if (isMultiSelect) {
+      handleBatchClose();
+    } else {
+      handleClose();
+    }
   }
 
   function handleTurnsChange(color: MotionColor, delta: number) {
@@ -432,40 +455,61 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   });
 </script>
 
-{#if isMultiSelect}
-  <BatchStepEditor
-    {isOpen}
-    steps={batchSteps}
-    stepNumbers={batchStepNumbers}
-    {totalBeats}
-    bluePropTypeOverride={bluePropType}
-    redPropTypeOverride={redPropType}
-    onBatchTurnsChange={handleBatchTurnsChange}
-    onClose={handleBatchClose}
-    onSelectAll={handleBatchSelectAll}
-  />
-{:else}
-  <StepEditorPanel
-    {isOpen}
-    {selectedStepNumber}
-    {selectedStepData}
-    {sequence}
-    {removingStepIndices}
-    onClose={handleClose}
-    onTurnsChange={handleTurnsChange}
-    onRotationChange={handleRotationChange}
-    onOrientationChange={handleOrientationChange}
-    onStepSelect={handleStepSelect}
-    onDelete={handleStepDelete}
-    onOpenPropSheet={handleOpenPropSheet}
-    onStepDataUpdate={handleStepBeatDataUpdate}
-    onPushUndoSnapshot={handlePushUndoSnapshot}
-    onDurationChange={handleDurationChange}
-    onPathShapeChange={handlePathShapeChange}
-    onPathShapeClear={handlePathShapeClear}
-    onBetaSwapToggle={handleBetaSwapToggle}
-  />
-{/if}
+<!--
+  ONE persistent drawer shell hosts both the single-step editor and the batch
+  editor. Switching multi ↔ single crossfades the body in place (Crossfade keyed
+  on selectionMode, fill) so the drawer never closes and reopens. The drawer's
+  own close routes to whichever editor is active.
+-->
+<CreatePanelDrawer
+  {isOpen}
+  panelName="step-editor"
+  fullHeightOnMobile={true}
+  showHandle={true}
+  closeOnBackdrop={false}
+  focusTrap={false}
+  autoFocus={false}
+  ariaLabel="Step editor panel"
+  onClose={handleActiveClose}
+>
+  <div class="editor-swap">
+    <Crossfade key={selectionMode} fill duration={DURATION.fast}>
+      {#if isMultiSelect}
+        <BatchStepEditor
+          steps={batchSteps}
+          stepNumbers={batchStepNumbers}
+          {totalBeats}
+          bluePropTypeOverride={bluePropType}
+          redPropTypeOverride={redPropType}
+          onBatchTurnsChange={handleBatchTurnsChange}
+          onClose={handleBatchClose}
+          onSelectAll={handleBatchSelectAll}
+        />
+      {:else}
+        <StepEditorPanel
+          {isOpen}
+          {selectedStepNumber}
+          {selectedStepData}
+          {sequence}
+          {removingStepIndices}
+          onClose={handleClose}
+          onTurnsChange={handleTurnsChange}
+          onRotationChange={handleRotationChange}
+          onOrientationChange={handleOrientationChange}
+          onStepSelect={handleStepSelect}
+          onDelete={handleStepDelete}
+          onOpenPropSheet={handleOpenPropSheet}
+          onStepDataUpdate={handleStepBeatDataUpdate}
+          onPushUndoSnapshot={handlePushUndoSnapshot}
+          onDurationChange={handleDurationChange}
+          onPathShapeChange={handlePathShapeChange}
+          onPathShapeClear={handlePathShapeClear}
+          onBetaSwapToggle={handleBetaSwapToggle}
+        />
+      {/if}
+    </Crossfade>
+  </div>
+</CreatePanelDrawer>
 
 <!-- Prop Selection Sheet - rendered as sibling to StepEditorPanel -->
 <PropSelectionSheet
@@ -475,3 +519,14 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   title={propSheetColor === "blue" ? "Select Blue Prop" : "Select Red Prop"}
   onSelect={handlePropSelect}
 />
+
+<style>
+  /* Fills the drawer body so the Crossfade (fill mode) has a sized parent; both
+     editor bodies are height:100% and stack absolutely during the transition. */
+  .editor-swap {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    position: relative;
+  }
+</style>
