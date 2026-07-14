@@ -19,14 +19,17 @@ import {
 export const FRONT_MATTER_COUNT = 5;
 
 export type ReaderNavRow =
+  // `group` is widened to string so the Level-2 nav builder (groups "2.0"/"2.1")
+  // can produce the SAME row shape GuidePageNav consumes — the nav renderer never
+  // reads `group` off a page row, only the group-header title.
   | { kind: "front"; index: number; title: string }
-  | { kind: "group"; group: GuideGroup; title: string }
+  | { kind: "group"; group: GuideGroup | string; title: string }
   | {
       kind: "page";
       index: number;
       id: string;
       title: string;
-      group: GuideGroup;
+      group: GuideGroup | string;
       level: 0 | 1;
       built: boolean;
     };

@@ -1,19 +1,19 @@
 <script lang="ts">
-  import type { Component } from "svelte";
-  import { buildReaderNav } from "../_data/guide-reader-nav";
-  import { hrefForIndex } from "../_data/guide-page-links";
+  import type { ReaderNavRow } from "../_data/guide-reader-nav";
 
   let {
-    built,
+    rows,
     activeIndex,
     onSelect,
+    hrefFor,
   }: {
-    built: Record<string, Component>;
+    /** Prebuilt nav rows (front jumps + grouped body pages) for the active level. */
+    rows: ReaderNavRow[];
     activeIndex: number;
     onSelect: (index: number) => void;
+    /** Real href for a row (right-click/middle-click); left-click scrolls in-pane. */
+    hrefFor: (index: number) => string | null;
   } = $props();
-
-  const rows = $derived(buildReaderNav(built));
 
   // Rows are REAL links (right-click → Copy Link Address, middle-click → new
   // tab); a plain left click is intercepted for the smooth in-pane scroll.
@@ -32,7 +32,7 @@
       <a
         class="row front"
         class:active={activeIndex === row.index}
-        href={hrefForIndex(row.index)}
+        href={hrefFor(row.index)}
         onclick={(e) => navClick(e, row.index)}
       >
         {row.title}
@@ -43,7 +43,7 @@
         class:sub={row.level === 1}
         class:active={activeIndex === row.index}
         class:soon={!row.built}
-        href={hrefForIndex(row.index)}
+        href={hrefFor(row.index)}
         onclick={(e) => navClick(e, row.index)}
       >
         <span class="t">{row.title}</span>
