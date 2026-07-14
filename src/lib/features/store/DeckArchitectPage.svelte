@@ -578,6 +578,15 @@
                   label="Preorder now"
                   waitlistText="Preorders open soon. Leave an email and you'll hear the moment they do."
                 />
+                {#if customSku.stripePriceId}
+                  <BuyButton
+                    product={customSku}
+                    {propType}
+                    {loopConfig}
+                    mode="add"
+                    label="Add to cart"
+                  />
+                {/if}
               {:else if flavorSkus[0]}
                 <BuyButton
                   product={flavorSkus[0]}
@@ -586,6 +595,15 @@
                   label="Preorder now"
                   waitlistText="Preorders open soon. Leave an email and you'll hear the moment they do."
                 />
+                {#if flavorSkus[0].stripePriceId}
+                  <BuyButton
+                    product={flavorSkus[0]}
+                    {propType}
+                    {loopConfig}
+                    mode="add"
+                    label="Add to cart"
+                  />
+                {/if}
               {/if}
             {:else}
               <div class="buy-blocked" role="status">{problem}</div>

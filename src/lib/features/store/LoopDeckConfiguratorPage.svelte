@@ -629,6 +629,15 @@
               label="Preorder now"
               waitlistText="Preorders open soon. Leave an email and you'll hear the moment they do."
             />
+            {#if customSku.stripePriceId}
+              <BuyButton
+                product={customSku}
+                {propType}
+                {loopConfig}
+                mode="add"
+                label="Add to cart"
+              />
+            {/if}
           {:else if flavorSkus[0]}
             <!-- Custom SKU not seeded/active yet: honest gate via the first
                  flavor SKU's waitlist (it has no Stripe price either). -->
@@ -639,6 +648,15 @@
               label="Preorder now"
               waitlistText="Preorders open soon. Leave an email and you'll hear the moment they do."
             />
+            {#if flavorSkus[0].stripePriceId}
+              <BuyButton
+                product={flavorSkus[0]}
+                {propType}
+                {loopConfig}
+                mode="add"
+                label="Add to cart"
+              />
+            {/if}
           {/if}
           {#if store.checkoutError}
             <p class="checkout-error" role="alert">{store.checkoutError}</p>
