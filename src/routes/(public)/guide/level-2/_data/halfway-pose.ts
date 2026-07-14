@@ -49,6 +49,46 @@ function pathShapeFor(type: MotionType): "arc" | "linear" {
   return type === MotionType.DASH ? "linear" : "arc";
 }
 
+/** The staff pose (viewBox coords + degrees) at an arbitrary stepProgress `t`
+ *  (0 = start, 0.5 = halfway, 1 = end). Used by the 2-turn pedagogy pages that
+ *  break a double turn into thirds/quarters. */
+export function poseAt(m: HalfwayMotion, t: number, color: MotionColor = MotionColor.RED): StaffPose {
+  const motion = createMotionData({
+    motionType: m.type,
+    rotationDirection: m.rot,
+    startLocation: m.from,
+    endLocation: m.to,
+    startOrientation: m.startOri,
+    endOrientation: m.endOri,
+    turns: m.turns ?? 0,
+    color,
+    propType: PropType.STAFF,
+    gridMode: GridMode.DIAMOND,
+    pathShape: pathShapeFor(m.type),
+  });
+  const step = {
+    id: "poseat",
+    letter: null,
+    gridMode: GridMode.DIAMOND,
+    motions: { [color === MotionColor.BLUE ? "blue" : "red"]: motion },
+  } as unknown as StepData;
+
+  const result = interpolatePropAngles(step, t);
+  const angles = color === MotionColor.BLUE ? result.blueAngles : result.redAngles;
+  if (!angles) return { cx: CENTER, cy: CENTER, deg: 0 };
+
+  const { x, y } =
+    angles.x !== undefined && angles.y !== undefined
+      ? { x: angles.x, y: angles.y }
+      : { x: Math.cos(angles.centerPathAngle), y: Math.sin(angles.centerPathAngle) };
+
+  return {
+    cx: CENTER + x * HALFWAY_RADIUS,
+    cy: CENTER + y * HALFWAY_RADIUS,
+    deg: (angles.staffRotationAngle * 180) / Math.PI,
+  };
+}
+
 /** The halfway staff pose (viewBox coords + degrees) for one hand's motion. */
 export function halfwayPose(m: HalfwayMotion, color: MotionColor = MotionColor.RED): StaffPose {
   const motion = createMotionData({

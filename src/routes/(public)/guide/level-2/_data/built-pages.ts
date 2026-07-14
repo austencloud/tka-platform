@@ -20,6 +20,8 @@ import Type6StaticPage from "../_pages/Type6StaticPage.svelte";
 import OneOneType1Page from "../_pages/OneOneType1Page.svelte";
 import OneOneType23Page from "../_pages/OneOneType23Page.svelte";
 import OneOneType456Page from "../_pages/OneOneType456Page.svelte";
+import TwoTurnsShiftsPage from "../_pages/TwoTurnsShiftsPage.svelte";
+import TwoTurnsDashStaticPage from "../_pages/TwoTurnsDashStaticPage.svelte";
 import CodexOneZeroType1Page from "../_pages/CodexOneZeroType1Page.svelte";
 import CodexZeroOneType23Page from "../_pages/CodexZeroOneType23Page.svelte";
 import CodexOneZeroType23And456Page from "../_pages/CodexOneZeroType23And456Page.svelte";
@@ -54,6 +56,8 @@ export const BUILT2: Record<string, Component> = {
   "one-one-t1": OneOneType1Page,
   "one-one-t23": OneOneType23Page,
   "one-one-t456": OneOneType456Page,
+  "two-turns-shifts": TwoTurnsShiftsPage,
+  "two-turns-dash-static": TwoTurnsDashStaticPage,
   "codex-1-0-t1": CodexOneZeroType1Page,
   "codex-0-1-t23": CodexZeroOneType23Page,
   "codex-1-0-t23-456": CodexOneZeroType23And456Page,
