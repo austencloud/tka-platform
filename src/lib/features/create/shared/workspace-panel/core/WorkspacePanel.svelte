@@ -97,12 +97,21 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
       modifiers ?? { range: false, toggle: false }
     );
 
-    // Open the step editor panel directly (shows the single or batch editor
-    // depending on selection size).
+    // A ctrl/cmd-toggle can deselect the last beat, leaving nothing selected.
+    // In that case close the editor entirely (drawer + selection gone) rather
+    // than leaving it open on stale content. Otherwise open it for the single
+    // or batch selection.
     // NOTE: We do this here rather than relying on an effect because
     // Svelte 5's $effect.root() doesn't properly track reactive state
     // accessed through multiple getter layers (CreateModuleState.sequenceState.selectedStepNumber)
-    panelState?.openStepEditorPanel();
+    const stillSelected =
+      sequenceState.selectedStepNumber !== null ||
+      sequenceState.selectedStepNumbers.size > 0;
+    if (stillSelected) {
+      panelState?.openStepEditorPanel();
+    } else {
+      panelState?.closeStepEditorPanel();
+    }
   }
 
   // Handle start position selection (stepNumber 0)
