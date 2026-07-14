@@ -64,3 +64,25 @@ describe("frame toggle wiring", () => {
     expect(src).toContain("reader-flow-page");
   });
 });
+
+describe("crawl route", () => {
+  const route = "src/routes/(public)/guide/level-1/hand-positions/+page.svelte";
+  it("renders FlowFrame + GuideSeo over the single-source content", () => {
+    const src = read(route);
+    expect(src).toContain("FlowFrame");
+    expect(src).toContain("GuideSeo");
+    expect(src).toContain('GUIDE_CONTENT["hand-positions"]');
+    expect(src).toContain("<h1>");
+  });
+  it("declares prerender = true", () => {
+    expect(read("src/routes/(public)/guide/level-1/hand-positions/+page.ts")).toContain(
+      "prerender = true"
+    );
+  });
+});
+
+describe("sitemap", () => {
+  it("lists the crawlable hand-positions route", () => {
+    expect(read("src/routes/sitemap.xml/+server.ts")).toContain("guide/level-1/hand-positions");
+  });
+});
