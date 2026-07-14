@@ -21,9 +21,12 @@ const pages = [
   // Guide — the indexable, reflowable article routes (the /print + /book
   // replicas are noindex; the canonical is the article, so only these are listed)
   { url: "guide", priority: "0.7", changefreq: "monthly" },
+  // Concept cluster — prerendered, prose-first articles (GuideArticle system).
+  // Austen's guide prose reflowed for the web + hydrating pictograph figures.
+  { url: "guide/flow-arts-positions", priority: "0.8", changefreq: "monthly" },
   // Level 1 lives in the in-app reader at /learn/guide, which is ssr=false
-  // (client-only shell — not crawlable). Omitted here until the Level 1 topics
-  // get a prerendered/SSR article form (SEO roadmap P0).
+  // (client-only shell — not crawlable). Its topics get crawlable form one at a
+  // time as concept articles above (SEO roadmap P0), not by exposing the reader.
   { url: "guide/level-2", priority: "0.8", changefreq: "monthly" },
   { url: "guide/level-2/turns", priority: "0.7", changefreq: "monthly" },
   { url: "guide/level-2/double-turns", priority: "0.7", changefreq: "monthly" },
