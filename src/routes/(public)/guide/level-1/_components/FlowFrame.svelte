@@ -16,7 +16,11 @@
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { GuideBlock, PictographRender } from "../_data/guide-content-blocks";
 
-  let { content }: { content: GuideBlock[] } = $props();
+  let { content, darkMode = false }: { content: GuideBlock[]; darkMode?: boolean } = $props();
+
+  // Theme handed to each pictograph: "dark" renders on the dark editorial theme
+  // (dark fill + light grid/props); "light" keeps the print ink-on-white look.
+  const picTheme = $derived(darkMode ? "dark" : "light");
 
   // Render hints → GuidePictograph props, defaulting to FlowFrame's prior hardcoded
   // behavior (HAND props, TKA glyph on, every other layer off).
@@ -56,6 +60,7 @@
           data={block.data}
           size="md"
           eager
+          forceTheme={picTheme}
           propType={rp.propType}
           showTKA={rp.showTKA}
           showPositions={rp.showPositions}
@@ -73,6 +78,7 @@
             data={pos}
             size="sm"
             eager
+            forceTheme={picTheme}
             propType={rp.propType}
             showTKA={rp.showTKA}
             showPositions={rp.showPositions}
@@ -85,14 +91,20 @@
       {#if block.caption}<p class="flow-caption">{block.caption}</p>{/if}
     {:else if block.kind === "gridFigure"}
       <figure class="flow-grid-figure">
-        <svg class="grid-fig" viewBox="0 0 950 950" role="img" aria-label={block.caption ?? gridLabel(block.mode)}>
+        <svg
+          class="grid-fig"
+          viewBox="0 0 950 950"
+          role="img"
+          aria-label={block.caption ?? gridLabel(block.mode)}
+          style:background={darkMode ? "#0a0a0f" : "#ffffff"}
+        >
           <desc>{block.caption ?? gridLabel(block.mode)}</desc>
-          <rect width="950" height="950" fill="#ffffff" />
+          <rect width="950" height="950" fill={darkMode ? "#0a0a0f" : "#ffffff"} />
           {#if block.mode === "merged"}
-            <GridSvg gridMode={GridMode.DIAMOND} darkMode={false} />
-            <GridSvg gridMode={GridMode.BOX} darkMode={false} />
+            <GridSvg gridMode={GridMode.DIAMOND} {darkMode} />
+            <GridSvg gridMode={GridMode.BOX} {darkMode} />
           {:else}
-            <GridSvg gridMode={block.mode === "box" ? GridMode.BOX : GridMode.DIAMOND} darkMode={false} />
+            <GridSvg gridMode={block.mode === "box" ? GridMode.BOX : GridMode.DIAMOND} {darkMode} />
           {/if}
         </svg>
         {#if block.caption}<figcaption>{block.caption}</figcaption>{/if}
@@ -207,7 +219,7 @@
     aspect-ratio: 1;
     border: 1px solid color-mix(in oklab, var(--ink, #1a1a1a) 18%, transparent);
     border-radius: 8px;
-    background: #fff;
+    /* background is set inline (theme-aware): white in light, near-black in dark */
   }
   /* The proof shows points only — drop GridSvg's connecting lines. */
   .grid-fig :global(line) {

@@ -110,6 +110,12 @@
   // Sheet scale-to-fit-width (client-only; sheet is never the SSR default).
   let sheetWrap = $state<HTMLDivElement>();
   let scale = $state(1);
+
+  // Effective page theme (drives dark-mode pictographs in the flow view). Mirrors
+  // the CSS resolution: an explicit data-theme wins, else prefers-color-scheme.
+  // Client-only — the prerendered HTML carries only pictograph aria-labels (the
+  // SVG hydrates), so this never causes an SSR mismatch. Reactive to a theme toggle.
+  let isDark = $state(false);
   onMount(() => {
     loadOverrides();
     const fit = () => {
@@ -119,7 +125,23 @@
     fit();
     const ro = new ResizeObserver(fit);
     if (sheetWrap) ro.observe(sheetWrap);
-    return () => ro.disconnect();
+
+    const root = document.documentElement;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const resolveTheme = () => {
+      const attr = root.getAttribute("data-theme");
+      isDark = attr ? attr === "dark" : mq.matches;
+    };
+    resolveTheme();
+    mq.addEventListener("change", resolveTheme);
+    const themeObs = new MutationObserver(resolveTheme);
+    themeObs.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
+
+    return () => {
+      ro.disconnect();
+      mq.removeEventListener("change", resolveTheme);
+      themeObs.disconnect();
+    };
   });
 </script>
 
@@ -152,7 +174,7 @@
   </header>
 
   {#if frame === "flow" && content}
-    <FlowFrame {content} />
+    <FlowFrame {content} darkMode={isDark} />
   {:else if Sheet}
     <!-- Print-friendly layout: the SAME built _pages sheet the book uses, scaled
          to fit width. Horizontal scroll guards narrow viewports. -->

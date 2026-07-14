@@ -30,6 +30,11 @@
     showPositions = false,
     showReversals = false,
     showNonRadialPoints = false,
+    /** Opt-in theme override for the reflow flow view. "dark" renders the
+     *  pictograph dark (dark fill + light grid/props) instead of the print
+     *  ink-on-white that getGuidePrintMode() otherwise forces; "light" keeps the
+     *  white print look. Undefined = existing behavior (no other caller passes it). */
+    forceTheme,
   }: {
     data?: PictographData | null;
     pngFallback?: string;
@@ -48,6 +53,7 @@
     showPositions?: boolean;
     showReversals?: boolean;
     showNonRadialPoints?: boolean;
+    forceTheme?: "light" | "dark";
   } = $props();
 
   let prepared: PreparedPictographData | null = $state(null);
@@ -59,7 +65,10 @@
   // and on a light (ink-on-white) background instead of the default dark fill.
   const guidePrint = getGuidePrintMode();
   const eagerEffective = eager || guidePrint;
-  const printModeEffective = printMode || guidePrint;
+  // forceTheme="dark" wins over the print/guide-print white background so the
+  // reflow flow view can render dark pictographs on the dark editorial theme.
+  const printModeEffective = $derived(forceTheme === "dark" ? false : printMode || guidePrint);
+  const darkModeEffective = $derived(forceTheme === "dark" ? true : darkMode);
 
   // Machine-readable notation for crawlers/AT — computed synchronously from raw
   // `data`, so it lands in the SSR/prerendered HTML even though the visual SVG
@@ -96,7 +105,7 @@
     let cancelled = false;
     pictographPreparer
       .prepareSingle(data, {
-        themeMode: "light",
+        themeMode: forceTheme === "dark" ? "dark" : "light",
         ...(propType ? { bluePropType: propType, redPropType: propType } : {}),
       })
       .then((result) => {
@@ -143,7 +152,7 @@
         pictograph={prepared}
         {showGrid}
         printMode={printModeEffective}
-        {darkMode}
+        darkMode={darkModeEffective}
         {showTKA}
         {showReversals}
         {showTnD}
