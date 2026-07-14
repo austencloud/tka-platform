@@ -28,6 +28,10 @@ import {
   PI,
   TWO_PI,
 } from "$lib/shared/foundation/domain/math-constants";
+import {
+  orientationToStaffAngle,
+  RADIAL_CYCLE,
+} from "$lib/shared/render/core/calculations/orientation-angle";
 
 export function normalizeAnglePositive(angle: number): number {
   const norm = angle % TWO_PI;
@@ -47,19 +51,17 @@ export function mapOrientationToAngle(
   ori: Orientation,
   centerPathAngle: number
 ): number {
-  if (ori === Orientation.IN) {
-    return normalizeAnglePositive(centerPathAngle + PI);
+  // Radial (cardinal + interradial): canonical 8-point map. Cardinals are
+  // byte-identical to the prior hard-coded branches; interradials, which
+  // previously fell through to the counter branch, are now correct.
+  if ((RADIAL_CYCLE as readonly string[]).includes(ori as string)) {
+    return orientationToStaffAngle(
+      ori as unknown as (typeof RADIAL_CYCLE)[number],
+      centerPathAngle
+    );
   }
-
-  if (ori === Orientation.OUT) {
-    return normalizeAnglePositive(centerPathAngle);
-  }
-
-  if (ori === Orientation.CLOCK) {
-    return normalizeAnglePositive(centerPathAngle + HALF_PI);
-  }
-
-  // Must be COUNTER (exhaustive check)
+  // Non-radial (center/"spun") orientations: preserve the prior behavior exactly
+  // (this pass does not change center handling — out of scope).
   return normalizeAnglePositive(centerPathAngle - HALF_PI);
 }
 
