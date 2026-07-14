@@ -27,13 +27,20 @@ import { MotionType, MotionColor, RotationDirection } from "$lib/shared/pictogra
 
 const CW = RotationDirection.CLOCKWISE;
 
-/** Which hand owns the high slot for this pictograph (PADS: pro > anti; else blue). */
+// PADS priority: Pro > Anti > Dash > Static (lower index = higher slot).
+const PADS: MotionType[] = [MotionType.PRO, MotionType.ANTI, MotionType.DASH, MotionType.STATIC];
+
+/** Which hand owns the high slot for this pictograph (PADS; else left/blue). */
 function highSlotColor(base: PictographData): MotionColor {
   const b = base.motions?.blue?.motionType;
   const r = base.motions?.red?.motionType;
-  if (b && r && b !== r) return b === MotionType.PRO ? MotionColor.BLUE : MotionColor.RED;
+  if (b && r && b !== r) {
+    return PADS.indexOf(b) < PADS.indexOf(r) ? MotionColor.BLUE : MotionColor.RED;
+  }
   return MotionColor.BLUE; // matching-type: left/blue high (S/T leader exception — see header)
 }
+
+const otherColor = (c: MotionColor) => (c === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE);
 
 export type Slot = "high" | "low";
 
@@ -90,5 +97,37 @@ export function codexRelData(
   const redTurns = highIsBlue ? lowTurns : highTurns;
   const blueDir = highIsBlue ? highDir : lowDir;
   const redDir = highIsBlue ? lowDir : highDir;
+  return applyPendingTurnsToOption(base, blueTurns, redTurns, blueDir, redDir);
+}
+
+export type OpenClose = "open" | "close";
+
+/**
+ * Open/Close-aware codex cell for Lambda (Λ, Type 4 dash+static), Lambda-Dash
+ * (Λ-, Type 5 dual-dash) and Gamma (Γ, Type 6 static). These letters use
+ * opening/closing instead of same/opp: the turning hand's spin direction resolves
+ * its trajectory toward alpha (open) or beta (close). We set the turning hand's
+ * rotation direction to encode it — CW = open, CCW = close by convention.
+ *
+ * Accuracy-pass flag: the open↔CW / close↔CCW mapping is a convention here; the
+ * true assignment is geometry-dependent (PropRotationStateTracker lookup tables).
+ * Confirm each Λ/Γ cell against the original artboard.
+ */
+export function codexOpenCloseData(
+  letter: string,
+  highTurns: number,
+  lowTurns: number,
+  oc: OpenClose
+): PictographData | null {
+  const base = codexData(`${letter}-0`);
+  if (!base) return null;
+  const high = highSlotColor(base);
+  const highIsBlue = high === MotionColor.BLUE;
+  const turnColor = highTurns > 0 ? high : otherColor(high);
+  const dir = oc === "open" ? CW : RotationDirection.COUNTER_CLOCKWISE;
+  const blueTurns = highIsBlue ? highTurns : lowTurns;
+  const redTurns = highIsBlue ? lowTurns : highTurns;
+  const blueDir = turnColor === MotionColor.BLUE ? dir : CW;
+  const redDir = turnColor === MotionColor.RED ? dir : CW;
   return applyPendingTurnsToOption(base, blueTurns, redTurns, blueDir, redDir);
 }
