@@ -13,10 +13,21 @@ import {
 // A spread across motion families: Type 1 (pro/anti), Type 4 (dash), Type 6 (static).
 const LETTERS = [Letter.A, Letter.B, Letter.G, Letter.J, Letter.PHI, Letter.ALPHA];
 const TURN_VALUES = [0, 0.5, 1, 1.5, 2, 2.5, 3];
+// Cover cardinal (in/out) AND interradial (clockIn/counterOut) starts, so the
+// invariant genuinely exercises Task 3's interradial mapOrientationToAngle fix
+// end-to-end through the engine (real CSV rows only ever carry startOrientation
+// "in", so without this the interradial path is never round-tripped here).
+const START_ORIENTATIONS = [
+  Orientation.IN,
+  Orientation.OUT,
+  Orientation.CLOCK_IN,
+  Orientation.COUNTER_OUT,
+];
 
 describe("calculateOrientationAt(·, 1) === calculateEndOrientation (dataset invariant)", () => {
   it("matches the shipped algebra at t=1 for real motions across turn values", async () => {
     const mismatches: string[] = [];
+    let comparisons = 0;
     for (const letter of LETTERS) {
       const variants = await getAllLetterVariants(letter);
       for (const picto of variants) {
@@ -24,34 +35,38 @@ describe("calculateOrientationAt(·, 1) === calculateEndOrientation (dataset inv
           if (!hand) continue;
           if ((hand.startOrientation as string).startsWith("center")) continue; // deferred
           for (const turns of TURN_VALUES) {
-            const endOrientation = calculateEndOrientation({
-              motionType: hand.motionType,
-              turns,
-              rotationDirection: hand.rotationDirection,
-              startLocation: hand.startLocation,
-              endLocation: hand.endLocation,
-              startOrientation: hand.startOrientation,
-            });
-            const input = {
-              motionType: hand.motionType as MotionType,
-              rotationDirection: hand.rotationDirection as RotationDirection,
-              startLocation: hand.startLocation,
-              endLocation: hand.endLocation,
-              startOrientation: hand.startOrientation as Orientation,
-              endOrientation,
-              turns,
-            };
-            const actual = calculateOrientationAt(input, 1, MotionColor.RED);
-            if (actual !== endOrientation) {
-              mismatches.push(
-                `${letter} ${hand.motionType} ${hand.startLocation}->${hand.endLocation} ` +
-                  `turns=${turns} start=${hand.startOrientation}: engine@1=${actual} algebra=${endOrientation}`
-              );
+            for (const startOri of START_ORIENTATIONS) {
+              const endOrientation = calculateEndOrientation({
+                motionType: hand.motionType,
+                turns,
+                rotationDirection: hand.rotationDirection,
+                startLocation: hand.startLocation,
+                endLocation: hand.endLocation,
+                startOrientation: startOri,
+              });
+              const input = {
+                motionType: hand.motionType as MotionType,
+                rotationDirection: hand.rotationDirection as RotationDirection,
+                startLocation: hand.startLocation,
+                endLocation: hand.endLocation,
+                startOrientation: startOri,
+                endOrientation,
+                turns,
+              };
+              const actual = calculateOrientationAt(input, 1, MotionColor.RED);
+              comparisons++;
+              if (actual !== endOrientation) {
+                mismatches.push(
+                  `${letter} ${hand.motionType} ${hand.startLocation}->${hand.endLocation} ` +
+                    `turns=${turns} start=${startOri}: engine@1=${actual} algebra=${endOrientation}`
+                );
+              }
             }
           }
         }
       }
     }
+    expect(comparisons).toBeGreaterThan(500);
     expect(mismatches, `\n${mismatches.slice(0, 40).join("\n")}`).toEqual([]);
   }, 30000);
 });
