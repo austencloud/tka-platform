@@ -320,14 +320,44 @@
 </svelte:head>
 
 <section class="hero-carousel" aria-label="TKA hero introduction">
-  <!-- Title block — header now shows the compact "TKA", so the hero carries the
-       full name (Fraunces) as the centrepiece, with the tagline beneath. -->
-  <div class="title-block">
-    <h1 class="hero-title">The Kinetic Alphabet</h1>
-    <p class="hero-tagline">Notation for flow arts.</p>
+  <!-- Left column on wide screens / stacked top on mobile+laptop. Holds the
+       name, tagline, primary CTA and the wide-only quick links. Below 1200px
+       .hero-copy is display:contents, so these behave as direct flex children of
+       the hero exactly as before; `order` keeps the mobile stack title→video→CTA.
+       At ≥1200px .hero-copy becomes the real left column (see the wide query). -->
+  <div class="hero-copy">
+    <!-- Title block — header shows the compact "TKA", so the hero carries the
+         full name (Fraunces) as the centrepiece, with the tagline beneath. -->
+    <div class="title-block">
+      <h1 class="hero-title">The Kinetic Alphabet</h1>
+      <p class="hero-tagline">Notation for flow arts.</p>
+    </div>
+
+    <!-- Primary CTA — pinned to the foot of the stack on mobile via order. -->
+    <nav class="hero-links" aria-label="Get started">
+      <a class="hero-link primary" href="/create" data-sveltekit-reload>
+        <i class="fas fa-rocket" aria-hidden="true"></i>
+        <span>Open Flow Arts Composer</span>
+      </a>
+    </nav>
+
+    <!-- Secondary paths — only rendered in the ≥1200px split (display:none
+         below), so the mobile single-CTA row is untouched. Icons match the
+         SiteHeader nav so the labels read consistently. -->
+    <nav class="hero-quicklinks" aria-label="Explore">
+      <a class="hero-link hero-chip" href="/guide">
+        <i class="fas fa-book-open" aria-hidden="true"></i><span>Guide</span>
+      </a>
+      <a class="hero-link hero-chip" href="/notation">
+        <i class="fas fa-language" aria-hidden="true"></i><span>Notation</span>
+      </a>
+      <a class="hero-link hero-chip" href="/shop">
+        <i class="fas fa-bag-shopping" aria-hidden="true"></i><span>Shop</span>
+      </a>
+    </nav>
   </div>
 
-  <!-- Video + CTA row -->
+  <!-- Video column -->
   <div class="hero-body">
 
   <!-- Video + dots/credit column -->
@@ -434,15 +464,6 @@
 
   </div><!-- /.carousel-column -->
   </div><!-- /.hero-body -->
-
-  <!-- Hero quick links — direct child of the hero so mobile can pin them to the
-       very bottom (title top, video as the hero, links at the foot). -->
-  <nav class="hero-links" aria-label="Get started">
-    <a class="hero-link primary" href="/create" data-sveltekit-reload>
-      <i class="fas fa-rocket" aria-hidden="true"></i>
-      <span>Open Flow Arts Composer</span>
-    </a>
-  </nav>
 </section>
 
 <style>
@@ -475,6 +496,20 @@
     color: #fff;
     margin: 0;
   }
+
+  /* ── Hero copy wrapper ───────────────────────────────────────────────────────
+     Below the split (<1200px) the wrapper dissolves (display:contents), so the
+     name, CTA and quick links stay direct flex children of .hero-carousel and
+     `order` reproduces the original mobile stack: title → video → CTA. At
+     ≥1200px it becomes the real left column (see the wide media query). */
+  .hero-copy {
+    display: contents;
+  }
+
+  .title-block { order: 1; }
+  .hero-body { order: 2; }
+  .hero-links { order: 3; }
+  .hero-quicklinks { order: 4; }
 
   /* ── Title block ────────────────────────────────────────────────────────────── */
 
@@ -823,6 +858,21 @@
     color: #ff8fbf;
   }
 
+  /* ── Hero quick links (wide-only secondary paths) ───────────────────────────── */
+
+  /* Hidden until the split; the ≥1200px query flips it to a flex row. */
+  .hero-quicklinks {
+    display: none;
+  }
+
+  /* Slightly denser than the primary CTA to read as secondary, but padding is
+     tuned to keep the ~44px touch-target floor. Reuses the .hero-link primitive
+     for all hover/focus/transition behaviour. */
+  .hero-chip {
+    padding: 12px 18px;
+    font-size: 0.9rem;
+  }
+
   /* ── Entrance animation ─────────────────────────────────────────────────────── */
 
   @keyframes fade-up {
@@ -833,6 +883,74 @@
     to {
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  /* ── Wide screens: two-column split hero ────────────────────────────────────
+     ≥1200px only. The lonely centred column becomes [copy | video]: the name,
+     tagline, CTA and quick links anchor the left; the portrait video grows into
+     a real hero on the right. Bounded to 1240px and centred so a 4K monitor
+     reads as one balanced composition instead of a tiny island in a sea of
+     space. Nothing in here can touch the <1200px layout. */
+  @media (min-width: 1200px) {
+    .hero-carousel {
+      display: grid;
+      grid-template-columns: minmax(300px, 440px) auto;
+      align-content: center;
+      justify-content: center;
+      column-gap: clamp(48px, 6vw, 96px);
+      max-width: 1240px;
+      margin-inline: auto;
+      text-align: left;
+    }
+
+    /* Wrapper becomes the real left column here. */
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      gap: clamp(18px, 2vw, 30px);
+      grid-column: 1;
+      align-self: center;
+      min-width: 0;
+    }
+
+    .title-block {
+      margin-bottom: 0;
+      max-width: none;
+    }
+
+    .hero-title {
+      /* Anchors the left column now, so a touch larger than the centred size. */
+      font-size: clamp(3rem, 3.2vw, 4.2rem);
+    }
+
+    .hero-links {
+      margin-top: 0;
+      justify-content: flex-start;
+    }
+
+    .hero-quicklinks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: flex-start;
+    }
+
+    .hero-body {
+      grid-column: 2;
+      align-self: center;
+      max-width: none;
+      width: auto;
+    }
+
+    .carousel-stage {
+      /* Height-driven on wide so the portrait video is a proper hero; width
+         derives from the 4/5 aspect ratio (height * 0.8). */
+      width: auto;
+      height: min(62vh, 640px);
+      max-height: none;
     }
   }
 
