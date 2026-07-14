@@ -1183,3 +1183,28 @@ git commit -m "docs(guide): reflow rollout template + hand-positions marked done
 **Type consistency:** `GuideBlock`/`PtHint`/`SheetGrid` defined in Task 1 and used verbatim in Tasks 2/3/5/6. `GUIDE_CONTENT` + `hasReflowContent` defined in Task 6, used in Tasks 7/8. `guideFramePrefs`/`setGuideFrame`/`GuideFrame` defined in Task 7, used in the same task's GuideReader edits. `handPositionsContent` defined Task 2, consumed Tasks 4/6. Frame prop values `"sheet"|"flow"` consistent across Tasks 7 (GuideDocument, pref store) and the reader.
 
 **Note (§9.4 open question):** `hand-positions` migrates without any `printOnly` block — it decomposes cleanly into prose/heading/glyphImage/rule/pictographGroup. The `printOnly` escape hatch is defined now (Task 1) and first exercised by `hm-type34` in the Task 11 rollout.
+
+---
+
+## Rollout Tracker (per-page migration through the same machine)
+
+The machine (Tasks 1–10) is shipped. Each remaining page is: (1) create
+`_data/content/<slug>.content.ts` lifting the page's verbatim `editText`/`RUNS`
+prose + pictograph data + pt hints; (2) register in `guide-content.ts`; (3) rewire
+`_pages/<Page>.svelte` to `<SheetFrame content=…/>`; (4) pixel-verify the sheet;
+(5) add `_data/content/<slug>.content.test.ts`; (6) create
+`guide/level-1/<slug>/+page.{svelte,ts}` (clone `hand-positions`); (7) add the slug
+to the sitemap + hub; (8) run the reflow + content tests.
+
+- [x] hand-positions — SHIPPED 2026-07-14 (machine proof; build exit 0, prerender verified)
+- [ ] the-grid
+- [ ] hand-motions
+- [ ] hm-type1
+- [ ] hm-gamma
+- [ ] hm-type2
+- [ ] hm-type34   (bespoke: flattened raster + measured vector row → `printOnly` blocks)
+- [ ] hm-type56   (bespoke, self-titled)
+- [ ] staff-positions
+- [ ] staff-motions
+- [ ] negative-space
+- [ ] (then clusters 1.1 + 1.2)
