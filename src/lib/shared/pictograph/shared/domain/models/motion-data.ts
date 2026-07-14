@@ -65,6 +65,13 @@ export interface MotionData extends Motion {
   // Per-step path shape override for animation interpolation.
   // Absent/undefined = use global pathShape setting.
   readonly pathShape?: "arc" | "linear" | "concave";
+
+  // Presence marks this motion as a PARTIAL (half/quarter) segment of a full
+  // motion — its end state (endLocation/endOrientation) IS the state at fraction
+  // t1. Drives the half-arrow pipeline branches (asset, location, rotation).
+  // { t0: 0, t1: 0.5 } = first half; { t0: 0.5, t1: 1 } = second half. Absent on
+  // every full-motion arrow, so all existing behavior is unchanged.
+  readonly segment?: { t0: number; t1: number };
 }
 
 /**
@@ -122,6 +129,7 @@ export function createMotionData(data: Partial<MotionData> = {}): MotionData {
     skewDir: data.skewDir ?? null,
     plane: data.plane ?? undefined,
     pathShape: data.pathShape ?? undefined,
+    segment: data.segment ?? undefined,
   };
 }
 
