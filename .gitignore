@@ -394,3 +394,6 @@ scripts/migrations/fixtures/data-parity-baseline.json
 # Render-parity wave gate — local baseline + drift artifacts (regenerate per wave)
 tests/render-parity/.baseline/
 tests/render-parity/.artifacts/
+
+# worktree-automerge opt-out sentinel — a per-worktree local marker, never committed
+.automerge-skip
