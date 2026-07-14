@@ -20,10 +20,16 @@ and the artboard exports under `D:\_THE KINETIC ALPHABET\_GUIDE\artboard-exports
    can't reflow cleanly, add a `.guide-page--landscape` print variant for that page only.
 3. **Back matter skipped** (p35 Let's Collaborate, p36 Taco Tuesday, p37 back cover) —
    same parking as Level 1's back matter. Revive together when Austen wants back matter.
-4. **Reader integration deferred.** GuideReader is level-1-manifest-bound (hosted in the
-   Learn tab). Level 2 ships print/book parity first; a reader level-switcher is its own
-   later phase. Legacy `_sections/ch20|ch21` + `/turns` + `/double-turns` routes retire
-   only at reader parity (guide single-source policy).
+4. **Reader integration — level switcher SHIPPED 2026-07-14.** GuideReader was
+   level-1-manifest-bound; it now takes a `GuideReaderConfig` seam
+   (`guide-reader-config.ts`) and the Learn > Guide tab has a Level 1 | Level 2
+   `SegmentedControl` — both levels render through the SAME reader (nav +
+   fit-to-page sheets + click-to-animate companion). Level 2 gets its own nav
+   builder (`guide-reader-nav-2.ts`); the level-1-only deep-link/QR-scan/codex
+   machinery no-ops for Level 2, and it coexists with the reflow sheet/flow
+   toggle (Level-2 pages aren't reflowable → toggle auto-hides). Still parked:
+   legacy `_sections/ch20|ch21` + `/turns` + `/double-turns` route retirement
+   (guide single-source policy) — remove at full reader parity.
 
 ## Page recipe (inherited from Level 1, plus turns)
 
@@ -215,8 +221,8 @@ matter + reader integration stay parked (see Parked).
 
 ### Parked
 - Back matter p35–37 (Let's Collaborate, Taco Tuesday, back cover) — with Level 1's.
-- Reader (Learn tab) level-2 integration + legacy `_sections`/`turns`/`double-turns`
-  retirement — after print/book parity.
+- Legacy `_sections`/`turns`/`double-turns` route retirement — after full reader parity.
+  (Reader Learn-tab level-2 integration itself SHIPPED 2026-07-14 — see Decision 4.)
 
 ## Verification gates (per page + per phase)
 
