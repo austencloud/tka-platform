@@ -62,11 +62,11 @@ export const LEVEL2_BODY_PAGES: Level2PageEntry[] = [
   { id: "codex-2-0-t1", title: "Codex: 2|0 Type 1", level: 0, group: "2.1", selfTitled: true }, // old p25 (landscape → portrait)
   { id: "codex-0-2-t23", title: "Codex: 0/2 Type 2/3", level: 1, group: "2.1", selfTitled: true }, // old p26 (landscape → portrait)
   { id: "codex-2-0-t23-456", title: "Codex: 2/0 Type 2/3 + 4/5/6", level: 1, group: "2.1", selfTitled: true }, // old p27 (landscape → portrait)
-  { id: "codex-2-1-t1", title: "Codex: 2|1 Type 1", level: 1, group: "2.1" }, // old p28 (landscape → portrait)
+  { id: "codex-2-1-t1", title: "Codex: 2|1 Type 1", level: 1, group: "2.1", selfTitled: true }, // old p28 (landscape → portrait)
   { id: "codex-1-2-t23", title: "Codex: 1/2 Type 2/3", level: 1, group: "2.1", selfTitled: true }, // old p29 (landscape → portrait)
   { id: "codex-2-1-t23", title: "Codex: 2/1 Type 2/3", level: 1, group: "2.1", selfTitled: true }, // old p30 (landscape → portrait)
   { id: "codex-21-12-t456", title: "Codex: 2/1 + 1/2 Type 4/5/6", level: 1, group: "2.1", selfTitled: true }, // old p31 (landscape → portrait)
-  { id: "codex-2-2-t1", title: "Codex: 2|2 Type 1", level: 1, group: "2.1" }, // old p32 (portrait template)
+  { id: "codex-2-2-t1", title: "Codex: 2|2 Type 1", level: 1, group: "2.1", selfTitled: true }, // old p32 (portrait template)
   { id: "codex-2-2-t23", title: "Codex: 2/2 Type 2/3", level: 1, group: "2.1", selfTitled: true }, // old p33 (landscape → portrait)
   { id: "codex-2-2-t456", title: "Codex: 2|2 Type 4/5/6", level: 1, group: "2.1", selfTitled: true }, // old p34 (portrait template)
 ];
