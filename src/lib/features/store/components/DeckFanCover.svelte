@@ -155,6 +155,13 @@
     shown.length && boxW ? Math.round(Math.min(maxW, fitW(shown.length))) : cardWidth
   );
 
+  // Live preview renders target the ON-SCREEN size (largest displayed width ×
+  // device pixel ratio), not the 822×1122 print canvas — a fan card shows at
+  // ~120–340px, so print res was rendering ~5–40× the pixels it displays. The
+  // renderer quantizes this to 128px buckets, so a resize rarely re-renders.
+  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+  const renderWidth = $derived(Math.ceil(maxW * dpr));
+
   const cardKey = (c: CoverCard) =>
     `${c.sequence?.id ?? c.sequence?.word ?? JSON.stringify(c).slice(0, 40)}|${propType}|${face}`;
 
@@ -197,7 +204,7 @@
       const render =
         face === "back"
           ? renderCoverBack(c, { propType: prop })
-          : renderCoverFront(c, { deckId, deckName, propType: prop });
+          : renderCoverFront(c, { deckId, deckName, propType: prop, maxWidthPx: renderWidth });
       render
         .then((url) => {
           urls[k] = url;

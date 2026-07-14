@@ -107,6 +107,13 @@ export interface PrintRenderOptions {
   deckId?: string;
   /** Deck name for QR attribution tracking */
   deckName?: string;
+  /**
+   * Force the QR cell on/off, overriding the canonical locked profile. The
+   * shop's live PREVIEW fan sets this false: a preview card is never scanned,
+   * and the QR pre-render is a per-card main-thread cost. Print/bake paths
+   * leave it unset so the real card keeps its scannable code.
+   */
+  showQRCode?: boolean;
 }
 
 export interface CardPair {
