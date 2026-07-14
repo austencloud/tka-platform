@@ -41,17 +41,32 @@ fast-iteration (check:watch, not per-edit builds).
   `/guide/level-1/hand-positions` HTML with `<h1>`+prose+pictograph aria-labels;
   `/print` + `/book` still build; no SSR crash. Commit Phase A (explicit pathspec).
 
-## Phase B — Content migration, pictographs INCLUDED (parallel subagents)
+## Phase B — Content migration, pictographs INCLUDED (parallel subagents) ✅ DONE 2026-07-14
 
-- [ ] B1. Batch the ~33 unmigrated body slugs. Each subagent: for its pages, build
-  `content[]` = verbatim prose (from `_pages` `editText`) + pictograph/
-  pictographGroup blocks whose data is derived from the SAME domain helper the
-  `_pages` component uses (read the component; replicate its derivation; DO NOT
-  fabricate StepData). Register nothing centrally (I do GUIDE_CONTENT).
-- [ ] B2. Register all migrated slugs in `GUIDE_CONTENT` (`guide-content.ts`).
-- [ ] B3. VERIFY B: prerender a sample of each batch; assert non-empty prose +
-  ≥1 pictograph aria-label. Flag any page whose pictograph data can't be derived
-  cleanly (hold from sitemap, note in ledger).
+- [x] B0. FlowFrame + block model extended: `PictographRender` render hint
+  (propType/showTKA/showPositions/showElemental/showReversals/showNonRadialPoints,
+  defaults = prior HAND behavior) on pictograph/pictographGroup blocks; new
+  `gridFigure` block (GridSvg diamond/box/merged, points-only). Fixes the HAND-only
+  hardcode so STAFF letter/word/LOOP pages render staves.
+- [x] B1. 31 body slugs migrated (2 by me — words + the-grid — as reference
+  patterns; 29 by 7 parallel Sonnet subagents batched by family). Each is a
+  FAITHFUL COPY of its `_pages` construction (same enums/locations/letters/motions),
+  reader-only wiring dropped, strips resolved statically (`[start, ...bakeReversals(steps)]`
+  where the page's PICTO_FLAGS.showReversals is true, else `[start, ...steps]`),
+  interleaved with the existing verbatim prose.
+- [x] B2. All 32 reflow slugs registered in `GUIDE_CONTENT`. codex / codex-2
+  deliberately NOT registered — wide reference tables whose sheet-fallback already
+  crawls 30+ describePictograph labels each; a 1-column mobile reflow of a table
+  is strictly worse.
+- [x] B3. VERIFY B: `npm run build:fast` exit 0, ZERO guide prerender 500s. Every
+  one of the 31 migrated pages prerenders with pictograph aria-labels (range 5–35;
+  letterless pages emit "Hand pictograph. …" descriptions). Contract test 13/13.
+  Visual spot-check (Chrome DevTools, Austen's explicit permission): words, the-grid,
+  permutations (LOOP+reversal dots), hm-type1 (HAND float strips) all render correct
+  TKA pictographs. Honest carve-outs flagged by subagents: lt3-dash-letters and
+  staff-motions dropped their bespoke sheet-only "halfway-frame" staff artwork
+  (raw SVG paths at hand-picked poses — not derivable pictograph data); kept the
+  real combined pictographs.
 
 ## Phase C — SEO + tests
 
@@ -86,11 +101,12 @@ fast-iteration (check:watch, not per-edit builds).
   full flow (16 pictograph aria-labels + prose + schema); other 33 = crawlable sheet
   fallback (prose + h1 + canonical, but no pictograph aria-labels, mobile-hostile).
 
+**PHASE B COMPLETE (2026-07-14, second overnight run):** all 31 reflowable pages now
+render full flow pictographs (Austen granted visual-verify permission + "finish all 33").
+FlowFrame extended (render hints + gridFigure). codex/codex-2 stay sheet-only (rich
+already). Build/check green, visually verified. See Phase B section above.
+
 **DEFERRED — needs Austen's eyes (NOT punts, verification blockers):**
-- Phase B flow pictograph migration (33 pages): bespoke per-page copy of each _pages'
-  pictograph construction → `pictographGroup` items → register in GUIDE_CONTENT. TKA
-  visual correctness needs his verification; `the-grid` needs a NEW grid-diagram
-  FlowFrame block type. Recipe: scratchpad `phase-b-recipe.md`. Seeds committed.
 - Rebase `GUIDE_READER_BASE` / redirect `/learn/guide` / retire in-app scroller:
   UX changes to the LearnTab reader; need his visual check. `/learn/guide` is
   ssr=false so no duplicate-content harm leaving it.
