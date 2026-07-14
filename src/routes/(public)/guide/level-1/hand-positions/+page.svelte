@@ -31,6 +31,18 @@
 <main class="guide-flow-route">
   <h1>Flow Arts Positions: Alpha, Beta, Gamma</h1>
   <FlowFrame {content} />
+
+  <!-- Funnel + internal-link graph: turn a search landing into an app visit, and
+       give crawlers edges into the pillar/tool pages. The primary CTA deep-links
+       into the interactive reader on THIS page; the rest are crawlable siblings. -->
+  <footer class="flow-cta">
+    <a class="cta-primary" href="/learn/guide/hand-positions">Open the interactive guide</a>
+    <nav class="cta-links" aria-label="Keep exploring">
+      <a href="/notation">Where to start</a>
+      <a href="/composer">Build a sequence</a>
+      <a href="/guide">All guides</a>
+    </nav>
+  </footer>
 </main>
 
 <style>
@@ -56,6 +68,58 @@
     font-weight: 700;
     line-height: 1.1;
     letter-spacing: -0.01em;
+  }
+
+  /* Funnel + related links. Primary CTA looks like a button (clickables-look-like-
+     buttons); the siblings are outline pills, 44px min target. */
+  .flow-cta {
+    max-width: 44rem;
+    margin: 1rem auto 0;
+    padding: 2rem 1.5rem 4rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    border-top: 1px solid color-mix(in oklab, var(--ink, #1a1a1a) 15%, transparent);
+  }
+  .cta-primary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0.75rem 1.75rem;
+    border-radius: 999px;
+    background: #e8590c;
+    color: #fff;
+    font-weight: 650;
+    font-size: 1.05rem;
+    text-decoration: none;
+    box-shadow: 0 4px 16px rgba(232, 89, 12, 0.3);
+    transition: transform 120ms ease, box-shadow 120ms ease;
+  }
+  .cta-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(232, 89, 12, 0.4);
+  }
+  .cta-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+  }
+  .cta-links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0.5rem 1.1rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in oklab, var(--ink, #1a1a1a) 30%, transparent);
+    color: var(--ink, #1a1a1a);
+    font-size: 0.98rem;
+    text-decoration: none;
+    transition: background 120ms ease;
+  }
+  .cta-links a:hover {
+    background: color-mix(in oklab, var(--ink, #1a1a1a) 8%, transparent);
   }
 
   @media (prefers-color-scheme: dark) {

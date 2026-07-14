@@ -79,6 +79,13 @@ describe("crawl route", () => {
       "prerender = true"
     );
   });
+  it("funnels into the app + links to pillar/tool pages (internal-link graph)", () => {
+    const src = read("src/routes/(public)/guide/level-1/hand-positions/+page.svelte");
+    expect(src).toContain('href="/learn/guide/hand-positions"'); // into the interactive reader
+    expect(src).toContain('href="/notation"');
+    expect(src).toContain('href="/composer"');
+    expect(src).toContain('href="/guide"');
+  });
 });
 
 describe("sitemap", () => {
