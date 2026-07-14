@@ -17,6 +17,16 @@
   export const DEAL_MS = 620;
   export const DEAL_STAGGER = 70;
   export const GATHER_MS = 240;
+
+  /* Resolved cover object URLs, shared across every DeckFanCover instance for
+     the page session. The configurator re-deals a fan by REMOUNTING this
+     component (its Crossfade is a {#key} block), which drops per-instance
+     state; without this shared map every re-deal fell back to shimmer and
+     re-awaited the render promise. Keyed identically to the instance map:
+     (card id/word | prop | face). The service already caches the underlying
+     render promises — this caches the resolved URL so a remount paints on the
+     first frame with zero await. */
+  const resolvedCovers = new Map<string, string>();
 </script>
 
 <script lang="ts">
@@ -145,22 +155,43 @@
     shown.length && boxW ? Math.round(Math.min(maxW, fitW(shown.length))) : cardWidth
   );
 
-  // key -> object URL, filled as the print renders land. Keyed per (card,
-  // prop) so a prop swap keeps earlier props warm for an instant swap back.
-  // Session-cached in the service, so revisits paint instantly.
-  let urls = $state<Record<string, string>>({});
   const cardKey = (c: CoverCard) =>
     `${c.sequence?.id ?? c.sequence?.word ?? JSON.stringify(c).slice(0, 40)}|${propType}|${face}`;
+
+  // key -> object URL, filled as the print renders land. Keyed per (card,
+  // prop) so a prop swap keeps earlier props warm for an instant swap back.
+  // SEEDED from the module-level resolved cache so a remount (the
+  // configurator re-deals by remounting this component through its Crossfade)
+  // paints already-rendered covers on the FIRST frame instead of flashing
+  // shimmer and re-awaiting the render promise. `resolvedCovers` lives outside
+  // the component so its entries survive every remount for the page session.
+  let urls = $state<Record<string, string>>(seedFromCache());
+  function seedFromCache(): Record<string, string> {
+    const out: Record<string, string> = {};
+    for (const c of cards) {
+      const hit = resolvedCovers.get(cardKey(c));
+      if (hit) out[cardKey(c)] = hit;
+    }
+    return out;
+  }
 
   $effect(() => {
     const prop = propType;
     for (const c of shown) {
       const k = cardKey(c);
       if (urls[k]) continue;
+      // A cover this fan hasn't seen but a prior mount rendered — paint it
+      // synchronously (no shimmer) from the shared cache.
+      const cached = resolvedCovers.get(k);
+      if (cached) {
+        urls[k] = cached;
+        continue;
+      }
       // Baked covers load straight from Storage — no print pipeline. Fronts only.
       const baked = face === "front" ? bakedCoverUrl(c, prop) : undefined;
       if (baked) {
         urls[k] = baked;
+        resolvedCovers.set(k, baked);
         continue;
       }
       const render =
@@ -170,6 +201,7 @@
       render
         .then((url) => {
           urls[k] = url;
+          resolvedCovers.set(k, url);
         })
         .catch((e) => console.error("[DeckFanCover] cover render failed:", e));
     }

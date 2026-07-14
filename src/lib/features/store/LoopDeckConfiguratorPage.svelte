@@ -42,8 +42,8 @@
   import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
   import { scale, slide, fly } from "svelte/transition";
   import { quintOut } from "svelte/easing";
-  import { prewarmCovers } from "./services/cover-front-renderer";
-  import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
+  import { prewarmCovers, renderCoverFront } from "./services/cover-front-renderer";
+  import { DEFAULT_SHOP_PROP, bakedCoverUrl } from "./domain/shop-prop-options";
   import ShopPropPicker from "./components/ShopPropPicker.svelte";
   import { loopPreviewCards } from "./services/loop-preview-cards";
   import type { CoverCard } from "./domain/models/product";
@@ -408,6 +408,43 @@
   $effect(() => {
     const all = flavorSkus.flatMap((p) => p.coverCards ?? []);
     if (all.length) prewarmCovers(all, propType);
+  });
+
+  // Warm the OTHER packs' fans on idle so switching difficulty is instant.
+  // Only the active pack renders on mount; without this, the first click on
+  // each difficulty paid a cold 6-card render through the 3-lane throttle.
+  // The rendered URLs land in the service + DeckFanCover module caches, so the
+  // switch then re-deals over already-resolved covers (no shimmer). Idle-
+  // scheduled so it never fights the active fan's first paint; re-runs per prop
+  // (a prop switch invalidates every render). Bounded: 3 packs × 6 slots.
+  const warmedProps = new Set<PropType>();
+  $effect(() => {
+    const prop = propType;
+    if (flavorSkus.length === 0 || warmedProps.has(prop)) return;
+    warmedProps.add(prop);
+    const kick = () => {
+      for (const p of LOOP_PACKS) {
+        loopPreviewCards({
+          pack: p.id,
+          level,
+          length,
+          flavor,
+          maxTurns: turnIntensity,
+          propType: prop,
+          excluded: new Set<LoopFlavor>(),
+          skuByFlavor,
+        })
+          .then((cards) => {
+            cards?.forEach((c) => {
+              if (!bakedCoverUrl(c, prop)) void renderCoverFront(c, { propType: prop });
+            });
+          })
+          .catch(() => {});
+      }
+    };
+    if (typeof requestIdleCallback !== "undefined")
+      requestIdleCallback(kick, { timeout: 2500 });
+    else setTimeout(kick, 500);
   });
 
   // ── mobile checkout dock (same pattern as the Deck Architect): while the
