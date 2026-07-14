@@ -23,7 +23,11 @@
   export type CodexCell = {
     data: PictographData | null;
     letter: string;
-    slot: "high" | "low" | "both";
+    // Turn-digit display: explicit `sup` (red, high slot) / `sub` (blue, low slot)
+    // take precedence; `slot` is the 1-turn shorthand kept for the Phase-2 pages.
+    slot?: "high" | "low" | "both";
+    sup?: string;
+    sub?: string;
     dot?: "same" | "opp";
   };
 
@@ -121,7 +125,10 @@
       </div>
       <div class="cell-label" style="left:{colLeft(ci) * S}px; top:{(rowTop(r) + LABEL_DY) * S}px; width:{SIZE * S}px">
         <span class="tka">{cell.letter}</span
-        >{#if cell.slot === "both"}<span class="oo"><span class="s1">1</span><span class="s2">1</span></span
+        >{#if cell.sup && cell.sub}<span class="oo"><span class="s1">{cell.sup}</span><span class="s2">{cell.sub}</span></span
+        >{:else if cell.sup}<sup>{cell.sup}</sup
+        >{:else if cell.sub}<sub>{cell.sub}</sub
+        >{:else if cell.slot === "both"}<span class="oo"><span class="s1">1</span><span class="s2">1</span></span
         >{:else if cell.slot === "high"}<sup>1</sup>{:else}<sub>1</sub>{/if}
       </div>
       {#if cell.dot === "same"}
