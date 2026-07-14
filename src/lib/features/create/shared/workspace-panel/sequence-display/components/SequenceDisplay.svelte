@@ -28,7 +28,10 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
     letterSources = null,
   } = $props<{
     sequenceState: SequenceState;
-    onStepSelected?: (stepNumber: number) => void;
+    onStepSelected?: (
+      stepNumber: number,
+      modifiers?: { range: boolean; toggle: boolean }
+    ) => void;
     onStartPositionSelected?: () => void;
     onStepDelete?: (stepNumber: number) => void;
     onStepLongPress?: () => void;
@@ -71,6 +74,22 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
   const isClearing = $derived.by(() => sequenceState.getIsClearing());
   const isShiftStartMode = $derived(panelState.isShiftStartMode);
   const isTimelineMode = $derived(getIsTimelineMode());
+
+  // Multi-select highlight: paint every batch-selected beat with the accent
+  // ring via the existing StepCell `.highlighted` mechanism. Gold `.selected`
+  // stays reserved for single-select (selectedStepNumber is null in multi mode).
+  const MULTI_HIGHLIGHT = {
+    bg: "rgba(139, 92, 246, 0.24)",
+    border: "rgba(139, 92, 246, 0.9)",
+  };
+  const highlightedSteps = $derived.by(() => {
+    if (!sequenceState.isMultiSelectMode) return null;
+    const map = new Map<number, { bg: string; border: string }>();
+    for (const n of sequenceState.selectedStepNumbers) {
+      map.set(n, MULTI_HIGHLIGHT);
+    }
+    return map;
+  });
 
   // Reactive LOOP detection - kept for grid alignment: the circular detector's
   // isCircular + loopType shape drives loopAlignedColumnCount below (the badge
@@ -116,16 +135,21 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
     };
   });
 
-  function handleStepClick(stepNumber: number) {
+  function handleStepClick(
+    stepNumber: number,
+    modifiers?: { range: boolean; toggle: boolean }
+  ) {
     hapticService?.trigger("selection");
 
-    // If in shift start mode, use the shift handler instead of normal selection
+    // If in shift start mode, use the shift handler instead of normal selection.
+    // (Spell's "move start" takes priority over range-select — shift means
+    // reorder-start there, not extend-selection.)
     if (panelState.isShiftStartMode && panelState.shiftStartHandler) {
       panelState.shiftStartHandler(stepNumber);
       return;
     }
 
-    onStepSelected?.(stepNumber);
+    onStepSelected?.(stepNumber, modifiers);
   }
 
   function handleStartPositionClick() {
@@ -175,6 +199,7 @@ import type { SequenceState } from "../../../state/sequence-state-orchestrator.s
           {isSideBySideLayout}
           {activeMode}
           {isTimelineMode}
+          {highlightedSteps}
           onDurationChange={handleDurationChange}
           manualColumnCount={loopAlignedColumnCount}
           sequenceWord={currentDisplayWord}

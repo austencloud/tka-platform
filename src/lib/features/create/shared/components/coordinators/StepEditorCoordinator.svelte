@@ -19,6 +19,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import StepEditorPanel from "../sequence-actions/StepEditorPanel.svelte";
+  import BatchStepEditor from "../sequence-actions/BatchStepEditor.svelte";
   import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
@@ -70,6 +71,9 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     const _selectedStep = state.selectedStepNumber;
     const _sequence = state.currentSequence;
     const _startPos = state.selectedStartPosition;
+    // Multi-select drives the batch editor branch below — track it too.
+    const _multiMode = state.isMultiSelectMode;
+    const _multiSet = state.selectedStepNumbers;
 
     return state;
   });
@@ -120,6 +124,24 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   const removingStepIndices = $derived.by(() =>
     activeSequenceState.getRemovingBeatIndices()
   );
+
+  // ---- Multi-select batch editing ----
+  const isMultiSelect = $derived(
+    activeSequenceState.isMultiSelectMode &&
+      activeSequenceState.selectedStepNumbers.size > 1
+  );
+  const batchStepNumbers = $derived.by(() =>
+    Array.from(activeSequenceState.selectedStepNumbers)
+      .filter((n) => n > 0)
+      .sort((a, b) => a - b)
+  );
+  const batchSteps = $derived.by(() => {
+    const seq = sequence;
+    return batchStepNumbers
+      .map((n) => seq?.steps?.[n - 1])
+      .filter((s): s is NonNullable<typeof s> => s != null);
+  });
+  const totalBeats = $derived(sequence?.steps?.length ?? 0);
 
   // Prop selection sheet state
   let propSheetOpen = $state(false);
@@ -176,6 +198,60 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
       CreateModuleState,
       panelState
     );
+  }
+
+  // Batch turns across every selected step. "set" writes one absolute value to
+  // all; "adjust" nudges each by a delta, preserving offsets. One undo snapshot
+  // wraps the whole batch; steps are applied ascending so the final orientation
+  // propagation is correct. Reuses the single-step turns write path per step.
+  function handleBatchTurnsChange(
+    color: MotionColor,
+    mode: "set" | "adjust",
+    amount: number | "fl"
+  ) {
+    if (batchStepNumbers.length === 0 || !StepOperator) return;
+    hapticService?.trigger("selection");
+
+    CreateModuleState.pushUndoSnapshot(UndoOperationType.MODIFY_BEAT_PROPERTIES);
+
+    const seq = sequence;
+    const delta = amount === "fl" ? -0.5 : amount;
+
+    for (const stepNumber of batchStepNumbers) {
+      const motion = seq?.steps?.[stepNumber - 1]?.motions?.[color];
+      if (!motion) continue;
+
+      const isShift =
+        motion.motionType === MotionType.PRO ||
+        motion.motionType === MotionType.ANTI;
+      const minTurns = isShift ? -0.5 : 0;
+      const current = motion.turns === "fl" ? -0.5 : Number(motion.turns) || 0;
+
+      const targetRaw = mode === "set" ? delta : current + delta;
+      const clamped = Math.min(3, Math.max(minTurns, targetRaw));
+      const newTurns: number | "fl" = clamped === -0.5 ? "fl" : clamped;
+
+      StepOperator.updateStepTurns(
+        stepNumber,
+        color,
+        newTurns,
+        CreateModuleState,
+        panelState
+      );
+    }
+  }
+
+  function handleBatchClose() {
+    panelState.closeStepEditorPanel();
+    activeSequenceState.exitMultiSelectMode();
+  }
+
+  function handleBatchSelectAll() {
+    const total = sequence?.steps?.length ?? 0;
+    if (total === 0) return;
+    const all: number[] = [];
+    for (let n = 1; n <= total; n++) all.push(n);
+    activeSequenceState.selectAllBeats(all);
   }
 
   function handleRotationChange(
@@ -342,26 +418,40 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   });
 </script>
 
-<StepEditorPanel
-  {isOpen}
-  {selectedStepNumber}
-  {selectedStepData}
-  {sequence}
-  {removingStepIndices}
-  onClose={handleClose}
-  onTurnsChange={handleTurnsChange}
-  onRotationChange={handleRotationChange}
-  onOrientationChange={handleOrientationChange}
-  onStepSelect={handleStepSelect}
-  onDelete={handleStepDelete}
-  onOpenPropSheet={handleOpenPropSheet}
-  onStepDataUpdate={handleStepBeatDataUpdate}
-  onPushUndoSnapshot={handlePushUndoSnapshot}
-  onDurationChange={handleDurationChange}
-  onPathShapeChange={handlePathShapeChange}
-  onPathShapeClear={handlePathShapeClear}
-  onBetaSwapToggle={handleBetaSwapToggle}
-/>
+{#if isMultiSelect}
+  <BatchStepEditor
+    {isOpen}
+    steps={batchSteps}
+    stepNumbers={batchStepNumbers}
+    {totalBeats}
+    bluePropTypeOverride={bluePropType}
+    redPropTypeOverride={redPropType}
+    onBatchTurnsChange={handleBatchTurnsChange}
+    onClose={handleBatchClose}
+    onSelectAll={handleBatchSelectAll}
+  />
+{:else}
+  <StepEditorPanel
+    {isOpen}
+    {selectedStepNumber}
+    {selectedStepData}
+    {sequence}
+    {removingStepIndices}
+    onClose={handleClose}
+    onTurnsChange={handleTurnsChange}
+    onRotationChange={handleRotationChange}
+    onOrientationChange={handleOrientationChange}
+    onStepSelect={handleStepSelect}
+    onDelete={handleStepDelete}
+    onOpenPropSheet={handleOpenPropSheet}
+    onStepDataUpdate={handleStepBeatDataUpdate}
+    onPushUndoSnapshot={handlePushUndoSnapshot}
+    onDurationChange={handleDurationChange}
+    onPathShapeChange={handlePathShapeChange}
+    onPathShapeClear={handlePathShapeClear}
+    onBetaSwapToggle={handleBetaSwapToggle}
+  />
+{/if}
 
 <!-- Prop Selection Sheet - rendered as sibling to StepEditorPanel -->
 <PropSelectionSheet

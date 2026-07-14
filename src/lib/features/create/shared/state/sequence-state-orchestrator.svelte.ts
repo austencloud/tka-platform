@@ -725,6 +725,15 @@ export function createSequenceState(services: SequenceStateServices) {
     exitMultiSelectMode: () => selectionState.exitMultiSelectMode(),
     toggleStepInMultiSelect: (stepNumber: number) =>
       selectionState.toggleStepInMultiSelect(stepNumber),
+    selectAllBeats: (stepNumbers: number[]) =>
+      selectionState.selectAllBeats(stepNumbers),
+    applyClickSelection: (
+      stepNumber: number,
+      modifiers: { range: boolean; toggle: boolean }
+    ) => selectionState.applyClickSelection(stepNumber, modifiers),
+    get selectionAnchor() {
+      return selectionState.selectionAnchor;
+    },
   };
 }
 

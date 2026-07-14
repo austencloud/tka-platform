@@ -61,7 +61,10 @@
   } = $props<{
     steps: ReadonlyArray<StepData> | StepData[];
     startPosition?: StartPositionData | StepData | null;
-    onStepClick?: (stepNumber: number) => void;
+    onStepClick?: (
+      stepNumber: number,
+      modifiers?: { range: boolean; toggle: boolean }
+    ) => void;
     onStartClick?: () => void;
     onStepDelete?: (stepNumber: number) => void;
     onStepLongPress?: (stepNumber: number) => void;
@@ -424,9 +427,12 @@
     };
   });
 
-  function handleStepClick(stepNumber: number) {
+  function handleStepClick(
+    stepNumber: number,
+    modifiers?: { range: boolean; toggle: boolean }
+  ) {
     hapticService?.trigger("selection");
-    onStepClick?.(stepNumber);
+    onStepClick?.(stepNumber, modifiers);
   }
 
   function handleStartClick() {

@@ -40,7 +40,7 @@
   } = $props<{
     step: StepData;
     index?: number;
-    onClick?: () => void;
+    onClick?: (modifiers?: { range: boolean; toggle: boolean }) => void;
     onDelete?: () => void;
     onLongPress?: () => void;
     shouldAnimate?: boolean;
@@ -208,10 +208,14 @@
     wasSelected = isSelected;
   });
 
-  function handleClick() {
+  function handleClick(event: MouseEvent) {
     // Trigger haptic feedback for step selection
     hapticService?.trigger("selection");
-    onClick?.();
+    // Shift = range-select, Ctrl/Cmd = toggle. Plain click = single-select.
+    onClick?.({
+      range: event.shiftKey,
+      toggle: event.ctrlKey || event.metaKey,
+    });
     // Focus the cell so keyboard events (Delete/Backspace) work immediately
     cellElement?.focus();
   }
