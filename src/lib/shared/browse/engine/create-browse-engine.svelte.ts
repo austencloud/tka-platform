@@ -464,7 +464,35 @@ export function createBrowseEngine(config: BrowseEngineConfig): BrowseEngine {
 			return;
 		}
 
-		// Auth guard
+		// Guests keep their library LOCALLY (Dexie). The Firestore sync on save is
+		// best-effort (anon session may be absent, offline, or still in flight), so
+		// reading Firestore would show an empty library even though the guest just
+		// saved. Read the local mirror directly instead. Full accounts read
+		// Firestore below — authoritative and cross-device — and must NOT read Dexie,
+		// which isn't uid-scoped and could surface another account's local cache on a
+		// shared device.
+		if (!authState.isFullAccount) {
+			try {
+				isLoading = true;
+				sectionsReady = false;
+				error = null;
+				const { getAllSequences } = await import(
+					"$lib/shared/persistence/services/dexie-persistence-service"
+				);
+				const local = deduplicateById((await getAllSequences()) as SequenceData[]);
+				allSequences = local;
+				libraryCache = local;
+				sectionsReady = true;
+			} catch (err) {
+				console.error("[BrowseEngine] Failed to load local library:", err);
+				error = err instanceof Error ? err.message : "Failed to load library";
+			} finally {
+				isLoading = false;
+			}
+			return;
+		}
+
+		// Auth guard (full-account Firestore path)
 		if (!authState.isAuthenticated) {
 			error = "Please sign in to view your library";
 			allSequences = [];

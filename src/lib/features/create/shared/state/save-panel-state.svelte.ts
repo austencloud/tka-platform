@@ -10,6 +10,8 @@ import type { LibrarySaveService } from "$lib/features/library/services/library-
 import type { SaveProgress } from "$lib/shared/library/domain/library-contract-types";
 import type { CreateModuleContext } from "../context/create-module-context";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
+import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
 type ContentModerator = { checkWord: (word: string) => ContentModerationResult };
 
@@ -292,6 +294,20 @@ export function createSavePanelState(deps: SavePanelDeps) {
       }
 
       props.onSaveComplete?.(result.sequenceId);
+
+      // Confirm the save and offer a one-tap jump to where it now lives, so the
+      // user can see it in context (its collection / the library grid) instead of
+      // wondering whether it saved. Navigates to Browse > Library.
+      showToast({
+        message: "Saved to your library.",
+        type: "success",
+        duration: 6000,
+        action: {
+          label: "Go to library",
+          onClick: () => navigationState.setCurrentModule("browse", "library"),
+        },
+      });
+
       handleClose();
     } catch (error) {
       logger.error("Failed to save sequence:", error);

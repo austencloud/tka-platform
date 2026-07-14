@@ -42,6 +42,12 @@ Card-based architecture with integrated Generate button:
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { PropType as PropTypeEnum } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
+  import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
+  import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
+  import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   // Get context for panel coordination (optional - may not be available in all contexts)
   const context = tryGetCreateModuleContext();
   const panelState = context?.panelState;
@@ -71,6 +77,16 @@ Card-based architecture with integrated Generate button:
   const deviceState = createDeviceState();
   const startEndState = createStartEndOptionsState();
   const favoriteState = createFavoriteState();
+
+  // Guest LOOP gating: guests only get rotated LOOPs + configs within their beat
+  // cap; tapping a gated LOOP opens a sign-up nudge (the conversion channel).
+  const accessTier = $derived(
+    resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
+  );
+  const guestLoopMaxLength = $derived(
+    accessTier === "guest" ? getMaxBeats("guest") : undefined
+  );
+  let loopSignupReason = $state<string | null>(null);
 
   // Spell mode: derived from word presence (if there's a word, it's spell mode)
   const hasWord = $derived(!!spellModeState.inputWord?.trim());
@@ -246,6 +262,11 @@ Card-based architecture with integrated Generate button:
       inversionMode: configState.config.inversionMode ?? "expand",
     }}
     sequenceLength={configState.config.length}
+    guestMaxLength={guestLoopMaxLength}
+    onRequestSignup={(reason) => {
+      panelState.closeLOOPPanel();
+      loopSignupReason = reason;
+    }}
     onRhythmChange={(u) =>
       configState.updateConfig({
         ...(u.rotationInterval
@@ -273,6 +294,21 @@ Card-based architecture with integrated Generate button:
     onSaveAsFavorite={handleSaveAsFavorite}
     onClose={() => panelState.closePresetDrawer()}
   />
+
+  <BaseModal
+    open={loopSignupReason !== null}
+    size="fit"
+    class="chromeless"
+    onclose={() => { loopSignupReason = null; }}
+  >
+    <AuthNudge
+      trigger="loop-locked-guest"
+      text={loopSignupReason ?? undefined}
+      onCreateAccount={() => { loopSignupReason = null; authDrawerState.show("signup"); }}
+      onLogin={() => { loopSignupReason = null; authDrawerState.show("signin"); }}
+      onDismiss={() => { loopSignupReason = null; }}
+    />
+  </BaseModal>
 {/if}
 
 <GeneratePanelTour />

@@ -329,7 +329,7 @@ instead of showing an empty shell.
 <!-- Shared shelf markup: the phone grid and the desktop rail render the same
      cards; only the wrapper (grid vs single column) and the selection
      highlight differ. -->
-<!-- TKA Originals: the founding "everybody's joint" decks (TKA 1/2/3, Book).
+<!-- TKA Core: the founding "everybody's joint" decks (TKA 1/2/3, Book).
      Curated by TKA, read-only — a distinct group from the user's own work. -->
 {#snippet tkaOriginalsShelf(sel: { id: string; ownerId: string | null } | null)}
 	{#each foundingCards as f (f.id)}
@@ -497,7 +497,7 @@ instead of showing an empty shell.
 					{@render artShelf(railSelection)}
 				</div>
 
-				<h3 class="shelf-heading">TKA Originals</h3>
+				<h3 class="shelf-heading">TKA Core</h3>
 				<div class="rail-cards">
 					{@render tkaOriginalsShelf(railSelection)}
 				</div>
@@ -590,7 +590,7 @@ instead of showing an empty shell.
 					{@render artShelf(null)}
 				</div>
 
-				<h3 class="shelf-heading">TKA Originals</h3>
+				<h3 class="shelf-heading">TKA Core</h3>
 				<div class="card-grid">
 					{@render tkaOriginalsShelf(null)}
 				</div>
@@ -748,7 +748,7 @@ instead of showing an empty shell.
 		align-content: start;
 	}
 
-	/* Section headers: My Collections / TKA Originals / Following each read as
+	/* Section headers: My Collections / TKA Core / Following each read as
 	   their own labeled shelf. */
 	.shelf-heading {
 		margin: 10px 0 0;

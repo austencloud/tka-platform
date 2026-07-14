@@ -4,14 +4,16 @@
 
   interface Props {
     trigger: AuthNudgeTrigger;
+    /** Overrides the trigger's default copy (e.g. a per-config lock reason). */
+    text?: string;
     onCreateAccount: () => void;
     onLogin: () => void;
     onDismiss: () => void;
   }
 
-  let { trigger, onCreateAccount, onLogin, onDismiss }: Props = $props();
+  let { trigger, text: textOverride, onCreateAccount, onLogin, onDismiss }: Props = $props();
 
-  const text = $derived(AUTH_NUDGE_TEXTS[trigger]);
+  const text = $derived(textOverride ?? AUTH_NUDGE_TEXTS[trigger]);
   const buttonText = "Create Account - free";
 </script>
 

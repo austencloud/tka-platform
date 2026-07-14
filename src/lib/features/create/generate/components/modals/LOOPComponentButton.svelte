@@ -12,6 +12,7 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     isMultiSelectMode = false,
     isSelected = false,
     isDisabled = false,
+    isLocked = false,
     showDescription = false,
     onClick,
   } = $props<{
@@ -19,6 +20,8 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     isMultiSelectMode?: boolean;
     isSelected?: boolean;
     isDisabled?: boolean;
+    /** Guest-gated: still clickable, but tapping routes to sign-up. */
+    isLocked?: boolean;
     showDescription?: boolean;
     onClick: () => void;
   }>();
@@ -35,14 +38,17 @@ Shows description in Quick Apply mode, compact in Build Combo mode
   class:selected={isSelected}
   class:multi-select={isMultiSelectMode}
   class:with-description={showDescription}
+  class:locked={isLocked}
   onclick={onClick}
   disabled={isDisabled}
   style="--component-color: {color};"
   aria-label="{label} - {description} - {isDisabled
     ? 'not compatible with current selection'
-    : isSelected
-      ? 'selected'
-      : 'not selected'}"
+    : isLocked
+      ? 'locked, sign up to unlock'
+      : isSelected
+        ? 'selected'
+        : 'not selected'}"
 >
   <div class="button-content">
     <div class="loop-component-icon">
@@ -61,6 +67,10 @@ Shows description in Quick Apply mode, compact in Build Combo mode
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
         <polyline points="6,12 10,16 18,8"></polyline>
       </svg>
+    </div>
+  {:else if isLocked}
+    <div class="lock-badge" aria-hidden="true">
+      <FontAwesomeIcon icon="fas fa-lock" size="0.7em" />
     </div>
   {/if}
 </button>
@@ -179,6 +189,28 @@ Shows description in Quick Apply mode, compact in Build Combo mode
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
     line-height: 1.3;
+  }
+
+  /* Guest-locked: muted like disabled, but stays interactive (tap -> sign-up). */
+  .loop-component-button.locked {
+    opacity: 0.55;
+    filter: saturate(0.55);
+  }
+
+  .lock-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 22px;
+    height: 22px;
+    background: rgba(20, 20, 35, 0.85);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--theme-text, white);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   }
 
   .check-badge {

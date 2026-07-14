@@ -12,7 +12,7 @@ import type {
   LOOPType,
   Period,
 } from "../../../circular/domain/models/circular-models";
-import type { LOOPSpec } from "@tka/sequence-engine/loop";
+import type { LOOPSpec, LOOPSpecWire } from "@tka/sequence-engine/loop";
 
 // Re-export LOOPType for convenience
 export type { LOOPType };
@@ -44,6 +44,9 @@ export interface GenerationOptions {
   period?: Period | undefined; // For circular generation
   loopType?: LOOPType | undefined; // LOOP type for circular generation
   loopSpec?: LOOPSpec | undefined;
+  /** Compositional wire-form spec built by the config-mapper (guest gating,
+      seed-length math). Mirrors the field on the shared GenerationOptions. */
+  loopSpecWire?: LOOPSpecWire | undefined;
 
   // 3-axis constraint system
   constraintPreset?: "smooth" | "mixed" | "choppy" | undefined;

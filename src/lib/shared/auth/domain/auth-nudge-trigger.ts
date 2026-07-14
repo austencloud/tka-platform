@@ -6,7 +6,8 @@ export type AuthNudgeTrigger =
   | "module:library"
   | "module:settings"
   | "edit-community"
-  | "generate-cap";
+  | "generate-cap"
+  | "loop-locked-guest";
 
 export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
   save: "Create a free account to save your sequences. Takes about 10 seconds.",
@@ -20,4 +21,6 @@ export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
   "edit-community": "Create a free account to edit and remix sequences.",
   "generate-cap":
     "Guests can generate sequences up to 8 beats. Sign up free for up to 64.",
+  "loop-locked-guest":
+    "Rotated LOOPs are free. Sign up free to unlock every LOOP type.",
 };

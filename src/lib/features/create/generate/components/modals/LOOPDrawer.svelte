@@ -26,6 +26,8 @@
     rhythm,
     sequenceLength,
     onRhythmChange,
+    guestMaxLength,
+    onRequestSignup,
   }: {
     isOpen: boolean;
     currentType: LOOPType | null;
@@ -37,6 +39,9 @@
     rhythm?: RhythmValue;
     sequenceLength?: number;
     onRhythmChange?: (updates: Partial<RhythmValue>) => void;
+    /** Guest gating — beat cap + sign-up callback (see LOOPExpandedOverlay). */
+    guestMaxLength?: number;
+    onRequestSignup?: (reason: string) => void;
   } = $props();
 </script>
 
@@ -62,6 +67,8 @@
           {rhythm}
           {sequenceLength}
           {onRhythmChange}
+          {guestMaxLength}
+          {onRequestSignup}
           layout="list"
         />
       {/if}

@@ -31,6 +31,8 @@ import { db } from "$lib/shared/persistence/database/tka-database";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { isFullAccountUser } from "$lib/shared/auth/domain/access-tier";
 import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
+import { GUEST_SAVE_CAP } from "$lib/shared/auth/domain/guest-access-config";
+import { openAuthDialog } from "$lib/shared/auth/state/auth-ui-state.svelte";
 import type { Sharer } from "../../../shared/share/services/sharer";
 import type { R2VideoUploader } from "../../../shared/share/services/r2-video-uploader";
 import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
@@ -118,6 +120,34 @@ export class LibrarySaveService {
       ...sequence,
       id: sequence.id || crypto.randomUUID(),
     };
+
+    // Guest save cap: a guest may keep up to GUEST_SAVE_CAP sequences on this
+    // device. Re-saving one already in the library is an update, not a new save,
+    // so it's always allowed. A brand-new save past the cap is blocked and routes
+    // the guest to sign up. Full accounts are never capped. Gated here (before the
+    // expensive thumbnail render) so all callers of saveSequence share the limit.
+    const isFullAccount = isFullAccountUser(
+      authState.isAuthenticated,
+      authState.isAnonymous
+    );
+    if (!isFullAccount) {
+      const alreadySaved = await db.sequences.get(resolvedSequence.id);
+      if (!alreadySaved) {
+        const guestCount = await db.sequences.count();
+        if (guestCount >= GUEST_SAVE_CAP) {
+          toast.info(
+            `Guests can save ${GUEST_SAVE_CAP}. Create a free account to save more.`,
+            6000
+          );
+          openAuthDialog();
+          throw new LibraryError(
+            `Guest save limit reached (${GUEST_SAVE_CAP}).`,
+            "GUEST_CAP",
+            resolvedSequence.id
+          );
+        }
+      }
+    }
 
     // Step 1: Generate thumbnail image
     emitProgress(1);
