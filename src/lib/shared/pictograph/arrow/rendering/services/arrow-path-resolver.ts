@@ -20,6 +20,13 @@ export function getArrowPath(
   motionData: MotionData
 ): string | null {
   const { motionType, turns } = motionData;
+
+  // Half-motion arrows are a turn-invariant end-direction glyph in a dedicated
+  // asset dir; rotation (not a per-turn file) encodes the turns. No skew variant.
+  if (motionData.segment) {
+    return `/images/arrows/${motionType}_half/from_radial/${motionType}_half.svg`;
+  }
+
   const baseDir = `/images/arrows/${motionType}`;
 
   if (
@@ -65,6 +72,10 @@ export function getArrowSvgPath(motionData: MotionData | undefined): string {
 
   if (motionType === MotionType.FLOAT) {
     return "/images/arrows/float.svg";
+  }
+
+  if (motionData.segment) {
+    return `/images/arrows/${motionType}_half/from_radial/${motionType}_half.svg`;
   }
 
   const radialPath =
