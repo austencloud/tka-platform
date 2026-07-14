@@ -178,56 +178,54 @@ describe("calculateEndOrientation — fractional radial cycle", () => {
     }
   });
 
-  // Regression spec for the case-normalization bug below: four chained quarter
-  // turns SHOULD equal one whole turn. They do not today, because the
-  // intermediate result is an interradial orientation that calculateEndOrientation
-  // then fails to normalize (see "KNOWN BUG" block). Marked it.fails so the suite
-  // stays green and this flips red the moment the bug is fixed.
-  it.fails(
-    "four chained 0.25 steps SHOULD equal one whole turn (blocked by case bug)",
-    () => {
-      let ori: Orientation = "in";
-      for (let i = 0; i < 4; i++) {
-        ori = calculateEndOrientation({
-          motionType: "pro",
-          turns: 0.25,
-          rotationDirection: "cw",
-          startLocation: "n",
-          endLocation: "n",
-          startOrientation: ori,
-        });
-      }
-      expect(ori).toBe("out");
+  // Regression spec for the case-normalization bug (see "KNOWN BUG" block
+  // below): four chained quarter turns SHOULD equal one whole turn. This
+  // requires the intermediate interradial orientation produced by each
+  // fractional step to normalize correctly on the next call, which
+  // canonicalOrientation now guarantees.
+  it("four chained 0.25 steps SHOULD equal one whole turn", () => {
+    let ori: Orientation = "in";
+    for (let i = 0; i < 4; i++) {
+      ori = calculateEndOrientation({
+        motionType: "pro",
+        turns: 0.25,
+        rotationDirection: "cw",
+        startLocation: "n",
+        endLocation: "n",
+        startOrientation: ori,
+      });
     }
-  );
+    expect(ori).toBe("out");
+  });
 });
 
 /**
- * KNOWN BUG — interradial (L6) and center (L4) start orientations.
+ * FIXED — interradial (L6) and center (L4) start orientations.
  *
- * calculateEndOrientation normalizes the start orientation with
- * `startOrientation.toLowerCase()`, but switchOrientation's map and the radial /
- * center cycles are keyed with camelCase (`clockIn`, `counterOut`, `centerN`...).
- * So a lowercased `"clockin"` misses every lookup and the orientation is returned
- * UNCHANGED instead of being switched / advanced. Only the four cardinal radial
- * orientations (in/out/clock/counter), which are already lowercase, behave
- * correctly through calculateEndOrientation.
+ * calculateEndOrientation used to normalize the start orientation with a
+ * blanket `startOrientation.toLowerCase()`, but switchOrientation's map and
+ * the radial / center cycles are keyed with camelCase (`clockIn`, `counterOut`,
+ * `centerN`...). A lowercased `"clockin"` missed every lookup and the
+ * orientation was returned UNCHANGED instead of being switched / advanced.
+ * Only the four cardinal radial orientations (in/out/clock/counter), which are
+ * already lowercase, behaved correctly through calculateEndOrientation.
  *
- * Impact: Level 4 (center) and Level 6 (interradial) orientation propagation is
- * silently wrong. switchOrientation itself is fine when called with the canonical
- * camelCase — the defect is purely the internal lowercasing in
- * calculateEndOrientation.
+ * Impact (before the fix): Level 4 (center) and Level 6 (interradial)
+ * orientation propagation was silently wrong. switchOrientation itself was
+ * always fine when called with the canonical camelCase — the defect was
+ * purely the internal lowercasing in calculateEndOrientation.
  *
- * These tests assert the CORRECT (canonical) behavior and are marked it.fails so
- * the suite is green today and turns red the moment the normalization is fixed.
+ * Fix: `canonicalOrientation()` (in orientation.ts) maps any-case input back
+ * to its canonical camelCase form via a lowercase-keyed lookup table built
+ * from RADIAL_CW_CYCLE + CENTER_CW_CYCLE, instead of blanket-lowercasing.
  */
-describe("KNOWN BUG: interradial/center orientations not normalized in calculateEndOrientation", () => {
+describe("FIXED: interradial/center orientations now normalized in calculateEndOrientation", () => {
   it("switchOrientation is correct with canonical camelCase (control)", () => {
     expect(switchOrientation("clockIn")).toBe("counterOut");
     expect(switchOrientation("centerN")).toBe("centerS");
   });
 
-  it.fails("pro 1 turn from clockIn SHOULD reverse to counterOut", () => {
+  it("pro 1 turn from clockIn SHOULD reverse to counterOut", () => {
     expect(
       calculateEndOrientation({
         motionType: "pro",
@@ -240,7 +238,7 @@ describe("KNOWN BUG: interradial/center orientations not normalized in calculate
     ).toBe("counterOut");
   });
 
-  it.fails("static 1 turn from centerN SHOULD reverse to centerS", () => {
+  it("static 1 turn from centerN SHOULD reverse to centerS", () => {
     expect(
       calculateEndOrientation({
         motionType: "static",
@@ -253,8 +251,7 @@ describe("KNOWN BUG: interradial/center orientations not normalized in calculate
     ).toBe("centerS");
   });
 
-  it("documents the current (buggy) behavior: interradial start returned unchanged + lowercased", () => {
-    // Pinning the present output so a behavior change is caught either way.
+  it("normalizes mixed-case interradial input to the canonical orientation", () => {
     expect(
       calculateEndOrientation({
         motionType: "pro",
@@ -262,9 +259,9 @@ describe("KNOWN BUG: interradial/center orientations not normalized in calculate
         rotationDirection: "cw",
         startLocation: "n",
         endLocation: "n",
-        startOrientation: "clockIn",
+        startOrientation: "CLOCKIN",
       })
-    ).toBe("clockin");
+    ).toBe("counterOut");
   });
 });
 
