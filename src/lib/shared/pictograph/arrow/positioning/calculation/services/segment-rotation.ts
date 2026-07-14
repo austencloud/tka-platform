@@ -12,19 +12,23 @@ import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
  * canonical `LOCATION_ANGLES` — the same constant the production engine uses to
  * produce `centerPathAngle` — so this never re-derives grid geometry.
  *
- * For a CENTER location (dash midpoint) there is no outward direction; fall back
- * to the supplied cardinal reference (the pre-dash start location). Note that
- * `LOCATION_ANGLES` DOES carry a CENTER entry (0, "no angle"), so a bare
- * `LOCATION_ANGLES[location]` would return 0 for a center location instead of
- * falling back — CENTER is guarded explicitly to preserve that fallback semantics.
+ * CENTER resolves to its canonical `LOCATION_ANGLES[GridLocation.CENTER] = 0`
+ * directly — oracle-verified (`half-arrow-pipeline.test.ts`, DASH S→N t2): for
+ * that halfway `halfwayOrientation === "clock"` and
+ * `orientationToStaffAngle("clock", 0) === PI/2 === 90°`, which matches the
+ * guide's physical staff angle (`poseAt`) exactly. An earlier revision special-
+ * cased CENTER to `centerFallback` (the pre-dash cardinal) purely to preserve
+ * pre-dedup behavior; that fallback was wrong by 90° against the ground truth
+ * and has been removed for the rotation path. `centerFallback` is kept as a
+ * parameter — still used when `location` itself has no `LOCATION_ANGLES` entry
+ * — in case a future non-center use needs it.
  */
 export function centerPathAngleFor(
   location: GridLocation,
   centerFallback: GridLocation
 ): number {
-  const ref = location === GridLocation.CENTER ? centerFallback : location;
   return (
-    LOCATION_ANGLES[ref] ??
+    LOCATION_ANGLES[location] ??
     LOCATION_ANGLES[centerFallback] ??
     LOCATION_ANGLES[GridLocation.EAST]
   );
