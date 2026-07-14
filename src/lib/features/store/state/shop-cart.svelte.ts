@@ -131,3 +131,11 @@ export function createShopCart() {
 }
 
 export type ShopCart = ReturnType<typeof createShopCart>;
+
+// One cart per browser tab, shared across /shop routes. Created lazily so SSR
+// (no localStorage) doesn't touch storage at import time.
+let sharedCart: ShopCart | null = null;
+export function getShopCart(): ShopCart {
+  if (!sharedCart) sharedCart = createShopCart();
+  return sharedCart;
+}
