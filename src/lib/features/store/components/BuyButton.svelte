@@ -61,6 +61,7 @@
         unitPrice: product.price,
         stripePriceId: product.stripePriceId,
         qty: 1,
+        ...(propType && { propType }),
       });
     }
   }

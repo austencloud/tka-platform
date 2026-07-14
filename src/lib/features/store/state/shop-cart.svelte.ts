@@ -18,6 +18,10 @@ interface BaseLine {
 }
 export interface SkuLine extends BaseLine {
   kind: "sku";
+  /** Buyer's print prop for physical-deck SKUs (PropType value). Absent on
+   *  posters/guides/materials. Folded into the line identity so two prop
+   *  choices of the same deck stay distinct lines. */
+  propType?: string;
 }
 export interface LoopDeckLine extends BaseLine {
   kind: "loopDeck";
@@ -42,7 +46,7 @@ export interface CheckoutItem {
 function lineIdentity(line: CartLine): string {
   return line.kind === "loopDeck"
     ? `deck:${line.productId}:${line.configKey}`
-    : `sku:${line.productId}`;
+    : `sku:${line.productId}:${line.propType ?? ""}`;
 }
 
 function load(): StoredLine[] {
@@ -114,7 +118,11 @@ export function createShopCart() {
             ...(l.propType && { propType: l.propType }),
             loopConfig: l.loopConfig,
           }
-        : { productId: l.productId, quantity: l.qty }
+        : {
+            productId: l.productId,
+            quantity: l.qty,
+            ...(l.propType && { propType: l.propType }),
+          }
     );
   }
 

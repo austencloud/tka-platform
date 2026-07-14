@@ -45,6 +45,24 @@ describe("createShopCart", () => {
     expect(cart.lines.length).toBe(2);
   });
 
+  it("keeps a physical-deck SKU with a different propType as a separate line", () => {
+    const cart = createShopCart();
+    const staffDeck: CartLine = {
+      kind: "sku", productId: "deck_x", name: "Trilogy Deck",
+      unitPrice: 3000, stripePriceId: "price_deck_x", qty: 1, propType: "staff",
+    };
+    const fanDeck: CartLine = { ...staffDeck, propType: "fan" };
+    cart.add(staffDeck);
+    cart.add(fanDeck);
+    expect(cart.lines.length).toBe(2);
+    cart.add(staffDeck);
+    expect(cart.lines.length).toBe(2);
+    expect(cart.lines.find((l) => l.propType === "staff")!.qty).toBe(2);
+    expect(cart.toCheckoutItems()).toContainEqual({
+      productId: "deck_x", quantity: 2, propType: "staff",
+    });
+  });
+
   it("locks configured-deck quantity to 1 even if setQty asks for more", () => {
     const cart = createShopCart();
     cart.add(deck("cfg1"));
