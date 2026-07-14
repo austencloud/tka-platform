@@ -9,7 +9,7 @@
  * - formatLOOPTypeForDisplay: human-readable formatting of a LOOPType string
  */
 
-import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import { LOOPType, ROTATED_LOOP_TYPES } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import type { LOOPSpecWire, PropLOOPSpecWire } from "@tka/sequence-engine/loop";
 
@@ -174,6 +174,53 @@ export function buildLoopSpec(
     }
   }
   return { blue: prop, red: prop };
+}
+
+export interface ResolvedLoopConfig {
+  /** Effective period after gating quartered→halved for non-rotation types. */
+  period: "halved" | "quartered";
+  /** Wire spec with the correct expander multiplier, or undefined for combos with no implemented mapping. */
+  loopSpecWire: LOOPSpecWire | undefined;
+  /** The rhythm the wire was built from (provenance / UI echo). */
+  loopRhythm: LoopRhythm;
+}
+
+/**
+ * THE single source of truth for turning a LOOP type + requested period into
+ * the effective period + compositional wire spec. Shared by the interactive
+ * generator (config-mapper) and EVERY deck/preview generation path so none of
+ * them can silently skip the two length-invariance guards:
+ *
+ *  1. Quartered is coerced to halved for non-ROTATED loop types. Only rotation
+ *     has a genuine period-4 orbit; the period-2 transforms (mirror / flip /
+ *     swap / invert) asked as quartered extend to a byte-identical double that
+ *     reduceToMinimalLoop strips back to HALF the requested length — the deck's
+ *     "I asked for 16 and got 8" bug.
+ *  2. The wire spec makes the orchestrator divide the requested length by the
+ *     TRUE expander multiplier (expanderMultiplier), not the raw period (2/4).
+ *     Without it, mirror+rotated (true period 4) overshoots to 2× on the halved
+ *     path (a requested 16 comes back 32).
+ *
+ * Even with both guards, a degenerate seed can still reduce below the requested
+ * length occasionally (e.g. a 2-beat quartered-rotation seed); the exact-length
+ * generator's step-count re-roll is the backstop for that residual.
+ */
+export function resolveLoopConfig(
+  loopType: LOOPType | string,
+  requestedPeriod: string | undefined,
+  rhythmOpts?: { inversionInterval?: 2 | 4; inversionMode?: "expand" | "overlay" },
+): ResolvedLoopConfig {
+  const supportsQuartered = ROTATED_LOOP_TYPES.has(loopType as LOOPType);
+  const period: "halved" | "quartered" =
+    supportsQuartered && requestedPeriod === "quartered" ? "quartered" : "halved";
+  const loopRhythm: LoopRhythm = {
+    rotationInterval: period === "quartered" ? 4 : 2,
+    inversionInterval: rhythmOpts?.inversionInterval ?? 2,
+    inversionMode: rhythmOpts?.inversionMode ?? "expand",
+  };
+  const loopSpecWire =
+    buildLoopSpec(parseLoopComponents(loopType), loopRhythm) ?? undefined;
+  return { period, loopSpecWire, loopRhythm };
 }
 
 /**

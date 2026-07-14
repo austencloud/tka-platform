@@ -88,17 +88,35 @@ export async function generateCircularExactLength(
     }
   }
 
-  // Normal path: re-roll at the full requested length until a closed
-  // (cycleCount 1) sequence comes back, keeping the last open one in case
-  // every attempt is exhausted.
+  // Normal path: re-roll at the full requested length until a CLOSED
+  // (cycleCount 1) sequence of EXACTLY the requested length comes back.
+  //
+  // Two ways a roll can miss the length:
+  //  - OPEN (cycleCount > 1): orientation hasn't self-closed; the extender
+  //    would double/quadruple it PAST the request. Re-roll for a self-closing
+  //    seed (the original overshoot guard).
+  //  - SHORT: the loop's transform degenerated on this seed into a literal
+  //    repeat, so reduceToMinimalLoop collapsed it BELOW the request (e.g.
+  //    16→8). It comes back closed-but-short. Re-roll for a seed whose
+  //    transform is genuine at the requested length. This is the deck "asked
+  //    for 16, got 8" fix — the previous success test only checked cycleCount,
+  //    so a collapsed sequence passed straight through as a success.
   let lastOpen: SequenceData | null = null;
+  let lastResult: SequenceData | null = null;
   for (let attempt = 0; attempt < MAX_REROLLS; attempt++) {
     const seq = await deps.generate(options);
-    if ((seq.orientationCycleCount ?? 1) === 1) {
+    lastResult = seq;
+    const closed = (seq.orientationCycleCount ?? 1) === 1;
+    if (closed && seq.steps.length === length) {
       return { sequence: seq, extendedPastRequest: false };
     }
-    lastOpen = seq;
+    if (!closed) lastOpen = seq;
   }
 
-  return { sequence: deps.extend(lastOpen!), extendedPastRequest: true };
+  // Exhausted. Prefer extending an open sequence up to the requested length;
+  // otherwise return the best-effort last result. Systematic collapse is
+  // prevented upstream by resolveLoopConfig's quartered gating, so reaching the
+  // short fallback is a rare residual (e.g. a degenerate 2-beat quartered seed).
+  if (lastOpen) return { sequence: deps.extend(lastOpen), extendedPastRequest: true };
+  return { sequence: lastResult!, extendedPastRequest: false };
 }

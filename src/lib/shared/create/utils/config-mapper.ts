@@ -17,9 +17,8 @@ import type {
   GenerationOptions,
 } from "$lib/shared/foundation/domain/models/generation/generate-models";
 import { DifficultyLevel as DifficultyEnum, PropContinuity } from "$lib/shared/foundation/domain/models/generation/generate-models";
-import { LOOPType, ROTATED_LOOP_TYPES } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import type { StartEndOptions } from "$lib/shared/create/state/panel-coordination-state.svelte";
-import { buildLoopSpec, parseLoopComponents, type LoopRhythm } from "$lib/shared/create/services/loop-type-utils";
+import { resolveLoopConfig } from "$lib/shared/create/services/loop-type-utils";
 
 /**
  * Map difficulty level number to DifficultyLevel enum
@@ -100,14 +99,24 @@ export function uiConfigToGenerationOptions(
   propType: PropType = PropTypeEnum.FAN,
   startEndOptions?: StartEndOptions | null
 ): GenerationOptions {
-  // Period-4 (quartered) viability is authoritative in ROTATED_LOOP_TYPES — the
-  // same set loop-viability-service and card-configurator key off to decide
-  // whether the Quartered card even shows. Base the mapper on that set rather
-  // than substring-matching the loopType name, which drifted out of sync and
-  // silently forced rotated_inverted, rotated_swapped, and mirrored_rotated_swapped
-  // (all quartered-viable) down to halved, discarding the user's Quartered choice.
-  const supportsQuartered = ROTATED_LOOP_TYPES.has(uiConfig.loopType as LOOPType);
-  const period = supportsQuartered ? uiConfig.period : "halved";
+  // Canonical loop-config resolution (single source of truth): coerces
+  // quartered→halved for non-rotation types (period-4 viability is authoritative
+  // in ROTATED_LOOP_TYPES) and builds the compositional wire-form spec so the
+  // orchestrator divides length by the TRUE expander multiplier, not the raw
+  // 2/4. Combos with no implemented mapping yield an undefined wire and fall
+  // back to the legacy type+period path in the orchestrator, unchanged. Shared
+  // with every deck/preview generation path via resolveLoopConfig so none of
+  // them can skip these guards (the "asked for 16, got 8/32" deck bug).
+  const resolvedLoop =
+    uiConfig.loopEnabled && uiConfig.loopType
+      ? resolveLoopConfig(uiConfig.loopType, uiConfig.period, {
+          inversionInterval: uiConfig.inversionInterval,
+          inversionMode: uiConfig.inversionMode,
+        })
+      : undefined;
+  const period = resolvedLoop?.period ?? uiConfig.period;
+  const loopRhythm = resolvedLoop?.loopRhythm;
+  const loopSpecWire = resolvedLoop?.loopSpecWire;
 
   // Derive propContinuity from constraintPreset for backwards compat
   const derivedPropContinuity =
@@ -115,22 +124,6 @@ export function uiConfigToGenerationOptions(
 
   // When loop is enabled, use the circular generation pipeline; otherwise freeform
   const effectiveMode = uiConfig.loopEnabled ? "circular" : "freeform";
-
-  // Compositional wire-form spec: only built when a loop is active AND a
-  // loopType is chosen. `buildLoopSpec` returns null for combos with no
-  // implemented mapping (same gate as generateLOOPType) — those fall back to
-  // the legacy type+period path in the orchestrator, unchanged.
-  const loopRhythm: LoopRhythm | undefined = uiConfig.loopEnabled
-    ? {
-        rotationInterval: period === "quartered" ? 4 : 2,
-        inversionInterval: uiConfig.inversionInterval ?? 2,
-        inversionMode: uiConfig.inversionMode ?? "expand",
-      }
-    : undefined;
-  const loopSpecWire =
-    uiConfig.loopEnabled && uiConfig.loopType && loopRhythm
-      ? (buildLoopSpec(parseLoopComponents(uiConfig.loopType), loopRhythm) ?? undefined)
-      : undefined;
 
   const options: GenerationOptions = {
     length: uiConfig.length,

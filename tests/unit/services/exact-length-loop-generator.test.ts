@@ -61,7 +61,7 @@ describe("generateCircularExactLength", () => {
 
   it("circular, closed on first try: returned as-is, one call, extendedPastRequest false", async () => {
     const options = baseOptions();
-    const closedSeq = seq({ orientationCycleCount: 1 });
+    const closedSeq = seq({ orientationCycleCount: 1, steps: new Array(8).fill({}) });
     const generate = vi.fn().mockResolvedValue(closedSeq);
     const extend = vi.fn();
     const rng = () => 0.9; // skip orientation-seeded path
@@ -77,7 +77,7 @@ describe("generateCircularExactLength", () => {
   it("circular, open then closed: two generate calls, closed sequence returned", async () => {
     const options = baseOptions();
     const openSeq = seq({ orientationCycleCount: 2 });
-    const closedSeq = seq({ orientationCycleCount: 1 });
+    const closedSeq = seq({ orientationCycleCount: 1, steps: new Array(8).fill({}) });
     const generate = vi
       .fn()
       .mockResolvedValueOnce(openSeq)
@@ -134,7 +134,7 @@ describe("generateCircularExactLength", () => {
   it("orientation-seeded attempt returns cycleCount 1 (discarded), falls through to normal path at full length", async () => {
     const options = baseOptions({ length: 8, period: Period.HALVED });
     const halfSeedClosed = seq({ orientationCycleCount: 1 });
-    const fullClosed = seq({ orientationCycleCount: 1 });
+    const fullClosed = seq({ orientationCycleCount: 1, steps: new Array(8).fill({}) });
     const generate = vi
       .fn()
       .mockResolvedValueOnce(halfSeedClosed) // seed attempt 1
@@ -155,7 +155,7 @@ describe("generateCircularExactLength", () => {
 
   it("rng at/above threshold skips the seeded path entirely - all generate calls at full length", async () => {
     const options = baseOptions({ length: 8, period: Period.HALVED });
-    const closedSeq = seq({ orientationCycleCount: 1 });
+    const closedSeq = seq({ orientationCycleCount: 1, steps: new Array(8).fill({}) });
     const generate = vi.fn().mockResolvedValue(closedSeq);
     const extend = vi.fn();
     const rng = () => 0.9;
@@ -167,9 +167,48 @@ describe("generateCircularExactLength", () => {
     }
   });
 
+  it("circular, closed but SHORT (reduced below request): re-rolls until a full-length card comes back", async () => {
+    // The deck "asked for 16, got 8" bug: a degenerate seed's transform is a
+    // literal repeat, so reduceToMinimalLoop collapses it. It comes back closed
+    // (cycleCount 1) but half length — must re-roll, not accept.
+    const options = baseOptions({ length: 8, period: Period.HALVED });
+    const collapsed = seq({ orientationCycleCount: 1, steps: new Array(4).fill({}) });
+    const full = seq({ orientationCycleCount: 1, steps: new Array(8).fill({}) });
+    const generate = vi
+      .fn()
+      .mockResolvedValueOnce(collapsed)
+      .mockResolvedValueOnce(collapsed)
+      .mockResolvedValueOnce(full);
+    const extend = vi.fn();
+    const rng = () => 0.9; // skip orientation-seeded path
+
+    const result = await generateCircularExactLength(options, { generate, extend, rng });
+
+    expect(generate).toHaveBeenCalledTimes(3);
+    expect(extend).not.toHaveBeenCalled();
+    expect(result.sequence).toBe(full);
+    expect(result.sequence.steps.length).toBe(8);
+    expect(result.extendedPastRequest).toBe(false);
+  });
+
+  it("circular, every roll closed-but-short: exhausts re-rolls, returns best-effort last (no crash, no extend)", async () => {
+    const options = baseOptions({ length: 8, period: Period.HALVED });
+    const collapsed = seq({ orientationCycleCount: 1, steps: new Array(4).fill({}) });
+    const generate = vi.fn().mockResolvedValue(collapsed);
+    const extend = vi.fn();
+    const rng = () => 0.9;
+
+    const result = await generateCircularExactLength(options, { generate, extend, rng });
+
+    expect(generate).toHaveBeenCalledTimes(MAX_REROLLS);
+    expect(extend).not.toHaveBeenCalled(); // closed, not open — nothing to extend
+    expect(result.sequence).toBe(collapsed);
+    expect(result.extendedPastRequest).toBe(false);
+  });
+
   it("half-generate throws: falls through to normal path without crashing", async () => {
     const options = baseOptions({ length: 8, period: Period.HALVED });
-    const fullClosed = seq({ orientationCycleCount: 1 });
+    const fullClosed = seq({ orientationCycleCount: 1, steps: new Array(8).fill({}) });
     const generate = vi
       .fn()
       .mockRejectedValueOnce(new Error("seed too short"))

@@ -31,9 +31,9 @@ import type {
   RecipeSlice,
 } from "../domain/loop-config";
 import { DEFAULT_MAX_TURNS, loopPack } from "../domain/loop-config";
-import { generateLOOPType } from "$lib/shared/create/services/loop-type-utils";
+import { generateLOOPType, resolveLoopConfig } from "$lib/shared/create/services/loop-type-utils";
 import { levelToDifficulty } from "$lib/shared/create/utils/config-mapper";
-import { LOOPType, Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import {
   GenerationMode,
   type GenerationOptions,
@@ -161,6 +161,14 @@ async function generateHand(dials: HandDials, n: number): Promise<SequenceData[]
     "$lib/shared/create/services/generation-orchestrator"
   );
 
+  // Rotated quartered is the printed-deck canon; combos seed halved. Route
+  // through resolveLoopConfig so the preview gets the compositional wire spec
+  // (true expander multiplier) — otherwise mirror+rotated previews overshoot to
+  // 2× the requested length, misrepresenting the printed card.
+  const resolvedLoop = resolveLoopConfig(
+    loopType,
+    loopType === LOOPType.ROTATED ? "quartered" : "halved",
+  );
   const options: GenerationOptions = {
     mode: GenerationMode.CIRCULAR,
     length: dials.steps,
@@ -168,8 +176,9 @@ async function generateHand(dials: HandDials, n: number): Promise<SequenceData[]
     propType: dials.propType,
     difficulty: levelToDifficulty(dials.level),
     loopType,
-    // Rotated quartered is the printed-deck canon; combos seed halved.
-    period: loopType === LOOPType.ROTATED ? Period.QUARTERED : Period.HALVED,
+    period: resolvedLoop.period as GenerationOptions["period"],
+    loopSpecWire: resolvedLoop.loopSpecWire,
+    loopRhythm: resolvedLoop.loopRhythm,
     constraintPreset: "smooth",
     turnIntensity: dials.level >= 2 ? dials.maxTurns : 0,
   };
