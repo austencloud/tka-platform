@@ -165,7 +165,7 @@ const RADIAL_CW_CYCLE: Orientation[] = [
 const ORIENTATION_BY_LOWER: Record<string, Orientation> = (() => {
   const map: Record<string, Orientation> = {};
   for (const o of [...RADIAL_CW_CYCLE, ...CENTER_CW_CYCLE]) {
-    map[(o as string).toLowerCase()] = o;
+    map[o.toLowerCase()] = o;
   }
   return map;
 })();
@@ -174,10 +174,17 @@ const ORIENTATION_BY_LOWER: Record<string, Orientation> = (() => {
  * Normalize any-case orientation input to its canonical camelCase form.
  * Blanket .toLowerCase() breaks interradial (clockIn) / center (centerN)
  * orientations because switchOrientation + the cycles are keyed camelCase.
+ * An unrecognized non-empty value is a data-integrity problem upstream — warn
+ * rather than coerce it to "in" silently.
  */
 export function canonicalOrientation(raw: string | undefined): Orientation {
   if (!raw) return "in";
-  return ORIENTATION_BY_LOWER[raw.toLowerCase()] ?? "in";
+  const canonical = ORIENTATION_BY_LOWER[raw.toLowerCase()];
+  if (!canonical) {
+    console.warn(`[orientation] Unknown orientation "${raw}", defaulting to "in"`);
+    return "in";
+  }
+  return canonical;
 }
 
 function calculateCenterFractionalTurnOrientation(
