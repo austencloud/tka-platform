@@ -114,6 +114,13 @@ export class ArrowLocationCalculator {
      * Throws:
      *     Error: If dash motion requires pictograph data but none provided
      */
+    // Half-motion frames carry the halfway hand location in endLocation (halving
+    // always lands on the 45° grid → a named GridLocation). Short-circuit before
+    // the motion-type switch so a segment DASH never requires pictographData.
+    if (motion.segment) {
+      return motion.endLocation;
+    }
+
     switch (motion.motionType) {
       case MotionType.STATIC:
         return this.calculateStaticLocation(motion);
