@@ -14,7 +14,9 @@
    * combined's turn arrows come from the renderer. Fractional frames compose a
    * bare-grid pictograph + the real staff SVG at the exact mid-motion pose, asked
    * from the animation engine via poseAt(motion, t) (level-1 StaffMotionsPage
-   * overlay technique, generalized to arbitrary t for the 2-turn breakdowns).
+   * overlay technique, generalized to arbitrary t for the 2-turn breakdowns),
+   * PLUS the end-direction arrow (poseArrow) — the app's own pro-curl/anti-zigzag
+   * glyph, engine-placed to trace that slice's end travel, per the artboard.
    *
    * Accuracy-pass flags: the bottom "broken in half" strip follows the proof's
    * own in→out→in labeling (combined IN→IN turns=2) which differs from the
@@ -37,6 +39,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { poseAt, type HalfwayMotion, type StaffPose } from "../_data/halfway-pose";
+  import { poseArrow, POSE_ARROW_RED, type PoseArrow } from "../_data/pose-arrow";
   import { bakeReversals } from "../../level-1/_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../../level-1/_data/guide-data-context";
   import { getGuideActiveStep } from "../../level-1/_data/guide-active-step.svelte";
@@ -107,7 +110,7 @@
   // ── Strip model ────────────────────────────────────────────────────────────
   type Frame =
     | { kind: "picto"; data: ReturnType<typeof redStaff>; left: number; animKey?: string }
-    | { kind: "pose"; grid: ReturnType<typeof bareGrid>; pose: StaffPose; left: number };
+    | { kind: "pose"; grid: ReturnType<typeof bareGrid>; pose: StaffPose; arrow: PoseArrow; left: number };
   type Strip = { y: number; size: number; frames: Frame[] };
 
   const proStrip: Strip = {
@@ -115,7 +118,7 @@
     size: 100,
     frames: [
       { kind: "picto", data: stat("pro-start", E, IN), left: 95 },
-      { kind: "pose", grid: bareGrid("pro-half"), pose: poseAt(PRO_M, 0.5), left: 215 },
+      { kind: "pose", grid: bareGrid("pro-half"), pose: poseAt(PRO_M, 0.5), arrow: poseArrow(PRO_M, 0, 0.5), left: 215 },
       { kind: "picto", data: stat("pro-end", SO_, IN), left: 335 },
       { kind: "picto", data: proCombined, left: 455, animKey: "l2ts-pro" },
     ],
@@ -125,8 +128,8 @@
     size: 88,
     frames: [
       { kind: "picto", data: stat("anti-start", E, IN), left: 30 },
-      { kind: "pose", grid: bareGrid("anti-t1"), pose: poseAt(ANTI_M, 1 / 3), left: 148 },
-      { kind: "pose", grid: bareGrid("anti-t2"), pose: poseAt(ANTI_M, 2 / 3), left: 266 },
+      { kind: "pose", grid: bareGrid("anti-t1"), pose: poseAt(ANTI_M, 1 / 3), arrow: poseArrow(ANTI_M, 0, 1 / 3, { flip: true }), left: 148 },
+      { kind: "pose", grid: bareGrid("anti-t2"), pose: poseAt(ANTI_M, 2 / 3), arrow: poseArrow(ANTI_M, 1 / 3, 2 / 3, { flip: true }), left: 266 },
       { kind: "picto", data: stat("anti-end", SO_, OUT), left: 384 },
       { kind: "picto", data: antiCombined, left: 508, animKey: "l2ts-anti" },
     ],
@@ -136,7 +139,7 @@
     size: 100,
     frames: [
       { kind: "picto", data: stat("antih-start", E, IN), left: 95 },
-      { kind: "pose", grid: bareGrid("antih-half"), pose: poseAt(ANTI_M, 0.5), left: 215 },
+      { kind: "pose", grid: bareGrid("antih-half"), pose: poseAt(ANTI_M, 0.5), arrow: poseArrow(ANTI_M, 0, 0.5, { flip: true }), left: 215 },
       { kind: "picto", data: stat("antih-end", SO_, IN), left: 335 },
       { kind: "picto", data: antiHalfCombined, left: 455, animKey: "l2ts-antih" },
     ],
@@ -316,6 +319,7 @@
         <div class="mini" style="left:{frame.left * S}px; top:{strip.y * S}px; width:{strip.size * S}px; height:{strip.size * S}px">
           <PictographContainer pictographData={frame.grid} gridMode={GridMode.DIAMOND} {...PICTO_FLAGS} />
           <svg class="halfway-staff" viewBox="0 0 950 950" aria-hidden="true">
+            <g transform={frame.arrow.transform}><path d={frame.arrow.d} fill={POSE_ARROW_RED} /></g>
             <g transform="translate({frame.pose.cx}, {frame.pose.cy}) rotate({frame.pose.deg}) translate(-126.4, -38.9)">
               <path d={STAFF_D} fill={RED} />
             </g>

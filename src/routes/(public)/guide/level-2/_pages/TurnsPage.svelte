@@ -8,12 +8,12 @@
    *   Anti — static E thumb-in → halfway pose (thumb out) → static S thumb-in
    *          = ANTI e→s (prop ccw) with 1 turn, in→in.
    *
-   * Start/end/combined are REAL single-staff pictographs (red hand, STAFF);
-   * turn arrows come from the renderer (turns: 1 on the motion), never drawn.
-   * The halfway frame composes a bare-grid pictograph + the real staff SVG at
-   * the mid-motion pose (level-1 StaffMotionsPage technique): hand at the SE
-   * point (576.2, 576.2); pro has swept 135° cw from the 180° start → 315°,
-   * anti 135° ccw → 45°.
+   * Start/end/combined are REAL single-staff pictographs (red hand, STAFF); the
+   * combined's turn arrow comes from the renderer (turns: 1 on the motion). The
+   * halfway frame composes a bare-grid pictograph + the real staff SVG at the
+   * mid-motion pose (poseAt) PLUS the end-direction arrow (poseArrow) — the app's
+   * own pro-curl / anti-zigzag glyph, placed by the engine to trace the pinky
+   * end's first-half arc, matching the original artboard's little red arrows.
    *
    * Header corner art is the divider's SequenceMandala facelift (iso left,
    * anti right) standing in for the original's hand-composited overlays.
@@ -32,6 +32,8 @@
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import { poseAt, type HalfwayMotion } from "../_data/halfway-pose";
+  import { poseArrow, POSE_ARROW_RED } from "../_data/pose-arrow";
   import { bakeReversals } from "../../level-1/_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../../level-1/_data/guide-data-context";
   import { getGuideActiveStep } from "../../level-1/_data/guide-active-step.svelte";
@@ -92,29 +94,37 @@
     "M251.4 67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1 3.9-9.1 8.7v19.2H10.3c-4.9 0-8.9 3.8-8.9 8.5V41c0 4.6 4 8.5 8.9 8.5h222.9v18.2c0 4.8 4.1 8.7 9.1 8.7s9.1-3.9 9.1-8.7z";
   const RED = "#DC2626";
 
-  type Halfway = { x: number; y: number; deg: number };
+  // Each motion is the source of truth for its combined pictograph, its halfway
+  // staff pose (poseAt), AND its end-direction arrows — one engine, so staff and
+  // arrow can never drift apart.
+  const PRO_M: HalfwayMotion = { type: MotionType.PRO, from: E, to: SO_, rot: CW, startOri: IN, endOri: OUT, turns: 1 };
+  const ANTI_M: HalfwayMotion = { type: MotionType.ANTI, from: E, to: SO_, rot: CCW, startOri: IN, endOri: IN, turns: 1 };
+
   type RowDef = {
     y: number;
+    motion: HalfwayMotion;
+    /** bow the arc the correct side for this prop rotation. */
+    flip: boolean;
     start: ReturnType<typeof redStaff>;
-    halfway: Halfway;
     end: ReturnType<typeof redStaff>;
     combined: ReturnType<typeof redStaff>;
   };
   const ROWS: RowDef[] = [
     {
-      // Pro + 1 turn: e→s CW handpath, prop cw; 90° path + 180° turn = 270°;
-      // halfway = 135° cw from the 180° start pose.
+      // Pro + 1 turn: e→s CW handpath, prop cw.
       y: 300,
+      motion: PRO_M,
+      flip: false,
       start: stat("pro-start", E, IN),
-      halfway: { x: 576.2, y: 576.2, deg: 315 },
       end: stat("pro-end", SO_, OUT),
       combined: redStaff("pro-full", MotionType.PRO, E, SO_, IN, OUT, CW, 1),
     },
     {
-      // Anti + 1 turn: e→s handpath, prop ccw; halfway = 135° ccw from 180°.
+      // Anti + 1 turn: e→s handpath, prop ccw.
       y: 560,
+      motion: ANTI_M,
+      flip: true,
       start: stat("anti-start", E, IN),
-      halfway: { x: 576.2, y: 576.2, deg: 45 },
       end: stat("anti-end", SO_, IN),
       combined: redStaff("anti-full", MotionType.ANTI, E, SO_, IN, IN, CCW, 1),
     },
@@ -258,10 +268,13 @@
     <div class="mini" style="left:{COLS[0]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
       <PictographContainer pictographData={row.start} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
     </div>
+    {@const hp = poseAt(row.motion, 0.5)}
+    {@const ha = poseArrow(row.motion, 0, 0.5, { flip: row.flip })}
     <div class="mini" style="left:{COLS[1]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
       <PictographContainer pictographData={bareGrids[ri]} gridMode={GridMode.DIAMOND} {...PICTO_FLAGS} />
       <svg class="halfway-staff" viewBox="0 0 950 950" aria-hidden="true">
-        <g transform="translate({row.halfway.x}, {row.halfway.y}) rotate({row.halfway.deg}) translate(-126.4, -38.9)">
+        <g transform={ha.transform}><path d={ha.d} fill={POSE_ARROW_RED} /></g>
+        <g transform="translate({hp.cx}, {hp.cy}) rotate({hp.deg}) translate(-126.4, -38.9)">
           <path d={STAFF_D} fill={RED} />
         </g>
       </svg>

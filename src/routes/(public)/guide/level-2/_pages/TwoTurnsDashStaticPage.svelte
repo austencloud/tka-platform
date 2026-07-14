@@ -15,12 +15,15 @@
    * Start/end/combined are REAL single-staff pictographs (red hand, STAFF); the
    * combined's turn arrows come from the renderer. Fractional frames compose a
    * bare-grid pictograph + the real staff SVG at the exact mid-motion pose from
-   * poseAt(motion, t) (generalized StaffMotionsPage overlay technique).
+   * poseAt(motion, t) (generalized StaffMotionsPage overlay technique), PLUS the
+   * end-direction arrow (poseArrow): the app's dash-bow / static-loop glyph,
+   * engine-placed to trace that slice's end travel, per the artboard's red arrows.
    *
    * Accuracy-pass flags: fractional pose positions/angles are engine
-   * approximations (radius-150 map), not the exact grid points; the small red
-   * pinky/thumb-end direction arrows on the intermediate frames are omitted
-   * (bare staves), matching the 1-turn breakdown pages — confirm vs artboard.
+   * approximations (radius-150 map), not the exact grid points. The dash
+   * end-direction arrows are the roughest fit — a dashing+spinning end traces a
+   * compound (near-cycloid) path the tail→head glyph map only approximates; the
+   * dash slice arrows want a hand-tuned pass against the artboard.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
@@ -36,6 +39,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import { poseAt, type HalfwayMotion, type StaffPose } from "../_data/halfway-pose";
+  import { poseArrow, POSE_ARROW_RED, type PoseArrow } from "../_data/pose-arrow";
   import { bakeReversals } from "../../level-1/_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../../level-1/_data/guide-data-context";
   import { getGuideActiveStep } from "../../level-1/_data/guide-active-step.svelte";
@@ -105,7 +109,7 @@
   // ── Strip model ────────────────────────────────────────────────────────────
   type Frame =
     | { kind: "picto"; data: ReturnType<typeof redStaff>; left: number; frameLabel?: string; thumbLabel?: string; animKey?: string }
-    | { kind: "pose"; grid: ReturnType<typeof bareGrid>; pose: StaffPose; left: number; frameLabel?: string; thumbLabel?: string };
+    | { kind: "pose"; grid: ReturnType<typeof bareGrid>; pose: StaffPose; arrow: PoseArrow; left: number; frameLabel?: string; thumbLabel?: string };
   type Strip = { y: number; size: number; capY: number; thumbY: number; thumbsPrefix?: boolean; frames: Frame[] };
 
   const dashQuarters: Strip = {
@@ -115,9 +119,9 @@
     thumbY: 150,
     frames: [
       { kind: "picto", data: stat("dq-start", SO_, IN), left: 21, frameLabel: "start", thumbLabel: "in" },
-      { kind: "pose", grid: bareGrid("dq-1"), pose: poseAt(DASH_M, 0.25), left: 121 },
-      { kind: "pose", grid: bareGrid("dq-2"), pose: poseAt(DASH_M, 0.5), left: 221, frameLabel: "halfway" },
-      { kind: "pose", grid: bareGrid("dq-3"), pose: poseAt(DASH_M, 0.75), left: 321 },
+      { kind: "pose", grid: bareGrid("dq-1"), pose: poseAt(DASH_M, 0.25), arrow: poseArrow(DASH_M, 0, 0.25), left: 121 },
+      { kind: "pose", grid: bareGrid("dq-2"), pose: poseAt(DASH_M, 0.5), arrow: poseArrow(DASH_M, 0.25, 0.5), left: 221, frameLabel: "halfway" },
+      { kind: "pose", grid: bareGrid("dq-3"), pose: poseAt(DASH_M, 0.75), arrow: poseArrow(DASH_M, 0.5, 0.75), left: 321 },
       { kind: "picto", data: stat("dq-end", N, OUT), left: 421, frameLabel: "end", thumbLabel: "out" },
       { kind: "picto", data: dashQCombined, left: 523, animKey: "l2tds-dash-q" },
     ],
@@ -129,7 +133,7 @@
     thumbY: 336,
     frames: [
       { kind: "picto", data: stat("dh-start", SO_, IN), left: 86, frameLabel: "start", thumbLabel: "in" },
-      { kind: "pose", grid: bareGrid("dh-half"), pose: poseAt(DASH_M, 0.5), left: 206, frameLabel: "halfway" },
+      { kind: "pose", grid: bareGrid("dh-half"), pose: poseAt(DASH_M, 0.5), arrow: poseArrow(DASH_M, 0, 0.5), left: 206, frameLabel: "halfway" },
       { kind: "picto", data: stat("dh-end", N, OUT), left: 326, frameLabel: "end", thumbLabel: "out" },
       { kind: "picto", data: dashHCombined, left: 446, animKey: "l2tds-dash-h" },
     ],
@@ -142,7 +146,7 @@
     thumbsPrefix: true,
     frames: [
       { kind: "picto", data: stat("st-start", E, IN), left: 95, frameLabel: "start", thumbLabel: "in" },
-      { kind: "pose", grid: bareGrid("st-half"), pose: poseAt(STATIC_M, 0.5), left: 215, frameLabel: "halfway", thumbLabel: "out" },
+      { kind: "pose", grid: bareGrid("st-half"), pose: poseAt(STATIC_M, 0.5), arrow: poseArrow(STATIC_M, 0, 0.5), left: 215, frameLabel: "halfway", thumbLabel: "out" },
       { kind: "picto", data: stat("st-end", E, IN), left: 335, frameLabel: "end", thumbLabel: "in" },
       { kind: "picto", data: staticCombined, left: 455, animKey: "l2tds-static" },
     ],
@@ -274,6 +278,7 @@
         <div class="mini" style="left:{frame.left * S}px; top:{strip.y * S}px; width:{strip.size * S}px; height:{strip.size * S}px">
           <PictographContainer pictographData={frame.grid} gridMode={GridMode.DIAMOND} {...PICTO_FLAGS} />
           <svg class="halfway-staff" viewBox="0 0 950 950" aria-hidden="true">
+            <g transform={frame.arrow.transform}><path d={frame.arrow.d} fill={POSE_ARROW_RED} /></g>
             <g transform="translate({frame.pose.cx}, {frame.pose.cy}) rotate({frame.pose.deg}) translate(-126.4, -38.9)">
               <path d={STAFF_D} fill={RED} />
             </g>
