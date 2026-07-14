@@ -1,7 +1,8 @@
 <script lang="ts">
   /**
-   * 2-Turns (Shifts) — Level 2 body page 23 (manifest `two-turns-shifts`),
-   * faithful to old p23. Two turns = a full 360° added to a shift. Three strips:
+   * 2-Turns (Shifts) — Level 2 body page (manifest `two-turns-shifts`), faithful
+   * to the source artboard (level-2.pdf page 22). Two turns = a full 360° added
+   * to a shift. Three strips:
    *
    *   Pro (halves)   — start E(in) → halfway pose (45°, out) → end S(in)
    *                    = PRO e→s IN→IN CW turns=2 (in → out → in, 2 switches).
@@ -10,21 +11,16 @@
    *                    "At each third there is a staff end at the center point."
    *   Anti (halves)  — the same anti motion sampled in half (start/halfway/end).
    *
-   * Start/end/combined are REAL single-staff pictographs (red hand, STAFF); the
-   * combined's turn arrows come from the renderer. Fractional frames compose a
-   * bare-grid pictograph + the real staff SVG at the exact mid-motion pose, asked
-   * from the animation engine via poseAt(motion, t) (level-1 StaffMotionsPage
-   * overlay technique, generalized to arbitrary t for the 2-turn breakdowns),
-   * PLUS the end-direction arrow (poseArrow) — the app's own pro-curl/anti-zigzag
-   * glyph, engine-placed to trace that slice's end travel, per the artboard.
+   * Every frame renders the red staff+arrow drawing lifted vector-exact from that
+   * artboard frame via LiftedTurnFrame (strips p22_s0 / p22_s1 / p22_s2 in
+   * lifted-turn-arrows.ts). The little end-direction arrows — the pro-curl, the
+   * anti zig-zag, the staff-end-at-center thirds — are Austen's own drawings, not
+   * the app motion-arrow assets, so they match the guide 1:1. The combined frame
+   * of each strip is the click-to-animate target; the animation is built from the
+   * real motion data (redStaff), independent of the lifted display.
    *
-   * Accuracy-pass flags: the bottom "broken in half" strip follows the proof's
-   * own in→out→in labeling (combined IN→IN turns=2) which differs from the
-   * authoritative thirds strip's 3-switch in→out→in→out — confirm vs artboard.
-   * Fractional pose positions/angles are engine approximations (radius-150 map),
-   * not the exact grid points; header corner art is the divider mandala facelift.
+   * Header corner art is the divider mandala facelift.
    */
-  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
@@ -38,8 +34,7 @@
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { poseAt, type HalfwayMotion, type StaffPose } from "../_data/halfway-pose";
-  import { poseArrow, POSE_ARROW_RED, type PoseArrow } from "../_data/pose-arrow";
+  import LiftedTurnFrame from "../_components/LiftedTurnFrame.svelte";
   import { bakeReversals } from "../../level-1/_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../../level-1/_data/guide-data-context";
   import { getGuideActiveStep } from "../../level-1/_data/guide-active-step.svelte";
@@ -85,64 +80,35 @@
   });
   const stat = (id: string, loc: GridLocation, ori: Orientation) =>
     redStaff(id, MotionType.STATIC, loc, loc, ori, ori, NOROT);
-  const bareGrid = (id: string) => ({
-    id: `l2ts-${id}`,
-    letter: null,
-    gridMode: GridMode.DIAMOND,
-    motions: {
-      blue: createPlaceholderMotion(MotionColor.BLUE),
-      red: createPlaceholderMotion(MotionColor.RED),
-    },
-  });
-
-  const STAFF_D =
-    "M251.4 67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1 3.9-9.1 8.7v19.2H10.3c-4.9 0-8.9 3.8-8.9 8.5V41c0 4.6 4 8.5 8.9 8.5h222.9v18.2c0 4.8 4.1 8.7 9.1 8.7s9.1-3.9 9.1-8.7z";
-  const RED = "#DC2626";
-
-  // ── Motions ──────────────────────────────────────────────────────────────
-  const PRO_M: HalfwayMotion = { type: MotionType.PRO, from: E, to: SO_, rot: CW, startOri: IN, endOri: IN, turns: 2 };
-  const ANTI_M: HalfwayMotion = { type: MotionType.ANTI, from: E, to: SO_, rot: CCW, startOri: IN, endOri: OUT, turns: 2 };
 
   const proCombined = redStaff("pro-full", MotionType.PRO, E, SO_, IN, IN, CW, 2);
   const antiCombined = redStaff("anti-full", MotionType.ANTI, E, SO_, IN, OUT, CCW, 2);
   const antiHalfCombined = redStaff("anti-half-full", MotionType.ANTI, E, SO_, IN, IN, CCW, 2);
 
   // ── Strip model ────────────────────────────────────────────────────────────
-  type Frame =
-    | { kind: "picto"; data: ReturnType<typeof redStaff>; left: number; animKey?: string }
-    | { kind: "pose"; grid: ReturnType<typeof bareGrid>; pose: StaffPose; arrow: PoseArrow; left: number };
-  type Strip = { y: number; size: number; frames: Frame[] };
+  // Every frame is the lifted artboard drawing (LiftedTurnFrame frameKey =
+  // `${liftBase}_f${index}`). The last frame of a strip is the combined result
+  // and carries an animKey (click-to-animate the real motion).
+  type Frame = { left: number; animKey?: string };
+  type Strip = { y: number; size: number; liftBase: string; frames: Frame[] };
 
   const proStrip: Strip = {
     y: 200,
     size: 100,
-    frames: [
-      { kind: "picto", data: stat("pro-start", E, IN), left: 95 },
-      { kind: "pose", grid: bareGrid("pro-half"), pose: poseAt(PRO_M, 0.5), arrow: poseArrow(PRO_M, 0, 0.5), left: 215 },
-      { kind: "picto", data: stat("pro-end", SO_, IN), left: 335 },
-      { kind: "picto", data: proCombined, left: 455, animKey: "l2ts-pro" },
-    ],
+    liftBase: "p22_s0",
+    frames: [{ left: 95 }, { left: 215 }, { left: 335 }, { left: 455, animKey: "l2ts-pro" }],
   };
   const antiThirds: Strip = {
     y: 455,
     size: 88,
-    frames: [
-      { kind: "picto", data: stat("anti-start", E, IN), left: 30 },
-      { kind: "pose", grid: bareGrid("anti-t1"), pose: poseAt(ANTI_M, 1 / 3), arrow: poseArrow(ANTI_M, 0, 1 / 3, { flip: true }), left: 148 },
-      { kind: "pose", grid: bareGrid("anti-t2"), pose: poseAt(ANTI_M, 2 / 3), arrow: poseArrow(ANTI_M, 1 / 3, 2 / 3, { flip: true }), left: 266 },
-      { kind: "picto", data: stat("anti-end", SO_, OUT), left: 384 },
-      { kind: "picto", data: antiCombined, left: 508, animKey: "l2ts-anti" },
-    ],
+    liftBase: "p22_s1",
+    frames: [{ left: 30 }, { left: 148 }, { left: 266 }, { left: 384 }, { left: 508, animKey: "l2ts-anti" }],
   };
   const antiHalves: Strip = {
     y: 670,
     size: 100,
-    frames: [
-      { kind: "picto", data: stat("antih-start", E, IN), left: 95 },
-      { kind: "pose", grid: bareGrid("antih-half"), pose: poseAt(ANTI_M, 0.5), arrow: poseArrow(ANTI_M, 0, 0.5, { flip: true }), left: 215 },
-      { kind: "picto", data: stat("antih-end", SO_, IN), left: 335 },
-      { kind: "picto", data: antiHalfCombined, left: 455, animKey: "l2ts-antih" },
-    ],
+    liftBase: "p22_s2",
+    frames: [{ left: 95 }, { left: 215 }, { left: 335 }, { left: 455, animKey: "l2ts-antih" }],
   };
   const STRIPS = [proStrip, antiThirds, antiHalves];
 
@@ -264,20 +230,6 @@
     mstep(m("anti", "ccw", "s", "w", "in", "out"), m("anti", "ccw", "n", "e", "in", "out")),
     mstep(m("anti", "ccw", "w", "n", "out", "in"), m("anti", "ccw", "e", "s", "out", "in")),
   ]);
-
-  const PICTO_FLAGS = {
-    showGrid: true,
-    showTKA: false,
-    showPositions: false,
-    showReversals: false,
-    showTnD: false,
-    showElemental: false,
-    showNonRadialPoints: false,
-    showHandPoints: true,
-    darkMode: false,
-    printMode: true,
-    disableTransitions: true,
-  } as const;
 </script>
 
 <div class="tt-page">
@@ -292,38 +244,27 @@
 
   {#each STRIPS as strip, si (si)}
     {#each strip.frames as frame, fi (fi)}
-      {#if frame.kind === "picto"}
-        {#if frame.animKey}
-          {@const key = frame.animKey}
-          <div
-            class="mini tka-seq-cell"
-            class:is-hovered={selection?.isHovered(key)}
-            class:is-selected={selection?.isSelected(key)}
-            class:guide-step-active={activeStep?.key === key}
-            style="left:{frame.left * S}px; top:{strip.y * S}px; width:{strip.size * S}px; height:{strip.size * S}px"
-          >
-            <PictographContainer pictographData={frame.data} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
-            <SelectionHit
-              groupId={key}
-              isGroupStart
-              label={`Animate: ${ANIM[key as keyof typeof ANIM].word}`}
-              onselect={() => emitSequence?.({ strip: rowSteps(key), word: ANIM[key as keyof typeof ANIM].word, key, propType: "staff" })}
-            />
-          </div>
-        {:else}
-          <div class="mini" style="left:{frame.left * S}px; top:{strip.y * S}px; width:{strip.size * S}px; height:{strip.size * S}px">
-            <PictographContainer pictographData={frame.data} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
-          </div>
-        {/if}
+      {@const key = `${strip.liftBase}_f${fi}`}
+      {#if frame.animKey}
+        {@const animKey = frame.animKey}
+        <div
+          class="mini tka-seq-cell"
+          class:is-hovered={selection?.isHovered(animKey)}
+          class:is-selected={selection?.isSelected(animKey)}
+          class:guide-step-active={activeStep?.key === animKey}
+          style="left:{frame.left * S}px; top:{strip.y * S}px; width:{strip.size * S}px; height:{strip.size * S}px"
+        >
+          <LiftedTurnFrame frameKey={key} />
+          <SelectionHit
+            groupId={animKey}
+            isGroupStart
+            label={`Animate: ${ANIM[animKey as keyof typeof ANIM].word}`}
+            onselect={() => emitSequence?.({ strip: rowSteps(animKey), word: ANIM[animKey as keyof typeof ANIM].word, key: animKey, propType: "staff" })}
+          />
+        </div>
       {:else}
         <div class="mini" style="left:{frame.left * S}px; top:{strip.y * S}px; width:{strip.size * S}px; height:{strip.size * S}px">
-          <PictographContainer pictographData={frame.grid} gridMode={GridMode.DIAMOND} {...PICTO_FLAGS} />
-          <svg class="halfway-staff" viewBox="0 0 950 950" aria-hidden="true">
-            <g transform={frame.arrow.transform}><path d={frame.arrow.d} fill={POSE_ARROW_RED} /></g>
-            <g transform="translate({frame.pose.cx}, {frame.pose.cy}) rotate({frame.pose.deg}) translate(-126.4, -38.9)">
-              <path d={STAFF_D} fill={RED} />
-            </g>
-          </svg>
+          <LiftedTurnFrame frameKey={key} />
         </div>
       {/if}
     {/each}
@@ -370,13 +311,6 @@
     position: absolute;
     border: 1px solid #c4c4cc;
     box-sizing: border-box;
-  }
-  .halfway-staff {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
   }
   .flow-arrow {
     position: absolute;

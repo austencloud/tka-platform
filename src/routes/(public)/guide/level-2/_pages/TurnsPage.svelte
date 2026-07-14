@@ -3,22 +3,18 @@
    * Turns (Shifts) — Level 2 body page 2 (manifest `turns-shifts`), faithful to
    * old p3. Two teaching strips, each start → halfway → end = combined:
    *
-   *   Pro  — static E thumb-in → halfway pose → static S thumb-out
-   *          = PRO e→s (CW handpath, prop cw) with 1 turn, in→out.
-   *   Anti — static E thumb-in → halfway pose (thumb out) → static S thumb-in
-   *          = ANTI e→s (prop ccw) with 1 turn, in→in.
+   *   Pro  — static E thumb-in → halfway → static S thumb-out
+   *          = PRO e→s with 1 turn, in→out.
+   *   Anti — static E thumb-in → halfway → static S thumb-in
+   *          = ANTI e→s with 1 turn, in→in.
    *
-   * Start/end/combined are REAL single-staff pictographs (red hand, STAFF); the
-   * combined's turn arrow comes from the renderer (turns: 1 on the motion). The
-   * halfway frame composes a bare-grid pictograph + the real staff SVG at the
-   * mid-motion pose (poseAt) PLUS the end-direction arrow (poseArrow) — the app's
-   * own pro-curl / anti-zigzag glyph, placed by the engine to trace the pinky
-   * end's first-half arc, matching the original artboard's little red arrows.
-   *
-   * Header corner art is the divider's SequenceMandala facelift (iso left,
-   * anti right) standing in for the original's hand-composited overlays.
+   * Every frame renders a bare-grid pictograph overlaid with the red staff+arrow
+   * drawing lifted vector-exact from the source artboard (see lifted-turn-arrows.ts,
+   * page 2). The little end-direction arrows (pro curl, anti zig-zag) are Austen's
+   * own drawings, not the app motion-arrow assets — so they match the guide 1:1.
+   * The combined frame is the click-to-animate target; the animation is built from
+   * the real motion data, independent of the lifted display.
    */
-  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
@@ -32,8 +28,7 @@
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { poseAt, type HalfwayMotion } from "../_data/halfway-pose";
-  import { poseArrow, POSE_ARROW_RED } from "../_data/pose-arrow";
+  import LiftedTurnFrame from "../_components/LiftedTurnFrame.svelte";
   import { bakeReversals } from "../../level-1/_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../../level-1/_data/guide-data-context";
   import { getGuideActiveStep } from "../../level-1/_data/guide-active-step.svelte";
@@ -49,6 +44,8 @@
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
 
+  // Motion data (used only to build the click-to-animate sequence, never drawn —
+  // the frames are the lifted artboard artwork).
   const redStaff = (
     id: string,
     type: MotionType,
@@ -79,61 +76,36 @@
   });
   const stat = (id: string, loc: GridLocation, ori: Orientation) =>
     redStaff(id, MotionType.STATIC, loc, loc, ori, ori, NOROT);
-  const bareGrid = (id: string) => ({
-    id: `l2t-${id}`,
-    letter: null,
-    gridMode: GridMode.DIAMOND,
-    motions: {
-      blue: createPlaceholderMotion(MotionColor.BLUE),
-      red: createPlaceholderMotion(MotionColor.RED),
-    },
-  });
-
-  // The staff SVG path (renderer asset); crossbar at the +x end.
-  const STAFF_D =
-    "M251.4 67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1 3.9-9.1 8.7v19.2H10.3c-4.9 0-8.9 3.8-8.9 8.5V41c0 4.6 4 8.5 8.9 8.5h222.9v18.2c0 4.8 4.1 8.7 9.1 8.7s9.1-3.9 9.1-8.7z";
-  const RED = "#DC2626";
-
-  // Each motion is the source of truth for its combined pictograph, its halfway
-  // staff pose (poseAt), AND its end-direction arrows — one engine, so staff and
-  // arrow can never drift apart.
-  const PRO_M: HalfwayMotion = { type: MotionType.PRO, from: E, to: SO_, rot: CW, startOri: IN, endOri: OUT, turns: 1 };
-  const ANTI_M: HalfwayMotion = { type: MotionType.ANTI, from: E, to: SO_, rot: CCW, startOri: IN, endOri: IN, turns: 1 };
 
   type RowDef = {
     y: number;
-    motion: HalfwayMotion;
-    /** bow the arc the correct side for this prop rotation. */
-    flip: boolean;
+    /** lifted-frame key prefix: `${liftBase}_f${col}`. */
+    liftBase: string;
     start: ReturnType<typeof redStaff>;
-    end: ReturnType<typeof redStaff>;
     combined: ReturnType<typeof redStaff>;
+    animKey: string;
+    word: string;
   };
   const ROWS: RowDef[] = [
     {
-      // Pro + 1 turn: e→s CW handpath, prop cw.
       y: 300,
-      motion: PRO_M,
-      flip: false,
+      liftBase: "p2_s0",
       start: stat("pro-start", E, IN),
-      end: stat("pro-end", SO_, OUT),
       combined: redStaff("pro-full", MotionType.PRO, E, SO_, IN, OUT, CW, 1),
+      animKey: "l2t-pro",
+      word: "Prospin with a turn",
     },
     {
-      // Anti + 1 turn: e→s handpath, prop ccw.
       y: 560,
-      motion: ANTI_M,
-      flip: true,
+      liftBase: "p2_s1",
       start: stat("anti-start", E, IN),
-      end: stat("anti-end", SO_, IN),
       combined: redStaff("anti-full", MotionType.ANTI, E, SO_, IN, IN, CCW, 1),
+      animKey: "l2t-anti",
+      word: "Antispin with a turn",
     },
   ];
-  const bareGrids = ["pro-half", "anti-half"].map(bareGrid);
 
   // Reader click-to-animate (combined pictograph plays Start → motion).
-  const ROW_KEYS = ["l2t-pro", "l2t-anti"];
-  const ROW_WORDS = ["Prospin with a turn", "Antispin with a turn"];
   const animStep = (data: ReturnType<typeof redStaff>, stepNumber: number): StepData =>
     ({
       ...data,
@@ -237,20 +209,6 @@
     { x: 372, y: 562, fs: 13, style: "cap", t: "in" },
     { x: 26, y: 602, fs: 24, style: "mode", t: "Anti" },
   ];
-
-  const PICTO_FLAGS = {
-    showGrid: true,
-    showTKA: false,
-    showPositions: false,
-    showReversals: false,
-    showTnD: false,
-    showElemental: false,
-    showNonRadialPoints: false,
-    showHandPoints: true,
-    darkMode: false,
-    printMode: true,
-    disableTransitions: true,
-  } as const;
 </script>
 
 <div class="turns-page">
@@ -265,39 +223,31 @@
   <div class="rule hair" style="left:{20 * S}px; top:{HAIRLINE * S}px; width:{572 * S}px"></div>
 
   {#each ROWS as row, ri (ri)}
-    <div class="mini" style="left:{COLS[0]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={row.start} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
-    </div>
-    {@const hp = poseAt(row.motion, 0.5)}
-    {@const ha = poseArrow(row.motion, 0, 0.5, { flip: row.flip })}
-    <div class="mini" style="left:{COLS[1]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={bareGrids[ri]} gridMode={GridMode.DIAMOND} {...PICTO_FLAGS} />
-      <svg class="halfway-staff" viewBox="0 0 950 950" aria-hidden="true">
-        <g transform={ha.transform}><path d={ha.d} fill={POSE_ARROW_RED} /></g>
-        <g transform="translate({hp.cx}, {hp.cy}) rotate({hp.deg}) translate(-126.4, -38.9)">
-          <path d={STAFF_D} fill={RED} />
-        </g>
-      </svg>
-    </div>
-    <div class="mini" style="left:{COLS[2]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-      <PictographContainer pictographData={row.end} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
-    </div>
-    {@const key = ROW_KEYS[ri]!}
-    <div
-      class="mini tka-seq-cell"
-      class:is-hovered={selection?.isHovered(key)}
-      class:is-selected={selection?.isSelected(key)}
-      class:guide-step-active={activeStep?.key === key}
-      style="left:{COLS[3]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px"
-    >
-      <PictographContainer pictographData={row.combined} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
-      <SelectionHit
-        groupId={key}
-        isGroupStart
-        label={`Animate: ${ROW_WORDS[ri]}`}
-        onselect={() => emitSequence?.({ strip: rowSteps(row), word: ROW_WORDS[ri]!, key, propType: "staff" })}
-      />
-    </div>
+    {#each COLS as col, ci (ci)}
+      {@const key = `${row.liftBase}_f${ci}`}
+      {@const isCombined = ci === COLS.length - 1}
+      {#if isCombined}
+        <div
+          class="mini tka-seq-cell"
+          class:is-hovered={selection?.isHovered(row.animKey)}
+          class:is-selected={selection?.isSelected(row.animKey)}
+          class:guide-step-active={activeStep?.key === row.animKey}
+          style="left:{col * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px"
+        >
+          <LiftedTurnFrame frameKey={key} />
+          <SelectionHit
+            groupId={row.animKey}
+            isGroupStart
+            label={`Animate: ${row.word}`}
+            onselect={() => emitSequence?.({ strip: rowSteps(row), word: row.word, key: row.animKey, propType: "staff" })}
+          />
+        </div>
+      {:else}
+        <div class="mini" style="left:{col * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
+          <LiftedTurnFrame frameKey={key} />
+        </div>
+      {/if}
+    {/each}
   {/each}
 
   {#each FLOW_ARROWS as a (a.x + "-" + a.y)}
@@ -336,13 +286,6 @@
     position: absolute;
     border: 1px solid #c4c4cc;
     box-sizing: border-box;
-  }
-  .halfway-staff {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
   }
   .flow-arrow {
     position: absolute;
