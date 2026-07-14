@@ -1,4 +1,4 @@
-# Collections IA — Distinguish Mine / TKA Originals / Others'
+# Collections IA — Distinguish Mine / TKA Core / Others'
 
 **Date:** 2026-07-08
 **Status:** Approved (design)
@@ -39,13 +39,13 @@ headers. Split into three headed sections (headers render only when the section
 is non-empty):
 
 1. **My Collections** — the All shelf + the user's own smart/manual collections.
-2. **TKA Originals** — the founding set (`FOUNDING_SMART_COLLECTIONS` →
+2. **TKA Core** — the founding set (`FOUNDING_SMART_COLLECTIONS` →
    `toSyntheticCollection`). Visually distinct group, so "everybody's joint"
    decks read as curated-by-TKA, not user-made.
 3. **Following** — followed creators' collections (existing `followedShelves`,
    gains a peer header consistent with the other two).
 
-Label chosen: **TKA Originals**. Section headers reuse the existing
+Label chosen: **TKA Core**. Section headers reuse the existing
 `.following-title` heading style (rename the shared class to a neutral
 `.shelf-heading` so all three match).
 

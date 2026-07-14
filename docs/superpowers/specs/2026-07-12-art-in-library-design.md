@@ -17,13 +17,13 @@ The Playground's three saved collections (Tunnels, 3D Scenes, Mandalas) are the 
 | Restore entry point | `MandalaModule.selectMandala()` | `services/open-tunnel-in-viewer.ts` | `services/open-3d-scene.ts` (`applyScene3DLook` / `openScene3DInViewer`) |
 
 - Shared infra: `src/lib/shared/collections/` (`CollectionState<T>`, Firestore `users/{uid}/*-collection`, localStorage guest mode + sign-in migration) + `CollectionGalleryDetail.svelte` shell.
-- Library (`MyCollectionsPanel.svelte`) is sequence-only, but its snippet-per-shelf sectioning (My Collections / TKA Originals / Following) and content-agnostic `CollectionCard` are the natural seam.
+- Library (`MyCollectionsPanel.svelte`) is sequence-only, but its snippet-per-shelf sectioning (My Collections / TKA Core / Following) and content-agnostic `CollectionCard` are the natural seam.
 - Tunnel gallery **browsing** is already sandboxed (`TunnelDetailPreview` restores state on destroy). Only explicit Open in Viewer / Apply look mutates globals — today with zero warning or undo.
 - BrowseEngine / smart collections are hard-typed to `SequenceData`; art does NOT ride that pipeline.
 
 ## Unit 1 — Library "Art" shelf + nav rename
 
-**`MyCollectionsPanel.svelte`** gains a fourth shelf, heading **Art**, positioned after "My Collections", before "TKA Originals". Rendered in BOTH hosts (desktop rail snippet + phone list snippet), same `shelf-heading` pattern.
+**`MyCollectionsPanel.svelte`** gains a fourth shelf, heading **Art**, positioned after "My Collections", before "TKA Core". Rendered in BOTH hosts (desktop rail snippet + phone list snippet), same `shelf-heading` pattern.
 
 Three cards: **Tunnels**, **3D Scenes**, **Mandalas**.
 - Count = live entry count from the three collection-state singletons (`tunnelCollectionState`, `scene3dCollectionState`, `mandalaCollectionState`); init lazily on Library mount if needed.

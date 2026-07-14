@@ -114,5 +114,5 @@ user's list never seeds the next. If teardown has the outgoing uid, clear there.
 
 ## Out of scope
 
-Member/thumbnail caching (stays lazy on open). Dexie migration. TKA Originals /
+Member/thumbnail caching (stays lazy on open). Dexie migration. TKA Core /
 All-count shelves (separate reads; not part of the skeleton complaint).
