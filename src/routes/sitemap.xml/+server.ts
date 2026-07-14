@@ -1,7 +1,48 @@
 import { LANDING_DOMAIN } from "../../config/domains";
 import { GUIDE_BODY_PAGES } from "../(public)/guide/level-1/_data/guide-manifest";
 import { hasReflowContent } from "../(public)/guide/level-1/_data/guide-content";
+import { allLetterSeo } from "$lib/shared/seo/notation-letters";
 import type { RequestHandler } from "./$types";
+
+interface SitemapImage {
+  loc: string;
+  title: string;
+  caption: string;
+}
+
+interface SitemapEntry {
+  url: string;
+  priority: string;
+  changefreq: string;
+  images?: SitemapImage[];
+}
+
+function xmlEscape(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/**
+ * One indexable page per canonical letter, each carrying the baked pictograph
+ * as an <image:image> so Google Images can associate the file with the page.
+ */
+function getLetterImageEntries(): SitemapEntry[] {
+  return allLetterSeo().map((l) => ({
+    url: l.href.replace(/^\//, ""),
+    priority: "0.6",
+    changefreq: "monthly",
+    images: [
+      {
+        loc: `${LANDING_DOMAIN}${l.images.webp}`,
+        title: `Kinetic Alphabet letter ${l.letter} pictograph`,
+        caption: l.caption,
+      },
+    ],
+  }));
+}
 
 const pages = [
   // Landing page (canonical — /landing duplicates this and is dropped)
@@ -20,6 +61,8 @@ const pages = [
   { url: "notation/clubs", priority: "0.7", changefreq: "monthly" },
   { url: "notation/buugeng", priority: "0.7", changefreq: "monthly" },
   { url: "notation/poi", priority: "0.7", changefreq: "monthly" },
+  // Per-letter notation pages with baked pictographs (2026-07-14-image-seo-google-images-design.md)
+  { url: "notation/letters", priority: "0.7", changefreq: "monthly" },
   { url: "glossary", priority: "0.8", changefreq: "monthly" },
   { url: "learn/staff-spinning-choreography", priority: "0.8", changefreq: "monthly" },
   { url: "roots", priority: "0.8", changefreq: "monthly" },
@@ -97,13 +140,14 @@ export const GET: RequestHandler = async () => {
   const now = new Date().toISOString().split("T")[0];
   const curatedUrls = await getCuratedSequenceUrls();
 
-  const allEntries = [
+  const allEntries: SitemapEntry[] = [
     ...pages.map((page) => ({
       url: page.url,
       priority: page.priority,
       changefreq: page.changefreq,
     })),
     ...guideLevel1Entries,
+    ...getLetterImageEntries(),
     ...curatedUrls.map((url) => ({
       url,
       priority: "0.6",
@@ -112,7 +156,8 @@ export const GET: RequestHandler = async () => {
   ];
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   ${allEntries
     .map(
       (page) => `
@@ -120,7 +165,16 @@ export const GET: RequestHandler = async () => {
     <loc>${LANDING_DOMAIN}/${page.url}</loc>
     <lastmod>${now}</lastmod>
     <changefreq>${page.changefreq}</changefreq>
-    <priority>${page.priority}</priority>
+    <priority>${page.priority}</priority>${(page.images ?? [])
+      .map(
+        (img) => `
+    <image:image>
+      <image:loc>${xmlEscape(img.loc)}</image:loc>
+      <image:title>${xmlEscape(img.title)}</image:title>
+      <image:caption>${xmlEscape(img.caption)}</image:caption>
+    </image:image>`
+      )
+      .join("")}
   </url>`
     )
     .join("")}

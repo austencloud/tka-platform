@@ -1,0 +1,754 @@
+{
+  "A": {
+    "startPosition": "alpha3",
+    "endPosition": "alpha5",
+    "timing": "split",
+    "direction": "same",
+    "blue": {
+      "motionType": "pro",
+      "start": "w",
+      "end": "n"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "B": {
+    "startPosition": "alpha3",
+    "endPosition": "alpha5",
+    "timing": "split",
+    "direction": "same",
+    "blue": {
+      "motionType": "anti",
+      "start": "w",
+      "end": "n"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "C": {
+    "startPosition": "alpha3",
+    "endPosition": "alpha5",
+    "timing": "split",
+    "direction": "same",
+    "blue": {
+      "motionType": "anti",
+      "start": "w",
+      "end": "n"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "D": {
+    "startPosition": "beta3",
+    "endPosition": "alpha5",
+    "timing": "split",
+    "direction": "opp",
+    "blue": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "n"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "E": {
+    "startPosition": "beta3",
+    "endPosition": "alpha5",
+    "timing": "split",
+    "direction": "opp",
+    "blue": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "n"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "F": {
+    "startPosition": "beta3",
+    "endPosition": "alpha5",
+    "timing": "split",
+    "direction": "opp",
+    "blue": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "n"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "G": {
+    "startPosition": "beta3",
+    "endPosition": "beta5",
+    "timing": "tog",
+    "direction": "same",
+    "blue": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "H": {
+    "startPosition": "beta3",
+    "endPosition": "beta5",
+    "timing": "tog",
+    "direction": "same",
+    "blue": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "I": {
+    "startPosition": "beta3",
+    "endPosition": "beta5",
+    "timing": "tog",
+    "direction": "same",
+    "blue": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "J": {
+    "startPosition": "alpha3",
+    "endPosition": "beta5",
+    "timing": "tog",
+    "direction": "opp",
+    "blue": {
+      "motionType": "pro",
+      "start": "w",
+      "end": "s"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "K": {
+    "startPosition": "alpha3",
+    "endPosition": "beta5",
+    "timing": "tog",
+    "direction": "opp",
+    "blue": {
+      "motionType": "anti",
+      "start": "w",
+      "end": "s"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "L": {
+    "startPosition": "alpha3",
+    "endPosition": "beta5",
+    "timing": "tog",
+    "direction": "opp",
+    "blue": {
+      "motionType": "anti",
+      "start": "w",
+      "end": "s"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "M": {
+    "startPosition": "gamma3",
+    "endPosition": "gamma13",
+    "timing": "quarter",
+    "direction": "opp",
+    "blue": {
+      "motionType": "pro",
+      "start": "n",
+      "end": "w"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "N": {
+    "startPosition": "gamma3",
+    "endPosition": "gamma13",
+    "timing": "quarter",
+    "direction": "opp",
+    "blue": {
+      "motionType": "anti",
+      "start": "n",
+      "end": "w"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "O": {
+    "startPosition": "gamma3",
+    "endPosition": "gamma13",
+    "timing": "quarter",
+    "direction": "opp",
+    "blue": {
+      "motionType": "anti",
+      "start": "n",
+      "end": "w"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "P": {
+    "startPosition": "gamma11",
+    "endPosition": "gamma5",
+    "timing": "quarter",
+    "direction": "opp",
+    "blue": {
+      "motionType": "pro",
+      "start": "s",
+      "end": "e"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "Q": {
+    "startPosition": "gamma11",
+    "endPosition": "gamma5",
+    "timing": "quarter",
+    "direction": "opp",
+    "blue": {
+      "motionType": "anti",
+      "start": "s",
+      "end": "e"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "R": {
+    "startPosition": "gamma11",
+    "endPosition": "gamma5",
+    "timing": "quarter",
+    "direction": "opp",
+    "blue": {
+      "motionType": "anti",
+      "start": "s",
+      "end": "e"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "S": {
+    "startPosition": "gamma3",
+    "endPosition": "gamma5",
+    "timing": "quarter",
+    "direction": "same",
+    "blue": {
+      "motionType": "pro",
+      "start": "n",
+      "end": "e"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "T": {
+    "startPosition": "gamma3",
+    "endPosition": "gamma5",
+    "timing": "quarter",
+    "direction": "same",
+    "blue": {
+      "motionType": "anti",
+      "start": "n",
+      "end": "e"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "U": {
+    "startPosition": "gamma11",
+    "endPosition": "gamma13",
+    "timing": "quarter",
+    "direction": "same",
+    "blue": {
+      "motionType": "pro",
+      "start": "s",
+      "end": "w"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "V": {
+    "startPosition": "gamma11",
+    "endPosition": "gamma13",
+    "timing": "quarter",
+    "direction": "same",
+    "blue": {
+      "motionType": "anti",
+      "start": "s",
+      "end": "w"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "W": {
+    "startPosition": "gamma3",
+    "endPosition": "alpha5",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "static",
+      "start": "n",
+      "end": "n"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "X": {
+    "startPosition": "gamma3",
+    "endPosition": "alpha5",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "static",
+      "start": "n",
+      "end": "n"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "Y": {
+    "startPosition": "gamma11",
+    "endPosition": "beta5",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "static",
+      "start": "s",
+      "end": "s"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "Z": {
+    "startPosition": "gamma11",
+    "endPosition": "beta5",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "static",
+      "start": "s",
+      "end": "s"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "Σ": {
+    "startPosition": "alpha3",
+    "endPosition": "gamma13",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "static",
+      "start": "w",
+      "end": "w"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "Δ": {
+    "startPosition": "alpha3",
+    "endPosition": "gamma13",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "static",
+      "start": "w",
+      "end": "w"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "Θ": {
+    "startPosition": "beta3",
+    "endPosition": "gamma5",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "static",
+      "start": "e",
+      "end": "e"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "Ω": {
+    "startPosition": "beta3",
+    "endPosition": "gamma5",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "static",
+      "start": "e",
+      "end": "e"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "W-": {
+    "startPosition": "gamma11",
+    "endPosition": "alpha5",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "dash",
+      "start": "s",
+      "end": "n"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "X-": {
+    "startPosition": "gamma11",
+    "endPosition": "alpha5",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "dash",
+      "start": "s",
+      "end": "n"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "Y-": {
+    "startPosition": "gamma3",
+    "endPosition": "beta5",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "dash",
+      "start": "n",
+      "end": "s"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "Z-": {
+    "startPosition": "gamma3",
+    "endPosition": "beta5",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "dash",
+      "start": "n",
+      "end": "s"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "Σ-": {
+    "startPosition": "beta3",
+    "endPosition": "gamma13",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "dash",
+      "start": "e",
+      "end": "w"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "Δ-": {
+    "startPosition": "beta3",
+    "endPosition": "gamma13",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "dash",
+      "start": "e",
+      "end": "w"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "Θ-": {
+    "startPosition": "alpha3",
+    "endPosition": "gamma5",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "dash",
+      "start": "w",
+      "end": "e"
+    },
+    "red": {
+      "motionType": "pro",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "Ω-": {
+    "startPosition": "alpha3",
+    "endPosition": "gamma5",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "dash",
+      "start": "w",
+      "end": "e"
+    },
+    "red": {
+      "motionType": "anti",
+      "start": "e",
+      "end": "s"
+    }
+  },
+  "Φ": {
+    "startPosition": "beta3",
+    "endPosition": "alpha7",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "static",
+      "start": "e",
+      "end": "e"
+    },
+    "red": {
+      "motionType": "dash",
+      "start": "e",
+      "end": "w"
+    }
+  },
+  "Ψ": {
+    "startPosition": "alpha3",
+    "endPosition": "beta7",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "static",
+      "start": "w",
+      "end": "w"
+    },
+    "red": {
+      "motionType": "dash",
+      "start": "e",
+      "end": "w"
+    }
+  },
+  "Λ": {
+    "startPosition": "gamma3",
+    "endPosition": "gamma15",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "static",
+      "start": "n",
+      "end": "n"
+    },
+    "red": {
+      "motionType": "dash",
+      "start": "e",
+      "end": "w"
+    }
+  },
+  "Φ-": {
+    "startPosition": "alpha3",
+    "endPosition": "alpha7",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "dash",
+      "start": "w",
+      "end": "e"
+    },
+    "red": {
+      "motionType": "dash",
+      "start": "e",
+      "end": "w"
+    }
+  },
+  "Ψ-": {
+    "startPosition": "beta3",
+    "endPosition": "beta7",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "dash",
+      "start": "e",
+      "end": "w"
+    },
+    "red": {
+      "motionType": "dash",
+      "start": "e",
+      "end": "w"
+    }
+  },
+  "Λ-": {
+    "startPosition": "gamma3",
+    "endPosition": "gamma7",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "dash",
+      "start": "n",
+      "end": "s"
+    },
+    "red": {
+      "motionType": "dash",
+      "start": "e",
+      "end": "w"
+    }
+  },
+  "α": {
+    "startPosition": "alpha3",
+    "endPosition": "alpha3",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "static",
+      "start": "w",
+      "end": "w"
+    },
+    "red": {
+      "motionType": "static",
+      "start": "e",
+      "end": "e"
+    }
+  },
+  "β": {
+    "startPosition": "beta3",
+    "endPosition": "beta3",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "static",
+      "start": "e",
+      "end": "e"
+    },
+    "red": {
+      "motionType": "static",
+      "start": "e",
+      "end": "e"
+    }
+  },
+  "γ": {
+    "startPosition": "gamma11",
+    "endPosition": "gamma11",
+    "timing": "none",
+    "direction": "none",
+    "blue": {
+      "motionType": "static",
+      "start": "s",
+      "end": "s"
+    },
+    "red": {
+      "motionType": "static",
+      "start": "e",
+      "end": "e"
+    }
+  }
+}
