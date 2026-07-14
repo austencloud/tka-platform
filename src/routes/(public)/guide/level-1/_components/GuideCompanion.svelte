@@ -88,6 +88,7 @@
     propType = "hand",
     stripKey = null,
     pageTitle = "",
+    levelLabel = "Level 1",
     isCodexMode = false,
     isMobile = false,
     showPositionGlyph = false,
@@ -106,6 +107,8 @@
     stripKey?: string | null;
     /** Human page label for the Copy-for-AI header ("Guide: Level 1 › <title> › <word>"). */
     pageTitle?: string;
+    /** Guide level for the Copy-for-AI header prefix ("Level 1" | "Level 2"). */
+    levelLabel?: string;
     /** True while the reader's active page is the interactive Codex sheet —
      *  renders GuideCodexControls above the player region (or above the "click
      *  a sequence" hint, if nothing's been clicked yet). */
@@ -157,7 +160,7 @@
 
   async function copyForAIData(): Promise<string> {
     if (!sequence) return "";
-    const header = `Guide: Level 1 › ${pageTitle} › ${sequence.word ?? ""}`;
+    const header = `Guide: ${levelLabel} › ${pageTitle} › ${sequence.word ?? ""}`;
     const body = await getClaudeCodeCopier().generatePrompt(sequence);
     return `${header}\n\n${body}`;
   }

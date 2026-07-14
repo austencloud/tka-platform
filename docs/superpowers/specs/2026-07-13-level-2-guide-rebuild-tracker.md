@@ -20,10 +20,16 @@ and the artboard exports under `D:\_THE KINETIC ALPHABET\_GUIDE\artboard-exports
    can't reflow cleanly, add a `.guide-page--landscape` print variant for that page only.
 3. **Back matter skipped** (p35 Let's Collaborate, p36 Taco Tuesday, p37 back cover) —
    same parking as Level 1's back matter. Revive together when Austen wants back matter.
-4. **Reader integration deferred.** GuideReader is level-1-manifest-bound (hosted in the
-   Learn tab). Level 2 ships print/book parity first; a reader level-switcher is its own
-   later phase. Legacy `_sections/ch20|ch21` + `/turns` + `/double-turns` routes retire
-   only at reader parity (guide single-source policy).
+4. **Reader integration — level switcher SHIPPED 2026-07-14.** GuideReader was
+   level-1-manifest-bound; it now takes a `GuideReaderConfig` seam
+   (`guide-reader-config.ts`) and the Learn > Guide tab has a Level 1 | Level 2
+   `SegmentedControl` — both levels render through the SAME reader (nav +
+   fit-to-page sheets + click-to-animate companion). Level 2 gets its own nav
+   builder (`guide-reader-nav-2.ts`); the level-1-only deep-link/QR-scan/codex
+   machinery no-ops for Level 2, and it coexists with the reflow sheet/flow
+   toggle (Level-2 pages aren't reflowable → toggle auto-hides). Still parked:
+   legacy `_sections/ch20|ch21` + `/turns` + `/double-turns` route retirement
+   (guide single-source policy) — remove at full reader parity.
 
 ## Page recipe (inherited from Level 1, plus turns)
 
@@ -183,24 +189,40 @@ and the artboard exports under `D:\_THE KINETIC ALPHABET\_GUIDE\artboard-exports
 **Phase 2 complete (p17–p22).** All 1-turn codex pages built + screenshot-verified,
 portrait reflow confirmed by Austen.
 
-### Phase 3 — 2-turn pedagogy + codex (original p23–34)
-- [ ] p23 2-Turns: shifts — pro/anti double-turn breakdowns (thirds decomposition)
-- [ ] p24 2-Turns: dashes + static — four-part dash breakdown, 360° static turn
-- [ ] p25 Codex 2|0 Type 1 (landscape → 6-col portrait)
-- [ ] p26 Codex 0/2 Type 2+3 same/opp (landscape → stacked portrait)
-- [ ] p27 Codex 2/0 Type 2+3 + Type 4/5 + 0/2 + Type 6 (landscape → stacked portrait)
-- [ ] p28 Codex 2|1 Type 1 (landscape → 6-col portrait)
-- [ ] p29 Codex 1/2 Type 2+3 (landscape → stacked portrait)
-- [ ] p30 Codex 2/1 Type 2+3 (landscape → stacked portrait)
-- [ ] p31 Codex 2/1 + 1/2 Type 4/5/6 same/opp (landscape → stacked portrait)
-- [ ] p32 Codex 2|2 Type 1 (already portrait)
-- [ ] p33 Codex 2|2 Type 2+3 same/opp (landscape → stacked portrait)
-- [ ] p34 Codex 2|2 Type 4/5/6 (already portrait)
+### Phase 3 — 2-turn pedagogy + codex (original p23–34) ✅ 2026-07-13
+- [x] p23 2-Turns: shifts — Pro halves + Anti thirds + Anti halves strips. `poseAt(m, t)`
+      generalizes halfway-pose.ts to arbitrary fraction (¼/⅓/½/⅔/¾) for the double-turn
+      breakdown frames. `two-turns-shifts` → TwoTurnsShiftsPage (selfTitled). Verified.
+      (Accuracy: fractional pose positions are engine radius-150 approximations; bottom
+      "broken in half" strip follows the proof's own in→out→in labeling — combined IN→IN
+      turns=2 — vs the authoritative thirds strip's 3-switch in→out→in→out.)
+- [x] p24 2-Turns: dashes + static — Dash quarters (5 frames + combined) + Dash halves +
+      Static 360°. `two-turns-dash-static` → TwoTurnsDashStaticPage (selfTitled). Verified.
+      (Accuracy: intermediate frames are bare staves — the small pinky/thumb-end direction
+      arrows are omitted, matching the 1-turn pedagogy pages.)
+- [x] p25 Codex 2|0 Type 1 (6-col portrait) — `codex-2-0-t1` → CodexTwoZeroType1Page. Verified.
+- [x] p26 Codex 0/2 Type 2+3 same/opp — `codex-0-2-t23` → CodexZeroTwoType23Page. Verified.
+- [x] p27 Codex 2/0 Type 2+3 + Type 4/5 + 0/2 + Type 6 — 4-quadrant. `codex-2-0-t23-456` →
+      CodexTwoZeroType23And456Page. Verified.
+- [x] p28 Codex 2|1 Type 1 (6-col portrait) — `codex-2-1-t1` → CodexTwoOneType1Page. Verified.
+- [x] p29 Codex 1/2 Type 2+3 — `codex-1-2-t23` → CodexOneTwoType23Page. Verified.
+- [x] p30 Codex 2/1 Type 2+3 — `codex-2-1-t23` → CodexTwoOneType23Page. Verified.
+- [x] p31 Codex 2/1 + 1/2 Type 4/5/6 same/opp — 4-quadrant. `codex-21-12-t456` →
+      CodexTwoOneOneTwoType456Page. Verified.
+- [x] p32 Codex 2|2 Type 1 (portrait) — `codex-2-2-t1` → CodexTwoTwoType1Page. Verified.
+- [x] p33 Codex 2|2 Type 2+3 same/opp — `codex-2-2-t23` → CodexTwoTwoType23Page. Verified.
+- [x] p34 Codex 2|2 Type 4/5/6 (portrait) — `codex-2-2-t456` → CodexTwoTwoType456Page. Verified.
+
+**Phase 3 complete (p23–p34).** All 2-turn pedagogy + codex pages built + screenshot-verified.
+
+**Rebuild complete — all 33 manifest body pages built (Phases 0–3).** `npm run check`
+clean. Remaining: Austen eyeball pass + the per-page accuracy-pass flags noted above; back
+matter + reader integration stay parked (see Parked).
 
 ### Parked
 - Back matter p35–37 (Let's Collaborate, Taco Tuesday, back cover) — with Level 1's.
-- Reader (Learn tab) level-2 integration + legacy `_sections`/`turns`/`double-turns`
-  retirement — after print/book parity.
+- Legacy `_sections`/`turns`/`double-turns` route retirement — after full reader parity.
+  (Reader Learn-tab level-2 integration itself SHIPPED 2026-07-14 — see Decision 4.)
 
 ## Verification gates (per page + per phase)
 

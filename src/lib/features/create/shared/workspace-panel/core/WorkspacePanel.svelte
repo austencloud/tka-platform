@@ -78,8 +78,11 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   // Toast message for validation errors
   let toastMessage = $state<string | null>(null);
 
-  // Handle beat selection (receives stepNumber: 1, 2, 3...)
-  function handleBeatSelected(stepNumber: number) {
+  // Handle beat selection (receives stepNumber: 1, 2, 3... + shift/ctrl modifiers)
+  function handleBeatSelected(
+    stepNumber: number,
+    modifiers?: { range: boolean; toggle: boolean }
+  ) {
     if (!sequenceState) return;
 
     // Close any open viewer/animation panels - editing takes priority
@@ -88,14 +91,27 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     panelState?.closeAnimationPanel();
     animationStateRef?.stop();
 
-    // Select the step (derived state will update automatically)
-    sequenceState.selectStep(stepNumber);
+    // Route single / shift-range / ctrl-toggle selection in one place.
+    sequenceState.applyClickSelection(
+      stepNumber,
+      modifiers ?? { range: false, toggle: false }
+    );
 
-    // Open the step editor panel directly
+    // A ctrl/cmd-toggle can deselect the last beat, leaving nothing selected.
+    // In that case close the editor entirely (drawer + selection gone) rather
+    // than leaving it open on stale content. Otherwise open it for the single
+    // or batch selection.
     // NOTE: We do this here rather than relying on an effect because
     // Svelte 5's $effect.root() doesn't properly track reactive state
     // accessed through multiple getter layers (CreateModuleState.sequenceState.selectedStepNumber)
-    panelState?.openStepEditorPanel();
+    const stillSelected =
+      sequenceState.selectedStepNumber !== null ||
+      sequenceState.selectedStepNumbers.size > 0;
+    if (stillSelected) {
+      panelState?.openStepEditorPanel();
+    } else {
+      panelState?.closeStepEditorPanel();
+    }
   }
 
   // Handle start position selection (stepNumber 0)

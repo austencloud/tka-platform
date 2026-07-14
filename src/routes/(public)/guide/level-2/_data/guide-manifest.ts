@@ -57,7 +57,7 @@ export const LEVEL2_BODY_PAGES: Level2PageEntry[] = [
   { id: "codex-1-1-t456", title: "Codex: 1|1 Type 4/5/6", level: 1, group: "2.0", selfTitled: true }, // old p22 (portrait template)
 
   // ── 2.1 2-Turns ────────────────────────────────────────────────────────
-  { id: "two-turns-shifts", title: "2-Turns", level: 0, group: "2.1" }, // old p23
+  { id: "two-turns-shifts", title: "2-Turns", level: 0, group: "2.1", selfTitled: true }, // old p23
   { id: "two-turns-dash-static", title: "Dashes / Static", level: 1, group: "2.1", selfTitled: true }, // old p24
   { id: "codex-2-0-t1", title: "Codex: 2|0 Type 1", level: 0, group: "2.1", selfTitled: true }, // old p25 (landscape → portrait)
   { id: "codex-0-2-t23", title: "Codex: 0/2 Type 2/3", level: 1, group: "2.1", selfTitled: true }, // old p26 (landscape → portrait)

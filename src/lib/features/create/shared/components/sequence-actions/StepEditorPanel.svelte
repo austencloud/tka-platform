@@ -9,9 +9,7 @@
   Desktop: Side panel with pictograph preview, horizontal controls
 -->
 <script lang="ts">
-  import CreatePanelDrawer from "../CreatePanelDrawer.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import TurnsEditMode from "./TurnsEditMode.svelte";
   import StartPositionEditMode from "./StartPositionEditMode.svelte";
   import DurationControl from "./DurationControl.svelte";
   import PictographInspectModal from "./PictographInspectModal.svelte";
@@ -23,12 +21,7 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-  import {
-    MotionColor,
-    MotionType,
-    RotationDirection,
-  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type { PathShapeValue } from "../../services/step-operations/path-shape-handler";
+  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
@@ -50,41 +43,28 @@
     sequence?: SequenceData | null;
     removingStepIndices?: Set<number>;
     onClose: () => void;
-    onTurnsChange: (color: MotionColor, delta: number) => void;
-    onRotationChange: (
-      color: MotionColor,
-      direction: RotationDirection
-    ) => void;
     onOrientationChange: (color: MotionColor, orientation: string) => void;
     onStepSelect?: (stepNumber: number) => void;
     onDelete?: () => void;
-    onOpenPropSheet?: (color: "blue" | "red") => void;
     onStepDataUpdate?: (updatedStepData: StepData) => void;
     onPushUndoSnapshot?: () => void;
     onDurationChange?: (newDuration: number) => void;
-    onPathShapeChange?: (color: MotionColor, shape: PathShapeValue) => void;
-    onPathShapeClear?: (color: MotionColor) => void;
     onBetaSwapToggle?: () => void;
   }
 
   let {
-    isOpen = $bindable(),
+    isOpen,
     selectedStepNumber,
     selectedStepData,
     sequence = null,
     removingStepIndices = new Set<number>(),
     onClose,
-    onTurnsChange,
-    onRotationChange,
     onOrientationChange,
     onStepSelect,
     onDelete,
-    onOpenPropSheet,
     onStepDataUpdate,
     onPushUndoSnapshot,
     onDurationChange,
-    onPathShapeChange,
-    onPathShapeClear,
     onBetaSwapToggle,
   }: Props = $props();
 
@@ -130,63 +110,6 @@
   // Derived state - use displayed values for rendering to prevent flicker
   const hasSelection = $derived(displayedStepNumber !== null);
   const isStartPositionSelected = $derived(displayedStepNumber === 0);
-
-  const blueMotion = $derived(displayedStepData?.motions?.[MotionColor.BLUE]);
-  const redMotion = $derived(displayedStepData?.motions?.[MotionColor.RED]);
-
-  const normalizeTurns = (turns: number | string | undefined): number =>
-    turns === "fl" ? -0.5 : Number(turns) || 0;
-
-  const currentBlueTurns = $derived(normalizeTurns(blueMotion?.turns));
-  const currentRedTurns = $derived(normalizeTurns(redMotion?.turns));
-
-  const displayBlueTurns = $derived(
-    blueMotion?.turns === "fl" ? "fl" : currentBlueTurns
-  );
-  const displayRedTurns = $derived(
-    redMotion?.turns === "fl" ? "fl" : currentRedTurns
-  );
-
-  // Determine if rotation can be shown for each prop
-  const showBlueRotation = $derived.by(() => {
-    if (currentBlueTurns < 0) return false; // Float motion
-    if (
-      (blueMotion?.motionType === MotionType.STATIC ||
-        blueMotion?.motionType === MotionType.DASH) &&
-      currentBlueTurns === 0
-    ) {
-      return false;
-    }
-    return true;
-  });
-
-  const showRedRotation = $derived.by(() => {
-    if (currentRedTurns < 0) return false; // Float motion
-    if (
-      (redMotion?.motionType === MotionType.STATIC ||
-        redMotion?.motionType === MotionType.DASH) &&
-      currentRedTurns === 0
-    ) {
-      return false;
-    }
-    return true;
-  });
-
-  const blueRotation = $derived(
-    blueMotion?.rotationDirection ?? RotationDirection.NO_ROTATION
-  );
-  const redRotation = $derived(
-    redMotion?.rotationDirection ?? RotationDirection.NO_ROTATION
-  );
-
-  const bluePathShape = $derived(blueMotion?.pathShape);
-  const redPathShape = $derived(redMotion?.pathShape);
-  const blueIsShift = $derived(
-    blueMotion ? blueMotion.startLocation !== blueMotion.endLocation : false
-  );
-  const redIsShift = $derived(
-    redMotion ? redMotion.startLocation !== redMotion.endLocation : false
-  );
 
   const stepLabel = $derived.by(() => {
     if (displayedStepNumber === null) return "";
@@ -336,18 +259,7 @@
   }
 </script>
 
-<CreatePanelDrawer
-  bind:isOpen
-  panelName="step-editor"
-  fullHeightOnMobile={true}
-  showHandle={true}
-  closeOnBackdrop={false}
-  focusTrap={false}
-  autoFocus={false}
-  ariaLabel="Step editor panel"
-  onClose={handleClose}
->
-  <div class="editor-panel" class:desktop={isSideBySideLayout} class:tour-active={stepEditorTourState.isActive}>
+<div class="editor-panel" class:desktop={isSideBySideLayout} class:tour-active={stepEditorTourState.isActive}>
     <!-- Step Editor Tour overlay -->
     <StepEditorTour />
 
@@ -490,36 +402,12 @@
             />
           </div>
         {/if}
-        <div
-          class="tour-section"
-          class:tour-highlight={tourHighlight === "turns"}
-          class:tour-dim={tourHighlight !== "none" && tourHighlight !== "turns"}
-        >
-          <TurnsEditMode
-            {hasSelection}
-            blueTurns={displayBlueTurns}
-            redTurns={displayRedTurns}
-            {blueRotation}
-            {redRotation}
-            {showBlueRotation}
-            {showRedRotation}
-            stacked={!isSideBySideLayout}
-            compact={!isSideBySideLayout}
-            {bluePathShape}
-            {redPathShape}
-            {blueIsShift}
-            {redIsShift}
-            {onTurnsChange}
-            {onRotationChange}
-            {onOpenPropSheet}
-            {onPathShapeChange}
-            {onPathShapeClear}
-          />
-        </div>
+        <!-- Blue/red turns controls now live in the shared, persistent
+             StepControlsZone (rendered by the coordinator below this panel), so
+             they morph across single ↔ multi instead of being rebuilt here. -->
       {/if}
     </div>
   </div>
-</CreatePanelDrawer>
 
 <!-- Inspect Modal (admin-only). Guard on a valid step + admin so a persisted
      open flag can't restore an empty modal or surface it to non-admins. -->

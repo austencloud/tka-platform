@@ -7,6 +7,7 @@ import {
   buildLoopSpec,
   expanderMultiplier,
   specHasExpandInversion,
+  resolveLoopConfig,
 } from "$lib/shared/create/services/loop-type-utils";
 import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
@@ -178,6 +179,43 @@ describe("buildLoopSpec", () => {
       rotationInterval: 2, inversionInterval: 4,
     })!;
     expect(expanderMultiplier(triple)).toBe(16);
+  });
+});
+
+describe("resolveLoopConfig", () => {
+  it("coerces quartered→halved for non-rotation loop types (period-2 transforms have no genuine period-4)", () => {
+    // A period-2 transform asked as quartered extends to a literal double that
+    // reduceToMinimalLoop strips back to half length — the "asked for 16, got 8"
+    // deck bug. The coercion is the first line of defense.
+    for (const lt of ["mirrored", "flipped", "swapped", "inverted", "mirrored_swapped", "swapped_inverted"]) {
+      expect(resolveLoopConfig(lt, "quartered").period, lt).toBe("halved");
+    }
+  });
+
+  it("honors quartered for rotation-bearing loop types", () => {
+    expect(resolveLoopConfig("rotated", "quartered").period).toBe("quartered");
+    expect(resolveLoopConfig("rotated_swapped", "quartered").period).toBe("quartered");
+    expect(resolveLoopConfig("mirrored_rotated", "quartered").period).toBe("quartered");
+    // ...and stays halved when halved is requested
+    expect(resolveLoopConfig("mirrored_rotated", "halved").period).toBe("halved");
+  });
+
+  it("builds a wire spec whose expander multiplier is the TRUE period, not the raw 2/4", () => {
+    // mirror+rotated HALVED: true period is LCM(mirror 2, rotate 2) = 4. The deck
+    // used to divide the requested length by the raw 2 and overshoot to 2× (16→32);
+    // the wire multiplier is 4, so the seed is length/4 and the card is exactly 16.
+    const mr = resolveLoopConfig("mirrored_rotated", "halved");
+    expect(expanderMultiplier(mr.loopSpecWire!)).toBe(4);
+    // A lone period-2 transform stays at multiplier 2 (no overshoot).
+    expect(expanderMultiplier(resolveLoopConfig("mirrored", "halved").loopSpecWire!)).toBe(2);
+    // rotated quartered = genuine period 4.
+    expect(expanderMultiplier(resolveLoopConfig("rotated", "quartered").loopSpecWire!)).toBe(4);
+  });
+
+  it("returns an undefined wire for combos with no implemented mapping", () => {
+    // mirrored+flipped has no implemented LOOP type — falls back to the legacy
+    // type+period path in the orchestrator, unchanged.
+    expect(resolveLoopConfig("mirrored_flipped", "halved").loopSpecWire).toBeUndefined();
   });
 });
 

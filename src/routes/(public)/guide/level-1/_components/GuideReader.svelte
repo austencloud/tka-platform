@@ -20,7 +20,6 @@
     type GuideSequenceClick,
   } from "../_data/guide-data-context";
   import GuidePage from "./GuidePage.svelte";
-  import GuideDocument from "./GuideDocument.svelte";
   import GuidePageNav from "./GuidePageNav.svelte";
   import GuideCompanion from "./GuideCompanion.svelte";
   import { GuideActiveStep, setGuideActiveStep } from "../_data/guide-active-step.svelte";
@@ -30,8 +29,6 @@
   import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
   import { loadOverrides } from "../_data/guide-overrides.svelte";
   import type { GuidePageMeta } from "../_data/guide-manifest";
-  import { GUIDE_BODY_PAGES } from "../_data/guide-manifest";
-  import { READER_PAGE_COUNT, FRONT_MATTER_COUNT } from "../_data/guide-reader-nav";
   import {
     GUIDE_READER_BASE,
     indexForSlug,
@@ -40,13 +37,26 @@
   } from "../_data/guide-page-links";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { consumeGuideScanIntent, fireCodexCell } from "../_data/guide-scan-intent";
-  import { isCodexSlug } from "../_data/guide-content-index";
   import {
     suppressBackground,
     releaseBackground,
   } from "$lib/shared/background/shared/state/background-suppression.svelte";
-  import { BUILT } from "../_data/built-pages";
+  import { LEVEL1_READER_CONFIG, type GuideReaderConfig } from "../_data/guide-reader-config";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import {
+    guideFramePrefs,
+    setGuideFrame,
+    type GuideFrame,
+  } from "../_data/guide-frame-prefs.svelte";
+  import { hasReflowContent } from "../_data/guide-content";
+
+  // The level seam: which document/pages/nav render, and whether the
+  // level-1-only deep-link / QR-scan / codex machinery is live. Defaults to
+  // Level 1, so an unparameterized <GuideReader /> is byte-for-byte the
+  // historical reader. GuideTab passes the Level-2 config for the L2 view.
+  let { config = LEVEL1_READER_CONFIG }: { config?: GuideReaderConfig } = $props();
+  const Doc = $derived(config.document);
 
   // Faithful pages render in print STYLE (ink-on-white, static pictographs).
   setGuidePrintMode();
@@ -57,11 +67,13 @@
   // Persist scroll position so it survives HMR remounts, full reloads, and
   // navigating away and back — sessionStorage, restored after the first fit()
   // lays the pages out. Keyed per-reader (one reader today; keep it explicit).
-  const SCROLL_KEY = "guide-reader-scroll";
+  // Keyed per level so Level 1 and Level 2 keep independent scroll/companion
+  // state (switching levels remounts the reader; each restores its own).
+  const SCROLL_KEY = `guide-reader-scroll-${config.levelLabel}`;
   // Persist the open companion (clicked strip) so a reload / HMR remount keeps
   // the animation drawer up instead of collapsing it and forcing a re-click.
   // Cleared on explicit close, so it only restores a drawer left open.
-  const COMPANION_KEY = "guide-reader-companion";
+  const COMPANION_KEY = `guide-reader-companion-${config.levelLabel}`;
 
   let activeIndex = $state(0); // highlighted page — driven by scroll position
   let scale = $state(0.5);
@@ -89,7 +101,7 @@
   // visibility, transforms) even before any cell is clicked — see
   // GuideCodexControls.svelte / guide-codex-state.svelte.ts.
   const isCodexPage = $derived(
-    isCodexSlug(GUIDE_BODY_PAGES[activeIndex - FRONT_MATTER_COUNT]?.id ?? "")
+    config.isCodexSlug(config.bodyPages[activeIndex - config.frontMatterCount]?.id ?? "")
   );
   $effect(() => {
     if (isCodexPage) {
@@ -117,7 +129,7 @@
   // Scroll a page into view; the scroll handler keeps activeIndex (the nav
   // highlight) in sync as you scroll freely between the stacked pages.
   function go(n: number) {
-    const i = Math.max(0, Math.min(READER_PAGE_COUNT - 1, n));
+    const i = Math.max(0, Math.min(config.readerPageCount - 1, n));
     activeIndex = i;
     docWrap?.querySelectorAll<HTMLElement>(".reader-page")[i]?.scrollIntoView({
       behavior: "smooth",
@@ -151,7 +163,7 @@
   // Deep link: /learn/guide/<slug> parks on that page and takes precedence over
   // the saved scroll offset (spec: 2026-07-09-guide-deep-links-design.md).
   const deepLinkIndex: number | null =
-    typeof window === "undefined"
+    !config.enableDeepLinks || typeof window === "undefined"
       ? null
       : (() => {
           const slug = slugFromPath(window.location.pathname);
@@ -221,7 +233,7 @@
     const isHandStrip = String(clickedPropType).toLowerCase() === "hand";
     clickedShowPositionGlyph = payload.showPositionGlyph ?? isHandStrip;
     clickedKey = payload.key ?? null;
-    clickedPageTitle = GUIDE_BODY_PAGES[activeIndex - FRONT_MATTER_COUNT]?.title ?? "";
+    clickedPageTitle = config.bodyPages[activeIndex - config.frontMatterCount]?.title ?? "";
     const seq = stripToSequence(payload.strip, { word: payload.word });
     clicked = (await ensureMotionData(seq)) ?? seq;
     companionOpen = true;
@@ -317,11 +329,11 @@
     // activeIndex synchronously), guarded by tick()+rAF so the just-mounted
     // Codex page (which registers its cell trigger in its own onMount — child
     // onMounts run before this parent one) has settled before we fire.
-    const scanIntent = consumeGuideScanIntent();
+    const scanIntent = config.enableDeepLinks ? consumeGuideScanIntent() : null;
     if (scanIntent) {
       await tick();
       requestAnimationFrame(() => {
-        if (scanIntent.cellKey && isCodexSlug(scanIntent.slug)) {
+        if (scanIntent.cellKey && config.isCodexSlug(scanIntent.slug)) {
           fireCodexCell(scanIntent.cellKey);
         } else if (scanIntent.sequence) {
           // TODO(guide-companion word-path): auto-open companion for
@@ -341,6 +353,7 @@
   // the test harness and other hosts never rewrite their URLs.
   $effect(() => {
     const i = activeIndex;
+    if (!config.enableDeepLinks) return;
     if (restoring) return;
     if (typeof window === "undefined") return;
     if (!window.location.pathname.startsWith(GUIDE_READER_BASE)) return;
@@ -490,6 +503,21 @@
     return () => readerRo.disconnect();
   });
 
+  // First mobile load defaults to the reflow frame (print sheets are mobile-
+  // hostile); once the user toggles, respect their choice. Desktop stays sheet.
+  let userPickedFrame = $state(false);
+  $effect(() => {
+    if (!userPickedFrame && isMobile && guideFramePrefs.frame === "sheet") {
+      setGuideFrame("flow");
+    }
+  });
+
+  // The active body page's manifest id — drives whether the sheet/flow toggle
+  // shows (only pages with single-source reflow content can reflow).
+  const activeReflowable = $derived(
+    hasReflowContent(config.bodyPages[activeIndex - config.frontMatterCount]?.id ?? "")
+  );
+
   // Re-observe the sheet element whenever it (re)mounts (companionOpen
   // toggles `{#if companionOpen}` in the markup, so companionEl's identity
   // changes) and re-sync immediately so a freshly opened sheet is measured.
@@ -503,21 +531,49 @@
 </script>
 
 {#snippet sheetFrame(meta: GuidePageMeta)}
-  <div class="reader-page">
-    <div class="page-fixed" style="transform: scale({scale})">
-      <GuidePage title={meta.title} pageNumber={meta.pageNumber} fullBleed={meta.fullBleed}>
-        {@render meta.content()}
-      </GuidePage>
+  {#if guideFramePrefs.frame === "flow" && meta.reflowable}
+    <!-- Flow mode: the reflowable page renders full-width + unscaled (its content
+         is a FlowFrame), NOT trapped in the scaled 8.5×11 sheet. Keeps the
+         `reader-page` class so the reader's scroll/index/deep-link queries (which
+         select `.reader-page`) still count it; `.reader-flow-page` overrides the
+         fixed sheet sizing. Other pages keep the scaled sheet below. -->
+    <div class="reader-page reader-flow-page">
+      {@render meta.content()}
     </div>
-  </div>
+  {:else}
+    <div class="reader-page">
+      <div class="page-fixed" style="transform: scale({scale})">
+        <GuidePage title={meta.title} pageNumber={meta.pageNumber} fullBleed={meta.fullBleed}>
+          {@render meta.content()}
+        </GuidePage>
+      </div>
+    </div>
+  {/if}
 {/snippet}
 
 <div class="reader" bind:this={readerEl}>
   <aside class="reader-aside">
-    <GuidePageNav built={BUILT} {activeIndex} onSelect={go} />
+    <GuidePageNav rows={config.navRows} hrefFor={config.hrefFor} {activeIndex} onSelect={go} />
   </aside>
 
   <div class="reader-stage" bind:this={stageEl}>
+    {#if activeReflowable}
+      <div class="frame-toggle">
+        <SegmentedControl
+          options={[
+            { value: "sheet", label: "Page" },
+            { value: "flow", label: "Reflow" },
+          ]}
+          value={guideFramePrefs.frame}
+          onchange={(v: GuideFrame) => {
+            userPickedFrame = true;
+            setGuideFrame(v);
+          }}
+          size="sm"
+          color="accent"
+        />
+      </div>
+    {/if}
     <div
       class="reader-doc"
       class:restoring
@@ -526,7 +582,7 @@
       onscrollend={onScroll}
       style="--w:{PAGE_W * scale}px; --h:{PAGE_H * scale}px"
     >
-      <GuideDocument built={BUILT} page={sheetFrame} />
+      <Doc built={config.built} page={sheetFrame} frame={guideFramePrefs.frame} />
     </div>
   </div>
 
@@ -543,6 +599,7 @@
         propType={clickedPropType}
         stripKey={clickedKey}
         pageTitle={clickedPageTitle}
+        levelLabel={config.levelLabel}
         showPositionGlyph={clickedShowPositionGlyph}
         isCodexMode={isCodexPage}
         {isMobile}
@@ -580,6 +637,25 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
+  }
+  .frame-toggle {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0 0;
+  }
+  /* Flow page: full stage width, content height, its own white editorial sheet.
+     Two-class selector (.reader-page.reader-flow-page) so it beats the equal-
+     specificity .reader-page sizing rule below regardless of source order —
+     otherwise the fixed --w/--h + overflow:hidden would clip the flow column. */
+  .reader-doc :global(.reader-page.reader-flow-page) {
+    flex: 0 0 auto;
+    width: min(100%, 52rem);
+    height: auto;
+    overflow: visible;
+    background: #fff;
+    color: #1a1a1a;
+    border-radius: 2px;
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.4);
   }
   /* Continuous scroller: pages stack vertically, each fit fully to the pane, and
      you scroll between them. */

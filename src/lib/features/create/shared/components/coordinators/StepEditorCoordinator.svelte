@@ -19,6 +19,12 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   import { createComponentLogger } from "$lib/shared/utils/debug-logger";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import StepEditorPanel from "../sequence-actions/StepEditorPanel.svelte";
+  import BatchStepEditor from "../sequence-actions/BatchStepEditor.svelte";
+  import StepControlsZone from "../sequence-actions/StepControlsZone.svelte";
+  import CreatePanelDrawer from "../CreatePanelDrawer.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import { selectedArrowState } from "$lib/shared/create/state/selected-arrow-state.svelte";
   import PropSelectionSheet from "$lib/shared/settings/components/tabs/prop-type/PropSelectionSheet.svelte";
   import { getCreateModuleContext } from "../../context/create-module-context";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
@@ -44,7 +50,8 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
 
   // Get context
   const ctx = getCreateModuleContext();
-  const { CreateModuleState, panelState } = ctx;
+  const { CreateModuleState, panelState, layout } = ctx;
+  const isSideBySideLayout = $derived(layout.shouldUseSideBySideLayout);
 
   // Services
   const hapticService: HapticFeedback = getHapticFeedback();
@@ -70,6 +77,9 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     const _selectedStep = state.selectedStepNumber;
     const _sequence = state.currentSequence;
     const _startPos = state.selectedStartPosition;
+    // Multi-select drives the batch editor branch below — track it too.
+    const _multiMode = state.isMultiSelectMode;
+    const _multiSet = state.selectedStepNumbers;
 
     return state;
   });
@@ -121,6 +131,45 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
     activeSequenceState.getRemovingBeatIndices()
   );
 
+  // ---- Multi-select batch editing ----
+  const isMultiSelect = $derived(
+    activeSequenceState.isMultiSelectMode &&
+      activeSequenceState.selectedStepNumbers.size > 1
+  );
+  const batchStepNumbers = $derived.by(() =>
+    Array.from(activeSequenceState.selectedStepNumbers)
+      .filter((n) => n > 0)
+      .sort((a, b) => a - b)
+  );
+  const batchSteps = $derived.by(() => {
+    const seq = sequence;
+    return batchStepNumbers
+      .map((n) => seq?.steps?.[n - 1])
+      .filter((s): s is NonNullable<typeof s> => s != null);
+  });
+  const totalBeats = $derived(sequence?.steps?.length ?? 0);
+
+  // Discriminator for the shared-drawer crossfade: single-step editor vs batch
+  // editor. Both bodies live in ONE persistent CreatePanelDrawer, so switching
+  // modes crossfades the content in place instead of closing/reopening a drawer.
+  const selectionMode = $derived<"single" | "multi">(
+    isMultiSelect ? "multi" : "single"
+  );
+
+  // Re-open the editor panel when a multi-selection becomes active. Covers the
+  // HMR/refresh restore path: the persisted multi set comes back but
+  // selectedStepNumber is null in multi mode, so the single-step auto-open
+  // effect doesn't fire. Only opens on the false→true transition (never
+  // auto-closes) so it doesn't fight a manual close.
+  let lastIsMulti = false;
+  $effect(() => {
+    const multi = isMultiSelect;
+    if (multi && !lastIsMulti && isTabSupported) {
+      panelState.openStepEditorPanel();
+    }
+    lastIsMulti = multi;
+  });
+
   // Prop selection sheet state
   let propSheetOpen = $state(false);
   let propSheetColor = $state<"blue" | "red">("blue");
@@ -143,9 +192,21 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   // Event handlers
   function handleClose() {
     logger.log("StepEditorCoordinator closing step editor panel");
+    // Clear any selected arrow (parity with the old in-panel drawer close, which
+    // ran StepEditorPanel.handleClose → selectedArrowState.clearSelection()).
+    selectedArrowState.clearSelection();
     panelState.closeStepEditorPanel();
     // Clear step selection when closing the Step Editor
     activeSequenceState.clearSelection();
+  }
+
+  // The single shared drawer routes its close to the active editor's handler.
+  function handleActiveClose() {
+    if (isMultiSelect) {
+      handleBatchClose();
+    } else {
+      handleClose();
+    }
   }
 
   function handleTurnsChange(color: MotionColor, delta: number) {
@@ -176,6 +237,60 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
       CreateModuleState,
       panelState
     );
+  }
+
+  // Batch turns across every selected step. "set" writes one absolute value to
+  // all; "adjust" nudges each by a delta, preserving offsets. One undo snapshot
+  // wraps the whole batch; steps are applied ascending so the final orientation
+  // propagation is correct. Reuses the single-step turns write path per step.
+  function handleBatchTurnsChange(
+    color: MotionColor,
+    mode: "set" | "adjust",
+    amount: number | "fl"
+  ) {
+    if (batchStepNumbers.length === 0 || !StepOperator) return;
+    hapticService?.trigger("selection");
+
+    CreateModuleState.pushUndoSnapshot(UndoOperationType.MODIFY_BEAT_PROPERTIES);
+
+    const seq = sequence;
+    const delta = amount === "fl" ? -0.5 : amount;
+
+    for (const stepNumber of batchStepNumbers) {
+      const motion = seq?.steps?.[stepNumber - 1]?.motions?.[color];
+      if (!motion) continue;
+
+      const isShift =
+        motion.motionType === MotionType.PRO ||
+        motion.motionType === MotionType.ANTI;
+      const minTurns = isShift ? -0.5 : 0;
+      const current = motion.turns === "fl" ? -0.5 : Number(motion.turns) || 0;
+
+      const targetRaw = mode === "set" ? delta : current + delta;
+      const clamped = Math.min(3, Math.max(minTurns, targetRaw));
+      const newTurns: number | "fl" = clamped === -0.5 ? "fl" : clamped;
+
+      StepOperator.updateStepTurns(
+        stepNumber,
+        color,
+        newTurns,
+        CreateModuleState,
+        panelState
+      );
+    }
+  }
+
+  function handleBatchClose() {
+    panelState.closeStepEditorPanel();
+    activeSequenceState.exitMultiSelectMode();
+  }
+
+  function handleBatchSelectAll() {
+    const total = sequence?.steps?.length ?? 0;
+    if (total === 0) return;
+    const all: number[] = [];
+    for (let n = 1; n <= total; n++) all.push(n);
+    activeSequenceState.selectAllBeats(all);
   }
 
   function handleRotationChange(
@@ -342,26 +457,73 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   });
 </script>
 
-<StepEditorPanel
+<!--
+  ONE persistent drawer shell hosts both editors. The TOP zone (header + preview
+  vs header + grid) crossfades on a single ↔ multi switch. The BOTTOM zone
+  (blue/red turn controls) is rendered ONCE below the crossfade, so its colored
+  frames persist and MORPH their inner control instead of being rebuilt. The
+  drawer's own close routes to whichever editor is active.
+-->
+<CreatePanelDrawer
   {isOpen}
-  {selectedStepNumber}
-  {selectedStepData}
-  {sequence}
-  {removingStepIndices}
-  onClose={handleClose}
-  onTurnsChange={handleTurnsChange}
-  onRotationChange={handleRotationChange}
-  onOrientationChange={handleOrientationChange}
-  onStepSelect={handleStepSelect}
-  onDelete={handleStepDelete}
-  onOpenPropSheet={handleOpenPropSheet}
-  onStepDataUpdate={handleStepBeatDataUpdate}
-  onPushUndoSnapshot={handlePushUndoSnapshot}
-  onDurationChange={handleDurationChange}
-  onPathShapeChange={handlePathShapeChange}
-  onPathShapeClear={handlePathShapeClear}
-  onBetaSwapToggle={handleBetaSwapToggle}
-/>
+  panelName="step-editor"
+  fullHeightOnMobile={true}
+  showHandle={true}
+  closeOnBackdrop={false}
+  focusTrap={false}
+  autoFocus={false}
+  ariaLabel="Step editor panel"
+  onClose={handleActiveClose}
+>
+  <div class="editor-body">
+    <div class="top-zone">
+      <Crossfade key={selectionMode} fill duration={DURATION.fast}>
+        {#if isMultiSelect}
+          <BatchStepEditor
+            steps={batchSteps}
+            stepNumbers={batchStepNumbers}
+            {totalBeats}
+            bluePropTypeOverride={bluePropType}
+            redPropTypeOverride={redPropType}
+            onClose={handleBatchClose}
+            onSelectAll={handleBatchSelectAll}
+          />
+        {:else}
+          <StepEditorPanel
+            {isOpen}
+            {selectedStepNumber}
+            {selectedStepData}
+            {sequence}
+            {removingStepIndices}
+            onClose={handleClose}
+            onOrientationChange={handleOrientationChange}
+            onStepSelect={handleStepSelect}
+            onDelete={handleStepDelete}
+            onStepDataUpdate={handleStepBeatDataUpdate}
+            onPushUndoSnapshot={handlePushUndoSnapshot}
+            onDurationChange={handleDurationChange}
+            onBetaSwapToggle={handleBetaSwapToggle}
+          />
+        {/if}
+      </Crossfade>
+    </div>
+
+    <!-- Persistent, morphing blue/red turn controls (single ↔ multi). -->
+    <StepControlsZone
+      {selectionMode}
+      stacked={!isSideBySideLayout}
+      compact={!isSideBySideLayout}
+      stepData={selectedStepNumber === 0 ? null : selectedStepData}
+      onTurnsChange={handleTurnsChange}
+      onRotationChange={handleRotationChange}
+      onOpenPropSheet={handleOpenPropSheet}
+      onPathShapeChange={handlePathShapeChange}
+      onPathShapeClear={handlePathShapeClear}
+      batchSteps={batchSteps}
+      onBatchTurnsChange={handleBatchTurnsChange}
+    />
+  </div>
+</CreatePanelDrawer>
 
 <!-- Prop Selection Sheet - rendered as sibling to StepEditorPanel -->
 <PropSelectionSheet
@@ -371,3 +533,21 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   title={propSheetColor === "blue" ? "Select Blue Prop" : "Select Red Prop"}
   onSelect={handlePropSelect}
 />
+
+<style>
+  /* Drawer body = crossfading top zone (grows) + persistent bottom controls. */
+  .editor-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+  }
+
+  /* Sized parent for the Crossfade (fill mode); both editor tops are height:100%
+     and stack absolutely during the transition. */
+  .top-zone {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+  }
+</style>

@@ -18,16 +18,21 @@
   import { GUIDE_BODY_PAGES, type GuidePageMeta } from "../_data/guide-manifest";
   import { PROOF_TEXT } from "../_data/proof-text";
   import { guideEdit, ptDrag, pt, editText, registerEditSource } from "../_data/guide-edit.svelte";
+  import FlowFrame from "./FlowFrame.svelte";
+  import { GUIDE_CONTENT, hasReflowContent } from "../_data/guide-content";
 
   let {
     page,
     coverTheme = "navy",
     built = {},
+    frame = "sheet",
   }: {
     page: Snippet<[GuidePageMeta]>;
     coverTheme?: "navy" | "light";
     /** Built per-page components keyed by manifest id; rest render a placeholder. */
     built?: Record<string, Component>;
+    /** Which frame the body pages render in. Flow only affects slugs in GUIDE_CONTENT. */
+    frame?: "sheet" | "flow";
   } = $props();
 
   // ONE QR → the support page Austen owns (handles/methods can change without a
@@ -191,7 +196,9 @@
   {@const hasProof = !isBuilt && !!PROOF_TEXT[entry.id]}
   {#snippet bodyContent()}
     {@const Built = built[entry.id]}
-    {#if Built}<Built />
+    {@const reflow = GUIDE_CONTENT[entry.id]}
+    {#if frame === "flow" && reflow}<FlowFrame content={reflow} />
+    {:else if Built}<Built />
     {:else if PROOF_TEXT[entry.id]}<ProofTextPage id={entry.id} />
     {:else}<PagePlaceholder />{/if}
   {/snippet}
@@ -209,6 +216,7 @@
     pageNumber: i + 1,
     label: `body p${i + 1}: ${entry.title}`,
     content: bodyContent,
+    reflowable: hasReflowContent(entry.id),
   })}
 {/each}
 

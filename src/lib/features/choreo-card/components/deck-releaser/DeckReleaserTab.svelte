@@ -38,8 +38,11 @@
   import { generationOrchestrator } from "$lib/shared/create/services/generation-orchestrator";
   import { GenerationMode } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import type { GenerationOptions } from "$lib/shared/foundation/domain/models/generation/generate-models";
-  import { LOOPType, Period } from "$lib/shared/foundation/domain/models/generation/circular-models";
+  import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
   import { levelToDifficulty } from "$lib/shared/create/utils/config-mapper";
+  import { resolveLoopConfig } from "$lib/shared/create/services/loop-type-utils";
+  import { generateCircularExactLength } from "$lib/features/create/generate/circular/services/exact-length-loop-generator";
+  import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
   import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
   import { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -816,8 +819,17 @@
   async function generateLiveDeck(generation: number): Promise<boolean> {
     const length = rs.selectedLength || 8;
     const gridMode = ([...rs.selectedGridModes][0] ?? "diamond") as "diamond" | "box";
-    const period = rs.selectedSliceTypes.has("quartered") ? Period.QUARTERED : Period.HALVED;
     const loopType = ([...rs.selectedLoopTypes][0] ?? "rotated") as LOOPType;
+    // Canonical loop-config resolution — the SAME guards the interactive
+    // Generate panel gets: quartered→halved coercion for non-rotation loop
+    // types (a period-2 transform asked as quartered collapses back to half the
+    // requested length) plus the compositional wire spec so the orchestrator
+    // divides length by the TRUE expander multiplier. Without this the deck
+    // shipped 8- and 32-beat cards for a requested 16.
+    const resolvedLoop = resolveLoopConfig(
+      loopType,
+      rs.selectedSliceTypes.has("quartered") ? "quartered" : "halved",
+    );
     const turnIntensity = rs.turnIntensity; // generator max-intensity model (0–3 scalar)
     const motionTypeFilter = rs.dashStyle === "low" ? "no-dash" : rs.dashStyle === "high" ? "prefer-dash" : null;
 
@@ -843,7 +855,9 @@
       propType: rs.bluePropType,
       difficulty: levelToDifficulty([...rs.selectedLevels][0] ?? 1),
       loopType,
-      period,
+      period: resolvedLoop.period as GenerationOptions["period"],
+      loopSpecWire: resolvedLoop.loopSpecWire,
+      loopRhythm: resolvedLoop.loopRhythm,
       constraintPreset: rs.propStyle,
       handPathMode: rs.handStyle,
       motionTypeFilter,
@@ -888,11 +902,30 @@
         }
         let s: SequenceData;
         try {
-          s = await generationOrchestrator.generateSequence(options);
+          // Exact-length wrapper: re-rolls when a seed's transform degenerates
+          // and reduceToMinimalLoop would collapse the card below the requested
+          // beat count, so every card is exactly `length` beats.
+          const exact = await generateCircularExactLength(options, {
+            generate: (o) => generationOrchestrator.generateSequence(o),
+            extend: (seq) => orientationCycleExtender.extendIfNeeded(seq),
+          });
+          s = exact.sequence;
         } catch (e) {
           console.warn("Live deck: a generation attempt failed", e);
           continue;
         }
+
+        // Strict length gate for the DECK. The exact-length wrapper honors the
+        // request when a seamless seed exists, but for combos that only close
+        // seamlessly at 2x (e.g. mirrored_inverted, whose inversion flips
+        // orientation so a 16-beat pass ends "out" not "in") it deliberately
+        // extends to the honest doubled length — right for the single-generate
+        // panel (with a toast), wrong for a fixed-count deck. Reject any card
+        // that isn't exactly `length` and re-draw; combos that rarely make a
+        // seamless card at this length simply yield a smaller deck (handled
+        // below), never an off-count card.
+        if (s.steps.length !== length) continue;
+
         const skeleton = hashSequenceSkeleton(s);
         if (!seenSkeleton.has(skeleton)) {
           const word = simplifyRepeatedWord(s.word ?? "") || skeleton;

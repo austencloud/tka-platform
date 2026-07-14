@@ -21,12 +21,25 @@ import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-stat
 
 export type SelectionMode = "single" | "multi";
 
-// Persist only the single-select step number. The step editor + inspect modal
-// hang off this, so restoring it across a dev HMR / page refresh lets them
-// reopen on the right step instead of empty. Multi-select sets stay transient.
+// Persist the single-select step number. The step editor + inspect modal hang
+// off this, so restoring it across a dev HMR / page refresh lets them reopen on
+// the right step instead of empty.
 const selectionPersistence = createPersistenceHelper<number | null>({
   key: "tka_selected_step_number",
   defaultValue: null,
+});
+
+// Persist the multi-select set + mode too, so an HMR / refresh restores a batch
+// selection (the highlighted beats + open batch editor) instead of silently
+// dropping back to single-select.
+interface PersistedMultiSelection {
+  mode: SelectionMode;
+  stepNumbers: number[];
+  anchor: number | null;
+}
+const multiSelectPersistence = createPersistenceHelper<PersistedMultiSelection>({
+  key: "tka_multi_selection",
+  defaultValue: { mode: "single", stepNumbers: [], anchor: null },
 });
 
 export interface SequenceSelectionStateData {
@@ -39,25 +52,49 @@ export interface SequenceSelectionStateData {
   // Multi-select (batch editing)
   selectedStepNumbers: Set<number>; // Multiple beat numbers for batch operations
 
+  // Anchor for shift-range selection (transient — the last plain/toggle click)
+  selectionAnchor: number | null;
+
   // Start position
   selectedStartPosition: StartPositionData | null;
   hasStartPosition: boolean;
 }
 
 export function createSequenceSelectionState() {
+  // Restore a persisted multi-selection (needs 2+ beats to count as multi).
+  const persistedMulti = multiSelectPersistence.load();
+  const restoredMulti =
+    persistedMulti.mode === "multi" && persistedMulti.stepNumbers.length > 1;
+
   const state = $state<SequenceSelectionStateData>({
-    mode: "single",
-    selectedStepNumber: selectionPersistence.load(),
-    selectedStepNumbers: new Set<number>(),
+    mode: restoredMulti ? "multi" : "single",
+    selectedStepNumber: restoredMulti ? null : selectionPersistence.load(),
+    selectedStepNumbers: new Set<number>(
+      restoredMulti ? persistedMulti.stepNumbers : []
+    ),
+    selectionAnchor: persistedMulti.anchor,
     selectedStartPosition: null,
     hasStartPosition: false,
   });
 
-  // Auto-save the selected step number so HMR / refresh restores it.
+  // Auto-save selection so HMR / refresh restores it — both the single-select
+  // step number and the multi-select set + mode + anchor.
   $effect.root(() => {
     $effect(() => {
       void state.selectedStepNumber;
       selectionPersistence.setupAutoSave(state.selectedStepNumber);
+    });
+    $effect(() => {
+      // Reading the Set reference tracks it — applyClickSelection always
+      // replaces it with a new Set, so this re-runs on every selection change.
+      void state.mode;
+      void state.selectedStepNumbers;
+      void state.selectionAnchor;
+      multiSelectPersistence.setupAutoSave({
+        mode: state.mode,
+        stepNumbers: Array.from(state.selectedStepNumbers),
+        anchor: state.selectionAnchor,
+      });
     });
   });
 
@@ -101,6 +138,9 @@ export function createSequenceSelectionState() {
     get selectedStepNumbers() {
       return state.selectedStepNumbers;
     },
+    get selectionAnchor() {
+      return state.selectionAnchor;
+    },
     get selectionCount(): number {
       if (state.mode === "single") {
         return state.selectedStepNumber !== null ? 1 : 0;
@@ -122,6 +162,93 @@ export function createSequenceSelectionState() {
     // Selection operations
     selectStep(stepNumber: number | null) {
       state.selectedStepNumber = stepNumber;
+      if (stepNumber !== null) state.selectionAnchor = stepNumber;
+    },
+
+    /**
+     * Front door for a workspace beat click. Routes single-select, shift-range,
+     * and ctrl/cmd-toggle in one place so the start-position guard and the
+     * multi-vs-single transitions stay centralized.
+     *
+     * - shift (range): select the contiguous span from the anchor to `target`.
+     * - toggle (ctrl/cmd): add/remove `target`, carrying the current single beat
+     *   into the multi set on the first toggle.
+     * - neither: plain single-select.
+     * The start position (0) never participates in multi-select.
+     */
+    applyClickSelection(
+      target: number,
+      modifiers: { range: boolean; toggle: boolean }
+    ) {
+      const toSingle = (n: number) => {
+        state.mode = "single";
+        state.selectedStepNumbers = new Set<number>();
+        state.selectedStepNumber = n;
+        state.selectionAnchor = n;
+      };
+
+      // Start position: always single, never mixed with beats.
+      if (target === 0) {
+        toSingle(0);
+        return;
+      }
+
+      if (modifiers.range) {
+        const anchor = state.selectionAnchor;
+        if (anchor === null || anchor < 1) {
+          toSingle(target);
+          return;
+        }
+        const lo = Math.min(anchor, target);
+        const hi = Math.max(anchor, target);
+        if (hi - lo < 1) {
+          toSingle(target);
+          return;
+        }
+        const set = new Set<number>();
+        for (let n = lo; n <= hi; n++) set.add(n);
+        state.mode = "multi";
+        state.selectedStepNumbers = set;
+        state.selectedStepNumber = null;
+        // Keep the anchor so the range can be re-extended from the same origin.
+        return;
+      }
+
+      if (modifiers.toggle) {
+        // First toggle from single-select carries the current beat into the set.
+        if (state.mode !== "multi") {
+          const carry = state.selectedStepNumber;
+          state.selectedStepNumbers =
+            carry !== null && carry > 0
+              ? new Set<number>([carry])
+              : new Set<number>();
+          state.mode = "multi";
+          state.selectedStepNumber = null;
+        }
+        const set = new Set(state.selectedStepNumbers);
+        if (set.has(target)) set.delete(target);
+        else set.add(target);
+        state.selectionAnchor = target;
+
+        // Collapse a 0/1-element selection back to single-select.
+        if (set.size <= 1) {
+          const only = set.values().next().value;
+          if (only === undefined) {
+            state.mode = "single";
+            state.selectedStepNumbers = new Set<number>();
+            state.selectedStepNumber = null;
+          } else {
+            toSingle(only);
+          }
+          return;
+        }
+        state.selectedStepNumbers = set;
+        state.selectedStepNumber = null;
+        return;
+      }
+
+      // Plain click.
+      toSingle(target);
     },
 
     selectStartPosition() {
@@ -247,6 +374,7 @@ export function createSequenceSelectionState() {
       state.mode = "single";
       state.selectedStepNumber = null;
       state.selectedStepNumbers.clear();
+      state.selectionAnchor = null;
       state.selectedStartPosition = null;
       state.hasStartPosition = false;
     },

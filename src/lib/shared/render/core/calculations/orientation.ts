@@ -162,6 +162,24 @@ const RADIAL_CW_CYCLE: Orientation[] = [
   "out", "counterOut", "counter", "counterIn",
 ];
 
+const ORIENTATION_BY_LOWER: Record<string, Orientation> = (() => {
+  const map: Record<string, Orientation> = {};
+  for (const o of [...RADIAL_CW_CYCLE, ...CENTER_CW_CYCLE]) {
+    map[(o as string).toLowerCase()] = o;
+  }
+  return map;
+})();
+
+/**
+ * Normalize any-case orientation input to its canonical camelCase form.
+ * Blanket .toLowerCase() breaks interradial (clockIn) / center (centerN)
+ * orientations because switchOrientation + the cycles are keyed camelCase.
+ */
+export function canonicalOrientation(raw: string | undefined): Orientation {
+  if (!raw) return "in";
+  return ORIENTATION_BY_LOWER[raw.toLowerCase()] ?? "in";
+}
+
 function calculateCenterFractionalTurnOrientation(
   motionType: string,
   turns: number,
@@ -257,7 +275,7 @@ export function calculateEndOrientation(input: OrientationInput): Orientation {
     startOrientation = "in",
   } = input;
 
-  const startOri = (startOrientation?.toLowerCase() as Orientation) || "in";
+  const startOri = canonicalOrientation(startOrientation);
   const type = motionType?.toLowerCase() || "static";
 
   const rotDir = rotationDirection?.toLowerCase() || "cw";
@@ -289,7 +307,7 @@ export function calculateOrientations(input: OrientationInput): {
   startOrientation: Orientation;
   endOrientation: Orientation;
 } {
-  const startOrientation = (input.startOrientation?.toLowerCase() as Orientation) || "in";
+  const startOrientation = canonicalOrientation(input.startOrientation);
 
   const endOrientation = calculateEndOrientation({
     ...input,

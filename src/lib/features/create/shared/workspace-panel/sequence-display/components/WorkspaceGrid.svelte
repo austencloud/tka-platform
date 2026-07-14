@@ -86,7 +86,10 @@
     removingStepIndices?: Set<number>;
     isClearing?: boolean;
     highlightedSteps?: Map<number, { bg: string; border: string }> | null;
-    onStepClick?: (stepNumber: number) => void;
+    onStepClick?: (
+      stepNumber: number,
+      modifiers?: { range: boolean; toggle: boolean }
+    ) => void;
     onStartClick?: () => void;
     onStepDelete?: (stepNumber: number) => void;
     onStepLongPress?: (stepNumber: number) => void;
@@ -408,7 +411,7 @@
                 <StepCell
                   {step}
                   index={stepIndex}
-                  onClick={() => onStepClick?.(step.stepNumber)}
+                  onClick={(mods) => onStepClick?.(step.stepNumber, mods)}
                   onDelete={() => onStepDelete?.(step.stepNumber)}
                   onLongPress={() => onStepLongPress?.(step.stepNumber)}
                   shouldAnimate={displayState.shouldBeatAnimate(stepIndex)}
@@ -481,7 +484,7 @@
           <StepCell
             {step}
             {index}
-            onClick={() => onStepClick?.(step.stepNumber)}
+            onClick={(mods) => onStepClick?.(step.stepNumber, mods)}
             onDelete={() => onStepDelete?.(step.stepNumber)}
             onLongPress={() => onStepLongPress?.(step.stepNumber)}
             shouldAnimate={displayState.shouldBeatAnimate(index)}

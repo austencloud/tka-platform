@@ -67,7 +67,7 @@
     gridMode: GridMode.DIAMOND,
     motions: { blue, red },
   });
-  const statPic = (color: MotionColor, loc: GridLocation, ori: Orientation, rot = NOROT, turns = 0) =>
+  const statPic = (color: MotionColor, loc: GridLocation, ori: Orientation, rot: RotationDirection = NOROT, turns = 0) =>
     mo(color, MotionType.STATIC, loc, loc, rot, ori, turns % 2 === 1 ? OUT : IN, turns);
 
   type Cont = { type: MotionType; from: GridLocation; to: GridLocation; rot: RotationDirection };
