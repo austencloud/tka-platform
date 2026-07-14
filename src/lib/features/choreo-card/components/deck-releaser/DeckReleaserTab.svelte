@@ -915,6 +915,17 @@
           continue;
         }
 
+        // Strict length gate for the DECK. The exact-length wrapper honors the
+        // request when a seamless seed exists, but for combos that only close
+        // seamlessly at 2x (e.g. mirrored_inverted, whose inversion flips
+        // orientation so a 16-beat pass ends "out" not "in") it deliberately
+        // extends to the honest doubled length — right for the single-generate
+        // panel (with a toast), wrong for a fixed-count deck. Reject any card
+        // that isn't exactly `length` and re-draw; combos that rarely make a
+        // seamless card at this length simply yield a smaller deck (handled
+        // below), never an off-count card.
+        if (s.steps.length !== length) continue;
+
         const skeleton = hashSequenceSkeleton(s);
         if (!seenSkeleton.has(skeleton)) {
           const word = simplifyRepeatedWord(s.word ?? "") || skeleton;
