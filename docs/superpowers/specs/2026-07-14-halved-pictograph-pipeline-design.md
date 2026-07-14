@@ -24,7 +24,7 @@ This is a large build. It is decomposed below so the load-bearing, riskiest piec
 Ground truth from the Flow Arts Knowledge MCP (`get_domain_topic` base-rotation + orientation-algebra):
 
 - **1 turn = 180° of additional prop rotation.** This unit was chosen deliberately so fractions land clean: a **half-turn = 90° = a cardinal orientation shift**, a **quarter-turn = 45° = an interradial** (L6+, the 8-point radial cycle `in → clockIn → clock → clockOut → out → counterOut → counter → counterIn`). **45° is the finest orientation grain that exists.** There is no eighth-turn / 22.5° orientation.
-- **Base rotation.** Every motion has an inherent base rotation at 0 additional turns. For **shifts** (curved arcs): *pro base preserves* center-relative orientation, *anti base reverses* it (180°). For **dashes / statics** (straight or no travel): no base rotation. The base accrues along the arc — the animation engine already models this as linear in `t` (`endpoint-calculator.ts`).
+- **Base rotation.** Every motion has an inherent base rotation at 0 additional turns, measured in **center-relative** orientation (not absolute prop spin). By the parity grouping — and confirmed on ~40 real 0-turn motions from MCP `get_pictograph_data` / `get_sequence_data` (§3.1) — *pro and static preserve*, *anti, dash, and hash reverse* (180°). Dash reverses **even though the prop does not spin**: the hand moving to a new location flips the center-relative orientation (e.g. a prop pointing `in` at east dashed to west, no spin, now points `out`). The base accrues along the motion — the animation engine already models this as linear in `t` (`endpoint-calculator.ts`).
 - **Parity.** Pro/Static: even turns preserve, odd reverse. Anti/Dash/Hash: even reverse, odd preserve. Fractional turns step the 8-point cycle: anti/dash step *same* direction as rotation, pro/static step *opposite*.
 
 **Consequence — the crux is the clean case.** The halfway rotation of a motion is `½ · (base + turns·180°)`. Because turns come in 180° units and base reversals are 180°, halving L1–L5 content (whole and half turns) always lands the halfway orientation on the existing 45° lattice — a cardinal or an interradial that the `Orientation` type already has a name for. Halving is representable and derivable in the discrete algebra for exactly the content the guide teaches and most sequences use.
@@ -43,6 +43,11 @@ Orientation is fundamentally 45°-granular, so:
 | **Half of an L6 quarter-turn** | 22.5° | **No — off-lattice, guarded** |
 
 Thirds (and other off-lattice fractions) have *no legal orientation* to compute. The guide's thirds-strips can only ever be **physical poses** (the traced staff sweep) with a drawn glyph. They stay on the existing visual `poseArrow` path — not a regression, a domain fact.
+
+**Crisp decidability rule (derived from the confirmed decomposition in §5).** A fraction `t` is orientation-legal for a motion iff `t·(base + turns·4)` is an integer number of 45° steps, where `base ∈ {0, ±4}`. Two consequences the spec relies on:
+
+- **Halving (t=½) is legal iff `turns` is a half-integer.** `½·(base + turns·4) = base/2 + turns·2`; `base/2 ∈ {0, ±2}` is always integer, so legality rides entirely on `turns·2`. Every L1–L5 whole turn and every L3 half turn qualifies — **the entire product surface. Off-lattice halving is exclusively an L6 quarter-turn phenomenon.**
+- **Quartering (t=¼) is narrower — legal only for whole-turn motions.** `¼·(base + turns·4) = base/4 + turns`; `base/4 ∈ {0, ±1}`, so legality rides on `turns` being a whole number. Quartering a half-turn motion is off-lattice. (Quarters are guide-only pedagogy; this narrower validity is fine.)
 
 ---
 
@@ -63,6 +68,10 @@ Read-only investigation (two agents, file:line-verified). ~60–70% of the machi
 | **Halfway orientation as a real `Orientation` value** | **DOES NOT EXIST** | the animation engine keeps only a continuous radian angle at intermediate `t`; `mapOrientationToAngle` (`angle-calculator.ts:46-64`) is one-way and cardinal-only — there is no angle→Orientation inverse anywhere |
 
 **Naming collision to avoid:** "halved" already exists in the LOOP system (`loop-config.ts:93-94` `RECIPE_STEPS`, `resolveLoopConfig`) meaning *whole-sequence position rotation slices* (a LOOP whose positions rotate 180°/90° per repeat). That is unrelated to halving a single motion. New code uses **"half-motion" / "segment"**, never bare "halved", to avoid colliding with LOOP vocabulary.
+
+### 3.1 Empirical validation (MCP ground truth)
+
+The base component of the decomposition was validated against the Flow Arts Knowledge MCP before this spec was finalized — an oracle independent of the codebase's own `orientation.ts`. `get_pictograph_data` + `get_sequence_data` over letters spanning all four families (A/G pro, B/C/E/F/H/N anti, `Φ` dash, `α`/`β`/`γ` static) across `alpha`/`beta`/`gamma` positions and `in`/`out` start orientations yielded ~40 real 0-turn motions. **Every one confirmed the base rule with zero violations:** pro/static `in→in` / `out→out` (preserve); anti/dash `in→out` / `out→in` (reverse). This is what surfaced the dash-base correction (§5) — the rule that dash *reverses* despite no prop spin. The turn component (`steps = round(turns·4)`, direction by motion-type) is taken from the shipped `calculateRadialFractionalTurnOrientation` (`orientation.ts:204-225`) and the MCP orientation-algebra topic. Note: `get_sequence_data` does not honor natural-language turn requests, so turned-motion data could not be harvested this way — the combined base+turn at arbitrary turns is proven instead by the Phase 1 `t=1` dataset invariant (§5), which runs the real `calculateEndOrientation` as oracle over every turn value.
 
 ---
 
@@ -108,10 +117,11 @@ Same `OrientationInput` shape `calculateEndOrientation` already takes (`motionTy
 
 Orientation change over a full motion decomposes into two signed components, each measured in **45° steps** on the radial cycle:
 
-1. **`baseStepsFull(motion)`** — the base rotation.
+1. **`baseStepsFull(motion)`** — the base rotation (empirically confirmed on ~40 real 0-turn motions, §3.1).
    - Pro shift → `0` (preserves).
-   - Anti shift → `±4` (the 180° reversal; sign from arc direction).
-   - Dash / static → `0`.
+   - Static → `0` (preserves; no location change).
+   - Anti shift → `±4` (180° reversal; sign from arc direction).
+   - **Dash / hash → `±4` (reverses)** — the location change flips center-relative orientation even with zero prop spin. This corrected an earlier draft that had dash at `0`; the MCP data (`Φ` red dash `in→out`) caught it before it reached code.
    - (Skewed shifts: base is the skewed arc's reversal for the anti family — see Risks; v1 may restrict to non-skew.)
 2. **`turnStepsFull(motion)`** — the additional turns: `turns · 4` steps (1 turn = 180° = 4 steps), signed by `rotationDirection` with the motion-type step-direction rule (anti/dash same as rotation, pro/static opposite).
 
