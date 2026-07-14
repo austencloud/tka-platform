@@ -1340,10 +1340,15 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // ── STORE: ORDERS (admin only, Cloud Function uses Admin SDK) ──
+    // ── STORE: ORDERS (admin only; Cloud Functions use the Admin SDK) ──
+    // createCartCheckout writes a `pending` doc with `expiresAt` (now + 24h);
+    // the Stripe webhook flips it to `paid` and DELETES `expiresAt`. A Firestore
+    // TTL policy on `orders.expiresAt` reaps abandoned pending docs — it deletes
+    // purely on the timestamp, so paid orders MUST clear the field (they do).
+    // Never allow client writes here: prices/status are resolved server-side.
     match /orders/{orderId} {
       allow read: if isAdmin();
-      allow write: if isAdmin();
+      allow write: if false; // Admin SDK bypasses rules; clients never write.
     }
 
     // ── STORE: SHOP WAITLIST (anyone may join, admin reads) ──
