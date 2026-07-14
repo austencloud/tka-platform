@@ -166,9 +166,9 @@ export const gammaLoopsContent: GuideBlock[] = [
       "In these examples, each word ends in gamma position on the opposite side.<br>" +
       "By repeating the word from there, we return to home position.",
   },
-  { kind: "pictographGroup", items: loopStrip(LOOPS[0]!), flowCols: 3, render: RENDER, caption: LOOPS[0]!.word },
-  { kind: "pictographGroup", items: loopStrip(LOOPS[1]!), flowCols: 3, render: RENDER, caption: LOOPS[1]!.word },
-  { kind: "pictographGroup", items: loopStrip(LOOPS[2]!), flowCols: 3, render: RENDER, caption: LOOPS[2]!.word },
+  { kind: "pictographGroup", items: loopStrip(LOOPS[0]!), flowCols: 3, card: true, render: RENDER, caption: LOOPS[0]!.word },
+  { kind: "pictographGroup", items: loopStrip(LOOPS[1]!), flowCols: 3, card: true, render: RENDER, caption: LOOPS[1]!.word },
+  { kind: "pictographGroup", items: loopStrip(LOOPS[2]!), flowCols: 3, card: true, render: RENDER, caption: LOOPS[2]!.word },
   {
     kind: "prose",
     html:

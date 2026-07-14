@@ -184,8 +184,8 @@ export const eightLetterWordsContent: GuideBlock[] = [
       "Words can be any length.<br>" +
       "These 8-letter words repeat twice, to create 16-count sequences.",
   },
-  { kind: "pictographGroup", items: strip(SEQS[0]!), flowCols: 4, render: RENDER, caption: "IIΩXKEΣY" },
+  { kind: "pictographGroup", items: strip(SEQS[0]!), flowCols: 4, card: true, render: RENDER, caption: "IIΩXKEΣY" },
   { kind: "prose", html: "(Rotated LOOP)" },
-  { kind: "pictographGroup", items: strip(SEQS[1]!), flowCols: 4, render: RENDER, caption: "CΣNZIΘUW" },
+  { kind: "pictographGroup", items: strip(SEQS[1]!), flowCols: 4, card: true, render: RENDER, caption: "CΣNZIΘUW" },
   { kind: "prose", html: "(Mirrored + Swapped LOOP)" },
 ];

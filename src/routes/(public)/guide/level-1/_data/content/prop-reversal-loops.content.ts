@@ -180,9 +180,9 @@ export const propReversalLoopsContent: GuideBlock[] = [
       "Each of these words uses a prop-reversal.<br>" +
       "These examples are <em>Rotated LOOPs</em>.",
   },
-  { kind: "pictographGroup", items: strip(LOOPS[0]!), flowCols: 3, render: RENDER, caption: "EΣQY Rotated" },
-  { kind: "pictographGroup", items: strip(LOOPS[1]!), flowCols: 3, render: RENDER, caption: "TWKΘ Rotated" },
-  { kind: "pictographGroup", items: strip(LOOPS[2]!), flowCols: 3, render: RENDER, caption: "BΔMX Rotated" },
+  { kind: "pictographGroup", items: strip(LOOPS[0]!), flowCols: 3, card: true, render: RENDER, caption: "EΣQY Rotated" },
+  { kind: "pictographGroup", items: strip(LOOPS[1]!), flowCols: 3, card: true, render: RENDER, caption: "TWKΘ Rotated" },
+  { kind: "pictographGroup", items: strip(LOOPS[2]!), flowCols: 3, card: true, render: RENDER, caption: "BΔMX Rotated" },
   {
     kind: "prose",
     html:

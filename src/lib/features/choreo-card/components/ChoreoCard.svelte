@@ -9,6 +9,7 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { onMount } from "svelte";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
@@ -40,6 +41,12 @@
     preRenderedImageUrl?: string | null;
     /** Show mandala fills in empty grid cells */
     showMandala?: boolean;
+    /** Force a prop family for both hands (default: the user's global setting).
+     *  Embedded contexts like the guide need a fixed prop type per page —
+     *  STAFF for letter/word/LOOP pages, HAND for motion pages — independent of
+     *  whatever the viewer has selected. */
+    bluePropType?: PropType;
+    redPropType?: PropType;
     onSelect?: (sequence: SequenceData) => void;
     onContextMenu?: (x: number, y: number, rerender: () => void) => void;
   }
@@ -62,6 +69,8 @@
     customNotesText = "🔥 FireDrums 2026 🔥",
     preRenderedImageUrl: preRenderedImageUrlProp,
     showMandala = false,
+    bluePropType,
+    redPropType,
     onSelect,
     onContextMenu,
   }: Props = $props();
@@ -83,10 +92,11 @@
     hapticService = getHapticFeedback();
   });
 
-  // Get prop settings from global state
+  // Prop family: an explicit override (guide pages pass a fixed STAFF/HAND) wins
+  // over the user's global setting.
   const propSettings = $derived({
-    bluePropType: settingsService.settings.bluePropType,
-    redPropType: settingsService.settings.redPropType,
+    bluePropType: bluePropType ?? settingsService.settings.bluePropType,
+    redPropType: redPropType ?? settingsService.settings.redPropType,
     catDogMode: settingsService.settings.catDogMode,
   });
 

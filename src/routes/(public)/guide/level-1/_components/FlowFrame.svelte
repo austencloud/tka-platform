@@ -10,10 +10,18 @@
    * NOT inherit the app's --theme-* vars, which are set for the dark-cosmic canvas
    * and render faint ink on the white editorial column.
    */
+  import { browser } from "$app/environment";
   import GuidePictograph from "./GuidePictograph.svelte";
+  import GuideCardStage from "./GuideCardStage.svelte";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { stripToSequence } from "../_data/guide-sequence-adapter";
+  import { deriveWord } from "$lib/shared/foundation/services/word-deriver";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { describePictograph } from "$lib/shared/pictograph/shared/domain/utils/pictograph-description";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { GuideBlock, PictographRender } from "../_data/guide-content-blocks";
 
   let {
@@ -54,6 +62,53 @@
     return out;
   });
 
+  // Group runs of consecutive card sequences into ONE row, so a page's card set
+  // renders as a responsive row of hybrid stages (each card paired with a live
+  // animation canvas) instead of one full-width card per line. Non-card blocks
+  // pass straight through in reading order.
+  type CardBlock = Extract<GuideBlock, { kind: "pictographGroup" }>;
+  type RenderItem =
+    | { type: "block"; block: GuideBlock }
+    | { type: "cardRow"; cards: CardBlock[] }
+    | { type: "cardAside"; card: CardBlock; prose: GuideBlock[] };
+  const isRowCard = (b: GuideBlock): b is CardBlock =>
+    b.kind === "pictographGroup" && !!b.card && b.cardLayout !== "aside";
+  const isAsideCard = (b: GuideBlock): b is CardBlock =>
+    b.kind === "pictographGroup" && !!b.card && b.cardLayout === "aside";
+  const isFlowText = (b: GuideBlock) => b.kind === "prose" || b.kind === "glyphImage";
+  const renderItems = $derived.by(() => {
+    const items: RenderItem[] = [];
+    const blocks = rendered;
+    let run: CardBlock[] = [];
+    const flush = () => {
+      if (run.length) {
+        items.push({ type: "cardRow", cards: run });
+        run = [];
+      }
+    };
+    for (let i = 0; i < blocks.length; i++) {
+      const b = blocks[i]!;
+      if (isRowCard(b)) {
+        run.push(b);
+        continue;
+      }
+      flush();
+      if (isAsideCard(b)) {
+        // The prose that FOLLOWS an aside card (until the next heading/card/end)
+        // is the text that references it — it flows beside the figure.
+        const prose: GuideBlock[] = [];
+        let j = i + 1;
+        while (j < blocks.length && isFlowText(blocks[j]!)) prose.push(blocks[j++]!);
+        items.push({ type: "cardAside", card: b, prose });
+        i = j - 1;
+        continue;
+      }
+      items.push({ type: "block", block: b });
+    }
+    flush();
+    return items;
+  });
+
   // Render hints → GuidePictograph props, defaulting to FlowFrame's prior hardcoded
   // behavior (HAND props, TKA glyph on, every other layer off).
   const r = (render?: PictographRender) => ({
@@ -65,6 +120,26 @@
     showNonRadialPoints: render?.showNonRadialPoints ?? false,
   });
 
+  // A sequence group → a playable SequenceData for the ChoreoCard. The word is
+  // derived from the steps' own letters (unique per sequence, so cards don't
+  // collide on the thumbnail cache key) rather than parsed from the caption.
+  const groupSequence = (items: readonly unknown[]): SequenceData => {
+    const strip = items as unknown as StepData[];
+    // Derive the word from the strip's OWN step letters (skipping the start box) —
+    // robust even when stripToSequence doesn't surface letters on `.steps` (some
+    // sources, e.g. the reversal demos, otherwise fall back to a generic name).
+    const fromLetters = strip
+      .filter((s) => (s.stepNumber ?? 0) > 0)
+      .map((s) => (s.letter as unknown as string) ?? "")
+      .filter(Boolean)
+      .join("");
+    const full = fromLetters || deriveWord(stripToSequence(strip, {})) || "sequence";
+    // A LOOP repeats its word by construction — show the smallest form (AABB, not
+    // AABBAABB), per the simplified-word-display rule.
+    const w = simplifyRepeatedWord(full) || full;
+    return stripToSequence(strip, { word: w, name: w });
+  };
+
   const gridLabel = (mode: "diamond" | "box" | "merged") =>
     mode === "diamond"
       ? "Diamond grid — four points at north, east, south, and west"
@@ -74,8 +149,61 @@
 </script>
 
 <div class="flow-frame">
-  {#each rendered as block, i (i)}
-    {#if block.kind === "heading"}
+  {#each renderItems as item, i (i)}
+    {#if item.type === "cardRow"}
+      <!-- A responsive row of hybrid card stages: each hold-in-hand ChoreoCard
+           paired with a live 2D animation canvas of the same sequence, ringed in
+           the viewer's gold playback glow while it's in view (GuideCardStage).
+           3-up on desktop, wrapping to 2/1-up as the column narrows. The card +
+           canvas are client-rendered (browser-gated); the caption and the
+           per-pictograph notation (sr-only) are always prerendered so the
+           sequence stays crawlable and available to assistive tech. -->
+      <div class="flow-card-row">
+        {#each item.cards as card, c (c)}
+          {@const crp = r(card.render)}
+          <div class="card-stage-slot">
+            {#if browser}
+              <GuideCardStage sequence={groupSequence(card.items)} propType={crp.propType} />
+            {/if}
+            {#if card.caption}<p class="card-caption">{card.caption}</p>{/if}
+            <div class="sr-only">
+              {#each card.items as pos, n (pos.id ?? n)}
+                <span>{describePictograph(pos)}</span>
+              {/each}
+            </div>
+          </div>
+        {/each}
+      </div>
+    {:else if item.type === "cardAside"}
+      <!-- A single card stage set to one side, with the prose that references it
+           flowing beside it (a figure + its explanation). Stacks on phones. -->
+      {@const acard = item.card}
+      {@const arp = r(acard.render)}
+      <div class="flow-aside-group">
+        <figure class="card-stage-aside">
+          {#if browser}
+            <GuideCardStage sequence={groupSequence(acard.items)} propType={arp.propType} />
+          {/if}
+          {#if acard.caption}<p class="card-caption">{acard.caption}</p>{/if}
+          <div class="sr-only">
+            {#each acard.items as pos, n (pos.id ?? n)}
+              <span>{describePictograph(pos)}</span>
+            {/each}
+          </div>
+        </figure>
+        <div class="aside-prose">
+          {#each item.prose as pb, m (m)}
+            {#if pb.kind === "prose"}
+              <p class="flow-p aside-p">{@html flowProse(pb.html)}</p>
+            {:else if pb.kind === "glyphImage"}
+              <img class="flow-glyph aside-glyph" src={pb.src} alt={pb.alt} />
+            {/if}
+          {/each}
+        </div>
+      </div>
+    {:else}
+      {@const block = item.block}
+      {#if block.kind === "heading"}
       {#if block.level === 2}
         <h2 class="flow-h2">{block.text}</h2>
       {:else}
@@ -181,8 +309,9 @@
         {#if fb.kind === "prose"}<p class="flow-p">{@html flowProse(fb.html)}</p>{/if}
         {#if fb.kind === "heading"}<h3 class="flow-h3">{fb.text}</h3>{/if}
       {/each}
+      {/if}
+      <!-- rule blocks are print-only chrome; the flow column uses spacing, not hairlines -->
     {/if}
-    <!-- rule blocks are print-only chrome; the flow column uses spacing, not hairlines -->
   {/each}
 </div>
 
@@ -197,8 +326,13 @@
      scoped .flow-* selectors out-specify .guide-content h2/h3/p, but only for the
      properties they actually set. Leave one unset and the dark-SPA value shows
      through. */
+  /* The frame is a WIDE container; the reading measure is enforced per-element
+     (.flow-p caps at 34rem, headings are short centred text), so prose pages look
+     unchanged — their content still sits centred at its own width. The extra
+     frame width only exists so card rows can break past the reading measure and
+     show 3 legible cards across. */
   .flow-frame {
-    max-width: 44rem;
+    max-width: 62rem;
     margin: 0 auto;
     padding: 0.5rem 1.5rem 4rem;
     color: var(--ink, #1a1a1a);
@@ -214,6 +348,7 @@
     font-weight: 700;
     letter-spacing: -0.01em;
     text-align: center;
+    text-wrap: balance;
   }
   .flow-h3 {
     font-family: "Cormorant Garamond", Georgia, serif;
@@ -222,6 +357,7 @@
     margin: 1.75rem 0 0.35rem;
     font-weight: 650;
     text-align: center;
+    text-wrap: balance;
   }
   .flow-p {
     font-family: "Cormorant Garamond", Georgia, serif;
@@ -233,6 +369,9 @@
     text-align: center;
     max-width: 34rem;
     margin-inline: auto;
+    /* Even the line lengths on these short centred blocks so breaks land on
+       phrase boundaries instead of stranding "the / shoulder" (2026 native). */
+    text-wrap: balance;
   }
   /* Plain <strong> emphasis stays ink + bold (guide-content colours it lavender);
      the red/blue letter spans below still win their own colour. */
@@ -305,6 +444,118 @@
     align-items: center;
     gap: 0.55rem;
     max-width: 15rem;
+  }
+
+  /* A row of hybrid card stages (each ChoreoCard + its live animation canvas).
+     auto-fit means the row is 3-up on a wide column and reflows to 2-up / 1-up
+     as it narrows — the "multiple pages, still flowable" requirement. A lone
+     card (a run of one) sits centred at a single stage's width. */
+  .flow-card-row {
+    display: grid;
+    /* Cards are CAPPED at ~300px, so one card (or a few) never balloons to fill
+       the whole column (a lone card at 1fr became a ~660px monster you had to
+       scroll past). auto-fit then packs as many capped cards across as the width
+       allows — more cards per row on wide screens, never bigger cards. min(240px,
+       100%) lets a lone card shrink below 240 on very narrow screens. */
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 300px));
+    gap: 1.1rem;
+    align-items: start;
+    justify-content: center;
+    /* Break OUT of the narrow reading measure to use the full content width on
+       large screens. 94cqw = 94% of the guide route's own width (a container set
+       in GuidePageHost), so this uses the 4K width without colliding with the
+       sidebar. Prose stays narrow; only card rows widen. Centred on the frame,
+       which is itself centred in the route. */
+    width: min(90rem, 94cqw);
+    margin-inline: calc((100% - min(90rem, 94cqw)) / 2);
+    margin-block: 1.75rem;
+  }
+  /* Phones: stack to one stage per row — these are detailed full cards, so 2-up
+     at ~190px reads too small. One column keeps each card legible while the page
+     stays a single flowing scroll. */
+  @media (max-width: 560px) {
+    .flow-card-row {
+      grid-template-columns: 1fr;
+      width: auto;
+      max-width: 20rem;
+      margin-inline: auto;
+    }
+  }
+  .card-stage-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+    min-width: 0;
+  }
+  .card-caption {
+    font-size: 1rem;
+    font-style: italic;
+    color: var(--ink-dim, #555);
+    text-align: center;
+    line-height: 1.4;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  /* Aside placement: one stage to the side, referencing prose flowing beside it
+     (a figure + its explanation). Stacks to a single column on phones. */
+  .flow-aside-group {
+    display: flex;
+    gap: 1.75rem;
+    align-items: flex-start;
+    max-width: 54rem;
+    margin: 1.75rem auto;
+  }
+  .card-stage-aside {
+    flex: 0 0 clamp(200px, 32%, 300px);
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-width: 0;
+  }
+  .aside-prose {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  /* Prose beside a float reads left-aligned and full-width in its column, not the
+     centred narrow measure the standalone flow prose uses. */
+  .aside-prose .aside-p {
+    text-align: left;
+    max-width: none;
+    margin-inline: 0;
+  }
+  .aside-prose .aside-glyph {
+    margin-inline: 0;
+  }
+  @media (max-width: 560px) {
+    .flow-aside-group {
+      flex-direction: column;
+      align-items: stretch;
+      max-width: 22rem;
+    }
+    .card-stage-aside {
+      flex: none;
+    }
+    .aside-prose .aside-p {
+      text-align: center;
+    }
+  }
+  /* Prerendered, invisible, but read by crawlers + assistive tech. */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
   .flow-figure figcaption,
   .flow-caption,

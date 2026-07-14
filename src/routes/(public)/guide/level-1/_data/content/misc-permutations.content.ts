@@ -173,10 +173,10 @@ export const miscPermutationsContent: GuideBlock[] = [
       "In this example of DJII, the graphs in the second repetition (steps 5-8) mirror the<br>" +
       "graphs in the first repetition (steps 1-4), classifying it as a <em>Mirrored LOOP</em>.",
   },
-  { kind: "pictographGroup", items: loopStrip(LOOPS[0]!), flowCols: 3, render: RENDER, caption: LOOPS[0]!.word },
+  { kind: "pictographGroup", items: loopStrip(LOOPS[0]!), flowCols: 3, card: true, render: RENDER, caption: LOOPS[0]!.word },
   { kind: "prose", html: "Swapped & Rotated LOOP" },
-  { kind: "pictographGroup", items: loopStrip(LOOPS[1]!), flowCols: 3, render: RENDER, caption: LOOPS[1]!.word },
-  { kind: "pictographGroup", items: loopStrip(LOOPS[2]!), flowCols: 3, render: RENDER, caption: LOOPS[2]!.word },
+  { kind: "pictographGroup", items: loopStrip(LOOPS[1]!), flowCols: 3, card: true, render: RENDER, caption: LOOPS[1]!.word },
+  { kind: "pictographGroup", items: loopStrip(LOOPS[2]!), flowCols: 3, card: true, render: RENDER, caption: LOOPS[2]!.word },
   {
     kind: "prose",
     html:

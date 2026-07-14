@@ -165,7 +165,7 @@ const RENDER = { propType: PropType.STAFF, showReversals: true } as const;
 export const sixteenCountContent: GuideBlock[] = [
   { kind: "heading", level: 1, text: "16-Count Sequences" },
   { kind: "prose", html: "These 4-letter words repeat 4 times, giving us 16-count sequences." },
-  { kind: "pictographGroup", items: seqStrip(SEQS[0]!), flowCols: 4, render: RENDER, caption: SEQS[0]!.word },
+  { kind: "pictographGroup", items: seqStrip(SEQS[0]!), flowCols: 4, card: true, render: RENDER, caption: SEQS[0]!.word },
   {
     kind: "prose",
     html:
@@ -173,7 +173,7 @@ export const sixteenCountContent: GuideBlock[] = [
       "This means it will take 4 repetitions to return to home.",
   },
   { kind: "prose", html: "<em>(Rotated + Swapped LOOP)</em>" },
-  { kind: "pictographGroup", items: seqStrip(SEQS[1]!), flowCols: 4, render: RENDER, caption: SEQS[1]!.word },
+  { kind: "pictographGroup", items: seqStrip(SEQS[1]!), flowCols: 4, card: true, render: RENDER, caption: SEQS[1]!.word },
   {
     kind: "prose",
     html:

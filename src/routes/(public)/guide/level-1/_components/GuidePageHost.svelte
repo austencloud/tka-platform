@@ -147,8 +147,13 @@
 
 <main class="guide-page-route">
   <header class="topic-hero">
-    <h1>{seo.h1}</h1>
-    {#if seo.tagline}<p class="hero-tagline">{seo.tagline}</p>{/if}
+    <!-- The Page (sheet) view is a self-titling print reproduction — it paints its
+         OWN calligraphic title + intro line. Showing the hero title/tagline above
+         it repeats both. So the hero title is visually hidden in sheet mode (kept
+         in the a11y tree as the page h1) and the tagline is dropped; the reflow
+         view keeps them (FlowFrame drops the sheet's copies instead). -->
+    <h1 class:visually-hidden={frame === "sheet"}>{seo.h1}</h1>
+    {#if seo.tagline && frame === "flow"}<p class="hero-tagline">{seo.tagline}</p>{/if}
     {#if canFlow}
       <!-- SegmentedControl lives under $lib/shared/3d and is on the CF-Worker SSR
            stub list (25 MiB worker cap — reference_cf_worker_size_limit), so its
@@ -240,6 +245,10 @@
     --ink: #1a1a1a;
     --ink-dim: #555;
     --glyph-invert: 0;
+    /* Size container so FlowFrame's card rows can break out to a fraction of THIS
+       route's width (cqw) — using wide/4K screens — while the reading column stays
+       narrow. inline-size only: block-size (min-height: 100vh) is unaffected. */
+    container-type: inline-size;
   }
   .topic-hero {
     max-width: 44rem;
@@ -260,6 +269,19 @@
     line-height: 0.95;
     letter-spacing: 0;
     color: var(--ink, #1a1a1a);
+  }
+  /* Sheet mode: keep the h1 in the a11y tree (page still has one heading) but
+     take it out of the visual flow, since the sheet paints its own title. */
+  .topic-hero h1.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
   .hero-tagline {
     margin: 0.35rem 0 1.25rem;

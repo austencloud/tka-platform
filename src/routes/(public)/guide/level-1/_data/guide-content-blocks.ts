@@ -92,6 +92,26 @@ export type GuideBlock =
        * baked-in letter glyphs identify each step.
        */
       stepLabels?: string[];
+      /**
+       * Render this sequence as the real hold-in-hand ChoreoCard (the product
+       * card front — word + step grid + start position + footer), instead of a
+       * loose strip/grid. For groups that are a single sequence/word/LOOP. The
+       * card visual is client-rendered; a prerendered visually-hidden notation
+       * block keeps the per-pictograph description crawlable. Galleries of
+       * independent letters/positions leave this off.
+       */
+      card?: boolean;
+      /**
+       * Placement of the card stage(s) in the flow column (card mode only):
+       * - "row" (default): a centred, responsive band of stages — canvas above
+       *   card, 3-up on desktop reflowing to 1-up on phones. For sets of
+       *   variations shown together (the AABB variations, a LOOP family).
+       * - "aside": the stage sits to one side and the prose that FOLLOWS it in
+       *   reading order flows beside it as a referenced figure. For a single
+       *   sequence discussed by surrounding text. Consecutive "row" cards group
+       *   into one row; an "aside" card stands alone with its trailing prose.
+       */
+      cardLayout?: "row" | "aside";
       /** Flow render hints (prop family + which system adornments to show). */
       render?: PictographRender;
       sheet?: PtHint;

@@ -182,7 +182,7 @@ export const fullReversalLoopsContent: GuideBlock[] = [
       "There are also prop-reversals within these words.<br>" +
       "Challenge yourself to identify each one.",
   },
-  { kind: "pictographGroup", items: strip(SEQS[0]!), flowCols: 3, render: RENDER, caption: "CCKE" },
-  { kind: "pictographGroup", items: strip(SEQS[1]!), flowCols: 3, render: RENDER, caption: "FLII" },
-  { kind: "pictographGroup", items: strip(SEQS[2]!), flowCols: 6, render: RENDER, caption: "DAK" },
+  { kind: "pictographGroup", items: strip(SEQS[0]!), flowCols: 3, card: true, render: RENDER, caption: "CCKE" },
+  { kind: "pictographGroup", items: strip(SEQS[1]!), flowCols: 3, card: true, render: RENDER, caption: "FLII" },
+  { kind: "pictographGroup", items: strip(SEQS[2]!), flowCols: 6, card: true, render: RENDER, caption: "DAK" },
 ];

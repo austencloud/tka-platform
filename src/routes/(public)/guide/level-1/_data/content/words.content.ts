@@ -148,9 +148,9 @@ export const wordsContent: GuideBlock[] = [
       "We’ll use the word AABB as an example. Here are three variations on AABB, starting from<br>" +
       'different thumb orientations. Use staves or <strong><span class="cR">red</span>/<span class="cB">blue</span></strong> pens to follow along.',
   },
-  { kind: "pictographGroup", items: rowStrip(ROWS[0]!), flowCols: 5, layout: "strip", stepLabels: STEP_LABELS, render: RENDER, caption: "AABB — thumbs in | in" },
-  { kind: "pictographGroup", items: rowStrip(ROWS[1]!), flowCols: 5, layout: "strip", stepLabels: STEP_LABELS, render: RENDER, caption: "AABB — thumbs out | out" },
-  { kind: "pictographGroup", items: rowStrip(ROWS[2]!), flowCols: 5, layout: "strip", stepLabels: STEP_LABELS, render: RENDER, caption: "AABB — thumbs in | out" },
+  { kind: "pictographGroup", items: rowStrip(ROWS[0]!), flowCols: 5, layout: "strip", stepLabels: STEP_LABELS, card: true, render: RENDER, caption: "AABB — thumbs in | in" },
+  { kind: "pictographGroup", items: rowStrip(ROWS[1]!), flowCols: 5, layout: "strip", stepLabels: STEP_LABELS, card: true, render: RENDER, caption: "AABB — thumbs out | out" },
+  { kind: "pictographGroup", items: rowStrip(ROWS[2]!), flowCols: 5, layout: "strip", stepLabels: STEP_LABELS, card: true, render: RENDER, caption: "AABB — thumbs in | out" },
   {
     kind: "prose",
     html:
