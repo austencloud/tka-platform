@@ -76,8 +76,22 @@ export type GuideBlock =
       caption?: string;
       /** Sheet grid geometry (SheetFrame lays the items out with this). */
       grid?: SheetGrid;
-      /** Flow layout: responsive column count for FlowFrame. */
+      /** Flow layout: responsive column count for FlowFrame's grid mode. */
       flowCols?: number;
+      /**
+       * Flow layout mode. "strip" = one horizontal, left-to-right sequence row
+       * (scrolls on narrow screens) — the faithful mobile form of the sheet's
+       * step strips, for groups that ARE a sequence (start → steps). "grid"
+       * (default when omitted) = the wrap grid, for galleries of independent
+       * pictographs. Set "strip" per-group where the source page draws a strip.
+       */
+      layout?: "strip" | "grid";
+      /**
+       * Optional labels rendered above each strip cell (parallel to `items`),
+       * e.g. ["Start", "1", "2", "3", "4"]. Strip mode only; omit to let the
+       * baked-in letter glyphs identify each step.
+       */
+      stepLabels?: string[];
       /** Flow render hints (prop family + which system adornments to show). */
       render?: PictographRender;
       sheet?: PtHint;

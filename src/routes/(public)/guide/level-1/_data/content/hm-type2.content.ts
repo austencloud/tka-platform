@@ -128,7 +128,15 @@ export const hmType2Content: GuideBlock[] = [
       "To move between γ and α/β, you can shift one hand and keep the other hand static.<br>" +
       "This combination is called a <strong class=\"pu\">Shift</strong> (with a capital “S”). Here’s a simple example:",
   },
-  { kind: "pictographGroup", items: stripSteps(STRIPS[0]!), flowCols: 5, render: RENDER, caption: SEQ_WORDS[0] },
+  {
+    kind: "pictographGroup",
+    items: stripSteps(STRIPS[0]!),
+    flowCols: 5,
+    layout: "strip",
+    stepLabels: ["Start", "1", "2", "3", "4"],
+    render: RENDER,
+    caption: SEQ_WORDS[0],
+  },
   {
     kind: "prose",
     html:

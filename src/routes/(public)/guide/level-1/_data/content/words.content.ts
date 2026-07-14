@@ -124,6 +124,9 @@ const rowStrip = (r: RowDef): PictographData[] =>
 /** STAFF props, TKA letter glyph on — matching WordsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF } as const;
 
+/** Step captions above each strip cell: the start box, then the four AABB steps. */
+const STEP_LABELS = ["Start", "1", "2", "3", "4"];
+
 export const wordsContent: GuideBlock[] = [
   { kind: "heading", level: 1, text: "Words" },
   { kind: "prose", html: "Let’s create more complex words using pictographs!" },
@@ -145,9 +148,9 @@ export const wordsContent: GuideBlock[] = [
       "We’ll use the word AABB as an example. Here are three variations on AABB, starting from<br>" +
       'different thumb orientations. Use staves or <strong><span class="cR">red</span>/<span class="cB">blue</span></strong> pens to follow along.',
   },
-  { kind: "pictographGroup", items: rowStrip(ROWS[0]!), flowCols: 5, render: RENDER, caption: "AABB — thumbs in | in" },
-  { kind: "pictographGroup", items: rowStrip(ROWS[1]!), flowCols: 5, render: RENDER, caption: "AABB — thumbs out | out" },
-  { kind: "pictographGroup", items: rowStrip(ROWS[2]!), flowCols: 5, render: RENDER, caption: "AABB — thumbs in | out" },
+  { kind: "pictographGroup", items: rowStrip(ROWS[0]!), flowCols: 5, layout: "strip", stepLabels: STEP_LABELS, render: RENDER, caption: "AABB — thumbs in | in" },
+  { kind: "pictographGroup", items: rowStrip(ROWS[1]!), flowCols: 5, layout: "strip", stepLabels: STEP_LABELS, render: RENDER, caption: "AABB — thumbs out | out" },
+  { kind: "pictographGroup", items: rowStrip(ROWS[2]!), flowCols: 5, layout: "strip", stepLabels: STEP_LABELS, render: RENDER, caption: "AABB — thumbs in | out" },
   {
     kind: "prose",
     html:

@@ -191,8 +191,24 @@ export const lt2WxyzContent: GuideBlock[] = [
     kind: "prose",
     html: "When we arrange them in continuous motions, we get the words WΣYΘ and XΔZΩ.",
   },
-  { kind: "pictographGroup", items: rowStrip(ROWS[0]!), flowCols: 5, render: RENDER, caption: "WΣYΘ — pro" },
-  { kind: "pictographGroup", items: rowStrip(ROWS[1]!), flowCols: 5, render: RENDER, caption: "XΔZΩ — anti" },
+  {
+    kind: "pictographGroup",
+    items: rowStrip(ROWS[0]!),
+    flowCols: 5,
+    layout: "strip",
+    stepLabels: ["Start", "1", "2", "3", "4"],
+    render: RENDER,
+    caption: "WΣYΘ — pro",
+  },
+  {
+    kind: "pictographGroup",
+    items: rowStrip(ROWS[1]!),
+    flowCols: 5,
+    layout: "strip",
+    stepLabels: ["Start", "1", "2", "3", "4"],
+    render: RENDER,
+    caption: "XΔZΩ — anti",
+  },
   {
     kind: "prose",
     html:

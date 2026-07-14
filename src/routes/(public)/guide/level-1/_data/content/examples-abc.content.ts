@@ -171,6 +171,8 @@ export const examplesAbcContent: GuideBlock[] = [
     kind: "pictographGroup",
     items: seqStrip(SEQS[0]!),
     flowCols: 5,
+    layout: "strip",
+    stepLabels: ["Start", "1", "2", "3", "4"],
     render: RENDER,
     caption: SEQS[0]!.word,
   },

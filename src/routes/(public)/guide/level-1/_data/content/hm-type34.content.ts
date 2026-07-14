@@ -145,6 +145,7 @@ export const hmType34Content: GuideBlock[] = [
     kind: "pictographGroup",
     items: breakdownSteps(),
     flowCols: 4,
+    layout: "strip",
     render: RENDER,
     caption: "start → halfway → end = combined",
   },

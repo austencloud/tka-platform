@@ -172,9 +172,25 @@ export const hmType56Content: GuideBlock[] = [
       'With a <span class="k-dash">Dash</span>, one hand executes a dash while the other hand remains static.<br>' +
       "With alpha → beta, this creates a two-step sequence:",
   },
-  { kind: "pictographGroup", items: stripSteps(T4A), flowCols: 3, render: RENDER, caption: T4A.word },
+  {
+    kind: "pictographGroup",
+    items: stripSteps(T4A),
+    flowCols: 3,
+    layout: "strip",
+    stepLabels: ["Start", "1", "2"],
+    render: RENDER,
+    caption: T4A.word,
+  },
   { kind: "prose", html: "And with gamma → gamma, it creates a 4-step sequence:" },
-  { kind: "pictographGroup", items: stripSteps(T4B), flowCols: 5, render: RENDER, caption: T4B.word },
+  {
+    kind: "pictographGroup",
+    items: stripSteps(T4B),
+    flowCols: 5,
+    layout: "strip",
+    stepLabels: ["Start", "1", "2", "3", "4"],
+    render: RENDER,
+    caption: T4B.word,
+  },
 
   { kind: "heading", level: 2, text: "Type 5 - Dual-Dash" },
   {
@@ -182,9 +198,33 @@ export const hmType56Content: GuideBlock[] = [
     html:
       'With a <span class="k-dual">Dual</span><span class="k-dash">-Dash</span>, both hands dash simultaneously to their opposite points.',
   },
-  { kind: "pictographGroup", items: stripSteps(T5A), flowCols: 2, render: RENDER, caption: T5A.word },
-  { kind: "pictographGroup", items: stripSteps(T5B), flowCols: 2, render: RENDER, caption: T5B.word },
-  { kind: "pictographGroup", items: stripSteps(T5C), flowCols: 2, render: RENDER, caption: T5C.word },
+  {
+    kind: "pictographGroup",
+    items: stripSteps(T5A),
+    flowCols: 2,
+    layout: "strip",
+    stepLabels: ["Start", "1"],
+    render: RENDER,
+    caption: T5A.word,
+  },
+  {
+    kind: "pictographGroup",
+    items: stripSteps(T5B),
+    flowCols: 2,
+    layout: "strip",
+    stepLabels: ["Start", "1"],
+    render: RENDER,
+    caption: T5B.word,
+  },
+  {
+    kind: "pictographGroup",
+    items: stripSteps(T5C),
+    flowCols: 2,
+    layout: "strip",
+    stepLabels: ["Start", "1"],
+    render: RENDER,
+    caption: T5C.word,
+  },
   {
     kind: "prose",
     html:

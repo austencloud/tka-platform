@@ -174,7 +174,7 @@
   </header>
 
   {#if frame === "flow" && content}
-    <FlowFrame {content} darkMode={isDark} />
+    <FlowFrame {content} darkMode={isDark} tagline={seo.tagline ?? ""} />
   {:else if Sheet}
     <!-- Print-friendly layout: the SAME built _pages sheet the book uses, scaled
          to fit width. Horizontal scroll guards narrow viewports. -->
@@ -247,18 +247,26 @@
     padding: 1.5rem 1.5rem 0.5rem;
     text-align: center;
   }
+  /* The page title in the guide's signature calligraphic script (the same
+     --guide-script the printed sheet uses for its title), so the crawl/flow
+     surface opens with the book's identity rather than a plain serif. Sized up
+     from the sheet's fixed 48pt to a fluid hero, coloured with the editorial ink
+     so it reads on both the warm-white and dark columns. */
   .topic-hero h1 {
     margin: 0;
-    font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: clamp(2rem, 5vw, 3rem);
-    font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: -0.01em;
+    font-family: var(--guide-script, "Cormorant Garamond", Georgia, serif);
+    font-weight: var(--guide-script-weight, 700);
+    font-size: clamp(3.2rem, 12vw, 5.25rem);
+    line-height: 0.95;
+    letter-spacing: 0;
+    color: var(--ink, #1a1a1a);
   }
   .hero-tagline {
-    margin: 0.6rem 0 1.25rem;
+    margin: 0.35rem 0 1.25rem;
     font-family: "Cormorant Garamond", Georgia, serif;
-    font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+    font-size: clamp(1.15rem, 2.6vw, 1.4rem);
+    font-style: italic;
+    line-height: 1.4;
     color: var(--ink-dim, #555);
   }
   .frame-toggle {
