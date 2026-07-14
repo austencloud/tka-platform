@@ -1,12 +1,13 @@
 import type Stripe from "stripe";
 import { SHIPPING_COUNTRIES } from "./shippingCountries";
 
-// PLACEHOLDER flat shipping rates (USD cents). The buyer selects one at checkout —
-// Stripe does not auto-pick a rate by destination in a static session. Tune these
-// once real package weight is measured (a ~128-card deck is <1lb: US ~$5, Canada
-// ~$14, international ~$25). tax_behavior is required when automatic_tax is enabled.
+// Flat shipping rates (USD cents). The buyer selects one at checkout — Stripe does
+// not auto-pick a rate by destination in a static session. US shipping is FREE
+// (baked into the deck price); Canada/International stay paid because those rates
+// (~$14 / ~$25 for a <1lb ~128-card deck) would erase the margin if absorbed.
+// tax_behavior is required when automatic_tax is enabled.
 const MERCH_SHIPPING_OPTIONS: Stripe.Checkout.SessionCreateParams.ShippingOption[] = [
-  { shipping_rate_data: { type: "fixed_amount", display_name: "US shipping", tax_behavior: "exclusive", fixed_amount: { amount: 500, currency: "usd" } } },
+  { shipping_rate_data: { type: "fixed_amount", display_name: "Free US shipping", tax_behavior: "exclusive", fixed_amount: { amount: 0, currency: "usd" } } },
   { shipping_rate_data: { type: "fixed_amount", display_name: "Canada shipping", tax_behavior: "exclusive", fixed_amount: { amount: 1400, currency: "usd" } } },
   { shipping_rate_data: { type: "fixed_amount", display_name: "International shipping", tax_behavior: "exclusive", fixed_amount: { amount: 2500, currency: "usd" } } },
 ];

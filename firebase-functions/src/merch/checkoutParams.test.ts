@@ -36,6 +36,18 @@ describe("buildMerchCheckoutParams", () => {
     }
   });
 
+  it("ships US free (baked into the deck price) and keeps Canada/International paid", () => {
+    const opts = params.shipping_options ?? [];
+    const us = opts.find(
+      (o) => o.shipping_rate_data?.display_name === "Free US shipping"
+    );
+    expect(us?.shipping_rate_data?.fixed_amount?.amount).toBe(0);
+    const paid = opts.filter(
+      (o) => (o.shipping_rate_data?.fixed_amount?.amount ?? 0) > 0
+    );
+    expect(paid.length).toBe(2);
+  });
+
   it("builds /shop success + cancel urls from baseUrl", () => {
     expect(params.success_url).toBe(
       "https://tkaflowarts.com/shop/success?session_id={CHECKOUT_SESSION_ID}"

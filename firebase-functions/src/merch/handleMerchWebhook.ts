@@ -109,17 +109,26 @@ export const handleMerchWebhook = functions.https.onRequest(
     }
 
     // Price sync: attach the active price to its product doc so checkout can use it.
+    // A deck carries TWO active prices — preorder and regular — distinguished by
+    // Stripe price metadata.tier. Route each to its own field so the second price
+    // does NOT clobber the first (the old single-field write did). Untagged prices
+    // are treated as preorder (back-compat with pre-swap products).
     if (event.type === "price.created" || event.type === "price.updated") {
       const price = event.data.object as Stripe.Price;
       const productId =
         typeof price.product === "string" ? price.product : price.product.id;
       if (price.active) {
+        const tier = price.metadata?.tier;
+        const patch =
+          tier === "regular"
+            ? { regularStripePriceId: price.id, regularPrice: price.unit_amount ?? 0 }
+            : { stripePriceId: price.id, price: price.unit_amount ?? 0 };
         await admin
           .firestore()
           .collection("products")
           .doc(productId)
-          .set({ stripePriceId: price.id, price: price.unit_amount ?? 0 }, { merge: true });
-        console.log(`Synced price ${price.id} -> product ${productId}`);
+          .set(patch, { merge: true });
+        console.log(`Synced ${tier ?? "preorder"} price ${price.id} -> product ${productId}`);
       }
     }
 

@@ -28,6 +28,8 @@
   } from "./components/DeckFanCover.svelte";
   import LoopChips from "./components/LoopChips.svelte";
   import BuyButton from "./components/BuyButton.svelte";
+  import PreorderPriceNote from "./components/PreorderPriceNote.svelte";
+  import { activePriceCents, preorderWindowOpen, formatUsd } from "./domain/preorder-pricing";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import BaseCard from "$lib/features/create/generate/components/cards/BaseCard.svelte";
   import { LOOPType } from "$lib/features/create/generate/circular/domain/models/circular-models";
@@ -440,8 +442,10 @@
   });
 
   const flavorTileValue = $derived(flavorLabel(flavor));
+  // Read once — the preorder→regular boundary is a fixed instant, no ticking.
+  const now = Date.now();
   const price = $derived(
-    customSku ? `$${(customSku.price / 100).toFixed(0)}` : "$30"
+    customSku ? formatUsd(activePriceCents(customSku, now)) : "$30"
   );
 
 </script>
@@ -615,6 +619,9 @@
 
           <aside class="buy-rail" bind:this={railEl}>
           <p class="price">{price}</p>
+          {#if customSku && preorderWindowOpen(customSku, now)}
+            <PreorderPriceNote product={customSku} />
+          {/if}
           <!-- Fixed specs this beta run — information, not dead buttons. -->
           <p class="spec-line">
             Poker size · 2.5" × 3.5" <span class="spec-sep">•</span> Deck only
