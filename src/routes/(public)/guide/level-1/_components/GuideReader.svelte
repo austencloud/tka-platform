@@ -47,6 +47,13 @@
   } from "$lib/shared/background/shared/state/background-suppression.svelte";
   import { BUILT } from "../_data/built-pages";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import {
+    guideFramePrefs,
+    setGuideFrame,
+    type GuideFrame,
+  } from "../_data/guide-frame-prefs.svelte";
+  import { hasReflowContent } from "../_data/guide-content";
 
   // Faithful pages render in print STYLE (ink-on-white, static pictographs).
   setGuidePrintMode();
@@ -490,6 +497,21 @@
     return () => readerRo.disconnect();
   });
 
+  // First mobile load defaults to the reflow frame (print sheets are mobile-
+  // hostile); once the user toggles, respect their choice. Desktop stays sheet.
+  let userPickedFrame = $state(false);
+  $effect(() => {
+    if (!userPickedFrame && isMobile && guideFramePrefs.frame === "sheet") {
+      setGuideFrame("flow");
+    }
+  });
+
+  // The active body page's manifest id — drives whether the sheet/flow toggle
+  // shows (only pages with single-source reflow content can reflow).
+  const activeReflowable = $derived(
+    hasReflowContent(GUIDE_BODY_PAGES[activeIndex - FRONT_MATTER_COUNT]?.id ?? "")
+  );
+
   // Re-observe the sheet element whenever it (re)mounts (companionOpen
   // toggles `{#if companionOpen}` in the markup, so companionEl's identity
   // changes) and re-sync immediately so a freshly opened sheet is measured.
@@ -503,13 +525,22 @@
 </script>
 
 {#snippet sheetFrame(meta: GuidePageMeta)}
-  <div class="reader-page">
-    <div class="page-fixed" style="transform: scale({scale})">
-      <GuidePage title={meta.title} pageNumber={meta.pageNumber} fullBleed={meta.fullBleed}>
-        {@render meta.content()}
-      </GuidePage>
+  {#if guideFramePrefs.frame === "flow" && meta.reflowable}
+    <!-- Flow mode: the reflowable page renders full-width + unscaled (its content
+         is a FlowFrame), NOT trapped in the scaled 8.5×11 sheet. Other pages keep
+         the scaled sheet below. -->
+    <div class="reader-flow-page">
+      {@render meta.content()}
     </div>
-  </div>
+  {:else}
+    <div class="reader-page">
+      <div class="page-fixed" style="transform: scale({scale})">
+        <GuidePage title={meta.title} pageNumber={meta.pageNumber} fullBleed={meta.fullBleed}>
+          {@render meta.content()}
+        </GuidePage>
+      </div>
+    </div>
+  {/if}
 {/snippet}
 
 <div class="reader" bind:this={readerEl}>
@@ -518,6 +549,23 @@
   </aside>
 
   <div class="reader-stage" bind:this={stageEl}>
+    {#if activeReflowable}
+      <div class="frame-toggle">
+        <SegmentedControl
+          options={[
+            { value: "sheet", label: "Page" },
+            { value: "flow", label: "Reflow" },
+          ]}
+          value={guideFramePrefs.frame}
+          onchange={(v: GuideFrame) => {
+            userPickedFrame = true;
+            setGuideFrame(v);
+          }}
+          size="sm"
+          color="accent"
+        />
+      </div>
+    {/if}
     <div
       class="reader-doc"
       class:restoring
@@ -526,7 +574,7 @@
       onscrollend={onScroll}
       style="--w:{PAGE_W * scale}px; --h:{PAGE_H * scale}px"
     >
-      <GuideDocument built={BUILT} page={sheetFrame} />
+      <GuideDocument built={BUILT} page={sheetFrame} frame={guideFramePrefs.frame} />
     </div>
   </div>
 
@@ -580,6 +628,21 @@
     min-width: 0;
     display: flex;
     flex-direction: column;
+  }
+  .frame-toggle {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0 0;
+  }
+  /* Flow page: full stage width, content height, its own white editorial sheet —
+     escapes the fixed --w/--h scaled-sheet box the .reader-page rules impose. */
+  .reader-doc :global(.reader-flow-page) {
+    flex: 0 0 auto;
+    width: min(100%, 52rem);
+    background: #fff;
+    color: #1a1a1a;
+    border-radius: 2px;
+    box-shadow: 0 6px 28px rgba(0, 0, 0, 0.4);
   }
   /* Continuous scroller: pages stack vertically, each fit fully to the pane, and
      you scroll between them. */

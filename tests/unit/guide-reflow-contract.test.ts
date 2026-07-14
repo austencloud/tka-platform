@@ -50,3 +50,17 @@ describe("GUIDE_CONTENT registry", () => {
     expect(GUIDE_CONTENT["hand-positions"]!.length).toBeGreaterThan(0);
   });
 });
+
+describe("frame toggle wiring", () => {
+  it("GuideDocument routes the flow frame via GUIDE_CONTENT", () => {
+    const src = read("src/routes/(public)/guide/level-1/_components/GuideDocument.svelte");
+    expect(src).toContain("FlowFrame");
+    expect(src).toContain('frame === "flow"');
+  });
+  it("GuideReader renders the sheet/flow SegmentedControl and a full-width flow page", () => {
+    const src = read("src/routes/(public)/guide/level-1/_components/GuideReader.svelte");
+    expect(src).toContain("SegmentedControl");
+    expect(src).toContain("guideFramePrefs.frame");
+    expect(src).toContain("reader-flow-page");
+  });
+});

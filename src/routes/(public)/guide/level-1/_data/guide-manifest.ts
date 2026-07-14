@@ -33,6 +33,12 @@ export type GuidePageMeta = {
   fullBleed?: boolean;
   label?: string;
   content: Snippet;
+  /**
+   * This page has a single-source reflow view (GUIDE_CONTENT). The reader's flow
+   * frame renders it full-width + unscaled instead of inside the scaled 8.5×11
+   * sheet. Sheet/print hosts ignore this.
+   */
+  reflowable?: boolean;
 };
 
 export type GuideGroup = "1.0" | "1.1" | "1.2";
