@@ -34,7 +34,7 @@ describe("createShopCart", () => {
     cart.add(poster);
     cart.add(poster);
     expect(cart.lines.length).toBe(1);
-    expect(cart.lines[0].qty).toBe(2);
+    expect(cart.lines[0]!.qty).toBe(2);
     expect(cart.subtotal).toBe(5000);
   });
 
@@ -48,14 +48,14 @@ describe("createShopCart", () => {
   it("locks configured-deck quantity to 1 even if setQty asks for more", () => {
     const cart = createShopCart();
     cart.add(deck("cfg1"));
-    cart.setQty(cart.lines[0].key, 5);
-    expect(cart.lines[0].qty).toBe(1);
+    cart.setQty(cart.lines[0]!.key, 5);
+    expect(cart.lines[0]!.qty).toBe(1);
   });
 
   it("clamps SKU quantity to >= 1 and removes on 0", () => {
     const cart = createShopCart();
     cart.add(poster);
-    cart.setQty(cart.lines[0].key, 0);
+    cart.setQty(cart.lines[0]!.key, 0);
     expect(cart.lines.length).toBe(0);
   });
 
@@ -64,7 +64,7 @@ describe("createShopCart", () => {
     a.add(poster);
     const b = createShopCart();
     expect(b.count).toBe(1);
-    expect(b.lines[0].productId).toBe("poster_a");
+    expect(b.lines[0]!.productId).toBe("poster_a");
   });
 
   it("clears everything", () => {
