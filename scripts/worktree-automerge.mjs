@@ -102,6 +102,14 @@ function releaseLock() {
   }
 }
 
+/** Porcelain status as two-char XY codes (path omitted — only the code matters here). */
+function statusCodes(path) {
+  return sh(`git -C "${path}" status --porcelain`)
+    .split("\n")
+    .filter(Boolean)
+    .map((l) => l.slice(0, 2));
+}
+
 /** All the cheap, read-only gates. Returns a reason string if NOT ready, else null. */
 function cheapGateReason(wt, originMainSha) {
   if (wt.branch === null) return "detached HEAD";
@@ -109,8 +117,13 @@ function cheapGateReason(wt, originMainSha) {
   if (SKIP_BRANCH_PREFIXES.some((p) => wt.branch.startsWith(p))) return `skip-prefixed branch (${wt.branch})`;
   if (existsSync(join(wt.path, SKIP_FILE))) return `opted out (${SKIP_FILE} present)`;
 
-  const dirty = sh(`git -C "${wt.path}" status --porcelain`);
-  if (dirty) return "working tree dirty (uncommitted work)";
+  // A handful of Greek-glyph guide images case-fold-collide on NTFS, so a fresh
+  // `git worktree add` can't materialize them and every worktree shows them as
+  // UNSTAGED deletions (" D"). Those are systemic phantoms, never the branch's work
+  // — and an uncommitted deletion is never part of what merges (the merge uses the
+  // committed tip). So real dirt = anything that ISN'T an unstaged deletion.
+  const realDirt = statusCodes(wt.path).filter((code) => code !== " D");
+  if (realDirt.length) return `working tree dirty (${realDirt.length} uncommitted change(s))`;
 
   const lastCommitTs = Number(sh(`git -C "${wt.path}" log -1 --format=%ct`)) * 1000;
   const ageMin = (Date.now() - lastCommitTs) / 60000;
