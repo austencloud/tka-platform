@@ -306,6 +306,27 @@ export function getDisabledFeatureModulePaths(): string[] {
 }
 
 /**
+ * Shared render modules that are client-only by nature (WebGL / 2D canvas) and
+ * never produce meaningful server HTML, yet still leak into the SSR `_worker.js`
+ * bundle. They ride in through *runtime-conditional* dynamic imports (e.g. the
+ * sequence viewer's lazy 3D pane, gated on `needs3D` — a runtime value, not the
+ * statically-`false` `browser` flag) that Vite cannot prove dead on the server,
+ * so it bundles the target chunk (Three.js + the entire 3D scene graph + GPU
+ * effect renderers) into the Worker regardless. `shared/3d/` alone pulls Three
+ * + threlte + every scene, which is what pushed the Worker past 25 MiB
+ * (26.28 MiB, commit 756f9bb0a8, 2026-07-14).
+ *
+ * Stubbing their `.svelte` components in the SSR build is safe because WebGL /
+ * canvas cannot render server-side — any public (SSR'd) page that mounts them
+ * already does so client-only, so the server output is unchanged (an empty
+ * placeholder that hydrates client-side) while the client build keeps them real.
+ */
+const SSR_STUBBED_SHARED_RENDER_PATHS: string[] = [
+  "shared/3d/",
+  "shared/animation-engine/",
+];
+
+/**
  * Module path prefixes to stub in the SSR / server (Cloudflare Pages Functions)
  * build.
  *
@@ -316,15 +337,18 @@ export function getDisabledFeatureModulePaths(): string[] {
  * pushed the server bundle past that limit and failed the deploy.
  *
  * Since these modules never execute server-side, we stub every non-core feature
- * module in the SSR build while keeping them real in the client build. This
- * returns the server bundle to its known-good (core-only) size AND reclaims the
- * entire server-side compile of those modules — the only legitimate build-time
- * win available, since a module that ships to users must still compile for the
- * client. Core (create/browse/feedback) stays real in SSR to match the prior
- * proven-good server bundle.
+ * module — plus the client-only shared render layers above — in the SSR build
+ * while keeping them real in the client build. This returns the server bundle to
+ * its known-good size AND reclaims the entire server-side compile of those
+ * modules — the only legitimate build-time win available, since a module that
+ * ships to users must still compile for the client. Core (create/browse/
+ * feedback) stays real in SSR to match the prior proven-good server bundle.
  */
 export function getSsrStubbedModulePaths(): string[] {
-  return FEATURES.filter((f) => f.tier !== "core").flatMap((f) => f.modulePaths);
+  return [
+    ...FEATURES.filter((f) => f.tier !== "core").flatMap((f) => f.modulePaths),
+    ...SSR_STUBBED_SHARED_RENDER_PATHS,
+  ];
 }
 
 /**
