@@ -6,7 +6,8 @@ export type ProductType =
   | "sampler-pack"
   | "digital"
   | "guide"
-  | "material";
+  | "material"
+  | "poster";
 
 export type ProductStatus = "active" | "draft" | "sold-out";
 
@@ -108,4 +109,44 @@ export interface ShippingAddress {
   readonly state: string;
   readonly postalCode: string;
   readonly country: string;
+}
+
+/** A line in a pre-payment draft order (orders/{id} with status "pending").
+ *  Written server-side by createCartCheckout; the webhook flips the doc to
+ *  paid. Distinct from OrderItem (the legacy metadata-reconstructed shape). */
+export type DraftOrderLine =
+  | {
+      readonly kind: "sku";
+      readonly productId: string;
+      readonly stripePriceId: string;
+      readonly name: string;
+      readonly unitPrice: number;
+      readonly qty: number;
+      readonly propType?: string;
+    }
+  | {
+      readonly kind: "loopDeck";
+      readonly productId: string;
+      readonly stripePriceId: string;
+      readonly name: string;
+      readonly unitPrice: number;
+      readonly qty: 1;
+      readonly propType?: string;
+      readonly loopConfig: Record<string, unknown>;
+      /** Reserved for the approve/reject preview phase. */
+      readonly sequenceIds?: string[];
+    };
+
+export type DraftOrderStatus = "pending" | "paid" | "expired";
+
+export interface DraftOrder {
+  readonly id: string;
+  readonly status: DraftOrderStatus;
+  readonly lineItems: readonly DraftOrderLine[];
+  readonly subtotal: number;
+  readonly stripeSessionId?: string;
+  readonly stripePaymentIntentId?: string;
+  readonly customerEmail?: string;
+  readonly shippingAddress?: ShippingAddress | null;
+  readonly totalAmount?: number;
 }

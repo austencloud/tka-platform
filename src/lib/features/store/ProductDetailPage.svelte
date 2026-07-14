@@ -110,6 +110,14 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
             {product}
             propType={product.type === "physical-deck" ? propType : undefined}
           />
+          {#if product.stripePriceId}
+            <BuyButton
+              {product}
+              propType={product.type === "physical-deck" ? propType : undefined}
+              mode="add"
+              label="Add to cart"
+            />
+          {/if}
           {#if store.checkoutError}
             <p class="checkout-error" role="alert">{store.checkoutError}</p>
           {/if}
