@@ -81,12 +81,6 @@
         Parts of the guide are already live and readable right in the browser:
       </p>
       <div class="available-links">
-        <a href="/guide/flow-arts-positions" class="guide-link">
-          <span class="guide-link-title">Flow Arts Positions</span>
-          <span class="guide-link-sub"
-            >The first three positions — Alpha, Beta, and Gamma</span
-          >
-        </a>
         <a href="/guide/level-2" class="guide-link">
           <span class="guide-link-title">Level 2</span>
           <span class="guide-link-sub"

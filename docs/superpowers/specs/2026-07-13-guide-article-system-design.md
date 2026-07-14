@@ -1,7 +1,14 @@
 # Guide Article System — Design Spec
 
 **Date:** 2026-07-13
-**Status:** SHIPPED 2026-07-14 (commit 7a5ab1ca08) — system + reference article `/guide/flow-arts-positions` built, prerendered, and deployed. Follow-on concept articles + prop pillars remain (same system, more of Austen's verbatim prose).
+**Status:** SUPERSEDED / PULLED 2026-07-14. The reference article shipped
+(7a5ab1ca08) then was pulled the same day: as a separate flat article it was a
+disconnected, worse-looking duplicate of the real guide (dark-only, wasted
+width, thin, no next/prev). Austen's call: don't duplicate the guide as flat
+articles — instead give the REAL guide a **crawlable reflow view** toggled
+against the existing paginated print-sheet view, developed in parallel. See the
+new guide-reflow spec. `GuideSeo`/`GuidePictograph` (pre-existing) stay; the
+flat `GuideArticle`/`GuideFigure` were removed.
 **Owner:** SEO overhaul, P0 lever ("flow arts education" search space)
 **Related specs:** `2026-07-09-seo-overhaul-design.md`, `2026-07-09-guide-deep-links-design.md`, `2026-07-13-composer-marketing-page-design.md`
 
