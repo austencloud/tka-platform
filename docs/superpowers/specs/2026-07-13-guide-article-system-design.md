@@ -1,7 +1,7 @@
 # Guide Article System — Design Spec
 
 **Date:** 2026-07-13
-**Status:** Draft — awaiting Austen's review (written while he was on remote control; scoped for a desk session)
+**Status:** SHIPPED 2026-07-14 (commit 7a5ab1ca08) — system + reference article `/guide/flow-arts-positions` built, prerendered, and deployed. Follow-on concept articles + prop pillars remain (same system, more of Austen's verbatim prose).
 **Owner:** SEO overhaul, P0 lever ("flow arts education" search space)
 **Related specs:** `2026-07-09-seo-overhaul-design.md`, `2026-07-09-guide-deep-links-design.md`, `2026-07-13-composer-marketing-page-design.md`
 
