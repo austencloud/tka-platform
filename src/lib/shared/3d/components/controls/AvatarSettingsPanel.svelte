@@ -8,10 +8,8 @@
    */
 
   import { t } from "$lib/shared/i18n/i18n.svelte";
-  import {
-    AVATAR_DEFINITIONS,
-    type AvatarId,
-  } from "@austencloud/scene-3d";
+  import { type AvatarId } from "@austencloud/scene-3d";
+  import { DEPLOYED_AVATAR_DEFINITIONS } from "$lib/shared/3d/config/deployed-avatars";
 
   interface Props {
     /** Whether avatar is visible */
@@ -48,7 +46,7 @@
 
   {#if showFigure}
     <div class="avatar-grid" role="radiogroup" aria-label={t("avatar_settings")}>
-      {#each AVATAR_DEFINITIONS as avatar}
+      {#each DEPLOYED_AVATAR_DEFINITIONS as avatar}
         <button
           class="avatar-card"
           class:selected={avatarId === avatar.id}
