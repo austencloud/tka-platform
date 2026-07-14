@@ -19,6 +19,7 @@ import { calculateSkewedFloatRotation } from "../config/float-rotation-maps";
 import { checkAndApplyOverride } from "../utils/rotation-override-checker";
 import { isNoRotation } from "../utils/rotation-direction-utils";
 import { calculateHandpathDirection } from "./handpath-direction-calculator";
+import { calculateSegmentRotation } from "./segment-rotation";
 
 export class ArrowRotationCalculator {
   /**
@@ -61,6 +62,17 @@ export class ArrowRotationCalculator {
      * Returns:
      *     Rotation angle in degrees (0-360)
      */
+    // Half-motion frames: rotation is the staff angle at the segment end, derived
+    // from Phase 1's pure orientation→angle bijection (endOrientation carries the
+    // halfway orientation). Pure — no animation-engine dependency in this pipeline.
+    if (motion.segment) {
+      return calculateSegmentRotation(
+        motion.endOrientation,
+        location,
+        motion.startLocation
+      );
+    }
+
     const motionType = motion.motionType.toLowerCase();
 
     switch (motionType) {
