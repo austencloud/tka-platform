@@ -23,3 +23,11 @@ describe("blockProseText", () => {
     );
   });
 });
+
+describe("SheetFrame", () => {
+  const src = read("src/routes/(public)/guide/level-1/_components/SheetFrame.svelte");
+  it("keeps the 816/612 pt→px scale and absolute positioning", () => {
+    expect(src).toContain("816 / 612");
+    expect(src).toContain("position: absolute");
+  });
+});
