@@ -11,10 +11,30 @@
    * and render faint ink on the white editorial column.
    */
   import GuidePictograph from "./GuidePictograph.svelte";
+  import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import type { GuideBlock } from "../_data/guide-content-blocks";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import type { GuideBlock, PictographRender } from "../_data/guide-content-blocks";
 
   let { content }: { content: GuideBlock[] } = $props();
+
+  // Render hints → GuidePictograph props, defaulting to FlowFrame's prior hardcoded
+  // behavior (HAND props, TKA glyph on, every other layer off).
+  const r = (render?: PictographRender) => ({
+    propType: render?.propType ?? PropType.HAND,
+    showTKA: render?.showTKA ?? true,
+    showPositions: render?.showPositions ?? false,
+    showElemental: render?.showElemental ?? false,
+    showReversals: render?.showReversals ?? false,
+    showNonRadialPoints: render?.showNonRadialPoints ?? false,
+  });
+
+  const gridLabel = (mode: "diamond" | "box" | "merged") =>
+    mode === "diamond"
+      ? "Diamond grid — four points at north, east, south, and west"
+      : mode === "box"
+        ? "Box grid — four points on the diagonals"
+        : "8-point grid — diamond and box combined";
 </script>
 
 <div class="flow-frame">
@@ -30,17 +50,53 @@
     {:else if block.kind === "glyphImage"}
       <img class="flow-glyph" src={block.src} alt={block.alt} />
     {:else if block.kind === "pictograph"}
+      {@const rp = r(block.render)}
       <figure class="flow-figure">
-        <GuidePictograph data={block.data} size="md" eager propType={PropType.HAND} />
+        <GuidePictograph
+          data={block.data}
+          size="md"
+          eager
+          propType={rp.propType}
+          showTKA={rp.showTKA}
+          showPositions={rp.showPositions}
+          showElemental={rp.showElemental}
+          showReversals={rp.showReversals}
+          showNonRadialPoints={rp.showNonRadialPoints}
+        />
         {#if block.caption}<figcaption>{block.caption}</figcaption>{/if}
       </figure>
     {:else if block.kind === "pictographGroup"}
+      {@const rp = r(block.render)}
       <div class="flow-grid" style:--cols={block.flowCols ?? 4}>
         {#each block.items as pos, n (pos.id ?? n)}
-          <GuidePictograph data={pos} size="sm" eager propType={PropType.HAND} />
+          <GuidePictograph
+            data={pos}
+            size="sm"
+            eager
+            propType={rp.propType}
+            showTKA={rp.showTKA}
+            showPositions={rp.showPositions}
+            showElemental={rp.showElemental}
+            showReversals={rp.showReversals}
+            showNonRadialPoints={rp.showNonRadialPoints}
+          />
         {/each}
       </div>
       {#if block.caption}<p class="flow-caption">{block.caption}</p>{/if}
+    {:else if block.kind === "gridFigure"}
+      <figure class="flow-grid-figure">
+        <svg class="grid-fig" viewBox="0 0 950 950" role="img" aria-label={block.caption ?? gridLabel(block.mode)}>
+          <desc>{block.caption ?? gridLabel(block.mode)}</desc>
+          <rect width="950" height="950" fill="#ffffff" />
+          {#if block.mode === "merged"}
+            <GridSvg gridMode={GridMode.DIAMOND} darkMode={false} />
+            <GridSvg gridMode={GridMode.BOX} darkMode={false} />
+          {:else}
+            <GridSvg gridMode={block.mode === "box" ? GridMode.BOX : GridMode.DIAMOND} darkMode={false} />
+          {/if}
+        </svg>
+        {#if block.caption}<figcaption>{block.caption}</figcaption>{/if}
+      </figure>
     {:else if block.kind === "printOnly"}
       {#each block.flow as fb, m (m)}
         {#if fb.kind === "prose"}<p class="flow-p">{@html fb.html}</p>{/if}
@@ -128,10 +184,37 @@
     gap: 0.5rem;
   }
   .flow-figure figcaption,
-  .flow-caption {
+  .flow-caption,
+  .flow-grid-figure figcaption {
     font-size: 0.95rem;
     color: var(--ink-dim, #555);
     text-align: center;
+  }
+
+  /* Grid diagram (The Grid page): the canonical GridSvg on a white square,
+     points only — matching the printed proof's diamond/box/8-point figures. */
+  .flow-grid-figure {
+    margin: 1.5rem auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    max-width: 18rem;
+  }
+  .grid-fig {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    border: 1px solid color-mix(in oklab, var(--ink, #1a1a1a) 18%, transparent);
+    border-radius: 8px;
+    background: #fff;
+  }
+  /* The proof shows points only — drop GridSvg's connecting lines. */
+  .grid-fig :global(line) {
+    display: none;
+  }
+  .grid-fig :global(.grid-container) {
+    opacity: 1;
   }
 
   /* Palette is HOST-owned: the reader's flow page is always a white sheet (keep

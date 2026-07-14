@@ -1,6 +1,37 @@
+/**
+ * Single source for The Grid page (manifest id "the-grid"). Prose is lifted
+ * VERBATIM from _pages/TheGridPage.svelte (Austen's words — never AI-written).
+ * The two-hand diagram is the same ALPHA3 pictograph that page builds; the three
+ * grid figures reuse the canonical GridSvg via the `gridFigure` flow block. The
+ * sheet toggle renders the built _pages component (with its callout arrows/labels,
+ * which are absolute-positioned sheet chrome and don't reflow). See the reflow
+ * spec + no-ghostwriting rule.
+ */
 import type { GuideBlock } from "../guide-content-blocks";
+import { startPositionManager } from "$lib/shared/create/services/start-position-manager";
+import { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
-// Verbatim prose lifted from _pages/TheGridPage.svelte (Austen's words — never AI-written).
+// ALPHA3 (blue hand at west, red hand at east), prop forced to HAND — copied from
+// _pages/TheGridPage.svelte so the flow diagram matches the printed one's figure.
+const ALPHA3_RAW = startPositionManager
+  .getAllStartPositionVariations(GridMode.DIAMOND)
+  .find((p) => p.startPosition === GridPosition.ALPHA3);
+const ALPHA3: PictographData | undefined = ALPHA3_RAW
+  ? ({
+      ...ALPHA3_RAW,
+      motions: {
+        blue: ALPHA3_RAW.motions?.blue
+          ? { ...ALPHA3_RAW.motions.blue, propType: PropType.HAND }
+          : undefined,
+        red: ALPHA3_RAW.motions?.red
+          ? { ...ALPHA3_RAW.motions.red, propType: PropType.HAND }
+          : undefined,
+      },
+    } as unknown as PictographData)
+  : undefined;
+
 export const theGridContent: GuideBlock[] = [
   { kind: "heading", level: 1, text: "The Grid" },
   {
@@ -11,6 +42,16 @@ export const theGridContent: GuideBlock[] = [
       "<strong>This guide is written in diamond, but everything translates to box.</strong><br><br>" +
       "On this grid, there are three types of points:",
   },
+  ...(ALPHA3
+    ? [
+        {
+          kind: "pictograph",
+          data: ALPHA3,
+          render: { propType: PropType.HAND, showTKA: false },
+          caption: "Two hands on the diamond grid — blue at west, red at east.",
+        } as GuideBlock,
+      ]
+    : []),
   {
     kind: "prose",
     html:
@@ -19,8 +60,8 @@ export const theGridContent: GuideBlock[] = [
       "The <strong>outer points</strong> depict the outer<br>edges of the grid.",
   },
   { kind: "prose", html: "Together, diamond and box form an 8-point grid:" },
-  { kind: "heading", level: 2, text: "Diamond" },
-  { kind: "heading", level: 2, text: "Box" },
-  { kind: "heading", level: 2, text: "8-point grid" },
+  { kind: "gridFigure", mode: "diamond", caption: "Diamond" },
+  { kind: "gridFigure", mode: "box", caption: "Box" },
+  { kind: "gridFigure", mode: "merged", caption: "8-point grid" },
   { kind: "prose", html: "We’ll use diamond mode to learn each concept." },
 ];

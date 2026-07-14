@@ -1,11 +1,98 @@
 /**
  * Single source for the Base Letters SEO doorway (manifest id "base-letters").
  * Prose is lifted VERBATIM from _pages/BaseLettersPage.svelte (Austen's words —
- * never AI-written). This is a prose-only content file for the crawlable doorway
- * route — no sheet hints, no pictograph blocks (those stay in the interactive
- * reader's single-source content). See the reflow spec + no-ghostwriting rule.
+ * never AI-written); the pictograph construction is a FAITHFUL COPY of that same
+ * file's letterStep() builder (same enums, locations, orientations → identical
+ * staff pictographs), minus the reader-only wiring (selection, overrides,
+ * click-to-animate strip). See the reflow spec + no-ghostwriting rule.
  */
 import type { GuideBlock } from "../guide-content-blocks";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  MotionType,
+  MotionColor,
+  Orientation,
+  RotationDirection,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+
+const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
+const { IN, OUT } = Orientation;
+const CW = RotationDirection.CLOCKWISE;
+const CCW = RotationDirection.COUNTER_CLOCKWISE;
+
+// ── The six letters, straight from MCP pictograph data — copied from
+// BaseLettersPage.svelte. Pro keeps the prop with the handpath (CW, in→in);
+// anti counter-rotates (CCW, in→out). Hybrid = blue anti + red pro (proof:
+// right pro, left anti).
+type Hand = { type: MotionType; rot: RotationDirection; from: GridLocation; to: GridLocation; eo: Orientation };
+type Cell = { letter: Letter; name: string; blue: Hand; red: Hand };
+const pro = (from: GridLocation, to: GridLocation): Hand => ({ type: MotionType.PRO, rot: CW, from, to, eo: IN });
+const anti = (from: GridLocation, to: GridLocation): Hand => ({ type: MotionType.ANTI, rot: CCW, from, to, eo: OUT });
+
+type Box = { key: string; cells: Cell[] };
+const BOXES: Box[] = [
+  // A/B/C — α→α Split-Same: blue s→w, red n→e.
+  {
+    key: "abc",
+    cells: [
+      { letter: Letter.A, name: "A", blue: pro(SO_, W), red: pro(N, E) },
+      { letter: Letter.B, name: "B", blue: anti(SO_, W), red: anti(N, E) },
+      { letter: Letter.C, name: "C", blue: anti(SO_, W), red: pro(N, E) },
+    ],
+  },
+  // G/H/I — β→β Tog-Same: both hands e→s.
+  {
+    key: "ghi",
+    cells: [
+      { letter: Letter.G, name: "G", blue: pro(E, SO_), red: pro(E, SO_) },
+      { letter: Letter.H, name: "H", blue: anti(E, SO_), red: anti(E, SO_) },
+      { letter: Letter.I, name: "I", blue: anti(E, SO_), red: pro(E, SO_) },
+    ],
+  },
+];
+
+const hand = (color: MotionColor, h: Hand) =>
+  createMotionData({
+    motionType: h.type,
+    rotationDirection: h.rot,
+    startLocation: h.from,
+    endLocation: h.to,
+    startOrientation: IN,
+    endOrientation: h.eo,
+    turns: 0,
+    color,
+    propType: PropType.STAFF,
+    gridMode: GridMode.DIAMOND,
+  });
+
+const letterStep = (c: Cell, stepNumber: number | null = null): StepData =>
+  ({
+    id: `bl-${c.name}${stepNumber === null ? "" : `-${stepNumber}`}`,
+    letter: c.letter,
+    gridMode: GridMode.DIAMOND,
+    startPosition: getGridPositionFromLocations(c.blue.from, c.red.from),
+    endPosition: getGridPositionFromLocations(c.blue.to, c.red.to),
+    motions: {
+      blue: hand(MotionColor.BLUE, c.blue),
+      red: hand(MotionColor.RED, c.red),
+    },
+    stepNumber,
+    duration: 1,
+    blueReversal: false,
+    redReversal: false,
+    isBlank: false,
+  }) as unknown as StepData;
+
+const boxGroup = (bx: Box): PictographData[] => bx.cells.map((c) => letterStep(c)) as unknown as PictographData[];
+
+/** STAFF props, TKA letter glyph on — matching BaseLettersPage's PictographContainer flags. */
+const RENDER = { propType: PropType.STAFF } as const;
 
 export const baseLettersContent: GuideBlock[] = [
   { kind: "heading", level: 1, text: "Base Letters" },
@@ -20,6 +107,13 @@ export const baseLettersContent: GuideBlock[] = [
   {
     kind: "prose",
     html: "First we’ll look at A, B, and C. Their handpath is <em>Split-Same</em> and they move from α→α:",
+  },
+  {
+    kind: "pictographGroup",
+    items: boxGroup(BOXES[0]!),
+    flowCols: 3,
+    render: RENDER,
+    caption: "A · B · C — α→α Split-Same",
   },
   {
     kind: "prose",
@@ -37,6 +131,13 @@ export const baseLettersContent: GuideBlock[] = [
   {
     kind: "prose",
     html: "Next let’s look at G, H, and I. Their handpaths are <em>Tog-Same</em> and they move from β→β:",
+  },
+  {
+    kind: "pictographGroup",
+    items: boxGroup(BOXES[1]!),
+    flowCols: 3,
+    render: RENDER,
+    caption: "G · H · I — β→β Tog-Same",
   },
   {
     kind: "prose",

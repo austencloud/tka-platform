@@ -9,6 +9,30 @@
  * SheetFrame multiplies by S = 816/612 to reach the 816×1056px on-screen sheet.
  */
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+
+/**
+ * Flow-view render hints for a pictograph / pictographGroup. FlowFrame reads these
+ * to render each figure the way its source _pages component does (prop family +
+ * which system adornments to show). SheetFrame ignores them — the sheet uses its
+ * own print flags. Every field is optional and defaults to FlowFrame's prior
+ * hardcoded behavior (HAND props, TKA glyph on, every other layer off), so
+ * existing pages (hand-positions) are unchanged.
+ */
+export type PictographRender = {
+  /** Prop family. HAND (default) for position/motion pages, STAFF for letter/word/LOOP pages. */
+  propType?: PropType;
+  /** Bottom-left TKA letter glyph. Default true (letter/word pages want it; letterless positions show nothing). */
+  showTKA?: boolean;
+  /** Top-centre start→end PositionGlyph. Default false. */
+  showPositions?: boolean;
+  /** Bottom-right elemental glyph, derived from the motions. Default false. */
+  showElemental?: boolean;
+  /** Prop-reversal dots (blueReversal/redReversal). Default false; the LOOP/reversal pages set it true. */
+  showReversals?: boolean;
+  /** Non-radial grid points. Default false. */
+  showNonRadialPoints?: boolean;
+};
 
 /** A block's position on the print sheet, in PDF points. Only SheetFrame reads it. */
 export type PtHint = {
@@ -43,7 +67,7 @@ export type GuideBlock =
   | { kind: "prose"; html: string; sheet?: PtHint }
   | { kind: "glyphImage"; src: string; alt: string; heightPt: number; sheet?: PtHint }
   | { kind: "rule"; sheet: PtHint }
-  | { kind: "pictograph"; data: PictographData; caption?: string; sheet?: PtHint }
+  | { kind: "pictograph"; data: PictographData; caption?: string; render?: PictographRender; sheet?: PtHint }
   | {
       kind: "pictographGroup";
       /** Real pictographs, in reading order. */
@@ -54,7 +78,17 @@ export type GuideBlock =
       grid?: SheetGrid;
       /** Flow layout: responsive column count for FlowFrame. */
       flowCols?: number;
+      /** Flow render hints (prop family + which system adornments to show). */
+      render?: PictographRender;
       sheet?: PtHint;
+    }
+  | {
+      /** A grid diagram (diamond / box / combined 8-point) as a standalone figure —
+       *  the canonical GridSvg on a white square, points-only. Flow-only (The Grid
+       *  page); the sheet renders its own hand-authored diagram. */
+      kind: "gridFigure";
+      mode: "diamond" | "box" | "merged";
+      caption?: string;
     }
   | {
       /** Bespoke print artifact (flattened raster / measured vector). Sheet renders

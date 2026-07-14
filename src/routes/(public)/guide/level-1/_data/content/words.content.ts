@@ -1,6 +1,129 @@
+/**
+ * Single source for the Words page (manifest id "words"). Prose is lifted
+ * VERBATIM from _pages/WordsPage.svelte (Austen's words — never AI-written); the
+ * pictograph construction is a FAITHFUL COPY of that same file's AABB derivation
+ * (same helpers, same locations/orientations → identical staff pictographs),
+ * minus the reader-only wiring (selection, overrides, click-to-animate). FlowFrame
+ * stacks the blocks in reading order; the sheet toggle renders the built _pages
+ * component. See the reflow spec + no-ghostwriting rule.
+ *
+ * REFERENCE EXAMPLE for the strip → pictographGroup transformation (the pattern
+ * every letter/word/LOOP page follows).
+ */
 import type { GuideBlock } from "../guide-content-blocks";
+import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  MotionType,
+  MotionColor,
+  Orientation,
+  RotationDirection,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { getGridPositionFromLocations } from "$lib/shared/pictograph/grid/services/grid-position-deriver";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
-// Verbatim prose lifted from _pages/WordsPage.svelte (Austen's words — never AI-written).
+const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
+const { IN, OUT } = Orientation;
+const CW = RotationDirection.CLOCKWISE;
+const CCW = RotationDirection.COUNTER_CLOCKWISE;
+
+// ── AABB: A A around (pro), B B back (anti) — copied from WordsPage.svelte ──
+type Leg = { from: GridLocation; to: GridLocation; anti: boolean };
+const BLUE_LEGS: Leg[] = [
+  { from: SO_, to: W, anti: false },
+  { from: W, to: N, anti: false },
+  { from: N, to: W, anti: true },
+  { from: W, to: SO_, anti: true },
+];
+const RED_LEGS: Leg[] = [
+  { from: N, to: E, anti: false },
+  { from: E, to: SO_, anti: false },
+  { from: SO_, to: E, anti: true },
+  { from: E, to: N, anti: true },
+];
+const LETTERS = [Letter.A, Letter.A, Letter.B, Letter.B];
+
+const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
+const hpDir = (from: GridLocation, to: GridLocation) => (HP_CW.has(`${from}-${to}`) ? CW : CCW);
+const flip = (o: Orientation) => (o === IN ? OUT : IN);
+// pro (steps 1-2) preserves the row's starting orientation, anti (step 3) flips
+// into step 4, which flips back.
+const oriAt = (o0: Orientation, i: number): Orientation => (i === 3 ? flip(o0) : o0);
+
+const hand = (color: MotionColor, leg: Leg, so: Orientation) => {
+  const dir = hpDir(leg.from, leg.to);
+  return createMotionData({
+    motionType: leg.anti ? MotionType.ANTI : MotionType.PRO,
+    rotationDirection: leg.anti ? (dir === CW ? CCW : CW) : dir,
+    startLocation: leg.from,
+    endLocation: leg.to,
+    startOrientation: so,
+    endOrientation: leg.anti ? flip(so) : so,
+    turns: 0,
+    color,
+    propType: PropType.STAFF,
+    gridMode: GridMode.DIAMOND,
+  });
+};
+const stat = (color: MotionColor, loc: GridLocation, ori: Orientation) =>
+  createMotionData({
+    motionType: MotionType.STATIC,
+    startLocation: loc,
+    endLocation: loc,
+    startOrientation: ori,
+    endOrientation: ori,
+    color,
+    propType: PropType.STAFF,
+    gridMode: GridMode.DIAMOND,
+  });
+
+type RowDef = { key: string; blueOri: Orientation; redOri: Orientation; label: string };
+const ROWS: RowDef[] = [
+  { key: "w-aabb-ii", blueOri: IN, redOri: IN, label: "in | in" },
+  { key: "w-aabb-oo", blueOri: OUT, redOri: OUT, label: "out | out" },
+  { key: "w-aabb-io", blueOri: IN, redOri: OUT, label: "in | out" },
+];
+
+const rowStep = (r: RowDef, i: number): StepData =>
+  ({
+    id: `${r.key}-${i + 1}`,
+    letter: LETTERS[i]!,
+    gridMode: GridMode.DIAMOND,
+    startPosition: getGridPositionFromLocations(BLUE_LEGS[i]!.from, RED_LEGS[i]!.from),
+    endPosition: getGridPositionFromLocations(BLUE_LEGS[i]!.to, RED_LEGS[i]!.to),
+    stepNumber: i + 1,
+    motions: {
+      blue: hand(MotionColor.BLUE, BLUE_LEGS[i]!, oriAt(r.blueOri, i)),
+      red: hand(MotionColor.RED, RED_LEGS[i]!, oriAt(r.redOri, i)),
+    },
+  }) as unknown as StepData;
+
+const startBox = (r: RowDef): StepData =>
+  ({
+    id: `${r.key}-0`,
+    letter: Letter.ALPHA,
+    gridMode: GridMode.DIAMOND,
+    stepNumber: 0,
+    startPosition: getGridPositionFromLocations(SO_, N),
+    endPosition: getGridPositionFromLocations(SO_, N),
+    motions: {
+      blue: stat(MotionColor.BLUE, SO_, r.blueOri),
+      red: stat(MotionColor.RED, N, r.redOri),
+    },
+  }) as unknown as StepData;
+
+// One AABB strip per starting thumb orientation: Start + 4 steps. (WordsPage's
+// PICTO_FLAGS keeps showReversals off, so the strip is used directly — no
+// bakeReversals needed for the display.)
+const rowStrip = (r: RowDef): PictographData[] =>
+  [startBox(r), ...[0, 1, 2, 3].map((i) => rowStep(r, i))] as unknown as PictographData[];
+
+/** STAFF props, TKA letter glyph on — matching WordsPage's PICTO_FLAGS. */
+const RENDER = { propType: PropType.STAFF } as const;
+
 export const wordsContent: GuideBlock[] = [
   { kind: "heading", level: 1, text: "Words" },
   { kind: "prose", html: "Let’s create more complex words using pictographs!" },
@@ -22,6 +145,9 @@ export const wordsContent: GuideBlock[] = [
       "We’ll use the word AABB as an example. Here are three variations on AABB, starting from<br>" +
       'different thumb orientations. Use staves or <strong><span class="cR">red</span>/<span class="cB">blue</span></strong> pens to follow along.',
   },
+  { kind: "pictographGroup", items: rowStrip(ROWS[0]!), flowCols: 5, render: RENDER, caption: "AABB — thumbs in | in" },
+  { kind: "pictographGroup", items: rowStrip(ROWS[1]!), flowCols: 5, render: RENDER, caption: "AABB — thumbs out | out" },
+  { kind: "pictographGroup", items: rowStrip(ROWS[2]!), flowCols: 5, render: RENDER, caption: "AABB — thumbs in | out" },
   {
     kind: "prose",
     html:
