@@ -31,3 +31,22 @@ describe("SheetFrame", () => {
     expect(src).toContain("position: absolute");
   });
 });
+
+describe("FlowFrame", () => {
+  const src = read("src/routes/(public)/guide/level-1/_components/FlowFrame.svelte");
+  it("renders semantic headings + prose and uses GuidePictograph for figures", () => {
+    expect(src).toContain("GuidePictograph");
+    expect(src).toMatch(/<h2|<h3/);
+    expect(src).not.toContain("position: absolute");
+  });
+});
+
+describe("GUIDE_CONTENT registry", () => {
+  it("registers hand-positions", async () => {
+    const { GUIDE_CONTENT, hasReflowContent } = await import(
+      "../../src/routes/(public)/guide/level-1/_data/guide-content"
+    );
+    expect(hasReflowContent("hand-positions")).toBe(true);
+    expect(GUIDE_CONTENT["hand-positions"]!.length).toBeGreaterThan(0);
+  });
+});
