@@ -279,7 +279,8 @@ export class SequenceBuilder {
     if (needsLoopTargeting && options.loop) {
       const constrainedStart = this.constrainStartForLoopType(
         options.loop.type,
-        effectiveStartPosition
+        effectiveStartPosition,
+        options.gridMode,
       );
       if (constrainedStart) {
         effectiveStartPosition = constrainedStart;
@@ -414,7 +415,8 @@ export class SequenceBuilder {
     if (needsLoopTargeting && options.loop) {
       const constrainedStart = this.constrainStartForLoopType(
         options.loop.type,
-        effectiveStartPosition
+        effectiveStartPosition,
+        options.gridMode,
       );
       if (constrainedStart) {
         effectiveStartPosition = constrainedStart;
@@ -1013,8 +1015,16 @@ export class SequenceBuilder {
    */
   private constrainStartForLoopType(
     loopType: LOOPType,
-    currentStartPosition?: string
+    currentStartPosition?: string,
+    gridMode?: string,
   ): string | undefined {
+    // Grid modes occupy disjoint grid points: diamond uses the cardinal
+    // (odd-index) positions (beta1/3/5/7…), box uses the intercardinal
+    // (even-index) ones (beta2/4/6/8…). A start pinned here MUST exist in the
+    // active grid mode — otherwise the beam search has zero variations there
+    // and the reachability pass dies at beat 1 ("no reachable positions").
+    const isBox = (gridMode ?? "").toLowerCase() === "box";
+
     // Swap+rotate combos degenerate from alpha starts (rotate and swap cancel
     // per-hand); beta is the reliable non-degenerate start (halved 25/25). Pin
     // a random beta unless the caller already chose a non-alpha start. Quarter
@@ -1028,7 +1038,11 @@ export class SequenceBuilder {
       if (currentStartPosition && !currentStartPosition.startsWith("alpha")) {
         return undefined; // beta or gamma — keep
       }
-      const betaPositions = Array.from({ length: 8 }, (_, i) => `beta${i + 1}`);
+      // Only the betas that exist in this grid mode (odd for diamond, even for
+      // box). Picking from all 8 pinned a nonexistent parity ~50% of the time.
+      const betaPositions = isBox
+        ? ["beta2", "beta4", "beta6", "beta8"]
+        : ["beta1", "beta3", "beta5", "beta7"];
       return betaPositions[Math.floor(Math.random() * betaPositions.length)];
     }
 
@@ -1041,6 +1055,14 @@ export class SequenceBuilder {
       loopType === LOOPType.MIRRORED_SWAPPED_INVERTED ||
       loopType === LOOPType.MIRRORED_ROTATED_INVERTED_SWAPPED
     ) {
+      // beta1/beta5 are cardinal (vertical-axis) positions — they exist only in
+      // diamond. Box has no vertical-axis position, so these combos cannot form
+      // a LOOP there. Fail clearly instead of crashing in the reachability pass.
+      if (isBox) {
+        throw new Error(
+          `${loopType} LOOPs need a vertical-axis start (beta1/beta5), which box mode does not have. Switch to diamond mode for this LOOP type.`,
+        );
+      }
       if (currentStartPosition === "beta1" || currentStartPosition === "beta5") {
         return undefined;
       }
@@ -1053,6 +1075,14 @@ export class SequenceBuilder {
     ]);
 
     if (!MIRRORED_ROTATED_TYPES.has(loopType)) return undefined;
+
+    // Vertical-mirror fixed points (alpha1/alpha5/beta1/beta5) are all cardinal —
+    // diamond-only. Box has none, so mirror+rotated combos can't loop there.
+    if (isBox) {
+      throw new Error(
+        `${loopType} LOOPs need a vertical-axis start, which box mode does not have. Switch to diamond mode for this LOOP type.`,
+      );
+    }
 
     // If the user's position is already on the vertical axis, no override needed
     if (currentStartPosition) {
