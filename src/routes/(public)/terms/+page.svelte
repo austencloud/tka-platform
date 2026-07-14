@@ -8,6 +8,7 @@
     name="description"
     content="Terms of Service for The Kinetic Alphabet (TKA) application."
   />
+  <link rel="canonical" href="https://tkaflowarts.com/terms" />
 </svelte:head>
 
 <div class="terms-page">

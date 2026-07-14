@@ -8,6 +8,7 @@
     name="description"
     content="Privacy Policy for The Kinetic Alphabet (TKA) application."
   />
+  <link rel="canonical" href="https://tkaflowarts.com/privacy" />
 </svelte:head>
 
 <div class="privacy-page">

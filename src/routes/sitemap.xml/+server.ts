@@ -13,14 +13,17 @@ const pages = [
   { url: "composer", priority: "0.9", changefreq: "monthly" },
   { url: "notation", priority: "0.9", changefreq: "monthly" },
   { url: "learn/staff-spinning-choreography", priority: "0.8", changefreq: "monthly" },
+  { url: "roots", priority: "0.8", changefreq: "monthly" },
   // Marketing
   { url: "about", priority: "0.6", changefreq: "monthly" },
-  { url: "support", priority: "0.5", changefreq: "monthly" },
+  // /support is noindex (see support/+page.svelte) — omitted to avoid a
+  // sitemap↔robots "index this / don't index this" conflict.
   // Guide — the indexable, reflowable article routes (the /print + /book
   // replicas are noindex; the canonical is the article, so only these are listed)
   { url: "guide", priority: "0.7", changefreq: "monthly" },
-  // Level 1 lives in the in-app reader; /guide/level-1* now 308s there.
-  { url: "learn/guide", priority: "0.8", changefreq: "monthly" },
+  // Level 1 lives in the in-app reader at /learn/guide, which is ssr=false
+  // (client-only shell — not crawlable). Omitted here until the Level 1 topics
+  // get a prerendered/SSR article form (SEO roadmap P0).
   { url: "guide/level-2", priority: "0.8", changefreq: "monthly" },
   { url: "guide/level-2/turns", priority: "0.7", changefreq: "monthly" },
   { url: "guide/level-2/double-turns", priority: "0.7", changefreq: "monthly" },

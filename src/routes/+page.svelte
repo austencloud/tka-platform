@@ -43,10 +43,7 @@
     rel="stylesheet"
   />
 
-  <title
-    >TKA - The Kinetic Alphabet | Flow Arts Notation for Staff, Clubs, Fans,
-    Hoops & More</title
-  >
+  <title>TKA - The Kinetic Alphabet | Flow Arts Notation</title>
   <meta
     name="description"
     content="TKA is a notation system for flow arts. Document and share staff, fans, hoop, club, fan, and buugeng choreography. Create sequences, animate them, share with other flow artists."

@@ -22,7 +22,10 @@
   const scale = $derived(colWidth / (8.5 * 96)); // 8.5in @ 96dpi
 </script>
 
-<svelte:head><title>Codex Parity: book vs render</title></svelte:head>
+<svelte:head>
+  <title>Codex Parity: book vs render</title>
+  <meta name="robots" content="noindex, nofollow" />
+</svelte:head>
 
 <div class="root">
   <header>

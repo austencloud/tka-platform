@@ -112,6 +112,11 @@
   });
 </script>
 
+<svelte:head>
+  <title>Render Utility</title>
+  <meta name="robots" content="noindex, nofollow" />
+</svelte:head>
+
 <div style="padding: 40px; font-family: system-ui;">
   <h1>Pictograph Renderer</h1>
   <p>{status}</p>

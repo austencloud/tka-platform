@@ -10,7 +10,6 @@
     "Profile & account info",
     "Library & collections",
     "Settings & preferences",
-    "Achievements & XP",
   ];
 
   const sequenceInfo = [
@@ -28,6 +27,7 @@
     name="description"
     content="How to delete your Flow Arts Composer account and data"
   />
+  <link rel="canonical" href="https://tkaflowarts.com/delete-account" />
 </svelte:head>
 
 <div class="page">

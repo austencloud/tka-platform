@@ -213,6 +213,9 @@
 
 <svelte:head>
   <title>Copy Comparison | TKA</title>
+  <!-- Internal copy-comparison dev tool: 3 near-duplicate /about variants.
+       noindex so it never dilutes the /about entity or leaks as duplicate content. -->
+  <meta name="robots" content="noindex, nofollow" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
   <link

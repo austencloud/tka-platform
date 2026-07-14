@@ -7,7 +7,10 @@
   import GuideCover from "../_components/GuideCover.svelte";
 </script>
 
-<svelte:head><title>Cover Lab: Level 1</title></svelte:head>
+<svelte:head>
+  <title>Cover Lab: Level 1</title>
+  <meta name="robots" content="noindex, nofollow" />
+</svelte:head>
 
 <div class="stage">
   <div class="row">

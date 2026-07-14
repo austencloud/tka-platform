@@ -146,7 +146,10 @@
   }
 </script>
 
-<svelte:head><title>Guide Compare: Level 2</title></svelte:head>
+<svelte:head>
+  <title>Guide Compare: Level 2</title>
+  <meta name="robots" content="noindex, nofollow" />
+</svelte:head>
 
 {#snippet cmpPage(meta: GuidePageMeta)}
   <div class="cmp-page">
