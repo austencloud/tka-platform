@@ -74,6 +74,29 @@ fast-iteration (check:watch, not per-edit builds).
 
 ---
 
+## FINAL STATUS (overnight session end)
+
+**DONE + verified + committed (3 commits: spec `3cefd98`, arch `5764866`, phase-C `0d79a1a`):**
+- Phase A architecture: `[slug]` prerendered route + `GuidePageHost` (flow default +
+  sheet toggle via BUILT + client-gated companion + prev/next nav) + `guide-page-seo`
+  (34 verbatim). Doorways deleted. SegmentedControl SSR-stub crash fixed (browser gate).
+- Phase C: dynamic sitemap (all 34 topics), contract test rewritten (13/13 green),
+  33 verbatim prose seeds committed.
+- BUILD VERIFIED (exit 0, 0 guide 500s): all 34 topics prerender; hand-positions =
+  full flow (16 pictograph aria-labels + prose + schema); other 33 = crawlable sheet
+  fallback (prose + h1 + canonical, but no pictograph aria-labels, mobile-hostile).
+
+**DEFERRED — needs Austen's eyes (NOT punts, verification blockers):**
+- Phase B flow pictograph migration (33 pages): bespoke per-page copy of each _pages'
+  pictograph construction → `pictographGroup` items → register in GUIDE_CONTENT. TKA
+  visual correctness needs his verification; `the-grid` needs a NEW grid-diagram
+  FlowFrame block type. Recipe: scratchpad `phase-b-recipe.md`. Seeds committed.
+- Rebase `GUIDE_READER_BASE` / redirect `/learn/guide` / retire in-app scroller:
+  UX changes to the LearnTab reader; need his visual check. `/learn/guide` is
+  ssr=false so no duplicate-content harm leaving it.
+- Full sheet-from-content[] unification (pt hints + pixel-verify): print-gated.
+- DEPLOY (push → CF → Search Console): gated on his go-ahead.
+
 ## Ledger notes (append as I go)
 - **A6/A7 DEFERRED (safety).** `GuideTab` renders inline via `LearnTab.svelte:217`
   (not a URL route), so rebasing `GUIDE_READER_BASE` / adding a `/learn/guide`
