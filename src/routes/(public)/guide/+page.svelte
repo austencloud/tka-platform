@@ -47,7 +47,7 @@
   <title>Guide | The Kinetic Alphabet</title>
   <meta
     name="description"
-    content="The Kinetic Alphabet guide is being rewritten for the web. Download the old PDF guides to read in the meantime, or get notified when the new guide is out."
+    content="The Kinetic Alphabet guide: a written guide to flow arts notation. Read Level 2 and the Codex now; the full Level 1 rewrite for the web is in progress."
   />
   <link rel="canonical" href="https://tkaflowarts.com/guide" />
   <meta property="og:type" content="website" />
@@ -55,7 +55,7 @@
   <meta property="og:title" content="Guide | The Kinetic Alphabet" />
   <meta
     property="og:description"
-    content="The Kinetic Alphabet guide is being rewritten for the web. Download the old PDF guides to read in the meantime, or get notified when the new one is out."
+    content="The Kinetic Alphabet guide: a written guide to flow arts notation. Read Level 2 and the Codex now; the full Level 1 rewrite for the web is in progress."
   />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
@@ -73,6 +73,27 @@
         browser: the grid, the letters, and the words. It is in progress, so it
         is not fully live yet.
       </p>
+    </section>
+
+    <section class="available" aria-labelledby="available-heading">
+      <h2 id="available-heading">Available now</h2>
+      <p class="note">
+        Parts of the guide are already live and readable right in the browser:
+      </p>
+      <div class="available-links">
+        <a href="/guide/level-2" class="guide-link">
+          <span class="guide-link-title">Level 2</span>
+          <span class="guide-link-sub"
+            >Turns, double-turns, and the intermediate system</span
+          >
+        </a>
+        <a href="/guide/codex" class="guide-link">
+          <span class="guide-link-title">The Codex</span>
+          <span class="guide-link-sub"
+            >Every letter of the Kinetic Alphabet, rendered</span
+          >
+        </a>
+      </div>
     </section>
 
     <section class="old-guides" aria-labelledby="old-guides-heading">
@@ -194,6 +215,65 @@
   }
   /* GuidesSection ships its own 120px vertical padding + heading, so it sits
      directly below the honest-framing note above. */
+
+  /* ── Available now (links to the live, crawlable guide surfaces) ──── */
+  .available {
+    max-width: 760px;
+    margin: 72px auto 0;
+    padding: 0 24px;
+    text-align: center;
+  }
+  .available-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 24px;
+  }
+  .guide-link {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1 1 240px;
+    min-width: 240px;
+    max-width: 320px;
+    padding: 20px 24px;
+    min-height: var(--min-touch-target, 44px);
+    border-radius: 16px;
+    background: rgba(20, 19, 38, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    text-decoration: none;
+    text-align: left;
+    transition:
+      border-color 0.18s ease,
+      transform 0.18s ease,
+      background 0.18s ease;
+  }
+  .guide-link:hover {
+    border-color: rgba(139, 108, 255, 0.6);
+    background: rgba(30, 27, 56, 0.6);
+    transform: translateY(-2px);
+  }
+  .guide-link-title {
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 1.35rem;
+    color: #fff;
+  }
+  .guide-link-sub {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: rgba(236, 233, 245, 0.62);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .guide-link {
+      transition: none;
+    }
+    .guide-link:hover {
+      transform: none;
+    }
+  }
 
   /* ── Notify ───────────────────────────────────────────────────────── */
   .notify {
