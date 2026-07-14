@@ -65,32 +65,40 @@ describe("frame toggle wiring", () => {
   });
 });
 
-describe("crawl route", () => {
-  const route = "src/routes/(public)/guide/level-1/hand-positions/+page.svelte";
-  it("renders FlowFrame + GuideSeo over the single-source content", () => {
-    const src = read(route);
-    expect(src).toContain("FlowFrame");
+describe("crawl route (paginated, one surface)", () => {
+  // Each Level-1 topic is a single prerendered /guide/level-1/<slug> route that is
+  // BOTH the crawlable page and the interactive reader (no doorway/funnel).
+  // Spec: 2026-07-14-guide-crawlable-paginated-reader-design.md.
+  const slugRoute = "src/routes/(public)/guide/level-1/[slug]/+page.svelte";
+  const host = "src/routes/(public)/guide/level-1/_components/GuidePageHost.svelte";
+
+  it("the [slug] route renders GuideSeo + GuidePageHost", () => {
+    const src = read(slugRoute);
     expect(src).toContain("GuideSeo");
-    expect(src).toContain('GUIDE_CONTENT["hand-positions"]');
-    expect(src).toContain("<h1>");
+    expect(src).toContain("GuidePageHost");
   });
-  it("declares prerender = true", () => {
-    expect(read("src/routes/(public)/guide/level-1/hand-positions/+page.ts")).toContain(
-      "prerender = true"
-    );
+  it("prerenders every body page via entries()", () => {
+    const ts = read("src/routes/(public)/guide/level-1/[slug]/+page.ts");
+    expect(ts).toContain("prerender = true");
+    expect(ts).toContain("entries");
+    expect(ts).toContain("GUIDE_BODY_PAGES");
   });
-  it("is a DOORWAY: hero routes to the interactive reader + the PDF download", () => {
-    const src = read("src/routes/(public)/guide/level-1/hand-positions/+page.svelte");
-    expect(src).toContain("/learn/guide/hand-positions"); // interactive reader (deep link)
-    expect(src).toContain("/guides/level-1.pdf"); // downloadable guide PDF
-    expect(src).toContain("Open the interactive guide");
-    expect(src).toContain("Download the PDF");
+  it("the host renders the flow/sheet switcher over one topic's single source", () => {
+    const src = read(host);
+    expect(src).toContain("FlowFrame"); // flow (mobile-first, crawlable) view
+    expect(src).toContain("BUILT"); // sheet (book layout) view
+    expect(src).toContain("SegmentedControl"); // the sheet<->flow switcher
+    expect(src).toContain("GUIDE_CONTENT"); // single-source content lookup
   });
-  it("links to pillar/tool/hub pages (internal-link graph)", () => {
-    const src = read("src/routes/(public)/guide/level-1/hand-positions/+page.svelte");
-    expect(src).toContain('href="/notation"');
-    expect(src).toContain('href="/composer"');
-    expect(src).toContain('href="/guide"');
+  it("keeps the companion off the prerender path (dynamic-imported, client-gated)", () => {
+    const src = read(host);
+    expect(src).toContain("browser");
+    expect(src).toMatch(/import\(["'][^"']*GuideCompanion/); // dynamic import
+  });
+  it("links to sibling topics + the guide hub (internal-link graph)", () => {
+    const src = read(host);
+    expect(src).toContain("/guide/level-1/"); // prev/next sibling routes
+    expect(src).toContain('href="/guide"'); // hub
   });
 });
 
@@ -102,7 +110,10 @@ describe("PDF indexing", () => {
 });
 
 describe("sitemap", () => {
-  it("lists the crawlable hand-positions route", () => {
-    expect(read("src/routes/sitemap.xml/+server.ts")).toContain("guide/level-1/hand-positions");
+  it("enumerates the Level-1 topic routes dynamically from the manifest", () => {
+    const src = read("src/routes/sitemap.xml/+server.ts");
+    expect(src).toContain("guide/level-1/${p.id}");
+    expect(src).toContain("GUIDE_BODY_PAGES");
+    expect(src).toContain("hasReflowContent"); // flow-ready pages rank higher
   });
 });

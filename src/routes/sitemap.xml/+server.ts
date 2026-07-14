@@ -1,4 +1,6 @@
 import { LANDING_DOMAIN } from "../../config/domains";
+import { GUIDE_BODY_PAGES } from "../(public)/guide/level-1/_data/guide-manifest";
+import { hasReflowContent } from "../(public)/guide/level-1/_data/guide-content";
 import type { RequestHandler } from "./$types";
 
 const pages = [
@@ -21,12 +23,11 @@ const pages = [
   // Guide — the indexable, reflowable article routes (the /print + /book
   // replicas are noindex; the canonical is the article, so only these are listed)
   { url: "guide", priority: "0.7", changefreq: "monthly" },
-  // Level-1 crawlable reflow routes. The in-app reader at /learn/guide is
-  // ssr=false (client shell, not crawlable); these prerendered
-  // /guide/level-1/<slug> pages are the SEO canonical — one content model,
-  // FlowFrame host (see 2026-07-14-guide-reflow-single-source-design.md). Add a
-  // line per page as each Level-1 page is migrated to the single-source model.
-  { url: "guide/level-1/hand-positions", priority: "0.7", changefreq: "monthly" },
+  // Level-1 topic routes are enumerated dynamically from the manifest below
+  // (guideLevel1Entries) — each is a prerendered /guide/level-1/<slug> page that
+  // is BOTH the crawlable SEO surface and the interactive reader (prerender +
+  // hydrate). Flow-ready (mobile-first) pages rank higher than sheet-fallback
+  // ones; see 2026-07-14-guide-crawlable-paginated-reader-design.md.
   // The downloadable guide PDFs — indexed directly so "what we have" is
   // discoverable, and so a doorway page + its PDF can both surface in search.
   { url: "guides/level-1.pdf", priority: "0.6", changefreq: "yearly" },
@@ -37,6 +38,18 @@ const pages = [
   { url: "guide/level-2/double-turns", priority: "0.7", changefreq: "monthly" },
   { url: "guide/codex", priority: "0.7", changefreq: "monthly" },
 ];
+
+/**
+ * Every Level-1 topic route (/guide/level-1/<slug>), enumerated from the manifest
+ * so a new body page is listed automatically. Flow-ready pages (mobile-first
+ * reflow content registered in GUIDE_CONTENT) rank higher than sheet-fallback
+ * pages, which still crawl but render the desktop print sheet.
+ */
+const guideLevel1Entries = GUIDE_BODY_PAGES.map((p) => ({
+  url: `guide/level-1/${p.id}`,
+  priority: hasReflowContent(p.id) ? "0.7" : "0.6",
+  changefreq: "monthly",
+}));
 
 /**
  * Curated sequences: cards released into a physical/printable deck
@@ -82,6 +95,7 @@ export const GET: RequestHandler = async () => {
       priority: page.priority,
       changefreq: page.changefreq,
     })),
+    ...guideLevel1Entries,
     ...curatedUrls.map((url) => ({
       url,
       priority: "0.6",
