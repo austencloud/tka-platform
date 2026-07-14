@@ -30,6 +30,9 @@ import CodexTwoZeroType1Page from "../_pages/CodexTwoZeroType1Page.svelte";
 import CodexZeroTwoType23Page from "../_pages/CodexZeroTwoType23Page.svelte";
 import CodexTwoOneType1Page from "../_pages/CodexTwoOneType1Page.svelte";
 import CodexTwoTwoType1Page from "../_pages/CodexTwoTwoType1Page.svelte";
+import CodexOneTwoType23Page from "../_pages/CodexOneTwoType23Page.svelte";
+import CodexTwoOneType23Page from "../_pages/CodexTwoOneType23Page.svelte";
+import CodexTwoTwoType23Page from "../_pages/CodexTwoTwoType23Page.svelte";
 
 export const BUILT2: Record<string, Component> = {
   // Pages register here as they are built (see the level-2 rebuild tracker).
@@ -58,4 +61,7 @@ export const BUILT2: Record<string, Component> = {
   "codex-0-2-t23": CodexZeroTwoType23Page,
   "codex-2-1-t1": CodexTwoOneType1Page,
   "codex-2-2-t1": CodexTwoTwoType1Page,
+  "codex-1-2-t23": CodexOneTwoType23Page,
+  "codex-2-1-t23": CodexTwoOneType23Page,
+  "codex-2-2-t23": CodexTwoTwoType23Page,
 };
