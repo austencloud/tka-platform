@@ -1,6 +1,6 @@
 <!-- src/lib/features/store/StorePage.svelte -->
 <script lang="ts">
-  import { getMerchCheckoutCreator } from "$lib/features/store/get-merch-checkout-creator";
+  import * as singleBuyCheckoutCreator from "$lib/features/store/services/single-buy-checkout-creator";
   import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
@@ -13,7 +13,7 @@
   // drafts and sold-out. Public buyers get active-only.
   let { showDrafts = false }: { showDrafts?: boolean } = $props();
 
-  const state = createStoreState(getProductLoader(), getMerchCheckoutCreator());
+  const state = createStoreState(getProductLoader(), singleBuyCheckoutCreator);
 
   setStoreContext({ state });
 

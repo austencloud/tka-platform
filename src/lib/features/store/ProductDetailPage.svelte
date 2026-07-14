@@ -1,7 +1,7 @@
 <!-- src/lib/features/store/ProductDetailPage.svelte -->
 <script lang="ts">
 
-import { getMerchCheckoutCreator } from "$lib/features/store/get-merch-checkout-creator";
+import * as singleBuyCheckoutCreator from "$lib/features/store/services/single-buy-checkout-creator";
 import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { onMount } from "svelte";
   import { createStoreState } from "./state/store-state.svelte";
@@ -28,7 +28,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
 
   const store = createStoreState(
     getProductLoader(),
-    getMerchCheckoutCreator(),
+    singleBuyCheckoutCreator,
     initialProduct
   );
 
