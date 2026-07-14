@@ -171,25 +171,25 @@ export async function bakeOgImage(
       <stop offset="70%" stop-color="#0f172a"/>
       <stop offset="100%" stop-color="#0c0515"/>
     </linearGradient>
-    <radialGradient id="glow" cx="18%" cy="45%" r="60%">
-      <stop offset="0%" stop-color="#581c87" stop-opacity="0.55"/>
+    <radialGradient id="glow" cx="50%" cy="18%" r="70%">
+      <stop offset="0%" stop-color="#581c87" stop-opacity="0.5"/>
       <stop offset="100%" stop-color="#581c87" stop-opacity="0"/>
     </radialGradient>
   </defs>
   <rect width="${W}" height="${H}" fill="url(#g)"/>
   <rect width="${W}" height="${H}" fill="url(#glow)"/>
-  <text x="72" y="300" font-family="system-ui, sans-serif" font-size="76" font-weight="800" fill="#ffffff">The Kinetic Alphabet</text>
-  <text x="74" y="360" font-family="system-ui, sans-serif" font-size="34" font-weight="500" fill="#c4b5fd">Flow arts notation you can read like music</text>
+  <text x="${W / 2}" y="150" text-anchor="middle" font-family="system-ui, sans-serif" font-size="72" font-weight="800" fill="#ffffff">The Kinetic Alphabet</text>
+  <text x="${W / 2}" y="205" text-anchor="middle" font-family="system-ui, sans-serif" font-size="32" font-weight="500" fill="#c4b5fd">Flow arts notation you can read like music</text>
 </svg>`;
 
   let img = sharp(Buffer.from(bg));
   const usable = pictographPngs.filter((p) => fs.existsSync(p)).slice(0, 4);
   if (usable.length > 0) {
-    const tile = 150;
-    const gap = 24;
+    const tile = 190;
+    const gap = 22;
     const totalW = usable.length * tile + (usable.length - 1) * gap;
-    const startX = W - totalW - 72;
-    const y = Math.round((H - tile) / 2) + 40;
+    const startX = Math.round((W - totalW) / 2);
+    const y = 310;
     const composites = await Promise.all(
       usable.map(async (p, i) => ({
         input: await sharp(p)
