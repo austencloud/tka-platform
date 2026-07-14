@@ -23,7 +23,7 @@
   export type CodexCell = {
     data: PictographData | null;
     letter: string;
-    slot: "high" | "low";
+    slot: "high" | "low" | "both";
     dot?: "same" | "opp";
   };
 
@@ -34,6 +34,7 @@
     rightHeader,
     rows,
     names,
+    cols = 8,
   }: {
     turnLabel: string;
     subParts?: Seg[];
@@ -41,16 +42,16 @@
     rightHeader?: Seg[];
     rows: CodexCell[][];
     names?: string[];
+    cols?: number;
   } = $props();
 
   const S = 816 / 612;
 
-  // 8-column grid scaled to the portrait content width (26..586 = 560pt).
-  const COLS = 8;
+  // N-column grid scaled to the portrait content width (26..586 = 560pt).
   const MARGIN = 26;
   const CONTENT = 560;
-  const COL_PITCH = CONTENT / COLS; // 70
-  const SIZE = 66;
+  const COL_PITCH = CONTENT / cols;
+  const SIZE = Math.min(COL_PITCH - 6, 80);
   const colLeft = (i: number) => MARGIN + i * COL_PITCH + (COL_PITCH - SIZE) / 2;
   const colCenter = (i: number) => MARGIN + i * COL_PITCH + COL_PITCH / 2;
 
@@ -59,7 +60,7 @@
   const rowTop = (r: number) => GRID_TOP + r * ROW_PITCH;
   const LABEL_DY = SIZE + 6;
   const split = !!(leftHeader && rightHeader);
-  const DIVIDER_X = MARGIN + 4 * COL_PITCH; // between col 3 and 4
+  const DIVIDER_X = MARGIN + Math.floor(cols / 2) * COL_PITCH; // page midline
   const gridBottom = () => rowTop(rows.length - 1) + LABEL_DY + 22;
 
   const PICTO_FLAGS = {
@@ -119,7 +120,9 @@
         {/if}
       </div>
       <div class="cell-label" style="left:{colLeft(ci) * S}px; top:{(rowTop(r) + LABEL_DY) * S}px; width:{SIZE * S}px">
-        <span class="tka">{cell.letter}</span>{#if cell.slot === "high"}<sup>1</sup>{:else}<sub>1</sub>{/if}
+        <span class="tka">{cell.letter}</span
+        >{#if cell.slot === "both"}<span class="oo"><span class="s1">1</span><span class="s2">1</span></span
+        >{:else if cell.slot === "high"}<sup>1</sup>{:else}<sub>1</sub>{/if}
       </div>
       {#if cell.dot === "same"}
         <span class="dir-dot" style="left:{(colCenter(ci) - 4) * S}px; top:{(rowTop(r) + LABEL_DY - 5) * S}px"></span>
@@ -195,6 +198,19 @@
     color: #dc2626;
   }
   .cell-label sub {
+    color: #2e3192;
+  }
+  .cell-label .oo {
+    display: inline-flex;
+    flex-direction: column;
+    font-size: 0.5em;
+    line-height: 0.9;
+    vertical-align: middle;
+  }
+  .cell-label .oo .s1 {
+    color: #dc2626;
+  }
+  .cell-label .oo .s2 {
     color: #2e3192;
   }
   .dir-dot {

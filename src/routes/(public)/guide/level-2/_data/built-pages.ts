@@ -23,6 +23,7 @@ import OneOneType456Page from "../_pages/OneOneType456Page.svelte";
 import CodexOneZeroType1Page from "../_pages/CodexOneZeroType1Page.svelte";
 import CodexZeroOneType23Page from "../_pages/CodexZeroOneType23Page.svelte";
 import CodexOneZeroType23And456Page from "../_pages/CodexOneZeroType23And456Page.svelte";
+import CodexOneOneType1Page from "../_pages/CodexOneOneType1Page.svelte";
 
 export const BUILT2: Record<string, Component> = {
   // Pages register here as they are built (see the level-2 rebuild tracker).
@@ -44,4 +45,5 @@ export const BUILT2: Record<string, Component> = {
   "codex-1-0-t1": CodexOneZeroType1Page,
   "codex-0-1-t23": CodexZeroOneType23Page,
   "codex-1-0-t23-456": CodexOneZeroType23And456Page,
+  "codex-1-1-t1": CodexOneOneType1Page,
 };
