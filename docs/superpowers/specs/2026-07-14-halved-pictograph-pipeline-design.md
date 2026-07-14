@@ -273,14 +273,22 @@ This replaces the current `LiftedTurnFrame` (baked staff+arrow on a bare grid �
 - Gate: 212/212 Phase-1 tests pass (2 pre-existing `.svelte.test.ts` browser-mode suite-load failures, unrelated); 0 tsc type errors in the 4 Phase-1 files.
 - Follow-up surfaced: same lowercasing bug lives in 4+ drifted module copies incl. the MCP render path — see `reference_orientation_lowercase_bug_copies` memory.
 
-**Phase 2 — half-motion arrow identity + assets**
-- [ ] `MotionData.segment` field + factory support
-- [ ] `arrow-location-calculator` half branch + `shiftHalfDirectionPairs`
-- [ ] `arrow-rotation-calculator` half branch + half rotation maps
-- [ ] `default_diamond_{pro,anti,dash,static}_half_placements.json` + key-generator recognition
-- [ ] `arrow-path-resolver` `_half` baseDir
-- [ ] Route half frames around the `letter||"A"` orchestrator footgun
-- [ ] Normalize guide glyphs → `*_half` assets (viewBox + `#centerPoint`); author the family
+**Phase 2a — half-motion arrow pipeline plumbing** ✅ COMPLETE (2026-07-14). Plan: `docs/superpowers/plans/2026-07-14-halved-pictograph-phase-2-arrow-identity.md`.
+- [x] `MotionData.segment` field + factory support — `60d038d6a3`
+- [x] `arrow-location-calculator` half branch — `e69351e92a`. Returns `motion.endLocation` (the halfway grid location); **`shiftHalfDirectionPairs` proved unnecessary** — halving always lands on the 45° grid, so `endLocation` is exact (refinement).
+- [x] `arrow-rotation-calculator` half branch — `30d5a28955` + dedup/guard `d0a66ce3a1` + dash-center fix in `1a6dc27e2c`. **Derived from Phase 1's pure `orientationToStaffAngle` bijection, NOT hand-authored rotation maps** (refinement #2 — authored maps would duplicate the keystone). Pure `segment-rotation.ts` — no animation-engine import in the arrow pipeline (no dependency cycle).
+- [~] `default_diamond_{pro,anti,dash,static}_half_placements.json` + key-generator recognition — **DEFERRED to Phase 2b.** 2a baselines the adjustment at `0` via an orchestrator guard; authored nudges are visual tuning (not needed for correct position/rotation).
+- [x] `arrow-path-resolver` `_half` baseDir — `2337be4a27` (both `getArrowPath` + `getArrowSvgPath`).
+- [x] Route half frames around the `letter||"A"` orchestrator footgun — `e9153fe3ce` + type fix `8880f67e1f`.
+- [x] Normalize guide glyphs → `*_half` assets — `795408d7f6`. Four seed glyphs (pro curl, anti zig-zag, dash bow, static loop) extracted from `lifted-turn-arrows.ts` via `scripts/extract-half-glyphs.mjs`. **`#centerPoint` is OPTIONAL** (parser defaults the pivot to viewBox center — §6 correction). **Glyphs are turn-invariant** → four assets, not a per-turn family (refinement #1 — the spec's feared "authoring is the bulk" collapses). Rotational-reference normalization + the full-family visual tuning is Phase 2b.
+
+**Phase 2a gate (2026-07-14):** 9 test files / 31 tests green, incl. the 7-motion end-to-end oracle asserting each guide half-arrow's pipeline rotation == the physical `poseAt` staff angle (PRO t1=315°, ANTI t1=225°, PRO t2=45°, ANTI t2=315°, DASH=90°, STATIC=0° — all exact). 0 tsc errors in the Phase-2a files (371 pre-existing project errors from other sessions, unchanged). Oracle-driven find: DASH-at-center rotation was 90° off (engine `centerPathAngle` degenerates at a through-center midpoint); fixed by resolving CENTER to canonical `LOCATION_ANGLES[CENTER]=0`.
+
+**Phase 2b — visual tuning (requires Austen's eye; NOT started)**
+- [ ] Screenshot review of `/test/half-arrows` vs the guide artboards; confirm glyph placement/rotation fidelity
+- [ ] Per-glyph rotational-reference offset (if a drawn glyph's head reference differs from the canonical 0)
+- [ ] Authored `_half` default-tier pixel nudges (sibling `ArrowPlacer` bucket — do NOT extend the hardcoded `motionTypes` array; swap the orchestrator's `0` baseline for the real lookup)
+- [ ] `getArrowSvgPath` vs `getArrowPath` live-call-path audit
 
 **Phase 3 — render integration + toggle + guide rewire**
 - [ ] `buildHalvedStep(step, t)`
