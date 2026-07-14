@@ -143,6 +143,20 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
   });
   const totalBeats = $derived(sequence?.steps?.length ?? 0);
 
+  // Re-open the editor panel when a multi-selection becomes active. Covers the
+  // HMR/refresh restore path: the persisted multi set comes back but
+  // selectedStepNumber is null in multi mode, so the single-step auto-open
+  // effect doesn't fire. Only opens on the false→true transition (never
+  // auto-closes) so it doesn't fight a manual close.
+  let lastIsMulti = false;
+  $effect(() => {
+    const multi = isMultiSelect;
+    if (multi && !lastIsMulti && isTabSupported) {
+      panelState.openStepEditorPanel();
+    }
+    lastIsMulti = multi;
+  });
+
   // Prop selection sheet state
   let propSheetOpen = $state(false);
   let propSheetColor = $state<"blue" | "red">("blue");

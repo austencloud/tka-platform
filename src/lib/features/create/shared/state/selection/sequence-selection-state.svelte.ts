@@ -21,12 +21,25 @@ import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-stat
 
 export type SelectionMode = "single" | "multi";
 
-// Persist only the single-select step number. The step editor + inspect modal
-// hang off this, so restoring it across a dev HMR / page refresh lets them
-// reopen on the right step instead of empty. Multi-select sets stay transient.
+// Persist the single-select step number. The step editor + inspect modal hang
+// off this, so restoring it across a dev HMR / page refresh lets them reopen on
+// the right step instead of empty.
 const selectionPersistence = createPersistenceHelper<number | null>({
   key: "tka_selected_step_number",
   defaultValue: null,
+});
+
+// Persist the multi-select set + mode too, so an HMR / refresh restores a batch
+// selection (the highlighted beats + open batch editor) instead of silently
+// dropping back to single-select.
+interface PersistedMultiSelection {
+  mode: SelectionMode;
+  stepNumbers: number[];
+  anchor: number | null;
+}
+const multiSelectPersistence = createPersistenceHelper<PersistedMultiSelection>({
+  key: "tka_multi_selection",
+  defaultValue: { mode: "single", stepNumbers: [], anchor: null },
 });
 
 export interface SequenceSelectionStateData {
@@ -48,20 +61,40 @@ export interface SequenceSelectionStateData {
 }
 
 export function createSequenceSelectionState() {
+  // Restore a persisted multi-selection (needs 2+ beats to count as multi).
+  const persistedMulti = multiSelectPersistence.load();
+  const restoredMulti =
+    persistedMulti.mode === "multi" && persistedMulti.stepNumbers.length > 1;
+
   const state = $state<SequenceSelectionStateData>({
-    mode: "single",
-    selectedStepNumber: selectionPersistence.load(),
-    selectedStepNumbers: new Set<number>(),
-    selectionAnchor: null,
+    mode: restoredMulti ? "multi" : "single",
+    selectedStepNumber: restoredMulti ? null : selectionPersistence.load(),
+    selectedStepNumbers: new Set<number>(
+      restoredMulti ? persistedMulti.stepNumbers : []
+    ),
+    selectionAnchor: persistedMulti.anchor,
     selectedStartPosition: null,
     hasStartPosition: false,
   });
 
-  // Auto-save the selected step number so HMR / refresh restores it.
+  // Auto-save selection so HMR / refresh restores it — both the single-select
+  // step number and the multi-select set + mode + anchor.
   $effect.root(() => {
     $effect(() => {
       void state.selectedStepNumber;
       selectionPersistence.setupAutoSave(state.selectedStepNumber);
+    });
+    $effect(() => {
+      // Reading the Set reference tracks it — applyClickSelection always
+      // replaces it with a new Set, so this re-runs on every selection change.
+      void state.mode;
+      void state.selectedStepNumbers;
+      void state.selectionAnchor;
+      multiSelectPersistence.setupAutoSave({
+        mode: state.mode,
+        stepNumbers: Array.from(state.selectedStepNumbers),
+        anchor: state.selectionAnchor,
+      });
     });
   });
 

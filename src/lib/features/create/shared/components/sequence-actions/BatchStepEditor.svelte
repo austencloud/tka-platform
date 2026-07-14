@@ -25,6 +25,8 @@
     formatTurn,
     type TurnsAggregate,
   } from "../../services/step-operations/turns-aggregation";
+  import { calculateGridLayout } from "$lib/shared/create/utils/grid-calculations";
+  import { getDeviceDetector } from "$lib/shared/device/get-device-detector";
 
   type BatchMode = "set" | "adjust";
 
@@ -58,6 +60,35 @@
 
   const count = $derived(steps.length);
 
+  // Size the pictograph cells to fill the available panel space — the same
+  // responsive sizing the workspace grid uses, so batch pictographs are big
+  // and clearly readable instead of a tight auto-fill of tiny thumbnails.
+  const deviceDetector = getDeviceDetector();
+  let gridEl = $state<HTMLElement>();
+  let gridW = $state(0);
+  let gridH = $state(0);
+
+  $effect(() => {
+    if (!gridEl) return;
+    const rect = gridEl.getBoundingClientRect();
+    gridW = rect.width;
+    gridH = rect.height;
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        gridW = entry.contentRect.width;
+        gridH = entry.contentRect.height;
+      }
+    });
+    ro.observe(gridEl);
+    return () => ro.disconnect();
+  });
+
+  const layout = $derived(
+    calculateGridLayout(count, gridW, gridH, deviceDetector, {
+      maxCellSize: 320,
+    })
+  );
+
   const blueAgg = $derived(
     aggregateTurns(steps.map((s) => s.motions?.[MotionColor.BLUE]?.turns))
   );
@@ -75,40 +106,24 @@
     { value: "adjust", label: "Adjust" },
   ];
 
+  // Absolute turn options for "Set all" — the full TKA axis plus float.
+  const SET_OPTIONS: (number | "fl")[] = ["fl", 0, 0.5, 1, 1.5, 2, 2.5, 3];
+
   function fmt(v: number | "fl"): string {
     return v === "fl" ? "fl" : `${v}`;
   }
 
-  function display(agg: TurnsAggregate, mode: BatchMode): string {
+  const norm = (v: number | "fl"): number => (v === "fl" ? -0.5 : v);
+
+  // Highlight an option chip only when the whole selection already shares it.
+  function isActiveOption(agg: TurnsAggregate, opt: number | "fl"): boolean {
+    return !agg.mixed && agg.value !== null && norm(agg.value) === norm(opt);
+  }
+
+  // Adjust-mode readout: shared value, or the min–max range when mixed.
+  function adjustDisplay(agg: TurnsAggregate): string {
     if (!agg.mixed) return agg.value === null ? "0" : fmt(agg.value);
-    // Mixed:
-    return mode === "set"
-      ? "Mixed"
-      : `${formatTurn(agg.min)}–${formatTurn(agg.max)}`;
-  }
-
-  // Seed for absolute "Set all" stepping when the selection is mixed: raise/lower
-  // from the current MAX so "+"/"−" move everyone to a predictable common value.
-  function seed(agg: TurnsAggregate): number {
-    if (!agg.mixed) return agg.value === "fl" ? -0.5 : (agg.value ?? 0);
-    return agg.max;
-  }
-
-  function stepTurns(
-    color: MotionColor,
-    mode: BatchMode,
-    agg: TurnsAggregate,
-    delta: number
-  ) {
-    if (mode === "adjust") {
-      onBatchTurnsChange(color, "adjust", delta);
-      return;
-    }
-    // Absolute target for "Set all". Per-step min (fl floor) is enforced in the
-    // write path; here we only clamp to the global axis [-0.5 .. 3].
-    let target = seed(agg) + delta;
-    target = Math.min(3, Math.max(-0.5, target));
-    onBatchTurnsChange(color, "set", target === -0.5 ? "fl" : target);
+    return `${formatTurn(agg.min)}–${formatTurn(agg.max)}`;
   }
 </script>
 
@@ -144,28 +159,22 @@
     </header>
 
     <!-- Pictograph grid: every selected step, captioned with its own turns -->
-    <div class="grid-scroll">
-      <div class="pictograph-grid">
+    <div class="grid-scroll" bind:this={gridEl}>
+      <div
+        class="pictograph-grid"
+        style:grid-template-columns={`repeat(${layout.columns}, ${layout.cellSize}px)`}
+      >
         {#each steps as step, i (stepNumbers[i] ?? i)}
-          <div class="grid-cell">
-            <div class="pictograph-box">
-              <PictographContainer
-                pictographData={step}
-                disableTransitions={true}
-                cellIndex={i}
-                {bluePropTypeOverride}
-                {redPropTypeOverride}
-              />
-            </div>
-            <div class="cell-caption">
-              <span class="beat-num">{stepNumbers[i]}</span>
-              <span class="turn blue"
-                >{fmt(step.motions?.[MotionColor.BLUE]?.turns ?? 0)}</span
-              >
-              <span class="turn red"
-                >{fmt(step.motions?.[MotionColor.RED]?.turns ?? 0)}</span
-              >
-            </div>
+          <!-- The pictograph already renders its beat number + per-hand turns,
+               so no extra caption is needed here. -->
+          <div class="pictograph-box" style:width={`${layout.cellSize}px`}>
+            <PictographContainer
+              pictographData={step}
+              disableTransitions={true}
+              cellIndex={i}
+              {bluePropTypeOverride}
+              {redPropTypeOverride}
+            />
           </div>
         {/each}
       </div>
@@ -207,25 +216,43 @@
       size="sm"
       onchange={setMode}
     />
-    <div class="stepper">
-      <button
-        class="ctrl-btn"
-        type="button"
-        aria-label="Decrease {colorName} turns"
-        onclick={() => stepTurns(color, mode, agg, -0.5)}
-      >
-        <i class="fas fa-minus" aria-hidden="true"></i>
-      </button>
-      <span class="turns-value" class:mixed={agg.mixed}>{display(agg, mode)}</span>
-      <button
-        class="ctrl-btn"
-        type="button"
-        aria-label="Increase {colorName} turns"
-        onclick={() => stepTurns(color, mode, agg, 0.5)}
-      >
-        <i class="fas fa-plus" aria-hidden="true"></i>
-      </button>
-    </div>
+    {#if mode === "set"}
+      <!-- Absolute value palette — tap sets every selected step to that value. -->
+      <div class="value-grid">
+        {#each SET_OPTIONS as opt (opt)}
+          <button
+            class="value-chip"
+            class:active={isActiveOption(agg, opt)}
+            type="button"
+            aria-label="Set all {colorName} turns to {fmt(opt)}"
+            onclick={() => onBatchTurnsChange(color, "set", opt)}
+          >
+            {fmt(opt)}
+          </button>
+        {/each}
+      </div>
+    {:else}
+      <!-- Relative nudge — ±0.5 to each step, preserving offsets. -->
+      <div class="stepper">
+        <button
+          class="ctrl-btn"
+          type="button"
+          aria-label="Decrease {colorName} turns"
+          onclick={() => onBatchTurnsChange(color, "adjust", -0.5)}
+        >
+          <i class="fas fa-minus" aria-hidden="true"></i>
+        </button>
+        <span class="turns-value" class:mixed={agg.mixed}>{adjustDisplay(agg)}</span>
+        <button
+          class="ctrl-btn"
+          type="button"
+          aria-label="Increase {colorName} turns"
+          onclick={() => onBatchTurnsChange(color, "adjust", 0.5)}
+        >
+          <i class="fas fa-plus" aria-hidden="true"></i>
+        </button>
+      </div>
+    {/if}
   </div>
 {/snippet}
 
@@ -294,50 +321,33 @@
     scrollbar-color: var(--scrollbar-thumb) transparent;
   }
 
+  /* Columns + cell size are computed (calculateGridLayout) and set inline so the
+     pictographs fill the panel. `safe center` centers them when they fit and
+     falls back to scroll-from-top when the selection overflows. */
   .pictograph-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
-    gap: 10px;
-    padding: 2px;
-  }
-
-  .grid-cell {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
+    gap: 12px;
+    padding: 6px;
+    box-sizing: border-box;
+    min-height: 100%;
+    justify-content: safe center;
+    align-content: safe center;
   }
 
   .pictograph-box {
-    width: 100%;
+    position: relative;
     aspect-ratio: 1;
     background: var(--dm-pictograph-bg, #0a0a0f);
-    border-radius: 8px;
+    border-radius: 10px;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
-  .cell-caption {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: var(--font-size-compact, 0.72rem);
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .beat-num {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
-  }
-
-  .turn.blue {
-    color: var(--prop-blue, #3b82f6);
-  }
-
-  .turn.red {
-    color: var(--prop-red, #ef4444);
+  .pictograph-box :global(.pictograph-container) {
+    width: 100%;
+    height: 100%;
   }
 
   /* ===== Per-hand controls ===== */
@@ -378,6 +388,44 @@
     font-weight: 600;
     text-align: center;
     color: var(--theme-text, rgba(255, 255, 255, 0.85));
+  }
+
+  /* Set-all value palette */
+  .value-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+
+  .value-chip {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: var(--min-touch-target, 44px);
+    border-radius: 10px;
+    border: 1px solid rgba(var(--prop-color-rgb, 59, 130, 246), 0.35);
+    background: rgba(var(--prop-color-rgb, 59, 130, 246), 0.12);
+    color: rgba(255, 255, 255, 0.92);
+    font-size: 1rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: all var(--duration-fast) ease;
+  }
+
+  .value-chip:hover {
+    background: rgba(var(--prop-color-rgb, 59, 130, 246), 0.24);
+    border-color: rgba(var(--prop-color-rgb, 59, 130, 246), 0.6);
+  }
+
+  .value-chip:active {
+    transform: scale(0.96);
+  }
+
+  .value-chip.active {
+    background: rgba(var(--prop-color-rgb, 59, 130, 246), 0.85);
+    border-color: rgba(var(--prop-color-rgb, 59, 130, 246), 1);
+    color: #fff;
   }
 
   .stepper {
@@ -430,10 +478,12 @@
 
   @media (prefers-reduced-motion: reduce) {
     .header-btn,
-    .ctrl-btn {
+    .ctrl-btn,
+    .value-chip {
       transition: none;
     }
-    .ctrl-btn:active {
+    .ctrl-btn:active,
+    .value-chip:active {
       transform: none;
     }
   }
