@@ -113,48 +113,49 @@ export function calculateOrientationAt(input: OrientationInput, t: number): Orie
 
 Same `OrientationInput` shape `calculateEndOrientation` already takes (`motionType, turns, rotationDirection, startLocation, endLocation, startOrientation`).
 
-### Algorithm
+### Algorithm (engine-grounded)
 
-Orientation change over a full motion decomposes into two signed components, each measured in **45° steps** on the radial cycle:
+A halfway orientation is a **physical fact** — where the staff actually is at fraction `t` — not an arithmetic combination of base + turn steps. An earlier draft decomposed it as `base + turn` steps; validation against `orientation.ts` disproved that model for fractional points. The shipped algebra applies base via **whole-turn parity** (`calculateWholeTurnOrientation`) but **fractional turns via `round(turns·4)` steps with no separately-summed base** (`calculateRadialFractionalTurnOrientation:204-225`), and the MCP orientation-algebra topic endorses "half turns produce orientations 90° from the start" flatly, no base caveat. Base and turns do not simply sum at the midpoint — so the decomposition would have shipped wrong halfway values. (The ~40-motion base findings in §3.1 remain valid: they confirm the *endpoint* base rule, which the oracle below still leans on.)
 
-1. **`baseStepsFull(motion)`** — the base rotation (empirically confirmed on ~40 real 0-turn motions, §3.1).
-   - Pro shift → `0` (preserves).
-   - Static → `0` (preserves; no location change).
-   - Anti shift → `±4` (180° reversal; sign from arc direction).
-   - **Dash / hash → `±4` (reverses)** — the location change flips center-relative orientation even with zero prop spin. This corrected an earlier draft that had dash at `0`; the MCP data (`Φ` red dash `in→out`) caught it before it reached code.
-   - (Skewed shifts: base is the skewed arc's reversal for the anti family — see Risks; v1 may restrict to non-skew.)
-2. **`turnStepsFull(motion)`** — the additional turns: `turns · 4` steps (1 turn = 180° = 4 steps), signed by `rotationDirection` with the motion-type step-direction rule (anti/dash same as rotation, pro/static opposite).
-
-Then:
+The correct source of the halfway staff position is the **animation engine**, which already computes it (production, visually verified in the guide's turn strips). The keystone converts that physical angle back into an orientation label:
 
 ```
-rawStepsFull = baseStepsFull + turnStepsFull        // signed integer, NOT mod 8 (multi-turn safe)
-stepsAtT     = t · rawStepsFull
-if (stepsAtT is not an integer) return null          // off-lattice — no legal orientation at t
-return cycleStep(startOrientation, stepsAtT mod 8)   // walk RADIAL_CW_CYCLE (or CENTER_CW_CYCLE
-                                                     // if startOrientation is a center orientation)
+calculateOrientationAt(motion, t):
+  1. sample the engine at t (per hand):
+       { staffRotationAngle, centerPathAngle } = interpolatePropAngles(step, t)
+  2. center-relative staff offset:
+       offset = normalizeSigned(staffRotationAngle − centerPathAngle)
+  3. locate on the 45° lattice:
+       k = (PI − offset) / (PI/4)                       // fractional step index into RADIAL_CW_CYCLE
+       if (k not within ε of an integer) return null      // OFF-LATTICE (e.g. 22.5°) — no legal orientation
+       return RADIAL_CW_CYCLE[round(k) mod 8]             // CENTER_CW_CYCLE for center orientations
 ```
 
-`rawStepsFull` is kept as a raw signed count (not reduced mod 8) so multi-turn motions halve correctly: a 2-turn motion is 8 raw steps; at `t=0.5` that is 4 steps = one 180° reversal (half of 360° = 180°), which is right — recovering the delta from endpoints alone would read 0 and be wrong.
+This handles base rotation **for free** — the engine accrues it physically along the arc — and off-lattice falls out naturally (the offset simply isn't a 45° multiple). No base/turn sign table to hand-copy and get wrong.
 
-The **exact sign rules** for `baseStepsFull` / `turnStepsFull` are not re-invented here — they are the same rules already encoded in `orientation.ts` (`calculateWholeTurnOrientation`, `calculateRadialFractionalTurnOrientation`, `switchOrientation`). Phase 1 decomposes those into signed step counts. Correctness is pinned by the invariant below, not by trusting a hand-copied sign table.
+**Two twinned prerequisite bugs (fixed as part of the keystone), both blocking interradial/center support:**
+
+1. **`mapOrientationToAngle` is cardinal-only** (`angle-calculator.ts:46-64`) — any interradial (`clockIn` …) silently falls through to `counter`. Phase 1 extends it to the full 8-point cycle: forward `staffAngle = centerPathAngle + PI − k·(PI/4)` for cycle index `k`, plus the inverse used in step 3.
+2. **`calculateEndOrientation` blanket-lowercases the start orientation** (`orientation.ts:260`, and `calculateOrientations:292`), but `switchOrientation`'s map and the `RADIAL_CW_CYCLE` / `CENTER_CW_CYCLE` constants are keyed camelCase (`clockIn`, `centerN`). So a lowercased `"clockin"` misses every lookup and the orientation is returned **unchanged** — L6 (interradial) and L4 (center) orientation propagation is silently wrong. This is already documented and `it.fails`-guarded in `orientation.test.ts:224-268`. Phase 1 replaces the blanket `.toLowerCase()` with a canonical-casing normalizer (any-case → canonical `Orientation`), flipping those guards green.
+
+Both bugs must be fixed before the `t=1` oracle is trustworthy (it compares against `calculateEndOrientation`) and before "halve any pictograph" accepts interradial starts. **The angle↔orientation bijection (8-point + center, forward and inverse) is the real deliverable**; the engine sampling is glue.
 
 ### Correctness oracle (the killer test)
 
 ```
-For every motion in the pictograph dataset:
-    calculateOrientationAt(motion, 1)  ===  calculateEndOrientation(motion)
+For every pictograph in the dataset (all letters × variations):
+    calculateOrientationAt(motion, 1)  ===  calculateEndOrientation(motion)   // per hand
 ```
 
-If `calculateOrientationAt(·, 1)` reproduces the shipped end-orientation algebra across the entire dataset, the decomposition into `base + turns` steps is proven correct. This is the Phase 1 acceptance gate.
+If sampling the engine at `t=1` and inverting through the bijection reproduces the shipped end-orientation algebra across the entire dataset, the bijection and the engine are proven mutually consistent with canon. This is the Phase 1 acceptance gate. **A disagreement is itself a valuable find** — it means the animation engine and the discrete orientation algebra diverge for that motion (two independently-built subsystems), a real latent bug to reconcile before halving can be trusted.
 
 ### Empirical halfway check
 
-The convention "base rotation accrues linearly, so halfway of a 180° anti base = 90° = one cardinal step" is validated against the **guide artboards**: Austen drew the halfway anti staffs (Level-2 `TwoTurnsShiftsPage` anti-halves). Cross-check `mapOrientationToAngle(calculateOrientationAt(antiMotion, 0.5))` against `poseAt(antiMotion, 0.5).deg` for cardinal cases — the drawn staff is ground truth. Agreement confirms the accrual convention (see Risks §9 — this is the one domain decision to ratify).
+Halfway values are cross-checked against the **guide artboards** — Austen drew the halfway anti/dash staffs (Level-2 `TwoTurnsShiftsPage`, `TwoTurnsDashStaticPage`). `poseAt(motion, 0.5).deg` (the same engine call) already renders those; `calculateOrientationAt(motion, 0.5)` must name the orientation matching that drawn staff. The drawn staff is ground truth.
 
 ### Off-lattice guard
 
-`null` return = "not orientation-representable at this `t`." Callers (halving) treat it as "this motion cannot be halved with a legal orientation" and fall back to physical-pose-only (the guide's `poseArrow` path) or refuse.
+`null` return = "not orientation-representable at this `t`." Callers (halving) treat it as "this motion cannot be halved with a legal orientation" and fall back to physical-pose-only (the guide's `poseArrow` path) or refuse. The §2 decidability rule (halving legal iff `turns` is a half-integer) is **re-verified empirically in Phase 1** by enumerating turn values and asserting which sampled offsets land on the 45° grid — it was derived from the now-superseded discrete decomposition, so it is treated as a hypothesis the engine confirms, not a proven fact.
 
 ---
 
