@@ -5,6 +5,10 @@
    * the reader (flow toggle) AND on the prerendered /guide/level-1/<slug> route
    * (crawlable). Pictographs render eagerly via GuidePictograph, whose synchronous
    * describePictograph aria-label lands in SSR HTML. One source with SheetFrame.
+   *
+   * Owns its OWN light/dark palette (prefers-color-scheme + [data-theme]) — it does
+   * NOT inherit the app's --theme-* vars, which are set for the dark-cosmic canvas
+   * and render faint ink on the white editorial column.
    */
   import GuidePictograph from "./GuidePictograph.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -24,7 +28,7 @@
     {:else if block.kind === "prose"}
       <p class="flow-p">{@html block.html}</p>
     {:else if block.kind === "glyphImage"}
-      <img class="flow-glyph" src={block.src} alt={block.alt} height={block.heightPt * 2} />
+      <img class="flow-glyph" src={block.src} alt={block.alt} />
     {:else if block.kind === "pictograph"}
       <figure class="flow-figure">
         <GuidePictograph data={block.data} size="md" eager propType={PropType.HAND} />
@@ -48,27 +52,35 @@
 </div>
 
 <style>
+  /* Palette comes from the host via --ink/--ink-dim/--glyph-invert (with dark-ink
+     fallbacks for a white host). FlowFrame must NOT declare --ink on .flow-frame —
+     a local declaration would shadow the host's value and break the dark theme. */
   .flow-frame {
-    max-width: 46rem;
+    max-width: 44rem;
     margin: 0 auto;
-    padding: 1.5rem 1.25rem 4rem;
-    color: var(--theme-text, #1a1a1a);
-    font-family: var(--font-body, system-ui, sans-serif);
-    line-height: 1.6;
+    padding: 0.5rem 1.5rem 4rem;
+    color: var(--ink, #1a1a1a);
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: 1.15rem;
+    line-height: 1.65;
   }
   .flow-h2 {
-    font-size: clamp(1.6rem, 4vw, 2.2rem);
-    margin: 2rem 0 0.75rem;
+    font-size: clamp(1.7rem, 4vw, 2.3rem);
+    margin: 1.5rem 0 0.75rem;
     font-weight: 700;
+    letter-spacing: -0.01em;
   }
   .flow-h3 {
-    font-size: clamp(1.25rem, 3vw, 1.5rem);
-    margin: 1.75rem 0 0.5rem;
+    font-size: clamp(1.3rem, 3vw, 1.6rem);
+    margin: 0.25rem 0 0.4rem;
     font-weight: 650;
+    text-align: center;
   }
   .flow-p {
-    margin: 0 0 1rem;
-    font-size: 1.05rem;
+    margin: 0 0 1.1rem;
+    text-align: center;
+    max-width: 34rem;
+    margin-inline: auto;
   }
   .flow-p :global(.cR) {
     color: #cc2127;
@@ -78,21 +90,34 @@
     color: #2e3192;
     font-weight: 700;
   }
+  .flow-p :global(.lg) {
+    display: inline-block;
+    width: 0.8em;
+  }
+  /* Section glyph: a modest opener, centered above the section name. */
   .flow-glyph {
     display: block;
-    margin: 1.5rem auto 0.25rem;
-    height: auto;
+    height: 3rem;
     width: auto;
+    margin: 2.25rem auto 0.35rem;
+    filter: invert(var(--glyph-invert, 0));
+  }
+  /* First section glyph shouldn't push a big gap under the intro. */
+  .flow-glyph:first-of-type,
+  .flow-p + .flow-glyph {
+    margin-top: 1.5rem;
   }
   .flow-grid {
     display: grid;
     grid-template-columns: repeat(var(--cols), 1fr);
-    gap: 0.75rem;
-    margin: 1rem 0;
+    gap: 0.6rem;
+    max-width: 30rem;
+    margin: 0.75rem auto 1rem;
   }
   @media (max-width: 520px) {
     .flow-grid {
       grid-template-columns: repeat(2, 1fr);
+      max-width: 20rem;
     }
   }
   .flow-figure {
@@ -104,8 +129,13 @@
   }
   .flow-figure figcaption,
   .flow-caption {
-    font-size: 0.9rem;
-    color: var(--theme-text-dim, #555);
+    font-size: 0.95rem;
+    color: var(--ink-dim, #555);
     text-align: center;
   }
+
+  /* Palette is HOST-owned: the reader's flow page is always a white sheet (keep
+     the dark-ink default), the crawl route sets --ink/--glyph-invert per
+     light/dark. FlowFrame never assumes its own background, so it can't flip ink
+     to light on a white host. */
 </style>

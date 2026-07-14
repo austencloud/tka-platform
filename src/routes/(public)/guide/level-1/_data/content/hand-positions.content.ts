@@ -53,11 +53,19 @@ const ROW_G2 = ROW_G1 + SIZE + ROW_GAP;
 const gDescY = ROW_G2 + SIZE + G_IN;
 const DIVIDERS = [aDescY + DESC_H + GAP / 2, bDescY + DESC_H + GAP / 2];
 
-const grid: SheetGrid = {
+// Split the 16 into their α/β/γ sections so BOTH frames group them the same way:
+// the sheet keeps its exact absolute rows (unchanged pixels); the flow column shows
+// each section's pictographs directly under that section's definition.
+const alpha = positions.slice(0, 4);
+const beta = positions.slice(4, 8);
+const gamma = positions.slice(8, 16);
+const alphaGrid: SheetGrid = { cols: COLS, rows: [ROW_A], cell: SIZE, rowFor: [0, 0, 0, 0] };
+const betaGrid: SheetGrid = { cols: COLS, rows: [ROW_B], cell: SIZE, rowFor: [0, 0, 0, 0] };
+const gammaGrid: SheetGrid = {
   cols: COLS,
-  rows: [ROW_A, ROW_B, ROW_G1, ROW_G2],
+  rows: [ROW_G1, ROW_G2],
   cell: SIZE,
-  rowFor: positions.map((_, i) => (i < 4 ? 0 : i < 8 ? 1 : i < 12 ? 2 : 3)),
+  rowFor: [0, 0, 0, 0, 1, 1, 1, 1],
 };
 
 // Verbatim intro HTML (HandPositionsPage.svelte lines 125–128).
@@ -67,14 +75,21 @@ const INTRO_HTML =
   '<strong><span class="cR">Red = Right</span> and <span class="cB">Blue = Left.</span></strong><br>' +
   "In The Kinetic Alphabet, our first three positions are called Alpha, Beta, and Gamma.";
 
+// Array order = the FLOW reading order (intro → per-section: glyph, name, its
+// pictographs, definition). SheetFrame ignores this order and places every block
+// at its absolute pt hint, so the printed sheet is byte-identical to the original.
 export const handPositionsContent: GuideBlock[] = [
-  { kind: "heading", level: 1, text: "Hand Positions", sheet: { x: 0, y: TITLE_Y } },
+  // Page title — flow-only (no `sheet`). On the sheet, GuidePage paints the
+  // calligraphic .guide-title from the manifest, so rendering it here too would
+  // duplicate it. In flow it's the section's top heading.
+  { kind: "heading", level: 1, text: "Hand Positions" },
   {
     kind: "prose",
     html: INTRO_HTML,
     sheet: { x: 0, y: introY, fontSize: 15, lineHeight: LINE, align: "center" },
   },
 
+  // ── Alpha ──
   {
     kind: "glyphImage",
     src: "/images/letters_trimmed/Type6/α.svg",
@@ -83,12 +98,15 @@ export const handPositionsContent: GuideBlock[] = [
     sheet: { x: 304, y: aGlyphY },
   },
   { kind: "heading", level: 2, text: "Alpha", sheet: { x: 275.0, y: aHeadY, w: 54.8, h: 22, align: "center" } },
+  { kind: "pictographGroup", items: alpha, grid: alphaGrid, flowCols: 4 },
   {
     kind: "prose",
     html: "In Alpha, the hands occupy the points across from each other.",
     sheet: { x: 75.9, y: aDescY, w: 454.5, h: 18, align: "center" },
   },
+  { kind: "rule", sheet: { x: 64.4, y: DIVIDERS[0]!, w: 491.6 } },
 
+  // ── Beta ──
   {
     kind: "glyphImage",
     src: "/images/letters_trimmed/Type6/β.svg",
@@ -97,12 +115,15 @@ export const handPositionsContent: GuideBlock[] = [
     sheet: { x: 304, y: bGlyphY },
   },
   { kind: "heading", level: 2, text: "Beta", sheet: { x: 283.9, y: bHeadY, w: 42.4, h: 22, align: "center" } },
+  { kind: "pictographGroup", items: beta, grid: betaGrid, flowCols: 4 },
   {
     kind: "prose",
     html: "In Beta, the hands occupy the same point.",
     sheet: { x: 150.1, y: bDescY, w: 308.2, h: 18, align: "center" },
   },
+  { kind: "rule", sheet: { x: 64.4, y: DIVIDERS[1]!, w: 491.6 } },
 
+  // ── Gamma ──
   {
     kind: "glyphImage",
     src: "/images/letters_trimmed/Type6/γ.svg",
@@ -111,20 +132,10 @@ export const handPositionsContent: GuideBlock[] = [
     sheet: { x: 304, y: gGlyphY },
   },
   { kind: "heading", level: 2, text: "Gamma", sheet: { x: 269.3, y: gHeadY, w: 71.5, h: 22, align: "center" } },
+  { kind: "pictographGroup", items: gamma, grid: gammaGrid, flowCols: 4 },
   {
     kind: "prose",
     html: "In Gamma, the hands form a right angle.",
     sheet: { x: 154.1, y: gDescY, w: 301.9, h: 18, align: "center" },
   },
-
-  {
-    kind: "pictographGroup",
-    items: positions,
-    grid,
-    flowCols: 4,
-    caption: "The sixteen canonical hand positions.",
-  },
-
-  { kind: "rule", sheet: { x: 64.4, y: DIVIDERS[0]!, w: 491.6 } },
-  { kind: "rule", sheet: { x: 64.4, y: DIVIDERS[1]!, w: 491.6 } },
 ];

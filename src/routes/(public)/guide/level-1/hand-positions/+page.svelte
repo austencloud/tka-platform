@@ -34,17 +34,51 @@
 </main>
 
 <style>
+  /* Standalone editorial page — owns its light/dark palette (not the app's dark-
+     canvas --theme-* vars) and hands FlowFrame the matching --ink so the column
+     is legible in both. Light: near-black ink on warm white. Dark: light ink on
+     deep slate. */
   .guide-flow-route {
     min-height: 100vh;
-    background: var(--theme-bg, #fff);
-    color: var(--theme-text, #1a1a1a);
+    background: #fbfaf7;
+    color: #1a1a1a;
+    padding-block: 1.5rem 0;
+    --ink: #1a1a1a;
+    --ink-dim: #555;
+    --glyph-invert: 0;
   }
   .guide-flow-route h1 {
-    max-width: 46rem;
+    max-width: 44rem;
     margin: 0 auto;
-    padding: 2rem 1.25rem 0;
-    font-size: clamp(1.9rem, 5vw, 2.8rem);
-    font-weight: 750;
+    padding: 1.5rem 1.5rem 0;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 700;
     line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .guide-flow-route {
+      background: #14141b;
+      color: #ececf2;
+      --ink: #ececf2;
+      --ink-dim: #a8a8b4;
+      --glyph-invert: 1;
+    }
+  }
+  :global(:root[data-theme="light"]) .guide-flow-route {
+    background: #fbfaf7;
+    color: #1a1a1a;
+    --ink: #1a1a1a;
+    --ink-dim: #555;
+    --glyph-invert: 0;
+  }
+  :global(:root[data-theme="dark"]) .guide-flow-route {
+    background: #14141b;
+    color: #ececf2;
+    --ink: #ececf2;
+    --ink-dim: #a8a8b4;
+    --glyph-invert: 1;
   }
 </style>

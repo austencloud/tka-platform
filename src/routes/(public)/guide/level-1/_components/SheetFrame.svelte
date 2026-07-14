@@ -17,7 +17,11 @@
 
 <div class="sheet-frame">
   {#each content as block, i (i)}
-    {#if block.kind === "heading"}
+    {#if (block.kind === "heading" || block.kind === "prose" || block.kind === "glyphImage") && !block.sheet}
+      <!-- Flow-only block (no pt hint): the sheet omits it. The page title lives
+           here — GuidePage paints the calligraphic .guide-title, so the content's
+           top-level heading is flow-only to avoid a duplicate title on the sheet. -->
+    {:else if block.kind === "heading"}
       <div
         class="run sub"
         style:left="{(block.sheet?.x ?? 0) * S}px"

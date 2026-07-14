@@ -533,9 +533,11 @@
 {#snippet sheetFrame(meta: GuidePageMeta)}
   {#if guideFramePrefs.frame === "flow" && meta.reflowable}
     <!-- Flow mode: the reflowable page renders full-width + unscaled (its content
-         is a FlowFrame), NOT trapped in the scaled 8.5×11 sheet. Other pages keep
-         the scaled sheet below. -->
-    <div class="reader-flow-page">
+         is a FlowFrame), NOT trapped in the scaled 8.5×11 sheet. Keeps the
+         `reader-page` class so the reader's scroll/index/deep-link queries (which
+         select `.reader-page`) still count it; `.reader-flow-page` overrides the
+         fixed sheet sizing. Other pages keep the scaled sheet below. -->
+    <div class="reader-page reader-flow-page">
       {@render meta.content()}
     </div>
   {:else}
@@ -641,11 +643,15 @@
     justify-content: center;
     padding: 8px 0 0;
   }
-  /* Flow page: full stage width, content height, its own white editorial sheet —
-     escapes the fixed --w/--h scaled-sheet box the .reader-page rules impose. */
-  .reader-doc :global(.reader-flow-page) {
+  /* Flow page: full stage width, content height, its own white editorial sheet.
+     Two-class selector (.reader-page.reader-flow-page) so it beats the equal-
+     specificity .reader-page sizing rule below regardless of source order —
+     otherwise the fixed --w/--h + overflow:hidden would clip the flow column. */
+  .reader-doc :global(.reader-page.reader-flow-page) {
     flex: 0 0 auto;
     width: min(100%, 52rem);
+    height: auto;
+    overflow: visible;
     background: #fff;
     color: #1a1a1a;
     border-radius: 2px;

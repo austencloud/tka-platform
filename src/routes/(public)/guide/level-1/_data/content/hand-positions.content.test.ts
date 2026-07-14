@@ -16,12 +16,12 @@ describe("hand-positions content", () => {
     );
   });
 
-  it("includes the 16 canonical positions as one pictograph group", () => {
-    const group = handPositionsContent.find((b) => b.kind === "pictographGroup");
-    expect(group).toBeDefined();
-    if (group?.kind === "pictographGroup") {
-      expect(group.items.length).toBe(16);
-    }
+  it("includes the 16 canonical positions across the α/β/γ groups (4/4/8)", () => {
+    const groups = handPositionsContent.filter((b) => b.kind === "pictographGroup");
+    expect(groups.length).toBe(3);
+    const counts = groups.map((g) => (g.kind === "pictographGroup" ? g.items.length : 0));
+    expect(counts).toEqual([4, 4, 8]);
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(16);
   });
 
   it("leads each section with a position glyph", () => {
