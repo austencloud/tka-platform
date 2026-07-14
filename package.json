@@ -21,7 +21,7 @@
     "capgo:upload": "npx @capgo/cli bundle upload",
     "build:packages": "tsc --build packages/tsconfig.build.json",
     "build:packages:force": "tsc --build packages/tsconfig.build.json --force",
-    "build": "npm run build:packages && svelte-kit sync && node scripts/generate-svg-precache-manifest.cjs && cross-env NODE_OPTIONS=--max-old-space-size=8192 vite build && node scripts/trim-deploy-assets.js",
+    "build": "npm run build:packages && svelte-kit sync && node scripts/generate-svg-precache-manifest.cjs && cross-env NODE_OPTIONS=--max-old-space-size=8192 vite build --logLevel error && node scripts/trim-deploy-assets.js",
     "build:fast": "npm run build:packages && svelte-kit sync && node scripts/generate-svg-precache-manifest.cjs && cross-env NODE_OPTIONS=--max-old-space-size=8192 NODE_ENV=production vite build",
     "build:all": "npm run build:packages && svelte-kit sync && node scripts/generate-svg-precache-manifest.cjs && cross-env NODE_OPTIONS=--max-old-space-size=8192 BUILD_ALL=true vite build",
     "build:analyze": "vite-bundle-visualizer",
