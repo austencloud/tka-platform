@@ -20,6 +20,11 @@ Design:
 - Fully accessible with ARIA labels
 -->
 <script lang="ts">
+  import { fade } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+  import { motionDuration } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+
   let {
     currentStep = 0,
     totalSteps = 0,
@@ -47,6 +52,11 @@ Design:
   } = $props();
 
   const interactive = $derived(!!onSeek);
+
+  const fadeParams = $derived({
+    duration: motionDuration(DURATION.normal),
+    easing: cubicOut,
+  });
 
   /**
    * Progress within current loop (0-1)
@@ -164,6 +174,7 @@ Design:
       class="progress-bar-container interactive"
       class:dark-mode={darkMode}
       class:scrubbing
+      transition:fade={fadeParams}
       role="slider"
       tabindex="0"
       aria-label="Seek position"
@@ -186,6 +197,7 @@ Design:
     <div
       class="progress-bar-container"
       class:dark-mode={darkMode}
+      transition:fade={fadeParams}
       role="progressbar"
       aria-label={ariaLabel}
       aria-valuenow={Math.floor(progress * 100)}

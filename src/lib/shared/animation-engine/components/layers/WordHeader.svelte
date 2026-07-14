@@ -19,6 +19,10 @@ Supports letter highlighting during animation playback.
   import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
   import { browser } from "$app/environment";
+  import { fade } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+  import { motionDuration } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
 
   const cache = browser ? getGlyphCache() : null;
 
@@ -249,6 +253,7 @@ Supports letter highlighting during animation playback.
     class="word-header"
     class:dark-mode={darkMode}
     data-controlled="true"
+    out:fade={{ duration: motionDuration(DURATION.normal), easing: cubicOut }}
   >
     {#if difficultyLevel != null}
       <div class="badge-wrapper">

@@ -454,16 +454,17 @@ captureEffectDiagnostics to the context menu.
       }
     />
 
-    {#if bluePathLinesVisible || redPathLinesVisible}
-      <PathLinesOverlay
-        {sequenceData}
-        {currentStep}
-        {stepData}
-        showBlue={bluePathLinesVisible}
-        showRed={redPathLinesVisible}
-        vm={visibilityManager}
-      />
-    {/if}
+    <!-- Always mounted: PathLinesOverlay self-gates on showBlue/showRed and owns
+         its own fade in/out, so the overlay must stay in the tree for its
+         out-transition to play when the Paths toggle flips off. -->
+    <PathLinesOverlay
+      {sequenceData}
+      {currentStep}
+      {stepData}
+      showBlue={bluePathLinesVisible}
+      showRed={redPathLinesVisible}
+      vm={visibilityManager}
+    />
 
     <ProgressOverlay
       {isPreRendering}

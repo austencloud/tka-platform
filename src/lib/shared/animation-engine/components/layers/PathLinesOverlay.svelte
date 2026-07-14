@@ -10,6 +10,10 @@
     type AnimationVisibilityStateManager,
   } from "../../state/animation-visibility-state.svelte";
   import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
+  import { fade } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+  import { motionDuration } from "$lib/shared/transitions/motion";
+  import { DURATION } from "$lib/shared/transitions/transitions";
 
   let {
     sequenceData = null,
@@ -82,11 +86,19 @@
   const redColor = $derived(getMotionColor(MotionColor.RED, "dark"));
   const drawBlue = $derived(showBlue && bluePathD !== null);
   const drawRed = $derived(showRed && redPathD !== null);
-  const hasAnyPath = $derived(drawBlue || drawRed);
 </script>
 
-{#if hasAnyPath}
-  <svg class="path-lines-overlay" viewBox="0 0 950 950" preserveAspectRatio="xMidYMid meet">
+<!-- Gate the overlay on the TOGGLE intent (showBlue/showRed), not on whether
+     this step happens to have path geometry — so turning Paths on/off fades the
+     whole overlay once, while per-step geometry swaps (drawBlue/drawRed) stay
+     instant and never trigger a fade mid-playback. -->
+{#if showBlue || showRed}
+  <svg
+    class="path-lines-overlay"
+    viewBox="0 0 950 950"
+    preserveAspectRatio="xMidYMid meet"
+    transition:fade={{ duration: motionDuration(DURATION.normal), easing: cubicOut }}
+  >
     {#if drawBlue}
       <path
         d={bluePathD}
