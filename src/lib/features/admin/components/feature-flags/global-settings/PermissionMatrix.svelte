@@ -15,7 +15,7 @@
     getFeatureIconAndColor,
     getRoleColor,
   } from "../shared/feature-utils";
-  import { auth } from "$lib/shared/auth/firebase";
+  import { authedFetch } from "$lib/shared/auth/services/authed-fetch";
   import AdminSearchBox from "$lib/shared/admin/components/AdminSearchBox.svelte";
   import MatrixRow from "./MatrixRow.svelte";
   import ModuleQuickBar from "./ModuleQuickBar.svelte";
@@ -35,18 +35,17 @@
     migrating = true;
     migrationResult = null;
     try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) throw new Error("Not authenticated");
-      const idToken = await currentUser.getIdToken();
-
-      const response = await fetch("/api/admin/feature-flags", {
+      const response = await authedFetch("/api/admin/feature-flags", {
         method: "POST",
-        headers: { Authorization: `Bearer ${idToken}` },
       });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP ${response.status}`);
+        const reason =
+          errorData.firebaseCode === "auth/id-token-expired" || response.status === 401
+            ? "Session expired — sign in again"
+            : errorData.message || `HTTP ${response.status}`;
+        throw new Error(reason);
       }
 
       const result = await response.json();

@@ -1,7 +1,7 @@
 import { browser } from "$app/environment";
 import type { FeatureId, FeatureFlagConfig, UserFeatureOverrides } from "../domain/models/feature-flag";
 import { type UserRole, hasRolePrivilege } from "../domain/models/user-role";
-import { auth } from "../firebase";
+import { authedFetch } from "./authed-fetch";
 import { reloadFeatureFlags, setUserProperties } from "../../analytics/services/posthog";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import type { GlobalFeatureFlagPersister } from "./global-feature-flag-persister";
@@ -85,25 +85,20 @@ export function createPostHogFlagAdminService(
         });
 
         try {
-          const currentUser = auth.currentUser;
-          if (!currentUser) {
-            throw new Error("Not authenticated");
-          }
-          const idToken = await currentUser.getIdToken();
-
-          const response = await fetch("/api/admin/feature-flags", {
+          const response = await authedFetch("/api/admin/feature-flags", {
             method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${idToken}`,
-            },
+            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ flagKey, enabled: updates.enabled }),
           });
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             const detail = errorData.detail ? ` - ${errorData.detail}` : "";
-            throw new Error((errorData.message || `HTTP ${response.status}`) + detail);
+            const reason =
+              errorData.firebaseCode === "auth/id-token-expired" || response.status === 401
+                ? "Session expired — sign in again"
+                : errorData.message || `HTTP ${response.status}`;
+            throw new Error(reason + detail);
           }
 
           const result = await response.json();
