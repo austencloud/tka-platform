@@ -13,6 +13,11 @@
   import "../_styles/guide.css";
 
   const content = GUIDE_CONTENT["hand-positions"]!;
+
+  // The real guide this doorway funnels to: the interactive reader deep-linked to
+  // this topic, and the downloadable full Level-1 PDF (static/guides/level-1.pdf).
+  const INTERACTIVE_HREF = "/learn/guide/hand-positions";
+  const PDF_HREF = "/guides/level-1.pdf";
 </script>
 
 <GuideSeo
@@ -29,14 +34,22 @@
 />
 
 <main class="guide-flow-route">
-  <h1>Flow Arts Positions: Alpha, Beta, Gamma</h1>
+  <header class="doorway-hero">
+    <h1>Flow Arts Positions: Alpha, Beta, Gamma</h1>
+    <p class="hero-tagline">The three starting hand positions in The Kinetic Alphabet.</p>
+    <!-- This page is a DOORWAY: it ranks in search, then hands you to the real
+         guide. The hero actions ARE the guide (interactive + PDF); the content
+         below is the searchable payload. -->
+    <div class="hero-actions">
+      <a class="btn-primary" href={INTERACTIVE_HREF}>Open the interactive guide</a>
+      <a class="btn-secondary" href={PDF_HREF} download>Download the PDF guide</a>
+    </div>
+  </header>
+
   <FlowFrame {content} />
 
-  <!-- Funnel + internal-link graph: turn a search landing into an app visit, and
-       give crawlers edges into the pillar/tool pages. The primary CTA deep-links
-       into the interactive reader on THIS page; the rest are crawlable siblings. -->
   <footer class="flow-cta">
-    <a class="cta-primary" href="/learn/guide/hand-positions">Open the interactive guide</a>
+    <a class="btn-primary" href={INTERACTIVE_HREF}>Open the interactive guide</a>
     <nav class="cta-links" aria-label="Keep exploring">
       <a href="/notation">Where to start</a>
       <a href="/composer">Build a sequence</a>
@@ -59,19 +72,37 @@
     --ink-dim: #555;
     --glyph-invert: 0;
   }
-  .guide-flow-route h1 {
+  /* Hero: the doorway's job is to route to the real guide, so the interactive +
+     PDF actions sit right under the title, above the searchable content. */
+  .doorway-hero {
     max-width: 44rem;
     margin: 0 auto;
-    padding: 1.5rem 1.5rem 0;
+    padding: 1.5rem 1.5rem 0.5rem;
+    text-align: center;
+  }
+  .doorway-hero h1 {
+    margin: 0;
     font-family: "Cormorant Garamond", Georgia, serif;
     font-size: clamp(2rem, 5vw, 3rem);
     font-weight: 700;
     line-height: 1.1;
     letter-spacing: -0.01em;
   }
+  .hero-tagline {
+    margin: 0.6rem 0 1.5rem;
+    font-family: "Cormorant Garamond", Georgia, serif;
+    font-size: clamp(1.1rem, 2.5vw, 1.35rem);
+    color: var(--ink-dim, #555);
+  }
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem;
+  }
 
-  /* Funnel + related links. Primary CTA looks like a button (clickables-look-like-
-     buttons); the siblings are outline pills, 44px min target. */
+  /* Funnel + related links. Primary/secondary look like buttons (clickables-look-
+     like-buttons); the pill siblings are outline links, 44px min target. */
   .flow-cta {
     max-width: 44rem;
     margin: 1rem auto 0;
@@ -82,7 +113,7 @@
     gap: 1.25rem;
     border-top: 1px solid color-mix(in oklab, var(--ink, #1a1a1a) 15%, transparent);
   }
-  .cta-primary {
+  .btn-primary {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
@@ -96,9 +127,26 @@
     box-shadow: 0 4px 16px rgba(232, 89, 12, 0.3);
     transition: transform 120ms ease, box-shadow 120ms ease;
   }
-  .cta-primary:hover {
+  .btn-primary:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 20px rgba(232, 89, 12, 0.4);
+  }
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0.75rem 1.5rem;
+    border-radius: 999px;
+    border: 1.5px solid color-mix(in oklab, var(--ink, #1a1a1a) 40%, transparent);
+    background: transparent;
+    color: var(--ink, #1a1a1a);
+    font-weight: 600;
+    font-size: 1.05rem;
+    text-decoration: none;
+    transition: background 120ms ease;
+  }
+  .btn-secondary:hover {
+    background: color-mix(in oklab, var(--ink, #1a1a1a) 8%, transparent);
   }
   .cta-links {
     display: flex;

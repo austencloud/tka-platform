@@ -27,6 +27,11 @@ const pages = [
   // FlowFrame host (see 2026-07-14-guide-reflow-single-source-design.md). Add a
   // line per page as each Level-1 page is migrated to the single-source model.
   { url: "guide/level-1/hand-positions", priority: "0.7", changefreq: "monthly" },
+  // The downloadable guide PDFs — indexed directly so "what we have" is
+  // discoverable, and so a doorway page + its PDF can both surface in search.
+  { url: "guides/level-1.pdf", priority: "0.6", changefreq: "yearly" },
+  { url: "guides/level-2.pdf", priority: "0.6", changefreq: "yearly" },
+  { url: "guides/level-3.pdf", priority: "0.6", changefreq: "yearly" },
   { url: "guide/level-2", priority: "0.8", changefreq: "monthly" },
   { url: "guide/level-2/turns", priority: "0.7", changefreq: "monthly" },
   { url: "guide/level-2/double-turns", priority: "0.7", changefreq: "monthly" },

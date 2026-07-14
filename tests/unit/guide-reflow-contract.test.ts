@@ -79,12 +79,25 @@ describe("crawl route", () => {
       "prerender = true"
     );
   });
-  it("funnels into the app + links to pillar/tool pages (internal-link graph)", () => {
+  it("is a DOORWAY: hero routes to the interactive reader + the PDF download", () => {
     const src = read("src/routes/(public)/guide/level-1/hand-positions/+page.svelte");
-    expect(src).toContain('href="/learn/guide/hand-positions"'); // into the interactive reader
+    expect(src).toContain("/learn/guide/hand-positions"); // interactive reader (deep link)
+    expect(src).toContain("/guides/level-1.pdf"); // downloadable guide PDF
+    expect(src).toContain("Open the interactive guide");
+    expect(src).toContain("Download the PDF");
+  });
+  it("links to pillar/tool/hub pages (internal-link graph)", () => {
+    const src = read("src/routes/(public)/guide/level-1/hand-positions/+page.svelte");
     expect(src).toContain('href="/notation"');
     expect(src).toContain('href="/composer"');
     expect(src).toContain('href="/guide"');
+  });
+});
+
+describe("PDF indexing", () => {
+  it("lists the downloadable guide PDFs in the sitemap", () => {
+    const src = read("src/routes/sitemap.xml/+server.ts");
+    expect(src).toContain("guides/level-1.pdf");
   });
 });
 
