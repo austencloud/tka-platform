@@ -1,0 +1,273 @@
+# Halved Pictograph Pipeline — Design
+
+- **Date:** 2026-07-14
+- **Status:** Design (approved to spec; implementation not started)
+- **Author:** Austen + Claude
+- **Scope:** Make "halve a pictograph" a first-class, orientation-correct, pipeline-positioned capability. Phases 1–3 in this doc. Phase 4 (product UX) flagged, deferred.
+
+---
+
+## 1. Vision
+
+Today a pictograph shows one motion: a start state → an end state, with an arrow the system positions. There is no way to ask the system for the *middle* of that motion.
+
+The target: **take any pictograph, cut it in half, and see the halfway state rendered correctly** — props at the halfway pose with the *correct halfway orientation*, and an arrow that represents that half of the motion. The arrows for these half-motions are a new asset family. The seed set already exists and is proven: the hand-drawn end-direction glyphs on the Level-2 "Turns" guide artboards (pro curl, anti zig-zag, dash bow, static loop). The rest get created the same way.
+
+The Level-2 turn-lesson pages are the **first consumer** and the **seed asset source**. Rebuilding them on this pipeline also fixes their current defect: they render tiny because they bake a lifted staff+arrow drawing onto a bare hand-dot grid instead of rendering a real pictograph.
+
+This is a large build. It is decomposed below so the load-bearing, riskiest piece (the halfway-orientation algebra) is built and proven first, in isolation, before anything downstream depends on it.
+
+---
+
+## 2. Domain foundation (why this is tractable)
+
+Ground truth from the Flow Arts Knowledge MCP (`get_domain_topic` base-rotation + orientation-algebra):
+
+- **1 turn = 180° of additional prop rotation.** This unit was chosen deliberately so fractions land clean: a **half-turn = 90° = a cardinal orientation shift**, a **quarter-turn = 45° = an interradial** (L6+, the 8-point radial cycle `in → clockIn → clock → clockOut → out → counterOut → counter → counterIn`). **45° is the finest orientation grain that exists.** There is no eighth-turn / 22.5° orientation.
+- **Base rotation.** Every motion has an inherent base rotation at 0 additional turns. For **shifts** (curved arcs): *pro base preserves* center-relative orientation, *anti base reverses* it (180°). For **dashes / statics** (straight or no travel): no base rotation. The base accrues along the arc — the animation engine already models this as linear in `t` (`endpoint-calculator.ts`).
+- **Parity.** Pro/Static: even turns preserve, odd reverse. Anti/Dash/Hash: even reverse, odd preserve. Fractional turns step the 8-point cycle: anti/dash step *same* direction as rotation, pro/static step *opposite*.
+
+**Consequence — the crux is the clean case.** The halfway rotation of a motion is `½ · (base + turns·180°)`. Because turns come in 180° units and base reversals are 180°, halving L1–L5 content (whole and half turns) always lands the halfway orientation on the existing 45° lattice — a cardinal or an interradial that the `Orientation` type already has a name for. Halving is representable and derivable in the discrete algebra for exactly the content the guide teaches and most sequences use.
+
+It goes **off-lattice only for halving L6 quarter-turn motions** (half of 45° = 22.5°, no legal name). Guarded, not supported, in v1.
+
+### The boundary domain law forces
+
+Orientation is fundamentally 45°-granular, so:
+
+| Fraction | Rotation at that fraction | Orientation-correct? |
+|---|---|---|
+| **Half (½)** of whole/half-turn motions | multiple of 45° | **Yes** — the product feature |
+| **Quarter (¼, ¾)** of whole/half-turn motions | multiple of 45° | **Yes** |
+| **Thirds (⅓, ⅔)** | 60° — never on the lattice | **No — physical-only, by domain definition** |
+| **Half of an L6 quarter-turn** | 22.5° | **No — off-lattice, guarded** |
+
+Thirds (and other off-lattice fractions) have *no legal orientation* to compute. The guide's thirds-strips can only ever be **physical poses** (the traced staff sweep) with a drawn glyph. They stay on the existing visual `poseArrow` path — not a regression, a domain fact.
+
+---
+
+## 3. What already exists
+
+Read-only investigation (two agents, file:line-verified). ~60–70% of the machinery ships. The missing 30–40% is one thing: the halfway *orientation value*.
+
+| Piece | Status | Anchor |
+|---|---|---|
+| Halfway pose geometry (staff position + angle at any `t`) | **Built** | `src/routes/(public)/guide/level-2/_data/halfway-pose.ts` — `poseAt(m,t)` (55-90), `halfwayPose(m)` (93-130), runs the real engine `interpolatePropAngles(step,t)` |
+| Half-motion arrow glyph (visual) | **Built** | `src/routes/(public)/guide/level-2/_data/pose-arrow.ts` — `poseArrow(m,tStart,tEnd)` (118-148) |
+| Animation engine (arc / linear / concave interpolation, base rotation) | **Built** | `src/lib/shared/animation-engine/services/prop-interpolator.ts` (48-218); `endpoint-calculator.ts:35-205` (base rotation PRO:73 / ANTI:97, `propRotation = dir·turns·π`) |
+| Discrete start→end orientation algebra | **Built** | `src/lib/shared/render/core/calculations/orientation.ts` — `calculateEndOrientation` (250-286), `RADIAL_CW_CYCLE` (160-163), `CENTER_CW_CYCLE` (155-158), `calculateWholeTurnOrientation` (187-202), `calculateRadialFractionalTurnOrientation` (204-225, `steps=round(turns·4)`), `calculateCenterFractionalTurnOrientation` (165-185), `switchOrientation` (129-149) |
+| `Orientation` value set (radial + interradial + center) | **Built** | `src/lib/shared/pictograph/shared/domain/enums/pictograph-enums.ts:102-125` |
+| Halfway grid *location* | **Free** | intercardinals (NE/SE/SW/NW) + center `c` are first-class `GridLocation`s; a N→E shift's midpoint IS "NE", a dash's is "C" |
+| State model to split into | **Present** | `MotionData` (`src/lib/shared/pictograph/shared/domain/models/motion-data.ts:39-68`, factory 95-126); `StepData` (`src/lib/shared/foundation/domain/models/step-data.ts:29-49`) |
+| Arrow positioning (location → rotation → adjustment → asset) | **Built, discrete** | see §5 |
+| **Halfway orientation as a real `Orientation` value** | **DOES NOT EXIST** | the animation engine keeps only a continuous radian angle at intermediate `t`; `mapOrientationToAngle` (`angle-calculator.ts:46-64`) is one-way and cardinal-only — there is no angle→Orientation inverse anywhere |
+
+**Naming collision to avoid:** "halved" already exists in the LOOP system (`loop-config.ts:93-94` `RECIPE_STEPS`, `resolveLoopConfig`) meaning *whole-sequence position rotation slices* (a LOOP whose positions rotate 180°/90° per repeat). That is unrelated to halving a single motion. New code uses **"half-motion" / "segment"**, never bare "halved", to avoid colliding with LOOP vocabulary.
+
+---
+
+## 4. Architecture overview
+
+Three phases. Each is independently testable; each is additive/opt-in (zero change to existing callers).
+
+```
+Phase 1  calculateOrientationAt(motion, t)      ← the keystone (pure algebra)
+            │  gives the halfway state its correct Orientation label
+            ▼
+Phase 2  half-motion arrow identity + assets     ← new sibling branch, hand-drawn glyphs
+            │  gives the half-motion its positioned arrow
+            ▼
+Phase 3  buildHalvedStep(step, t) + showArrow    ← compose a real pictograph of the halfway state
+            │  first consumer = Level-2 turn pages (also fixes tiny rendering)
+            ▼
+Phase 4  "halve any pictograph" product UX        ← DEFERRED
+```
+
+---
+
+## 5. Phase 1 — Halfway-orientation algebra (the keystone)
+
+The load-bearing 30–40%. A pure function, no I/O, fully unit-testable. Build and prove this **before anything else**.
+
+### Signature
+
+```ts
+// src/lib/shared/render/core/calculations/orientation-at.ts  (new, beside orientation.ts)
+
+/**
+ * Orientation at fraction t of a motion, or null when t lands off the 45° lattice
+ * (no legal Orientation exists at that fraction — e.g. thirds, or halving an L6
+ * quarter-turn). t in [0,1]. calculateOrientationAt(m, 1) === calculateEndOrientation(m).
+ */
+export function calculateOrientationAt(input: OrientationInput, t: number): Orientation | null;
+```
+
+Same `OrientationInput` shape `calculateEndOrientation` already takes (`motionType, turns, rotationDirection, startLocation, endLocation, startOrientation`).
+
+### Algorithm
+
+Orientation change over a full motion decomposes into two signed components, each measured in **45° steps** on the radial cycle:
+
+1. **`baseStepsFull(motion)`** — the base rotation.
+   - Pro shift → `0` (preserves).
+   - Anti shift → `±4` (the 180° reversal; sign from arc direction).
+   - Dash / static → `0`.
+   - (Skewed shifts: base is the skewed arc's reversal for the anti family — see Risks; v1 may restrict to non-skew.)
+2. **`turnStepsFull(motion)`** — the additional turns: `turns · 4` steps (1 turn = 180° = 4 steps), signed by `rotationDirection` with the motion-type step-direction rule (anti/dash same as rotation, pro/static opposite).
+
+Then:
+
+```
+rawStepsFull = baseStepsFull + turnStepsFull        // signed integer, NOT mod 8 (multi-turn safe)
+stepsAtT     = t · rawStepsFull
+if (stepsAtT is not an integer) return null          // off-lattice — no legal orientation at t
+return cycleStep(startOrientation, stepsAtT mod 8)   // walk RADIAL_CW_CYCLE (or CENTER_CW_CYCLE
+                                                     // if startOrientation is a center orientation)
+```
+
+`rawStepsFull` is kept as a raw signed count (not reduced mod 8) so multi-turn motions halve correctly: a 2-turn motion is 8 raw steps; at `t=0.5` that is 4 steps = one 180° reversal (half of 360° = 180°), which is right — recovering the delta from endpoints alone would read 0 and be wrong.
+
+The **exact sign rules** for `baseStepsFull` / `turnStepsFull` are not re-invented here — they are the same rules already encoded in `orientation.ts` (`calculateWholeTurnOrientation`, `calculateRadialFractionalTurnOrientation`, `switchOrientation`). Phase 1 decomposes those into signed step counts. Correctness is pinned by the invariant below, not by trusting a hand-copied sign table.
+
+### Correctness oracle (the killer test)
+
+```
+For every motion in the pictograph dataset:
+    calculateOrientationAt(motion, 1)  ===  calculateEndOrientation(motion)
+```
+
+If `calculateOrientationAt(·, 1)` reproduces the shipped end-orientation algebra across the entire dataset, the decomposition into `base + turns` steps is proven correct. This is the Phase 1 acceptance gate.
+
+### Empirical halfway check
+
+The convention "base rotation accrues linearly, so halfway of a 180° anti base = 90° = one cardinal step" is validated against the **guide artboards**: Austen drew the halfway anti staffs (Level-2 `TwoTurnsShiftsPage` anti-halves). Cross-check `mapOrientationToAngle(calculateOrientationAt(antiMotion, 0.5))` against `poseAt(antiMotion, 0.5).deg` for cardinal cases — the drawn staff is ground truth. Agreement confirms the accrual convention (see Risks §9 — this is the one domain decision to ratify).
+
+### Off-lattice guard
+
+`null` return = "not orientation-representable at this `t`." Callers (halving) treat it as "this motion cannot be halved with a legal orientation" and fall back to physical-pose-only (the guide's `poseArrow` path) or refuse.
+
+---
+
+## 6. Phase 2 — Half-motion arrow identity + assets
+
+The arrow pipeline is discrete-lookup end to end. It is extended **additively**, the way `FLOAT` sits beside `PRO/ANTI/DASH/STATIC` — a new branch keyed on a new discriminator, touching no existing table, key, or caller.
+
+### The discriminator — do NOT expand `MotionType`
+
+`MotionType` is a closed 5-value union (`pro/anti/float/dash/static`) with a huge blast radius; it is **not** expanded. Instead:
+
+```ts
+// on MotionData
+segment?: { t0: number; t1: number };   // presence ⇒ this arrow represents a partial motion.
+                                         // halving: {t0:0, t1:0.5} first half, {t0:0.5, t1:1} second.
+```
+
+Asset variant is derived (`motionType` + `segment` present → `pro_half` etc.); no separate variant string needed.
+
+### Pipeline touch points (all additive, opt-in)
+
+- **Location** — `arrow-location-calculator.ts` `calculateLocation` (100-127): early branch when `segment` present → a new hand-authored `shiftHalfDirectionPairs` table (same shape as `shiftDirectionPairs` 32-97), or compute from the halfway `GridLocation` (now known). Existing pairs untouched.
+- **Rotation** — `arrow-rotation-calculator.ts` `calculateRotation` (48-89): early branch → new hand-authored half rotation maps (mirroring `selectProMap`/etc. 133-194). The guide's hand-drawn half-glyphs establish the correct discrete rotations; the half-arrow is a curl/bow/loop glyph sitting in a canonical orientation, not a literal travel vector, so authored maps (not a formula) are correct — same as the original systems.
+- **Adjustment cascade** — `arrow-adjustment-calculator.ts` `getBaseAdjustment` (480-541): **no code change for tiers 1–3.** They gate on `letter` (498) / `endPosition`; a synthetic half-motion frame leaves those empty and the tiers no-op safely. Tier 4 (Default) needs new namespaced data: `default_diamond_pro_half_placements.json` (+ anti/dash/static), addressed by `arrow-placement-key-generator.ts` (157-207) recognizing the segment discriminator.
+- **Orchestrator** — `arrow-positioning-orchestrator.ts` `calculateArrowPoint` (25-75): **zero change** — already polymorphic over whatever `MotionData` it receives. **Footgun to route around:** line 58 defaults `letter` to `"A"` when falsy. A half-motion frame must not hit that default (it would spuriously match letter-A Special/Global entries). Pass an explicit empty letter for segment frames, or call the adjustment path directly. Small, contained.
+- **Asset resolver** — `arrow-path-resolver.ts` `getArrowPath` (18-52): `baseDir = /images/arrows/${motionType}` (23) is already parameterized purely on the motion-type string; a `_half` suffix yields `/images/arrows/pro_half/from_radial/pro_half_{turns}.svg`. This is exactly how `float.svg` already deviates from the pattern (66-68) — the resolver tolerates per-identity path shapes.
+
+### Assets
+
+Normalize the guide artboard glyphs (pro curl, anti zig-zag, dash bow, static loop) into proper arrow assets. **Parser requirements** (`arrow-svg-parser.ts` 12-74), a constraint on the Illustrator export, not the code:
+
+- a real `viewBox` on the root `<svg>` (16-25);
+- an element `id="centerPoint"` with `cx`/`cy` — the rotation/position anchor (43-65).
+
+Glyphs authored under 50×50 native get auto-rescaled to a 250 target (29-38, 52-62) for free; authored at ~250 it is a no-op.
+
+The guide seeds the four base half-glyphs. The full family (per turn value / orientation bucket) is authored the same way — this **authoring is the bulk of the project's effort**, mirroring the ~24-pair table + per-turn tuning that built each original motion-type system.
+
+---
+
+## 7. Phase 3 — Render integration + `showArrow` toggle
+
+### Compose the halfway pictograph
+
+A halved pictograph is a real pictograph whose end state IS the halfway state:
+
+```ts
+// buildHalvedStep(step: StepData, t = 0.5): StepData | null
+//   - for each hand's MotionData:
+//       halfwayOri  = calculateOrientationAt(motion, t)        // Phase 1; null ⇒ bail (off-lattice)
+//       halfwayLoc  = intercardinal/center midpoint            // existing GridLocation
+//       endLocation/endOrientation ← halfway values
+//       segment     = { t0: 0, t1: t }                          // Phase 2 arrow
+//   returns a StepData the normal preparer/renderer can consume, or null if any hand is off-lattice
+```
+
+Props place from `location + orientation` (both now known for the halfway state) through the existing prop positioner. The arrow places through the Phase 2 segment branch. No new renderer — a synthetic `StepData` flows through `prepareSingle` unchanged.
+
+### Toggle
+
+`ArrowSvg.svelte` already has a `showArrow` prop, but `PictographRenderer.svelte` hardcodes it `true` at 414 / 433 / 454. Thread it as a real prop from `PictographContainer` so arrow rendering is a caller choice ("renderable option"). Default stays `true` — no behavior change for existing callers.
+
+### Guide rewire (the payoff + the tiny-fix)
+
+`TurnsPage.svelte`, `TwoTurnsShiftsPage.svelte`, `TwoTurnsDashStaticPage.svelte` render **real full-size pictographs**:
+
+- start / end / combined frames → normal pictograph + normal arrow (existing pipeline; "reuse the existing arrow slot").
+- halfway frames → `buildHalvedStep(step, 0.5)` → real pictograph with the correct halfway orientation + the half-arrow.
+- **on-lattice quarter frames** (quarters of whole/half-turn motions) → same, at `t ∈ {0.25, 0.75}`.
+- **off-lattice frames** (thirds; L6 quarter-halves) → stay on the existing visual `poseArrow` path (no legal orientation to compute).
+
+This replaces the current `LiftedTurnFrame` (baked staff+arrow on a bare grid → tiny) with full pictographs at proper scale. The lifted glyphs become the `*_half` assets.
+
+**Interim:** the committed `LiftedTurnFrame` lift stays in place (vector-exact, if small) until Phase 3 lands, then is removed.
+
+---
+
+## 8. Testing strategy
+
+- **Phase 1:** the `calculateOrientationAt(·,1) === calculateEndOrientation(·)` dataset invariant (acceptance gate) + explicit halfway cases (0-turn anti = one cardinal step; 1-turn pro = 90°; 2-turn = reverse) + the empirical guide-artboard cross-check (`mapOrientationToAngle` vs `poseAt.deg`) + off-lattice returns `null` (thirds, L6 quarter-halves). Runs in the existing orientation unit-test harness.
+- **Phase 2:** render each `*_half` arrow, screenshot-compare to the guide artboards. Parser accepts the normalized assets (viewBox + `#centerPoint`).
+- **Phase 3:** guide pages render full-size (tiny-bug gone) — screenshot proof per verification protocol. Segment arrows land on-grid. A contract test asserting the turn pages render real pictographs (not `LiftedTurnFrame`).
+
+---
+
+## 9. Risks
+
+- **Base-rotation accrual convention (the one domain decision to ratify).** v1 asserts base rotation accrues linearly in `t`, so halfway of a 180° base reversal = 90° = one cardinal step. This matches the animation engine and the 180°-unit design intent, and is empirically checkable against the guide's drawn halfway anti staffs (§5). **Austen ratifies** — he is the domain authority. If the domain says otherwise for some motion family, Phase 1's `baseStepsFull` is the single place it changes.
+- **Off-lattice fractions.** Thirds (60°) and halving L6 quarter-turns (22.5°) have no legal orientation. Guarded via `null`; those frames stay visual-only. Not a v1 feature.
+- **Skew motions.** Skewed shifts still have an arc, so an anti-family base reversal applies; the `baseStepsFull` sign for skews needs care. v1 may restrict halving to non-skew shifts and flag skews as future.
+- **Authoring load, not code, is the size.** The half-arrow location/rotation/default-tier tables + the per-turn asset family are hand-authored, like the original four systems. This is where the real time goes; the plumbing is small.
+- **Adjustment cascade's "graceful degradation" is a trap.** It never throws but falls back to `{x:0,y:0}` (`arrow-placer.ts:178-181`) — calibrated for nothing. Every half-motion scenario needs its own authored default-tier entry before it looks right.
+
+---
+
+## 10. Out of scope (this spec)
+
+- **Phase 4 — "halve any pictograph" product UX** (a user action to split any pictograph and view the two halves). Builds directly on Phases 1–3; specced separately once the pipeline lands.
+- **Thirds / arbitrary off-lattice fractions as orientation-correct.** Domain-impossible at 45° granularity; permanently visual-only.
+- **Arbitrary continuous `t` / scrubbing** (smooth animation positioning of the half-arrow). Escalates to a continuous placement system (L-XL); not needed for the fixed-fraction feature. The discrete on-lattice set `{0, 0.25, 0.5, 0.75, 1}` covers the product goal.
+
+---
+
+## 11. Implementation ledger
+
+**Phase 1 — halfway-orientation algebra**
+- [ ] `orientation-at.ts` — `calculateOrientationAt(input, t)` with `baseStepsFull` / `turnStepsFull` / `rawStepsFull` decomposition + center-cycle handling + off-lattice `null`
+- [ ] Dataset invariant test `calculateOrientationAt(·,1) === calculateEndOrientation(·)`
+- [ ] Explicit halfway + off-lattice unit cases
+- [ ] Guide-artboard empirical cross-check; ratify accrual convention with Austen
+
+**Phase 2 — half-motion arrow identity + assets**
+- [ ] `MotionData.segment` field + factory support
+- [ ] `arrow-location-calculator` half branch + `shiftHalfDirectionPairs`
+- [ ] `arrow-rotation-calculator` half branch + half rotation maps
+- [ ] `default_diamond_{pro,anti,dash,static}_half_placements.json` + key-generator recognition
+- [ ] `arrow-path-resolver` `_half` baseDir
+- [ ] Route half frames around the `letter||"A"` orchestrator footgun
+- [ ] Normalize guide glyphs → `*_half` assets (viewBox + `#centerPoint`); author the family
+
+**Phase 3 — render integration + toggle + guide rewire**
+- [ ] `buildHalvedStep(step, t)`
+- [ ] Thread `showArrow` as a real `PictographContainer` prop
+- [ ] Rewire the 3 turn pages to real pictographs (half + on-lattice quarter → pipeline; thirds/off-lattice → visual `poseArrow`)
+- [ ] Remove `LiftedTurnFrame`; screenshot proof (tiny-bug gone)
+- [ ] Turn-page contract test
