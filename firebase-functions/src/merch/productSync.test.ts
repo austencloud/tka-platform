@@ -41,6 +41,17 @@ describe("mapStripeProductToDoc", () => {
     expect(doc.shipBy).toBeUndefined();
   });
 
+  it("carries preorderPriceCutoff from metadata", () => {
+    const doc = mapStripeProductToDoc(
+      product({ metadata: { preorderPriceCutoff: "2026-09-30T23:59:59-05:00" } })
+    );
+    expect(doc.preorderPriceCutoff).toBe("2026-09-30T23:59:59-05:00");
+  });
+
+  it("omits preorderPriceCutoff when metadata absent", () => {
+    expect(mapStripeProductToDoc(product({})).preorderPriceCutoff).toBeUndefined();
+  });
+
   it("parses numeric metadata (cardCount, sortOrder) and deckId", () => {
     const doc = mapStripeProductToDoc(
       product({ metadata: { cardCount: "128", sortOrder: "2", deckId: "l1-x", type: "guide" } })

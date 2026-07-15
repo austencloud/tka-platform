@@ -18,6 +18,8 @@
   import { setStoreContext } from "./context/store-context";
   import DeckFanCover from "./components/DeckFanCover.svelte";
   import BuyButton from "./components/BuyButton.svelte";
+  import PreorderPriceNote from "./components/PreorderPriceNote.svelte";
+  import { activePriceCents, preorderWindowOpen, formatUsd } from "./domain/preorder-pricing";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import ShopPropPicker from "./components/ShopPropPicker.svelte";
   import StepperCard from "$lib/shared/components/stepper-card/StepperCard.svelte";
@@ -113,8 +115,10 @@
   const loopConfig = $derived<LoopConfig>({
     recipe: slices.map(({ id: _id, ...s }) => s),
   });
+  // Read once — the preorder→regular boundary is a fixed instant, no ticking.
+  const now = Date.now();
   const price = $derived(
-    customSku ? `$${(customSku.price / 100).toFixed(0)}` : "$30"
+    customSku ? formatUsd(activePriceCents(customSku, now)) : "$30"
   );
 
   function addSlice() {
@@ -566,6 +570,9 @@
               </Crossfade>
             </div>
             <p class="price">{price}</p>
+            {#if customSku && preorderWindowOpen(customSku, now)}
+              <PreorderPriceNote product={customSku} />
+            {/if}
             <p class="spec-line">
               Poker size · 2.5" × 3.5" <span class="spec-sep">•</span> Deck only
             </p>

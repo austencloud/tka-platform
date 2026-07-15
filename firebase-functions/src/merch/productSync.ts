@@ -25,5 +25,9 @@ export function mapStripeProductToDoc(product: Stripe.Product): Record<string, u
   if (meta.listing) doc.listing = meta.listing;
   if (meta.preorder === "true") doc.preorder = true;
   if (meta.shipBy) doc.shipBy = meta.shipBy;
+  // Preorder → regular price swap boundary (ISO instant). The two price IDs
+  // ride in on price.* events; this cutoff rides in product metadata. Absent ⇒
+  // no swap (evergreen).
+  if (meta.preorderPriceCutoff) doc.preorderPriceCutoff = meta.preorderPriceCutoff;
   return doc;
 }
