@@ -8,9 +8,11 @@
     "54 flow sequences printed as playing cards. Pick a transformation flavor and build your LOOP deck.";
   const CANONICAL = "https://tkaflowarts.com/shop/loop-deck";
 
-  // Product schema. The page is a configurator: standard packs from $30, bespoke
-  // Architect builds up to $40 — keep lowPrice/highPrice in sync with the shop
-  // catalog (listings "loop-deck" / "loop-deck-architect"). Preorder until ship.
+  // Product schema. The page is a configurator: standard packs from $35 (preorder),
+  // bespoke Architect builds up to $55 (regular). lowPrice = lowest current price,
+  // highPrice = highest post-cutoff price, spanning the preorder→regular swap — keep
+  // in sync with the shop catalog (listings "loop-deck" / "loop-deck-architect")
+  // and the preorder cutoff. Preorder until ship.
   const jsonLd = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "Product",
@@ -22,8 +24,8 @@
     offers: {
       "@type": "AggregateOffer",
       priceCurrency: "USD",
-      lowPrice: "30",
-      highPrice: "40",
+      lowPrice: "35",
+      highPrice: "55",
       availability: "https://schema.org/PreOrder",
       url: CANONICAL,
     },
