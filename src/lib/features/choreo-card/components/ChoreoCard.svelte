@@ -31,6 +31,10 @@
     handPathMode?: boolean;
     /** Use 5:7 playing card layout for physical card export (different from printMode) */
     cardMode?: boolean;
+    /** Override the light/dark theme of the render. Defaults to light when
+     *  printMode/cardMode (paper cards are light). Pass `false` to render a
+     *  dark 5:7 card (e.g. the guide's dark flow view). */
+    lightMode?: boolean;
     /** Show the notes footer line (FireDrums banner / custom notes) */
     showNotes?: boolean;
     /** Show the LOOP transform icon strip in the card header */
@@ -69,11 +73,16 @@
     customNotesText = "🔥 FireDrums 2026 🔥",
     preRenderedImageUrl: preRenderedImageUrlProp,
     showMandala = false,
+    lightMode: lightModeProp,
     bluePropType,
     redPropType,
     onSelect,
     onContextMenu,
   }: Props = $props();
+
+  // Paper cards (print/cardMode) default to light; an explicit prop wins so an
+  // embedded dark surface (the guide flow view) can render a dark 5:7 card.
+  const effectiveLightMode = $derived(lightModeProp ?? (printMode || cardMode));
 
   // Local override so re-render can clear the pre-rendered URL
   let preRenderedCleared = $state(false);
@@ -155,7 +164,7 @@
         bluePropType={propSettings.bluePropType}
         redPropType={propSettings.redPropType}
         catDogModeEnabled={propSettings.catDogMode}
-        lightMode={printMode || cardMode}
+        lightMode={effectiveLightMode}
         variant="wordcard"
         addWord={showWord}
         addDifficultyLevel={false}

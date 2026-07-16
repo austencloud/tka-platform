@@ -92,6 +92,8 @@
   <div class="card-box">
     <ChoreoCard
       {sequence}
+      cardMode={true}
+      lightMode={false}
       bluePropType={propType}
       redPropType={propType}
       showQRCodes={false}
@@ -154,14 +156,24 @@
   }
 
   /* Reserved 5:7 physical-card box — the client-rendered image drops in without
-     resizing the stage. */
+     resizing the stage. cardMode renders a true 5:7 card, so the image fills the
+     box exactly (no letterbox). */
   .card-box {
     width: 100%;
     aspect-ratio: 5 / 7;
     display: flex;
   }
+  /* The dark 5:7 card render is the whole card. Drop the ChoreoCard's paper-white
+     background + light stroke (built for print) so nothing white shows behind or
+     around it on the dark flow view. */
   .card-box :global(.choreo-card) {
     border-radius: 12px;
+    border: none;
+    background: transparent;
+  }
+  .card-box :global(.prop-thumbnail),
+  .card-box :global(.card-content) {
+    background: transparent;
   }
 
   @media (prefers-reduced-motion: reduce) {
