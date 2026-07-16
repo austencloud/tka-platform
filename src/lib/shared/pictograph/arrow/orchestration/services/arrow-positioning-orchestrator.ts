@@ -11,7 +11,7 @@ import {
   type MotionData,
 } from "../../../shared/domain/models/motion-data";
 import type { PictographData } from "../../../shared/domain/models/pictograph-data";
-import type { GridMode } from "../../../grid/domain/enums/grid-enums";
+import { GridMode } from "../../../grid/domain/enums/grid-enums";
 import { getInitialPosition, getSceneCenter } from "./arrow-grid-coordinator";
 import {
   ensureValidPosition,
@@ -21,6 +21,7 @@ import {
 import { arrowLocationCalculator } from "../../positioning/calculation/services/arrow-location-calculator";
 import { arrowRotationCalculator } from "../../positioning/calculation/services/arrow-rotation-calculator";
 import { arrowAdjustmentCalculator } from "../../positioning/calculation/services/arrow-adjustment-calculator";
+import { arrowPlacer, type SegmentPlacementKey } from "../../positioning/placement/services/arrow-placer";
 
 export async function calculateArrowPoint(
   pictographData: PictographData,
@@ -54,21 +55,34 @@ export async function calculateArrowPoint(
 
     // Half-motion frames are letterless by construction; route them AROUND the
     // letter-based adjustment tiers (Special/Global calibrated for real letters —
-    // a "A" default would mis-adjust). Baseline nudge is 0 (extractAdjustmentValues
-    // maps a number n → [n, n], so 0 → [0, 0]); authored _half default-tier nudges
-    // arrive in Phase 2b.
-    const adjustment = motion.segment
-      ? 0
-      : await arrowAdjustmentCalculator.calculateAdjustment(
-          pictographData,
-          motion,
-          pictographData.letter || "A",
-          location,
-          motion.color,
-          soloMode
-        );
-
-    const [adjustmentX, adjustmentY] = extractAdjustmentValues(adjustment);
+    // a "A" default would mis-adjust) and straight to the default-tier `_half`
+    // bucket instead. The lookup key is the basic motion-type key ("pro", not
+    // a letter-derived placement key) since there's no letter to key off of.
+    // Today's `_half` data files are empty ({}), so the lookup falls through
+    // to {0,0} — same baseline as before, but now real nudges are a pure data
+    // edit away instead of requiring another code change.
+    let adjustmentX: number;
+    let adjustmentY: number;
+    if (motion.segment) {
+      const segmentAdjustment = await arrowPlacer.getDefaultAdjustment(
+        `${motion.motionType}_half` as SegmentPlacementKey,
+        motion.motionType,
+        motion.turns,
+        gridMode ?? GridMode.DIAMOND
+      );
+      adjustmentX = segmentAdjustment.x;
+      adjustmentY = segmentAdjustment.y;
+    } else {
+      const adjustment = await arrowAdjustmentCalculator.calculateAdjustment(
+        pictographData,
+        motion,
+        pictographData.letter || "A",
+        location,
+        motion.color,
+        soloMode
+      );
+      [adjustmentX, adjustmentY] = extractAdjustmentValues(adjustment);
+    }
 
     const finalX = validPosition.x + adjustmentX;
     const finalY = validPosition.y + adjustmentY;
