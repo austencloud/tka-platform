@@ -30,12 +30,18 @@
     {#if showCredit}
       <p class="credit">Made by Austen Cloud.</p>
     {/if}
+    <!-- Same destination set as SiteHeader's NAV (plus legal): a page reachable
+         from the top of the site is reachable from the bottom too. "Composer"
+         matches the header's label for /composer, so the label→destination
+         pairing is consistent between the two navs. -->
     <nav class="footer-links">
       <a href="/about">About</a>
       <a href="/notation">Notation</a>
+      <a href="/composer">Composer</a>
       <a href="/roots">Roots</a>
-      <a href="/composer">Flow Arts Composer</a>
+      <a href="/guide">Guide</a>
       <a href="/shop">Shop</a>
+      <a href="/support">Support</a>
       <a href="/create?sheet=auth" data-sveltekit-reload>Sign in</a>
       <a href="/terms" onclick={(e) => handleLegalClick(e, "terms")}>Terms</a>
       <a href="/privacy" onclick={(e) => handleLegalClick(e, "privacy")}>Privacy</a>

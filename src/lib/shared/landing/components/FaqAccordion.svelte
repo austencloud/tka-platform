@@ -70,8 +70,14 @@
     color: #ffffff;
     font-size: clamp(1.5rem, 4vw, 2rem);
   }
+  /* Section variant sits between the other landing sections, so it must speak
+     their heading language: the shared serif at the shared weight. Without an
+     explicit font-family this h2 fell back to the body sans — the only
+     sans-serif heading on the page. */
   .faq.section h2 {
+    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
     font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 500;
   }
 
   /* The card variant wraps the whole block in a panel to match /about's cards. */
@@ -90,9 +96,9 @@
   }
 
   .faq-item {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.03));
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 12px;
+    border-radius: 16px;
     margin-bottom: 12px;
     overflow: hidden;
   }

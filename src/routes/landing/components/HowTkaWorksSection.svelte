@@ -187,6 +187,9 @@
 </script>
 
 <section class="how-tka-works">
+  <h2>How it works</h2>
+  <p class="section-subtitle">From an empty grid to an animated sequence in six steps.</p>
+
   {#if loaded && sequence}
     <!-- All six cards in one row: grid → hands → props → motion → sequence → animation -->
     <div class="cards-row">
@@ -373,6 +376,24 @@
     margin: 0 auto;
   }
 
+  /* Heading language shared with the neighbouring sections (PlayWithIt's h2). */
+  h2 {
+    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 400;
+    color: #f5f5f5;
+    text-align: center;
+    margin: 0 0 12px;
+  }
+
+  .section-subtitle {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: var(--font-size-min, 14px);
+    text-align: center;
+    max-width: 480px;
+    margin: 0 auto 40px;
+  }
+
   /* One row of six equal cards - the progression reads left to right */
   .cards-row {
     display: grid;
@@ -464,6 +485,17 @@
       /* 51vw == 1960px at 3840; fluid past 4K. */
       max-width: max(1960px, 51vw);
       padding: 112px 24px;
+    }
+
+    /* Same 4K heading step as PlayWithItSection. */
+    h2 {
+      font-size: 3.6rem;
+    }
+
+    .section-subtitle {
+      font-size: 1.1rem;
+      max-width: 560px;
+      margin-bottom: 48px;
     }
 
     .cards-row {

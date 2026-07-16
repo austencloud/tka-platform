@@ -18,7 +18,7 @@
     </p>
     <a class="cta-link" href="/shop">
       <i class="fas fa-store" aria-hidden="true"></i>
-      <span>Visit the shop</span>
+      <span>Join the waitlist</span>
     </a>
   </div>
 </section>
