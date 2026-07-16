@@ -1,7 +1,17 @@
 <script lang="ts">
   import "$lib/shared/landing/styles/public-editorial.css";
+  import LandingFooter from "../../landing/components/LandingFooter.svelte";
 
   let { data } = $props();
+
+  // Position-term slugs (from @tka/domain's GLOSSARY keys, see +page.server.ts)
+  // that get a pictograph thumbnail beside their definition. Fixed-size PNGs,
+  // present from first paint — no layout shift.
+  const POSITION_THUMBS: Record<string, { src: string; alt: string }> = {
+    alpha: { src: "/images/position_images/alpha.png", alt: "Alpha position pictograph" },
+    beta: { src: "/images/position_images/beta.png", alt: "Beta position pictograph" },
+    gamma: { src: "/images/position_images/gamma.png", alt: "Gamma position pictograph" },
+  };
 
   const TITLE =
     "Flow Arts Glossary: The Kinetic Alphabet Lexicon | Every Term Defined";
@@ -111,7 +121,8 @@
       <span class="section-kicker">{g.label}</span>
       <dl class="term-list">
         {#each g.terms as t (t.slug)}
-          <div class="term" id={t.slug}>
+          {@const thumb = POSITION_THUMBS[t.slug]}
+          <div class="term" class:has-thumb={thumb} id={t.slug}>
             <dt><dfn class="term-name">{t.term}</dfn></dt>
             <dd class="term-body">
               <p class="term-def">{t.definition}</p>
@@ -131,10 +142,15 @@
               {#if t.related.length}
                 <p class="term-related">
                   Related:
-                  {#each t.related as r, i (r.slug)}<a href={`#${r.slug}`}>{r.term}</a>{#if i < t.related.length - 1}, {/if}{/each}
+                  {#each t.related as r, i (r.slug)}<a href={`#${r.slug}`}>{r.term}</a>{#if i < t.related.length - 1}{", "}{/if}{/each}
                 </p>
               {/if}
             </dd>
+            {#if thumb}
+              <div class="term-thumb">
+                <img src={thumb.src} alt={thumb.alt} width="72" height="72" loading="lazy" />
+              </div>
+            {/if}
           </div>
         {/each}
       </dl>
@@ -152,6 +168,8 @@
     <a href="/roots">Roots</a> · <a href="/guide">Guide</a>
   </p>
 </div>
+
+<LandingFooter showCredit={false} />
 
 <style>
   /* ── category jump nav ── */
@@ -198,6 +216,40 @@
   .term:first-child {
     border-top: none;
   }
+
+  /* Position terms (alpha/beta/gamma) get a fixed-size pictograph thumbnail
+     to the right of the definition. Two-column grid, thumb spans both the
+     dt and dd rows so it sits vertically centered against the term block. */
+  .term.has-thumb {
+    display: grid;
+    grid-template-columns: 1fr 72px;
+    column-gap: 1.25rem;
+    align-items: start;
+  }
+  .term.has-thumb dt,
+  .term.has-thumb dd {
+    grid-column: 1;
+  }
+  .term-thumb {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    width: 72px;
+    height: 72px;
+    flex-shrink: 0;
+    background: #ffffff;
+    border: 1px solid oklch(0.4 0.04 270 / 0.15);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .term-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
   dt {
     margin: 0 0 0.4rem;
   }

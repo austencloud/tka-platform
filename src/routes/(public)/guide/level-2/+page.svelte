@@ -60,15 +60,19 @@
     text-align: center;
   }
 
+  /* The level-2 layout renders on the dark guide scroller background
+     (.guide-layout is oklch(0.13 0.015 270)), so all colors here must be
+     dark-theme values — the old #666/#888/#e5e5e5 set was written for a white
+     page and was near-invisible. */
   .subtitle {
     font-size: 1.2rem;
-    color: #666;
+    color: oklch(0.68 0.02 270);
     margin-bottom: 0.5rem;
   }
 
   .byline {
     font-size: 0.95rem;
-    color: #888;
+    color: oklch(0.58 0.02 270);
     margin-bottom: 2rem;
   }
 
@@ -94,7 +98,8 @@
   .toc a {
     display: block;
     padding: 1rem;
-    border: 1px solid #e5e5e5;
+    background: oklch(0.18 0.02 270 / 0.6);
+    border: 1px solid oklch(0.45 0.04 270 / 0.35);
     border-radius: 8px;
     text-decoration: none;
     color: inherit;
@@ -103,13 +108,13 @@
 
   .toc a:hover {
     border-color: #4ea7e8;
-    box-shadow: 0 2px 8px rgba(78, 167, 232, 0.15);
+    box-shadow: 0 2px 8px rgba(78, 167, 232, 0.25);
   }
 
   .toc span {
     display: block;
     font-size: 0.9rem;
-    color: #666;
+    color: oklch(0.68 0.02 270);
     margin-top: 0.25rem;
   }
 

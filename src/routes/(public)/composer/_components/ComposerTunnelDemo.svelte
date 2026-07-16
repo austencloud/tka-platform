@@ -29,7 +29,7 @@
   import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { ViewerPlaybackState } from "$lib/shared/sequence-viewer/domain/viewer-prop-groups";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import demoJson from "../_data/demo-sequence.json";
+  import demoJson from "$lib/shared/landing/data/demo-sequence.json";
 
   let playing = $state(true);
   let fold = $state(4);

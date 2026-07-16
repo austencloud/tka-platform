@@ -1,5 +1,6 @@
 <script lang="ts">
   import FaqAccordion from "$lib/shared/landing/components/FaqAccordion.svelte";
+  import PositionTrioGrid from "$lib/shared/landing/components/PositionTrioGrid.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   const sections = [
@@ -143,6 +144,7 @@
             <p>{paragraph}</p>
           {/each}
           {#if section.id === "notation"}
+            <PositionTrioGrid />
             <p>
               Want the full breakdown, with the positions rendered live? Read the
               <a href="/notation">notation page</a>.

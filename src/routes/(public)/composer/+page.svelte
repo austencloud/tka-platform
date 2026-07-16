@@ -1,8 +1,12 @@
 <script lang="ts">
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
-  import ComposerHeroDemo from "./_components/ComposerHeroDemo.svelte";
+  import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
   import ComposerGenerateDemo from "./_components/ComposerGenerateDemo.svelte";
+  import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import "$lib/shared/landing/styles/public-editorial.css";
+
+  const heroDemoSequence = demoJson as unknown as SequenceData;
 
   const DESCRIPTION =
     "Flow Arts Composer is a free web app for building flow arts choreography. Construct sequences beat by beat, generate them from parameters, animate them, and share them. Supports staff, fans, clubs, hoops, buugeng, and more.";
@@ -187,7 +191,10 @@
     </p>
   </div>
 
-  <ComposerHeroDemo />
+  <SequenceHeroDemo
+    sequence={heroDemoSequence}
+    note="a rotated LOOP from the generator, animating live"
+  />
 
   <div class="hero-ctas">
     <a href="/create" class="cta-button" data-sveltekit-reload>

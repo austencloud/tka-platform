@@ -1,5 +1,6 @@
 <script lang="ts">
   import "$lib/shared/landing/styles/public-editorial.css";
+  import LandingFooter from "../../../landing/components/LandingFooter.svelte";
 
   const DESCRIPTION =
     "Learn staff choreography with The Kinetic Alphabet: a notation system built for double staves, from your first isolation to written sequences.";
@@ -92,13 +93,13 @@
         momentum making that difficult.
       </p>
       <p>
-        That distinguishes TKA from previous prop systems, in particular from VTG, which
-        was built for momentum-based props and continuous spinning at a continuous rate.
-        TKA says: spin at whatever rate we want, add reversals whenever we want, turn on a
-        dime, hold any prop at any of eight orientations at any of nine points, move
-        between any of them, and categorize every combination therein. It explores a wider
-        space, one that's only accessible to props like staves. That's why we start with
-        staves.
+        That distinguishes TKA from previous prop systems, in particular from
+        <a href="/roots">VTG</a>, which was built for momentum-based props and continuous
+        spinning at a continuous rate. TKA says: spin at whatever rate we want, add
+        reversals whenever we want, turn on a dime, hold any prop at any of eight
+        orientations at any of nine points, move between any of them, and categorize every
+        combination therein. It explores a wider space, one that's only accessible to
+        props like staves. That's why we start with staves.
       </p>
     </div>
   </section>
@@ -147,3 +148,5 @@
     </a>
   </div>
 </div>
+
+<LandingFooter showCredit={false} />

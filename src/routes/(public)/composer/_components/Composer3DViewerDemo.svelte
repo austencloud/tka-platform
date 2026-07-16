@@ -31,7 +31,7 @@
   import { BackgroundType } from "@austencloud/backgrounds";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import demoJson from "../_data/demo-sequence.json";
+  import demoJson from "$lib/shared/landing/data/demo-sequence.json";
 
   // ── contexts (must be set during component init, not onMount) ────────────
   const viewer = createViewer3DState();

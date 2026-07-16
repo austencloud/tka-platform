@@ -93,6 +93,12 @@
             >Every letter of the Kinetic Alphabet, rendered</span
           >
         </a>
+        <a href="/learn/staff-spinning-choreography" class="guide-link">
+          <span class="guide-link-title">Staff Choreography</span>
+          <span class="guide-link-sub"
+            >Why TKA starts with staves, and what your first session looks like</span
+          >
+        </a>
       </div>
     </section>
 

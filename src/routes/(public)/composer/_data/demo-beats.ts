@@ -1,13 +1,14 @@
 /**
  * Derives pictograph demo data for the /composer marketing page from the
- * baked CΨΩX fixture (see demo-sequence.json — one real released rotated LOOP).
+ * baked CΨΩX fixture (see $lib/shared/landing/data/demo-sequence.json — one
+ * real released rotated LOOP).
  *
  * The guide's pictograph components take PictographData; the fixture's steps
  * are StepData with the same motion payloads, so the mapping is a projection.
  */
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-import demoJson from "./demo-sequence.json";
+import demoJson from "$lib/shared/landing/data/demo-sequence.json";
 
 export const DEMO_SEQUENCE = demoJson as unknown as SequenceData;
 

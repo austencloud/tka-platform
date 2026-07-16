@@ -1,7 +1,12 @@
 <script lang="ts">
   import LightsToggleButton from "$lib/shared/ui/components/LightsToggleButton.svelte";
   import PositionTrioGrid from "$lib/shared/landing/components/PositionTrioGrid.svelte";
+  import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
+  import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import "$lib/shared/landing/styles/public-editorial.css";
+
+  const heroDemoSequence = demoJson as unknown as SequenceData;
 
   let positionLightsOn = $state(true);
 
@@ -109,6 +114,8 @@
         generate sequences. Put in your name, generate your name as a sequence, play it
         back, and save it to your own collection.
       </p>
+
+      <SequenceHeroDemo sequence={heroDemoSequence} note="the phone demo, minus the phone" />
     </div>
   </section>
 
@@ -120,6 +127,7 @@
         the basis for this. TKA is the child of VTG in a way, and we pay respects to it by
         taking it further, not by claiming what we're doing is in a completely different
         ballpark. What TKA does has unique properties VTG cannot and would not ever cover.
+        The full lineage, with sources, lives on the <a href="/roots">roots page</a>.
       </p>
     </div>
   </section>

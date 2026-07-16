@@ -176,7 +176,8 @@
 
         <p>
           The result is a visual notation system for static dual wielded props - staff, fans,
-          buugeng, clubs, hoops, and anything you can hold two of.
+          buugeng, clubs, hoops, and anything you can hold two of. The
+          <a href="/notation">notation page</a> shows what that system looks like on the page.
         </p>
       </div>
     </section>

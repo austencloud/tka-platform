@@ -1,9 +1,11 @@
 <!--
-  ComposerHeroDemo
+  SequenceHeroDemo
 
-  The one live embed on the /composer marketing page: a real sequence
-  (CΨΩX, a rotated LOOP pulled from the public library) playing in the
-  standalone InlineAnimationPlayer with minimal chrome.
+  A live sequence embed for public marketing pages: a real SequenceData
+  object playing in the standalone InlineAnimationPlayer with minimal chrome.
+  Originated as /composer's ComposerHeroDemo (hardcoded to the CΨΩX fixture);
+  generalized so any public page can drop in its own sequence + caption note
+  without re-deriving the LazyMount/aspect-ratio/idle-activation plumbing.
 
   The player chunk is heavy (whole animation engine), so it goes through
   LazyMount and only starts importing after hydration hits idle. The stage
@@ -15,9 +17,9 @@
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import demoJson from "../_data/demo-sequence.json";
 
-  const sequence = demoJson as unknown as SequenceData;
+  let { sequence, note }: { sequence: SequenceData; note: string } = $props();
+
   const word = simplifyRepeatedWord(sequence.word);
 
   let active = $state(false);
@@ -50,7 +52,7 @@
   </div>
   <figcaption>
     <span class="tka-font demo-word">{word}</span>
-    <span class="demo-note">a rotated LOOP from the generator, animating live</span>
+    <span class="demo-note">{note}</span>
   </figcaption>
 </figure>
 
