@@ -5,7 +5,6 @@
   import PlayWithItSection from "./landing/components/PlayWithItSection.svelte";
   import GuidesSection from "./landing/components/GuidesSection.svelte";
   import ShopCtaSection from "./landing/components/ShopCtaSection.svelte";
-  import LandingFooter from "./landing/components/LandingFooter.svelte";
   import FaqAccordion from "$lib/shared/landing/components/FaqAccordion.svelte";
 
   onMount(() => {
@@ -183,7 +182,6 @@
         <FaqAccordion emitSchema />
       </div>
     </main>
-    <LandingFooter />
   </div>
 </div>
 

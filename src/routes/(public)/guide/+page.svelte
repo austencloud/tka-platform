@@ -1,8 +1,8 @@
 <!--
   /guide — the Guide hub. A standalone page on the site's live cosmic background
-  (same as the landing), with SiteHeader + LandingFooter chrome. Plain and
-  honest: the guide is being rewritten, here are the old PDFs to download in the
-  meantime, and an announce-me email form.
+  (same as the landing), with SiteHeader + SiteFooter chrome from
+  MarketingChrome. Plain and honest: the guide is being rewritten, here are the
+  old PDFs to download in the meantime, and an announce-me email form.
 
   This is NOT the in-progress guide itself, but it does link out to every
   Level 1 topic page (/guide/level-1/<slug>) so those crawlable, prerendered
@@ -10,7 +10,6 @@
   guide-manifest.ts table of contents.
 -->
 <script lang="ts">
-  import LandingFooter from "../../landing/components/LandingFooter.svelte";
   import GuidesSection from "../../landing/components/GuidesSection.svelte";
   import { joinWaitlist } from "$lib/features/store/services/waitlist";
   import { bodyPagesByGroup, GROUP_TITLES, type GuideGroup } from "./level-1/_data/guide-manifest";
@@ -217,8 +216,6 @@
       </div>
     </section>
   </main>
-
-<LandingFooter showCredit={false} />
 
 <style>
   .guide {

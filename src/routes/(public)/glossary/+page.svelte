@@ -1,6 +1,5 @@
 <script lang="ts">
   import "$lib/shared/landing/styles/public-editorial.css";
-  import LandingFooter from "../../landing/components/LandingFooter.svelte";
 
   let { data } = $props();
 
@@ -168,8 +167,6 @@
     <a href="/roots">Roots</a> · <a href="/guide">Guide</a>
   </p>
 </div>
-
-<LandingFooter showCredit={false} />
 
 <style>
   /* ── category jump nav ── */

@@ -19,6 +19,7 @@
   import { BackgroundType } from "@austencloud/backgrounds";
   import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
   import SiteHeader from "./SiteHeader.svelte";
+  import SiteFooter from "./SiteFooter.svelte";
 
   let { children }: { children: Snippet } = $props();
 
@@ -83,6 +84,11 @@
         {/key}
       {/if}
     </div>
+
+    <!-- Persistent chrome like the header: outside the keyed crossfade, so it
+         never re-fades between pages; below the growing stage, so it pins to
+         the viewport bottom on short pages (sticky-footer flex column). -->
+    <SiteFooter />
   </div>
 </div>
 
@@ -117,13 +123,20 @@
   .mkt-layer {
     position: relative;
     z-index: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   /* Both the outgoing and incoming keyed content share a single grid cell so
-     they crossfade in place instead of stacking and shoving page height. */
+     they crossfade in place instead of stacking and shoving page height.
+     flex: 1 makes the stage absorb spare height so the footer sits at the
+     viewport bottom even on short pages (e.g. /shop/success). */
   .mkt-stage {
     display: grid;
     grid-template-columns: 1fr;
+    flex: 1;
   }
   .mkt-content {
     grid-area: 1 / 1;
