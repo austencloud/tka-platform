@@ -97,4 +97,25 @@
 
   /* Waitlist form visuals live in WaitlistForm.svelte (shared with the
      per-product "not on sale yet" state). */
+
+  /* 4K / ultrawide: one scale step so the gate doesn't read miniature. */
+  @media (min-width: 2200px) {
+    .inner {
+      max-width: 720px;
+    }
+    .eyebrow {
+      font-size: 1.05rem;
+    }
+    h1 {
+      font-size: 3.8rem;
+    }
+    .lede {
+      font-size: 1.4rem;
+      margin-bottom: 36px;
+    }
+    .whats-coming li {
+      font-size: 1.05rem;
+      padding: 12px 20px;
+    }
+  }
 </style>

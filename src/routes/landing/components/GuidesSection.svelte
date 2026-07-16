@@ -226,6 +226,9 @@
     .closing {
       font-size: 1.2rem;
       max-width: 720px;
+      /* .closing's base rule has no auto centring (it never had a max-width
+         before this tier), so pin both here. */
+      margin-inline: auto;
     }
 
     .guide-list {
