@@ -1,7 +1,7 @@
 # TKA Tutorial Voiceover — Agent Handoff
 
 **Purpose:** pick up the TKA tutorial-video voiceover project from any machine.
-**Last updated:** 2026-07-15 · **Status:** scripts complete (1–7, DJ, EK×2, FL); production/editing not started.
+**Last updated:** 2026-07-16 · **Status:** scripts complete (1–7, DJ, EK×2, FL); DRAFT guideline scripts 12–22 added (`Voiceover-Scripts-Next.md`, awaiting Austen's body-knowledge pass); production/editing not started.
 
 ---
 
@@ -34,6 +34,7 @@ verified. What remains is the actual edit/record, plus sourcing/organizing raws.
 | File | What |
 |---|---|
 | `Voiceover-Scripts.md` | The 11 rewritten scripts (reels 1–7, DJ, EK Tog-Opp, EK Split-Opp, FL) |
+| `Voiceover-Scripts-Next.md` | DRAFT guideline scripts 12–22 (G/H/I, Gamma, S/T/U+V, MP/NQ/OR, Type 1 wrap) — MCP-grounded skeletons with `[AUSTEN: ...]` slots for body knowledge; no footage exists for these |
 | `Voiceover-Scripts.html` | Same, as a readable page |
 | `transcripts/` | Verbatim transcripts — final cuts + the mapped RAW sessions |
 | `Master-Video-Index.csv` | All 103 videos under `_THE KINETIC ALPHABET` (paths, dates, sizes) |
@@ -87,12 +88,18 @@ demo footage for every video.
    demo. Beat counts in the script stay in sync with the on-screen demo.
    - **Grid coverage gap:** the finished Grid ending (alpha→beta, alpha→gamma) has
      no matching footage in the existing renders (gamma demos = M–V, never filmed).
-     Shoot those two ~10-sec demos fresh, or trim them.
+     Shoot those two ~10-sec demos fresh, or trim them. Note: draft script 15
+     (Gamma, in `Voiceover-Scripts-Next.md`) opens with the same alpha→gamma demo —
+     shooting for video 15 produces the Grid-gap footage for free.
 2. **Hydrate remaining iCloud raws** (local machine) only if better/longer takes are
    wanted than the finals — otherwise skip.
 3. **Publish the readable page** — `Voiceover-Scripts.html` (a claude.ai artifact
    backend was 500ing during authoring; local file is current).
-4. **Word videos** (future, catalogued in the CSV): 92 clips under `_WORD_VIDEOS`,
+4. **Review the next-series drafts** — `Voiceover-Scripts-Next.md` (added
+   2026-07-16) holds guideline scripts 12–22 completing Type 1. Austen fills the
+   `[AUSTEN: ...]` body-knowledge slots and answers the "Open domain questions"
+   list at the bottom; the conceptual spoken text is already MCP-grounded.
+5. **Word videos** (future, catalogued in the CSV): 92 clips under `_WORD_VIDEOS`,
    buckets `Posted` / `To re-record` / `To repost with pictographs` — not started.
 
 ## Tooling (local machine only — needs the media)
