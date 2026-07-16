@@ -31,8 +31,10 @@
     query?: string;
     activeSlug?: string;
     showSearch?: boolean;
-    /** Fired after any link is activated - the drawer host closes on it. */
-    onNavigate?: (slug: string) => void;
+    /** Fired when any link is activated (term slug or `cat-*` section slug).
+     *  The host owns what happens: reveal the term / drill the category /
+     *  close the drawer. It may preventDefault the anchor jump. */
+    onNavigate?: (slug: string, e: MouseEvent) => void;
   } = $props();
 
   const shown = $derived(groups.reduce((n, g) => n + g.terms.length, 0));
@@ -88,7 +90,7 @@
           class="gnav-heading"
           class:active={groupActive}
           href={`#${g.sectionSlug}`}
-          onclick={() => onNavigate?.(g.sectionSlug)}
+          onclick={(e) => onNavigate?.(g.sectionSlug, e)}
         >
           <span>{g.label}</span>
           <span class="gnav-n">{g.terms.length}</span>
@@ -101,7 +103,7 @@
                 class:active={t.slug === activeSlug}
                 aria-current={t.slug === activeSlug ? "location" : undefined}
                 href={`#${t.slug}`}
-                onclick={() => onNavigate?.(t.slug)}
+                onclick={(e) => onNavigate?.(t.slug, e)}
               >
                 {t.term}
               </a>
