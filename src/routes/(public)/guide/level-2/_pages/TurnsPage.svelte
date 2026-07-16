@@ -1,24 +1,32 @@
 <script lang="ts">
   /**
    * Turns (Shifts) — Level 2 body page 2 (manifest `turns-shifts`), faithful to
-   * old p3. Two teaching strips, each start → halfway → end = combined:
+   * old p3. Two teaching strips, each start → halfway → end = combined, now
+   * REAL pictographs end to end (Phase 3 of the halved-pictograph pipeline —
+   * docs/superpowers/specs/2026-07-14-halved-pictograph-pipeline-design.md §7):
    *
    *   Pro  — static E thumb-in → halfway → static S thumb-out
    *          = PRO e→s with 1 turn, in→out.
    *   Anti — static E thumb-in → halfway → static S thumb-in
    *          = ANTI e→s with 1 turn, in→in.
    *
-   * Every frame renders a bare-grid pictograph overlaid with the red staff+arrow
-   * drawing lifted vector-exact from the source artboard (see lifted-turn-arrows.ts,
-   * page 2). The little end-direction arrows (pro curl, anti zig-zag) are Austen's
-   * own drawings, not the app motion-arrow assets — so they match the guide 1:1.
-   * The combined frame is the click-to-animate target; the animation is built from
-   * the real motion data, independent of the lifted display.
+   * start/end are real single-staff pictographs (red hand only, showArrow=false
+   * — a pose, not a motion). The halfway frame is buildHalvedStep(combined,
+   * 0.5): a real pictograph whose end state IS the midpoint, with the correct
+   * halfway orientation (Phase 1's orientation algebra) and the half-arrow
+   * asset (Phase 2). Both strips here are whole 1-turn shifts, always on the
+   * 45deg lattice, so buildHalvedStep always succeeds; the PoseFrame fallback
+   * exists only to honor the null contract (build-halved-step.ts) and is not
+   * expected to trigger on this page. The combined frame is the real
+   * full-motion pictograph (system arrow) and the click-to-animate target,
+   * built from the same motion data.
    */
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
   import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
   import {
     MotionType,
     MotionColor,
@@ -28,7 +36,8 @@
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import LiftedTurnFrame from "../_components/LiftedTurnFrame.svelte";
+  import type { HalfwayMotion } from "../_data/halfway-pose";
+  import PoseFrame from "../_components/PoseFrame.svelte";
   import { bakeReversals } from "../../level-1/_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../../level-1/_data/guide-data-context";
   import { getGuideActiveStep } from "../../level-1/_data/guide-active-step.svelte";
@@ -44,8 +53,8 @@
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
 
-  // Motion data (used only to build the click-to-animate sequence, never drawn —
-  // the frames are the lifted artboard artwork).
+  // Real single-staff motion data (red hand only) — drives every frame's
+  // pictograph render AND the click-to-animate sequence.
   const redStaff = (
     id: string,
     type: MotionType,
@@ -76,36 +85,56 @@
   });
   const stat = (id: string, loc: GridLocation, ori: Orientation) =>
     redStaff(id, MotionType.STATIC, loc, loc, ori, ori, NOROT);
+  /** Motion → the HalfwayMotion shape poseAt/poseArrow (PoseFrame) expect. */
+  const toHM = (m: ReturnType<typeof redStaff>["motions"]["red"]): HalfwayMotion => ({
+    type: m.motionType,
+    from: m.startLocation,
+    to: m.endLocation,
+    rot: m.rotationDirection,
+    startOri: m.startOrientation,
+    endOri: m.endOrientation,
+    turns: typeof m.turns === "number" ? m.turns : 0,
+  });
 
   type RowDef = {
     y: number;
-    /** lifted-frame key prefix: `${liftBase}_f${col}`. */
-    liftBase: string;
     start: ReturnType<typeof redStaff>;
+    end: ReturnType<typeof redStaff>;
     combined: ReturnType<typeof redStaff>;
     animKey: string;
     word: string;
   };
+  const endOf = (combined: ReturnType<typeof redStaff>) => {
+    const m = combined.motions.red;
+    return stat(`${combined.id}-end`, m.endLocation, m.endOrientation);
+  };
+  const rowDef = (opts: {
+    y: number;
+    start: ReturnType<typeof redStaff>;
+    combined: ReturnType<typeof redStaff>;
+    animKey: string;
+    word: string;
+  }): RowDef => ({ ...opts, end: endOf(opts.combined) });
   const ROWS: RowDef[] = [
-    {
+    rowDef({
       y: 300,
-      liftBase: "p2_s0",
       start: stat("pro-start", E, IN),
       combined: redStaff("pro-full", MotionType.PRO, E, SO_, IN, OUT, CW, 1),
       animKey: "l2t-pro",
       word: "Prospin with a turn",
-    },
-    {
+    }),
+    rowDef({
       y: 560,
-      liftBase: "p2_s1",
       start: stat("anti-start", E, IN),
       combined: redStaff("anti-full", MotionType.ANTI, E, SO_, IN, IN, CCW, 1),
       animKey: "l2t-anti",
       word: "Antispin with a turn",
-    },
+    }),
   ];
 
-  // Reader click-to-animate (combined pictograph plays Start → motion).
+  // Reader click-to-animate (combined pictograph plays Start → motion). Also
+  // doubles as the "full step" buildHalvedStep needs (both hands present —
+  // blue is an invisible placeholder, per the both-required step contract).
   const animStep = (data: ReturnType<typeof redStaff>, stepNumber: number): StepData =>
     ({
       ...data,
@@ -120,6 +149,24 @@
     const [start, ...steps] = [animStep(row.start, 0), animStep(row.combined, 1)];
     return [start!, ...bakeReversals(steps)];
   };
+
+  // Halfway frame: a real pictograph at the midpoint. Precomputed once (this
+  // page's data is static) rather than in the template.
+  const halvedOf = (row: RowDef) => buildHalvedStep(animStep(row.combined, 1), 0.5);
+
+  const PICTO_FLAGS = {
+    showGrid: true,
+    showTKA: false,
+    showPositions: false,
+    showReversals: false,
+    showTnD: false,
+    showElemental: false,
+    showNonRadialPoints: false,
+    showHandPoints: true,
+    darkMode: false,
+    printMode: true,
+    disableTransitions: true,
+  } as const;
 
   // ── Layout (pt) ─────────────────────────────────────────────────────────────
   const COLS = [95, 215, 335, 455];
@@ -223,31 +270,45 @@
   <div class="rule hair" style="left:{20 * S}px; top:{HAIRLINE * S}px; width:{572 * S}px"></div>
 
   {#each ROWS as row, ri (ri)}
-    {#each COLS as col, ci (ci)}
-      {@const key = `${row.liftBase}_f${ci}`}
-      {@const isCombined = ci === COLS.length - 1}
-      {#if isCombined}
-        <div
-          class="mini tka-seq-cell"
-          class:is-hovered={selection?.isHovered(row.animKey)}
-          class:is-selected={selection?.isSelected(row.animKey)}
-          class:guide-step-active={activeStep?.key === row.animKey}
-          style="left:{col * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px"
-        >
-          <LiftedTurnFrame frameKey={key} />
-          <SelectionHit
-            groupId={row.animKey}
-            isGroupStart
-            label={`Animate: ${row.word}`}
-            onselect={() => emitSequence?.({ strip: rowSteps(row), word: row.word, key: row.animKey, propType: "staff" })}
-          />
-        </div>
+    {@const halfPic = halvedOf(row)}
+    <!-- start: real pose, no arrow -->
+    <div class="mini" style="left:{COLS[0]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
+      <PictographContainer pictographData={row.start} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} showArrow={false} {...PICTO_FLAGS} />
+    </div>
+    <!-- halfway: real pictograph via buildHalvedStep, PoseFrame fallback -->
+    <div class="mini" style="left:{COLS[1]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
+      {#if halfPic}
+        <PictographContainer pictographData={halfPic} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} bluePropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
       {:else}
-        <div class="mini" style="left:{col * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
-          <LiftedTurnFrame frameKey={key} />
-        </div>
+        <PoseFrame motion={toHM(row.combined.motions.red)} t={0.5} arrow={{ tStart: 0, tEnd: 0.5 }} />
       {/if}
-    {/each}
+    </div>
+    <!-- end: real pose, no arrow -->
+    <div class="mini" style="left:{COLS[2]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px">
+      <PictographContainer pictographData={row.end} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} showArrow={false} {...PICTO_FLAGS} />
+    </div>
+    <!-- combined: real full-motion pictograph, click-to-animate -->
+    <div
+      class="mini tka-seq-cell"
+      class:is-hovered={selection?.isHovered(row.animKey)}
+      class:is-selected={selection?.isSelected(row.animKey)}
+      class:guide-step-active={activeStep?.key === row.animKey}
+      style="left:{COLS[3]! * S}px; top:{row.y * S}px; width:{SIZE * S}px; height:{SIZE * S}px"
+    >
+      <PictographContainer
+        pictographData={{ ...animStep(row.combined, 1), stepNumber: undefined } as unknown as StepData}
+        gridMode={GridMode.DIAMOND}
+        redPropTypeOverride={PropType.STAFF}
+        bluePropTypeOverride={PropType.STAFF}
+        {...PICTO_FLAGS}
+      />
+      <SelectionHit
+        groupId={row.animKey}
+        isGroupStart
+        label={`Animate: ${row.word}`}
+        onselect={() => emitSequence?.({ strip: rowSteps(row), word: row.word, key: row.animKey, propType: "staff" })}
+      />
+    </div>
   {/each}
 
   {#each FLOW_ARROWS as a (a.x + "-" + a.y)}

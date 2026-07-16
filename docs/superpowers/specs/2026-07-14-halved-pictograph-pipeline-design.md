@@ -290,9 +290,9 @@ This replaces the current `LiftedTurnFrame` (baked staff+arrow on a bare grid �
 - [~] Authored `_half` default-tier pixel nudges (sibling `ArrowPlacer` bucket — do NOT extend the hardcoded `motionTypes` array; swap the orchestrator's `0` baseline for the real lookup) — **plumbing landed.** Sibling `pro_half`/`anti_half`/`dash_half`/`static_half` bucket in `arrow-placer.ts` (staff-root only, v1) + empty `default_diamond_*_half_placements.json` files + orchestrator now calls the real `getDefaultAdjustment` lookup instead of a hardcoded `0`. Empty data → `{0,0}` baseline preserved (verified: regression test asserts final position == unadjusted initial position). Authored pixel values still pending Austen's visual review of `/test/half-arrows`.
 - [ ] `getArrowSvgPath` vs `getArrowPath` live-call-path audit
 
-**Phase 3 — render integration + toggle + guide rewire**
-- [ ] `buildHalvedStep(step, t)`
-- [ ] Thread `showArrow` as a real `PictographContainer` prop
-- [ ] Rewire the 3 turn pages to real pictographs (half + on-lattice quarter → pipeline; thirds/off-lattice → visual `poseArrow`)
-- [ ] Remove `LiftedTurnFrame`; screenshot proof (tiny-bug gone)
-- [ ] Turn-page contract test
+**Phase 3 — render integration + toggle + guide rewire** ✅ CODE COMPLETE (2026-07-16); screenshot proof pending
+- [x] `buildHalvedStep(step, t)` — shipped earlier this phase (`src/lib/shared/animation-engine/services/build-halved-step.ts`); v1 only supports `t=0.5` (the midpoint), the only fraction with a NAMED grid location — see its module doc comment. **Correction to this doc's §7 rewire bullet:** quarters (¼/¾) do NOT route through the pipeline like halves — they have a legal orientation but no legal grid location (a shift's quarter-point sits between the grid's 8 named points), so they render via the new runtime `PoseFrame` visual path, not `buildHalvedStep`.
+- [x] Thread `showArrow` as a real `PictographContainer` prop — already landed (default `true`); used here with `showArrow={false}` on all start/end pose frames.
+- [x] Rewire the 3 turn pages to real pictographs — TurnsPage, TwoTurnsShiftsPage, TwoTurnsDashStaticPage. start/end → real single-staff `PictographContainer` (showArrow=false); halfway (t=0.5, all whole/half-turn shifts here) → `buildHalvedStep` with a `PoseFrame` fallback for the null contract; quarters (dash ¼/¾) and thirds (anti-2turn ⅓/⅔) → new runtime `PoseFrame` component (poseAt + pose-arrow.ts, same visual language LiftedTurnFrame used — a minimal 5-dot grid, not the full app grid); combined → real full-motion pictograph (system arrow), SelectionHit click-to-animate preserved.
+- [x] Remove `LiftedTurnFrame` — deleted (`_components/LiftedTurnFrame.svelte`); `_data/lifted-turn-arrows.ts` and `scripts/extract-half-glyphs.mjs` kept (asset-regeneration path, per spec). Screenshot proof of the tiny-bug fix is the orchestrator's follow-up.
+- [x] Turn-page contract test — `tests/unit/guide-turn-pages-contract.test.ts` (LiftedTurnFrame gone from disk + unreferenced by the 3 pages; each page imports PictographContainer and references buildHalvedStep). 10/10 green.

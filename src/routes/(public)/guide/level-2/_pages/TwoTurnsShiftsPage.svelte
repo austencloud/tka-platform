@@ -2,7 +2,9 @@
   /**
    * 2-Turns (Shifts) — Level 2 body page (manifest `two-turns-shifts`), faithful
    * to the source artboard (level-2.pdf page 22). Two turns = a full 360° added
-   * to a shift. Three strips:
+   * to a shift. Three strips, now REAL pictographs end to end (Phase 3 of the
+   * halved-pictograph pipeline — docs/superpowers/specs/
+   * 2026-07-14-halved-pictograph-pipeline-design.md §7):
    *
    *   Pro (halves)   — start E(in) → halfway pose (45°, out) → end S(in)
    *                    = PRO e→s IN→IN CW turns=2 (in → out → in, 2 switches).
@@ -11,20 +13,27 @@
    *                    "At each third there is a staff end at the center point."
    *   Anti (halves)  — the same anti motion sampled in half (start/halfway/end).
    *
-   * Every frame renders the red staff+arrow drawing lifted vector-exact from that
-   * artboard frame via LiftedTurnFrame (strips p22_s0 / p22_s1 / p22_s2 in
-   * lifted-turn-arrows.ts). The little end-direction arrows — the pro-curl, the
-   * anti zig-zag, the staff-end-at-center thirds — are Austen's own drawings, not
-   * the app motion-arrow assets, so they match the guide 1:1. The combined frame
-   * of each strip is the click-to-animate target; the animation is built from the
-   * real motion data (redStaff), independent of the lifted display.
+   * start/end frames are real single-staff pictographs (red hand only,
+   * showArrow=false). Halfway frames (pro, anti-halves) are
+   * buildHalvedStep(combined, 0.5) — a real pictograph at the midpoint with the
+   * correct halfway orientation (Phase 1) and half-arrow asset (Phase 2); both
+   * are whole 2-turn shifts, always on-lattice, so this always succeeds — the
+   * PoseFrame fallback exists only for the null contract. Thirds (1/3, 2/3) are
+   * NOT pipeline-representable — 60° never lands on the 45deg orientation
+   * lattice, a domain fact, not a gap (see build-halved-step.ts) — so they stay
+   * on the visual-only PoseFrame path (poseAt + Austen's own end-direction
+   * glyphs via pose-arrow.ts), same as the old lifted artwork, just computed
+   * at runtime instead of baked. The combined frame of each strip is the real
+   * full-motion pictograph (system arrow) and the click-to-animate target.
    *
    * Header corner art is the divider mandala facelift.
    */
+  import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";
   import { getSequenceSelection } from "$lib/shared/selection/sequence-selection.svelte";
   import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
   import {
     MotionType,
     MotionColor,
@@ -34,7 +43,8 @@
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import LiftedTurnFrame from "../_components/LiftedTurnFrame.svelte";
+  import type { HalfwayMotion } from "../_data/halfway-pose";
+  import PoseFrame from "../_components/PoseFrame.svelte";
   import { bakeReversals } from "../../level-1/_data/guide-sequence-adapter";
   import { getGuideSequenceClick } from "../../level-1/_data/guide-data-context";
   import { getGuideActiveStep } from "../../level-1/_data/guide-active-step.svelte";
@@ -80,54 +90,24 @@
   });
   const stat = (id: string, loc: GridLocation, ori: Orientation) =>
     redStaff(id, MotionType.STATIC, loc, loc, ori, ori, NOROT);
+  /** Motion → the HalfwayMotion shape poseAt/poseArrow (PoseFrame) expect. */
+  const toHM = (m: ReturnType<typeof redStaff>["motions"]["red"]): HalfwayMotion => ({
+    type: m.motionType,
+    from: m.startLocation,
+    to: m.endLocation,
+    rot: m.rotationDirection,
+    startOri: m.startOrientation,
+    endOri: m.endOrientation,
+    turns: typeof m.turns === "number" ? m.turns : 0,
+  });
 
   const proCombined = redStaff("pro-full", MotionType.PRO, E, SO_, IN, IN, CW, 2);
   const antiCombined = redStaff("anti-full", MotionType.ANTI, E, SO_, IN, OUT, CCW, 2);
   const antiHalfCombined = redStaff("anti-half-full", MotionType.ANTI, E, SO_, IN, IN, CCW, 2);
 
-  // ── Strip model ────────────────────────────────────────────────────────────
-  // Every frame is the lifted artboard drawing (LiftedTurnFrame frameKey =
-  // `${liftBase}_f${index}`). The last frame of a strip is the combined result
-  // and carries an animKey (click-to-animate the real motion).
-  type Frame = { left: number; animKey?: string };
-  type Strip = { y: number; size: number; liftBase: string; frames: Frame[] };
-
-  const proStrip: Strip = {
-    y: 200,
-    size: 100,
-    liftBase: "p22_s0",
-    frames: [{ left: 95 }, { left: 215 }, { left: 335 }, { left: 455, animKey: "l2ts-pro" }],
-  };
-  const antiThirds: Strip = {
-    y: 455,
-    size: 88,
-    liftBase: "p22_s1",
-    frames: [{ left: 30 }, { left: 148 }, { left: 266 }, { left: 384 }, { left: 508, animKey: "l2ts-anti" }],
-  };
-  const antiHalves: Strip = {
-    y: 670,
-    size: 100,
-    liftBase: "p22_s2",
-    frames: [{ left: 95 }, { left: 215 }, { left: 335 }, { left: 455, animKey: "l2ts-antih" }],
-  };
-  const STRIPS = [proStrip, antiThirds, antiHalves];
-
-  // Arrows sit in every inter-frame gap except the last (which gets "="). Each
-  // connector centers in the gap between neighbouring boxes.
-  const connectors = (strip: Strip) => {
-    const out: { x: number; y: number; equals: boolean }[] = [];
-    const midY = strip.y + strip.size / 2;
-    for (let i = 0; i < strip.frames.length - 1; i++) {
-      const rightEdge = strip.frames[i]!.left + strip.size;
-      const nextLeft = strip.frames[i + 1]!.left;
-      out.push({ x: (rightEdge + nextLeft) / 2, y: midY, equals: i === strip.frames.length - 2 });
-    }
-    return out;
-  };
-
-  const ARROW_W = 14.5;
-
-  // ── Click-to-animate (combined pictograph plays Start → motion) ─────────────
+  // ── Click-to-animate (combined pictograph plays Start → motion) — also the
+  // "full step" buildHalvedStep needs (both hands present; blue is an
+  // invisible placeholder, per the both-required step contract). ────────────
   const ANIM = {
     "l2ts-pro": { data: proCombined, word: "Prospin with 2 turns", startLoc: E },
     "l2ts-anti": { data: antiCombined, word: "Antispin with 2 turns", startLoc: E },
@@ -150,6 +130,84 @@
     const [start, ...steps] = [animStep(animKeyStat(key), 0, cfg.startLoc), animStep(cfg.data, 1, cfg.startLoc)];
     return [start!, ...bakeReversals(steps)];
   };
+
+  // ── Strip model ────────────────────────────────────────────────────────────
+  // Every frame carries a `render` mode: a real pose (start/end), a real
+  // halved pictograph (half, PoseFrame fallback), a runtime PoseFrame pose
+  // (pose — off-lattice thirds), or the real full-motion pictograph (combined,
+  // click-to-animate).
+  type FrameRender =
+    | { kind: "start" | "end"; loc: GridLocation; ori: Orientation }
+    | { kind: "half"; combined: ReturnType<typeof redStaff>; half: StepData | null }
+    | { kind: "pose"; motion: HalfwayMotion; t: number; arrowStart: number }
+    | { kind: "combined"; animKey: keyof typeof ANIM };
+  type Frame = { left: number; render: FrameRender };
+  type Strip = { y: number; size: number; frames: Frame[] };
+
+  const halfOf = (combined: ReturnType<typeof redStaff>, startLoc: GridLocation) =>
+    buildHalvedStep(animStep(combined, 1, startLoc), 0.5);
+
+  const proStrip: Strip = {
+    y: 200,
+    size: 100,
+    frames: [
+      { left: 95, render: { kind: "start", loc: E, ori: IN } },
+      { left: 215, render: { kind: "half", combined: proCombined, half: halfOf(proCombined, E) } },
+      { left: 335, render: { kind: "end", loc: SO_, ori: proCombined.motions.red.endOrientation } },
+      { left: 455, render: { kind: "combined", animKey: "l2ts-pro" } },
+    ],
+  };
+  const antiThirds: Strip = {
+    y: 455,
+    size: 88,
+    frames: [
+      { left: 30, render: { kind: "start", loc: E, ori: IN } },
+      { left: 148, render: { kind: "pose", motion: toHM(antiCombined.motions.red), t: 1 / 3, arrowStart: 0 } },
+      { left: 266, render: { kind: "pose", motion: toHM(antiCombined.motions.red), t: 2 / 3, arrowStart: 1 / 3 } },
+      { left: 384, render: { kind: "end", loc: SO_, ori: antiCombined.motions.red.endOrientation } },
+      { left: 508, render: { kind: "combined", animKey: "l2ts-anti" } },
+    ],
+  };
+  const antiHalves: Strip = {
+    y: 670,
+    size: 100,
+    frames: [
+      { left: 95, render: { kind: "start", loc: E, ori: IN } },
+      { left: 215, render: { kind: "half", combined: antiHalfCombined, half: halfOf(antiHalfCombined, E) } },
+      { left: 335, render: { kind: "end", loc: SO_, ori: antiHalfCombined.motions.red.endOrientation } },
+      { left: 455, render: { kind: "combined", animKey: "l2ts-antih" } },
+    ],
+  };
+  const STRIPS = [proStrip, antiThirds, antiHalves];
+
+  // Arrows sit in every inter-frame gap except the last (which gets "="). Each
+  // connector centers in the gap between neighbouring boxes.
+  const connectors = (strip: Strip) => {
+    const out: { x: number; y: number; equals: boolean }[] = [];
+    const midY = strip.y + strip.size / 2;
+    for (let i = 0; i < strip.frames.length - 1; i++) {
+      const rightEdge = strip.frames[i]!.left + strip.size;
+      const nextLeft = strip.frames[i + 1]!.left;
+      out.push({ x: (rightEdge + nextLeft) / 2, y: midY, equals: i === strip.frames.length - 2 });
+    }
+    return out;
+  };
+
+  const ARROW_W = 14.5;
+
+  const PICTO_FLAGS = {
+    showGrid: true,
+    showTKA: false,
+    showPositions: false,
+    showReversals: false,
+    showTnD: false,
+    showElemental: false,
+    showNonRadialPoints: false,
+    showHandPoints: true,
+    darkMode: false,
+    printMode: true,
+    disableTransitions: true,
+  } as const;
 
   // ── Text (pt coords, proof wording verbatim) ────────────────────────────────
   type Para = { y: number; fs: number; lh: number; html: string };
@@ -244,9 +302,9 @@
 
   {#each STRIPS as strip, si (si)}
     {#each strip.frames as frame, fi (fi)}
-      {@const key = `${strip.liftBase}_f${fi}`}
-      {#if frame.animKey}
-        {@const animKey = frame.animKey}
+      {@const r = frame.render}
+      {#if r.kind === "combined"}
+        {@const animKey = r.animKey}
         <div
           class="mini tka-seq-cell"
           class:is-hovered={selection?.isHovered(animKey)}
@@ -254,17 +312,35 @@
           class:guide-step-active={activeStep?.key === animKey}
           style="left:{frame.left * S}px; top:{strip.y * S}px; width:{strip.size * S}px; height:{strip.size * S}px"
         >
-          <LiftedTurnFrame frameKey={key} />
+          <PictographContainer
+            pictographData={{ ...animStep(ANIM[animKey].data, 1, ANIM[animKey].startLoc), stepNumber: undefined } as unknown as StepData}
+            gridMode={GridMode.DIAMOND}
+            redPropTypeOverride={PropType.STAFF}
+            bluePropTypeOverride={PropType.STAFF}
+            {...PICTO_FLAGS}
+          />
           <SelectionHit
             groupId={animKey}
             isGroupStart
-            label={`Animate: ${ANIM[animKey as keyof typeof ANIM].word}`}
-            onselect={() => emitSequence?.({ strip: rowSteps(animKey), word: ANIM[animKey as keyof typeof ANIM].word, key: animKey, propType: "staff" })}
+            label={`Animate: ${ANIM[animKey].word}`}
+            onselect={() => emitSequence?.({ strip: rowSteps(animKey), word: ANIM[animKey].word, key: animKey, propType: "staff" })}
           />
+        </div>
+      {:else if r.kind === "half"}
+        <div class="mini" style="left:{frame.left * S}px; top:{strip.y * S}px; width:{strip.size * S}px; height:{strip.size * S}px">
+          {#if r.half}
+            <PictographContainer pictographData={r.half} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} bluePropTypeOverride={PropType.STAFF} {...PICTO_FLAGS} />
+          {:else}
+            <PoseFrame motion={toHM(r.combined.motions.red)} t={0.5} arrow={{ tStart: 0, tEnd: 0.5 }} />
+          {/if}
+        </div>
+      {:else if r.kind === "pose"}
+        <div class="mini" style="left:{frame.left * S}px; top:{strip.y * S}px; width:{strip.size * S}px; height:{strip.size * S}px">
+          <PoseFrame motion={r.motion} t={r.t} arrow={{ tStart: r.arrowStart, tEnd: r.t }} />
         </div>
       {:else}
         <div class="mini" style="left:{frame.left * S}px; top:{strip.y * S}px; width:{strip.size * S}px; height:{strip.size * S}px">
-          <LiftedTurnFrame frameKey={key} />
+          <PictographContainer pictographData={stat(`p22-${si}-${fi}`, r.loc, r.ori)} gridMode={GridMode.DIAMOND} redPropTypeOverride={PropType.STAFF} showArrow={false} {...PICTO_FLAGS} />
         </div>
       {/if}
     {/each}
