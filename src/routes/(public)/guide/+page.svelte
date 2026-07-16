@@ -4,13 +4,33 @@
   honest: the guide is being rewritten, here are the old PDFs to download in the
   meantime, and an announce-me email form.
 
-  This is NOT the in-progress guide itself. /guide/level-1 and its sub-routes are
-  owned by another agent's rewrite and are deliberately not linked from here yet.
+  This is NOT the in-progress guide itself, but it does link out to every
+  Level 1 topic page (/guide/level-1/<slug>) so those crawlable, prerendered
+  pages aren't orphaned — see the "Level 1" section below, generated from the
+  guide-manifest.ts table of contents.
 -->
 <script lang="ts">
   import LandingFooter from "../../landing/components/LandingFooter.svelte";
   import GuidesSection from "../../landing/components/GuidesSection.svelte";
   import { joinWaitlist } from "$lib/features/store/services/waitlist";
+  import { bodyPagesByGroup, GROUP_TITLES, type GuideGroup } from "./level-1/_data/guide-manifest";
+  import { seoForSlug } from "./level-1/_data/guide-page-seo";
+
+  // Level 1 table of contents: every topic page, grouped the same way the
+  // manifest groups the printed book's TOC (1.0 Positions/Motions, 1.1
+  // Letters, 1.2 Words). Anchor text is the harvested SEO h1 (guide-page-seo.ts),
+  // falling back to the manifest title for entries not yet harvested.
+  type Level1Row = { id: string; label: string; level: 0 | 1 };
+  type Level1Group = { group: GuideGroup; title: string; rows: Level1Row[] };
+  const level1Groups: Level1Group[] = bodyPagesByGroup().map(({ group, entries }) => ({
+    group,
+    title: GROUP_TITLES[group],
+    rows: entries.map(({ entry }) => ({
+      id: entry.id,
+      label: seoForSlug(entry.id, entry.title).h1,
+      level: entry.level,
+    })),
+  }));
 
   // Cosmic background + SiteHeader are provided by the persistent MarketingChrome
   // (root layout) so they survive navigation between marketing pages without a
@@ -44,19 +64,35 @@
 </script>
 
 <svelte:head>
-  <title>Guide | The Kinetic Alphabet</title>
+  <title>Flow Arts Guide | The Kinetic Alphabet</title>
   <meta
     name="description"
-    content="The Kinetic Alphabet guide: a written guide to flow arts notation. Read Level 2 and the Codex now; the full Level 1 rewrite for the web is in progress."
+    content="The Kinetic Alphabet guide: a written guide to flow arts notation. Read Level 1 topic by topic, plus Level 2 and the Codex."
   />
   <link rel="canonical" href="https://tkaflowarts.com/guide" />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://tkaflowarts.com/guide" />
-  <meta property="og:title" content="Guide | The Kinetic Alphabet" />
+  <meta property="og:title" content="Flow Arts Guide | The Kinetic Alphabet" />
   <meta
     property="og:description"
-    content="The Kinetic Alphabet guide: a written guide to flow arts notation. Read Level 2 and the Codex now; the full Level 1 rewrite for the web is in progress."
+    content="The Kinetic Alphabet guide: a written guide to flow arts notation. Read Level 1 topic by topic, plus Level 2 and the Codex."
   />
+  <meta property="og:site_name" content="The Kinetic Alphabet" />
+  <meta property="og:image" content="https://tkaflowarts.com/branding/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="The Kinetic Alphabet" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@tkaflowarts" />
+  <meta name="twitter:creator" content="@tkaflowarts" />
+  <meta name="twitter:title" content="Flow Arts Guide | The Kinetic Alphabet" />
+  <meta
+    name="twitter:description"
+    content="The Kinetic Alphabet guide: a written guide to flow arts notation. Read Level 1 topic by topic, plus Level 2 and the Codex."
+  />
+  <meta name="twitter:image" content="https://tkaflowarts.com/branding/og-image.png" />
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
   <link
@@ -100,6 +136,31 @@
           >
         </a>
       </div>
+    </section>
+
+    <section class="level1-toc" aria-labelledby="level1-toc-heading">
+      <h2 id="level1-toc-heading">Level 1</h2>
+      <p class="note">
+        Every Level 1 topic is already live, page by page, right in the
+        browser:
+      </p>
+      <nav class="level1-groups" aria-label="Level 1 guide contents">
+        {#each level1Groups as g (g.group)}
+          <div class="level1-group">
+            <h3 id={`level1-group-${g.group}`} class="level1-group-h">
+              <span class="level1-group-num">{g.group}</span>
+              <span>{g.title}</span>
+            </h3>
+            <ul class="level1-list" aria-labelledby={`level1-group-${g.group}`}>
+              {#each g.rows as row (row.id)}
+                <li class="level1-row" class:sub={row.level === 1}>
+                  <a href={`/guide/level-1/${row.id}`}>{row.label}</a>
+                </li>
+              {/each}
+            </ul>
+          </div>
+        {/each}
+      </nav>
     </section>
 
     <section class="old-guides" aria-labelledby="old-guides-heading">
@@ -176,10 +237,15 @@
     text-align: center;
   }
   h1 {
-    font-family: "Playfair Display", Georgia, serif;
-    font-weight: 500;
+    /* Brand Fraunces wonky italic — the page-title voice shared across every
+       public page. Section h2s below stay Playfair (h1 vs h2 hierarchy). */
+    font-family: var(--page-title-font, "Fraunces", Georgia, serif);
+    font-style: italic;
+    font-weight: 700;
+    font-variation-settings: "opsz" 144, "wght" 700, "SOFT" 0, "WONK" 1;
     font-size: clamp(2rem, 5vw, 3.2rem);
-    line-height: 1.12;
+    line-height: 1.1;
+    letter-spacing: -0.015em;
     margin: 0;
     color: #fff;
     /* Even out the line lengths so it doesn't break to a ragged "for the web". */
@@ -193,6 +259,72 @@
     color: rgba(236, 233, 245, 0.7);
     /* Balance all three lines so the last one isn't a stray "fully live yet". */
     text-wrap: balance;
+  }
+
+  /* ── Level 1 (links every crawlable topic page, grouped by manifest) ── */
+  .level1-toc {
+    max-width: 920px;
+    margin: 88px auto 0;
+    padding: 0 24px;
+    text-align: center;
+  }
+  .level1-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 32px 40px;
+    margin-top: 32px;
+    text-align: left;
+  }
+  .level1-group-h {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4em;
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    font-family: "Playfair Display", Georgia, serif;
+    font-size: 1.1rem;
+    color: #fff;
+  }
+  .level1-group-num {
+    color: #8b6cff;
+    font-style: italic;
+  }
+  .level1-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .level1-row {
+    line-height: 1.4;
+  }
+  .level1-row.sub {
+    padding-left: 1em;
+  }
+  .level1-row a {
+    display: inline-block;
+    padding: 8px 0;
+    color: rgba(236, 233, 245, 0.78);
+    font-size: 0.95rem;
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, 0.22);
+    text-underline-offset: 3px;
+    transition:
+      color 0.16s ease,
+      text-decoration-color 0.16s ease;
+  }
+  .level1-row.sub a {
+    font-size: 0.88rem;
+    color: rgba(236, 233, 245, 0.62);
+  }
+  .level1-row a:hover {
+    color: #fff;
+    text-decoration-color: #8b6cff;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .level1-row a {
+      transition: none;
+    }
   }
 
   /* ── Old guides ───────────────────────────────────────────────────── */
@@ -427,6 +559,7 @@
       grid-template-areas:
         "hero hero"
         "available notify"
+        "level1 level1"
         "old old"
         "guides guides";
       column-gap: 96px;
@@ -467,6 +600,12 @@
       align-items: center;
       margin-top: 96px;
       padding: 0;
+    }
+    .level1-toc {
+      grid-area: level1;
+      justify-self: center;
+      max-width: 1400px;
+      margin-top: 96px;
     }
     .old-guides {
       grid-area: old;
