@@ -26,6 +26,6 @@ export function setGuideFrame(frame: GuideFrame): void {
   try {
     window.localStorage.setItem(KEY, frame);
   } catch {
-    // private mode / disabled — the choice just won't persist
+    // private mode / disabled - the choice just won't persist
   }
 }

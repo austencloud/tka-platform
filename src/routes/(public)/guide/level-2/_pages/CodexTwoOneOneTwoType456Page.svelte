@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Codex 2/1 + 1/2 — Type 4/5/6 — Level 2 body page 31 (manifest
+   * Codex 2/1 + 1/2 - Type 4/5/6 - Level 2 body page 31 (manifest
    * `codex-21-12-t456`), faithful to old p31. Four quadrants split by a heavy H+V
    * divider, each a Same row (dot above) + Opp row (dot below):
    *   TL Type 4 (Dash) 2/1     TR Type 5 (Dual-Dash) 2/1
@@ -8,7 +8,7 @@
    * Φ/Ψ/α/β use Same/Opp; Λ/Λ-/Γ use dual open/close, labeled o/c and c/o.
    *
    * Accuracy-pass flag: dual-hand open/close combinatorics (o/c vs c/o) and the exact
-   * Same/Opp direction mapping are approximated — confirm vs the artboard.
+   * Same/Opp direction mapping are approximated - confirm vs the artboard.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";

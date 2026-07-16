@@ -16,10 +16,10 @@ const CCW = RotationDirection.COUNTER_CLOCKWISE;
 const CW = RotationDirection.CLOCKWISE;
 const NOROT = RotationDirection.NO_ROTATION;
 
-// Real single-staff pictographs (red hand only) — copied verbatim from
+// Real single-staff pictographs (red hand only) - copied verbatim from
 // _pages/StaffMotionsPage.svelte. The halfway frame (a bare grid with a raw
 // staff-SVG path hand-composited at a mid-motion pose) is sheet-only artwork,
-// not pictograph data, and is intentionally NOT reproduced here — start / end /
+// not pictograph data, and is intentionally NOT reproduced here - start / end /
 // combined are the three REAL system-rendered pictographs per row.
 const redStaff = (
   id: string,
@@ -80,10 +80,10 @@ const ROWS: RowDef[] = [
 const rowItems = (row: RowDef): PictographData[] =>
   [row.start, row.end, row.combined] as unknown as PictographData[];
 
-/** STAFF props, TKA letter glyph off — matching StaffMotionsPage's PICTO_FLAGS (showTKA: false). */
+/** STAFF props, TKA letter glyph off - matching StaffMotionsPage's PICTO_FLAGS (showTKA: false). */
 const RENDER = { propType: PropType.STAFF, showTKA: false } as const;
 
-// Verbatim prose lifted from _pages/StaffMotionsPage.svelte (Austen's words — never AI-written).
+// Verbatim prose lifted from _pages/StaffMotionsPage.svelte (Austen's words - never AI-written).
 export const staffMotionsContent: GuideBlock[] = [
   { kind: "heading", level: 1, text: "Staff Motions" },
 

@@ -10,7 +10,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 
 const { EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 
-// 12 staff pictographs: 3 positions × 4 thumb-orientation columns — copied
+// 12 staff pictographs: 3 positions × 4 thumb-orientation columns - copied
 // verbatim from _pages/StaffPositionsPage.svelte.
 const staticMotion = (color: MotionColor, loc: GridLocation, ori: Orientation) =>
   createMotionData({
@@ -60,13 +60,13 @@ const cell = (row: Row, col: number): StepData =>
 const rowCells = (row: Row): PictographData[] =>
   [0, 1, 2, 3].map((col) => cell(row, col)) as unknown as PictographData[];
 
-/** STAFF props (TKA letter glyph stays on — the default) — matching StaffPositionsPage's PICTO_FLAGS. */
+/** STAFF props (TKA letter glyph stays on - the default) - matching StaffPositionsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF } as const;
 
 // Row glyph height, copied from StaffPositionsPage.svelte's GLYPH_H.
 const GLYPH_H = 26;
 
-// Verbatim prose lifted from _pages/StaffPositionsPage.svelte (Austen's words — never AI-written).
+// Verbatim prose lifted from _pages/StaffPositionsPage.svelte (Austen's words - never AI-written).
 export const staffPositionsContent: GuideBlock[] = [
   { kind: "heading", level: 1, text: "Staff Positions" },
   {

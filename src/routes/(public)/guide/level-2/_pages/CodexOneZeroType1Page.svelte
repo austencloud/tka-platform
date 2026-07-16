@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Codex 1|0 — Type 1 — Level 2 body page 17 (manifest `codex-1-0-t1`), faithful
+   * Codex 1|0 - Type 1 - Level 2 body page 17 (manifest `codex-1-0-t1`), faithful
    * to old p17. Every Type-1 letter (A–V) with a single turn on one hand: `¹` = turn
    * on the high slot, `₁` = turn on the low slot. Pure pro/anti letters have only a
    * `¹`; hybrids (C,F,I,L,O,R) and the quarter-same group (S,T,U,V) carry both.

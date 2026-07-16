@@ -1,20 +1,20 @@
 /**
  * Single source for the Type 3 Cross-Shift Letters SEO doorway (manifest id
  * "lt3-dash-letters"). Prose is lifted VERBATIM from
- * _pages/Type3CrossShiftLettersPage.svelte (Austen's words — never
+ * _pages/Type3CrossShiftLettersPage.svelte (Austen's words - never
  * AI-written); the pictograph construction is a FAITHFUL COPY of that same
  * file's dash+shift derivation (same helpers, same locations/orientations →
  * identical staff pictographs), minus the reader-only wiring (selection,
  * overrides, click-to-animate), the bespoke sheet-only halfway/end frame
  * artwork (a hand-composed bare grid + raw staff SVG at fixed rotation poses
- * — not derived pictograph data), and sheet geometry. See the reflow spec +
+ * - not derived pictograph data), and sheet geometry. See the reflow spec +
  * no-ghostwriting rule.
  *
  * Box labels follow the SOURCE PAGE's dataset-corrected positions (not the
- * old artboard): Σ-/Δ- start at beta, Θ-/Ω- start at alpha — see that file's
+ * old artboard): Σ-/Δ- start at beta, Θ-/Ω- start at alpha - see that file's
  * header comment for the flagged correction. The two breakdown letters (W-,
  * Δ-) are real, distinct pictograph instances chosen for the page's Staff
- * Motions recipe — same letter as a box cell, different start position.
+ * Motions recipe - same letter as a box cell, different start position.
  */
 import type { GuideBlock } from "../guide-content-blocks";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
@@ -37,7 +37,7 @@ const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 const NOROT = RotationDirection.NO_ROTATION;
 
-// ── Motion authoring — copied from Type3CrossShiftLettersPage.svelte ───────
+// ── Motion authoring - copied from Type3CrossShiftLettersPage.svelte ───────
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
 const hpDir = (from: GridLocation, to: GridLocation) => (HP_CW.has(`${from}-${to}`) ? CW : CCW);
 const shift = (color: MotionColor, from: GridLocation, to: GridLocation, anti: boolean, so: Orientation = IN) => {
@@ -141,7 +141,7 @@ const boxGroup = (box: BoxDef, key: string): PictographData[] =>
 
 // ── The two step-by-step breakdown letters (Staff Motions recipe): real
 // Start + combined-letter strips, copied from Type3CrossShiftLettersPage's
-// BREAKDOWNS (only the start/end pose + full-letter data — the halfway
+// BREAKDOWNS (only the start/end pose + full-letter data - the halfway
 // bare-grid/raw-SVG composite is sheet-only artwork, dropped). ─────────────
 type Breakdown = { key: string; name: string; cell: CellDef; startOris: [Orientation, Orientation] };
 const BREAKDOWNS: Breakdown[] = [
@@ -172,11 +172,11 @@ const bdStart = (b: Breakdown): StepData =>
   }) as unknown as StepData;
 
 // Type3CrossShiftLettersPage's PICTO_FLAGS keeps showReversals off, so the
-// strip is used directly — no bakeReversals needed for the display.
+// strip is used directly - no bakeReversals needed for the display.
 const bdStrip = (b: Breakdown): PictographData[] =>
   [bdStart(b), cellStep(b.cell, `${b.key}-full`, 1)] as unknown as PictographData[];
 
-/** STAFF props, TKA letter glyph on — matching Type3CrossShiftLettersPage's PICTO_FLAGS. */
+/** STAFF props, TKA letter glyph on - matching Type3CrossShiftLettersPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF } as const;
 
 export const lt3DashLettersContent: GuideBlock[] = [
@@ -190,10 +190,10 @@ export const lt3DashLettersContent: GuideBlock[] = [
       "<em>A dash symbol in the glyph equals a dash arrow on the graph.</em><br>" +
       "<strong><em>The end position for each Type 2/3 letter remains the same.</em></strong>",
   },
-  { kind: "pictographGroup", items: boxGroup(BOXES[0]!, "t3-a"), flowCols: 2, render: RENDER, caption: "γ→α — W-, X-" },
-  { kind: "pictographGroup", items: boxGroup(BOXES[1]!, "t3-b"), flowCols: 2, render: RENDER, caption: "γ→β — Y-, Z-" },
-  { kind: "pictographGroup", items: boxGroup(BOXES[2]!, "t3-c"), flowCols: 2, render: RENDER, caption: "β→γ — Sig Dash, Del Dash" },
-  { kind: "pictographGroup", items: boxGroup(BOXES[3]!, "t3-d"), flowCols: 2, render: RENDER, caption: "α→γ — The Dash, Om Dash" },
+  { kind: "pictographGroup", items: boxGroup(BOXES[0]!, "t3-a"), flowCols: 2, render: RENDER, caption: "γ→α: W-, X-" },
+  { kind: "pictographGroup", items: boxGroup(BOXES[1]!, "t3-b"), flowCols: 2, render: RENDER, caption: "γ→β: Y-, Z-" },
+  { kind: "pictographGroup", items: boxGroup(BOXES[2]!, "t3-c"), flowCols: 2, render: RENDER, caption: "β→γ: Sig Dash, Del Dash" },
+  { kind: "pictographGroup", items: boxGroup(BOXES[3]!, "t3-d"), flowCols: 2, render: RENDER, caption: "α→γ: The Dash, Om Dash" },
   {
     kind: "prose",
     html:
@@ -205,8 +205,8 @@ export const lt3DashLettersContent: GuideBlock[] = [
     html:
       'Just like we did with hands, let’s break down some <strong style="color:#26e600">Cross</strong><strong style="color:#6F2DA8">-Shifts</strong> step-by-step.',
   },
-  { kind: "pictographGroup", items: bdStrip(BREAKDOWNS[0]!), flowCols: 2, layout: "strip", stepLabels: ["Start", "1"], render: RENDER, caption: "W- — step by step" },
-  { kind: "pictographGroup", items: bdStrip(BREAKDOWNS[1]!), flowCols: 2, layout: "strip", stepLabels: ["Start", "1"], render: RENDER, caption: "Δ- — step by step" },
+  { kind: "pictographGroup", items: bdStrip(BREAKDOWNS[0]!), flowCols: 2, layout: "strip", stepLabels: ["Start", "1"], render: RENDER, caption: "W-: step by step" },
+  { kind: "pictographGroup", items: bdStrip(BREAKDOWNS[1]!), flowCols: 2, layout: "strip", stepLabels: ["Start", "1"], render: RENDER, caption: "Δ-: step by step" },
   {
     kind: "prose",
     html:

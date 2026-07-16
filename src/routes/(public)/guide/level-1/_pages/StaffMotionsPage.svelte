@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Staff Motions — body page 10 (manifest `staff-motions`), faithful to the
+   * Staff Motions - body page 10 (manifest `staff-motions`), faithful to the
    * proof PDF / "1.0 - Layer 1 Staff Motions" artboard.
    *
    * Three teaching rows (Prospin / Antispin / Dash), each: start → [halfway] →
@@ -10,7 +10,7 @@
    *   antispin → static S thumb-in · static E thumb-out · ANTI S→E ccw (arrow)
    *   dash     → static S thumb-in · static N thumb-out · DASH S→N (arrow)
    * End orientations follow the orientation algebra (pro preserves, anti/dash
-   * reverse at 0 turns) — they matched the artboard's "end thumb in/out"
+   * reverse at 0 turns) - they matched the artboard's "end thumb in/out"
    * captions before any tuning.
    *
    * The HALFWAY frame is a mid-motion pose the pictograph system deliberately
@@ -18,12 +18,12 @@
    * bare-grid pictograph (both motions invisible placeholders) + the REAL staff
    * SVG path overlaid with the renderer's own placement recipe
    * (translate(point) rotate(θ) translate(-126.4,-38.9), crossbar = +x at 0°):
-   *   prospin  → SE hand point (576.2,576.2) rotate(225°)  — crossbar at center
-   *   antispin → SE hand point (576.2,576.2) rotate(-45°)  — crossbar NE
-   *   dash     → grid center (475,475) rotate(-90°)        — crossbar up
+   *   prospin  → SE hand point (576.2,576.2) rotate(225°)  - crossbar at center
+   *   antispin → SE hand point (576.2,576.2) rotate(-45°)  - crossbar NE
+   *   dash     → grid center (475,475) rotate(-90°)        - crossbar up
    * Facelift deviation (flagged): the proof drew partial-progress arrows inside
    * halfway/end frames; here frames are clean POSES and the motion arrow lives
-   * only in the combined pictograph — the "=" reads "these poses = this
+   * only in the combined pictograph - the "=" reads "these poses = this
    * pictograph".
    *
    * Geometry off the artboard border scan (20px/pt): 100pt boxes, cols
@@ -52,7 +52,7 @@
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_ } = GridLocation;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -157,7 +157,7 @@
 
   // ── Reader click-to-animate: the combined pictograph plays Start → motion ────
   // with the real staff from the in orientation (the same seam as the Negative
-  // Space strips; blue is an invisible placeholder — both-hands step contract).
+  // Space strips; blue is an invisible placeholder - both-hands step contract).
   const ROW_KEYS = ["sm-pro", "sm-anti", "sm-dash"];
   const ROW_WORDS = ["Prospin", "Antispin", "Dash"];
   const animStep = (data: ReturnType<typeof redStaff>, stepNumber: number): StepData =>
@@ -173,7 +173,7 @@
   const authoredRowSteps = (row: RowDef): StepData[] => [animStep(row.start, 0), animStep(row.combined, 1)];
 
   // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
-  // present, resolved before baking — reversal dots stay derived either way.
+  // present, resolved before baking - reversal dots stay derived either way.
   // Reactive ($derived) so a save/revert/reset re-renders without a refresh.
   const resolvedRowStrip = (row: RowDef, key: string): StepData[] => {
     const authored = authoredRowSteps(row);
@@ -453,7 +453,7 @@
     white-space: nowrap;
     text-align: center;
   }
-  /* Prospin/Antispin side labels — display serif italic (mode-name style). */
+  /* Prospin/Antispin side labels - display serif italic (mode-name style). */
   .run.mode {
     font-family: var(--guide-display);
     font-style: italic;

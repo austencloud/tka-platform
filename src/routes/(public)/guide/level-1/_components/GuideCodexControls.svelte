@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Codex companion controls — rendered inside GuideCompanion when the reader's
+   * Codex companion controls - rendered inside GuideCompanion when the reader's
    * active page is the Codex (spec: 2026-07-10-guide-codex-rebuild-design.md).
    * The Codex PAGE is the printable artifact (see GuideCodexPage.svelte); every
    * control that used to live in an on-page toolbar moves here. All knobs
@@ -11,7 +11,7 @@
    * app (2026-07-11 redesign): the app-wide PropSelectionSheet drawer for prop
    * choice, text-only FilterChipBase toggles for layers, the PropControlPair
    * Blue/Red card pair for turns, and full-width labeled action chips for the
-   * transforms — no bespoke icon rows, no cryptic icon-only segmented control.
+   * transforms - no bespoke icon rows, no cryptic icon-only segmented control.
    */
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import PropControlPair from "$lib/features/create/shared/components/sequence-actions/PropControlPair.svelte";
@@ -30,7 +30,7 @@
 
   let propDrawerOpen = $state(false);
 
-  // Layer toggles — text only. The layer name IS the label; no decorative icon
+  // Layer toggles - text only. The layer name IS the label; no decorative icon
   // (a flame doesn't explain "Glyph", an "A" doesn't explain "TKA").
   const VISIBILITY_CHIPS: { key: keyof GuideCodexVisibility; label: string }[] = [
     { key: "showGlyph", label: "Glyph" },
@@ -168,7 +168,7 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
   }
 
-  /* Prop trigger — a full-width settings row (art + name + chevron) that opens
+  /* Prop trigger - a full-width settings row (art + name + chevron) that opens
      the app-wide PropSelectionSheet drawer, matching Create / Arena. */
   .prop-trigger {
     display: flex;
@@ -219,7 +219,7 @@
     gap: 6px;
   }
 
-  /* Transform actions — three equal chips filling the row (no left-dumped
+  /* Transform actions - three equal chips filling the row (no left-dumped
      icon buttons). */
   .transform-row {
     display: grid;

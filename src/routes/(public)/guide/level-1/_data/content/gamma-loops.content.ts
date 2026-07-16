@@ -14,7 +14,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { bakeReversals } from "../guide-sequence-adapter";
 
-// Verbatim prose lifted from _pages/GammaLoopsPage.svelte (Austen's words — never AI-written);
+// Verbatim prose lifted from _pages/GammaLoopsPage.svelte (Austen's words - never AI-written);
 // pictograph construction is a FAITHFUL COPY of that same file's step authoring (same
 // helpers, same locations/orientations → identical staff pictographs), minus the
 // reader-only wiring (selection, overrides, click-to-animate, sheet geometry).
@@ -69,7 +69,7 @@ type LoopDef = {
 };
 const LOOPS: LoopDef[] = [
   {
-    // SOTR ×2 — both props CW throughout; second half rotated 180°.
+    // SOTR ×2 - both props CW throughout; second half rotated 180°.
     key: "gl-sotr",
     word: "SOTR Rotated",
     steps: [
@@ -84,7 +84,7 @@ const LOOPS: LoopDef[] = [
     ],
   },
   {
-    // VPUQ ×2 — blue CCW / red CW throughout; second half rotated 180°.
+    // VPUQ ×2 - blue CCW / red CW throughout; second half rotated 180°.
     key: "gl-vpuq",
     word: "VPUQ Rotated",
     steps: [
@@ -99,7 +99,7 @@ const LOOPS: LoopDef[] = [
     ],
   },
   {
-    // MVNU ×2 — blue CW / red CCW throughout; second half rotated 180°.
+    // MVNU ×2 - blue CW / red CCW throughout; second half rotated 180°.
     key: "gl-mvnu",
     word: "MVNU Rotated",
     steps: [
@@ -130,7 +130,7 @@ const stepData = (l: LoopDef, i: number): StepData => {
     },
   } as unknown as StepData;
 };
-// Start box: Γ — blue S, red E, thumbs in.
+// Start box: Γ - blue S, red E, thumbs in.
 const startBox = (l: LoopDef): StepData =>
   ({
     id: `${l.key}-0`,
@@ -146,7 +146,7 @@ const startBox = (l: LoopDef): StepData =>
   }) as unknown as StepData;
 
 // Each LOOP's full strip (start + 8 steps), reversal dots derived from the
-// motions themselves via bakeReversals (never hand-authored) — matching
+// motions themselves via bakeReversals (never hand-authored) - matching
 // GammaLoopsPage.svelte's PICTO_FLAGS.showReversals: true. Constant per-hand
 // prop rotation means bakeReversals derives no flags here, matching the artboard.
 const loopStrip = (l: LoopDef): PictographData[] => {
@@ -154,7 +154,7 @@ const loopStrip = (l: LoopDef): PictographData[] => {
   return [authored[0], ...bakeReversals(authored.slice(1))] as unknown as PictographData[];
 };
 
-/** STAFF props with reversal dots — matching GammaLoopsPage's PICTO_FLAGS. */
+/** STAFF props with reversal dots - matching GammaLoopsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF, showReversals: true } as const;
 
 export const gammaLoopsContent: GuideBlock[] = [

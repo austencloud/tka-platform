@@ -1,6 +1,6 @@
 /**
  * Single source for the Base Letters SEO doorway (manifest id "base-letters").
- * Prose is lifted VERBATIM from _pages/BaseLettersPage.svelte (Austen's words —
+ * Prose is lifted VERBATIM from _pages/BaseLettersPage.svelte (Austen's words -
  * never AI-written); the pictograph construction is a FAITHFUL COPY of that same
  * file's letterStep() builder (same enums, locations, orientations → identical
  * staff pictographs), minus the reader-only wiring (selection, overrides,
@@ -26,7 +26,7 @@ const { IN, OUT } = Orientation;
 const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-// ── The six letters, straight from MCP pictograph data — copied from
+// ── The six letters, straight from MCP pictograph data - copied from
 // BaseLettersPage.svelte. Pro keeps the prop with the handpath (CW, in→in);
 // anti counter-rotates (CCW, in→out). Hybrid = blue anti + red pro (proof:
 // right pro, left anti).
@@ -37,7 +37,7 @@ const anti = (from: GridLocation, to: GridLocation): Hand => ({ type: MotionType
 
 type Box = { key: string; cells: Cell[] };
 const BOXES: Box[] = [
-  // A/B/C — α→α Split-Same: blue s→w, red n→e.
+  // A/B/C - α→α Split-Same: blue s→w, red n→e.
   {
     key: "abc",
     cells: [
@@ -46,7 +46,7 @@ const BOXES: Box[] = [
       { letter: Letter.C, name: "C", blue: anti(SO_, W), red: pro(N, E) },
     ],
   },
-  // G/H/I — β→β Tog-Same: both hands e→s.
+  // G/H/I - β→β Tog-Same: both hands e→s.
   {
     key: "ghi",
     cells: [
@@ -91,7 +91,7 @@ const letterStep = (c: Cell, stepNumber: number | null = null): StepData =>
 
 const boxGroup = (bx: Box): PictographData[] => bx.cells.map((c) => letterStep(c)) as unknown as PictographData[];
 
-/** STAFF props, TKA letter glyph on — matching BaseLettersPage's PictographContainer flags. */
+/** STAFF props, TKA letter glyph on - matching BaseLettersPage's PictographContainer flags. */
 const RENDER = { propType: PropType.STAFF } as const;
 
 export const baseLettersContent: GuideBlock[] = [
@@ -113,7 +113,7 @@ export const baseLettersContent: GuideBlock[] = [
     items: boxGroup(BOXES[0]!),
     flowCols: 3,
     render: RENDER,
-    caption: "A · B · C — α→α Split-Same",
+    caption: "A · B · C: α→α Split-Same",
   },
   {
     kind: "prose",
@@ -137,7 +137,7 @@ export const baseLettersContent: GuideBlock[] = [
     items: boxGroup(BOXES[1]!),
     flowCols: 3,
     render: RENDER,
-    caption: "G · H · I — β→β Tog-Same",
+    caption: "G · H · I: β→β Tog-Same",
   },
   {
     kind: "prose",

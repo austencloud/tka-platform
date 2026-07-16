@@ -1,16 +1,16 @@
 <script lang="ts">
   /**
-   * 1|1 — Type 4/5/6 — Level 2 body page 15 (manifest `one-one-t456`), faithful to
+   * 1|1 - Type 4/5/6 - Level 2 body page 15 (manifest `one-one-t456`), faithful to
    * old p16. One-one examples for the dash-family and static types where both hands
    * carry turns=1, so a Same/Opp (or Open/Close for gamma) applies.
    *
-   *   Type 4 (Φ, dash+static):  Phi-Same/Opp One-One — Φ[1] (blue n→n static, red n→s dash).
-   *   Type 5 (Ψ-, dual-dash):   Psi-Dash Same/Opp One-One — Ψ-[1] (both n→s dash).
-   *   Type 6 (Γ, dual-static):  Gamma Opp One-One, Open + Close — γ[0] (blue s→s, red e→e static).
+   *   Type 4 (Φ, dash+static):  Phi-Same/Opp One-One - Φ[1] (blue n→n static, red n→s dash).
+   *   Type 5 (Ψ-, dual-dash):   Psi-Dash Same/Opp One-One - Ψ-[1] (both n→s dash).
+   *   Type 6 (Γ, dual-static):  Gamma Opp One-One, Open + Close - γ[0] (blue s→s, red e→e static).
    *
    * Same = both props rotate the same direction; Opp = opposite. Gamma's two props
    * always rotate oppositely here; Open vs Close is the two ways that opposition
-   * resolves (angle opens vs closes). Glyph "1" high slot blue, low slot red — note
+   * resolves (angle opens vs closes). Glyph "1" high slot blue, low slot red - note
    * this is the reverse of p15's ordering, matching the original artboard. Self-titled
    * (section headers, no GuidePage title). Halfway poses from the engine interpolator.
    */
@@ -153,21 +153,21 @@
   }
 
   const STRIPS: Strip[] = [
-    // Type 4 — Φ (dash+static). Φ[1]: blue n→n static, red n→s dash.
+    // Type 4 - Φ (dash+static). Φ[1]: blue n→n static, red n→s dash.
     makeStrip({ y: 56, letter: "Φ", labelLines: ["“Phi-Same", "One-One”"], labelTopY: 68.1, dot: "same",
       startThumb: "in", endThumb: "mixed", showComb: false, startOri: IN,
       blue: H(STAT, N, N, CW), red: H(DASH, N, SO_, CW) }),
     makeStrip({ y: 166, letter: "Φ", labelLines: ["“Phi-Opp", "One-One”"], labelTopY: 184.4, dot: "opp",
       startThumb: "in", endThumb: "mixed", showComb: false, startOri: IN,
       blue: H(STAT, N, N, CCW), red: H(DASH, N, SO_, CW) }),
-    // Type 5 — Ψ- (dual-dash). Ψ-[1]: both n→s dash.
+    // Type 5 - Ψ- (dual-dash). Ψ-[1]: both n→s dash.
     makeStrip({ y: 316, letter: "Ψ-", labelLines: ["“Psi-Dash", "Same", "One-One”"], labelTopY: 330.2, dot: "same",
       startThumb: "in", endThumb: "mixed", showComb: true, startOri: IN,
       blue: H(DASH, N, SO_, CW), red: H(DASH, N, SO_, CW) }),
     makeStrip({ y: 421, letter: "Ψ-", labelLines: ["“Psi-Dash", "Opp", "One-One”"], labelTopY: 440.1, dot: "opp",
       startThumb: "in", endThumb: "mixed", showComb: true, startOri: IN,
       blue: H(DASH, N, SO_, CCW), red: H(DASH, N, SO_, CW) }),
-    // Type 6 — Γ (dual-static). γ[0]: blue s→s static, red e→e static.
+    // Type 6 - Γ (dual-static). γ[0]: blue s→s static, red e→e static.
     makeStrip({ y: 576, letter: "Γ", labelLines: ["“Gamma", "Opp", "One-One”"], labelTopY: 591.2, tag: "OPEN", tagY: 632.8,
       dot: "opp", startThumb: "out", endThumb: "in", showComb: true, startOri: OUT,
       blue: H(STAT, SO_, SO_, CCW), red: H(STAT, E, E, CW) }),

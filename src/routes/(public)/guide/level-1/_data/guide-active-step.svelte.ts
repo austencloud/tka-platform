@@ -12,7 +12,7 @@ const GUIDE_ACTIVE_STEP_KEY = Symbol("guide-active-step");
  * feeds `highlightedStepIndex` into the choreo card so the active step rings in
  * time with the animation. The reader splits animation and strip across two
  * independent panes (the companion owns its own AnimationPanelState), so that
- * coupling can't fall out for free — this signal reconnects them.
+ * coupling can't fall out for free - this signal reconnects them.
  *
  * `key` scopes the ring to exactly the strip that's playing (every wired page
  * hands up a unique `page-strip` key), so only that one strip rings, never both
@@ -34,7 +34,7 @@ export class GuideActiveStep {
     return this.step < 1 ? 0 : Math.floor(this.step);
   }
 
-  /** A new strip started animating — ring its Start box immediately. */
+  /** A new strip started animating - ring its Start box immediately. */
   begin(key: string): void {
     this.key = key;
     this.step = 0;
@@ -45,7 +45,7 @@ export class GuideActiveStep {
     this.step = step;
   }
 
-  /** Companion closed — clear the ring. */
+  /** Companion closed - clear the ring. */
   clear(): void {
     this.key = null;
     this.step = 0;

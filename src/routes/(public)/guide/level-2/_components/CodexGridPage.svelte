@@ -3,7 +3,7 @@
    * Reusable Level 2 turn-codex page: a portrait-reflowed grid of turn-annotated
    * pictographs under a "turns" header. The original artboards are landscape codex
    * sheets; we keep the 8-column × 4-row structure (preserving the VTG / type
-   * grouping) and scale it to the portrait GuidePage width — the elegant reflow.
+   * grouping) and scale it to the portrait GuidePage width - the elegant reflow.
    * Cells render via PictographContainer with the TKA glyph suppressed; the letter
    * + turn digit is a dark print label below each cell, with an optional Same/Opp
    * dot. Turn arrows and end orientation come baked into `cell.data` (see

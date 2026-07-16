@@ -1,16 +1,16 @@
 <script lang="ts">
   /**
-   * 16-Count Sequences — body page (manifest `sixteen-count`), faithful to
+   * 16-Count Sequences - body page (manifest `sixteen-count`), faithful to
    * "1.2 - 16-count sequences - GΘOZ, EΔQY" artboard (old p40; CAP→LOOP
    * facelift).
    *
    * Two 4-letter words repeated 4 times → 16-count sequences (Start + 4 rows
    * of 4, real staff pictographs):
-   *   GΘOZ — each repetition ends in a β 90° from its start, so 4 repetitions
+   *   GΘOZ - each repetition ends in a β 90° from its start, so 4 repetitions
    *   return home. Rotated + Swapped LOOP. Variations G[6] Θ[15] O[8] Z[1] /
    *   G[4] Θ[6] O[7] Z[10] / G[5] Θ[4] O[6] Z[11] / G[7] Θ[13] O[11] Z[0].
    *   Blue and red props both CCW throughout.
-   *   EΔQY — home after two repetitions; repeats twice more mirrored to fill
+   *   EΔQY - home after two repetitions; repeats twice more mirrored to fill
    *   the remaining quadrants. Rotated + Mirrored + Swapped LOOP. E[6] Δ[7]
    *   Q[5] Y[2] / E[5] Δ[4] Q[6] Y[0] / E[6] Δ[10] Q[7] Y[15] / E[5] Δ[8]
    *   Q[4] Y[12]. Blue CCW, red CW throughout.
@@ -51,7 +51,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -105,7 +105,7 @@
   };
   const SEQS: SeqDef[] = [
     {
-      // GΘOZ ×4 — Rotated + Swapped LOOP; both props CCW throughout.
+      // GΘOZ ×4 - Rotated + Swapped LOOP; both props CCW throughout.
       key: "sc-gtoz",
       word: "GΘOZ ×4",
       rowY: 107.8,
@@ -129,7 +129,7 @@
       ],
     },
     {
-      // EΔQY ×4 — Rotated + Mirrored + Swapped LOOP; blue CCW, red CW.
+      // EΔQY ×4 - Rotated + Mirrored + Swapped LOOP; blue CCW, red CW.
       key: "sc-eqdy",
       word: "EΔQY ×4",
       rowY: 459,

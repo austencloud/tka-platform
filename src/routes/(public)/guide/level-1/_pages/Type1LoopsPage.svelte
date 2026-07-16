@@ -1,32 +1,32 @@
 <script lang="ts">
   /**
-   * Type 1 LOOPs — body page (manifest `misc-permutations`, retitled "Type 1
+   * Type 1 LOOPs - body page (manifest `misc-permutations`, retitled "Type 1
    * LOOPs"), faithful to proof p37 / "1.2 - Type 1 Permutations - DJII, BBLF,
-   * KIEC" artboard ("Type 1 CAPs" — CAP→LOOP facelift).
+   * KIEC" artboard ("Type 1 CAPs" - CAP→LOOP facelift).
    *
    * Three 8-step Type 1 LOOPs (Start + 2 rows of 4, real staff pictographs):
-   *   DJII — from β (both S): D and J are self-mirrored tog-opp shapes, so
+   *   DJII - from β (both S): D and J are self-mirrored tog-opp shapes, so
    *   steps 5-6 repeat 1-2 and only the I steps mirror (W side → E side).
    *   A Mirrored LOOP.
-   *   BBLF — from α (blue S / red N): the anti lap out (BB), hybrid close
+   *   BBLF - from α (blue S / red N): the anti lap out (BB), hybrid close
    *   (L F). The second half is the swap+half-turn-rotation transform of the
    *   first, so the closing L/F trade the colors' roles: step 7 is blue-PRO
    *   n→w + red-ANTI s→w, step 8 continues those motion types home (blue w→s,
-   *   red w→n). Swapped & Rotated. (Corrected 2026-07-10 — the first build
+   *   red w→n). Swapped & Rotated. (Corrected 2026-07-10 - the first build
    *   repeated steps 3-4's roles without the swap; Austen caught it.)
-   *   KIEC — from α (blue W / red E): the second half swaps the colors' roles
+   *   KIEC - from α (blue W / red E): the second half swaps the colors' roles
    *   on both hybrids (I: step 2 blue-pro/red-anti vs step 6 blue-anti/red-pro;
    *   C: step 4 blue-pro/red-anti vs step 8 blue-anti/red-pro). Swapped &
-   *   Mirrored. (Step 2's I corrected 2026-07-10 — first build used the
+   *   Mirrored. (Step 2's I corrected 2026-07-10 - first build used the
    *   blue-anti variation, breaking the swap symmetry and spawning bogus
    *   reversal dots; Austen caught it. Now I[13] per dataset.)
-   * All letters MCP-verified (D/J pro, B/E/K anti, I/L/F/C hybrids — hybrids
+   * All letters MCP-verified (D/J pro, B/E/K anti, I/L/F/C hybrids - hybrids
    * keep their letter under a color swap; L/F re-verified 2026-07-10).
    * Orientations follow the algebra (anti flips, pro keeps).
    * Reversal dots are DERIVED from the motion data via bakeReversals (never
    * hand-authored): DJII flags both hands at step 7 (the mirror point flips
    * both prop directions); BBLF and KIEC flag nothing (constant per-hand
-   * rotation sense the whole loop — KIEC blue CCW / red CW).
+   * rotation sense the whole loop - KIEC blue CCW / red CW).
    *
    * Reader: each LOOP is one clickable strip playing Start + 8 steps.
    *
@@ -61,7 +61,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -113,7 +113,7 @@
   };
   const LOOPS: LoopDef[] = [
     {
-      // DJII ×2 — Mirrored LOOP from β (both S).
+      // DJII ×2 - Mirrored LOOP from β (both S).
       key: "t1l-djii",
       word: "DJII Mirrored",
       startLetter: Letter.BETA,
@@ -132,7 +132,7 @@
       ],
     },
     {
-      // BBLF ×2 — Swapped & Rotated LOOP from α (blue S / red N).
+      // BBLF ×2 - Swapped & Rotated LOOP from α (blue S / red N).
       key: "t1l-bblf",
       word: "BBLF Swapped & Rotated",
       tag: "Swapped & Rotated LOOP",
@@ -152,7 +152,7 @@
       ],
     },
     {
-      // KIEC ×2 — Swapped & Mirrored LOOP from α (blue W / red E); the second
+      // KIEC ×2 - Swapped & Mirrored LOOP from α (blue W / red E); the second
       // half swaps the colors' pro/anti roles (compare steps 4 and 8's C).
       key: "t1l-kiec",
       word: "KIEC Swapped & Mirrored",
@@ -202,10 +202,10 @@
       },
     }) as unknown as StepData;
 
-  // Static authoring — build each LOOP's full strip (start + numbered steps),
+  // Static authoring - build each LOOP's full strip (start + numbered steps),
   // with reversal dots derived from the motions themselves (bakeReversals;
   // never hand-authored). An admin override (guide-overrides.svelte) replaces
-  // the WHOLE strip when present, resolved before baking — reversal dots stay
+  // the WHOLE strip when present, resolved before baking - reversal dots stay
   // derived either way. Reactive ($derived) so a save/revert/reset while the
   // reader is open re-renders these cells without a refresh.
   const resolvedStrip = (l: LoopDef): StepData[] => {
@@ -385,7 +385,7 @@
     letter-spacing: 0.02em;
   }
   /* The word itself renders in the TKA letterforms (still real, selectable
-     text — the webfont). Single-weight font: don't synthesize bold. */
+     text - the webfont). Single-weight font: don't synthesize bold. */
   .margin-word .tka-font {
     font-weight: normal;
     letter-spacing: 0.06em;

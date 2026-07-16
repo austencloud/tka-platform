@@ -1,15 +1,15 @@
 <script lang="ts">
   /**
-   * Mixed Words (ACAC, BCBC) — body page (manifest `examples-acac`), faithful
+   * Mixed Words (ACAC, BCBC) - body page (manifest `examples-acac`), faithful
    * to "1.2 - Guide pt. 3 - ACAC, BCBC" artboard (old p36).
    *
    * Combining a hybrid (C) with a non-hybrid (A or B) forces prop-reversals.
-   * Three 4-step strips (no Start boxes — same convention as ExamplesPage):
-   *   ACAC v1 — the left (blue) hand prop-reverses on every step (R on 2,3,4);
+   * Three 4-step strips (no Start boxes - same convention as ExamplesPage):
+   *   ACAC v1 - the left (blue) hand prop-reverses on every step (R on 2,3,4);
    *   the right hand rides a continuous pro CW path.
-   *   ACAC v2 — reversals alternate left/right (blue R on 2 and 4, red R on 3);
+   *   ACAC v2 - reversals alternate left/right (blue R on 2 and 4, red R on 3);
    *   uses every reversal type: hand (blue path flips at 3), prop, and full.
-   *   BCBC — the right (red) hand prop-reverses on every step (R on 2,3,4);
+   *   BCBC - the right (red) hand prop-reverses on every step (R on 2,3,4);
    *   the left hand stays anti on a continuous CW path.
    * Letters MCP-verified this build (A dual-pro, B dual-anti, C hybrid); the
    * R flags are DERIVED via bakeReversals from the motion data, never authored.
@@ -45,7 +45,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -89,7 +89,7 @@
   type SeqDef = { key: string; word: string; y: number; steps: Step[] };
   const SEQS: SeqDef[] = [
     {
-      // ACAC v1 — blue prop-reverses every step (R derives on 2, 3, 4).
+      // ACAC v1 - blue prop-reverses every step (R derives on 2, 3, 4).
       key: "mw-acac1",
       word: "ACAC (left-hand reversals)",
       y: 132.1,
@@ -101,7 +101,7 @@
       ],
     },
     {
-      // ACAC v2 — reversals alternate left/right (blue R on 2 and 4, red R on
+      // ACAC v2 - reversals alternate left/right (blue R on 2 and 4, red R on
       // 3); blue's handpath also flips at step 3 (hand reversal, no dot).
       key: "mw-acac2",
       word: "ACAC (alternating reversals)",
@@ -114,7 +114,7 @@
       ],
     },
     {
-      // BCBC — red prop-reverses every step (R derives on 2, 3, 4).
+      // BCBC - red prop-reverses every step (R derives on 2, 3, 4).
       key: "mw-bcbc",
       word: "BCBC (right-hand reversals)",
       y: 622.4,

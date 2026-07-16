@@ -1,17 +1,17 @@
 <script lang="ts">
   /**
-   * Gamma LOOPs — body page (manifest `gamma-loops`), faithful to
+   * Gamma LOOPs - body page (manifest `gamma-loops`), faithful to
    * "1.2 - Type 1 Gamma Permutations - SOTR, VPUQ, MVNU" artboard (old p38;
-   * "Rotated CAPs" — CAP→LOOP facelift, lowercase γ).
+   * "Rotated CAPs" - CAP→LOOP facelift, lowercase γ).
    *
    * Three 8-step γ→γ LOOPs (Start + 2 rows of 4, real staff pictographs), each
    * word ending in gamma position on the opposite side, so one repetition
-   * rotated 180° returns home — all three are Rotated LOOPs:
-   *   SOTR — blue & red props ride CW the whole loop. Dataset variations
+   * rotated 180° returns home - all three are Rotated LOOPs:
+   *   SOTR - blue & red props ride CW the whole loop. Dataset variations
    *   S[8] O[14] T[15] R[13] / S[10] O[13] T[12] R[14].
-   *   VPUQ — blue CCW / red CW throughout. V[15] P[3] U[11] Q[5] /
+   *   VPUQ - blue CCW / red CW throughout. V[15] P[3] U[11] Q[5] /
    *   V[12] P[1] U[8] Q[6].
-   *   MVNU — blue CW / red CCW throughout. M[7] V[7] N[0] U[1] /
+   *   MVNU - blue CW / red CCW throughout. M[7] V[7] N[0] U[1] /
    *   M[5] V[5] N[2] U[3].
    * Every step MCP-verified against list_letter_variations this build; constant
    * per-hand prop rotation means bakeReversals derives NO reversal flags,
@@ -50,7 +50,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -101,7 +101,7 @@
   };
   const LOOPS: LoopDef[] = [
     {
-      // SOTR ×2 — both props CW throughout; second half rotated 180°.
+      // SOTR ×2 - both props CW throughout; second half rotated 180°.
       key: "gl-sotr",
       word: "SOTR Rotated",
       rowYs: [130.1, 221.2],
@@ -117,7 +117,7 @@
       ],
     },
     {
-      // VPUQ ×2 — blue CCW / red CW throughout; second half rotated 180°.
+      // VPUQ ×2 - blue CCW / red CW throughout; second half rotated 180°.
       key: "gl-vpuq",
       word: "VPUQ Rotated",
       rowYs: [340.8, 431.9],
@@ -133,7 +133,7 @@
       ],
     },
     {
-      // MVNU ×2 — blue CW / red CCW throughout; second half rotated 180°.
+      // MVNU ×2 - blue CW / red CCW throughout; second half rotated 180°.
       key: "gl-mvnu",
       word: "MVNU Rotated",
       rowYs: [550.8, 642],
@@ -165,7 +165,7 @@
       },
     } as unknown as StepData;
   };
-  // Start box: Γ — blue S, red E, thumbs in.
+  // Start box: Γ - blue S, red E, thumbs in.
   const startBox = (l: LoopDef): StepData =>
     ({
       id: `${l.key}-0`,

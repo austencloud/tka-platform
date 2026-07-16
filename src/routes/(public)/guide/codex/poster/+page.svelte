@@ -1,13 +1,13 @@
 <!--
-  Codex Wall Poster — dev tool (lives under (public)/guide/codex so it inherits
+  Codex Wall Poster - dev tool (lives under (public)/guide/codex so it inherits
   the bare public layout reset; the root app-shell layout would redirect a
   non-module URL via module-state).
 
   v1 of the printable-for-the-wall direction: the Level 1 guide's Double-Staff
   Codex, re-flowed from the guide's two 8.5×11 sheets into ONE tall single sheet
-  you hang on a wall. Reuses the real render wholesale — CodexSheet → CodexBox →
+  you hang on a wall. Reuses the real render wholesale - CodexSheet → CodexBox →
   CodexCell, fed by the same SHEET1/SHEET2 defs the printable guide/codex route
-  uses — so cell content can never drift from the guide. The only new thing here
+  uses - so cell content can never drift from the guide. The only new thing here
   is the tall single-column arrangement + an exact-height print page.
 
   This IS the prod home (/guide/codex/poster); the toolbar is dev-only chrome to
@@ -19,13 +19,13 @@
 
   // The full codex = both guide sheets' types (1–2 then 3–6) stacked into one
   // continuous tall sheet. CodexSheet's `min-height: 11in` is only a floor, so
-  // feeding it every type just grows the sheet taller — no page breaks.
+  // feeding it every type just grows the sheet taller - no page breaks.
   const poster: CodexSheetDef = {
     title: SHEET1.title,
     types: [...SHEET1.types, ...SHEET2.types],
   };
 
-  let zoom = $state(0.5); // preview scale only — does not affect print output
+  let zoom = $state(0.5); // preview scale only - does not affect print output
 
   // Measure the rendered sheet so print produces ONE exact-height tall page
   // instead of a guessed size with trailing whitespace.

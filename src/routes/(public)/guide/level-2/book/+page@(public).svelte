@@ -1,12 +1,12 @@
 <!--
-  Level 2 guide compare — page-by-page proofing, mirroring level-1/book. OLD
+  Level 2 guide compare - page-by-page proofing, mirroring level-1/book. OLD
   v0.5 proof (pdf.js canvases) on the left, the live Level2Document on the
   right, one page per side, Prev/Next stepping both in lockstep. The "Book"
   button flips through the rebuild with StPageFlip.
 
   Offset note: the rebuild keeps the original's page sequence 1:1 (cover +
   33 body pages, back matter parked), so the default offset is 0. Landscape
-  originals are reflowed to portrait in the rebuild — expect intentional layout
+  originals are reflowed to portrait in the rebuild - expect intentional layout
   deltas on those pages (content parity is what's being proofed).
 -->
 <script lang="ts">

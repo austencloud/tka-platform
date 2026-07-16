@@ -1,6 +1,6 @@
 /**
  * Single source for the Words page (manifest id "words"). Prose is lifted
- * VERBATIM from _pages/WordsPage.svelte (Austen's words — never AI-written); the
+ * VERBATIM from _pages/WordsPage.svelte (Austen's words - never AI-written); the
  * pictograph construction is a FAITHFUL COPY of that same file's AABB derivation
  * (same helpers, same locations/orientations → identical staff pictographs),
  * minus the reader-only wiring (selection, overrides, click-to-animate). FlowFrame
@@ -30,7 +30,7 @@ const { IN, OUT } = Orientation;
 const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-// ── AABB: A A around (pro), B B back (anti) — copied from WordsPage.svelte ──
+// ── AABB: A A around (pro), B B back (anti) - copied from WordsPage.svelte ──
 type Leg = { from: GridLocation; to: GridLocation; anti: boolean };
 const BLUE_LEGS: Leg[] = [
   { from: SO_, to: W, anti: false },
@@ -116,12 +116,12 @@ const startBox = (r: RowDef): StepData =>
   }) as unknown as StepData;
 
 // One AABB strip per starting thumb orientation: Start + 4 steps. (WordsPage's
-// PICTO_FLAGS keeps showReversals off, so the strip is used directly — no
+// PICTO_FLAGS keeps showReversals off, so the strip is used directly - no
 // bakeReversals needed for the display.)
 const rowStrip = (r: RowDef): PictographData[] =>
   [startBox(r), ...[0, 1, 2, 3].map((i) => rowStep(r, i))] as unknown as PictographData[];
 
-/** STAFF props, TKA letter glyph on — matching WordsPage's PICTO_FLAGS. */
+/** STAFF props, TKA letter glyph on - matching WordsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF } as const;
 
 /** Step captions above each strip cell: the start box, then the four AABB steps. */
@@ -148,9 +148,9 @@ export const wordsContent: GuideBlock[] = [
       "We’ll use the word AABB as an example. Here are three variations on AABB, starting from<br>" +
       'different thumb orientations. Use staves or <strong><span class="cR">red</span>/<span class="cB">blue</span></strong> pens to follow along.',
   },
-  { kind: "pictographGroup", items: rowStrip(ROWS[0]!), flowCols: 5, layout: "strip", stepLabels: STEP_LABELS, card: true, render: RENDER, caption: "AABB — thumbs in | in" },
-  { kind: "pictographGroup", items: rowStrip(ROWS[1]!), flowCols: 5, layout: "strip", stepLabels: STEP_LABELS, card: true, render: RENDER, caption: "AABB — thumbs out | out" },
-  { kind: "pictographGroup", items: rowStrip(ROWS[2]!), flowCols: 5, layout: "strip", stepLabels: STEP_LABELS, card: true, render: RENDER, caption: "AABB — thumbs in | out" },
+  { kind: "pictographGroup", items: rowStrip(ROWS[0]!), flowCols: 5, layout: "strip", stepLabels: STEP_LABELS, card: true, render: RENDER, caption: "AABB: thumbs in | in" },
+  { kind: "pictographGroup", items: rowStrip(ROWS[1]!), flowCols: 5, layout: "strip", stepLabels: STEP_LABELS, card: true, render: RENDER, caption: "AABB: thumbs out | out" },
+  { kind: "pictographGroup", items: rowStrip(ROWS[2]!), flowCols: 5, layout: "strip", stepLabels: STEP_LABELS, card: true, render: RENDER, caption: "AABB: thumbs in | out" },
   {
     kind: "prose",
     html:

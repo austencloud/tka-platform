@@ -1,8 +1,8 @@
 <script lang="ts">
   /**
-   * Gamma — γ→γ Quarter-Opp / Quarter-Same — body page 5, a faithful rebuild of
+   * Gamma - γ→γ Quarter-Opp / Quarter-Same - body page 5, a faithful rebuild of
    * the proof PDF (level-1-v05.pdf, page 11) in the CURRENT renderer's language.
-   * Nothing on the pictographs is hand-drawn — every adornment is the system's:
+   * Nothing on the pictographs is hand-drawn - every adornment is the system's:
    *
    *   - Hand motion   → real FLOAT motions (author as PRO shift; because both
    *                     props are HAND, PictographPreparer's hand-path mode makes
@@ -19,19 +19,19 @@
    * boxes. The exception is the QO strip's two "antiparallel" cells, where blue
    * and red float along the SAME edge (W→N vs N→W, E→S vs S→E): their arrows
    * collide, and the pipeline separates them only via the letter-gated special-
-   * placement tier — so those two carry letter "P" (both-PRO Quarter-Opp), the
+   * placement tier - so those two carry letter "P" (both-PRO Quarter-Opp), the
    * gamma analogue of the α/β Tog rows' G/H. Every other box stays null.
    *
    * Geometry comes from the proof's own image placements + text runs (extracted
    * from the PDF operator list). Proof strips (pt, top-left origin) were
    *   QO   L90.6 T124   500×100  (Start + 4)
    *   QS   L90   T279.2 500×100  (Start + 4)
-   *   swap L56.2 T512.9 500×200  (5×2 grid — Start,1..4 / _,5..8; box 5 under 1)
+   *   swap L56.2 T512.9 500×200  (5×2 grid - Start,1..4 / _,5..8; box 5 under 1)
    * Text y = baseline − fs (the proof's convention); the row-label glyph line
    * (γ→γ, dropped by the glyph-font extraction) sits 21.7pt above the mode name.
    * The proof page carried NO title; our facelift adds the 48pt calligraphic
    * page title (occupies ~22–70pt). Every y below is the proof value mapped
-   * through fitY(y) = 72 + (y − 30.8)·0.92117 — a gentle ~8% squeeze of the
+   * through fitY(y) = 72 + (y − 30.8)·0.92117 - a gentle ~8% squeeze of the
    * content range [30.8, 745.1] → [72, 730] so the header clears the title and
    * the footer still lands on the page. Values are baked (not applied live) so
    * edit-mode drag stays 1:1.
@@ -66,7 +66,7 @@
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 
   // Golden step ring: which strip cell the companion is currently animating
-  // (null outside the reader — /print + /book render no ring).
+  // (null outside the reader - /print + /book render no ring).
   const activeStep = getGuideActiveStep();
   const selection = getSequenceSelection();
 
@@ -107,7 +107,7 @@
   // letter is null on every box EXCEPT the QO same-edge "antiparallel" cells:
   // there blue and red float along the SAME edge (e.g. W→N vs N→W), so their
   // arrows collide. The arrow pipeline separates them only through the special-
-  // placement tier, which is letter-gated — letter "P" (both-PRO Quarter-Opp,
+  // placement tier, which is letter-gated - letter "P" (both-PRO Quarter-Opp,
   // canonical DiamondPictographDataframe rows 187/188) unlocks P_placements.json's
   // "(fl, fl)" red offset [70,-75] with blue falling to default [30,-30]. No other
   // strip has a same-edge box (QS's one-point lead keeps hands off a shared edge).
@@ -116,7 +116,7 @@
   const c = (m: Move, step: number, letter: Letter | null = null): Cell => ({ m, step, letter });
 
   const STRIPS: Strip[] = [
-    // γ→γ Quarter-Opp — opposite spin, hands 90° apart the whole loop.
+    // γ→γ Quarter-Opp - opposite spin, hands 90° apart the whole loop.
     {
       x: 90.6,
       y: 157.9,
@@ -124,13 +124,13 @@
         [
           c([SO_, SO_, E, E], 0), // Start: blue S, red E
           c([SO_, W, E, N], 1), //  Parallel
-          c([W, N, N, W], 2, Letter.P), //    Antiparallel — same W↔N edge; P separates
+          c([W, N, N, W], 2, Letter.P), //    Antiparallel - same W↔N edge; P separates
           c([N, E, W, SO_], 3), //  Parallel
-          c([E, SO_, SO_, E], 4, Letter.P), // Antiparallel — same E↔S edge; P separates
+          c([E, SO_, SO_, E], 4, Letter.P), // Antiparallel - same E↔S edge; P separates
         ],
       ],
     },
-    // γ→γ Quarter-Same — same spin, red leads blue by one point.
+    // γ→γ Quarter-Same - same spin, red leads blue by one point.
     {
       x: 90,
       y: 300.8,
@@ -144,7 +144,7 @@
         ],
       ],
     },
-    // Switching sequence — alternates QO/QS each count; closes back to Start.
+    // Switching sequence - alternates QO/QS each count; closes back to Start.
     // 5×2 grid: Start,1,2,3,4 on top; _,5,6,7,8 on the bottom (box 5 under box 1).
     {
       x: 56.2,
@@ -390,12 +390,12 @@
     overflow: hidden;
   }
 
-  /* Per-sequence wrapper — carries the shared selection ring (.tka-seq-cell). */
+  /* Per-sequence wrapper - carries the shared selection ring (.tka-seq-cell). */
   .strip-wrap {
     position: absolute;
   }
 
-  /* Centred paragraph blocks — full sheet width, one box per paragraph. */
+  /* Centred paragraph blocks - full sheet width, one box per paragraph. */
   .para {
     position: absolute;
     left: 0;

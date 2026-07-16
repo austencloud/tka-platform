@@ -92,14 +92,14 @@ export function collectEditCoords(): string {
     const txt = [...editedTextIds]
       .map((id) => {
         const e = editables.get(id)?.e;
-        return `  ${id} — ${e?.label ?? "?"}\n    ${JSON.stringify(e?.get() ?? "")}`;
+        return `  ${id}: ${e?.label ?? "?"}\n    ${JSON.stringify(e?.get() ?? "")}`;
       })
       .join("\n");
     prefix.push(`=== EDITED TEXT (make permanent in source) ===\n${txt}`);
   }
   if (deletedIds.size > 0) {
     const del = [...deletedIds]
-      .map((id) => `  ${id} — ${movables.get(id)?.m.label ?? "?"}`)
+      .map((id) => `  ${id}: ${movables.get(id)?.m.label ?? "?"}`)
       .join("\n");
     prefix.push(`=== DELETED (make permanent in source) ===\n${del}`);
   }
@@ -112,7 +112,7 @@ export function select(id: string | null): void {
   guideEdit.selectedLabel = id ? movables.get(id)?.m.label ?? null : null;
 }
 
-/** Live coords of the selected movable — reactive (reads the page $state). */
+/** Live coords of the selected movable - reactive (reads the page $state). */
 export function selectedSnapshot(): number[] | null {
   const id = guideEdit.selectedId;
   if (!id) return null;
@@ -241,7 +241,7 @@ export function ptDrag(node: HTMLElement | SVGElement, movable: Movable) {
   function move(ev: Event) {
     const e = ev as PointerEvent;
     // Total wanted delta from the drag origin (guide-points), so Shift can lock
-    // to one axis and un-Shift mid-drag re-frees the other — both recompute
+    // to one axis and un-Shift mid-drag re-frees the other - both recompute
     // from the origin rather than accumulating capped increments.
     let wantX = (e.clientX - startX) * scale.px;
     let wantY = (e.clientY - startY) * scale.py;
@@ -327,7 +327,7 @@ export function editText(node: HTMLElement, editable: Editable) {
       // Discard: the source value never changed while typing, so re-assigning it
       // is a no-op that won't re-render the contenteditable DOM. Flip through a
       // blank via tick() to force Svelte to re-render the original (this keeps
-      // Svelte's text / {@html} anchors intact — clobbering the DOM would not).
+      // Svelte's text / {@html} anchors intact - clobbering the DOM would not).
       e.set("");
       await tick();
       e.set(original);

@@ -1,26 +1,26 @@
 <script lang="ts">
   /**
-   * 2-Turns (Shifts) — Level 2 body page (manifest `two-turns-shifts`), faithful
+   * 2-Turns (Shifts) - Level 2 body page (manifest `two-turns-shifts`), faithful
    * to the source artboard (level-2.pdf page 22). Two turns = a full 360° added
    * to a shift. Three strips, now REAL pictographs end to end (Phase 3 of the
-   * halved-pictograph pipeline — docs/superpowers/specs/
+   * halved-pictograph pipeline - docs/superpowers/specs/
    * 2026-07-14-halved-pictograph-pipeline-design.md §7):
    *
-   *   Pro (halves)   — start E(in) → halfway pose (45°, out) → end S(in)
+   *   Pro (halves)   - start E(in) → halfway pose (45°, out) → end S(in)
    *                    = PRO e→s IN→IN CW turns=2 (in → out → in, 2 switches).
-   *   Anti (thirds)  — start E(in) → ⅓ pose (out) → ⅔ pose (in) → end S(out)
+   *   Anti (thirds)  - start E(in) → ⅓ pose (out) → ⅔ pose (in) → end S(out)
    *                    = ANTI e→s IN→OUT CCW turns=2 (3 switches, ends out).
    *                    "At each third there is a staff end at the center point."
-   *   Anti (halves)  — the same anti motion sampled in half (start/halfway/end).
+   *   Anti (halves)  - the same anti motion sampled in half (start/halfway/end).
    *
    * start/end frames are real single-staff pictographs (red hand only,
    * showArrow=false). Halfway frames (pro, anti-halves) are
-   * buildHalvedStep(combined, 0.5) — a real pictograph at the midpoint with the
+   * buildHalvedStep(combined, 0.5) - a real pictograph at the midpoint with the
    * correct halfway orientation (Phase 1) and half-arrow asset (Phase 2); both
-   * are whole 2-turn shifts, always on-lattice, so this always succeeds — the
+   * are whole 2-turn shifts, always on-lattice, so this always succeeds - the
    * PoseFrame fallback exists only for the null contract. Thirds (1/3, 2/3) are
-   * NOT pipeline-representable — 60° never lands on the 45deg orientation
-   * lattice, a domain fact, not a gap (see build-halved-step.ts) — so they stay
+   * NOT pipeline-representable - 60° never lands on the 45deg orientation
+   * lattice, a domain fact, not a gap (see build-halved-step.ts) - so they stay
    * on the visual-only PoseFrame path (poseAt + Austen's own end-direction
    * glyphs via pose-arrow.ts), same as the old lifted artwork, just computed
    * at runtime instead of baked. The combined frame of each strip is the real
@@ -105,7 +105,7 @@
   const antiCombined = redStaff("anti-full", MotionType.ANTI, E, SO_, IN, OUT, CCW, 2);
   const antiHalfCombined = redStaff("anti-half-full", MotionType.ANTI, E, SO_, IN, IN, CCW, 2);
 
-  // ── Click-to-animate (combined pictograph plays Start → motion) — also the
+  // ── Click-to-animate (combined pictograph plays Start → motion) - also the
   // "full step" buildHalvedStep needs (both hands present; blue is an
   // invisible placeholder, per the both-required step contract). ────────────
   const ANIM = {
@@ -134,7 +134,7 @@
   // ── Strip model ────────────────────────────────────────────────────────────
   // Every frame carries a `render` mode: a real pose (start/end), a real
   // halved pictograph (half, PoseFrame fallback), a runtime PoseFrame pose
-  // (pose — off-lattice thirds), or the real full-motion pictograph (combined,
+  // (pose - off-lattice thirds), or the real full-motion pictograph (combined,
   // click-to-animate).
   type FrameRender =
     | { kind: "start" | "end"; loc: GridLocation; ori: Orientation }
@@ -274,7 +274,7 @@
     { x: 372, y: 667, fs: 13, style: "cap", t: "in" },
   ];
 
-  // Corner mandala forms (facelift, divider family) — iso left, anti right.
+  // Corner mandala forms (facelift, divider family) - iso left, anti right.
   const m = (mt: string, rd: string, sl: string, el: string, so: string, eo: string) =>
     ({ motionType: mt, rotationDirection: rd, startLocation: sl, endLocation: el, startOrientation: so, endOrientation: eo });
   const mstep = (blue: unknown, red: unknown) => ({ motions: { blue, red } });

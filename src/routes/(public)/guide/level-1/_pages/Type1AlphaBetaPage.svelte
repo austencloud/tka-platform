@@ -1,8 +1,8 @@
 <script lang="ts">
   /**
-   * Type 1 Dual-Shifts (Alpha, Beta) — body page 4, a faithful reproduction of
+   * Type 1 Dual-Shifts (Alpha, Beta) - body page 4, a faithful reproduction of
    * the proof PDF (level-1-v05.pdf, page 10) rebuilt in the CURRENT renderer's
-   * own language. Nothing on the pictographs is hand-drawn — every adornment is
+   * own language. Nothing on the pictographs is hand-drawn - every adornment is
    * the system's:
    *
    *   - Hand motion   → real FLOAT motions (Level 1's base motion), so the
@@ -48,7 +48,7 @@
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 
   // Golden step ring: which strip cell the companion is currently animating
-  // (null outside the reader — /print + /book render no ring).
+  // (null outside the reader - /print + /book render no ring).
   const activeStep = getGuideActiveStep();
   const selection = getSequenceSelection();
 
@@ -56,7 +56,7 @@
   // A hand that moves is authored as a PRO shift; because both props are HAND,
   // PictographPreparer's hand-path mode converts it to a FLOAT ("fl", handPath
   // derived from the locations) and the arrow pipeline renders the system float
-  // arrow along the path — the same route the app itself takes for hand
+  // arrow along the path - the same route the app itself takes for hand
   // pictographs. A hand that stays is STATIC (no arrow). Positions derive from
   // the location pairs, the elemental from the motions, numbers from stepNumber.
   const motion = (color: MotionColor, from: GridLocation, to: GridLocation) =>
@@ -70,7 +70,7 @@
     });
 
   // [blueFrom, blueTo, redFrom, redTo]; start boxes hold (from === to).
-  // The letter keys the special-placement tier — G's per-color "(fl, fl)"
+  // The letter keys the special-placement tier - G's per-color "(fl, fl)"
   // adjustments are what separate the Tog rows' same-path float arrows.
   // MCP-confirmed: A = α→α, G = β→β, D = β→α, J = α→β (all Type 1 dual-pro).
   type Move = [GridLocation, GridLocation, GridLocation, GridLocation];
@@ -199,7 +199,7 @@
   ]);
 
   // Left row labels at the proof's own coordinates: the α→α / β→β glyph lines
-  // (dropped by the text extraction — glyph font) over the italic mode names.
+  // (dropped by the text extraction - glyph font) over the italic mode names.
   // `pos` renders the real TKA start→end PositionGlyph instead of Greek text.
   type Label = {
     x: number;
@@ -227,7 +227,7 @@
     strip.moves.map((m, i) => box(m, i, strip.letters[i] ?? null));
 
   // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
-  // present, resolved before baking — reversal dots stay derived either way.
+  // present, resolved before baking - reversal dots stay derived either way.
   // Reactive ($derived) so a save/revert/reset re-renders without a refresh.
   const resolvedStripSteps = (strip: Strip, key: string): StepData[] => {
     const authored = authoredStripSteps(strip);
@@ -352,7 +352,7 @@
     border-left: 1px solid #c4c4cc;
   }
 
-  /* Centred paragraph blocks — full sheet width, one box per paragraph. */
+  /* Centred paragraph blocks - full sheet width, one box per paragraph. */
   .para {
     position: absolute;
     left: 0;
@@ -373,7 +373,7 @@
     font-weight: 700;
   }
 
-  /* Left row labels — bold glyph line over italic mode name, centred in their
+  /* Left row labels - bold glyph line over italic mode name, centred in their
      own column like the proof. */
   .label {
     position: absolute;

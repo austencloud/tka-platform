@@ -1,5 +1,5 @@
 /**
- * Reader nav rows — the manifest, flattened for the GuideReader's left nav.
+ * Reader nav rows - the manifest, flattened for the GuideReader's left nav.
  *
  * GuideDocument renders 5 unnumbered front-matter pages (cover, drink, support,
  * readme, toc) before body page 0, so a body entry at 1-based manifest position
@@ -20,7 +20,7 @@ export const FRONT_MATTER_COUNT = 5;
 
 export type ReaderNavRow =
   // `group` is widened to string so the Level-2 nav builder (groups "2.0"/"2.1")
-  // can produce the SAME row shape GuidePageNav consumes — the nav renderer never
+  // can produce the SAME row shape GuidePageNav consumes - the nav renderer never
   // reads `group` off a page row, only the group-header title.
   | { kind: "front"; index: number; title: string }
   | { kind: "group"; group: GuideGroup | string; title: string }

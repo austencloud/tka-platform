@@ -14,7 +14,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { bakeReversals } from "../guide-sequence-adapter";
 
-// Verbatim prose lifted from _pages/EightLetterWordsPage.svelte (Austen's words — never AI-written).
+// Verbatim prose lifted from _pages/EightLetterWordsPage.svelte (Austen's words - never AI-written).
 // Pictograph construction is a FAITHFUL COPY of that same file's step authoring (same
 // helpers, same locations/orientations → identical staff pictographs), minus the
 // reader-only wiring (selection, overrides, click-to-animate, sheet geometry).
@@ -78,7 +78,7 @@ type SeqDef = {
 };
 const SEQS: SeqDef[] = [
   {
-    // IIΩXKEΣY ×2 — Rotated LOOP; blue CCW, red CW throughout.
+    // IIΩXKEΣY ×2 - Rotated LOOP; blue CCW, red CW throughout.
     key: "el-iixksy",
     word: "IIΩXKEΣY",
     tag: "Rotated LOOP",
@@ -105,9 +105,9 @@ const SEQS: SeqDef[] = [
     ],
   },
   {
-    // CΣNZIΘUW ×2 — Mirrored + Swapped LOOP; blue prop CCW and red CW the
+    // CΣNZIΘUW ×2 - Mirrored + Swapped LOOP; blue prop CCW and red CW the
     // whole way (fully continuous, no reversals). The margin letter is U,
-    // not V — U[8]/U[5] are the dataset steps that keep both hands
+    // not V - U[8]/U[5] are the dataset steps that keep both hands
     // continuous (V has no variation pairing these paths).
     key: "el-csnzvw",
     word: "CΣNZIΘUW",
@@ -166,14 +166,14 @@ const startBox = (q: SeqDef): StepData =>
   }) as unknown as StepData;
 
 // Start + 16 steps, reversal dots derived from the motions themselves
-// (bakeReversals; never hand-authored) — matching PICTO_FLAGS.showReversals
+// (bakeReversals; never hand-authored) - matching PICTO_FLAGS.showReversals
 // on the source page.
 const strip = (q: SeqDef): PictographData[] => {
   const authored = [startBox(q), ...q.steps.map((_, i) => stepData(q, i))];
   return [authored[0]!, ...bakeReversals(authored.slice(1))] as unknown as PictographData[];
 };
 
-/** STAFF props with reversal dots — matching EightLetterWordsPage's PICTO_FLAGS. */
+/** STAFF props with reversal dots - matching EightLetterWordsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF, showReversals: true } as const;
 
 export const eightLetterWordsContent: GuideBlock[] = [

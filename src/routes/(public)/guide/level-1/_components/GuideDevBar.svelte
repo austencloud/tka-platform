@@ -2,12 +2,12 @@
   /**
    * The print route's ONE piece of dev chrome: a fixed top-right toolbar with
    * every viewing toggle, so there is a single place to look at the guide
-   * during development — no ?edit / ?theme URL juggling, no separate screens.
+   * during development - no ?edit / ?theme URL juggling, no separate screens.
    *
-   *   ✎ Edit        — drag-edit mode on/off (same state as the E hotkey);
+   *   ✎ Edit        - drag-edit mode on/off (same state as the E hotkey);
    *                   while on, the contextual coords panel appears bottom-center
-   *   Page numbers  — recto/verso footer numbers on/off
-   *   Cover         — navy (foil) ↔ home (ink-cheap) edition
+   *   Page numbers  - recto/verso footer numbers on/off
+   *   Cover         - navy (foil) ↔ home (ink-cheap) edition
    *
    * Screen-only; hidden in the printout.
    */

@@ -1,12 +1,12 @@
 <script lang="ts">
   /**
-   * Type 6 — Static — Level 2 body page 12 (manifest `t6-static`), faithful to old
+   * Type 6 - Static - Level 2 body page 12 (manifest `t6-static`), faithful to old
    * p13. Type 6 letters keep both hands static; matching type means the single turn
    * goes in the high slot by default. Two sections:
    *
-   *   α¹ "Alpha-One"      — one strip (α variation [0]: blue w→w / red e→e static),
+   *   α¹ "Alpha-One"      - one strip (α variation [0]: blue w→w / red e→e static),
    *                         1 turn on one static hand (red). No opening/closing (alpha).
-   *   Γ¹ opening/closing  — Γ is a gamma static, so it uses opening/closing with a
+   *   Γ¹ opening/closing  - Γ is a gamma static, so it uses opening/closing with a
    *                         Continuation column. Both static (blue@S, red@W); 1 turn on
    *                         the red hand. cw = opening→W (alpha), ccw = closing→Y (beta).
    *
@@ -157,13 +157,13 @@
   const PRO = (from: GridLocation, to: GridLocation, rot: RotationDirection): Cont => ({ type: MotionType.PRO, from, to, rot });
 
   const STRIPS: Strip[] = [
-    // α section — both static (blue@W, red@E, alpha); 1 turn on the red hand.
+    // α section - both static (blue@W, red@E, alpha); 1 turn on the red hand.
     makeStrip({
       y: 289, letter: "α", label: "“Alpha-One”", labelY: 327, opcl: null, captions: true,
       endThumb: "in", cols: WIDE, contLetter: null,
       blue: SH(W, 0, NOROT), red: SH(E, 1, CW),
     }),
-    // Γ section — both static at gamma (blue@S, red@W); 1 turn on the red hand.
+    // Γ section - both static at gamma (blue@S, red@W); 1 turn on the red hand.
     makeStrip({
       y: 509, letter: "Γ", label: "“Gamma-One”", labelY: 549, opcl: "OPEN", captions: true,
       endThumb: "in", cols: NARROW, contLetter: "W",

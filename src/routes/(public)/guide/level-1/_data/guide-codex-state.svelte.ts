@@ -1,9 +1,9 @@
 /**
- * Guide Codex live state — the shared reactive source of truth for the
+ * Guide Codex live state - the shared reactive source of truth for the
  * interactive Codex reader page (GuideCodexPage.svelte) and its companion
  * controls (GuideCodexControls.svelte). The PAGE renders the printable sheet
  * from this state; the COMPANION's controls mutate it. Neither owns the
- * other — both read/write the same module-level singleton (the factory +
+ * other - both read/write the same module-level singleton (the factory +
  * context-free singleton pattern this codebase uses for durable client state).
  *
  * Three knobs, same semantics as the old Learn-tab CodexExplorer:
@@ -49,7 +49,7 @@ function idsOf(sheet: CodexSheetDef): string[] {
   return ids;
 }
 
-/** Every cell id across both printed sheets — the transform's working set. */
+/** Every cell id across both printed sheets - the transform's working set. */
 const ALL_CELL_IDS: string[] = [...idsOf(SHEET1), ...idsOf(SHEET2)];
 
 function baselineMap(): Map<string, PictographData> {
@@ -74,7 +74,7 @@ function withPropType(p: PictographData, type: PropType): PictographData {
   };
 }
 
-/** Set each hand's turn count (SETTING, not adding — the canonical option-picker
+/** Set each hand's turn count (SETTING, not adding - the canonical option-picker
  *  path recomputes rotation + end orientation). Spin direction only matters for
  *  dash/static hands carrying turns; CW matches the option picker's default. */
 function withTurns(p: PictographData, blueTurns: GuideCodexTurns, redTurns: GuideCodexTurns): PictographData {
@@ -98,7 +98,7 @@ class GuideCodexState {
    *  transform). Shared here because the codex spans two reader pages: the
    *  page whose sheet contains the cell re-emits the animation strip whenever
    *  this selection OR anything dataFor() reads (turns/prop/transform)
-   *  changes — so a turn adjustment restyles the playing animation live, not
+   *  changes - so a turn adjustment restyles the playing animation live, not
    *  just the static cells (see CodexPageBody's emit effect). */
   selectedCellId = $state<string | null>(null);
 
@@ -115,7 +115,7 @@ class GuideCodexState {
       this.blueTurns = prefs.blueTurns;
       this.redTurns = prefs.redTurns;
     } catch {
-      // private mode / quota — fall back to defaults, not worth surfacing
+      // private mode / quota - fall back to defaults, not worth surfacing
     }
   }
 
@@ -159,7 +159,7 @@ class GuideCodexState {
     this.#persist();
   }
 
-  /** Rotate/mirror/color-swap the WHOLE codex — composes across repeated calls. */
+  /** Rotate/mirror/color-swap the WHOLE codex - composes across repeated calls. */
   applyTransform(op: CodexTransformOp): void {
     const base = this.#transformed ?? baselineMap();
     const ids = [...base.keys()];
@@ -184,7 +184,7 @@ class GuideCodexState {
   }
 
   /** Resolved pictograph for a cell id: transformed data if a transform has
-   *  been applied, else the baseline dataset — always with the selected prop
+   *  been applied, else the baseline dataset - always with the selected prop
    *  family applied. Returns null for an unknown id. */
   dataFor(id: string): PictographData | null {
     const base = this.#transformed?.get(id) ?? codexData(id);

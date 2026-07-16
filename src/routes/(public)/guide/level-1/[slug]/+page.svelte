@@ -4,7 +4,7 @@
    * (GuideSeo + the flow reading column with Austen's prose and every
    * pictograph's describePictograph aria-label) that hydrates into the full
    * per-topic reader (sheet⇄flow switcher, companion, prev/next nav). One
-   * surface — no doorway, no funnel. Spec:
+   * surface - no doorway, no funnel. Spec:
    * 2026-07-14-guide-crawlable-paginated-reader-design.md.
    */
   import GuideSeo from "../_components/GuideSeo.svelte";

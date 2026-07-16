@@ -1,18 +1,18 @@
 /**
- * Guide sequence overrides — Firestore-backed edit layer for the Level 1 guide
+ * Guide sequence overrides - Firestore-backed edit layer for the Level 1 guide
  * (Guide Companion v2, P1). Lets an admin replace a broken guide strip's steps
  * from any device; the edit persists for every reader after refresh. Never
  * hand-authors reversal dots (bakeReversals still derives those at the page
- * seam) — this module only owns the step DATA.
+ * seam) - this module only owns the step DATA.
  *
  * Firestore shape:
  *   guideOverrides/{stripKey}            { steps, word?, updatedAt, updatedBy }
  *   guideOverrides/{stripKey}/revisions/{autoId}
  *                                        { steps: StepData[] | null, word, savedAt }
- *   (steps: null on a revision = the "authored" pseudo-revision — canonical
+ *   (steps: null on a revision = the "authored" pseudo-revision - canonical
  *   code literal, popped back to by revertOverride when it's the last one.)
  *
- * Rules: public read (the guide is public), admin-only write — see
+ * Rules: public read (the guide is public), admin-only write - see
  * firestore.rules `guideOverrides/{stripKey}`.
  *
  * Module-level singleton (this codebase's state-factory convention): one
@@ -56,7 +56,7 @@ class GuideOverridesState {
 
 const state = new GuideOverridesState();
 
-/** Strip a StepData[] down to plain JSON — Firestore rejects class instances /
+/** Strip a StepData[] down to plain JSON - Firestore rejects class instances /
  *  functions / undefined; round-tripping through JSON also proves the shape is
  *  serializable (the same guarantee the unit test asserts). */
 function serializeSteps(steps: StepData[]): unknown[] {
@@ -68,7 +68,7 @@ function deserializeSteps(raw: unknown): StepData[] {
   return raw as StepData[];
 }
 
-/** Admin gate for every mutating call — mirrors SequenceViewerShell's
+/** Admin gate for every mutating call - mirrors SequenceViewerShell's
  *  `authState.isAdmin` check (grepped: `.claude/rules` guide-overrides task). */
 export function canEditGuide(): boolean {
   return authIsAdmin();
@@ -98,7 +98,7 @@ export function hasRevisionsCached(key: string): boolean {
 
 // ── Load ──────────────────────────────────────────────────────────────────
 
-/** One collection read; safe to call from multiple hosts (reader/print/book) —
+/** One collection read; safe to call from multiple hosts (reader/print/book) -
  *  re-entrant while a load is already in flight. */
 export async function loadOverrides(): Promise<Map<string, StepData[]>> {
   if (state.loading) return state.map;
@@ -149,7 +149,7 @@ async function snapshotRevision(key: string): Promise<void> {
   await pruneRevisions(key);
 }
 
-/** Cap ~20 revisions per strip — client-side prune, oldest first. */
+/** Cap ~20 revisions per strip - client-side prune, oldest first. */
 async function pruneRevisions(key: string): Promise<void> {
   const db = await getFirestoreInstance();
   const revisionsRef = collection(db, OVERRIDES_COLLECTION, key, REVISIONS_SUBCOLLECTION);
@@ -237,7 +237,7 @@ export async function revertOverride(key: string): Promise<boolean> {
   return true;
 }
 
-/** Deletes the override doc outright — canonical authored steps show again.
+/** Deletes the override doc outright - canonical authored steps show again.
  *  Revision history is left intact (Reset is not itself undo-able, but nothing
  *  is destroyed by it). */
 export async function resetOverride(key: string): Promise<void> {

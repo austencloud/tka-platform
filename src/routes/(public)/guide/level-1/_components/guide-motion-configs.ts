@@ -10,7 +10,7 @@
  *
  * `buildGuideMotionSequence` is the shared builder (extracted from the old
  * GuideMotionDemo.svelte). Only the bake route and the dev write endpoint
- * import this module — the runtime guide page imports nothing from here.
+ * import this module - the runtime guide page imports nothing from here.
  */
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
@@ -37,7 +37,7 @@ export interface GuideMotionConfig {
   label: string;
   red: GuideMotionLeg;
   blue?: GuideMotionLeg;
-  /** Renderer visibility flag — threaded into `renderScene`'s `visibility.blueMotionVisible`
+  /** Renderer visibility flag - threaded into `renderScene`'s `visibility.blueMotionVisible`
    *  by the bake helper. NOT reflected in the `SequenceData` output of `buildGuideMotionSequence`
    *  (the blue motion is always present in the data; this flag controls whether it is drawn). */
   showBlue: boolean;
@@ -87,7 +87,7 @@ export const GUIDE_MOTION_CONFIGS: GuideMotionConfig[] = [
   {
     // Genuine beta->beta (Together-Same). Both hands start together at east,
     // shift together to south. Canonical letter G (beta3->beta5), MCP-verified.
-    // (Previously red S->E / blue S->W, which ends APART at alpha — wrong.)
+    // (Previously red S->E / blue S->W, which ends APART at alpha - wrong.)
     id: "t1-together-same",
     label: "Dual-shift: both hands shift together from east to south, beta to beta",
     showBlue: true,
@@ -120,7 +120,7 @@ export const GUIDE_MOTION_CONFIGS: GuideMotionConfig[] = [
   {
     // Genuine gamma opposite-direction (Quarter-Opp): hands cross gamma halves.
     // Canonical letter M (gamma3->gamma13), MCP-verified: blue N->W, red E->S.
-    // (Previously stayed within one gamma half = same-direction — wrong.)
+    // (Previously stayed within one gamma half = same-direction - wrong.)
     id: "t1-gamma-opposite",
     label: "Dual-shift at gamma, hands moving in opposite directions",
     showBlue: true,
@@ -287,13 +287,13 @@ export function buildGuideMotionSequence(config: GuideMotionConfig): SequenceDat
 /**
  * Static-pictograph form of a motion demo, for print (and any non-animated
  * context). The motion's single step IS a pictograph: blue + red MotionData with
- * start/end/type, where the arrow encodes direction and the hand the end point —
+ * start/end/type, where the arrow encodes direction and the hand the end point -
  * exactly how the original printed guide drew motions. Reuses `makeMotion` so the
  * geometry can never drift from the baked video.
  */
 export function configToPictographData(config: GuideMotionConfig): PictographData {
   const { red, blue } = config;
-  // Single-hand demos set showBlue: false — only the moving (red) hand is drawn,
+  // Single-hand demos set showBlue: false - only the moving (red) hand is drawn,
   // matching the original printed guide. Omitting the blue motion stops the
   // renderer from drawing a second hand.
   const redMotion = makeMotion(MotionColor.RED, red.start, red.end, red.motionType);

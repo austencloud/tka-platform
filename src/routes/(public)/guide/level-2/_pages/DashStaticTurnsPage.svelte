@@ -1,16 +1,16 @@
 <script lang="ts">
   /**
-   * Dashes / Static turns — Level 2 body page 3 (manifest `turns-dash-static`),
+   * Dashes / Static turns - Level 2 body page 3 (manifest `turns-dash-static`),
    * faithful to old p4. Self-titled (two script heads).
    *
-   *   Dash strip   — static S(in) → halfway (staff horizontal at the grid
+   *   Dash strip   - static S(in) → halfway (staff horizontal at the grid
    *                  center, T west) → static N(in) = DASH s→n turns=1.
    *                  Base dash flips in→out; +180° turn returns to in.
-   *   Static strip — static E(in) → halfway (staff vertical at the E hand
+   *   Static strip - static E(in) → halfway (staff vertical at the E hand
    *                  point, T up) → static E(out) = STATIC at E turns=1 cw.
    *
    * Bottom note compares the static-turn arrow (half circle WITH the position)
-   * to the shift-turn arrow (half circle around the empty start position) —
+   * to the shift-turn arrow (half circle around the empty start position) -
    * both drawn by the real renderer from motion data.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";

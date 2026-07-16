@@ -1,5 +1,5 @@
 /**
- * Guide Companion v2, P3 — pure staging logic for inline pictograph editing.
+ * Guide Companion v2, P3 - pure staging logic for inline pictograph editing.
  * The companion stages edits to a flat strip (start box + numbered steps)
  * locally ($state in GuideCompanion), only calling saveOverride() on commit.
  * Kept pure/testable: no Firestore, no Svelte runes here.
@@ -34,7 +34,7 @@ export function appendStep(strip: StepData[], option: PictographData): StepData[
   return [...strip, step];
 }
 
-/** Word recomputed from the edited strip's step letters (start box excluded —
+/** Word recomputed from the edited strip's step letters (start box excluded -
  *  it never carries a letter). Matches deriveWordFromBeats used elsewhere. */
 export function deriveWordFromStrip(strip: StepData[]): string {
   return deriveWordFromBeats(stepsOf(strip) as unknown as Parameters<typeof deriveWordFromBeats>[0]);

@@ -1,16 +1,16 @@
 <script lang="ts">
   /**
-   * Alpha/Beta Words · Same Direction — body page (manifest `lt1-abc-ghi`),
+   * Alpha/Beta Words · Same Direction - body page (manifest `lt1-abc-ghi`),
    * faithful to the proof p22 / "1.1 - Basic Words, ABC, GHI" artboard.
    *
    * The first WORDS: six four-letter repetitions sharing one Start box per
    * block, every cell a real staff letter pictograph:
    *   α block (Start = α, blue S / red N, thumbs in):
-   *     AAAA (pro), BBBB (anti), CCCC (hybrid) — the CW Split-Same loop
+   *     AAAA (pro), BBBB (anti), CCCC (hybrid) - the CW Split-Same loop
    *     blue s→w→n→e→s, red n→e→s→w→n (A's four MCP variations chained,
    *     alpha1→alpha3→alpha5→alpha7→alpha1).
    *   β block (Start = β, both S, thumbs in):
-   *     GGGG (pro), HHHH (anti), IIII (hybrid) — the CW Tog-Same loop
+   *     GGGG (pro), HHHH (anti), IIII (hybrid) - the CW Tog-Same loop
    *     both hands s→w→n→e→s.
    * Pro keeps the prop with the handpath (CW, thumb in throughout); anti
    * counter-rotates (CCW, thumb alternating in/out each letter); hybrids =
@@ -23,7 +23,7 @@
    * Geometry off the artboard border scan (20px/pt): 90pt cells; α block
    * Start (106.5, 194.6), word rows x 196.5 at y 194.6/284.5/374.5; heavy
    * divider y 483.3; β block Start (106.5, 504), rows y 504/593.9/683.8.
-   * Rows per word (B/C/H/I own no Start box — they reuse the block's).
+   * Rows per word (B/C/H/I own no Start box - they reuse the block's).
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import SelectionHit from "$lib/shared/selection/SelectionHit.svelte";
@@ -53,7 +53,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -174,7 +174,7 @@
   ];
 
   // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
-  // present, resolved before baking — reversal dots stay derived either way.
+  // present, resolved before baking - reversal dots stay derived either way.
   // Reactive ($derived) so a save/revert/reset re-renders without a refresh.
   const resolvedWordStrip = (w: WordDef): StepData[] => {
     const authored = authoredWordSteps(w);
@@ -211,7 +211,7 @@
     { pos: GridPosition.BETA1, t: "β→β", mode: "Tog-Same", glyphY: 528.5, modeY: 549.8 },
   ];
 
-  // ── Text (artboard coords — this proof page has no extracted PROOF_TEXT) ────
+  // ── Text (artboard coords - this proof page has no extracted PROOF_TEXT) ────
   const SUBTITLE_Y = 60;
   type Para = { x: number; y: number; fs: number; lh: number; bold?: boolean; html: string };
   let PARAS: Para[] = $state([
@@ -277,7 +277,7 @@
     </div>
   {/each}
 
-  <!-- Six word rows — each row is one clickable strip. -->
+  <!-- Six word rows - each row is one clickable strip. -->
   {#each WORDS as w (w.key)}
     <div
       class="strip-wrap tka-seq-cell"

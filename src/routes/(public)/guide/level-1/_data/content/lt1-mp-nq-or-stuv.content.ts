@@ -1,7 +1,7 @@
 /**
  * Single source for the Gamma Letters SEO doorway (manifest id
  * "lt1-mp-nq-or-stuv"). Prose is lifted VERBATIM from
- * _pages/GammaLettersPage.svelte (Austen's words — never AI-written), including
+ * _pages/GammaLettersPage.svelte (Austen's words - never AI-written), including
  * the three word captions (the page's own "memorable phrase"s). The pictograph
  * construction is a FAITHFUL COPY of that same file's cell/word derivation
  * (same enums, locations, orientations, rotation directions → identical staff
@@ -30,7 +30,7 @@ const { IN, OUT } = Orientation;
 const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-// ── Motion authoring — copied from GammaLettersPage.svelte (same helpers as
+// ── Motion authoring - copied from GammaLettersPage.svelte (same helpers as
 // CompoundLettersPage). ─────────────────────────────────────────────────────
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
 const hpDir = (from: GridLocation, to: GridLocation) => (HP_CW.has(`${from}-${to}`) ? CW : CCW);
@@ -153,14 +153,14 @@ const rowGroup = (row: CellDef[]): PictographData[] =>
   row.map((c) => cellStep(c, `gl-${c.name}`)) as unknown as PictographData[];
 
 const wordKey = (w: WordDef) => `gl-word-${w.word}`;
-// Start + 2 letters — the full playable strip.
+// Start + 2 letters - the full playable strip.
 const wordStrip = (w: WordDef): PictographData[] =>
   [
     startFor(w.steps[0]!),
     ...w.steps.map((c, i) => cellStep(c, `${wordKey(w)}-s`, i + 1)),
   ] as unknown as PictographData[];
 
-/** STAFF props, TKA letter glyph on — matching GammaLettersPage's PICTO_FLAGS. */
+/** STAFF props, TKA letter glyph on - matching GammaLettersPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF } as const;
 
 export const lt1MpNqOrStuvContent: GuideBlock[] = [
@@ -176,14 +176,14 @@ export const lt1MpNqOrStuvContent: GuideBlock[] = [
     items: rowGroup(QO_ROWS[0]!),
     flowCols: 3,
     render: RENDER,
-    caption: "M · N · O — γ→γ Quarter-Opp",
+    caption: "M · N · O: γ→γ Quarter-Opp",
   },
   {
     kind: "pictographGroup",
     items: rowGroup(QO_ROWS[1]!),
     flowCols: 3,
     render: RENDER,
-    caption: "P · Q · R — γ→γ Quarter-Opp",
+    caption: "P · Q · R: γ→γ Quarter-Opp",
   },
   {
     kind: "prose",
@@ -199,7 +199,7 @@ export const lt1MpNqOrStuvContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2"],
     card: true,
     render: RENDER,
-    caption: "MP — Magic Potion",
+    caption: "MP: Magic Potion",
   },
   {
     kind: "prose",
@@ -213,7 +213,7 @@ export const lt1MpNqOrStuvContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2"],
     card: true,
     render: RENDER,
-    caption: "NQ — Never Quit",
+    caption: "NQ: Never Quit",
   },
   {
     kind: "prose",
@@ -227,7 +227,7 @@ export const lt1MpNqOrStuvContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2"],
     card: true,
     render: RENDER,
-    caption: "OR — Open Road",
+    caption: "OR: Open Road",
   },
   {
     kind: "prose",
@@ -245,7 +245,7 @@ export const lt1MpNqOrStuvContent: GuideBlock[] = [
     items: rowGroup(QS_ROW),
     flowCols: 4,
     render: RENDER,
-    caption: "S · T · U · V — γ→γ Quarter-Same",
+    caption: "S · T · U · V: γ→γ Quarter-Same",
   },
   {
     kind: "prose",

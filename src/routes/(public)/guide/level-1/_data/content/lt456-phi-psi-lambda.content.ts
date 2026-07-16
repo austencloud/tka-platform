@@ -1,7 +1,7 @@
 /**
  * Single source for the Type 4, 5, 6 Letters SEO doorway (manifest id
  * "lt456-phi-psi-lambda"). Prose is lifted VERBATIM from
- * _pages/Type456LettersPage.svelte (Austen's words — never AI-written); the
+ * _pages/Type456LettersPage.svelte (Austen's words - never AI-written); the
  * pictograph construction is a FAITHFUL COPY of that same file's dash/static
  * derivation (same helpers, same locations/orientations → identical staff
  * pictographs), minus the reader-only wiring (selection, overrides,
@@ -27,7 +27,7 @@ const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 const { IN, OUT } = Orientation;
 const NOROT = RotationDirection.NO_ROTATION;
 
-// ── Motion authoring — copied from Type456LettersPage.svelte ───────────────
+// ── Motion authoring - copied from Type456LettersPage.svelte ───────────────
 const dash = (color: MotionColor, from: GridLocation, to: GridLocation) =>
   createMotionData({
     motionType: MotionType.DASH,
@@ -58,7 +58,7 @@ const mv = (from: GridLocation, to: GridLocation): Hand => ({ from, to, dash: tr
 const st = (loc: GridLocation): Hand => ({ from: loc, to: loc, dash: false });
 type CellDef = { letter: Letter; name: string; blue: Hand; red: Hand };
 
-// ── Type 4 - Dash · Type 5 - Dual-Dash · Type 6 - Static — copied from
+// ── Type 4 - Dash · Type 5 - Dual-Dash · Type 6 - Static - copied from
 // Type456LettersPage.svelte's SECTIONS. ─────────────────────────────────────
 type Section = { key: string; cells: CellDef[] };
 const SECTIONS: Section[] = [
@@ -107,7 +107,7 @@ const cellStep = (c: CellDef, id: string, stepNumber: number | null): StepData =
 const sectionGroup = (sec: Section): PictographData[] =>
   sec.cells.map((c, ci) => cellStep(c, `t456-${sec.key}-${ci}`, null)) as unknown as PictographData[];
 
-/** STAFF props, TKA letter glyph on — matching Type456LettersPage's PICTO_FLAGS. */
+/** STAFF props, TKA letter glyph on - matching Type456LettersPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF } as const;
 
 export const lt456PhiPsiLambdaContent: GuideBlock[] = [

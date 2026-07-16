@@ -1,5 +1,5 @@
 /**
- * Level 2 guide — BUILT page registry. Maps manifest id → the page component
+ * Level 2 guide - BUILT page registry. Maps manifest id → the page component
  * that faithfully rebuilds that original page. Unregistered ids render the
  * shared PagePlaceholder in /print and /book until built (mirrors
  * level-1/_data/built-pages.ts).

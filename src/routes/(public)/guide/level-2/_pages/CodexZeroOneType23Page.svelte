@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Codex 0/1 — Type 2/3 — Level 2 body page 18 (manifest `codex-0-1-t23`),
+   * Codex 0/1 - Type 2/3 - Level 2 body page 18 (manifest `codex-0-1-t23`),
    * faithful to old p18. Every Type-2 (shift+static) and Type-3 (shift+dash) letter
    * with the turn on the LOW slot (`₁`), shown in both Same (dot above, rows 1–2)
    * and Opp (dot below, rows 3–4) rotational relationships. Two half-page columns

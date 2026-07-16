@@ -1,9 +1,9 @@
 <script lang="ts">
   /**
-   * GuideReader — the durable 3-pane shell for the faithful guide: manifest nav
+   * GuideReader - the durable 3-pane shell for the faithful guide: manifest nav
    * (left) + one printable page fit-to-pane (center) + slide-open live-animation
    * companion (right). Renders the shared GuideDocument (all manifest pages, the
-   * single source of truth) and shows only the active page, scaled to fit — the
+   * single source of truth) and shows only the active page, scaled to fit - the
    * same technique /book uses, so /print + /book never drift from this.
    *
    * The center is rendered through the `sheetFrame` snippet. Keeping it a snippet
@@ -65,7 +65,7 @@
   const PAGE_H = 1056; // 11in
 
   // Persist scroll position so it survives HMR remounts, full reloads, and
-  // navigating away and back — sessionStorage, restored after the first fit()
+  // navigating away and back - sessionStorage, restored after the first fit()
   // lays the pages out. Keyed per-reader (one reader today; keep it explicit).
   // Keyed per level so Level 1 and Level 2 keep independent scroll/companion
   // state (switching levels remounts the reader; each restores its own).
@@ -75,22 +75,22 @@
   // Cleared on explicit close, so it only restores a drawer left open.
   const COMPANION_KEY = `guide-reader-companion-${config.levelLabel}`;
 
-  let activeIndex = $state(0); // highlighted page — driven by scroll position
+  let activeIndex = $state(0); // highlighted page - driven by scroll position
   let scale = $state(0.5);
   let stageEl = $state<HTMLDivElement>();
   let docWrap = $state<HTMLDivElement>();
 
-  // Mobile detection — owned here (single source of truth for the 720px
+  // Mobile detection - owned here (single source of truth for the 720px
   // cutoff), measured off the reader's own container width so it tracks the
   // SAME breakpoint the `@container (max-width: 720px)` CSS below uses,
   // rather than duplicating it as a `matchMedia` viewport check (this reader
-  // sits inside a `container-type: inline-size` ancestor — GuideTab.svelte —
+  // sits inside a `container-type: inline-size` ancestor - GuideTab.svelte -
   // so its container width, not the viewport, is what actually flips the
   // layout). Passed down to GuideCompanion as a plain prop.
   const MOBILE_BREAKPOINT_PX = 720;
   let readerEl = $state<HTMLDivElement>();
   let isMobile = $state(false);
-  // The mobile companion sheet — observed so the scroll-sync band recomputes
+  // The mobile companion sheet - observed so the scroll-sync band recomputes
   // whenever the sheet's rendered height changes (compact <-> overflow-open).
   let companionEl = $state<HTMLElement>();
 
@@ -98,7 +98,7 @@
   let companionOpen = $state(false);
   // Codex mode: the active body page is the interactive Codex sheet (manifest
   // id "codex"). The companion auto-opens to host its controls (prop family,
-  // visibility, transforms) even before any cell is clicked — see
+  // visibility, transforms) even before any cell is clicked - see
   // GuideCodexControls.svelte / guide-codex-state.svelte.ts.
   const isCodexPage = $derived(
     config.isCodexSlug(config.bodyPages[activeIndex - config.frontMatterCount]?.id ?? "")
@@ -107,14 +107,14 @@
     if (isCodexPage) {
       companionOpen = true;
     } else if (!clicked) {
-      // Leaving the Codex page with nothing animating — close the panel that
+      // Leaving the Codex page with nothing animating - close the panel that
       // was opened purely to host its controls.
       companionOpen = false;
     }
   });
 
   // Golden step ring: the companion animates a clicked strip while THIS signal
-  // rings the matching cell on the page's on-screen strip, in sync — the same
+  // rings the matching cell on the page's on-screen strip, in sync - the same
   // dual-view coupling the Sequence Viewer has. Provided down to the pages via
   // context (getGuideActiveStep); the companion reports its live step in.
   const activeStep = new GuideActiveStep();
@@ -122,7 +122,7 @@
 
   // Whole-sequence selection: the accent "Lift & Glow" ring marks WHICH strip is
   // active while the amber step ring (activeStep) hops through its steps. Only the
-  // reader sets a scope — /print and /book don't, so their strips stay pristine.
+  // reader sets a scope - /print and /book don't, so their strips stay pristine.
   const selection = new SequenceSelection();
   setSequenceSelection(selection);
 
@@ -139,8 +139,8 @@
     // 'scroll'/'scrollend' event during the animation via a throttled rAF, so
     // it can land on activeIndex === i mid-transit and never get a final
     // correcting pass if the tab is backgrounded/inactive enough to starve
-    // requestAnimationFrame (observed: isCodexPage — and any page's nav
-    // highlight — can go stale after a nav click otherwise). Calling the pure
+    // requestAnimationFrame (observed: isCodexPage - and any page's nav
+    // highlight - can go stale after a nav click otherwise). Calling the pure
     // recompute directly (no rAF) once the smooth scroll should be done closes
     // that gap without touching the scroll-event path at all.
     settleTimer = setTimeout(recomputeActiveIndex, 500);
@@ -151,8 +151,8 @@
   // the raw scrollTop is persisted so a remount/reload can restore it.
   let scrollRaf = 0;
   // True while we're parking at the saved offset. It (a) drives the `restoring`
-  // class that hides the doc until it's landed — so the reader APPEARS already
-  // scrolled there rather than jumping from the top — and (b) blocks onScroll
+  // class that hides the doc until it's landed - so the reader APPEARS already
+  // scrolled there rather than jumping from the top - and (b) blocks onScroll
   // from persisting an intermediate clamped value over the saved target. It must
   // be Svelte-owned (a class, not an imperative inline style): `.reader-doc`
   // carries a reactive `style` for --w/--h, and any scale change re-renders that
@@ -170,7 +170,7 @@
           return slug ? indexForSlug(slug) : null;
         })();
   let restoring = $state(deepLinkIndex !== null || savedScrollTarget() > 0);
-  // The actual nearest-to-center recompute — pulled out of the rAF wrapper so
+  // The actual nearest-to-center recompute - pulled out of the rAF wrapper so
   // the settle-correction timer in go() can call it directly. If a scroll
   // handler's rAF never gets scheduled (backgrounded/inactive tab throttling
   // can starve it indefinitely), this direct call still lands, so activeIndex
@@ -195,7 +195,7 @@
     try {
       sessionStorage.setItem(SCROLL_KEY, String(docWrap.scrollTop));
     } catch {
-      // sessionStorage unavailable (private mode / disabled) — scroll just
+      // sessionStorage unavailable (private mode / disabled) - scroll just
       // won't persist; not worth surfacing.
     }
   }
@@ -211,7 +211,7 @@
   // up "staff" so the player renders real staves from the authored orientations;
   // the codex page hands up any PropType the reader has selected there).
   let clickedPropType = $state<"hand" | "staff" | PropType>("hand");
-  // Identity of the clicked strip + a human page label — the companion needs
+  // Identity of the clicked strip + a human page label - the companion needs
   // both for the admin action row (saveOverride key) and Copy-for-AI's header
   // ("Guide: Level 1 › <page title> › <word>").
   let clickedKey = $state<string | null>(null);
@@ -241,7 +241,7 @@
     persistCompanion(payload);
     if (isMobile) {
       // Wait for the DOM to reflect both the new `.is-selected` ring and the
-      // just-opened sheet before measuring — one `tick()` flushes Svelte's
+      // just-opened sheet before measuring - one `tick()` flushes Svelte's
       // pending updates, then an rAF lets layout (the sheet's height) settle.
       await tick();
       requestAnimationFrame(syncMobileScroll);
@@ -268,7 +268,7 @@
 
   /** Scroll the doc scroller so `cellEl`'s bounding box lands centered in the
    *  band of viewport between the top (0) and `bandBottomPx` (the sheet's
-   *  top edge) — the visible strip above the mobile companion sheet. */
+   *  top edge) - the visible strip above the mobile companion sheet. */
   function scrollCellIntoBand(cellEl: HTMLElement, bandBottomPx: number): void {
     if (!docWrap) return;
     const cellRect = cellEl.getBoundingClientRect();
@@ -298,12 +298,12 @@
   }
 
   // Guide overrides load once per reader mount (public read; admin gate lives
-  // on the write side). Reactive singleton — pages + companion re-render as
+  // on the write side). Reactive singleton - pages + companion re-render as
   // soon as this resolves, no manual plumbing needed beyond this one call.
   // Pause the global animated background while the reader is open. Its rAF
   // repaints a viewport-sized canvas every frame behind the (near-fully
   // opaque) pages, and its bursty entities (cosmic comets/UFOs, ocean fish)
-  // stole enough main thread to stutter the companion's playback — measured
+  // stole enough main thread to stutter the companion's playback - measured
   // 37.9fps / 40.7% hitch frames with the background on vs 59.9fps / 0.1%
   // with it off, same page, same playing strip. Museum precedent; see
   // background-suppression.svelte.ts. Sync onMount on purpose: an async
@@ -327,7 +327,7 @@
     // stashed a request to reproduce what a tap would do once the reader
     // mounts. Consumed here (after the deep-link slug landing above has set
     // activeIndex synchronously), guarded by tick()+rAF so the just-mounted
-    // Codex page (which registers its cell trigger in its own onMount — child
+    // Codex page (which registers its cell trigger in its own onMount - child
     // onMounts run before this parent one) has settled before we fire.
     const scanIntent = config.enableDeepLinks ? consumeGuideScanIntent() : null;
     if (scanIntent) {
@@ -338,7 +338,7 @@
         } else if (scanIntent.sequence) {
           // TODO(guide-companion word-path): auto-open companion for
           // multi-letter scans. GuideSequenceClick (guide-data-context.ts)
-          // only accepts a flat StepData[] strip, not a raw SequenceData —
+          // only accepts a flat StepData[] strip, not a raw SequenceData -
           // wiring this cleanly needs a `sequence` field added to that type,
           // which is out of scope for this file set. For now the reader lands
           // on the target page; the user taps the strip to open the companion.
@@ -348,7 +348,7 @@
   });
 
   // Live URL sync: the address bar always carries the active page's deep link
-  // (replaceState — no history spam; copying the URL bar IS the share
+  // (replaceState - no history spam; copying the URL bar IS the share
   // affordance, like the sequence ?open= sync). Gated to /learn/guide paths so
   // the test harness and other hosts never rewrite their URLs.
   $effect(() => {
@@ -370,7 +370,7 @@
     return () => clearTimeout(t);
   });
 
-  // Fit each page FULLY inside the pane (whole page visible — no per-page
+  // Fit each page FULLY inside the pane (whole page visible - no per-page
   // scrolling); the pages then stack and you scroll between them, like a PDF
   // reader's continuous view. 40/32 = the reader-doc padding (20px / 16px).
   function fit() {
@@ -390,14 +390,14 @@
     }
   }
 
-  // Companion (clicked strip) persistence — mirror of the scroll restore. The
+  // Companion (clicked strip) persistence - mirror of the scroll restore. The
   // click payload is plain serializable data (strip StepData[], word, key,
   // propType), so it round-trips through sessionStorage.
   function persistCompanion(payload: GuideSequenceClick): void {
     try {
       sessionStorage.setItem(COMPANION_KEY, JSON.stringify(payload));
     } catch {
-      // private mode / quota — the drawer just won't survive a reload
+      // private mode / quota - the drawer just won't survive a reload
     }
   }
   function clearCompanion(): void {
@@ -418,7 +418,7 @@
 
   onMount(() => {
     // Apply the fitted scale, then flush it to the DOM synchronously so the
-    // pages take their real heights before we measure/scroll — the doc is then
+    // pages take their real heights before we measure/scroll - the doc is then
     // tall enough that the very first park lands at the target, in this same
     // (pre-paint) tick. `restoring` keeps the doc hidden until we land.
     fit();
@@ -456,13 +456,13 @@
         const target = getTarget();
         if (target === null) return reveal();
         const scrollHeight = docWrap.scrollHeight;
-        // behavior:"instant" — NOT "auto". "auto" defers to the doc's CSS
+        // behavior:"instant" - NOT "auto". "auto" defers to the doc's CSS
         // scroll-behavior:smooth, which animates every scrollTo and is exactly
         // the visible crawl-to-position we're eliminating. "instant" jumps.
         docWrap.scrollTo({ top: target, behavior: "instant" });
         attempts += 1;
 
-        // Landed on the target — reveal.
+        // Landed on the target - reveal.
         if (Math.abs(docWrap.scrollTop - target) <= 2) return reveal();
 
         // If the scale is still settling the height keeps growing; retry until
@@ -491,7 +491,7 @@
     };
   });
 
-  // Mobile detection off the reader's own container width — tracks the same
+  // Mobile detection off the reader's own container width - tracks the same
   // 720px cutoff the `@container` CSS below uses.
   onMount(() => {
     if (!readerEl) return;
@@ -512,7 +512,7 @@
     }
   });
 
-  // The active body page's manifest id — drives whether the sheet/flow toggle
+  // The active body page's manifest id - drives whether the sheet/flow toggle
   // shows (only pages with single-source reflow content can reflow).
   const activeReflowable = $derived(
     hasReflowContent(config.bodyPages[activeIndex - config.frontMatterCount]?.id ?? "")
@@ -645,7 +645,7 @@
   }
   /* Flow page: full stage width, content height, its own white editorial sheet.
      Two-class selector (.reader-page.reader-flow-page) so it beats the equal-
-     specificity .reader-page sizing rule below regardless of source order —
+     specificity .reader-page sizing rule below regardless of source order -
      otherwise the fixed --w/--h + overflow:hidden would clip the flow column. */
   .reader-doc :global(.reader-page.reader-flow-page) {
     flex: 0 0 auto;
@@ -672,7 +672,7 @@
     scroll-behavior: smooth;
   }
   /* Hidden (but still laid out, so scrollHeight is valid and scrollTo works)
-     while restoring the saved scroll offset — the doc reveals already parked
+     while restoring the saved scroll offset - the doc reveals already parked
      there instead of visibly jumping from the top. */
   .reader-doc.restoring {
     visibility: hidden;
@@ -722,7 +722,7 @@
     }
   }
 
-  /* Mobile: nav collapses and the companion becomes a bottom sheet — sized by
+  /* Mobile: nav collapses and the companion becomes a bottom sheet - sized by
      its own content (GuideCompanion's hero-animator layout), NOT a full-panel
      overlay. The doc scroller stays visible above it and the reader scrolls
      the clicked cell into the visible band (see scrollCellIntoBand). */
@@ -741,7 +741,7 @@
       min-width: 0;
       max-height: 92svh;
       height: auto;
-      /* Opaque sheet — without this the page bleeds through the animator and
+      /* Opaque sheet - without this the page bleeds through the animator and
          controls, muddying both. Solid app background, not a translucent tint. */
       background: var(--theme-bg, oklch(0.13 0.015 270));
       border-left: 0;

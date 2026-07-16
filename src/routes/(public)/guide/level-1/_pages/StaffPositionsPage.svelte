@@ -1,13 +1,13 @@
 <script lang="ts">
   /**
-   * Staff Positions — body page 9 (manifest `staff-positions`), faithful to the
+   * Staff Positions - body page 9 (manifest `staff-positions`), faithful to the
    * proof PDF (level-1-v05.pdf) / "1.0 - Layer 1 Staff Positions" artboard.
    *
-   * 12 REAL staff pictographs: α (blue W / red E), β (both S — the system's beta
+   * 12 REAL staff pictographs: α (blue W / red E), β (both S - the system's beta
    * offset separates them side-by-side), γ (blue S / red E), each in the four
    * thumb-orientation columns. The thumb end is the staff SVG's crossbar; the
    * renderer rotates it from the motion's orientation (MCP: IN = toward center,
-   * OUT = away). Column order is blue/red — "(out/in)" = blue out, red in —
+   * OUT = away). Column order is blue/red - "(out/in)" = blue out, red in -
    * matching the artboard's blue/red colored header.
    *
    * Text runs sit at the proof's own coordinates (PROOF_TEXT staff-positions).
@@ -90,7 +90,7 @@
     { src: "/images/letters_trimmed/Type6/γ.svg", ar: 79 / 100.11, name: "Gamma (γ)", labelY: 608.7, label: "Gamma", lw: 55.3 },
   ];
 
-  // ── Rules (heavier black, per the artboard — not the hairline style) ────────
+  // ── Rules (heavier black, per the artboard - not the hairline style) ────────
   const RULES = [257.4, 389.7, 521.3];
 
   // ── Centred paragraphs at proof coords ──────────────────────────────────────

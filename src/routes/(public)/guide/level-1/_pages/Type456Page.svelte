@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Type 4 / 5 / 6 — Dash, Dual-Dash, Static — body page 8, a faithful rebuild of
+   * Type 4 / 5 / 6 - Dash, Dual-Dash, Static - body page 8, a faithful rebuild of
    * the proof PDF ("1.0 - Type 5 and 6" artboard, which actually leads with Type 4)
    * in the CURRENT renderer's language. Same recipe as Type3CrossShiftsPage: proof-
    * placed strips of real PictographContainers, every adornment system-owned (dash
@@ -9,7 +9,7 @@
    *
    * ONE physical page, THREE titled sections (three calligraphic .guide-title
    * headers + two full-width divider rules). The manifest entry is `selfTitled`, so
-   * GuidePage does NOT draw its single header — this page paints all three.
+   * GuidePage does NOT draw its single header - this page paints all three.
    *
    * Motion authoring (both props are HAND):
    *   - dash hand  → DASH (opposite cardinals; straight dash arrow through centre).
@@ -35,7 +35,7 @@
    * The position glyph derives from startPosition/endPosition (NOT the letter), so a
    * pedagogical α→α labelled Ψ- still shows the correct α→α glyph.
    *
-   * Facelift: lowercase γ (proof used Γ); keyword tints — Dash/Dual-Dash green
+   * Facelift: lowercase γ (proof used Γ); keyword tints - Dash/Dual-Dash green
    * (#2f9e44), Dual cyan (#36c3ff), Cross green + Shift purple (#6f2da8), Static
    * orange (#f08c00). The "two beta / 4-beat" proof OCR is corrected to "two-step /
    * 4-step". Geometry measured off the artboard border grid (4px/pt): Type 4 boxes
@@ -63,7 +63,7 @@
   const OPP: Partial<Record<GridLocation, GridLocation>> = { [N]: SO_, [SO_]: N, [E]: W, [W]: E };
 
   // Golden step ring: which strip cell the companion is currently animating (null
-  // outside the reader — /print + /book render no ring).
+  // outside the reader - /print + /book render no ring).
   const activeStep = getGuideActiveStep();
   const selection = getSequenceSelection();
   // Reader companion handoff: present ONLY inside GuideReader (null on /print,/book).
@@ -123,7 +123,7 @@
   };
 
   const STRIPS: Strip[] = [
-    // Type 4 — Dash. One hand dashes, one static → one arrow, never collides.
+    // Type 4 - Dash. One hand dashes, one static → one arrow, never collides.
     {
       key: "t56-4a",
       x: 156.5,
@@ -154,7 +154,7 @@
         { m: [SO_, SO_, W, E], step: 4 }, //  red dash W→E, blue static S  (→ Start)
       ],
     },
-    // Type 5 — Dual-Dash. Both dash → letters key the arrow separation.
+    // Type 5 - Dual-Dash. Both dash → letters key the arrow separation.
     {
       key: "t56-5a",
       x: 7.5,
@@ -194,7 +194,7 @@
         { m: [SO_, N, E, W], step: 1, letter: Letter.LAMBDA_DASH }, // blue S→N (E) / red E→W (S)
       ],
     },
-    // Type 6 — Static. No hand movement → no arrows; the letter glyph is the point.
+    // Type 6 - Static. No hand movement → no arrows; the letter glyph is the point.
     {
       key: "t56-6a",
       x: 7.5,
@@ -397,7 +397,7 @@
     color: #141414;
   }
 
-  /* Pictograph boxes — hairline square like the proof. */
+  /* Pictograph boxes - hairline square like the proof. */
   .cell {
     position: absolute;
     border: 1px solid #c4c4cc;
@@ -415,12 +415,12 @@
     background: #141414;
   }
 
-  /* Per-sequence wrapper — carries the shared selection ring (.tka-seq-cell). */
+  /* Per-sequence wrapper - carries the shared selection ring (.tka-seq-cell). */
   .strip-wrap {
     position: absolute;
   }
 
-  /* Centred paragraph blocks — full sheet width, one box per paragraph. */
+  /* Centred paragraph blocks - full sheet width, one box per paragraph. */
   .para {
     position: absolute;
     left: 0;

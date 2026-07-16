@@ -1,16 +1,16 @@
 <script lang="ts">
   /**
-   * Examples — body page (manifest `examples-abc`, retitled "Examples"),
+   * Examples - body page (manifest `examples-abc`, retitled "Examples"),
    * faithful to proof p34 / "1.2 - Guide pt 1 - AABB" artboard.
    *
    * Three AABB presentations differing only in reversal placement (no Start
-   * boxes — "interpret it from the first motions"; all start α, blue S / red N,
+   * boxes - "interpret it from the first motions"; all start α, blue S / red N,
    * thumbs in). Reversal flags follow the prop-only rule:
-   *   1. AABB ×1, prop-reversals after steps 2 and 4 — the whole word rides
+   *   1. AABB ×1, prop-reversals after steps 2 and 4 - the whole word rides
    *      the CW handpath, so B flips the prop (R on 3) and the loop wrap flips
    *      it back (R on 1).
    *   2. AABB ×2 Mirrored LOOP, reversals after steps 1 and 5 (R on 2 and 6)
-   *      — steps 5-8 mirror 1-4 across the horizontal plane.
+   *      - steps 5-8 mirror 1-4 across the horizontal plane.
    *   3. AABB ×2, reversals after steps 3 and 7 (R on 4 and 8).
    * FACELIFT: "beats" reads "steps"; "Mirrored CAP" reads "Mirrored LOOP"; the
    * gutter "R/R" is the system's own reversal indicator on the step.
@@ -49,7 +49,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -172,7 +172,7 @@
   const seqSteps = (q: SeqDef): StepData[] => [startPose(q), ...q.steps.map((_, i) => stepData(q, i))];
 
   // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
-  // present, resolved before baking — reversal dots stay derived either way.
+  // present, resolved before baking - reversal dots stay derived either way.
   // Reactive so a save/revert/reset while the reader is open re-renders.
   const resolvedSeqSteps = (q: SeqDef): StepData[] => {
     const authored = seqSteps(q);

@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Type 3 - Cross-Shift (letters) — body page (manifest `lt3-dash-letters`),
+   * Type 3 - Cross-Shift (letters) - body page (manifest `lt3-dash-letters`),
    * faithful to proof p28 / "1.1 - Type 3 - Cross-Shifts" artboard.
    *
    * Cross-Shifts = the Type 2 letters with the other hand DASHING into its end
@@ -10,12 +10,12 @@
    *   w→s) · β→γ (Σ- Δ-: blue dash e→w, red e→s) · α→γ (Θ- Ω-: blue dash
    *   n→s, red s→e).
    * CORRECTION vs the artboard (flagged): the old guide labeled the Σ-/Δ- box
-   * "α→Γ" and the Θ-/Ω- box "β→Γ" — the dataset says Σ-/Δ- START at beta and
+   * "α→Γ" and the Θ-/Ω- box "β→Γ" - the dataset says Σ-/Δ- START at beta and
    * Θ-/Ω- at alpha (dashing means the start position family flips); labels
    * here follow the data.
    *
    * Bottom: two step-by-step breakdown rows (start → halfway → end = combined)
-   * in the Staff Motions recipe — halfway frames compose a bare grid + the
+   * in the Staff Motions recipe - halfway frames compose a bare grid + the
    * real staff SVG at the renderer's own placement pose:
    *   W- : blue mid-dash at the center (horizontal, crossbar W) + red
    *        mid-prospin at the SE hand point rotate(225°);
@@ -62,7 +62,7 @@
   const [T3_GREEN, T3_PURPLE] = LETTER_TYPE_COLORS[LetterType.TYPE3];
   const T2_PURPLE = LETTER_TYPE_COLORS[LetterType.TYPE2][0];
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();

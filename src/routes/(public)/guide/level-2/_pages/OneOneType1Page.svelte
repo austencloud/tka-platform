@@ -1,15 +1,15 @@
 <script lang="ts">
   /**
-   * 1|1 Turns — Type 1 — Level 2 body page 13 (manifest `one-one-t1`), faithful to
+   * 1|1 Turns - Type 1 - Level 2 body page 13 (manifest `one-one-t1`), faithful to
    * old p14. A turn on BOTH props writes a "1" in the high and low slot (1|1). Four
    * cherry-picked Type 1 (dual-shift) examples, each with turns=1 on both hands:
    *
-   *   D¹₁ "D-One-One"  — D[3]: blue n→w pro ccw, red n→e pro cw
-   *   I¹₁ "I-One-One"  — I[0]: blue e→s anti ccw, red e→s pro cw
-   *   N¹₁ "N-One-One"  — N[2]: blue s→e anti cw, red w→n anti ccw
-   *   V¹₁ "V-One-One"  — V[1]: blue w→n anti ccw, red s→w pro cw
+   *   D¹₁ "D-One-One"  - D[3]: blue n→w pro ccw, red n→e pro cw
+   *   I¹₁ "I-One-One"  - I[0]: blue e→s anti ccw, red e→s pro cw
+   *   N¹₁ "N-One-One"  - N[2]: blue s→e anti cw, red w→n anti ccw
+   *   V¹₁ "V-One-One"  - V[1]: blue w→n anti ccw, red s→w pro cw
    *
-   * (MCP-verified.) No continuation and no same/opp — Type 1 hybrids. Both slot
+   * (MCP-verified.) No continuation and no same/opp - Type 1 hybrids. Both slot
    * glyphs are "1" (red). Halfway poses from the engine interpolator.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";

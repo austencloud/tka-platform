@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Type 2 - Shift (letters) — body page (manifest `lt2-wxyz`), faithful to
+   * Type 2 - Shift (letters) - body page (manifest `lt2-wxyz`), faithful to
    * proof p27 / "1.1 - Type 2 - Shifts" artboard.
    *
    * A Shift = one shift + one static (MCP: all eight letters blue-static +
@@ -9,7 +9,7 @@
    *     γ→α OPEN  (W X: blue static W, red s→e) · γ→β CLOSE (Y Z: blue static
    *     S, red w→s) · α→γ CLOSE (Σ Δ: blue static W, red e→s) · β→γ OPEN
    *     (Θ Ω: blue static S, red s→e).
-   *   Word rows — WΣYΘ (pro) and XΔZΩ (anti) from the shared γ Start
+   *   Word rows - WΣYΘ (pro) and XΔZΩ (anti) from the shared γ Start
    *   (blue S / red E): red cycles the CCW loop e→n→w→s→e while blue rests.
    * Anti letters flip the thumb (in→out); the anti word alternates.
    *
@@ -52,7 +52,7 @@
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
   const T2_PURPLE = LETTER_TYPE_COLORS[LetterType.TYPE2][0];
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();

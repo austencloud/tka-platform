@@ -1,10 +1,10 @@
 <script lang="ts">
   /**
    * Table of Contents, generated from the body-page manifest. Page numbers,
-   * order, and sub-entry nesting all come from `guide-manifest.ts` — never
-   * hand-numbered — so building or reordering a page updates the TOC for free.
+   * order, and sub-entry nesting all come from `guide-manifest.ts` - never
+   * hand-numbered - so building or reordering a page updates the TOC for free.
    *
-   * Layout: two columns that read in NATURAL order — fill the left column
+   * Layout: two columns that read in NATURAL order - fill the left column
    * top-to-bottom (1.0, then 1.1…), overflow into the right (…1.1, 1.2) via CSS
    * multi-column flow. The long 1.1 spans the column break instead of jumping
    * the eye left→right→left. Fraunces section heads with big navy numerals + a
@@ -56,7 +56,7 @@
     justify-content: center;
   }
   /* Native multi-column flow: content reads down the left column then down the
-     right (column-major), balanced automatically — no manual side assignment. */
+     right (column-major), balanced automatically - no manual side assignment. */
   .toc-flow {
     width: 100%;
     padding: 0 0.55in;

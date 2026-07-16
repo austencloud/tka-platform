@@ -19,8 +19,8 @@ const CCW = RotationDirection.COUNTER_CLOCKWISE;
 const CW = RotationDirection.CLOCKWISE;
 const NOROT = RotationDirection.NO_ROTATION;
 
-// Two real single-staff sequences (red hand; blue is an invisible placeholder —
-// the both-hands step contract) — copied verbatim from _pages/NegativeSpacePage.svelte.
+// Two real single-staff sequences (red hand; blue is an invisible placeholder -
+// the both-hands step contract) - copied verbatim from _pages/NegativeSpacePage.svelte.
 type Cell = {
   step: number;
   type: MotionType;
@@ -55,7 +55,7 @@ const cellData = (stripId: string, c: Cell) => ({
 type Strip = { id: string; word: string; cells: Cell[] };
 const STRIPS: Strip[] = [
   {
-    // 360° Isolation — pro all the way around, thumb in throughout.
+    // 360° Isolation - pro all the way around, thumb in throughout.
     id: "iso",
     word: "360° Isolation",
     cells: [
@@ -67,7 +67,7 @@ const STRIPS: Strip[] = [
     ],
   },
   {
-    // 4-Petal Antispin — same handpath, prop counter-rotates (CW), thumb alternates.
+    // 4-Petal Antispin - same handpath, prop counter-rotates (CW), thumb alternates.
     id: "anti",
     word: "4-Petal Antispin",
     cells: [
@@ -83,10 +83,10 @@ const STRIPS: Strip[] = [
 const stripItems = (s: Strip): PictographData[] =>
   s.cells.map((c) => cellData(s.id, c)) as unknown as PictographData[];
 
-/** STAFF props, TKA letter glyph off — matching NegativeSpacePage's PICTO_FLAGS (showTKA={false}). */
+/** STAFF props, TKA letter glyph off - matching NegativeSpacePage's PICTO_FLAGS (showTKA={false}). */
 const RENDER = { propType: PropType.STAFF, showTKA: false } as const;
 
-// Verbatim prose lifted from _pages/NegativeSpacePage.svelte (Austen's words — never AI-written).
+// Verbatim prose lifted from _pages/NegativeSpacePage.svelte (Austen's words - never AI-written).
 export const negativeSpaceContent: GuideBlock[] = [
   { kind: "heading", level: 1, text: "Negative Space and Body Turns" },
   {

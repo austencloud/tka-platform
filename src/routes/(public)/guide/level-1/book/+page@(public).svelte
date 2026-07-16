@@ -1,14 +1,14 @@
 <script lang="ts">
   /**
-   * Guide compare — page-by-page proofing. The OLD v0.5 proof on the left, the
+   * Guide compare - page-by-page proofing. The OLD v0.5 proof on the left, the
    * live rebuild on the right, ONE page per side. Step with Prev/Next (or ← →);
    * no scrolling. The editions no longer share a page count (the rebuild dropped
-   * the old intro pages), so an offset nudge (±) aligns them — set once, then
+   * the old intro pages), so an offset nudge (±) aligns them - set once, then
    * Next advances both in lockstep.
    *
    * Left  = the frozen v0.5 PDF rendered to canvases via pdf.js (one shown).
    * Right = the live GuideDocument (same page sequence as /print), every page
-   *         mounted once and shown one at a time — so it always reflects the
+   *         mounted once and shown one at a time - so it always reflects the
    *         latest page work with no rebuild step.
    *
    * The "Book" button shows the rebuild in actual flip-book form (single book).
@@ -25,7 +25,7 @@
 
   setGuidePrintMode();
 
-  // The override IS the guide — the rebuild pane reflects saved edits too.
+  // The override IS the guide - the rebuild pane reflects saved edits too.
   onMount(() => {
     loadOverrides();
   });
@@ -36,7 +36,7 @@
 
   let mode = $state<"compare" | "flip">("compare");
   // Active NEW-page index (0-based). Front matter is cover/drink/support/readme/
-  // toc (5), so 5 = the first body page (The Grid) — open there, already aligned.
+  // toc (5), so 5 = the first body page (The Grid) - open there, already aligned.
   let idx = $state(5);
   let offset = $state(1); // old index = new index + offset (front-matter delta)
   let newCount = $state(0);
@@ -212,7 +212,7 @@
     </div>
   </div>
 
-  <!-- COMPARE — kept mounted (just hidden in book mode) so pdf canvases persist. -->
+  <!-- COMPARE - kept mounted (just hidden in book mode) so pdf canvases persist. -->
   <div class="cmp" style="display:{mode === 'compare' ? 'grid' : 'none'}">
     <div class="pane" bind:this={paneEl}>
       <div class="cap">Old: v0.5</div>
@@ -249,7 +249,7 @@
   .modes { display: flex; gap: 8px; flex: 0 0 auto; }
   .modes button.on { background: #3730a3; border-color: #3730a3; color: #fff; }
 
-  /* Compare grid — two equal panes, one page each, no scroll. */
+  /* Compare grid - two equal panes, one page each, no scroll. */
   .cmp { flex: 1 1 auto; min-height: 0; grid-template-columns: 1fr 1fr; gap: 1px; background: #2c2c38; }
   .pane { display: flex; flex-direction: column; min-height: 0; background: #1f1f27; padding: 8px 0; }
   .cap { flex: 0 0 auto; font-size: 12px; color: #9a9ab0; text-align: center; padding-bottom: 6px; }
@@ -262,7 +262,7 @@
   .cmp-scale { width: 816px; height: 1056px; transform: scale(var(--s)); transform-origin: top left; background: #fff; }
   .pg :global(.guide-page) { margin: 0; box-shadow: none; }
 
-  /* Book (flip) mode — single book of the rebuild. */
+  /* Book (flip) mode - single book of the rebuild. */
   .flipmode { flex: 1 1 auto; min-height: 0; align-items: center; justify-content: center; padding: 20px; }
   .flip { background: transparent; }
   .flip :global(.page) { background: #fff; overflow: hidden; box-sizing: border-box; }

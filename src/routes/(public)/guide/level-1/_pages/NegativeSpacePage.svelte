@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Negative Space / Body Turns — body page 11 (manifest `negative-space`),
+   * Negative Space / Body Turns - body page 11 (manifest `negative-space`),
    * faithful to the proof PDF / "1.0 - Prerequisites" artboard.
    *
    * Two REAL single-staff sequences (red hand, prop pinned to STAFF), Start + 4
@@ -8,7 +8,7 @@
    * arrows, thumb crossbar from orientations):
    *   360° Isolation  → 4 × PRO around S→E→N→W→S (ccw handpath, prop ccw);
    *                     thumb stays in the whole way (pro preserves).
-   *   4-Petal Antispin → same handpath, 4 × ANTI (prop CW — rotationDirection is
+   *   4-Petal Antispin → same handpath, 4 × ANTI (prop CW - rotationDirection is
    *                     the prop's rotation); thumb alternates in→out→in→out→in
    *                     (anti reverses at 0 turns).
    * Companion click-to-animate is deliberately NOT wired: the reader companion
@@ -49,7 +49,7 @@
   const NOROT = RotationDirection.NO_ROTATION;
 
   // Reader wiring: whole-strip selection ring, golden step ring, and the
-  // companion handoff (all null outside the reader — /print,/book stay inert).
+  // companion handoff (all null outside the reader - /print,/book stay inert).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -63,7 +63,7 @@
     eo: Orientation;
     rot: RotationDirection;
   };
-  // Blue is an invisible placeholder (both-hands step contract) — renderers and
+  // Blue is an invisible placeholder (both-hands step contract) - renderers and
   // the animation engine skip it; only the red staff shows/plays.
   const cellData = (stripId: string, c: Cell) => ({
     id: `ns-${stripId}-${c.step}`,
@@ -107,7 +107,7 @@
   const SIZE = 99.8;
   const STRIPS: Strip[] = [
     {
-      // 360° Isolation — pro all the way around, thumb in throughout.
+      // 360° Isolation - pro all the way around, thumb in throughout.
       id: "iso",
       word: "360° Isolation",
       x: 52.2,
@@ -121,7 +121,7 @@
       ],
     },
     {
-      // 4-Petal Antispin — same handpath, prop counter-rotates (CW), thumb alternates.
+      // 4-Petal Antispin - same handpath, prop counter-rotates (CW), thumb alternates.
       id: "anti",
       word: "4-Petal Antispin",
       x: 48.3,
@@ -314,7 +314,7 @@
     font-size: 48px;
   }
 
-  /* Per-sequence wrapper — carries the shared selection ring (.tka-seq-cell). */
+  /* Per-sequence wrapper - carries the shared selection ring (.tka-seq-cell). */
   .strip-wrap {
     position: absolute;
   }

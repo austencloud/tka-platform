@@ -1,18 +1,18 @@
 <script lang="ts">
   /**
-   * LOOPs — body page (manifest `permutations`, retitled "LOOPs"), faithful to
+   * LOOPs - body page (manifest `permutations`, retitled "LOOPs"), faithful to
    * proof p32 / "1.2 - Permutations" artboard ("CAPs"). FACELIFT TERMINOLOGY:
    * the old guide's "CAP / Continuous Assembly Pattern" reads "LOOP" here, per
    * the tracker convention (the app's term).
    *
    * Three 8-step LOOPs (Start + 2 rows of 4, real staff pictographs), one per
    * LOOP type, with the system's reversal indicators exactly where the prop
-   * rotation flips (`blueReversal`/`redReversal` — dots are prop-only):
-   *   Mirrored — AABB then its horizontal-plane reflection (both hands flag R
+   * rotation flips (`blueReversal`/`redReversal` - dots are prop-only):
+   *   Mirrored - AABB then its horizontal-plane reflection (both hands flag R
    *   on step 5, where CW becomes CCW).
-   *   Rotated  — DΨDΨDΨDΨ from β: each D+Ψ repetition ends 90° rotated
+   *   Rotated  - DΨDΨDΨDΨ from β: each D+Ψ repetition ends 90° rotated
    *   (S→W→N→E→S, home). No reversals (D never flips; Ψ's dash has none).
-   *   Swapped  — Δ-TQZ- twice from β: the second repetition swaps the
+   *   Swapped  - Δ-TQZ- twice from β: the second repetition swaps the
    *   right/left roles. Blue flags R on steps 3 and 5, red on step 7.
    * All letters MCP-verified earlier this run (A/B, D, Ψ, T, Q, Δ-, Z-).
    *
@@ -51,7 +51,7 @@
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
   const NOROT = RotationDirection.NO_ROTATION;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -206,10 +206,10 @@
       },
     }) as unknown as StepData;
 
-  // Static authoring — build each LOOP's full strip (start + numbered steps),
+  // Static authoring - build each LOOP's full strip (start + numbered steps),
   // with reversal dots derived from the motions themselves (bakeReversals;
   // never hand-authored). An admin override (guide-overrides.svelte) replaces
-  // the WHOLE strip when present, resolved before baking — reversal dots stay
+  // the WHOLE strip when present, resolved before baking - reversal dots stay
   // derived either way. Reactive ($derived) so a save/revert/reset while the
   // reader is open re-renders these cells without a refresh.
   const resolvedStrip = (l: LoopDef): StepData[] => {

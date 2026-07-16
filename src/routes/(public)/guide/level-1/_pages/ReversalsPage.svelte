@@ -1,21 +1,21 @@
 <script lang="ts">
   /**
-   * Reversals — body page (manifest `reversals`), faithful to proof p33 /
+   * Reversals - body page (manifest `reversals`), faithful to proof p33 /
    * "1.2 - Reversals" artboard.
    *
    * Three reversal types, each shown as two single-staff strips (Start at N,
    * thumb in, + 2 steps; red strip then blue strip):
-   *   Hand-reversal — the hand returns, the prop keeps spinning: pro n→e then
-   *   anti e→n (red) / anti n→w then pro w→n (blue). No R — the prop never
+   *   Hand-reversal - the hand returns, the prop keeps spinning: pro n→e then
+   *   anti e→n (red) / anti n→w then pro w→n (blue). No R - the prop never
    *   flips.
-   *   Prop-reversal — the hand continues, the prop reverses: pro n→e then
+   *   Prop-reversal - the hand continues, the prop reverses: pro n→e then
    *   anti e→s (red, R) / anti n→w then pro w→s (blue, R).
-   *   Full-reversal — prop AND hand retrace: pro n→e then pro e→n (red, R) /
+   *   Full-reversal - prop AND hand retrace: pro n→e then pro e→n (red, R) /
    *   anti n→w then anti w→n (blue, R).
    * Reversal flags follow the prop-only rule (R exactly where the prop's
    * rotation direction flips); orientations follow the algebra (pro keeps,
    * anti flips). FACELIFT: the old guide drew the "R" in the gutter between
-   * pictographs — here it's the system's own reversal indicator inside the
+   * pictographs - here it's the system's own reversal indicator inside the
    * step, same teaching.
    *
    * Reader: each strip click-animates Start + 2 steps with the staff.
@@ -50,7 +50,7 @@
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
   const NOROT = RotationDirection.NO_ROTATION;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -124,7 +124,7 @@
   const stripSteps = (s: StripDef): StepData[] => [startBox(s), stepData(s, 0), stepData(s, 1)];
 
   // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
-  // present, resolved before baking — reversal dots stay derived either way.
+  // present, resolved before baking - reversal dots stay derived either way.
   // Reactive so a save/revert/reset while the reader is open re-renders.
   const resolvedStripSteps = (s: StripDef): StepData[] => {
     const authored = stripSteps(s);

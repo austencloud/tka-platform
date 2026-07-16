@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Type 2 — Shifts — body page 6, a faithful rebuild of the proof PDF
+   * Type 2 - Shifts - body page 6, a faithful rebuild of the proof PDF
    * (level-1-v05.pdf, page 12) in the CURRENT renderer's language. Same recipe
    * as GammaPage: three proof-placed strips of real PictographContainers, every
    * adornment system-owned (float arrows, Start/count StepNumber, per-box
@@ -9,7 +9,7 @@
    * A Type 2 motion (a "Shift") = ONE hand shifts while the OTHER stays static.
    * So every box has exactly one moving hand → one float arrow; the still hand
    * is STATIC (from === to, no arrow). One arrow per box means no same-edge
-   * collision, so — unlike Gamma's antiparallel cells — NO box needs a letter;
+   * collision, so - unlike Gamma's antiparallel cells - NO box needs a letter;
    * default float placement is correct everywhere.
    *
    *   - Hand motion   → the moving hand is a PRO shift (hand-path mode makes it a
@@ -21,11 +21,11 @@
    *                     showElemental is off.
    *
    * Three strips (proof image placements, pt, top-left origin, x/y used directly
-   * — the proof page already carries its own "Type 2 - Shifts" title, so unlike
+   * - the proof page already carries its own "Type 2 - Shifts" title, so unlike
    * Gamma there is no fitY squeeze):
-   *   single  L56 T118.2 500×100  (Start + 4)   — one hand shifts, one static
-   *   same    L56 T308.8 500×200  (Start + 8)   — both handpaths same direction
-   *   opp     L56 T550.9 500×200  (Start + 8)   — handpaths opposite directions
+   *   single  L56 T118.2 500×100  (Start + 4)   - one hand shifts, one static
+   *   same    L56 T308.8 500×200  (Start + 8)   - both handpaths same direction
+   *   opp     L56 T550.9 500×200  (Start + 8)   - handpaths opposite directions
    * The 8-box strips lay out Start,1,2,3,4 on top and _,5,6,7,8 below (box 5
    * under box 1), like Gamma's switch. Sequences decoded from the artboard and
    * verified to close: single = blue static S, red floats CCW; same = every
@@ -58,7 +58,7 @@
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 
   // Golden step ring: which strip cell the companion is currently animating
-  // (null outside the reader — /print + /book render no ring).
+  // (null outside the reader - /print + /book render no ring).
   const activeStep = getGuideActiveStep();
   const selection = getSequenceSelection();
 
@@ -100,7 +100,7 @@
   const c = (m: Move, step: number): Cell => ({ m, step });
 
   const STRIPS: Strip[] = [
-    // Single Shift — blue holds at S; red floats CCW one point per count.
+    // Single Shift - blue holds at S; red floats CCW one point per count.
     {
       x: 56,
       y: 118.2,
@@ -114,7 +114,7 @@
         ],
       ],
     },
-    // Same direction — every shift clockwise; anchor hand swaps at beta.
+    // Same direction - every shift clockwise; anchor hand swaps at beta.
     {
       x: 56,
       y: 308.8,
@@ -135,7 +135,7 @@
         ],
       ],
     },
-    // Opposite directions — red always CCW, blue always CW; shifting hand alternates.
+    // Opposite directions - red always CCW, blue always CW; shifting hand alternates.
     {
       x: 56,
       y: 550.9,
@@ -331,12 +331,12 @@
     overflow: hidden;
   }
 
-  /* Per-sequence wrapper — carries the shared selection ring (.tka-seq-cell). */
+  /* Per-sequence wrapper - carries the shared selection ring (.tka-seq-cell). */
   .strip-wrap {
     position: absolute;
   }
 
-  /* Centred paragraph blocks — full sheet width, one box per paragraph. */
+  /* Centred paragraph blocks - full sheet width, one box per paragraph. */
   .para {
     position: absolute;
     left: 0;

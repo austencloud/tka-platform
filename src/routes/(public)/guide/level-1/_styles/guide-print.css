@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   Level 1 Guide — Printable document theme
+   Level 1 Guide - Printable document theme
    Layered ON TOP of guide.css. Only /guide/level-1/print imports it.
    Re-themes the dark glassmorphic guide to ink-on-white, single column,
    and sets up clean page breaks for print / Save-as-PDF.
@@ -166,7 +166,7 @@
 
 /* === Print page setup + breaks === */
 @media print {
-  /* margin:0 — each GuidePage is a true 8.5×11 sheet and supplies its own 0.6in
+  /* margin:0 - each GuidePage is a true 8.5×11 sheet and supplies its own 0.6in
      margin via .page-body padding, so the recto/verso footer prints where it
      shows on screen. */
   @page {

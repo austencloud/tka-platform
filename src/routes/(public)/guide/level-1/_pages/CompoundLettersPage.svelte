@@ -1,22 +1,22 @@
 <script lang="ts">
   /**
-   * Compound Letters — body page (manifest `lt1-dj-ek-fl`, retitled "Compound
+   * Compound Letters - body page (manifest `lt1-dj-ek-fl`, retitled "Compound
    * Letters"), faithful to proof p23 / "1.1 - Compound Letters" artboard (the
    * v05 proof merged the old compound-letters + compound-words pages into one).
    *
    * The β↔α letters in both handpath modes, all real staff pictographs:
-   *   Tog-Opp half  — β→α from N (D E F end blue W / red E);
+   *   Tog-Opp half  - β→α from N (D E F end blue W / red E);
    *                   α→β from blue W / red E (J K L end both S).
-   *   Split-Opp half — β→α from W (D E F end blue S / red N);
+   *   Split-Opp half - β→α from W (D E F end blue S / red N);
    *                   α→β from blue S / red N (J K L end both E).
    * Columns Iso / Anti / Hybrid (the proof's own captions): D/J dual-pro,
-   * E/K dual-anti, F/L hybrid blue-anti + red-pro — MCP-confirmed
+   * E/K dual-anti, F/L hybrid blue-anti + red-pro - MCP-confirmed
    * (`get_letter_explanation` D–L), and per the page's own rule ("All
    * pictographs can be rotated or mirrored without changing letters") the
    * artboard's rotations of the MCP base variations stay the same letters.
    *
    * Bottom: the three compound WORDS as 2-step strips with the proof's cute
-   * phrases — DJ Disco Jam, EK Exploding Kitten, FL Fruity Loops — chaining
+   * phrases - DJ Disco Jam, EK Exploding Kitten, FL Fruity Loops - chaining
    * β(S)→α(W/E)→β(N).
    *
    * Reader: every grid cell animates Start→letter; every word strip animates
@@ -55,7 +55,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -252,7 +252,7 @@
   const SUB_CENTERS = [94.4, 184.4, 274.4, 378.3, 468.3, 558.3];
   const SUB_Y = 241.5;
 
-  // Margin row labels (dropped by extraction — real PositionGlyphs).
+  // Margin row labels (dropped by extraction - real PositionGlyphs).
   const MARGINS = [
     { start: GridPosition.BETA1, end: GridPosition.ALPHA1, t: "β→α", y: 300 },
     { start: GridPosition.ALPHA1, end: GridPosition.BETA1, t: "α→β", y: 390 },

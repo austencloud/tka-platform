@@ -9,7 +9,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 /**
- * Verbatim prose lifted from _pages/Type1AlphaBetaPage.svelte (Austen's words —
+ * Verbatim prose lifted from _pages/Type1AlphaBetaPage.svelte (Austen's words -
  * never AI-written). Pictograph construction is a faithful copy of that same
  * file's `motion`/`box`/STRIPS derivation (identical enums, locations, letters
  * → identical hand pictographs), minus the reader-only wiring (selection,
@@ -21,7 +21,7 @@ const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 // A hand that moves is authored as a PRO shift; because both props are HAND,
 // PictographPreparer's hand-path mode converts it to a FLOAT (handPath derived
 // from the locations) and the arrow pipeline renders the system float arrow
-// along the path — the same route the app itself takes for hand pictographs.
+// along the path - the same route the app itself takes for hand pictographs.
 // A hand that stays is STATIC (no arrow).
 const motion = (color: MotionColor, from: GridLocation, to: GridLocation) =>
   createMotionData({
@@ -104,11 +104,11 @@ const STRIPS: Strip[] = [
 ];
 
 // Strip → Start + 4 real pictographs. Type1AlphaBetaPage's PICTO_FLAGS keep
-// showReversals off, so the strip is used directly — no bakeReversals needed.
+// showReversals off, so the strip is used directly - no bakeReversals needed.
 const stripSteps = (strip: Strip): PictographData[] =>
   strip.moves.map((m, i) => box(m, i, strip.letters[i] ?? null)) as unknown as PictographData[];
 
-/** HAND props — matching Type1AlphaBetaPage's PICTO_FLAGS. */
+/** HAND props - matching Type1AlphaBetaPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.HAND } as const;
 
 const SEQ_WORDS = ["α→α Split-Same", "β→β Tog-Same", "α↔β Split-Opp", "α↔β Tog-Opp"];

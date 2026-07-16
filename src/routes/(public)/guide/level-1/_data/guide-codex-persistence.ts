@@ -1,5 +1,5 @@
 // Pure serialize/restore for the guide Codex page's durable view prefs.
-// The page itself (GuideCodexPage.svelte) is the printable sheet — there is no
+// The page itself (GuideCodexPage.svelte) is the printable sheet - there is no
 // letter/grid-mode selection anymore (that lived in the retired Explorer-style
 // layout). What persists now is just the reader's two live controls: which
 // prop family renders across the whole sheet, and which layers are visible.
@@ -11,7 +11,7 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 export const GUIDE_CODEX_STORAGE_KEY = "guide-codex-view-prefs";
 const GUIDE_CODEX_PREFS_VERSION = 3;
 
-/** A turn count applied uniformly to every cell — 0 by default (the canonical
+/** A turn count applied uniformly to every cell - 0 by default (the canonical
  *  base codex; letters.json bakes in 1, which the codex normalizes away).
  *  "fl" is float, matching the option picker's turns model. */
 export type GuideCodexTurns = number | "fl";
@@ -25,7 +25,7 @@ export function normalizeGuideCodexTurns(v: unknown): GuideCodexTurns {
   return 0;
 }
 
-/** Prop families that actually render in the codex — see prop-type.ts. */
+/** Prop families that actually render in the codex - see prop-type.ts. */
 export const GUIDE_CODEX_PROP_TYPES = [
   PropType.STAFF,
   PropType.CLUB,
@@ -55,7 +55,7 @@ export interface GuideCodexPrefs {
 
 /** Matches the printed sheet's hardcoded defaults exactly (grid + TKA glyph
  *  visible; the elemental/TnD glyph, positions, reversals and non-radial
- *  markers hidden) — so switching into the reader shows the identical sheet
+ *  markers hidden) - so switching into the reader shows the identical sheet
  *  before the user touches a single control. */
 export function defaultGuideCodexVisibility(): GuideCodexVisibility {
   return {

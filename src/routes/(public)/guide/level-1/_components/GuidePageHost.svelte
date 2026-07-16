@@ -1,16 +1,16 @@
 <script lang="ts">
   /**
-   * GuidePageHost — ONE guide topic rendered as its own page: the crawlable,
+   * GuidePageHost - ONE guide topic rendered as its own page: the crawlable,
    * prerendered SEO surface AND the interactive reader for that topic, in one
    * component. Replaces the doorway/scroller split (spec:
    * 2026-07-14-guide-crawlable-paginated-reader-design.md).
    *
    * Renders the topic through the sheet⇄flow switcher: FLOW (mobile-first
    * reflow column) is the default so the prerendered HTML Google sees is the
-   * crawlable, mobile-friendly view — Austen's verbatim prose + every
+   * crawlable, mobile-friendly view - Austen's verbatim prose + every
    * pictograph's synchronous describePictograph aria-label. SHEET (the
    * print-faithful 8.5×11 page, the book layout) is the desktop toggle,
-   * rendered from the SAME built _pages component /print and /book use — so the
+   * rendered from the SAME built _pages component /print and /book use - so the
    * book product is reused, never re-authored, never risked.
    *
    * The companion (tap-a-strip-to-animate) reuses GuideReader's exact context
@@ -63,7 +63,7 @@
   );
 
   // Default FLOW so the prerendered (crawlable) HTML is the mobile-first reflow.
-  // Local state — NOT guideFramePrefs, which defaults to "sheet" on the server
+  // Local state - NOT guideFramePrefs, which defaults to "sheet" on the server
   // and would make prerender emit the mobile-hostile 8.5in sheet. Sheet is an
   // opt-in toggle. Pages with no reflow content yet render sheet-only.
   let frame = $state<GuideFrame>(canFlow ? "flow" : "sheet");
@@ -72,11 +72,11 @@
     if (!canFlow && frame === "flow") frame = "sheet";
   });
 
-  // Pictographs render eagerly (no IntersectionObserver — matches /print, and a
+  // Pictographs render eagerly (no IntersectionObserver - matches /print, and a
   // scaled/off-screen sheet needs it). getGuidePrintMode() → light ink-on-white.
   setGuidePrintMode();
 
-  // Companion wiring — mirrors GuideReader exactly (tap a strip → animate it).
+  // Companion wiring - mirrors GuideReader exactly (tap a strip → animate it).
   const activeStep = new GuideActiveStep();
   setGuideActiveStep(activeStep);
   const selection = new SequenceSelection();
@@ -113,7 +113,7 @@
 
   // Effective page theme (drives dark-mode pictographs in the flow view). Mirrors
   // the CSS resolution: an explicit data-theme wins, else prefers-color-scheme.
-  // Client-only — the prerendered HTML carries only pictograph aria-labels (the
+  // Client-only - the prerendered HTML carries only pictograph aria-labels (the
   // SVG hydrates), so this never causes an SSR mismatch. Reactive to a theme toggle.
   let isDark = $state(false);
   onMount(() => {
@@ -147,7 +147,7 @@
 
 <main class="guide-page-route">
   <header class="topic-hero">
-    <!-- The Page (sheet) view is a self-titling print reproduction — it paints its
+    <!-- The Page (sheet) view is a self-titling print reproduction - it paints its
          OWN calligraphic title + intro line. Showing the hero title/tagline above
          it repeats both. So the hero title is visually hidden in sheet mode (kept
          in the a11y tree as the page h1) and the tagline is dropped; the reflow
@@ -156,7 +156,7 @@
     {#if seo.tagline && frame === "flow"}<p class="hero-tagline">{seo.tagline}</p>{/if}
     {#if canFlow}
       <!-- SegmentedControl lives under $lib/shared/3d and is on the CF-Worker SSR
-           stub list (25 MiB worker cap — reference_cf_worker_size_limit), so its
+           stub list (25 MiB worker cap - reference_cf_worker_size_limit), so its
            SSR stub is not a valid component and crashes prerender. The toggle is
            interactive-only (no crawl value), so render it client-side; the
            reserved-height wrapper keeps the flow content from shifting when it
@@ -235,7 +235,7 @@
 {/if}
 
 <style>
-  /* Standalone editorial topic page — owns its light/dark palette (not the app's
+  /* Standalone editorial topic page - owns its light/dark palette (not the app's
      dark-canvas --theme-* vars) and hands FlowFrame the matching --ink. */
   .guide-page-route {
     min-height: 100vh;
@@ -246,7 +246,7 @@
     --ink-dim: #555;
     --glyph-invert: 0;
     /* Size container so FlowFrame's card rows can break out to a fraction of THIS
-       route's width (cqw) — using wide/4K screens — while the reading column stays
+       route's width (cqw) - using wide/4K screens - while the reading column stays
        narrow. inline-size only: block-size (min-height: 100vh) is unaffected. */
     container-type: inline-size;
   }
@@ -295,7 +295,7 @@
     display: flex;
     justify-content: center;
     /* Reserve the toggle's height so it doesn't shift the flow content when it
-       hydrates in client-side (it renders SSR-empty — see the browser gate). */
+       hydrates in client-side (it renders SSR-empty - see the browser gate). */
     min-height: 50px;
   }
   .frame-toggle :global(.segmented-control) {
@@ -376,7 +376,7 @@
     flex: 1 1 0;
   }
 
-  /* Companion appears on strip-click as a fixed bottom drawer — an overlay, so it
+  /* Companion appears on strip-click as a fixed bottom drawer - an overlay, so it
      never shifts page layout (no-layout-shift). */
   .companion-drawer {
     position: fixed;

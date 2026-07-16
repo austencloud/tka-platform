@@ -1,30 +1,30 @@
 <script lang="ts">
   /**
-   * 2-Turns (Dashes / Static) — Level 2 body page (manifest
+   * 2-Turns (Dashes / Static) - Level 2 body page (manifest
    * `two-turns-dash-static`), faithful to the source artboard (level-2.pdf page
    * 23). Self-titled (Dashes + Static heads). Three strips, now REAL
-   * pictographs end to end (Phase 3 of the halved-pictograph pipeline —
+   * pictographs end to end (Phase 3 of the halved-pictograph pipeline -
    * docs/superpowers/specs/2026-07-14-halved-pictograph-pipeline-design.md §7):
    *
-   *   Dash (quarters) — start S(in) → ¼ → ½ → ¾ → end N(out), broken into the
+   *   Dash (quarters) - start S(in) → ¼ → ½ → ¾ → end N(out), broken into the
    *                     four parts the proof calls out; = DASH s→n IN→OUT CCW
    *                     turns=2 (up → down → up on a vertical dash).
-   *   Dash (halves)   — the same dash sampled in half (start/halfway/end).
-   *   Static (halves) — start E(in) → halfway (360°, out at 180°) → end E(in)
+   *   Dash (halves)   - the same dash sampled in half (start/halfway/end).
+   *   Static (halves) - start E(in) → halfway (360°, out at 180°) → end E(in)
    *                     = STATIC E IN→IN CCW turns=2 (in → out → in, a 360° turn
    *                     in place).
    *
    * start/end frames are real single-staff pictographs (red hand only,
    * showArrow=false). Halfway frames (½ of dash-quarters, dash-halves,
-   * static-halves) are buildHalvedStep(combined, 0.5) — a real pictograph at
+   * static-halves) are buildHalvedStep(combined, 0.5) - a real pictograph at
    * the midpoint with the correct halfway orientation (Phase 1) and half-arrow
    * asset (Phase 2); all three are whole 2-turn motions, always on-lattice, so
-   * this always succeeds — the PoseFrame fallback exists only for the null
-   * contract. The dash-quarters ¼/¾ frames are NOT pipeline-representable — a
+   * this always succeeds - the PoseFrame fallback exists only for the null
+   * contract. The dash-quarters ¼/¾ frames are NOT pipeline-representable - a
    * quarter-point sits between the grid's named locations, a domain fact, not
-   * a gap (see build-halved-step.ts) — so they stay on the visual-only
+   * a gap (see build-halved-step.ts) - so they stay on the visual-only
    * PoseFrame path (poseAt + Austen's own end-direction glyphs via
-   * pose-arrow.ts — the dash bow, the static 360° loop — same drawings the old
+   * pose-arrow.ts - the dash bow, the static 360° loop - same drawings the old
    * lifted artwork used, just computed at runtime instead of baked). The
    * combined frame of each strip is the real full-motion pictograph (system
    * arrow) and the click-to-animate target.
@@ -104,7 +104,7 @@
   const dashHCombined = redStaff("dash-h-full", MotionType.DASH, SO_, N, IN, OUT, CCW, 2);
   const staticCombined = redStaff("static-full", MotionType.STATIC, E, E, IN, IN, CCW, 2);
 
-  // ── Click-to-animate — also the "full step" buildHalvedStep needs (both
+  // ── Click-to-animate - also the "full step" buildHalvedStep needs (both
   // hands present; blue is an invisible placeholder, per the both-required
   // step contract). ───────────────────────────────────────────────────────
   const ANIM = {
@@ -134,7 +134,7 @@
   // ── Strip model ────────────────────────────────────────────────────────────
   // Every frame carries a `render` mode: a real pose (start/end), a real
   // halved pictograph (half, PoseFrame fallback), a runtime PoseFrame pose
-  // (pose — off-lattice quarters), or the real full-motion pictograph
+  // (pose - off-lattice quarters), or the real full-motion pictograph
   // (combined, click-to-animate).
   type FrameRender =
     | { kind: "start" | "end"; loc: GridLocation; ori: Orientation }

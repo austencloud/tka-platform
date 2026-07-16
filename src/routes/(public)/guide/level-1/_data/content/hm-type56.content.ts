@@ -9,7 +9,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 /**
- * Verbatim prose lifted from _pages/Type456Page.svelte (Austen's words —
+ * Verbatim prose lifted from _pages/Type456Page.svelte (Austen's words -
  * never AI-written). Pictograph construction is a faithful copy of that same
  * file's `motion`/`box`/STRIPS derivation, minus the reader-only wiring
  * (selection, overrides, click-to-animate, edit-mode dragging, pt geometry,
@@ -71,7 +71,7 @@ type Cell = { m: Move; step: number; letter?: Letter };
 type Strip = { key: string; word: string; cells: Cell[] };
 
 const STRIPS: Strip[] = [
-  // Type 4 — Dash. One hand dashes, one static → one arrow, never collides.
+  // Type 4 - Dash. One hand dashes, one static → one arrow, never collides.
   {
     key: "t56-4a",
     word: "α → β",
@@ -92,7 +92,7 @@ const STRIPS: Strip[] = [
       { m: [SO_, SO_, W, E], step: 4 }, //  red dash W→E, blue static S  (→ Start)
     ],
   },
-  // Type 5 — Dual-Dash. Both dash → letters key the arrow separation.
+  // Type 5 - Dual-Dash. Both dash → letters key the arrow separation.
   {
     key: "t56-5a",
     word: "α → α",
@@ -117,7 +117,7 @@ const STRIPS: Strip[] = [
       { m: [SO_, N, E, W], step: 1, letter: Letter.LAMBDA_DASH }, // blue S→N (E) / red E→W (S)
     ],
   },
-  // Type 6 — Static. No hand movement → no arrows; the letter glyph is the point.
+  // Type 6 - Static. No hand movement → no arrows; the letter glyph is the point.
   {
     key: "t56-6a",
     word: "α",
@@ -145,7 +145,7 @@ const STRIPS: Strip[] = [
 ];
 
 // Flatten a strip into ordered pictographs. Type456Page's PICTO_FLAGS keep
-// showReversals off, so this is used directly — no bakeReversals needed.
+// showReversals off, so this is used directly - no bakeReversals needed.
 const stripSteps = (s: Strip): PictographData[] =>
   s.cells.map((cell, i) => box(cell.m, cell.step, `seq-${i}`, cell.letter ?? null)) as unknown as PictographData[];
 const stripByKey = (key: string): Strip => STRIPS.find((s) => s.key === key)!;
@@ -159,7 +159,7 @@ const T6A = stripByKey("t56-6a");
 const T6B = stripByKey("t56-6b");
 const T6C = stripByKey("t56-6c");
 
-/** HAND props — matching Type456Page's PICTO_FLAGS. */
+/** HAND props - matching Type456Page's PICTO_FLAGS. */
 const RENDER = { propType: PropType.HAND } as const;
 
 export const hmType56Content: GuideBlock[] = [

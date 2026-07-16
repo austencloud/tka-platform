@@ -1,13 +1,13 @@
 <script lang="ts">
   /**
-   * Hand Motions — body page 3, a faithful reproduction of the proof PDF
+   * Hand Motions - body page 3, a faithful reproduction of the proof PDF
    * (level-1-v05.pdf, page 9). Text runs sit at the PDF's own coordinates
    * (top-left origin, 612×792pt sheet, ×4/3 to px); multi-line passages render
    * as GROUPED blocks (one box per paragraph, like the original), not
    * per-line runs.
    *
    * Every motion box is a REAL single-hand pictograph through the current
-   * renderer — nothing hand-drawn on them:
+   * renderer - nothing hand-drawn on them:
    *   shift  → PRO W→N / W→S; PictographPreparer's hand-path mode converts to
    *            FLOAT so the arrow pipeline places the canonical float arrows
    *   dash   → DASH W→E; the system dash arrow
@@ -20,9 +20,9 @@
    * (underlining it) and ends in a solid arrowhead pointing at the pictograph
    * box itself.
    *
-   * The six combination names are two-tone colored from LETTER_TYPE_COLORS —
+   * The six combination names are two-tone colored from LETTER_TYPE_COLORS -
    * the system's canonical letter-type color code (Type1 Dual-Shift …
-   * Type6 Static) — with hairline table dividers between the six cells,
+   * Type6 Static) - with hairline table dividers between the six cells,
    * matching the original.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
@@ -51,7 +51,7 @@
   const S = 816 / 612; // pt → px (4/3)
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -88,7 +88,7 @@
 
   // ── Reader click-to-animate ─────────────────────────────────────────────────
   // A demo box plays its single blue-hand motion (the other hand is an invisible
-  // placeholder — the both-hands step contract); a combination cell plays a
+  // placeholder - the both-hands step contract); a combination cell plays a
   // canonical two-hand example of exactly what its description says. Every strip
   // is Start + one step, so the companion opens from the resting pose.
   const demoStep = (key: string, type: MotionType, from: GridLocation, to: GridLocation, stepNumber: number) =>
@@ -116,7 +116,7 @@
   ];
 
   // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
-  // present, resolved before baking — reversal dots stay derived either way.
+  // present, resolved before baking - reversal dots stay derived either way.
   // Reactive ($derived) so a save/revert/reset re-renders without a refresh.
   const resolvedDemoStrip = (key: string, type: MotionType, from: GridLocation, to: GridLocation): StepData[] => {
     const authored = authoredDemoSteps(key, type, from, to);
@@ -137,7 +137,7 @@
   );
   const demoSteps = (key: string): StepData[] => RESOLVED_DEMOS[key]!;
 
-  // Two-hand combination examples — one per named cell, blue does the first
+  // Two-hand combination examples - one per named cell, blue does the first
   // motion of the description, red the second. Locations keep the ends distinct.
   type ComboHand = { type: MotionType; from: GridLocation; to: GridLocation };
   type ComboDemo = { word: string; blue: ComboHand; red: ComboHand };
@@ -176,7 +176,7 @@
   const authoredComboSteps = (ci: number, d: ComboDemo): StepData[] => [comboStep(ci, d, true), comboStep(ci, d, false)];
 
   // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
-  // present, resolved before baking — reversal dots stay derived either way.
+  // present, resolved before baking - reversal dots stay derived either way.
   // Reactive ($derived) so a save/revert/reset re-renders without a refresh.
   const resolvedComboStrip = (ci: number, d: ComboDemo, key: string): StepData[] => {
     const authored = authoredComboSteps(ci, d);
@@ -203,13 +203,13 @@
     };
   });
 
-  // ── Flowchart (pt) — the proof's thick line + solid arrowheads ─────────────
+  // ── Flowchart (pt) - the proof's thick line + solid arrowheads ─────────────
   // One line leaves the Start box's right edge at its centre and runs straight
   // through to the dash pictograph (same height). A spine splits up to the
   // shift row and down to the static row. Each branch underlines its word and
   // ends in a solid arrowhead pointing at the pictograph box.
   const START_RX = 60.6 + SIZE; // Start box right edge (170.6)
-  const START_CY = 233.1 + SIZE / 2; // 288.1 — also the dash branch line
+  const START_CY = 233.1 + SIZE / 2; // 288.1 - also the dash branch line
   const SPINE_X = 178;
   const TIP_X = 295.5; // arrowhead tip, just left of the boxes at x 298.5
   const ROWS_Y = [172, START_CY, 401.5]; // shift / dash / static branch lines
@@ -217,7 +217,7 @@
   const HEAD_L = 9; // solid arrowhead length
   const HEAD_H = 7.4;
 
-  // ── Six combination names — the system's letter-type color code ────────────
+  // ── Six combination names - the system's letter-type color code ────────────
   const T1 = LETTER_TYPE_COLORS[LetterType.TYPE1]; // Dual-Shift: cyan, purple
   const T2 = LETTER_TYPE_COLORS[LetterType.TYPE2]; // Shift: purple
   const T3 = LETTER_TYPE_COLORS[LetterType.TYPE3]; // Cross-Shift: green, purple
@@ -375,7 +375,7 @@
     </div>
   {/each}
 
-  <!-- Combination cells: invisible hit regions over name + description — click
+  <!-- Combination cells: invisible hit regions over name + description - click
        plays a canonical two-hand example of that combination. -->
   {#each COMBO_DEMOS as d, ci (d.word + ci)}
     {@const key = `hm-combo-${ci}`}
@@ -490,7 +490,7 @@
     font-style: italic;
   }
 
-  /* Two-tone combination names — bold, canonical letter-type colors inline. */
+  /* Two-tone combination names - bold, canonical letter-type colors inline. */
   .combo {
     position: absolute;
     font-family: ui-sans-serif, system-ui, "Segoe UI", sans-serif;
@@ -512,7 +512,7 @@
     border-radius: 8px;
   }
 
-  /* Flowchart — thick ink lines + solid arrowheads, proof style. */
+  /* Flowchart - thick ink lines + solid arrowheads, proof style. */
   .connectors {
     position: absolute;
     inset: 0;

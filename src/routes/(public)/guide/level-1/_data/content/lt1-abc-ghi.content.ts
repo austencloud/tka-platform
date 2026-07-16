@@ -1,7 +1,7 @@
 /**
  * Single source for the Alpha and Beta Words SEO doorway (manifest id
  * "lt1-abc-ghi"). Prose is lifted VERBATIM from _pages/AlphaBetaWordsPage.svelte
- * (Austen's words — never AI-written); the pictograph construction is a
+ * (Austen's words - never AI-written); the pictograph construction is a
  * FAITHFUL COPY of that same file's word-strip derivation (same enums,
  * locations, orientations, rotation directions → identical staff pictographs),
  * minus the reader-only wiring (selection, overrides, click-to-animate, shared
@@ -29,7 +29,7 @@ const { IN, OUT } = Orientation;
 const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-// ── Motion authoring — copied from AlphaBetaWordsPage.svelte. Pro rides the
+// ── Motion authoring - copied from AlphaBetaWordsPage.svelte. Pro rides the
 // CW handpath (prop CW, in→in); anti counter-rotates (prop CCW) and flips the
 // thumb every letter, so its legs alternate in→out / out→in.
 type Leg = [GridLocation, GridLocation];
@@ -138,12 +138,12 @@ const startBox = (block: "alpha" | "beta"): StepData =>
     },
   }) as unknown as StepData;
 
-// Start + 4 letters — the full playable strip, matching words.content.ts's
+// Start + 4 letters - the full playable strip, matching words.content.ts's
 // rowStrip pattern.
 const wordStrip = (w: WordDef): PictographData[] =>
   [startBox(w.block), ...[0, 1, 2, 3].map((i) => wordStep(w, i))] as unknown as PictographData[];
 
-/** STAFF props, TKA letter glyph on — matching AlphaBetaWordsPage's PictographContainer flags. */
+/** STAFF props, TKA letter glyph on - matching AlphaBetaWordsPage's PictographContainer flags. */
 const RENDER = { propType: PropType.STAFF } as const;
 
 export const lt1AbcGhiContent: GuideBlock[] = [
@@ -167,7 +167,7 @@ export const lt1AbcGhiContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2", "3", "4"],
     card: true,
     render: RENDER,
-    caption: "AAAA — α→α Split-Same",
+    caption: "AAAA: α→α Split-Same",
   },
   {
     kind: "pictographGroup",
@@ -177,7 +177,7 @@ export const lt1AbcGhiContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2", "3", "4"],
     card: true,
     render: RENDER,
-    caption: "BBBB — α→α Split-Same",
+    caption: "BBBB: α→α Split-Same",
   },
   {
     kind: "pictographGroup",
@@ -187,7 +187,7 @@ export const lt1AbcGhiContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2", "3", "4"],
     card: true,
     render: RENDER,
-    caption: "CCCC — α→α Split-Same",
+    caption: "CCCC: α→α Split-Same",
   },
   {
     kind: "pictographGroup",
@@ -197,7 +197,7 @@ export const lt1AbcGhiContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2", "3", "4"],
     card: true,
     render: RENDER,
-    caption: "GGGG — β→β Tog-Same",
+    caption: "GGGG: β→β Tog-Same",
   },
   {
     kind: "pictographGroup",
@@ -207,7 +207,7 @@ export const lt1AbcGhiContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2", "3", "4"],
     card: true,
     render: RENDER,
-    caption: "HHHH — β→β Tog-Same",
+    caption: "HHHH: β→β Tog-Same",
   },
   {
     kind: "pictographGroup",
@@ -217,6 +217,6 @@ export const lt1AbcGhiContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2", "3", "4"],
     card: true,
     render: RENDER,
-    caption: "IIII — β→β Tog-Same",
+    caption: "IIII: β→β Tog-Same",
   },
 ];

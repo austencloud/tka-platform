@@ -14,7 +14,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { bakeReversals } from "../guide-sequence-adapter";
 
-// Verbatim prose lifted from _pages/FullReversalLoopsPage.svelte (Austen's words — never AI-written).
+// Verbatim prose lifted from _pages/FullReversalLoopsPage.svelte (Austen's words - never AI-written).
 // Pictograph construction is a FAITHFUL COPY of that same file's step authoring (same
 // helpers, same locations/orientations → identical staff pictographs), minus the
 // reader-only wiring (selection, overrides, click-to-animate, sheet geometry).
@@ -73,7 +73,7 @@ type SeqDef = {
 };
 const SEQS: SeqDef[] = [
   {
-    // CCKE ×2 — full reversal at each C-C corner; R/R derives on 2,3,5,6,7.
+    // CCKE ×2 - full reversal at each C-C corner; R/R derives on 2,3,5,6,7.
     key: "frl-ccke",
     word: "CCKE",
     startLetter: Letter.ALPHA,
@@ -91,7 +91,7 @@ const SEQS: SeqDef[] = [
     ],
   },
   {
-    // FLII ×2 — blue R on 3, red R on 5 and 7.
+    // FLII ×2 - blue R on 3, red R on 5 and 7.
     key: "frl-flii",
     word: "FLII",
     startLetter: Letter.BETA,
@@ -109,7 +109,7 @@ const SEQS: SeqDef[] = [
     ],
   },
   {
-    // DAK ×4 — alternating single-hand flips: blue R on 2,6,8,12; red R on
+    // DAK ×4 - alternating single-hand flips: blue R on 2,6,8,12; red R on
     // 3,5,9,11.
     key: "frl-dak",
     word: "DAK",
@@ -163,14 +163,14 @@ const startBox = (q: SeqDef): StepData =>
   }) as unknown as StepData;
 
 // Start + N steps, reversal dots derived from the motions themselves
-// (bakeReversals; never hand-authored) — matching PICTO_FLAGS.showReversals
+// (bakeReversals; never hand-authored) - matching PICTO_FLAGS.showReversals
 // on the source page.
 const strip = (q: SeqDef): PictographData[] => {
   const authored = [startBox(q), ...q.steps.map((_, i) => stepData(q, i))];
   return [authored[0]!, ...bakeReversals(authored.slice(1))] as unknown as PictographData[];
 };
 
-/** STAFF props with reversal dots — matching FullReversalLoopsPage's PICTO_FLAGS. */
+/** STAFF props with reversal dots - matching FullReversalLoopsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF, showReversals: true } as const;
 
 export const fullReversalLoopsContent: GuideBlock[] = [

@@ -6,7 +6,7 @@
    * below); Φ/Ψ/α/β use Same/Opp, Λ/Λ-/Γ use Open/Close. Both hands take `turns`.
    *
    * Accuracy-pass flag: exact per-cell Same/Opp vs Open/Close assignment and the
-   * dual-hand open/close combinatorics are approximated — confirm vs the artboard.
+   * dual-hand open/close combinatorics are approximated - confirm vs the artboard.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";

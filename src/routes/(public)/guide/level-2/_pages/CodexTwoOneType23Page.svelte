@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Codex 2/1 — Type 2/3 — Level 2 body page 30 (manifest `codex-2-1-t23`), faithful
+   * Codex 2/1 - Type 2/3 - Level 2 body page 30 (manifest `codex-2-1-t23`), faithful
    * to old p30. p21 split-column layout with 2 turns on the high slot and 1 on the
    * low (`²₁`), Same (rows 1–2) and Opp (rows 3–4).
    */

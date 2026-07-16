@@ -14,7 +14,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { bakeReversals } from "../guide-sequence-adapter";
 
-// Verbatim prose lifted from _pages/MixedWordsPage.svelte (Austen's words —
+// Verbatim prose lifted from _pages/MixedWordsPage.svelte (Austen's words -
 // never AI-written); the pictograph construction below is a FAITHFUL COPY of
 // that same file's SEQS/handMotion/stepData/startPose authoring (same
 // locations/orientations → identical staff pictographs; reversal dots are
@@ -26,7 +26,7 @@ const { IN, OUT } = Orientation;
 const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-// ── Step authoring — copied from _pages/MixedWordsPage.svelte ──────────────
+// ── Step authoring - copied from _pages/MixedWordsPage.svelte ──────────────
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
 const flip = (o: Orientation) => (o === IN ? OUT : IN);
 type HandStep = { anti: boolean; from: GridLocation; to: GridLocation; so: Orientation };
@@ -65,7 +65,7 @@ const { A, B, C } = Letter;
 type SeqDef = { key: string; word: string; steps: Step[] };
 const SEQS: SeqDef[] = [
   {
-    // ACAC v1 — blue prop-reverses every step (R derives on 2, 3, 4).
+    // ACAC v1 - blue prop-reverses every step (R derives on 2, 3, 4).
     key: "mw-acac1",
     word: "ACAC (left-hand reversals)",
     steps: [
@@ -76,7 +76,7 @@ const SEQS: SeqDef[] = [
     ],
   },
   {
-    // ACAC v2 — reversals alternate left/right (blue R on 2 and 4, red R on
+    // ACAC v2 - reversals alternate left/right (blue R on 2 and 4, red R on
     // 3); blue's handpath also flips at step 3 (hand reversal, no dot).
     key: "mw-acac2",
     word: "ACAC (alternating reversals)",
@@ -88,7 +88,7 @@ const SEQS: SeqDef[] = [
     ],
   },
   {
-    // BCBC — red prop-reverses every step (R derives on 2, 3, 4).
+    // BCBC - red prop-reverses every step (R derives on 2, 3, 4).
     key: "mw-bcbc",
     word: "BCBC (right-hand reversals)",
     steps: [
@@ -127,14 +127,14 @@ const startPose = (q: SeqDef): StepData =>
   }) as unknown as StepData;
 
 // Start + 4 steps per sequence, reversal dots derived from the motions
-// themselves (bakeReversals; never hand-authored) — matches _pages/
+// themselves (bakeReversals; never hand-authored) - matches _pages/
 // MixedWordsPage.svelte's resolvedSeqSteps (minus the admin-override seam).
 const seqStrip = (q: SeqDef): PictographData[] => {
   const authored = [startPose(q), ...q.steps.map((_, i) => stepData(q, i))];
   return [authored[0], ...bakeReversals(authored.slice(1))] as unknown as PictographData[];
 };
 
-/** STAFF props with reversal dots — matching MixedWordsPage's PICTO_FLAGS. */
+/** STAFF props with reversal dots - matching MixedWordsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF, showReversals: true } as const;
 
 export const examplesAcacContent: GuideBlock[] = [

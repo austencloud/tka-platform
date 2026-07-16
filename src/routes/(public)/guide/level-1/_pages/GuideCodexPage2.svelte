@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * GuideCodexPage2 — Codex page 2 (manifest `codex-2`): Types 3-6.
+   * GuideCodexPage2 - Codex page 2 (manifest `codex-2`): Types 3-6.
    * Thin wrapper over CodexPageBody (page 1 is GuideCodexPage). See that
    * component and CodexPageBody for the print/reader/scan wiring.
    */

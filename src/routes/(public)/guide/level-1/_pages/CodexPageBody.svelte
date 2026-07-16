@@ -1,27 +1,27 @@
 <script lang="ts">
   /**
-   * CodexPageBody — one Codex sheet as one printable guide page.
+   * CodexPageBody - one Codex sheet as one printable guide page.
    *
    * The Codex spans TWO letter-sized pages (Types 1-2 on sheet 1, Types 3-6 on
    * sheet 2), exactly like the original printed guide. Each sheet is authored to
    * fill one page, so each renders as its own manifest page (`codex`, `codex-2`)
-   * — no nested scrollbar cramming both sheets into a single frame. This is the
+   * - no nested scrollbar cramming both sheets into a single frame. This is the
    * component both codex pages delegate to; GuideCodexPage / GuideCodexPage2 are
    * thin wrappers that pass SHEET1 / SHEET2.
    *
-   * The page IS the printable codex — visually identical to the static
+   * The page IS the printable codex - visually identical to the static
    * /guide/codex sheets (white paper, CodexSheet/CodexBox/CodexCell, no gray
    * backgrounds, no on-page controls). It serves print AND the interactive
    * reader with the exact same layout.
    *
    * Every control (prop family, layer visibility, rotate/mirror/color-swap)
-   * lives in the companion panel (GuideCodexControls.svelte) — never on the
+   * lives in the companion panel (GuideCodexControls.svelte) - never on the
    * page. Both codex pages and the controls read/write one shared singleton,
    * guide-codex-state.svelte.ts, so a control change re-renders the sheets live.
    *
    * PRINT/BOOK SEAM: /print and /book share this manifest + BUILT registry with
    * the reader; this component discriminates via the sequence-click context
-   * (only the reader provides it — getGuidePrintMode() && emitSequence === null
+   * (only the reader provides it - getGuidePrintMode() && emitSequence === null
    * means print/book, which render the plain static sheet, no live state, no
    * clickable cells).
    */
@@ -51,7 +51,7 @@
 
   // Flat lookup from cell id -> its CodexCellDef, across BOTH sheets, so the
   // scan-trigger handler (registered globally) can animate any cell regardless
-  // of which codex page registered last — and so the click handler can read the
+  // of which codex page registered last - and so the click handler can read the
   // human label (`W-`, `Σ`, `α`…) without re-deriving it from the raw id.
   const CELLS_BY_ID: Map<string, CodexCellDef> = new Map(
     [SHEET1, SHEET2].flatMap((s) =>
@@ -73,7 +73,7 @@
     });
   }
 
-  // Cell ids on THIS page's sheet — the emit effect below only fires for
+  // Cell ids on THIS page's sheet - the emit effect below only fires for
   // selections this page owns, so with both codex pages mounted exactly one
   // of them (the one rendering the cell) emits the animation strip.
   const SHEET_IDS: Set<string> = new Set(
@@ -84,7 +84,7 @@
   // $effect below builds and emits the strip. Because the effect re-runs when
   // anything dataFor() reads changes (turns, prop family, rotate/mirror/swap),
   // adjusting a turn while the companion is playing re-emits the strip and the
-  // animation updates live — not just the static cells.
+  // animation updates live - not just the static cells.
   function handleCellSelect(id: string) {
     if (!state) return;
     state.selectedCellId = id;
@@ -140,7 +140,7 @@
   // would do. The handler is sheet-agnostic (CELLS_BY_ID + state cover both
   // sheets), so with both codex pages mounted in the reader, whichever registers
   // last can still animate any cell. Only the interactive branch registers
-  // (print/book never do — state is null there).
+  // (print/book never do - state is null there).
   onMount(() => {
     if (state) registerCodexCellTrigger((id) => handleCellSelect(id));
     return () => registerCodexCellTrigger(null);
@@ -148,13 +148,13 @@
 </script>
 
 {#if printMode || !state}
-  <!-- Faithful print/book branch — the static Double-Staff sheet, identical
+  <!-- Faithful print/book branch - the static Double-Staff sheet, identical
        content the /guide/codex route renders. -->
   <div class="codex-page">
     <CodexSheet {sheet} embed />
   </div>
 {:else}
-  <!-- Interactive reader branch — the SAME sheet layout, live: prop/visibility/
+  <!-- Interactive reader branch - the SAME sheet layout, live: prop/visibility/
        transform state comes from the shared singleton; controls live in the
        companion (GuideCodexControls.svelte), never here. One sheet fits one
        page frame, so no nested scroll is needed. -->

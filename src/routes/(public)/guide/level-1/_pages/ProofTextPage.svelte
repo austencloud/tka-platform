@@ -14,7 +14,7 @@
    *
    * Non-edit output is unchanged until a paragraph is actually edited. Title is NOT
    * rendered here (GuidePage draws it from the manifest). Images/pictographs are NOT
-   * here yet — text only. Body font is Cambria (the proof's face) so line spacing
+   * here yet - text only. Body font is Cambria (the proof's face) so line spacing
    * matches the extracted coordinates, with Georgia/Times fallback off-Windows.
    */
   import { tick } from "svelte";
@@ -217,7 +217,7 @@
     font-weight: 700;
     font-style: italic;
   }
-  /* f1 (Monotype Corsiva) sub-headings — kept serif per the page-title-only
+  /* f1 (Monotype Corsiva) sub-headings - kept serif per the page-title-only
      script rule; sized by the proof, weighted to read as a heading. */
   .s-heading {
     font-weight: 600;

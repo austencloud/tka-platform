@@ -1,15 +1,15 @@
 <script lang="ts">
   /**
-   * Gamma Words — body page (NEW manifest entry `lt1-gamma-words`), faithful to
+   * Gamma Words - body page (NEW manifest entry `lt1-gamma-words`), faithful to
    * proof p26 / "1.1 - Gamma Words - MP, NQ, OR, STUV" artboard.
    *
    * The simplest 4-letter γ→γ words, all real staff pictographs sharing one
-   * Start box per block (start = blue S / red E, thumbs in — the γ the previous
+   * Start box per block (start = blue S / red E, thumbs in - the γ the previous
    * page ends on):
-   *   γ→γ (Opp)  — MPMP / NQNQ / OROR: blue rides the CW loop s→w→n→e→s while
-   *   red rides the CCW loop e→n→w→s→e (letters alternate M,P,M,P — MCP: M/P
+   *   γ→γ (Opp)  - MPMP / NQNQ / OROR: blue rides the CW loop s→w→n→e→s while
+   *   red rides the CCW loop e→n→w→s→e (letters alternate M,P,M,P - MCP: M/P
    *   dual-pro, N/Q dual-anti, O/R hybrid blue-anti + red-pro).
-   *   γ→γ (Same) — SSSS / TTTT / UUUU / VVVV: both hands ride the CCW loop,
+   *   γ→γ (Same) - SSSS / TTTT / UUUU / VVVV: both hands ride the CCW loop,
    *   red positionally leading (blue s→e→n→w→s one step behind red's
    *   e→n→w→s→e). U = leader pro (red pro / blue anti); V = leader anti.
    * Anti hands flip the thumb every letter (in→out→in→out); pro hands stay in.
@@ -49,7 +49,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -233,7 +233,7 @@
     </div>
   {/each}
 
-  <!-- Seven word rows — each one clickable strip with numbered steps. -->
+  <!-- Seven word rows - each one clickable strip with numbered steps. -->
   {#each ROWS as r (r.key)}
     <div
       class="strip-wrap tka-seq-cell"

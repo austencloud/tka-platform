@@ -1,7 +1,7 @@
 /**
  * Render-time paragraph grouping for the auto-populated proof pages.
  *
- * The proof extractor emits one `ProofRun` per text fragment — every visual line,
+ * The proof extractor emits one `ProofRun` per text fragment - every visual line,
  * and every emphasis fragment within a line, is its own run. `groupRuns` clusters
  * those runs back into paragraph GROUPS (by their own coordinates) so the guide's
  * dev "Illustrator mode" can move + edit a paragraph as one unit, without touching
@@ -15,7 +15,7 @@ export type GroupAlign = "left" | "center";
 
 export type Group = {
   id: string;
-  /** Owned copies of the member runs — mutating x/y repositions the group. */
+  /** Owned copies of the member runs - mutating x/y repositions the group. */
   runs: ProofRun[];
   /** bbox top-left, proof points. */
   x0: number;
@@ -29,7 +29,7 @@ export type Group = {
   fs: number;
   /** combined html: runs styled + space-joined, lines joined by <br>. */
   html: string;
-  /** ≥2 runs — a real paragraph / multi-emphasis line (gets the group handle). */
+  /** ≥2 runs - a real paragraph / multi-emphasis line (gets the group handle). */
   multi: boolean;
 };
 
@@ -87,7 +87,7 @@ function lineHtml(runs: ProofRun[]): string {
   return html;
 }
 
-/** fs of the widest run — the body text, not a stray narrow emphasis fragment. */
+/** fs of the widest run - the body text, not a stray narrow emphasis fragment. */
 function dominantFs(runs: ProofRun[]): number {
   let best = runs[0]!;
   for (const r of runs) if (r.w > best.w) best = r;

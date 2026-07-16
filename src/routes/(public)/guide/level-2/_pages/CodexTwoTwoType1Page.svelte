@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Codex 2|2 — Type 1 — Level 2 body page 32 (manifest `codex-2-2-t1`), faithful
+   * Codex 2|2 - Type 1 - Level 2 body page 32 (manifest `codex-2-2-t1`), faithful
    * to old p32. Same 22-letter 6-column structure as p20, but two turns on each hand
    * (`²₂`). Symmetric turns, so no high/low split and no Same/Opp dot.
    */

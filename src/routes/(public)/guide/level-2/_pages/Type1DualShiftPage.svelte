@@ -1,13 +1,13 @@
 <script lang="ts">
   /**
-   * Type 1 — Dual-Shift — Level 2 body page 5 (manifest `t1-dual-shift`),
+   * Type 1 - Dual-Shift - Level 2 body page 5 (manifest `t1-dual-shift`),
    * faithful to old p6. Four two-hand breakdown strips, each start → halfway →
    * end = combined:
    *
-   *   A¹ "A-One"       — A[3] (blue s→w pro cw, red n→e pro cw), turn on blue (high=left)
-   *   B¹ "B-One"       — B[3] (blue s→w anti ccw, red n→e anti ccw), turn on blue
-   *   C¹ "C-High-One"  — C[11] (blue s→w pro cw, red n→e anti ccw), turn on blue (high=pro)
-   *   C₁ "C-Low-One"   — same C[11] base, turn on red (low=anti)
+   *   A¹ "A-One"       - A[3] (blue s→w pro cw, red n→e pro cw), turn on blue (high=left)
+   *   B¹ "B-One"       - B[3] (blue s→w anti ccw, red n→e anti ccw), turn on blue
+   *   C¹ "C-High-One"  - C[11] (blue s→w pro cw, red n→e anti ccw), turn on blue (high=pro)
+   *   C₁ "C-Low-One"   - same C[11] base, turn on red (low=anti)
    *
    * start/end are real two-hand static pictographs; combined is the real letter
    * variation with `turns` on the appropriate hand (renderer draws the turn

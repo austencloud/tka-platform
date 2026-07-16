@@ -1,5 +1,5 @@
 <!--
-  Printable Level 2 guide — mirrors level-1/print. Resets out of the level-2
+  Printable Level 2 guide - mirrors level-1/print. Resets out of the level-2
   sidebar layout (`@(public)`) and stacks every page as a real 8.5×11 sheet.
   guide-print-mode + guide-print.css come from the shared level-1 styles so the
   two booklets print identically.

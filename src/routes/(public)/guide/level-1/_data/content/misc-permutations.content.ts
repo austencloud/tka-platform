@@ -14,7 +14,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { bakeReversals } from "../guide-sequence-adapter";
 
-// Verbatim prose lifted from _pages/Type1LoopsPage.svelte (Austen's words — never AI-written);
+// Verbatim prose lifted from _pages/Type1LoopsPage.svelte (Austen's words - never AI-written);
 // pictograph construction is a FAITHFUL COPY of that same file's step authoring (same
 // helpers, same locations/orientations → identical staff pictographs), minus the
 // reader-only wiring (selection, overrides, click-to-animate, sheet geometry).
@@ -69,7 +69,7 @@ type LoopDef = {
 };
 const LOOPS: LoopDef[] = [
   {
-    // DJII ×2 — Mirrored LOOP from β (both S).
+    // DJII ×2 - Mirrored LOOP from β (both S).
     key: "t1l-djii",
     word: "DJII Mirrored",
     startLetter: Letter.BETA,
@@ -87,7 +87,7 @@ const LOOPS: LoopDef[] = [
     ],
   },
   {
-    // BBLF ×2 — Swapped & Rotated LOOP from α (blue S / red N).
+    // BBLF ×2 - Swapped & Rotated LOOP from α (blue S / red N).
     key: "t1l-bblf",
     word: "BBLF Swapped & Rotated",
     startLetter: Letter.ALPHA,
@@ -105,7 +105,7 @@ const LOOPS: LoopDef[] = [
     ],
   },
   {
-    // KIEC ×2 — Swapped & Mirrored LOOP from α (blue W / red E); the second
+    // KIEC ×2 - Swapped & Mirrored LOOP from α (blue W / red E); the second
     // half swaps the colors' pro/anti roles (compare steps 4 and 8's C).
     key: "t1l-kiec",
     word: "KIEC Swapped & Mirrored",
@@ -155,14 +155,14 @@ const startBox = (l: LoopDef): StepData =>
   }) as unknown as StepData;
 
 // Each LOOP's full strip (start + 8 steps), reversal dots derived from the
-// motions themselves via bakeReversals (never hand-authored) — matching
+// motions themselves via bakeReversals (never hand-authored) - matching
 // Type1LoopsPage.svelte's PICTO_FLAGS.showReversals: true.
 const loopStrip = (l: LoopDef): PictographData[] => {
   const authored = [startBox(l), ...l.steps.map((_, i) => stepData(l, i))];
   return [authored[0], ...bakeReversals(authored.slice(1))] as unknown as PictographData[];
 };
 
-/** STAFF props with reversal dots — matching Type1LoopsPage's PICTO_FLAGS. */
+/** STAFF props with reversal dots - matching Type1LoopsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF, showReversals: true } as const;
 
 export const miscPermutationsContent: GuideBlock[] = [

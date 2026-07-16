@@ -1,12 +1,12 @@
 <script lang="ts">
   /**
-   * Codex 1/0 Type 2/3 + 1|0·0|1 Type 4/5/6 — Level 2 body page 19 (manifest
+   * Codex 1/0 Type 2/3 + 1|0·0|1 Type 4/5/6 - Level 2 body page 19 (manifest
    * `codex-1-0-t23-456`), faithful to old p19. A 4-quadrant page split by one heavy
    * horizontal + one heavy vertical divider:
-   *   TL  Type 2 (Shift)      1/0  — W¹ X¹ Y¹ Z¹ / Σ¹ Δ¹ Θ¹ Ω¹
-   *   TR  Type 3 (Cross-Shift)1/0  — W-¹ … / Σ-¹ …
-   *   BL  Type 4 (Dash)       1/0  — Φ¹ Ψ¹ Λ¹open Λ¹close   (then 0/1: Φ₁ Ψ₁ Λ₁open Λ₁close)
-   *   BR  Type 5 (Dual-Dash)  1/0  — Φ-¹ Ψ-¹ Λ-¹open Λ-¹close   (then Type 6 static: α¹ β¹ Γ¹open Γ¹close)
+   *   TL  Type 2 (Shift)      1/0  - W¹ X¹ Y¹ Z¹ / Σ¹ Δ¹ Θ¹ Ω¹
+   *   TR  Type 3 (Cross-Shift)1/0  - W-¹ … / Σ-¹ …
+   *   BL  Type 4 (Dash)       1/0  - Φ¹ Ψ¹ Λ¹open Λ¹close   (then 0/1: Φ₁ Ψ₁ Λ₁open Λ₁close)
+   *   BR  Type 5 (Dual-Dash)  1/0  - Φ-¹ Ψ-¹ Λ-¹open Λ-¹close   (then Type 6 static: α¹ β¹ Γ¹open Γ¹close)
    * Cell data from the shared codex path (codex-turns.ts); Λ/Γ cells use the
    * open/close helper. Self-titled (no GuidePage title).
    */
@@ -32,16 +32,16 @@
 
   type RowDef = { x0: number; y: number; cells: Cell[] };
   const rowDefs: RowDef[] = [
-    // TL — Type 2, 1/0
+    // TL - Type 2, 1/0
     { x0: 22, y: 138, cells: [hi("W"), hi("X"), hi("Y"), hi("Z")] },
     { x0: 22, y: 268, cells: [hi("Σ"), hi("Δ"), hi("Θ"), hi("Ω")] },
-    // TR — Type 3, 1/0
+    // TR - Type 3, 1/0
     { x0: 314, y: 138, cells: [hi("W-"), hi("X-"), hi("Y-"), hi("Z-")] },
     { x0: 314, y: 268, cells: [hi("Σ-"), hi("Δ-"), hi("Θ-"), hi("Ω-")] },
-    // BL — Type 4, 1/0 then 0/1
+    // BL - Type 4, 1/0 then 0/1
     { x0: 22, y: 452, cells: [hi("Φ"), hi("Ψ"), oc("Λ", 1, 0, "Λ", "open"), oc("Λ", 1, 0, "Λ", "close")] },
     { x0: 22, y: 606, cells: [lo("Φ"), lo("Ψ"), oc("Λ", 0, 1, "Λ", "open"), oc("Λ", 0, 1, "Λ", "close")] },
-    // BR — Type 5, 1/0 then Type 6 static
+    // BR - Type 5, 1/0 then Type 6 static
     { x0: 314, y: 452, cells: [hi("Φ-"), hi("Ψ-"), oc("Λ-", 1, 0, "Λ-", "open"), oc("Λ-", 1, 0, "Λ-", "close")] },
     { x0: 314, y: 606, cells: [hi("α"), hi("β"), oc("γ", 1, 0, "Γ", "open"), oc("γ", 1, 0, "Γ", "close")] },
   ];

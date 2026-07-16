@@ -1,14 +1,14 @@
 <script lang="ts">
   /**
-   * Words — body page (manifest `words`), faithful to proof p31 / "1.2 - Words"
+   * Words - body page (manifest `words`), faithful to proof p31 / "1.2 - Words"
    * artboard. The 1.2 chapter opener.
    *
    * Three variations of AABB (Start + 4 steps, real staff pictographs), one per
-   * starting thumb orientation — in|in, out|out, in|out (blue|red). The word
+   * starting thumb orientation - in|in, out|out, in|out (blue|red). The word
    * itself: A A forward around the CW loop (blue s→w→n, red n→e→s, pro), then
-   * B B back (blue n→w→s, red s→e→n, anti — prop CW, thumb flipping out and
+   * B B back (blue n→w→s, red s→e→n, anti - prop CW, thumb flipping out and
    * back). Pro preserves each row's starting orientation, anti flips it, so
-   * the three rows differ ONLY in thumb marks — the teaching point.
+   * the three rows differ ONLY in thumb marks - the teaching point.
    *
    * Reader: each row is one clickable strip playing Start + AABB with staffs
    * from that row's thumb orientation.
@@ -43,7 +43,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -137,7 +137,7 @@
   const rowSteps = (r: RowDef): StepData[] => [startBox(r), ...[0, 1, 2, 3].map((i) => rowStep(r, i))];
 
   // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
-  // present, resolved before baking — reversal dots stay derived either way.
+  // present, resolved before baking - reversal dots stay derived either way.
   // Reactive so a save/revert/reset while the reader is open re-renders.
   const resolvedRowSteps = (r: RowDef): StepData[] => {
     const authored = rowSteps(r);
@@ -255,7 +255,7 @@
     </span>
   {/each}
 
-  <!-- Three AABB strips — one clickable row per thumb orientation. -->
+  <!-- Three AABB strips - one clickable row per thumb orientation. -->
   {#each ROWS as r (r.key)}
     <div
       class="strip-wrap tka-seq-cell"

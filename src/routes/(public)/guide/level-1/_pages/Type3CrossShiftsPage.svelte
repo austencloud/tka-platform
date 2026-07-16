@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Type 3 — Cross-Shifts — body page 7, a faithful rebuild of the proof PDF
+   * Type 3 - Cross-Shifts - body page 7, a faithful rebuild of the proof PDF
    * (level-1-v05.pdf, "Type 3 - Cross-Shifts") in the CURRENT renderer's language.
    * Same recipe as GammaPage/Type2ShiftsPage: proof-placed strips of real
    * PictographContainers, every adornment system-owned (float arrows, dash arrows,
@@ -55,7 +55,7 @@
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W, SOUTHEAST: SE, CENTER: C } = GridLocation;
 
   // Golden step ring: which strip cell the companion is currently animating
-  // (null outside the reader — /print + /book render no ring).
+  // (null outside the reader - /print + /book render no ring).
   const activeStep = getGuideActiveStep();
   const selection = getSequenceSelection();
   const OPP: Partial<Record<GridLocation, GridLocation>> = { [N]: SO_, [SO_]: N, [E]: W, [W]: E };
@@ -124,7 +124,7 @@
   // ── Sequences: Start + 8, laid out Start,1,2,3,4 / _,5,6,7,8 ──────────────────
   type Strip = { x: number; y1: number; y2: number; rows: Cell[][] };
 
-  // Sequence 1 — alpha→gamma. Shifts all CW; dash & shift swap hands each count.
+  // Sequence 1 - alpha→gamma. Shifts all CW; dash & shift swap hands each count.
   const SEQ1: Strip = {
     x: 56,
     y1: 320.4,
@@ -147,7 +147,7 @@
     ],
   };
 
-  // Sequence 2 — beta→gamma. Shifts all CCW; returns to both-S (beta).
+  // Sequence 2 - beta→gamma. Shifts all CCW; returns to both-S (beta).
   const SEQ2: Strip = {
     x: 56,
     y1: 554.9,
@@ -234,7 +234,7 @@
   const emitSequence = getGuideSequenceClick();
 
   // Flatten a strip's rows (row-major, skipping null cells) into ordered StepData
-  // — Start(0) then 1..8 — for the animation companion.
+  // - Start(0) then 1..8 - for the animation companion.
   function stripSteps(strip: Strip): StepData[] {
     return strip.rows
       .flat()
@@ -386,7 +386,7 @@
     color: #141414;
   }
 
-  /* Pictograph boxes (breakdown + sequences) — hairline square like the proof. */
+  /* Pictograph boxes (breakdown + sequences) - hairline square like the proof. */
   .bdbox,
   .cell {
     position: absolute;
@@ -405,12 +405,12 @@
     line-height: 1;
   }
 
-  /* Per-sequence wrapper — carries the shared selection ring (.tka-seq-cell). */
+  /* Per-sequence wrapper - carries the shared selection ring (.tka-seq-cell). */
   .strip-wrap {
     position: absolute;
   }
 
-  /* Centred paragraph blocks — full sheet width, one box per paragraph. */
+  /* Centred paragraph blocks - full sheet width, one box per paragraph. */
   .para {
     position: absolute;
     left: 0;
@@ -429,7 +429,7 @@
     font-weight: 700;
   }
 
-  /* Breakdown pose labels — italic, centred in their column. */
+  /* Breakdown pose labels - italic, centred in their column. */
   .label {
     position: absolute;
     font-family: "Cambria", Georgia, "Times New Roman", serif;

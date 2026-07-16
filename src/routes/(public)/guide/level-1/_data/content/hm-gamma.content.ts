@@ -9,7 +9,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 /**
- * Verbatim prose lifted from _pages/GammaPage.svelte (Austen's words — never
+ * Verbatim prose lifted from _pages/GammaPage.svelte (Austen's words - never
  * AI-written). Pictograph construction is a faithful copy of that same file's
  * `motion`/`box`/STRIPS derivation, minus the reader-only wiring (selection,
  * overrides, click-to-animate, edit-mode dragging, pt geometry).
@@ -53,7 +53,7 @@ const box = (m: Move, step: number, letter: Letter | null = null): StepData =>
 // letter is null on every box EXCEPT the QO same-edge "antiparallel" cells:
 // there blue and red float along the SAME edge (e.g. W→N vs N→W), so their
 // arrows collide. The arrow pipeline separates them only through the
-// special-placement tier, which is letter-gated — letter "P" (both-PRO
+// special-placement tier, which is letter-gated - letter "P" (both-PRO
 // Quarter-Opp, canonical DiamondPictographDataframe rows 187/188) unlocks the
 // separated placement. No other strip has a same-edge box.
 type Cell = { m: Move; step: number; letter?: Letter | null } | null;
@@ -61,19 +61,19 @@ type Strip = { rows: Cell[][] };
 const c = (m: Move, step: number, letter: Letter | null = null): Cell => ({ m, step, letter });
 
 const STRIPS: Strip[] = [
-  // γ→γ Quarter-Opp — opposite spin, hands 90° apart the whole loop.
+  // γ→γ Quarter-Opp - opposite spin, hands 90° apart the whole loop.
   {
     rows: [
       [
         c([SO_, SO_, E, E], 0), // Start: blue S, red E
         c([SO_, W, E, N], 1), //  Parallel
-        c([W, N, N, W], 2, Letter.P), //    Antiparallel — same W↔N edge; P separates
+        c([W, N, N, W], 2, Letter.P), //    Antiparallel - same W↔N edge; P separates
         c([N, E, W, SO_], 3), //  Parallel
-        c([E, SO_, SO_, E], 4, Letter.P), // Antiparallel — same E↔S edge; P separates
+        c([E, SO_, SO_, E], 4, Letter.P), // Antiparallel - same E↔S edge; P separates
       ],
     ],
   },
-  // γ→γ Quarter-Same — same spin, red leads blue by one point.
+  // γ→γ Quarter-Same - same spin, red leads blue by one point.
   {
     rows: [
       [
@@ -85,7 +85,7 @@ const STRIPS: Strip[] = [
       ],
     ],
   },
-  // Switching sequence — alternates QO/QS each count; closes back to Start.
+  // Switching sequence - alternates QO/QS each count; closes back to Start.
   {
     rows: [
       [
@@ -107,15 +107,15 @@ const STRIPS: Strip[] = [
 ];
 
 // Flatten a strip's rows (row-major, skipping null cells) into ordered
-// pictographs — Start(0) then 1..n. GammaPage's PICTO_FLAGS keep showReversals
-// off, so this is used directly — no bakeReversals needed.
+// pictographs - Start(0) then 1..n. GammaPage's PICTO_FLAGS keep showReversals
+// off, so this is used directly - no bakeReversals needed.
 const stripSteps = (strip: Strip): PictographData[] =>
   strip.rows
     .flat()
     .filter((cell): cell is { m: Move; step: number; letter?: Letter | null } => cell !== null)
     .map((cell) => box(cell.m, cell.step, cell.letter ?? null)) as unknown as PictographData[];
 
-/** HAND props — matching GammaPage's PICTO_FLAGS. */
+/** HAND props - matching GammaPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.HAND } as const;
 
 export const hmGammaContent: GuideBlock[] = [

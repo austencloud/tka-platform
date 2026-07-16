@@ -3,8 +3,8 @@ import { SHEET1, SHEET2, type CodexSheetDef } from "../../codex/_data/codex-grou
 // The Codex spans two printed pages (Types 1-2 on `codex`, Types 3-6 on
 // `codex-2`). Each letter points at the page that actually renders it, so a
 // scan / deep link lands on the right sheet.
-export const GUIDE_CODEX_SLUG = "codex"; // page 1 — Types 1-2 (Double Staff)
-export const GUIDE_CODEX_SLUG_2 = "codex-2"; // page 2 — Types 3-6
+export const GUIDE_CODEX_SLUG = "codex"; // page 1 - Types 1-2 (Double Staff)
+export const GUIDE_CODEX_SLUG_2 = "codex-2"; // page 2 - Types 3-6
 export const GUIDE_CODEX_SLUGS = [GUIDE_CODEX_SLUG, GUIDE_CODEX_SLUG_2] as const;
 
 /** True for any manifest slug that renders a Codex sheet. */
@@ -19,7 +19,7 @@ export interface GuideContentTarget {
   cellKey?: string;
 }
 
-// Which sheet lives on which page — the single source that keeps the letter→slug
+// Which sheet lives on which page - the single source that keeps the letter→slug
 // map from ever drifting from the sheet a letter is actually rendered on.
 const SHEET_SLUGS: [CodexSheetDef, string][] = [
   [SHEET1, GUIDE_CODEX_SLUG],

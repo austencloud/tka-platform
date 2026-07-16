@@ -1,12 +1,12 @@
 <script lang="ts">
   /**
-   * 1|1 — Type 2/3 — Level 2 body page 14 (manifest `one-one-t23`), faithful to old
+   * 1|1 - Type 2/3 - Level 2 body page 14 (manifest `one-one-t23`), faithful to old
    * p15. Cherry-picked 1|1 examples where both hands rotate, so a Same/Opp dot
    * applies (dot above = same, below = opp). Both hands carry turns=1.
    *
-   *   Type 2 (X, shift+static): X-Same/Opp One-One — X[3] (blue w→w static, red n→e anti ccw).
-   *   Type 3 (Θ-, dash+shift):  Θ-Same/Opp One-One — Θ-[3] (blue s→n dash, red n→e pro cw).
-   *   Type 3 (Δ-, dash+anti):   Δ-Same/Opp One-One — Δ-[3] (blue n→s dash, red n→e anti ccw).
+   *   Type 2 (X, shift+static): X-Same/Opp One-One - X[3] (blue w→w static, red n→e anti ccw).
+   *   Type 3 (Θ-, dash+shift):  Θ-Same/Opp One-One - Θ-[3] (blue s→n dash, red n→e pro cw).
+   *   Type 3 (Δ-, dash+anti):   Δ-Same/Opp One-One - Δ-[3] (blue n→s dash, red n→e anti ccw).
    *
    * Same = both props rotate the same direction; Opp = opposite (set on the blue
    * hand's rotation relative to red). High slot glyph "1" red, low "1" blue.
@@ -139,17 +139,17 @@
   const ANTI = MotionType.ANTI;
 
   const STRIPS: Strip[] = [
-    // Type 2 — X (shift+static). X[3]: blue w→w static, red n→e anti ccw.
+    // Type 2 - X (shift+static). X[3]: blue w→w static, red n→e anti ccw.
     makeStrip({ y: 64, letter: "X", labelLines: ["“X-Same", "One-One”"], labelY: 94, dot: "same", captions: true, endThumb: "mixed",
       blue: ST(W, CCW), red: D(ANTI, N, E, CCW) }),
     makeStrip({ y: 169, letter: "X", labelLines: ["“X-Opp", "One-One”"], labelY: 199, dot: "opp", captions: false, endThumb: "mixed",
       blue: ST(W, CW), red: D(ANTI, N, E, CCW) }),
-    // Type 3 — Θ- (dash+shift). Θ-[3]: blue s→n dash, red n→e pro cw.
+    // Type 3 - Θ- (dash+shift). Θ-[3]: blue s→n dash, red n→e pro cw.
     makeStrip({ y: 346, letter: "Θ-", labelLines: ["“Theta-Dash", "Same", "One-One”"], labelY: 368, dot: "same", captions: true, endThumb: "mixed",
       blue: D(DASH, SO_, N, CW), red: D(PRO, N, E, CW) }),
     makeStrip({ y: 455, letter: "Θ-", labelLines: ["“Theta-Dash", "Opp", "One-One”"], labelY: 477, dot: "opp", captions: false, endThumb: "out",
       blue: D(DASH, SO_, N, CCW), red: D(PRO, N, E, CW) }),
-    // Type 3 — Δ- (dash+anti). Δ-[3]: blue n→s dash, red n→e anti ccw.
+    // Type 3 - Δ- (dash+anti). Δ-[3]: blue n→s dash, red n→e anti ccw.
     makeStrip({ y: 574, letter: "Δ-", labelLines: ["“Delta-Dash", "Same", "One-One”"], labelY: 596, dot: "same", captions: false, endThumb: "mixed",
       blue: D(DASH, N, SO_, CCW), red: D(ANTI, N, E, CCW) }),
     makeStrip({ y: 683, letter: "Δ-", labelLines: ["“Delta-Dash", "Opp", "One-One”"], labelY: 705, dot: "opp", captions: false, endThumb: "out",
