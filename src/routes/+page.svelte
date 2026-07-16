@@ -43,7 +43,7 @@
     rel="stylesheet"
   />
 
-  <title>TKA - The Kinetic Alphabet | Flow Arts Notation</title>
+  <title>Flow Arts Notation | The Kinetic Alphabet</title>
   <meta
     name="description"
     content="TKA is a notation system for flow arts. Document and share staff, fans, hoop, club, fan, and buugeng choreography. Create sequences, animate them, share with other flow artists."
@@ -66,7 +66,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="TKA - The Kinetic Alphabet" />
   <meta property="og:url" content="https://tkaflowarts.com/" />
-  <meta property="og:title" content="TKA | A Flow Arts Notation System" />
+  <meta property="og:title" content="Flow Arts Notation | The Kinetic Alphabet" />
   <meta
     property="og:description"
     content="A notation system for flow arts. Document, animate, and share staff, fans, hoop, club, and fan choreography."
@@ -87,7 +87,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@tkaflowarts" />
   <meta name="twitter:creator" content="@tkaflowarts" />
-  <meta name="twitter:title" content="TKA | A Flow Arts Notation System" />
+  <meta name="twitter:title" content="Flow Arts Notation | The Kinetic Alphabet" />
   <meta
     name="twitter:description"
     content="A notation system for flow arts. Document, animate, and share staff, fans, hoop, club, and fan choreography."
