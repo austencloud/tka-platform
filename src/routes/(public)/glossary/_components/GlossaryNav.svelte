@@ -281,6 +281,25 @@
     color: oklch(0.62 0.02 270);
   }
 
+  /* 4K / ultrawide: match public-editorial's 2200px type scale. */
+  @media (min-width: 2200px) {
+    .gnav-search input {
+      font-size: 1.1rem;
+    }
+    .gnav-count {
+      font-size: 0.9rem;
+    }
+    .gnav-heading {
+      font-size: 0.9rem;
+    }
+    .gnav-group li a {
+      font-size: 1.05rem;
+    }
+    .gnav-empty {
+      font-size: 1.05rem;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .gnav-search input,
     .gnav-heading,

@@ -116,8 +116,9 @@
   .term-card:hover {
     border-color: oklch(0.55 0.08 273 / 0.4);
   }
+  /* The host's .card-slot wrapper owns grid placement (full-row span when
+     open); the card itself only changes its surface treatment. */
   .term-card.open {
-    grid-column: 1 / -1;
     background: oklch(0.17 0.02 271 / 0.55);
     border-color: oklch(0.6 0.11 275 / 0.45);
   }
@@ -175,6 +176,9 @@
 
   .card-body {
     padding: 0 1rem 0.9rem;
+    /* Expanded cards span the full grid row; cap the measure so definitions
+       stay readable on ultrawide screens instead of running 3000px lines. */
+    max-width: 74ch;
   }
   .card-def {
     font-size: 0.96rem;
@@ -255,6 +259,25 @@
   .term-related a:hover {
     color: oklch(0.9 0.06 275);
     border-bottom-color: oklch(0.78 0.12 275 / 0.8);
+  }
+
+  /* 4K / ultrawide: step the card type up alongside public-editorial's
+     2200px type scale so cards don't read miniature on a 3840px viewport. */
+  @media (min-width: 2200px) {
+    .term-name {
+      font-size: 1.3rem;
+    }
+    .card-def {
+      font-size: 1.15rem;
+    }
+    .term-meta,
+    .term-examples li,
+    .term-related {
+      font-size: 1.05rem;
+    }
+    .card-body {
+      max-width: 80ch;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

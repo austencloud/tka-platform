@@ -74,12 +74,13 @@
   }).replace(/</g, "\\u003c");
 
   // ── navigation state ──────────────────────────────────────────────────
-  // The full lexicon prerenders into the HTML (query "", category "all",
-  // cards collapsed but with all text in the DOM), so the drill-down, filter,
-  // and scroll-spy below are pure client-side enhancement — SEO sees every
-  // term regardless.
+  // Drill-down views: "landing" (category cards) → one category → or "all"
+  // (the full read-through document). EVERY term section stays in the DOM at
+  // all times — views and search only toggle CSS visibility — so the
+  // prerendered HTML (landing state) still carries all 110 definitions for
+  // SEO, and the drill/filter/scroll-spy are pure client-side enhancement.
   let query = $state("");
-  let activeCat = $state("all");
+  let view = $state("landing");
   let expanded = $state<Record<string, boolean>>({});
   let activeSlug = $state("");
   let drawerOpen = $state(false);
@@ -110,7 +111,7 @@
     );
   }
 
-  // Search-filtered view (cross-category: a search always looks everywhere).
+  // Search always looks everywhere, regardless of the current drill.
   const searchGroups = $derived(
     !filtering
       ? data.groups
@@ -122,27 +123,36 @@
           .filter((g) => g.terms.length > 0)
   );
   const matchCount = $derived(
-    searchGroups.reduce((n, g) => n + g.terms.length, 0)
+    filtering ? searchGroups.reduce((n, g) => n + g.terms.length, 0) : data.total
+  );
+  const matchSlugs = $derived(
+    filtering
+      ? new Set(searchGroups.flatMap((g) => g.terms.map((t) => t.slug)))
+      : null
+  );
+  const matchedSections = $derived(
+    filtering ? new Set<string>(searchGroups.map((g) => g.key)) : null
   );
 
-  // What the article renders: search results win; otherwise the category
-  // drill; "all" is the full read-through document.
-  const displayGroups = $derived(
-    filtering
-      ? searchGroups
-      : activeCat === "all"
-        ? data.groups
-        : data.groups.filter((g) => g.key === activeCat)
-  );
+  const landingShown = $derived(!filtering && view === "landing");
+
+  function sectionShown(key: string): boolean {
+    if (filtering) return matchedSections?.has(key) ?? false;
+    return view === "all" || view === key;
+  }
 
   // The sidebar always shows the FULL index (that's its job); it only narrows
   // under an active search.
   const sidebarGroups = $derived(filtering ? searchGroups : data.groups);
 
-  const visibleSlugs = $derived(
-    displayGroups.flatMap((g) => g.terms.map((t) => t.slug))
+  // Expand-all operates on whatever the current view shows.
+  const viewSlugs = $derived(
+    view === "all"
+      ? data.groups.flatMap((g) => g.terms.map((t) => t.slug))
+      : (data.groups.find((g) => g.key === view)?.terms.map((t) => t.slug) ?? [])
   );
-  const anyOpen = $derived(visibleSlugs.some((s) => Boolean(expanded[s])));
+  const viewCount = $derived(viewSlugs.length);
+  const anyOpen = $derived(viewSlugs.some((s) => Boolean(expanded[s])));
 
   function toggleTerm(slug: string) {
     expanded[slug] = !expanded[slug];
@@ -153,7 +163,7 @@
       expanded = {};
     } else {
       const next: Record<string, boolean> = { ...expanded };
-      for (const s of visibleSlugs) next[s] = true;
+      for (const s of viewSlugs) next[s] = true;
       expanded = next;
     }
   }
@@ -165,7 +175,7 @@
     if (!slugToCat.has(slug)) return;
     if (filtering) query = ""; // leave search mode; the target may not match it
     const cat = slugToCat.get(slug);
-    if (activeCat !== "all" && cat && cat !== activeCat) activeCat = cat;
+    if (cat && view !== "all" && view !== cat) view = cat;
     expanded[slug] = true;
     await tick();
     const el = document.getElementById(slug);
@@ -183,7 +193,7 @@
     if (catKey) {
       e.preventDefault();
       if (filtering) query = "";
-      activeCat = catKey;
+      view = catKey;
       await tick();
       document.getElementById(slug)?.scrollIntoView({ block: "start" });
       return;
@@ -203,11 +213,14 @@
   // ── scroll-spy ────────────────────────────────────────────────────────
   // Same mechanism as the guide's GuideSection: an IntersectionObserver band
   // near the top of the viewport marks the term being read. Rebuilt whenever
-  // the drill or filter changes the set of rendered cards.
+  // the drill or filter changes which cards are visible.
   $effect(() => {
-    void displayGroups;
+    void view;
+    void searchGroups;
     const terms = Array.from(
-      document.querySelectorAll<HTMLElement>(".term-grid .term-card[id]")
+      document.querySelectorAll<HTMLElement>(
+        ".editorial-section:not(.sec-hidden) .card-slot:not(.hit-hidden) .term-card[id]"
+      )
     );
     if (!terms.length) return;
     const observer = new IntersectionObserver(
@@ -346,63 +359,71 @@
     </header>
 
     <div class="lede">
-      <p>
-        Every term in The Kinetic Alphabet, defined: positions, letter types,
-        motions, grid modes, and the notation vocabulary. The canonical reference
-        for reading and writing flow arts choreography.
-      </p>
-      <p class="emphasis">{data.total} terms.</p>
+      <p>Every term in The Kinetic Alphabet, defined. Pick a category or search.</p>
     </div>
 
-    {#if !filtering}
-      <!-- Single-select category drill. Kept route-local instead of the shared
-           SegmentedControl: 10 wrapping options with long labels can't live in
-           an equal-width sliding-indicator control at this column width. -->
-      <div class="explorer-controls">
-        <div class="cat-tabs" role="group" aria-label="Browse by category">
-          <button
-            type="button"
-            class="cat-tab"
-            class:active={activeCat === "all"}
-            aria-pressed={activeCat === "all"}
-            onclick={() => (activeCat = "all")}
-          >
-            All <span class="tab-n">{data.total}</span>
-          </button>
-          {#each data.groups as g (g.key)}
-            <button
-              type="button"
-              class="cat-tab"
-              class:active={activeCat === g.key}
-              aria-pressed={activeCat === g.key}
-              onclick={() => (activeCat = g.key)}
-            >
-              {g.label} <span class="tab-n">{g.terms.length}</span>
-            </button>
-          {/each}
-        </div>
+    {#if filtering}
+      <p class="filter-status" aria-live="polite">
+        {matchCount} of {data.total} terms match "{query.trim()}".
+      </p>
+    {:else if view !== "landing"}
+      <div class="view-head">
+        <button type="button" class="back-btn" onclick={() => (view = "landing")}>
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+          Categories
+        </button>
+        <span class="view-count">{viewCount} terms</span>
         <button type="button" class="expand-toggle" onclick={toggleAll}>
           {anyOpen ? "Collapse all" : "Expand all"}
         </button>
       </div>
-    {:else}
-      <p class="filter-status" aria-live="polite">
-        {matchCount} of {data.total} terms match "{query.trim()}".
-      </p>
     {/if}
 
-    {#each displayGroups as g (g.key)}
-      <section class="editorial-section" id={g.sectionSlug}>
+    {#if landingShown}
+      <nav class="cat-cards" aria-label="Browse by category">
+        {#each data.groups as g (g.key)}
+          <button type="button" class="cat-card" onclick={() => (view = g.key)}>
+            <span class="cc-top">
+              <span class="cc-label">{g.label}</span>
+              <span class="cc-count">{g.terms.length}</span>
+            </span>
+            <span class="cc-sample">
+              {g.terms.slice(0, 3).map((t) => t.term).join(" · ")}
+            </span>
+            <i class="fa-solid fa-arrow-right cc-arrow" aria-hidden="true"></i>
+          </button>
+        {/each}
+      </nav>
+      <div class="landing-all">
+        <button type="button" class="browse-all" onclick={() => (view = "all")}>
+          Browse all {data.total} terms
+        </button>
+      </div>
+    {/if}
+
+    {#each data.groups as g (g.key)}
+      <section
+        class="editorial-section"
+        class:sec-hidden={!sectionShown(g.key)}
+        id={g.sectionSlug}
+      >
         <span class="section-kicker">{g.label}</span>
         <div class="term-grid">
           {#each g.terms as t (t.slug)}
-            <GlossaryTermCard
-              entry={t}
-              open={Boolean(expanded[t.slug]) || filtering}
-              thumb={POSITION_THUMBS[t.slug] ?? null}
-              ontoggle={() => toggleTerm(t.slug)}
-              onrelated={(slug, e) => reveal(slug, e)}
-            />
+            {@const open = Boolean(expanded[t.slug]) || filtering}
+            <div
+              class="card-slot"
+              class:hit-hidden={matchSlugs !== null && !matchSlugs.has(t.slug)}
+              class:open-slot={open}
+            >
+              <GlossaryTermCard
+                entry={t}
+                {open}
+                thumb={POSITION_THUMBS[t.slug] ?? null}
+                ontoggle={() => toggleTerm(t.slug)}
+                onrelated={(slug, e) => reveal(slug, e)}
+              />
+            </div>
           {/each}
         </div>
       </section>
@@ -419,7 +440,7 @@
 
     <div class="cta-card">
       <h3>See the notation in motion</h3>
-      <p>These terms come alive in the composer — build a sequence and watch it animate.</p>
+      <p>These terms come alive in the composer. Build a sequence and watch it animate.</p>
       <a class="cta-button" href="/composer">Open the Composer <i class="fa-solid fa-arrow-right"></i></a>
     </div>
 
@@ -465,18 +486,26 @@
 {/if}
 
 <style>
-  /* ── two-column shell: sidebar + editorial column on wide screens ── */
+  /* ── two-column shell: sidebar + full-width article on wide screens ──
+     The editorial column drops its 46rem cap inside this shell: the term
+     and category grids are responsive multi-column and are MEANT to use
+     the full viewport (4K included). Prose measures are capped per-element
+     (lede, expanded card text, CTA) instead of capping the whole column. */
   .glossary-sidebar {
     display: none;
   }
   @media (min-width: 1024px) {
     .glossary-shell {
       display: grid;
-      grid-template-columns: 17.5rem minmax(0, 1fr);
-      column-gap: 1.5rem;
-      max-width: 76rem;
-      margin: 0 auto;
-      padding: 0 1.5rem;
+      grid-template-columns: 18rem minmax(0, 1fr);
+      column-gap: 2rem;
+      padding: 0 2rem;
+    }
+    .glossary-shell .editorial {
+      max-width: none;
+      width: 100%;
+      padding-left: 0;
+      padding-right: 0;
     }
     .glossary-sidebar {
       /* Sticky full-height rail. Its own 88px top padding clears the fixed
@@ -488,6 +517,22 @@
       top: 0;
       height: 100vh;
       padding: 88px 0 1.25rem;
+    }
+    .cta-card {
+      max-width: 46rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+  /* 4K / ultrawide: wider rail, larger type, same fluid grids. */
+  @media (min-width: 2200px) {
+    .glossary-shell {
+      grid-template-columns: 24rem minmax(0, 1fr);
+      column-gap: 3rem;
+      padding: 0 3rem;
+    }
+    .cta-card {
+      max-width: 60rem;
     }
   }
 
@@ -580,58 +625,143 @@
     outline-offset: 2px;
   }
 
-  /* ── explorer controls: category drill tabs + expand toggle ── */
-  .explorer-controls {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.75rem;
-    margin: 0 0 2.5rem;
+  /* ── landing: category cards ── */
+  .cat-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0.9rem;
+    margin: 0 0 1.5rem;
   }
-  .cat-tabs {
+  .cat-card {
+    all: unset;
+    box-sizing: border-box;
+    position: relative;
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    flex: 1;
-    min-width: 0;
+    flex-direction: column;
+    gap: 0.45rem;
+    min-height: 44px;
+    padding: 1.1rem 3rem 1.1rem 1.2rem;
+    background: oklch(0.16 0.018 270 / 0.45);
+    border: 1px solid oklch(0.4 0.04 270 / 0.14);
+    border-radius: 16px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    cursor: pointer;
+    transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
   }
-  .cat-tab {
+  .cat-card:hover {
+    background: oklch(0.19 0.025 272 / 0.55);
+    border-color: oklch(0.6 0.11 275 / 0.45);
+    transform: translateY(-2px);
+  }
+  .cat-card:focus-visible {
+    outline: 2px solid oklch(0.65 0.13 275);
+    outline-offset: 2px;
+  }
+  .cc-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.6rem;
+  }
+  .cc-label {
+    font-size: 1.05rem;
+    font-weight: 660;
+    letter-spacing: -0.01em;
+    color: oklch(0.96 0.01 270);
+  }
+  .cc-count {
+    font-size: 0.78rem;
+    font-weight: 550;
+    font-variant-numeric: tabular-nums;
+    color: oklch(0.72 0.08 274);
+    background: oklch(0.3 0.06 274 / 0.35);
+    border-radius: 999px;
+    padding: 0.1rem 0.55rem;
+  }
+  .cc-sample {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: oklch(0.65 0.015 270);
+  }
+  .cc-arrow {
+    position: absolute;
+    right: 1.1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.85rem;
+    color: oklch(0.55 0.06 274);
+    transition: transform 160ms ease, color 160ms ease;
+  }
+  .cat-card:hover .cc-arrow {
+    color: oklch(0.8 0.12 275);
+    transform: translateY(-50%) translateX(3px);
+  }
+  .landing-all {
+    text-align: center;
+    margin: 0 0 3rem;
+  }
+  .browse-all {
     all: unset;
     box-sizing: border-box;
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
     min-height: 44px;
-    padding: 0.4rem 0.95rem;
-    font-size: 0.85rem;
+    padding: 0 1.4rem;
+    font-size: 0.92rem;
     font-weight: 550;
-    color: oklch(0.85 0.015 270);
-    background: oklch(0.2 0.02 270 / 0.4);
-    border: 1px solid oklch(0.45 0.04 270 / 0.2);
+    color: oklch(0.78 0.05 273);
+    border: 1px solid oklch(0.5 0.07 273 / 0.35);
     border-radius: 999px;
     cursor: pointer;
-    transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
+    transition: border-color 160ms ease, color 160ms ease;
   }
-  .cat-tab:hover {
-    background: oklch(0.26 0.03 275 / 0.5);
-    border-color: oklch(0.6 0.12 275 / 0.5);
+  .browse-all:hover {
+    color: oklch(0.92 0.04 274);
+    border-color: oklch(0.6 0.11 274 / 0.6);
   }
-  .cat-tab.active {
-    color: oklch(0.97 0.015 275);
-    background: oklch(0.32 0.07 274 / 0.55);
-    border-color: oklch(0.65 0.14 275 / 0.7);
-  }
-  .cat-tab:focus-visible {
+  .browse-all:focus-visible {
     outline: 2px solid oklch(0.65 0.13 275);
     outline-offset: 2px;
   }
-  .tab-n {
-    font-size: 0.72rem;
-    font-weight: 500;
-    font-variant-numeric: tabular-nums;
-    color: oklch(0.62 0.03 272);
+
+  /* ── drilled view header: back + count + expand toggle ── */
+  .view-head {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    margin: 0 0 1.75rem;
   }
-  .cat-tab.active .tab-n {
-    color: oklch(0.82 0.06 275);
+  .back-btn {
+    all: unset;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 44px;
+    padding: 0 1.1rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: oklch(0.9 0.015 270);
+    background: oklch(0.24 0.03 272 / 0.5);
+    border: 1px solid oklch(0.5 0.06 272 / 0.35);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: border-color 160ms ease, background 160ms ease;
+  }
+  .back-btn:hover {
+    background: oklch(0.28 0.05 273 / 0.6);
+    border-color: oklch(0.6 0.11 274 / 0.6);
+  }
+  .back-btn:focus-visible {
+    outline: 2px solid oklch(0.65 0.13 275);
+    outline-offset: 2px;
+  }
+  .view-count {
+    flex: 1;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    color: oklch(0.62 0.02 270);
   }
   .expand-toggle {
     all: unset;
@@ -657,15 +787,6 @@
   .expand-toggle:focus-visible {
     outline: 2px solid oklch(0.65 0.13 275);
     outline-offset: 2px;
-  }
-  @media (max-width: 560px) {
-    .explorer-controls {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    .expand-toggle {
-      align-self: flex-end;
-    }
   }
 
   .filter-status {
@@ -787,11 +908,23 @@
   .editorial-section {
     scroll-margin-top: 120px; /* category anchors clear the header + mobile bar */
   }
+  .sec-hidden {
+    display: none;
+  }
   .term-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 0.75rem;
     align-items: start;
+  }
+  .card-slot {
+    min-width: 0;
+  }
+  .card-slot.open-slot {
+    grid-column: 1 / -1;
+  }
+  .card-slot.hit-hidden {
+    display: none;
   }
 
   .creator-credit a {
@@ -802,14 +935,42 @@
     color: oklch(0.8 0.08 275);
   }
 
+  /* ── tiny screens (iPhone SE class, ≤400px) ── */
+  @media (max-width: 400px) {
+    .glossary-shell .editorial {
+      padding-left: 0.85rem;
+      padding-right: 0.85rem;
+    }
+    .mobile-bar {
+      gap: 0.45rem;
+    }
+    .mb-contents {
+      padding: 0 0.8rem;
+    }
+    .cat-card {
+      padding: 0.95rem 2.6rem 0.95rem 1rem;
+    }
+    .view-head {
+      flex-wrap: wrap;
+      gap: 0.6rem;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .back-top,
-    .cat-tab,
+    .cat-card,
+    .cc-arrow,
+    .back-btn,
+    .browse-all,
     .expand-toggle {
       transition: none;
     }
-    .back-top:hover {
+    .back-top:hover,
+    .cat-card:hover {
       transform: none;
+    }
+    .cat-card:hover .cc-arrow {
+      transform: translateY(-50%);
     }
   }
 </style>
