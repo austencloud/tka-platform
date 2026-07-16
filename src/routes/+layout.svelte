@@ -93,15 +93,14 @@
   // content transitions — no flash of the body's saved-theme gradient between
   // pages. App routes (everything else) render children exactly as before.
   // Exact marketing pages + whole subtrees (/shop/*) that all render the same
-  // persistent cosmic chrome. Only the /guide HUB is covered — the deeper guide
-  // rewrite routes (/guide/level-*, /guide/codex, print/poster) own their own
-  // chrome and are intentionally excluded.
+  // persistent cosmic chrome. The whole /guide subtree (hub included) now owns
+  // its own shell chrome via GuideShell — clicking Guide lands directly in the
+  // sidebar shell instead of a separate cosmic-background landing page first.
   const MARKETING_EXACT = new Set([
     "/",
     "/about",
     "/roots",
     "/support",
-    "/guide",
     "/notation",
     "/composer",
     "/glossary",

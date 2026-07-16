@@ -57,8 +57,20 @@ de-orphaned earlier today — rejected.
       Not this phase.
 
 ### Deferred / gated
-- [ ] G1: Hub flip — /guide lands in the shell (gated on concurrent session's hub edits).
-- [ ] G2: Chrome unification across hub/topic crossing (MARKETING_EXACT review).
+- [x] G1 (2026-07-16): Hub flip shipped — `/guide` removed from `MARKETING_EXACT`
+      in `src/routes/+layout.svelte`; the hub `+page.svelte` now renders inside
+      `GuideShell` and its content was reworked (per Austen's live review) into
+      a decisive front door: hero + "Start reading"/"Read Level 2" CTA buttons,
+      a "More in the guide" section (Codex, Staff Choreography), and a demoted
+      notify-form section. SEO `<svelte:head>` left byte-identical.
+- [x] G2 (2026-07-16): Chrome unified — new `guide/_components/GuideShell.svelte`
+      is the single component every host (`level-1/+layout.svelte`,
+      `level-2/+layout.svelte`, hub `+page.svelte`) renders; it owns the mobile
+      menu button, sidebar aside, content column, `SiteFooter`, and (added
+      after live review) `SiteHeader` + the COSMIC theme-pipeline bootstrap so
+      site chrome stays visible across the whole guide subtree. Both level
+      `GuideNav.svelte` wrappers were deleted (GuideShell hosts `GuideSidebar`
+      directly) since nothing else imported them.
 
 ## File ownership
 - Executor U: new guide/_components/GuideSidebar.svelte, both GuideNav.svelte, level-2
