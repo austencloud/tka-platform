@@ -32,6 +32,13 @@ export function setDefaultOverrideResolver(fn: DefaultOverrideResolver | null): 
   defaultOverrideResolver = fn;
 }
 
+/**
+ * Bucket keys for halved-arrow (segment) default-tier placements. Siblings of
+ * MotionType, not members of it — a half-motion frame is letterless and looked
+ * up by its own bucket ("pro_half" etc.), never by extending motionTypes.
+ */
+export type SegmentPlacementKey = "pro_half" | "anti_half" | "dash_half" | "static_half";
+
 export class ArrowPlacer {
   private jsonCacheImpl: SimpleJsonCache;
 
@@ -53,14 +60,29 @@ export class ArrowPlacer {
 
   private readonly motionTypes = ["pro", "anti", "float", "dash", "static"] as const;
 
-  /** Resolve the 5 motion-type file paths for a (gridMode, propType). Seeded
-   *  props read their <prop>/ subfolder; staff and unseeded props read root. */
+  // Sibling bucket for halved-arrow default placements — NOT added to
+  // motionTypes above. A half-motion frame is letterless, so it never goes
+  // through the letter tiers; it reads its own pro_half/anti_half/dash_half/
+  // static_half file instead. float has no half variant (no shift-turns
+  // concept to split).
+  private readonly segmentMotionTypes = ["pro_half", "anti_half", "dash_half", "static_half"] as const;
+
+  /** Resolve the motion-type file paths for a (gridMode, propType). Seeded
+   *  props read their <prop>/ subfolder; staff and unseeded props read root.
+   *  The 4 _half segment files are staff-root only (v1) — seeded prop buckets
+   *  skip them so a prop bucket doesn't fire 4 spurious missing-file warnings
+   *  for data that hasn't been authored per-prop yet. */
   private filesFor(gridMode: string, propType: string): Record<string, string> {
     const seeded = ArrowPlacer.SEEDED_PROPS.has(propType);
     const sub = seeded ? `${propType}/` : "";
     const files: Record<string, string> = {};
     for (const mt of this.motionTypes) {
       files[mt] = `/data/arrow_placement/${gridMode}/default/${sub}default_${gridMode}_${mt}_placements.json`;
+    }
+    if (sub === "") {
+      for (const mt of this.segmentMotionTypes) {
+        files[mt] = `/data/arrow_placement/${gridMode}/default/default_${gridMode}_${mt}_placements.json`;
+      }
     }
     return files;
   }
@@ -151,7 +173,7 @@ export class ArrowPlacer {
    * Get default adjustment using placement key and turns
    */
   async getDefaultAdjustment(
-    motionType: MotionType,
+    motionType: MotionType | SegmentPlacementKey,
     placementKey: string,
     turns: number | string,
     gridMode: GridMode = GridMode.DIAMOND,

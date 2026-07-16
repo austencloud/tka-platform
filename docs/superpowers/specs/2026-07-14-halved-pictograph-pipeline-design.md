@@ -287,7 +287,7 @@ This replaces the current `LiftedTurnFrame` (baked staff+arrow on a bare grid �
 **Phase 2b — visual tuning (requires Austen's eye; NOT started)**
 - [ ] Screenshot review of `/test/half-arrows` vs the guide artboards; confirm glyph placement/rotation fidelity
 - [ ] Per-glyph rotational-reference offset (if a drawn glyph's head reference differs from the canonical 0)
-- [ ] Authored `_half` default-tier pixel nudges (sibling `ArrowPlacer` bucket — do NOT extend the hardcoded `motionTypes` array; swap the orchestrator's `0` baseline for the real lookup)
+- [~] Authored `_half` default-tier pixel nudges (sibling `ArrowPlacer` bucket — do NOT extend the hardcoded `motionTypes` array; swap the orchestrator's `0` baseline for the real lookup) — **plumbing landed.** Sibling `pro_half`/`anti_half`/`dash_half`/`static_half` bucket in `arrow-placer.ts` (staff-root only, v1) + empty `default_diamond_*_half_placements.json` files + orchestrator now calls the real `getDefaultAdjustment` lookup instead of a hardcoded `0`. Empty data → `{0,0}` baseline preserved (verified: regression test asserts final position == unadjusted initial position). Authored pixel values still pending Austen's visual review of `/test/half-arrows`.
 - [ ] `getArrowSvgPath` vs `getArrowPath` live-call-path audit
 
 **Phase 3 — render integration + toggle + guide rewire**
