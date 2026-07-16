@@ -14,7 +14,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   import PropPicker from "./components/PropPicker.svelte";
   import PreorderPriceNote from "./components/PreorderPriceNote.svelte";
   import { captureMorphSource } from "./transitions/shop-morph";
-  import { activePriceCents, preorderWindowOpen } from "./domain/preorder-pricing";
+  import { activePriceCents, preorderWindowOpen, formatUsd } from "./domain/preorder-pricing";
   import type { Product } from "./domain/models/product";
   import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -41,9 +41,7 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   // Read once at mount — the swap boundary is a fixed instant, no ticking needed.
   const now = Date.now();
   let formattedPrice = $derived(
-    store.selectedProduct
-      ? `$${(activePriceCents(store.selectedProduct, now) / 100).toFixed(2)}`
-      : ""
+    store.selectedProduct ? formatUsd(activePriceCents(store.selectedProduct, now)) : ""
   );
 
   onMount(() => {

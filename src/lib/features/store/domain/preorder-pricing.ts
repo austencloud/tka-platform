@@ -32,9 +32,11 @@ export function activePriceCents(product: Product, nowMs: number): number {
   return product.price;
 }
 
-/** `$35` — whole-dollar USD from cents, matching the store's existing format. */
+/** `$35` when the price is a whole dollar amount, `$32.50` when it carries
+ *  cents — the one price formatter every store surface renders through. */
 export function formatUsd(cents: number): string {
-  return `$${(cents / 100).toFixed(0)}`;
+  const dollars = cents / 100;
+  return cents % 100 === 0 ? `$${dollars.toFixed(0)}` : `$${dollars.toFixed(2)}`;
 }
 
 /** "September 30" in the shop's timezone (Chicago), from the cutoff ISO instant.

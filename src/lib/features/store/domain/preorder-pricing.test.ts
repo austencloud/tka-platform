@@ -72,6 +72,11 @@ describe("formatUsd", () => {
     expect(formatUsd(3500)).toBe("$35");
     expect(formatUsd(5500)).toBe("$55");
   });
+
+  it("shows cents when the price isn't a whole dollar amount", () => {
+    expect(formatUsd(3250)).toBe("$32.50");
+    expect(formatUsd(999)).toBe("$9.99");
+  });
 });
 
 describe("cutoffLabel", () => {

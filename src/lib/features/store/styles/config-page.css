@@ -1,0 +1,171 @@
+/* src/lib/features/store/styles/config-page.css
+
+   Shared chrome for the shop "configurator" pages — LoopDeckConfiguratorPage,
+   DeckArchitectPage, StarterPackPage, TnDTrilogyPage. These four pages grew in
+   parallel and copy-pasted the same page chrome (root shell, back button,
+   price, assurance list, checkout error, loading/error states) four times,
+   drifting slightly on each copy.
+
+   Every selector here is scoped under .store-config-page, a marker class added
+   ONLY to these four pages' root element — so nothing here can ever match an
+   element on another route, no matter how common a class name like .price or
+   .eyebrow is elsewhere in the app.
+
+   This file is a plain (non-scoped) stylesheet, so it can only safely hold
+   declarations that are byte-identical across every page that uses the
+   selector. Anywhere a page's value genuinely differs (a height clamp, a
+   margin, a font-size), that property is deliberately left OUT of this file
+   and stays local to the page's own <style> block — split at the property
+   level so the shared and local declarations never redeclare the same
+   property for the same element (no specificity/cascade-order gamble on a
+   live purchase page). See docs comment on each page for what it kept local. */
+
+/* ---------- page shell ---------- */
+/* Identical across all four pages (LoopDeckConfiguratorPage .config-page,
+   DeckArchitectPage .architect-page, StarterPackPage .config-page,
+   TnDTrilogyPage .config-page). */
+.store-config-page {
+  min-height: 100vh;
+  padding-top: 64px; /* clear the fixed SiteHeader */
+  background: transparent; /* cosmic BackgroundHost shows through */
+  color: var(--theme-text, #ffffff);
+}
+
+/* ---------- back button ---------- */
+/* Common to all four pages. margin-bottom, transition, and (DeckArchitectPage
+   only) align-self differ per page and stay local — see each page's
+   .back-button rule. */
+.store-config-page .back-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--min-touch-target, 44px);
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid var(--theme-border, rgba(255, 255, 255, 0.15));
+  background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+  color: var(--theme-text, #ffffff);
+  text-decoration: none;
+  font-size: var(--font-size-min, 14px);
+  font-weight: 600;
+}
+/* Byte-identical on all four — no local override anywhere, safe to fully own. */
+.store-config-page .back-button:hover {
+  background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
+  border-color: var(--theme-border-strong, rgba(255, 255, 255, 0.3));
+}
+
+/* ---------- eyebrow label ---------- */
+/* font-size and letter-spacing vary per page (12px/0.12em vs 14px/0.14em on
+   DeckArchitectPage) and stay local. */
+.store-config-page .eyebrow {
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #b8a6ff;
+}
+
+/* ---------- h1 ---------- */
+/* Shared by LoopDeckConfiguratorPage, StarterPackPage, TnDTrilogyPage
+   (DeckArchitectPage has no page h1). line-height is unique to
+   LoopDeckConfiguratorPage and stays local there. */
+.store-config-page h1 {
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+/* ---------- price + checkout error ---------- */
+/* Both byte-identical across all four pages. */
+.store-config-page .price {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--theme-accent, #60a5fa);
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+.store-config-page .checkout-error {
+  margin: 0;
+  text-align: center;
+  font-size: var(--font-size-sm, 14px);
+  color: var(--semantic-error, #ef4444);
+}
+
+/* ---------- assurance list ---------- */
+/* The list container and the icon rule are byte-identical across all four.
+   The <li> font-size/color vary (literal 15px/rgba(...,.85) on
+   LoopDeckConfiguratorPage + DeckArchitectPage vs the var(--font-size-min)/
+   var(--theme-text-muted) pair on StarterPackPage + TnDTrilogyPage) and stay
+   local to each page. */
+.store-config-page .assurance {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.store-config-page .assurance li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.store-config-page .assurance i {
+  color: #8b6cff;
+  flex: 0 0 auto;
+}
+
+/* ---------- loading / error states ---------- */
+/* Byte-identical across all four. */
+.store-config-page .loading,
+.store-config-page .error {
+  text-align: center;
+  padding: 48px;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+}
+.store-config-page .error {
+  color: var(--semantic-error, #ef4444);
+}
+
+/* ---------- fixed spec line ---------- */
+/* Only LoopDeckConfiguratorPage and DeckArchitectPage render a .spec-line —
+   byte-identical between the two. Inert (no matching elements) on
+   StarterPackPage/TnDTrilogyPage. */
+.store-config-page .spec-line {
+  margin: 0;
+  font-size: var(--font-size-min, 14px);
+  color: rgba(255, 255, 255, 0.82);
+  text-align: center;
+}
+.store-config-page .spec-sep {
+  margin: 0 6px;
+  opacity: 0.5;
+}
+
+/* ---------- preview stage box ---------- */
+/* Only LoopDeckConfiguratorPage, StarterPackPage, TnDTrilogyPage render a
+   .preview-box (DeckArchitectPage's equivalent, .rail-stage, is a distinct
+   layout and stays fully local). The height/min-height clamp and background
+   gradient differ per page by design and stay local — this is the exact
+   "preview-box height clamps differ" case called out for the refactor. */
+.store-config-page .preview-box {
+  border-radius: 20px;
+  border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  padding: clamp(16px, 2.5vw, 32px);
+}
+
+/* ---------- labeled field (prop picker, box contents) ---------- */
+/* Only StarterPackPage and TnDTrilogyPage use this pattern; byte-identical
+   between the two. */
+.store-config-page .field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.store-config-page .field-label {
+  font-size: var(--font-size-compact, 12px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+}

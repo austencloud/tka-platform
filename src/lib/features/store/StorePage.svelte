@@ -75,9 +75,7 @@
       (p) => p.listing === "starter-pack" && p.status === "active"
     ) ?? null
   );
-  const starterPrice = $derived(
-    starterPack ? `$${(starterPack.price / 100).toFixed(0)}` : ""
-  );
+  const starterPrice = $derived(starterPack ? formatUsd(starterPack.price) : "");
   // Deliberately half LOOP, half color-coded trilogy: the mix is the message.
   const starterCards = $derived([
     ...heroCards.slice(0, 3),
@@ -89,9 +87,7 @@
   const book = $derived(
     state.products.find((p) => p.type === "guide" && p.status === "active") ?? null
   );
-  const bookPrice = $derived(
-    book ? `$${(book.price / 100).toFixed(0)}` : ""
-  );
+  const bookPrice = $derived(book ? formatUsd(book.price) : "");
 
   // First-load frame ONLY: fetching with nothing to show yet. Cache hits paint
   // synchronously (products present frame one), so this is true first visit only.

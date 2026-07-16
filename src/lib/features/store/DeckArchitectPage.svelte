@@ -12,6 +12,7 @@
   Spec: docs/superpowers/specs/2026-07-12-deck-architect-design.md
 -->
 <script lang="ts">
+  import "./styles/config-page.css";
   import { getMerchCheckoutCreator } from "$lib/features/store/get-merch-checkout-creator";
   import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { createStoreState } from "./state/store-state.svelte";
@@ -366,7 +367,7 @@
 
 <svelte:window onkeydown={onWindowKey} bind:innerWidth={pageW} />
 
-<div class="architect-page">
+<div class="architect-page store-config-page">
   <main class="architect-content">
     <a href="/shop/loop-deck" class="back-button">
       <i class="fas fa-arrow-left" aria-hidden="true"></i> LOOP Deck
@@ -737,12 +738,9 @@
 {/if}
 
 <style>
-  .architect-page {
-    min-height: 100vh;
-    padding-top: 64px;
-    background: transparent;
-    color: var(--theme-text, #ffffff);
-  }
+  /* .architect-page root chrome (min-height/padding-top/background/color)
+     lives in the shared src/lib/features/store/styles/config-page.css, scoped
+     under the .store-config-page marker class added to this root div above. */
   .architect-content {
     max-width: min(1720px, 92vw);
     margin: 0 auto;
@@ -751,27 +749,14 @@
     flex-direction: column;
   }
 
+  /* Shared .back-button properties live in config-page.css; align-self,
+     margin-bottom, and transition are unique to this page (or interact with
+     the prefers-reduced-motion override below) and stay local. */
   .back-button {
     /* Top block is centered — the back pill sits with it, not ragged left. */
     align-self: center;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0 18px;
     margin-bottom: 16px;
-    border-radius: 999px;
-    border: 1px solid var(--theme-border, rgba(255, 255, 255, 0.15));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, #ffffff);
-    text-decoration: none;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
     transition: background 0.2s, border-color 0.2s;
-  }
-  .back-button:hover {
-    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-border-strong, rgba(255, 255, 255, 0.3));
   }
 
   .layout {
@@ -847,12 +832,11 @@
     align-items: center;
     gap: 8px;
   }
+  /* Shared .eyebrow properties (font-weight/text-transform/color) live in
+     config-page.css; font-size and letter-spacing vary per page. */
   .eyebrow {
     font-size: var(--font-size-min, 14px);
-    font-weight: 700;
     letter-spacing: 0.14em;
-    text-transform: uppercase;
-    color: #b8a6ff;
   }
   /* One-sentence orientation — kills the "wait, what do I do here" beat for a
      newcomer who lands on the Architect without reading the listing first. */
@@ -1087,23 +1071,8 @@
   }
 
   /* ---------- buy rail ---------- */
-  .price {
-    font-size: 2rem;
-    font-weight: 800;
-    color: var(--theme-accent, #60a5fa);
-    margin: 0;
-    font-variant-numeric: tabular-nums;
-  }
-  .spec-line {
-    margin: 0;
-    font-size: var(--font-size-min, 14px);
-    color: rgba(255, 255, 255, 0.82);
-    text-align: center;
-  }
-  .spec-sep {
-    margin: 0 6px;
-    opacity: 0.5;
-  }
+  /* .price and .spec-line/.spec-sep are byte-identical with
+     LoopDeckConfiguratorPage and live in config-page.css. */
   .buy-blocked {
     padding: 16px;
     border-radius: 12px;
@@ -1114,40 +1083,12 @@
     font-weight: 600;
     color: rgba(255, 255, 255, 0.9);
   }
-  .checkout-error {
-    margin: 0;
-    text-align: center;
-    font-size: var(--font-size-sm, 14px);
-    color: var(--semantic-error, #ef4444);
-  }
-  .assurance {
-    list-style: none;
-    margin: 4px 0 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
+  /* .checkout-error, .assurance (container + icon), and .loading/.error are
+     byte-identical across all four configurator pages and live fully in
+     config-page.css. .assurance li's font-size/color vary per page. */
   .assurance li {
-    display: flex;
-    align-items: center;
-    gap: 10px;
     font-size: 15px;
     color: rgba(255, 255, 255, 0.85);
-  }
-  .assurance i {
-    color: #8b6cff;
-    flex: 0 0 auto;
-  }
-
-  .loading,
-  .error {
-    text-align: center;
-    padding: 48px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
-  }
-  .error {
-    color: var(--semantic-error, #ef4444);
   }
 
   /* ---------- flavor modal ---------- */
