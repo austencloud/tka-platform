@@ -2,10 +2,10 @@
   /**
    * Real-pictograph diagrams for the 2-turn shifts breakdown, mirroring
    * TwoTurnsShiftsPage.svelte's `proStrip` and `antiThirds` strips exactly
-   * (same motions/turns/orientations — the print artboard is the source of
+   * (same motions/turns/orientations - the print artboard is the source of
    * truth for this data). The artboard's third strip, `antiHalves`, is a bonus
    * alternate breakdown with no corresponding prose paragraph in this article
-   * (the article has exactly 2 diagram TODOs — pro, anti) — omitted here to
+   * (the article has exactly 2 diagram TODOs - pro, anti) - omitted here to
    * avoid inventing new copy around it.
    */
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
@@ -142,29 +142,59 @@
 </script>
 
 <GuideSection id="double-turn-shifts" title="Shifts">
-  <p>
-    2 turns add a 360 degree rotation to a motion.
-  </p>
+  <div class="section-body">
+    <p>
+      2 turns add a 360 degree rotation to a motion.
+    </p>
 
-  <h3>Pro</h3>
-  <p>
-    On a prospin with a double turn, note the 45° angle of the halfway position.
-  </p>
+    <h3>Pro</h3>
+    <p>
+      On a prospin with a double turn, note the 45° angle of the halfway position.
+    </p>
+  </div>
 
-  <TurnStrip frames={proFrames} caption="Prospin with 2 turns, east to south — start, halfway, end, full motion" />
+  <TurnStrip frames={proFrames} caption="Prospin with 2 turns, east to south: start, halfway, end, full motion" />
 
-  <p>
-    A base prospin (ASA isolation) has 0 thumb switches, therefore a prospin with 2 turns has 2 thumb switches (in → out → in)
-  </p>
+  <div class="section-body">
+    <p>
+      A base prospin (ASA isolation) has 0 thumb switches, therefore a prospin with 2 turns has 2 thumb switches (in → out → in)
+    </p>
 
-  <h3>Anti</h3>
-  <p>
-    With a double-turning antispin, it's easier to visually conceive of the motion in thirds. At each third there is a staff end at the center point.
-  </p>
+    <h3>Anti</h3>
+    <p>
+      With a double-turning antispin, it's easier to visually conceive of the motion in thirds. At each third there is a staff end at the center point.
+    </p>
+  </div>
 
-  <TurnStrip frames={antiFrames} caption="Antispin with 2 turns, east to south, broken into thirds — start, one-third, two-thirds, end, full motion" />
+  <TurnStrip frames={antiFrames} caption="Antispin with 2 turns, east to south, broken into thirds: start, one-third, two-thirds, end, full motion" />
 
-  <p>
-    A base antispin has 1 thumb switch (in → out), therefore an antispin with 2 turns has 3 thumb switches (in → out → in → out)
-  </p>
+  <div class="section-body">
+    <p>
+      A base antispin has 1 thumb switch (in → out), therefore an antispin with 2 turns has 3 thumb switches (in → out → in → out)
+    </p>
+  </div>
 </GuideSection>
+
+<style>
+  /* Prose measure + rhythm mirror level-1's FlowFrame `.flow-p`/`.flow-h3`.
+     TurnStrip calls stay OUTSIDE these wrappers, as direct GuideSection
+     children, so their own grid-column breakout (TurnStrip.svelte) still
+     applies. */
+  .section-body :global(p) {
+    max-width: 34rem;
+    margin: 0 auto 1.1rem;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .section-body :global(p:last-child) {
+    margin-bottom: 0;
+  }
+  .section-body :global(h3) {
+    text-align: center;
+    text-wrap: balance;
+    margin: 1.75rem 0 0.35rem;
+  }
+  .section-body :global(h3:first-child) {
+    margin-top: 0;
+  }
+</style>

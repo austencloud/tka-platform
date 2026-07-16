@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
    * Real-pictograph diagrams for the 1-turn shifts breakdown, mirroring
-   * TurnsPage.svelte's `ROWS` (pro, anti) exactly — same motions/turns/
+   * TurnsPage.svelte's `ROWS` (pro, anti) exactly - same motions/turns/
    * orientations, the print artboard is the source of truth for this data.
    */
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
@@ -141,29 +141,50 @@
 </script>
 
 <GuideSection id="turn-shifts" title="Shifts" subtitle="VTG: 1:3">
-  <p>
-    <strong>Turns:</strong> A turn is a 180° rotation that occurs during a motion. Let's add a single turn to a shift.
-  </p>
+  <div class="section-body">
+    <p>
+      <strong>Turns:</strong> A turn is a 180° rotation that occurs during a motion. Let's add a single turn to a shift.
+    </p>
 
-  <p>
-    First we'll add 1 turn to a prospin. Take note of the diagonal halfway position, and pause there for a moment before continuing. These arrows refer to the pinky end on the first half, then to the thumb end on the second half. The full arrow depicts a half-circle, from the start position's outer point.
-  </p>
+    <p>
+      First we'll add 1 turn to a prospin. Take note of the diagonal halfway position, and pause there for a moment before continuing. These arrows refer to the pinky end on the first half, then to the thumb end on the second half. The full arrow depicts a half-circle, from the start position's outer point.
+    </p>
+  </div>
 
-  <TurnStrip frames={proFrames} caption="Prospin with a turn, east to south — start, halfway, end, full motion" />
+  <TurnStrip frames={proFrames} caption="Prospin with a turn, east to south: start, halfway, end, full motion" />
 
-  <p>Each turn adds a thumb switch.</p>
+  <div class="section-body">
+    <p>Each turn adds a thumb switch.</p>
 
-  <p>
-    <strong>Pro:</strong> An isolation has 0 thumb switches, therefore a prospin with a turn has 1 thumb switch (in → out)
-  </p>
+    <p>
+      <strong>Pro:</strong> An isolation has 0 thumb switches, therefore a prospin with a turn has 1 thumb switch (in → out)
+    </p>
 
-  <p>
-    Now let's add 1 turn to an antispin. Again, take note of the diagonal halfway position, and pause there before continuing.
-  </p>
+    <p>
+      Now let's add 1 turn to an antispin. Again, take note of the diagonal halfway position, and pause there before continuing.
+    </p>
+  </div>
 
-  <TurnStrip frames={antiFrames} caption="Antispin with a turn, east to south — start, halfway, end, full motion" />
+  <TurnStrip frames={antiFrames} caption="Antispin with a turn, east to south: start, halfway, end, full motion" />
 
-  <p>
-    <strong>Anti:</strong> A base antispin has 1 thumb switch. (in → out), therefore an antispin with a turn has 2 thumb switches (in → out → in).
-  </p>
+  <div class="section-body">
+    <p>
+      <strong>Anti:</strong> A base antispin has 1 thumb switch. (in → out), therefore an antispin with a turn has 2 thumb switches (in → out → in).
+    </p>
+  </div>
 </GuideSection>
+
+<style>
+  /* Prose measure + rhythm mirror level-1's FlowFrame `.flow-p`. TurnStrip
+     calls stay OUTSIDE these wrappers, as direct GuideSection children, so
+     their own grid-column breakout (see TurnStrip.svelte) still applies. */
+  .section-body :global(p) {
+    max-width: 34rem;
+    margin: 0 auto 1.1rem;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .section-body :global(p:last-child) {
+    margin-bottom: 0;
+  }
+</style>

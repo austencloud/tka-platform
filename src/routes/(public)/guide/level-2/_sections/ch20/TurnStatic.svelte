@@ -1,16 +1,16 @@
 <script lang="ts">
   /**
    * Real-pictograph diagram for the 1-turn static breakdown, mirroring
-   * DashStaticTurnsPage.svelte's static row (`ROWS[1]`) exactly — same
+   * DashStaticTurnsPage.svelte's static row (`ROWS[1]`) exactly - same
    * motion/turns/orientations, the print artboard is the source of truth
    * for this data.
    *
    * The second TODO on this section (the static-turn-arrow vs prospin-turn-
    * arrow comparison, `DashStaticTurnsPage`'s bottom NOTE_STATIC/NOTE_SHIFT
    * boxes) is a side-by-side compare of two unrelated full-motion
-   * pictographs with no start/halfway/end chain between them — TurnStrip's
+   * pictographs with no start/halfway/end chain between them - TurnStrip's
    * connector always renders a flow-arrow-then-equals between frames, which
-   * would visually claim "static turn = prospin turn" (false — the point of
+   * would visually claim "static turn = prospin turn" (false - the point of
    * the comparison is that their ARROW SHAPES differ, not that the motions
    * are equal). Left text-only; not a fit for this primitive.
    */
@@ -74,7 +74,7 @@
   });
 
   // ── Motion data (verbatim from DashStaticTurnsPage.svelte's static row) ──
-  // Static: E→E IN→OUT CCW turns=1 — a 180° turn in place (in → out).
+  // Static: E→E IN→OUT CCW turns=1 - a 180° turn in place (in → out).
   const staticCombined = redStaff("static-full", MotionType.STATIC, E, E, IN, OUT, CCW, 1);
 
   const ANIM = {
@@ -124,26 +124,45 @@
 </script>
 
 <GuideSection id="turn-static" title="Static">
-  <p>
-    Finally, we'll look at static turns. Here is a breakdown of a static turn starting from thumb in:
-  </p>
+  <div class="section-body">
+    <p>
+      Finally, we'll look at static turns. Here is a breakdown of a static turn starting from thumb in:
+    </p>
+  </div>
 
-  <TurnStrip frames={staticFrames} caption="Static turn, held at east — start, halfway, end, full motion" />
+  <TurnStrip frames={staticFrames} caption="Static turn, held at east: start, halfway, end, full motion" />
 
-  <p>
-    This can be executed at any hand point, starting from either thumb orientation, turning in either direction.
-  </p>
+  <div class="section-body">
+    <p>
+      This can be executed at any hand point, starting from either thumb orientation, turning in either direction.
+    </p>
 
-  <p>
-    Note the differences between the arrow for static turns and the arrow for prospin turns:
-  </p>
+    <p>
+      Note the differences between the arrow for static turns and the arrow for prospin turns:
+    </p>
 
-  <!-- TODO: add diagram — comparison of static turn arrow vs prospin turn arrow -->
+    <!-- TODO: add diagram - comparison of static turn arrow vs prospin turn arrow -->
 
-  <p>
-    <strong>Static:</strong> Prop remains at its start position. The arrow forms a half circle with that position.
-  </p>
-  <p>
-    <strong>Shift:</strong> Prop ends at an adjacent position. The arrow forms a half-circle around the empty start position.
-  </p>
+    <p>
+      <strong>Static:</strong> Prop remains at its start position. The arrow forms a half circle with that position.
+    </p>
+    <p>
+      <strong>Shift:</strong> Prop ends at an adjacent position. The arrow forms a half-circle around the empty start position.
+    </p>
+  </div>
 </GuideSection>
+
+<style>
+  /* Prose measure + rhythm mirror level-1's FlowFrame `.flow-p`. TurnStrip
+     stays OUTSIDE this wrapper, as a direct GuideSection child, so its own
+     grid-column breakout (see TurnStrip.svelte) still applies. */
+  .section-body :global(p) {
+    max-width: 34rem;
+    margin: 0 auto 1.1rem;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .section-body :global(p:last-child) {
+    margin-bottom: 0;
+  }
+</style>

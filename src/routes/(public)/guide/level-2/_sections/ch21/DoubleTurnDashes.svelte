@@ -2,7 +2,7 @@
   /**
    * Real-pictograph diagrams for the 2-turn dash breakdown, mirroring
    * TwoTurnsDashStaticPage.svelte's `dashQuarters` and `dashHalves` strips
-   * exactly (same motion/turns/orientations — the print artboard is the
+   * exactly (same motion/turns/orientations - the print artboard is the
    * source of truth for this data).
    */
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
@@ -65,7 +65,7 @@
   });
 
   // ── Motion data (verbatim from TwoTurnsDashStaticPage.svelte) ────────────
-  // Dash: S→N IN→OUT CCW turns=2 (a vertical dash — up/down as thumb indicators).
+  // Dash: S→N IN→OUT CCW turns=2 (a vertical dash - up/down as thumb indicators).
   const dashQCombined = redStaff("dash-q-full", MotionType.DASH, SO_, N, IN, OUT, CCW, 2);
   const dashHCombined = redStaff("dash-h-full", MotionType.DASH, SO_, N, IN, OUT, CCW, 2);
 
@@ -143,29 +143,48 @@
 </script>
 
 <GuideSection id="double-turn-dashes" title="Dashes">
-  <p>
-    Now let's add a double turn to a dash. It's relatively complex, so we'll break it down into four parts.
-  </p>
+  <div class="section-body">
+    <p>
+      Now let's add a double turn to a dash. It's relatively complex, so we'll break it down into four parts.
+    </p>
+  </div>
 
   <TurnStrip
     frames={quartersFrames}
-    caption="Dash with 2 turns, south to north, broken into quarters — start, quarter, halfway, three-quarter, end, full motion"
+    caption="Dash with 2 turns, south to north, broken into quarters: start, quarter, halfway, three-quarter, end, full motion"
   />
 
-  <p>
-    A base dash starting from thumb in ends with thumb out, therefore a dash with 2 turns also ends with thumb out (in → out)
-  </p>
+  <div class="section-body">
+    <p>
+      A base dash starting from thumb in ends with thumb out, therefore a dash with 2 turns also ends with thumb out (in → out)
+    </p>
 
-  <p>
-    For a vertical dash such as this, you can use up/down as indicators (up → down → up)
-  </p>
+    <p>
+      For a vertical dash such as this, you can use up/down as indicators (up → down → up)
+    </p>
 
-  <p>
-    As with all dashes, it's important to travel in a straight handpath even though the prop is rotating. Here is the same motion broken in half:
-  </p>
+    <p>
+      As with all dashes, it's important to travel in a straight handpath even though the prop is rotating. Here is the same motion broken in half:
+    </p>
+  </div>
 
   <TurnStrip
     frames={halvesFrames}
-    caption="The same dash with 2 turns, broken in half — start, halfway, end, full motion"
+    caption="The same dash with 2 turns, broken in half: start, halfway, end, full motion"
   />
 </GuideSection>
+
+<style>
+  /* Prose measure + rhythm mirror level-1's FlowFrame `.flow-p`. TurnStrip
+     calls stay OUTSIDE these wrappers, as direct GuideSection children, so
+     their own grid-column breakout (TurnStrip.svelte) still applies. */
+  .section-body :global(p) {
+    max-width: 34rem;
+    margin: 0 auto 1.1rem;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .section-body :global(p:last-child) {
+    margin-bottom: 0;
+  }
+</style>

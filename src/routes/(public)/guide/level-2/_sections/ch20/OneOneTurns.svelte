@@ -1,18 +1,18 @@
 <script lang="ts">
   /**
    * Real-pictograph diagrams for the Type 1 (dual-shift) 1|1 breakdown,
-   * mirroring OneOneType1Page.svelte's four `STRIPS` (D, I, N, V) exactly —
+   * mirroring OneOneType1Page.svelte's four `STRIPS` (D, I, N, V) exactly -
    * same motions/turns/orientations, the print artboard is the source of
    * truth for this data. Both hands turn simultaneously on every strip, so
    * the halfway frame uses TurnStrip's dual-pose kind (two staves in one
-   * cell) rather than buildHalvedStep — matching the print artboard, which
+   * cell) rather than buildHalvedStep - matching the print artboard, which
    * also renders these via the raw halfwayPose interpolator rather than the
    * halved-pictograph pipeline.
    *
    * Types 2 through 6 are left as their original TODO markers: their source
    * artboards (OneOneType23Page.svelte, OneOneType456Page.svelte) were not
    * part of this task's assigned data sources, so no motion data has been
-   * copied for them here — inventing it would violate the "never invent
+   * copied for them here - inventing it would violate the "never invent
    * motions" rule.
    */
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
@@ -137,29 +137,58 @@
 </script>
 
 <GuideSection id="one-one-turns" title="1|1 Turns">
-  <p>
-    For a turn on both props, add a "1" in both the high and the low slot. This can also be written as 1|1. Here are some cherry-picked examples of 1|1 in each Type. Since you know all the mechanisms involved, explanation is kept to a minimum.
-  </p>
+  <div class="section-body">
+    <p>
+      For a turn on both props, add a "1" in both the high and the low slot. This can also be written as 1|1. Here are some cherry-picked examples of 1|1 in each Type. Since you know all the mechanisms involved, explanation is kept to a minimum.
+    </p>
 
-  <h3>Type 1</h3>
-  <p>Pause at the halfway point of each motion while learning. This will ensure accurate timing.</p>
-  <TurnStrip frames={dFrames} caption="D-One-One — both hands with a turn, start, halfway, end, full motion" />
-  <TurnStrip frames={iFrames} caption="I-One-One — both hands with a turn, start, halfway, end, full motion" />
-  <TurnStrip frames={nFrames} caption="N-One-One — both hands with a turn, start, halfway, end, full motion" />
-  <TurnStrip frames={vFrames} caption="V-One-One — both hands with a turn, start, halfway, end, full motion" />
+    <h3>Type 1</h3>
+    <p>Pause at the halfway point of each motion while learning. This will ensure accurate timing.</p>
+  </div>
 
-  <h3>Type 2</h3>
-  <!-- TODO: add diagram — X-Same One-One, X-Opp One-One -->
+  <TurnStrip frames={dFrames} caption="D-One-One: both hands with a turn, start, halfway, end, full motion" />
+  <TurnStrip frames={iFrames} caption="I-One-One: both hands with a turn, start, halfway, end, full motion" />
+  <TurnStrip frames={nFrames} caption="N-One-One: both hands with a turn, start, halfway, end, full motion" />
+  <TurnStrip frames={vFrames} caption="V-One-One: both hands with a turn, start, halfway, end, full motion" />
 
-  <h3>Type 3</h3>
-  <!-- TODO: add diagram — Theta-Dash Same One-One, Theta-Dash Opp One-One, Delta-Dash Same One-One, Delta-Dash Opp One-One -->
+  <div class="section-body">
+    <h3>Type 2</h3>
+    <!-- TODO: add diagram - X-Same One-One, X-Opp One-One -->
 
-  <h3>Type 4</h3>
-  <!-- TODO: add diagram — Phi-Same One-One, Phi-Opp One-One -->
+    <h3>Type 3</h3>
+    <!-- TODO: add diagram - Theta-Dash Same One-One, Theta-Dash Opp One-One, Delta-Dash Same One-One, Delta-Dash Opp One-One -->
 
-  <h3>Type 5</h3>
-  <!-- TODO: add diagram — Psi-Dash Same One-One, Psi-Dash Opp One-One -->
+    <h3>Type 4</h3>
+    <!-- TODO: add diagram - Phi-Same One-One, Phi-Opp One-One -->
 
-  <h3>Type 6</h3>
-  <!-- TODO: add diagram — Gamma Opp One-One (two variations) -->
+    <h3>Type 5</h3>
+    <!-- TODO: add diagram - Psi-Dash Same One-One, Psi-Dash Opp One-One -->
+
+    <h3>Type 6</h3>
+    <!-- TODO: add diagram - Gamma Opp One-One (two variations) -->
+  </div>
 </GuideSection>
+
+<style>
+  /* Prose measure + rhythm mirror level-1's FlowFrame `.flow-p`/`.flow-h3`.
+     TurnStrip calls stay OUTSIDE these wrappers, as direct GuideSection
+     children, so their own grid-column breakout (TurnStrip.svelte) still
+     applies. */
+  .section-body :global(p) {
+    max-width: 34rem;
+    margin: 0 auto 1.1rem;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .section-body :global(p:last-child) {
+    margin-bottom: 0;
+  }
+  .section-body :global(h3) {
+    text-align: center;
+    text-wrap: balance;
+    margin: 1.75rem 0 0.35rem;
+  }
+  .section-body :global(h3:first-child) {
+    margin-top: 0;
+  }
+</style>

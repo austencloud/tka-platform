@@ -2,7 +2,7 @@
   /**
    * Real-pictograph diagrams for the S/T leading-following breakdown,
    * mirroring SAndTPage.svelte's four `STRIPS` (S-High, S-Low, T-High,
-   * T-Low) exactly — same motions/turns/orientations, the print artboard
+   * T-Low) exactly - same motions/turns/orientations, the print artboard
    * is the source of truth for this data. Both hands move on every strip,
    * so the halfway frame uses TurnStrip's dual-pose kind, matching how the
    * print artboard renders these via the raw halfway-pose interpolator.
@@ -118,20 +118,39 @@
 </script>
 
 <GuideSection id="s-and-t" title="S and T">
-  <p>
-    S and T are a different type of hybrid. Even though their motions are a matching shift type (pro|pro, anti|anti), each has one hand leading and the other following. Though this doesn't affect their base forms, it produces additional variations when modifying their motions. S and T are the only letters that have a leader and follower while both hands share the same motion type.
-  </p>
+  <div class="section-body">
+    <p>
+      S and T are a different type of hybrid. Even though their motions are a matching shift type (pro|pro, anti|anti), each has one hand leading and the other following. Though this doesn't affect their base forms, it produces additional variations when modifying their motions. S and T are the only letters that have a leader and follower while both hands share the same motion type.
+    </p>
 
-  <p>
-    Fortunately, we have a tool to disambiguate hybrids: the high/low slots. For S and T, high = leading and low = following.
-  </p>
+    <p>
+      Fortunately, we have a tool to disambiguate hybrids: the high/low slots. For S and T, high = leading and low = following.
+    </p>
+  </div>
 
-  <TurnStrip frames={sHighFrames} caption="S-High-One — turn on the leading hand, start, halfway, end, full motion" />
-  <TurnStrip frames={sLowFrames} caption="S-Low-One — turn on the following hand, start, halfway, end, full motion" />
-  <TurnStrip frames={tHighFrames} caption="T-High-One — turn on the leading hand, start, halfway, end, full motion" />
-  <TurnStrip frames={tLowFrames} caption="T-Low-One — turn on the following hand, start, halfway, end, full motion" />
+  <TurnStrip frames={sHighFrames} caption="S-High-One: turn on the leading hand, start, halfway, end, full motion" />
+  <TurnStrip frames={sLowFrames} caption="S-Low-One: turn on the following hand, start, halfway, end, full motion" />
+  <TurnStrip frames={tHighFrames} caption="T-High-One: turn on the leading hand, start, halfway, end, full motion" />
+  <TurnStrip frames={tLowFrames} caption="T-Low-One: turn on the following hand, start, halfway, end, full motion" />
 
-  <p>
-    Note that these leading/following rules do NOT apply to U and V. Even though U and V have a leader/follower, their slots refer to pro/anti.
-  </p>
+  <div class="section-body">
+    <p>
+      Note that these leading/following rules do NOT apply to U and V. Even though U and V have a leader/follower, their slots refer to pro/anti.
+    </p>
+  </div>
 </GuideSection>
+
+<style>
+  /* Prose measure + rhythm mirror level-1's FlowFrame `.flow-p`. TurnStrip
+     calls stay OUTSIDE these wrappers, as direct GuideSection children, so
+     their own grid-column breakout (see TurnStrip.svelte) still applies. */
+  .section-body :global(p) {
+    max-width: 34rem;
+    margin: 0 auto 1.1rem;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .section-body :global(p:last-child) {
+    margin-bottom: 0;
+  }
+</style>

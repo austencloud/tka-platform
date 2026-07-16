@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
    * Real-pictograph diagram for the 1-turn dash breakdown, mirroring
-   * DashStaticTurnsPage.svelte's dash row (`ROWS[0]`) exactly — same motion/
+   * DashStaticTurnsPage.svelte's dash row (`ROWS[0]`) exactly - same motion/
    * turns/orientations, the print artboard is the source of truth for this
    * data.
    */
@@ -65,7 +65,7 @@
   });
 
   // ── Motion data (verbatim from DashStaticTurnsPage.svelte's dash row) ────
-  // Dash: S→N IN→IN CCW turns=1 — a vertical dash returning to thumb in.
+  // Dash: S→N IN→IN CCW turns=1 - a vertical dash returning to thumb in.
   const dashCombined = redStaff("dash-full", MotionType.DASH, SO_, N, IN, IN, CCW, 1);
 
   const ANIM = {
@@ -116,17 +116,36 @@
 </script>
 
 <GuideSection id="turn-dashes" title="Dashes" subtitle="VTG: 1:1">
-  <p>
-    You can also add a turn to a dash. During the prop rotation, move the hand directly in a straight line. Pause at the halfway point while learning to ensure that your hand is in the center point and the staff is perpendicular to your starting position.
-  </p>
+  <div class="section-body">
+    <p>
+      You can also add a turn to a dash. During the prop rotation, move the hand directly in a straight line. Pause at the halfway point while learning to ensure that your hand is in the center point and the staff is perpendicular to your starting position.
+    </p>
+  </div>
 
-  <TurnStrip frames={dashFrames} caption="Dash with a turn, south to north — start, halfway, end, full motion" />
+  <TurnStrip frames={dashFrames} caption="Dash with a turn, south to north: start, halfway, end, full motion" />
 
-  <p>
-    A base dash has 1 thumb switch (in → out), therefore a dash with a turn has 2 thumb switches (in → in).
-  </p>
+  <div class="section-body">
+    <p>
+      A base dash has 1 thumb switch (in → out), therefore a dash with a turn has 2 thumb switches (in → in).
+    </p>
 
-  <p>
-    Executing this move on repeat is commonly called a linear extension. It feels peculiar to execute with staves because one end is in pro and the other end is in anti. It helps to focus on the half that's in antispin. This will ensure that you pass your hand directly through the center point.
-  </p>
+    <p>
+      Executing this move on repeat is commonly called a linear extension. It feels peculiar to execute with staves because one end is in pro and the other end is in anti. It helps to focus on the half that's in antispin. This will ensure that you pass your hand directly through the center point.
+    </p>
+  </div>
 </GuideSection>
+
+<style>
+  /* Prose measure + rhythm mirror level-1's FlowFrame `.flow-p`. TurnStrip
+     stays OUTSIDE these wrappers, as a direct GuideSection child, so its own
+     grid-column breakout (see TurnStrip.svelte) still applies. */
+  .section-body :global(p) {
+    max-width: 34rem;
+    margin: 0 auto 1.1rem;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .section-body :global(p:last-child) {
+    margin-bottom: 0;
+  }
+</style>
