@@ -96,7 +96,17 @@
   // persistent cosmic chrome. Only the /guide HUB is covered — the deeper guide
   // rewrite routes (/guide/level-*, /guide/codex, print/poster) own their own
   // chrome and are intentionally excluded.
-  const MARKETING_EXACT = new Set(["/", "/about", "/roots", "/support", "/guide", "/notation", "/composer"]);
+  const MARKETING_EXACT = new Set([
+    "/",
+    "/about",
+    "/roots",
+    "/support",
+    "/guide",
+    "/notation",
+    "/composer",
+    "/glossary",
+    "/learn/staff-spinning-choreography",
+  ]);
   const MARKETING_SUBTREES = ["/shop"];
   const isMarketing = $derived.by(() => {
     const p = page.url.pathname;

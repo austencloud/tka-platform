@@ -49,8 +49,10 @@ const PUBLIC_PATH_PREFIXES = [
   // Any future (public)/learn/* pillar page gets its own exact entry here.
   "/learn/staff-spinning-choreography",
   "/notation",
+  "/composer",
+  "/glossary",
+  "/guide",
   "/privacy",
-  "/render",
   "/roots",
   "/support",
   "/terms",

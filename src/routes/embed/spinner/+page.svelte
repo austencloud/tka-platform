@@ -1,15 +1,17 @@
 <!--
   Embed: Spinner
 
-  Minimal, frameless page for embedding the animation demo in an iframe.
-  Used by tkaflowarts.com's NotationShowcaseSection.
+  Minimal, frameless page for embedding the spinner demo in an iframe.
+  The URL is outward-facing (third parties may iframe it), so it stays alive
+  even though its original consumer (the old NotationShowcaseSection) is gone.
+  Serves the same PlayWithItInner spinner the landing page uses.
 
   No header, no footer, no navigation. Just the animation.
   Sends postMessage to parent with "ready" when loaded.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
-  import LandingAnimationDemo from "../../landing/components/LandingAnimationDemo.svelte";
+  import PlayWithItInner from "../../landing/components/PlayWithItInner.svelte";
 
   onMount(() => {
     // Signal to parent iframe that embed is ready
@@ -33,7 +35,7 @@
 </svelte:head>
 
 <div class="embed-container">
-  <LandingAnimationDemo />
+  <PlayWithItInner />
 </div>
 
 <style>
