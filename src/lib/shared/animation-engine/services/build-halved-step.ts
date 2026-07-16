@@ -43,13 +43,22 @@
  * named halfway location) — render a visual pose instead (the guide's
  * existing `poseArrow`/`halfwayPose` path), don't guess.
  */
-import { calculateOrientationAt } from "./orientation-at";
+import {
+  calculateOrientationAt,
+  calculateStaffAngleAt,
+  type OrientationAtInput,
+} from "./orientation-at";
+import { staffAngleToCenterOrientation } from "$lib/shared/render/core/calculations/orientation-angle";
 import {
   createMotionData,
   isVisibleMotion,
   type MotionData,
 } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionType } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import {
+  MotionType,
+  type MotionColor,
+  type Orientation,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { StepData, StepMotions } from "$lib/shared/foundation/domain/models/step-data";
 
@@ -74,6 +83,18 @@ const SHIFT_MIDPOINTS: Record<string, GridLocation> = {
 
 function pairKey(a: GridLocation, b: GridLocation): string {
   return [a, b].sort().join("|");
+}
+
+/** The center-family orientation at fraction t: the engine's absolute staff
+ *  angle mapped onto the 8-point compass. Null when off the 45deg lattice. */
+function centerOrientationAt(
+  input: OrientationAtInput,
+  t: number,
+  color: MotionColor
+): Orientation | null {
+  const staffAngle = calculateStaffAngleAt(input, t, color);
+  if (staffAngle === null) return null;
+  return (staffAngleToCenterOrientation(staffAngle) as Orientation | null) ?? null;
 }
 
 /** Halfway grid location for a shift (pro/anti) — the named arc midpoint, or
@@ -120,25 +141,34 @@ function halveMotion(motion: MotionData, t: number): MotionData | null {
   if (motion.motionType === MotionType.FLOAT) return null;
   if (motion.skewSteps || motion.skewDir) return null;
 
-  const halfwayOrientation = calculateOrientationAt(
-    {
-      motionType: motion.motionType,
-      rotationDirection: motion.rotationDirection,
-      startLocation: motion.startLocation,
-      endLocation: motion.endLocation,
-      startOrientation: motion.startOrientation,
-      endOrientation: motion.endOrientation,
-      // motion.turns is `number | "fl"` on the canonical Motion shape, but
-      // FLOAT (the only "fl" case) is already guarded out above.
-      turns: typeof motion.turns === "number" ? motion.turns : 0,
-    },
-    t,
-    motion.color
-  );
-  if (halfwayOrientation === null) return null;
-
   const halfwayLocation = halfwayLocationFor(motion);
   if (halfwayLocation === null) return null;
+
+  const orientationInput = {
+    motionType: motion.motionType,
+    rotationDirection: motion.rotationDirection,
+    startLocation: motion.startLocation,
+    endLocation: motion.endLocation,
+    startOrientation: motion.startOrientation,
+    endOrientation: motion.endOrientation,
+    // motion.turns is `number | "fl"` on the canonical Motion shape, but
+    // FLOAT (the only "fl" case) is already guarded out above.
+    turns: typeof motion.turns === "number" ? motion.turns : 0,
+  };
+
+  // At CENTER (a standard dash's midpoint) the radial reference is degenerate:
+  // the interpolator's midpoint centerPathAngle depends on the travel axis
+  // (0 for S<->N, PI/2 for E<->W), so a radial label computed against it can't
+  // be rendered back to the correct physical angle by location+orientation
+  // alone (that lossiness is what drew dash-half props 90deg off). The
+  // center-family (L5 centric) orientations are ABSOLUTE and survive the
+  // roundtrip — PropRotAngleManager's CENTRIC_ANGLE_MAP and the arrow
+  // segment-rotation branch both render them by compass angle directly.
+  const halfwayOrientation =
+    halfwayLocation === GridLocation.CENTER
+      ? centerOrientationAt(orientationInput, t, motion.color)
+      : calculateOrientationAt(orientationInput, t, motion.color);
+  if (halfwayOrientation === null) return null;
 
   return createMotionData({
     ...motion,

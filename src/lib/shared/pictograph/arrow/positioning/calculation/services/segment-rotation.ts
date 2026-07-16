@@ -2,6 +2,7 @@ import { GridLocation } from "../../../../grid/domain/enums/grid-enums";
 import type { Orientation } from "../../../../shared/domain/enums/pictograph-enums";
 import {
   orientationToStaffAngle,
+  centerOrientationToDegrees,
   RADIAL_CYCLE,
 } from "$lib/shared/render/core/calculations/orientation-angle";
 import { LOCATION_ANGLES } from "$lib/shared/foundation/domain/math-constants";
@@ -47,10 +48,20 @@ export function calculateSegmentRotation(
   location: GridLocation,
   centerFallback: GridLocation
 ): number {
-  // orientationToStaffAngle's contract is "radial: caller guards" — a center-family
-  // (centerN…) orientation would silently degrade. Phase 1's calculateOrientationAt
-  // returns null for center-family, so nothing in scope reaches this today; warn (do
-  // not throw) so a future Phase 3 wiring can't silently ship a wrong number.
+  // Center-family (centerN…) halfway orientations are ABSOLUTE compass angles —
+  // buildHalvedStep emits them when the halfway location is CENTER (a standard
+  // dash's midpoint), where the radial reference is degenerate and travel-axis-
+  // dependent (the fixed centerPathAngleFor(CENTER)=0 below is only correct for
+  // the S<->N axis; E<->W dashes label against PI/2 and were 90deg off). The
+  // absolute angle needs no reference — return it directly.
+  const centerDeg = centerOrientationToDegrees(
+    halfwayOrientation as Parameters<typeof centerOrientationToDegrees>[0]
+  );
+  if (centerDeg !== null) return centerDeg;
+
+  // orientationToStaffAngle's contract is "radial: caller guards" — any other
+  // non-radial orientation would silently degrade; warn (do not throw) so a
+  // future wiring can't silently ship a wrong number.
   if (!RADIAL_CYCLE.includes(halfwayOrientation as (typeof RADIAL_CYCLE)[number])) {
     console.warn(
       `[segment-rotation] non-radial halfwayOrientation "${halfwayOrientation}" — ` +

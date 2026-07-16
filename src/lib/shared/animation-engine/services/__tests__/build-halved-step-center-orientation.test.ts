@@ -1,0 +1,108 @@
+
+// Regression lock (2026-07-16): dash-half midpoint orientations were rendered
+// 90deg off because (CENTER, radial-label) is a lossy representation — the
+// interpolated midpoint centerPathAngle is travel-axis-dependent (0 for S<->N,
+// PI/2 for E<->W), while renderers assumed a fixed reference. buildHalvedStep
+// now emits ABSOLUTE center-family orientations at CENTER; prop and arrow
+// renderers roundtrip them exactly. Proof: for 2-turn dashes on every axis, the halved step's midpoint
+// orientation must render (prop AND arrow) at the engine's physical staff angle.
+import { describe, it, expect } from "vitest";
+import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
+import { calculateStaffAngleAt } from "$lib/shared/animation-engine/services/orientation-at";
+import { calculateSegmentRotation } from "$lib/shared/pictograph/arrow/positioning/calculation/services/segment-rotation";
+import PropRotAngleManager from "$lib/shared/pictograph/prop/services/prop-rot-angle-manager";
+import {
+  createMotionData,
+  createPlaceholderMotion,
+} from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  MotionType,
+  MotionColor,
+  Orientation,
+  RotationDirection,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+
+const AXES: Array<[GridLocation, GridLocation]> = [
+  [GridLocation.SOUTH, GridLocation.NORTH],
+  [GridLocation.NORTH, GridLocation.SOUTH],
+  [GridLocation.EAST, GridLocation.WEST],
+  [GridLocation.WEST, GridLocation.EAST],
+  [GridLocation.NORTHEAST, GridLocation.SOUTHWEST],
+];
+
+describe("roundtrip: 2-turn dash halves render at the physical staff angle", () => {
+  it.each(AXES)("dash %s -> %s", (startLocation, endLocation) => {
+    const red = createMotionData({
+      color: MotionColor.RED,
+      motionType: MotionType.DASH,
+      startLocation,
+      endLocation,
+      startOrientation: Orientation.IN,
+      endOrientation: Orientation.OUT,
+      rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+      turns: 2,
+      propType: PropType.STAFF,
+      gridMode: GridMode.DIAMOND,
+      pathShape: "linear",
+    });
+    const step = {
+      id: "probe",
+      letter: null,
+      gridMode: GridMode.DIAMOND,
+      motions: { red, blue: createPlaceholderMotion(MotionColor.BLUE) },
+      stepNumber: 1,
+      duration: 1,
+      isBlank: false,
+    } as unknown as StepData;
+
+    // Ground truth: engine's absolute staff angle at the midpoint, degrees.
+    const physicalDeg =
+      (((calculateStaffAngleAt(
+        {
+          motionType: red.motionType,
+          rotationDirection: red.rotationDirection,
+          startLocation: red.startLocation,
+          endLocation: red.endLocation,
+          startOrientation: red.startOrientation,
+          endOrientation: red.endOrientation,
+          turns: 2,
+        },
+        0.5,
+        MotionColor.RED
+      )! *
+        180) /
+        Math.PI) %
+        360 +
+        360) %
+      360;
+
+    const halved = buildHalvedStep(step, 0.5);
+    expect(halved).not.toBeNull();
+    const mid = halved!.motions.red;
+    console.log(
+      `${startLocation}->${endLocation}: physical=${physicalDeg}deg ori=${mid.endOrientation}`
+    );
+
+    // The midpoint orientation must be center-family (absolute), not radial.
+    expect(String(mid.endOrientation).startsWith("center")).toBe(true);
+
+    // Prop renderer roundtrip.
+    const propDeg = PropRotAngleManager.calculateRotation(
+      GridLocation.CENTER,
+      mid.endOrientation,
+      GridMode.DIAMOND
+    );
+    expect(propDeg).toBeCloseTo(physicalDeg, 6);
+
+    // Arrow segment-rotation roundtrip.
+    const arrowDeg = calculateSegmentRotation(
+      mid.endOrientation,
+      GridLocation.CENTER,
+      startLocation
+    );
+    expect(arrowDeg).toBeCloseTo(physicalDeg, 6);
+  });
+});

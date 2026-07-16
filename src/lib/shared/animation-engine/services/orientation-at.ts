@@ -66,6 +66,39 @@ export function calculateOrientationAt(
 ): Orientation | null {
   if (isCenterOrientation(m.startOrientation)) return null; // center-family deferred
 
+  const angles = sampleAnglesAt(m, t, color);
+  if (!angles) return null;
+
+  return staffAngleToOrientation(angles.staffRotationAngle, angles.centerPathAngle);
+}
+
+/**
+ * The prop's ABSOLUTE staff angle (radians, engine/SVG convention: 0=east,
+ * PI/2=south, PI=west, 3PI/2=north) at fraction t along a motion, or null when
+ * the engine can't produce angles for this hand.
+ *
+ * Exists for the CENTER-location case: at the grid center the radial reference
+ * direction is degenerate, so a center-relative Orientation label cannot encode
+ * where the staff physically points (the interpolator's midpoint centerPathAngle
+ * differs by travel axis — 0 for S<->N dashes, PI/2 for E<->W). Callers whose
+ * halfway location is CENTER take this absolute angle and map it to the
+ * center-family orientations (centerN..centerNW) instead of a radial label.
+ */
+export function calculateStaffAngleAt(
+  m: OrientationAtInput,
+  t: number,
+  color: MotionColor = MotionColor.RED
+): number | null {
+  if (isCenterOrientation(m.startOrientation)) return null; // center-family deferred
+  return sampleAnglesAt(m, t, color)?.staffRotationAngle ?? null;
+}
+
+/** Shared engine sampling for the two calculators above. */
+function sampleAnglesAt(
+  m: OrientationAtInput,
+  t: number,
+  color: MotionColor
+): { staffRotationAngle: number; centerPathAngle: number } | null {
   const motion = createMotionData({
     motionType: m.motionType,
     rotationDirection: m.rotationDirection,
@@ -87,8 +120,5 @@ export function calculateOrientationAt(
   } as unknown as StepData;
 
   const result = interpolatePropAngles(step, t);
-  const angles = color === MotionColor.BLUE ? result.blueAngles : result.redAngles;
-  if (!angles) return null;
-
-  return staffAngleToOrientation(angles.staffRotationAngle, angles.centerPathAngle);
+  return (color === MotionColor.BLUE ? result.blueAngles : result.redAngles) ?? null;
 }
