@@ -1,5 +1,6 @@
 <script lang="ts">
   import LegalPageShell from "$lib/shared/legal/components/LegalPageShell.svelte";
+  import Seo from "$lib/shared/components/Seo.svelte";
 
   const steps = [
     "Sign in to Flow Arts Composer",
@@ -21,14 +22,11 @@
   ];
 </script>
 
-<svelte:head>
-  <title>Delete Account - Flow Arts Composer</title>
-  <meta
-    name="description"
-    content="How to delete your Flow Arts Composer account and data"
-  />
-  <link rel="canonical" href="https://tkaflowarts.com/delete-account" />
-</svelte:head>
+<Seo
+  title="Delete Account - Flow Arts Composer"
+  description="How to delete your Flow Arts Composer account and data"
+  canonical="https://tkaflowarts.com/delete-account"
+/>
 
 <LegalPageShell variant="compact">
   <div class="header-content">
