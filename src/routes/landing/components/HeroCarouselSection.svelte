@@ -914,6 +914,11 @@
       grid-column: 1;
       align-self: center;
       min-width: 0;
+      /* The video column (.hero-body) includes the dots + credit footer below
+         the stage (55px tall incl. its margin), so a plain center-align sits the
+         copy ~28px below the video's midline. This padding re-centres the copy
+         on the stage itself, not the stage + footer. */
+      padding-bottom: 56px;
     }
 
     .title-block {
@@ -951,6 +956,67 @@
       width: auto;
       height: min(62vh, 640px);
       max-height: none;
+    }
+  }
+
+  /* ── 4K / ultrawide: scale the split up ──────────────────────────────────────
+     ≥2200px. The 1240px/640px caps that balance a 1080p–1440p desktop read as a
+     small island on a 4K monitor (at 3840 the whole composition was ~27% of the
+     width). Same split, bigger canvas: wider bound, taller stage, larger type.
+     Everything below 2200px keeps the verified tier above. */
+  @media (min-width: 2200px) {
+    .hero-carousel {
+      max-width: 1720px;
+      grid-template-columns: minmax(380px, 600px) auto;
+      column-gap: clamp(96px, 6vw, 170px);
+    }
+
+    .hero-copy {
+      gap: clamp(26px, 1.6vw, 40px);
+      /* Footer block grew (24px margin + bigger dots/credit ≈ 66px), keep the
+         copy centred on the stage. */
+      padding-bottom: 66px;
+    }
+
+    .hero-title {
+      font-size: clamp(4rem, 2.7vw, 5.8rem);
+    }
+
+    .hero-tagline {
+      font-size: clamp(1.35rem, 0.9vw, 1.7rem);
+    }
+
+    .carousel-stage {
+      height: min(64vh, 960px);
+      border-radius: 20px;
+    }
+
+    /* Bump the interactive text one step so it doesn't read miniature next to
+       the scaled title. Touch-target floor already cleared. */
+    .hero-link {
+      font-size: 1.05rem;
+      padding: 14px 26px;
+    }
+
+    .hero-chip {
+      font-size: 1rem;
+      padding: 13px 21px;
+    }
+
+    .carousel-footer {
+      margin-top: 24px;
+      gap: 12px;
+    }
+
+    .credit {
+      font-size: 14px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      min-width: 10px;
+      min-height: 10px;
     }
   }
 

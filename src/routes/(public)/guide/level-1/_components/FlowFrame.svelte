@@ -62,81 +62,63 @@
     return out;
   });
 
-  // Lay out a page's card set by run length:
-  //  • 2+ consecutive cards → ONE responsive row that breaks out to the wide
-  //    route width (3-up+ on desktop, live canvas above each card).
-  //  • a LONE card → an ASIDE figure: the card sits to one side and the section's
-  //    text (its heading + the prose before it, plus any prose right after it)
-  //    flows beside it, so a single card USES the width instead of floating in a
-  //    void. A lone card with no nearby prose falls back to a centred single.
-  // Non-card blocks pass through in reading order.
+  // Group runs of consecutive card sequences, choosing the layout AUTOMATICALLY
+  // by run length — `card: true` on the block is the only signal:
+  //   • 2+ consecutive cards → one responsive card ROW (breaks out wide).
+  //   • a LONE card → an ASIDE: the card on one side, its section's text (heading
+  //     + preceding prose + any prose right after) flowing beside it. A lone
+  //     ~300px card centred in the wide breakout band left a void of empty
+  //     gutter; the aside fills the width with card + explanation instead.
+  //   • a lone card with NO nearby prose → a SOLO row: card width, centred,
+  //     no wide band. Non-card blocks pass straight through in reading order.
   type CardBlock = Extract<GuideBlock, { kind: "pictographGroup" }>;
   type RenderItem =
     | { type: "block"; block: GuideBlock }
-    | { type: "cardRow"; cards: CardBlock[] }
+    | { type: "cardRow"; cards: CardBlock[]; solo?: boolean }
     | { type: "cardAside"; card: CardBlock; prose: GuideBlock[] };
-  const isCard = (b: GuideBlock): b is CardBlock =>
-    b.kind === "pictographGroup" && !!b.card;
+  const isCard = (b: GuideBlock): b is CardBlock => b.kind === "pictographGroup" && !!b.card;
   const isFlowText = (b: GuideBlock) => b.kind === "prose" || b.kind === "glyphImage";
   const renderItems = $derived.by(() => {
     const items: RenderItem[] = [];
     const blocks = rendered;
-    // Heading + prose accumulated in the CURRENT section, not yet committed — a
-    // lone card pulls these to sit beside it; otherwise they flush out normally.
-    let pending: GuideBlock[] = [];
-    const flushPending = () => {
-      for (const pb of pending) items.push({ type: "block", block: pb });
-      pending = [];
-    };
     let i = 0;
     while (i < blocks.length) {
       const b = blocks[i]!;
-      if (b.kind === "heading") {
-        flushPending(); // previous section's leftover text renders above
-        pending.push(b); // start the new section with its heading
+      if (!isCard(b)) {
+        items.push({ type: "block", block: b });
         i++;
         continue;
       }
-      if (isFlowText(b)) {
-        pending.push(b);
-        i++;
+      // Collect the run of consecutive cards.
+      const run: CardBlock[] = [];
+      while (i < blocks.length && isCard(blocks[i]!)) run.push(blocks[i++] as CardBlock);
+      if (run.length >= 2) {
+        items.push({ type: "cardRow", cards: run });
         continue;
       }
-      if (isCard(b)) {
-        // Consume the run of consecutive cards.
-        const run: CardBlock[] = [];
-        let j = i;
-        while (j < blocks.length) {
-          const nb = blocks[j]!;
-          if (!isCard(nb)) break; // narrows nb → CardBlock for the push below
-          run.push(nb);
-          j++;
-        }
-        if (run.length >= 2) {
-          flushPending(); // section text sits above a multi-card row
-          items.push({ type: "cardRow", cards: run });
-          i = j;
-          continue;
-        }
-        // Lone card → aside. Prose = this section's accumulated text (heading +
-        // preceding prose) plus any prose that immediately follows the card.
-        const following: GuideBlock[] = [];
-        let k = j;
-        while (k < blocks.length && isFlowText(blocks[k]!)) following.push(blocks[k++]!);
-        const prose = [...pending, ...following];
-        pending = [];
-        if (prose.length === 0) items.push({ type: "cardRow", cards: run });
-        else items.push({ type: "cardAside", card: run[0]!, prose });
-        i = k;
+      // Lone card. Reclaim the section text already emitted above it (contiguous
+      // prose/glyphs), and consume the prose that follows, to flow beside it.
+      const before: GuideBlock[] = [];
+      while (items.length) {
+        const last = items[items.length - 1]!;
+        if (last.type !== "block" || !isFlowText(last.block)) break;
+        items.pop();
+        before.unshift(last.block);
+      }
+      const after: GuideBlock[] = [];
+      while (i < blocks.length && isFlowText(blocks[i]!)) after.push(blocks[i++]!);
+      if (before.length + after.length === 0) {
+        items.push({ type: "cardRow", cards: run, solo: true });
         continue;
       }
-      // Any other block (pictograph, grid, strip, printOnly) — commit section
-      // text first, then the block, in reading order.
-      flushPending();
-      items.push({ type: "block", block: b });
-      i++;
+      // Pull the section heading in too, so the whole section sits beside its card.
+      const head = items[items.length - 1];
+      if (head && head.type === "block" && head.block.kind === "heading" && head.block.level !== 1) {
+        items.pop();
+        before.unshift(head.block);
+      }
+      items.push({ type: "cardAside", card: run[0]!, prose: [...before, ...after] });
     }
-    flushPending();
     return items;
   });
 
@@ -189,7 +171,7 @@
            canvas are client-rendered (browser-gated); the caption and the
            per-pictograph notation (sr-only) are always prerendered so the
            sequence stays crawlable and available to assistive tech. -->
-      <div class="flow-card-row" class:solo={item.cards.length === 1}>
+      <div class="flow-card-row" class:solo={item.solo ?? false}>
         {#each item.cards as card, c (c)}
           {@const crp = r(card.render)}
           <div class="card-stage-slot">
@@ -507,18 +489,17 @@
     margin-inline: calc((100% - min(90rem, 94cqw)) / 2);
     margin-block: 1.75rem;
   }
-  /* A run of exactly ONE card is NOT a row to break out — a lone card in the wide
-     band floats in a void. It sits at its own width, centred in the reading
-     measure (a lone card with nearby prose becomes an aside instead; this is the
-     no-prose fallback). */
-  .flow-card-row.solo {
-    width: auto;
-    max-width: 300px;
-    margin-inline: auto;
-  }
   /* Phones: stack to one stage per row — these are detailed full cards, so 2-up
      at ~190px reads too small. One column keeps each card legible while the page
      stays a single flowing scroll. */
+  /* A lone card with no nearby prose: card width, centred — no wide breakout
+     band (which would frame it in a void of empty gutter). */
+  .flow-card-row.solo {
+    grid-template-columns: min(300px, 100%);
+    width: auto;
+    margin-inline: auto;
+    justify-content: center;
+  }
   @media (max-width: 560px) {
     .flow-card-row {
       grid-template-columns: 1fr;
@@ -544,19 +525,17 @@
     text-wrap: balance;
   }
 
-  /* Aside placement: the card to one side, the section's heading + prose beside
-     it (a figure + its explanation). Uses the wide screen — the card+text block
-     is ~60rem centred, so a single card no longer floats in a void — while the
-     text column stays a readable measure. Stacks to one column on phones. */
+  /* Aside placement: one stage to the side, referencing prose flowing beside it
+     (a figure + its explanation). Stacks to a single column on phones. */
   .flow-aside-group {
     display: flex;
-    gap: 2rem;
+    gap: 1.75rem;
     align-items: center;
-    width: min(60rem, 92cqw);
-    margin: 2rem auto;
+    max-width: 60rem;
+    margin: 1.75rem auto;
   }
   .card-stage-aside {
-    flex: 0 0 clamp(220px, 30%, 300px);
+    flex: 0 0 clamp(200px, 32%, 300px);
     margin: 0;
     display: flex;
     flex-direction: column;
@@ -570,19 +549,18 @@
     flex-direction: column;
     gap: 0.4rem;
   }
-  /* The section heading, when it sits beside the card, reads as a left-aligned
-     figure title — not the big centred page-section head. */
-  .aside-prose .aside-h {
-    text-align: left;
-    margin-top: 0;
-    margin-bottom: 0.2rem;
-  }
   /* Prose beside a float reads left-aligned and full-width in its column, not the
      centred narrow measure the standalone flow prose uses. */
   .aside-prose .aside-p {
     text-align: left;
     max-width: none;
     margin-inline: 0;
+  }
+  /* The section heading rides along into the aside column — left-aligned with
+     its prose, without the standalone section head's big top margin. */
+  .aside-prose .aside-h {
+    text-align: left;
+    margin: 0 0 0.35rem;
   }
   .aside-prose .aside-glyph {
     margin-inline: 0;
@@ -596,7 +574,8 @@
     .card-stage-aside {
       flex: none;
     }
-    .aside-prose .aside-p {
+    .aside-prose .aside-p,
+    .aside-prose .aside-h {
       text-align: center;
     }
   }

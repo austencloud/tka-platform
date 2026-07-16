@@ -457,6 +457,39 @@
     text-align: center;
   }
 
+  /* 4K / ultrawide: scale the six-card row up so it holds its own next to the
+     scaled hero. Same single-row progression, roomier cards, bigger media. */
+  @media (min-width: 2200px) {
+    .how-tka-works {
+      max-width: 1960px;
+      padding: 112px 24px;
+    }
+
+    .cards-row {
+      gap: 24px;
+    }
+
+    .step-card {
+      padding: 32px 20px 26px;
+      border-radius: 20px;
+      gap: 16px;
+    }
+
+    .pictograph-frame,
+    .animation-frame,
+    .skeleton .skeleton-pictograph {
+      max-width: 280px;
+    }
+
+    .sequence-frame {
+      height: clamp(200px, 12vw, 300px);
+    }
+
+    h3 {
+      font-size: 1.35rem;
+    }
+  }
+
   /* Tablet: 3 across, 2 rows. The progression wraps onto a second row instead
      of scrolling sideways — every step stays on screen. */
   @media (max-width: 1100px) {

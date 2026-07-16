@@ -95,6 +95,23 @@
     transform: translateY(-1px);
   }
 
+  /* 4K / ultrawide: match the heading/intro scale of the neighbouring sections. */
+  @media (min-width: 2200px) {
+    h2 {
+      font-size: 2.75rem;
+    }
+
+    .section-intro {
+      font-size: 1.2rem;
+      max-width: 720px;
+    }
+
+    .cta-link {
+      font-size: 1.05rem;
+      padding: 14px 26px;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .cta-link {
       transition: none;

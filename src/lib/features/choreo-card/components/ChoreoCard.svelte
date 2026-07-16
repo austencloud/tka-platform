@@ -31,9 +31,9 @@
     handPathMode?: boolean;
     /** Use 5:7 playing card layout for physical card export (different from printMode) */
     cardMode?: boolean;
-    /** Override the light/dark theme of the render. Defaults to light when
-     *  printMode/cardMode (paper cards are light). Pass `false` to render a
-     *  dark 5:7 card (e.g. the guide's dark flow view). */
+    /** Override the light/paper render. Unset → printMode/cardMode decide (light for
+     *  paper). `false` forces a DARK card even in cardMode — the guide's card stages
+     *  sit on the dark editorial column and must match the canvas above them. */
     lightMode?: boolean;
     /** Show the notes footer line (FireDrums banner / custom notes) */
     showNotes?: boolean;
@@ -68,21 +68,17 @@
     startPositionLayout = "row",
     handPathMode = false,
     cardMode = false,
+    lightMode: lightModeProp,
     showNotes = true,
     showLoopGlyph = true,
     customNotesText = "🔥 FireDrums 2026 🔥",
     preRenderedImageUrl: preRenderedImageUrlProp,
     showMandala = false,
-    lightMode: lightModeProp,
     bluePropType,
     redPropType,
     onSelect,
     onContextMenu,
   }: Props = $props();
-
-  // Paper cards (print/cardMode) default to light; an explicit prop wins so an
-  // embedded dark surface (the guide flow view) can render a dark 5:7 card.
-  const effectiveLightMode = $derived(lightModeProp ?? (printMode || cardMode));
 
   // Local override so re-render can clear the pre-rendered URL
   let preRenderedCleared = $state(false);
@@ -100,6 +96,10 @@
   onMount(() => {
     hapticService = getHapticFeedback();
   });
+
+  // Light/paper render: an explicit override wins; otherwise printMode/cardMode
+  // force light (both target paper).
+  const effectiveLightMode = $derived(lightModeProp ?? (printMode || cardMode));
 
   // Prop family: an explicit override (guide pages pass a fixed STAFF/HAND) wins
   // over the user's global setting.

@@ -90,15 +90,20 @@
   </div>
 
   <div class="card-box">
+    <!-- cardMode makes the RENDER itself 5:7 (960×1344) so it fills the 5:7 box
+         exactly — without it the wordcard variant renders ~1.2 landscape and
+         object-fit: contain letterboxes it in white bands. lightMode={false}
+         overrides cardMode's paper-light default: the guide's card is DARK,
+         matching the canvas above it. -->
     <ChoreoCard
       {sequence}
-      cardMode={true}
-      lightMode={false}
       bluePropType={propType}
       redPropType={propType}
       showQRCodes={false}
       showNotes={false}
       showLoopGlyph={true}
+      cardMode={true}
+      lightMode={false}
     />
   </div>
 </figure>
@@ -156,23 +161,23 @@
   }
 
   /* Reserved 5:7 physical-card box — the client-rendered image drops in without
-     resizing the stage. cardMode renders a true 5:7 card, so the image fills the
-     box exactly (no letterbox). */
+     resizing the stage. */
   .card-box {
     width: 100%;
     aspect-ratio: 5 / 7;
     display: flex;
   }
-  /* The dark 5:7 card render is the whole card. Drop the ChoreoCard's paper-white
-     background + light stroke (built for print) so nothing white shows behind or
-     around it on the dark flow view. */
   .card-box :global(.choreo-card) {
     border-radius: 12px;
-    border: none;
+    /* Zero ChoreoCard's paper chrome: its white --print-bg fill and light stroke
+       would show around/behind the dark card render. The stage owns the frame. */
     background: transparent;
+    border: none;
   }
-  .card-box :global(.prop-thumbnail),
-  .card-box :global(.card-content) {
+  .card-box :global(.choreo-card .prop-thumbnail),
+  .card-box :global(.choreo-card .loading-placeholder),
+  .card-box :global(.choreo-card .error-placeholder),
+  .card-box :global(.choreo-card .empty-placeholder) {
     background: transparent;
   }
 

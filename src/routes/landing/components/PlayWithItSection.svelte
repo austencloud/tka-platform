@@ -51,7 +51,13 @@
     <!-- Structural skeleton - same showcase proportions as PlayWithItInner.
          Stops pulsing if the lazy import failed (nothing is coming). -->
     <div class="showcase skeleton-showcase" class:load-failed={loadFailed} aria-hidden="true">
-      <div class="sk-canvas"></div>
+      <div class="sk-stage-row">
+        <div class="sk-canvas"></div>
+        <!-- Desktop (≥920px) only: placeholder for the AnimationPanel sidebar so
+             the skeleton's footprint matches the loaded with-sidebar layout and
+             the lazy swap doesn't reflow the page. -->
+        <div class="sk-panel"></div>
+      </div>
       <div class="sk-beat-strip">
         {#each { length: 5 } as _}
           <div class="sk-beat-cell"></div>
@@ -113,6 +119,50 @@
     flex-shrink: 0;
   }
 
+  /* Mobile default: the row wrapper dissolves and the canvas flows in the
+     showcase column, exactly as before. The sidebar placeholder only exists on
+     desktop. */
+  .sk-stage-row {
+    display: contents;
+  }
+
+  .sk-panel {
+    display: none;
+  }
+
+  /* Desktop (matches PlayWithItInner's 920px isDesktopLayout breakpoint): the
+     loaded showcase renders canvas + 380px AnimationPanel sidebar at
+     min(1600px, 94vw) wide. Mirror that footprint in the skeleton so the lazy
+     import swap doesn't shift the layout. Constraints copied from
+     .showcase.with-sidebar / .canvas-area in PlayWithItInner. */
+  @media (min-width: 920px) {
+    .showcase {
+      max-width: min(1600px, 94vw);
+    }
+
+    .sk-stage-row {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      width: 100%;
+    }
+
+    .sk-canvas {
+      flex: 1 1 auto;
+      min-width: 0;
+      width: auto;
+      max-height: min(1100px, 70vh);
+    }
+
+    .sk-panel {
+      display: block;
+      flex: 0 0 380px;
+      max-width: 380px;
+      background: rgba(255, 255, 255, 0.02);
+      border-left: 1px solid rgba(255, 255, 255, 0.06);
+    }
+  }
+
   /* Beat strip - same padding/height as the real strip */
   .sk-beat-strip {
     display: flex;
@@ -145,6 +195,19 @@
 
   .skeleton-showcase.load-failed {
     animation: none;
+  }
+
+  /* 4K / ultrawide: heading scale to match the rest of the scaled page. */
+  @media (min-width: 2200px) {
+    h2 {
+      font-size: 3.6rem;
+    }
+
+    .subtitle {
+      font-size: 1.1rem;
+      max-width: 560px;
+      margin-bottom: 48px;
+    }
   }
 
   @media (max-width: 600px) {
