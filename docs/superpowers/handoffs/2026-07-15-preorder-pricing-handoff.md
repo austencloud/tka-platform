@@ -174,19 +174,34 @@ Spec: `docs/superpowers/specs/2026-07-14-preorder-price-swap-design.md`.
 Repricing was scoped to LOOP packs + Architect. Other **active** products still
 sit at old prices, now inconsistent with the $35 floor:
 
-- **TnD Trilogy** — TKA 1 / 2 / 3 at **$30 each** (live, sold via
-  `TnDTrilogyPage`, no preorder swap).
+- **TnD Trilogy** — TKA 1 / 2 / 3 listed at **$30 each** (no preorder swap).
 - **7 LOOP flavor SKUs at $25** (`listing: "loop-deck"`: Inverted, Mirrored,
-  Swapped, …). These are **backing / cover-art + flavor-list sources** — every buy
-  path calls `startCheckout(customSku.id)` where `customSku` is the $35
-  `loop-deck-custom` SKU, so nothing charges $25 today. Not exhaustively proven
-  across every `BuyButton` mount; confirm they're dead before archiving.
+  Swapped, …). These are **backing / cover-art + flavor-list sources**.
 - Book $39, Starter Pack $65 — untouched.
 
-Recommendation (pending Austen): give TnD the same preorder→regular treatment if
-it should align (e.g. $30→$40), and confirm the $25 flavor SKUs are unreachable so
-they can be archived. Do **not** apply a pricing scheme without his go-ahead —
-this is a business decision.
+**VERIFIED 2026-07-15 (follow-up agent, live Firestore query of `products`):**
+every product above has `stripePriceId: ""` — the flavor SKUs, all three TnD
+volumes, the Book, AND the Starter Pack. `BuyButton.svelte` gates purchasability
+on `Boolean(product.stripePriceId)`, so all of them render the waitlist form,
+never a checkout — including via direct `/shop/<docId>` URLs and the
+`flavorSkus[0]` fallback branches in the Configurator/Architect. **Nothing can
+charge $25 or $30 today; the only purchasable products are the LOOP Deck
+($35→$45) and Deck Architect ($45→$55), both swap-configured.** 29/29 merch unit
+tests pass (`firebase-functions`, jest).
+
+**Do NOT archive the flavor SKUs.** They must stay `status: "active"`: the
+Configurator, Architect, and StorePage derive cover cards, hero fans, and the
+flavor list from `listing === "loop-deck"` actives, and the Configurator
+error-states when `flavorSkus.length === 0`. They are unpurchasable data
+sources; their `price: 2500` field is never rendered anywhere (all displayed
+prices come from the custom/architect SKUs). No $25 Stripe prices exist to
+archive — the $25 lives only in the Firestore field.
+
+Remaining owner decision (Austen): none of TnD / Book / Starter Pack is on sale
+today (waitlist-only). When any of them goes on sale, pick its price then —
+e.g. give TnD the same preorder→regular treatment if it should align
+($30→$40). Do **not** apply a pricing scheme without his go-ahead — this is a
+business decision.
 
 ---
 
