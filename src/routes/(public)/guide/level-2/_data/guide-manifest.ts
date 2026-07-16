@@ -1,5 +1,5 @@
 /**
- * Level 2 guide — body page manifest. Single source of truth for the Level 2
+ * Level 2 guide - body page manifest. Single source of truth for the Level 2
  * printable guide's page order and page numbers, mirroring the Level 1
  * architecture (see level-1/_data/guide-manifest.ts and the rebuild tracker
  * docs/superpowers/specs/2026-07-13-level-2-guide-rebuild-tracker.md).
@@ -34,8 +34,8 @@ export const LEVEL2_GROUP_TITLES: Record<Level2Group, string> = {
 
 export const LEVEL2_BODY_PAGES: Level2PageEntry[] = [
   // ── 2.0 1-Turns ────────────────────────────────────────────────────────
-  { id: "divider-1-turns", title: "2.0 — 1-Turns", level: 0, group: "2.0", selfTitled: true }, // old p2 (divider art)
-  { id: "turns-shifts", title: "Turns", level: 0, group: "2.0" }, // old p3 — pro/anti 1-turn breakdowns
+  { id: "divider-1-turns", title: "2.0: 1-Turns", level: 0, group: "2.0", selfTitled: true }, // old p2 (divider art)
+  { id: "turns-shifts", title: "Turns", level: 0, group: "2.0" }, // old p3 - pro/anti 1-turn breakdowns
   { id: "turns-dash-static", title: "Dashes / Static", level: 1, group: "2.0", selfTitled: true }, // old p4
   { id: "glyphs-pads", title: "Glyphs / PADS", level: 0, group: "2.0" }, // old p5
   { id: "t1-dual-shift", title: "Type 1 - Dual-Shift", level: 0, group: "2.0" }, // old p6
@@ -76,3 +76,76 @@ export function level2PageNumberOf(id: string): number | undefined {
   const i = LEVEL2_BODY_PAGES.findIndex((e) => e.id === id);
   return i === -1 ? undefined : i + 1;
 }
+
+/**
+ * The body entries grouped in manifest order, for TOC rendering - mirrors
+ * level-1's `bodyPagesByGroup()` (guide-manifest.ts). Consumed by
+ * guide-reader-nav-2.ts (extracted from its previously-inline grouping loop)
+ * and available for any other level-2 TOC surface that needs the same shape.
+ */
+export function level2BodyPagesByGroup(): {
+  group: Level2Group;
+  entries: { entry: Level2PageEntry; page: number }[];
+}[] {
+  const out: { group: Level2Group; entries: { entry: Level2PageEntry; page: number }[] }[] = [];
+  LEVEL2_BODY_PAGES.forEach((entry, i) => {
+    let bucket = out.find((b) => b.group === entry.group);
+    if (!bucket) {
+      bucket = { group: entry.group, entries: [] };
+      out.push(bucket);
+    }
+    bucket.entries.push({ entry, page: i + 1 });
+  });
+  return out;
+}
+
+/**
+ * Real in-page section anchors for the two live level-2 route pages (`turns`,
+ * `double-turns`) - the actual `<GuideSection id="...">` ids rendered by the
+ * ch20/ch21 section components, NOT the physical-page manifest ids above
+ * (LEVEL2_BODY_PAGES splits pages the print pagination hasn't built yet - e.g.
+ * one-one-t1/t23/t456 are three manifest rows but only one live section,
+ * `one-one-turns`, exists today). This is the ground truth for anything that
+ * links `#id` into a live level-2 page (the unified GuideSidebar). Verified
+ * against every `_sections/ch20/*.svelte` and `_sections/ch21/*.svelte`
+ * `GuideSection id=` prop (2026-07-16) - the same list the retired
+ * `nav-config.ts` carried, ported forward here since it was accurate.
+ */
+export type Level2SectionAnchor = { id: string; title: string };
+export type Level2RouteAnchors = {
+  slug: "turns" | "double-turns";
+  group: Level2Group;
+  sections: Level2SectionAnchor[];
+};
+
+export const LEVEL2_SECTION_ANCHORS: Level2RouteAnchors[] = [
+  {
+    slug: "turns",
+    group: "2.0",
+    sections: [
+      { id: "turn-shifts", title: "Shifts" },
+      { id: "turn-dashes", title: "Dashes" },
+      { id: "turn-static", title: "Static" },
+      { id: "glyphs-pads", title: "Glyphs / PADS" },
+      { id: "type-1-turns", title: "Type 1: Dual-Shift" },
+      { id: "s-and-t", title: "S and T" },
+      { id: "type-2-turns", title: "Type 2: Shift" },
+      { id: "type-3-turns", title: "Type 3: Cross-Shift" },
+      { id: "type-4-turns", title: "Type 4: Dash" },
+      { id: "opening-closing", title: "Opening / Closing" },
+      { id: "type-5-turns", title: "Type 5: Dual-Dash" },
+      { id: "type-6-turns", title: "Type 6: Static" },
+      { id: "one-one-turns", title: "1|1 Turns" },
+    ],
+  },
+  {
+    slug: "double-turns",
+    group: "2.1",
+    sections: [
+      { id: "double-turn-shifts", title: "Shifts" },
+      { id: "double-turn-dashes", title: "Dashes" },
+      { id: "double-turn-static", title: "Static" },
+      { id: "codex-pages", title: "Codex Pages" },
+    ],
+  },
+];
