@@ -140,8 +140,10 @@ test-results/
 # vitest-browser-svelte saves screenshots here on test failure (regenerated, never commit)
 **/__screenshots__/
 
-# VSCode
-.vscode/
+# VSCode — ignore all except the shared launch config (dev-server launch,
+# runs scripts/start-dev.ps1), which is tracked so it syncs across machines.
+.vscode/*
+!.vscode/launch.json
 .vscode/chrome-debug-fresh/
 
 # OS generated files

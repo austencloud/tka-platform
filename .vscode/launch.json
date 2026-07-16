@@ -1,0 +1,66 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "🚀 Start Dev Server",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "powershell.exe -ExecutionPolicy Bypass -File '${workspaceFolder}/scripts/start-dev.ps1'",
+      "cwd": "${workspaceFolder}",
+      "presentation": {
+        "hidden": false,
+        "group": "TKA",
+        "order": 1
+      }
+    },
+    {
+      "name": "🌐 Debug in Chrome",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}",
+      "sourceMaps": true,
+      "sourceMapPathOverrides": {
+        "/./*": "${webRoot}/*",
+        "/src/*": "${webRoot}/src/*",
+        "/*": "*",
+        "/./~/*": "${webRoot}/node_modules/*"
+      },
+      "presentation": {
+        "hidden": false,
+        "group": "TKA",
+        "order": 2
+      }
+    },
+    {
+      "name": "🔧 Build TKA",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "build"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "presentation": {
+        "hidden": false,
+        "group": "TKA",
+        "order": 3
+      }
+    },
+    {
+      "name": "✅ Type Check TKA",
+      "type": "node",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "check"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "presentation": {
+        "hidden": false,
+        "group": "TKA",
+        "order": 4
+      }
+    }
+  ]
+}
