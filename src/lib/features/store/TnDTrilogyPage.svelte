@@ -14,6 +14,8 @@
   import DeckFanCover from "./components/DeckFanCover.svelte";
   import BuyButton from "./components/BuyButton.svelte";
   import PropPicker from "./components/PropPicker.svelte";
+  import PreorderPriceNote from "./components/PreorderPriceNote.svelte";
+  import { activePriceCents, preorderWindowOpen, formatUsd } from "./domain/preorder-pricing";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { TND_ELEMENTS } from "$lib/features/choreo-card/domain/tnd-element";
   import { prewarmCovers } from "./services/cover-front-renderer";
@@ -46,8 +48,10 @@
     if (all.length) prewarmCovers(all, propType);
   });
 
+  // Read once — the preorder→regular boundary is a fixed instant, no ticking.
+  const now = Date.now();
   const price = $derived(
-    selected ? `$${(selected.price / 100).toFixed(0)}` : "$30"
+    selected ? formatUsd(activePriceCents(selected, now)) : "$30"
   );
 
   // "TKA 1: Learning Letters" -> ["TKA 1", "Learning Letters"]
@@ -140,7 +144,7 @@
                 >
                   <span class="volume-num">{num}</span>
                   <span class="volume-title">{title}</span>
-                  <span class="volume-meta">{volume.cardCount} cards · ${(volume.price / 100).toFixed(0)}</span>
+                  <span class="volume-meta">{volume.cardCount} cards · {formatUsd(activePriceCents(volume, now))}</span>
                 </button>
               {/each}
               <!-- Package option: visible so the offer is legible, gated until priced. -->
@@ -158,6 +162,9 @@
           </div>
 
           <p class="price">{price}</p>
+          {#if selected && preorderWindowOpen(selected, now)}
+            <PreorderPriceNote product={selected} />
+          {/if}
 
           <BuyButton product={selected} {propType} />
           {#if store.checkoutError}

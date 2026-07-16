@@ -67,6 +67,15 @@ export interface Product {
   readonly preorder?: boolean;
   /** Human ship-by label shown on pre-order products, e.g. "September 2026". From Stripe metadata. */
   readonly shipBy?: string;
+  /** Post-cutoff Stripe price. Set by the `tier=regular` price.* sync. Absent ⇒
+   *  no swap. `stripePriceId`/`price` are the preorder (pre-cutoff) price. */
+  readonly regularStripePriceId?: string;
+  /** Post-cutoff display price in cents (matches `price`). Set alongside
+   *  `regularStripePriceId`. */
+  readonly regularPrice?: number;
+  /** ISO instant the preorder price jumps to the regular price, e.g.
+   *  "2026-09-30T23:59:59-05:00". From Stripe product metadata. Absent ⇒ evergreen. */
+  readonly preorderPriceCutoff?: string;
   readonly sortOrder: number;
 }
 

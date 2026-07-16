@@ -3,6 +3,7 @@ import * as admin from "firebase-admin";
 import Stripe from "stripe";
 import { defineString } from "firebase-functions/params";
 import { buildMerchCheckoutParams } from "./checkoutParams";
+import { resolveActivePriceId, isMisauthoredPastCutoff } from "./resolveActivePrice";
 
 const stripeSecretKey = defineString("STRIPE_SECRET_KEY");
 const appBaseUrl = defineString("APP_BASE_URL", { default: "https://tkaflowarts.com" });
@@ -184,9 +185,27 @@ export const createMerchCheckout = functions.https.onCall(
 
     const baseUrl = appBaseUrl.value();
 
+    // Preorder → regular price gate. Evaluated with the SERVER clock so a client
+    // can't force the cheaper preorder price after the cutoff has passed.
+    const now = Date.now();
+    const activePriceId = resolveActivePriceId(
+      product as {
+        stripePriceId: string;
+        regularStripePriceId?: string;
+        preorderPriceCutoff?: string;
+      },
+      now
+    );
+    if (isMisauthoredPastCutoff(product as { stripePriceId: string; preorderPriceCutoff?: string }, now)) {
+      functions.logger.warn(
+        `Product ${productId} is past its preorder cutoff but has no regularStripePriceId; ` +
+          `charging the preorder price. Author the regular price in Stripe.`
+      );
+    }
+
     const session = await stripe.checkout.sessions.create(
       buildMerchCheckoutParams({
-        product: product as { name: string; stripePriceId: string },
+        product: { name: product.name as string, stripePriceId: activePriceId },
         productId,
         baseUrl,
         propType,

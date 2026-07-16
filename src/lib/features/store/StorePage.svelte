@@ -8,6 +8,10 @@
   import DeckFanCover from "./components/DeckFanCover.svelte";
   import LoopChips from "./components/LoopChips.svelte";
   import { prewarmCovers } from "./services/cover-front-renderer";
+  import { activePriceCents, formatUsd } from "./domain/preorder-pricing";
+
+  // Read once — the preorder→regular boundary is a fixed instant, no ticking.
+  const now = Date.now();
 
   // showDrafts: the admin "play with it" view loads every product including
   // drafts and sold-out. Public buyers get active-only.
@@ -37,10 +41,12 @@
     ) ?? null
   );
   const deckPrice = $derived(
-    loopCustomSku ? `$${(loopCustomSku.price / 100).toFixed(0)}` : "$30"
+    loopCustomSku ? formatUsd(activePriceCents(loopCustomSku, now)) : "$30"
   );
   const tndPrice = $derived(
-    tndSkus.length ? `$${(Math.min(...tndSkus.map((p) => p.price)) / 100).toFixed(0)}` : "$30"
+    tndSkus.length
+      ? formatUsd(Math.min(...tndSkus.map((p) => activePriceCents(p, now))))
+      : "$30"
   );
   // Hero fan: the first cover of each LOOP flavor — a varied hand, one card per family.
   const heroCards = $derived(

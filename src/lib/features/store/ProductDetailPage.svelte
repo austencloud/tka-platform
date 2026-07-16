@@ -12,7 +12,9 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   import BuyButton from "./components/BuyButton.svelte";
   import LoopChips from "./components/LoopChips.svelte";
   import PropPicker from "./components/PropPicker.svelte";
+  import PreorderPriceNote from "./components/PreorderPriceNote.svelte";
   import { captureMorphSource } from "./transitions/shop-morph";
+  import { activePriceCents, preorderWindowOpen } from "./domain/preorder-pricing";
   import type { Product } from "./domain/models/product";
   import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -36,9 +38,11 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
 
   let propType = $state<PropType>(DEFAULT_SHOP_PROP);
 
+  // Read once at mount — the swap boundary is a fixed instant, no ticking needed.
+  const now = Date.now();
   let formattedPrice = $derived(
     store.selectedProduct
-      ? `$${(store.selectedProduct.price / 100).toFixed(2)}`
+      ? `$${(activePriceCents(store.selectedProduct, now) / 100).toFixed(2)}`
       : ""
   );
 
@@ -95,6 +99,9 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
           {/if}
           <p class="description">{product.description}</p>
           <p class="price">{formattedPrice}</p>
+          {#if preorderWindowOpen(product, now)}
+            <PreorderPriceNote {product} />
+          {/if}
           {#if product.preorder}
             <p class="preorder-note">
               Pre-order.{product.shipBy ? ` Ships ${product.shipBy}.` : ""} You pay now and it ships once printed.
