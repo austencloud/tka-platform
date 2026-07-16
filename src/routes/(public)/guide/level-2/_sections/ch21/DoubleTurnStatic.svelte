@@ -6,6 +6,7 @@
    * data).
    */
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
+  import SequenceShowcase from "../../../level-1/_components/SequenceShowcase.svelte";
   import TurnStrip, { type TurnStripFrame } from "../../_components/TurnStrip.svelte";
   import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
@@ -18,7 +19,7 @@
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { bakeReversals } from "../../../level-1/_data/guide-sequence-adapter";
+  import { bakeReversals, stripToSequence } from "../../../level-1/_data/guide-sequence-adapter";
 
   const { EAST: E } = GridLocation;
   const { IN } = Orientation;
@@ -113,6 +114,10 @@
       rowSteps: rowSteps("l2a-tst-static"),
     },
   ];
+  const staticSequence = stripToSequence(rowSteps("l2a-tst-static"), {
+    word: ANIM["l2a-tst-static"].word,
+    name: ANIM["l2a-tst-static"].word,
+  });
 </script>
 
 <GuideSection id="double-turn-static" title="Static">
@@ -122,7 +127,13 @@
     </p>
   </div>
 
-  <TurnStrip frames={staticFrames} caption="Static with 2 turns, held at east: start, halfway, end, full motion" />
+  <div class="showcase-wrap">
+    <SequenceShowcase variant="compact" sequence={staticSequence} items={[]} bpm={60}>
+      {#snippet strip()}
+        <TurnStrip frames={staticFrames} caption="Static with 2 turns, held at east: start, halfway, end, full motion" />
+      {/snippet}
+    </SequenceShowcase>
+  </div>
 
   <div class="section-body">
     <p>
@@ -143,5 +154,11 @@
   }
   .section-body :global(p:last-child) {
     margin-bottom: 0;
+  }
+  .showcase-wrap {
+    grid-column: full-start / full-end;
+    max-width: 56rem;
+    margin: 1.9rem auto;
+    padding: 0 2rem;
   }
 </style>

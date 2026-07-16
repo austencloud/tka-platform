@@ -8,6 +8,7 @@
    * print artboard renders these via the raw halfway-pose interpolator.
    */
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
+  import SequenceShowcase from "../../../level-1/_components/SequenceShowcase.svelte";
   import TurnStrip, { type TurnStripFrame } from "../../_components/TurnStrip.svelte";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
@@ -19,8 +20,9 @@
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { HalfwayMotion } from "../../_data/halfway-pose";
-  import { bakeReversals } from "../../../level-1/_data/guide-sequence-adapter";
+  import { bakeReversals, stripToSequence } from "../../../level-1/_data/guide-sequence-adapter";
 
   const { EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
   const { IN, OUT } = Orientation;
@@ -66,7 +68,7 @@
     red: Hand;
     blueTurns: number;
     redTurns: number;
-  }): TurnStripFrame[] {
+  }): { frames: TurnStripFrame[]; sequence: SequenceData } {
     const bEnd = endOri(opts.blue.type, opts.blueTurns);
     const rEnd = endOri(opts.red.type, opts.redTurns);
     const bHalf: HalfwayMotion = { type: opts.blue.type, from: opts.blue.from, to: opts.blue.to, rot: opts.blue.rot, startOri: IN, endOri: bEnd, turns: opts.blueTurns };
@@ -89,7 +91,7 @@
     } as unknown as StepData;
     const animKey = `l2st-${opts.id}`;
     const rowSteps = [startStep, ...bakeReversals([combinedStep])];
-    return [
+    const frames: TurnStripFrame[] = [
       { kind: "start", step: startStep, frameLabel: "start", thumbLabel: "in" },
       {
         kind: "dual-pose",
@@ -102,6 +104,8 @@
       { kind: "end", step: endStep, frameLabel: "end", thumbLabel: "mixed" },
       { kind: "combined", step: combinedStep, animKey, word: opts.word, rowSteps },
     ];
+    const sequence = stripToSequence(rowSteps, { word: opts.word, name: opts.word });
+    return { frames, sequence };
   }
 
   // S = pro|pro leading/following; T = anti|anti leading/following. Both use
@@ -111,10 +115,10 @@
   const T_BLUE: Hand = { type: MotionType.ANTI, from: W, to: SO_, rot: CW };
   const T_RED: Hand = { type: MotionType.ANTI, from: SO_, to: E, rot: CW };
 
-  const sHighFrames = makeStrip({ id: "s-hi", word: "S-High-One", blue: S_BLUE, red: S_RED, blueTurns: 1, redTurns: 0 });
-  const sLowFrames = makeStrip({ id: "s-lo", word: "S-Low-One", blue: S_BLUE, red: S_RED, blueTurns: 0, redTurns: 1 });
-  const tHighFrames = makeStrip({ id: "t-hi", word: "T-High-One", blue: T_BLUE, red: T_RED, blueTurns: 1, redTurns: 0 });
-  const tLowFrames = makeStrip({ id: "t-lo", word: "T-Low-One", blue: T_BLUE, red: T_RED, blueTurns: 0, redTurns: 1 });
+  const { frames: sHighFrames, sequence: sHighSequence } = makeStrip({ id: "s-hi", word: "S-High-One", blue: S_BLUE, red: S_RED, blueTurns: 1, redTurns: 0 });
+  const { frames: sLowFrames, sequence: sLowSequence } = makeStrip({ id: "s-lo", word: "S-Low-One", blue: S_BLUE, red: S_RED, blueTurns: 0, redTurns: 1 });
+  const { frames: tHighFrames, sequence: tHighSequence } = makeStrip({ id: "t-hi", word: "T-High-One", blue: T_BLUE, red: T_RED, blueTurns: 1, redTurns: 0 });
+  const { frames: tLowFrames, sequence: tLowSequence } = makeStrip({ id: "t-lo", word: "T-Low-One", blue: T_BLUE, red: T_RED, blueTurns: 0, redTurns: 1 });
 </script>
 
 <GuideSection id="s-and-t" title="S and T">
@@ -128,10 +132,34 @@
     </p>
   </div>
 
-  <TurnStrip frames={sHighFrames} caption="S-High-One: turn on the leading hand, start, halfway, end, full motion" />
-  <TurnStrip frames={sLowFrames} caption="S-Low-One: turn on the following hand, start, halfway, end, full motion" />
-  <TurnStrip frames={tHighFrames} caption="T-High-One: turn on the leading hand, start, halfway, end, full motion" />
-  <TurnStrip frames={tLowFrames} caption="T-Low-One: turn on the following hand, start, halfway, end, full motion" />
+  <div class="showcase-wrap">
+    <SequenceShowcase variant="compact" sequence={sHighSequence} items={[]} bpm={60}>
+      {#snippet strip()}
+        <TurnStrip frames={sHighFrames} caption="S-High-One: turn on the leading hand, start, halfway, end, full motion" />
+      {/snippet}
+    </SequenceShowcase>
+  </div>
+  <div class="showcase-wrap">
+    <SequenceShowcase variant="compact" sequence={sLowSequence} items={[]} bpm={60}>
+      {#snippet strip()}
+        <TurnStrip frames={sLowFrames} caption="S-Low-One: turn on the following hand, start, halfway, end, full motion" />
+      {/snippet}
+    </SequenceShowcase>
+  </div>
+  <div class="showcase-wrap">
+    <SequenceShowcase variant="compact" sequence={tHighSequence} items={[]} bpm={60}>
+      {#snippet strip()}
+        <TurnStrip frames={tHighFrames} caption="T-High-One: turn on the leading hand, start, halfway, end, full motion" />
+      {/snippet}
+    </SequenceShowcase>
+  </div>
+  <div class="showcase-wrap">
+    <SequenceShowcase variant="compact" sequence={tLowSequence} items={[]} bpm={60}>
+      {#snippet strip()}
+        <TurnStrip frames={tLowFrames} caption="T-Low-One: turn on the following hand, start, halfway, end, full motion" />
+      {/snippet}
+    </SequenceShowcase>
+  </div>
 
   <div class="section-body">
     <p>
@@ -152,5 +180,11 @@
   }
   .section-body :global(p:last-child) {
     margin-bottom: 0;
+  }
+  .showcase-wrap {
+    grid-column: full-start / full-end;
+    max-width: 56rem;
+    margin: 1.9rem auto;
+    padding: 0 2rem;
   }
 </style>

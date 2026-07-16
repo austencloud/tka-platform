@@ -26,23 +26,10 @@
   import { seoForSlug } from "../_data/guide-page-seo";
   import FlowFrame from "./FlowFrame.svelte";
   import GuidePage from "./GuidePage.svelte";
+  import GuideCompanionHost from "../../_components/GuideCompanionHost.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
-  import {
-    setGuidePrintMode,
-    setGuideSequenceClick,
-    type GuideSequenceClick,
-  } from "../_data/guide-data-context";
-  import { GuideActiveStep, setGuideActiveStep } from "../_data/guide-active-step.svelte";
-  import {
-    SequenceSelection,
-    setSequenceSelection,
-  } from "$lib/shared/selection/sequence-selection.svelte";
-  import "$lib/shared/selection/selection.css";
-  import { stripToSequence } from "../_data/guide-sequence-adapter";
-  import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
+  import { setGuidePrintMode } from "../_data/guide-data-context";
   import { loadOverrides } from "../_data/guide-overrides.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { GuideFrame } from "../_data/guide-frame-prefs.svelte";
   import "../_styles/guide.css";
 
@@ -75,37 +62,6 @@
   // Pictographs render eagerly (no IntersectionObserver - matches /print, and a
   // scaled/off-screen sheet needs it). getGuidePrintMode() → light ink-on-white.
   setGuidePrintMode();
-
-  // Companion wiring - mirrors GuideReader exactly (tap a strip → animate it).
-  const activeStep = new GuideActiveStep();
-  setGuideActiveStep(activeStep);
-  const selection = new SequenceSelection();
-  setSequenceSelection(selection);
-
-  let clicked = $state<SequenceData | null>(null);
-  let companionOpen = $state(false);
-  let clickedPropType = $state<"hand" | "staff" | PropType>("hand");
-  let clickedKey = $state<string | null>(null);
-  let clickedShowPositionGlyph = $state(false);
-
-  async function handleSequenceClick(payload: GuideSequenceClick) {
-    activeStep.begin(payload.key ?? "");
-    selection.select(payload.key ?? "");
-    clickedPropType = payload.propType ?? "hand";
-    const isHand = String(clickedPropType).toLowerCase() === "hand";
-    clickedShowPositionGlyph = payload.showPositionGlyph ?? isHand;
-    clickedKey = payload.key ?? null;
-    const seq = stripToSequence(payload.strip, { word: payload.word });
-    clicked = (await ensureMotionData(seq)) ?? seq;
-    companionOpen = true;
-  }
-  setGuideSequenceClick(handleSequenceClick);
-
-  function closeCompanion() {
-    companionOpen = false;
-    activeStep.clear();
-    selection.clear();
-  }
 
   // Sheet scale-to-fit-width (client-only; sheet is never the SSR default).
   let sheetWrap = $state<HTMLDivElement>();
@@ -145,6 +101,7 @@
   });
 </script>
 
+<GuideCompanionHost pageTitle={meta?.title ?? ""} levelLabel="Level 1">
 <main class="guide-page-route">
   <header class="topic-hero">
     <!-- The Page (sheet) view is a self-titling print reproduction - it paints its
@@ -214,25 +171,7 @@
     {/if}
   </nav>
 </main>
-
-{#if browser && companionOpen}
-  {#await import("./GuideCompanion.svelte") then Comp}
-    <div class="companion-drawer" role="dialog" aria-label="Animation companion">
-      <Comp.default
-        sequence={clicked}
-        propType={clickedPropType}
-        stripKey={clickedKey}
-        pageTitle={meta?.title ?? ""}
-        levelLabel="Level 1"
-        showPositionGlyph={clickedShowPositionGlyph}
-        isCodexMode={false}
-        isMobile={true}
-        onStep={(s: number) => activeStep.report(s)}
-        onClose={closeCompanion}
-      />
-    </div>
-  {/await}
-{/if}
+</GuideCompanionHost>
 
 <style>
   /* Standalone editorial topic page - owns its light/dark palette (not the app's
@@ -374,22 +313,6 @@
   }
   .nav-spacer {
     flex: 1 1 0;
-  }
-
-  /* Companion appears on strip-click as a fixed bottom drawer - an overlay, so it
-     never shifts page layout (no-layout-shift). */
-  .companion-drawer {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 60;
-    max-height: 92svh;
-    background: #14141b;
-    color: #ececf2;
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.4);
   }
 
   @media (prefers-color-scheme: dark) {
