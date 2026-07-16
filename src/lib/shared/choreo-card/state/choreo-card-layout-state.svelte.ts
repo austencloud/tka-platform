@@ -65,6 +65,11 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
   const compositionManager = getImageCompositionManager();
 
   const SCROLL_THRESHOLD = 16;
+  // Legibility floor for the on-screen header (badge + word). Export/print
+  // (forceContain) stays purely proportional so the preview matches the
+  // compositor. Anything that renders the header MUST size the contain box
+  // through containModel below so this floor is part of the same geometry.
+  const HEADER_MIN_PX = 24;
 
   // Whether the sequence exceeds scroll threshold (independent of forceContain)
   const isLongSequence = $derived((getDeps().sequence?.steps?.length ?? 0) > SCROLL_THRESHOLD);
@@ -215,24 +220,37 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
   const effectiveColumns = $derived(mandalaLayoutOverride?.cols ?? baseColumns);
   const effectiveRows = $derived(mandalaLayoutOverride?.rows ?? baseRows);
 
-  // Compute aspect ratio for the entire preview (width / height)
-  const previewAspectRatio = $derived.by(() => {
+  // The single geometry model behind the contain fit: everything the card's
+  // height is made of, in cell-width units, plus the header's px floor (which
+  // a pure width/height ratio cannot express). ChoreoCard's contain math and
+  // the rendered header/footer heights both derive from these SAME pieces —
+  // keeping them in one place is what prevents the modeled box and the actual
+  // content from disagreeing (the disagreement is what clips grid rows).
+  const containModel = $derived.by(() => {
     const deps = getDeps();
-    if (!effectiveColumns || !effectiveRows) return 1;
-    const gridWidth = effectiveColumns;
-
+    const cols = effectiveColumns || 1;
     const rowHeightInCellUnits = (deps.hasMixedDurations && deps.durationColCount > 0)
       ? effectiveColumns / deps.durationColCount
       : 1;
-    const gridHeight = effectiveRows * rowHeightInCellUnits;
-
-    const cols = effectiveColumns;
     const hfScale = cols >= 3 ? 1 : cols / 3;
-    const headerFraction = deps.showHeader ? (1 / HEADER_HEIGHT_DIVISOR) * hfScale : 0;
-    const footerFraction = deps.showFooter ? (1 / FOOTER_HEIGHT_DIVISOR) * hfScale : 0;
-    const totalHeight = gridHeight + headerFraction + footerFraction;
-    const ratio = gridWidth / totalHeight;
-    return ratio;
+    return {
+      cols,
+      gridHeightUnits: effectiveRows * rowHeightInCellUnits,
+      headerUnits: deps.showHeader ? (1 / HEADER_HEIGHT_DIVISOR) * hfScale : 0,
+      footerUnits: deps.showFooter ? (1 / FOOTER_HEIGHT_DIVISOR) * hfScale : 0,
+      // scaledHeaderHeight never renders below this (0 = floor not in play:
+      // header hidden, or the proportional export path).
+      headerMinPx: deps.showHeader && !deps.forceContain ? HEADER_MIN_PX : 0,
+    };
+  });
+
+  // Compute aspect ratio for the entire preview (width / height).
+  // Pure proportional form — valid while the header floor isn't engaged;
+  // updateContainedDimensions handles the floored regime via containModel.
+  const previewAspectRatio = $derived.by(() => {
+    if (!effectiveColumns || !effectiveRows) return 1;
+    const m = containModel;
+    return m.cols / (m.gridHeightUnits + m.headerUnits + m.footerUnits);
   });
 
   // Scaled sizes based on grid element width.
@@ -247,7 +265,7 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
   const scaledHeaderHeight = $derived.by(() => {
     if (!headerFooterRefWidth) return 0;
     const proportional = Math.floor(headerFooterRefWidth / HEADER_HEIGHT_DIVISOR);
-    return getDeps().forceContain ? proportional : Math.max(proportional, 24);
+    return getDeps().forceContain ? proportional : Math.max(proportional, HEADER_MIN_PX);
   });
 
   const scaledFooterHeight = $derived.by(() => {
@@ -310,6 +328,7 @@ export function createChoreoCardLayoutState(getDeps: () => ChoreoCardLayoutDeps)
     get effectiveRows() { return effectiveRows; },
     get mandalaLayoutOverride() { return mandalaLayoutOverride; },
     get mandalaPlacements() { return mandalaPlacements; },
+    get containModel() { return containModel; },
     get previewAspectRatio() { return previewAspectRatio; },
     get headerFooterRefWidth() { return headerFooterRefWidth; },
     get scaledHeaderHeight() { return scaledHeaderHeight; },
