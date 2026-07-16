@@ -37,6 +37,11 @@
  */
 
 import { rasterizeLoopIconByKind } from "./card-back-bitmaps-constant";
+import {
+  layoutTurnGlyph,
+  TURN_GLYPH_BOX_W_CQI,
+  TURN_GLYPH_BOX_H_CQI,
+} from "../../components/card-back/turn-glyph-layout";
 import type { TurnGlyphEntry } from "../../components/card-back/card-back-data";
 import type { DirectRenderOptions } from "$lib/shared/render/services/IDirectRenderer";
 import type { RenderCanvas } from "$lib/shared/render/services/types";
@@ -182,11 +187,13 @@ const RED_HAND = "#e74c3c";
  * Rasterize the turn-pattern bar chart for `entries` into a glyph-box-sized
  * bitmap (10cqi × 6cqi), drawn DIRECTLY to an OffscreenCanvas (no DOM mount).
  *
- * Mirrors TurnPatternGlyph.svelte: each entry is a blue bar then a red bar
- * (intra-group gap 0.25cqi), groups separated by 0.6cqi, bar width 1.1cqi with a
- * 0.2cqi top radius. Heights per `turnBarHeightCqi`. Bars are bottom-aligned
- * (`align-items:flex-end`) and the whole cluster is centered horizontally in the
- * box (the live `.turn-glyph` flex sits bottom-center in CardBack's glyph slot).
+ * Mirrors TurnPatternGlyph.svelte: each entry is a blue bar then a red bar,
+ * bar widths/gaps/radius from the shared `layoutTurnGlyph` geometry (which
+ * scales all horizontal dimensions down when a long pattern would overflow
+ * the 10cqi box — heights never scale). Heights per `turnBarHeightCqi`.
+ * Bars are bottom-aligned (`align-items:flex-end`) and the whole cluster is
+ * centered horizontally in the box (the live `.turn-glyph` flex sits
+ * bottom-center in CardBack's glyph slot).
  *
  * Float bars (45° hatch in the live CSS, `opacity:0.7`) are approximated here as
  * diagonal hatch lines over the bar at 0.7 alpha — a close visual match without
@@ -197,20 +204,17 @@ export async function rasterizeTurnGlyph(
   ctx: PerCardRenderCtx = DEFAULT_CTX,
 ): Promise<ImageBitmap> {
   const cqi = ctx.cqi;
-  const boxW = Math.round(10 * cqi);
-  const boxH = Math.round(6 * cqi);
+  const boxW = Math.round(TURN_GLYPH_BOX_W_CQI * cqi);
+  const boxH = Math.round(TURN_GLYPH_BOX_H_CQI * cqi);
   const { canvas, ctx: ctx2d } = makeCanvas(boxW, boxH);
 
-  const barW = 1.1 * cqi;
-  const intraGap = 0.25 * cqi;
-  const groupGap = 0.6 * cqi;
-  const radius = 0.2 * cqi;
+  const layout = layoutTurnGlyph(entries.length);
+  const barW = layout.barW * cqi;
+  const intraGap = layout.intraGap * cqi;
+  const groupGap = layout.groupGap * cqi;
+  const radius = layout.radius * cqi;
 
-  // Cluster width: per group = 2 bars + intra gap; groups joined by groupGap.
-  const groupW = barW * 2 + intraGap;
-  const clusterW = entries.length > 0
-    ? entries.length * groupW + (entries.length - 1) * groupGap
-    : 0;
+  const clusterW = layout.clusterW * cqi;
   let x = (boxW - clusterW) / 2;
 
   for (const entry of entries) {
