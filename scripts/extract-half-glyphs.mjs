@@ -18,7 +18,10 @@
 //      movement gets the same staff-relative geometry.
 //   3. MIRROR — shouldMirrorArrow's table (anti mirrors when cw, others when
 //      ccw) is inverted out of the seed art, so the stored asset is the
-//      unmirrored-canonical form the pipeline expects.
+//      unmirrored-canonical form the pipeline expects. Segment glyphs mirror
+//      across the STAFF axis — scale(1,-1) in glyph-local space, where the
+//      staff lies along +x by construction (ArrowSvg's segment branch) — so
+//      the inversion here flips local y, not x.
 //   4. SCALE — guide art is pedagogy-mark weight (~8.5-unit stroke in the 950
 //      box); app arrows use ~17. Uniform 2x about the anchor brings the glyphs
 //      to app-arrow visual weight.
@@ -47,8 +50,14 @@ const POINT = {
   [GridLocation.CENTER]: { x: 475, y: 475 },
 };
 
-// The guide page motions each seed frame draws (TurnsPage: pro E->S t1 CW,
-// anti E->S t1 CCW; TwoTurnsDashStaticPage: dash S->N t2 CCW, static E t2 CCW).
+// The guide page motions each seed frame draws (TurnsPage: pro/anti E->S t1;
+// TwoTurnsShiftsPage: pro/anti E->S t2; TwoTurnsDashStaticPage: dash S->N t2,
+// static E t2). The halfway glyph is TURNS-SPECIFIC — Austen draws a different
+// arc for the 1-turn and 2-turn halfway (proven numerically by
+// half-glyph-parity.mjs: the t1-derived glyph rotated for t2 misses the drawn
+// t2 frame by ~90 deg of bearing). So, like the regular arrow assets
+// (pro_0.0.svg ... pro_3.0.svg), each halvable turns value gets its own file:
+// `{mt}_half_{turns}.svg`, plus a bare `{mt}_half.svg` fallback copy.
 const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 const SEEDS = [
@@ -57,10 +66,24 @@ const SEEDS = [
     motionType: MotionType.PRO, rot: CW, turns: 1,
     start: GridLocation.EAST, end: GridLocation.SOUTH,
     endOri: Orientation.OUT, mid: GridLocation.SOUTHEAST,
+    fallback: true,
   },
   {
     mt: "anti", frame: "p2_s1_f1", idx: 1,
     motionType: MotionType.ANTI, rot: CCW, turns: 1,
+    start: GridLocation.EAST, end: GridLocation.SOUTH,
+    endOri: Orientation.IN, mid: GridLocation.SOUTHEAST,
+    fallback: true,
+  },
+  {
+    mt: "pro", frame: "p22_s0_f1", idx: 1,
+    motionType: MotionType.PRO, rot: CW, turns: 2,
+    start: GridLocation.EAST, end: GridLocation.SOUTH,
+    endOri: Orientation.IN, mid: GridLocation.SOUTHEAST,
+  },
+  {
+    mt: "anti", frame: "p22_s2_f1", idx: 1,
+    motionType: MotionType.ANTI, rot: CCW, turns: 2,
     start: GridLocation.EAST, end: GridLocation.SOUTH,
     endOri: Orientation.IN, mid: GridLocation.SOUTHEAST,
   },
@@ -69,12 +92,14 @@ const SEEDS = [
     motionType: MotionType.DASH, rot: CCW, turns: 2,
     start: GridLocation.SOUTH, end: GridLocation.NORTH,
     endOri: Orientation.OUT, mid: GridLocation.CENTER,
+    fallback: true,
   },
   {
     mt: "static", frame: "p23_s2_f3", idx: 1,
     motionType: MotionType.STATIC, rot: CCW, turns: 2,
     start: GridLocation.EAST, end: GridLocation.EAST,
     endOri: Orientation.IN, mid: GridLocation.EAST,
+    fallback: true,
   },
 ];
 
@@ -143,8 +168,8 @@ for (const seed of SEEDS) {
     let v = y - H.y;
     const ru = u * cos - v * sin;
     const rv = u * sin + v * cos;
-    u = mirrored ? -ru : ru;
-    v = rv;
+    u = ru;
+    v = mirrored ? -rv : rv; // staff-axis mirror: scale(1,-1) is its own inverse
     u *= SCALE;
     v *= SCALE;
     pts.push([u, v]);
@@ -172,13 +197,15 @@ for (const seed of SEEDS) {
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" xml:space="preserve">` +
     `<path d="${d}" style="fill:${BLUE}"/>` +
     `<circle id="centerPoint" cx="${cx}" cy="${cy}" r="2" fill="none"/></svg>`;
-  const out = resolve(
-    process.cwd(),
-    `static/images/arrows/${seed.mt}_half/from_radial/${seed.mt}_half.svg`
-  );
-  mkdirSync(dirname(out), { recursive: true });
-  writeFileSync(out, svg, "utf8");
-  console.log(
-    `wrote ${out} (viewBox 0 0 ${w} ${h}, seed rotation ${rotationDeg.toFixed(1)}deg, mirrored=${mirrored}, centerPoint ${cx},${cy})`
-  );
+  const dir = `static/images/arrows/${seed.mt}_half/from_radial`;
+  const outputs = [`${dir}/${seed.mt}_half_${seed.turns.toFixed(1)}.svg`];
+  if (seed.fallback) outputs.push(`${dir}/${seed.mt}_half.svg`);
+  for (const rel of outputs) {
+    const out = resolve(process.cwd(), rel);
+    mkdirSync(dirname(out), { recursive: true });
+    writeFileSync(out, svg, "utf8");
+    console.log(
+      `wrote ${out} (viewBox 0 0 ${w} ${h}, seed rotation ${rotationDeg.toFixed(1)}deg, mirrored=${mirrored}, centerPoint ${cx},${cy})`
+    );
+  }
 }

@@ -445,6 +445,10 @@ even when Svelte recreates the component instance.
 </script>
 
 {#if showArrow}
+  <!-- Segment (halved) glyphs are anchor-offset assets normalized with the
+       staff along local +x (extract-half-glyphs.mjs), so the opposite rotation
+       direction mirrors across the STAFF axis: scale(1,-1). Anchor-centered
+       regular assets keep the classic scale(-1,1). -->
   <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
   <g
     class="arrow-svg {motionData.color}-arrow-svg"
@@ -464,7 +468,7 @@ even when Svelte recreates the component instance.
     style="
       transform: translate({displayedX}px, {displayedY}px)
                  rotate({displayedRotation}deg)
-                 {shouldMirror ? 'scale(-1, 1)' : ''};
+                 {shouldMirror ? (motionData.segment ? 'scale(1, -1)' : 'scale(-1, 1)') : ''};
     "
   >
     <!-- Background-matching halo filter (shared with the export pipeline via

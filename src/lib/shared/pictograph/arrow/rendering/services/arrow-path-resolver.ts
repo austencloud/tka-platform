@@ -13,6 +13,25 @@ import {
 import type { ArrowPlacementData } from "../../positioning/placement/domain/arrow-placement-data";
 
 /**
+ * Halved-motion glyphs are TURNS-SPECIFIC, like the regular per-turn arrow
+ * files: the guide draws a different halfway arc for a 1-turn and a 2-turn
+ * motion (proven by scripts/half-glyph-parity.mjs). These are the turns values
+ * with an extracted `{mt}_half_{turns}.svg`; anything else falls back to the
+ * bare `{mt}_half.svg`.
+ */
+const HALF_ASSET_TURNS = new Set([1, 2]);
+
+function halfArrowPath(motionData: MotionData): string {
+  const mt = motionData.motionType;
+  const turns = motionData.turns;
+  const suffix =
+    typeof turns === "number" && HALF_ASSET_TURNS.has(turns)
+      ? `_${turns.toFixed(1)}`
+      : "";
+  return `/images/arrows/${mt}_half/from_radial/${mt}_half${suffix}.svg`;
+}
+
+/**
  * Get arrow SVG path based on motion type and properties (extracted from Arrow.svelte)
  */
 export function getArrowPath(
@@ -21,10 +40,10 @@ export function getArrowPath(
 ): string | null {
   const { motionType, turns } = motionData;
 
-  // Half-motion arrows are a turn-invariant end-direction glyph in a dedicated
-  // asset dir; rotation (not a per-turn file) encodes the turns. No skew variant.
+  // Half-motion arrows live in a dedicated asset dir, one file per halvable
+  // turns value (see halfArrowPath). No skew variant.
   if (motionData.segment) {
-    return `/images/arrows/${motionType}_half/from_radial/${motionType}_half.svg`;
+    return halfArrowPath(motionData);
   }
 
   const baseDir = `/images/arrows/${motionType}`;
@@ -75,7 +94,7 @@ export function getArrowSvgPath(motionData: MotionData | undefined): string {
   }
 
   if (motionData.segment) {
-    return `/images/arrows/${motionType}_half/from_radial/${motionType}_half.svg`;
+    return halfArrowPath(motionData);
   }
 
   const radialPath =
