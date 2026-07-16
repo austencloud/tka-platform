@@ -14,7 +14,7 @@ import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-typ
 /**
  * Flow-view render hints for a pictograph / pictographGroup. FlowFrame reads these
  * to render each figure the way its source _pages component does (prop family +
- * which system adornments to show). SheetFrame ignores them — the sheet uses its
+ * which system adornments to show). SheetFrame ignores them - the sheet uses its
  * own print flags. Every field is optional and defaults to FlowFrame's prior
  * hardcoded behavior (HAND props, TKA glyph on, every other layer off), so
  * existing pages (hand-positions) are unchanged.
@@ -34,11 +34,27 @@ export type PictographRender = {
   showNonRadialPoints?: boolean;
 };
 
+/**
+ * One curated example in a showcase pool: its word, a semantic loop label
+ * ("Mirrored", "Rotated 180°", …), the example-specific prose, and the built
+ * pictograph strip (start box + steps). Entry 0 is the slot's original print
+ * example; entries 1..N come from the example-pool adapter. The type lives here
+ * (the content-model hub) so the adapter and SequenceShowcase share it without
+ * a runtime dependency on either. Spec:
+ * docs/superpowers/specs/2026-07-16-guide-example-pools-design.md.
+ */
+export type PoolEntry = {
+  word: string;
+  loopLabel: string;
+  proseHtml: string;
+  items: PictographData[];
+};
+
 /** A block's position on the print sheet, in PDF points. Only SheetFrame reads it. */
 export type PtHint = {
   x: number;
   y: number;
-  /** Width in pt (text wrap / element width). Optional — full-width prose omits it. */
+  /** Width in pt (text wrap / element width). Optional - full-width prose omits it. */
   w?: number;
   /** Height in pt (drives font-size for text runs on the sheet). */
   h?: number;
@@ -80,7 +96,7 @@ export type GuideBlock =
       flowCols?: number;
       /**
        * Flow layout mode. "strip" = one horizontal, left-to-right sequence row
-       * (scrolls on narrow screens) — the faithful mobile form of the sheet's
+       * (scrolls on narrow screens) - the faithful mobile form of the sheet's
        * step strips, for groups that ARE a sequence (start → steps). "grid"
        * (default when omitted) = the wrap grid, for galleries of independent
        * pictographs. Set "strip" per-group where the source page draws a strip.
@@ -93,31 +109,31 @@ export type GuideBlock =
        */
       stepLabels?: string[];
       /**
-       * Render this sequence as the real hold-in-hand ChoreoCard (the product
-       * card front — word + step grid + start position + footer), instead of a
-       * loose strip/grid. For groups that are a single sequence/word/LOOP. The
-       * card visual is client-rendered; a prerendered visually-hidden notation
-       * block keeps the per-pictograph description crawlable. Galleries of
-       * independent letters/positions leave this off.
+       * Render this sequence as a SequenceShowcase: a banner (square live
+       * animation beside the section's text) with the steps unrolled as one
+       * full-width strip beneath. For groups that are a genuine sequence/word/
+       * LOOP. The strip + text prerender (crawlable); only the animation is
+       * client-rendered. A lone card absorbs its section text into the banner;
+       * consecutive cards stack as showcases with their own word + caption.
+       * Galleries of independent letters/positions leave this off.
+       * Spec: docs/superpowers/specs/2026-07-16-sequence-showcase-design.md.
        */
       card?: boolean;
       /**
-       * Placement of the card stage(s) in the flow column (card mode only):
-       * - "row" (default): a centred, responsive band of stages — canvas above
-       *   card, 3-up on desktop reflowing to 1-up on phones. For sets of
-       *   variations shown together (the AABB variations, a LOOP family).
-       * - "aside": the stage sits to one side and the prose that FOLLOWS it in
-       *   reading order flows beside it as a referenced figure. For a single
-       *   sequence discussed by surrounding text. Consecutive "row" cards group
-       *   into one row; an "aside" card stands alone with its trailing prose.
+       * Refreshable example pool. When present, the showcase seeds the strip +
+       * animation from `entries[0]` (the original print example, which
+       * prerenders) and lets the reader cycle to `entries[1..N]` (client-side on
+       * demand). Each entry carries its own example-specific prose. Only set on
+       * `card: true` groups whose example is an arbitrary instance of a pattern.
+       * Spec: docs/superpowers/specs/2026-07-16-guide-example-pools-design.md.
        */
-      cardLayout?: "row" | "aside";
+      pool?: { entries: PoolEntry[] };
       /** Flow render hints (prop family + which system adornments to show). */
       render?: PictographRender;
       sheet?: PtHint;
     }
   | {
-      /** A grid diagram (diamond / box / combined 8-point) as a standalone figure —
+      /** A grid diagram (diamond / box / combined 8-point) as a standalone figure -
        *  the canonical GridSvg on a white square, points-only. Flow-only (The Grid
        *  page); the sheet renders its own hand-authored diagram. */
       kind: "gridFigure";
@@ -133,7 +149,7 @@ export type GuideBlock =
       sheet: PtHint;
     };
 
-/** Concatenated human-readable text of a page's prose + headings — the drift-guard
+/** Concatenated human-readable text of a page's prose + headings - the drift-guard
  *  input. Strips HTML tags so `<strong>`/`<span>` markup doesn't affect equality. */
 export function blockProseText(blocks: GuideBlock[]): string {
   const strip = (html: string) => html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
