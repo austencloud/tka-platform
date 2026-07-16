@@ -329,8 +329,10 @@
     <!-- Title block — header shows the compact "TKA", so the hero carries the
          full name (Fraunces) as the centrepiece, with the tagline beneath. -->
     <div class="title-block">
-      <h1 class="hero-title">The Kinetic Alphabet</h1>
-      <p class="hero-tagline">Notation for flow arts.</p>
+      <h1 class="hero-title">
+        The Kinetic Alphabet
+        <span class="hero-tagline">Notation for Flow Arts</span>
+      </h1>
     </div>
 
     <!-- Primary CTA — pinned to the foot of the stack on mobile via order. -->
@@ -526,8 +528,12 @@
     animation-delay: 0.1s;
   }
 
-  /* Subtitle beneath the title — quieter, lets the name lead. */
+  /* Subtitle beneath the title — quieter, lets the name lead. Rendered as a
+     <span> now that it lives inside the H1 (single-heading SEO structure); the
+     explicit display:block reproduces the line-break + spacing the old <p>
+     gave for free, so the visual result is byte-identical to before. */
   .hero-tagline {
+    display: block;
     font-family: "Fraunces", Georgia, serif;
     font-style: italic;
     font-weight: 400;
