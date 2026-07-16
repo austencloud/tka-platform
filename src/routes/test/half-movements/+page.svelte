@@ -85,11 +85,17 @@
   // ── WASD placement harness ─────────────────────────────────────────────────
   // Adjustments are authored in GLYPH-LOCAL space (the extracted asset's frame,
   // staff along +x) and shared per (motionType, turns) — the same granularity
-  // as the asset files — so nudging one cell moves its 7 siblings coherently.
+  // as the asset files — so nudging one cell moves its whole family coherently.
   // Per cell, local -> screen is rotate(R) with local y flipped when the
-  // pipeline mirrors (ArrowSvg's segment scale(1,-1)). Values persist in
-  // localStorage; "Copy JSON" exports them for baking into the extractor as
-  // anchor nudges.
+  // pipeline mirrors (ArrowSvg's segment scale(1,-1)).
+  //
+  // Persistence is CANON: the page holds TOTALS per key, autosaves them to the
+  // dev-only ./save endpoint, which writes the default placement JSONs the
+  // pipeline's segment branch reads (glyph-local, rotated by the orchestrator).
+  // In-session the pipeline still has the load-time values cached, so the page
+  // renders the DELTA (total - load-time base) as manualAdjustment on top —
+  // identical math, no double-application, and a full reload shows the same
+  // picture straight from the files.
   type CellMeta = { key: string; R: number; mirrored: boolean };
 
   const metaOf = (half: StepData | null): CellMeta | null => {
@@ -105,30 +111,75 @@
     };
   };
 
-  const STORAGE_KEY = "half-movements-adjustments";
-  let adjustments = $state<Record<string, { x: number; y: number }>>(
-    (() => {
-      try {
-        if (typeof localStorage === "undefined") return {}; // SSR pass
-        return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
-      } catch {
-        return {};
-      }
-    })()
-  );
+  const MT_LIST = ["pro", "anti", "dash", "static"] as const;
+
+  let adjustments = $state<Record<string, { x: number; y: number }>>({}); // TOTALS
+  let baseline = $state<Record<string, { x: number; y: number }>>({}); // JSON at load
+  let baselineLoaded = $state(false);
+  let saveStatus = $state<"idle" | "saving" | "saved" | "error">("idle");
+  let lastSavedStr = "";
+  let saveTimer: ReturnType<typeof setTimeout> | null = null;
   let selected = $state<string | null>(null); // cell sub (unique per cell)
   let selectedMeta = $state<CellMeta | null>(null);
 
   $effect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(adjustments));
+    // Load the pipeline's own placement files once — they are both the render
+    // baseline (what the cached pipeline already applies this session) and the
+    // starting totals.
+    (async () => {
+      const out: Record<string, { x: number; y: number }> = {};
+      for (const mt of MT_LIST) {
+        try {
+          const res = await fetch(
+            `/data/arrow_placement/diamond/default/default_diamond_${mt}_half_placements.json`
+          );
+          const data = await res.json();
+          for (const [turns, xy] of Object.entries((data?.[mt] ?? {}) as Record<string, [number, number]>)) {
+            out[`${mt}_t${turns}`] = { x: xy[0], y: xy[1] };
+          }
+        } catch {
+          /* missing file = empty dataset */
+        }
+      }
+      baseline = out;
+      adjustments = JSON.parse(JSON.stringify(out));
+      lastSavedStr = JSON.stringify(adjustments);
+      baselineLoaded = true;
+    })();
   });
 
-  /** Apply the cell's shared glyph-local adjustment as the screen-space
-   *  manualAdjustment the render pipeline already honors. */
+  $effect(() => {
+    // Autosave: any totals change (after baseline load) debounces into a POST
+    // that rewrites the placement JSONs — the nudge becomes canon immediately.
+    const str = JSON.stringify(adjustments);
+    if (!baselineLoaded || str === lastSavedStr) return;
+    saveStatus = "saving";
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(async () => {
+      try {
+        const res = await fetch("/test/half-movements/save", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ adjustments: JSON.parse(str) }),
+        });
+        if (!res.ok) throw new Error(String(res.status));
+        lastSavedStr = str;
+        saveStatus = "saved";
+      } catch {
+        saveStatus = "error";
+      }
+    }, 600);
+  });
+
+  /** Apply the DELTA (total - load-time baseline) as the screen-space
+   *  manualAdjustment the render pipeline already honors; the baseline part is
+   *  already applied by the pipeline itself from the JSON it cached at load. */
   const withAdjustment = (step: StepData, meta: CellMeta | null): StepData => {
     if (!meta) return step;
-    const adj = adjustments[meta.key];
-    if (!adj || (!adj.x && !adj.y)) return step;
+    const tot = adjustments[meta.key];
+    const b = baseline[meta.key];
+    const adj = { x: (tot?.x ?? 0) - (b?.x ?? 0), y: (tot?.y ?? 0) - (b?.y ?? 0) };
+    if (!adj.x && !adj.y) return step;
     const rad = (meta.R * Math.PI) / 180;
     const ly = meta.mirrored ? -adj.y : adj.y;
     const sx = adj.x * Math.cos(rad) - ly * Math.sin(rad);
@@ -171,13 +222,13 @@
     }
     if (k === "r") {
       e.preventDefault();
-      const { [selectedMeta.key]: _, ...rest } = adjustments;
-      adjustments = rest;
+      adjustments = { ...adjustments, [selectedMeta.key]: { x: 0, y: 0 } };
       return;
     }
     if (k !== "w" && k !== "a" && k !== "s" && k !== "d") return;
     e.preventDefault();
-    const inc = e.shiftKey ? 1 : 5;
+    // Same increment scheme as the step editor's ArrowAdjustmentPanel.
+    const inc = e.shiftKey && e.ctrlKey ? 200 : e.shiftKey ? 20 : 5;
     const dx = k === "a" ? -inc : k === "d" ? inc : 0;
     const dy = k === "w" ? -inc : k === "s" ? inc : 0;
     // Screen delta -> glyph-local (inverse of withAdjustment's transform).
@@ -198,7 +249,7 @@
   };
   // ───────────────────────────────────────────────────────────────────────────
 
-  type Cell = { label: string; sub: string; step: StepData | null; meta: CellMeta | null };
+  type Cell = { label: string; sub: string; step: StepData | null; meta: CellMeta | null; hole?: boolean };
 
   const dirWord = (rot: RotationDirection) => (rot === CW ? "cw" : "ccw");
 
@@ -302,27 +353,33 @@
     },
   ];
 
-  // Art holes: every (motionType, turns) combo the engine can halve but that
-  // has NO per-turns glyph yet (scripts/half-domain-coverage.mjs is the
-  // authority). Each renders its current FALLBACK art — the wrong turns'
-  // glyph — one representative cell per hole, as the Illustrator work list.
-  const HOLE_TURNS: Record<string, (number | "fl")[]> = {
-    [MotionType.PRO]: [0, 0.5, 1.5, 2.5, 3, "fl"],
-    [MotionType.ANTI]: [0, 0.5, 1.5, 2.5, 3, "fl"],
-    [MotionType.DASH]: [0, 0.5, 1, 1.5, 2.5, 3],
-    [MotionType.STATIC]: [0, 0.5, 1, 1.5, 2.5, 3],
+  // One example per (motionType, turns) family — the primary review grid.
+  // Covered families use their per-turns glyph; the rest render fallback art
+  // and are flagged as ART HOLES (scripts/half-domain-coverage.mjs is the
+  // authority). Every cell is WASD-adjustable; one nudge = the whole family.
+  const FAMILY_TURNS: Record<string, (number | "fl")[]> = {
+    [MotionType.PRO]: [0, 0.5, 1, 1.5, 2, 2.5, 3, "fl"],
+    [MotionType.ANTI]: [0, 0.5, 1, 1.5, 2, 2.5, 3, "fl"],
+    [MotionType.DASH]: [0, 0.5, 1, 1.5, 2, 2.5, 3],
+    [MotionType.STATIC]: [0, 0.5, 1, 1.5, 2, 2.5, 3],
   };
-  const HOLE_SHAPE: Record<string, [GridLocation, GridLocation]> = {
+  const COVERED: Record<string, Set<number | "fl">> = {
+    [MotionType.PRO]: new Set([1, 2]),
+    [MotionType.ANTI]: new Set([1, 2]),
+    [MotionType.DASH]: new Set([2]),
+    [MotionType.STATIC]: new Set([2]),
+  };
+  const FAMILY_SHAPE: Record<string, [GridLocation, GridLocation]> = {
     [MotionType.PRO]: [E, S],
     [MotionType.ANTI]: [E, S],
     [MotionType.DASH]: [S, N],
     [MotionType.STATIC]: [E, E],
   };
-  const holeCell = (type: MotionType, turns: number | "fl"): Cell | null => {
-    const [from, to] = HOLE_SHAPE[type]!;
+  const familyCell = (type: MotionType, turns: number | "fl"): Cell | null => {
+    const [from, to] = FAMILY_SHAPE[type]!;
     const rot = type === MotionType.ANTI ? CCW : type === MotionType.PRO ? CW : CCW;
     const full = fullStep(
-      `hole-${type}-${turns}`,
+      `family-${type}-${turns}`,
       type,
       from,
       to,
@@ -333,16 +390,22 @@
     );
     const half = buildHalvedStep(full, 0.5);
     if (!half) return null;
+    const hole = !COVERED[type]!.has(turns);
     return {
       label: `${type} · ${turns} turn${turns === 1 ? "" : "s"}`,
-      sub: `NO ART — renders fallback ${type}_half.svg`,
+      sub: hole
+        ? `NO ART — renders fallback ${type}_half.svg`
+        : `asset ${type}_half_${typeof turns === "number" ? turns.toFixed(1) : turns}.svg · ${LOC_SHORT[from]}→${LOC_SHORT[to]}`,
       step: half,
       meta: metaOf(half),
+      hole,
     };
   };
-  const HOLES: Cell[] = Object.entries(HOLE_TURNS).flatMap(([mt, list]) =>
-    list.map((t) => holeCell(mt as MotionType, t)).filter((c): c is Cell => c !== null)
+  const FAMILIES: Cell[] = Object.entries(FAMILY_TURNS).flatMap(([mt, list]) =>
+    list.map((t) => familyCell(mt as MotionType, t)).filter((c): c is Cell => c !== null)
   );
+
+  let showLattice = $state(false);
 
   // Scale reference: the SAME motions un-halved, rendered with the regular
   // arrow assets. The half glyphs should read as the same pen weight as these.
@@ -394,13 +457,12 @@
 <div class="page">
   <h1>Half-Movement Lattice</h1>
   <p class="subtitle">
-    Every 45° halved movement as a real pipeline pictograph
-    (<code>buildHalvedStep</code> → <code>PictographContainer</code>). Click a
-    cell, then <strong>WASD</strong> to move its glyph (Shift = fine,
-    <strong>R</strong> = reset, <strong>Esc</strong> = deselect). One nudge
-    moves the whole (motion&nbsp;type, turns) family — adjustments live in
-    glyph-local space, so every cell of the family shifts relative to its own
-    staff.
+    One example per (motion&nbsp;type, turns) family, rendered by the real
+    pipeline. Click a cell, then <strong>WASD</strong> to move its glyph
+    (Shift = 20px, Ctrl+Shift = 200px, <strong>R</strong> = reset,
+    <strong>Esc</strong> = deselect). One nudge moves the whole family —
+    adjustments live in glyph-local space and <strong>autosave into the
+    placement JSONs</strong>: what you set here is canon everywhere.
   </p>
 
   <div class="panel">
@@ -414,14 +476,64 @@
       <span class="panel-idle">no cell selected</span>
     {/if}
     <span class="panel-values">
-      {#each Object.entries(adjustments) as [k, v] (k)}
+      {#each Object.entries(adjustments).filter(([, v]) => v.x || v.y) as [k, v] (k)}
         <code>{k}: ({v.x}, {v.y})</code>
       {/each}
+    </span>
+    <span
+      class="save-status"
+      class:saving={saveStatus === "saving"}
+      class:saved={saveStatus === "saved"}
+      class:error={saveStatus === "error"}
+    >
+      {saveStatus === "saving"
+        ? "saving…"
+        : saveStatus === "saved"
+          ? "saved ✓"
+          : saveStatus === "error"
+            ? "save FAILED"
+            : "no changes"}
     </span>
     <button type="button" class="copy-btn" onclick={copyJson}>Copy JSON</button>
   </div>
 
-  {#each SECTIONS as section (section.title)}
+  <h2>All families — one example each</h2>
+  <p class="note">
+    orange = art hole (renders fallback art of the wrong turns value — the
+    Illustrator work list; source of truth: scripts/half-domain-coverage.mjs)
+  </p>
+  <div class="grid">
+    {#each FAMILIES as cell (cell.label)}
+      <div
+        class="cell"
+        class:hole={cell.hole}
+        class:selected={selected === cell.label}
+        onclick={() => selectCell(cell.label, cell.meta)}
+        onkeydown={(e) => (e.key === "Enter" || e.key === " ") && selectCell(cell.label, cell.meta)}
+        role="button"
+        tabindex="0"
+      >
+        <div class="label">{cell.label}</div>
+        <div class="stage">
+          {#if cell.step}
+            <PictographContainer
+              pictographData={withAdjustment(cell.step, cell.meta)}
+              gridMode={GridMode.DIAMOND}
+              redPropTypeOverride={PropType.STAFF}
+              {...PICTO_FLAGS}
+            />
+          {/if}
+        </div>
+        <div class="sub" class:hole-sub={cell.hole}>{cell.sub}</div>
+      </div>
+    {/each}
+  </div>
+
+  <button type="button" class="lattice-toggle" onclick={() => (showLattice = !showLattice)}>
+    {showLattice ? "Hide" : "Show"} full lattice (every start point and direction)
+  </button>
+
+  {#each showLattice ? SECTIONS : [] as section (section.title)}
     <h2>{section.title}</h2>
     <p class="note">{section.note}</p>
     <div class="grid">
@@ -452,38 +564,6 @@
       {/each}
     </div>
   {/each}
-
-  <h2>Art holes — halvable, no drawn glyph yet</h2>
-  <p class="note">
-    every (motion type, turns) the engine can halve that has no per-turns asset
-    — each cell renders its FALLBACK art (the wrong turns' glyph). This is the
-    Illustrator work list; source of truth: scripts/half-domain-coverage.mjs
-  </p>
-  <div class="grid">
-    {#each HOLES as cell (cell.sub + cell.label)}
-      <div
-        class="cell hole"
-        class:selected={selected === cell.sub + cell.label}
-        onclick={() => selectCell(cell.sub + cell.label, cell.meta)}
-        onkeydown={(e) => (e.key === "Enter" || e.key === " ") && selectCell(cell.sub + cell.label, cell.meta)}
-        role="button"
-        tabindex="0"
-      >
-        <div class="label">{cell.label}</div>
-        <div class="stage">
-          {#if cell.step}
-            <PictographContainer
-              pictographData={withAdjustment(cell.step, cell.meta)}
-              gridMode={GridMode.DIAMOND}
-              redPropTypeOverride={PropType.STAFF}
-              {...PICTO_FLAGS}
-            />
-          {/if}
-        </div>
-        <div class="sub hole-sub">{cell.sub}</div>
-      </div>
-    {/each}
-  </div>
 
   <h2>Scale reference — regular arrows</h2>
   <p class="note">the un-halved motions with the standard arrow assets</p>
@@ -629,6 +709,43 @@
 
   .copy-btn:hover {
     background: #9333ea;
+  }
+
+  .save-status {
+    min-width: 9ch;
+    text-align: center;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .save-status.saving {
+    color: #ffd27a;
+  }
+
+  .save-status.saved {
+    color: #6ee7a0;
+  }
+
+  .save-status.error {
+    color: #ff8a8a;
+    font-weight: 700;
+  }
+
+  .lattice-toggle {
+    display: block;
+    margin: 28px auto 0;
+    padding: 10px 20px;
+    min-height: 44px;
+    background: rgba(168, 85, 247, 0.15);
+    color: #d8b4fe;
+    border: 1px solid rgba(168, 85, 247, 0.5);
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .lattice-toggle:hover {
+    background: rgba(168, 85, 247, 0.3);
   }
 
   .label {

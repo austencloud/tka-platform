@@ -64,14 +64,26 @@ export async function calculateArrowPoint(
     let adjustmentX: number;
     let adjustmentY: number;
     if (motion.segment) {
-      const segmentAdjustment = await arrowPlacer.getDefaultAdjustment(
+      const local = await arrowPlacer.getDefaultAdjustment(
         `${motion.motionType}_half` as SegmentPlacementKey,
         motion.motionType,
         motion.turns,
         gridMode ?? GridMode.DIAMOND
       );
-      adjustmentX = segmentAdjustment.x;
-      adjustmentY = segmentAdjustment.y;
+      // Segment default adjustments are authored in GLYPH-LOCAL space (the
+      // extracted asset's frame, staff along +x — extract-half-glyphs.mjs), so
+      // one (motionType, turns) value serves every location/direction: rotate
+      // it with the glyph, flipping local y when the pipeline mirrors
+      // (ArrowSvg's segment scale(1,-1) is a pre-rotation local-y flip).
+      const mirrored = shouldMirrorArrow(
+        {} as ArrowPlacementData,
+        pictographData,
+        motion
+      );
+      const rad = (rotation * Math.PI) / 180;
+      const ly = mirrored ? -local.y : local.y;
+      adjustmentX = local.x * Math.cos(rad) - ly * Math.sin(rad);
+      adjustmentY = local.x * Math.sin(rad) + ly * Math.cos(rad);
     } else {
       const adjustment = await arrowAdjustmentCalculator.calculateAdjustment(
         pictographData,
