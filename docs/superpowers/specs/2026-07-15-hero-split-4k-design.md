@@ -1,7 +1,8 @@
 # Hero Split Layout for Wide / 4K — Handoff Spec
 
 **Date:** 2026-07-15
-**Status:** Implemented + verified across 6 viewports. **Two optional polish items open.** Not yet decided: production deploy.
+**Status:** SUPERSEDED by the 2026-07-16 continuation pass (§9 below). §5.1 fixed;
+§5.2 still open (Austen's call). Whole landing page now has a ≥2200px 4K tier.
 **Owner change file:** `src/routes/landing/components/HeroCarouselSection.svelte` (single file)
 **Author of this pass:** Opus 4.8 session `5b1aff21`
 
@@ -155,3 +156,66 @@ This change compiles clean.
 4. Decide items §5.1 / §5.2 with Austen, apply in this one file, keep the ≥1200px gate.
 5. Do **not** widen scope beyond the hero. `+page.svelte` and other `git status` dirty
    files belong to other sessions — leave them.
+
+---
+
+## 9. Continuation pass — full landing page 4K tier (2026-07-16)
+
+Austen widened scope: *"make sure the entire landing page experience is truly fully
+optimized for 4K."* Findings and changes from that pass (Fable session):
+
+### The finding
+
+The ≥1200px split fixed 1080p–1440p, but at a true 4K CSS viewport (3840×2160)
+the island returned: the 1240px hero bound + 640px stage cap left the whole
+composition at ~27% of the screen width (measured: stage 512×640, content span
+~1050px of 3840). Note the §4 matrix labels 2560×1440 as "4K" — Austen's monitor
+likely presents ~2560 CSS px, so the new tier fires at **≥2200px** to catch both.
+
+### What changed (all gated `@media (min-width: 2200px)`, nothing below moves)
+
+| File | Change |
+|---|---|
+| `HeroCarouselSection.svelte` | Scale tier: hero bound 1240→1720px, stage `min(64vh, 960px)` (was 640 cap), title to clamp(4rem, 2.7vw, 5.8rem), CTA/chips/dots/credit one step up. **§5.1 fixed at all split widths**: `.hero-copy` gets `padding-bottom` = footer block height (56px; 66px at ≥2200) so the copy centres on the *stage*, not stage+dots+credit. Verified copy-center == stage-center at 1920/2560/3840. |
+| `HowTkaWorksSection.svelte` | Tier: 1400→1960px, pictograph frames 200→280px, sequence frame cap 220→300px, card/type scale. |
+| `PlayWithItSection.svelte` | Tier: heading/subtitle scale. Plus a **skeleton-parity fix at ≥920px** (see below). |
+| `GuidesSection.svelte` | Tier: list 620→760px, cover 76→92px, heading/type scale. |
+| `ShopCtaSection.svelte` | Tier: heading/intro/CTA scale. |
+| `FaqAccordion.svelte` | Tier (`.faq.section` only — card variant on /about untouched): container 760→880px, item type up. |
+| `LandingFooter.svelte` | Tier: link/credit type 0.875→1rem. |
+
+### Skeleton-parity fix (pre-existing layout shift, all desktop widths)
+
+PlayWithItInner renders the with-sidebar showcase at `min(1600px, 94vw)` from
+920px up, but the section's loading skeleton was 800px wide — the lazy import
+swap reflowed the page (`no-layout-shift` violation). The skeleton now mirrors
+the desktop footprint (≥920px: full width + 380px `.sk-panel` placeholder +
+`min(1100px, 70vh)` canvas cap). Measured after: width 1552 == 1552, height
+delta 1198 vs 1102 (was ~500px).
+
+### Also fixed in passing
+
+`packages/sequence-engine/dist` was stale (missing `reduceToMinimalLoop`
+export), which crashed the Infinite Spinner's lazy import — the landing spinner
+showed a dead skeleton. `tsc -b` in the package fixed it. If the spinner is
+ever skeleton-stuck, check the console for that import error first, and rebuild
+packages.
+
+### §5.2 pillarboxing — still open, deliberately
+
+Kept `object-fit: contain`. Cropping to `cover` cuts prop tips out of flow
+footage (worst-case crop for this content), and a blurred-video backdrop fill
+would double video decodes for an aesthetic Austen hasn't asked for. The bigger
+4K stage already makes the video dominate the frame. Decide with Austen if bars
+still bother him.
+
+### Verification (2026-07-16, Chrome DevTools MCP, scratch server :5190)
+
+| Viewport | Result |
+|---|---|
+| 3840×2160 | Tier fires: stage 768×960, hero 1720px, title 92.8px, copy centred on stage (1081 vs 1080). All sections scaled. ✅ |
+| 2560×1440 | Tier fires: stage 737×922, copy centre 721 vs stage 720. ✅ |
+| 1920×1080 | Prior tier intact: stage 512×640, hero 1240, title 61.44px; §5.1 centring applied (546 == 546). ✅ |
+| 1280×800 | Split intact, stage 397×496, chips visible. ✅ |
+| 1000×820 | Single-column fallback: `.hero-copy` display:contents, chips hidden. ✅ |
+| 390×844 | Mobile identical: title → video → single CTA. ✅ |

@@ -159,6 +159,24 @@
     padding: 0 0 1.25rem;
   }
 
+  /* 4K / ultrawide: section variant only (the card variant lives inside /about's
+     already-constrained container). Wider reading column + one type step up. */
+  @media (min-width: 2200px) {
+    .faq.section .container {
+      max-width: 880px;
+    }
+
+    .faq.section .faq-item summary {
+      padding: 24px 28px;
+      font-size: 1.15rem;
+    }
+
+    .faq.section .faq-item p {
+      padding: 0 28px 24px;
+      font-size: 1.05rem;
+    }
+  }
+
   @media (max-width: 600px) {
     .faq.section {
       padding: 64px 20px;

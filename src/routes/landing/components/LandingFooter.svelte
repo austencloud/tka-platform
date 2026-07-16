@@ -85,6 +85,14 @@
     color: var(--theme-text, #ffffff);
   }
 
+  /* 4K / ultrawide: one type step up so the footer doesn't read miniature. */
+  @media (min-width: 2200px) {
+    .credit,
+    .footer-links a {
+      font-size: 1rem;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .footer-links a {
       transition: none;

@@ -215,6 +215,49 @@
     margin-top: 2.5rem;
   }
 
+  /* 4K / ultrawide: keep the chapter-list feel, scale it to hold its own next
+     to the scaled hero. Reading width grows modestly, not to fill the screen. */
+  @media (min-width: 2200px) {
+    h2 {
+      font-size: 2.75rem;
+    }
+
+    .section-intro,
+    .closing {
+      font-size: 1.2rem;
+      max-width: 720px;
+    }
+
+    .guide-list {
+      max-width: 760px;
+      gap: 20px;
+    }
+
+    .guide-card {
+      gap: 24px;
+      padding: 20px 24px;
+    }
+
+    .cover {
+      width: 92px;
+      height: 92px;
+    }
+
+    .title {
+      font-size: 1.55rem;
+    }
+
+    .desc {
+      font-size: 1rem;
+    }
+
+    .action {
+      margin: -20px -24px -20px 0;
+      padding: 0 20px;
+      font-size: 0.9rem;
+    }
+  }
+
   @media (max-width: 520px) {
     .guide-card {
       gap: 14px;
