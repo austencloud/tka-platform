@@ -29,7 +29,7 @@ Shows:
   const canEdit = $derived(selectionCount > 0);
   const selectionText = $derived(
     selectionCount === 1
-      ? "1 beat selected"
+      ? "1 step selected"
       : `${selectionCount} steps selected`
   );
 </script>

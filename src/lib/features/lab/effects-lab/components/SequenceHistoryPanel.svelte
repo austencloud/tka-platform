@@ -70,7 +70,7 @@
             <li class="history-entry">
               <div class="entry-info">
                 <span class="entry-name">{simplifyAndTruncate(entry.word)}</span>
-                <span class="entry-meta">{entry.stepCount} beats</span>
+                <span class="entry-meta">{entry.stepCount} steps</span>
               </div>
               <div class="entry-actions">
                 {#if onView}

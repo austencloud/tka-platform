@@ -72,7 +72,7 @@
   );
 
   const tooltip = $derived.by(() => {
-    if (disabled) return "Add more beats to see LOOP options";
+    if (disabled) return "Add more steps to see LOOP options";
     if (activeComponents.size > 0) return "LOOP detected - tap for details";
     if (availableComponents.size > 0) return "LOOP completions available";
     return "No LOOP options for this sequence";

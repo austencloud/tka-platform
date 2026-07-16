@@ -36,15 +36,15 @@
 </script>
 
 {#if totalSteps > 1}
-  <div class="beat-plane-strip" role="group" aria-label="Per-beat plane assignments">
+  <div class="beat-plane-strip" role="group" aria-label="Per-step plane assignments">
     {#each beatIndices as i (i)}
       <button
         class="beat-cell"
         class:current={i === currentStepIndex}
         class:has-override={hasOverride(i)}
         onclick={() => onStepClick(i)}
-        title="Beat {i + 1}{hasOverride(i) ? ' (custom planes)' : ''}"
-        aria-label="Beat {i + 1}"
+        title="Step {i + 1}{hasOverride(i) ? ' (custom planes)' : ''}"
+        aria-label="Step {i + 1}"
         aria-current={i === currentStepIndex ? "step" : undefined}
       >
         <div class="hand-half blue-half" style="background: {getColor(i, 'blue')};"></div>

@@ -94,7 +94,7 @@ export class CreateModuleHandlers {
       this.StepOperator.removeStep(stepIndex, CreateModuleState);
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to remove beat";
+        err instanceof Error ? err.message : "Failed to remove step";
       console.error("❌ CreateModuleHandlers: Failed to remove beat", err);
       throw new Error(errorMessage);
     }

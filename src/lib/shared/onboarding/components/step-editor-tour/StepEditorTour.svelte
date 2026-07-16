@@ -27,15 +27,15 @@
       icon: "fa-sliders-h",
       title: "Step Editor",
       description:
-        "This panel opens when you tap any beat. You can edit each beat individually.",
+        "This panel opens when you tap any step. You can edit each step individually.",
       highlight: "all",
     },
     {
       id: "preview",
       icon: "fa-image",
-      title: "Beat Preview",
+      title: "Step Preview",
       description:
-        "This pictograph shows the beat you selected, with both props and their positions.",
+        "This pictograph shows the step you selected, with both props and their positions.",
       highlight: "preview",
     },
     {
@@ -51,7 +51,7 @@
       icon: "fa-clock",
       title: "Duration",
       description:
-        "Adjust how long this beat lasts in your sequence. Longer beats hold the position.",
+        "Adjust how long this step lasts in your sequence. Longer steps hold the position.",
       highlight: "duration",
     },
   ];

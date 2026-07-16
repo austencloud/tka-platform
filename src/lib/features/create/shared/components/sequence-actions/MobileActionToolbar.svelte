@@ -116,7 +116,7 @@
       ? [{ id: "extend" as const, icon: "circle-check", label: "Extend", btnColor: "34, 197, 94", action: onExtend, disabled: !hasSequence || isExtending }]
       : []),
     ...(onShiftStart
-      ? [{ id: "shift-start" as const, icon: "forward", label: "First Beat", btnColor: "6, 182, 212", action: onShiftStart, disabled: !hasSequence || isTransforming || !canShiftStart, unavailable: !canShiftStart }]
+      ? [{ id: "shift-start" as const, icon: "forward", label: "First Step", btnColor: "6, 182, 212", action: onShiftStart, disabled: !hasSequence || isTransforming || !canShiftStart, unavailable: !canShiftStart }]
       : []),
   ]);
 

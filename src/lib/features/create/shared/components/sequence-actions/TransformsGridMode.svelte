@@ -287,8 +287,8 @@
             <i class="fas fa-forward" aria-hidden="true"></i>
           </div>
           <div class="btn-text">
-            <span class="btn-label">First Beat</span>
-            <span class="btn-desc">Pick new beat 1</span>
+            <span class="btn-label">First Step</span>
+            <span class="btn-desc">Pick new step 1</span>
           </div>
         </button>
       {/if}
@@ -320,8 +320,8 @@
         onclick={onTurns}
         disabled={!hasSelection}
         aria-label={hasSelection
-          ? "Edit turns for selected beat"
-          : "Edit turns: select a beat first"}
+          ? "Edit turns for selected step"
+          : "Edit turns: select a step first"}
       >
         <div class="btn-icon">
           <i class="fas fa-sliders-h" aria-hidden="true"></i>
@@ -329,7 +329,7 @@
         <div class="btn-text">
           <span class="btn-label">Edit Turns</span>
           <span class="btn-desc"
-            >{hasSelection ? "Adjust rotation" : "Select beat first"}</span
+            >{hasSelection ? "Adjust rotation" : "Select step first"}</span
           >
         </div>
       </button>

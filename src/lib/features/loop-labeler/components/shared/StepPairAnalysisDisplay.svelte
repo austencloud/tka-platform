@@ -142,14 +142,14 @@
       class:expanded={isExpanded}
       onclick={() => (isExpanded = !isExpanded)}
       aria-expanded={isExpanded}
-      aria-label={isExpanded ? "Collapse beat-pair analysis" : "Expand beat-pair analysis"}
+      aria-label={isExpanded ? "Collapse step-pair analysis" : "Expand step-pair analysis"}
     >
       <div class="header-left">
         <FontAwesomeIcon
           icon={isExpanded ? "chevron-down" : "chevron-right"}
           size="0.8em"
         />
-        <span class="title">Beat-Pair Analysis</span>
+        <span class="title">Step-Pair Analysis</span>
         {#if isAxisAlternating && axisAlternatingPattern}
           <span class="axis-alternating-badge"
             >{axisAlternatingPattern.metaPatternType}</span

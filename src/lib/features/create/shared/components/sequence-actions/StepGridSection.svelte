@@ -38,7 +38,7 @@
 <div class="step-grid-section" class:shift-mode={isShiftMode} class:mobile-mode={mobileMode}>
   {#if isShiftMode}
     <div class="shift-mode-banner">
-      <span>Tap the beat to play first - it becomes Beat 1</span>
+      <span>Tap the step to play first - it becomes Step 1</span>
       <button class="cancel-btn" onclick={onCancelShiftMode}>Cancel</button>
     </div>
   {/if}

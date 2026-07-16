@@ -99,7 +99,7 @@
     >
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
-    <span class="batch-title">Editing {count} beats</span>
+    <span class="batch-title">Editing {count} steps</span>
     {#if count < totalBeats}
       <button class="header-btn select-all" type="button" onclick={onSelectAll}>
         Select all

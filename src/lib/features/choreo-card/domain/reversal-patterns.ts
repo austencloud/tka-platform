@@ -105,7 +105,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'dense-weave-1',
     label: 'Dense Weave 1',
-    description: '8-step weave. Solo and pair beats alternate every position.',
+    description: '8-step weave. Solo and pair steps alternate every position.',
     family: 'dense-weave',
     sequence: 'RPBPRPBP',
     period: 8,
@@ -134,7 +134,7 @@ export const REVERSAL_PATTERNS = [
   {
     id: 'sparse-weave-1',
     label: 'Sparse Weave 1',
-    description: '8-step weave. Pair beats every 4th position, solo beats between.',
+    description: '8-step weave. Pair steps every 4th position, solo steps between.',
     family: 'sparse-weave',
     sequence: 'RBRPBRBP',
     period: 8,

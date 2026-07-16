@@ -124,7 +124,7 @@ export class CreateModuleEventHandler {
       // 📸 PUSH UNDO SNAPSHOT: Save state BEFORE adding beat (now deferred via queueMicrotask)
       this.pushUndoSnapshotCallback?.("ADD_BEAT", {
         stepNumber: nextStepNumber,
-        description: `Add beat ${nextStepNumber}`,
+        description: `Add step ${nextStepNumber}`,
       });
 
       // 🔄 REVERSAL DETECTION: Calculate reversals for the new beat based on current sequence
@@ -214,7 +214,7 @@ export class CreateModuleEventHandler {
       console.error("❌ Error handling option selection:", error);
       const errorHandler = getErrorHandler() as ErrorHandler;
       errorHandler.showUserError({
-        message: "Something went wrong adding that beat",
+        message: "Something went wrong adding that step",
         technicalDetails: error instanceof Error ? error.message : String(error),
         error: error instanceof Error ? error : new Error(String(error)),
         severity: "error",

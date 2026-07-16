@@ -102,7 +102,7 @@ Reads from / writes to a headless BrowseEngine instance.
   function handleLengthSelect(length: number | null) {
     hapticService?.trigger("selection");
     if (length == null) engine.removeFilter("length");
-    else engine.addFilter(BrowseFilterType.LENGTH, length, `${length} beats`, "#f59e0b");
+    else engine.addFilter(BrowseFilterType.LENGTH, length, `${length} steps`, "#f59e0b");
   }
 
   function handleMaxTurnIntensitySelect(intensity: number | null) {

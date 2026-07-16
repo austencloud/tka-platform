@@ -75,10 +75,10 @@
   );
 
   const selectionStatus = $derived.by(() => {
-    if (firstStep === null) return "Click first beat (key beat)";
+    if (firstStep === null) return "Click first step (key step)";
     if (secondStep === null)
-      return `Beat ${firstStep} selected → Click second beat`;
-    return `Beat ${firstStep} ↔ Beat ${secondStep}`;
+      return `Step ${firstStep} selected → Click second step`;
+    return `Step ${firstStep} ↔ Step ${secondStep}`;
   });
 
   const hasBothBeats = $derived(firstStep !== null && secondStep !== null);

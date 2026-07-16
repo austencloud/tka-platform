@@ -123,7 +123,7 @@ export function persistBeatWithAdjustments(
   // Push undo snapshot before applying changes
   createModuleState.pushUndoSnapshot(UndoOperationType.MODIFY_BEAT_PROPERTIES, {
     stepIndex: stepNumber,
-    description: `Adjust arrow positions for beat ${stepNumber === START_POSITION_BEAT_NUMBER ? "start position" : stepNumber}`,
+    description: `Adjust arrow positions for step ${stepNumber === START_POSITION_BEAT_NUMBER ? "start position" : stepNumber}`,
   });
 
   if (stepNumber === START_POSITION_BEAT_NUMBER) {

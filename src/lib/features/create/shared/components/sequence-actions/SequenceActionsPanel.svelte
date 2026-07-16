@@ -590,7 +590,7 @@ import * as subDrawerStatePersisterModule from "$lib/features/create/shared/serv
     if (!sequence || !canShiftStart) return;
     hapticService?.trigger("selection");
     panelState.enterShiftStartMode(handleShiftStartBeatSelect);
-    toast.info("Tap the beat you want to play first - it will become Beat 1");
+    toast.info("Tap the step you want to play first - it will become Step 1");
   }
 
   function handleShiftStartBeatSelect(stepNumber: number) {

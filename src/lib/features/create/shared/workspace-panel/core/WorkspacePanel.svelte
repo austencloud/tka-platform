@@ -182,7 +182,7 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
       StepOperator.removeStep(stepIndex, createModuleState);
     } catch (err) {
       console.error("Failed to remove beat", err);
-      toastMessage = "Failed to remove beat";
+      toastMessage = "Failed to remove step";
       setTimeout(() => (toastMessage = null), 3000);
     }
   }

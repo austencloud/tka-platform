@@ -67,7 +67,7 @@
 			>
 				<HTML center sprite>
 					<div class="prop-tooltip">
-						<div>{artifact.propType} - {artifact.totalStepsPerformed} beats</div>
+						<div>{artifact.propType} - {artifact.totalStepsPerformed} steps</div>
 						<div>Owners: {artifact.ownershipChain.length}</div>
 						<div>{PROP_WEAR_PROFILES[artifact.propType]?.failureMode ?? "retired"}</div>
 					</div>

@@ -23,12 +23,12 @@
 
   // Type descriptions for all operation types
   const typeDescriptions: Record<UndoOperationType, string> = {
-    [UndoOperationType.ADD_BEAT]: "Add Beat",
+    [UndoOperationType.ADD_BEAT]: "Add Step",
     [UndoOperationType.REMOVE_BEATS]: "Remove Steps",
     [UndoOperationType.CLEAR_SEQUENCE]: "Clear Sequence",
     [UndoOperationType.SELECT_START_POSITION]: "Select Start Position",
-    [UndoOperationType.UPDATE_BEAT]: "Update Beat",
-    [UndoOperationType.INSERT_BEAT]: "Insert Beat",
+    [UndoOperationType.UPDATE_BEAT]: "Update Step",
+    [UndoOperationType.INSERT_BEAT]: "Insert Step",
     [UndoOperationType.BATCH_EDIT]: "Batch Edit",
     [UndoOperationType.MIRROR_SEQUENCE]: "Mirror",
     [UndoOperationType.FLIP_SEQUENCE]: "Flip",
@@ -41,7 +41,7 @@
     [UndoOperationType.APPLY_ROTATION_PATTERN]: "Rotation Pattern",
     [UndoOperationType.APPLY_DURATION_PATTERN]: "Duration Pattern",
     [UndoOperationType.EXTEND_SEQUENCE]: "Extend",
-    [UndoOperationType.MODIFY_BEAT_PROPERTIES]: "Edit Beat",
+    [UndoOperationType.MODIFY_BEAT_PROPERTIES]: "Edit Step",
     [UndoOperationType.GENERATE_SEQUENCE]: "Generate Sequence",
     [UndoOperationType.SPELL_GENERATE]: "Spell Generate",
     [UndoOperationType.SPELL_APPLY_LOOP]: "Apply Spell Loop",

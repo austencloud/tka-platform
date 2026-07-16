@@ -51,7 +51,7 @@
       label: "Step by Step",
       icon: "fa-shoe-prints",
       color: "var(--semantic-success)",
-      description: "Go at your own pace. Manually advance through each beat.",
+      description: "Go at your own pace. Manually advance through each step.",
     },
     {
       value: PracticeMode.TIMED,

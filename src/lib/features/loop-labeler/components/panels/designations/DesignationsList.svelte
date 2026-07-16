@@ -46,7 +46,7 @@
 
   function formatBeatPair(bp: StepPairRelationship): string {
     const transformation = bp.confirmedTransformation || "Unknown";
-    return `Beat ${bp.keyStep} ↔ ${bp.correspondingStep}: ${transformation}`;
+    return `Step ${bp.keyStep} ↔ ${bp.correspondingStep}: ${transformation}`;
   }
 
   function formatSection(s: SectionDesignation): string {

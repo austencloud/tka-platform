@@ -209,7 +209,7 @@ Animates forward in z-axis and expands to fill the container space
       localRhythm.inversionMode === "overlay"
         ? " · inversion on top"
         : "";
-    return `${gate.seedLength} letters × ${gate.multiplier} = ${sequenceLength} beats${overlaySuffix}`;
+    return `${gate.seedLength} letters × ${gate.multiplier} = ${sequenceLength} steps${overlaySuffix}`;
   });
 
   const inversionCaption = $derived.by(() => {
@@ -474,7 +474,7 @@ Animates forward in z-axis and expands to fill the container space
     {#if wordMathText}
       <div class="word-math">
         <span class="word-math-sizer" aria-hidden="true"
-          >Too short — a one-beat seed has nothing for inversion to flip</span
+          >Too short — a one-step seed has nothing for inversion to flip</span
         >
         <span class="word-math-live">{wordMathText}</span>
       </div>
