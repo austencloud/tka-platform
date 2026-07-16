@@ -12,8 +12,17 @@
 
     A — cut through the number (A1 fixed-angle, A2 corner-to-corner)
     B — standalone mark beside the number (mimics a future dedicated asset)
+
+  Treatment B won (ratified 2026-07-16). The final "Live component" section
+  at the bottom breaks the "self-contained, no feature-module imports" rule
+  above on purpose — it renders the REAL TurnsColumn.svelte (not a mock) with
+  the shipped static/images/numbers/half.svg asset, so this page still proves
+  the production component after the decision, not just the mockups that led
+  to it.
 -->
 <script lang="ts">
+  import TurnsColumn from "$lib/shared/pictograph/tka-glyph/components/TurnsColumn.svelte";
+
   // Same swatch as TurnsColumn.svelte's STATIC_COLORS.light — the values
   // Austen actually looks at on a light background.
   const BLUE = "#3D44B8";
@@ -332,6 +341,92 @@
             {@render glyphPreview("B", "gp-b-dark-zoom", 175)}
           </div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Live component — TurnsColumn.svelte</h2>
+    <p class="note">
+      Treatment B, ratified 2026-07-16 - not a mock. This renders the
+      production
+      <code>src/lib/shared/pictograph/tka-glyph/components/TurnsColumn.svelte</code>
+      standalone, fed by the real parser (<code>turn-tuple-parser.ts</code>)
+      and the shipped <code>static/images/numbers/half.svg</code> asset. Left
+      pair: "(1.5/, 2)" — top halved, bottom plain. Right pair: "(0/, 0)" — a
+      halved 0-turn motion shows the mark alone (shouldDisplayTurn still hides
+      bare "0"; the halved flag is what keeps the slot visible).
+    </p>
+    <div class="panels">
+      <div class="panel panel-light">
+        <div class="panel-label">white bg &middot; (1.5/, 2), letter B</div>
+        <svg viewBox="0 0 160 140" width="320" height="280">
+          <TurnsColumn
+            turnsTuple="(1.5/, 2)"
+            letter="B"
+            letterDimensions={{ width: 63.83, height: 100.06 }}
+            standalone={true}
+            visible={true}
+            instantAppear={true}
+            x={20}
+            y={20}
+            darkMode={false}
+          />
+        </svg>
+      </div>
+      <div class="panel panel-dark">
+        <div class="panel-label">near-black bg &middot; (1.5/, 2), letter B</div>
+        <svg viewBox="0 0 160 140" width="320" height="280">
+          <TurnsColumn
+            turnsTuple="(1.5/, 2)"
+            letter="B"
+            letterDimensions={{ width: 63.83, height: 100.06 }}
+            standalone={true}
+            visible={true}
+            instantAppear={true}
+            x={20}
+            y={20}
+            darkMode={true}
+          />
+        </svg>
+      </div>
+    </div>
+    <div class="panels">
+      <div class="panel panel-light">
+        <div class="panel-label">
+          white bg &middot; (0/, 0), letter B — halved 0-turn, mark alone
+        </div>
+        <svg viewBox="0 0 160 140" width="320" height="280">
+          <TurnsColumn
+            turnsTuple="(0/, 0)"
+            letter="B"
+            letterDimensions={{ width: 63.83, height: 100.06 }}
+            standalone={true}
+            visible={true}
+            instantAppear={true}
+            x={20}
+            y={20}
+            darkMode={false}
+          />
+        </svg>
+      </div>
+      <div class="panel panel-dark">
+        <div class="panel-label">
+          near-black bg &middot; (0/, 0), letter B — halved 0-turn, mark alone
+        </div>
+        <svg viewBox="0 0 160 140" width="320" height="280">
+          <TurnsColumn
+            turnsTuple="(0/, 0)"
+            letter="B"
+            letterDimensions={{ width: 63.83, height: 100.06 }}
+            standalone={true}
+            visible={true}
+            instantAppear={true}
+            x={20}
+            y={20}
+            darkMode={true}
+          />
+        </svg>
       </div>
     </div>
   </section>

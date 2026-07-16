@@ -20,6 +20,8 @@ Props:
     shouldDisplayTurn,
     getTurnNumberImagePath,
     getTurnNumberWidth,
+    HALF_MARK_IMAGE_PATH,
+    getHalfMarkWidth,
   } from "../utils/turn-tuple-parser";
   import { calculateTurnPositions } from "../utils/turn-position-calculator";
   import { interpretTurnColors } from "../services/turn-color-interpreter";
@@ -183,13 +185,43 @@ Props:
   // Number height is constant across all turn numbers
   const numberHeight = 45;
 
-  // Calculate the maximum width needed for the turn column
-  // This ensures consistent alignment when top and bottom numbers have different widths
+  // Halved-motion mark (docs/superpowers/specs/2026-07-16-half-notation-canon-design.md,
+  // Treatment B): a standalone asset rendered after the number, not baked into
+  // the number's own image. Gap matches the geometry proven on the A/B page
+  // (src/routes/test/half-notation/+page.svelte's MARK_GAP).
+  const MARK_GAP = 8;
+  const markWidth = getHalfMarkWidth();
+
+  const topOwnWidth = $derived(getTurnNumberWidth(parsedTurns.top));
+  const bottomOwnWidth = $derived(getTurnNumberWidth(parsedTurns.bottom));
+
+  // A slot's "unit" is the number alone, or number+gap+mark when halved.
+  // Each slot's unit is centered independently within the shared column box
+  // (below) so a halved top and an unhalved bottom still align the same way
+  // unhalved top/bottom pairs always have.
+  function slotUnitWidth(ownWidth: number, halved: boolean): number {
+    return halved ? ownWidth + MARK_GAP + markWidth : ownWidth;
+  }
+
+  // Calculate the maximum width needed for the turn column, including any
+  // halved slot's mark+gap - this is the box both top and bottom center within.
   const columnWidth = $derived.by(() => {
-    const topWidth = getTurnNumberWidth(parsedTurns.top);
-    const bottomWidth = getTurnNumberWidth(parsedTurns.bottom);
-    return Math.max(topWidth, bottomWidth);
+    const topUnit = slotUnitWidth(topOwnWidth, parsedTurns.topHalved);
+    const bottomUnit = slotUnitWidth(bottomOwnWidth, parsedTurns.bottomHalved);
+    return Math.max(topUnit, bottomUnit);
   });
+
+  // Left offset (within the column box) of each slot's unit, so the number
+  // renders at its own intrinsic width instead of being stretched to
+  // columnWidth - this reproduces the old xMid-via-preserveAspectRatio
+  // centering exactly for the unhalved case (unit === ownWidth) while giving
+  // the mark a real, reliable coordinate to sit at for the halved case.
+  const topOffsetX = $derived(
+    (columnWidth - slotUnitWidth(topOwnWidth, parsedTurns.topHalved)) / 2
+  );
+  const bottomOffsetX = $derived(
+    (columnWidth - slotUnitWidth(bottomOwnWidth, parsedTurns.bottomHalved)) / 2
+  );
 
   // Check if this letter has a dash (Type3/Type5)
   const hasDash = $derived(isDashLetter(letter));
@@ -221,12 +253,17 @@ Props:
     return isRed ? !viewerVisibility.redMotion : !viewerVisibility.blueMotion;
   }
 
-  // Check visibility
+  // Check visibility. A slot renders if it has a displayable number OR is
+  // halved - a halved 0-turn motion shows the mark alone (shouldDisplayTurn
+  // hides bare 0 today; that's still correct, the mark is what makes a
+  // halved 0 visible).
   const showTop = $derived(
-    shouldDisplayTurn(parsedTurns.top) && !isColorHidden(turnColors.top)
+    (shouldDisplayTurn(parsedTurns.top) || parsedTurns.topHalved) &&
+      !isColorHidden(turnColors.top)
   );
   const showBottom = $derived(
-    shouldDisplayTurn(parsedTurns.bottom) && !isColorHidden(turnColors.bottom)
+    (shouldDisplayTurn(parsedTurns.bottom) || parsedTurns.bottomHalved) &&
+      !isColorHidden(turnColors.bottom)
   );
 
   // Get image paths
@@ -299,15 +336,29 @@ Props:
         class="turn-number top"
         transform="translate({positions.top.x}, {positions.top.y})"
       >
-        <image
-          href={topImagePath}
-          width={columnWidth}
-          height={numberHeight}
-          filter="url(#{turnColors.top === '#ED1C24'
-            ? 'turn-color-red'
-            : 'turn-color-blue'})"
-          preserveAspectRatio="xMidYMin meet"
-        />
+        {#if shouldDisplayTurn(parsedTurns.top)}
+          <image
+            href={topImagePath}
+            x={topOffsetX}
+            width={topOwnWidth}
+            height={numberHeight}
+            filter="url(#{turnColors.top === '#ED1C24'
+              ? 'turn-color-red'
+              : 'turn-color-blue'})"
+            preserveAspectRatio="xMidYMin meet"
+          />
+        {/if}
+        {#if parsedTurns.topHalved}
+          <image
+            href={HALF_MARK_IMAGE_PATH}
+            x={topOffsetX + topOwnWidth + MARK_GAP}
+            width={markWidth}
+            height={numberHeight}
+            filter="url(#{turnColors.top === '#ED1C24'
+              ? 'turn-color-red'
+              : 'turn-color-blue'})"
+          />
+        {/if}
       </g>
     {/if}
 
@@ -317,15 +368,29 @@ Props:
         class="turn-number bottom"
         transform="translate({positions.bottom.x}, {positions.bottom.y})"
       >
-        <image
-          href={bottomImagePath}
-          width={columnWidth}
-          height={numberHeight}
-          filter="url(#{turnColors.bottom === '#ED1C24'
-            ? 'turn-color-red'
-            : 'turn-color-blue'})"
-          preserveAspectRatio="xMidYMin meet"
-        />
+        {#if shouldDisplayTurn(parsedTurns.bottom)}
+          <image
+            href={bottomImagePath}
+            x={bottomOffsetX}
+            width={bottomOwnWidth}
+            height={numberHeight}
+            filter="url(#{turnColors.bottom === '#ED1C24'
+              ? 'turn-color-red'
+              : 'turn-color-blue'})"
+            preserveAspectRatio="xMidYMin meet"
+          />
+        {/if}
+        {#if parsedTurns.bottomHalved}
+          <image
+            href={HALF_MARK_IMAGE_PATH}
+            x={bottomOffsetX + bottomOwnWidth + MARK_GAP}
+            width={markWidth}
+            height={numberHeight}
+            filter="url(#{turnColors.bottom === '#ED1C24'
+              ? 'turn-color-red'
+              : 'turn-color-blue'})"
+          />
+        {/if}
       </g>
     {/if}
   </g>

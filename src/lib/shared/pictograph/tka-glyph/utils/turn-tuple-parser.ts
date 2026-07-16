@@ -17,6 +17,15 @@
  * - "(0, 1, op)"           => { direction: null, top: 0, bottom: 1, bottomOpenClose: "op" }
  * - "(1, 0, cl)"           => { direction: null, top: 1, bottom: 0, topOpenClose: "cl" }
  * - "(s, 1, 1, op, cl)"    => { direction: "s", top: 1, bottom: 1, topOpenClose: "op", bottomOpenClose: "cl" }
+ *
+ * Halved motions (docs/superpowers/specs/2026-07-16-half-notation-canon-design.md):
+ * any turn slot may carry a trailing "/" marking the whole motion frozen at
+ * t=0.5 (MotionData.segment {t0:0, t1:0.5}). "/" is per-hand, so it rides on
+ * the top/bottom slot, never the direction/oc slots.
+ * - "(1.5/, 2)"      => { top: 1.5, bottom: 2, topHalved: true, bottomHalved: false }
+ * - "(s, 1/, 2/)"    => { direction: "s", top: 1, bottom: 2, topHalved: true, bottomHalved: true }
+ * - "(0/, 0)"        => { top: 0, bottom: 0, topHalved: true, bottomHalved: false }
+ *   (a halved 0-turn shows the mark alone — see shouldDisplayTurn's note)
  */
 
 export type TurnValue = number | "fl";
@@ -29,6 +38,8 @@ export interface ParsedTurnsTuple {
   bottom: TurnValue;
   topOpenClose: OpenCloseValue;
   bottomOpenClose: OpenCloseValue;
+  topHalved: boolean;
+  bottomHalved: boolean;
 }
 
 const VALID_DIRECTIONS = ["s", "o", "cw", "ccw"] as const;
@@ -49,6 +60,8 @@ function emptyResult(): ParsedTurnsTuple {
     bottom: 0,
     topOpenClose: null,
     bottomOpenClose: null,
+    topHalved: false,
+    bottomHalved: false,
   };
 }
 
@@ -74,57 +87,83 @@ export function parseTurnsTuple(turnsTuple: string): ParsedTurnsTuple {
 
     // 5-part: (direction, top, bottom, topOC, bottomOC) - Λ/Λ-/γ both hands rotating
     if (firstIsDirection && parts.length >= 5) {
-      const top = parseTurnValue(parts[1] || "");
-      const bottom = parseTurnValue(parts[2] || "");
+      const top = parseHalvedTurn(parts[1] || "");
+      const bottom = parseHalvedTurn(parts[2] || "");
       return {
         direction: parts[0] as DirectionValue,
-        top,
-        bottom,
+        top: top.value,
+        bottom: bottom.value,
         topOpenClose: parseOpenClose(parts[3]),
         bottomOpenClose: parseOpenClose(parts[4]),
+        topHalved: top.halved,
+        bottomHalved: bottom.halved,
       };
     }
 
     // 3-part direction-prefixed: (direction, top, bottom)
     if (firstIsDirection && parts.length >= 3) {
+      const top = parseHalvedTurn(parts[1] || "");
+      const bottom = parseHalvedTurn(parts[2] || "");
       return {
         direction: parts[0] as DirectionValue,
-        top: parseTurnValue(parts[1] || ""),
-        bottom: parseTurnValue(parts[2] || ""),
+        top: top.value,
+        bottom: bottom.value,
         topOpenClose: null,
         bottomOpenClose: null,
+        topHalved: top.halved,
+        bottomHalved: bottom.halved,
       };
     }
 
     // 3-part no-direction: (top, bottom, oc) - Λ/Λ-/γ single hand rotating.
     // The op/cl binds to whichever slot is non-zero; the zero slot has no rotational state.
     if (!firstIsDirection && parts.length >= 3) {
-      const top = parseTurnValue(parts[0] || "");
-      const bottom = parseTurnValue(parts[1] || "");
+      const top = parseHalvedTurn(parts[0] || "");
+      const bottom = parseHalvedTurn(parts[1] || "");
       const oc = parseOpenClose(parts[2]);
-      const topNonZero = top !== 0;
-      const bottomNonZero = bottom !== 0;
+      const topNonZero = top.value !== 0;
+      const bottomNonZero = bottom.value !== 0;
       return {
         direction: null,
-        top,
-        bottom,
+        top: top.value,
+        bottom: bottom.value,
         topOpenClose: topNonZero && !bottomNonZero ? oc : null,
         bottomOpenClose: bottomNonZero && !topNonZero ? oc : null,
+        topHalved: top.halved,
+        bottomHalved: bottom.halved,
       };
     }
 
     // 2-part: (top, bottom)
-    return {
-      direction: null,
-      top: parseTurnValue(parts[0] || ""),
-      bottom: parseTurnValue(parts[1] || ""),
-      topOpenClose: null,
-      bottomOpenClose: null,
-    };
+    {
+      const top = parseHalvedTurn(parts[0] || "");
+      const bottom = parseHalvedTurn(parts[1] || "");
+      return {
+        direction: null,
+        top: top.value,
+        bottom: bottom.value,
+        topOpenClose: null,
+        bottomOpenClose: null,
+        topHalved: top.halved,
+        bottomHalved: bottom.halved,
+      };
+    }
   } catch (error) {
     console.error("Failed to parse turns tuple:", turnsTuple, error);
     return emptyResult();
   }
+}
+
+/**
+ * Strip a trailing "/" (halved-motion marker) off a turn slot before parsing
+ * the number/fl underneath. Unknown junk still degrades to { value: 0, halved: false }
+ * via parseTurnValue's existing fallback — the "/" alone never fabricates a turn.
+ */
+function parseHalvedTurn(raw: string): { value: TurnValue; halved: boolean } {
+  const trimmed = raw.trim();
+  const halved = trimmed.endsWith("/");
+  const text = halved ? trimmed.slice(0, -1).trim() : trimmed;
+  return { value: parseTurnValue(text), halved };
 }
 
 /**
@@ -197,4 +236,20 @@ export function getTurnNumberWidth(value: TurnValue): number {
   }
 
   return 0;
+}
+
+/**
+ * Path to the standalone halved-motion mark asset (Treatment B, ratified
+ * 2026-07-16). Rendered as its own <image>, positioned after the turn
+ * number by the consumer — the asset itself carries no offset.
+ */
+export const HALF_MARK_IMAGE_PATH = "/images/numbers/half.svg";
+
+/**
+ * Width of the halved-motion mark's viewBox (static/images/numbers/half.svg,
+ * viewBox="0 0 16 45"). A function, not a constant, to match
+ * getTurnNumberWidth's shape in case the mark ever needs per-value sizing.
+ */
+export function getHalfMarkWidth(): number {
+  return 16;
 }

@@ -66,7 +66,8 @@ exists as an asset today — the web renderer currently has zero modifier notati
 ## 7. Ledger
 
 - [x] Token `/`, midpoint-only scope, per-hand placement, derived naming — ratified 2026-07-16
-- [ ] Drawn mark A/B on `/test/half-notation` — Austen picks
-- [ ] Implement parser + TurnsColumn rendering per the pick
-- [ ] Turns-tuple generator emits `/` for segment motions
+- [x] Drawn mark A/B on `/test/half-notation` — **B (standalone mark beside the number), ratified 2026-07-16**
+- [x] Implement parser + TurnsColumn rendering per the pick — `turn-tuple-parser.ts` (`topHalved`/`bottomHalved`, `HALF_MARK_IMAGE_PATH`, `getHalfMarkWidth`), `static/images/numbers/half.svg` (new asset, geometry copied from the A/B page's `computeB()`), `TurnsColumn.svelte` (renders the mark beside the number, halved 0-turn slots show the mark alone)
+- [x] Turns-tuple generator emits `/` for segment motions — `turns-tuple-generator.ts`'s `formatTurns` is the single seam every tuple shape funnels through; it appends `/` when the motion passed alongside has `segment` set
 - [ ] Skew `+`/`-` marks (follow-up pass, same pattern)
+- [ ] Canvas/export render paths (`canvas-2d-glyph-renderer.ts`, `export-glyph-prerenderer.ts`) don't draw the halved mark yet — they parse the halved flags safely (no crash/corruption) but only the SVG-based live glyph (`TurnsColumn.svelte` and anything that inlines its output, e.g. `GlyphRenderer.svelte`) draws it. Deferred: the canvas pipeline draws via `ctx.drawImage` (no shared column-width/offset math with `TurnsColumn`) and the export pre-renderer hand-inlines a composite SVG string without a mark step — both need real work, not a drop-in path swap.
