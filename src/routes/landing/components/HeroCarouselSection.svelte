@@ -966,9 +966,11 @@
      Everything below 2200px keeps the verified tier above. */
   @media (min-width: 2200px) {
     .hero-carousel {
-      max-width: 1720px;
-      grid-template-columns: minmax(380px, 600px) auto;
-      column-gap: clamp(96px, 6vw, 170px);
+      /* Fluid past 3840: 44.8vw == 1720px at 3840, so a 5K/6K screen keeps
+         scaling instead of re-shrinking into an island. Same at/below 3840. */
+      max-width: max(1720px, 44.8vw);
+      grid-template-columns: minmax(380px, max(600px, 15.6vw)) auto;
+      column-gap: clamp(96px, 6vw, 220px);
     }
 
     .hero-copy {
@@ -979,15 +981,18 @@
     }
 
     .hero-title {
-      font-size: clamp(4rem, 2.7vw, 5.8rem);
+      /* 2.42vw == 92.9px at 3840 (the verified size); keeps growing beyond. */
+      font-size: clamp(4rem, 2.42vw, 9rem);
     }
 
     .hero-tagline {
-      font-size: clamp(1.35rem, 0.9vw, 1.7rem);
+      font-size: clamp(1.35rem, 0.9vw, 2rem);
     }
 
     .carousel-stage {
-      height: min(64vh, 960px);
+      /* 25vw == 960px at 3840; a 5K screen gets a proportionally taller stage
+         instead of freezing at the 4K cap. vh still bounds it on short windows. */
+      height: min(64vh, max(960px, 25vw));
       border-radius: 20px;
     }
 

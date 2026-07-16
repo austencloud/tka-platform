@@ -338,19 +338,21 @@
    wider — still readable — measure. Nothing below 2200px moves. */
 @media (min-width: 2200px) {
   .editorial {
-    max-width: 60rem;
+    /* 25vw == 60rem (960px) at 3840; fluid past 4K instead of re-freezing. */
+    max-width: max(60rem, 25vw);
   }
   .editorial .back-link {
     font-size: 1rem;
   }
   .page-title {
-    font-size: clamp(4.2rem, 2.4vw, 5.4rem);
+    /* 2.25vw == 86.4px (5.4rem) at 3840; keeps growing on 5K/6K. */
+    font-size: clamp(4.2rem, 2.25vw, 8rem);
   }
   .page-subtitle {
     font-size: 1.35rem;
   }
   .lede {
-    max-width: 52rem;
+    max-width: max(52rem, 21.7vw);
   }
   .lede p {
     font-size: 1.5rem;
@@ -362,7 +364,8 @@
     font-size: 2.4rem;
   }
   .prose {
-    font-size: 1.3rem;
+    /* 0.542vw == 20.8px (1.3rem) at 3840; ramps gently on wider screens. */
+    font-size: clamp(1.3rem, 0.542vw, 1.6rem);
   }
   .bullet-list li {
     font-size: 1.25rem;

@@ -461,7 +461,8 @@
      scaled hero. Same single-row progression, roomier cards, bigger media. */
   @media (min-width: 2200px) {
     .how-tka-works {
-      max-width: 1960px;
+      /* 51vw == 1960px at 3840; fluid past 4K. */
+      max-width: max(1960px, 51vw);
       padding: 112px 24px;
     }
 
@@ -478,11 +479,11 @@
     .pictograph-frame,
     .animation-frame,
     .skeleton .skeleton-pictograph {
-      max-width: 280px;
+      max-width: max(280px, 7.3vw);
     }
 
     .sequence-frame {
-      height: clamp(200px, 12vw, 300px);
+      height: clamp(200px, 12vw, max(300px, 7.8vw));
     }
 
     h3 {

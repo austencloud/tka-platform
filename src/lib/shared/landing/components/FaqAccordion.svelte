@@ -160,10 +160,23 @@
   }
 
   /* 4K / ultrawide: section variant only (the card variant lives inside /about's
-     already-constrained container). Wider reading column + one type step up. */
+     already-constrained container). Recomposed: the accordion runs two-up so
+     seven questions land in one viewport instead of a single tall strip.
+     align-items:start keeps an opened item from stretching its row neighbour. */
   @media (min-width: 2200px) {
     .faq.section .container {
-      max-width: 880px;
+      max-width: 1560px;
+    }
+
+    .faq.section .faq-list {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px 22px;
+      align-items: start;
+    }
+
+    .faq.section .faq-item {
+      margin-bottom: 0;
     }
 
     .faq.section .faq-item summary {

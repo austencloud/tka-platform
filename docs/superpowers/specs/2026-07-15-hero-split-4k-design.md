@@ -232,7 +232,37 @@ active guide-rewrite workstream — see `2026-07-15-guide-card-stage-handoff`),
 /terms + /privacy (legal reading columns), shop product detail pages (in-flight
 shop sessions), /q and /sequence/[id] (sequence-viewer-shell rule).
 
-### Verification (2026-07-16, Chrome DevTools MCP, scratch server :5190)
+### Third wave — recomposition + fluid ramps (same session)
+
+Austen's verdict on wave 2: *"you scaled the layouts but you didn't recompose
+them. Bigger same thing is not design, it's optimization."* Wave 3 recomposes
+where extra width buys a different composition, and converts the structural
+caps to fluid values so nothing re-freezes above 3840:
+
+- **/notation + /about (PositionTrioGrid):** the alpha/beta/gamma trio breaks
+  out of the reading column into a `clamp(1360px, 35.4vw, 1800px)` media band
+  (via `--band` custom property + negative-margin centring). Images cap at
+  360px — source PNGs are 400×400, so never upscaled.
+- **/guide hub:** recomposed at ≥2200px into a grid: hero spans, then
+  "Available now" links (stacked, left) beside the notify card (right sidebar),
+  old-guides + download list spanning below. The whole hub lands in ONE 4K
+  viewport. Pure CSS grid-template-areas on existing DOM.
+- **FAQ (landing):** two-column grid at ≥2200px (`align-items: start` so an
+  opened item doesn't stretch its row neighbour), container 1560px. Seven
+  questions in one glance.
+- **Fluid ramps** (each expression equals the verified 3840 value AT 3840, then
+  keeps scaling): hero bound `max(1720px, 44.8vw)`, stage
+  `min(64vh, max(960px, 25vw))`, hero title `clamp(4rem, 2.42vw, 9rem)`,
+  editorial column `max(60rem, 25vw)`, page-title `clamp(4.2rem, 2.25vw, 8rem)`,
+  prose `clamp(1.3rem, 0.542vw, 1.6rem)`, cards row `max(1960px, 51vw)`.
+- **Video sources check:** hero clips are 720×1280 portrait. At the 4K stage
+  they render 540×960 (under native); at 5K exactly 1:1. No soft upscaling.
+
+Verified at 5120×2880: hero 2294px, stage 1024×1280, title 124px, editorial
+1280px + 25.6px prose, trio band 1800px — no island at 5K. Verified at 3840
+(guide grid: available x=1169 / notify x=2021 same row; trio band 1360px
+centred; FAQ 2-col). Regressed clean: 1920 (hero 1240/640, FAQ single-column
+760, guide block flow) and 390 (guide stacked, notify 342px).
 
 | Viewport | Result |
 |---|---|

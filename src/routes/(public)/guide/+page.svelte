@@ -407,33 +407,94 @@
     border: 0;
   }
 
-  /* ── 4K / ultrawide: scale the hub so it doesn't read miniature ─────── */
+  /* ── 4K / ultrawide: recompose, don't just enlarge ────────────────────
+     The hub becomes a two-column composition: the hero spans the top, then
+     "Available now" (the two live guide links, stacked) sits LEFT while the
+     notify card sits RIGHT as a true sidebar — the two calls to action share
+     one glance instead of a long scroll. The old-guides intro + list span
+     below. Pure grid placement on existing DOM; below 2200px the original
+     stacked flow is untouched. */
   @media (min-width: 2200px) {
-    .hero {
-      max-width: 980px;
+    .guide {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+      grid-template-areas:
+        "hero hero"
+        "available notify"
+        "old old"
+        "guides guides";
+      column-gap: 96px;
+      /* 45.8vw == 1760px at 3840; fluid past 4K. */
+      max-width: max(1760px, 45.8vw);
+      margin: 0 auto;
+      align-items: start;
     }
+    .hero {
+      grid-area: hero;
+      max-width: 1100px;
+      justify-self: center;
+    }
+    .available {
+      grid-area: available;
+      justify-self: end;
+      text-align: left;
+      max-width: 640px;
+      margin-top: 96px;
+      padding: 0;
+    }
+    /* Stack the two live-guide links so the left column reads as a list. */
+    .available-links {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .guide-link {
+      max-width: none;
+      flex: 0 0 auto;
+      padding: 26px 30px;
+      gap: 8px;
+    }
+    .notify {
+      grid-area: notify;
+      justify-self: start;
+      align-self: stretch;
+      display: flex;
+      align-items: center;
+      margin-top: 96px;
+      padding: 0;
+    }
+    .old-guides {
+      grid-area: old;
+      justify-self: center;
+    }
+    /* GuidesSection's root section spans the full row below. */
+    .guide > :global(.guides) {
+      grid-area: guides;
+    }
+
     h1 {
-      font-size: clamp(3.2rem, 2.2vw, 4.2rem);
+      font-size: clamp(3.2rem, 2.2vw, 4.6rem);
     }
     .lede {
       max-width: 800px;
       font-size: 1.45rem;
     }
-    .available,
     .old-guides {
       max-width: 980px;
     }
     h2 {
       font-size: 2.5rem;
     }
+    .available h2 {
+      font-size: 2.1rem;
+      text-align: left;
+    }
+    .available .note {
+      text-align: left;
+      margin: 0 0 4px;
+    }
     .note {
       font-size: 1.3rem;
       max-width: 760px;
-    }
-    .guide-link {
-      max-width: 400px;
-      padding: 26px 30px;
-      gap: 8px;
     }
     .guide-link-title {
       font-size: 1.7rem;
@@ -442,7 +503,7 @@
       font-size: 1.15rem;
     }
     .notify-card {
-      max-width: 680px;
+      max-width: 640px;
       padding: 52px 48px 48px;
     }
     .notify-card h2 {

@@ -90,6 +90,33 @@
     color: oklch(0.6 0.02 270);
   }
 
+  /* 4K / ultrawide: the trio is the page's only visual — let it break out of
+     the reading column into a wide media band (classic editorial breakout:
+     the negative margins centre a viewport-scaled band on the column).
+     Source PNGs are 400×400, so the 360px cap stays under native. */
+  @media (min-width: 2200px) {
+    .position-grid {
+      /* 35.4vw == 1360px at 3840; the band scales fluidly, but the 1800px cap
+         (and the 360px image cap below) respect the 400×400 source PNGs. */
+      --band: clamp(1360px, 35.4vw, 1800px);
+      width: min(var(--band), 90vw);
+      margin-left: calc(50% - min(var(--band), 90vw) / 2);
+      gap: 2.5rem;
+      margin-block: 3rem;
+    }
+    .position-image-container {
+      max-width: 360px;
+      border-radius: 18px;
+    }
+    .position-name {
+      font-size: 1.4rem;
+      margin-top: 0.4rem;
+    }
+    .position-desc {
+      font-size: 1.1rem;
+    }
+  }
+
   @media (max-width: 768px) {
     .position-image-container {
       max-width: 100px;
