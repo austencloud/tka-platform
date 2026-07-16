@@ -90,8 +90,14 @@ describe("crawl route (paginated, one surface)", () => {
     expect(src).toContain("SegmentedControl"); // the sheet<->flow switcher
     expect(src).toContain("GUIDE_CONTENT"); // single-source content lookup
   });
-  it("keeps the companion off the prerender path (dynamic-imported, client-gated)", () => {
+  it("delegates companion wiring to the shared GuideCompanionHost (also used by level-2)", () => {
     const src = read(host);
+    expect(src).toContain("GuideCompanionHost");
+  });
+  it("GuideCompanionHost keeps the companion off the prerender path (dynamic-imported, client-gated)", () => {
+    const src = read(
+      "src/routes/(public)/guide/_components/GuideCompanionHost.svelte"
+    );
     expect(src).toContain("browser");
     expect(src).toMatch(/import\(["'][^"']*GuideCompanion/); // dynamic import
   });

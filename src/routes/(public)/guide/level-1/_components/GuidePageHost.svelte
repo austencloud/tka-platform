@@ -1,16 +1,16 @@
 <script lang="ts">
   /**
-   * GuidePageHost — ONE guide topic rendered as its own page: the crawlable,
+   * GuidePageHost - ONE guide topic rendered as its own page: the crawlable,
    * prerendered SEO surface AND the interactive reader for that topic, in one
    * component. Replaces the doorway/scroller split (spec:
    * 2026-07-14-guide-crawlable-paginated-reader-design.md).
    *
    * Renders the topic through the sheet⇄flow switcher: FLOW (mobile-first
    * reflow column) is the default so the prerendered HTML Google sees is the
-   * crawlable, mobile-friendly view — Austen's verbatim prose + every
+   * crawlable, mobile-friendly view - Austen's verbatim prose + every
    * pictograph's synchronous describePictograph aria-label. SHEET (the
    * print-faithful 8.5×11 page, the book layout) is the desktop toggle,
-   * rendered from the SAME built _pages component /print and /book use — so the
+   * rendered from the SAME built _pages component /print and /book use - so the
    * book product is reused, never re-authored, never risked.
    *
    * The companion (tap-a-strip-to-animate) reuses GuideReader's exact context
@@ -26,23 +26,10 @@
   import { seoForSlug } from "../_data/guide-page-seo";
   import FlowFrame from "./FlowFrame.svelte";
   import GuidePage from "./GuidePage.svelte";
+  import GuideCompanionHost from "../../_components/GuideCompanionHost.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
-  import {
-    setGuidePrintMode,
-    setGuideSequenceClick,
-    type GuideSequenceClick,
-  } from "../_data/guide-data-context";
-  import { GuideActiveStep, setGuideActiveStep } from "../_data/guide-active-step.svelte";
-  import {
-    SequenceSelection,
-    setSequenceSelection,
-  } from "$lib/shared/selection/sequence-selection.svelte";
-  import "$lib/shared/selection/selection.css";
-  import { stripToSequence } from "../_data/guide-sequence-adapter";
-  import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
+  import { setGuidePrintMode } from "../_data/guide-data-context";
   import { loadOverrides } from "../_data/guide-overrides.svelte";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { GuideFrame } from "../_data/guide-frame-prefs.svelte";
   import "../_styles/guide.css";
 
@@ -63,7 +50,7 @@
   );
 
   // Default FLOW so the prerendered (crawlable) HTML is the mobile-first reflow.
-  // Local state — NOT guideFramePrefs, which defaults to "sheet" on the server
+  // Local state - NOT guideFramePrefs, which defaults to "sheet" on the server
   // and would make prerender emit the mobile-hostile 8.5in sheet. Sheet is an
   // opt-in toggle. Pages with no reflow content yet render sheet-only.
   let frame = $state<GuideFrame>(canFlow ? "flow" : "sheet");
@@ -72,40 +59,9 @@
     if (!canFlow && frame === "flow") frame = "sheet";
   });
 
-  // Pictographs render eagerly (no IntersectionObserver — matches /print, and a
+  // Pictographs render eagerly (no IntersectionObserver - matches /print, and a
   // scaled/off-screen sheet needs it). getGuidePrintMode() → light ink-on-white.
   setGuidePrintMode();
-
-  // Companion wiring — mirrors GuideReader exactly (tap a strip → animate it).
-  const activeStep = new GuideActiveStep();
-  setGuideActiveStep(activeStep);
-  const selection = new SequenceSelection();
-  setSequenceSelection(selection);
-
-  let clicked = $state<SequenceData | null>(null);
-  let companionOpen = $state(false);
-  let clickedPropType = $state<"hand" | "staff" | PropType>("hand");
-  let clickedKey = $state<string | null>(null);
-  let clickedShowPositionGlyph = $state(false);
-
-  async function handleSequenceClick(payload: GuideSequenceClick) {
-    activeStep.begin(payload.key ?? "");
-    selection.select(payload.key ?? "");
-    clickedPropType = payload.propType ?? "hand";
-    const isHand = String(clickedPropType).toLowerCase() === "hand";
-    clickedShowPositionGlyph = payload.showPositionGlyph ?? isHand;
-    clickedKey = payload.key ?? null;
-    const seq = stripToSequence(payload.strip, { word: payload.word });
-    clicked = (await ensureMotionData(seq)) ?? seq;
-    companionOpen = true;
-  }
-  setGuideSequenceClick(handleSequenceClick);
-
-  function closeCompanion() {
-    companionOpen = false;
-    activeStep.clear();
-    selection.clear();
-  }
 
   // Sheet scale-to-fit-width (client-only; sheet is never the SSR default).
   let sheetWrap = $state<HTMLDivElement>();
@@ -113,7 +69,7 @@
 
   // Effective page theme (drives dark-mode pictographs in the flow view). Mirrors
   // the CSS resolution: an explicit data-theme wins, else prefers-color-scheme.
-  // Client-only — the prerendered HTML carries only pictograph aria-labels (the
+  // Client-only - the prerendered HTML carries only pictograph aria-labels (the
   // SVG hydrates), so this never causes an SSR mismatch. Reactive to a theme toggle.
   let isDark = $state(false);
   onMount(() => {
@@ -145,9 +101,10 @@
   });
 </script>
 
+<GuideCompanionHost pageTitle={meta?.title ?? ""} levelLabel="Level 1">
 <main class="guide-page-route">
   <header class="topic-hero">
-    <!-- The Page (sheet) view is a self-titling print reproduction — it paints its
+    <!-- The Page (sheet) view is a self-titling print reproduction - it paints its
          OWN calligraphic title + intro line. Showing the hero title/tagline above
          it repeats both. So the hero title is visually hidden in sheet mode (kept
          in the a11y tree as the page h1) and the tagline is dropped; the reflow
@@ -156,7 +113,7 @@
     {#if seo.tagline && frame === "flow"}<p class="hero-tagline">{seo.tagline}</p>{/if}
     {#if canFlow}
       <!-- SegmentedControl lives under $lib/shared/3d and is on the CF-Worker SSR
-           stub list (25 MiB worker cap — reference_cf_worker_size_limit), so its
+           stub list (25 MiB worker cap - reference_cf_worker_size_limit), so its
            SSR stub is not a valid component and crashes prerender. The toggle is
            interactive-only (no crawl value), so render it client-side; the
            reserved-height wrapper keeps the flow content from shifting when it
@@ -214,28 +171,10 @@
     {/if}
   </nav>
 </main>
-
-{#if browser && companionOpen}
-  {#await import("./GuideCompanion.svelte") then Comp}
-    <div class="companion-drawer" role="dialog" aria-label="Animation companion">
-      <Comp.default
-        sequence={clicked}
-        propType={clickedPropType}
-        stripKey={clickedKey}
-        pageTitle={meta?.title ?? ""}
-        levelLabel="Level 1"
-        showPositionGlyph={clickedShowPositionGlyph}
-        isCodexMode={false}
-        isMobile={true}
-        onStep={(s: number) => activeStep.report(s)}
-        onClose={closeCompanion}
-      />
-    </div>
-  {/await}
-{/if}
+</GuideCompanionHost>
 
 <style>
-  /* Standalone editorial topic page — owns its light/dark palette (not the app's
+  /* Standalone editorial topic page - owns its light/dark palette (not the app's
      dark-canvas --theme-* vars) and hands FlowFrame the matching --ink. */
   .guide-page-route {
     min-height: 100vh;
@@ -246,7 +185,7 @@
     --ink-dim: #555;
     --glyph-invert: 0;
     /* Size container so FlowFrame's card rows can break out to a fraction of THIS
-       route's width (cqw) — using wide/4K screens — while the reading column stays
+       route's width (cqw) - using wide/4K screens - while the reading column stays
        narrow. inline-size only: block-size (min-height: 100vh) is unaffected. */
     container-type: inline-size;
   }
@@ -295,7 +234,7 @@
     display: flex;
     justify-content: center;
     /* Reserve the toggle's height so it doesn't shift the flow content when it
-       hydrates in client-side (it renders SSR-empty — see the browser gate). */
+       hydrates in client-side (it renders SSR-empty - see the browser gate). */
     min-height: 50px;
   }
   .frame-toggle :global(.segmented-control) {
@@ -374,22 +313,6 @@
   }
   .nav-spacer {
     flex: 1 1 0;
-  }
-
-  /* Companion appears on strip-click as a fixed bottom drawer — an overlay, so it
-     never shifts page layout (no-layout-shift). */
-  .companion-drawer {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 60;
-    max-height: 92svh;
-    background: #14141b;
-    color: #ececf2;
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 16px 16px 0 0;
-    box-shadow: 0 -8px 28px rgba(0, 0, 0, 0.4);
   }
 
   @media (prefers-color-scheme: dark) {

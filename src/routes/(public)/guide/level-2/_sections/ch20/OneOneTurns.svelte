@@ -16,6 +16,7 @@
    * motions" rule.
    */
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
+  import SequenceShowcase from "../../../level-1/_components/SequenceShowcase.svelte";
   import TurnStrip, { type TurnStripFrame } from "../../_components/TurnStrip.svelte";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import {
@@ -28,7 +29,7 @@
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { HalfwayMotion } from "../../_data/halfway-pose";
-  import { bakeReversals } from "../../../level-1/_data/guide-sequence-adapter";
+  import { bakeReversals, stripToSequence } from "../../../level-1/_data/guide-sequence-adapter";
 
   const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
   const { IN, OUT } = Orientation;
@@ -115,22 +116,23 @@
       { kind: "end", step: { ...endStep, stepNumber: 0 } as unknown as StepData, frameLabel: "end", thumbLabel: opts.endThumb },
       { kind: "combined", step: combinedStep, animKey, word: opts.word, rowSteps },
     ];
-    return frames;
+    const sequence = stripToSequence(rowSteps, { word: opts.word, name: opts.word });
+    return { frames, sequence };
   }
 
-  const dFrames = makeStrip({
+  const { frames: dFrames, sequence: dSequence } = makeStrip({
     id: "d", word: "D-One-One", endThumb: "out",
     blue: H(PRO, N, W, CCW), red: H(PRO, N, E, CW),
   });
-  const iFrames = makeStrip({
+  const { frames: iFrames, sequence: iSequence } = makeStrip({
     id: "i", word: "I-One-One", endThumb: "mixed",
     blue: H(ANTI, E, SO_, CCW), red: H(PRO, E, SO_, CW),
   });
-  const nFrames = makeStrip({
+  const { frames: nFrames, sequence: nSequence } = makeStrip({
     id: "n", word: "N-One-One", endThumb: "in", halfThumb: "out",
     blue: H(ANTI, SO_, E, CW), red: H(ANTI, W, N, CCW),
   });
-  const vFrames = makeStrip({
+  const { frames: vFrames, sequence: vSequence } = makeStrip({
     id: "v", word: "V-One-One", endThumb: "mixed",
     blue: H(ANTI, W, N, CCW), red: H(PRO, SO_, W, CW),
   });
@@ -146,10 +148,34 @@
     <p>Pause at the halfway point of each motion while learning. This will ensure accurate timing.</p>
   </div>
 
-  <TurnStrip frames={dFrames} caption="D-One-One: both hands with a turn, start, halfway, end, full motion" />
-  <TurnStrip frames={iFrames} caption="I-One-One: both hands with a turn, start, halfway, end, full motion" />
-  <TurnStrip frames={nFrames} caption="N-One-One: both hands with a turn, start, halfway, end, full motion" />
-  <TurnStrip frames={vFrames} caption="V-One-One: both hands with a turn, start, halfway, end, full motion" />
+  <div class="showcase-wrap">
+    <SequenceShowcase variant="compact" sequence={dSequence} items={[]} bpm={60}>
+      {#snippet strip()}
+        <TurnStrip frames={dFrames} caption="D-One-One: both hands with a turn, start, halfway, end, full motion" />
+      {/snippet}
+    </SequenceShowcase>
+  </div>
+  <div class="showcase-wrap">
+    <SequenceShowcase variant="compact" sequence={iSequence} items={[]} bpm={60}>
+      {#snippet strip()}
+        <TurnStrip frames={iFrames} caption="I-One-One: both hands with a turn, start, halfway, end, full motion" />
+      {/snippet}
+    </SequenceShowcase>
+  </div>
+  <div class="showcase-wrap">
+    <SequenceShowcase variant="compact" sequence={nSequence} items={[]} bpm={60}>
+      {#snippet strip()}
+        <TurnStrip frames={nFrames} caption="N-One-One: both hands with a turn, start, halfway, end, full motion" />
+      {/snippet}
+    </SequenceShowcase>
+  </div>
+  <div class="showcase-wrap">
+    <SequenceShowcase variant="compact" sequence={vSequence} items={[]} bpm={60}>
+      {#snippet strip()}
+        <TurnStrip frames={vFrames} caption="V-One-One: both hands with a turn, start, halfway, end, full motion" />
+      {/snippet}
+    </SequenceShowcase>
+  </div>
 
   <div class="section-body">
     <h3>Type 2</h3>
@@ -190,5 +216,11 @@
   }
   .section-body :global(h3:first-child) {
     margin-top: 0;
+  }
+  .showcase-wrap {
+    grid-column: full-start / full-end;
+    max-width: 56rem;
+    margin: 1.9rem auto;
+    padding: 0 2rem;
   }
 </style>

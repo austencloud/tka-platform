@@ -39,6 +39,7 @@
     variant = "feature",
     pool,
     text,
+    strip,
   }: {
     /** Playable sequence for the animation canvas (the DEFAULT / entry-0 example). */
     sequence: SequenceData;
@@ -66,6 +67,16 @@
     pool?: PoolEntry[];
     /** The text slot: heading + prose (feature) or word + caption (compact). */
     text?: Snippet;
+    /**
+     * Override for the strip: when provided, renders in place of the internal
+     * GuideStepStrip in BOTH variants (e.g. level-2's TurnStrip breakdown -
+     * start/halfway/end/combined - rather than a plain pictograph row). The
+     * canvas still plays `sequence`; the override is presentation-only for the
+     * strip slot. Pool cycling is unsupported with a strip override (the pool
+     * exists to refresh GuideStepStrip's own items - a fixed strip snippet has
+     * no per-entry variant to cycle to) - if both are passed, `pool` is ignored.
+     */
+    strip?: Snippet;
   } = $props();
 
   const propType = $derived(render?.propType ?? PropType.HAND);
@@ -73,10 +84,12 @@
   // ── Example cycling ────────────────────────────────────────────────────────
   // Index is CLIENT state (default 0), so entries 1+ never render server-side -
   // only the default example's strip prerenders (the SEO / page-weight split).
+  // A `strip` override disables the pool (see the prop doc above).
   let exampleIndex = $state(0);
-  const hasPool = $derived(!!pool && pool.length > 1);
-  const total = $derived(pool?.length ?? 1);
-  const entry = $derived(pool?.[exampleIndex]);
+  const effectivePool = $derived(strip ? undefined : pool);
+  const hasPool = $derived(!!effectivePool && effectivePool.length > 1);
+  const total = $derived(effectivePool?.length ?? 1);
+  const entry = $derived(effectivePool?.[exampleIndex]);
   // Current strip: the pool entry's items, or the plain `items` prop.
   const curItems = $derived(entry ? entry.items : items);
   // Current playable sequence: entry 0 reuses the SSR'd `sequence` prop
@@ -186,9 +199,13 @@
         {@render player()}
       </div>
       <div class="compact-right">
-        <!-- The label rides in the strip's start ROW - beside the start box,
-             filling the band the tab layout leaves free. -->
-        <GuideStepStrip {items} {stepLabels} {render} {picTheme} startAside={text} />
+        {#if strip}
+          {@render strip()}
+        {:else}
+          <!-- The label rides in the strip's start ROW - beside the start box,
+               filling the band the tab layout leaves free. -->
+          <GuideStepStrip {items} {stepLabels} {render} {picTheme} startAside={text} />
+        {/if}
       </div>
     </div>
   {:else}
@@ -202,7 +219,9 @@
       </div>
     </div>
 
-    {#if hasPool}
+    {#if strip}
+      {@render strip()}
+    {:else if hasPool}
       <!-- Every pool entry has the same step count → the same strip height, so a
            keyed Crossfade swaps cleanly with zero layout shift (crossfade rule:
            cheap identical-height content, not the heavy no-remount path). -->

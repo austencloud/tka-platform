@@ -6,6 +6,7 @@
    * source of truth for this data).
    */
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
+  import SequenceShowcase from "../../../level-1/_components/SequenceShowcase.svelte";
   import TurnStrip, { type TurnStripFrame } from "../../_components/TurnStrip.svelte";
   import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
@@ -18,7 +19,7 @@
   import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import { bakeReversals } from "../../../level-1/_data/guide-sequence-adapter";
+  import { bakeReversals, stripToSequence } from "../../../level-1/_data/guide-sequence-adapter";
 
   const { NORTH: N, SOUTH: SO_ } = GridLocation;
   const { IN, OUT } = Orientation;
@@ -117,6 +118,10 @@
       rowSteps: rowSteps("l2a-td-dash-q"),
     },
   ];
+  const quartersSequence = stripToSequence(rowSteps("l2a-td-dash-q"), {
+    word: ANIM["l2a-td-dash-q"].word,
+    name: ANIM["l2a-td-dash-q"].word,
+  });
 
   const halvesFrames: TurnStripFrame[] = [
     { kind: "start", step: animStep(stat("h-start", SO_, IN), 0, SO_), frameLabel: "start", thumbLabel: "in" },
@@ -140,6 +145,10 @@
       rowSteps: rowSteps("l2a-td-dash-h"),
     },
   ];
+  const halvesSequence = stripToSequence(rowSteps("l2a-td-dash-h"), {
+    word: ANIM["l2a-td-dash-h"].word,
+    name: ANIM["l2a-td-dash-h"].word,
+  });
 </script>
 
 <GuideSection id="double-turn-dashes" title="Dashes">
@@ -149,10 +158,16 @@
     </p>
   </div>
 
-  <TurnStrip
-    frames={quartersFrames}
-    caption="Dash with 2 turns, south to north, broken into quarters: start, quarter, halfway, three-quarter, end, full motion"
-  />
+  <div class="showcase-wrap">
+    <SequenceShowcase variant="compact" sequence={quartersSequence} items={[]} bpm={60}>
+      {#snippet strip()}
+        <TurnStrip
+          frames={quartersFrames}
+          caption="Dash with 2 turns, south to north, broken into quarters: start, quarter, halfway, three-quarter, end, full motion"
+        />
+      {/snippet}
+    </SequenceShowcase>
+  </div>
 
   <div class="section-body">
     <p>
@@ -168,10 +183,16 @@
     </p>
   </div>
 
-  <TurnStrip
-    frames={halvesFrames}
-    caption="The same dash with 2 turns, broken in half: start, halfway, end, full motion"
-  />
+  <div class="showcase-wrap">
+    <SequenceShowcase variant="compact" sequence={halvesSequence} items={[]} bpm={60}>
+      {#snippet strip()}
+        <TurnStrip
+          frames={halvesFrames}
+          caption="The same dash with 2 turns, broken in half: start, halfway, end, full motion"
+        />
+      {/snippet}
+    </SequenceShowcase>
+  </div>
 </GuideSection>
 
 <style>
@@ -186,5 +207,11 @@
   }
   .section-body :global(p:last-child) {
     margin-bottom: 0;
+  }
+  .showcase-wrap {
+    grid-column: full-start / full-end;
+    max-width: 56rem;
+    margin: 1.9rem auto;
+    padding: 0 2rem;
   }
 </style>
