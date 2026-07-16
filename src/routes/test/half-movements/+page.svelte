@@ -1,19 +1,25 @@
 <!--
-  Half-Movement Lattice — Phase 2b review harness
+  Half-Movement Matrix — Phase 2b review harness
 
-  One cell per 45deg halved movement, rendered as a REAL pictograph through the
-  production pipeline (buildHalvedStep -> PictographContainer), so rotation,
-  mirroring, placement, and glyph scale can be reviewed movement by movement:
+  Bird's-eye COVERAGE MATRIX: rows = motion type, columns = turns value. Every
+  cell is one (motionType, turns) family rendered as a REAL pictograph through
+  the production pipeline (buildHalvedStep -> PictographContainer):
 
-    Pro/Anti  — every cardinal start x both rotation directions (8 each):
-                N->NE, E->SE, S->SW, W->NW (cw) and N->NW, W->SW, S->SE, E->NE (ccw)
-    Dash      — every cardinal pair through center, both directions (8)
-    Static    — every cardinal, both directions (8)
+    green  = per-turns glyph art exists (asset {mt}_half_{turns}.svg)
+    orange = engine-legal but NO ART yet (renders fallback art — the
+             Illustrator work list; scripts/half-domain-coverage.mjs is the
+             coverage authority)
+    grey ✕ = not pipeline-representable (dash/static have no fl turns)
 
-  The last section renders the equivalent FULL (non-halved) pictographs with the
-  regular arrow assets — the scale reference the half glyphs must sit naturally
-  beside. Motion recipes (turns/orientations) reuse the guide pages' proven
-  combos; only locations and rotation direction vary.
+  Click a matrix cell to pop open that family's 8 VARIATIONS (every start
+  point x both directions) and WASD-edit the arrow placement. Adjustments are
+  authored in GLYPH-LOCAL space shared per family — one nudge moves all 8
+  variations coherently — and AUTOSAVE as canon into the default placement
+  JSONs the pipeline reads (dev-only ./save endpoint).
+
+  Structurally blocked families (float motions, skews, hash center-dashes,
+  quarter fractions) are pipeline work, not art holes — they live outside this
+  matrix entirely.
 -->
 <script lang="ts">
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
@@ -21,6 +27,7 @@
   import { createArrowPlacementData } from "$lib/shared/pictograph/arrow/positioning/placement/domain/create-arrow-placement-data";
   import { calculateSegmentRotation } from "$lib/shared/pictograph/arrow/positioning/calculation/services/segment-rotation";
   import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
+  import { HALF_ASSET_TURNS } from "$lib/shared/pictograph/arrow/rendering/services/half-asset-manifest";
   import {
     MotionType,
     MotionColor,
@@ -48,6 +55,9 @@
     [GridLocation.CENTER]: "center",
   };
 
+  type Turns = number | "fl";
+  const turnsLabel = (t: Turns) => (t === "fl" ? "fl" : String(t));
+
   // Full-motion step (red staff + invisible blue placeholder, per the
   // both-hands step contract buildHalvedStep expects).
   const fullStep = (
@@ -58,7 +68,7 @@
     startOri: Orientation,
     endOri: Orientation,
     rot: RotationDirection,
-    turns: number
+    turns: Turns
   ): StepData =>
     ({
       id: `hm-${id}`,
@@ -74,7 +84,7 @@
           endLocation: to,
           startOrientation: startOri,
           endOrientation: endOri,
-          turns,
+          turns: turns as number,
           color: MotionColor.RED,
           propType: PropType.STAFF,
           gridMode: GridMode.DIAMOND,
@@ -213,13 +223,17 @@
   };
 
   const onKeydown = (e: KeyboardEvent) => {
-    if (!selected || !selectedMeta) return;
     const k = e.key.toLowerCase();
     if (k === "escape") {
-      selected = null;
-      selectedMeta = null;
+      if (selected) {
+        selected = null;
+        selectedMeta = null;
+      } else {
+        expanded = null;
+      }
       return;
     }
+    if (!selected || !selectedMeta) return;
     if (k === "r") {
       e.preventDefault();
       adjustments = { ...adjustments, [selectedMeta.key]: { x: 0, y: 0 } };
@@ -249,20 +263,20 @@
   };
   // ───────────────────────────────────────────────────────────────────────────
 
-  type Cell = { label: string; sub: string; step: StepData | null; meta: CellMeta | null; hole?: boolean };
+  type Cell = { label: string; sub: string; step: StepData | null; meta: CellMeta | null };
 
   const dirWord = (rot: RotationDirection) => (rot === CW ? "cw" : "ccw");
 
-  // Guide-proven recipes: pro t1 in->out, anti t1 in->in, dash t2 in->out,
-  // static t2 in->in. Locations/directions are the swept variable.
+  // Guide-proven recipes: pro t1 in->out, dash in->out, everything else
+  // in->in. The declared full-step endOri doesn't drive the halfway state —
+  // calculateOrientationAt samples the engine at t from startOri + turns —
+  // but we keep the proven values where they're known.
   //
   // For a shift the hand-path direction is fixed by start->end; the motion's
   // rotationDirection is the PROP rotation, which is derived: pro = same as
   // the path, anti = opposite (TurnsPage: PRO E->S carries CW, ANTI E->S
   // carries CCW). `pathCw` is the swept axis; rot falls out of it.
-  const shiftCell = (type: MotionType, from: GridLocation, to: GridLocation, pathCw: boolean, turns: 1 | 2): Cell => {
-    // Guide-proven end orientations: pro t1 in->out (TurnsPage), everything
-    // else here in->in (TurnsPage anti, TwoTurnsShiftsPage pro/anti t2).
+  const shiftCell = (type: MotionType, from: GridLocation, to: GridLocation, pathCw: boolean, turns: Turns): Cell => {
     const endOri = type === MotionType.PRO && turns === 1 ? OUT : IN;
     const propCw = type === MotionType.PRO ? pathCw : !pathCw;
     const rot = propCw ? CW : CCW;
@@ -271,29 +285,29 @@
     const mid = half?.motions?.red?.endLocation;
     return {
       label: `${LOC_SHORT[from]} → ${mid ? LOC_SHORT[mid] : "?"}`,
-      sub: `${type} · half of ${LOC_SHORT[from]}→${LOC_SHORT[to]}, ${turns} turn${turns > 1 ? "s" : ""} · path ${pathCw ? "cw" : "ccw"}, prop ${dirWord(rot)}`,
+      sub: `${type} t${turnsLabel(turns)} · half of ${LOC_SHORT[from]}→${LOC_SHORT[to]} · path ${pathCw ? "cw" : "ccw"}, prop ${dirWord(rot)}`,
       step: half,
       meta: metaOf(half),
     };
   };
 
-  const dashCell = (from: GridLocation, to: GridLocation, rot: RotationDirection): Cell => {
-    const full = fullStep(`dash-${from}-${to}-${dirWord(rot)}`, MotionType.DASH, from, to, IN, OUT, rot, 2);
+  const dashCell = (from: GridLocation, to: GridLocation, rot: RotationDirection, turns: Turns): Cell => {
+    const full = fullStep(`dash-${from}-${to}-${dirWord(rot)}-t${turns}`, MotionType.DASH, from, to, IN, OUT, rot, turns);
     const half = buildHalvedStep(full, 0.5);
     return {
       label: `${LOC_SHORT[from]} → center`,
-      sub: `dash ${dirWord(rot)} · half of ${LOC_SHORT[from]}→${LOC_SHORT[to]}, 2 turns`,
+      sub: `dash t${turnsLabel(turns)} ${dirWord(rot)} · half of ${LOC_SHORT[from]}→${LOC_SHORT[to]}`,
       step: half,
       meta: metaOf(half),
     };
   };
 
-  const staticCell = (at: GridLocation, rot: RotationDirection): Cell => {
-    const full = fullStep(`static-${at}-${dirWord(rot)}`, MotionType.STATIC, at, at, IN, IN, rot, 2);
+  const staticCell = (at: GridLocation, rot: RotationDirection, turns: Turns): Cell => {
+    const full = fullStep(`static-${at}-${dirWord(rot)}-t${turns}`, MotionType.STATIC, at, at, IN, IN, rot, turns);
     const half = buildHalvedStep(full, 0.5);
     return {
       label: `${LOC_SHORT[at]} (static)`,
-      sub: `static ${dirWord(rot)} · half of 2 turns at ${LOC_SHORT[at]}`,
+      sub: `static t${turnsLabel(turns)} ${dirWord(rot)} · at ${LOC_SHORT[at]}`,
       step: half,
       meta: metaOf(half),
     };
@@ -304,11 +318,6 @@
   const cwEnd = (from: GridLocation) => RING[(RING.indexOf(from as (typeof RING)[number]) + 1) % 4]!;
   const ccwEnd = (from: GridLocation) => RING[(RING.indexOf(from as (typeof RING)[number]) + 3) % 4]!;
 
-  const shiftCells = (type: MotionType, turns: 1 | 2): Cell[] => [
-    ...RING.map((from) => shiftCell(type, from, cwEnd(from), true, turns)),
-    ...RING.map((from) => shiftCell(type, from, ccwEnd(from), false, turns)),
-  ];
-
   const OPPOSITE: [GridLocation, GridLocation][] = [
     [N, S],
     [E, W],
@@ -316,96 +325,120 @@
     [W, E],
   ];
 
-  type Section = { title: string; note: string; cells: Cell[] };
-  const SECTIONS: Section[] = [
-    {
-      title: "Pro halves — 1 turn",
-      note: "path-cw row then path-ccw row — each cell is the first half of a 1-turn prospin shift (prop rotation = path direction)",
-      cells: shiftCells(MotionType.PRO, 1),
-    },
-    {
-      title: "Anti halves — 1 turn",
-      note: "path-cw row then path-ccw row — each cell is the first half of a 1-turn antispin shift (prop rotation = opposite of path)",
-      cells: shiftCells(MotionType.ANTI, 1),
-    },
-    {
-      title: "Pro halves — 2 turns",
-      note: "the per-turns glyph family: 2-turn halfway uses its own drawn asset (pro_half_2.0)",
-      cells: shiftCells(MotionType.PRO, 2),
-    },
-    {
-      title: "Anti halves — 2 turns",
-      note: "the per-turns glyph family: 2-turn halfway uses its own drawn asset (anti_half_2.0)",
-      cells: shiftCells(MotionType.ANTI, 2),
-    },
-    {
-      title: "Dash halves",
-      note: "midpoint is always center — cw then ccw",
-      cells: [
-        ...OPPOSITE.map(([f, t]) => dashCell(f, t, CW)),
-        ...OPPOSITE.map(([f, t]) => dashCell(f, t, CCW)),
-      ],
-    },
-    {
-      title: "Static halves",
-      note: "staff stays at its point — cw then ccw",
-      cells: [...RING.map((at) => staticCell(at, CW)), ...RING.map((at) => staticCell(at, CCW))],
-    },
-  ];
+  /** Every variation of one family: all start points x both directions. */
+  const variationCells = (mt: MotionType, turns: Turns): Cell[] => {
+    if (mt === MotionType.PRO || mt === MotionType.ANTI) {
+      return [
+        ...RING.map((from) => shiftCell(mt, from, cwEnd(from), true, turns)),
+        ...RING.map((from) => shiftCell(mt, from, ccwEnd(from), false, turns)),
+      ];
+    }
+    if (mt === MotionType.DASH) {
+      return [
+        ...OPPOSITE.map(([f, t]) => dashCell(f, t, CW, turns)),
+        ...OPPOSITE.map(([f, t]) => dashCell(f, t, CCW, turns)),
+      ];
+    }
+    return [
+      ...RING.map((at) => staticCell(at, CW, turns)),
+      ...RING.map((at) => staticCell(at, CCW, turns)),
+    ];
+  };
 
-  // One example per (motionType, turns) family — the primary review grid.
-  // Covered families use their per-turns glyph; the rest render fallback art
-  // and are flagged as ART HOLES (scripts/half-domain-coverage.mjs is the
-  // authority). Every cell is WASD-adjustable; one nudge = the whole family.
-  const FAMILY_TURNS: Record<string, (number | "fl")[]> = {
-    [MotionType.PRO]: [0, 0.5, 1, 1.5, 2, 2.5, 3, "fl"],
-    [MotionType.ANTI]: [0, 0.5, 1, 1.5, 2, 2.5, 3, "fl"],
-    [MotionType.DASH]: [0, 0.5, 1, 1.5, 2, 2.5, 3],
-    [MotionType.STATIC]: [0, 0.5, 1, 1.5, 2, 2.5, 3],
+  // ── Coverage matrix ────────────────────────────────────────────────────────
+  // scripts/half-domain-coverage.mjs is the authority behind these sets.
+  const ALL_TURNS: Turns[] = [0, 0.5, 1, 1.5, 2, 2.5, 3, "fl"];
+  const MT_ORDER = [MotionType.PRO, MotionType.ANTI, MotionType.DASH, MotionType.STATIC] as const;
+
+  const LEGAL_TURNS: Record<string, Set<Turns>> = {
+    [MotionType.PRO]: new Set(ALL_TURNS),
+    [MotionType.ANTI]: new Set(ALL_TURNS),
+    [MotionType.DASH]: new Set(ALL_TURNS.filter((t) => t !== "fl")),
+    [MotionType.STATIC]: new Set(ALL_TURNS.filter((t) => t !== "fl")),
   };
-  const COVERED: Record<string, Set<number | "fl">> = {
-    [MotionType.PRO]: new Set([1, 2]),
-    [MotionType.ANTI]: new Set([1, 2]),
-    [MotionType.DASH]: new Set([2]),
-    [MotionType.STATIC]: new Set([2]),
-  };
+  // Coverage comes from the generated manifest (single source of truth shared
+  // with the arrow path resolver) — ingesting new art via
+  // scripts/ingest-half-arrows.mjs flips cells green here automatically.
+  const COVERED: Record<string, ReadonlySet<Turns>> = HALF_ASSET_TURNS;
+
+  type Status = "covered" | "hole" | "blocked";
+  const statusOf = (mt: MotionType, t: Turns): Status =>
+    !LEGAL_TURNS[mt]!.has(t) ? "blocked" : COVERED[mt]!.has(t) ? "covered" : "hole";
+
+  const familyKey = (mt: MotionType, t: Turns) => `${mt}_t${t}`;
+
+  // One representative pictograph per family, for the matrix minis.
   const FAMILY_SHAPE: Record<string, [GridLocation, GridLocation]> = {
     [MotionType.PRO]: [E, S],
     [MotionType.ANTI]: [E, S],
     [MotionType.DASH]: [S, N],
     [MotionType.STATIC]: [E, E],
   };
-  const familyCell = (type: MotionType, turns: number | "fl"): Cell | null => {
-    const [from, to] = FAMILY_SHAPE[type]!;
-    const rot = type === MotionType.ANTI ? CCW : type === MotionType.PRO ? CW : CCW;
-    const full = fullStep(
-      `family-${type}-${turns}`,
-      type,
-      from,
-      to,
-      IN,
-      IN,
-      rot,
-      turns as number
-    );
+  const familyCell = (mt: MotionType, turns: Turns): Cell | null => {
+    const [from, to] = FAMILY_SHAPE[mt]!;
+    const rot = mt === MotionType.PRO ? CW : CCW;
+    const full = fullStep(`family-${mt}-${turns}`, mt, from, to, IN, IN, rot, turns);
     const half = buildHalvedStep(full, 0.5);
     if (!half) return null;
-    const hole = !COVERED[type]!.has(turns);
     return {
-      label: `${type} · ${turns} turn${turns === 1 ? "" : "s"}`,
-      sub: hole
-        ? `NO ART — renders fallback ${type}_half.svg`
-        : `asset ${type}_half_${typeof turns === "number" ? turns.toFixed(1) : turns}.svg · ${LOC_SHORT[from]}→${LOC_SHORT[to]}`,
+      label: `${mt} · t${turnsLabel(turns)}`,
+      sub: familyKey(mt, turns),
       step: half,
       meta: metaOf(half),
-      hole,
     };
   };
-  const FAMILIES: Cell[] = Object.entries(FAMILY_TURNS).flatMap(([mt, list]) =>
-    list.map((t) => familyCell(mt as MotionType, t)).filter((c): c is Cell => c !== null)
+  const FAMILY_CELLS: Record<string, Cell | null> = Object.fromEntries(
+    MT_ORDER.flatMap((mt) =>
+      ALL_TURNS.filter((t) => LEGAL_TURNS[mt]!.has(t)).map((t) => [
+        familyKey(mt, t),
+        familyCell(mt, t),
+      ])
+    )
   );
 
-  let showLattice = $state(false);
+  // Completion stats — the math-brain readout.
+  const rowLegal = (mt: MotionType) => LEGAL_TURNS[mt]!.size;
+  const rowCovered = (mt: MotionType) => COVERED[mt]!.size;
+  const TOTAL_LEGAL = MT_ORDER.reduce((n, mt) => n + rowLegal(mt), 0);
+  const TOTAL_COVERED = MT_ORDER.reduce((n, mt) => n + rowCovered(mt), 0);
+  const COVERED_PCT = Math.round((TOTAL_COVERED / TOTAL_LEGAL) * 100);
+
+  const isTuned = (key: string) => {
+    const a = adjustments[key];
+    return !!a && (a.x !== 0 || a.y !== 0);
+  };
+  const tunedCount = $derived(
+    MT_ORDER.flatMap((mt) =>
+      ALL_TURNS.filter((t) => LEGAL_TURNS[mt]!.has(t)).map((t) => familyKey(mt, t))
+    ).filter(isTuned).length
+  );
+
+  // ── Expansion ──────────────────────────────────────────────────────────────
+  let expanded = $state<{ mt: MotionType; turns: Turns } | null>(null);
+  let panelEl = $state<HTMLElement | null>(null);
+
+  const variations = $derived(expanded ? variationCells(expanded.mt, expanded.turns) : []);
+
+  const expandFamily = (mt: MotionType, t: Turns) => {
+    if (expanded?.mt === mt && expanded?.turns === t) {
+      expanded = null;
+      selected = null;
+      selectedMeta = null;
+      return;
+    }
+    expanded = { mt, turns: t };
+    // Auto-select the first variation so WASD works immediately (any
+    // variation edits the shared family value anyway).
+    const first = variationCells(mt, t).find((c) => c.meta);
+    selected = first?.sub ?? null;
+    selectedMeta = first?.meta ?? null;
+  };
+
+  $effect(() => {
+    if (expanded && panelEl) {
+      panelEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  });
 
   // Scale reference: the SAME motions un-halved, rendered with the regular
   // arrow assets. The half glyphs should read as the same pen weight as these.
@@ -455,14 +488,16 @@
 <svelte:window onkeydown={onKeydown} />
 
 <div class="page">
-  <h1>Half-Movement Lattice</h1>
+  <h1>Half-Movement Matrix</h1>
   <p class="subtitle">
-    One example per (motion&nbsp;type, turns) family, rendered by the real
-    pipeline. Click a cell, then <strong>WASD</strong> to move its glyph
-    (Shift = 20px, Ctrl+Shift = 200px, <strong>R</strong> = reset,
-    <strong>Esc</strong> = deselect). One nudge moves the whole family —
-    adjustments live in glyph-local space and <strong>autosave into the
-    placement JSONs</strong>: what you set here is canon everywhere.
+    Rows = motion type, columns = turns. <span class="lg green">green</span> =
+    art exists, <span class="lg orange">orange</span> = engine-legal but no art
+    yet, <span class="lg grey">✕</span> = not representable. Click a cell to
+    open its 8 variations, then <strong>WASD</strong> to move the glyph
+    (Shift&nbsp;=&nbsp;20px, Ctrl+Shift&nbsp;=&nbsp;200px,
+    <strong>R</strong>&nbsp;=&nbsp;reset, <strong>Esc</strong>&nbsp;=&nbsp;close).
+    One nudge moves the whole family and <strong>autosaves as canon</strong>
+    into the placement JSONs.
   </p>
 
   <div class="panel">
@@ -497,73 +532,107 @@
     <button type="button" class="copy-btn" onclick={copyJson}>Copy JSON</button>
   </div>
 
-  <h2>All families — one example each</h2>
-  <p class="note">
-    orange = art hole (renders fallback art of the wrong turns value — the
-    Illustrator work list; source of truth: scripts/half-domain-coverage.mjs)
-  </p>
-  <div class="grid">
-    {#each FAMILIES as cell (cell.label)}
-      <div
-        class="cell"
-        class:hole={cell.hole}
-        class:selected={selected === cell.label}
-        onclick={() => selectCell(cell.label, cell.meta)}
-        onkeydown={(e) => (e.key === "Enter" || e.key === " ") && selectCell(cell.label, cell.meta)}
-        role="button"
-        tabindex="0"
-      >
-        <div class="label">{cell.label}</div>
-        <div class="stage">
-          {#if cell.step}
-            <PictographContainer
-              pictographData={withAdjustment(cell.step, cell.meta)}
-              gridMode={GridMode.DIAMOND}
-              redPropTypeOverride={PropType.STAFF}
-              {...PICTO_FLAGS}
-            />
-          {/if}
-        </div>
-        <div class="sub" class:hole-sub={cell.hole}>{cell.sub}</div>
-      </div>
+  <div class="stats">
+    <div class="stat-line">
+      <strong>Art coverage: {TOTAL_COVERED} / {TOTAL_LEGAL} families ({COVERED_PCT}%)</strong>
+      <span class="stat-tuned">placement tuned: {tunedCount} / {TOTAL_LEGAL}</span>
+    </div>
+    <div class="progress" role="progressbar" aria-valuenow={COVERED_PCT} aria-valuemin="0" aria-valuemax="100">
+      <div class="progress-fill" style:width="{COVERED_PCT}%"></div>
+    </div>
+  </div>
+
+  <div class="matrix">
+    <div class="corner"></div>
+    {#each ALL_TURNS as t (t)}
+      <div class="col-head">{turnsLabel(t)}</div>
+    {/each}
+    <div class="col-head row-stat-head">row</div>
+
+    {#each MT_ORDER as mt (mt)}
+      <div class="row-head">{mt}</div>
+      {#each ALL_TURNS as t (t)}
+        {@const st = statusOf(mt, t)}
+        {#if st === "blocked"}
+          <div class="mcell blocked" title="no {turnsLabel(t)}-turns {mt} halves — not pipeline-representable">✕</div>
+        {:else}
+          {@const cell = FAMILY_CELLS[familyKey(mt, t)]}
+          <button
+            type="button"
+            class="mcell {st}"
+            class:open={expanded?.mt === mt && expanded?.turns === t}
+            onclick={() => expandFamily(mt, t)}
+            title="{mt} · {turnsLabel(t)} turns — {st === 'covered' ? `asset ${mt}_half${typeof t === 'number' ? `_${t.toFixed(1)}` : `_${t}`}.svg` : 'NO ART (fallback shown)'}"
+          >
+            <div class="mini">
+              {#if cell?.step}
+                <PictographContainer
+                  pictographData={withAdjustment(cell.step, cell.meta)}
+                  gridMode={GridMode.DIAMOND}
+                  redPropTypeOverride={PropType.STAFF}
+                  {...PICTO_FLAGS}
+                />
+              {/if}
+            </div>
+            {#if st === "hole"}
+              <span class="tag">no art</span>
+            {/if}
+            {#if isTuned(familyKey(mt, t))}
+              <span class="dot" title="placement tuned"></span>
+            {/if}
+          </button>
+        {/if}
+      {/each}
+      <div class="row-stat">{rowCovered(mt)}/{rowLegal(mt)}</div>
     {/each}
   </div>
 
-  <button type="button" class="lattice-toggle" onclick={() => (showLattice = !showLattice)}>
-    {showLattice ? "Hide" : "Show"} full lattice (every start point and direction)
-  </button>
+  <p class="note center">
+    Outside this matrix (pipeline-blocked, not art holes): float motions,
+    skewed motions, hash (center-touching dashes), quarter fractions.
+  </p>
 
-  {#each showLattice ? SECTIONS : [] as section (section.title)}
-    <h2>{section.title}</h2>
-    <p class="note">{section.note}</p>
-    <div class="grid">
-      {#each section.cells as cell (cell.sub)}
-        <div
-          class="cell"
-          class:selected={selected === cell.sub}
-          onclick={() => selectCell(cell.sub, cell.meta)}
-          onkeydown={(e) => (e.key === "Enter" || e.key === " ") && selectCell(cell.sub, cell.meta)}
-          role="button"
-          tabindex="0"
-        >
-          <div class="label">{cell.label}</div>
-          <div class="stage">
-            {#if cell.step}
-              <PictographContainer
-                pictographData={withAdjustment(cell.step, cell.meta)}
-                gridMode={GridMode.DIAMOND}
-                redPropTypeOverride={PropType.STAFF}
-                {...PICTO_FLAGS}
-              />
-            {:else}
-              <div class="null-step">buildHalvedStep returned null</div>
-            {/if}
+  {#if expanded}
+    <section class="variations" bind:this={panelEl}>
+      <h2>
+        {expanded.mt} · {turnsLabel(expanded.turns)} turns — all 8 variations
+        {#if statusOf(expanded.mt, expanded.turns) === "hole"}
+          <span class="hole-flag">NO ART — showing fallback {expanded.mt}_half.svg</span>
+        {/if}
+      </h2>
+      <p class="note">
+        every start point x both directions. Nudging ANY cell moves the whole
+        family — the adjustment is one glyph-local value shared across all 8.
+      </p>
+      <div class="grid">
+        {#each variations as cell (cell.sub)}
+          <div
+            class="cell"
+            class:selected={selected === cell.sub}
+            onclick={() => selectCell(cell.sub, cell.meta)}
+            onkeydown={(e) => (e.key === "Enter" || e.key === " ") && selectCell(cell.sub, cell.meta)}
+            role="button"
+            tabindex="0"
+          >
+            <div class="label">{cell.label}</div>
+            <div class="stage">
+              {#if cell.step}
+                <PictographContainer
+                  pictographData={withAdjustment(cell.step, cell.meta)}
+                  gridMode={GridMode.DIAMOND}
+                  redPropTypeOverride={PropType.STAFF}
+                  {...PICTO_FLAGS}
+                />
+              {:else}
+                <div class="null-step">buildHalvedStep returned null</div>
+              {/if}
+            </div>
+            <div class="sub">{cell.sub}</div>
           </div>
-          <div class="sub">{cell.sub}</div>
-        </div>
-      {/each}
-    </div>
-  {/each}
+        {/each}
+      </div>
+    </section>
+  {/if}
 
   <h2>Scale reference — regular arrows</h2>
   <p class="note">the un-halved motions with the standard arrow assets</p>
@@ -606,18 +675,27 @@
   }
 
   .subtitle {
-    max-width: 760px;
+    max-width: 820px;
     margin: 0 auto 8px;
     text-align: center;
     color: rgba(255, 255, 255, 0.7);
     line-height: 1.5;
   }
 
-  .subtitle code {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 1px 5px;
-    border-radius: 4px;
-    font-size: 0.9em;
+  .lg {
+    font-weight: 700;
+  }
+
+  .lg.green {
+    color: #4ade80;
+  }
+
+  .lg.orange {
+    color: #ffaa3c;
+  }
+
+  .lg.grey {
+    color: rgba(255, 255, 255, 0.45);
   }
 
   .note {
@@ -627,6 +705,178 @@
     font-size: 0.9rem;
   }
 
+  .note.center {
+    text-align: center;
+    margin-top: 12px;
+  }
+
+  /* ── Stats ── */
+  .stats {
+    max-width: 1000px;
+    margin: 0 auto 16px;
+  }
+
+  .stat-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 6px;
+    font-size: 1rem;
+  }
+
+  .stat-line strong {
+    color: #4ade80;
+  }
+
+  .stat-tuned {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+  }
+
+  .progress {
+    height: 10px;
+    background: rgba(255, 170, 60, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 5px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: #22c55e;
+    border-radius: 5px 0 0 5px;
+  }
+
+  /* ── Matrix ── */
+  .matrix {
+    display: grid;
+    grid-template-columns: 64px repeat(8, minmax(0, 1fr)) 56px;
+    gap: 8px;
+    align-items: center;
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  .col-head {
+    text-align: center;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.95rem;
+  }
+
+  .row-stat-head,
+  .row-stat {
+    text-align: center;
+    font-family: monospace;
+    font-variant-numeric: tabular-nums;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+  }
+
+  .row-head {
+    text-align: right;
+    padding-right: 6px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .mcell {
+    position: relative;
+    aspect-ratio: 1;
+    width: 100%;
+    padding: 3px;
+    border-radius: 10px;
+    border: 3px solid transparent;
+    background: rgba(255, 255, 255, 0.04);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+  }
+
+  .mcell.covered {
+    border-color: rgba(34, 197, 94, 0.8);
+  }
+
+  .mcell.hole {
+    border-color: rgba(255, 170, 60, 0.8);
+    border-style: dashed;
+  }
+
+  .mcell.hole .mini {
+    filter: grayscale(0.65) opacity(0.5);
+  }
+
+  .mcell.blocked {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.02);
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 1.3rem;
+    cursor: default;
+  }
+
+  .mcell.open {
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.8);
+  }
+
+  .mcell:not(.blocked):hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .mini {
+    width: 100%;
+    aspect-ratio: 1;
+    background: white;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .tag {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(180, 90, 10, 0.92);
+    color: white;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding: 1px 6px;
+    border-radius: 4px;
+    pointer-events: none;
+  }
+
+  .dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #a855f7;
+    border: 2px solid rgba(255, 255, 255, 0.9);
+    pointer-events: none;
+  }
+
+  /* ── Variations panel ── */
+  .variations {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .variations h2 {
+    margin-top: 28px;
+  }
+
+  .hole-flag {
+    margin-left: 12px;
+    font-size: 0.8rem;
+    color: #ffaa3c;
+    font-weight: 700;
+  }
+
+  /* ── Cells / grids (variations + reference) ── */
   .grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -647,14 +897,6 @@
   .cell.selected {
     border-color: #a855f7;
     box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.5);
-  }
-
-  .cell.hole {
-    border-color: rgba(255, 170, 60, 0.5);
-  }
-
-  .hole-sub {
-    color: #ffaa3c;
   }
 
   .panel {
@@ -729,23 +971,6 @@
   .save-status.error {
     color: #ff8a8a;
     font-weight: 700;
-  }
-
-  .lattice-toggle {
-    display: block;
-    margin: 28px auto 0;
-    padding: 10px 20px;
-    min-height: 44px;
-    background: rgba(168, 85, 247, 0.15);
-    color: #d8b4fe;
-    border: 1px solid rgba(168, 85, 247, 0.5);
-    border-radius: 8px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .lattice-toggle:hover {
-    background: rgba(168, 85, 247, 0.3);
   }
 
   .label {

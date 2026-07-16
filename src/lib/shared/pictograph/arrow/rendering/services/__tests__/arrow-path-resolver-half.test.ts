@@ -52,6 +52,33 @@ describe("arrow path resolvers — _half variant (per-turns asset, no skew)", ()
     );
   });
 
+  it("coverage is PER MOTION TYPE — dash turns=1 has no glyph even though pro does", () => {
+    // Regression: a single shared turns set sent dash/static t1 to
+    // dash_half_1.0.svg, a file that doesn't exist (404 -> broken arrow).
+    const m = createMotionData({
+      motionType: MotionType.DASH,
+      turns: 1,
+      startOrientation: Orientation.IN,
+      segment: HALF,
+    });
+    expect(getArrowSvgPath(m)).toBe(
+      "/images/arrows/dash_half/from_radial/dash_half.svg"
+    );
+  });
+
+  it("fl turns resolve to the _fl suffix once the manifest lists them (fallback until then)", () => {
+    const m = createMotionData({
+      motionType: MotionType.PRO,
+      turns: "fl" as unknown as number,
+      startOrientation: Orientation.IN,
+      segment: HALF,
+    });
+    // Not in the manifest today -> bare fallback, never "pro_half_fl.0.svg".
+    expect(getArrowSvgPath(m)).toBe(
+      "/images/arrows/pro_half/from_radial/pro_half.svg"
+    );
+  });
+
   it("does NOT alter the path for a non-segment (full) motion", () => {
     const m = createMotionData({
       motionType: MotionType.PRO,
