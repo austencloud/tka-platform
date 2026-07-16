@@ -50,3 +50,38 @@ export function staffAngleToOrientation(
   const idx = ((kRounded % 8) + 8) % 8;
   return RADIAL_CYCLE[idx]!;
 }
+
+/**
+ * The center-family (L5 centric) orientations by absolute compass angle,
+ * 45deg steps CW from east. SVG/engine convention: 0=east, 90=south,
+ * 180=west, 270=north — the same values PropRotAngleManager's
+ * CENTRIC_ANGLE_MAP and rotation-maps.ts render with.
+ *
+ * At GridLocation.CENTER the radial reference direction is degenerate, so a
+ * radial label (in/clock/...) cannot encode where the staff physically points.
+ * The center-family vocabulary is absolute and survives the roundtrip — use
+ * these for any state pinned at the grid center (e.g. a halved dash midpoint).
+ */
+export const CENTER_CYCLE: Orientation[] = [
+  "centerE", "centerSE", "centerS", "centerSW",
+  "centerW", "centerNW", "centerN", "centerNE",
+];
+
+/** Absolute staff angle (radians) -> center-family orientation, or null when
+ *  the angle is off the 45deg lattice. */
+export function staffAngleToCenterOrientation(
+  staffAngle: number,
+  epsilonSteps = 1e-6
+): Orientation | null {
+  const kFloat = normalizePositive(staffAngle) / QUARTER;
+  const kRounded = Math.round(kFloat);
+  if (Math.abs(kFloat - kRounded) > epsilonSteps) return null;
+  return CENTER_CYCLE[((kRounded % 8) + 8) % 8]!;
+}
+
+/** Center-family orientation -> absolute staff angle in DEGREES (0=east, CW),
+ *  or null for non-center-family input. */
+export function centerOrientationToDegrees(ori: Orientation): number | null {
+  const k = CENTER_CYCLE.indexOf(ori);
+  return k === -1 ? null : k * 45;
+}
