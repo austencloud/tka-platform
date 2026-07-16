@@ -196,6 +196,9 @@
   const ARROW_W = 14.5;
 
   const PICTO_FLAGS = {
+    // The halved anim step carries a stepNumber; these frames are lesson
+    // diagrams, not sequence beats, so the badge stays off.
+    stepNumberOverride: false,
     showGrid: true,
     showTKA: false,
     showPositions: false,
