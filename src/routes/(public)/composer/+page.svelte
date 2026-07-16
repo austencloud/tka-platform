@@ -62,6 +62,7 @@
   <link rel="canonical" href="https://tkaflowarts.com/composer" />
 
   <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="The Kinetic Alphabet" />
   <meta property="og:url" content="https://tkaflowarts.com/composer" />
   <meta property="og:title" content="Flow Arts Composer | Choreography App for Flow Arts" />
   <meta property="og:description" content={DESCRIPTION} />
