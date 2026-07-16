@@ -1,0 +1,839 @@
+<style>
+  :root{
+    --paper:#f6f7f9; --panel:#ffffff; --ink:#14181b; --ink-soft:#3a424c;
+    --meta:#5b6472; --hair:#dde1e8; --hair-soft:#e9ecf1;
+    --blue:#2f5fd0; --blue-deep:#1e3d8f; --blue-wash:#eef2fb;
+    --red:#d23f36; --red-deep:#a52a22; --red-wash:#fbeeed;
+    --sans:"Bahnschrift","DIN Alternate","Oswald","Segoe UI",system-ui,sans-serif;
+    --serif:"Palatino Linotype","Iowan Old Style","Palatino",Georgia,"Times New Roman",serif;
+    --mono:"Cascadia Code","Consolas",ui-monospace,"SFMono-Regular",monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;background:var(--paper);color:var(--ink);
+    font-family:var(--serif);line-height:1.62;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;}
+
+  .wrap{max-width:940px;margin:0 auto;padding:0 24px 120px;}
+  .col{max-width:64ch;}
+
+  /* ---- Masthead ---- */
+  header.masthead{padding:56px 0 30px;border-bottom:2px solid var(--ink);
+    display:flex;gap:26px;align-items:flex-start;}
+  .mark{flex:0 0 auto;width:78px;height:78px;margin-top:4px;}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--red-deep);margin:0 0 10px;}
+  h1.title{font-family:var(--sans);font-weight:700;font-size:clamp(34px,6vw,58px);
+    line-height:.98;letter-spacing:.01em;margin:0;text-wrap:balance;color:var(--ink);}
+  h1.title span{color:var(--blue);}
+  .standfirst{font-size:18px;color:var(--ink-soft);margin:16px 0 0;max-width:60ch;}
+
+  /* ---- Production notes ---- */
+  .notes{margin:34px 0 8px;padding:22px 26px;background:var(--panel);
+    border:1px solid var(--hair);border-left:3px solid var(--blue);border-radius:4px;}
+  .notes h2{font-family:var(--sans);font-weight:600;font-size:13px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--blue-deep);margin:0 0 14px;}
+  .notes ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:11px;}
+  .notes li{position:relative;padding-left:20px;font-size:15.5px;color:var(--ink-soft);line-height:1.5;}
+  .notes li::before{content:"";position:absolute;left:2px;top:.62em;width:7px;height:7px;
+    background:var(--blue);transform:rotate(45deg);}
+  .notes b{color:var(--ink);font-weight:600;}
+  .fix{font-family:var(--mono);font-size:.88em;background:var(--red-wash);
+    color:var(--red-deep);padding:1px 6px;border-radius:3px;}
+
+  /* ---- Runtime table ---- */
+  .runtimes{margin:26px 0 6px;overflow-x:auto;}
+  table.rt{border-collapse:collapse;width:100%;font-size:15px;}
+  table.rt th,table.rt td{text-align:left;padding:9px 14px;border-bottom:1px solid var(--hair-soft);}
+  table.rt thead th{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--meta);border-bottom:1px solid var(--hair);}
+  table.rt td.n,table.rt td.dur{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--blue-deep);}
+  table.rt td.dur{color:var(--meta);}
+  table.rt td.name{font-family:var(--sans);font-weight:600;}
+  table.rt tbody tr:hover{background:var(--blue-wash);}
+
+  /* ---- Sticky reel nav ---- */
+  nav.reels{position:sticky;top:0;z-index:5;margin:40px 0 0;padding:10px 0;
+    background:color-mix(in srgb,var(--paper) 88%,transparent);
+    backdrop-filter:blur(6px);border-bottom:1px solid var(--hair);
+    display:flex;flex-wrap:wrap;gap:7px;}
+  nav.reels a{font-family:var(--mono);font-size:12px;text-decoration:none;
+    color:var(--meta);border:1px solid var(--hair);border-radius:20px;
+    padding:5px 13px;transition:background .15s,color .15s,border-color .15s;white-space:nowrap;}
+  nav.reels a:hover{color:var(--blue-deep);border-color:var(--blue);background:var(--blue-wash);}
+  nav.reels a.on{color:#fff;background:var(--blue);border-color:var(--blue);}
+  @media (prefers-reduced-motion:reduce){nav.reels a{transition:none}}
+
+  /* ---- Reel section ---- */
+  .reel{padding:52px 0 8px;border-top:1px solid var(--hair);}
+  .reel:first-of-type{border-top:none;}
+  .reel-head{display:flex;gap:20px;align-items:baseline;margin:0 0 6px;}
+  .reel-num{font-family:var(--sans);font-weight:700;font-size:clamp(40px,7vw,64px);
+    line-height:.9;color:var(--blue);flex:0 0 auto;font-variant-numeric:tabular-nums;}
+  .reel-titles h3{font-family:var(--sans);font-weight:700;font-size:clamp(24px,4vw,34px);
+    margin:0;line-height:1.02;letter-spacing:.005em;text-wrap:balance;}
+  .reel-run{font-family:var(--mono);font-size:12px;color:var(--meta);margin:8px 0 0;
+    font-variant-numeric:tabular-nums;letter-spacing:.02em;}
+  .reel-run b{color:var(--red-deep);font-weight:600;}
+  .goal{font-style:italic;color:var(--meta);font-size:15.5px;margin:16px 0 4px;
+    padding-left:16px;border-left:2px solid var(--hair);max-width:62ch;}
+
+  .script{margin-top:22px;}
+  .script p{margin:0 0 18px;font-size:19px;line-height:1.66;color:var(--ink);max-width:62ch;}
+  .script p strong{font-weight:700;}
+  .script p em{font-style:italic;}
+
+  /* spoken emphasis: position/motion terms */
+  .term{color:var(--blue-deep);font-weight:600;font-style:normal;}
+
+  /* cue lines — NOT spoken */
+  .cue{font-family:var(--mono);font-size:14.5px;line-height:1.5;color:var(--red-deep);
+    background:var(--red-wash);border-left:3px solid var(--red);border-radius:0 4px 4px 0;
+    padding:10px 16px;margin:0 0 18px;max-width:62ch;}
+  .cue .tag{display:inline-block;font-size:10px;letter-spacing:.18em;font-weight:700;
+    color:#fff;background:var(--red);padding:1px 7px;border-radius:3px;margin-right:10px;
+    vertical-align:1px;}
+
+  footer{margin-top:64px;padding-top:26px;border-top:2px solid var(--ink);
+    font-family:var(--mono);font-size:12.5px;color:var(--meta);line-height:1.7;}
+  footer b{color:var(--ink);}
+
+  /* ---- Part II ---- */
+  nav.reels a.nav-2:hover{color:var(--red-deep);border-color:var(--red);background:var(--red-wash);}
+  nav.reels a.nav-2.on{background:var(--red);border-color:var(--red);}
+  .part{margin:66px 0 0;padding:38px 0 4px;border-top:3px double var(--ink);}
+  .part-eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--red-deep);margin:0 0 8px;}
+  .part h2{font-family:var(--sans);font-weight:700;font-size:clamp(26px,4.5vw,40px);
+    margin:0;line-height:1;color:var(--ink);}
+  .part h2 em{font-style:normal;color:var(--red);}
+  .part .lede{font-size:16.5px;color:var(--ink-soft);margin:18px 0 0;max-width:62ch;line-height:1.6;}
+  .part .lede b{color:var(--ink);}
+  .loop-key{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0 4px;}
+  .loop-key .k{font-family:var(--mono);font-size:12.5px;padding:6px 12px;border-radius:4px;
+    background:var(--panel);border:1px solid var(--hair);}
+  .loop-key .k b{color:var(--red-deep);}
+  .reel.compound .reel-num{color:var(--red);}
+  .reel.compound .reel-run b{color:var(--blue-deep);}
+
+  @media (max-width:620px){
+    .masthead{gap:16px;} .mark{width:56px;height:56px;}
+    .reel-head{gap:14px;} .script p{font-size:17.5px;}
+  }
+  @media print{
+    body{background:#fff;} nav.reels{display:none;}
+    .reel{page-break-inside:avoid;} .cue{background:#f4f4f4;}
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <svg class="mark" viewBox="0 0 100 100" aria-hidden="true">
+      <g fill="none" stroke="#2f5fd0" stroke-width="2">
+        <line x1="50" y1="50" x2="50" y2="10"/>
+        <line x1="50" y1="50" x2="90" y2="50"/>
+        <line x1="50" y1="50" x2="50" y2="90"/>
+        <line x1="50" y1="50" x2="10" y2="50"/>
+      </g>
+      <!-- hand points (intercardinal) -->
+      <g fill="#ffffff" stroke="#5b6472" stroke-width="2">
+        <circle cx="78" cy="22" r="5.5"/><circle cx="78" cy="78" r="5.5"/>
+        <circle cx="22" cy="78" r="5.5"/><circle cx="22" cy="22" r="5.5"/>
+      </g>
+      <!-- outer cardinal points -->
+      <g fill="#2f5fd0">
+        <circle cx="50" cy="10" r="5.5"/><circle cx="90" cy="50" r="5.5"/>
+        <circle cx="50" cy="90" r="5.5"/><circle cx="10" cy="50" r="5.5"/>
+      </g>
+      <!-- center -->
+      <circle cx="50" cy="50" r="4.5" fill="#d23f36"/>
+    </svg>
+    <div>
+      <p class="eyebrow">Voiceover Scripts &middot; First Series</p>
+      <h1 class="title">The Kinetic <span>Alphabet</span></h1>
+      <p class="standfirst">Eleven scripts, rewritten from the audio of the originals &mdash; the
+        seven-part first series, plus the DJ, EK, and FL compounds. Same teaching, same terminology,
+        your voice; filler cut, beat counts kept.</p>
+    </div>
+  </header>
+
+  <section class="notes col" aria-label="Production notes">
+    <h2>How to use this</h2>
+    <ul>
+      <li><b>Read it, don't perform the brackets.</b> Everything in serif is spoken.
+        The red <b>CUE</b> blocks are stage directions for you, never read aloud.</li>
+      <li><b>Works two ways.</b> Voice it over the existing clips (order and beats match
+        the originals) or shoot new footage and follow the same beats.</li>
+      <li><b>Beat counts stay.</b> The "one, two, three, four" walk-throughs are load-bearing
+        for a movement tutorial. Rambles, false starts, and repeated count-throughs are gone.</li>
+      <li><b>Fixes from the transcript:</b> <span class="fix">stabs &rarr; staves</span>
+        <span class="fix">four-pedal &rarr; four-petal</span>
+        <span class="fix">C: "pro and anti" &rarr; one hand isolates, one anti-spins</span></li>
+      <li><b>Checked against the knowledge base.</b> The memorization trick holds: every Type&nbsp;1
+        group runs iso-iso / anti-anti / hybrid, so A-B-C and J-K-L share the same shape.</li>
+    </ul>
+  </section>
+
+  <div class="runtimes col">
+    <table class="rt">
+      <thead><tr><th>#</th><th>Video</th><th>Original</th><th>Target</th></tr></thead>
+      <tbody>
+        <tr><td class="n">1</td><td class="name">The Grid</td><td class="dur">3:45</td><td class="dur">~3:00</td></tr>
+        <tr><td class="n">2</td><td class="name">Positions</td><td class="dur">2:49</td><td class="dur">~2:30</td></tr>
+        <tr><td class="n">3</td><td class="name">Letter A</td><td class="dur">2:51</td><td class="dur">~2:30</td></tr>
+        <tr><td class="n">4</td><td class="name">Letter B &mdash; front facing</td><td class="dur">4:44</td><td class="dur">~3:45</td></tr>
+        <tr><td class="n">5</td><td class="name">Letter B &mdash; body turns</td><td class="dur">6:20</td><td class="dur">~4:30</td></tr>
+        <tr><td class="n">6</td><td class="name">Letter C</td><td class="dur">8:05</td><td class="dur">~5:30</td></tr>
+        <tr><td class="n">7</td><td class="name">Wrap Up</td><td class="dur">1:26</td><td class="dur">~1:15</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <nav class="reels" aria-label="Jump to reel">
+    <a href="#v1">1 &middot; Grid</a>
+    <a href="#v2">2 &middot; Positions</a>
+    <a href="#v3">3 &middot; A</a>
+    <a href="#v4">4 &middot; B front</a>
+    <a href="#v5">5 &middot; B turns</a>
+    <a href="#v6">6 &middot; C</a>
+    <a href="#v7">7 &middot; Wrap</a>
+    <a href="#v8" class="nav-2">8 &middot; DJ</a>
+    <a href="#v9" class="nav-2">9 &middot; EK tog</a>
+    <a href="#v10" class="nav-2">10 &middot; EK split</a>
+    <a href="#v11" class="nav-2">11 &middot; FL</a>
+  </nav>
+
+  <div class="col">
+
+  <!-- ===================== 1 ===================== -->
+  <section class="reel" id="v1">
+    <div class="reel-head">
+      <div class="reel-num">1</div>
+      <div class="reel-titles">
+        <h3>The Grid</h3>
+        <p class="reel-run">3:45 &rarr; <b>~3:00</b></p>
+      </div>
+    </div>
+    <p class="goal">The grid, the three single-hand motions, the six two-hand combinations,
+      the three positions, a nod to the modes, and the first split-same move.</p>
+    <div class="script">
+      <p>Welcome to the Kinetic Alphabet. Everything in this system lives on one grid.</p>
+      <p class="cue"><span class="tag">CUE</span> Show the grid.</p>
+      <p>The grid has four outer points, one center point, and a set of points in between.
+        Those in-between points are the <span class="term">hand points</span> &mdash; the places
+        your hands travel to, from one beat to the next.</p>
+      <p>Put one hand on a point. From there you can do exactly three things. You can
+        <strong>shift</strong> to an adjacent point. You can <strong>dash</strong> straight across
+        to the opposite point. Or you can stay <strong>static</strong>, right where you are.
+        Shift, dash, static. That's the entire vocabulary for a single hand.</p>
+      <p>Now use both hands at once, each doing one of those three things. That gives you six
+        combinations.</p>
+      <p class="cue"><span class="tag">CUE</span> Demonstrate each combination.</p>
+      <p>Both hands shift together &mdash; dual shifts. This one is huge: it contains all of VTG,
+        all four modes, and all of quarter time. One hand shifts while the other stays static.
+        One hand shifts while the other dashes across. One hand dashes while the other stays
+        static. Both hands dash at once. Or both hands stay static.</p>
+      <p>Six combinations. Every letter you'll ever learn is built from them.</p>
+      <p>When both hands land on the grid together, they form a position. There are three:
+        <span class="term">alpha</span>, <span class="term">beta</span>, and <span class="term">gamma</span>.</p>
+      <p><span class="term">Alpha</span> means hands apart. One hand east, one hand west &mdash; alpha.
+        North and south &mdash; alpha. Turn to face a new direction, still alpha. As long as the
+        hands are apart, it's alpha.</p>
+      <p><span class="term">Beta</span> means hands together, stacked on the same point. Wherever
+        they meet, it's beta.</p>
+      <p><span class="term">Gamma</span> means a right angle. The hands sit on adjacent points and
+        make an L. That's gamma.</p>
+      <p>Alpha, beta, gamma. Apart, together, right angle.</p>
+      <p>One more thing before we move, and I'll go quick &mdash; you get a full lesson on this later.
+        Motion has modes. Four main ones: split same, together same, together opposite, and split
+        opposite. Plus two quarter-time modes: quarter-time same direction, and quarter-time
+        opposite direction. Don't memorize them yet. Just know they're there.</p>
+      <p>Here's the payoff. The Type 1 letters cover every way to move between alpha, beta, and
+        gamma, using all of those modes. That's what this whole series is about.</p>
+      <p>Let's put those three positions in motion. Start in alpha, hands apart.</p>
+      <p class="cue"><span class="tag">CUE</span> Run alpha &rarr; alpha, same direction.</p>
+      <p>Send both hands the same direction, staying apart, and you land right back in alpha. Face
+        the camera and it's the same move. Twist the hands, turn the body &mdash; as long as they stay
+        apart, it's still <span class="term">alpha</span>. Alpha to alpha.</p>
+      <p class="cue"><span class="tag">CUE</span> Run alpha &rarr; beta.</p>
+      <p>Now bring the hands toward each other instead, until they meet and stack on a single point.
+        That's a move into <span class="term">beta</span>.</p>
+      <p class="cue"><span class="tag">CUE</span> Run alpha &rarr; gamma.</p>
+      <p>And bring them to a right angle &mdash; one hand square to the other, making that L. That's a
+        move into <span class="term">gamma</span>.</p>
+      <p>Alpha, beta, gamma. Apart, together, right angle &mdash; and your shifts, dashes, and statics
+        are what carry you between them. Every letter in this series is just a named route from one
+        position to another. That's the whole alphabet.</p>
+      <p>That's your grid, your motions, and your positions. Next video, we put a staff in your hand.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 2 ===================== -->
+  <section class="reel" id="v2">
+    <div class="reel-head">
+      <div class="reel-num">2</div>
+      <div class="reel-titles">
+        <h3>Positions</h3>
+        <p class="reel-run">2:49 &rarr; <b>~2:30</b></p>
+      </div>
+    </div>
+    <p class="goal">The staff on the grid, radial, the two prerequisites, negative space,
+      the orientation rule (iso keeps, anti swaps), reading a pictograph, positions with two staves.</p>
+    <div class="script">
+      <p>Now let's put a staff on the grid.</p>
+      <p>Your hand goes on a hand point, and the staff radiates out from the center. One end sits
+        near the middle of the grid &mdash; right around your solar plexus &mdash; and the other end
+        points out to the edge. That's a <span class="term">radial</span> staff.</p>
+      <p>Before you touch the letters, you need two skills. Just two.</p>
+      <p>First, the <strong>isolation</strong> &mdash; thumb lead or pinky lead, either one.</p>
+      <p class="cue"><span class="tag">CUE</span> Isolation.</p>
+      <p>Second, the <strong>four-petal anti-spin</strong>, and you need to take it through negative
+        space.</p>
+      <p class="cue"><span class="tag">CUE</span> Four-petal anti-spin.</p>
+      <p><span class="term">Negative space</span> is the room above your shoulder, right here. Start
+        thumb-in and that's the pocket you pass through, up top. Start thumb-out and the negative
+        space shows up down here instead &mdash; not in front, but low and behind. Learn to find both.
+        Almost every pattern in the Kinetic Alphabet depends on it.</p>
+      <p>Here's the single most useful rule for reading your own movement. It's about orientation
+        &mdash; which way your thumb points.</p>
+      <p>In an isolation, the thumb orientation never changes. Start thumb-in, stay thumb-in, the
+        whole way through. Thumb in, thumb in, thumb in, thumb in.</p>
+      <p>In an anti-spin, the logic flips &mdash; the orientation swaps. Start thumb-in, do one
+        anti-spin, and now you're thumb-out. Follow through, thumb-in again. Out, in, out, in.</p>
+      <p>So: isolations keep their orientation, anti-spins swap it. Hold onto that. It's what lets
+        you glance at a <span class="term">pictograph</span>, check the orientation it shows, and
+        know instantly whether you've been running the sequence right.</p>
+      <p>Now pick up both staves and let's find the three positions again.</p>
+      <p>Hands in <span class="term">alpha</span>: the staves sit in a line, each one radial,
+        radiating out from the center. Vertical alpha, horizontal alpha, vertical again.</p>
+      <p>Hands in <span class="term">beta</span>: the staves stack on one hand point, both radiating
+        out. They act like a single staff.</p>
+      <p>Hands in <span class="term">gamma</span>: the hands sit at a right angle and make that L shape.</p>
+      <p>Alpha, beta, gamma &mdash; now with staves in your hands. Next, our first letter: A.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 3 ===================== -->
+  <section class="reel" id="v3">
+    <div class="reel-head">
+      <div class="reel-num">3</div>
+      <div class="reel-titles">
+        <h3>Letter A</h3>
+        <p class="reel-run">2:51 &rarr; <b>~2:30</b></p>
+      </div>
+    </div>
+    <p class="goal">Split-same isolations = A, the twist, the body-turn solution, both sides,
+      discrete vs continuous.</p>
+    <div class="script">
+      <p>This is the letter A.</p>
+      <p>Start in a vertical alpha. Right hand on top, both thumbs in. Not thumbs up &mdash; some
+        people start there, but that's not us. Thumbs in.</p>
+      <p class="cue"><span class="tag">CUE</span> Starting position.</p>
+      <p>For A, both hands isolate at the same time, and you land in a horizontal alpha. Do it
+        again &mdash; both hands isolate &mdash; and you're back to vertical alpha. That's A.</p>
+      <p>Keep going, though, and you hit a wall. One more time and you're twisted up. You can't
+        continue.</p>
+      <p class="cue"><span class="tag">CUE</span> Show the twist.</p>
+      <p>So rewind to right here. To get through the twist and keep the motion alive, take one hand
+        &mdash; the right, in this case &mdash; and bring it behind your body. As you keep isolating,
+        right hand down, left hand up, the right comes up behind you and your upper body turns to
+        face the side. From there the right keeps isolating up, the left comes down, and even though
+        you're facing sideways now, one gentle turn of the body brings you home.</p>
+      <p>Let's put it together. A. Turn. A. And turn back home. A.</p>
+      <p>A little faster: A, A, A, A.</p>
+      <p>You can also send the staves the same direction while turning your body the other way. It
+        feels slightly different, but it's the same letter. Start the same. A &mdash; now I prepare
+        to turn to my left as the left staff rises and the right drops. A, A, A. The left staff
+        drops behind me, I keep twisting to hold the isolation, the right comes back up, the left
+        comes down, and one turn to face front brings me home.</p>
+      <p>So there's A on this side &mdash; A, A, A, A &mdash; and A on the other side &mdash; A, A, A, A.</p>
+      <p>And you don't have to run it continuously. One A, reset, another A. Continuous or one at a
+        time, it's the same thing.</p>
+      <p>These are split-same isolations. One unit of split-same isolations is the letter A.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 4 ===================== -->
+  <section class="reel" id="v4">
+    <div class="reel-head">
+      <div class="reel-num">4</div>
+      <div class="reel-titles">
+        <h3>Letter B &mdash; front facing</h3>
+        <p class="reel-run">4:44 &rarr; <b>~3:45</b></p>
+      </div>
+    </div>
+    <p class="goal">B = two anti-spins on the A hand path, the negative-space pockets, the elbow
+      trick out of the twist, the above/below sneak and the body-turn advantage.</p>
+    <div class="script">
+      <p>B follows the exact same hand path as A. The only change: two anti-spins instead of two
+        isolations.</p>
+      <p>Start the same way &mdash; right hand on top, thumbs in, alpha.</p>
+      <p>For B you'll live in that negative space you practiced. The right thumb-end passes through
+        the pocket at the shoulder while the left anti-spins up. That's B.</p>
+      <p class="cue"><span class="tag">CUE</span> Beat one.</p>
+      <p>Follow through. Now the left anti-spins up through negative space, and the right anti-spins
+        down. B.</p>
+      <p>Keep twisting to see what happens. The right anti-spins up, the left anti-spins down, and
+        your arms cross. B. Now it looks like you're stuck, the same way A got stuck. You're not
+        &mdash; and here's the trick.</p>
+      <p>Find the pinky-end of your left staff &mdash; this one. Bring it right in front of your nose
+        so you know you've got the right end. Now make eye contact with your right elbow. Take that
+        pinky-end and bring it behind the elbow. You can barely see it from out front. Pull it in
+        toward you, trace it down along your armpit, and you can anti-spin both staves right back
+        into place.</p>
+      <p>Let's run it a couple more times. Right hand through negative space. Left up through
+        negative space. Follow through and cross &mdash; your left ends on top of your right. To clear
+        the twist, find that left pinky-end, bring it behind the inner elbow, trace down the armpit,
+        follow all the way through.</p>
+      <p>One more. Right through negative space. Left through negative space. Cross the arms.
+        Pinky-end behind the inner elbow, and follow through to the end.</p>
+      <p>There's a second way to handle it. Start the same. One, two. But instead of bringing the
+        right hand under the left on the next move, sneak the right staff <em>above</em> the arm
+        &mdash; right through there. Because you fixed the problem early, beat four takes care of
+        itself. Just anti-spin both back to right-hand-on-top.</p>
+      <p>Let's drill it. One, two &mdash; right hand sneaks above the left arm as the left anti-spins
+        down &mdash; three, four. Again: one, two, sneak above, three, four. One more: one, two,
+        above, three.</p>
+      <p>So that's B, facing your audience, with two options &mdash; sneak above, or sneak below. And
+        the direction you sneak changes how you want to turn. Going above, it's cleaner to turn your
+        body back this way than to force the ends stacked toward the audience. Going below &mdash; the
+        first version we worked &mdash; it's cleaner to turn the other way. Practice both. Above, and
+        below.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 5 ===================== -->
+  <section class="reel" id="v5">
+    <div class="reel-head">
+      <div class="reel-num">5</div>
+      <div class="reel-titles">
+        <h3>Letter B &mdash; body turns</h3>
+        <p class="reel-run">6:20 &rarr; <b>~4:30</b></p>
+      </div>
+    </div>
+    <p class="goal">Turning the body through B, with negative space, on both sides, then alternating
+      both sides with counts.</p>
+    <div class="script">
+      <p>You've done B with negative space. Now let's add a body turn &mdash; and then do both at once.
+        This gets complex, so move with me slowly.</p>
+      <p>Turn your body to the right. Start the motion: right staff through negative space as the left
+        anti-spins up. Facing this way now, bring the left up through negative space as the right
+        comes down. Follow through &mdash; left forward, right back. Then the right rises up through
+        negative space again.</p>
+      <p>Let's take that slower, because it's a lot. Left up with an anti-spin, right down with an
+        anti-spin. As the left rises, carry it through negative space &mdash; vertical. Left down,
+        right up. As the right rises, carry it through negative space &mdash; vertical again. Left up,
+        right down, through negative space. Left down, right up, through negative space.</p>
+      <p>One more, less talking. One. Two. Three. Four &mdash; negative space every time.</p>
+      <p>Now the other way. Turn your body to the left, and keep using negative space as much as you
+        can.</p>
+      <p>The right goes through negative space as the left comes up. This next part sounds strange,
+        so trust me: the left pinky-end, the one closest to the floor, has to come up behind you on
+        this side. That's just for this variation. Then the right comes down and the left comes up,
+        ready to pass through the negative space &mdash; right there, just about to pass.</p>
+      <p>Same thing on this side. Left through negative space, right anti-spins up. Keep that
+        pinky-end on the outside of the arm &mdash; closer to the camera. Follow through: right up,
+        left down, ready to bring the right through negative space.</p>
+      <p>A few more. Right through negative space, continue. Left through negative space, continue.
+        Right, continue. Left, continue. Nice.</p>
+      <p>Now let's alternate sides, the way we did with A. Slowly, both sides.</p>
+      <p>Right hand through negative space as it comes down &mdash; one. Left up through negative space
+        &mdash; two. Right rises up behind you, left comes forward &mdash; three. Right up through
+        negative space, back home &mdash; four.</p>
+      <p>Continue into the second half. Right through negative space as the left comes up, and bring
+        that left pinky-end behind your elbow. Left up, ready for negative space, right down. Left
+        through negative space, right up. Right up ready for negative space, left down.</p>
+      <p>Both sides together now. Right through negative space &mdash; one. Left up through negative
+        space &mdash; two. Turn to the right &mdash; three. Right through negative space &mdash; four.
+        Watch the wrist as you go.</p>
+      <p>Then pick up the pace: one, two, three, four, five, six, seven, eight. Faster. That's B on
+        both sides, turning, through negative space.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 6 ===================== -->
+  <section class="reel" id="v6">
+    <div class="reel-head">
+      <div class="reel-num">6</div>
+      <div class="reel-titles">
+        <h3>Letter C</h3>
+        <p class="reel-run">8:05 &rarr; <b>~5:30</b></p>
+      </div>
+    </div>
+    <p class="goal">Recap A/B, C = hybrid (iso + anti), twice the variations, pick a convention, the
+      elbow trick, the early sneak-under, reversing, turning with C on both sides.</p>
+    <div class="script">
+      <p>Quick recap. With A, we isolated both hands and found the twist. With B, we learned to get
+        through that twist by sneaking around the elbow &mdash; there are more ways than the one we
+        covered, but you've got one. And we learned to turn with B, the same way we turned with A.
+        Lots to track between negative space and turns, but commit to your path and you get through
+        it.</p>
+      <p>Now, C. C is the hybrid: one hand isolates, one hand anti-spins. Same hand path as A and B.
+        Because the two hands are doing different things, C has twice as many variations.</p>
+      <p>Let's pick one and keep it consistent for the whole video. Right hand on top, thumbs in.
+        Right hand isolates, left hand anti-spins, hands moving clockwise. That's C.</p>
+      <p>Follow through: left up through negative space while the right isolates down &mdash; C again.
+        Anti-spin the left down, isolate the right up, cross your arms. And here's where B pays off
+        &mdash; you already know this twist. Find the left pinky-end, bring it behind the inner elbow
+        of the right arm, trace the body, anti-spin down, and isolate the right up.</p>
+      <p>Run it. Reset: thumbs in, right on top. Left anti up, right iso down &mdash; one. Left up
+        through negative space &mdash; two. Cross the arms &mdash; three. Pinky-end down on the inside
+        &mdash; four. Again: one, two, three, four.</p>
+      <p>Same early fix as B. Start one, two &mdash; then, instead of passing the anti-spinning hand
+        over the top, sneak its thumb-end under the elbow one beat early &mdash; three &mdash; and four
+        takes care of itself. One, two, sneak under, three, four.</p>
+      <p>Keeping our convention &mdash; right isolates, left anti-spins &mdash; you can run C every
+        direction. Reverse it. Go under instead of over. Or switch which hand does which. That's your
+        homework: explore all of it, on both sides.</p>
+      <p>Now let's turn with C, exactly like A and B. Right hand iso, left hand anti. Turn to the
+        right first, then the left.</p>
+      <p>Right isolates down, left anti-spins up &mdash; one. Left anti-spins up through negative space
+        as the right isolates down, facing right &mdash; two. Right isolates up behind you as your body
+        turns right, left anti-spins forward &mdash; three. Right isolates up, left anti-spins down,
+        back to thumbs in, right on top &mdash; four. Again, no words: one, two, three, four.</p>
+      <p>Other side now. The left hand feels like the work we did in B; the right hand feels like A.
+        Coming up on one, keep that pinky-end on the outside of the elbow. Left anti up, right iso
+        down &mdash; thumbs in. Left through negative space, right up, left down, home. Watch your
+        thumbs as you go: in, mixed, in, mixed, in.</p>
+      <p>Now alternate sides, back and forth. Right iso down, left anti up &mdash; one. Left up through
+        negative space &mdash; two. Right up behind, left forward &mdash; three. Follow through
+        &mdash; four. Other side: one &mdash; turn that left so the pinky-end is outside &mdash; two,
+        left through negative space, three, four. Then run it up to speed: one through eight, both
+        sides.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 7 ===================== -->
+  <section class="reel" id="v7">
+    <div class="reel-head">
+      <div class="reel-num">7</div>
+      <div class="reel-titles">
+        <h3>Wrap Up</h3>
+        <p class="reel-run">1:26 &rarr; <b>~1:15</b></p>
+      </div>
+    </div>
+    <p class="goal">A/B/C = split-same pattern, the iso/anti/hybrid triple repeats through Type 1,
+      the J-K-L inference trick, the sign-off.</p>
+    <div class="script">
+      <p>Let's tie it together. A, B, and C make up the split-same hand path, and they follow a
+        pattern. A is two isolations. B is two anti-spins. C is the hybrid &mdash; one hand isolating,
+        one anti-spinning. Iso-iso, anti-anti, hybrid.</p>
+      <p>That pattern repeats, and it's how you memorize the whole alphabet.</p>
+      <p>Say someone shows you a motion and tells you it's K. K is two anti-spins. From that one fact
+        you can fill in its neighbors. The letter before it, J, has to be two isolations. The letter
+        after it, L, has to be the hybrid. Iso, anti, hybrid &mdash; J, K, L.</p>
+      <p>That triple &mdash; two isolations, then two anti-spins, then the hybrid &mdash; runs all the
+        way through the Type 1 letters. So from a single piece of information, you can work out the
+        letters next to it.</p>
+      <p>That's the first series. I hope it was useful. I'd genuinely love your feedback &mdash; tell
+        me what landed and what I could do better. See you in the next one.</p>
+    </div>
+  </section>
+
+  <!-- ===================== PART II ===================== -->
+  <section class="part" aria-label="Part II intro">
+    <p class="part-eyebrow">Part II</p>
+    <h2>Compound Letters &mdash; <em>LOOPs</em></h2>
+    <p class="lede">In continuous spinning you don't run single letters, you run <b>compounds</b>
+      &mdash; two half-cycles that close into a loop. A letter that goes beta to alpha, paired with
+      its partner that goes alpha back to beta, makes one repeating cycle. They inherit the A-B-C
+      pattern.</p>
+    <div class="loop-key">
+      <span class="k"><b>DJ</b> = isolation loop &middot; cousin of A</span>
+      <span class="k"><b>EK</b> = anti-spin loop &middot; cousin of B</span>
+      <span class="k"><b>FL</b> = hybrid &middot; cousin of C</span>
+    </div>
+    <p class="lede"><b>EK is one loop taught across two videos.</b> "Tog-opp" and "split-opp" aren't
+      different moves &mdash; it's the same EK cycle entered from two vantages: the beta-phase start
+      reads as together-opposite, the side-beta start reads as split-opposite.</p>
+  </section>
+
+  <!-- ===================== 8 ===================== -->
+  <section class="reel compound" id="v8">
+    <div class="reel-head">
+      <div class="reel-num">8</div>
+      <div class="reel-titles">
+        <h3>DJ</h3>
+        <p class="reel-run">10:56 &rarr; <b>~7:30</b></p>
+      </div>
+    </div>
+    <p class="goal">The alpha/beta/gamma map, compounds, DJ = open-D / close-J isolations, crossing
+      arms both sides, body turns, the split-opposite vantage, the 12-beat structure, thumbs-out.</p>
+    <div class="script">
+      <p>Take a look at the main page of the alphabet. A, B, C, D, E, F all end in alpha. G, H, I, J,
+        K, L all end in beta. M through V all end in gamma. So the moment you see where a motion ends,
+        you've narrowed it down. Ends in alpha, it's one of the first six. Ends in beta, it's G
+        through L. Ends in gamma, it's M through V.</p>
+      <p>We've already done A, B, and C &mdash; the three that go alpha to alpha. Now meet their
+        neighbors. D, E, and F start in <span class="term">beta</span> and end in
+        <span class="term">alpha</span>. J, K, and L start in alpha and end in beta.</p>
+      <p>Here's why that matters. A, B, C repeat cleanly &mdash; do an A, follow the same hand path,
+        and you get another A, and another. D, E, F don't loop on their own, because they run the
+        opposite hand path. But pair a beta-to-alpha letter with an alpha-to-beta letter and you get
+        a complete cycle: beta to alpha, back to beta. That's a compound. D plus J. E plus K. F plus
+        L.</p>
+      <p>And they inherit the A-B-C pattern. DJ is the isolation loop. EK is the anti-spin loop. FL
+        is the hybrid. This video is DJ &mdash; isolations &mdash; and a few ways to run it.</p>
+      <p class="cue"><span class="tag">CUE</span> Start thumbs in, low beta.</p>
+      <p>We'll start thumbs in, though thumbs out, or one in and one out, is just as valid. From this
+        low beta, isolate both hands up and open into alpha. That's D. Follow through from alpha back
+        to beta &mdash; that's J. Open D, close J. Reverse it: open D, close J. Again &mdash; open D,
+        close J.</p>
+      <p class="cue"><span class="tag">CUE</span> Crossing arms, right in front.</p>
+      <p>Now let's keep it going by crossing the hands. Pick one hand to travel in front &mdash; say
+        the right, so we stay consistent. Right hand travels in front, left stays closer to the body,
+        cross, and do D. Follow through into beta for J. D, J. Pass the right in front. D, J. You'll
+        feel a natural lean back to your right every time the right passes in front.</p>
+      <p class="cue"><span class="tag">CUE</span> Left in front.</p>
+      <p>Now the left in front. Left travels further out, right comes closer. D, J. This time you lean
+        back to your left. D, J.</p>
+      <p class="cue"><span class="tag">CUE</span> Alternate sides.</p>
+      <p>Now alternate &mdash; right in front, then left in front, from that low beta. D, J, right in
+        front. D, J, left in front. A couple more, right, then left. That's DJ facing the audience,
+        crossing arms.</p>
+      <p class="cue"><span class="tag">CUE</span> Body turns, right.</p>
+      <p>Same as A, B, and C, we can turn the body. From low beta, aim to turn right. It starts the
+        same &mdash; D, J &mdash; but by J you've turned to face the right. Now the right hand passes
+        behind you, toward the curtain, and the left comes in front, both isolating. D, J. And you're
+        home.</p>
+      <p class="cue"><span class="tag">CUE</span> Body turns, left.</p>
+      <p>Other side. Start the same, then turn left through the J. The left hand comes down behind
+        you, the right comes in front. D, J. Home.</p>
+      <p class="cue"><span class="tag">CUE</span> Alternate turns, four times.</p>
+      <p>Now alternate &mdash; right, then left, four times. D, J, turn right, home. D, J, turn left,
+        home. Keep going.</p>
+      <p class="cue"><span class="tag">CUE</span> Split-opposite vantage, side beta.</p>
+      <p>Everything so far is the together-opposite hand path &mdash; the one some people call air.
+        You can also run DJ from a side beta, and now you're in the split-opposite hand path. From
+        the side beta, thumbs in, right hand down, left hand up. D &mdash; thumbs still in &mdash; J.
+        Keep it flowing. D, J. Start from the other side if you like: right up, left down. D, J.</p>
+      <p>You can turn with the split-opposite version too. Start turned toward the right, right down,
+        left up, then twist your body toward the back &mdash; a big twist, all the way over &mdash;
+        and follow through to the other side. D, J. Keep the direction going and it carries you all
+        the way around.</p>
+      <p class="cue"><span class="tag">CUE</span> Full run with count.</p>
+      <p>Now the whole thing, less talking. One, two, three, four, five, six, seven, eight, nine, ten,
+        eleven, twelve.</p>
+      <p>Why twelve? Four beats facing front, four through the turns one way, four the other. Four and
+        four and four is twelve.</p>
+      <p class="cue"><span class="tag">CUE</span> Thumbs out.</p>
+      <p>And you can run all of it thumbs out instead. Same shape, different feel &mdash; now the pinky
+        ends stay into the center the whole time. D, J. D, J. And with turns. D, J.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 9 ===================== -->
+  <section class="reel compound" id="v9">
+    <div class="reel-head">
+      <div class="reel-num">9</div>
+      <div class="reel-titles">
+        <h3>EK &mdash; Together-Opposite</h3>
+        <p class="reel-run">9:26 &rarr; <b>~6:30</b></p>
+      </div>
+    </div>
+    <p class="goal">E matches K like D matched J but through anti-spins; open-E to alpha, close-K to
+      beta through negative space; continuous with the crossing negative-space pass-throughs on both
+      sides; alternating; body turns using the outside-of-body variation.</p>
+    <div class="script">
+      <p>This is EK &mdash; the anti-spin loop. E matches with K exactly the way D matched with J. E
+        travels from beta to alpha through two anti-spins. K travels from alpha to beta through two
+        anti-spins. E, K.</p>
+      <p class="cue"><span class="tag">CUE</span> Low beta, thumbs in.</p>
+      <p>Start in low beta, thumbs in. For E, anti-spin both hands up and open into alpha. The thumb
+        ends that were pointing in are now pointing out. To follow through to beta at the top, carry
+        those thumb ends through the negative space above your shoulders &mdash; right through. That's
+        K.</p>
+      <p>Reverse it &mdash; back through that same negative space into alpha, follow through, thumb
+        ends to the center, pinky ends down, home in beta. Open E, close K. Again: E, K. Reverse, E,
+        K.</p>
+      <p class="cue"><span class="tag">CUE</span> Continuous, right in front.</p>
+      <p>Now continuously. Hands together in beta, open E, follow through K. To keep going, pick a
+        hand in front &mdash; the right. The right passes in front of everything; the left passes
+        behind the right arm, through its negative space. E &mdash; now you're thumb-out, arms
+        crossed, leaning back to your right. Follow through: pinky ends down, thumb ends to center,
+        and the right staff travels underneath the left arm's negative space &mdash; watch it pass
+        right behind &mdash; into beta.</p>
+      <p>Run it a couple times. Beta, open E, close K, right further out, left closer, left pinky-end
+        through the right arm's negative space. E &mdash; right staff under the left arm &mdash; K.</p>
+      <p class="cue"><span class="tag">CUE</span> Left in front.</p>
+      <p>Now the left in front. Same thing, other side. E, K. Left further out, pass in front, right
+        staff through the left arm's negative space. Lean back to your left &mdash; it's easier. The
+        left staff travels under the right arm for K.</p>
+      <p class="cue"><span class="tag">CUE</span> Alternate sides.</p>
+      <p>Alternate &mdash; right in front, then left. E, K, right, lean right. E, K, left, lean left. A
+        few more.</p>
+      <p class="cue"><span class="tag">CUE</span> Body turns, outside-of-body variation.</p>
+      <p>Now add body turns, and this changes things. Prepare to turn right. Open E, turn to the right
+        &mdash; and here's the difference. Turning this way, we drop the negative space and use a
+        different variation: the thumb ends pass on the outside of the body, not the inside. Coming
+        up for E, both thumb ends ride outside the arms. Then the right staff anti-spins down behind
+        you, the left anti-spins forward. E. Follow through, thumb ends to center, pinky ends straight
+        down. K. Home.</p>
+      <p>Work that side: E, turn right, K, thumbs on the outside, follow through. E, K.</p>
+      <p class="cue"><span class="tag">CUE</span> Left side.</p>
+      <p>Same on the left. Prepare to turn left. E, turn left, both staves pass on the outside of the
+        arms, anti-spin down for K. Home. A few more. E, K.</p>
+      <p class="cue"><span class="tag">CUE</span> Alternate turns.</p>
+      <p>Now alternate &mdash; face right, then face left. E, turn right, K, home. E, turn left, K,
+        home. Both sides, a few times through. Nice work.</p>
+      <p>That's EK from the together-opposite vantage. Next video, the same loop from the
+        split-opposite side.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 10 ===================== -->
+  <section class="reel compound" id="v10">
+    <div class="reel-head">
+      <div class="reel-num">10</div>
+      <div class="reel-titles">
+        <h3>EK &mdash; Split-Opposite</h3>
+        <p class="reel-run">8:39 &rarr; <b>~6:00</b></p>
+      </div>
+    </div>
+    <p class="goal">EK from the side beta; the important awkward pass-through position; thumbs-in then
+      thumbs-out; the 90-degree turn; mixed orientation; side beta plus body turns (the super-twist);
+      outro into FL.</p>
+    <div class="script">
+      <p>You've done EK from the low beta. Now we start from a side beta, and it opens up a whole new
+        set of considerations. Same anti-spins, different orientation, different feel.</p>
+      <p class="cue"><span class="tag">CUE</span> Side beta, thumbs in.</p>
+      <p>Side beta, thumbs in &mdash; and we'll keep it consistent with DJ. Right hand comes down,
+        left hand comes up. Both staves start in toward the center, between your arms. The left
+        anti-spins up, the right anti-spins down, and the right lands in a position that feels awkward
+        at first. Learn it &mdash; you pass through it constantly. Thumbs are out, the left thumb
+        points up, the right thumb points down, pinky ends in the center. Now push those pinky ends to
+        the left and bring the thumb ends toward the center as you anti-spin again. E &mdash; and
+        you're in beta on this side.</p>
+      <p>Follow through: right hand up, left hand down. E. Watch that odd hand position, it's
+        intentional. Follow through, pinky ends travel right, thumb ends to center, K. Home.</p>
+      <p>Run it faster a few times. Right down, left up, E, follow through K. Right up, left down, E,
+        follow through K. Thumbs out, thumbs in. E, K.</p>
+      <p class="cue"><span class="tag">CUE</span> Thumbs-out start.</p>
+      <p>We've been starting thumbs in. Start thumbs out instead and the shape looks identical but
+        feels completely different. Twist your wrists so the pinky ends sit on the outside of the
+        body. Thumb ends move to the center, pinky ends straight down. E. Now the thumb ends are in,
+        pinky ends out. Turn your body ninety degrees to the left, thumb ends traveling left, pinky
+        ends to the center &mdash; and keep those pinky ends on the outside of the elbow, not the
+        inside. Follow through: right up with an anti-spin, left down. E, thumbs in, turn to the
+        right, thumb ends push right, pinky ends down and onto the outside of the elbows, home. A few
+        more. E, K.</p>
+      <p class="cue"><span class="tag">CUE</span> Mixed orientation.</p>
+      <p>Push it further &mdash; one thumb in, one thumb out. Start left thumb out, right thumb in,
+        and run EK from that mixed position, borrowing from both versions. Right down, left up. E
+        &mdash; right thumb out, left thumb in, both pointing at the floor. Follow through, K &mdash;
+        right in, left out, left pinky-end outside the elbow. Follow through, right up, left down. E
+        &mdash; both thumb ends pointing up now. K &mdash; and home. Thumbs down, thumbs mixed, thumbs
+        up, thumbs mixed. The left-in, right-out version can be your homework.</p>
+      <p class="cue"><span class="tag">CUE</span> Side beta plus body turns.</p>
+      <p>Now the hard one &mdash; side beta with body turns, like we did with DJ. Thumbs in, left up,
+        right down. E. Now, instead of turning back to your audience, keep turning left and face away
+        for E &mdash; thumbs out &mdash; then twist all the way around to the far side for K, fully
+        twisted, thumbs in. Follow through, right down, left up, E, and keep twisting. Then carry it
+        all the way to the right &mdash; a maximal twist, you'll have to step your feet to get there
+        &mdash; E, thumbs out, K. Follow through, right up, left down, facing back now, K, home.</p>
+      <p>Whole thing, less talking. E, K, twist left. E, K. Right down, left up. E, K. Four more,
+        twist far right. E, K. E, K.</p>
+      <p class="cue"><span class="tag">CUE</span> Outro.</p>
+      <p>From here you can start thumbs out, or thumbs mixed, and turn &mdash; each opens its own bag
+        of negative-space problems. I'll leave those to you, so this doesn't run forever. Happy
+        practicing. Next one, we do FL.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 11 ===================== -->
+  <section class="reel compound" id="v11">
+    <div class="reel-head">
+      <div class="reel-num">11</div>
+      <div class="reel-titles">
+        <h3>FL</h3>
+        <p class="reel-run">raw takes (2024-07-24) &rarr; <b>~7:00</b></p>
+      </div>
+    </div>
+    <p class="goal">FL = the hybrid compound (cousin of C); F+L on the same hand paths as DJ and EK;
+      low-beta open-F / close-L with the crossing on both role assignments, body turns, the
+      split-opposite side beta (flamenco grip, thumbs in/mixed), side-beta turns + the 12-count,
+      outro.</p>
+    <div class="script">
+      <p>Last compound: FL &mdash; the hybrid loop. F and L run the same hand paths as DJ and EK, but
+        now the two hands do different things. F travels beta to alpha, L travels alpha to beta. And
+        because it's the hybrid, one hand isolates while the other anti-spins. It's the loop cousin
+        of the letter C.</p>
+      <p class="cue"><span class="tag">CUE</span> Main page &mdash; highlight F and L.</p>
+      <p>For this whole video, keep one convention: the right hand isolates, the left hand anti-spins.
+        Everything here also works with the roles swapped &mdash; that's your homework.</p>
+      <p class="cue"><span class="tag">CUE</span> Low beta, thumbs in.</p>
+      <p>Start in low beta, thumbs in, and follow the same path as DJ and EK. Open: the right isolates
+        up, the left anti-spins up &mdash; that's F, and you're in <span class="term">alpha</span>.
+        Close: bring the left up through the negative space above your shoulder &mdash; that's L, back
+        to <span class="term">beta</span>. Open F, close L. Reverse it &mdash; left back through the
+        negative space, right isolates down. F, L.</p>
+      <p class="cue"><span class="tag">CUE</span> Continuous, cross &mdash; right in front.</p>
+      <p>Now go continuous, all the way around. Open F, close L, and here &mdash; just like C &mdash;
+        you get to pick how to proceed. Take the isolating hand, the right, and pass it in front; the
+        left goes behind, thumb-end inside the shoulder. The left travels through the right shoulder's
+        negative space as the right isolates down, then the left pinky-end leads in front and comes
+        down for L. F, L. F, L.</p>
+      <p class="cue"><span class="tag">CUE</span> Swap the leading hand.</p>
+      <p>Now swap which hand leads in front &mdash; the left isolating hand travels in front, the
+        right anti-spinning hand passes through the left shoulder's negative space. F, L. You'll flip
+        between the two versions at the low point: right-iso, then left-iso, back and forth. F, L, F,
+        L.</p>
+      <p class="cue"><span class="tag">CUE</span> Body turns.</p>
+      <p>Now turn the body and travel all the way around. Open F, turn to the right &mdash; the left
+        comes up on the outside of the body instead of through negative space, and that sends you into
+        the turn. L. The right drops behind you with an isolation, the left comes in front. F. Both
+        come down to low beta. L. Home. Run it the other way, turning left, roles mirrored. F, L.</p>
+      <p class="cue"><span class="tag">CUE</span> Alternate turns, both assignments.</p>
+      <p>Do it turning right, then turning left. Then swap the iso and anti hands and run both sides
+        again. F, L, F, L. That evens out the whole turning section.</p>
+      <p class="cue"><span class="tag">CUE</span> Side beta &mdash; split-opposite.</p>
+      <p>Now, just like DJ and EK, start from a side beta instead of low beta &mdash; same letters, F
+        and L, the split-opposite feel. If you haven't done the EK split-opposite video, go do that
+        one first; this builds on it. Right hand up, left hand down. The left anti-spins down into a
+        flamenco grip, the right isolates up, and you're in a vertical alpha. F. Follow through side
+        to side, right down, left up, back to side beta. L. Watch the thumbs: in on beta, mixed on F,
+        in again on L. F, L. Then reverse the roles &mdash; left isolates, right anti-spins &mdash;
+        and run it from the left. F, L.</p>
+      <p class="cue"><span class="tag">CUE</span> Side beta with turns + count.</p>
+      <p>Last section: side beta with body turns. It's a twelve-count &mdash; four here, four through
+        the turn, four back &mdash; same shape as DJ. Start side beta, right iso, left anti. F, thumbs
+        mixed. Keep twisting the body left as you come up behind. L. Twist further, all the way
+        around. F. Follow through. L. It carries you the whole way around. One, two, three, four,
+        five, six, seven, eight, nine, ten, eleven, twelve. Run it in each role assignment.</p>
+      <p class="cue"><span class="tag">CUE</span> Outro.</p>
+      <p>That's FL. And that's the three compound loops: DJ the isolation loop, EK the anti-spin loop,
+        FL the hybrid &mdash; the same iso / anti / hybrid pattern as A, B, and C, one level up. The
+        rest of the role-and-direction variations are yours to explore. Thanks for following along,
+        and sorry this one took a while. See you in the next one.</p>
+    </div>
+  </section>
+
+  </div><!-- /col -->
+
+  <footer class="col">
+    Rewritten from the audio of <b>First series &mdash; 1 thru 7</b> plus the <b>DJ</b>, <b>EK</b>,
+    and <b>FL</b> compound tutorials. Transcribed on-device with faster-whisper &middot; terminology
+    verified against the Flow Arts knowledge base. Raw transcripts saved alongside the source videos.
+  </footer>
+
+</div>
+
+<script>
+  (function(){
+    var links = Array.prototype.slice.call(document.querySelectorAll('nav.reels a'));
+    var map = {};
+    links.forEach(function(a){ map[a.getAttribute('href').slice(1)] = a; });
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          links.forEach(function(a){ a.classList.remove('on'); });
+          var a = map[e.target.id];
+          if(a) a.classList.add('on');
+        }
+      });
+    }, {rootMargin:'-45% 0px -50% 0px', threshold:0});
+    document.querySelectorAll('section.reel').forEach(function(s){ io.observe(s); });
+  })();
+</script>
