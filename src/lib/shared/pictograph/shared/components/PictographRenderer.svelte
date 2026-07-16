@@ -78,6 +78,9 @@ Usage:
     visibleHand = null,
     // Enable arrow selection for adjustment (admin feature)
     arrowsClickable = false,
+    // Renderable option: hide arrows entirely (props + grid still render).
+    // Threaded from PictographContainer; default true = zero behavior change.
+    showArrow = true,
     // Enable prop selection for beat editing
     propsClickable = false,
     selectedPropHand = null,
@@ -135,6 +138,8 @@ Usage:
     gridModeOverride?: GridMode | null;
     visibleHand?: "blue" | "red" | null;
     arrowsClickable?: boolean;
+    /** Renderable option: hide arrows entirely (props + grid still render). Default true. */
+    showArrow?: boolean;
     propsClickable?: boolean;
     selectedPropHand?: "blue" | "red" | null;
     onPropClick?: (hand: "blue" | "red") => void;
@@ -411,7 +416,7 @@ Usage:
                 arrowAssets={arrowAssets[color]}
                 arrowPosition={arrowPositions[color]}
                 shouldMirror={arrowMirroring[color] || false}
-                showArrow={true}
+                {showArrow}
                 isClickable={arrowsClickable}
                 {cellIndex}
                 {darkMode}
@@ -430,7 +435,7 @@ Usage:
                 arrowAssets={arrowAssets[color]}
                 arrowPosition={arrowPositions[color]}
                 shouldMirror={arrowMirroring[color] || false}
-                showArrow={true}
+                {showArrow}
                 isClickable={arrowsClickable}
                 {cellIndex}
                 {darkMode}
@@ -451,7 +456,7 @@ Usage:
                 arrowAssets={arrowAssets[color]}
                 arrowPosition={arrowPositions[color]}
                 shouldMirror={arrowMirroring[color] || false}
-                showArrow={true}
+                {showArrow}
                 isClickable={arrowsClickable}
                 {cellIndex}
                 {darkMode}

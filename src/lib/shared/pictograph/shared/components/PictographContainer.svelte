@@ -69,6 +69,9 @@ with pre-prepared data for better performance.
     visibleHand = null,
     // Enable arrow selection for adjustment (admin feature)
     arrowsClickable = false,
+    // Renderable option: hide arrows entirely (props + grid still render).
+    // Default true = zero behavior change for existing callers.
+    showArrow = true,
     // Enable prop selection for variant cycling
     propsClickable = false,
     // Currently selected prop hand (for visual feedback)
@@ -122,6 +125,8 @@ with pre-prepared data for better performance.
     previewMode?: boolean;
     visibleHand?: "blue" | "red" | null;
     arrowsClickable?: boolean;
+    /** Renderable option: hide arrows entirely (props + grid still render). Default true. */
+    showArrow?: boolean;
     propsClickable?: boolean;
     selectedPropHand?: "blue" | "red" | null;
     onPropClick?: (hand: "blue" | "red") => void;
@@ -512,6 +517,7 @@ with pre-prepared data for better performance.
         gridModeOverride={overrideGridMode}
         {visibleHand}
         {arrowsClickable}
+        {showArrow}
         darkMode={effectiveDarkMode}
         {printMode}
         {onToggleTKA}
@@ -552,6 +558,7 @@ with pre-prepared data for better performance.
             gridModeOverride={overrideGridMode}
             {visibleHand}
             {arrowsClickable}
+            {showArrow}
             darkMode={effectiveDarkMode}
             {printMode}
             {onToggleTKA}

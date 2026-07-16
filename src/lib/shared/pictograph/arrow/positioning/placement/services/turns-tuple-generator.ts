@@ -659,9 +659,14 @@ export class TurnsTupleGenerator {
           : turns.toString()
         : turns; // Already a string ("fl")
 
-    // "/" = midpoint-halved (MotionData.segment {t0:0, t1:0.5}) per
-    // docs/superpowers/specs/2026-07-16-half-notation-canon-design.md.
-    return motion?.segment ? `${base}/` : base;
+    // "/" = midpoint-halved ONLY. Per the ratified notation canon
+    // (docs/superpowers/specs/2026-07-16-half-notation-canon-design.md §2),
+    // v1's fraction scope is midpoint-only ({t0:0, t1:0.5}) — other segment
+    // fractions (e.g. a future quarter-freeze) are deferred and must NOT
+    // emit the mark yet.
+    const isMidpointSegment =
+      motion?.segment?.t0 === 0 && motion.segment.t1 === 0.5;
+    return isMidpointSegment ? `${base}/` : base;
   }
 }
 

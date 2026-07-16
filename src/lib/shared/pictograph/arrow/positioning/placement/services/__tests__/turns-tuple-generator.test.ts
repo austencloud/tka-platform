@@ -64,6 +64,32 @@ describe("TurnsTupleGenerator - halved motion marker", () => {
     expect(tuple).toBe("(1, 1.5/)");
   });
 
+  it("does NOT append '/' for a non-midpoint segment fraction (e.g. a future quarter-freeze)", () => {
+    const blueMotion = createMotionData({
+      color: MotionColor.BLUE,
+      motionType: MotionType.PRO,
+      turns: 1,
+      isVisible: true,
+      segment: { t0: 0, t1: 0.25 },
+    });
+    const redMotion = createMotionData({
+      color: MotionColor.RED,
+      motionType: MotionType.ANTI,
+      turns: 2,
+      isVisible: true,
+    });
+
+    const pictograph = createPictographData({
+      letter: Letter.A,
+      motions: { blue: blueMotion, red: redMotion },
+    });
+
+    const tuple = turnsTupleGenerator.generateTurnsTuple(pictograph);
+
+    expect(tuple).toBe("(1, 2)");
+    expect(tuple).not.toContain("/");
+  });
+
   it("regression: no motion carries a segment, no '/' appears anywhere", () => {
     const blueMotion = createMotionData({
       color: MotionColor.BLUE,
