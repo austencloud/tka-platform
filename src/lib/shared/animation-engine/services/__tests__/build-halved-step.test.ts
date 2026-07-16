@@ -96,6 +96,23 @@ describe("buildHalvedStep — real motion families", () => {
     expect(result!.motions.red.segment).toEqual({ t0: 0, t1: 0.5 });
   });
 
+  it("hash (center-touching dash) E->C -> null (midpoint is off the named grid)", () => {
+    const redMotion = createMotionData({
+      color: MotionColor.RED,
+      motionType: MotionType.DASH,
+      startLocation: GridLocation.EAST,
+      endLocation: GridLocation.CENTER,
+      startOrientation: Orientation.IN,
+      endOrientation: Orientation.OUT,
+      rotationDirection: RotationDirection.COUNTER_CLOCKWISE,
+      turns: 2,
+      isVisible: true,
+    });
+    const step = createStepData({ motions: { red: redMotion } });
+
+    expect(buildHalvedStep(step)).toBeNull();
+  });
+
   it("STATIC E->E, IN->IN, CCW, 2 turns -> halfway location is the (unchanged) start", () => {
     const redMotion = createMotionData({
       color: MotionColor.RED,

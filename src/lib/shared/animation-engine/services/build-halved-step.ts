@@ -91,8 +91,17 @@ function halfwayLocationFor(motion: MotionData): GridLocation | null {
     case MotionType.ANTI:
       return shiftHalfwayLocation(motion);
     case MotionType.DASH:
-      // A dash travels perimeter<->center in a straight line; its midpoint
-      // is always the center point, regardless of direction.
+      // A standard dash travels perimeter->opposite-perimeter in a straight
+      // line THROUGH the center, so its midpoint is the center point. A hash
+      // (dash-) runs perimeter<->center instead — its midpoint sits halfway
+      // along that half-line, off the named grid — so center-touching dashes
+      // bail to null rather than claiming CENTER.
+      if (
+        motion.startLocation === GridLocation.CENTER ||
+        motion.endLocation === GridLocation.CENTER
+      ) {
+        return null;
+      }
       return GridLocation.CENTER;
     case MotionType.STATIC:
       // A static motion doesn't travel — "halfway" is still at the start.
