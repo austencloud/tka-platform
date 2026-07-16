@@ -1,6 +1,5 @@
 <script lang="ts">
   import "$lib/shared/landing/styles/public-editorial.css";
-  import LandingFooter from "../../../landing/components/LandingFooter.svelte";
 
   const DESCRIPTION =
     "Learn staff choreography with The Kinetic Alphabet: a notation system built for double staves, from your first isolation to written sequences.";
@@ -148,5 +147,3 @@
     </a>
   </div>
 </div>
-
-<LandingFooter showCredit={false} />

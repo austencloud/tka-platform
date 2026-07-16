@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import GuideNav from "./_components/GuideNav.svelte";
+  import SiteFooter from "$lib/shared/landing/components/SiteFooter.svelte";
   import { setActiveSectionContext } from "./_data/guide-data-context";
   import "./_styles/guide.css";
 
@@ -42,6 +43,10 @@
 
   <main class="guide-content">
     {@render children()}
+    <!-- The guide subtree runs its own GuideNav chrome (no MarketingChrome),
+         so it mounts the shared site footer itself — deep guide pages are top
+         Google entry points and need a way back out to the rest of the site. -->
+    <SiteFooter />
   </main>
 </div>
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import GuideNav from "./GuideNav.svelte";
+  import SiteFooter from "$lib/shared/landing/components/SiteFooter.svelte";
   import { setActiveSectionContext } from "../level-1/_data/guide-data-context";
   import "./_styles/guide.css";
 
@@ -37,6 +38,9 @@
 
   <main class="guide-content">
     {@render children()}
+    <!-- Same reason as level-1: no MarketingChrome here, so the layout mounts
+         the shared site footer itself. -->
+    <SiteFooter />
   </main>
 </div>
 
