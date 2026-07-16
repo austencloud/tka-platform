@@ -1,4 +1,6 @@
 <script lang="ts">
+  import LegalPageShell from "$lib/shared/legal/components/LegalPageShell.svelte";
+
   const steps = [
     "Sign in to Flow Arts Composer",
     "Tap profile icon → Settings",
@@ -17,8 +19,6 @@
     "Choose: Anonymize or keep your name",
     "Protects community references",
   ];
-
-  const backHref = "/";
 </script>
 
 <svelte:head>
@@ -30,151 +30,85 @@
   <link rel="canonical" href="https://tkaflowarts.com/delete-account" />
 </svelte:head>
 
-<div class="page">
-  <div class="container">
-    <header>
-      <a href={backHref} class="back-link">
-        <i class="fas fa-arrow-left" aria-hidden="true"></i>
-        <span>Back</span>
-      </a>
-
-      <div class="header-content">
-        <div class="logo">TKA</div>
-        <h1>Delete Your Account</h1>
-        <p class="subtitle">Account deletion for Flow Arts Composer</p>
-      </div>
-    </header>
-
-    <div class="cards">
-      <section class="card steps">
-        <div class="card-icon">
-          <i class="fas fa-list-check" aria-hidden="true"></i>
-        </div>
-        <h2>How to Delete</h2>
-        <ol>
-          {#each steps as step}
-            <li>{step}</li>
-          {/each}
-        </ol>
-      </section>
-
-      <section class="card deleted">
-        <div class="card-icon">
-          <i class="fas fa-trash-can" aria-hidden="true"></i>
-        </div>
-        <h2>What's Deleted</h2>
-        <ul>
-          {#each deletedData as item}
-            <li>{item}</li>
-          {/each}
-        </ul>
-      </section>
-
-      <section class="card sequences">
-        <div class="card-icon">
-          <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-        </div>
-        <h2>Your Sequences</h2>
-        <ul>
-          {#each sequenceInfo as item}
-            <li>{item}</li>
-          {/each}
-        </ul>
-      </section>
-    </div>
-
-    <div class="warning-banner">
-      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
-      <span>
-        <strong>This action is permanent</strong> and cannot be undone. You'll be
-        signed out immediately.
-      </span>
-    </div>
-
-    <footer>
-      <a href="/" class="cta-button">
-        <span>Open Flow Arts Composer</span>
-        <i class="fas fa-arrow-right" aria-hidden="true"></i>
-      </a>
-      <p class="help">
-        Need help? <a href="mailto:tkaflowarts@gmail.com">tkaflowarts@gmail.com</a>
-      </p>
-    </footer>
+<LegalPageShell variant="compact">
+  <div class="header-content">
+    <h1>Delete Your Account</h1>
+    <p class="subtitle">Account deletion for Flow Arts Composer</p>
   </div>
 
-</div>
+  <div class="cards">
+    <section class="card steps">
+      <div class="card-icon">
+        <i class="fas fa-list-check" aria-hidden="true"></i>
+      </div>
+      <h2>How to Delete</h2>
+      <ol>
+        {#each steps as step}
+          <li>{step}</li>
+        {/each}
+      </ol>
+    </section>
+
+    <section class="card deleted">
+      <div class="card-icon">
+        <i class="fas fa-trash-can" aria-hidden="true"></i>
+      </div>
+      <h2>What's Deleted</h2>
+      <ul>
+        {#each deletedData as item}
+          <li>{item}</li>
+        {/each}
+      </ul>
+    </section>
+
+    <section class="card sequences">
+      <div class="card-icon">
+        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+      </div>
+      <h2>Your Sequences</h2>
+      <ul>
+        {#each sequenceInfo as item}
+          <li>{item}</li>
+        {/each}
+      </ul>
+    </section>
+  </div>
+
+  <div class="warning-banner">
+    <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+    <span>
+      <strong>This action is permanent</strong> and cannot be undone. You'll be
+      signed out immediately.
+    </span>
+  </div>
+
+  <footer>
+    <a href="/" class="cta-button">
+      <span>Open Flow Arts Composer</span>
+      <i class="fas fa-arrow-right" aria-hidden="true"></i>
+    </a>
+    <p class="help">
+      Need help? <a href="mailto:tkaflowarts@gmail.com">tkaflowarts@gmail.com</a>
+    </p>
+  </footer>
+</LegalPageShell>
 
 <style>
-  .page {
-    position: relative;
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
+  /* This page uses its own font stack, card grid, and warning banner — none
+     of these are shared with terms/privacy, so they stay page-local. Scoped
+     to the "compact" variant so it can't leak onto the other two pages. */
+  :global(.legal-page.compact) {
     font-family: system-ui, -apple-system, sans-serif;
-    color: rgba(255, 255, 255, 0.6);
-    overflow-x: hidden;
-    background: linear-gradient(145deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
-  }
-
-  .container {
-    position: relative;
-    z-index: 1;
-    max-width: 1000px;
-    width: 100%;
-  }
-
-  header {
-    margin-bottom: 2.5rem;
-  }
-
-  .back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: rgba(255, 255, 255, 0.6);
-    text-decoration: none;
-    font-size: 0.875rem;
-    padding: 0.5rem 1rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 100px;
-    margin-bottom: 2rem;
-    transition: all 0.2s ease;
-  }
-
-  .back-link:hover {
-    color: #ffffff;
-    border-color: rgba(255, 255, 255, 0.2);
-    background: rgba(255, 255, 255, 0.05);
   }
 
   .header-content {
-    text-align: center;
+    margin-bottom: 2.5rem;
   }
 
-  .logo {
-    display: inline-block;
-    font-size: 1rem;
-    font-weight: 700;
-    color: #6366f1;
-    background: color-mix(in srgb, #6366f1 15%, transparent);
-    padding: 0.5rem 1rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    letter-spacing: 0.1em;
-  }
-
-  h1 {
+  /* h1 here is smaller/lighter than the shell's document-page default */
+  .header-content h1 {
     font-size: 2.5rem;
-    margin: 0 0 0.5rem;
-    color: #ffffff;
     font-weight: 600;
-    background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.7) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
   }
 
   .subtitle {
@@ -210,7 +144,7 @@
     color: #818cf8;
   }
 
-  h2 {
+  .cards h2 {
     font-size: 1rem;
     margin: 0 0 1rem;
     color: #ffffff;
@@ -219,20 +153,20 @@
     letter-spacing: 0.05em;
   }
 
-  ol,
-  ul {
+  .cards ol,
+  .cards ul {
     padding-left: 1.25rem;
     margin: 0;
   }
 
-  li {
+  .cards li {
     margin-bottom: 0.5rem;
     color: rgba(255, 255, 255, 0.6);
     font-size: 0.9rem;
     line-height: 1.7;
   }
 
-  li:last-child {
+  .cards li:last-child {
     margin-bottom: 0;
   }
 
@@ -364,19 +298,13 @@
       grid-template-columns: 1fr;
     }
 
-    h1 {
+    .header-content h1 {
       font-size: 1.75rem;
-    }
-
-    .page {
-      padding: 1.5rem 1rem;
-      align-items: flex-start;
     }
   }
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .back-link,
     .card,
     .cta-button,
     .help a {
