@@ -31,6 +31,10 @@
     handPathMode?: boolean;
     /** Use 5:7 playing card layout for physical card export (different from printMode) */
     cardMode?: boolean;
+    /** Override the light/paper render. Unset → printMode/cardMode decide (light for
+     *  paper). `false` forces a DARK card even in cardMode — the guide's card stages
+     *  sit on the dark editorial column and must match the canvas above them. */
+    lightMode?: boolean;
     /** Show the notes footer line (FireDrums banner / custom notes) */
     showNotes?: boolean;
     /** Show the LOOP transform icon strip in the card header */
@@ -64,6 +68,7 @@
     startPositionLayout = "row",
     handPathMode = false,
     cardMode = false,
+    lightMode: lightModeProp,
     showNotes = true,
     showLoopGlyph = true,
     customNotesText = "🔥 FireDrums 2026 🔥",
@@ -91,6 +96,10 @@
   onMount(() => {
     hapticService = getHapticFeedback();
   });
+
+  // Light/paper render: an explicit override wins; otherwise printMode/cardMode
+  // force light (both target paper).
+  const effectiveLightMode = $derived(lightModeProp ?? (printMode || cardMode));
 
   // Prop family: an explicit override (guide pages pass a fixed STAFF/HAND) wins
   // over the user's global setting.
@@ -155,7 +164,7 @@
         bluePropType={propSettings.bluePropType}
         redPropType={propSettings.redPropType}
         catDogModeEnabled={propSettings.catDogMode}
-        lightMode={printMode || cardMode}
+        lightMode={effectiveLightMode}
         variant="wordcard"
         addWord={showWord}
         addDifficultyLevel={false}

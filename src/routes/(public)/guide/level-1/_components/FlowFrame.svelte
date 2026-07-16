@@ -62,50 +62,63 @@
     return out;
   });
 
-  // Group runs of consecutive card sequences into ONE row, so a page's card set
-  // renders as a responsive row of hybrid stages (each card paired with a live
-  // animation canvas) instead of one full-width card per line. Non-card blocks
-  // pass straight through in reading order.
+  // Group runs of consecutive card sequences, choosing the layout AUTOMATICALLY
+  // by run length — `card: true` on the block is the only signal:
+  //   • 2+ consecutive cards → one responsive card ROW (breaks out wide).
+  //   • a LONE card → an ASIDE: the card on one side, its section's text (heading
+  //     + preceding prose + any prose right after) flowing beside it. A lone
+  //     ~300px card centred in the wide breakout band left a void of empty
+  //     gutter; the aside fills the width with card + explanation instead.
+  //   • a lone card with NO nearby prose → a SOLO row: card width, centred,
+  //     no wide band. Non-card blocks pass straight through in reading order.
   type CardBlock = Extract<GuideBlock, { kind: "pictographGroup" }>;
   type RenderItem =
     | { type: "block"; block: GuideBlock }
-    | { type: "cardRow"; cards: CardBlock[] }
+    | { type: "cardRow"; cards: CardBlock[]; solo?: boolean }
     | { type: "cardAside"; card: CardBlock; prose: GuideBlock[] };
-  const isRowCard = (b: GuideBlock): b is CardBlock =>
-    b.kind === "pictographGroup" && !!b.card && b.cardLayout !== "aside";
-  const isAsideCard = (b: GuideBlock): b is CardBlock =>
-    b.kind === "pictographGroup" && !!b.card && b.cardLayout === "aside";
+  const isCard = (b: GuideBlock): b is CardBlock => b.kind === "pictographGroup" && !!b.card;
   const isFlowText = (b: GuideBlock) => b.kind === "prose" || b.kind === "glyphImage";
   const renderItems = $derived.by(() => {
     const items: RenderItem[] = [];
     const blocks = rendered;
-    let run: CardBlock[] = [];
-    const flush = () => {
-      if (run.length) {
-        items.push({ type: "cardRow", cards: run });
-        run = [];
-      }
-    };
-    for (let i = 0; i < blocks.length; i++) {
+    let i = 0;
+    while (i < blocks.length) {
       const b = blocks[i]!;
-      if (isRowCard(b)) {
-        run.push(b);
+      if (!isCard(b)) {
+        items.push({ type: "block", block: b });
+        i++;
         continue;
       }
-      flush();
-      if (isAsideCard(b)) {
-        // The prose that FOLLOWS an aside card (until the next heading/card/end)
-        // is the text that references it — it flows beside the figure.
-        const prose: GuideBlock[] = [];
-        let j = i + 1;
-        while (j < blocks.length && isFlowText(blocks[j]!)) prose.push(blocks[j++]!);
-        items.push({ type: "cardAside", card: b, prose });
-        i = j - 1;
+      // Collect the run of consecutive cards.
+      const run: CardBlock[] = [];
+      while (i < blocks.length && isCard(blocks[i]!)) run.push(blocks[i++] as CardBlock);
+      if (run.length >= 2) {
+        items.push({ type: "cardRow", cards: run });
         continue;
       }
-      items.push({ type: "block", block: b });
+      // Lone card. Reclaim the section text already emitted above it (contiguous
+      // prose/glyphs), and consume the prose that follows, to flow beside it.
+      const before: GuideBlock[] = [];
+      while (items.length) {
+        const last = items[items.length - 1]!;
+        if (last.type !== "block" || !isFlowText(last.block)) break;
+        items.pop();
+        before.unshift(last.block);
+      }
+      const after: GuideBlock[] = [];
+      while (i < blocks.length && isFlowText(blocks[i]!)) after.push(blocks[i++]!);
+      if (before.length + after.length === 0) {
+        items.push({ type: "cardRow", cards: run, solo: true });
+        continue;
+      }
+      // Pull the section heading in too, so the whole section sits beside its card.
+      const head = items[items.length - 1];
+      if (head && head.type === "block" && head.block.kind === "heading" && head.block.level !== 1) {
+        items.pop();
+        before.unshift(head.block);
+      }
+      items.push({ type: "cardAside", card: run[0]!, prose: [...before, ...after] });
     }
-    flush();
     return items;
   });
 
@@ -158,7 +171,7 @@
            canvas are client-rendered (browser-gated); the caption and the
            per-pictograph notation (sr-only) are always prerendered so the
            sequence stays crawlable and available to assistive tech. -->
-      <div class="flow-card-row">
+      <div class="flow-card-row" class:solo={item.solo ?? false}>
         {#each item.cards as card, c (c)}
           {@const crp = r(card.render)}
           <div class="card-stage-slot">
@@ -193,7 +206,13 @@
         </figure>
         <div class="aside-prose">
           {#each item.prose as pb, m (m)}
-            {#if pb.kind === "prose"}
+            {#if pb.kind === "heading"}
+              {#if pb.level === 2}
+                <h2 class="flow-h2 aside-h">{pb.text}</h2>
+              {:else}
+                <h3 class="flow-h3 aside-h">{pb.text}</h3>
+              {/if}
+            {:else if pb.kind === "prose"}
               <p class="flow-p aside-p">{@html flowProse(pb.html)}</p>
             {:else if pb.kind === "glyphImage"}
               <img class="flow-glyph aside-glyph" src={pb.src} alt={pb.alt} />
@@ -473,6 +492,14 @@
   /* Phones: stack to one stage per row — these are detailed full cards, so 2-up
      at ~190px reads too small. One column keeps each card legible while the page
      stays a single flowing scroll. */
+  /* A lone card with no nearby prose: card width, centred — no wide breakout
+     band (which would frame it in a void of empty gutter). */
+  .flow-card-row.solo {
+    grid-template-columns: min(300px, 100%);
+    width: auto;
+    margin-inline: auto;
+    justify-content: center;
+  }
   @media (max-width: 560px) {
     .flow-card-row {
       grid-template-columns: 1fr;
@@ -503,8 +530,8 @@
   .flow-aside-group {
     display: flex;
     gap: 1.75rem;
-    align-items: flex-start;
-    max-width: 54rem;
+    align-items: center;
+    max-width: 60rem;
     margin: 1.75rem auto;
   }
   .card-stage-aside {
@@ -529,6 +556,12 @@
     max-width: none;
     margin-inline: 0;
   }
+  /* The section heading rides along into the aside column — left-aligned with
+     its prose, without the standalone section head's big top margin. */
+  .aside-prose .aside-h {
+    text-align: left;
+    margin: 0 0 0.35rem;
+  }
   .aside-prose .aside-glyph {
     margin-inline: 0;
   }
@@ -541,7 +574,8 @@
     .card-stage-aside {
       flex: none;
     }
-    .aside-prose .aside-p {
+    .aside-prose .aside-p,
+    .aside-prose .aside-h {
       text-align: center;
     }
   }
