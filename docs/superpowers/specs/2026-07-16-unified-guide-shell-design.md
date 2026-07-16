@@ -51,8 +51,17 @@ de-orphaned earlier today — rejected.
       theme-decoupled palette (match FlowFrame's contract), reading measure for prose
       (34rem cap) with container-query breakout for strips (cqw), GuidePictograph sizing
       conventions. Visual reference: level-1 [slug] pages.
-- [ ] P2: DEFERRED to showcase session: SequenceShowcase/GuideStepStrip integration in
-      level-2 (their interfaces are in-flux today — pool wiring incomplete).
+- [x] P2 (2026-07-16, undeferred once the showcase session's commit `b7f0aed3bc`
+      settled the interfaces): SequenceShowcase integration + companion wiring in
+      level-2. New shared `guide/_components/GuideCompanionHost.svelte` (extracted
+      from GuidePageHost, which now delegates to it) is mounted on both level-2
+      chapter pages, so TurnStrip's previously-inert combined-frame clicks open the
+      animation drawer. SequenceShowcase gained an optional `strip` Snippet
+      (pool ignored when set); 21 combined-frame TurnStrips across 9 ch20/ch21
+      sections are wrapped in compact showcases playing their own `rowSteps` live.
+      Both chapter pages now declare the `--ink`/`--ink-dim`/`--glyph-invert` host
+      contract (dark-only, matching the shell's unconditional dark background).
+      Awaiting Austen's browser eyeball for canvas playback + companion click.
 - [ ] P3: Level-2 per-topic URL split (LEVEL2_BODY_PAGES -> [slug] routes like level-1).
       Not this phase.
 
