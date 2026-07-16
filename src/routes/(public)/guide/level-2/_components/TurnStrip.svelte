@@ -4,25 +4,25 @@
 
   /**
    * One reflowable lesson strip: start pose → (poses/half) → end pose → an
-   * optional trailing full-motion, click-to-animate pictograph — the mobile
+   * optional trailing full-motion, click-to-animate pictograph - the mobile
    * article-lane form of the print artboards' turn-breakdown strips (see
    * TwoTurnsDashStaticPage.svelte / TwoTurnsShiftsPage.svelte's `FrameRender`
    * union, which this mirrors kind-for-kind):
    *
-   *   - "start" / "end": a real single-staff pose (no arrow — it's a hold, not
+   *   - "start" / "end": a real single-staff pose (no arrow - it's a hold, not
    *     a motion slice).
    *   - "half": the real halved pictograph at the motion's midpoint
    *     (`buildHalvedStep(step, 0.5)`), when the pipeline can represent it.
    *     `step: null` falls back to the runtime PoseFrame pose (same visual as
    *     "pose", fixed at t=0.5) for the null contract.
    *   - "pose": an off-lattice fraction (quarters/thirds) that has a legal
-   *     45deg orientation but no legal named grid location — rendered via the
+   *     45deg orientation but no legal named grid location - rendered via the
    *     visual-only PoseFrame path (poseAt + Austen's own end-direction glyphs).
    *   - "combined": the real full-motion pictograph, the click-to-animate
    *     target. Selection highlighting / click-to-animate degrade to a plain
    *     static pictograph when no selection context is provided (both
    *     `getSequenceSelection` and `getGuideSequenceClick` return null off any
-   *     host that doesn't set one — see SelectionHit.svelte — so no guard is
+   *     host that doesn't set one - see SelectionHit.svelte - so no guard is
    *     needed beyond the same optional chaining the artboards already use).
    */
   export type TurnStripFrame =
@@ -45,7 +45,7 @@
     | {
         kind: "combined";
         step: StepData;
-        /** Selection/animation identity — must be unique across the page. */
+        /** Selection/animation identity - must be unique across the page. */
         animKey: string;
         /** Spoken/derived word for the click-to-animate label. */
         word: string;
@@ -56,11 +56,11 @@
       }
     | {
         /**
-         * Both-hands-turning halfway pose — for 1|1 hybrids (OneOneTurns,
+         * Both-hands-turning halfway pose - for 1|1 hybrids (OneOneTurns,
          * S/T, Lam opening/closing) where BOTH staves are mid-turn at once,
          * unlike every other frame kind here (single moving hand). Renders
          * one PoseFrame per entry grid-stacked in the same cell (same
-         * technique as Crossfade — see crossfade-primitive.md), so both
+         * technique as Crossfade - see crossfade-primitive.md), so both
          * staves draw over one shared 5-dot grid with no layout cost.
          */
         kind: "dual-pose";
@@ -97,7 +97,7 @@
 
   // ── Pose-frame accessibility text ───────────────────────────────────────
   // "pose" and the null-fallback "half" frames aren't real StepData, so they
-  // don't get GuidePictograph's synchronous describePictograph aria-label —
+  // don't get GuidePictograph's synchronous describePictograph aria-label -
   // this builds the equivalent sentence from the HalfwayMotion + fraction.
   const MOTION_WORD: Partial<Record<MotionType, string>> = {
     [MotionType.PRO]: "pro-spin shift",
@@ -213,18 +213,34 @@
 {#if caption}<p class="turn-strip-caption">{caption}</p>{/if}
 
 <style>
-  /* Palette follows FlowFrame's contract: --ink/--ink-dim come from the host
-     (guide article column), never declared locally here. */
+  /* Palette follows FlowFrame's contract: --ink/--ink-dim are consumed via
+     var(), never declared as a fixed color. The level-2 host (ch20/ch21,
+     rendered inside .guide-content's dark glassmorphic shell - see
+     level-1/_styles/guide.css) never sets --ink/--ink-dim itself (unlike
+     GuidePageHost, which sets them for FlowFrame), so the fallback here is
+     tuned to that actual host background - the same light-ink values
+     GuidePageHost declares for its own dark theme - rather than FlowFrame's
+     print-oriented dark-on-white fallback, which renders near-invisible on
+     the dark host. A future host that DOES set --ink still wins outright. */
   .turn-strip {
-    --frame-size: clamp(4.2rem, 20cqw, 7.25rem);
+    --frame-size: clamp(4.75rem, 15cqw, 9.5rem);
     container-type: inline-size;
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
     justify-content: center;
-    gap: 0.6rem 0.5rem;
-    margin: 1.75rem auto;
-    max-width: 48rem;
+    gap: 0.75rem 0.6rem;
+    margin: 1.9rem auto;
+    max-width: 56rem;
+    /* Break out of the inherited prose column: GuideSection is a CSS subgrid
+       (level-1/_styles/guide.css) whose `.guide-section > *` rule confines
+       every direct child (including this strip) to the narrow `prose` track.
+       This selector's specificity (two classes) beats that universal-child
+       rule (one class), so it wins without editing guide.css - the strip
+       spans the section's full width instead of squeezing into the text
+       column, the level-2 equivalent of FlowFrame's `.flow-showcase`
+       breakout. `max-width` above still caps how wide the strip itself gets. */
+    grid-column: full-start / full-end;
   }
 
   .turn-frame {
@@ -234,7 +250,7 @@
     gap: 0.3rem;
   }
 
-  /* Reserved-height caption slots — always rendered (empty string when a frame
+  /* Reserved-height caption slots - always rendered (empty string when a frame
      carries no label) so every frame's box lands at the same vertical offset
      regardless of which frames have labels, and so the connector's own
      matching spacers line its arrow up with the frame boxes' centers without
@@ -246,26 +262,27 @@
     font-family: "Cormorant Garamond", Georgia, serif;
     font-style: italic;
     font-size: 0.85rem;
+    letter-spacing: 0.01em;
     line-height: 1.1;
     text-align: center;
   }
   .frame-cap.top {
     font-weight: 600;
-    color: var(--ink, #1a1a1a);
+    color: var(--ink, #ececf2);
   }
   .frame-cap.bottom {
-    color: var(--ink-dim, #555);
+    color: var(--ink-dim, #a8a8b4);
   }
 
   .frame-box {
     position: relative;
     width: var(--frame-size);
     height: var(--frame-size);
-    border: 1px solid color-mix(in oklab, var(--ink, #1a1a1a) 16%, transparent);
-    border-radius: 10px;
+    border: 1px solid color-mix(in oklab, var(--ink, #ececf2) 16%, transparent);
+    border-radius: 12px;
     overflow: hidden;
-    background: color-mix(in oklab, var(--ink, #1a1a1a) 3%, transparent);
-    box-shadow: 0 1px 4px color-mix(in oklab, var(--ink, #1a1a1a) 7%, transparent);
+    background: color-mix(in oklab, var(--ink, #ececf2) 5%, transparent);
+    box-shadow: 0 1px 4px color-mix(in oklab, var(--ink, #ececf2) 7%, transparent);
   }
   .pose-box {
     width: 100%;
@@ -307,35 +324,36 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 1.5rem;
+    width: 1.75rem;
     height: var(--frame-size);
-    color: var(--ink, #1a1a1a);
+    color: var(--ink-dim, #a8a8b4);
   }
   .flow-arrow {
     display: block;
     width: 100%;
-    height: 0.7rem;
+    height: 0.8rem;
   }
   .equals {
     font-family: "Cambria", Georgia, serif;
     font-weight: 700;
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     line-height: 1;
   }
 
   .turn-strip-caption {
     font-size: 1rem;
     font-style: italic;
-    color: var(--ink-dim, #555);
+    letter-spacing: 0.01em;
+    color: var(--ink-dim, #a8a8b4);
     text-align: center;
     line-height: 1.4;
     max-width: 30rem;
-    margin: 0.15rem auto 0.25rem;
+    margin: 0.35rem auto 0.25rem;
   }
 
   @container (max-width: 360px) {
     .turn-strip {
-      --frame-size: clamp(3.4rem, 24cqw, 5.5rem);
+      --frame-size: clamp(3.6rem, 22cqw, 6rem);
       gap: 0.5rem 0.35rem;
     }
   }

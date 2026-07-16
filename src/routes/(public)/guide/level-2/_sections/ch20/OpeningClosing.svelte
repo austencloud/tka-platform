@@ -1,11 +1,11 @@
 <script lang="ts">
   /**
    * Real-pictograph diagrams for the Lam (Λ) opening/closing breakdown,
-   * mirroring OpeningClosingPage.svelte's four `STRIPS` exactly — same
+   * mirroring OpeningClosingPage.svelte's four `STRIPS` exactly - same
    * motions/turns/orientations, the print artboard is the source of truth
    * for this data. The print artboard's bonus "Continuation" column (a
    * hypothetical pro-shift showing why each variant is called opening/W or
-   * closing/Y) has no corresponding prose or TODO in this article section —
+   * closing/Y) has no corresponding prose or TODO in this article section -
    * omitted here to avoid inventing new copy around it, same judgment call
    * ch21's DoubleTurnShifts made for TwoTurnsShiftsPage's bonus antiHalves
    * strip. Both hands move on every strip (one hand always turns, the other
@@ -133,25 +133,46 @@
 </script>
 
 <GuideSection id="opening-closing" title="Opening / Closing">
-  <p>
-    Because of Gamma's asymmetry, Λ (Lam) presents an extra variation when adding a turn. We can't use rotational relationship to tell them apart, because there isn't one to describe. Instead, we can disambiguate them with opening and closing. This refers to the appearance of the 90° angle if we continue the rotation into a pro-shift.
-  </p>
+  <div class="section-body">
+    <p>
+      Because of Gamma's asymmetry, Λ (Lam) presents an extra variation when adding a turn. We can't use rotational relationship to tell them apart, because there isn't one to describe. Instead, we can disambiguate them with opening and closing. This refers to the appearance of the 90° angle if we continue the rotation into a pro-shift.
+    </p>
+  </div>
 
-  <TurnStrip frames={highOpenFrames} caption="Lam-High-One opening — start, halfway, end, full motion" />
-  <TurnStrip frames={highCloseFrames} caption="Lam-High-One closing — start, halfway, end, full motion" />
+  <TurnStrip frames={highOpenFrames} caption="Lam-High-One opening: start, halfway, end, full motion" />
+  <TurnStrip frames={highCloseFrames} caption="Lam-High-One closing: start, halfway, end, full motion" />
 
-  <p>
-    Now let's add 1 turn to the static hand, leaving the dash in its base form. Since the dashing prop is not rotating, there is no rotational relationship to describe. However the rotating static prop can still be identified as opening or closing.
-  </p>
+  <div class="section-body">
+    <p>
+      Now let's add 1 turn to the static hand, leaving the dash in its base form. Since the dashing prop is not rotating, there is no rotational relationship to describe. However the rotating static prop can still be identified as opening or closing.
+    </p>
+  </div>
 
-  <TurnStrip frames={lowOpenFrames} caption="Lam-Low-One opening — start, halfway, end, full motion" />
-  <TurnStrip frames={lowCloseFrames} caption="Lam-Low-One closing — start, halfway, end, full motion" />
+  <TurnStrip frames={lowOpenFrames} caption="Lam-Low-One opening: start, halfway, end, full motion" />
+  <TurnStrip frames={lowCloseFrames} caption="Lam-Low-One closing: start, halfway, end, full motion" />
 
-  <p>
-    It's not necessary to speak all of the glyph modifications when talking about a letter. It would be cumbersome if you were required to say "Lam-Low-One-Closing". In the context of a word or sequence, you can just refer to the base letter "Lam" instead.
-  </p>
+  <div class="section-body">
+    <p>
+      It's not necessary to speak all of the glyph modifications when talking about a letter. It would be cumbersome if you were required to say "Lam-Low-One-Closing". In the context of a word or sequence, you can just refer to the base letter "Lam" instead.
+    </p>
 
-  <p>
-    To shorten this for code, include "op" or "cl" as a final parameter. E.g. "(0,1,op)" or "(0,1,cl)"
-  </p>
+    <p>
+      To shorten this for code, include "op" or "cl" as a final parameter. E.g. "(0,1,op)" or "(0,1,cl)"
+    </p>
+  </div>
 </GuideSection>
+
+<style>
+  /* Prose measure + rhythm mirror level-1's FlowFrame `.flow-p`. TurnStrip
+     calls stay OUTSIDE these wrappers, as direct GuideSection children, so
+     their own grid-column breakout (see TurnStrip.svelte) still applies. */
+  .section-body :global(p) {
+    max-width: 34rem;
+    margin: 0 auto 1.1rem;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .section-body :global(p:last-child) {
+    margin-bottom: 0;
+  }
+</style>

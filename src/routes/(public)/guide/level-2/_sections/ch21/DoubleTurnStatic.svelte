@@ -2,7 +2,7 @@
   /**
    * Real-pictograph diagram for the 2-turn static breakdown, mirroring
    * TwoTurnsDashStaticPage.svelte's `staticHalves` strip exactly (same motion/
-   * turns/orientations — the print artboard is the source of truth for this
+   * turns/orientations - the print artboard is the source of truth for this
    * data).
    */
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
@@ -65,7 +65,7 @@
   });
 
   // ── Motion data (verbatim from TwoTurnsDashStaticPage.svelte) ────────────
-  // Static: E→E IN→IN CCW turns=2 — a 360° turn in place (in → out → in).
+  // Static: E→E IN→IN CCW turns=2 - a 360° turn in place (in → out → in).
   const staticCombined = redStaff("static-full", MotionType.STATIC, E, E, IN, IN, CCW, 2);
 
   const ANIM = {
@@ -116,13 +116,32 @@
 </script>
 
 <GuideSection id="double-turn-static" title="Static">
-  <p>
-    A static motion with 2 turns is simply a 360° turn in place. It's necessary to use negative space or a turn to achieve this.
-  </p>
+  <div class="section-body">
+    <p>
+      A static motion with 2 turns is simply a 360° turn in place. It's necessary to use negative space or a turn to achieve this.
+    </p>
+  </div>
 
-  <TurnStrip frames={staticFrames} caption="Static with 2 turns, held at east — start, halfway, end, full motion" />
+  <TurnStrip frames={staticFrames} caption="Static with 2 turns, held at east: start, halfway, end, full motion" />
 
-  <p>
-    A static motion has 0 thumb switches, therefore a static motion with 2 turns has 2 thumb switches (in → out → in)
-  </p>
+  <div class="section-body">
+    <p>
+      A static motion has 0 thumb switches, therefore a static motion with 2 turns has 2 thumb switches (in → out → in)
+    </p>
+  </div>
 </GuideSection>
+
+<style>
+  /* Prose measure + rhythm mirror level-1's FlowFrame `.flow-p`. TurnStrip
+     stays OUTSIDE these wrappers, as a direct GuideSection child, so its own
+     grid-column breakout (TurnStrip.svelte) still applies. */
+  .section-body :global(p) {
+    max-width: 34rem;
+    margin: 0 auto 1.1rem;
+    text-align: center;
+    text-wrap: balance;
+  }
+  .section-body :global(p:last-child) {
+    margin-bottom: 0;
+  }
+</style>
