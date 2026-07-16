@@ -302,6 +302,48 @@
     },
   ];
 
+  // Art holes: every (motionType, turns) combo the engine can halve but that
+  // has NO per-turns glyph yet (scripts/half-domain-coverage.mjs is the
+  // authority). Each renders its current FALLBACK art — the wrong turns'
+  // glyph — one representative cell per hole, as the Illustrator work list.
+  const HOLE_TURNS: Record<string, (number | "fl")[]> = {
+    [MotionType.PRO]: [0, 0.5, 1.5, 2.5, 3, "fl"],
+    [MotionType.ANTI]: [0, 0.5, 1.5, 2.5, 3, "fl"],
+    [MotionType.DASH]: [0, 0.5, 1, 1.5, 2.5, 3],
+    [MotionType.STATIC]: [0, 0.5, 1, 1.5, 2.5, 3],
+  };
+  const HOLE_SHAPE: Record<string, [GridLocation, GridLocation]> = {
+    [MotionType.PRO]: [E, S],
+    [MotionType.ANTI]: [E, S],
+    [MotionType.DASH]: [S, N],
+    [MotionType.STATIC]: [E, E],
+  };
+  const holeCell = (type: MotionType, turns: number | "fl"): Cell | null => {
+    const [from, to] = HOLE_SHAPE[type]!;
+    const rot = type === MotionType.ANTI ? CCW : type === MotionType.PRO ? CW : CCW;
+    const full = fullStep(
+      `hole-${type}-${turns}`,
+      type,
+      from,
+      to,
+      IN,
+      IN,
+      rot,
+      turns as number
+    );
+    const half = buildHalvedStep(full, 0.5);
+    if (!half) return null;
+    return {
+      label: `${type} · ${turns} turn${turns === 1 ? "" : "s"}`,
+      sub: `NO ART — renders fallback ${type}_half.svg`,
+      step: half,
+      meta: metaOf(half),
+    };
+  };
+  const HOLES: Cell[] = Object.entries(HOLE_TURNS).flatMap(([mt, list]) =>
+    list.map((t) => holeCell(mt as MotionType, t)).filter((c): c is Cell => c !== null)
+  );
+
   // Scale reference: the SAME motions un-halved, rendered with the regular
   // arrow assets. The half glyphs should read as the same pen weight as these.
   const REFERENCE: Cell[] = [
@@ -411,6 +453,38 @@
     </div>
   {/each}
 
+  <h2>Art holes — halvable, no drawn glyph yet</h2>
+  <p class="note">
+    every (motion type, turns) the engine can halve that has no per-turns asset
+    — each cell renders its FALLBACK art (the wrong turns' glyph). This is the
+    Illustrator work list; source of truth: scripts/half-domain-coverage.mjs
+  </p>
+  <div class="grid">
+    {#each HOLES as cell (cell.sub + cell.label)}
+      <div
+        class="cell hole"
+        class:selected={selected === cell.sub + cell.label}
+        onclick={() => selectCell(cell.sub + cell.label, cell.meta)}
+        onkeydown={(e) => (e.key === "Enter" || e.key === " ") && selectCell(cell.sub + cell.label, cell.meta)}
+        role="button"
+        tabindex="0"
+      >
+        <div class="label">{cell.label}</div>
+        <div class="stage">
+          {#if cell.step}
+            <PictographContainer
+              pictographData={withAdjustment(cell.step, cell.meta)}
+              gridMode={GridMode.DIAMOND}
+              redPropTypeOverride={PropType.STAFF}
+              {...PICTO_FLAGS}
+            />
+          {/if}
+        </div>
+        <div class="sub hole-sub">{cell.sub}</div>
+      </div>
+    {/each}
+  </div>
+
   <h2>Scale reference — regular arrows</h2>
   <p class="note">the un-halved motions with the standard arrow assets</p>
   <div class="grid">
@@ -493,6 +567,14 @@
   .cell.selected {
     border-color: #a855f7;
     box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.5);
+  }
+
+  .cell.hole {
+    border-color: rgba(255, 170, 60, 0.5);
+  }
+
+  .hole-sub {
+    color: #ffaa3c;
   }
 
   .panel {
