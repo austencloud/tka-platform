@@ -209,6 +209,29 @@ would double video decodes for an aesthetic Austen hasn't asked for. The bigger
 4K stage already makes the video dominate the frame. Decide with Austen if bars
 still bother him.
 
+### Second wave — public marketing pages (same session)
+
+Austen asked whether *each page* was 4K-first, not just the landing page. It
+wasn't. Audit of the public surface at 3840×2160 found the same miniature-island
+pattern everywhere; fixes, all `@media (min-width: 2200px)` gated:
+
+| Surface | Before at 3840 | Change |
+|---|---|---|
+| `public-editorial.css` (shared by /about, /roots, /notation, /composer, /glossary, /learn/staff-spinning-choreography, /shop/choreography-cards) | 46rem column = 688px content, prose capped ~18px | Column 46→60rem, prose 1.3rem, title clamp to 5.4rem, all sub-elements one step up |
+| `/guide` hub | 760px hero, 600px notify card | Hero/sections to 980px, notify card 680px, type scale |
+| `/shop` (ShopComingSoon) | 560px gate block | 720px, h1 3.8rem, chips/lede up |
+| `/support` | 480px jar-card | `zoom: 1.3` at the route level (SupportContent is shared with the in-app modal — don't fork its internals) |
+| GuidesSection `.closing` | — | Fixed a bug from the first wave: the tier's `max-width: 720px` without auto margins left the closing line off-centre; added `margin-inline: auto` |
+
+Verified at 3840 (/notation 912px col + 20.8px prose, /guide, /shop 720px,
+/support 624px visual card, /about) and regressed at 1920 (/about editorial
+688px + 17.92px prose — original) and 390 mobile (355px + 15.98px — original).
+
+Deliberately NOT touched: /guide/level-1|level-2|codex sub-pages (owned by the
+active guide-rewrite workstream — see `2026-07-15-guide-card-stage-handoff`),
+/terms + /privacy (legal reading columns), shop product detail pages (in-flight
+shop sessions), /q and /sequence/[id] (sequence-viewer-shell rule).
+
 ### Verification (2026-07-16, Chrome DevTools MCP, scratch server :5190)
 
 | Viewport | Result |

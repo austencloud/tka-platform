@@ -407,6 +407,60 @@
     border: 0;
   }
 
+  /* ── 4K / ultrawide: scale the hub so it doesn't read miniature ─────── */
+  @media (min-width: 2200px) {
+    .hero {
+      max-width: 980px;
+    }
+    h1 {
+      font-size: clamp(3.2rem, 2.2vw, 4.2rem);
+    }
+    .lede {
+      max-width: 800px;
+      font-size: 1.45rem;
+    }
+    .available,
+    .old-guides {
+      max-width: 980px;
+    }
+    h2 {
+      font-size: 2.5rem;
+    }
+    .note {
+      font-size: 1.3rem;
+      max-width: 760px;
+    }
+    .guide-link {
+      max-width: 400px;
+      padding: 26px 30px;
+      gap: 8px;
+    }
+    .guide-link-title {
+      font-size: 1.7rem;
+    }
+    .guide-link-sub {
+      font-size: 1.15rem;
+    }
+    .notify-card {
+      max-width: 680px;
+      padding: 52px 48px 48px;
+    }
+    .notify-card h2 {
+      font-size: 2.1rem;
+    }
+    .notify-intro {
+      font-size: 1.2rem;
+      max-width: 500px;
+    }
+    .notify-form {
+      max-width: 520px;
+    }
+    .text-input,
+    .notify-btn {
+      font-size: 1.05rem;
+    }
+  }
+
   @media (max-width: 480px) {
     .notify-form {
       flex-direction: column;

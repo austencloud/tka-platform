@@ -128,6 +128,16 @@
     }
   }
 
+  /* 4K / ultrawide: the 480px donate card reads miniature on a 4K monitor.
+     SupportContent is shared with the in-app modal, so scale it here at the
+     route level (zoom is standardized and participates in layout, unlike
+     transform) instead of forking the shared card's internals. */
+  @media (min-width: 2200px) {
+    .support > :global(.jar-card) {
+      zoom: 1.3;
+    }
+  }
+
   /* True desktop (mouse, not touch): revert to the footer pinned at the very
      bottom with the card centred in the space above it — the expected document
      feel with a cursor. Touch devices (phones, iPads, the Z Fold in every
