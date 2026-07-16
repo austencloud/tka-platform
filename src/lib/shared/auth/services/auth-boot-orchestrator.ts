@@ -99,6 +99,25 @@ export async function initializeChildServices(
       }
     });
 
+  // Sync generate-tour status FROM cloud (suppresses the "First time
+  // generating?" offer on this device if the user took or dismissed it on
+  // another). Non-blocking; localStorage carries the flag if this fails.
+  import("$lib/shared/onboarding/state/generate-tour-state.svelte")
+    .then(async ({ generateTourState }) => {
+      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+      await generateTourState.syncFromCloud();
+    })
+    .catch(async (error) => {
+      console.warn("⚠️ [authState] Generate-tour sync failed:", error);
+      try {
+        const { generateTourState } = await import("$lib/shared/onboarding/state/generate-tour-state.svelte");
+        generateTourState.markCloudSyncComplete();
+      } catch {
+        // Non-fatal; localStorage carries the flag
+      }
+    });
+
   // Sync password-onboarding status FROM cloud (drives the required set-password
   // gate for email-only accounts; clears it if a password was set on another device)
   import("$lib/shared/onboarding/state/password-onboarding-state.svelte")
