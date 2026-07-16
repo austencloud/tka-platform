@@ -131,7 +131,7 @@
 
 <div class="editorial">
     <header class="editorial-header">
-      <h1 class="page-title wordmark">The Kinetic Alphabet</h1>
+      <h1 class="page-title">The Kinetic Alphabet</h1>
       <p class="page-subtitle">A notation system for flow arts</p>
     </header>
 

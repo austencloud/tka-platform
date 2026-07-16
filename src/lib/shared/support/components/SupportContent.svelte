@@ -255,10 +255,13 @@
   }
 
   .title {
-    /* Same display serif as the public page titles (Playfair is also the in-app
-       hint serif, so this reads right in the SupportModal host too). */
-    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
-    font-weight: 500;
+    /* Brand Fraunces wonky italic — the shared public page-title voice. The 700
+       italic is self-hosted app-wide, so it reads right in the SupportModal host
+       too (where the MarketingChrome token is absent, the fallback applies). */
+    font-family: var(--page-title-font, "Fraunces", Georgia, serif);
+    font-style: italic;
+    font-weight: 700;
+    font-variation-settings: "opsz" 144, "wght" 700, "SOFT" 0, "WONK" 1;
     font-size: clamp(2.5rem, 6vw, 3.5rem);
     line-height: 1.2;
     padding-bottom: 0.12em; /* room for the 'y' descender under background-clip:text */

@@ -253,9 +253,11 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   }
 
   h1 {
-    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
+    font-family: var(--page-title-font, "Fraunces", Georgia, serif);
+    font-style: italic;
+    font-weight: 700;
+    font-variation-settings: "opsz" 144, "wght" 700, "SOFT" 0, "WONK" 1;
     font-size: 1.75rem;
-    font-weight: 500;
     margin: 0 0 8px;
   }
 
