@@ -418,9 +418,12 @@
   }
 
   .hero h1 {
+    /* Same display serif as every other public page title (token set by
+       MarketingChrome; /shop lives under that chrome). */
+    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
     font-size: clamp(2.2rem, 3.2vw, 4.2rem);
-    font-weight: 800;
-    letter-spacing: -0.02em;
+    font-weight: 500;
+    letter-spacing: -0.01em;
     margin: 0 0 14px;
   }
 

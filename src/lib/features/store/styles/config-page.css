@@ -69,8 +69,11 @@
    (DeckArchitectPage has no page h1). line-height is unique to
    LoopDeckConfiguratorPage and stays local there. */
 .store-config-page h1 {
+  /* Same display serif as every other public page title (token set by
+     MarketingChrome; /shop lives under that chrome). */
+  font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
   font-size: clamp(1.8rem, 3vw, 2.4rem);
-  font-weight: 800;
+  font-weight: 500;
   margin: 0;
   letter-spacing: -0.01em;
 }

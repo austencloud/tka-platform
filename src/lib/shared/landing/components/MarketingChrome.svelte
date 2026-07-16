@@ -92,6 +92,11 @@
     min-height: 100vh;
     overflow-x: hidden;
     color: var(--theme-text, #ffffff);
+    /* Single source of truth for the marketing display serif. Every page under
+       this chrome (landing sections, guide hub, editorial page titles, shop)
+       resolves its headings from this token, so the face can't drift per-page.
+       The 500 weight is self-hosted app-wide (app.html → /fonts/css/playfair.css). */
+    --landing-heading-font: "Playfair Display", Georgia, serif;
   }
 
   .mkt-bg {

@@ -253,8 +253,9 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   }
 
   h1 {
+    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
     font-size: 1.75rem;
-    font-weight: 700;
+    font-weight: 500;
     margin: 0 0 8px;
   }
 

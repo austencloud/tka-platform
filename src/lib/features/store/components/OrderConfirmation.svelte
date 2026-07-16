@@ -37,7 +37,9 @@
   }
 
   h1 {
+    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
     font-size: 2rem;
+    font-weight: 500;
     margin: 0 0 16px;
   }
 
