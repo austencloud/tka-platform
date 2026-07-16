@@ -13,8 +13,9 @@ import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { bakeReversals } from "../guide-sequence-adapter";
+import { mirroredPool, rotatedPool, swappedPool } from "../example-pools/pool-adapter";
 
-// Verbatim prose lifted from _pages/LoopsPage.svelte (Austen's words — never
+// Verbatim prose lifted from _pages/LoopsPage.svelte (Austen's words - never
 // AI-written); the pictograph construction below is a FAITHFUL COPY of that
 // same file's LOOPS/handMotion/stepData/startBox authoring (same helpers, same
 // locations/orientations/reversal flags → identical staff pictographs), minus
@@ -27,7 +28,7 @@ const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 const NOROT = RotationDirection.NO_ROTATION;
 
-// ── Step authoring — copied from _pages/LoopsPage.svelte ───────────────────
+// ── Step authoring - copied from _pages/LoopsPage.svelte ───────────────────
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
 type HandStep = { t: "pro" | "anti" | "dash" | "static"; from: GridLocation; to: GridLocation; so: Orientation };
 const handMotion = (color: MotionColor, h: HandStep) => {
@@ -163,16 +164,26 @@ const startBox = (l: LoopDef): StepData =>
   }) as unknown as StepData;
 
 // Start + 8 steps per LOOP, reversal dots derived from the motions themselves
-// (bakeReversals; never hand-authored for display) — matches _pages/LoopsPage
+// (bakeReversals; never hand-authored for display) - matches _pages/LoopsPage
 // .svelte's resolvedStrip (minus the admin-override seam).
 const loopStrip = (l: LoopDef): PictographData[] => {
   const authored = [startBox(l), ...l.steps.map((_, i) => stepData(l, i))];
   return [authored[0], ...bakeReversals(authored.slice(1))] as unknown as PictographData[];
 };
 
-/** STAFF props with reversal dots — matching LoopsPage's PICTO_FLAGS. */
+/** STAFF props with reversal dots - matching LoopsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF, showReversals: true } as const;
 
+// Build each print example's strip ONCE - the card's `items` and the pool's
+// entry 0 (the default, prerendered example) are the SAME strip.
+const mirrorStrip = loopStrip(LOOPS[0]!);
+const rotateStrip = loopStrip(LOOPS[1]!);
+const swapStrip = loopStrip(LOOPS[2]!);
+
+// The per-example ("In this example…") prose that used to sit in the flow now
+// rides with entry 0 of each pool - it explains THIS specific instance, so it
+// belongs to the example, not the section. The concept prose + heading stay in
+// the flow, absorbed into the banner as before.
 export const permutationsContent: GuideBlock[] = [
   { kind: "heading", level: 1, text: "LOOPs" },
   {
@@ -192,16 +203,23 @@ export const permutationsContent: GuideBlock[] = [
     html: "In a mirrored LOOP, the second repetition’s pictographs reflect the first, which changes their rotation direction.",
   },
   {
-    kind: "prose",
-    html: "In this example, each column is reflected across a horizontal plane.",
-  },
-  {
     kind: "pictographGroup",
-    items: loopStrip(LOOPS[0]!),
+    items: mirrorStrip,
     flowCols: 3,
     card: true,
     render: RENDER,
     caption: LOOPS[0]!.word,
+    pool: {
+      entries: [
+        {
+          word: "AABB",
+          loopLabel: "Mirrored",
+          proseHtml: "In this example, each column is reflected across a horizontal plane.",
+          items: mirrorStrip,
+        },
+        ...mirroredPool,
+      ],
+    },
   },
   { kind: "heading", level: 2, text: "Rotated" },
   {
@@ -209,16 +227,23 @@ export const permutationsContent: GuideBlock[] = [
     html: "In a rotated LOOP, each repetition ends in a rotated variation on its previous position.",
   },
   {
-    kind: "prose",
-    html: "In this example, there is a 90° rotation, finally returning to the start position (aka “home”).",
-  },
-  {
     kind: "pictographGroup",
-    items: loopStrip(LOOPS[1]!),
+    items: rotateStrip,
     flowCols: 3,
     card: true,
     render: RENDER,
     caption: LOOPS[1]!.word,
+    pool: {
+      entries: [
+        {
+          word: "DΨ",
+          loopLabel: "Rotated 90°",
+          proseHtml: "In this example, there is a 90° rotation, finally returning to the start position (aka “home”).",
+          items: rotateStrip,
+        },
+        ...rotatedPool,
+      ],
+    },
   },
   { kind: "heading", level: 2, text: "Swapped" },
   {
@@ -226,15 +251,22 @@ export const permutationsContent: GuideBlock[] = [
     html: 'In a swapped LOOP, each repetition swaps the roles of <strong class="cR">right</strong>/<strong class="cB">left</strong>.',
   },
   {
-    kind: "prose",
-    html: "Though the prop’s shapes look the same, this swap changes the body motion significantly.",
-  },
-  {
     kind: "pictographGroup",
-    items: loopStrip(LOOPS[2]!),
+    items: swapStrip,
     flowCols: 3,
     card: true,
     render: RENDER,
     caption: LOOPS[2]!.word,
+    pool: {
+      entries: [
+        {
+          word: "Δ-TQZ-",
+          loopLabel: "Swapped",
+          proseHtml: "Though the prop’s shapes look the same, this swap changes the body motion significantly.",
+          items: swapStrip,
+        },
+        ...swappedPool,
+      ],
+    },
   },
 ];

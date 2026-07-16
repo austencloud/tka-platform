@@ -6,20 +6,19 @@
    * (crawlable). Pictographs render eagerly via GuidePictograph, whose synchronous
    * describePictograph aria-label lands in SSR HTML. One source with SheetFrame.
    *
-   * Owns its OWN light/dark palette (prefers-color-scheme + [data-theme]) — it does
+   * Owns its OWN light/dark palette (prefers-color-scheme + [data-theme]) - it does
    * NOT inherit the app's --theme-* vars, which are set for the dark-cosmic canvas
    * and render faint ink on the white editorial column.
    */
-  import { browser } from "$app/environment";
   import GuidePictograph from "./GuidePictograph.svelte";
-  import GuideCardStage from "./GuideCardStage.svelte";
+  import GuideStepStrip from "./GuideStepStrip.svelte";
+  import SequenceShowcase from "./SequenceShowcase.svelte";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import { stripToSequence } from "../_data/guide-sequence-adapter";
   import { deriveWord } from "$lib/shared/foundation/services/word-deriver";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-  import { describePictograph } from "$lib/shared/pictograph/shared/domain/utils/pictograph-description";
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { GuideBlock, PictographRender } from "../_data/guide-content-blocks";
@@ -38,7 +37,7 @@
 
   // The prose carries hard <br> line-wraps authored for the fixed-width print
   // sheet; in the reflow column they force awkward mid-phrase breaks. Drop them so
-  // the text wraps to the column naturally (a flow-only transform — the sheet keeps
+  // the text wraps to the column naturally (a flow-only transform - the sheet keeps
   // its <br>s). Keep every other tag (the red/blue spans, <strong>, <em>).
   const flowProse = (html: string) => html.replace(/<br\s*\/?>/gi, " ").replace(/\s{2,}/g, " ");
 
@@ -46,7 +45,7 @@
   // host hero (calligraphic title + tagline deck). Drop them here so the flow
   // column doesn't repeat the title as a section head or the tagline as its first
   // paragraph. Only the FIRST prose is checked, and only removed on an exact match
-  // — unique intros stay verbatim.
+  // - unique intros stay verbatim.
   const rendered = $derived.by(() => {
     const tag = stripHtml(tagline);
     const out: GuideBlock[] = [];
@@ -62,22 +61,39 @@
     return out;
   });
 
-  // Group runs of consecutive card sequences, choosing the layout AUTOMATICALLY
-  // by run length — `card: true` on the block is the only signal:
-  //   • 2+ consecutive cards → one responsive card ROW (breaks out wide).
-  //   • a LONE card → an ASIDE: the card on one side, its section's text (heading
-  //     + preceding prose + any prose right after) flowing beside it. A lone
-  //     ~300px card centred in the wide breakout band left a void of empty
-  //     gutter; the aside fills the width with card + explanation instead.
-  //   • a lone card with NO nearby prose → a SOLO row: card width, centred,
-  //     no wide band. Non-card blocks pass straight through in reading order.
+  // Every `card: true` pictographGroup renders as ONE SequenceShowcase.
+  // Spec: docs/superpowers/specs/2026-07-16-sequence-showcase-design.md.
+  //
+  // Which text the card owns:
+  //   • Preceding text is absorbed ONLY as a complete heading-led mini-section
+  //     (heading → prose → card, the permutations shape). A prose run with no
+  //     heading directly above it is shared narrative for the whole page/family
+  //     (the dj-ek-fl intro) - it stays in the flow.
+  //   • Trailing prose up to the next heading/card is the card's own label or
+  //     explanation - always absorbed.
+  //   • Cards in a run of 2+ absorb nothing; the shared prose stays above.
+  //
+  // Which SHAPE the showcase takes (the layout answers to content density):
+  //   • feature - a heading or substantial prose: banner (canvas left, text
+  //     right) + full-width strip beneath.
+  //   • compact - caption-sized text or none: one tight band (canvas | label +
+  //     strip) hugging its content. A one-line label in the feature banner's
+  //     text column would float in a void of empty space.
   type CardBlock = Extract<GuideBlock, { kind: "pictographGroup" }>;
   type RenderItem =
     | { type: "block"; block: GuideBlock }
-    | { type: "cardRow"; cards: CardBlock[]; solo?: boolean }
-    | { type: "cardAside"; card: CardBlock; prose: GuideBlock[] };
+    | { type: "showcase"; card: CardBlock; text: GuideBlock[]; variant: "feature" | "compact" };
   const isCard = (b: GuideBlock): b is CardBlock => b.kind === "pictographGroup" && !!b.card;
   const isFlowText = (b: GuideBlock) => b.kind === "prose" || b.kind === "glyphImage";
+  const isSectionHead = (it: RenderItem): it is { type: "block"; block: GuideBlock } =>
+    it.type === "block" && it.block.kind === "heading" && it.block.level !== 1;
+  // Substantial = a heading, or more plain-text than a caption-sized label.
+  const FEATURE_TEXT_CHARS = 180;
+  const showcaseVariant = (text: GuideBlock[]): "feature" | "compact" => {
+    if (text.some((b) => b.kind === "heading")) return "feature";
+    const chars = text.reduce((n, b) => n + (b.kind === "prose" ? stripHtml(b.html).length : 0), 0);
+    return chars > FEATURE_TEXT_CHARS ? "feature" : "compact";
+  };
   const renderItems = $derived.by(() => {
     const items: RenderItem[] = [];
     const blocks = rendered;
@@ -93,31 +109,28 @@
       const run: CardBlock[] = [];
       while (i < blocks.length && isCard(blocks[i]!)) run.push(blocks[i++] as CardBlock);
       if (run.length >= 2) {
-        items.push({ type: "cardRow", cards: run });
+        for (const c of run) items.push({ type: "showcase", card: c, text: [], variant: "compact" });
         continue;
       }
-      // Lone card. Reclaim the section text already emitted above it (contiguous
-      // prose/glyphs), and consume the prose that follows, to flow beside it.
-      const before: GuideBlock[] = [];
-      while (items.length) {
-        const last = items[items.length - 1]!;
-        if (last.type !== "block" || !isFlowText(last.block)) break;
-        items.pop();
-        before.unshift(last.block);
+      // Lone card. Measure the contiguous text run already emitted above it,
+      // and absorb it (with its heading) only if a heading sits directly above
+      // - a complete mini-section that belongs to this card.
+      let k = items.length;
+      while (k > 0) {
+        const it = items[k - 1]!;
+        if (it.type === "block" && isFlowText(it.block)) k--;
+        else break;
       }
+      const before: GuideBlock[] = [];
+      if (k < items.length && k > 0 && isSectionHead(items[k - 1]!)) {
+        const section = items.splice(k - 1);
+        for (const it of section) before.push((it as { type: "block"; block: GuideBlock }).block);
+      }
+      // Trailing prose/glyphs are the card's own label or explanation.
       const after: GuideBlock[] = [];
       while (i < blocks.length && isFlowText(blocks[i]!)) after.push(blocks[i++]!);
-      if (before.length + after.length === 0) {
-        items.push({ type: "cardRow", cards: run, solo: true });
-        continue;
-      }
-      // Pull the section heading in too, so the whole section sits beside its card.
-      const head = items[items.length - 1];
-      if (head && head.type === "block" && head.block.kind === "heading" && head.block.level !== 1) {
-        items.pop();
-        before.unshift(head.block);
-      }
-      items.push({ type: "cardAside", card: run[0]!, prose: [...before, ...after] });
+      const text = [...before, ...after];
+      items.push({ type: "showcase", card: run[0]!, text, variant: showcaseVariant(text) });
     }
     return items;
   });
@@ -138,7 +151,7 @@
   // collide on the thumbnail cache key) rather than parsed from the caption.
   const groupSequence = (items: readonly unknown[]): SequenceData => {
     const strip = items as unknown as StepData[];
-    // Derive the word from the strip's OWN step letters (skipping the start box) —
+    // Derive the word from the strip's OWN step letters (skipping the start box) -
     // robust even when stripToSequence doesn't surface letters on `.steps` (some
     // sources, e.g. the reversal demos, otherwise fall back to a generic name).
     const fromLetters = strip
@@ -147,7 +160,7 @@
       .filter(Boolean)
       .join("");
     const full = fromLetters || deriveWord(stripToSequence(strip, {})) || "sequence";
-    // A LOOP repeats its word by construction — show the smallest form (AABB, not
+    // A LOOP repeats its word by construction - show the smallest form (AABB, not
     // AABBAABB), per the simplified-word-display rule.
     const w = simplifyRepeatedWord(full) || full;
     return stripToSequence(strip, { word: w, name: w });
@@ -155,70 +168,55 @@
 
   const gridLabel = (mode: "diamond" | "box" | "merged") =>
     mode === "diamond"
-      ? "Diamond grid — four points at north, east, south, and west"
+      ? "Diamond grid: four points at north, east, south, and west"
       : mode === "box"
-        ? "Box grid — four points on the diagonals"
-        : "8-point grid — diamond and box combined";
+        ? "Box grid: four points on the diagonals"
+        : "8-point grid: diamond and box combined";
 </script>
 
 <div class="flow-frame">
   {#each renderItems as item, i (i)}
-    {#if item.type === "cardRow"}
-      <!-- A responsive row of hybrid card stages: each hold-in-hand ChoreoCard
-           paired with a live 2D animation canvas of the same sequence, ringed in
-           the viewer's gold playback glow while it's in view (GuideCardStage).
-           3-up on desktop, wrapping to 2/1-up as the column narrows. The card +
-           canvas are client-rendered (browser-gated); the caption and the
-           per-pictograph notation (sr-only) are always prerendered so the
-           sequence stays crawlable and available to assistive tech. -->
-      <div class="flow-card-row" class:solo={item.solo ?? false}>
-        {#each item.cards as card, c (c)}
-          {@const crp = r(card.render)}
-          <div class="card-stage-slot">
-            {#if browser}
-              <GuideCardStage sequence={groupSequence(card.items)} propType={crp.propType} />
-            {/if}
-            {#if card.caption}<p class="card-caption">{card.caption}</p>{/if}
-            <div class="sr-only">
-              {#each card.items as pos, n (pos.id ?? n)}
-                <span>{describePictograph(pos)}</span>
+    {#if item.type === "showcase"}
+      <!-- A word sequence's showcase: square live animation beside the section's
+           text, the steps unrolled as a strip beneath. The strip + text are
+           prerendered (crawlable); only the animation is browser-gated, inside
+           SequenceShowcase. -->
+      {@const scard = item.card}
+      {@const sseq = groupSequence(scard.items)}
+      <div class="flow-showcase" class:compact={item.variant === "compact"}>
+        <SequenceShowcase
+          sequence={sseq}
+          items={scard.items}
+          stepLabels={scard.stepLabels}
+          render={scard.render}
+          variant={item.variant}
+          pool={scard.pool?.entries}
+          {picTheme}
+        >
+          {#snippet text()}
+            {#if item.text.length}
+              {#each item.text as tb, m (m)}
+                {#if tb.kind === "heading"}
+                  {#if tb.level === 2}
+                    <h2 class="flow-h2 showcase-h">{tb.text}</h2>
+                  {:else}
+                    <h3 class="flow-h3 showcase-h">{tb.text}</h3>
+                  {/if}
+                {:else if tb.kind === "prose"}
+                  <p class="flow-p showcase-p">{@html flowProse(tb.html)}</p>
+                {:else if tb.kind === "glyphImage"}
+                  <img class="flow-glyph showcase-glyph" src={tb.src} alt={tb.alt} />
+                {/if}
               {/each}
-            </div>
-          </div>
-        {/each}
-      </div>
-    {:else if item.type === "cardAside"}
-      <!-- A single card stage set to one side, with the prose that references it
-           flowing beside it (a figure + its explanation). Stacks on phones. -->
-      {@const acard = item.card}
-      {@const arp = r(acard.render)}
-      <div class="flow-aside-group">
-        <figure class="card-stage-aside">
-          {#if browser}
-            <GuideCardStage sequence={groupSequence(acard.items)} propType={arp.propType} />
-          {/if}
-          {#if acard.caption}<p class="card-caption">{acard.caption}</p>{/if}
-          <div class="sr-only">
-            {#each acard.items as pos, n (pos.id ?? n)}
-              <span>{describePictograph(pos)}</span>
-            {/each}
-          </div>
-        </figure>
-        <div class="aside-prose">
-          {#each item.prose as pb, m (m)}
-            {#if pb.kind === "heading"}
-              {#if pb.level === 2}
-                <h2 class="flow-h2 aside-h">{pb.text}</h2>
-              {:else}
-                <h3 class="flow-h3 aside-h">{pb.text}</h3>
-              {/if}
-            {:else if pb.kind === "prose"}
-              <p class="flow-p aside-p">{@html flowProse(pb.html)}</p>
-            {:else if pb.kind === "glyphImage"}
-              <img class="flow-glyph aside-glyph" src={pb.src} alt={pb.alt} />
+            {:else if scard.caption}
+              <!-- Authored captions already name the word ("EK - Exploding
+                   Kitten") - showing the derived word above one doubles it. -->
+              <p class="flow-caption showcase-caption">{scard.caption}</p>
+            {:else}
+              <h3 class="flow-h3 showcase-h">{sseq.word}</h3>
             {/if}
-          {/each}
-        </div>
+          {/snippet}
+        </SequenceShowcase>
       </div>
     {:else}
       {@const block = item.block}
@@ -256,32 +254,13 @@
       {#if block.layout === "strip"}
         <!-- A sequence: one left-to-right strip (scrolls on narrow screens),
              the mobile-faithful form of the sheet's step rows. -->
-        <figure class="flow-strip-figure">
-          <div class="flow-strip" role="group" aria-label={block.caption ?? "Sequence"}>
-            {#each block.items as pos, n (pos.id ?? n)}
-              <div class="strip-cell">
-                {#if block.stepLabels?.[n]}
-                  <span class="strip-step">{block.stepLabels[n]}</span>
-                {/if}
-                <div class="pic-card">
-                  <GuidePictograph
-                    data={pos}
-                    size="sm"
-                    eager
-                    forceTheme={picTheme}
-                    propType={rp.propType}
-                    showTKA={rp.showTKA}
-                    showPositions={rp.showPositions}
-                    showElemental={rp.showElemental}
-                    showReversals={rp.showReversals}
-                    showNonRadialPoints={rp.showNonRadialPoints}
-                  />
-                </div>
-              </div>
-            {/each}
-          </div>
-          {#if block.caption}<figcaption>{block.caption}</figcaption>{/if}
-        </figure>
+        <GuideStepStrip
+          items={block.items}
+          stepLabels={block.stepLabels}
+          caption={block.caption}
+          render={block.render}
+          {picTheme}
+        />
       {:else}
         <div class="flow-grid" style:--cols={block.flowCols ?? 4}>
           {#each block.items as pos, n (pos.id ?? n)}
@@ -336,18 +315,18 @@
 
 <style>
   /* Palette comes from the host via --ink/--ink-dim/--glyph-invert (with dark-ink
-     fallbacks for a white host). FlowFrame must NOT declare --ink on .flow-frame —
+     fallbacks for a white host). FlowFrame must NOT declare --ink on .flow-frame -
      a local declaration would shadow the host's value and break the dark theme. */
   /* This column renders INSIDE the guide SPA shell (.guide-content), whose
      dark-scroll typography (Inter, lavender oklch, weight 370, smaller sizes) is
      set with (0,1,1) rules that beat inheritance. Every text element below
-     therefore states its OWN color / font-family / size / weight explicitly — the
+     therefore states its OWN color / font-family / size / weight explicitly - the
      scoped .flow-* selectors out-specify .guide-content h2/h3/p, but only for the
      properties they actually set. Leave one unset and the dark-SPA value shows
      through. */
   /* The frame is a WIDE container; the reading measure is enforced per-element
      (.flow-p caps at 34rem, headings are short centred text), so prose pages look
-     unchanged — their content still sits centred at its own width. The extra
+     unchanged - their content still sits centred at its own width. The extra
      frame width only exists so card rows can break past the reading measure and
      show 3 legible cards across. */
   .flow-frame {
@@ -425,7 +404,7 @@
   }
 
   /* ── Pictograph card: a framed cell so every pictograph reads as a discrete
-     figure (the sheet minis' hairline border), theme-aware in one rule — a faint
+     figure (the sheet minis' hairline border), theme-aware in one rule - a faint
      border + matching fill derived from --ink, so it works on both the warm-white
      and dark editorial columns. Rounds + clips the pictograph's square corners. */
   .pic-card {
@@ -465,135 +444,72 @@
     max-width: 15rem;
   }
 
-  /* A row of hybrid card stages (each ChoreoCard + its live animation canvas).
-     auto-fit means the row is 3-up on a wide column and reflows to 2-up / 1-up
-     as it narrows — the "multiple pages, still flowable" requirement. A lone
-     card (a run of one) sits centred at a single stage's width. */
-  .flow-card-row {
-    display: grid;
-    /* Cards are CAPPED at ~300px, so one card (or a few) never balloons to fill
-       the whole column (a lone card at 1fr became a ~660px monster you had to
-       scroll past). auto-fit then packs as many capped cards across as the width
-       allows — more cards per row on wide screens, never bigger cards. min(240px,
-       100%) lets a lone card shrink below 240 on very narrow screens. */
-    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 300px));
-    gap: 1.1rem;
-    align-items: start;
-    justify-content: center;
-    /* Break OUT of the narrow reading measure to use the full content width on
-       large screens. 94cqw = 94% of the guide route's own width (a container set
-       in GuidePageHost), so this uses the 4K width without colliding with the
-       sidebar. Prose stays narrow; only card rows widen. Centred on the frame,
-       which is itself centred in the route. */
-    width: min(90rem, 94cqw);
-    margin-inline: calc((100% - min(90rem, 94cqw)) / 2);
-    margin-block: 1.75rem;
+  /* ── Sequence showcase: banner (square animation + section text) over the
+     step strip. SequenceShowcase owns its internal layout; this wrapper owns
+     PLACEMENT - break out of the narrow reading measure to use the content
+     width on large screens. 94cqw = 94% of the guide route's own width (a
+     container set in GuidePageHost), so it uses the 4K width without colliding
+     with the sidebar; 72rem caps the text measure. Prose elsewhere stays
+     narrow-centred. */
+  .flow-showcase {
+    width: min(72rem, 94cqw);
+    margin-inline: calc((100% - min(72rem, 94cqw)) / 2);
+    margin-block: 1.9rem;
   }
-  /* Phones: stack to one stage per row — these are detailed full cards, so 2-up
-     at ~190px reads too small. One column keeps each card legible while the page
-     stays a single flowing scroll. */
-  /* A lone card with no nearby prose: card width, centred — no wide breakout
-     band (which would frame it in a void of empty gutter). */
-  .flow-card-row.solo {
-    grid-template-columns: min(300px, 100%);
-    width: auto;
-    margin-inline: auto;
-    justify-content: center;
+  /* Compact showcases (caption-only) read as figures in the flow, not feature
+     bands - tighter rhythm between consecutive ones. */
+  .flow-showcase.compact {
+    margin-block: 1.4rem;
   }
-  @media (max-width: 560px) {
-    .flow-card-row {
-      grid-template-columns: 1fr;
-      width: auto;
-      max-width: 20rem;
-      margin-inline: auto;
-    }
+  /* Inside the compact label, tight paragraph rhythm - the band is shallow. */
+  .flow-showcase.compact .showcase-h {
+    margin: 0 0 0.25rem;
   }
-  .card-stage-slot {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.45rem;
-    min-width: 0;
+  .flow-showcase.compact .showcase-p {
+    margin-bottom: 0.4rem;
   }
-  .card-caption {
-    font-size: 1rem;
-    font-style: italic;
-    color: var(--ink-dim, #555);
-    text-align: center;
-    line-height: 1.4;
-    margin: 0;
-    text-wrap: balance;
+  .flow-showcase.compact .showcase-p:last-child,
+  .flow-showcase.compact .showcase-h:last-child {
+    margin-bottom: 0;
   }
-
-  /* Aside placement: one stage to the side, referencing prose flowing beside it
-     (a figure + its explanation). Stacks to a single column on phones. */
-  .flow-aside-group {
-    display: flex;
-    gap: 1.75rem;
-    align-items: center;
-    max-width: 60rem;
-    margin: 1.75rem auto;
-  }
-  .card-stage-aside {
-    flex: 0 0 clamp(200px, 32%, 300px);
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.45rem;
-    min-width: 0;
-  }
-  .aside-prose {
-    flex: 1 1 0;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.4rem;
-  }
-  /* Prose beside a float reads left-aligned and full-width in its column, not the
-     centred narrow measure the standalone flow prose uses. */
-  .aside-prose .aside-p {
+  /* Text inside the showcase banner reads left-aligned and full-width in its
+     column (not the centred narrow measure standalone flow prose uses);
+     headings drop the standalone section head's big top margin. Inside a
+     stacked (narrow) showcase - the nearest @container is the showcase itself -
+     everything re-centres. */
+  .flow-p.showcase-p {
     text-align: left;
     max-width: none;
     margin-inline: 0;
+    margin-bottom: 0.7rem;
   }
-  /* The section heading rides along into the aside column — left-aligned with
-     its prose, without the standalone section head's big top margin. */
-  .aside-prose .aside-h {
+  .flow-h2.showcase-h,
+  .flow-h3.showcase-h {
     text-align: left;
     margin: 0 0 0.35rem;
   }
-  .aside-prose .aside-glyph {
+  .flow-glyph.showcase-glyph {
     margin-inline: 0;
   }
-  @media (max-width: 560px) {
-    .flow-aside-group {
-      flex-direction: column;
-      align-items: stretch;
-      max-width: 22rem;
-    }
-    .card-stage-aside {
-      flex: none;
-    }
-    .aside-prose .aside-p,
-    .aside-prose .aside-h {
+  .flow-caption.showcase-caption {
+    margin: 0;
+    max-width: none;
+    text-align: left;
+  }
+  @container (max-width: 600px) {
+    .flow-p.showcase-p,
+    .flow-h2.showcase-h,
+    .flow-h3.showcase-h,
+    .flow-caption.showcase-caption {
       text-align: center;
     }
+    .flow-glyph.showcase-glyph {
+      margin-inline: auto;
+    }
   }
-  /* Prerendered, invisible, but read by crawlers + assistive tech. */
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-  }
+
   .flow-figure figcaption,
   .flow-caption,
-  .flow-strip-figure figcaption,
   .flow-grid-figure figcaption {
     font-size: 1rem;
     font-style: italic;
@@ -606,50 +522,8 @@
     max-width: 30rem;
   }
 
-  /* ── Sequence strip: a horizontal, left-to-right row that scrolls on narrow
-     screens — the mobile form of the printed step strip. Cells stay legible
-     (~118px) rather than shrinking to fit, so a long sequence scrolls instead of
-     becoming unreadable. Snap points make the scroll feel intentional. */
-  .flow-strip-figure {
-    margin: 1.5rem auto;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.6rem;
-    max-width: 100%;
-  }
-  .flow-strip {
-    display: flex;
-    gap: 0.7rem;
-    overflow-x: auto;
-    max-width: 100%;
-    padding: 0.25rem 0.25rem 0.6rem;
-    scroll-snap-type: x proximity;
-    /* Centre when the row is narrower than the column; left-align + scroll when wider. */
-    justify-content: safe center;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: thin;
-  }
-  .strip-cell {
-    flex: 0 0 auto;
-    width: clamp(104px, 30vw, 132px);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.3rem;
-    scroll-snap-align: center;
-  }
-  .strip-step {
-    font-size: 0.78rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--ink-dim, #555);
-    font-variant-numeric: tabular-nums;
-  }
-
   /* Grid diagram (The Grid page): the canonical GridSvg on a white square,
-     points only — matching the printed proof's diamond/box/8-point figures. */
+     points only - matching the printed proof's diamond/box/8-point figures. */
   .flow-grid-figure {
     margin: 1.5rem auto;
     display: flex;
@@ -666,7 +540,7 @@
     border-radius: 12px;
     /* background is set inline (theme-aware): white in light, near-black in dark */
   }
-  /* The proof shows points only — drop GridSvg's connecting lines. */
+  /* The proof shows points only - drop GridSvg's connecting lines. */
   .grid-fig :global(line) {
     display: none;
   }
