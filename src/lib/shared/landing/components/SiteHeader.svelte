@@ -14,6 +14,7 @@
   import { afterNavigate, preloadData } from "$app/navigation";
   import { onMount, type Component } from "svelte";
   import RobustAvatar from "../../components/avatar/RobustAvatar.svelte";
+  import NavDropdown, { type NavDropdownItem } from "./NavDropdown.svelte";
   import type { authState as AuthStateModule } from "../../auth/state/auth-state.svelte";
 
   let scrolled = $state(false);
@@ -124,20 +125,73 @@
     if (authModalOpen && authApi?.isFullAccount) authModalOpen = false;
   });
 
-  const NAV = [
+  // Two shapes: a plain link, or a labeled group that renders as a disclosure
+  // dropdown on desktop and an accordion section in the mobile overlay. Support
+  // moved to the footer (donation link — footer real estate) to keep the row
+  // comfortable at laptop widths.
+  interface NavLink {
+    label: string;
+    href: string;
+    icon: string;
+  }
+  interface NavGroup {
+    label: string;
+    icon: string;
+    items: (NavDropdownItem & { icon: string })[];
+  }
+  type NavEntry = NavLink | NavGroup;
+
+  const NAV: NavEntry[] = [
     { label: "Notation", href: "/notation", icon: "fa-language" },
     { label: "Composer", href: "/composer", icon: "fa-wand-magic-sparkles" },
+    {
+      label: "Learn",
+      icon: "fa-book-open",
+      items: [
+        { label: "Guide", href: "/guide", icon: "fa-book-open", desc: "Level 1, free on the web" },
+        { label: "Glossary", href: "/glossary", icon: "fa-spell-check", desc: "Every TKA term, defined" },
+        { label: "Staff Choreography", href: "/learn/staff-spinning-choreography", icon: "fa-graduation-cap", desc: "Why TKA starts with staves" },
+      ],
+    },
+    {
+      label: "Shop",
+      icon: "fa-bag-shopping",
+      items: [
+        { label: "How Choreo Cards Work", href: "/shop/choreography-cards", icon: "fa-qrcode" },
+        { label: "LOOP Deck", href: "/shop/loop-deck", icon: "fa-layer-group" },
+        { label: "T&D Trilogy", href: "/shop/tnd-trilogy", icon: "fa-clone" },
+        { label: "Starter Pack", href: "/shop/starter-pack", icon: "fa-box-open" },
+        { label: "Browse the Shop", href: "/shop", icon: "fa-bag-shopping" },
+      ],
+    },
     { label: "Roots", href: "/roots", icon: "fa-seedling" },
-    { label: "Guide", href: "/guide", icon: "fa-book-open" },
     { label: "About", href: "/about", icon: "fa-circle-info" },
-    { label: "Shop", href: "/shop", icon: "fa-bag-shopping" },
-    { label: "Support", href: "/support", icon: "fa-heart" },
   ];
+
+  function isGroup(entry: NavEntry): entry is NavGroup {
+    return "items" in entry;
+  }
+
+  const ALL_HREFS = NAV.flatMap((e) => (isGroup(e) ? e.items.map((i) => i.href) : [e.href]));
 
   function isActive(href: string): boolean {
     const path = page.url?.pathname ?? "";
     return path === href || path.startsWith(href + "/");
   }
+
+  function groupActive(group: NavGroup): boolean {
+    return group.items.some((i) => isActive(i.href));
+  }
+
+  // Mobile accordion: one group expanded at a time. Opening the overlay
+  // auto-expands the group holding the current page so "where am I" is
+  // answered without a tap.
+  let expandedGroup = $state<string | null>(null);
+  $effect(() => {
+    if (!mobileOpen) return;
+    const current = NAV.find((e) => isGroup(e) && groupActive(e));
+    expandedGroup = current?.label ?? null;
+  });
 
   function handleScroll() {
     scrolled = window.scrollY > 40;
@@ -164,7 +218,7 @@
   // free. Lightweight marketing routes, so eagerly warming all of them is cheap.
   $effect(() => {
     if (!mobileOpen) return;
-    for (const link of NAV) void preloadData(link.href).catch(() => {});
+    for (const href of ALL_HREFS) void preloadData(href).catch(() => {});
   });
 
   function handleKeydown(e: KeyboardEvent) {
@@ -204,11 +258,15 @@
     </a>
 
     <nav class="desktop-nav" aria-label="Main navigation">
-      {#each NAV as link}
-        <a href={link.href} class:active={isActive(link.href)}>
-          {link.label}
-          {#if isActive(link.href)}<span class="ind" aria-hidden="true"></span>{/if}
-        </a>
+      {#each NAV as entry}
+        {#if isGroup(entry)}
+          <NavDropdown label={entry.label} items={entry.items} active={groupActive(entry)} />
+        {:else}
+          <a href={entry.href} class:active={isActive(entry.href)}>
+            {entry.label}
+            {#if isActive(entry.href)}<span class="ind" aria-hidden="true"></span>{/if}
+          </a>
+        {/if}
       {/each}
       {#if !authReady}
         <span class="auth-slot" aria-hidden="true"></span>
@@ -267,13 +325,40 @@
   aria-hidden={!mobileOpen}
 >
     <ul class="m-list">
-      {#each NAV as link, i}
+      {#each NAV as entry, i}
         <li style="--i:{i}">
-          <a href={link.href} class:active={isActive(link.href)}>
-            <i class="fas {link.icon} m-icon" aria-hidden="true"></i>
-            <span class="m-label">{link.label}</span>
-            <i class="fas fa-chevron-right m-chev" aria-hidden="true"></i>
-          </a>
+          {#if isGroup(entry)}
+            {@const expanded = expandedGroup === entry.label}
+            <button
+              class="m-group-btn"
+              class:active={groupActive(entry)}
+              aria-expanded={expanded}
+              onclick={() => (expandedGroup = expanded ? null : entry.label)}
+            >
+              <i class="fas {entry.icon} m-icon" aria-hidden="true"></i>
+              <span class="m-label">{entry.label}</span>
+              <i class="fas fa-chevron-down m-chev" class:m-chev-up={expanded} aria-hidden="true"></i>
+            </button>
+            <div class="m-sub" class:expanded>
+              <ul class="m-sub-inner">
+                {#each entry.items as item}
+                  <li>
+                    <a href={item.href} class:active={isActive(item.href)}>
+                      <i class="fas {item.icon} m-icon m-sub-icon" aria-hidden="true"></i>
+                      <span class="m-label">{item.label}</span>
+                      <i class="fas fa-chevron-right m-chev" aria-hidden="true"></i>
+                    </a>
+                  </li>
+                {/each}
+              </ul>
+            </div>
+          {:else}
+            <a href={entry.href} class:active={isActive(entry.href)}>
+              <i class="fas {entry.icon} m-icon" aria-hidden="true"></i>
+              <span class="m-label">{entry.label}</span>
+              <i class="fas fa-chevron-right m-chev" aria-hidden="true"></i>
+            </a>
+          {/if}
         </li>
       {/each}
     </ul>
@@ -552,14 +637,16 @@
     transform: rotate(-45deg) translate(5px, -5px);
   }
 
-  /* Mobile menu — full-screen navy overlay */
+  /* Mobile menu — full-screen navy overlay. Content centers when it fits
+     (auto margins on the first/last child) but the overlay scrolls instead of
+     clipping when an expanded accordion outgrows a short viewport. */
   .mobile-nav {
     display: none;
     position: fixed;
     inset: 0;
     z-index: 195; /* below the header bar (200) so the logo + X stay on top */
     flex-direction: column;
-    justify-content: center;
+    overflow-y: auto;
     padding: calc(64px + env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom));
     background: radial-gradient(120% 90% at 50% 0%, #1d1d3a 0%, #14142b 55%, #0f0f22 100%);
     -webkit-backdrop-filter: blur(8px);
@@ -576,7 +663,7 @@
 
   .m-list {
     list-style: none;
-    margin: 0 auto;
+    margin: auto auto 0; /* top auto centers when content fits (see .m-actions) */
     padding: 0;
     width: 100%;
     max-width: 420px;
@@ -616,6 +703,69 @@
     border-color: rgba(139, 108, 255, 0.4);
     color: #fff;
   }
+
+  /* Accordion group header — a button wearing the exact row look of .m-list a. */
+  .m-group-btn {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    padding: 18px 18px;
+    border-radius: 16px;
+    color: #e8e6f4;
+    background: none;
+    font-family: inherit;
+    text-align: left;
+    font-size: 1.4rem;
+    font-weight: 600;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease;
+  }
+  .m-group-btn:hover,
+  .m-group-btn:focus-visible {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+    outline: none;
+  }
+  .m-group-btn.active {
+    color: #fff;
+  }
+  .m-group-btn.active .m-icon {
+    color: #b8a6ff;
+  }
+  .m-chev-up {
+    transform: rotate(180deg);
+  }
+  .m-group-btn .m-chev {
+    transition: transform 0.25s ease;
+  }
+
+  /* Collapsible sub-list: the 0fr→1fr grid-row trick animates height without
+     measuring content. */
+  .m-sub {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .m-sub.expanded {
+    grid-template-rows: 1fr;
+  }
+  .m-sub-inner {
+    overflow: hidden;
+    min-height: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 22px;
+  }
+  .m-sub-inner a {
+    font-size: 1.08rem;
+    padding: 13px 16px;
+    border-radius: 13px;
+  }
+  .m-sub-icon {
+    font-size: 0.95rem;
+  }
   .m-icon {
     width: 28px;
     text-align: center;
@@ -634,7 +784,7 @@
   }
 
   .m-actions {
-    margin: 26px auto 0;
+    margin: 26px auto auto; /* bottom auto pairs with .m-list's top auto */
     width: 100%;
     max-width: 420px;
     display: flex;
@@ -734,8 +884,8 @@
     }
   }
 
-  /* Seven top-level links + auth + CTA need more room; drop to the mobile
-     drawer earlier so the desktop row never crowds. */
+  /* Six top-level entries + auth + CTA still crowd mid-size tablets; drop to
+     the mobile drawer earlier so the desktop row never crowds. */
   @media (max-width: 1024px) {
     .desktop-nav {
       display: none;
@@ -760,6 +910,10 @@
       animation: none;
       opacity: 1;
       transform: none;
+    }
+    .m-sub,
+    .m-group-btn .m-chev {
+      transition: none;
     }
   }
 </style>
