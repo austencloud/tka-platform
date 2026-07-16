@@ -1,5 +1,118 @@
 <script lang="ts">
+  /**
+   * Real-pictograph diagram for the 1-turn dash breakdown, mirroring
+   * DashStaticTurnsPage.svelte's dash row (`ROWS[0]`) exactly — same motion/
+   * turns/orientations, the print artboard is the source of truth for this
+   * data.
+   */
   import GuideSection from "../../../level-1/_components/GuideSection.svelte";
+  import TurnStrip, { type TurnStripFrame } from "../../_components/TurnStrip.svelte";
+  import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import { buildHalvedStep } from "$lib/shared/animation-engine/services/build-halved-step";
+  import {
+    MotionType,
+    MotionColor,
+    Orientation,
+    RotationDirection,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
+  import { bakeReversals } from "../../../level-1/_data/guide-sequence-adapter";
+
+  const { NORTH: N, SOUTH: SO_ } = GridLocation;
+  const { IN } = Orientation;
+  const CCW = RotationDirection.COUNTER_CLOCKWISE;
+
+  const redStaff = (
+    id: string,
+    type: MotionType,
+    from: GridLocation,
+    to: GridLocation,
+    startOri: Orientation,
+    endOri: Orientation,
+    rot: RotationDirection,
+    turns = 0
+  ) => ({
+    id: `l2td1-${id}`,
+    letter: null,
+    gridMode: GridMode.DIAMOND,
+    motions: {
+      red: createMotionData({
+        motionType: type,
+        rotationDirection: rot,
+        startLocation: from,
+        endLocation: to,
+        startOrientation: startOri,
+        endOrientation: endOri,
+        turns,
+        color: MotionColor.RED,
+        propType: PropType.STAFF,
+        gridMode: GridMode.DIAMOND,
+      }),
+    },
+  });
+  const stat = (id: string, loc: GridLocation, ori: Orientation) =>
+    redStaff(id, MotionType.STATIC, loc, loc, ori, ori, RotationDirection.NO_ROTATION);
+  const toHM = (m: ReturnType<typeof redStaff>["motions"]["red"]) => ({
+    type: m.motionType,
+    from: m.startLocation,
+    to: m.endLocation,
+    rot: m.rotationDirection,
+    startOri: m.startOrientation,
+    endOri: m.endOrientation,
+    turns: typeof m.turns === "number" ? m.turns : 0,
+  });
+
+  // ── Motion data (verbatim from DashStaticTurnsPage.svelte's dash row) ────
+  // Dash: S→N IN→IN CCW turns=1 — a vertical dash returning to thumb in.
+  const dashCombined = redStaff("dash-full", MotionType.DASH, SO_, N, IN, IN, CCW, 1);
+
+  const ANIM = {
+    "l2td1-dash": { data: dashCombined, word: "Dash with a turn", startLoc: SO_ },
+  } as const;
+  const animStep = (data: ReturnType<typeof redStaff>, stepNumber: number, startLoc: GridLocation): StepData =>
+    ({
+      ...data,
+      id: `${data.id}-anim-${stepNumber}`,
+      stepNumber,
+      motions: {
+        blue: createPlaceholderMotion(MotionColor.BLUE, { location: startLoc, orientation: IN }),
+        red: data.motions.red,
+      },
+    }) as unknown as StepData;
+  const rowSteps = (key: keyof typeof ANIM): StepData[] => {
+    const cfg = ANIM[key];
+    const start = animStep(stat(`${key}-start`, cfg.startLoc, IN), 0, cfg.startLoc);
+    const combined = animStep(cfg.data, 1, cfg.startLoc);
+    return [start, ...bakeReversals([combined])];
+  };
+  const halfOf = (combined: ReturnType<typeof redStaff>, startLoc: GridLocation) =>
+    buildHalvedStep(animStep(combined, 1, startLoc), 0.5);
+
+  const dashHM = toHM(dashCombined.motions.red);
+  const dashFrames: TurnStripFrame[] = [
+    { kind: "start", step: animStep(stat("start", SO_, IN), 0, SO_), frameLabel: "start", thumbLabel: "in" },
+    {
+      kind: "half",
+      step: halfOf(dashCombined, SO_),
+      fallbackMotion: dashHM,
+      frameLabel: "halfway",
+    },
+    {
+      kind: "end",
+      step: animStep(stat("end", N, dashCombined.motions.red.endOrientation), 0, N),
+      frameLabel: "end",
+      thumbLabel: "in",
+    },
+    {
+      kind: "combined",
+      step: animStep(ANIM["l2td1-dash"].data, 1, SO_),
+      animKey: "l2td1-dash",
+      word: ANIM["l2td1-dash"].word,
+      rowSteps: rowSteps("l2td1-dash"),
+    },
+  ];
 </script>
 
 <GuideSection id="turn-dashes" title="Dashes" subtitle="VTG: 1:1">
@@ -7,7 +120,7 @@
     You can also add a turn to a dash. During the prop rotation, move the hand directly in a straight line. Pause at the halfway point while learning to ensure that your hand is in the center point and the staff is perpendicular to your starting position.
   </p>
 
-  <!-- TODO: add diagram — dash with 1 turn breakdown -->
+  <TurnStrip frames={dashFrames} caption="Dash with a turn, south to north — start, halfway, end, full motion" />
 
   <p>
     A base dash has 1 thumb switch (in → out), therefore a dash with a turn has 2 thumb switches (in → in).
