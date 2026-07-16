@@ -253,3 +253,39 @@ export const HALF_MARK_IMAGE_PATH = "/images/numbers/half.svg";
 export function getHalfMarkWidth(): number {
   return 16;
 }
+
+/**
+ * Gap (in glyph units) between a turn number and its halved-motion mark.
+ * Matches the geometry proven on the A/B page (src/routes/test/half-notation/
+ * +page.svelte's MARK_GAP). Every renderer that draws the mark (the live SVG
+ * TurnsColumn, the canvas-2d pipeline, the video-export prerenderer) imports
+ * this single constant rather than hardcoding "8" a second or third time.
+ */
+export const MARK_GAP = 8;
+
+/**
+ * Width of a turn slot's full drawable unit: just the number's own width when
+ * not halved, or number + gap + mark when halved. This is the box each slot
+ * centers within (see getSlotOffsetX) so a halved slot's mark never overlaps
+ * a neighboring column or gets clipped by a column sized for the number alone.
+ *
+ * Single source of truth for TurnsColumn.svelte, canvas-2d-glyph-renderer.ts,
+ * and export-glyph-prerenderer.ts - don't re-derive this inline in a consumer.
+ */
+export function getSlotUnitWidth(ownWidth: number, halved: boolean): number {
+  return halved ? ownWidth + MARK_GAP + getHalfMarkWidth() : ownWidth;
+}
+
+/**
+ * Left offset (within a shared column box of `columnWidth`) at which a slot's
+ * unit should render, so the number/mark pair centers the same way an
+ * unhalved number always has (reproduces the historical xMid-via-
+ * preserveAspectRatio centering for the unhalved case, where unit === ownWidth).
+ */
+export function getSlotOffsetX(
+  columnWidth: number,
+  ownWidth: number,
+  halved: boolean
+): number {
+  return (columnWidth - getSlotUnitWidth(ownWidth, halved)) / 2;
+}

@@ -3,6 +3,9 @@ import {
   parseTurnsTuple,
   getHalfMarkWidth,
   HALF_MARK_IMAGE_PATH,
+  MARK_GAP,
+  getSlotUnitWidth,
+  getSlotOffsetX,
 } from "../turn-tuple-parser";
 
 // Coverage for the halved-motion token ("/" suffix) added in
@@ -103,5 +106,40 @@ describe("half-mark asset helpers", () => {
 
   it("exposes the mark's viewBox width", () => {
     expect(getHalfMarkWidth()).toBe(16);
+  });
+});
+
+// Shared layout math (getSlotUnitWidth/getSlotOffsetX) - the single source of
+// truth TurnsColumn.svelte, canvas-2d-glyph-renderer.ts, and
+// export-glyph-prerenderer.ts all import instead of re-deriving the
+// gap/width/centering arithmetic three times.
+describe("getSlotUnitWidth", () => {
+  it("returns the number's own width when not halved", () => {
+    expect(getSlotUnitWidth(30, false)).toBe(30);
+    expect(getSlotUnitWidth(80, false)).toBe(80);
+  });
+
+  it("adds gap + mark width when halved", () => {
+    // 30 (number) + 8 (MARK_GAP) + 16 (mark) = 54
+    expect(getSlotUnitWidth(30, true)).toBe(30 + MARK_GAP + getHalfMarkWidth());
+    expect(getSlotUnitWidth(30, true)).toBe(54);
+  });
+});
+
+describe("getSlotOffsetX", () => {
+  it("centers an unhalved slot exactly like plain (columnWidth - width) / 2", () => {
+    expect(getSlotOffsetX(80, 30, false)).toBe((80 - 30) / 2);
+  });
+
+  it("is zero when the halved slot's unit equals the column width", () => {
+    // top halved (unit 54) is the widest slot -> column is 54 -> offset 0
+    expect(getSlotOffsetX(54, 30, true)).toBe(0);
+  });
+
+  it("shrinks the offset for a halved slot vs. an unhalved slot of the same own width, given the same column", () => {
+    const columnWidth = 60;
+    const unhalvedOffset = getSlotOffsetX(columnWidth, 30, false);
+    const halvedOffset = getSlotOffsetX(columnWidth, 30, true);
+    expect(halvedOffset).toBeLessThan(unhalvedOffset);
   });
 });

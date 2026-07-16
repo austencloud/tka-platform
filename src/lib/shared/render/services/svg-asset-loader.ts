@@ -14,6 +14,7 @@ import { getSvgImageCache, type DrawableImage } from "./svg-image-cache";
 import { Letter } from "../../foundation/domain/models/letter";
 import { getLetterImagePath } from "../../pictograph/tka-glyph/utils/letter-image-getter";
 import { assetFetch } from "../../net/asset-fetch";
+import { HALF_MARK_IMAGE_PATH } from "../../pictograph/tka-glyph/utils/turn-tuple-parser";
 
 export interface LetterAsset {
   image: DrawableImage;
@@ -29,6 +30,7 @@ export interface LoadedAssets {
   };
   letters: Map<string, LetterAsset>;
   turnNumbers: Map<string, DrawableImage>;
+  halfMark: DrawableImage | null;
 }
 
 // Plain singleton — no import.meta.hot here. HMR in a worker pulls in
@@ -46,6 +48,7 @@ export class SvgAssetLoader {
     },
     letters: new Map(),
     turnNumbers: new Map(),
+    halfMark: null,
   };
 
   private initialized = false;
@@ -234,6 +237,25 @@ export class SvgAssetLoader {
       const path = `/images/numbers/${filename}.svg`;
       const img = await cache.getImageFromUrl(path);
       this.assets.turnNumbers.set(key, img);
+      return img;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Load the halved-motion mark SVG (static/images/numbers/half.svg) as an
+   * image (lazy-loaded and cached once - it's a single shared asset, unlike
+   * turn numbers which vary per value). Path comes from HALF_MARK_IMAGE_PATH
+   * (turn-tuple-parser.ts) - the single source of truth for the mark's path.
+   */
+  async getHalfMarkImage(): Promise<DrawableImage | null> {
+    if (this.assets.halfMark) return this.assets.halfMark;
+
+    try {
+      const cache = getSvgImageCache();
+      const img = await cache.getImageFromUrl(HALF_MARK_IMAGE_PATH);
+      this.assets.halfMark = img;
       return img;
     } catch {
       return null;

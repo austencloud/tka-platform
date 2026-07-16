@@ -32,6 +32,11 @@ import {
   shouldDisplayTurn,
   getTurnNumberImagePath,
   getTurnNumberWidth,
+  HALF_MARK_IMAGE_PATH,
+  getHalfMarkWidth,
+  MARK_GAP,
+  getSlotUnitWidth,
+  getSlotOffsetX,
 } from "$lib/shared/pictograph/tka-glyph/utils/turn-tuple-parser";
 import { calculateTurnPositions } from "$lib/shared/pictograph/tka-glyph/utils/turn-position-calculator";
 
@@ -133,6 +138,8 @@ export class ExportGlyphPrerenderer {
         uniqueTurnPaths.add(getTurnNumberImagePath(parsed.top));
       if (shouldDisplayTurn(parsed.bottom))
         uniqueTurnPaths.add(getTurnNumberImagePath(parsed.bottom));
+      if (parsed.topHalved || parsed.bottomHalved)
+        uniqueTurnPaths.add(HALF_MARK_IMAGE_PATH);
     }
 
     const fetchPromises: Promise<void>[] = [];
@@ -264,8 +271,13 @@ export class ExportGlyphPrerenderer {
 
     const parsed = parseTurnsTuple(data.turnsTuple);
     const hasDash = isDashLetter(data.letter);
-    const showTop = shouldDisplayTurn(parsed.top);
-    const showBottom = shouldDisplayTurn(parsed.bottom);
+    // A slot shows if it has a displayable number OR is halved - a halved
+    // 0-turn motion shows the mark alone (matches TurnsColumn.svelte and
+    // canvas-2d-glyph-renderer.ts's showTop/showBottom).
+    const showTopNumber = shouldDisplayTurn(parsed.top);
+    const showBottomNumber = shouldDisplayTurn(parsed.bottom);
+    const showTop = showTopNumber || parsed.topHalved;
+    const showBottom = showBottomNumber || parsed.bottomHalved;
     const hasTurns = showTop || showBottom;
 
     // Turn positions (relative to letter origin)
@@ -273,8 +285,14 @@ export class ExportGlyphPrerenderer {
       ? calculateTurnPositions(letterDims, NUMBER_HEIGHT, hasDash)
       : null;
 
-    const topWidth = showTop ? getTurnNumberWidth(parsed.top) : 0;
-    const bottomWidth = showBottom ? getTurnNumberWidth(parsed.bottom) : 0;
+    // Own (number-only) width per slot, plus each slot's full unit (number,
+    // or number+gap+mark when halved) via the shared getSlotUnitWidth -
+    // single source of truth with TurnsColumn.svelte and
+    // canvas-2d-glyph-renderer.ts, so all three render paths agree on layout.
+    const topOwnWidth = getTurnNumberWidth(parsed.top);
+    const bottomOwnWidth = getTurnNumberWidth(parsed.bottom);
+    const topWidth = showTop ? getSlotUnitWidth(topOwnWidth, parsed.topHalved) : 0;
+    const bottomWidth = showBottom ? getSlotUnitWidth(bottomOwnWidth, parsed.bottomHalved) : 0;
     const columnWidth = Math.max(topWidth, bottomWidth);
 
     // Compute composite bounds
@@ -331,31 +349,55 @@ export class ExportGlyphPrerenderer {
 
     parts.push("</g>"); // End letter+dash group
 
-    // --- Turn numbers (NOT inside the dark-mode-inverted group) ---
+    // --- Turn numbers + halved-motion marks (NOT inside the dark-mode-inverted group) ---
     if (hasTurns && turnPositions) {
       if (showTop) {
-        this.appendTurnNumber(
-          parts,
-          parsed.top,
-          turnPositions.top.x,
-          turnPositions.top.y + yPadTop,
-          columnWidth,
-          "top-color",
-          svgTextCache,
-          svgDimsCache
-        );
+        const topOffsetX = getSlotOffsetX(columnWidth, topOwnWidth, parsed.topHalved);
+        if (showTopNumber) {
+          this.appendTurnNumber(
+            parts,
+            parsed.top,
+            turnPositions.top.x + topOffsetX,
+            turnPositions.top.y + yPadTop,
+            "top-color",
+            svgTextCache,
+            svgDimsCache
+          );
+        }
+        if (parsed.topHalved) {
+          this.appendHalfMark(
+            parts,
+            turnPositions.top.x + topOffsetX + topOwnWidth + MARK_GAP,
+            turnPositions.top.y + yPadTop,
+            "top-color",
+            svgTextCache,
+            svgDimsCache
+          );
+        }
       }
       if (showBottom) {
-        this.appendTurnNumber(
-          parts,
-          parsed.bottom,
-          turnPositions.bottom.x,
-          turnPositions.bottom.y + yPadTop,
-          columnWidth,
-          "bottom-color",
-          svgTextCache,
-          svgDimsCache
-        );
+        const bottomOffsetX = getSlotOffsetX(columnWidth, bottomOwnWidth, parsed.bottomHalved);
+        if (showBottomNumber) {
+          this.appendTurnNumber(
+            parts,
+            parsed.bottom,
+            turnPositions.bottom.x + bottomOffsetX,
+            turnPositions.bottom.y + yPadTop,
+            "bottom-color",
+            svgTextCache,
+            svgDimsCache
+          );
+        }
+        if (parsed.bottomHalved) {
+          this.appendHalfMark(
+            parts,
+            turnPositions.bottom.x + bottomOffsetX + bottomOwnWidth + MARK_GAP,
+            turnPositions.bottom.y + yPadTop,
+            "bottom-color",
+            svgTextCache,
+            svgDimsCache
+          );
+        }
       }
     }
 
@@ -381,14 +423,15 @@ export class ExportGlyphPrerenderer {
 
   /**
    * Append an inlined turn number SVG element to the composite parts array.
-   * Uses feFlood color filter and centers narrower numbers within columnWidth.
+   * Uses a feFlood color filter. `x` is the already-offset absolute position
+   * (see getSlotOffsetX at the call site) - this method no longer re-centers,
+   * so halved and unhalved slots share one offset computation.
    */
   private appendTurnNumber(
     parts: string[],
     turnValue: number | "fl",
     x: number,
     y: number,
-    columnWidth: number,
     filterId: string,
     svgTextCache: Map<string, string>,
     svgDimsCache: Map<
@@ -406,10 +449,6 @@ export class ExportGlyphPrerenderer {
       width: 30,
       height: 45,
     };
-    const nativeWidth = getTurnNumberWidth(turnValue);
-
-    // Center narrower numbers within columnWidth (matches preserveAspectRatio="xMidYMin meet")
-    const xOffset = (columnWidth - nativeWidth) / 2;
     const content = this.extractSvgInnerContent(svg);
 
     const originTranslate =
@@ -418,7 +457,48 @@ export class ExportGlyphPrerenderer {
         : "";
 
     parts.push(
-      `<g transform="translate(${x + xOffset}, ${y})" filter="url(#${filterId})">`
+      `<g transform="translate(${x}, ${y})" filter="url(#${filterId})">`
+    );
+    parts.push(`<g${originTranslate ? ` transform="${originTranslate.trim()}"` : ""}>`);
+    parts.push(content);
+    parts.push("</g></g>");
+  }
+
+  /**
+   * Append the inlined halved-motion mark (static/images/numbers/half.svg,
+   * HALF_MARK_IMAGE_PATH) to the composite parts array. Same feFlood-filter
+   * recoloring as appendTurnNumber, sharing the slot's own filter id so the
+   * mark always tints with its slot's motion color, matching TurnsColumn.svelte.
+   */
+  private appendHalfMark(
+    parts: string[],
+    x: number,
+    y: number,
+    filterId: string,
+    svgTextCache: Map<string, string>,
+    svgDimsCache: Map<
+      string,
+      { minX: number; minY: number; width: number; height: number }
+    >
+  ): void {
+    const svg = svgTextCache.get(HALF_MARK_IMAGE_PATH);
+    if (!svg) return;
+
+    const viewBox = svgDimsCache.get(HALF_MARK_IMAGE_PATH) ?? {
+      minX: 0,
+      minY: 0,
+      width: getHalfMarkWidth(),
+      height: NUMBER_HEIGHT,
+    };
+    const content = this.extractSvgInnerContent(svg);
+
+    const originTranslate =
+      viewBox.minX !== 0 || viewBox.minY !== 0
+        ? `translate(${-viewBox.minX}, ${-viewBox.minY}) `
+        : "";
+
+    parts.push(
+      `<g transform="translate(${x}, ${y})" filter="url(#${filterId})">`
     );
     parts.push(`<g${originTranslate ? ` transform="${originTranslate.trim()}"` : ""}>`);
     parts.push(content);

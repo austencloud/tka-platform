@@ -6,7 +6,16 @@ import { getSvgAssetLoader } from "./svg-asset-loader";
 import { getLetterImagePath, isDashLetter } from "../../pictograph/tka-glyph/utils/letter-image-getter";
 import { Letter, getLetterType } from "../../foundation/domain/models/letter";
 import { LetterType } from "../../foundation/domain/models/letter-type";
-import { parseTurnsTuple, shouldDisplayTurn, getTurnNumberImagePath, getTurnNumberWidth } from "../../pictograph/tka-glyph/utils/turn-tuple-parser";
+import {
+  parseTurnsTuple,
+  shouldDisplayTurn,
+  getTurnNumberImagePath,
+  getTurnNumberWidth,
+  getHalfMarkWidth,
+  MARK_GAP,
+  getSlotUnitWidth,
+  getSlotOffsetX,
+} from "../../pictograph/tka-glyph/utils/turn-tuple-parser";
 import { interpretTurnColors, BLUE_HEX, RED_HEX } from "../../pictograph/tka-glyph/services/turn-color-interpreter";
 import { calculateTurnPositions } from "../../pictograph/tka-glyph/utils/turn-position-calculator";
 import { deriveTnDFromPictograph } from "../../pictograph/shared/domain/utils/tnd-deriver";
@@ -223,8 +232,12 @@ export async function drawTurnsColumn(
   }
 
   const parsed = parseTurnsTuple(turnsTuple);
-  const showTop = shouldDisplayTurn(parsed.top);
-  const showBottom = shouldDisplayTurn(parsed.bottom);
+  // A slot renders if it has a displayable number OR is halved - a halved
+  // 0-turn motion shows the mark alone (matches TurnsColumn.svelte's showTop/
+  // showBottom; shouldDisplayTurn hides bare 0, the mark is what makes a
+  // halved 0 visible).
+  const showTop = shouldDisplayTurn(parsed.top) || parsed.topHalved;
+  const showBottom = shouldDisplayTurn(parsed.bottom) || parsed.bottomHalved;
 
   if (!showTop && !showBottom) return;
 
@@ -243,10 +256,21 @@ export async function drawTurnsColumn(
 
   const positions = calculateTurnPositions(letterDimensions, TURN_NUMBER_HEIGHT, hasDash);
 
+  // Own (number-only) width per slot, plus the shared column box each slot's
+  // unit (number, or number+gap+mark when halved) centers within. Matches
+  // TurnsColumn.svelte's topOwnWidth/columnWidth/topOffsetX exactly via the
+  // shared getSlotUnitWidth/getSlotOffsetX helpers - don't re-derive inline.
+  const topOwnWidth = getTurnNumberWidth(parsed.top);
+  const bottomOwnWidth = getTurnNumberWidth(parsed.bottom);
+  const markWidth = getHalfMarkWidth();
+
   const columnWidth = Math.max(
-    getTurnNumberWidth(parsed.top),
-    getTurnNumberWidth(parsed.bottom)
+    getSlotUnitWidth(topOwnWidth, parsed.topHalved),
+    getSlotUnitWidth(bottomOwnWidth, parsed.bottomHalved)
   );
+
+  const topOffsetX = getSlotOffsetX(columnWidth, topOwnWidth, parsed.topHalved);
+  const bottomOffsetX = getSlotOffsetX(columnWidth, bottomOwnWidth, parsed.bottomHalved);
 
   const baseX = TKA_GLYPH_X * scale;
   const baseY = TKA_GLYPH_Y * scale;
@@ -254,43 +278,70 @@ export async function drawTurnsColumn(
   const assetLoader = getSvgAssetLoader();
 
   if (showTop && !isColorHidden(turnColors.top)) {
-    const topPath = getTurnNumberImagePath(parsed.top);
-    if (topPath) {
-      try {
-        const topImg = await assetLoader.getTurnNumberImage(parsed.top);
-        if (topImg) {
-          const topNaturalWidth = getTurnNumberWidth(parsed.top);
-          const centerOffset = ((columnWidth - topNaturalWidth) / 2) * scale;
-          const drawX = baseX + positions.top.x * scale + centerOffset;
-          const drawY = baseY + positions.top.y * scale;
-          const drawWidth = topNaturalWidth * scale;
-          const drawHeight = TURN_NUMBER_HEIGHT * scale;
+    if (shouldDisplayTurn(parsed.top)) {
+      const topPath = getTurnNumberImagePath(parsed.top);
+      if (topPath) {
+        try {
+          const topImg = await assetLoader.getTurnNumberImage(parsed.top);
+          if (topImg) {
+            const drawX = baseX + (positions.top.x + topOffsetX) * scale;
+            const drawY = baseY + positions.top.y * scale;
+            const drawWidth = topOwnWidth * scale;
+            const drawHeight = TURN_NUMBER_HEIGHT * scale;
 
-          drawColoredImage(ctx, topImg, drawX, drawY, drawWidth, drawHeight, turnColors.top);
+            drawColoredImage(ctx, topImg, drawX, drawY, drawWidth, drawHeight, turnColors.top);
+          }
+        } catch {
+          drawTurnText(ctx, parsed.top, turnColors.top, baseX + positions.top.x * scale, baseY + positions.top.y * scale, scale);
+        }
+      }
+    }
+
+    if (parsed.topHalved) {
+      try {
+        const markImg = await assetLoader.getHalfMarkImage();
+        if (markImg) {
+          const markX = baseX + (positions.top.x + topOffsetX + topOwnWidth + MARK_GAP) * scale;
+          const markY = baseY + positions.top.y * scale;
+          drawColoredImage(ctx, markImg, markX, markY, markWidth * scale, TURN_NUMBER_HEIGHT * scale, turnColors.top);
         }
       } catch {
-        drawTurnText(ctx, parsed.top, turnColors.top, baseX + positions.top.x * scale, baseY + positions.top.y * scale, scale);
+        // No text fallback for the mark - the number (if any) already
+        // rendered above; missing mark art degrades to "just the number".
       }
     }
   }
 
   if (showBottom && !isColorHidden(turnColors.bottom)) {
-    const bottomPath = getTurnNumberImagePath(parsed.bottom);
-    if (bottomPath) {
-      try {
-        const bottomImg = await assetLoader.getTurnNumberImage(parsed.bottom);
-        if (bottomImg) {
-          const bottomNaturalWidth = getTurnNumberWidth(parsed.bottom);
-          const centerOffset = ((columnWidth - bottomNaturalWidth) / 2) * scale;
-          const drawX = baseX + positions.bottom.x * scale + centerOffset;
-          const drawY = baseY + positions.bottom.y * scale;
-          const drawWidth = bottomNaturalWidth * scale;
-          const drawHeight = TURN_NUMBER_HEIGHT * scale;
+    if (shouldDisplayTurn(parsed.bottom)) {
+      const bottomPath = getTurnNumberImagePath(parsed.bottom);
+      if (bottomPath) {
+        try {
+          const bottomImg = await assetLoader.getTurnNumberImage(parsed.bottom);
+          if (bottomImg) {
+            const drawX = baseX + (positions.bottom.x + bottomOffsetX) * scale;
+            const drawY = baseY + positions.bottom.y * scale;
+            const drawWidth = bottomOwnWidth * scale;
+            const drawHeight = TURN_NUMBER_HEIGHT * scale;
 
-          drawColoredImage(ctx, bottomImg, drawX, drawY, drawWidth, drawHeight, turnColors.bottom);
+            drawColoredImage(ctx, bottomImg, drawX, drawY, drawWidth, drawHeight, turnColors.bottom);
+          }
+        } catch {
+          drawTurnText(ctx, parsed.bottom, turnColors.bottom, baseX + positions.bottom.x * scale, baseY + positions.bottom.y * scale, scale);
+        }
+      }
+    }
+
+    if (parsed.bottomHalved) {
+      try {
+        const markImg = await assetLoader.getHalfMarkImage();
+        if (markImg) {
+          const markX = baseX + (positions.bottom.x + bottomOffsetX + bottomOwnWidth + MARK_GAP) * scale;
+          const markY = baseY + positions.bottom.y * scale;
+          drawColoredImage(ctx, markImg, markX, markY, markWidth * scale, TURN_NUMBER_HEIGHT * scale, turnColors.bottom);
         }
       } catch {
-        drawTurnText(ctx, parsed.bottom, turnColors.bottom, baseX + positions.bottom.x * scale, baseY + positions.bottom.y * scale, scale);
+        // No text fallback for the mark - see the top-slot comment above.
       }
     }
   }

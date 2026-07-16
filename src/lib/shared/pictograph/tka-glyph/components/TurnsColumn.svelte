@@ -22,6 +22,9 @@ Props:
     getTurnNumberWidth,
     HALF_MARK_IMAGE_PATH,
     getHalfMarkWidth,
+    MARK_GAP,
+    getSlotUnitWidth,
+    getSlotOffsetX,
   } from "../utils/turn-tuple-parser";
   import { calculateTurnPositions } from "../utils/turn-position-calculator";
   import { interpretTurnColors } from "../services/turn-color-interpreter";
@@ -187,27 +190,19 @@ Props:
 
   // Halved-motion mark (docs/superpowers/specs/2026-07-16-half-notation-canon-design.md,
   // Treatment B): a standalone asset rendered after the number, not baked into
-  // the number's own image. Gap matches the geometry proven on the A/B page
-  // (src/routes/test/half-notation/+page.svelte's MARK_GAP).
-  const MARK_GAP = 8;
+  // the number's own image. Width/gap math (getSlotUnitWidth/getSlotOffsetX)
+  // is shared with canvas-2d-glyph-renderer.ts and export-glyph-prerenderer.ts
+  // so all three render paths agree on layout - don't re-derive it locally.
   const markWidth = getHalfMarkWidth();
 
   const topOwnWidth = $derived(getTurnNumberWidth(parsedTurns.top));
   const bottomOwnWidth = $derived(getTurnNumberWidth(parsedTurns.bottom));
 
-  // A slot's "unit" is the number alone, or number+gap+mark when halved.
-  // Each slot's unit is centered independently within the shared column box
-  // (below) so a halved top and an unhalved bottom still align the same way
-  // unhalved top/bottom pairs always have.
-  function slotUnitWidth(ownWidth: number, halved: boolean): number {
-    return halved ? ownWidth + MARK_GAP + markWidth : ownWidth;
-  }
-
   // Calculate the maximum width needed for the turn column, including any
   // halved slot's mark+gap - this is the box both top and bottom center within.
   const columnWidth = $derived.by(() => {
-    const topUnit = slotUnitWidth(topOwnWidth, parsedTurns.topHalved);
-    const bottomUnit = slotUnitWidth(bottomOwnWidth, parsedTurns.bottomHalved);
+    const topUnit = getSlotUnitWidth(topOwnWidth, parsedTurns.topHalved);
+    const bottomUnit = getSlotUnitWidth(bottomOwnWidth, parsedTurns.bottomHalved);
     return Math.max(topUnit, bottomUnit);
   });
 
@@ -217,10 +212,10 @@ Props:
   // centering exactly for the unhalved case (unit === ownWidth) while giving
   // the mark a real, reliable coordinate to sit at for the halved case.
   const topOffsetX = $derived(
-    (columnWidth - slotUnitWidth(topOwnWidth, parsedTurns.topHalved)) / 2
+    getSlotOffsetX(columnWidth, topOwnWidth, parsedTurns.topHalved)
   );
   const bottomOffsetX = $derived(
-    (columnWidth - slotUnitWidth(bottomOwnWidth, parsedTurns.bottomHalved)) / 2
+    getSlotOffsetX(columnWidth, bottomOwnWidth, parsedTurns.bottomHalved)
   );
 
   // Check if this letter has a dash (Type3/Type5)
