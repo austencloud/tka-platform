@@ -287,61 +287,89 @@ export class SequenceBuilder {
       }
     }
 
-    // Compute required end positions for LOOP targeting.
-    // When start position is known, we can compute them upfront.
-    // When start position is unknown (random), we validate after each attempt.
-    let requiredEndPositions: Set<string> | undefined;
-    if (needsLoopTargeting && effectiveStartPosition && options.loop) {
-      requiredEndPositions = this.getAllValidEndPositions(
-        options.loop.type,
-        effectiveStartPosition,
-        options.loop.period,
+    // Build the ordered list of (start, requiredEnds) targets to search toward.
+    //
+    // The closure constraint is enforced by handing the beam search the set of
+    // valid end positions for the FINAL letter (search() filters the last beat
+    // to those). That only works if we know the start position, because the
+    // valid ends are a function of (start, loopType). When the caller pins a
+    // start we compute a single target. When the start is random for a LOOP we
+    // must NOT let the beam draw blind and then reject the pair post-hoc — for
+    // many words that draw is deterministic (same invalid pair every attempt),
+    // so retrying can never fix it. Instead we enumerate every closure-
+    // compatible start the first letter can occupy and steer the beam toward
+    // each one's valid ends until a path closes.
+    let searchTargets: Array<{
+      start: string | undefined;
+      requiredEnds: Set<string> | undefined;
+    }>;
+    if (needsLoopTargeting && options.loop && !effectiveStartPosition) {
+      searchTargets = this.enumerateLoopStartTargets(
+        letters[0]!,
+        options.loop,
+        options.gridMode,
+        options.blockedStartPositions,
       );
+      if (searchTargets.length === 0) {
+        throw new Error(
+          `No closure-compatible start position exists for a ${options.loop.type} LOOP spelling "${options.word}"`,
+        );
+      }
+    } else {
+      let requiredEndPositions: Set<string> | undefined;
+      if (needsLoopTargeting && effectiveStartPosition && options.loop) {
+        requiredEndPositions = this.getAllValidEndPositions(
+          options.loop.type,
+          effectiveStartPosition,
+          options.loop.period,
+        );
+      }
+      searchTargets = [{ start: effectiveStartPosition, requiredEnds: requiredEndPositions }];
     }
 
     // Word-based LOOP needs more retries because the word constrains which
     // positions are reachable. Each retry picks different random variations
-    // that may land on different end positions.
+    // (rotation-direction resolution + turn-driven enrichment) that may take a
+    // different lane through the beam.
     const maxRetries = needsLoopTargeting ? 30 : 1;
     let searchResult: BeamSearchResult | undefined;
     let lastError: string | undefined;
 
+    outer:
     for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
-      const propContinuity = this.resolveEffectivePropContinuity(options);
-      const result = beamSearch.search(
-        letters,
-        effectiveStartPosition,
-        constraintSet,
-        options.beamWidth ?? 10,
-        requiredEndPositions,
-        turnAllocation,
-        propContinuity,
-      );
+      for (const target of searchTargets) {
+        const beamSearch = new BeamSearch(this.variationProvider, options.gridMode);
+        const propContinuity = this.resolveEffectivePropContinuity(options);
+        const result = beamSearch.search(
+          letters,
+          target.start,
+          constraintSet,
+          options.beamWidth ?? 10,
+          target.requiredEnds,
+          turnAllocation,
+          propContinuity,
+        );
 
-      if (result.success || result.steps.length > 0) {
-        // When LOOP is requested but start position was random (no
-        // requiredEndPositions computed upfront), validate the result's
-        // position pair after the fact. If invalid, retry.
-        if (needsLoopTargeting && !requiredEndPositions && options.loop && result.steps.length >= 2) {
-          const actualStart = result.steps[0]?.startPosition;
-          const actualEnd = result.steps[result.steps.length - 1]?.endPosition;
-          if (actualStart && actualEnd) {
-            const validEnds = this.getAllValidEndPositions(
-              options.loop.type,
-              actualStart,
-              options.loop.period,
-            );
-            if (validEnds.size > 0 && !validEnds.has(actualEnd)) {
-              lastError = `Position pair ${actualStart} -> ${actualEnd} not valid for ${options.loop.type} LOOP`;
-              continue; // retry
+        if (result.success || result.steps.length > 0) {
+          // Closure guard. search() filters the final letter's DIRECT
+          // variations to requiredEnds, but a bridge inserted before the final
+          // letter (tryBridges) places that letter without re-applying the
+          // filter, so a bridged path can slip through ending off-target. Verify
+          // the real end closes the LOOP; if not, this start can't close it —
+          // move on to the next candidate rather than handing the LOOP executor
+          // a pair it will reject downstream.
+          if (target.requiredEnds && target.requiredEnds.size > 0) {
+            const actualEnd = result.steps[result.steps.length - 1]?.endPosition;
+            if (!actualEnd || !target.requiredEnds.has(actualEnd)) {
+              lastError = `Sequence for "${options.word}" could not close as a ${options.loop?.type} LOOP from ${target.start ?? "?"} (ended ${actualEnd ?? "?"})`;
+              continue; // try the next start candidate
             }
           }
+          searchResult = result;
+          break outer;
         }
-        searchResult = result;
-        break;
+        lastError = result.error;
       }
-      lastError = result.error;
     }
 
     if (!searchResult || (!searchResult.success && searchResult.steps.length === 0)) {
@@ -1181,6 +1209,49 @@ export class SequenceBuilder {
     }
 
     return positions;
+  }
+
+  /**
+   * Enumerate the closure-compatible start positions the first letter can
+   * occupy for a random-start LOOP, each paired with its valid end positions.
+   *
+   * A start is a candidate only when (a) the first letter has a variation that
+   * begins there in this grid mode, (b) it is not blocked, and (c) the LOOP
+   * type yields at least one valid end from it (degenerate starts — e.g.
+   * rotated+swapped from alpha — return an empty end set and are skipped). The
+   * list is shuffled so repeated calls vary the chosen start rather than always
+   * drawing the same one.
+   */
+  private enumerateLoopStartTargets(
+    firstLetter: string,
+    loop: LoopOptions,
+    gridMode: string,
+    blockedStartPositions?: string[],
+  ): Array<{ start: string; requiredEnds: Set<string> }> {
+    const blocked = new Set(blockedStartPositions ?? []);
+    const firstVariations = this.variationProvider
+      .getAllVariations(gridMode)
+      .filter((p) => p.letter === firstLetter);
+    const starts = [...new Set(firstVariations.map((p) => p.startPosition))];
+
+    const targets: Array<{ start: string; requiredEnds: Set<string> }> = [];
+    for (const start of starts) {
+      if (blocked.has(start)) continue;
+      const requiredEnds = this.getAllValidEndPositions(loop.type, start, loop.period);
+      if (requiredEnds.size > 0) {
+        targets.push({ start, requiredEnds });
+      }
+    }
+
+    // Fisher-Yates shuffle for start-position variety across calls.
+    for (let i = targets.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = targets[i]!;
+      targets[i] = targets[j]!;
+      targets[j] = tmp;
+    }
+
+    return targets;
   }
 
   /**
