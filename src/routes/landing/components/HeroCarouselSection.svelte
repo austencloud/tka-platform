@@ -345,6 +345,11 @@
          below), so the mobile single-CTA row is untouched. Icons match the
          SiteHeader nav so the labels read consistently. -->
     <nav class="hero-quicklinks" aria-label="Explore">
+      <!-- /composer is the Composer's front page (what it is), distinct from the
+           primary CTA above which opens the app itself at /create. -->
+      <a class="hero-link hero-chip" href="/composer">
+        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i><span>Composer</span>
+      </a>
       <a class="hero-link hero-chip" href="/guide">
         <i class="fas fa-book-open" aria-hidden="true"></i><span>Guide</span>
       </a>

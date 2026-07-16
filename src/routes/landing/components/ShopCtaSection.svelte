@@ -14,11 +14,13 @@
     <h2>Choreo Cards</h2>
     <p class="section-intro">
       <span>Physical decks of flow arts choreography.</span>
-      <span>Coming soon. Join the waitlist.</span>
+      <span>Each card holds a sequence you can scan and play.</span>
     </p>
-    <a class="cta-link" href="/shop">
-      <i class="fas fa-store" aria-hidden="true"></i>
-      <span>Join the waitlist</span>
+    <!-- Points at the explainer, not the gated /shop — the shop hasn't launched,
+         so the useful destination is the page that says what the cards are. -->
+    <a class="cta-link" href="/shop/choreography-cards">
+      <i class="fas fa-layer-group" aria-hidden="true"></i>
+      <span>See how they work</span>
     </a>
   </div>
 </section>
