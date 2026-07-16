@@ -1,15 +1,13 @@
 <script lang="ts">
   import LegalPageShell from "$lib/shared/legal/components/LegalPageShell.svelte";
+  import Seo from "$lib/shared/components/Seo.svelte";
 </script>
 
-<svelte:head>
-  <title>Terms of Service | Flow Arts Composer</title>
-  <meta
-    name="description"
-    content="Terms of Service for The Kinetic Alphabet (TKA) application."
-  />
-  <link rel="canonical" href="https://tkaflowarts.com/terms" />
-</svelte:head>
+<Seo
+  title="Terms of Service | Flow Arts Composer"
+  description="Terms of Service for The Kinetic Alphabet (TKA) application."
+  canonical="https://tkaflowarts.com/terms"
+/>
 
 <LegalPageShell>
   <div class="header-content">

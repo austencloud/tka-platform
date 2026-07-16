@@ -35,7 +35,9 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content={data.meta.thumbnailUrl} />
   {:else}
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content="https://tkaflowarts.com/og-default.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://tkaflowarts.com/og-default.png" />
   {/if}
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />

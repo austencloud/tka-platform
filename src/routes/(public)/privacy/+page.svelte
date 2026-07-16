@@ -1,15 +1,13 @@
 <script lang="ts">
   import LegalPageShell from "$lib/shared/legal/components/LegalPageShell.svelte";
+  import Seo from "$lib/shared/components/Seo.svelte";
 </script>
 
-<svelte:head>
-  <title>Privacy Policy | Flow Arts Composer</title>
-  <meta
-    name="description"
-    content="Privacy Policy for The Kinetic Alphabet (TKA) application."
-  />
-  <link rel="canonical" href="https://tkaflowarts.com/privacy" />
-</svelte:head>
+<Seo
+  title="Privacy Policy | Flow Arts Composer"
+  description="Privacy Policy for The Kinetic Alphabet (TKA) application."
+  canonical="https://tkaflowarts.com/privacy"
+/>
 
 <LegalPageShell>
   <div class="header-content">

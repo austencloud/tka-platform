@@ -1,15 +1,18 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { page } from "$app/state";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
   let { data } = $props();
 
+  const displayWord = $derived(data.meta?.word ? simplifyRepeatedWord(data.meta.word) : null);
+
   const title = $derived(
-    data.meta?.word ? `${data.meta.word} — Flow Arts Sequence | The Kinetic Alphabet` : "Scanned Sequence | The Kinetic Alphabet"
+    displayWord ? `${displayWord}: Flow Arts Sequence | The Kinetic Alphabet` : "Scanned Sequence | The Kinetic Alphabet"
   );
   const description = $derived(
-    data.meta?.word
-      ? `"${data.meta.word}"${data.meta?.creator ? ` by ${data.meta.creator}` : ""}${data.meta?.deckName ? ` from the ${data.meta.deckName} deck` : ""} — watch, practice, and remix this flow arts choreography sequence.`
+    displayWord
+      ? `"${displayWord}"${data.meta?.creator ? ` by ${data.meta.creator}` : ""}${data.meta?.deckName ? ` from the ${data.meta.deckName} deck` : ""}. Watch, practice, and remix this flow arts choreography sequence.`
       : "Watch and practice a flow arts choreography sequence."
   );
   const canonical = $derived(`https://tkaflowarts.com/q/${page.params.code}`);
@@ -29,7 +32,9 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content={data.meta.thumbnailUrl} />
   {:else}
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content="https://tkaflowarts.com/og-default.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://tkaflowarts.com/og-default.png" />
   {/if}
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />
