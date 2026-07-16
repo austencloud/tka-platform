@@ -65,10 +65,14 @@
    full-bleed content grid, fluid typography
    ══════════════════════════════════════════ */
 
-/* === Layout === */
+/* === Layout ===
+   GuideShell mounts a fixed SiteHeader (64px tall, 56px once scrolled) above
+   this layout - it doesn't push document flow, so the layout clears it with
+   an explicit top offset instead. */
 .guide-layout {
   display: flex;
   min-height: 100vh;
+  padding-top: 64px;
   background: oklch(0.13 0.015 270);
   color: oklch(0.90 0.01 270);
   font-family: 'Inter', system-ui, sans-serif;
@@ -77,10 +81,10 @@
 /* === Sidebar === */
 .guide-sidebar {
   position: fixed;
-  top: 0;
+  top: 64px;
   left: 0;
   width: 220px;
-  height: 100vh;
+  height: calc(100vh - 64px);
   overflow-y: auto;
   overflow-x: clip;
   background: oklch(0.15 0.02 270 / 0.6);
@@ -591,8 +595,9 @@
   .guide-sidebar.open {
     display: block;
     position: fixed;
+    top: 64px;
     width: 100%;
-    height: 100vh;
+    height: calc(100vh - 64px);
     z-index: 50;
     background: oklch(0.13 0.015 270);
     backdrop-filter: blur(24px);

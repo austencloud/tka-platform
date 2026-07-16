@@ -1,39 +1,29 @@
 <!--
-  /guide — the Guide hub. A standalone page on the site's live cosmic background
-  (same as the landing), with SiteHeader + SiteFooter chrome from
-  MarketingChrome. Plain and honest: the guide is being rewritten, here are the
-  old PDFs to download in the meantime, and an announce-me email form.
+  /guide - the Guide hub. Renders inside GuideShell (the same sidebar shell
+  every /guide/level-* page uses), so clicking Guide from the landing page
+  lands directly in the navigable guide instead of a separate cosmic-
+  background page first. This page is the guide's front door: what it is,
+  a way straight into Level 1, and a way into Level 2. It commits to being
+  the guide, not apologizing for what isn't built yet.
 
-  This is NOT the in-progress guide itself, but it does link out to every
-  Level 1 topic page (/guide/level-1/<slug>) so those crawlable, prerendered
-  pages aren't orphaned — see the "Level 1" section below, generated from the
-  guide-manifest.ts table of contents.
+  The full Level 1 topic corpus (/guide/level-1/<slug>) is not repeated in an
+  in-page TOC here - GuideShell's sidebar (GuideSidebar.svelte) already lists
+  every one of those routes in SSR HTML, so they stay crawlable without a
+  duplicate list on this page. Same for the PDF downloads - the sidebar's
+  Downloads group carries them.
 -->
 <script lang="ts">
-  import GuidesSection from "../../landing/components/GuidesSection.svelte";
+  import GuideShell from "./_components/GuideShell.svelte";
   import { joinWaitlist } from "$lib/features/store/services/waitlist";
-  import { bodyPagesByGroup, GROUP_TITLES, type GuideGroup } from "./level-1/_data/guide-manifest";
+  import { bodyPagesByGroup } from "./level-1/_data/guide-manifest";
   import { seoForSlug } from "./level-1/_data/guide-page-seo";
 
-  // Level 1 table of contents: every topic page, grouped the same way the
-  // manifest groups the printed book's TOC (1.0 Positions/Motions, 1.1
-  // Letters, 1.2 Words). Anchor text is the harvested SEO h1 (guide-page-seo.ts),
-  // falling back to the manifest title for entries not yet harvested.
-  type Level1Row = { id: string; label: string; level: 0 | 1 };
-  type Level1Group = { group: GuideGroup; title: string; rows: Level1Row[] };
-  const level1Groups: Level1Group[] = bodyPagesByGroup().map(({ group, entries }) => ({
-    group,
-    title: GROUP_TITLES[group],
-    rows: entries.map(({ entry }) => ({
-      id: entry.id,
-      label: seoForSlug(entry.id, entry.title).h1,
-      level: entry.level,
-    })),
-  }));
-
-  // Cosmic background + SiteHeader are provided by the persistent MarketingChrome
-  // (root layout) so they survive navigation between marketing pages without a
-  // flash. This page only renders its own content + footer.
+  // The guide's actual first page - "Start reading" goes straight there.
+  const firstTopic = bodyPagesByGroup()[0]?.entries[0]?.entry;
+  const firstTopicHref = firstTopic ? `/guide/level-1/${firstTopic.id}` : "/guide/level-1";
+  const firstTopicLabel = firstTopic
+    ? seoForSlug(firstTopic.id, firstTopic.title).h1
+    : "Level 1";
 
   let email = $state("");
   let status = $state<"idle" | "submitting" | "done" | "error">("idle");
@@ -100,28 +90,34 @@
   />
 </svelte:head>
 
-<main class="guide">
+<GuideShell>
+<!-- guide-page-route: the shared guide.css hook that lets a route span the
+     full guide-content width instead of the narrow prose column (see
+     guide.css's `.guide-content > .guide-page-route` rule) - needed so the
+     2200px recomposition below actually gets the width to recompose into. -->
+<main class="guide guide-page-route">
     <section class="hero">
-      <h1>The guide is being rewritten for the web</h1>
+      <h1>The Kinetic Alphabet Guide</h1>
       <p class="lede">
-        The whole guide is being rebuilt as web pages you can read in the
-        browser: the grid, the letters, and the words. It is in progress, so it
-        is not fully live yet.
+        Written notation for flow arts. Level 1 covers the grid, hand
+        positions and motions, letters, and words. Level 2 covers turns and
+        the intermediate system.
       </p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary" href={firstTopicHref}>
+          Start reading
+          <span class="btn-sub">{firstTopicLabel}</span>
+        </a>
+        <a class="btn btn-secondary" href="/guide/level-2/turns">
+          Read Level 2
+          <span class="btn-sub">Turns</span>
+        </a>
+      </div>
     </section>
 
-    <section class="available" aria-labelledby="available-heading">
-      <h2 id="available-heading">Available now</h2>
-      <p class="note">
-        Parts of the guide are already live and readable right in the browser:
-      </p>
+    <section class="more" aria-labelledby="more-heading">
+      <h2 id="more-heading">More in the guide</h2>
       <div class="available-links">
-        <a href="/guide/level-2" class="guide-link">
-          <span class="guide-link-title">Level 2</span>
-          <span class="guide-link-sub"
-            >Turns, double-turns, and the intermediate system</span
-          >
-        </a>
         <a href="/guide/codex" class="guide-link">
           <span class="guide-link-title">The Codex</span>
           <span class="guide-link-sub"
@@ -137,47 +133,11 @@
       </div>
     </section>
 
-    <section class="level1-toc" aria-labelledby="level1-toc-heading">
-      <h2 id="level1-toc-heading">Level 1</h2>
-      <p class="note">
-        Every Level 1 topic is already live, page by page, right in the
-        browser:
-      </p>
-      <nav class="level1-groups" aria-label="Level 1 guide contents">
-        {#each level1Groups as g (g.group)}
-          <div class="level1-group">
-            <h3 id={`level1-group-${g.group}`} class="level1-group-h">
-              <span class="level1-group-num">{g.group}</span>
-              <span>{g.title}</span>
-            </h3>
-            <ul class="level1-list" aria-labelledby={`level1-group-${g.group}`}>
-              {#each g.rows as row (row.id)}
-                <li class="level1-row" class:sub={row.level === 1}>
-                  <a href={`/guide/level-1/${row.id}`}>{row.label}</a>
-                </li>
-              {/each}
-            </ul>
-          </div>
-        {/each}
-      </nav>
-    </section>
-
-    <section class="old-guides" aria-labelledby="old-guides-heading">
-      <h2 id="old-guides-heading">The old guides</h2>
-      <p class="note">
-        These are the old guides. They are incomplete, but they cover the
-        basics. Download and read them on your phone, tablet, or screen in the
-        meantime.
-      </p>
-    </section>
-
-    <GuidesSection showHeading={false} />
-
     <section class="notify" aria-labelledby="notify-heading">
       <div class="notify-card">
-        <h2 id="notify-heading">Get notified when it's ready</h2>
+        <h2 id="notify-heading">New sections are still landing</h2>
         <p class="notify-intro">
-          Leave your email to get one message when the web guide is ready.
+          Leave your email to get one message when they do.
         </p>
 
         <!-- Reserved-height slot so swapping form -> confirmation never shifts
@@ -186,7 +146,7 @@
           {#if status === "done"}
             <div class="confirmed" role="status">
               <i class="fas fa-circle-check" aria-hidden="true"></i>
-              <span>You're on the list. You'll get an email when the new guide is out.</span>
+              <span>You're on the list. You'll get an email when new sections land.</span>
             </div>
           {:else}
             <form class="notify-form" onsubmit={handleSubmit}>
@@ -216,14 +176,13 @@
       </div>
     </section>
   </main>
+</GuideShell>
 
 <style>
   .guide {
     font-family: system-ui, -apple-system, sans-serif;
     --landing-heading-font: "Playfair Display", Georgia, serif;
     color: #ece9f5;
-    /* Clear the fixed 64px header. */
-    padding-top: 64px;
   }
 
   /* ── Hero ─────────────────────────────────────────────────────────── */
@@ -234,7 +193,7 @@
     text-align: center;
   }
   h1 {
-    /* Brand Fraunces wonky italic — the page-title voice shared across every
+    /* Brand Fraunces wonky italic - the page-title voice shared across every
        public page. Section h2s below stay Playfair (h1 vs h2 hierarchy). */
     font-family: var(--page-title-font, "Fraunces", Georgia, serif);
     font-style: italic;
@@ -254,83 +213,65 @@
     font-size: clamp(1.02rem, 2vw, 1.18rem);
     line-height: 1.65;
     color: rgba(236, 233, 245, 0.7);
-    /* Balance all three lines so the last one isn't a stray "fully live yet". */
     text-wrap: balance;
   }
 
-  /* ── Level 1 (links every crawlable topic page, grouped by manifest) ── */
-  .level1-toc {
-    max-width: 920px;
-    margin: 88px auto 0;
-    padding: 0 24px;
-    text-align: center;
-  }
-  .level1-groups {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 32px 40px;
-    margin-top: 32px;
-    text-align: left;
-  }
-  .level1-group-h {
+  /* ── Hero CTAs ────────────────────────────────────────────────────── */
+  .hero-ctas {
     display: flex;
-    align-items: baseline;
-    gap: 0.4em;
-    margin: 0 0 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-    font-family: "Playfair Display", Georgia, serif;
-    font-size: 1.1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 36px;
+  }
+  .btn {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 200px;
+    min-height: var(--min-touch-target, 44px);
+    padding: 14px 28px;
+    border-radius: 14px;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.05rem;
+    transition: filter 0.18s ease, transform 0.18s ease, background 0.18s ease;
+  }
+  .btn:hover {
+    transform: translateY(-2px);
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #6f8cff, #8b6cff);
+    color: #fff;
+    box-shadow: 0 8px 26px rgba(111, 140, 255, 0.35);
+  }
+  .btn-primary:hover {
+    filter: brightness(1.08);
+  }
+  .btn-secondary {
+    background: rgba(20, 19, 38, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.16);
     color: #fff;
   }
-  .level1-group-num {
-    color: #8b6cff;
-    font-style: italic;
+  .btn-secondary:hover {
+    border-color: rgba(139, 108, 255, 0.6);
+    background: rgba(30, 27, 56, 0.6);
   }
-  .level1-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  .level1-row {
-    line-height: 1.4;
-  }
-  .level1-row.sub {
-    padding-left: 1em;
-  }
-  .level1-row a {
-    display: inline-block;
-    padding: 8px 0;
-    color: rgba(236, 233, 245, 0.78);
-    font-size: 0.95rem;
-    text-decoration: underline;
-    text-decoration-color: rgba(255, 255, 255, 0.22);
-    text-underline-offset: 3px;
-    transition:
-      color 0.16s ease,
-      text-decoration-color 0.16s ease;
-  }
-  .level1-row.sub a {
-    font-size: 0.88rem;
-    color: rgba(236, 233, 245, 0.62);
-  }
-  .level1-row a:hover {
-    color: #fff;
-    text-decoration-color: #8b6cff;
+  .btn-sub {
+    font-weight: 400;
+    font-size: 0.78rem;
+    opacity: 0.75;
   }
   @media (prefers-reduced-motion: reduce) {
-    .level1-row a {
+    .btn {
       transition: none;
+    }
+    .btn:hover {
+      transform: none;
     }
   }
 
-  /* ── Old guides ───────────────────────────────────────────────────── */
-  .old-guides {
-    max-width: 680px;
-    margin: 88px auto 0;
-    padding: 0 24px;
-    text-align: center;
-  }
   h2 {
     font-family: "Playfair Display", Georgia, serif;
     font-weight: 500;
@@ -340,21 +281,11 @@
     color: #fff;
     text-wrap: balance;
   }
-  .note {
-    font-size: 1.05rem;
-    line-height: 1.7;
-    color: rgba(236, 233, 245, 0.64);
-    margin: 0 auto;
-    max-width: 580px;
-    text-wrap: pretty;
-  }
-  /* GuidesSection ships its own 120px vertical padding + heading, so it sits
-     directly below the honest-framing note above. */
 
-  /* ── Available now (links to the live, crawlable guide surfaces) ──── */
-  .available {
+  /* ── More in the guide (Codex, staff choreography) ───────────────── */
+  .more {
     max-width: 760px;
-    margin: 72px auto 0;
+    margin: 96px auto 0;
     padding: 0 24px;
     text-align: center;
   }
@@ -544,21 +475,17 @@
 
   /* ── 4K / ultrawide: recompose, don't just enlarge ────────────────────
      The hub becomes a two-column composition: the hero spans the top, then
-     "Available now" (the two live guide links, stacked) sits LEFT while the
-     notify card sits RIGHT as a true sidebar — the two calls to action share
-     one glance instead of a long scroll. The old-guides intro + list span
-     below. Pure grid placement on existing DOM; below 2200px the original
-     stacked flow is untouched. */
+     "More in the guide" sits LEFT while the notify card sits RIGHT as a true
+     sidebar - the two share one glance instead of a long scroll. Pure grid
+     placement on existing DOM; below 2200px the original stacked flow is
+     untouched. */
   @media (min-width: 2200px) {
     .guide {
       display: grid;
       grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
       grid-template-areas:
         "hero hero"
-        "available notify"
-        "level1 level1"
-        "old old"
-        "guides guides";
+        "more notify";
       column-gap: 96px;
       /* 45.8vw == 1760px at 3840; fluid past 4K. */
       max-width: max(1760px, 45.8vw);
@@ -570,15 +497,18 @@
       max-width: 1100px;
       justify-self: center;
     }
-    .available {
-      grid-area: available;
+    .more {
+      grid-area: more;
       justify-self: end;
       text-align: left;
       max-width: 640px;
       margin-top: 96px;
       padding: 0;
     }
-    /* Stack the two live-guide links so the left column reads as a list. */
+    .more h2 {
+      text-align: left;
+    }
+    /* Stack the links so the left column reads as a list. */
     .available-links {
       flex-direction: column;
       align-items: stretch;
@@ -598,20 +528,6 @@
       margin-top: 96px;
       padding: 0;
     }
-    .level1-toc {
-      grid-area: level1;
-      justify-self: center;
-      max-width: 1400px;
-      margin-top: 96px;
-    }
-    .old-guides {
-      grid-area: old;
-      justify-self: center;
-    }
-    /* GuidesSection's root section spans the full row below. */
-    .guide > :global(.guides) {
-      grid-area: guides;
-    }
 
     h1 {
       font-size: clamp(3.2rem, 2.2vw, 4.6rem);
@@ -620,23 +536,8 @@
       max-width: 800px;
       font-size: 1.45rem;
     }
-    .old-guides {
-      max-width: 980px;
-    }
     h2 {
       font-size: 2.5rem;
-    }
-    .available h2 {
-      font-size: 2.1rem;
-      text-align: left;
-    }
-    .available .note {
-      text-align: left;
-      margin: 0 0 4px;
-    }
-    .note {
-      font-size: 1.3rem;
-      max-width: 760px;
     }
     .guide-link-title {
       font-size: 1.7rem;
