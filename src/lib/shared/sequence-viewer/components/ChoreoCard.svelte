@@ -670,6 +670,10 @@
       return { ...cell, gridColumn, gridRow };
     });
 
+    // A column-count change resizes every cell even when the stack's outer box
+    // doesn't move (so the ResizeObserver may never fire). Recompute directly.
+    updateCellWidth();
+
     // Update the global cache entry with new positions
     const renderOptions = buildRenderOptionsFn();
     const isDark = darkMode;
@@ -1273,6 +1277,26 @@
       newWidth = Number.isFinite(w) ? w : null;
     }
 
+    // The ratio models the header as a fraction of cell width, but on screen
+    // it never renders below headerMinPx (scaledHeaderHeight's floor). Once
+    // cells are small enough that the floor engages, the header is taller
+    // than the box budgeted and the difference comes out of the grid — every
+    // row clips at the bottom. Re-solve in the floored regime: header pinned
+    // at headerMinPx, grid + footer still proportional to width.
+    const model = layoutState.containModel;
+    if (newWidth != null && model.headerMinPx > 0) {
+      const modeledHeaderPx = (newWidth / model.cols) * model.headerUnits;
+      if (modeledHeaderPx < model.headerMinPx) {
+        const perWidthUnits = (model.gridHeightUnits + model.footerUnits) / model.cols;
+        const w = Math.max(
+          0,
+          Math.min(containerWidth, (containerHeight - model.headerMinPx) / perWidthUnits)
+        );
+        newWidth = w;
+        newHeight = model.headerMinPx + w * perWidthUnits;
+      }
+    }
+
     const widthChanged = newWidth !== containedWidth && (newWidth === null || containedWidth === null || Math.abs(newWidth - containedWidth) > 0.5);
     const heightChanged = newHeight !== containedHeight && (newHeight === null || containedHeight === null || Math.abs(newHeight - containedHeight) > 0.5);
 
@@ -1293,10 +1317,19 @@
   function updateCellWidth() {
     if (suppressCellWidthUpdates) return;
 
-    if (previewStackElement && columns > 0) {
+    // Divide by effectiveColumns (the same live derivation the grid template
+    // renders from), NOT the `columns` state copy. On a cold scan the container
+    // is measured mid-render: the table layout (e.g. 4 cols for 12 steps) is
+    // replaced by the container-aware fit (7 cols) while cellWidth updates are
+    // suppressed, and the one post-render update ran before `columns` caught
+    // up — locking cellWidth at the 4-col size. Header/footer heights scale
+    // from cellWidth but the contain box assumes the correct proportions, so
+    // the oversized chrome squeezed the grid and clipped the bottom row.
+    const cols = effectiveColumns;
+    if (previewStackElement && cols > 0) {
       const stackWidth = previewStackElement.clientWidth;
       if (stackWidth < 1) return;
-      const newCellWidth = Number.isFinite(stackWidth / columns) ? stackWidth / columns : 0;
+      const newCellWidth = Number.isFinite(stackWidth / cols) ? stackWidth / cols : 0;
       if (Math.abs(newCellWidth - cellWidth) > 0.5) {
         cellWidth = newCellWidth;
       }
