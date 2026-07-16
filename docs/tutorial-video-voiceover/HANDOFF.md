@@ -35,6 +35,8 @@ verified. What remains is the actual edit/record, plus sourcing/organizing raws.
 |---|---|
 | `Voiceover-Scripts.md` | The 11 rewritten scripts (reels 1–7, DJ, EK Tog-Opp, EK Split-Opp, FL) |
 | `Voiceover-Scripts-Next.md` | DRAFT guideline scripts 12–22 (G/H/I, Gamma, S/T/U+V, MP/NQ/OR, Type 1 wrap) — MCP-grounded skeletons with `[AUSTEN: ...]` slots for body knowledge; no footage exists for these |
+| `Voiceover-Scripts-Advanced.md` | DRAFT guideline scripts 23–38 (Types 2–6, glyphs, orientation algebra, turns/floats, words, LOOPs, first deck) — same MCP-grounded + `[AUSTEN]` slot format |
+| `Curriculum-Roadmap.md` | The video plan behind scripts 23–38, with open ordering decisions |
 | `Voiceover-Scripts.html` | Same, as a readable page |
 | `transcripts/` | Verbatim transcripts — final cuts + the mapped RAW sessions |
 | `Master-Video-Index.csv` | All 103 videos under `_THE KINETIC ALPHABET` (paths, dates, sizes) |
