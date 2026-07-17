@@ -1,5 +1,11 @@
 # Google Merchant Center Setup
 
+> **STATUS (2026-07-17): SHELVED at the product-upload step** until real product
+> images exist. The resume path is the merchant product image pipeline spec:
+> `docs/superpowers/specs/2026-07-17-merchant-product-image-pipeline-design.md`.
+> Account is created and the website claim is done; every form value needed to
+> finish is recorded below.
+
 Why this exists: "kinetic alphabet" gets spell-corrected to "phonetic alphabet" in Google.
 The fix is entity establishment, not a Google Business Profile (online-only shops are
 ineligible for GBP, and GBP only affects Maps/local results anyway). Merchant Center is
