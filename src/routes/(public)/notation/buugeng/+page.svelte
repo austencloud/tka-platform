@@ -49,22 +49,25 @@
   </header>
 
   <section class="editorial-section has-duo" style="--accent: #22c55e">
-    <h2 class="section-title">Buugeng Work Like Staves</h2>
     <div class="section-duo">
       <div class="duo-copy">
         <div class="prose">
           <p>
-            Buugeng have two ends, which puts them in the staff family alongside props
-            like eight rings and double contact ball. That matters because the dual-ended
-            properties that make staves the system's home apply to buugeng directly: the
-            isolation and antispin collapse, the two visible references, the whole
-            notation. The <a href="/notation/staves">staff page</a> explains those
-            properties; everything there transfers. The grid positions, the letters, and
-            the timing and direction system apply unchanged.
+            Good news: this is the shortest prop page, because buugeng have two ends, and
+            that single fact does most of the work. Everything on the
+            <a href="/notation/staves">staff page</a> transfers whole. The isolation and
+            antispin collapse, the two visible references, the grid, the letters, the
+            timing. Eight rings and double contact ball sit in the same dual-ended family
+            and inherit the same way.
           </p>
           <p>
-            The player beside this is the same demo sequence every prop page uses, spun
-            on buugeng.
+            Two things are worth saying anyway. Buugeng are large, and sometimes strange
+            and unwieldy, because they curve around. And finger spinning with buugeng is
+            well established. A lot of Kinetic Alphabet patterns might be hard to finger
+            spin. Definitely not impossible. It's not my forte, so I'll just say it: feel
+            free to finger spin to your heart's desire. The strict thumb-orientation
+            discipline belongs to how we teach staves, and once you can read the turn
+            value off any pictograph it stops mattering even there.
           </p>
         </div>
       </div>
@@ -79,41 +82,18 @@
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #14b8a6">
-    <h2 class="section-title">Big, Curved, and Finger-Spun</h2>
-    <div class="prose">
-      <p>
-        Buugeng are large, and sometimes strange and unwieldy, because they curve around.
-        Finger spinning with buugeng is well established and a lot of people do it. Plenty
-        of Kinetic Alphabet patterns might be hard to finger spin, but definitely not
-        impossible. It's not my forte, so I'll say it plainly: if you spin buugeng, feel
-        free to finger spin to your heart's desire.
-      </p>
-      <p>
-        The strict thumb-orientation discipline belongs to how we teach staves. It's a
-        scaffold. Once you've absorbed the math of how orientations change well enough to
-        spot the turn value in any pictograph, the strictness stops mattering, and it
-        becomes about what the prop can effectively do under its own limitations.
-      </p>
-    </div>
-  </section>
-
   <OpenChapter prop="Buugeng">
     <p>
-      I trained double staves. The buugeng grip vocabulary, the finger spinning technique,
-      and the way the curves change body mechanics are a language of their own, and I
-      won't pretend to write that chapter with authority I don't have.
+      What this page doesn't cover is the part buugeng artists care most about: the grip
+      vocabulary, the finger spinning technique, the way the curves change body
+      mechanics. I trained double staves, and that chapter needs someone who trained
+      these.
     </p>
-    <p>
-      What's proven: buugeng are dual-ended, so the notation carries over directly, and
-      the composer renders buugeng today. What's open: the grip and finger spinning
-      language unique to buugeng. If buugeng are your language, this chapter is yours to
-      write.
-    </p>
+    <p>If buugeng are your language, come write it.</p>
   </OpenChapter>
 
   <div class="cta-card">
-    <h3>Try a sequence with buugeng</h3>
+    <h3>Take it to your buugeng</h3>
     <p>Flow Arts Composer is free to use. No download required.</p>
     <a href="/create" class="cta-button" data-sveltekit-reload>
       <span>Open Flow Arts Composer</span>

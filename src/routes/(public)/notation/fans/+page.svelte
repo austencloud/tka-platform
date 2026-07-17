@@ -49,22 +49,17 @@
   </header>
 
   <section class="editorial-section has-duo" style="--accent: #22c55e">
-    <h2 class="section-title">What Carries Over</h2>
     <div class="section-duo">
       <div class="duo-copy">
         <div class="prose">
           <p>
-            Fans are single-ended props, so they translate the same way clubs do: pretend
-            you're holding a staff with one end cut off and do everything exactly the
-            same. A fan's orientation is the same concept as a staff's thumb orientation,
-            and the flat face makes it easy to read at a glance. The grid positions, the
-            letters, and the timing and direction system apply unchanged. The
-            <a href="/notation/clubs">club page</a> explains the single-ended story in
-            full, and the <a href="/glossary">glossary</a> defines every term.
-          </p>
-          <p>
-            The player beside this is the same demo sequence every prop page uses, spun
-            on fans.
+            This page is short because the honest version is short. Fans are single-ended
+            props, so they translate from staves the way clubs do: pretend one end of the
+            staff got cut off and do everything else the same. A fan's orientation is the
+            staff's thumb orientation, the flat face makes it easy to read at a glance,
+            and every grid position, letter, and timing relationship applies unchanged.
+            The full single-ended story lives on the <a href="/notation/clubs">club
+            page</a>, and all of it holds for fans.
           </p>
         </div>
       </div>
@@ -80,42 +75,37 @@
   </section>
 
   <section class="editorial-section" style="--accent: #14b8a6">
-    <h2 class="section-title">Folds: What the Notation Can't Write Yet</h2>
     <div class="prose">
       <p>
-        Fans are planar props: the leaves form a plane, the way a triad's arms form a
-        triangle plane. The notation currently assumes the prop's plane matches the plane
-        it's being spun on. Fans break that assumption with folds. A fold doesn't travel
-        through the two-dimensional space of the grid at all. It leaves the plane, moves
-        through 3D space, and lands back on the same plane with your hand orientation
-        switched from front to back.
-      </p>
-      <p>
-        Hand orientation isn't a concept in The Kinetic Alphabet yet. Mapping the full
-        hand orientation matrix into pictographs is a large missing piece, and folds are
-        so fundamental to fans that this page has to say so plainly: there are ideas, they
-        haven't been incorporated, and until they are, the notation captures less of fan
-        spinning than fan spinners deserve.
+        What fans have that no tubular prop has is a plane. The leaves form a fan plane
+        the way a triad's arms form a triangle plane, and the notation currently assumes
+        the prop's plane matches the plane it's being spun on. Folds break that
+        assumption. A fold doesn't travel through the grid's two-dimensional space at
+        all: it leaves the plane, passes through 3D space, and lands back where it
+        started with your hand orientation switched from front to back. Hand orientation
+        isn't a concept in The Kinetic Alphabet yet. I have ideas about mapping the full
+        hand orientation matrix into pictographs. They haven't been incorporated, and
+        folds are so fundamental to fans that this page has to say so plainly: until that
+        piece lands, the notation captures less of fan spinning than fan spinners
+        deserve.
       </p>
     </div>
   </section>
 
   <OpenChapter prop="Fans">
     <p>
-      I trained double staves. Fans are not a language I fully speak when it comes to grip
-      types, so I'm not going to fake a chapter on how the alphabet meets fan grips and
-      pretend it's authoritative.
+      I trained double staves. Fan grips are a language I only half speak, and half
+      fluency isn't enough to write a chapter people will train from.
     </p>
     <p>
-      What's proven: the translation rule, the letters, and the timing carry over, and the
-      composer renders fans today. What's open: the fan grip language, the fold
-      vocabulary, and the body mechanics unique to fans. If fans are the language you
-      speak, this chapter is yours to write.
+      The translation rule, the letters, and the timing are proven, and the composer
+      renders fans today. The grip vocabulary, the folds, and the body mechanics that
+      belong to fans alone are open territory. If that territory is yours, write me.
     </p>
   </OpenChapter>
 
   <div class="cta-card">
-    <h3>Try a sequence with fans</h3>
+    <h3>Spin it yourself</h3>
     <p>Flow Arts Composer is free to use. No download required.</p>
     <a href="/create" class="cta-button" data-sveltekit-reload>
       <span>Open Flow Arts Composer</span>

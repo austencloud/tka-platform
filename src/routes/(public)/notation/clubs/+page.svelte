@@ -49,36 +49,24 @@
     <p class="page-subtitle">The base single-ended prop</p>
   </header>
 
-  <section class="editorial-section" style="--accent: #22c55e">
-    <h2 class="section-title">Why Clubs Anchor the Single-Ended Story</h2>
-    <div class="prose">
-      <p>
-        This page is about dual-wielded club spinning, one club in each hand, not toss
-        juggling. Props split into two families: dual-ended props like staves, where both
-        ends are visible references, and single-ended props, where there's one. Clubs are
-        the base prop of the single-ended family. They're the easiest prop to explain the
-        single-ended story with, and they're the core of Vulcan Tech Gospel, the notation
-        framework TKA is built on. The lineage lives on the <a href="/roots">roots
-        page</a>.
-      </p>
-    </div>
-  </section>
-
-  <section class="editorial-section has-duo" style="--accent: #14b8a6">
-    <h2 class="section-title">The Translation Rule</h2>
+  <section class="editorial-section has-duo" style="--accent: #22c55e">
     <div class="section-duo">
       <div class="duo-copy">
         <div class="prose">
           <p>
-            Translating The Kinetic Alphabet from staves to clubs takes one sentence:
-            pretend you're holding a staff and one end of it is invisible, or got cut off,
-            and do everything exactly the way you would with the staff. A club's
-            orientation is the same concept as a staff's thumb orientation. The grid
-            positions, the letters, and the timing and direction system apply unchanged.
+            First, what this page is not about: toss juggling. This is dual-wielded club
+            spinning, one club in each hand, gripped the whole time. Held that way, clubs
+            are the base prop of the single-ended family. They're the easiest prop to
+            explain the single-ended story with, and they're the core of Vulcan Tech
+            Gospel, the framework The Kinetic Alphabet is built on. The lineage lives on
+            the <a href="/roots">roots page</a>.
           </p>
           <p>
-            The player beside this proves it: the same demo sequence every prop page
-            uses, spun on clubs, letter for letter.
+            Translating the alphabet from staves to clubs takes one sentence. Pretend
+            you're holding a staff whose other end is invisible, or got cut off, and do
+            everything exactly the way you would with the staff. A club's orientation is
+            the staff's thumb orientation, and the rest follows: same grid, same letters,
+            same timing, as the player beside this shows.
           </p>
         </div>
       </div>
@@ -99,30 +87,24 @@
       <div class="duo-copy">
         <div class="prose">
           <p>
-            On a staff, an isolation and an extension are one motion: the thumb end
-            isolates while the pinky end extends. A club can only do one of those at a
-            time, so the club world has two distinct moves, an isolation and an
-            extension, that look completely different despite having the same underlying
-            mathematical geometry.
-          </p>
-          <p>
-            Antispin splits the same way. A club's antispin reads as a vertical flower or
-            a horizontal flower depending on its orientation through the pattern, which
-            is exactly what the VTG terms vertical antispin and horizontal antispin name.
-            On a staff those variants collapse, because both ends are always covered. The
-            <a href="/notation/staves">staff page</a> tells that side of the story.
-          </p>
-          <p>
-            The mandalas beside this trace the same sequence twice. With staves, both
-            ends of each prop leave a path. With clubs, only one end does, and half the
-            pattern disappears.
+            The two mandalas trace the identical sequence. In the staff render, both ends
+            of each prop leave a path. In the club render, one does. Half the pattern is
+            gone, and that missing half is where the single-ended vocabulary comes from.
+            On a staff, an isolation and an extension are one motion, the thumb end
+            isolating while the pinky end extends. A club can only do one at a time, so
+            club spinners know them as two moves that look nothing alike despite
+            identical underlying geometry. Antispin splits too: a club's antispin reads
+            as a vertical or a horizontal flower depending on its orientation through the
+            pattern, which is exactly what VTG's vertical antispin and horizontal
+            antispin name. On a staff those distinctions fold away. The
+            <a href="/notation/staves">staff page</a> tells that side.
           </p>
         </div>
       </div>
       <div class="duo-demo">
         <MandalaContrast
           sequence={demoSequence}
-          note="one sequence, traced by both ends of a staff and the single end of a club"
+          note="same sequence, both staff ends vs a club's single end"
         />
       </div>
     </div>
@@ -130,21 +112,18 @@
 
   <OpenChapter prop="Clubs">
     <p>
-      I trained double staves, and the geometry above is solid ground. Club grip technique
-      is not. Clubs ask for finger spinning and grip changes the staff pedagogy
-      deliberately avoids, and that vocabulary deserves an author who actually lives in
-      it.
+      The geometry above is solid ground. Club grip technique is not, because I trained
+      double staves, and clubs ask for finger spinning and grip changes the staff
+      pedagogy deliberately avoids.
     </p>
     <p>
-      What's proven: the translation rule, the letters, and the timing all carry over, and
-      the composer renders clubs today. What's open: the club grip language and the body
-      mechanics unique to clubs. If clubs are your language, this chapter is yours to
-      write.
+      That vocabulary deserves an author who lives in it. If clubs are your language,
+      this chapter is yours to write.
     </p>
   </OpenChapter>
 
   <div class="cta-card">
-    <h3>Try a sequence with clubs</h3>
+    <h3>Try it with clubs</h3>
     <p>Flow Arts Composer is free to use. No download required.</p>
     <a href="/create" class="cta-button" data-sveltekit-reload>
       <span>Open Flow Arts Composer</span>
