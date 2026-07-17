@@ -142,14 +142,14 @@ length. `/roots` gets a short cross-link section pointing here.
 
 ## Ledger
 
-- [ ] /composer title, DESCRIPTION, og/twitter, subtitle, lede, JSON-LD keywords
-- [ ] FAQ item added (faq-items.ts)
-- [ ] /notation wording touch
-- [ ] Per-prop notation pages wording touches (fans, clubs, buugeng)
-- [ ] domains.ts keywords
-- [ ] /roots/software page built (research-verified roster)
-- [ ] /roots cross-link to /roots/software
-- [ ] sitemap static list entry
-- [ ] seo-winning-strategy.md software cluster section
-- [ ] seo-a-plus-plan.md ledger entries
-- [ ] Verification pass (check, em-dash grep, phrase-placement grep)
+- [x] /composer title, DESCRIPTION, og/twitter, subtitle, lede, JSON-LD keywords
+- [x] FAQ item added (faq-items.ts)
+- [x] /notation wording touch
+- [x] Per-prop notation pages wording touches (fans, clubs, buugeng)
+- [x] domains.ts keywords
+- [x] /roots/software page built (research-verified roster)
+- [x] /roots cross-link to /roots/software
+- [x] sitemap static list entry
+- [x] seo-winning-strategy.md software cluster section
+- [x] seo-a-plus-plan.md ledger entries
+- [x] Verification pass (check, em-dash grep, phrase-placement grep)
