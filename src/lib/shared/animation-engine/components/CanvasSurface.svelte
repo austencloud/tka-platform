@@ -89,6 +89,7 @@ captureEffectDiagnostics to the context menu.
     // Overlay / glyph visibility props (resolved by the parent from the visibility manager)
     hideTkaGlyph = false,
     hideStepNumbers = false,
+    beatIndicators = true,
     darkModeEnabled = false,
     effectiveTkaGlyphVisible = false,
     effectiveBeatNumbersVisible = false,
@@ -139,6 +140,9 @@ captureEffectDiagnostics to the context menu.
     virtualTime?: number;
     hideTkaGlyph?: boolean;
     hideStepNumbers?: boolean;
+    /** Show the canvas's Start/End text overlay. On by default; the guide
+     *  showcase turns it off (its on-screen strip already labels the steps). */
+    beatIndicators?: boolean;
     darkModeEnabled?: boolean;
     effectiveTkaGlyphVisible?: boolean;
     effectiveBeatNumbersVisible?: boolean;
@@ -445,8 +449,9 @@ captureEffectDiagnostics to the context menu.
       stepNumbersVisible={effectiveBeatNumbersVisible}
       {positionGlyphVisible}
       darkMode={darkModeEnabled}
-      isAtStartPosition={!hideStepNumbers && currentStep < 1 && sequenceData !== null}
+      isAtStartPosition={beatIndicators && !hideStepNumbers && currentStep < 1 && sequenceData !== null}
       isAtEndPosition={
+        beatIndicators &&
         !hideStepNumbers &&
         sequenceData !== null &&
         !effectiveIsSeamlesslyLoopable &&

@@ -109,6 +109,7 @@ Last audit: 2025-12-27
     hoverHint = "none",
     cornerToggle = false,
     extraContextMenuItems = [],
+    beatIndicators = true,
   }: {
     blueProp: PropState | null;
     redProp: PropState | null;
@@ -213,6 +214,11 @@ Last audit: 2025-12-27
      *  tunnel"). Prepended before the built-in items by CanvasContextMenuHost.
      *  Defaults to [] so existing consumers are unaffected. */
     extraContextMenuItems?: ContextMenuEntry[];
+    /** Show the canvas's Start/End text overlay (GlyphOverlay's
+     *  isAtStartPosition/isAtEndPosition indicator). On by default everywhere;
+     *  the guide showcase turns it off (the on-screen strip already labels
+     *  Start/steps, so the canvas overlay is redundant there). */
+    beatIndicators?: boolean;
   } = $props();
 
   const resolvedContextId = contextId ?? `canvas-${Math.random().toString(36).slice(2, 8)}`;
@@ -581,6 +587,7 @@ Last audit: 2025-12-27
       visibilityManagerOverride={visibilityManagerOverride}
       {effectsConfigState}
       {prewarmEffects}
+      {beatIndicators}
       contextId={resolvedContextId}
       {onCanvasReady}
       onInitialized={onInitializedCallback}
