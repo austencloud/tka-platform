@@ -14,8 +14,9 @@ describe("_half assets parse cleanly through parseArrowSvg", () => {
       const dims = parseArrowSvg(svg);
       expect(dims.width).toBeGreaterThan(0);
       expect(dims.height).toBeGreaterThan(0);
-      expect(Number.isFinite(dims.center.x)).toBe(true);
-      expect(Number.isFinite(dims.center.y)).toBe(true);
+      expect(dims.center).toBeDefined();
+      expect(Number.isFinite(dims.center!.x)).toBe(true);
+      expect(Number.isFinite(dims.center!.y)).toBe(true);
       expect(svg).toMatch(/#2e3192/i);
       expect(svg).toMatch(/viewBox\s*=/i);
     });
