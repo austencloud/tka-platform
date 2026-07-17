@@ -75,6 +75,16 @@
     .showcase {
       max-width: min(1600px, 94vw);
     }
+  }
+
+  /* Ultrawide: mirrors PlayWithItInner's .showcase.with-sidebar 4K step. */
+  @media (min-width: 2200px) {
+    .showcase {
+      max-width: min(1960px, 94vw);
+    }
+  }
+
+  @media (min-width: 920px) {
 
     .sk-stage-row {
       display: flex;

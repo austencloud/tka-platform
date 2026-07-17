@@ -12,17 +12,18 @@
   props (cardWidth 128, maxCardWidth 210, interactive):
 
     cardW(n) = boxW / ((1 + 0.82·(n−1)) · 1.05)   (spreadPitch · tiltSlack)
-    count n drops 5 → 4 → 3 while cardW(n) < 128
+    count n drops 6 → 5 → 4 → 3 while cardW(n) < 128
     fan height = cardW · 7/5 + 28px               (.fan padding 18px + 10px)
 
   Solving cardW(n) ≥ 128 for boxW gives the count bands (in container px):
-    n=5: boxW ≥ 575.23   n=4: boxW ≥ 465.02   n=3: below
+    n=6: boxW ≥ 685.44   n=5: boxW ≥ 575.23   n=4: boxW ≥ 465.02   n=3: below
   DeckFanCover compares against an integer clientWidth, so it switches at
-  466 / 576; the @container thresholds sit 0.25px above those so any
+  466 / 576 / 686; the @container thresholds sit 0.25px above those so any
   fractional-width sliver rounds toward the TALLER reservation (air above
   the fan for <1px of widths, never overflow). Card widths per band are
-  100cqw / ((1 + 0.82·(n−1)) · 1.05). maxCardWidth (210) never binds under
-  the host's 40rem cap, so it drops out.
+  100cqw / ((1 + 0.82·(n−1)) · 1.05). The host's duo column can now exceed
+  40rem, so maxCardWidth (210) binds once boxW ≥ 210 · 5.355 = 1124.55 —
+  the final band pins the card at 210px.
 
   If DeckFanCover's spreadPitch/tiltSlack/padding or the demo's card props
   change, re-derive these numbers — they are that math, in CSS.
@@ -35,7 +36,7 @@
 </script>
 
 <div class="sk-fan" class:shimmer aria-hidden="true">
-  {#each [0, 1, 2, 3, 4] as i (i)}
+  {#each [0, 1, 2, 3, 4, 5] as i (i)}
     <div class="sk-card"></div>
   {/each}
 </div>
@@ -62,6 +63,18 @@
       --sk-card-w: 22.252cqw;
     }
   }
+  @container (min-width: 686.25px) {
+    .sk-fan {
+      /* n=6 band: cardW = 100cqw / 5.355 */
+      --sk-card-w: 18.674cqw;
+    }
+  }
+  @container (min-width: 1124.55px) {
+    .sk-fan {
+      /* maxCardWidth ceiling: fitW(6) would exceed 210px here */
+      --sk-card-w: 210px;
+    }
+  }
 
   .sk-card {
     width: var(--sk-card-w);
@@ -83,7 +96,8 @@
 
   /* Card count + tilt fan-out per band, mirroring tilt(i, n) = -12° … +12°. */
   .sk-card:nth-child(4),
-  .sk-card:nth-child(5) {
+  .sk-card:nth-child(5),
+  .sk-card:nth-child(6) {
     display: none;
   }
   .sk-card:nth-child(1) { transform: rotate(-12deg); }
@@ -104,6 +118,15 @@
     .sk-card:nth-child(3) { transform: rotate(0deg); }
     .sk-card:nth-child(4) { transform: rotate(6deg); }
     .sk-card:nth-child(5) { transform: rotate(12deg); }
+  }
+  @container (min-width: 686.25px) {
+    .sk-card:nth-child(6) { display: block; }
+    .sk-card:nth-child(1) { transform: rotate(-12deg); }
+    .sk-card:nth-child(2) { transform: rotate(-7.2deg); }
+    .sk-card:nth-child(3) { transform: rotate(-2.4deg); }
+    .sk-card:nth-child(4) { transform: rotate(2.4deg); }
+    .sk-card:nth-child(5) { transform: rotate(7.2deg); }
+    .sk-card:nth-child(6) { transform: rotate(12deg); }
   }
 
   @keyframes sk-shimmer {

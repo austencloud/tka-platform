@@ -75,6 +75,13 @@
     margin: 2.4rem auto 0;
     max-width: min(26rem, 100%);
   }
+  /* Ultrawide: the hero holds its own against the 4K type step (public
+     editorial pages scale their measure and headings at this breakpoint). */
+  @media (min-width: 2200px) {
+    .hero-demo {
+      max-width: min(34rem, 100%);
+    }
+  }
 
   .demo-stage {
     position: relative;

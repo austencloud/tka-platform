@@ -227,46 +227,56 @@
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #ec4899">
-    <span class="section-kicker">Generate</span>
-    <h2 class="section-title">Or skip the building entirely</h2>
-    <div class="prose">
-      <p>
-        Set your parameters, hit generate, and a valid sequence lands in front of you.
-        Watch it animate, keep it if you like it, run it again if you don't. Every
-        sequence draws its own mandala. Try it:
-      </p>
-    </div>
-    <div class="breakout">
-      <ComposerGenerateDemo />
+  <!-- duo-uw: stacked (same as always) below 2200px; on ultrawide the copy
+       sits beside the player+mandala pair instead of above it. -->
+  <section class="editorial-section has-duo duo-uw" style="--accent: #ec4899">
+    <div class="section-duo">
+      <div class="duo-copy">
+        <span class="section-kicker">Generate</span>
+        <h2 class="section-title">Or skip the building entirely</h2>
+        <div class="prose">
+          <p>
+            Set your parameters, hit generate, and a valid sequence lands in front of you.
+            Watch it animate, keep it if you like it, run it again if you don't. Every
+            sequence draws its own mandala. Try it:
+          </p>
+        </div>
+      </div>
+      <div class="duo-demo">
+        <ComposerGenerateDemo />
+      </div>
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #14b8a6">
-    <span class="section-kicker">Multiply</span>
-    <h2 class="section-title">Unfold it into a tunnel</h2>
-    <div class="prose">
-      <p>
-        Every sequence can unfold into a tunnel: the same choreography multiplied across
-        two, four, or eight performers in a ring, with mirrors, echoes, and staggered
-        canons on top. What starts as one pattern becomes a stage full of them. This is
-        running live:
-      </p>
-    </div>
-    <div class="breakout" use:activateTunnelWhenNear>
-      <LazyMount
-        loader={() => import("./_components/ComposerTunnelDemo.svelte")}
-        active={tunnelActive}
-      >
-        {#snippet placeholder()}
-          <!-- Same footprint as ComposerTunnelDemo: 1.6rem top margin, square
-               stage capped at 30rem, then the 52px performer row. -->
-          <div class="sk-demo sk-tunnel" aria-hidden="true">
-            <div class="sk-stage sk-stage-square"></div>
-            <div class="sk-pill sk-pill-tunnel"></div>
-          </div>
-        {/snippet}
-      </LazyMount>
+  <section class="editorial-section has-duo" style="--accent: #14b8a6">
+    <div class="section-duo flip">
+      <div class="duo-copy">
+        <span class="section-kicker">Multiply</span>
+        <h2 class="section-title">Unfold it into a tunnel</h2>
+        <div class="prose">
+          <p>
+            Every sequence can unfold into a tunnel: the same choreography multiplied across
+            two, four, or eight performers in a ring, with mirrors, echoes, and staggered
+            canons on top. What starts as one pattern becomes a stage full of them. This is
+            running live:
+          </p>
+        </div>
+      </div>
+      <div class="duo-demo" use:activateTunnelWhenNear>
+        <LazyMount
+          loader={() => import("./_components/ComposerTunnelDemo.svelte")}
+          active={tunnelActive}
+        >
+          {#snippet placeholder()}
+            <!-- Same footprint as ComposerTunnelDemo: square stage capped at
+                 30rem (40rem on ultrawide), then the 52px performer row. -->
+            <div class="sk-demo" aria-hidden="true">
+              <div class="sk-stage sk-stage-square"></div>
+              <div class="sk-pill sk-pill-tunnel"></div>
+            </div>
+          {/snippet}
+        </LazyMount>
+      </div>
     </div>
   </section>
 
@@ -288,37 +298,45 @@
       </p>
     </div>
 
-    <div class="cards-block">
+    <div class="cards-block has-duo">
       <h3 class="cards-heading">The alphabet leaves the screen</h3>
-      <div class="cards-fan" use:activateChoreoCardsWhenNear>
-        <LazyMount
-          loader={() => import("./_components/ComposerChoreoCardsDemo.svelte")}
-          active={choreoCardsActive}
-        >
-          {#snippet placeholder()}
-            <!-- Same skeleton the demo shows while its catalog loads — the
-                 chunk swap is pixel-identical. -->
-            <FanSkeleton />
-          {/snippet}
-        </LazyMount>
-      </div>
-      <div class="prose">
-        <p>
-          Choreo Cards put a sequence on a physical card: the word, every step, the
-          mandalas, and a QR that opens it in Composer with any prop at any speed. Shuffle a
-          deck and the same osmosis happens away from the app, one card in your hand at a
-          time. Every card the app builds can print, and the decks in the shop are already
-          composed and ready to spin.
-        </p>
-      </div>
-      <div class="hero-ctas">
-        <a href="/shop/choreography-cards" class="cta-button">
-          <span>See how Choreo Cards work</span>
-          <i class="fas fa-arrow-right" aria-hidden="true"></i>
-        </a>
-        <a href="/shop" class="cta-secondary">
-          <span>Browse the decks</span>
-        </a>
+      <!-- demo-star: fan first in source (phones keep fan-above-copy), copy
+           takes the narrower left column from 1100px up. -->
+      <div class="section-duo demo-star">
+        <div class="duo-demo">
+          <div class="cards-fan" use:activateChoreoCardsWhenNear>
+            <LazyMount
+              loader={() => import("./_components/ComposerChoreoCardsDemo.svelte")}
+              active={choreoCardsActive}
+            >
+              {#snippet placeholder()}
+                <!-- Same skeleton the demo shows while its catalog loads — the
+                     chunk swap is pixel-identical. -->
+                <FanSkeleton />
+              {/snippet}
+            </LazyMount>
+          </div>
+        </div>
+        <div class="duo-copy">
+          <div class="prose">
+            <p>
+              Choreo Cards put a sequence on a physical card: the word, every step, the
+              mandalas, and a QR that opens it in Composer with any prop at any speed. Shuffle a
+              deck and the same osmosis happens away from the app, one card in your hand at a
+              time. Every card the app builds can print, and the decks in the shop are already
+              composed and ready to spin.
+            </p>
+          </div>
+          <div class="hero-ctas cards-ctas">
+            <a href="/shop/choreography-cards" class="cta-button">
+              <span>See how Choreo Cards work</span>
+              <i class="fas fa-arrow-right" aria-hidden="true"></i>
+            </a>
+            <a href="/shop" class="cta-secondary">
+              <span>Browse the decks</span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -334,7 +352,7 @@
         notation is the score. The 3D viewer is the performance.
       </p>
     </div>
-    <div class="breakout" use:activate3DWhenNear>
+    <div class="breakout cinema" use:activate3DWhenNear>
       <LazyMount
         loader={() => import("./_components/Composer3DViewerDemo.svelte")}
         active={viewer3DActive}
@@ -366,7 +384,7 @@
     <div class="prose">
       <p>Every one of these is live in the app today.</p>
     </div>
-    <div class="breakout">
+    <div class="breakout wide">
       <div class="bento">
         <div class="bento-cell text-only">
           <div class="bento-text">
@@ -465,7 +483,7 @@
         sequence's notation, keeping time with the animation.
       </p>
     </div>
-    <div class="breakout playwithit-slot" use:activatePlayWithItWhenNear>
+    <div class="breakout cinema playwithit-slot" use:activatePlayWithItWhenNear>
       <LazyMount
         loader={() => import("../../landing/components/PlayWithItInner.svelte")}
         active={playWithItActive}
@@ -524,15 +542,20 @@
     border-color: oklch(0.6 0.08 270 / 0.5);
   }
 
-  /* ── breakout band ──
-     Prose keeps the 46rem editorial measure; visual bands escape it and
-     center on the viewport, up to 66rem. min() with the viewport term keeps
-     phones untouched (band == column width there). */
-  .breakout {
-    --breakout-width: min(66rem, calc(100vw - 2.2rem));
-    width: var(--breakout-width);
-    margin-inline: calc((100% - var(--breakout-width)) / 2);
-    margin-block: 0.4rem 1.4rem;
+  /* .breakout (+ .wide / .cinema band steps) now lives in public-editorial.css
+     as a shared primitive — this page was its first consumer. */
+
+  /* Duo helpers: below the duo breakpoints the copy block centers in the
+     stacked section, matching the page's centered essay column. */
+  @media (max-width: 1099.98px) {
+    .section-duo > .duo-copy {
+      margin-inline: auto;
+    }
+  }
+  /* CTAs inside a duo copy cell: the .hero-ctas defaults carry hero-scale
+     margins (2.2rem/3.6rem) that would pad the whole section. */
+  .cards-ctas {
+    margin: 1.8rem 0 0;
   }
 
   /* The showcase's footprint is reserved by PlayWithItSkeleton (same geometry
@@ -560,10 +583,6 @@
     align-items: center;
     animation: sk-pulse 1.8s ease-in-out infinite;
   }
-  /* = .tunnel-demo margin-top in ComposerTunnelDemo */
-  .sk-tunnel {
-    margin-top: 1.6rem;
-  }
   .sk-stage {
     width: 100%;
     border-radius: 16px;
@@ -574,11 +593,17 @@
       oklch(0.11 0.02 270) 70%
     );
   }
-  /* = ComposerTunnelDemo .stage */
+  /* = ComposerTunnelDemo .stage (30rem cap, 40rem on ultrawide — keep in
+     sync with the component) */
   .sk-stage-square {
     aspect-ratio: 1;
     max-width: min(30rem, 100%);
     border-radius: 18px;
+  }
+  @media (min-width: 2200px) {
+    .sk-stage-square {
+      max-width: min(40rem, 100%);
+    }
   }
   /* = Composer3DViewerDemo .stage */
   .sk-stage-wide {
@@ -688,6 +713,15 @@
     /* Size container so FanSkeleton's cqw-based card widths (which mirror
        DeckFanCover's fit math) resolve against the fan's actual box. */
     container-type: inline-size;
+  }
+  /* Inside the duo (≥1100px) the fan fills its grid column — 6/11 of the
+     duo width, which lands near today's 40rem at ordinary desktops and
+     reaches ~900px (a six-card fan) on ultrawide. */
+  @media (min-width: 1100px) {
+    .cards-fan {
+      max-width: none;
+      margin: 0;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {

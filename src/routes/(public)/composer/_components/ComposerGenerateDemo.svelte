@@ -126,10 +126,7 @@
 </div>
 
 <style>
-  .generate-demo {
-    margin-top: 1.8rem;
-  }
-
+  /* Spacing to the prose above is owned by the host's duo grid gap. */
   .stages {
     display: grid;
     grid-template-columns: 1fr 1fr;

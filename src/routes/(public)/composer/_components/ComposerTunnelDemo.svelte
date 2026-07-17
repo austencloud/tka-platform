@@ -110,10 +110,7 @@
 </div>
 
 <style>
-  .tunnel-demo {
-    margin-top: 1.6rem;
-  }
-
+  /* Spacing to the prose above is owned by the host's duo grid gap. */
   .stage {
     position: relative;
     aspect-ratio: 1;
@@ -123,6 +120,13 @@
     border-radius: 18px;
     overflow: hidden;
     border: 1px solid oklch(0.4 0.04 270 / 0.18);
+  }
+  /* Ultrawide: the duo column has the room — let the kaleidoscope earn it.
+     Keep in sync with the page's .sk-stage-square placeholder. */
+  @media (min-width: 2200px) {
+    .stage {
+      max-width: min(40rem, 100%);
+    }
   }
 
   .pause-toggle {

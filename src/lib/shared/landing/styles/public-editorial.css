@@ -130,7 +130,7 @@
    sit side by side from 1100px up. This is the wide-screen answer for
    demonstration-heavy pages: on 4K the demo fills the measure instead of the
    page reading like a stretched mobile column. */
-.editorial-section.has-duo {
+.editorial .has-duo {
   position: relative;
   left: 50%;
   translate: -50% 0;
@@ -156,6 +156,43 @@
   .section-duo.flip > .duo-demo {
     order: 1;
   }
+  /* demo-star: the demo keeps the wider column while sitting on the RIGHT.
+     Source order is demo-first (so stacked layouts show the demo above the
+     copy); the order swap here puts the copy in the narrower left column. */
+  .section-duo.demo-star {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  }
+  .section-duo.demo-star > .duo-copy {
+    order: 1;
+  }
+  .section-duo.demo-star > .duo-demo {
+    order: 2;
+  }
+}
+
+/* duo-uw: side-by-side ONLY on ultrawide (≥2200px, see the 4K block below).
+   Below that it renders as a stacked breakout-width band — for demos too wide
+   to share a 1100px row (e.g. a pair of square stages). */
+.editorial .has-duo.duo-uw {
+  width: min(66rem, calc(100vw - 2.2rem));
+}
+.has-duo.duo-uw .section-duo {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2.2rem;
+}
+.has-duo.duo-uw .section-duo > .duo-copy {
+  margin-inline: auto;
+}
+
+/* ── breakout bands ──
+   Prose keeps the essay measure; visual bands escape it and center on the
+   viewport. `wide` and `cinema` step up on ultrawide only (4K block below):
+   wide = roomy grid band, cinema = full stage band. */
+.editorial .breakout {
+  --breakout-width: min(66rem, calc(100vw - 2.2rem));
+  width: var(--breakout-width);
+  margin-inline: calc((100% - var(--breakout-width)) / 2);
+  margin-block: 0.4rem 1.4rem;
 }
 
 .section-title {
@@ -382,6 +419,38 @@
   .editorial {
     /* 25vw == 60rem (960px) at 3840; fluid past 4K instead of re-freezing. */
     max-width: max(60rem, 25vw);
+  }
+  /* Duo sections claim real width: 110rem == 1760px at 3840. The copy keeps
+     its 46rem measure and centers in its column. */
+  .editorial .has-duo {
+    width: min(110rem, 88vw);
+  }
+  .section-duo {
+    gap: clamp(3rem, 5vw, 7rem);
+  }
+  .section-duo > .duo-copy {
+    justify-self: center;
+  }
+  /* duo-uw engages its side-by-side layout here (stacked below): copy 5fr,
+     demo 7fr — the wide-demo split these sections exist for. */
+  .editorial .has-duo.duo-uw {
+    width: min(110rem, 88vw);
+  }
+  .has-duo.duo-uw .section-duo {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: clamp(3rem, 5vw, 7rem);
+  }
+  .has-duo.duo-uw .section-duo > .duo-copy {
+    margin-inline: 0;
+  }
+  /* Band steps: wide = roomy grid band (1280px), cinema = full stage band
+     (50vw == 1920px at 3840, capped at 1960 past 5K — matches the landing's
+     HowTkaWorks ceiling). */
+  .editorial .breakout.wide {
+    --breakout-width: min(80rem, 92vw);
+  }
+  .editorial .breakout.cinema {
+    --breakout-width: min(max(66rem, 50vw), 1960px);
   }
   .editorial .back-link {
     font-size: 1rem;

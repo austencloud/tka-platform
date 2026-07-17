@@ -320,6 +320,13 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   .showcase.with-sidebar {
     max-width: min(1600px, 94vw);
   }
+  /* Ultrawide: step up with the composer/landing 4K bands. Keep in sync with
+     PlayWithItSkeleton (the shared structural placeholder). */
+  @media (min-width: 2200px) {
+    .showcase.with-sidebar {
+      max-width: min(1960px, 94vw);
+    }
+  }
 
   /* Stage row holds the spinner + the AnimationPanel sidebar side by side.
      On mobile it collapses (display:contents) so the stage column flows
