@@ -110,7 +110,7 @@
      base rules so it wins by source order. */
   @media (min-width: 1680px) {
     .hero-demo {
-      max-width: min(52vh, 100%);
+      max-width: min(60vh, 100%);
     }
     figcaption {
       font-size: 1.05rem;

@@ -178,35 +178,43 @@
 </svelte:head>
 
 <div class="editorial">
-  <header class="editorial-header">
-    <h1 class="page-title">Flow Arts Composer</h1>
-    <p class="page-subtitle">
-      The flow arts choreography app built on <a href="/notation">The Kinetic Alphabet</a>
-    </p>
-  </header>
+  <!-- Hero: stacked and centered by default; from 1680px up it splits into a
+       duo — copy left, the live notation player right — matching the duo
+       grammar of the sections below. Source order is unchanged, so nothing
+       below the breakpoint moves. -->
+  <div class="hero-duo">
+    <header class="editorial-header">
+      <h1 class="page-title">Flow Arts Composer</h1>
+      <p class="page-subtitle">
+        The flow arts choreography app built on <a href="/notation">The Kinetic Alphabet</a>
+      </p>
+    </header>
 
-  <div class="lede">
-    <p>
-      Flow Arts Composer is a free web app for building flow arts choreography. Construct
-      sequences step by step, generate them from parameters, watch them animate, and share
-      them with other flow artists. It supports staff, fans, clubs, hoops, buugeng, and
-      more, all built on The Kinetic Alphabet notation system.
-    </p>
-  </div>
+    <div class="lede">
+      <p>
+        Flow Arts Composer is a free web app for building flow arts choreography. Construct
+        sequences step by step, generate them from parameters, watch them animate, and share
+        them with other flow artists. It supports staff, fans, clubs, hoops, buugeng, and
+        more, all built on The Kinetic Alphabet notation system.
+      </p>
+    </div>
 
-  <SequenceHeroDemo
-    sequence={heroDemoSequence}
-    note="a rotated LOOP from the generator, animating live"
-  />
+    <div class="hero-stage">
+      <SequenceHeroDemo
+        sequence={heroDemoSequence}
+        note="a rotated LOOP from the generator, animating live"
+      />
+    </div>
 
-  <div class="hero-ctas">
-    <a href="/create" class="cta-button" data-sveltekit-reload>
-      <span>Open Composer</span>
-      <i class="fas fa-arrow-right" aria-hidden="true"></i>
-    </a>
-    <a href="/notation" class="cta-secondary">
-      <span>See the notation</span>
-    </a>
+    <div class="hero-ctas">
+      <a href="/create" class="cta-button" data-sveltekit-reload>
+        <span>Open Composer</span>
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </a>
+      <a href="/notation" class="cta-secondary">
+        <span>See the notation</span>
+      </a>
+    </div>
   </div>
 
   <section class="editorial-section" style="--accent: #6366f1">
@@ -749,6 +757,56 @@
     .cards-heading {
       font-size: 1.7rem;
       margin-bottom: 1.2rem;
+    }
+  }
+
+  /* ── split hero (big tier) ──
+     Copy left, the live notation player right — the page's duo grammar
+     applied to the hero. Base (below 1680px) has NO .hero-duo styles, so the
+     stacked centered hero is untouched. The row spacers (1fr) center the copy
+     block against the player. */
+  @media (min-width: 1680px) {
+    .hero-duo {
+      position: relative;
+      left: 50%;
+      translate: -50% 0;
+      width: min(88vw, 3600px);
+      display: grid;
+      grid-template-columns: minmax(0, 46rem) minmax(0, 1fr);
+      grid-template-rows: 1fr auto auto auto 1fr;
+      grid-template-areas:
+        ".      stage"
+        "header stage"
+        "lede   stage"
+        "ctas   stage"
+        ".      stage";
+      column-gap: clamp(3rem, 5vw, 7rem);
+      margin-bottom: 3.6rem;
+    }
+    .hero-duo > .editorial-header {
+      grid-area: header;
+      text-align: left;
+      margin: 0 0 0.4rem;
+    }
+    .hero-duo > .lede {
+      grid-area: lede;
+      text-align: left;
+      margin: 0 0 0.8rem;
+      max-width: 42rem;
+    }
+    .hero-duo > .hero-stage {
+      grid-area: stage;
+      align-self: center;
+    }
+    /* The demo's own top margin exists for the stacked layout; in the
+       vertically-centered cell it would push the player off-center. */
+    .hero-duo > .hero-stage :global(.hero-demo) {
+      margin-top: 0;
+    }
+    .hero-duo > .hero-ctas {
+      grid-area: ctas;
+      justify-content: flex-start;
+      margin: 1.4rem 0 0;
     }
   }
 </style>
