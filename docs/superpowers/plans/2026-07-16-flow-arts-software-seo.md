@@ -30,7 +30,7 @@
 
 **Steps:**
 
-- [ ] **Step 1.1: DESCRIPTION const** (line 11-12). Replace:
+- [x] **Step 1.1: DESCRIPTION const** (line 11-12). Replace:
 
 ```
   const DESCRIPTION =
@@ -44,7 +44,7 @@ with:
     "Flow Arts Composer is free flow arts software for building choreography in your browser. Construct sequences step by step, generate them from parameters, animate them, and share them. Supports staff, fans, clubs, hoops, buugeng, and more.";
 ```
 
-- [ ] **Step 1.2: Title** (line 60). Replace:
+- [x] **Step 1.2: Title** (line 60). Replace:
 
 ```
   <title>Flow Arts Composer | Choreography App for Staff, Fans, Clubs & More</title>
@@ -56,7 +56,7 @@ with:
   <title>Flow Arts Composer | Free Flow Arts Software for Choreography</title>
 ```
 
-- [ ] **Step 1.3: OG + Twitter titles** (lines 67 and 72). Replace BOTH occurrences of:
+- [x] **Step 1.3: OG + Twitter titles** (lines 67 and 72). Replace BOTH occurrences of:
 
 ```
 content="Flow Arts Composer | Choreography App for Flow Arts"
@@ -68,13 +68,13 @@ with:
 content="Flow Arts Composer | Free Flow Arts Software for Choreography"
 ```
 
-- [ ] **Step 1.4: SoftwareApplication JSON-LD keywords.** In the first JSON-LD block, after the line `"applicationCategory": "EducationalApplication",` insert:
+- [x] **Step 1.4: SoftwareApplication JSON-LD keywords.** In the first JSON-LD block, after the line `"applicationCategory": "EducationalApplication",` insert:
 
 ```
     "keywords": "flow arts software, flow arts choreography software, flow arts app",
 ```
 
-- [ ] **Step 1.5: Page subtitle** (line ~182). Replace:
+- [x] **Step 1.5: Page subtitle** (line ~182). Replace:
 
 ```
       The flow arts choreography app built on <a href="/notation">The Kinetic Alphabet</a>
@@ -86,7 +86,7 @@ with:
       Free flow arts software for choreography, built on <a href="/notation">The Kinetic Alphabet</a>
 ```
 
-- [ ] **Step 1.6: Lede** (line ~188). Replace the first sentence:
+- [x] **Step 1.6: Lede** (line ~188). Replace the first sentence:
 
 ```
       Flow Arts Composer is a free web app for building flow arts choreography. Construct
@@ -99,9 +99,9 @@ with:
       browser. Construct
 ```
 
-- [ ] **Step 1.7: domains.ts keywords.** In `LANDING_SEO_CONFIG.keywords` (line ~117), change the string end `..., prop notation, movement notation"` to `..., prop notation, movement notation, flow arts software, flow arts choreography software"`. In `APP_SEO_CONFIG.keywords` (line ~136), change `..., buugeng patterns"` to `..., buugeng patterns, flow arts software, flow arts choreography software"`.
+- [x] **Step 1.7: domains.ts keywords.** In `LANDING_SEO_CONFIG.keywords` (line ~117), change the string end `..., prop notation, movement notation"` to `..., prop notation, movement notation, flow arts software, flow arts choreography software"`. In `APP_SEO_CONFIG.keywords` (line ~136), change `..., buugeng patterns"` to `..., buugeng patterns, flow arts software, flow arts choreography software"`.
 
-- [ ] **Step 1.8: Commit**
+- [x] **Step 1.8: Commit**
 
 ```bash
 git commit -m "feat(seo): /composer targets flow arts software + keyword configs" -- "src/routes/(public)/composer/+page.svelte" src/config/domains.ts
@@ -120,7 +120,7 @@ git commit -m "feat(seo): /composer targets flow arts software + keyword configs
 
 **Steps:**
 
-- [ ] **Step 2.1: New FAQ item.** In `faq-items.ts`, insert this item into `FAQ_ITEMS` immediately BEFORE the `"Is Flow Arts Composer free?"` item:
+- [x] **Step 2.1: New FAQ item.** In `faq-items.ts`, insert this item into `FAQ_ITEMS` immediately BEFORE the `"Is Flow Arts Composer free?"` item:
 
 ```ts
   {
@@ -131,7 +131,7 @@ git commit -m "feat(seo): /composer targets flow arts software + keyword configs
   },
 ```
 
-- [ ] **Step 2.2: /notation wording** (line ~173). Replace:
+- [x] **Step 2.2: /notation wording** (line ~173). Replace:
 
 ```
         concepts. Then <a href="/composer">Flow Arts Composer</a>: everything else you
@@ -144,7 +144,7 @@ with:
         the system: everything else you
 ```
 
-- [ ] **Step 2.3: /notation/fans wording** (line ~54-56). Replace:
+- [x] **Step 2.3: /notation/fans wording** (line ~54-56). Replace:
 
 ```
         as letters is prop-agnostic, and the animator in
@@ -160,7 +160,7 @@ with:
         render it with fans instead of staves.
 ```
 
-- [ ] **Step 2.4: /notation/clubs wording** (line ~55). Replace:
+- [x] **Step 2.4: /notation/clubs wording** (line ~55). Replace:
 
 ```
         <a href="/composer">Flow Arts Composer</a> can render a sequence with clubs.
@@ -173,7 +173,7 @@ with:
         with clubs.
 ```
 
-- [ ] **Step 2.5: /notation/buugeng wording** (line ~54-55). Replace:
+- [x] **Step 2.5: /notation/buugeng wording** (line ~54-55). Replace:
 
 ```
         <a href="/composer">Flow Arts Composer</a> can render a written sequence with
@@ -187,7 +187,7 @@ with:
         choreography, can render a written sequence with buugeng.
 ```
 
-- [ ] **Step 2.6: Commit**
+- [x] **Step 2.6: Commit**
 
 ```bash
 git commit -m "feat(seo): flow arts software FAQ entry + notation link-web anchors" -- src/lib/shared/landing/faq/faq-items.ts "src/routes/(public)/notation/+page.svelte" "src/routes/(public)/notation/fans/+page.svelte" "src/routes/(public)/notation/clubs/+page.svelte" "src/routes/(public)/notation/buugeng/+page.svelte"
@@ -204,7 +204,7 @@ git commit -m "feat(seo): flow arts software FAQ entry + notation link-web ancho
 
 **Steps:**
 
-- [ ] **Step 3.1: Create the page.** Full contents of `src/routes/(public)/roots/software/+page.svelte`:
+- [x] **Step 3.1: Create the page.** Full contents of `src/routes/(public)/roots/software/+page.svelte`:
 
 ```svelte
 <script lang="ts">
@@ -451,7 +451,7 @@ git commit -m "feat(seo): flow arts software FAQ entry + notation link-web ancho
 </div>
 ```
 
-- [ ] **Step 3.2: Roots cross-link.** In `src/routes/(public)/roots/+page.svelte`, insert a new section between the closing `</section>` of "The Synthesis" and the `<!-- CTA -->` comment:
+- [x] **Step 3.2: Roots cross-link.** In `src/routes/(public)/roots/+page.svelte`, insert a new section between the closing `</section>` of "The Synthesis" and the `<!-- CTA -->` comment:
 
 ```svelte
     <!-- Software lineage -->
@@ -468,13 +468,13 @@ git commit -m "feat(seo): flow arts software FAQ entry + notation link-web ancho
     </section>
 ```
 
-- [ ] **Step 3.3: Sitemap entry.** In `src/routes/sitemap.xml/+server.ts`, after the line `{ url: "roots", priority: "0.8", changefreq: "monthly" },` insert:
+- [x] **Step 3.3: Sitemap entry.** In `src/routes/sitemap.xml/+server.ts`, after the line `{ url: "roots", priority: "0.8", changefreq: "monthly" },` insert:
 
 ```ts
   { url: "roots/software", priority: "0.7", changefreq: "monthly" },
 ```
 
-- [ ] **Step 3.4: Commit**
+- [x] **Step 3.4: Commit**
 
 ```bash
 git commit -m "feat(seo): /roots/software flow arts software lineage page + sitemap + roots cross-link" -- "src/routes/(public)/roots/software/+page.svelte" "src/routes/(public)/roots/+page.svelte" src/routes/sitemap.xml/+server.ts
@@ -490,7 +490,7 @@ git commit -m "feat(seo): /roots/software flow arts software lineage page + site
 
 **Steps:**
 
-- [ ] **Step 4.1: Strategy addendum.** Append to the END of `docs/reference/seo-winning-strategy.md`:
+- [x] **Step 4.1: Strategy addendum.** Append to the END of `docs/reference/seo-winning-strategy.md`:
 
 ```markdown
 
@@ -517,14 +517,14 @@ feat/flow-arts-software-seo, spec 2026-07-16-flow-arts-software-seo-design.md):
   adjacent).
 ```
 
-- [ ] **Step 4.2: A+ plan ledger.** In `docs/superpowers/specs/2026-07-16-seo-a-plus-plan.md`, after the `- [ ] W2-4: ...` line, add:
+- [x] **Step 4.2: A+ plan ledger.** In `docs/superpowers/specs/2026-07-16-seo-a-plus-plan.md`, after the `- [ ] W2-4: ...` line, add:
 
 ```markdown
 - [x] W2-5: "flow arts software" commercial cluster: /composer retitle + description + JSON-LD keywords, keyword configs, FAQ entry, varied link web (2026-07-16, feat/flow-arts-software-seo)
 - [x] W2-6: /roots/software lineage page: fact-verified roster (VTG app, LAB simulators, VisualSpinner3D, today's tools), sitemap entry, /roots cross-link (2026-07-16, feat/flow-arts-software-seo)
 ```
 
-- [ ] **Step 4.3: Commit**
+- [x] **Step 4.3: Commit**
 
 ```bash
 git commit -m "docs(seo): software cluster addendum + A+ ledger entries" -- docs/reference/seo-winning-strategy.md docs/superpowers/specs/2026-07-16-seo-a-plus-plan.md

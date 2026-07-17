@@ -206,3 +206,25 @@ staff/practice/gear/cards where people actually search, and getting cited by AI
 via Wikidata + DefinedTerm + first-hand rigor.** Not: ranking a keyword nobody
 types. First-mover on a zero-demand term is a placeholder; first-mover as the
 *canonical interactive source of a real system* is a moat.
+
+## Addendum (2026-07-16): the software cluster
+
+The sweep above never examined "flow arts software", and the term turned out to
+be an unowned commercial-intent SERP: page one is a video-effects app (AR Flow
+Arts), a hoop tutorial platform (Taylor Flows), and flowchart-software noise.
+No choreography tool targets it. Shipped response (branch
+feat/flow-arts-software-seo, spec 2026-07-16-flow-arts-software-seo-design.md):
+
+- /composer owns the bare phrase: title "Flow Arts Composer | Free Flow Arts
+  Software for Choreography"; description, lede, and subtitle lead with it;
+  the SoftwareApplication JSON-LD gains a keywords property.
+- Internal link web: varied anchors pointing at /composer (new FAQ entry "Is
+  there software for flow arts choreography?" on / and /about, wording touches
+  on /notation and the per-prop pages). Exactly one exact-match anchor
+  site-wide, on /roots/software.
+- /roots/software takes the informational intent ("history of flow arts
+  software"): a fact-checked lineage page covering the VTG app, the LAB
+  simulators, VisualSpinner3D, and today's tools, with every living project
+  linked out. Competitor brand names never appear in our title/meta. This is
+  also the site's most link-worthy page for community backlinks (Layer 3
+  adjacent).

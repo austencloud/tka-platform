@@ -26,6 +26,8 @@ Source: full SEO audit (4-agent codebase sweep + live-site probe). Austen approv
 - [ ] W2-2: Poi explainer page ("why poi works differently in TKA") targeting "poi notation"
 - [ ] W2-3: Question-intent pages (e.g. "how to write down staff choreography")
 - [ ] W2-4: Sequence-page thin-content + og:image programmatic pass
+- [x] W2-5: "flow arts software" commercial cluster: /composer retitle + description + JSON-LD keywords, keyword configs, FAQ entry, varied link web (2026-07-16, feat/flow-arts-software-seo)
+- [x] W2-6: /roots/software lineage page: fact-verified roster (VTG app, LAB simulators, VisualSpinner3D, today's tools), sitemap entry, /roots cross-link (2026-07-16, feat/flow-arts-software-seo)
 
 ### Wave 3 — verification + external
 - [ ] W3-1: One full `npm run check` + `npm run build`; grep built HTML for new links
