@@ -128,7 +128,7 @@
   </div>
 
   <div class="showcase-wrap">
-    <SequenceShowcase variant="compact" sequence={staticSequence} items={[]} bpm={60}>
+    <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={staticSequence} items={[]} bpm={60}>
       {#snippet strip()}
         <TurnStrip frames={staticFrames} caption="Static with 2 turns, held at east: start, halfway, end, full motion" />
       {/snippet}
@@ -156,9 +156,15 @@
     margin-bottom: 0;
   }
   .showcase-wrap {
+    /* The showcase inside is a container-query container (container-type:
+       inline-size), so it has ZERO intrinsic width - this wrapper must get a
+       DEFINITE width from the grid (width: 100% + justify-self), never
+       shrink-to-fit (auto width + auto margins collapsed it to its padding). */
     grid-column: full-start / full-end;
-    max-width: 56rem;
-    margin: 1.9rem auto;
+    width: 100%;
+    max-width: 76rem;
+    justify-self: center;
+    margin: 1.9rem 0;
     padding: 0 2rem;
   }
 </style>

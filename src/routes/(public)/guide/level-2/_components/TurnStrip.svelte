@@ -223,15 +223,19 @@
      print-oriented dark-on-white fallback, which renders near-invisible on
      the dark host. A future host that DOES set --ink still wins outright. */
   .turn-strip {
-    --frame-size: clamp(4.75rem, 15cqw, 9.5rem);
+    --frame-size: clamp(5rem, 18cqw, 11rem);
     container-type: inline-size;
+    /* inline-size containment zeroes this element's intrinsic width, so it
+       MUST take a definite width from its context (width: 100%); auto-margin
+       shrink-to-fit collapsed it to 0 and stacked the frames vertically. */
+    width: 100%;
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
     justify-content: center;
     gap: 0.75rem 0.6rem;
     margin: 1.9rem auto;
-    max-width: 56rem;
+    max-width: 72rem;
     /* Break out of the inherited prose column: GuideSection is a CSS subgrid
        (level-1/_styles/guide.css) whose `.guide-section > *` rule confines
        every direct child (including this strip) to the narrow `prose` track.
