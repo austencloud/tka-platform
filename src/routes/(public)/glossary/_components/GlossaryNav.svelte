@@ -21,6 +21,7 @@
     total,
     query = $bindable(""),
     activeSlug = "",
+    activeCat = "",
     showSearch = true,
     onNavigate,
   }: {
@@ -30,6 +31,9 @@
     total: number;
     query?: string;
     activeSlug?: string;
+    /** The page's current drill view ("landing" | "all" | category key) -
+     *  highlights the matching category heading. */
+    activeCat?: string;
     showSearch?: boolean;
     /** Fired when any link is activated (term slug or `cat-*` section slug).
      *  The host owns what happens: reveal the term / drill the category /
@@ -84,7 +88,8 @@
 
   <nav class="gnav-list" aria-label="Glossary contents" bind:this={listEl}>
     {#each groups as g (g.key)}
-      {@const groupActive = g.terms.some((t) => t.slug === activeSlug)}
+      {@const groupActive =
+        g.key === activeCat || g.terms.some((t) => t.slug === activeSlug)}
       <div class="gnav-group">
         <a
           class="gnav-heading"

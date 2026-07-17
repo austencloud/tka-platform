@@ -96,7 +96,12 @@
   .mkt-shell {
     position: relative;
     min-height: 100vh;
-    overflow-x: hidden;
+    /* clip, not hidden: `overflow-x: hidden` computes overflow-y to `auto`,
+       which makes this shell a (never-scrolling) scroll container and silently
+       disables position:sticky for every descendant on every marketing page.
+       `clip` clips decorative horizontal overflow identically without creating
+       a scroll container, so sticky elements track the real window scroll. */
+    overflow-x: clip;
     color: var(--theme-text, #ffffff);
     /* Two-tier display type, both self-hosted app-wide (app.html):
        --page-title-font  → the brand's Fraunces wonky italic, for each page's

@@ -1,13 +1,15 @@
 <script lang="ts">
   import "$lib/shared/landing/styles/public-editorial.css";
   import { onMount, tick } from "svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
   import GlossaryNav from "./_components/GlossaryNav.svelte";
-  import GlossaryTermCard from "./_components/GlossaryTermCard.svelte";
+  import GlossaryTermDetail from "./_components/GlossaryTermDetail.svelte";
 
   let { data } = $props();
 
   // Position-term slugs (from @tka/domain's GLOSSARY keys, see +page.server.ts)
-  // that get a pictograph thumbnail in their card header. Fixed-size PNGs,
+  // that get a pictograph thumbnail in their detail view. Fixed-size PNGs,
   // present from first paint — no layout shift.
   const POSITION_THUMBS: Record<string, { src: string; alt: string }> = {
     alpha: { src: "/images/position_images/alpha.png", alt: "Alpha position pictograph" },
@@ -74,15 +76,16 @@
   }).replace(/</g, "\\u003c");
 
   // ── navigation state ──────────────────────────────────────────────────
-  // Drill-down views: "landing" (category cards) → one category → or "all"
-  // (the full read-through document). EVERY term section stays in the DOM at
-  // all times — views and search only toggle CSS visibility — so the
-  // prerendered HTML (landing state) still carries all 110 definitions for
-  // SEO, and the drill/filter/scroll-spy are pure client-side enhancement.
+  // Drill-down views: "landing" (category cards) → one category → or "all".
+  // Inside a view the layout is master-detail: a term list (master) and, on
+  // desktop, a sticky detail panel showing the selected term; on mobile the
+  // selected row expands in place. EVERY term row and its full body stay in
+  // the DOM at all times — views, search, and selection only toggle CSS
+  // visibility — so the prerendered HTML (landing state) still carries all
+  // definitions for SEO, and everything below is client-side enhancement.
   let query = $state("");
   let view = $state("landing");
-  let expanded = $state<Record<string, boolean>>({});
-  let activeSlug = $state("");
+  let selected = $state("");
   let drawerOpen = $state(false);
   let showBackTop = $state(false);
   let drawerCloseBtn: HTMLButtonElement | undefined = $state();
@@ -92,6 +95,9 @@
   // Static lookups (the lexicon never changes at runtime).
   const slugToCat = new Map<string, string>(
     data.groups.flatMap((g) => g.terms.map((t) => [t.slug, g.key] as const))
+  );
+  const slugToEntry = new Map<string, GlossaryTerm>(
+    data.groups.flatMap((g) => g.terms.map((t) => [t.slug, t] as const))
   );
   const sectionSlugToKey = new Map<string, string>(
     data.groups.map((g) => [g.sectionSlug, g.key] as const)
@@ -135,6 +141,19 @@
   );
 
   const landingShown = $derived(!filtering && view === "landing");
+  const selectedEntry = $derived(
+    selected ? (slugToEntry.get(selected) ?? null) : null
+  );
+  const viewTitle = $derived(
+    view === "all"
+      ? "All terms"
+      : (data.groups.find((g) => g.key === view)?.label ?? "")
+  );
+  const viewCount = $derived(
+    view === "all"
+      ? data.total
+      : (data.groups.find((g) => g.key === view)?.terms.length ?? 0)
+  );
 
   function sectionShown(key: string): boolean {
     if (filtering) return matchedSections?.has(key) ?? false;
@@ -145,45 +164,50 @@
   // under an active search.
   const sidebarGroups = $derived(filtering ? searchGroups : data.groups);
 
-  // Expand-all operates on whatever the current view shows.
-  const viewSlugs = $derived(
-    view === "all"
-      ? data.groups.flatMap((g) => g.terms.map((t) => t.slug))
-      : (data.groups.find((g) => g.key === view)?.terms.map((t) => t.slug) ?? [])
-  );
-  const viewCount = $derived(viewSlugs.length);
-  const anyOpen = $derived(viewSlugs.some((s) => Boolean(expanded[s])));
+  const isDesktop = () =>
+    typeof window !== "undefined" &&
+    window.matchMedia("(min-width: 1024px)").matches;
 
-  function toggleTerm(slug: string) {
-    expanded[slug] = !expanded[slug];
+  function firstSlugOf(key: string): string {
+    return data.groups.find((g) => g.key === key)?.terms[0]?.slug ?? "";
   }
 
-  function toggleAll() {
-    if (anyOpen) {
-      expanded = {};
-    } else {
-      const next: Record<string, boolean> = { ...expanded };
-      for (const s of viewSlugs) next[s] = true;
-      expanded = next;
+  /** Drill into a category (or "all"). Desktop auto-selects the first term so
+   *  the detail panel is never empty; mobile waits for a tap. */
+  function enterView(v: string) {
+    view = v;
+    selected = isDesktop()
+      ? v === "all"
+        ? (data.groups[0]?.terms[0]?.slug ?? "")
+        : firstSlugOf(v)
+      : "";
+  }
+
+  /** Row click: select on desktop (re-click keeps it), toggle on mobile. */
+  function select(slug: string) {
+    if (!isDesktop() && selected === slug) {
+      selected = "";
+      return;
     }
+    selected = slug;
+    history.replaceState(null, "", `#${slug}`);
   }
 
-  /** Expand a term, make sure its category is on screen, and scroll to it.
-   *  Used by sidebar term links, related-term links, and #hash deep links. */
+  /** Select a term, make sure its category is on screen, and scroll to it.
+   *  Used by sidebar term links, related-term chips, and #hash deep links. */
   async function reveal(slug: string, e?: Event) {
     e?.preventDefault();
     if (!slugToCat.has(slug)) return;
     if (filtering) query = ""; // leave search mode; the target may not match it
     const cat = slugToCat.get(slug);
     if (cat && view !== "all" && view !== cat) view = cat;
-    expanded[slug] = true;
+    selected = slug;
     await tick();
     const el = document.getElementById(slug);
     if (!el) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+    el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "nearest" });
     history.replaceState(null, "", `#${slug}`);
-    activeSlug = slug;
   }
 
   /** Sidebar / drawer link handler: category headings drill, terms reveal. */
@@ -193,46 +217,21 @@
     if (catKey) {
       e.preventDefault();
       if (filtering) query = "";
-      view = catKey;
+      enterView(catKey);
       await tick();
-      document.getElementById(slug)?.scrollIntoView({ block: "start" });
+      document.querySelector(".view-head")?.scrollIntoView({ block: "start" });
       return;
     }
     await reveal(slug, e);
   }
 
   // #hash deep link on load (e.g. a related-term link shared externally):
-  // expand the target card and scroll to it once hydrated. onMount, not
+  // select the target term and scroll to it once hydrated. onMount, not
   // $effect - reveal() reads and writes reactive state, so an effect here
   // would re-fire on every search keystroke and yank the scroll position.
   onMount(() => {
     const slug = window.location.hash.slice(1);
     if (slug && slugToCat.has(slug)) void reveal(slug);
-  });
-
-  // ── scroll-spy ────────────────────────────────────────────────────────
-  // Same mechanism as the guide's GuideSection: an IntersectionObserver band
-  // near the top of the viewport marks the term being read. Rebuilt whenever
-  // the drill or filter changes which cards are visible.
-  $effect(() => {
-    void view;
-    void searchGroups;
-    const terms = Array.from(
-      document.querySelectorAll<HTMLElement>(
-        ".editorial-section:not(.sec-hidden) .card-slot:not(.hit-hidden) .term-card[id]"
-      )
-    );
-    if (!terms.length) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) activeSlug = entry.target.id;
-        }
-      },
-      { rootMargin: "-15% 0px -70% 0px", threshold: 0 }
-    );
-    terms.forEach((el) => observer.observe(el));
-    return () => observer.disconnect();
   });
 
   // Drawer: lock body scroll and move focus in while open.
@@ -311,12 +310,13 @@
       groups={sidebarGroups}
       total={data.total}
       bind:query
-      {activeSlug}
+      activeSlug={selected}
+      activeCat={view}
       onNavigate={handleNav}
     />
   </aside>
 
-  <div class="editorial">
+  <div class="editorial" class:compact={!landingShown}>
     <!-- ── mobile: sticky filter bar + Contents drawer trigger ── -->
     <div class="mobile-bar">
       <div class="mb-search">
@@ -368,21 +368,26 @@
       </p>
     {:else if view !== "landing"}
       <div class="view-head">
-        <button type="button" class="back-btn" onclick={() => (view = "landing")}>
+        <button
+          type="button"
+          class="back-btn"
+          onclick={() => {
+            view = "landing";
+            selected = "";
+          }}
+        >
           <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
           Categories
         </button>
+        <h2 class="view-title">{viewTitle}</h2>
         <span class="view-count">{viewCount} terms</span>
-        <button type="button" class="expand-toggle" onclick={toggleAll}>
-          {anyOpen ? "Collapse all" : "Expand all"}
-        </button>
       </div>
     {/if}
 
     {#if landingShown}
       <nav class="cat-cards" aria-label="Browse by category">
         {#each data.groups as g (g.key)}
-          <button type="button" class="cat-card" onclick={() => (view = g.key)}>
+          <button type="button" class="cat-card" onclick={() => enterView(g.key)}>
             <span class="cc-top">
               <span class="cc-label">{g.label}</span>
               <span class="cc-count">{g.terms.length}</span>
@@ -395,48 +400,87 @@
         {/each}
       </nav>
       <div class="landing-all">
-        <button type="button" class="browse-all" onclick={() => (view = "all")}>
+        <button type="button" class="browse-all" onclick={() => enterView("all")}>
           Browse all {data.total} terms
         </button>
       </div>
     {/if}
 
-    {#each data.groups as g (g.key)}
-      <section
-        class="editorial-section"
-        class:sec-hidden={!sectionShown(g.key)}
-        id={g.sectionSlug}
-      >
-        <span class="section-kicker">{g.label}</span>
-        <div class="term-grid">
-          {#each g.terms as t (t.slug)}
-            {@const open = Boolean(expanded[t.slug]) || filtering}
-            <div
-              class="card-slot"
-              class:hit-hidden={matchSlugs !== null && !matchSlugs.has(t.slug)}
-              class:open-slot={open}
+    <!-- master-detail: always in the DOM (SEO); hidden on the landing view -->
+    {#key view}
+      <div class="split" class:sec-hidden={landingShown}>
+        <div class="term-index">
+          {#each data.groups as g (g.key)}
+            <section
+              class="index-section"
+              class:sec-hidden={!sectionShown(g.key)}
+              id={g.sectionSlug}
             >
-              <GlossaryTermCard
-                entry={t}
-                {open}
-                thumb={POSITION_THUMBS[t.slug] ?? null}
-                ontoggle={() => toggleTerm(t.slug)}
-                onrelated={(slug, e) => reveal(slug, e)}
-              />
-            </div>
+              {#if view === "all" || filtering}
+                <span class="section-kicker">{g.label}</span>
+              {/if}
+              <ul class="term-rows">
+                {#each g.terms as t (t.slug)}
+                  <li
+                    id={t.slug}
+                    class="term-item"
+                    class:hit-hidden={matchSlugs !== null && !matchSlugs.has(t.slug)}
+                  >
+                    <button
+                      type="button"
+                      class="term-row"
+                      class:selected={selected === t.slug}
+                      aria-expanded={selected === t.slug}
+                      onclick={() => select(t.slug)}
+                    >
+                      <dfn class="row-name">{t.term}</dfn>
+                      <span class="row-teaser">{t.definition}</span>
+                      <i class="fa-solid fa-chevron-down row-chev" aria-hidden="true"></i>
+                    </button>
+                    <!-- mobile accordion body; the full entry lives in the DOM
+                         at every breakpoint (crawlable), desktop just hides it
+                         and shows the detail panel instead -->
+                    <div class="row-body" class:open={selected === t.slug}>
+                      <div class="row-body-inner">
+                        <GlossaryTermDetail
+                          entry={t}
+                          thumb={POSITION_THUMBS[t.slug] ?? null}
+                          showTitle={false}
+                          onrelated={(s, e) => reveal(s, e)}
+                        />
+                      </div>
+                    </div>
+                  </li>
+                {/each}
+              </ul>
+            </section>
           {/each}
-        </div>
-      </section>
-    {/each}
 
-    {#if filtering && matchCount === 0}
-      <div class="no-results">
-        <p>No terms match "{query.trim()}".</p>
-        <button type="button" class="no-results-clear" onclick={() => (query = "")}>
-          Clear filter
-        </button>
+          {#if filtering && matchCount === 0}
+            <div class="no-results">
+              <p>No terms match "{query.trim()}".</p>
+              <button type="button" class="no-results-clear" onclick={() => (query = "")}>
+                Clear filter
+              </button>
+            </div>
+          {/if}
+        </div>
+
+        <aside class="detail-panel" aria-label="Term details">
+          <Crossfade key={selected || "none"} duration={DURATION.normal}>
+            {#if selectedEntry}
+              <GlossaryTermDetail
+                entry={selectedEntry}
+                thumb={POSITION_THUMBS[selectedEntry.slug] ?? null}
+                onrelated={(s, e) => reveal(s, e)}
+              />
+            {:else}
+              <p class="detail-empty">Pick a term from the list.</p>
+            {/if}
+          </Crossfade>
+        </aside>
       </div>
-    {/if}
+    {/key}
 
     <div class="cta-card">
       <h3>See the notation in motion</h3>
@@ -471,7 +515,8 @@
         groups={sidebarGroups}
         total={data.total}
         bind:query
-        {activeSlug}
+        activeSlug={selected}
+        activeCat={view}
         showSearch={false}
         onNavigate={handleNav}
       />
@@ -487,10 +532,10 @@
 
 <style>
   /* ── two-column shell: sidebar + full-width article on wide screens ──
-     The editorial column drops its 46rem cap inside this shell: the term
-     and category grids are responsive multi-column and are MEANT to use
+     The editorial column drops its 46rem cap inside this shell: the
+     master-detail split and category grid are responsive and MEANT to use
      the full viewport (4K included). Prose measures are capped per-element
-     (lede, expanded card text, CTA) instead of capping the whole column. */
+     (lede, detail text, CTA) instead of capping the whole column. */
   .glossary-sidebar {
     display: none;
   }
@@ -524,7 +569,7 @@
       margin-right: auto;
     }
   }
-  /* 4K / ultrawide: wider rail, larger type, same fluid grids. */
+  /* 4K / ultrawide: wider rail and list, larger type, same fluid layout. */
   @media (min-width: 2200px) {
     .glossary-shell {
       grid-template-columns: 24rem minmax(0, 1fr);
@@ -534,6 +579,23 @@
     .cta-card {
       max-width: 60rem;
     }
+  }
+
+  /* Drilled views compact the hero: the reader came to look something up,
+     so the reference surface starts near the top instead of below a full
+     editorial masthead. */
+  .editorial.compact .editorial-header {
+    margin: 1.4rem 0 1.6rem;
+  }
+  .editorial.compact .page-title {
+    font-size: clamp(1.9rem, 1.5rem + 1.3vw, 2.7rem);
+  }
+  .editorial.compact .lede {
+    display: none;
+  }
+  .page-title,
+  .lede p {
+    text-wrap: balance;
   }
 
   /* ── mobile sticky bar: filter + Contents ── */
@@ -668,6 +730,7 @@
     font-size: 1.05rem;
     font-weight: 660;
     letter-spacing: -0.01em;
+    text-wrap: balance;
     color: oklch(0.96 0.01 270);
   }
   .cc-count {
@@ -680,6 +743,13 @@
     padding: 0.1rem 0.55rem;
   }
   .cc-sample {
+    /* One line, clean end-ellipsis: keeps every card the same height (no
+       ragged wrapping) so the landing grid reads as a calm, even surface. */
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
     font-size: 0.85rem;
     line-height: 1.5;
     color: oklch(0.65 0.015 270);
@@ -725,12 +795,12 @@
     outline-offset: 2px;
   }
 
-  /* ── drilled view header: back + count + expand toggle ── */
+  /* ── drilled view header: back + category title + count ── */
   .view-head {
     display: flex;
     align-items: center;
-    gap: 0.85rem;
-    margin: 0 0 1.75rem;
+    gap: 1rem;
+    margin: 0 0 1.4rem;
   }
   .back-btn {
     all: unset;
@@ -757,48 +827,192 @@
     outline: 2px solid oklch(0.65 0.13 275);
     outline-offset: 2px;
   }
+  .view-title {
+    font-size: clamp(1.3rem, 1.15rem + 0.5vw, 1.7rem);
+    font-weight: 680;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    color: oklch(0.96 0.01 270);
+    margin: 0;
+  }
   .view-count {
-    flex: 1;
     font-size: 0.85rem;
     font-variant-numeric: tabular-nums;
-    color: oklch(0.62 0.02 270);
-  }
-  .expand-toggle {
-    all: unset;
-    box-sizing: border-box;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 44px;
-    min-width: 8.25rem; /* fits "Collapse all" so the label swap never shifts layout */
-    padding: 0 1rem;
-    font-size: 0.85rem;
-    font-weight: 550;
-    color: oklch(0.78 0.05 273);
-    border: 1px solid oklch(0.5 0.07 273 / 0.35);
-    border-radius: 999px;
-    cursor: pointer;
-    transition: border-color 160ms ease, color 160ms ease;
-  }
-  .expand-toggle:hover {
-    color: oklch(0.92 0.04 274);
-    border-color: oklch(0.6 0.11 274 / 0.6);
-  }
-  .expand-toggle:focus-visible {
-    outline: 2px solid oklch(0.65 0.13 275);
-    outline-offset: 2px;
+    color: oklch(0.6 0.02 270);
   }
 
   .filter-status {
-    margin: 0 auto 2.5rem;
+    margin: 0 auto 1.5rem;
     text-align: center;
     font-size: 0.95rem;
     color: oklch(0.72 0.015 270);
   }
 
+  /* ── master-detail split ── */
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 3rem;
+  }
+  @media (min-width: 1024px) {
+    .split {
+      grid-template-columns: minmax(20rem, 30rem) minmax(0, 1fr);
+      column-gap: 1.75rem;
+      align-items: start;
+    }
+  }
+  @media (min-width: 2200px) {
+    .split {
+      grid-template-columns: minmax(24rem, 36rem) minmax(0, 1fr);
+      column-gap: 2.5rem;
+    }
+  }
+
+  .index-section {
+    margin: 0 0 1.6rem;
+  }
+  .index-section .section-kicker {
+    padding: 0 0.85rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .term-rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .term-item {
+    border-bottom: 1px solid oklch(0.5 0.03 270 / 0.1);
+    scroll-margin-top: 130px; /* deep links clear the header + mobile bar */
+  }
+  .term-item:last-child {
+    border-bottom: none;
+  }
+
+  .term-row {
+    all: unset;
+    box-sizing: border-box;
+    display: grid;
+    grid-template-columns: minmax(8rem, auto) minmax(0, 1fr) auto;
+    align-items: center;
+    column-gap: 0.9rem;
+    width: 100%;
+    min-height: 48px;
+    padding: 0.55rem 0.85rem;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+    border-radius: 0 10px 10px 0;
+    transition: background 140ms ease, border-color 140ms ease;
+  }
+  .term-row:hover {
+    background: oklch(0.22 0.025 272 / 0.4);
+  }
+  .term-row:focus-visible {
+    outline: 2px solid oklch(0.65 0.13 275);
+    outline-offset: -2px;
+  }
+  /* Selected = accent spine + tinted surface + accent name. Color only, no
+     weight change, so the row's text metrics never shift (no layout shift). */
+  .term-row.selected {
+    background: oklch(0.28 0.05 275 / 0.35);
+    border-left-color: oklch(0.72 0.14 275);
+  }
+  .row-name {
+    font-size: 0.95rem;
+    font-weight: 620;
+    font-style: normal; /* override <dfn> italics */
+    color: oklch(0.93 0.012 270);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .term-row.selected .row-name {
+    color: oklch(0.9 0.09 275);
+  }
+  .row-teaser {
+    /* One line, clean end-ellipsis: truncation always happens at the same
+       visual edge instead of clamp-wrapping mid-thought. */
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    color: oklch(0.6 0.015 270);
+  }
+  .row-chev {
+    font-size: 0.7rem;
+    color: oklch(0.55 0.03 270);
+    transition: transform 200ms ease, color 160ms ease;
+  }
+  .term-row[aria-expanded="true"] .row-chev {
+    transform: rotate(180deg);
+    color: oklch(0.75 0.1 275);
+  }
+
+  /* Mobile accordion body: 0fr -> 1fr keeps the full entry in the DOM
+     (crawlable) and animates open height without measuring. */
+  .row-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 240ms ease;
+  }
+  .row-body.open {
+    grid-template-rows: 1fr;
+  }
+  .row-body-inner {
+    overflow: hidden;
+    min-height: 0;
+    padding: 0 0.85rem;
+  }
+  .row-body.open .row-body-inner {
+    padding: 0.4rem 0.85rem 1.2rem;
+  }
+
+  /* Desktop: rows drive the sticky detail panel instead of expanding. */
+  .detail-panel {
+    display: none;
+  }
+  @media (min-width: 1024px) {
+    .row-chev,
+    .row-body {
+      display: none;
+    }
+    .detail-panel {
+      display: block;
+      position: sticky;
+      top: 84px;
+      /* Hug a readable measure instead of stretching across an ultrawide
+         viewport; the text inside caps at ~64ch anyway. */
+      max-width: 62rem;
+      max-height: calc(100vh - 100px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 1.6rem 1.75rem;
+      background: oklch(0.16 0.018 270 / 0.45);
+      border: 1px solid oklch(0.4 0.04 270 / 0.14);
+      border-radius: 18px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      scrollbar-width: thin;
+      scrollbar-color: oklch(0.4 0.03 270 / 0.5) transparent;
+    }
+    .detail-panel::-webkit-scrollbar {
+      width: 6px;
+    }
+    .detail-panel::-webkit-scrollbar-thumb {
+      background: oklch(0.4 0.03 270 / 0.5);
+      border-radius: 3px;
+    }
+  }
+  .detail-empty {
+    margin: 0;
+    font-size: 0.95rem;
+    color: oklch(0.6 0.02 270);
+  }
+
   .no-results {
     text-align: center;
-    padding: 2.5rem 0 1rem;
+    padding: 2rem 0 1rem;
   }
   .no-results p {
     font-size: 1.05rem;
@@ -823,6 +1037,11 @@
   .no-results-clear:focus-visible {
     outline: 2px solid oklch(0.65 0.13 275);
     outline-offset: 2px;
+  }
+
+  .sec-hidden,
+  .hit-hidden {
+    display: none;
   }
 
   /* ── mobile Contents drawer ── */
@@ -904,35 +1123,31 @@
     outline-offset: 2px;
   }
 
-  /* ── term sections ── */
-  .editorial-section {
-    scroll-margin-top: 120px; /* category anchors clear the header + mobile bar */
-  }
-  .sec-hidden {
-    display: none;
-  }
-  .term-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 0.75rem;
-    align-items: start;
-  }
-  .card-slot {
-    min-width: 0;
-  }
-  .card-slot.open-slot {
-    grid-column: 1 / -1;
-  }
-  .card-slot.hit-hidden {
-    display: none;
-  }
-
   .creator-credit a {
     color: oklch(0.6 0.1 275);
     text-decoration: none;
   }
   .creator-credit a:hover {
     color: oklch(0.8 0.08 275);
+  }
+
+  /* ── entry motion: one orchestrated fade-up when a view mounts ── */
+  @media (prefers-reduced-motion: no-preference) {
+    .cat-cards,
+    .view-head,
+    .split {
+      animation: gl-fadeup 260ms cubic-bezier(0.22, 0.7, 0.35, 1) both;
+    }
+    @keyframes gl-fadeup {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   }
 
   /* ── tiny screens (iPhone SE class, ≤400px) ── */
@@ -951,8 +1166,15 @@
       padding: 0.95rem 2.6rem 0.95rem 1rem;
     }
     .view-head {
+      gap: 0.7rem;
       flex-wrap: wrap;
-      gap: 0.6rem;
+    }
+    .term-row {
+      grid-template-columns: minmax(0, 1fr) auto;
+      column-gap: 0.6rem;
+    }
+    .row-teaser {
+      display: none; /* name + chevron only; the tap reveals the entry */
     }
   }
 
@@ -962,7 +1184,9 @@
     .cc-arrow,
     .back-btn,
     .browse-all,
-    .expand-toggle {
+    .term-row,
+    .row-chev,
+    .row-body {
       transition: none;
     }
     .back-top:hover,
