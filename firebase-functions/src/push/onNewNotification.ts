@@ -47,8 +47,11 @@ export const onNewNotification = onDocumentCreated(
 
     const unreadCount = await getUnreadCount(userId);
 
-    // Build title from sender name or notification type
-    const title = fromUserName || formatNotificationType(type);
+    // Build the push title. Pulse/admin types get a clean label (the scanner's
+    // name and full detail already live in the body) instead of the ugly
+    // slug-cased fallback ("Admin Qr Scan"). Social types keep the sender name.
+    const title =
+      PULSE_TITLES[type] || fromUserName || formatNotificationType(type);
 
     const payload: PushPayload = {
       title,
@@ -69,6 +72,17 @@ export const onNewNotification = onDocumentCreated(
     }
   }
 );
+
+/**
+ * Clean push titles for the admin Pulse family — the body already carries the
+ * who/what/where, so the title stays a short, human label.
+ */
+const PULSE_TITLES: Record<string, string> = {
+  "admin-qr-scan": "QR Scan",
+  "admin-user-returned": "User Returned",
+  "admin-new-user-signup": "New Signup",
+  "admin-content-created": "New Content",
+};
 
 /**
  * Convert a notification type slug to a readable title.

@@ -136,6 +136,13 @@ export interface PulseNotification extends BaseNotification {
   shortCode?: string;
   scanCity?: string | null;
   scanCountry?: string | null;
+  /** Latest scan's coordinates — drives the map fly-to on notification click. */
+  scanLat?: number | null;
+  scanLng?: number | null;
+  /** How many scans this rolling digest has coalesced (1 = single scan). */
+  scanCount?: number;
+  /** Display name of a signed-in scanner (set on the first scan of a digest). */
+  fromUserName?: string;
   contentType?: "sequence" | "collection";
   sequenceId?: string;
   collectionId?: string;

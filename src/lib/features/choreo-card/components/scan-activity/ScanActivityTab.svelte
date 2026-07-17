@@ -12,8 +12,13 @@
   import { env } from "$env/dynamic/public";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { scanActivityState } from "$lib/features/choreo-card/state/scan-activity-state.svelte";
+  import {
+    scanNotificationTargetState,
+    takeScanNotificationTarget,
+  } from "$lib/features/choreo-card/state/scan-notification-target.svelte";
   import GlobalUserMap from "$lib/features/community/components/GlobalUserMap.svelte";
   import RecentScansList from "./RecentScansList.svelte";
+  import ScanCardPeek from "./ScanCardPeek.svelte";
 
   const scanState = scanActivityState;
   const isAdmin = $derived(authState.isAdmin === true);
@@ -40,6 +45,30 @@
   });
 
   onDestroy(() => scanState.teardown());
+
+  // Card peeked from a scan notification — the resolved entry (with its decoded
+  // sequence) is looked up reactively from state so the thumbnail fills in as
+  // the code decodes.
+  let peekCode = $state<string | null>(null);
+  const peekEntry = $derived(
+    peekCode ? (scanState.codes.find((c) => c.code === peekCode) ?? null) : null
+  );
+
+  // Tapping an admin QR-scan notification lands here with a target. Consume it
+  // reactively (not just on mount) so it also fires when the tab is already
+  // open: fly the map to the scan (coords ride the notification, so we don't
+  // wait on the scanEvents subscription) and peek the card.
+  $effect(() => {
+    const t = scanNotificationTargetState.target;
+    if (!t) return;
+    takeScanNotificationTarget();
+    peekCode = t.code;
+    if (t.lat !== null && t.lng !== null) {
+      focus = { lat: t.lat, lng: t.lng };
+    } else {
+      locateCode(t.code);
+    }
+  });
 
   function openCard(code: string) {
     goto(`/q/${code}`);
@@ -99,6 +128,16 @@
           size="full"
         />
 
+        {#if peekCode}
+          <div class="peek-slot">
+            <ScanCardPeek
+              code={peekCode}
+              entry={peekEntry}
+              onClose={() => (peekCode = null)}
+            />
+          </div>
+        {/if}
+
         {#if scanState.mapPins.length === 0}
           <div class="overlay-empty">
             {#if scanState.loading}
@@ -154,6 +193,11 @@
   .body { display: grid; grid-template-columns: 1fr 300px; gap: 16px; padding: 16px; flex: 1; min-height: 0; }
 
   .map { position: relative; min-width: 0; min-height: 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--theme-stroke, #1a1f2e); }
+
+  .peek-slot {
+    position: absolute; top: 12px; right: 12px; z-index: 5;
+    width: 240px; max-width: calc(100% - 24px);
+  }
 
   .overlay-empty {
     position: absolute; inset: 0; display: flex; flex-direction: column; gap: 6px;

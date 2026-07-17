@@ -588,6 +588,23 @@
         // up. This is the real card-scan path; unlike the client-only callers
         // (viewer drawer, /sequence), it has the Cloudflare geo from the server
         // load (data.geo), so these are the events that carry real country/city.
+        //
+        // Attribute a signed-in scanner: the bare /q layout fire-and-forgets the
+        // auth listener, so give the persisted Firebase session a brief moment to
+        // resolve before recording. Raced against a short timeout so an anonymous
+        // scan (or a slow auth resolve) never stalls the write — it just records
+        // userId: null and stays anonymous.
+        let scannerUserId: string | null = null;
+        try {
+          await Promise.race([
+            initializeAuthListener(),
+            new Promise((resolve) => setTimeout(resolve, 1500)),
+          ]);
+          scannerUserId = authState.user?.uid ?? null;
+        } catch {
+          scannerUserId = null;
+        }
+
         shortCodeManager.incrementScanCount(shortCode).catch(() => {});
         void shortCodeManager
           .logScanEvent(shortCode, {
@@ -598,7 +615,7 @@
             screenWidth: window.screen.width,
             screenHeight: window.screen.height,
             referrer: document.referrer || null,
-            userId: null, // auth isn't initialized on this bare route
+            userId: scannerUserId,
             deviceId: getDeviceId(),
             lat: geo?.lat ?? null,
             lng: geo?.lng ?? null,
