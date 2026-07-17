@@ -147,23 +147,6 @@
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #a855f7">
-    <h2 class="section-title">Notation by Prop</h2>
-    <div class="prose">
-      <p>
-        TKA was designed around double staves, and other dual-wielded props you grip
-        directly speak the same language. Each prop page covers what carries over, what
-        changes, and how to write your first sequence:
-      </p>
-      <ul>
-        <li><a href="/notation/fans">Fan notation</a></li>
-        <li><a href="/notation/clubs">Club notation</a></li>
-        <li><a href="/notation/buugeng">Buugeng notation</a></li>
-        <li><a href="/notation/poi">Poi and TKA: what works</a></li>
-      </ul>
-    </div>
-  </section>
-
   <section class="editorial-section" style="--accent: #06b6d4">
     <h2 class="section-title">Where to Start</h2>
     <div class="prose">
@@ -184,15 +167,17 @@
     <h2 class="section-title">Notation by Prop</h2>
     <div class="prose">
       <p>
-        The alphabet is one system, but every prop meets it differently. Staves are what it
-        was built for. Fans, clubs, and buugeng inherit the core and raise their own grip
-        questions. Poi reaches a restricted subset. Each prop has its own page:
+        The alphabet is one system, and props meet it in two families. Dual-ended props
+        like staves show two references at once, so distinctions collapse and patterns
+        are easier to read. Single-ended props like clubs and fans show one, so the same
+        math unfolds into more visible variety. Poi rely on momentum and reach a
+        restricted subset. Each prop has its own page:
       </p>
     </div>
     <nav class="prop-links" aria-label="Notation by prop">
       <a class="prop-link" href="/notation/staves">Double Staves</a>
-      <a class="prop-link" href="/notation/fans">Fans</a>
       <a class="prop-link" href="/notation/clubs">Clubs</a>
+      <a class="prop-link" href="/notation/fans">Fans</a>
       <a class="prop-link" href="/notation/buugeng">Buugeng</a>
       <a class="prop-link" href="/notation/poi">Poi</a>
     </nav>

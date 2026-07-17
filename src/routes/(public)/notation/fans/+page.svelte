@@ -5,7 +5,7 @@
 
   const TITLE = "Fan Spinning Notation | The Kinetic Alphabet for Fans";
   const DESCRIPTION =
-    "How The Kinetic Alphabet applies to fan spinning: the positions, letters, and timing that carry over, what fans change, and the grip questions still waiting for an author.";
+    "How The Kinetic Alphabet applies to fan spinning: the translation from staves, and folds, the plane-crossing move the notation honestly can't write down yet.";
   const URL = "https://tkaflowarts.com/notation/fans";
 </script>
 
@@ -47,17 +47,14 @@
     <h2 class="section-title">What Carries Over</h2>
     <div class="prose">
       <p>
-        Fans are static props: gripped directly, with the performer in full control of
-        orientation. That means the core of The Kinetic Alphabet applies. The nine grid
-        positions, the letters, and the timing and direction system all describe fan
-        choreography exactly the way they describe staff choreography. A sequence written
-        as letters is prop-agnostic, and the animator in
-        <a href="/composer">Flow Arts Composer</a> can render it with fans instead of
-        staves.
-      </p>
-      <p>
-        If a term is unfamiliar, the <a href="/glossary">glossary</a> defines all of them,
-        and the <a href="/guide">guide</a> teaches the system from zero.
+        Fans are single-ended props, so they translate the same way clubs do: pretend
+        you're holding a staff with one end cut off and do everything exactly the same.
+        A fan's orientation is the same concept as a staff's thumb orientation, and the
+        flat face makes it easy to read at a glance. The grid positions, the letters, and
+        the timing and direction system apply unchanged, and
+        <a href="/composer">Flow Arts Composer</a> can render a written sequence with
+        fans. The <a href="/notation/clubs">club page</a> explains the single-ended story
+        in full, and the <a href="/glossary">glossary</a> defines every term.
       </p>
       <!-- Animation-example slot: same demo sequence rendered with fans.
            Drops in when the per-prop demo component exists (see
@@ -66,35 +63,37 @@
   </section>
 
   <section class="editorial-section" style="--accent: #14b8a6">
-    <h2 class="section-title">What Fans Change</h2>
+    <h2 class="section-title">Folds: What the Notation Can't Write Yet</h2>
     <div class="prose">
       <p>
-        A fan shows its orientation on a visible flat face, which makes it easy to read at
-        a glance. What it lacks is the dual-end reference system that staves have: a staff
-        gives you a consistent thumb end and a consistent pinky end at all times, while a
-        fan gives you one reference, the head, and a grip. See
-        <a href="/notation/staves">double staff notation</a> for why that dual reference is
-        the system's foundation.
+        Fans are planar props: the leaves form a plane, the way a triad's arms form a
+        triangle plane. The notation currently assumes the prop's plane matches the plane
+        it's being spun on. Fans break that assumption with folds. A fold doesn't travel
+        through the two-dimensional space of the grid at all. It leaves the plane, moves
+        through 3D space, and lands back on the same plane with your hand orientation
+        switched from front to back.
       </p>
       <p>
-        That difference is not a footnote. Fan spinning has its own grip vocabulary and its
-        own body mechanics, and mapping the alphabet onto them cleanly is real per-prop
-        work that hasn't been done yet.
+        Hand orientation isn't a concept in The Kinetic Alphabet yet. Mapping the full
+        hand orientation matrix into pictographs is a large missing piece, and folds are
+        so fundamental to fans that this page has to say so plainly: there are ideas, they
+        haven't been incorporated, and until they are, the notation captures less of fan
+        spinning than fan spinners deserve.
       </p>
     </div>
   </section>
 
   <OpenChapter prop="Fans">
     <p>
-      I trained double staves. That's the prop I have authority to speak on. Fans are not a
-      language I speak when it comes to grip types, so I'm not going to fake a chapter on
-      how the alphabet meets fan grips and pretend it's authoritative.
+      I trained double staves. Fans are not a language I fully speak when it comes to grip
+      types, so I'm not going to fake a chapter on how the alphabet meets fan grips and
+      pretend it's authoritative.
     </p>
     <p>
-      What's proven: the positions, letters, and timing carry over to any static prop, and
-      the composer renders fans today. What's open: the fan grip language, and the body
-      mechanics that are unique to fans. If fans are the language you speak, this chapter
-      is yours to write.
+      What's proven: the translation rule, the letters, and the timing carry over, and the
+      composer renders fans today. What's open: the fan grip language, the fold
+      vocabulary, and the body mechanics unique to fans. If fans are the language you
+      speak, this chapter is yours to write.
     </p>
   </OpenChapter>
 

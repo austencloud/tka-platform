@@ -54,8 +54,8 @@
       title: "Props",
       links: [
         { label: "Double Staves", href: "/notation/staves" },
-        { label: "Fans", href: "/notation/fans" },
         { label: "Clubs", href: "/notation/clubs" },
+        { label: "Fans", href: "/notation/fans" },
         { label: "Buugeng", href: "/notation/buugeng" },
         { label: "Poi", href: "/notation/poi" },
       ],

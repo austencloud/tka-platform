@@ -4,7 +4,7 @@
 
   const TITLE = "Poi Notation | Can The Kinetic Alphabet Write Poi?";
   const DESCRIPTION =
-    "Can The Kinetic Alphabet notate poi? The honest answer: partially. Poi is momentum-based, so it reaches a restricted subset of the system. Here is what applies, and why VTG is the poi-native lineage.";
+    "Can The Kinetic Alphabet notate poi? Partially. Poi rely on momentum, so they reach the subset of patterns whose rotation stays consistent. Here is where the line is, and why VTG is the poi-native lineage.";
   const URL = "https://tkaflowarts.com/notation/poi";
 </script>
 
@@ -46,15 +46,20 @@
     <h2 class="section-title">Can TKA Write Poi?</h2>
     <div class="prose">
       <p>
-        Some of it. The Kinetic Alphabet was built for static props: props that are gripped
-        directly, hold any orientation for as long as you want, and reverse direction on
-        the fly with no debt to momentum. Poi are not that. A poi head follows its
-        momentum, and gravity constrains its trajectory in ways it never constrains a
-        staff.
+        Some of it. The Kinetic Alphabet was built to take advantage of the unique
+        properties of static dual-wielded props: they aren't affected by gravity, can be
+        held at any orientation, and can move to any other location in any orientation
+        freely, with no reliance on momentum. Poi are the opposite case. The head hangs
+        from a tether, and its motion is continuous and momentum-driven.
       </p>
       <p>
-        So poi can perform many TKA sequences, but not all of them. Poi reaches a
-        restricted subset of the system, and this site will never pretend otherwise.
+        So here's where the line is. The alphabet can generate lots and lots of patterns.
+        Only some of them can be achieved with poi, and only when the pattern's rotational
+        value stays relatively consistent, because momentum needs continuity. Patterns
+        that hold an orientation, reverse on a dime, or change rotation speed abruptly are
+        outside what a tethered head can do. That makes The Kinetic Alphabet a generator
+        poi spinners can draw from, not an ideal system for describing poi patterns, and
+        this site won't pretend otherwise.
       </p>
     </div>
   </section>
@@ -105,9 +110,10 @@
         it is.
       </p>
       <p>
-        In the meantime, the <a href="/notation">notation overview</a> shows what the full
-        system covers, and the <a href="/glossary">glossary</a> defines every term used
-        here.
+        In the meantime, the <a href="/guide">guide</a>, the
+        <a href="/glossary">glossary</a>, and the <a href="/notation">notation
+        overview</a> are all readable through a poi spinner's eyes, and the
+        momentum-friendly slice of what you build in the composer will be spinnable.
       </p>
     </div>
   </section>

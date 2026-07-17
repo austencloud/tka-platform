@@ -5,7 +5,7 @@
 
   const TITLE = "Buugeng Notation | The Kinetic Alphabet for Buugeng";
   const DESCRIPTION =
-    "How The Kinetic Alphabet applies to buugeng: the positions, letters, and timing that carry over, what the S-shaped prop changes, and the open per-prop questions.";
+    "How The Kinetic Alphabet applies to buugeng: dual-ended like staves, so the notation carries over directly, with finger spinning welcomed where the staff pedagogy is strict.";
   const URL = "https://tkaflowarts.com/notation/buugeng";
 </script>
 
@@ -40,23 +40,21 @@
 
   <header class="editorial-header">
     <h1 class="page-title">Buugeng Notation</h1>
-    <p class="page-subtitle">The Kinetic Alphabet, applied to buugeng</p>
+    <p class="page-subtitle">Dual-ended, like staves</p>
   </header>
 
   <section class="editorial-section" style="--accent: #22c55e">
-    <h2 class="section-title">What Carries Over</h2>
+    <h2 class="section-title">Buugeng Work Like Staves</h2>
     <div class="prose">
       <p>
-        Buugeng are static props: gripped directly, with orientation fully under the
-        performer's control. The core of The Kinetic Alphabet applies. The nine grid
-        positions, the letters, and the timing and direction system describe buugeng
-        choreography the same way they describe staff choreography, and
-        <a href="/composer">Flow Arts Composer</a> can render a written sequence with
-        buugeng.
-      </p>
-      <p>
-        Every term is defined in the <a href="/glossary">glossary</a>, and the
-        <a href="/guide">guide</a> teaches the system from the beginning.
+        Buugeng have two ends, which puts them in the staff family alongside props like
+        eight rings and double contact ball. That matters because the dual-ended
+        properties that make staves the system's home apply to buugeng directly: the
+        isolation and antispin collapse, the two visible references, the whole notation.
+        The <a href="/notation/staves">staff page</a> explains those properties;
+        everything there transfers. The grid positions, the letters, and the timing and
+        direction system apply unchanged, and <a href="/composer">Flow Arts Composer</a>
+        can render a written sequence with buugeng.
       </p>
       <!-- Animation-example slot: same demo sequence rendered with buugeng.
            Drops in when the per-prop demo component exists (see
@@ -65,33 +63,35 @@
   </section>
 
   <section class="editorial-section" style="--accent: #14b8a6">
-    <h2 class="section-title">What Buugeng Change</h2>
+    <h2 class="section-title">Big, Curved, and Finger-Spun</h2>
     <div class="prose">
       <p>
-        Buugeng are closer to staves than fans or clubs are: like a staff, a buugeng has
-        two ends. But the prop is an asymmetric S-curve rather than a straight line, the
-        two halves can nest together, and much of the art form lives in the optical
-        illusions that shape creates. A straight-line pictograph reads a buugeng's position
-        and orientation correctly, and it deliberately says nothing about the illusion
-        layer, which is exactly the part buugeng artists care most about.
+        Buugeng are large, and sometimes strange and unwieldy, because they curve around.
+        Finger spinning with buugeng is well established and a lot of people do it. Plenty
+        of Kinetic Alphabet patterns might be hard to finger spin, but definitely not
+        impossible. It's not my forte, so I'll say it plainly: if you spin buugeng, feel
+        free to finger spin to your heart's desire.
       </p>
       <p>
-        How the alphabet should meet buugeng grip changes and the illusion vocabulary is
-        open per-prop territory.
+        The strict thumb-orientation discipline belongs to how we teach staves. It's a
+        scaffold. Once you've absorbed the math of how orientations change well enough to
+        spot the turn value in any pictograph, the strictness stops mattering, and it
+        becomes about what the prop can effectively do under its own limitations.
       </p>
     </div>
   </section>
 
   <OpenChapter prop="Buugeng">
     <p>
-      I trained double staves. Buugeng grips and the illusion tradition are their own
-      language, and I won't pretend to write its chapter with authority I don't have.
+      I trained double staves. The buugeng grip vocabulary, the finger spinning technique,
+      and the way the curves change body mechanics are a language of their own, and I
+      won't pretend to write that chapter with authority I don't have.
     </p>
     <p>
-      What's proven: the positions, letters, and timing carry over to any static prop, and
-      the composer renders buugeng today. What's open: the buugeng grip language, the
-      nesting vocabulary, and how notation should relate to the illusion layer. If buugeng
-      are your language, this chapter is yours to write.
+      What's proven: buugeng are dual-ended, so the notation carries over directly, and
+      the composer renders buugeng today. What's open: the grip and finger spinning
+      language unique to buugeng. If buugeng are your language, this chapter is yours to
+      write.
     </p>
   </OpenChapter>
 

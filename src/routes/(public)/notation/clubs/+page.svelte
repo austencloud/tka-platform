@@ -5,7 +5,7 @@
 
   const TITLE = "Club Spinning Notation | The Kinetic Alphabet for Clubs";
   const DESCRIPTION =
-    "How The Kinetic Alphabet applies to club spinning: what carries over from the staff-built system, what clubs change, and the per-prop questions still open.";
+    "How The Kinetic Alphabet applies to club spinning: the one-sentence translation rule from staves, why one end splits isolation from extension, and the grip questions still open.";
   const URL = "https://tkaflowarts.com/notation/clubs";
 </script>
 
@@ -40,56 +40,73 @@
 
   <header class="editorial-header">
     <h1 class="page-title">Club Spinning Notation</h1>
-    <p class="page-subtitle">The Kinetic Alphabet, applied to clubs</p>
+    <p class="page-subtitle">The base single-ended prop</p>
   </header>
 
   <section class="editorial-section" style="--accent: #22c55e">
-    <h2 class="section-title">What Carries Over</h2>
+    <h2 class="section-title">Why Clubs Anchor the Single-Ended Story</h2>
     <div class="prose">
       <p>
         This page is about dual-wielded club spinning, one club in each hand, not toss
-        juggling. Held that way, clubs are static props: gripped directly, orientation
-        fully under your control. So the core of The Kinetic Alphabet applies as written.
-        The nine grid positions, the letters, and the timing and direction system describe
-        club choreography the same way they describe staff choreography, and
-        <a href="/composer">Flow Arts Composer</a> can render a sequence with clubs.
+        juggling. Props split into two families: dual-ended props like staves, where both
+        ends are visible references, and single-ended props, where there's one. Clubs are
+        the base prop of the single-ended family. They're the easiest prop to explain the
+        single-ended story with, and they're the core of Vulcan Tech Gospel, the notation
+        framework TKA is built on. The lineage lives on the <a href="/roots">roots
+        page</a>.
       </p>
-      <p>
-        New to the system? Start with the <a href="/guide">guide</a>, and keep the
-        <a href="/glossary">glossary</a> nearby.
-      </p>
-      <!-- Animation-example slot: same demo sequence rendered with clubs.
-           Drops in when the per-prop demo component exists (see
-           2026-07-16-per-prop-notation-pages-design.md, out of scope note). -->
     </div>
   </section>
 
   <section class="editorial-section" style="--accent: #14b8a6">
-    <h2 class="section-title">What Clubs Change</h2>
+    <h2 class="section-title">The Translation Rule</h2>
     <div class="prose">
       <p>
-        A club has one reference end, the body, and a handle you grip. That is a real
-        departure from the staff's dual-end system, where a consistent thumb reference and
-        a consistent pinky reference are both visible at all times.
-        <a href="/notation/staves">Double staff notation</a> explains why those two
-        references are the foundation everything else stands on.
+        Translating The Kinetic Alphabet from staves to clubs takes one sentence: pretend
+        you're holding a staff and one end of it is invisible, or got cut off, and do
+        everything exactly the way you would with the staff. A club's orientation is the
+        same concept as a staff's thumb orientation. The grid positions, the letters, and
+        the timing and direction system apply unchanged, and
+        <a href="/composer">Flow Arts Composer</a> can render a written sequence with
+        clubs.
+      </p>
+    </div>
+  </section>
+
+  <section class="editorial-section" style="--accent: #ec4899">
+    <h2 class="section-title">One End, Two Moves</h2>
+    <div class="prose">
+      <p>
+        Here's what changes when the second end disappears. On a staff, an isolation and
+        an extension are one motion: the thumb end isolates while the pinky end extends.
+        A club can only do one of those at a time, so the club world has two distinct
+        moves, an isolation and an extension, that look completely different despite
+        having the same underlying mathematical geometry.
       </p>
       <p>
-        Club spinning also carries its own grip tradition and its own body mechanics.
-        Mapping the alphabet onto that vocabulary, honestly and precisely, is per-prop work
-        that still needs its practitioner.
+        Antispin splits the same way. A club's antispin reads as a vertical flower or a
+        horizontal flower depending on its orientation through the pattern, which is
+        exactly what the VTG terms vertical antispin and horizontal antispin name. On a
+        staff those variants collapse, because both ends are always covered. The
+        <a href="/notation/staves">staff page</a> tells that side of the story. You can
+        see the split yourself in the composer: same letter, pro motion with zero turns,
+        flip the start orientation from in to out, and the pattern changes shape.
       </p>
+      <!-- Animation-example slot: staff/club mandala pair on the same letter
+           (iso vs extension, vanti vs hanti). Drops in when the per-prop demo
+           component exists (see 2026-07-16-per-prop-notation-pages-design.md). -->
     </div>
   </section>
 
   <OpenChapter prop="Clubs">
     <p>
-      I trained double staves, and that's where my authority ends. Club grips are their own
-      language, and I'm not going to write an authoritative chapter in a language I don't
-      speak.
+      I trained double staves, and the geometry above is solid ground. Club grip technique
+      is not. Clubs ask for finger spinning and grip changes the staff pedagogy
+      deliberately avoids, and that vocabulary deserves an author who actually lives in
+      it.
     </p>
     <p>
-      What's proven: the positions, letters, and timing carry over to any static prop, and
+      What's proven: the translation rule, the letters, and the timing all carry over, and
       the composer renders clubs today. What's open: the club grip language and the body
       mechanics unique to clubs. If clubs are your language, this chapter is yours to
       write.
