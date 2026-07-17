@@ -41,6 +41,7 @@
                       : p.status === "sold-out"
                         ? "https://schema.org/SoldOut"
                         : "https://schema.org/PreOrder",
+                  itemCondition: "https://schema.org/NewCondition",
                   url: canonical,
                 },
               }

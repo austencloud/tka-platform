@@ -13,6 +13,11 @@
   Accepting starts the existing GeneratePanelTour (mounted in GeneratePanel).
   The tour itself, its state, and its animations are untouched — this only
   changes how a first-time user is offered it (was: a permanent ? button).
+
+  Offer resolution (taken OR dismissed) is per-account: generateTourState
+  syncs it to Firestore, so a user who dealt with the offer on one device is
+  not re-offered on another. The offer stays hidden until that FROM-cloud pull
+  resolves (cloudSynced) so it never flashes for a returning user.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
@@ -21,12 +26,13 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { generateTourState } from "$lib/shared/onboarding/state/generate-tour-state.svelte";
 
-  // First-run gate. localStorage-only, matching generate-tour-state's own
-  // persistence (the tour does not sync to cloud, so neither does its offer).
-  const OFFERED_KEY = "tka-generate-tour-offered";
-
-  let showOffer = $state(false);
   let hapticService = $state<ReturnType<typeof getHapticFeedback> | null>(null);
+
+  // Show the first-run offer only once the account sync has resolved, and only
+  // if the offer hasn't already been taken or dismissed on any device.
+  const showOffer = $derived(
+    generateTourState.cloudSynced && !generateTourState.hasResolvedOffer
+  );
 
   onMount(() => {
     try {
@@ -34,30 +40,17 @@
     } catch {
       /* optional */
     }
-
-    if (typeof localStorage !== "undefined") {
-      const alreadyOffered = localStorage.getItem(OFFERED_KEY) === "true";
-      // Don't offer if they've already seen the tour by any path, or already declined.
-      showOffer = !alreadyOffered && !generateTourState.hasCompleted;
-    }
   });
-
-  function markOffered() {
-    if (typeof localStorage !== "undefined") {
-      localStorage.setItem(OFFERED_KEY, "true");
-    }
-    showOffer = false;
-  }
 
   function acceptTour() {
     hapticService?.trigger("selection");
-    markOffered();
+    generateTourState.markOffered();
     generateTourState.start();
   }
 
   function declineTour() {
     hapticService?.trigger("selection");
-    markOffered();
+    generateTourState.markOffered();
   }
 </script>
 

@@ -1,8 +1,8 @@
 <script lang="ts">
   /**
-   * Glyphs / PADS — Level 2 body page 4 (manifest `glyphs-pads`), faithful to
+   * Glyphs / PADS - Level 2 body page 4 (manifest `glyphs-pads`), faithful to
    * old p5. High/low turn slots, the PADS priority list, and the five hybrid
-   * examples — every pictograph MCP-verified against the dataset:
+   * examples - every pictograph MCP-verified against the dataset:
    *
    *   Type 1 pro|anti  = C[11]  (blue s→w pro cw · red n→e anti ccw)
    *   S and T          = S[8]   (blue s→w pro cw · red e→s pro cw)

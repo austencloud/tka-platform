@@ -115,7 +115,7 @@ import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downlo
   const ogCreator = $derived(sequence?.ownerDisplayName || data?.meta?.creator || null);
   const ogDesc = $derived(
     ogCreator
-      ? `Flow sequence by ${ogCreator}${data?.meta?.stepCount ? ` • ${data.meta.stepCount} beats` : ""}${data?.meta?.difficulty ? ` • Level ${data.meta.difficulty}` : ""}`
+      ? `Flow sequence by ${ogCreator}${data?.meta?.stepCount ? ` • ${data.meta.stepCount} steps` : ""}${data?.meta?.difficulty ? ` • Level ${data.meta.difficulty}` : ""}`
       : "View this flow sequence in Flow Arts Composer"
   );
   const ogImage = $derived(data?.meta?.thumbnailUrl || "https://tkaflowarts.com/og-default.png");

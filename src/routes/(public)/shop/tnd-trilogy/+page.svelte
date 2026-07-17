@@ -9,8 +9,9 @@
     "The TKA teaching trilogy: three printed decks, every card color-coded by its timing and direction family.";
   const CANONICAL = "https://tkaflowarts.com/shop/tnd-trilogy";
 
-  // Product schema. One listing over three volume SKUs (price varies by volume,
-  // so no fixed offer price here); keep in sync with the "tnd-trilogy" catalog.
+  // Product schema. One listing over three volume SKUs, each $30 as of
+  // 2026-07 (Firestore products tka-1/2/3, all price: 3000); keep the
+  // AggregateOffer in sync with the "tnd-trilogy" catalog.
   const jsonLd = JSON.stringify({
     "@context": "https://schema.org",
     "@type": "Product",
@@ -19,6 +20,16 @@
     brand: { "@type": "Brand", name: "The Kinetic Alphabet" },
     url: CANONICAL,
     image: "https://tkaflowarts.com/branding/og-image.png",
+    offers: {
+      "@type": "AggregateOffer",
+      priceCurrency: "USD",
+      lowPrice: "30",
+      highPrice: "30",
+      offerCount: 3,
+      availability: "https://schema.org/InStock",
+      itemCondition: "https://schema.org/NewCondition",
+      url: CANONICAL,
+    },
   }).replace(/</g, "\\u003c");
 </script>
 

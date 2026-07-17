@@ -30,7 +30,7 @@
   <div class="header-left">
     <span class="title-icon"><i class="fas fa-magnifying-glass" aria-hidden="true"></i></span>
     <h2>Inspect</h2>
-    <span class="beat-chip">Beat {displayData?.stepNumber ?? stepData.stepNumber}</span>
+    <span class="beat-chip">Step {displayData?.stepNumber ?? stepData.stepNumber}</span>
     {#if displayData?.letter ?? stepData.letter}
       <span class="letter-chip">{displayData?.letter ?? stepData.letter}</span>
     {/if}

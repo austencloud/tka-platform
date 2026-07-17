@@ -64,7 +64,7 @@ export function getCategoryInfo(category: TemplateCategory): CategoryInfo {
     case "alternating":
       return {
         label: "Alternating",
-        description: "Direction alternates each beat",
+        description: "Direction alternates each step",
         color: "#f59e0b", // amber
       };
     case "split-hand":

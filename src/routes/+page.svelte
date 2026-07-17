@@ -5,7 +5,7 @@
   import PlayWithItSection from "./landing/components/PlayWithItSection.svelte";
   import GuidesSection from "./landing/components/GuidesSection.svelte";
   import ShopCtaSection from "./landing/components/ShopCtaSection.svelte";
-  import FaqAccordion from "$lib/shared/landing/components/FaqAccordion.svelte";
+  import FaqInterview from "$lib/shared/landing/components/FaqInterview.svelte";
 
   onMount(() => {
     // Cosmic background + SiteHeader are provided by MarketingChrome (root layout).
@@ -134,6 +134,15 @@
 		"url": "https://tkaflowarts.com/",
 		"logo": "https://tkaflowarts.com/pwa/icons/icon-512x512.png",
 		"description": "TKA is a notation system for flow arts. Document and share staff, fans, hoop, club, fan, and buugeng choreography.",
+		"disambiguatingDescription": "The Kinetic Alphabet is a movement notation system for flow arts and prop spinning. It is not related to the NATO phonetic alphabet or any spelling alphabet.",
+		"knowsAbout": [
+			"flow arts",
+			"staff spinning",
+			"double staff",
+			"prop spinning",
+			"movement notation",
+			"choreography notation"
+		],
 		"foundingDate": "2022-03-27",
 		"sameAs": [
 			"https://instagram.com/tkaflowarts",
@@ -151,7 +160,7 @@
   <!-- SoftwareApplication + HowTo JSON-LD moved to /composer — Flow Arts
        Composer is its own entity with its own page; this page is TKA's. -->
 
-  <!-- FAQPage JSON-LD is emitted by <FaqAccordion emitSchema> in the body, from
+  <!-- FAQPage JSON-LD is emitted by <FaqInterview emitSchema> in the body, from
        the canonical FAQ_ITEMS, so the schema matches the visible on-page FAQ. -->
 
 </svelte:head>
@@ -179,7 +188,7 @@
       </div>
       <hr class="divider" />
       <div class="scroll-reveal">
-        <FaqAccordion emitSchema />
+        <FaqInterview emitSchema />
       </div>
     </main>
   </div>

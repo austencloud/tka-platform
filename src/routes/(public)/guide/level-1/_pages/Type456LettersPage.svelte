@@ -1,19 +1,19 @@
 <script lang="ts">
   /**
-   * Type 4/5/6 letters — body page (manifest `lt456-phi-psi-lambda`), faithful
+   * Type 4/5/6 letters - body page (manifest `lt456-phi-psi-lambda`), faithful
    * to proof p29 / "1.1 - Type 4,5,6" artboard. ONE physical page, THREE
    * calligraphic titled sections (selfTitled, Type456Page precedent).
    *
    * All nine cells are real staff pictographs (MCP `get_pictograph_data`:
    * Φ/Ψ/Λ = one static + one dash; the dash letters both dash):
-   *   Type 4 - Dash      — Φ (β→α: blue static W, red dash w→e), Ψ (α→β: blue
+   *   Type 4 - Dash      - Φ (β→α: blue static W, red dash w→e), Ψ (α→β: blue
    *                        static S, red dash n→s), Λ (γ→γ: blue static S,
    *                        red dash w→e).
-   *   Type 5 - Dual-Dash — Φ- (α→α swap: blue w→e, red e→w), Ψ- (β→β: both
+   *   Type 5 - Dual-Dash - Φ- (α→α swap: blue w→e, red e→w), Ψ- (β→β: both
    *                        n→s), Λ- (γ→γ: blue n→s, red w→e). The letter keys
    *                        the dash-location maps that separate coinciding
    *                        arrows (PHI_DASH_PSI_DASH_MAP / LAMBDA map).
-   *   Type 6 - Static    — α (blue W / red E), β (both S), γ (blue S / red E).
+   *   Type 6 - Static    - α (blue W / red E), β (both S), γ (blue S / red E).
    * Dash flips the thumb (in→out); statics stay in.
    *
    * Reader: every cell click-animates Start→letter with staffs (Type 6 plays a
@@ -54,7 +54,7 @@
   const [T5_CYAN, T5_GREEN] = LETTER_TYPE_COLORS[LetterType.TYPE5];
   const T6_ORANGE = LETTER_TYPE_COLORS[LetterType.TYPE6][0];
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();

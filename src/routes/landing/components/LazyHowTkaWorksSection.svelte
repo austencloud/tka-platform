@@ -53,7 +53,10 @@
   });
 </script>
 
-<div bind:this={sectionEl} class="lazy-section" class:revealed>
+<!-- id anchors the FAQ's "Watch a sequence build" CTA (/#how-it-works); it lives
+     on this always-present wrapper, not the lazily-mounted inner section, so the
+     anchor resolves even before the section loads. -->
+<div bind:this={sectionEl} class="lazy-section" class:revealed id="how-it-works">
   {#if InnerComponent}
     <InnerComponent />
   {:else if loadFailed}

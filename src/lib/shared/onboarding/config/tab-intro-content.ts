@@ -38,14 +38,14 @@ export const CREATE_TAB_INTROS: Record<string, TabIntroContent> = {
     pages: [
       {
         content: {
-          text: "Build sequences one beat at a time:",
+          text: "Build sequences one step at a time:",
           points: [
             "Start by picking a position from the grid",
-            "Browse available options for the next beat",
+            "Browse available options for the next step",
             "Tap an option to add it to your sequence",
           ],
         },
-        tip: "Tap a beat in your sequence to edit or remove it",
+        tip: "Tap a step in your sequence to edit or remove it",
       },
     ],
   },

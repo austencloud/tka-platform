@@ -418,12 +418,14 @@
   }
 
   .hero h1 {
-    /* Same display serif as every other public page title (token set by
-       MarketingChrome; /shop lives under that chrome). */
-    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
+    /* Brand Fraunces wonky italic — same page-title voice as every other public
+       page (token set by MarketingChrome; /shop lives under that chrome). */
+    font-family: var(--page-title-font, "Fraunces", Georgia, serif);
+    font-style: italic;
+    font-weight: 700;
+    font-variation-settings: "opsz" 144, "wght" 700, "SOFT" 0, "WONK" 1;
     font-size: clamp(2.2rem, 3.2vw, 4.2rem);
-    font-weight: 500;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
     margin: 0 0 14px;
   }
 

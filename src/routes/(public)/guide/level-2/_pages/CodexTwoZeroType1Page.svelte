@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Codex 2|0 — Type 1 — Level 2 body page 25 (manifest `codex-2-0-t1`), faithful
+   * Codex 2|0 - Type 1 - Level 2 body page 25 (manifest `codex-2-0-t1`), faithful
    * to old p25. Identical structure to p17 (every Type-1 letter A–V, `²` = 2 turns
    * on the high slot, `₂` = 2 on the low slot) but two turns instead of one.
    */

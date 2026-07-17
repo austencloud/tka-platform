@@ -225,7 +225,7 @@
 		{@const idx = editing.idx}
 		<div class="correction-editor">
 			<div class="editor-header">
-				<h3>Beat {idx + 1} — correct a misread</h3>
+				<h3>Step {idx + 1} — correct a misread</h3>
 				<button class="reset-btn" onclick={() => resetBeat(idx)} disabled={!isCorrected(idx)}>
 					Reset beat
 				</button>
@@ -358,7 +358,7 @@
 						<span class="stat-sub">{report.overall.matched}/{report.overall.scored} fields</span>
 					</div>
 					<div class="summary-stat">
-						<span class="stat-label">Beats</span>
+						<span class="stat-label">Steps</span>
 						<span class="stat-value">{report.detectedBeatCount}</span>
 						<span class="stat-sub">truth: {report.truthBeatCount}</span>
 					</div>
@@ -379,7 +379,7 @@
 					<table class="report-table">
 						<thead>
 							<tr>
-								<th>Beat</th>
+								<th>Step</th>
 								<th>Letter</th>
 								<th>Score</th>
 								<th>Conf</th>

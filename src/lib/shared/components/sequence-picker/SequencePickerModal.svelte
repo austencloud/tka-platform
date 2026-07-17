@@ -33,7 +33,7 @@
   const engine = createBrowseEngine({
     persistKey: null,
     constraints: requiredBeatCount != null
-      ? [{ type: BrowseFilterType.LENGTH, value: requiredBeatCount, label: `${requiredBeatCount} beats` }]
+      ? [{ type: BrowseFilterType.LENGTH, value: requiredBeatCount, label: `${requiredBeatCount} steps` }]
       : undefined,
     allowSourceToggle: showSourceToggle,
     sources: ["community", "my-library"],

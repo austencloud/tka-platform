@@ -204,7 +204,7 @@
 
   function handleLengthSelect(length: number | null) {
     if (length == null) engine.removeFilter("length");
-    else engine.addFilter(BrowseFilterType.LENGTH, length, `${length} beats`, "#f59e0b");
+    else engine.addFilter(BrowseFilterType.LENGTH, length, `${length} steps`, "#f59e0b");
   }
 
   // Loop filters live under composite keys ("cap_type:<value>") so several can

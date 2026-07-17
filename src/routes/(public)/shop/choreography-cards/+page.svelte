@@ -2,7 +2,7 @@
   import { browser } from "$app/environment";
   import { onMount } from "svelte";
   import type { CoverCard } from "$lib/features/store/domain/models/product";
-  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import CardAnatomyExplainer from "$lib/features/store/components/CardAnatomyExplainer.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   // Real baked card fronts, one fan per deck line (variety proof under
@@ -48,90 +48,6 @@
     },
   ];
 
-  const frontLegend = [
-    { id: "word", term: "The word", text: "The sequence's word, spelled in TKA letters." },
-    {
-      id: "start",
-      term: "Start",
-      text: "The start position: where the sequence starts and ends.",
-    },
-    { id: "steps", term: "The steps", text: "The sequence itself, step by step, as pictographs." },
-    {
-      id: "mandalas",
-      term: "Mandalas",
-      text: "The mandalas that show in blue and red what the sequence looks like when performed.",
-    },
-    {
-      id: "qr",
-      term: "QR code",
-      text: "Scan it to immediately visualize this sequence with any prop at any speed, save it to your personal catalog, and open practice mode.",
-    },
-  ];
-
-  const backLegend = [
-    {
-      id: "turn",
-      term: "Turn pattern",
-      text: "How many extra rotations the sequence carries, and whether there's a pattern in that too.",
-    },
-    {
-      id: "reversal",
-      term: "Reversal pattern",
-      text: "A simple glyph showing whether the props alternate spin direction over the course of the pattern.",
-    },
-    {
-      id: "mandala",
-      term: "Combined mandala",
-      text: "A combination of the two mandalas. The purple represents where they overlap.",
-    },
-    {
-      id: "looptype",
-      term: "LOOP type",
-      text: "The LOOP type of the sequence.",
-    },
-    {
-      id: "difficulty",
-      term: "Difficulty",
-      text: "The difficulty level. The Kinetic Alphabet is built into clear tiers of difficulty.",
-    },
-    {
-      id: "startpos",
-      term: "Start position",
-      text: "Shows you where the sequence starts and ends, and the prop that sequence is using on that card.",
-    },
-    { id: "stepcount", term: "Step count", text: "The number of steps in the sequence." },
-  ];
-
-  let highlight = $state<string | null>(null);
-
-  function toggle(id: string) {
-    highlight = highlight === id ? null : id;
-  }
-
-  // Desktop = the three-column front|cards|back diagram (hover-driven). Mobile
-  // (<1100px) = one card with a Front/Back toggle, a detail slot, and a chip
-  // row, so the card and its explanation always share the screen. Default true
-  // so the prerendered HTML carries the full diagram for SEO; hydrate corrects.
-  let isDesktop = $state(true);
-  onMount(() => {
-    const mq = window.matchMedia("(min-width: 1100px)");
-    const update = () => (isDesktop = mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  });
-
-  // Mobile single-face toggle + detail lookup.
-  let face = $state<"front" | "back">("front");
-  function switchFace(f: "front" | "back") {
-    face = f;
-    highlight = null;
-  }
-  const legendById = $derived(
-    new Map([...frontLegend, ...backLegend].map((i) => [i.id, i]))
-  );
-  const detail = $derived(highlight ? legendById.get(highlight) : null);
-  const faceLegend = $derived(face === "front" ? frontLegend : backLegend);
 </script>
 
 <svelte:head>
@@ -201,103 +117,9 @@
     <h2 class="section-title">What's on the Card</h2>
     <p class="anatomy-hint">Tap or point at any part of the card, or any row in the list. Its match lights up.</p>
 
-    {#if isDesktop}
-      <!-- Desktop: front labels | cards | back labels, hover-driven. -->
-      <div class="anatomy-layout" class:dimming={highlight !== null}>
-        <div class="legend-col front">
-          <h3 class="legend-title">Front</h3>
-          <div class="legend-list" role="list">
-            {#each frontLegend as item}
-              <button
-                type="button"
-                class="legend-row"
-                class:active={highlight === item.id}
-                onpointerenter={(e) => e.pointerType === "mouse" && (highlight = item.id)}
-                onpointerleave={(e) => e.pointerType === "mouse" && (highlight = null)}
-                onclick={() => toggle(item.id)}
-              >
-                <span class="legend-term">{item.term}</span>
-                <span class="legend-text">{item.text}</span>
-              </button>
-            {/each}
-          </div>
-        </div>
-
-        <div class="cards-slot">
-          {#if browser}
-            {#await import("$lib/features/store/components/CardAnatomy.svelte") then { default: CardAnatomy }}
-              <CardAnatomy {highlight} onhighlight={(id) => (highlight = id)} />
-            {/await}
-          {/if}
-        </div>
-
-        <div class="legend-col back">
-          <h3 class="legend-title">Back</h3>
-          <div class="legend-list" role="list">
-            {#each backLegend as item}
-              <button
-                type="button"
-                class="legend-row"
-                class:active={highlight === item.id}
-                onpointerenter={(e) => e.pointerType === "mouse" && (highlight = item.id)}
-                onpointerleave={(e) => e.pointerType === "mouse" && (highlight = null)}
-                onclick={() => toggle(item.id)}
-              >
-                <span class="legend-term">{item.term}</span>
-                <span class="legend-text">{item.text}</span>
-              </button>
-            {/each}
-          </div>
-        </div>
-      </div>
-    {:else}
-      <!-- Mobile: one card + a Front/Back toggle, its detail directly beneath,
-           and a chip row — card and text always on screen together. -->
-      <div class="mobile-anatomy">
-        <div class="face-toggle">
-          <SegmentedControl
-            options={[
-              { value: "front", label: "Front" },
-              { value: "back", label: "Back" },
-            ]}
-            value={face}
-            onchange={switchFace}
-            color="accent"
-          />
-        </div>
-
-        <div class="cards-slot">
-          {#if browser}
-            {#await import("$lib/features/store/components/CardAnatomy.svelte") then { default: CardAnatomy }}
-              <CardAnatomy {highlight} {face} onhighlight={(id) => (highlight = id)} />
-            {/await}
-          {/if}
-        </div>
-
-        <div class="detail-slot" aria-live="polite">
-          {#if detail}
-            <span class="detail-term">{detail.term}</span>
-            <span class="detail-text">{detail.text}</span>
-          {:else}
-            <span class="detail-prompt">Tap a part of the card, or a chip below, to learn what it is.</span>
-          {/if}
-        </div>
-
-        <div class="chip-row" role="list">
-          {#each faceLegend as item}
-            <button
-              type="button"
-              class="part-chip"
-              class:active={highlight === item.id}
-              aria-pressed={highlight === item.id}
-              onclick={() => toggle(item.id)}
-            >
-              {item.term}
-            </button>
-          {/each}
-        </div>
-      </div>
-    {/if}
+    <div class="anatomy-diagram">
+      <CardAnatomyExplainer />
+    </div>
 
     <p class="qr-live">
       That QR code is live. Scan it with your phone and this card's sequence opens.
@@ -378,25 +200,12 @@
     .editorial.wide {
       max-width: 76rem;
     }
-    /* Anatomy diagram: front labels | cards | back labels. The section
-       breaks out of the editorial column and the label columns center
-       against the cards, so neither side towers over the other. */
-    .anatomy-layout {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 2.3fr) minmax(0, 1fr);
-      gap: clamp(1.5rem, 2.5vw, 3.25rem);
-      align-items: center;
+    /* The anatomy diagram breaks out of the editorial reading column so the
+       two faces and their legend columns get real width. CardAnatomyExplainer
+       fills whatever width this wrapper hands it and picks its own layout. */
+    .anatomy-diagram {
       width: min(100vw - 4rem, 110rem);
       margin-inline: calc((100% - min(100vw - 4rem, 110rem)) / 2);
-    }
-    .cards-slot {
-      order: 0;
-    }
-    /* Left labels read toward the card they describe. */
-    .legend-col.front {
-      text-align: right;
-    }
-    .legend-col.front .legend-row {
-      align-items: flex-end;
     }
   }
 
@@ -421,164 +230,6 @@
     color: oklch(0.72 0.012 270);
     font-size: 0.95rem;
     margin: 2rem 0 0;
-  }
-
-  .anatomy-layout {
-    display: grid;
-    gap: 1.75rem;
-  }
-
-  /* ---------- mobile single-card layout ---------- */
-  .mobile-anatomy {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1rem;
-    max-width: 30rem;
-    margin-inline: auto;
-  }
-
-  .face-toggle {
-    width: 100%;
-    max-width: 18rem;
-    margin-inline: auto;
-  }
-
-  /* Detail directly under the card. Reserved height so a longer description
-     never shoves the chips (no-layout-shift): sized to the wordiest entry. */
-  .detail-slot {
-    display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    min-height: 7.5rem;
-    padding: 0.9rem 1rem;
-    border-radius: 12px;
-    border: 1px solid oklch(0.4 0.04 270 / 0.25);
-    background: oklch(0.2 0.03 270 / 0.4);
-  }
-  .detail-term {
-    font-weight: 700;
-    font-size: 1rem;
-    color: oklch(0.95 0.01 270);
-  }
-  .detail-text {
-    font-size: 0.92rem;
-    line-height: 1.55;
-    color: oklch(0.78 0.015 270);
-  }
-  .detail-prompt {
-    font-size: 0.92rem;
-    line-height: 1.55;
-    color: oklch(0.62 0.02 270);
-    font-style: italic;
-  }
-
-  .chip-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    justify-content: center;
-  }
-  .part-chip {
-    min-height: 44px;
-    padding: 0.5rem 0.9rem;
-    border-radius: 999px;
-    border: 1px solid oklch(0.42 0.04 270 / 0.35);
-    background: oklch(0.24 0.03 270 / 0.5);
-    color: oklch(0.9 0.01 270);
-    font: inherit;
-    font-size: 0.9rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 140ms ease, border-color 140ms ease, box-shadow 180ms ease;
-  }
-  .part-chip.active {
-    border-color: color-mix(in oklch, var(--accent, #ec4899) 55%, transparent);
-    background: oklch(0.32 0.04 270 / 0.6);
-    box-shadow: 0 0 20px color-mix(in oklch, var(--accent, #ec4899) 20%, transparent);
-  }
-  .part-chip:focus-visible {
-    outline: 2px solid oklch(0.7 0.1 275 / 0.7);
-    outline-offset: 2px;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .part-chip {
-      transition: none;
-    }
-  }
-
-  .legend-title {
-    font-size: 0.78rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: oklch(0.6 0.02 270);
-    margin: 0 0 0.6rem;
-  }
-
-  .legend-list {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .legend-row {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    align-items: flex-start;
-    text-align: left;
-    width: 100%;
-    min-height: 44px;
-    padding: 0.6rem 0.75rem;
-    background: transparent;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font: inherit;
-    transition:
-      background 140ms ease,
-      opacity 180ms ease,
-      box-shadow 180ms ease;
-  }
-  .legend-row:hover,
-  .legend-row:focus-visible,
-  .legend-row.active {
-    background: oklch(0.3 0.03 270 / 0.22);
-  }
-  /* Focused pair lights up; every other row steps back. */
-  .legend-row.active {
-    background: oklch(0.33 0.04 270 / 0.45);
-    box-shadow:
-      0 0 0 1px color-mix(in oklch, var(--accent, #ec4899) 40%, transparent),
-      0 0 22px color-mix(in oklch, var(--accent, #ec4899) 16%, transparent);
-  }
-  .anatomy-layout.dimming .legend-row:not(.active) {
-    opacity: 0.35;
-  }
-  .anatomy-layout.dimming .legend-title {
-    opacity: 0.5;
-    transition: opacity 180ms ease;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .legend-row,
-    .anatomy-layout.dimming .legend-title {
-      transition: none;
-    }
-  }
-  .legend-row:focus-visible {
-    outline: 2px solid oklch(0.7 0.1 275 / 0.7);
-    outline-offset: 2px;
-  }
-
-  .legend-term {
-    font-weight: 650;
-    font-size: 0.92rem;
-    color: oklch(0.93 0.01 270);
-  }
-
-  .legend-text {
-    font-size: 0.88rem;
-    line-height: 1.5;
-    color: oklch(0.72 0.012 270);
   }
 
   .deck-links {

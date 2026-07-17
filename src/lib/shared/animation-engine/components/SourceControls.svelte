@@ -136,7 +136,7 @@
     {#if sequence}
       <span class="seq-name">{simplifyAndTruncate(sequence.word || sequence.name || "Unnamed")}</span>
       <span class="seq-meta">
-        <span class="seq-beats">{sequence.steps?.length || 0} beats</span>
+        <span class="seq-beats">{sequence.steps?.length || 0} steps</span>
       </span>
     {:else}
       <span class="seq-name seq-placeholder">&nbsp;</span>

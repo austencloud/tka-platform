@@ -86,7 +86,7 @@
     }
 
     if (sequence.steps && sequence.steps.length > 0) {
-      return `${sequence.steps.length} beats`;
+      return `${sequence.steps.length} steps`;
     }
 
     return "Untitled";

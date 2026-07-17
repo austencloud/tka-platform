@@ -14,7 +14,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { bakeReversals } from "../guide-sequence-adapter";
 
-// Verbatim prose lifted from _pages/Type2LoopsPage.svelte (Austen's words — never AI-written);
+// Verbatim prose lifted from _pages/Type2LoopsPage.svelte (Austen's words - never AI-written);
 // pictograph construction is a FAITHFUL COPY of that same file's step authoring (same
 // helpers, same locations/orientations → identical staff pictographs), minus the
 // reader-only wiring (selection, overrides, click-to-animate, sheet geometry).
@@ -76,7 +76,7 @@ type LoopDef = {
 };
 const LOOPS: LoopDef[] = [
   {
-    // BΣTX ×2 — α↔γ; blue CCW (statics between), red CCW throughout.
+    // BΣTX ×2 - α↔γ; blue CCW (statics between), red CCW throughout.
     key: "t2l-bstx",
     word: "BΣTX Rotated",
     startLetter: Letter.ALPHA,
@@ -94,7 +94,7 @@ const LOOPS: LoopDef[] = [
     ],
   },
   {
-    // EΔUZ ×2 — β↔γ; blue CCW, red CW.
+    // EΔUZ ×2 - β↔γ; blue CCW, red CW.
     key: "t2l-eduz",
     word: "EΔUZ Rotated",
     startLetter: Letter.BETA,
@@ -112,7 +112,7 @@ const LOOPS: LoopDef[] = [
     ],
   },
   {
-    // OYHΘ ×2 — γ↔β; both hands CCW throughout.
+    // OYHΘ ×2 - γ↔β; both hands CCW throughout.
     key: "t2l-oyht",
     word: "OYHΘ Rotated",
     startLetter: Letter.GAMMA,
@@ -161,7 +161,7 @@ const startBox = (l: LoopDef): StepData =>
   }) as unknown as StepData;
 
 // Each LOOP's full strip (start + 8 steps), reversal dots derived from the
-// motions themselves via bakeReversals (never hand-authored) — matching
+// motions themselves via bakeReversals (never hand-authored) - matching
 // Type2LoopsPage.svelte's PICTO_FLAGS.showReversals: true. Constant per-hand
 // prop rotation (statics inert) means bakeReversals derives no flags here,
 // matching the artboard.
@@ -170,7 +170,7 @@ const loopStrip = (l: LoopDef): PictographData[] => {
   return [authored[0], ...bakeReversals(authored.slice(1))] as unknown as PictographData[];
 };
 
-/** STAFF props with reversal dots — matching Type2LoopsPage's PICTO_FLAGS. */
+/** STAFF props with reversal dots - matching Type2LoopsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF, showReversals: true } as const;
 
 export const type2LoopsContent: GuideBlock[] = [

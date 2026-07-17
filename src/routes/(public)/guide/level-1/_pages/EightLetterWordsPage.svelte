@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
-   * 8-Letter Words — body page (manifest `eight-letter-words`), faithful to
-   * "1.2 - 8-Letter Words" artboard (word 2 reads CΣNZIΘUW — the U is a U, dataset-confirmed) (old p41; CAP→LOOP
+   * 8-Letter Words - body page (manifest `eight-letter-words`), faithful to
+   * "1.2 - 8-Letter Words" artboard (word 2 reads CΣNZIΘUW - the U is a U, dataset-confirmed) (old p41; CAP→LOOP
    * facelift).
    *
    * FLAGGED LAYOUT DEVIATION: the original artboard is LANDSCAPE (Start + 8
@@ -9,12 +9,12 @@
    * layout: Start + 4 rows of 4. Content (every motion) is unchanged.
    *
    * Two 8-letter words, each repeated twice → 16 counts:
-   *   IIΩXKEΣY — Rotated LOOP (second repetition = 180° rotation). Variations
+   *   IIΩXKEΣY - Rotated LOOP (second repetition = 180° rotation). Variations
    *   I[1] I[2] Ω[5] X[4] K[6] E[7] Σ[14] Y[15] / I[3] I[0] Ω[6] X[7] K[5]
-   *   E[4] Σ[13] Y[12]. Blue prop CCW, red CW throughout — no reversals.
-   *   CΣNZIΘUW — Mirrored + Swapped LOOP. C Σ[0] N[6] Z[7] I[13] Θ[12] U[8]
+   *   E[4] Σ[13] Y[12]. Blue prop CCW, red CW throughout - no reversals.
+   *   CΣNZIΘUW - Mirrored + Swapped LOOP. C Σ[0] N[6] Z[7] I[13] Θ[12] U[8]
    *   W[15] / C Σ[12] N[7] Z[10] I[3] Θ[0] U[5] W[2]. Blue CCW, red CW
-   *   throughout — fully continuous, no reversal flags.
+   *   throughout - fully continuous, no reversal flags.
    * Every step MCP-verified against list_letter_variations this build.
    *
    * Reader: each word is one clickable strip playing Start + 16 steps.
@@ -46,7 +46,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -106,7 +106,7 @@
   };
   const SEQS: SeqDef[] = [
     {
-      // IIΩXKEΣY ×2 — Rotated LOOP; blue CCW, red CW throughout.
+      // IIΩXKEΣY ×2 - Rotated LOOP; blue CCW, red CW throughout.
       key: "el-iixksy",
       word: "IIΩXKEΣY",
       tag: "Rotated LOOP",
@@ -134,9 +134,9 @@
       ],
     },
     {
-      // CΣNZIΘUW ×2 — Mirrored + Swapped LOOP; blue prop CCW and red CW the
+      // CΣNZIΘUW ×2 - Mirrored + Swapped LOOP; blue prop CCW and red CW the
       // whole way (fully continuous, no reversals). The margin letter is U,
-      // not V — U[8]/U[5] are the dataset steps that keep both hands
+      // not V - U[8]/U[5] are the dataset steps that keep both hands
       // continuous (V has no variation pairing these paths). Corrected
       // 2026-07-13 after Austen caught the discontinuity.
       key: "el-csnzvw",
@@ -207,7 +207,7 @@
     Object.fromEntries(SEQS.map((q) => [q.key, resolvedStrip(q)]))
   );
 
-  // ── Geometry (portrait reflow — Start + 4 rows of 4 per word) ──────────────
+  // ── Geometry (portrait reflow - Start + 4 rows of 4 per word) ──────────────
   const CELL = 80;
   const START_X = 128;
   const ROW_X = 208;

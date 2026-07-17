@@ -1,5 +1,5 @@
 /**
- * LEVEL2_READER_CONFIG — the Level-2 seam for the shared GuideReader (see
+ * LEVEL2_READER_CONFIG - the Level-2 seam for the shared GuideReader (see
  * level-1/_data/guide-reader-config.ts). Renders Level2Document + BUILT2 with a
  * level-2 side nav; the level-1-only deep-link / QR-scan / codex machinery is
  * off (Level 2 has no /learn/guide/<slug> deep-link map or interactive Codex
@@ -20,7 +20,7 @@ export const LEVEL2_READER_CONFIG: GuideReaderConfig = {
   readerPageCount: READER_PAGE_COUNT_2,
   navRows: buildLevel2ReaderNav(BUILT2),
   // No level-2 deep-link route; nav rows scroll in-pane (left-click), and the
-  // href is only a right-click/middle-click affordance — keep it inert.
+  // href is only a right-click/middle-click affordance - keep it inert.
   hrefFor: () => "#",
   levelLabel: "Level 2",
   enableDeepLinks: false,

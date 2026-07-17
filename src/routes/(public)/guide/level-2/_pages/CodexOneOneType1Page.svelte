@@ -1,11 +1,11 @@
 <script lang="ts">
   /**
-   * Codex 1|1 — Type 1 — Level 2 body page 20 (manifest `codex-1-1-t1`), faithful
+   * Codex 1|1 - Type 1 - Level 2 body page 20 (manifest `codex-1-1-t1`), faithful
    * to old p20. Every Type-1 letter (A–V) with one turn on EACH hand (`¹₁`, high
    * slot red over low slot blue). No Same/Opp dot: for dual-shift letters the
    * rotational relationship is intrinsic to the letter, not a free modifier. 6-column
    * portrait grid (the original is already portrait). Both hands are shifts, so the
-   * direction args are ignored — a plain `codexTurnData(letter, 1, 1)` is exact.
+   * direction args are ignored - a plain `codexTurnData(letter, 1, 1)` is exact.
    */
   import CodexGridPage, { type CodexCell } from "../_components/CodexGridPage.svelte";
   import { codexTurnData } from "../_data/codex-turns";

@@ -62,7 +62,7 @@
 
   /* The level-2 layout renders on the dark guide scroller background
      (.guide-layout is oklch(0.13 0.015 270)), so all colors here must be
-     dark-theme values — the old #666/#888/#e5e5e5 set was written for a white
+     dark-theme values - the old #666/#888/#e5e5e5 set was written for a white
      page and was near-invisible. */
   .subtitle {
     font-size: 1.2rem;

@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Cover lab — design source/preview for the Level 1 cover. The cover itself
+   * Cover lab - design source/preview for the Level 1 cover. The cover itself
    * lives in _components/GuideCover.svelte (shared with the print route). Shows
    * both editions: navy (digital / pro / foil) and light (cheap home printer).
    */

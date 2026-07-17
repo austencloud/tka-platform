@@ -182,7 +182,7 @@ import type { LibraryRepository } from "$lib/shared/library/services/library-rep
           <div class="card-footer">
             <div class="card-info">
               <span class="card-name">{selectedSequence.word ?? selectedSequence.name}</span>
-              <span class="card-sub">{stepCount} beats</span>
+              <span class="card-sub">{stepCount} steps</span>
             </div>
             <button type="button" class="text-btn" onclick={() => (pickerOpen = true)}>Change</button>
           </div>

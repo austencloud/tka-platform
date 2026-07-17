@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Codex 0/2 — Type 2/3 — Level 2 body page 26 (manifest `codex-0-2-t23`),
+   * Codex 0/2 - Type 2/3 - Level 2 body page 26 (manifest `codex-0-2-t23`),
    * faithful to old p26. Same split-column layout as p18 but with 2 turns on the
    * low slot (`₂`), Same (rows 1–2) and Opp (rows 3–4).
    */

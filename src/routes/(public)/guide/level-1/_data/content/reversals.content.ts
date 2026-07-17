@@ -12,10 +12,10 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { bakeReversals } from "../guide-sequence-adapter";
 
-// Verbatim prose lifted from _pages/ReversalsPage.svelte (Austen's words —
+// Verbatim prose lifted from _pages/ReversalsPage.svelte (Austen's words -
 // never AI-written); the pictograph construction below is a FAITHFUL COPY of
 // that same file's STRIPS/motionOf/stepData/startBox authoring (single-staff
-// strips, other hand an invisible placeholder — same locations/orientations/
+// strips, other hand an invisible placeholder - same locations/orientations/
 // reversal flags → identical staff pictographs), minus the reader-only wiring
 // (selection, overrides, click-to-animate, PARAS/RULES/HEADS sheet geometry).
 
@@ -92,7 +92,7 @@ const startBox = (s: StripDef): StepData => {
 };
 
 // Start + 2 steps per strip, reversal dots derived from the motions themselves
-// (bakeReversals; never hand-authored for display) — matches _pages/
+// (bakeReversals; never hand-authored for display) - matches _pages/
 // ReversalsPage.svelte's resolvedStripSteps (minus the admin-override seam).
 const stripSteps = (s: StripDef): PictographData[] => {
   const authored = [startBox(s), stepData(s, 0), stepData(s, 1)];
@@ -102,7 +102,7 @@ const stripSteps = (s: StripDef): PictographData[] => {
 const byKey = (key: string) => STRIPS.find((s) => s.key === key)!;
 const captionFor = (s: StripDef) => `${s.label} (${s.color})`;
 
-/** STAFF props with reversal dots, TKA glyph off — matching ReversalsPage's PICTO_FLAGS. */
+/** STAFF props with reversal dots, TKA glyph off - matching ReversalsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF, showTKA: false, showReversals: true } as const;
 
 export const reversalsContent: GuideBlock[] = [

@@ -1,7 +1,7 @@
 /**
  * Single source for the Compound Letters SEO doorway (manifest id
  * "lt1-dj-ek-fl"). Prose is lifted VERBATIM from _pages/CompoundLettersPage.svelte
- * (Austen's words — never AI-written), including the three word captions ("cute
+ * (Austen's words: never AI-written), including the three word captions ("cute
  * phrases" the page itself refers to). The pictograph construction is a
  * FAITHFUL COPY of that same file's cell/word derivation (same enums,
  * locations, orientations, rotation directions → identical staff pictographs),
@@ -30,7 +30,7 @@ const { IN, OUT } = Orientation;
 const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-// ── Motion authoring — copied from CompoundLettersPage.svelte. Handpath
+// ── Motion authoring - copied from CompoundLettersPage.svelte. Handpath
 // direction on the compass ring (N→E→S→W = CW): pro's prop rides it, anti's
 // prop counter-rotates and flips the thumb (in↔out).
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
@@ -182,14 +182,14 @@ const WORDS: WordDef[] = [
   },
 ];
 const wordKey = (w: WordDef) => `cl-word-${w.word}`;
-// Start + 2 letters — the full playable strip.
+// Start + 2 letters - the full playable strip.
 const wordStrip = (w: WordDef): PictographData[] =>
   [
     startFor(w.steps[0]!),
     ...w.steps.map((c, i) => cellStep(c, `${wordKey(w)}-s`, i + 1)),
   ] as unknown as PictographData[];
 
-/** STAFF props, TKA letter glyph on — matching CompoundLettersPage's PICTO_FLAGS. */
+/** STAFF props, TKA letter glyph on - matching CompoundLettersPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF } as const;
 
 export const lt1DjEkFlContent: GuideBlock[] = [
@@ -211,28 +211,28 @@ export const lt1DjEkFlContent: GuideBlock[] = [
     items: rowGroup(TOG.rows[0]!, "cl-tog"),
     flowCols: 3,
     render: RENDER,
-    caption: "D · E · F — β→α (Tog-Opp)",
+    caption: "D · E · F: β→α (Tog-Opp)",
   },
   {
     kind: "pictographGroup",
     items: rowGroup(TOG.rows[1]!, "cl-tog"),
     flowCols: 3,
     render: RENDER,
-    caption: "J · K · L — α→β (Tog-Opp)",
+    caption: "J · K · L: α→β (Tog-Opp)",
   },
   {
     kind: "pictographGroup",
     items: rowGroup(SPLIT.rows[0]!, "cl-split"),
     flowCols: 3,
     render: RENDER,
-    caption: "D · E · F — β→α (Split-Opp)",
+    caption: "D · E · F: β→α (Split-Opp)",
   },
   {
     kind: "pictographGroup",
     items: rowGroup(SPLIT.rows[1]!, "cl-split"),
     flowCols: 3,
     render: RENDER,
-    caption: "J · K · L — α→β (Split-Opp)",
+    caption: "J · K · L: α→β (Split-Opp)",
   },
   {
     kind: "prose",
@@ -254,7 +254,7 @@ export const lt1DjEkFlContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2"],
     card: true,
     render: RENDER,
-    caption: "DJ — Disco Jam",
+    caption: "DJ: Disco Jam",
   },
   {
     kind: "prose",
@@ -268,7 +268,7 @@ export const lt1DjEkFlContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2"],
     card: true,
     render: RENDER,
-    caption: "EK — Exploding Kitten",
+    caption: "EK: Exploding Kitten",
   },
   {
     kind: "prose",
@@ -282,7 +282,7 @@ export const lt1DjEkFlContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2"],
     card: true,
     render: RENDER,
-    caption: "FL — Fruity Loops",
+    caption: "FL: Fruity Loops",
   },
   {
     kind: "prose",

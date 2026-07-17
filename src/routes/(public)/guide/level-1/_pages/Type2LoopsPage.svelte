@@ -1,18 +1,18 @@
 <script lang="ts">
   /**
-   * Type 2 LOOPs — body page (manifest `type2-loops`), faithful to
+   * Type 2 LOOPs - body page (manifest `type2-loops`), faithful to
    * "1.2 - Type 2 Permutations - BΣTX, EΔUZ, OYHΘ" artboard (old p39;
-   * "Type 2 CAPs" — CAP→LOOP facelift, lowercase γ).
+   * "Type 2 CAPs" - CAP→LOOP facelift, lowercase γ).
    *
    * Three 8-step LOOPs using Type 2 letters to travel between α/β and γ
    * (Start + 2 rows of 4, real staff pictographs). Each repetition is rotated
    * 180°, so all three are Rotated LOOPs:
-   *   BΣTX — α↔γ via Σ (static + pro) and X (static + anti). Variations
+   *   BΣTX - α↔γ via Σ (static + pro) and X (static + anti). Variations
    *   Σ[7] T[3] X[0] / Σ[4] T[1] X[2]; B by symmetry. Blue prop CCW with
    *   statics between, red CCW throughout.
-   *   EΔUZ — β↔γ via Δ/Z (static + anti). E[6] Δ[7] U[7] Z[7] / E[5] Δ[4]
+   *   EΔUZ - β↔γ via Δ/Z (static + anti). E[6] Δ[7] U[7] Z[7] / E[5] Δ[4]
    *   U[5] Z[4]. Blue CCW, red CW.
-   *   OYHΘ — γ↔β via Y/Θ (static + pro) with H (β→β dual-anti) between.
+   *   OYHΘ - γ↔β via Y/Θ (static + pro) with H (β→β dual-anti) between.
    *   O[6] Y[7] H[3] Θ[7] / O[5] Y[4] H[1] Θ[4]. Both hands CCW.
    * Every step MCP-verified against list_letter_variations this build; constant
    * per-hand prop rotation (statics inert) means bakeReversals derives NO
@@ -51,7 +51,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -109,7 +109,7 @@
   };
   const LOOPS: LoopDef[] = [
     {
-      // BΣTX ×2 — α↔γ; blue CCW (statics between), red CCW throughout.
+      // BΣTX ×2 - α↔γ; blue CCW (statics between), red CCW throughout.
       key: "t2l-bstx",
       word: "BΣTX Rotated",
       startLetter: Letter.ALPHA,
@@ -128,7 +128,7 @@
       ],
     },
     {
-      // EΔUZ ×2 — β↔γ; blue CCW, red CW.
+      // EΔUZ ×2 - β↔γ; blue CCW, red CW.
       key: "t2l-eduz",
       word: "EΔUZ Rotated",
       startLetter: Letter.BETA,
@@ -147,7 +147,7 @@
       ],
     },
     {
-      // OYHΘ ×2 — γ↔β; both hands CCW throughout.
+      // OYHΘ ×2 - γ↔β; both hands CCW throughout.
       key: "t2l-oyht",
       word: "OYHΘ Rotated",
       startLetter: Letter.GAMMA,

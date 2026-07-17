@@ -14,7 +14,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { bakeReversals } from "../guide-sequence-adapter";
 
-// Verbatim prose lifted from _pages/ExamplesPage.svelte (Austen's words —
+// Verbatim prose lifted from _pages/ExamplesPage.svelte (Austen's words -
 // never AI-written); the pictograph construction below is a FAITHFUL COPY of
 // that same file's SEQS/handMotion/stepData/startPose authoring (same
 // locations/orientations/reversal flags → identical staff pictographs), minus
@@ -27,7 +27,7 @@ const { IN, OUT } = Orientation;
 const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-// ── Step authoring — copied from _pages/ExamplesPage.svelte ────────────────
+// ── Step authoring - copied from _pages/ExamplesPage.svelte ────────────────
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
 const flip = (o: Orientation) => (o === IN ? OUT : IN);
 type HandStep = { anti: boolean; from: GridLocation; to: GridLocation; so: Orientation };
@@ -138,14 +138,14 @@ const startPose = (q: SeqDef): StepData =>
   }) as unknown as StepData;
 
 // Start + N steps per sequence, reversal dots derived from the motions
-// themselves (bakeReversals; never hand-authored for display) — matches
+// themselves (bakeReversals; never hand-authored for display) - matches
 // _pages/ExamplesPage.svelte's resolvedSeqSteps (minus the admin-override seam).
 const seqStrip = (q: SeqDef): PictographData[] => {
   const authored = [startPose(q), ...q.steps.map((_, i) => stepData(q, i))];
   return [authored[0], ...bakeReversals(authored.slice(1))] as unknown as PictographData[];
 };
 
-/** STAFF props with reversal dots — matching ExamplesPage's PICTO_FLAGS. */
+/** STAFF props with reversal dots - matching ExamplesPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF, showReversals: true } as const;
 
 export const examplesAbcContent: GuideBlock[] = [

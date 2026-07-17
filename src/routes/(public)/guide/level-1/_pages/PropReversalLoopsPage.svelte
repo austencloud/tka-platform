@@ -1,18 +1,18 @@
 <script lang="ts">
   /**
-   * Prop-Reversal LOOPs — body page (manifest `prop-reversal-loops`), faithful
+   * Prop-Reversal LOOPs - body page (manifest `prop-reversal-loops`), faithful
    * to "1.2 - Prop-Reversal Permutations, EΣQY, TWKΘ, BΔMX" artboard (old p42;
-   * "Prop-reversal CAPs" — CAP→LOOP facelift).
+   * "Prop-reversal CAPs" - CAP→LOOP facelift).
    *
    * Three 8-step Rotated LOOPs that each REQUIRE prop-reversals (Start + 2
    * rows of 4, real staff pictographs). Reversal dots are DERIVED via
    * bakeReversals and land exactly where the artboard drew its R marks:
-   *   EΣQY — red R on 2, 3, 6, 7 (the pro Σ/Q corners flip red's rotation);
+   *   EΣQY - red R on 2, 3, 6, 7 (the pro Σ/Q corners flip red's rotation);
    *   blue rides CCW with statics between. E[6] Σ[7] Q[5] Y[2] / E[5] Σ[4]
    *   Q[6] Y[0].
-   *   TWKΘ — blue R on 2 and 8, red R on 4 and 6, both on 5. T[8] W[10] K[1]
+   *   TWKΘ - blue R on 2 and 8, red R on 4 and 6, both on 5. T[8] W[10] K[1]
    *   Θ[2] / T[3] W[0] K[6] Θ[8].
-   *   BΔMX — red R on 3, 5, 7; red stops (static) on 2, 4, 6, 8 and still
+   *   BΔMX - red R on 3, 5, 7; red stops (static) on 2, 4, 6, 8 and still
    *   reverses across the stop, which is the page's teaching point. B Δ[10]
    *   M[0] X[10] / B Δ[8] M[2] X[8].
    * Every step MCP-verified against list_letter_variations this build.
@@ -50,7 +50,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -108,7 +108,7 @@
   };
   const LOOPS: LoopDef[] = [
     {
-      // EΣQY ×2 — red R derives on 2, 3, 6, 7; blue CCW throughout.
+      // EΣQY ×2 - red R derives on 2, 3, 6, 7; blue CCW throughout.
       key: "prl-esqy",
       word: "EΣQY Rotated",
       startLetter: Letter.BETA,
@@ -127,7 +127,7 @@
       ],
     },
     {
-      // TWKΘ ×2 — blue R on 2 and 8, red R on 4 and 6, both on 5.
+      // TWKΘ ×2 - blue R on 2 and 8, red R on 4 and 6, both on 5.
       key: "prl-twkt",
       word: "TWKΘ Rotated",
       startLetter: Letter.GAMMA,
@@ -146,7 +146,7 @@
       ],
     },
     {
-      // BΔMX ×2 — red R on 3, 5, 7 with red stopping on the even steps; blue
+      // BΔMX ×2 - red R on 3, 5, 7 with red stopping on the even steps; blue
       // CCW throughout.
       key: "prl-bdmx",
       word: "BΔMX Rotated",

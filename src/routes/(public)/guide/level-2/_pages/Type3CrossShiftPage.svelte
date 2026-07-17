@@ -1,14 +1,14 @@
 <script lang="ts">
   /**
-   * Type 3 — Cross-Shift — Level 2 body page 8 (manifest `t3-cross-shift`),
+   * Type 3 - Cross-Shift - Level 2 body page 8 (manifest `t3-cross-shift`),
    * faithful to old p9. Type 3 hybrids combine a shift and a dash; PADS puts
    * the shift high and the dash low. Three breakdown strips (all from Z- variation
-   * [7]: blue s→n dash, red e→n anti cw — MCP-verified):
+   * [7]: blue s→n dash, red e→n anti cw - MCP-verified):
    *
-   *   Z-¹   "Z-Dash High-One"      — 1 turn on the shift (red).
-   *   Ż-₁   "Z-Dash Same Low-One"  — 1 turn on the dash (blue) spinning the SAME
+   *   Z-¹   "Z-Dash High-One"      - 1 turn on the shift (red).
+   *   Ż-₁   "Z-Dash Same Low-One"  - 1 turn on the dash (blue) spinning the SAME
    *                                  sense as the shift (cw) → dot ABOVE.
-   *   Ẓ-₁   "Z-Dash Opp Low-One"   — 1 turn on the dash spinning OPPOSITE (ccw) → dot BELOW.
+   *   Ẓ-₁   "Z-Dash Opp Low-One"   - 1 turn on the dash spinning OPPOSITE (ccw) → dot BELOW.
    *
    * The dash passes through the grid center, so the halfway frame lands on the
    * "centric" position the page teaches. Halfway poses come from the engine

@@ -1,12 +1,12 @@
 <script lang="ts">
   /**
-   * Letters intro / Type 1 Dual-Shift — body page 12 (manifest `base-letters`),
+   * Letters intro / Type 1 Dual-Shift - body page 12 (manifest `base-letters`),
    * faithful to the proof PDF (level-1-v05.pdf) / "1.1 - Letters - Type 1"
    * artboard: the first REAL letters (A B C at α, G H I at β), each triplet in
    * the Pro - Anti - Hybrid pattern.
    *
    * 6 real letter pictographs rendered in the system's own letter language
-   * (grid + motion arrows + STAFF props + bottom-left TKA glyph — the same form
+   * (grid + motion arrows + STAFF props + bottom-left TKA glyph - the same form
    * the codex and the app workspace use; the old artboard drew bare arrows only):
    *   A/B/C → α→α Split-Same (blue s→w, red n→e)
    *   G/H/I → β→β Tog-Same  (both e→s; the beta offset separates the pair)
@@ -52,7 +52,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -67,7 +67,7 @@
 
   type Box = { key: string; x: number; y: number; cells: Cell[] };
   const BOXES: Box[] = [
-    // A/B/C — α→α Split-Same: blue s→w, red n→e.
+    // A/B/C - α→α Split-Same: blue s→w, red n→e.
     {
       key: "abc",
       x: 154.5,
@@ -78,7 +78,7 @@
         { letter: Letter.C, name: "C", blue: anti(SO_, W), red: pro(N, E) },
       ],
     },
-    // G/H/I — β→β Tog-Same: both hands e→s.
+    // G/H/I - β→β Tog-Same: both hands e→s.
     {
       key: "ghi",
       x: 154.5,
@@ -137,7 +137,7 @@
     }) as unknown as StepData;
 
   // Companion strip: a static Start at the letter's start position, then the
-  // letter itself — so playback opens from the in orientation like the page says.
+  // letter itself - so playback opens from the in orientation like the page says.
   const authoredCellSteps = (c: Cell): StepData[] => [
     {
       id: `bl-${c.name}-start`,
@@ -155,7 +155,7 @@
   ];
 
   // Admin override (guide-overrides.svelte) replaces the WHOLE strip when
-  // present, resolved before baking — reversal dots stay derived either way.
+  // present, resolved before baking - reversal dots stay derived either way.
   // Reactive ($derived) so a save/revert/reset re-renders without a refresh.
   const resolvedCellStrip = (c: Cell): StepData[] => {
     const authored = authoredCellSteps(c);
@@ -367,7 +367,7 @@
     color: #6f2da8;
   }
 
-  /* Abutting absolute cells — shared edges coincide, so borders read as one
+  /* Abutting absolute cells - shared edges coincide, so borders read as one
      divider line, matching the artboard's single-box-three-cells look. */
   .mini {
     position: absolute;

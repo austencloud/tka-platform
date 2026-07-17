@@ -6,7 +6,7 @@
  * Every Level-1 topic is registered EXCEPT codex / codex-2: those are wide
  * reference tables (the full letter matrix). Their sheet-fallback already crawls
  * richly (30+ describePictograph labels each via CodexCell), and a 1-column
- * mobile reflow of a table would be strictly worse — so they intentionally stay
+ * mobile reflow of a table would be strictly worse - so they intentionally stay
  * sheet-only. Every other page reflows.
  */
 import type { GuideBlock } from "./guide-content-blocks";
@@ -56,7 +56,7 @@ export const GUIDE_CONTENT: Record<string, GuideBlock[]> = {
   "staff-positions": staffPositionsContent,
   "staff-motions": staffMotionsContent,
   "negative-space": negativeSpaceContent,
-  // ── 1.1 Letters (codex / codex-2 stay sheet-only — see header) ──
+  // ── 1.1 Letters (codex / codex-2 stay sheet-only - see header) ──
   "base-letters": baseLettersContent,
   "lt1-abc-ghi": lt1AbcGhiContent,
   "lt1-dj-ek-fl": lt1DjEkFlContent,

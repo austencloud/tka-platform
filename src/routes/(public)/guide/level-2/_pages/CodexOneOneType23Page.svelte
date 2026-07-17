@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Codex 1/1 — Type 2/3 — Level 2 body page 21 (manifest `codex-1-1-t23`),
+   * Codex 1/1 - Type 2/3 - Level 2 body page 21 (manifest `codex-1-1-t23`),
    * faithful to old p21. Same split-column layout as p18 (Type 2 shift | Type 3
    * cross-shift) but with a turn on BOTH hands (`¹₁`), shown in Same (rows 1–2, dot
    * above) and Opp (rows 3–4, dot below). Cell data via codexRelData with hi=lo=1.

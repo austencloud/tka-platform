@@ -21,16 +21,16 @@
 {#if show}
   <div class="first-beat-overlay" role="dialog" aria-modal="true">
     <div class="first-beat-dialog">
-      <h3>Set New First Beat</h3>
+      <h3>Set New First Step</h3>
       <p>
-        This will permanently remove beat{isPlural ? "s" : ""} 1{isPlural
+        This will permanently remove step{isPlural ? "s" : ""} 1{isPlural
           ? `-${stepsToRemove}`
           : ""}.
       </p>
       <div class="dialog-actions">
         <button class="dialog-btn cancel" onclick={onCancel}> Cancel </button>
         <button class="dialog-btn confirm" onclick={onConfirm}>
-          Set First Beat
+          Set First Step
         </button>
       </div>
     </div>

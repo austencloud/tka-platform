@@ -367,7 +367,7 @@
                   <span class="entry-index">#{(playback?.history ?? []).length - i}</span>
                   <span class="entry-word">{entry.word ?? entry.sequence.word ?? "Generated"}</span>
                   <span class="entry-mode">{entry.sourceMode}</span>
-                  <span class="entry-steps">{entry.sequence.steps?.length ?? 0} beats</span>
+                  <span class="entry-steps">{entry.sequence.steps?.length ?? 0} steps</span>
                 </div>
                 <div class="entry-actions">
                   <button

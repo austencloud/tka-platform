@@ -7,7 +7,7 @@
  * pictograph 950 viewBox by calibrating on the frame's diamond hand-point dots
  * (n/e/s/w at 331.9/618.1). Rendered over LiftedTurnFrame's minimal grid so the
  * arrows land on the real grid. These are the CANONICAL end-direction arrows
- * (pro curl, anti zig-zag, dash bow, static loop) — do not substitute the app
+ * (pro curl, anti zig-zag, dash bow, static loop) - do not substitute the app
  * motion-arrow assets, whose shapes differ.
  *
  * Regenerate with `py scripts/lift-turn-arrows.py`. Keys: p<page>_s<strip>_f<frame>.

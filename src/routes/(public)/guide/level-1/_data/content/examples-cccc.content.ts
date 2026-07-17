@@ -15,7 +15,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import { bakeReversals } from "../guide-sequence-adapter";
 
 // Verbatim prose lifted from _pages/HybridReversalsPage.svelte (Austen's
-// words — never AI-written); the pictograph construction below is a FAITHFUL
+// words - never AI-written); the pictograph construction below is a FAITHFUL
 // COPY of that same file's SEQS/handMotion/stepData/startPose authoring (same
 // locations/orientations → identical staff pictographs; reversal dots are
 // DERIVED via bakeReversals, never hand-authored), minus the reader-only
@@ -26,7 +26,7 @@ const { IN, OUT } = Orientation;
 const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-// ── Step authoring — copied from _pages/HybridReversalsPage.svelte ─────────
+// ── Step authoring - copied from _pages/HybridReversalsPage.svelte ─────────
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
 const flip = (o: Orientation) => (o === IN ? OUT : IN);
 type HandStep = { anti: boolean; from: GridLocation; to: GridLocation; so: Orientation };
@@ -65,7 +65,7 @@ const { A, B, C } = Letter;
 type SeqDef = { key: string; word: string; label?: string; steps: Step[] };
 const SEQS: SeqDef[] = [
   {
-    // AABB ×2, reversals after the second B (step 4) — R/R derives on step 5.
+    // AABB ×2, reversals after the second B (step 4) - R/R derives on step 5.
     key: "hr-aabb",
     word: "AABB ×2 (reversals after the second B)",
     steps: [
@@ -80,7 +80,7 @@ const SEQS: SeqDef[] = [
     ],
   },
   {
-    // CCCC hand-reversal: handpath flips per step, prop rotation continues —
+    // CCCC hand-reversal: handpath flips per step, prop rotation continues -
     // the pro/anti roles trade each step; NO prop-reversal flags derive.
     key: "hr-hand",
     word: "CCCC Hand-reversal",
@@ -94,7 +94,7 @@ const SEQS: SeqDef[] = [
   },
   {
     // CCCC prop-reversal: handpath continues CW, prop rotation flips each
-    // step — R/R derives on 2, 3, 4.
+    // step - R/R derives on 2, 3, 4.
     key: "hr-prop",
     word: "CCCC Prop-reversal",
     label: "Prop-reversal",
@@ -106,7 +106,7 @@ const SEQS: SeqDef[] = [
     ],
   },
   {
-    // CCCC full-reversal: handpath AND prop flip together — each hand keeps
+    // CCCC full-reversal: handpath AND prop flip together - each hand keeps
     // its pro/anti role while retracing; R/R derives on 2, 3, 4.
     key: "hr-full",
     word: "CCCC Full-reversal",
@@ -147,7 +147,7 @@ const startPose = (q: SeqDef): StepData =>
   }) as unknown as StepData;
 
 // Start + N steps per sequence, reversal dots derived from the motions
-// themselves (bakeReversals; never hand-authored) — matches _pages/
+// themselves (bakeReversals; never hand-authored) - matches _pages/
 // HybridReversalsPage.svelte's resolvedSeqSteps (minus the admin-override seam).
 const seqStrip = (q: SeqDef): PictographData[] => {
   const authored = [startPose(q), ...q.steps.map((_, i) => stepData(q, i))];
@@ -156,7 +156,7 @@ const seqStrip = (q: SeqDef): PictographData[] => {
 
 const byKey = (key: string) => SEQS.find((q) => q.key === key)!;
 
-/** STAFF props with reversal dots — matching HybridReversalsPage's PICTO_FLAGS. */
+/** STAFF props with reversal dots - matching HybridReversalsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF, showReversals: true } as const;
 
 export const examplesCcccContent: GuideBlock[] = [

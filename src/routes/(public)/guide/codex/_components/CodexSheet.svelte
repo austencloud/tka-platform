@@ -14,11 +14,11 @@
     onCellSelect,
   }: {
     sheet: CodexSheetDef;
-    /** Render only the type blocks — no sheet chrome (size/padding/background)
-     *  and no title — for hosting inside another page frame (the Level 1 guide's
+    /** Render only the type blocks - no sheet chrome (size/padding/background)
+     *  and no title - for hosting inside another page frame (the Level 1 guide's
      *  GuidePage owns the sheet + paints the manifest title). */
     embed?: boolean;
-    /** Interactive-reader overrides — all undefined for print/card callers,
+    /** Interactive-reader overrides - all undefined for print/card callers,
      *  which keeps this component's default (canonical) rendering untouched. */
     propType?: PropType;
     visibility?: GuideCodexVisibility;
@@ -44,7 +44,7 @@
         {#each type.boxes as box, i (i)}
           <!-- Boxes alternate left/right down the 2-column sheet grid; the side
                pins each transition glyph to its OUTER corner (OG parity).
-               Full-width boxes have no side — their header (if any) centers. -->
+               Full-width boxes have no side - their header (if any) centers. -->
           <CodexBox
             {box}
             side={box.full ? undefined : i % 2 === 0 ? "left" : "right"}
@@ -65,7 +65,7 @@
     min-height: 11in;
     box-sizing: border-box;
     /* Tight vertical padding: the 110px cells + two type sections use nearly
-       the whole 11in — fat margins here push the sheet onto a second page. */
+       the whole 11in - fat margins here push the sheet onto a second page. */
     padding: 0.25in 0.5in 0.25in;
     background: #fff;
     color: #111;
@@ -108,7 +108,7 @@
   }
 
   /* Tight head margins: vertical room goes to the pictographs, not the type
-     headings — the sheet has to fit two types (sheet 1) / four types (sheet 2)
+     headings - the sheet has to fit two types (sheet 1) / four types (sheet 2)
      on one letter page with 110px cells. */
   .type-head {
     font-family: Georgia, "Times New Roman", serif;

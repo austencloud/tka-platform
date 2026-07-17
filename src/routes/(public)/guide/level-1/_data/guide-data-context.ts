@@ -52,10 +52,10 @@ export function getGuidePrintMode(): boolean {
 /** Payload a page hands up when the user clicks one of its sequences. `key`
  *  uniquely identifies the strip (`"<page>-<stripIndex>"`) so the reader can
  *  scope the golden step ring to exactly the strip that's animating.
- *  `propType` picks the companion's animated prop — hand for the hand-motion
+ *  `propType` picks the companion's animated prop - hand for the hand-motion
  *  chapters (default), staff for the staff pages (isolation/antispin strips
  *  animate real staves from their authored orientations). Widened (2026-07-10,
- *  guide/codex merge) to accept any PropType — the codex page lets the reader
+ *  guide/codex merge) to accept any PropType - the codex page lets the reader
  *  switch prop family (club, buugeng, triad, fan, mini hoop, hand); existing
  *  "hand"/"staff" string literals from other pages keep working unchanged. */
 export type GuideSequenceClick = {
@@ -64,8 +64,8 @@ export type GuideSequenceClick = {
   key?: string;
   propType?: "hand" | "staff" | PropType;
   /** Show the α/β/γ start→end position indicator on the companion animator for
-   *  this strip. Defaults (when omitted) to on for hand renders — the early
-   *  hand-path chapters — and off for staff/letter/word strips. Set explicitly
+   *  this strip. Defaults (when omitted) to on for hand renders - the early
+   *  hand-path chapters - and off for staff/letter/word strips. Set explicitly
    *  to force it for a given example. */
   showPositionGlyph?: boolean;
 };

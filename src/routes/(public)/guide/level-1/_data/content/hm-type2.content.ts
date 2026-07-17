@@ -8,7 +8,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
 /**
- * Verbatim prose lifted from _pages/Type2ShiftsPage.svelte (Austen's words —
+ * Verbatim prose lifted from _pages/Type2ShiftsPage.svelte (Austen's words -
  * never AI-written). Pictograph construction is a faithful copy of that same
  * file's `motion`/`box`/STRIPS derivation, minus the reader-only wiring
  * (selection, overrides, click-to-animate, edit-mode dragging, pt geometry).
@@ -19,7 +19,7 @@ const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 // A hand that moves → PRO shift (hand-path mode converts to FLOAT); a hand
 // that stays → STATIC (no arrow). Positions/numbers derive downstream. A Type
 // 2 motion ("Shift") always has exactly one moving hand, so no same-edge
-// collision — no letter is ever needed for placement.
+// collision - no letter is ever needed for placement.
 const motion = (color: MotionColor, from: GridLocation, to: GridLocation) =>
   createMotionData({
     motionType: from === to ? MotionType.STATIC : MotionType.PRO,
@@ -55,7 +55,7 @@ type Strip = { rows: Cell[][] };
 const c = (m: Move, step: number): Cell => ({ m, step });
 
 const STRIPS: Strip[] = [
-  // Single Shift — blue holds at S; red floats CCW one point per count.
+  // Single Shift - blue holds at S; red floats CCW one point per count.
   {
     rows: [
       [
@@ -67,7 +67,7 @@ const STRIPS: Strip[] = [
       ],
     ],
   },
-  // Same direction — every shift clockwise; anchor hand swaps at beta.
+  // Same direction - every shift clockwise; anchor hand swaps at beta.
   {
     rows: [
       [
@@ -86,7 +86,7 @@ const STRIPS: Strip[] = [
       ],
     ],
   },
-  // Opposite directions — red always CCW, blue always CW; shifting hand alternates.
+  // Opposite directions - red always CCW, blue always CW; shifting hand alternates.
   {
     rows: [
       [
@@ -108,15 +108,15 @@ const STRIPS: Strip[] = [
 ];
 
 // Flatten a strip's rows (row-major, skipping null cells) into ordered
-// pictographs — Start(0) then 1..n. Type2ShiftsPage's PICTO_FLAGS keep
-// showReversals off, so this is used directly — no bakeReversals needed.
+// pictographs - Start(0) then 1..n. Type2ShiftsPage's PICTO_FLAGS keep
+// showReversals off, so this is used directly - no bakeReversals needed.
 const stripSteps = (strip: Strip): PictographData[] =>
   strip.rows
     .flat()
     .filter((cell): cell is { m: Move; step: number } => cell !== null)
     .map((cell) => box(cell.m, cell.step)) as unknown as PictographData[];
 
-/** HAND props — matching Type2ShiftsPage's PICTO_FLAGS. */
+/** HAND props - matching Type2ShiftsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.HAND } as const;
 const SEQ_WORDS = ["Single Shift", "Same-Direction Shifts", "Opposite Shifts"];
 

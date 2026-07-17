@@ -1,15 +1,15 @@
 <script lang="ts">
   /**
-   * Type 4 — Dash — Level 2 body page 9 (manifest `t4-dash`), faithful to old
+   * Type 4 - Dash - Level 2 body page 9 (manifest `t4-dash`), faithful to old
    * p10. Type 4 hybrids combine a dash and a static motion (no shift); PADS puts
    * the dash high and the static low. Two breakdown strips (all from Φ variation
-   * [3]: blue s→s static, red s→n dash — MCP-verified):
+   * [3]: blue s→s static, red s→n dash - MCP-verified):
    *
-   *   Φ¹  "Phi-High-One"  — 1 turn on the dash (red).
-   *   Φ₁  "Phi-Low-One"   — 1 turn on the static hand (blue).
+   *   Φ¹  "Phi-High-One"  - 1 turn on the dash (red).
+   *   Φ₁  "Phi-Low-One"   - 1 turn on the static hand (blue).
    *
    * Only one prop rotates per strip, so there is no Same/Opp relationship and no
-   * dots — an opposite-direction turn is just the mirror image. High glyph = red,
+   * dots - an opposite-direction turn is just the mirror image. High glyph = red,
    * low = blue. Halfway poses come from the engine interpolator.
    */
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";

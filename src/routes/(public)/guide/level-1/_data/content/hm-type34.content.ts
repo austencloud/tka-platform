@@ -9,7 +9,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 
 /**
  * Verbatim prose lifted from _pages/Type3CrossShiftsPage.svelte (Austen's
- * words — never AI-written). Pictograph construction is a faithful copy of
+ * words - never AI-written). Pictograph construction is a faithful copy of
  * that same file's `motion`/`box`/BREAKDOWN/SEQ1/SEQ2 derivation, minus the
  * reader-only wiring (selection, overrides, click-to-animate, edit-mode
  * dragging, pt geometry).
@@ -80,7 +80,7 @@ type Cell = { m: Move; step: number } | null;
 const c = (m: Move, step: number): Cell => ({ m, step });
 type Strip = { rows: Cell[][] };
 
-// Sequence 1 — alpha→gamma. Shifts all CW; dash & shift swap hands each count.
+// Sequence 1 - alpha→gamma. Shifts all CW; dash & shift swap hands each count.
 const SEQ1: Strip = {
   rows: [
     [
@@ -100,7 +100,7 @@ const SEQ1: Strip = {
   ],
 };
 
-// Sequence 2 — beta→gamma. Shifts all CCW; returns to both-S (beta).
+// Sequence 2 - beta→gamma. Shifts all CCW; returns to both-S (beta).
 const SEQ2: Strip = {
   rows: [
     [
@@ -121,15 +121,15 @@ const SEQ2: Strip = {
 };
 
 // Flatten a strip's rows (row-major, skipping null cells) into ordered
-// pictographs — Start(0) then 1..8. Type3CrossShiftsPage's PICTO_FLAGS keep
-// showReversals off, so this is used directly — no bakeReversals needed.
+// pictographs - Start(0) then 1..8. Type3CrossShiftsPage's PICTO_FLAGS keep
+// showReversals off, so this is used directly - no bakeReversals needed.
 const stripSteps = (strip: Strip): PictographData[] =>
   strip.rows
     .flat()
     .filter((cell): cell is { m: Move; step: number } => cell !== null)
     .map((cell) => box(cell.m, cell.step, `seq-${cell.step}`)) as unknown as PictographData[];
 
-/** HAND props — matching Type3CrossShiftsPage's PICTO_FLAGS. */
+/** HAND props - matching Type3CrossShiftsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.HAND } as const;
 
 export const hmType34Content: GuideBlock[] = [

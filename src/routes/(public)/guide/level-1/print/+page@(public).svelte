@@ -1,5 +1,5 @@
 <!--
-  Printable Level 1 guide — the single hand-out document.
+  Printable Level 1 guide - the single hand-out document.
 
   Resets out of the level-1 sidebar layout (`@(public)`) and stacks the cover
   plus all three chapter pages (each manages its own setGuideData context). The
@@ -27,12 +27,12 @@
 
   setGuidePrintMode();
 
-  // The override IS the guide — /print reflects saved edits too (public read).
+  // The override IS the guide - /print reflects saved edits too (public read).
   onMount(() => {
     loadOverrides();
   });
 
-  // Cover edition — toggled in the GuideDevBar; ?theme=home still seeds the
+  // Cover edition - toggled in the GuideDevBar; ?theme=home still seeds the
   // ink-cheap light cover for home printers (default = navy foil).
   let coverTheme = $state<"navy" | "light">(
     page.url.searchParams.get("theme") === "home" ? "light" : "navy"

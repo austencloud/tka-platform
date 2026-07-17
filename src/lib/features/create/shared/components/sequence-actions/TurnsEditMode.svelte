@@ -68,7 +68,7 @@
 {#if !hasSelection}
   <div class="empty-state">
     <i class="fas fa-hand-pointer" aria-hidden="true"></i>
-    <p>Tap a beat in the sequence to edit its turns</p>
+    <p>Tap a step in the sequence to edit its turns</p>
   </div>
 {:else}
   <PropControlPair {stacked} {compact}>

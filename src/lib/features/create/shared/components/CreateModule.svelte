@@ -851,7 +851,7 @@ import { getLibraryRepository } from "$lib/shared/library/get-library-repository
   <ConfirmDialog
     bind:isOpen={showLoopConfirm}
     title="Apply {pendingLoopComponentName} LOOP?"
-    message="This will add {pendingLoopBeatCount} beats to your sequence."
+    message="This will add {pendingLoopBeatCount} steps to your sequence."
     confirmText="Apply"
     cancelText="Cancel"
     variant="info"

@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Level 1 guide cover — the locked design, as a reusable component.
+   * Level 1 guide cover - the locked design, as a reusable component.
    *
    * Hero title = Fraunces (wonky italic). "Level 1" = canonical baby-blue badge.
    * A combined emblem (Iso circle + Anti lens-rose + Dash +, overlaid) above an
@@ -8,8 +8,8 @@
    * hands (blue/red), NOT motion type. Arc path. Deterministic MCP geometry, so
    * it reprints identically.
    *
-   * `theme="navy"` — matte navy + gold foil, glowing line-art (digital / pro
-   * print / foil edition). `theme="light"` — ivory + ink rule, dark line-art
+   * `theme="navy"` - matte navy + gold foil, glowing line-art (digital / pro
+   * print / foil edition). `theme="light"` - ivory + ink rule, dark line-art
    * (cheap home-printer edition, minimal ink).
    *
    * Mandala sizes scale to the container width, so the same component fills the
@@ -25,7 +25,7 @@
   const emblemSize = $derived(w ? Math.round(w * 0.44) : 0);
   const trioSize = $derived(w ? Math.round(w * 0.185) : 0);
 
-  // ── Edit-mode offsets (pt) — every cover element is draggable/deletable ────
+  // ── Edit-mode offsets (pt) - every cover element is draggable/deletable ────
   const S = 816 / 612; // pt → px at native page width
   type Off = { x: number; y: number };
   const zero = (): Off => ({ x: 0, y: 0 });
@@ -197,7 +197,7 @@
   .cover.light .frame { border: 1.4px solid #1f2937; }
   .cover.light .frame::before { content: ""; position: absolute; inset: 5px; border: 0.8px solid #1f2937; }
 
-  /* Title — Fraunces wonky italic */
+  /* Title - Fraunces wonky italic */
   .hero { text-align: center; }
   .title {
     font-family: "Fraunces", Georgia, serif; font-style: italic; font-weight: 700;
@@ -205,11 +205,11 @@
     line-height: 1.0; margin: 0; display: flex; flex-direction: column;
     font-size: clamp(32px, 12.5cqw, 88px);
   }
-  /* Pure white on navy, pure black on ivory — max legibility (AAA). */
+  /* Pure white on navy, pure black on ivory - max legibility (AAA). */
   .cover.navy .title { color: #ffffff; }
   .cover.light .title { color: #000000; }
 
-  /* Subtitle under the title — gold foil on navy, deep gold ink on ivory. */
+  /* Subtitle under the title - gold foil on navy, deep gold ink on ivory. */
   .subtitle {
     margin: 2.4cqw 0 0; text-align: center;
     font-family: "Cormorant Garamond", Georgia, serif; font-style: italic;

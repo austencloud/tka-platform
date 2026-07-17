@@ -77,7 +77,7 @@
       <span>{t("compose_step_by_step")}</span>
     </div>
     {#if showDescriptions}
-      <span class="mode-desc">One beat at a time</span>
+      <span class="mode-desc">One step at a time</span>
     {/if}
   </button>
 </div>

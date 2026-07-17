@@ -99,7 +99,7 @@
   <div class="axis">
     <div class="axis-row">
       <span class="axis-lbl">Length</span>
-      <span class="reps">×{reps} over {sequenceLength} beats</span>
+      <span class="reps">×{reps} over {sequenceLength} steps</span>
     </div>
     <div class="seg-wrap">
       <SegmentedControl

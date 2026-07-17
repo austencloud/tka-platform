@@ -1,17 +1,17 @@
 <script lang="ts">
   /**
-   * A single codex cell — one letter's pictograph plus its transition/name
+   * A single codex cell - one letter's pictograph plus its transition/name
    * captions. Print/card callers (the /codex sheets, poster, Choreo Card
    * printing) pass NOTHING beyond `cell`: they get the exact byte-identical
    * static Double-Staff rendering this component always produced.
    *
    * The interactive guide reader (GuideCodexPage.svelte) additionally passes
-   * `propType`/`visibility`/`dataOverride`/`onSelect` — the SAME sheet, live:
+   * `propType`/`visibility`/`dataOverride`/`onSelect` - the SAME sheet, live:
    * propType re-skins the pictograph, visibility toggles its layers, and
    * `onSelect` makes the cell clickable via the shared sequence-selection
    * primitive (`SelectionHit` + `.tka-seq-cell`, the same hover/select ring
-   * used elsewhere in the guide — see feedback_sequence_selection_primitive),
-   * never a hand-rolled button/hover style. No gray fill is added either way —
+   * used elsewhere in the guide - see feedback_sequence_selection_primitive),
+   * never a hand-rolled button/hover style. No gray fill is added either way -
    * the printable white-paper look is preserved.
    */
   import GuidePictograph from "../../level-1/_components/GuidePictograph.svelte";
@@ -45,7 +45,7 @@
     /** Live-transformed pictograph (rotate/mirror/color-swap) to render instead
      *  of the canonical dataset. Only the interactive reader supplies this. */
     dataOverride?: PictographData | null;
-    /** Presence makes the cell clickable — only the reader supplies it. */
+    /** Presence makes the cell clickable - only the reader supplies it. */
     onSelect?: (id: string) => void;
   } = $props();
 
@@ -116,11 +116,11 @@
     line-height: 1.1;
   }
 
-  /* ONE fixed pictograph size across the whole codex (both pages, every type) —
+  /* ONE fixed pictograph size across the whole codex (both pages, every type) -
      never sized off the row's leftover space, which made 4-cell/full-width rows
      render bigger pictographs than 3-cell rows. Each pictograph carries its own
      plain 1px border and sits flush against its neighbors (CodexBox collapses
-     the shared walls), reproducing the original guide's table look — no inset
+     the shared walls), reproducing the original guide's table look - no inset
      floating squares. The pictograph's dark-mode outline (--pictograph-border)
      is suppressed so the only frame is this border. aspect-ratio keeps the box
      square so the async pictograph swap never reflows neighbors. */
@@ -138,7 +138,7 @@
 
   /* Force the whole pictograph (wrapper + SVG) to fill the 64px box. The
      size-sm wrapper otherwise keeps its own ~120px intrinsic size (max-width
-     140px + its own aspect-ratio) and ignores this box, so it overflowed —
+     140px + its own aspect-ratio) and ignores this box, so it overflowed -
      spilling into neighbors, or cropped once the box clipped it. The SVG
      viewBox is a clean square, so filling the box shows the whole pictograph
      at cell size: no overflow, no crop. */
@@ -160,7 +160,7 @@
     line-height: 1.1;
   }
 
-  /* Interactive (reader) cells: cursor affordance only — the hover/select
+  /* Interactive (reader) cells: cursor affordance only - the hover/select
    * ring comes entirely from the shared .tka-seq-cell primitive above, never
    * a gray fill. Keeps the print-sheet white-paper look intact. */
   .codex-cell.interactive {

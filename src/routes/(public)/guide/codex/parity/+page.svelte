@@ -1,12 +1,12 @@
 <!--
-  Codex Parity — original book artboard vs live render, side by side.
+  Codex Parity - original book artboard vs live render, side by side.
 
   Lives under (public) so it inherits the bare layout (a /test/* route gets
   redirected to /create/construct by the app-shell module-state). Each row pairs
   the scanned book page (left) with the SAME sheet rendered from CodexSheet
   (right), both pinned to the same on-screen width so any size/spacing drift is
-  directly readable. This is the tuning surface for getting the render — and the
-  tall poster that reuses it — back to book parity.
+  directly readable. This is the tuning surface for getting the render - and the
+  tall poster that reuses it - back to book parity.
 -->
 <script lang="ts">
   import CodexSheet from "../_components/CodexSheet.svelte";

@@ -1,12 +1,12 @@
 <script lang="ts">
   /**
-   * Type 5 — Dual-Dash — Level 2 body page 11 (manifest `t5-dual-dash`), faithful
+   * Type 5 - Dual-Dash - Level 2 body page 11 (manifest `t5-dual-dash`), faithful
    * to old p12. Both hands dash (dash|dash), so there are no hybrids; matching type
    * means left→high, right→low. Two sections:
    *
-   *   Ψ-¹ "Psi-Dash-One"  — one strip (Ψ- variation [1]: both n→s dash), 1 turn on
+   *   Ψ-¹ "Psi-Dash-One"  - one strip (Ψ- variation [1]: both n→s dash), 1 turn on
    *                         the high/left hand (blue). No opening/closing (beta letter).
-   *   Λ-¹ opening/closing — Λ- is a gamma dual-dash, so it uses opening/closing with a
+   *   Λ-¹ opening/closing - Λ- is a gamma dual-dash, so it uses opening/closing with a
    *                         Continuation column (variation [7]: blue w→e, red s→n dash).
    *                         1 turn on the low/right hand (red); ccw = opening→W (alpha),
    *                         cw = closing→Y (beta).
@@ -163,13 +163,13 @@
   const PRO = (from: GridLocation, to: GridLocation, rot: RotationDirection): Cont => ({ type: MotionType.PRO, from, to, rot });
 
   const STRIPS: Strip[] = [
-    // Ψ- section — both n→s dash, 1 turn on the high/left hand (blue).
+    // Ψ- section - both n→s dash, 1 turn on the high/left hand (blue).
     makeStrip({
       y: 302, letter: "Ψ-", label: "“Psi-Dash-One”", labelY: 340, opcl: null, supPos: "hi", captions: true,
       endThumb: "in", cols: WIDE, contLetter: null,
       blue: DASH(N, SO_, CW, 1), red: DASH(N, SO_, NOROT, 0),
     }),
-    // Λ- section — blue w→e / red s→n dash; 1 turn on the low/right hand (red).
+    // Λ- section - blue w→e / red s→n dash; 1 turn on the low/right hand (red).
     makeStrip({
       y: 528, letter: "Λ-", label: "“Lam-Dash-One”", labelY: 562, opcl: "OPENING", supPos: "lo", captions: false,
       endThumb: "mixed", cols: NARROW, contLetter: "W",

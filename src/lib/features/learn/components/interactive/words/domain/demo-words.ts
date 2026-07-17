@@ -38,7 +38,7 @@ export const wordAABB: LetterDefinition[] = [
     endRight: "W",
     leftMotion: "pro",
     rightMotion: "pro",
-    description: "Beat 1",
+    description: "Step 1",
   },
   {
     letter: "A",
@@ -48,7 +48,7 @@ export const wordAABB: LetterDefinition[] = [
     endRight: "N",
     leftMotion: "pro",
     rightMotion: "pro",
-    description: "Beat 2",
+    description: "Step 2",
   },
   {
     letter: "B",
@@ -58,7 +58,7 @@ export const wordAABB: LetterDefinition[] = [
     endRight: "W",
     leftMotion: "anti",
     rightMotion: "anti",
-    description: "Beat 3",
+    description: "Step 3",
   },
   {
     letter: "B",
@@ -68,7 +68,7 @@ export const wordAABB: LetterDefinition[] = [
     endRight: "S",
     leftMotion: "anti",
     rightMotion: "anti",
-    description: "Beat 4",
+    description: "Step 4",
   },
 ];
 

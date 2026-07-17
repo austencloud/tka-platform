@@ -254,7 +254,7 @@ export function createSequenceState(services: SequenceStateServices) {
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Unknown error updating beat";
+        error instanceof Error ? error.message : "Unknown error updating step";
       coreState.setError(errorMessage);
       console.error("Failed to update beat:", error);
     }

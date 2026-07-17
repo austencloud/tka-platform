@@ -52,7 +52,7 @@
       "Choose your start position!",
       "Choose the blue starting location",
       "Configure sequence parameters",
-      "Select your first beat!",
+      "Select your first step!",
       "Choose your 1st pictograph!",
     ];
     return contextualPhrases.some((phrase) => word.includes(phrase));

@@ -1,6 +1,6 @@
 /**
  * Single source for the Gamma Words SEO doorway (manifest id "lt1-gamma-words").
- * Prose is lifted VERBATIM from _pages/GammaWordsPage.svelte (Austen's words —
+ * Prose is lifted VERBATIM from _pages/GammaWordsPage.svelte (Austen's words -
  * never AI-written); the pictograph construction is a FAITHFUL COPY of that
  * same file's loop-leg derivation (same helpers, same locations/orientations
  * → identical staff pictographs), minus the reader-only wiring (selection,
@@ -27,7 +27,7 @@ const { IN, OUT } = Orientation;
 const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-// ── Motion authoring — copied from GammaWordsPage.svelte ───────────────────
+// ── Motion authoring - copied from GammaWordsPage.svelte ───────────────────
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
 const hpDir = (from: GridLocation, to: GridLocation) => (HP_CW.has(`${from}-${to}`) ? CW : CCW);
 const hand = (color: MotionColor, from: GridLocation, to: GridLocation, anti: boolean, so: Orientation) => {
@@ -58,7 +58,7 @@ const staticHand = (color: MotionColor, loc: GridLocation) =>
   });
 
 // ── The two loops: blue rides CW (Opp block) or CCW (Same block); red always
-// rides the CCW loop one step ahead — copied from GammaWordsPage.svelte. ───
+// rides the CCW loop one step ahead - copied from GammaWordsPage.svelte. ───
 type Leg = [GridLocation, GridLocation];
 const BLUE_CW: Leg[] = [
   [SO_, W],
@@ -134,12 +134,12 @@ const startBox = (block: 0 | 1): StepData =>
   }) as unknown as StepData;
 
 // One strip per word: Start + 4 letters. (GammaWordsPage's PICTO_FLAGS keeps
-// showReversals off, so the strip is used directly — no bakeReversals needed
+// showReversals off, so the strip is used directly - no bakeReversals needed
 // for the display.)
 const rowStrip = (r: RowDef): PictographData[] =>
   [startBox(r.block), ...[0, 1, 2, 3].map((i) => rowStep(r, i))] as unknown as PictographData[];
 
-/** STAFF props, TKA letter glyph on — matching GammaWordsPage's PICTO_FLAGS. */
+/** STAFF props, TKA letter glyph on - matching GammaWordsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF } as const;
 
 export const lt1GammaWordsContent: GuideBlock[] = [
@@ -156,7 +156,7 @@ export const lt1GammaWordsContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2", "3", "4"],
     card: true,
     render: RENDER,
-    caption: "MPMP — γ→γ (Opp)",
+    caption: "MPMP: γ→γ (Opp)",
   },
   {
     kind: "pictographGroup",
@@ -166,7 +166,7 @@ export const lt1GammaWordsContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2", "3", "4"],
     card: true,
     render: RENDER,
-    caption: "NQNQ — γ→γ (Opp)",
+    caption: "NQNQ: γ→γ (Opp)",
   },
   {
     kind: "pictographGroup",
@@ -176,7 +176,7 @@ export const lt1GammaWordsContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2", "3", "4"],
     card: true,
     render: RENDER,
-    caption: "OROR — γ→γ (Opp)",
+    caption: "OROR: γ→γ (Opp)",
   },
   {
     kind: "pictographGroup",
@@ -186,7 +186,7 @@ export const lt1GammaWordsContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2", "3", "4"],
     card: true,
     render: RENDER,
-    caption: "SSSS — γ→γ (Same)",
+    caption: "SSSS: γ→γ (Same)",
   },
   {
     kind: "pictographGroup",
@@ -196,7 +196,7 @@ export const lt1GammaWordsContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2", "3", "4"],
     card: true,
     render: RENDER,
-    caption: "TTTT — γ→γ (Same)",
+    caption: "TTTT: γ→γ (Same)",
   },
   {
     kind: "pictographGroup",
@@ -206,7 +206,7 @@ export const lt1GammaWordsContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2", "3", "4"],
     card: true,
     render: RENDER,
-    caption: "UUUU — γ→γ (Same)",
+    caption: "UUUU: γ→γ (Same)",
   },
   {
     kind: "pictographGroup",
@@ -216,6 +216,6 @@ export const lt1GammaWordsContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2", "3", "4"],
     card: true,
     render: RENDER,
-    caption: "VVVV — γ→γ (Same)",
+    caption: "VVVV: γ→γ (Same)",
   },
 ];

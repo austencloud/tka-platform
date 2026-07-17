@@ -5,10 +5,10 @@
    * On screen: a paper-like sheet (8.5×11in) with a drop shadow, so the print
    * route is a true WYSIWYG page-by-page preview. In print: the sheet stays
    * fixed 8.5×11 (the @page is margin:0 in guide-print.css), so what you see is
-   * exactly what prints — including the page-number footer, which is absolutely
+   * exactly what prints - including the page-number footer, which is absolutely
    * positioned and would otherwise drift if the sheet collapsed.
    *
-   * Content is authored to FIT one page — this is the seam that replaced the old
+   * Content is authored to FIT one page - this is the seam that replaced the old
    * continuous-scroll-sliced-by-@page chaos. Each page is rebuilt one at a time
    * (see docs/.../guide-rebuild-tracker.md).
    */
@@ -23,9 +23,9 @@
     title,
   }: {
     children: Snippet;
-    /** Edge-to-edge content (cover art etc.) — drops the inner page margin. */
+    /** Edge-to-edge content (cover art etc.) - drops the inner page margin. */
     fullBleed?: boolean;
-    /** Dev-only page tag shown on screen (e.g. "p1 — Cover"); hidden in print. */
+    /** Dev-only page tag shown on screen (e.g. "p1 - Cover"); hidden in print. */
     label?: string;
     /** Body page number. Omitted for front matter (prints unnumbered). */
     pageNumber?: number;
@@ -37,7 +37,7 @@
   const recto = $derived(pageNumber !== undefined && pageNumber % 2 === 1);
   const showNumber = $derived(pageNumber !== undefined && pageNumberPrefs.show);
   // Body pages carry a page number; front matter (cover/toc/read-me) does not.
-  // EVERY body page — built or placeholder — gets the calligraphic .guide-title;
+  // EVERY body page - built or placeholder - gets the calligraphic .guide-title;
   // only front matter keeps the serif header band + flourish.
   const isBody = $derived(pageNumber !== undefined);
 </script>
@@ -48,7 +48,7 @@
     {#if title && !isBody}
       <!-- Front matter (TOC, Read Me…): the SAME calligraphic title as body pages,
            rendered in flow so the page content sits below it. A <div> (not <h1>)
-           on purpose — /print wraps the doc in .guide-content, whose `.guide-content
+           on purpose - /print wraps the doc in .guide-content, whose `.guide-content
            h1` rule (Inter 750, for the scroll layout) would otherwise outweigh
            .guide-title and force the title to bold sans-serif. Body titles are
            already divs and render Tangerine correctly inside that same wrapper. -->
@@ -80,7 +80,7 @@
     box-sizing: border-box;
     overflow: hidden;
     /* Flex column so page-body fills the full 11in sheet even when content is
-       short — a percentage height would collapse against min-height. This is
+       short - a percentage height would collapse against min-height. This is
        what lets front-matter content centre in the true page, not float high. */
     display: flex;
     flex-direction: column;

@@ -1,10 +1,10 @@
 /**
- * Guide page deep links — the slug ↔ reader-index map behind
+ * Guide page deep links - the slug ↔ reader-index map behind
  * `/learn/guide/<slug>` (spec: 2026-07-09-guide-deep-links-design.md).
  *
  * Body pages use their manifest id verbatim (stable, unique, kebab-case), so
  * new manifest entries are linkable automatically. The five unnumbered
- * front-matter pages get fixed slugs by reader index. Pure module — the
+ * front-matter pages get fixed slugs by reader index. Pure module - the
  * GuideReader consumes it for landing + live URL sync; GuidePageNav for row
  * hrefs; anyone (including Claude in chat) can mint links from manifest ids.
  */

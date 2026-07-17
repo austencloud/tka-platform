@@ -19,9 +19,29 @@ import {
   onDocumentWritten,
 } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
-import { notifyAdmins, isAdminData } from "./notifyAdmins";
+import {
+  notifyAdmins,
+  notifyAdminsScanDigest,
+  isAdminData,
+} from "./notifyAdmins";
+import { simplifyRepeatedWord } from "./wordSimplifier";
 
 const db = admin.firestore();
+
+/** Coalescing window for QR-scan digests. */
+const SCAN_DIGEST_WINDOW_MINUTES = 10;
+const SCAN_DIGEST_WINDOW_MS = SCAN_DIGEST_WINDOW_MINUTES * 60 * 1000;
+
+/** unknown → finite number | null (scan lat/lng arrive as number | string | null). */
+function toFinite(v: unknown): number | null {
+  const n = typeof v === "string" ? Number.parseFloat(v) : (v as number);
+  return Number.isFinite(n) ? (n as number) : null;
+}
+
+/** Non-empty string | null. */
+function strOrNull(v: unknown): string | null {
+  return typeof v === "string" && v.length > 0 ? v : null;
+}
 
 /** Minimum gap between "user is back" pings for the same user. */
 const RETURN_THROTTLE_MS = 6 * 60 * 60 * 1000;
@@ -155,35 +175,41 @@ export const pulseScanActivity = onDocumentCreated(
     const scan = snap.data();
     const { code } = event.params;
 
-    // A signed-in admin scanning their own cards is not news.
+    // Resolve the scanner's identity: an admin scanning their own cards is not
+    // news (volume = "all except your own"), and a signed-in non-admin gets
+    // named attribution in the message.
+    let scannerName: string | null = null;
     if (scan.userId) {
       const scanner = await db
         .collection("users")
         .doc(scan.userId as string)
         .get();
-      if (isAdminData(scanner.data())) return;
+      const sd = scanner.data();
+      if (isAdminData(sd)) return; // own-scan — suppressed
+      scannerName =
+        (sd?.displayName as string) ||
+        (sd?.username as string) ||
+        (sd?.isAnonymous === true ? "A guest" : null);
     }
 
     const parent = await db.collection("shortcodes").doc(code).get();
     const p = parent.data() ?? {};
-    const label =
-      (p.sequenceName as string) || (p.word as string) || code;
+    const rawLabel = (p.sequenceName as string) || (p.word as string) || code;
+    // LOOP words repeat by construction — always show the smallest form.
+    const label = simplifyRepeatedWord(rawLabel);
 
-    const where = [scan.city, scan.country]
-      .filter((v): v is string => typeof v === "string" && v.length > 0)
-      .join(", ");
-
-    await notifyAdmins({
-      type: "admin-qr-scan",
-      message: where
-        ? `QR scan: "${label}" scanned in ${where}`
-        : `QR scan: "${label}" scanned`,
+    await notifyAdminsScanDigest({
+      code,
+      label,
+      scannerName,
       fromUserId: (scan.userId as string | null) ?? null,
-      data: {
-        shortCode: code,
-        scanCity: (scan.city as string | null) ?? null,
-        scanCountry: (scan.country as string | null) ?? null,
-      },
+      city: strOrNull(scan.city),
+      country: strOrNull(scan.country),
+      lat: toFinite(scan.lat),
+      lng: toFinite(scan.lng),
+      windowMs: SCAN_DIGEST_WINDOW_MS,
+      windowMinutes: SCAN_DIGEST_WINDOW_MINUTES,
+      now: Date.now(),
     });
   }
 );

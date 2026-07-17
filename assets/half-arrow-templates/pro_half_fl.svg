@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="950" height="1105" viewBox="0 -155 950 1105">
+  <g id="REFERENCE__notes">
+    <rect x="0" y="-155" width="950" height="155" fill="#f5f3ff"/>
+    <text x="12" y="-132" font-family="system-ui, sans-serif" font-size="24" fill="#111" font-weight="700">pro_half_fl.svg — halved pro, float turns</text>
+    <text x="12" y="-106" font-family="system-ui, sans-serif" font-size="17" fill="#555">Seed motion: East → South, prop clockwise · halfway pose shown (staff + grid)</text>
+    <text x="12" y="-80" font-family="system-ui, sans-serif" font-size="17" fill="#555">Draw the halfway arrow at the ghost's weight. Ghost (35% opacity) = wrong-turns fallback art: correct anchor + stroke weight, wrong arc.</text>
+    <text x="12" y="-54" font-family="system-ui, sans-serif" font-size="17" fill="#555">Use FILLED shapes (Object &gt; Path &gt; Outline Stroke before saving). Keep everything else — ingest ignores REFERENCE groups.</text>
+    <text x="12" y="-28" font-family="system-ui, sans-serif" font-size="17" fill="#555">Then: npx tsx scripts/ingest-half-arrows.mjs</text>
+  </g>
+  <g id="REFERENCE__pictograph">
+    <rect x="0" y="0" width="950" height="950" fill="#ffffff"/>
+    <desc class="s-bno8nWx-BLYx">Hand pictograph. Red hand float east to southeast.</desc><rect pointer-events="none" class="s-bno8nWx-BLYx" height="950" width="950" fill="#ffffff"></rect><g class="s-bno8nWx-BLYx" transform="translate(0, 0)"><!----><g class="grid-container s-fF65qFnvWZYv visible light-mode-override" data-grid-mode="diamond" transform="rotate(0, 475, 475)"><g class="grid-layer s-fF65qFnvWZYv"><!--?xml version="1.0" encoding="utf-8"?-->
+
+  
+  
+  <!-- Outer points -->
+  <circle id="n_diamond_outer_point" cx="475" cy="175" r="25" fill="#000000" stroke="#000000" fill-opacity="1" stroke-opacity="0" stroke-width="13" stroke-miterlimit="10"></circle>
+  <circle id="e_diamond_outer_point" cx="775" cy="475" r="25" fill="#000000" stroke="#000000" fill-opacity="1" stroke-opacity="0" stroke-width="13" stroke-miterlimit="10"></circle>
+  <circle id="s_diamond_outer_point" cx="475" cy="775" r="25" fill="#000000" stroke="#000000" fill-opacity="1" stroke-opacity="0" stroke-width="13" stroke-miterlimit="10"></circle>
+  <circle id="w_diamond_outer_point" cx="175" cy="475" r="25" fill="#000000" stroke="#000000" fill-opacity="1" stroke-opacity="0" stroke-width="13" stroke-miterlimit="10"></circle>
+  
+  <!-- Hand points -->
+  <circle id="n_diamond_hand_point" class="normal-hand-point" cx="475" cy="331.9" r="4.7" fill="#000000"></circle>
+  <circle id="e_diamond_hand_point" class="normal-hand-point" cx="618.1" cy="475" r="4.7" fill="#000000"></circle>
+  <circle id="s_diamond_hand_point" class="normal-hand-point" cx="475" cy="618.1" r="4.7" fill="#000000"></circle>
+  <circle id="w_diamond_hand_point" class="normal-hand-point" cx="331.9" cy="475" r="4.7" fill="#000000"></circle>
+  
+  <!-- Layer 2 points -->
+  <circle id="ne_diamond_layer2_point" class="normal-layer2-point" cx="618.1" cy="331.9" r="8.8" fill="none" opacity="0"></circle>
+  <circle id="se_diamond_layer2_point" class="normal-layer2-point" cx="618.1" cy="618.1" r="8.8" fill="none" opacity="0"></circle>
+  <circle id="sw_diamond_layer2_point" class="normal-layer2-point" cx="331.9" cy="618.1" r="8.8" fill="none" opacity="0"></circle>
+  <circle id="nw_diamond_layer2_point" class="normal-layer2-point" cx="331.9" cy="331.9" r="8.8" fill="none" opacity="0"></circle>
+  
+  <!-- Layer 2 strict points -->
+  <circle id="ne_diamond_layer2_point_strict" class="strict-layer2-point" cx="625" cy="325" r="8.8" fill="none"></circle>
+  <circle id="se_diamond_layer2_point_strict" class="strict-layer2-point" cx="625" cy="625" r="8.8" fill="none"></circle>
+  <circle id="sw_diamond_layer2_point_strict" class="strict-layer2-point" cx="325" cy="625" r="8.8" fill="none"></circle>
+  <circle id="nw_diamond_layer2_point_strict" class="strict-layer2-point" cx="325" cy="325" r="8.8" fill="none"></circle>
+  
+  <!-- Hand strict points -->
+  <circle id="n_diamond_hand_point_strict" class="strict-hand-point" cx="475" cy="325" r="4.7" fill="none"></circle>
+  <circle id="e_diamond_hand_point_strict" class="strict-hand-point" cx="625" cy="475" r="4.7" fill="none"></circle>
+  <circle id="s_diamond_hand_point_strict" class="strict-hand-point" cx="475" cy="625" r="4.7" fill="none"></circle>
+  <circle id="w_diamond_hand_point_strict" class="strict-hand-point" cx="325" cy="475" r="4.7" fill="none"></circle>
+  
+  <!-- Center point -->
+  <circle id="center_point" cx="475" cy="475" r="12" fill="#000000"></circle><!----></g><!----><!----></g><!----><!----><g class="s-bno8nWx-BLYx" opacity="1"><!----><!----><g class="prop-svg red-prop-svg s-LHCb8TzV5MVr" data-prop-type="staff" style=";" transform="translate(576.2, 576.2) rotate(225) translate(-126.4, -38.9)"><path d="M251.4 67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1 3.9-9.1 8.7v19.2H10.3c-4.9 0-8.9 3.8-8.9 8.5V41c0 4.6 4 8.5 8.9 8.5h222.9v18.2c0 4.8 4.1 8.7 9.1 8.7s9.1-3.9 9.1-8.7z" style="fill:#DC2626"></path><!----><!----></g><!----></g><!----><!----><!----><g class="s-bno8nWx-BLYx" opacity="1"><!----><g class="arrow-svg red-arrow-svg s-wlRm2WQwkHBo" style=";" transform="translate(625, 625) rotate(225)" opacity="0.35" data-ghost="current fallback glyph — weight/anchor reference only"><!----><g class="s-wlRm2WQwkHBo" transform="translate(-104.66, -274.08)"><!----><!----><path d="M9.77 54.82C8.00 44.28 9.88 10.05 9.88 10.05C9.88 10.05 50.14 8.00 54.61 8.65C62.62 9.81 62.49 21.81 62.49 21.81L33.33 22.49L33.26 22.53C77.34 68.51 175.29 121.94 248.84 63.94C258.30 54.91 269.56 68.34 260.51 75.58C180.01 140.78 75.74 88.97 22.99 33.71L23.19 62.33C23.19 62.33 11.19 62.73 9.77 54.82Z" style="fill:#DC2626"></path><!----></g><!----></g><!----></g><!----></g><!----><g class="s-bno8nWx-BLYx" opacity="1"><!----><!----></g><!----><!----><!----><!----><!----><!----><!----><g class="s-bno8nWx-BLYx" opacity="1"><!----><!----></g><g class="s-bno8nWx-BLYx" opacity="1"><!----><!----></g><!----><!----><!----><!---->
+    <g stroke="#a855f7" stroke-width="2" opacity="0.9"><line x1="604.1" y1="618.1" x2="632.1" y2="618.1"/><line x1="618.1" y1="604.1" x2="618.1" y2="632.1"/><circle cx="618.1" cy="618.1" r="9" fill="none"/></g><text x="636.1" y="606.1" font-family="system-ui, sans-serif" font-size="15" fill="#a855f7">anchor</text>
+  </g>
+  <g id="ARROW"><!-- Draw the halved arrow here (anywhere outside REFERENCE groups works) --></g>
+</svg>

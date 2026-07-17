@@ -1,9 +1,9 @@
-/* Guide typefaces — both free + OFL (web + PDF-embed clean), unlike the proof's
+/* Guide typefaces - both free + OFL (web + PDF-embed clean), unlike the proof's
    Monotype Corsiva. Alex Brush = the calligraphic script for HEADERS (titles +
    section names), the closest free Corsiva-class script and the cited pairing
    for Cormorant. Cormorant Garamond = the display serif for everything else
    (captions, legends). Loaded HERE because the print/compare routes use
-   @(public) and bypass the guide +layout — every guide surface imports this
+   @(public) and bypass the guide +layout - every guide surface imports this
    file, so this is the one place that reaches all of them. Swap a header font
    by changing --guide-script in one spot below. */
 @import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500;1,600;1,700&family=Tangerine:wght@400;700&display=swap");
@@ -16,10 +16,10 @@
   --guide-script-weight: 700; /* Tangerine has a true bold */
   --guide-display: "Cormorant Garamond", Georgia, serif; /* serif body/captions */
 
-  /* Shared page-title treatment — edit HERE to change EVERY guide title's size
+  /* Shared page-title treatment - edit HERE to change EVERY guide title's size
      and placement at once. Values are px on the 816×1056 sheet (1pt = 4/3px):
      64px = 48pt, 16px = 12pt. Title rides high on the sheet so its descenders
-     never crowd the intro line below — buys every page more clearance. */
+     never crowd the intro line below - buys every page more clearance. */
   --guide-title-size: 64px; /* 48pt */
   --guide-title-top: 16px; /* 12pt from the top of the sheet */
   --guide-title-color: #14142b;
@@ -44,7 +44,7 @@
 }
 /* Front matter (cover excepted) renders the SAME title in normal flow, so its
    page content (TOC columns, the Read Me letter, the support QR) centres below
-   it. Same font/size as the body-page titles — one consistent header. */
+   it. Same font/size as the body-page titles - one consistent header. */
 .guide-title.flow {
   position: static;
   margin: -0.3in 0 0.4in; /* ride up to the body-page title height, then a gap */
@@ -53,14 +53,14 @@
 /* Guide sheets are always WHITE, even though the app shell runs under :root.dark.
    The pictograph position glyph (α/β/γ start→end indicator) is a dark SVG that
    PositionGlyph.svelte lightens for dark backgrounds via a :root.dark invert
-   filter — which fires here and washes the glyph out to faint grey on the white
+   filter - which fires here and washes the glyph out to faint grey on the white
    page. Cancel it on guide pages so the glyph keeps its native dark ink. */
 .guide-page .position-glyph {
   filter: none !important;
 }
 
 /* ══════════════════════════════════════════
-   Level 1 Guide — Bleeding Edge Design
+   Level 1 Guide - Bleeding Edge Design
    Dark glassmorphic, Inter Variable, OKLCH,
    full-bleed content grid, fluid typography
    ══════════════════════════════════════════ */
@@ -115,8 +115,8 @@
 }
 
 /* The crawl/flow route (GuidePageHost's <main>) spans the FULL content width so
-   its card rows can use wide / 4K screens. The reading column stays narrow —
-   FlowFrame caps prose to its own measure and centres it — while card rows break
+   its card rows can use wide / 4K screens. The reading column stays narrow -
+   FlowFrame caps prose to its own measure and centres it - while card rows break
    out to the route width via container queries. Only this route opts in; the
    reader-SPA children keep the default narrow prose column.
    Desktop only: on mobile the sidebar is gone (no 4K concern) and the `full`
@@ -542,11 +542,11 @@
 /* ══════════════════════════════════════════
    Reader companion → page strip: golden step ring
    While the animation companion plays a clicked sequence, the page's on-screen
-   strip rings the CURRENT step in time with the animation — the same amber
+   strip rings the CURRENT step in time with the animation - the same amber
    highlight the Sequence Viewer dual view puts on the active step
    (PictographCell.current). Toggled by the pages via a global class
    (class:guide-step-active) so all four wired pages (Type 1/2/3, Gamma) share
-   ONE definition. Only ever set inside the reader — never on /print or /book
+   ONE definition. Only ever set inside the reader - never on /print or /book
    (getGuideActiveStep is null there, so the printable pages stay pristine).
    The box-shadow ring is NOT clipped by a cell's own overflow:hidden (overflow
    clips descendants, not the element's outward shadow); z-index lifts the active

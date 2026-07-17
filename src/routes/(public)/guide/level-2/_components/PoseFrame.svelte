@@ -2,24 +2,24 @@
   /**
    * Runtime pose frame for Level-2 turn pedagogy: a single staff pose at
    * fraction `t` of a motion, for the fractions the halved-pictograph pipeline
-   * cannot represent — quarters (1/4, 3/4) and thirds (1/3, 2/3). Those have a
+   * cannot represent - quarters (1/4, 3/4) and thirds (1/3, 2/3). Those have a
    * legal 45deg-lattice ORIENTATION (Phase 1's algebra doesn't care which
    * fraction) but no legal named grid LOCATION (a shift's quarter/third point
    * sits between the grid's 8 named points), so `buildHalvedStep` always
-   * returns null for them — see build-halved-step.ts's module doc comment.
+   * returns null for them - see build-halved-step.ts's module doc comment.
    * This is the guide's visual-only fallback for exactly that case: it never
    * builds a synthetic StepData or touches the pipeline, it just asks the real
    * animation engine where the staff physically is (`poseAt`, halfway-pose.ts)
    * and draws it, the same way LiftedTurnFrame's baked artwork used to.
    *
    * Draws the same minimal 5-dot grid LiftedTurnFrame used (4 hand points +
-   * center) rather than the full app pictograph grid — the real grid's big
+   * center) rather than the full app pictograph grid - the real grid's big
    * outer points (radius 300) dwarf this scale (see LiftedTurnFrame's doc
-   * comment) — plus the staff (STAFF_D, the same asset path OneOneType1Page's
+   * comment) - plus the staff (STAFF_D, the same asset path OneOneType1Page's
    * halfway frame draws) at `poseAt(motion, t)`, plus an optional
    * end-direction arrow glyph for the slice [tStart, tEnd] via pose-arrow.ts
    * (Austen's own curl/zig-zag/bow drawings, not the app's motion-arrow
-   * assets — see pose-arrow.ts's doc comment).
+   * assets - see pose-arrow.ts's doc comment).
    */
   import { poseAt, type HalfwayMotion } from "../_data/halfway-pose";
   import { poseArrow, POSE_ARROW_RED } from "../_data/pose-arrow";
@@ -40,7 +40,7 @@
   } = $props();
 
   // The renderer's own staff asset path (static/images/props/staff.svg),
-  // native 252.8x77.8, centerPoint (126.4, 38.9), crossbar at the +x end —
+  // native 252.8x77.8, centerPoint (126.4, 38.9), crossbar at the +x end -
   // same constant OneOneType1Page and StaffMotionsPage draw from.
   const STAFF_D =
     "M251.4 67.7V10.1c0-4.8-4.1-8.7-9.1-8.7s-9.1 3.9-9.1 8.7v19.2H10.3c-4.9 0-8.9 3.8-8.9 8.5V41c0 4.6 4 8.5 8.9 8.5h222.9v18.2c0 4.8 4.1 8.7 9.1 8.7s9.1-3.9 9.1-8.7z";

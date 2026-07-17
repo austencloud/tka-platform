@@ -1,10 +1,10 @@
 <script lang="ts">
   /**
-   * Double Staff codex, Types 1–2 — body page (manifest `bl-double-staff`),
+   * Double Staff codex, Types 1–2 - body page (manifest `bl-double-staff`),
    * proof p19 / artboard "1.1 - Base Letters - Double Staff, Type 1-2".
    *
    * Pure reuse: the printable Double-Staff Codex (guide/codex, SHEET1) already
-   * reproduces this artboard box-for-box (see the codex parity route) — the
+   * reproduces this artboard box-for-box (see the codex parity route) - the
    * guide page just embeds it (`embed` drops the codex's own sheet chrome +
    * title; GuidePage paints the manifest title). One source of truth for the
    * codex content, two frames.
@@ -31,7 +31,7 @@
   }
 
   /* Body pages render full-bleed; the codex's 64px reference cells leave a third
-     of the sheet empty — scale toward the artboard's larger cells. */
+     of the sheet empty - scale toward the artboard's larger cells. */
   .codex-page :global(.codex-cell .picto) {
     max-width: 86px;
   }

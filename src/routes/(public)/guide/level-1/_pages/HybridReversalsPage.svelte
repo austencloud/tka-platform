@@ -1,18 +1,18 @@
 <script lang="ts">
   /**
-   * Hybrid Reversals (CCCC) — body page (manifest `examples-cccc`), faithful to
+   * Hybrid Reversals (CCCC) - body page (manifest `examples-cccc`), faithful to
    * "1.2 - Guide pt. 2 - CCCC" artboard (old p35).
    *
-   * Top: AABB ×2 with the reversals moved after the second B (step 4) — the R/R
+   * Top: AABB ×2 with the reversals moved after the second B (step 4) - the R/R
    * flag lands on step 5 (derived, not authored), and the prose explains the
    * body-turn it forces.
    * Bottom: CCCC (hybrid: one pro + one anti) in its three reversal variants,
    * one 4-step row each:
-   *   Hand-reversal — the handpath flips each step, prop rotation continues, so
+   *   Hand-reversal - the handpath flips each step, prop rotation continues, so
    *   the pro/anti roles trade per step and NO prop-reversal flag appears.
-   *   Prop-reversal — the handpath continues CW, the prop rotation flips every
+   *   Prop-reversal - the handpath continues CW, the prop rotation flips every
    *   step (R/R on 2, 3, 4).
-   *   Full-reversal — both flip together: each hand keeps its pro/anti role
+   *   Full-reversal - both flip together: each hand keeps its pro/anti role
    *   while retracing S↔W / N↔E (R/R on 2, 3, 4).
    * All letters MCP-verified this build (A dual-pro, B dual-anti, C = one anti +
    * one pro; hybrids keep the letter when the colors trade roles). Reversal
@@ -54,7 +54,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -98,7 +98,7 @@
   type SeqDef = { key: string; word: string; label?: string; x: number; rowYs: number[]; cell: number; steps: Step[] };
   const SEQS: SeqDef[] = [
     {
-      // AABB ×2, reversals after the second B (step 4) — R/R derives on step 5.
+      // AABB ×2, reversals after the second B (step 4) - R/R derives on step 5.
       key: "hr-aabb",
       word: "AABB ×2 (reversals after the second B)",
       x: 128.7,
@@ -116,7 +116,7 @@
       ],
     },
     {
-      // CCCC hand-reversal: handpath flips per step, prop rotation continues —
+      // CCCC hand-reversal: handpath flips per step, prop rotation continues -
       // the pro/anti roles trade each step; NO prop-reversal flags derive.
       key: "hr-hand",
       word: "CCCC Hand-reversal",
@@ -133,7 +133,7 @@
     },
     {
       // CCCC prop-reversal: handpath continues CW, prop rotation flips each
-      // step — R/R derives on 2, 3, 4.
+      // step - R/R derives on 2, 3, 4.
       key: "hr-prop",
       word: "CCCC Prop-reversal",
       label: "Prop-reversal",
@@ -148,7 +148,7 @@
       ],
     },
     {
-      // CCCC full-reversal: handpath AND prop flip together — each hand keeps
+      // CCCC full-reversal: handpath AND prop flip together - each hand keeps
       // its pro/anti role while retracing; R/R derives on 2, 3, 4.
       key: "hr-full",
       word: "CCCC Full-reversal",
@@ -192,7 +192,7 @@
     }) as unknown as StepData;
 
   // Admin override replaces the WHOLE strip when present, resolved before
-  // baking — reversal dots stay derived either way.
+  // baking - reversal dots stay derived either way.
   const resolvedSeqSteps = (q: SeqDef): StepData[] => {
     const authored = [startPose(q), ...q.steps.map((_, i) => stepData(q, i))];
     const override = overrideStepsFor(q.key);

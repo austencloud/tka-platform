@@ -39,7 +39,7 @@
     if (seq.word) return seq.word;
     if (seq.name) return seq.name;
     const count = seq.steps?.length ?? 0;
-    return count > 0 ? `${count}-beat sequence` : "Empty";
+    return count > 0 ? `${count}-step sequence` : "Empty";
   }
 
   // Derive display info

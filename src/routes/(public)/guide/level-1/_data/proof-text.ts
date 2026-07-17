@@ -1,10 +1,10 @@
 /**
  * Proof text runs for manifest pages that faithfully correspond to a page in the
- * original proof PDF (static/guides/_proof/level-1-v05.pdf). GENERATED — do not
+ * original proof PDF (static/guides/_proof/level-1-v05.pdf). GENERATED - do not
  * hand-edit; regenerate from scripts if the proof changes. Coordinates are the
  * proof's own points (top-left origin, 612×792pt sheet); the renderer scales by
  * 816/612. The page title is intentionally omitted (GuidePage renders it from
- * the manifest). Images/pictographs are NOT here — text only, for now.
+ * the manifest). Images/pictographs are NOT here - text only, for now.
  */
 export type ProofRun = {
   x: number;

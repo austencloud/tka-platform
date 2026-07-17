@@ -7,7 +7,7 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 
 const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 
-// Single-hand pictograph builder — copied verbatim from _pages/HandMotionsPage.svelte
+// Single-hand pictograph builder - copied verbatim from _pages/HandMotionsPage.svelte
 // (blue hand only; the renderer's hand-path mode floats the shifts into the
 // canonical float arrows, dash gets the system dash arrow, static shows the
 // resting hand).
@@ -28,7 +28,7 @@ const singleHand = (id: string, type: MotionType, from: GridLocation, to: GridLo
 });
 
 // The five motion-demo boxes, in the source page's own order (HandMotionsPage.svelte
-// `boxes` array) — sheet geometry (x/y) dropped, the box's word kept as its caption.
+// `boxes` array) - sheet geometry (x/y) dropped, the box's word kept as its caption.
 const DEMOS = [
   { caption: "Start", data: singleHand("start", MotionType.STATIC, W, W) },
   { caption: "Shift", data: singleHand("shift-cw", MotionType.PRO, W, N) },
@@ -37,10 +37,10 @@ const DEMOS = [
   { caption: "Static", data: singleHand("static", MotionType.STATIC, W, W) },
 ];
 
-/** HAND props, TKA letter glyph off — matching HandMotionsPage's PICTO_FLAGS (showTKA={false}). */
+/** HAND props, TKA letter glyph off - matching HandMotionsPage's PICTO_FLAGS (showTKA={false}). */
 const RENDER = { propType: PropType.HAND, showTKA: false } as const;
 
-// Verbatim prose lifted from _pages/HandMotionsPage.svelte (Austen's words — never AI-written).
+// Verbatim prose lifted from _pages/HandMotionsPage.svelte (Austen's words - never AI-written).
 export const handMotionsContent: GuideBlock[] = [
   { kind: "heading", level: 1, text: "Hand Motions" },
   {

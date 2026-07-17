@@ -18,9 +18,9 @@
     propType,
     printMode = false,
     darkMode,
-    /** Skip IntersectionObserver and render immediately — use for print/poster contexts. */
+    /** Skip IntersectionObserver and render immediately - use for print/poster contexts. */
     eager = false,
-    /** Optional layer toggles — default to this component's long-standing
+    /** Optional layer toggles - default to this component's long-standing
      *  hardcoded values so every existing caller (which passes none of these)
      *  renders byte-identically. Only the interactive guide Codex page passes
      *  these explicitly, driven by its visibility controls. */
@@ -70,7 +70,7 @@
   const printModeEffective = $derived(forceTheme === "dark" ? false : printMode || guidePrint);
   const darkModeEffective = $derived(forceTheme === "dark" ? true : darkMode);
 
-  // Machine-readable notation for crawlers/AT — computed synchronously from raw
+  // Machine-readable notation for crawlers/AT - computed synchronously from raw
   // `data`, so it lands in the SSR/prerendered HTML even though the visual SVG
   // renders client-side (async prepare + IntersectionObserver). Without this the
   // 30+ pictographs on each indexable chapter page are empty, undescribed divs.

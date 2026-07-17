@@ -1,11 +1,11 @@
 <script lang="ts">
   /**
-   * The Level 2 guide as ONE ordered page sequence — the level-2 counterpart of
+   * The Level 2 guide as ONE ordered page sequence - the level-2 counterpart of
    * level-1's GuideDocument. Both the print route (stacked pages) and the
    * compare/book route render this, so the two can never drift.
    *
    * Front matter is just the cover (the original Level 2 has no drink-water /
-   * support / read-me / TOC pages — it goes cover → divider → content). Body
+   * support / read-me / TOC pages - it goes cover → divider → content). Body
    * pages come from LEVEL2_BODY_PAGES; unbuilt ids render the shared
    * placeholder. Back matter is parked per the rebuild tracker.
    */
@@ -25,7 +25,7 @@
   } = $props();
 </script>
 
-<!-- Same locked cover design as Level 1, with the Level 2 badge (facelift —
+<!-- Same locked cover design as Level 1, with the Level 2 badge (facelift -
      the original v0.5 pictograph-diamond cover is superseded, as Level 1's was). -->
 {#snippet coverContent()}
   <div class="cover-fill"><GuideCover theme="navy" level="2" /></div>

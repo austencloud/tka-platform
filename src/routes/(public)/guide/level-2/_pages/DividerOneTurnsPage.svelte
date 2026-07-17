@@ -1,11 +1,11 @@
 <script lang="ts">
   /**
-   * "2.0 — 1-Turns" divider — body page 1 (manifest `divider-1-turns`),
+   * "2.0 - 1-Turns" divider - body page 1 (manifest `divider-1-turns`),
    * rebuilding old p2. Structure is faithful (pictograph row · "2.0" ·
    * vertical rule · "1-Turns" · vertical rule · pictograph row); the art is a
    * facelift (flagged in the tracker): the original's hand-composited 4-fold
-   * pictograph overlays are rendered with the real SequenceMandala engine —
-   * the same forms family as the locked Level 1 cover — instead of decoding
+   * pictograph overlays are rendered with the real SequenceMandala engine -
+   * the same forms family as the locked Level 1 cover - instead of decoding
    * each composite stroke-for-stroke.
    */
   import SequenceMandala from "$lib/shared/mandala/components/SequenceMandala.svelte";

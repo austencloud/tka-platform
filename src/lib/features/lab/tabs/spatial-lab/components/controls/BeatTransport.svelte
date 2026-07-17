@@ -16,7 +16,7 @@
     <div class="transport-controls">
       <button
         class="transport-btn"
-        aria-label="Previous beat"
+        aria-label="Previous step"
         disabled={labState.beatIndex === 0}
         onclick={() => labState.setBeat(labState.beatIndex - 1)}
       >⏮</button>
@@ -28,21 +28,21 @@
       >{labState.playing ? "⏸" : "▶"}</button>
       <button
         class="transport-btn"
-        aria-label="Next beat"
+        aria-label="Next step"
         disabled={labState.beatIndex >= labState.totalBeats - 1}
         onclick={() => labState.setBeat(labState.beatIndex + 1)}
       >⏭</button>
     </div>
 
     <div class="beat-scrubber">
-      <span class="beat-label">Beat {labState.beatIndex + 1} / {labState.totalBeats}</span>
+      <span class="beat-label">Step {labState.beatIndex + 1} / {labState.totalBeats}</span>
       <div class="beat-dots">
         {#each { length: labState.totalBeats } as _, i}
           <button
             class="beat-dot"
             class:active={i === labState.beatIndex}
             class:visited={i < labState.beatIndex}
-            aria-label="Beat {i + 1}"
+            aria-label="Step {i + 1}"
             aria-pressed={i === labState.beatIndex}
             onclick={() => labState.setBeat(i)}
           ></button>

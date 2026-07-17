@@ -1,6 +1,6 @@
 /**
  * Single source for The Grid page (manifest id "the-grid"). Prose is lifted
- * VERBATIM from _pages/TheGridPage.svelte (Austen's words — never AI-written).
+ * VERBATIM from _pages/TheGridPage.svelte (Austen's words - never AI-written).
  * The two-hand diagram is the same ALPHA3 pictograph that page builds; the three
  * grid figures reuse the canonical GridSvg via the `gridFigure` flow block. The
  * sheet toggle renders the built _pages component (with its callout arrows/labels,
@@ -13,7 +13,7 @@ import { GridMode, GridPosition } from "$lib/shared/pictograph/grid/domain/enums
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 
-// ALPHA3 (blue hand at west, red hand at east), prop forced to HAND — copied from
+// ALPHA3 (blue hand at west, red hand at east), prop forced to HAND - copied from
 // _pages/TheGridPage.svelte so the flow diagram matches the printed one's figure.
 const ALPHA3_RAW = startPositionManager
   .getAllStartPositionVariations(GridMode.DIAMOND)
@@ -48,7 +48,7 @@ export const theGridContent: GuideBlock[] = [
           kind: "pictograph",
           data: ALPHA3,
           render: { propType: PropType.HAND, showTKA: false },
-          caption: "Two hands on the diamond grid — blue at west, red at east.",
+          caption: "Two hands on the diamond grid: blue at west, red at east.",
         } as GuideBlock,
       ]
     : []),

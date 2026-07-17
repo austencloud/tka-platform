@@ -14,10 +14,21 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import DeckFanCover from "$lib/features/store/components/DeckFanCover.svelte";
+  import CardAnatomyModal from "$lib/features/store/components/CardAnatomyModal.svelte";
   import type { CoverCard } from "$lib/features/store/domain/models/product";
 
   let cards = $state<CoverCard[]>([]);
   let failed = $state(false);
+
+  // Click a card → explain it. Same "What's on the Card" diagram as the shop
+  // explainer page, pointed at the clicked card. selectedCard stays set through
+  // the close animation so the modal doesn't blank mid-fade.
+  let selectedCard = $state<CoverCard | null>(null);
+  let modalOpen = $state(false);
+  function openCard(card: CoverCard) {
+    selectedCard = card;
+    modalOpen = true;
+  }
 
   onMount(() => {
     const load = async () => {
@@ -34,6 +45,11 @@
           .filter((c): c is CoverCard => c != null);
         if (hand.length) cards = hand;
         else failed = true;
+        // Warm the explainer's lazy CardAnatomy chunk (and its CardBack
+        // subtree) now, while idle — the first card click then opens the
+        // modal with zero chunk fetches. The front image is already in HTTP
+        // cache because the fan itself displays it.
+        void import("$lib/features/store/components/CardAnatomy.svelte");
       } catch (err) {
         console.error("[ComposerChoreoCardsDemo] card fan load failed:", err);
         failed = true;
@@ -58,6 +74,7 @@
       maxCardWidth={210}
       deal
       inert={false}
+      onCardClick={openCard}
     />
   {:else if failed}
     <p class="quiet-note">The decks are loading. Open the shop to see the full fan.</p>
@@ -69,6 +86,8 @@
     </div>
   {/if}
 </div>
+
+<CardAnatomyModal bind:open={modalOpen} card={selectedCard} onclose={() => (modalOpen = false)} />
 
 <style>
   .cards-stage {

@@ -294,8 +294,8 @@ export function registerCreateShortcuts(
   // Note: This adds to the sequence, but we need to figure out which prop color
   service.register({
     id: "create.add-beat",
-    label: "Add Beat",
-    description: "Add a beat to the sequence",
+    label: "Add Step",
+    description: "Add a step to the sequence",
     key: "+",
     modifiers: [],
     context: "create",
@@ -366,8 +366,8 @@ export function registerCreateShortcuts(
   // Backspace - Delete selected beat
   service.register({
     id: "create.delete-beat",
-    label: "Delete Beat",
-    description: "Delete the currently selected beat",
+    label: "Delete Step",
+    description: "Delete the currently selected step",
     key: "Backspace",
     modifiers: [],
     context: "create",
@@ -434,8 +434,8 @@ export function registerCreateShortcuts(
   // Delete - Delete selected beat (same as Backspace)
   service.register({
     id: "create.delete-beat-delete-key",
-    label: "Delete Beat",
-    description: "Delete the currently selected beat (Delete key)",
+    label: "Delete Step",
+    description: "Delete the currently selected step (Delete key)",
     key: "Delete",
     modifiers: [],
     context: "create",
@@ -602,7 +602,7 @@ export function registerCreateShortcuts(
   service.register({
     id: "create.transform-shift-start",
     label: "Shift Start",
-    description: "Move the first beat to the end of the sequence",
+    description: "Move the first step to the end of the sequence",
     key: "f",
     modifiers: ["alt"],
     context: "create",

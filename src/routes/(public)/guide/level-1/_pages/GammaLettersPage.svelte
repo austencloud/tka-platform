@@ -1,19 +1,19 @@
 <script lang="ts">
   /**
-   * Gamma Letters — body page (manifest `lt1-mp-nq-or-stuv`, retitled "Gamma
+   * Gamma Letters - body page (manifest `lt1-mp-nq-or-stuv`, retitled "Gamma
    * Letters"), faithful to proof p25 / "1.1 - Gamma Letters" artboard.
    *
    * The γ→γ letters, all real staff pictographs:
-   *   Quarter-Opp grid — M N O (blue w→n, red s→e) over P Q R (blue n→e,
+   *   Quarter-Opp grid - M N O (blue w→n, red s→e) over P Q R (blue n→e,
    *   red e→n) in Iso/Anti/Hybrid columns; MCP-confirmed M/P dual-pro,
    *   N/Q dual-anti, O/R hybrid blue-anti + red-pro.
-   *   MP / NQ / OR word strips — M chains into P exactly (end blue N red E =
+   *   MP / NQ / OR word strips - M chains into P exactly (end blue N red E =
    *   P's start) with the proof's phrases (Magic Potion / Never Quit / Open
    *   Road).
-   *   Quarter-Same row — S T U V (both hands w→s / s→e, red positionally
+   *   Quarter-Same row - S T U V (both hands w→s / s→e, red positionally
    *   LEADING per the proof's "the right is leading"): S dual-pro, T
    *   dual-anti, U = leader pro (red pro, blue anti), V = leader anti (red
-   *   anti, blue pro) — the leader/follower rule (U leads with an isolation,
+   *   anti, blue pro) - the leader/follower rule (U leads with an isolation,
    *   V with an antispin).
    * Facelift: lowercase γ (the proof's Γ is stale per the tracker convention);
    * follower thumb orientations follow the algebra (anti flips in→out) even
@@ -55,7 +55,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -186,7 +186,7 @@
   // ── Override resolution (admin edits replace the WHOLE strip when present;
   // reversal dots stay derived via bakeReversals either way). Reactive so a
   // save/revert/reset while the reader is open re-renders these cells. One
-  // shared resolver per source function — Quarter-Opp cells, MP/NQ/OR words,
+  // shared resolver per source function - Quarter-Opp cells, MP/NQ/OR words,
   // and Quarter-Same cells all key off `gl-${c.name}` / `gl-word-${word}`.
   const ALL_CELLS: CellDef[] = [...QO_ROWS.flat(), ...QS_ROW];
   const resolvedCellSteps = (c: CellDef, key: string): StepData[] => {
@@ -233,7 +233,7 @@
   type Para = { x: number; y: number; fs: number; lh: number; bold?: boolean; html: string };
   let PARAS: Para[] = $state([
     {
-      // Proof y 49.7 collides with the Tangerine title's descenders — nudged.
+      // Proof y 49.7 collides with the Tangerine title's descenders - nudged.
       x: 0,
       y: 58,
       fs: 15,

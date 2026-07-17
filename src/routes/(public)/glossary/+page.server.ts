@@ -3,8 +3,8 @@ import type { GlossaryCategory } from "@tka/domain";
 import type { PageServerLoad } from "./$types";
 
 // Static reference — render the whole lexicon at build time. The @tka/domain
-// package stays server-side (this load runs at prerender), so the 110-entry
-// GLOSSARY never ships to the client; only the serialized view-model does.
+// package stays server-side (this load runs at prerender), so the GLOSSARY
+// never ships to the client; only the serialized view-model does.
 export const prerender = true;
 
 // Display order + human labels for every GlossaryCategory. Core concepts first,
@@ -22,8 +22,31 @@ const CATEGORY_ORDER: { key: GlossaryCategory; label: string }[] = [
   { key: "execution", label: "Execution & Technique" },
 ];
 
-function slugify(term: string, i: number): string {
-  const s = term
+// GLOSSARY keys are lowercase kebab slugs — that's the data/MCP lookup layer.
+// Humans read Title Case with spaces, so the page displays humanized names.
+// Overrides cover acronyms and special casing; hyphens that carry meaning
+// (the "-" letter-suffix convention) keep their hyphen.
+const DISPLAY_OVERRIDES: Record<string, string> = {
+  vtg: "VTG",
+  caps: "CAPs",
+  pads: "PADS",
+  cw: "CW",
+  ccw: "CCW",
+  "rubiks-cube": "Rubik's Cube",
+  "tau-dash": "Tau-Dash (τ-)",
+};
+
+function displayName(key: string): string {
+  const override = DISPLAY_OVERRIDES[key];
+  if (override) return override;
+  return key
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+function slugify(key: string, i: number): string {
+  const s = key
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
@@ -32,37 +55,40 @@ function slugify(term: string, i: number): string {
 }
 
 export const load: PageServerLoad = () => {
+  // Slugs derive from the raw KEY (not the display name) so existing #anchors
+  // and JSON-LD @ids stay stable across display-name changes.
+  const sortedKeys = Object.keys(GLOSSARY).sort();
+  const slugOf = new Map<string, string>();
+  sortedKeys.forEach((k, i) => slugOf.set(k, slugify(k, i)));
+
   // Object.entries types the value as GlossaryEntry (not `| undefined`), so this
   // avoids the noUncheckedIndexedAccess flags that GLOSSARY[key] would raise.
-  const sortedEntries = Object.entries(GLOSSARY).sort(([a], [b]) =>
-    a.localeCompare(b)
-  );
-  const slugOf = new Map<string, string>();
-  sortedEntries.forEach(([t], i) => slugOf.set(t, slugify(t, i)));
+  const entries = Object.entries(GLOSSARY);
 
   const groups = CATEGORY_ORDER.map(({ key, label }) => {
-    const terms = sortedEntries
+    const terms = entries
       .filter(([, e]) => e.category === key)
-      .map(([t, e]) => ({
-        term: t,
-        slug: slugOf.get(t)!,
+      .map(([k, e]) => ({
+        term: displayName(k),
+        slug: slugOf.get(k)!,
         definition: e.definition,
         examples: e.examples,
         // Only link related terms that resolve to an on-page anchor.
         related: e.relatedTerms
           .filter((r) => slugOf.has(r))
-          .map((r) => ({ term: r, slug: slugOf.get(r)! })),
+          .map((r) => ({ term: displayName(r), slug: slugOf.get(r)! })),
         benefit: e.benefit ?? null,
         importance: e.importance ?? null,
-      }));
+      }))
+      .sort((a, b) => a.term.localeCompare(b.term));
     return { key, label, sectionSlug: `cat-${key.toLowerCase()}`, terms };
   }).filter((g) => g.terms.length > 0);
 
   const placed = groups.reduce((n, g) => n + g.terms.length, 0);
   // Loud during build if an entry's category has no row above.
-  if (placed !== sortedEntries.length) {
+  if (placed !== entries.length) {
     console.warn(
-      `[glossary] ${sortedEntries.length - placed} term(s) dropped — category missing from CATEGORY_ORDER`
+      `[glossary] ${entries.length - placed} term(s) dropped — category missing from CATEGORY_ORDER`
     );
   }
 

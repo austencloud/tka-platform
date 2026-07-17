@@ -1,12 +1,12 @@
 /**
- * GuideReaderConfig — the level seam for the shared GuideReader shell. The reader
+ * GuideReaderConfig - the level seam for the shared GuideReader shell. The reader
  * is otherwise a generic "render a manifest's BUILT pages as a fit-to-pane
  * scroller with side nav + click-to-animate companion"; this bundle carries the
  * per-level specifics (which document, which pages, which nav, whether the
  * level-1-only deep-link/codex/scan machinery is live) so Level 1 and Level 2
  * share one reader instead of forking it (never-hand-roll).
  *
- * LEVEL1_READER_CONFIG is the default — passing no `config` to GuideReader keeps
+ * LEVEL1_READER_CONFIG is the default - passing no `config` to GuideReader keeps
  * its historical Level-1 behavior byte-for-byte.
  */
 import type { Component } from "svelte";
@@ -24,7 +24,7 @@ export type ReaderBodyPage = { id: string; title: string };
 export type GuideReaderConfig = {
   /** The ordered-page-sequence document (GuideDocument / Level2Document). Typed
    *  loosely (`Component<any>`) because the reader is what knows the props to
-   *  feed it (page snippet, built, frame) — the two documents differ in props. */
+   *  feed it (page snippet, built, frame) - the two documents differ in props. */
   document: Component<any>;
   /** Built per-page components keyed by manifest id. */
   built: Record<string, Component>;
@@ -37,7 +37,7 @@ export type GuideReaderConfig = {
   /** Prebuilt side-nav rows (front jumps + grouped body pages). */
   navRows: ReaderNavRow[];
   /** Real href for a nav row (right-click/middle-click); left-click scrolls.
-   *  May be null (no deep-link target — the row is scroll-only). */
+   *  May be null (no deep-link target - the row is scroll-only). */
   hrefFor: (index: number) => string | null;
   /** Copy-for-AI header prefix, e.g. "Level 1". */
   levelLabel: string;

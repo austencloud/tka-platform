@@ -1,15 +1,15 @@
 <script lang="ts">
   /**
-   * S and T — Level 2 body page 6 (manifest `s-and-t`), faithful to old p7.
+   * S and T - Level 2 body page 6 (manifest `s-and-t`), faithful to old p7.
    * S and T are the leading/following hybrids: their two hands trace a matching
    * shift path one position apart (leader ahead, follower behind), so the
    * high/low slots mean leading/following instead of the pro/anti of Type 1.
    *
    * Four breakdown strips, each start → halfway → end = combined:
-   *   S¹ "S-High-One"  — S[6] (blue w→s pro ccw leads, red s→e pro ccw follows), turn on leading (blue)
-   *   S₁ "S-Low-One"   — same base, turn on following (red)
-   *   T¹ "T-High-One"  — T[6] (blue w→s anti cw leads, red s→e anti cw follows), turn on leading (blue)
-   *   T₁ "T-Low-One"   — same base, turn on following (red)
+   *   S¹ "S-High-One"  - S[6] (blue w→s pro ccw leads, red s→e pro ccw follows), turn on leading (blue)
+   *   S₁ "S-Low-One"   - same base, turn on following (red)
+   *   T¹ "T-High-One"  - T[6] (blue w→s anti cw leads, red s→e anti cw follows), turn on leading (blue)
+   *   T₁ "T-Low-One"   - same base, turn on following (red)
    *
    * (S/T verified via MCP list_letter_variations; variation [6] matches the
    * original's start blue@W red@S / end blue@S red@E framing.) Halfway staff

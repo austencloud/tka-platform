@@ -1,7 +1,7 @@
 <script lang="ts">
   /**
    * The print-faithful frame. Absolute-positions each GuideBlock at its `sheet`
-   * pt hint (× S) over the 816×1056 GuidePage sheet — reproducing the original
+   * pt hint (× S) over the 816×1056 GuidePage sheet - reproducing the original
    * hand-authored page. The single-source counterpart to FlowFrame; both render
    * the same GuideBlock[]. See the reflow spec.
    */
@@ -19,7 +19,7 @@
   {#each content as block, i (i)}
     {#if (block.kind === "heading" || block.kind === "prose" || block.kind === "glyphImage") && !block.sheet}
       <!-- Flow-only block (no pt hint): the sheet omits it. The page title lives
-           here — GuidePage paints the calligraphic .guide-title, so the content's
+           here - GuidePage paints the calligraphic .guide-title, so the content's
            top-level heading is flow-only to avoid a duplicate title on the sheet. -->
     {:else if block.kind === "heading"}
       <div
@@ -95,7 +95,7 @@
 </div>
 
 <style>
-  /* Absolute layer over the whole GuidePage sheet — coords map straight to pt×S.
+  /* Absolute layer over the whole GuidePage sheet - coords map straight to pt×S.
      Mirrors HandPositionsPage.svelte's .hand-positions/.run/.para/.mini/.glyph/.rule. */
   .sheet-frame {
     position: absolute;

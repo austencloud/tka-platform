@@ -57,7 +57,7 @@
     invert: "Inverts rotation relative to the path. Pro becomes Anti, and Anti becomes Pro. Base motion types remain unchanged.",
     rotate: "Pivots 45° around the center.",
     swap: "Exchanges left and right hand movements. Same pattern, opposite hands perform each motion.",
-    rewind: "Plays backwards. End becomes start, every beat reverses order, turns flip direction.",
+    rewind: "Plays backwards. End becomes start, every step reverses order, turns flip direction.",
   };
 
   const description = $derived(descriptions[transformId] ?? action?.fullDesc ?? "");

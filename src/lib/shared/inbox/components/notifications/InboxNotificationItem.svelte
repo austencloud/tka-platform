@@ -13,6 +13,7 @@
   import { inboxState } from "../../state/inbox-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { setNotificationTargetFeedback } from "$lib/shared/feedback/state/notification-action-state.svelte";
+  import { setScanNotificationTarget } from "$lib/features/choreo-card/state/scan-notification-target.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
@@ -116,10 +117,11 @@
         | "fromUserId"
         | "conversationId"
         | "newUserId"
-        | "actionUrl",
+        | "actionUrl"
+        | "shortCode",
         string
       >
-    >;
+    > & { scanLat?: number | null; scanLng?: number | null };
     const n = notification as UserNotification & DeepLinkFields;
 
     switch (notification.type) {
@@ -172,6 +174,19 @@
         if (n["newUserId"]) {
           inboxState.close();
           goto(`/profile/${n["newUserId"]}`);
+        }
+        break;
+
+      case "admin-qr-scan":
+        // Open the Scan Activity tab, flown to the scan and peeking the card.
+        if (n["shortCode"]) {
+          setScanNotificationTarget({
+            code: n["shortCode"] as string,
+            lat: typeof n.scanLat === "number" ? n.scanLat : null,
+            lng: typeof n.scanLng === "number" ? n.scanLng : null,
+          });
+          inboxState.close();
+          await handleModuleChange("choreo_card", "scan-activity");
         }
         break;
 

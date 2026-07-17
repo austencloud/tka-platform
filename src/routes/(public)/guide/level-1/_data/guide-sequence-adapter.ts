@@ -1,5 +1,5 @@
 /**
- * Guide sequence adapter — turns a page's sequence strip (a flat StepData[]) into
+ * Guide sequence adapter - turns a page's sequence strip (a flat StepData[]) into
  * a playable SequenceData for the reader's animation companion.
  *
  * A strip's first box is the start pose (stepNumber 0 or null); the rest are
@@ -23,7 +23,7 @@ export const isStartBox = (b: StepData): boolean =>
   b.stepNumber === 0 || b.stepNumber === null || b.stepNumber === undefined;
 
 /**
- * Force a linear path archetype on every HAND motion of a box (clones — never
+ * Force a linear path archetype on every HAND motion of a box (clones - never
  * mutates the page's source StepData). The Level 1 guide teaches the grid points
  * themselves, so a companion animation should trace a straight point-to-point
  * hand path; a curved shift arc reads as extra information the lesson hasn't
@@ -49,11 +49,11 @@ function withLinearPaths<T extends Record<string, unknown>>(box: T): T {
 
 /**
  * Bake reversal dots (blueReversal/redReversal) into a strip FROM ITS OWN
- * MOTION DATA via the canonical engine detector — never hand-author flags on
+ * MOTION DATA via the canonical engine detector - never hand-author flags on
  * pages that use this. Dots = the `propReversal` channel only (display policy
  * 2026-07-05: dots mark prop-direction reversals). Strips read LINEARLY (no
  * loop wrap): the printed page teaches left-to-right, so the first direction
- * establishes and mid-strip flips get dots — matching the old guide's R marks.
+ * establishes and mid-strip flips get dots - matching the old guide's R marks.
  * The start box (stepNumber 0) never flags and never anchors.
  */
 export function bakeReversals(strip: StepData[]): StepData[] {
@@ -100,7 +100,7 @@ export function stripToSequence(
 }
 
 /**
- * Inverse of stripToSequence — a SequenceData picked via SequencePickerModal
+ * Inverse of stripToSequence - a SequenceData picked via SequencePickerModal
  * (Guide Companion v2 "Replace") becomes a flat strip: the start position
  * first (stepNumber 0), then the numbered steps. Best-effort field carry-over
  * (StartPositionData and StepData overlap on motions/gridMode/letter, per the

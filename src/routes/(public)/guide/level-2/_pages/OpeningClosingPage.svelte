@@ -1,8 +1,8 @@
 <script lang="ts">
   /**
-   * Opening/Closing — Level 2 body page 10 (manifest `opening-closing`), faithful
+   * Opening/Closing - Level 2 body page 10 (manifest `opening-closing`), faithful
    * to old p11. Λ (Lam) is a Type 4 (dash+static) at gamma. Because gamma's
-   * right-angle position is geometrically asymmetric, same/opp collapses — Λ uses
+   * right-angle position is geometrically asymmetric, same/opp collapses - Λ uses
    * OPENING / CLOSING instead (MCP get_domain_topic("glyph-anatomy")): extrapolate
    * the rotating hand's trajectory into a pro-shift; opening resolves toward ALPHA
    * (opposite pts) so the continuation is W, closing resolves toward BETA (same pt)
@@ -10,10 +10,10 @@
    *
    * Four breakdown strips, each start → halfway → end = combined, plus a right
    * "Continuation" column (a hypothetical pro-shift = W or Y) behind a vertical
-   * divider. All from Λ variation [14] (blue w→w static, red s→n dash — MCP):
+   * divider. All from Λ variation [14] (blue w→w static, red s→n dash - MCP):
    *
-   *   Λ¹ opening / closing  — 1 turn on the dash (red); cw arc = opening→W, ccw = closing→Y.
-   *   Λ₁ opening / closing  — 1 turn on the static hand (blue); the static rotates,
+   *   Λ¹ opening / closing  - 1 turn on the dash (red); cw arc = opening→W, ccw = closing→Y.
+   *   Λ₁ opening / closing  - 1 turn on the static hand (blue); the static rotates,
    *                           so its own pro-shift continuation opens (→W) or closes (→Y).
    *
    * High glyph = red, low = blue. Halfway poses from the engine interpolator.
@@ -174,7 +174,7 @@
     }),
   ];
 
-  // ── Layout (pt) — compressed columns to leave room for the continuation column.
+  // ── Layout (pt) - compressed columns to leave room for the continuation column.
   const START_X = 98;
   const HALF_X = 197;
   const END_X = 297;

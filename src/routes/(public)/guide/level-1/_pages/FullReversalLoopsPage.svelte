@@ -1,18 +1,18 @@
 <script lang="ts">
   /**
-   * Full-Reversal LOOPs — body page (manifest `full-reversal-loops`), faithful
+   * Full-Reversal LOOPs - body page (manifest `full-reversal-loops`), faithful
    * to "1.2 - Full-Reversal Permutations" artboard (old p43; "Full-reversal
-   * CAPs" — CAP→LOOP facelift).
+   * CAPs" - CAP→LOOP facelift).
    *
-   * Three sequences that each use a full-reversal (plus prop-reversals within —
+   * Three sequences that each use a full-reversal (plus prop-reversals within -
    * the page's challenge is spotting each). Reversal dots are DERIVED via
    * bakeReversals and land exactly on the artboard's R marks:
-   *   CCKE (8) — R/R on 2, 3, 5, 6, 7. The C-C corner is the full reversal
+   *   CCKE (8) - R/R on 2, 3, 5, 6, 7. The C-C corner is the full reversal
    *   (both handpath and prop flip, so each C keeps hybrid form with the
    *   colors' roles trading). C C[swap] K[6] E[7] / C[6] C[swap] K[1] E[2].
-   *   FLII (8) — blue R on 3, red R on 5 and 7. F[14] L[15] I[13] I[12] /
+   *   FLII (8) - blue R on 3, red R on 5 and 7. F[14] L[15] I[13] I[12] /
    *   F[6] L[7] I[3] I[0].
-   *   DAK ×4 (12) — alternating single-hand flips: blue R on 2, 6, 8, 12; red
+   *   DAK ×4 (12) - alternating single-hand flips: blue R on 2, 6, 8, 12; red
    *   R on 3, 5, 9, 11. D[6] A K[5] / D[2] A K[2] / D[5] A K[6] / D[0] A K[0].
    * Every step MCP-verified against list_letter_variations this build.
    *
@@ -49,7 +49,7 @@
   const CW = RotationDirection.CLOCKWISE;
   const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-  // Reader wiring (all null on /print,/book — pages stay pristine).
+  // Reader wiring (all null on /print,/book - pages stay pristine).
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
@@ -108,7 +108,7 @@
   };
   const SEQS: SeqDef[] = [
     {
-      // CCKE ×2 — full reversal at each C-C corner; R/R derives on 2,3,5,6,7.
+      // CCKE ×2 - full reversal at each C-C corner; R/R derives on 2,3,5,6,7.
       key: "frl-ccke",
       word: "CCKE",
       startLetter: Letter.ALPHA,
@@ -131,7 +131,7 @@
       ],
     },
     {
-      // FLII ×2 — blue R on 3, red R on 5 and 7.
+      // FLII ×2 - blue R on 3, red R on 5 and 7.
       key: "frl-flii",
       word: "FLII",
       startLetter: Letter.BETA,
@@ -154,7 +154,7 @@
       ],
     },
     {
-      // DAK ×4 — alternating single-hand flips: blue R on 2,6,8,12; red R on
+      // DAK ×4 - alternating single-hand flips: blue R on 2,6,8,12; red R on
       // 3,5,9,11.
       key: "frl-dak",
       word: "DAK",

@@ -1,17 +1,17 @@
 <script lang="ts">
   /**
-   * Turns (Shifts) — Level 2 body page 2 (manifest `turns-shifts`), faithful to
+   * Turns (Shifts) - Level 2 body page 2 (manifest `turns-shifts`), faithful to
    * old p3. Two teaching strips, each start → halfway → end = combined, now
-   * REAL pictographs end to end (Phase 3 of the halved-pictograph pipeline —
+   * REAL pictographs end to end (Phase 3 of the halved-pictograph pipeline -
    * docs/superpowers/specs/2026-07-14-halved-pictograph-pipeline-design.md §7):
    *
-   *   Pro  — static E thumb-in → halfway → static S thumb-out
+   *   Pro  - static E thumb-in → halfway → static S thumb-out
    *          = PRO e→s with 1 turn, in→out.
-   *   Anti — static E thumb-in → halfway → static S thumb-in
+   *   Anti - static E thumb-in → halfway → static S thumb-in
    *          = ANTI e→s with 1 turn, in→in.
    *
    * start/end are real single-staff pictographs (red hand only, showArrow=false
-   * — a pose, not a motion). The halfway frame is buildHalvedStep(combined,
+   * - a pose, not a motion). The halfway frame is buildHalvedStep(combined,
    * 0.5): a real pictograph whose end state IS the midpoint, with the correct
    * halfway orientation (Phase 1's orientation algebra) and the half-arrow
    * asset (Phase 2). Both strips here are whole 1-turn shifts, always on the
@@ -53,7 +53,7 @@
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
 
-  // Real single-staff motion data (red hand only) — drives every frame's
+  // Real single-staff motion data (red hand only) - drives every frame's
   // pictograph render AND the click-to-animate sequence.
   const redStaff = (
     id: string,
@@ -133,7 +133,7 @@
   ];
 
   // Reader click-to-animate (combined pictograph plays Start → motion). Also
-  // doubles as the "full step" buildHalvedStep needs (both hands present —
+  // doubles as the "full step" buildHalvedStep needs (both hands present -
   // blue is an invisible placeholder, per the both-required step contract).
   const animStep = (data: ReturnType<typeof redStaff>, stepNumber: number): StepData =>
     ({

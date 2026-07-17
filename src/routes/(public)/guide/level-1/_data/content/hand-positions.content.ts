@@ -1,7 +1,7 @@
 /**
  * Single source for the Hand Positions page (manifest id "hand-positions").
  * Prose is lifted VERBATIM from the original HandPositionsPage.svelte (Austen's
- * words — never AI-written). Geometry constants are copied from that same file so
+ * words - never AI-written). Geometry constants are copied from that same file so
  * SheetFrame reproduces the proof sheet pixel-for-pixel; FlowFrame ignores the
  * pt hints and stacks the blocks. See the reflow spec + no-ghostwriting rule.
  */
@@ -10,7 +10,7 @@ import { startPositionManager } from "$lib/shared/create/services/start-position
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
-// The 16 diamond-mode positions (α/β/γ, 4/4/8), prop forced to HAND — identical
+// The 16 diamond-mode positions (α/β/γ, 4/4/8), prop forced to HAND - identical
 // to the original page's derivation (HandPositionsPage.svelte lines 31–39).
 const positions = startPositionManager
   .getAllStartPositionVariations(GridMode.DIAMOND)
@@ -79,7 +79,7 @@ const INTRO_HTML =
 // pictographs, definition). SheetFrame ignores this order and places every block
 // at its absolute pt hint, so the printed sheet is byte-identical to the original.
 export const handPositionsContent: GuideBlock[] = [
-  // Page title — flow-only (no `sheet`). On the sheet, GuidePage paints the
+  // Page title - flow-only (no `sheet`). On the sheet, GuidePage paints the
   // calligraphic .guide-title from the manifest, so rendering it here too would
   // duplicate it. In flow it's the section's top heading.
   { kind: "heading", level: 1, text: "Hand Positions" },

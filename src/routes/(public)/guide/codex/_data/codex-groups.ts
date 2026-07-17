@@ -34,7 +34,7 @@ export function transitionFor(id: string): string {
  *  Without this, pictograph-preparer's `if (!motion.propPlacementData) return`
  *  guard skips every prop and arrow, leaving grid-only pictographs.
  *
- *  The codex is the base-letter reference, which is canonically 0 turns —
+ *  The codex is the base-letter reference, which is canonically 0 turns -
  *  letters.json happens to bake in 1 turn, so we normalize to 0 here. This is
  *  the single 0-turns baseline every codex surface shares (this reader page,
  *  the /guide/codex print route, the poster, and Choreo Card codex printing) so
@@ -43,7 +43,7 @@ export function transitionFor(id: string): string {
  *
  *  Zeroing is a plain field set (not the heavy canonical apply-turns service):
  *  this module is imported by prerendered routes and the whole app's codex
- *  surfaces, so it must stay dependency-light — pulling the create-services
+ *  surfaces, so it must stay dependency-light - pulling the create-services
  *  graph in here wedges the SSR module graph. `createMotionData` recomputes end
  *  orientation from turns=0, and the pictograph-preparer re-keys placement to
  *  the turn-0 lookups at render time, so a base radial letter resolves cleanly. */
@@ -106,7 +106,7 @@ function gbox(cells: CodexCellDef[], mode?: CellMode, full?: boolean): CodexBoxD
   return { header: transitionFor(cells[0]!.id), mode, full, cells };
 }
 
-/** Same grouped box, no header — the OG sheet labels a repeated transition
+/** Same grouped box, no header - the OG sheet labels a repeated transition
  *  (γ→γ) only on the row's first box and leaves the rest unlabeled. */
 function gboxUnlabeled(cells: CodexCellDef[], mode?: CellMode, full?: boolean): CodexBoxDef {
   return { mode, full, cells };
@@ -118,7 +118,7 @@ function cbox(cells: CodexCellDef[], full?: boolean): CodexBoxDef {
 }
 
 /** Static box (Type 6): the position never changes, so each cell's header is
- *  the single position glyph ("α"), not a degenerate "α→α" transition —
+ *  the single position glyph ("α"), not a degenerate "α→α" transition -
  *  matching the original guide sheet. */
 function sbox(cells: CodexCellDef[], full?: boolean): CodexBoxDef {
   return {

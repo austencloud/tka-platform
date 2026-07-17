@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Contextual edit palette — appears bottom-center ONLY while edit mode is on.
+   * Contextual edit palette - appears bottom-center ONLY while edit mode is on.
    * Owns init (from ?edit or the last localStorage choice) and the global
    * hotkeys (E, Ctrl+Z/Y, arrows, Esc, Del). Entry into edit mode lives in the
    * GuideDevBar toolbar (or the E hotkey).
@@ -28,7 +28,7 @@
 
   let copied = $state(false);
 
-  // Live coords of the selection (reactive — reads the page $state through the
+  // Live coords of the selection (reactive - reads the page $state through the
   // registered movable). Updates as you drag or nudge.
   const coords = $derived(selectedSnapshot());
   const canEditText = $derived(isEditable(guideEdit.selectedId));
@@ -97,7 +97,7 @@
         onclick={deleteSelected}
         disabled={!guideEdit.selectedId}
         aria-label="Delete selected"
-        title="Delete selected (Del) — undoable; Copy lists deletions"
+        title="Delete selected (Del). Undoable. Copy lists deletions"
       >
         <i class="fas fa-trash" aria-hidden="true"></i>
       </button>

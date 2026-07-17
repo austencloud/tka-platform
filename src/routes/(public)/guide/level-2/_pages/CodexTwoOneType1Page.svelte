@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Codex 2|1 — Type 1 — Level 2 body page 28 (manifest `codex-2-1-t1`), faithful
+   * Codex 2|1 - Type 1 - Level 2 body page 28 (manifest `codex-2-1-t1`), faithful
    * to old p28. Same 32-cell 8×4 structure as p17, but every cell turns BOTH hands
    * asymmetrically: the `²₁` cells are (2,1) [2 high / 1 low], the `¹₂` cells are
    * (1,2). Hybrids (C,F,I,L,O,R) and S/T/U/V carry both; pure letters only `²₁`.

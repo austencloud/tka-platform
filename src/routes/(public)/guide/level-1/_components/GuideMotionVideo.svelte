@@ -1,7 +1,7 @@
 <script lang="ts">
   // A guide motion demo. On screen: the pre-baked looping video. On paper (print,
   // or inside a `.guide-print-mode` ancestor): a static pictograph rendered live
-  // from the same config — the arrow shows direction, the hand shows the end
+  // from the same config - the arrow shows direction, the hand shows the end
   // position, exactly like the original printed guide. Video assets are generated
   // by /test/guide-motion-bake; pictograph data comes from guide-motion-configs.
   import GuidePictograph from "./GuidePictograph.svelte";

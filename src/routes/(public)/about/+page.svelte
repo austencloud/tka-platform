@@ -1,5 +1,5 @@
 <script lang="ts">
-  import FaqAccordion from "$lib/shared/landing/components/FaqAccordion.svelte";
+  import FaqInterview from "$lib/shared/landing/components/FaqInterview.svelte";
   import PositionTrioGrid from "$lib/shared/landing/components/PositionTrioGrid.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
@@ -125,13 +125,13 @@
   }
   </script>`}
 
-  <!-- FAQPage JSON-LD is emitted by <FaqAccordion emitSchema> below, generated
+  <!-- FAQPage JSON-LD is emitted by <FaqInterview emitSchema> below, generated
        from the canonical FAQ_ITEMS so schema and visible answers never drift. -->
 </svelte:head>
 
 <div class="editorial">
     <header class="editorial-header">
-      <h1 class="page-title wordmark">The Kinetic Alphabet</h1>
+      <h1 class="page-title">The Kinetic Alphabet</h1>
       <p class="page-subtitle">A notation system for flow arts</p>
     </header>
 
@@ -156,7 +156,12 @@
 
     <!-- Frequently Asked Questions (visible FAQ for search + AI overviews).
          Visible answers AND the FAQPage JSON-LD both come from FAQ_ITEMS. -->
-    <FaqAccordion emitSchema variant="card" />
+    <FaqInterview
+      emitSchema
+      mode="stack"
+      dense
+      heading="Frequently Asked Questions"
+    />
 
     <!-- CTA -->
     <div class="cta-card">

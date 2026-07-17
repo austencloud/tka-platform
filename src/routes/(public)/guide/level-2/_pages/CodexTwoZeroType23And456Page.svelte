@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Codex 2/0 Type 2/3 + 2|0·0|2 Type 4/5/6 — Level 2 body page 27 (manifest
+   * Codex 2/0 Type 2/3 + 2|0·0|2 Type 4/5/6 - Level 2 body page 27 (manifest
    * `codex-2-0-t23-456`), faithful to old p27. Same 4-quadrant layout as p19 but
    * with two turns:
    *   TL Type 2 2/0 (`²`), TR Type 3 2/0 (`²`),
@@ -29,16 +29,16 @@
 
   type RowDef = { x0: number; y: number; cells: Cell[] };
   const rowDefs: RowDef[] = [
-    // TL — Type 2, 2/0
+    // TL - Type 2, 2/0
     { x0: 22, y: 138, cells: [hi("W"), hi("X"), hi("Y"), hi("Z")] },
     { x0: 22, y: 268, cells: [hi("Σ"), hi("Δ"), hi("Θ"), hi("Ω")] },
-    // TR — Type 3, 2/0
+    // TR - Type 3, 2/0
     { x0: 314, y: 138, cells: [hi("W-"), hi("X-"), hi("Y-"), hi("Z-")] },
     { x0: 314, y: 268, cells: [hi("Σ-"), hi("Δ-"), hi("Θ-"), hi("Ω-")] },
-    // BL — Type 4, 2/0 then 0/2
+    // BL - Type 4, 2/0 then 0/2
     { x0: 22, y: 452, cells: [hi("Φ"), hi("Ψ"), oc("Λ", 2, 0, "Λ", "open"), oc("Λ", 2, 0, "Λ", "close")] },
     { x0: 22, y: 606, cells: [lo("Φ"), lo("Ψ"), oc("Λ", 0, 2, "Λ", "open"), oc("Λ", 0, 2, "Λ", "close")] },
-    // BR — Type 5, 2/0 then Type 6 static
+    // BR - Type 5, 2/0 then Type 6 static
     { x0: 314, y: 452, cells: [hi("Φ-"), hi("Ψ-"), oc("Λ-", 2, 0, "Λ-", "open"), oc("Λ-", 2, 0, "Λ-", "close")] },
     { x0: 314, y: 606, cells: [hi("α"), hi("β"), oc("γ", 2, 0, "Γ", "open"), oc("γ", 2, 0, "Γ", "close")] },
   ];

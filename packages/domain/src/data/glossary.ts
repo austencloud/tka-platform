@@ -2,19 +2,19 @@ import type { GlossaryEntry } from "../types/glossary.js";
 
 export const GLOSSARY: Record<string, GlossaryEntry> = {
   "alpha": {
-    definition: "A position where the two hands are at opposite grid points (180 degrees apart). Note: the Type 6 letter α (lowercase) shares this name because a static letter is essentially a held position — the same concept. When someone asks 'what is alpha?', context determines whether they mean the position (hands opposite) or the letter (both hands static at opposite points).",
+    definition: "A position where the two hands are at opposite grid points (180 degrees apart). Note: the Type 6 letter α (lowercase) shares this name because a static letter is essentially a held position: the same concept. When someone asks 'what is alpha?', context determines whether they mean the position (hands opposite) or the letter (both hands static at opposite points).",
     examples: ["alpha1: hands at N and S", "alpha3: hands at E and W", "The Type 6 letter α represents holding an alpha position with no motion"],
     relatedTerms: ["beta", "gamma", "position"],
     category: "position"
   },
   "beta": {
-    definition: "A position where both hands are at the same grid point (0 degrees apart). The Type 6 letter β (lowercase) shares this name — it represents holding a beta position with no motion, which is also a natural start position for 'together' patterns.",
+    definition: "A position where both hands are at the same grid point (0 degrees apart). The Type 6 letter β (lowercase) shares this name. It represents holding a beta position with no motion, which is also a natural start position for 'together' patterns.",
     examples: ["beta1: both hands at N", "beta5: both hands at NE"],
     relatedTerms: ["alpha", "gamma", "position"],
     category: "position"
   },
   "gamma": {
-    definition: "A position where the hands form a right angle (90 degrees apart on adjacent grid points). The Type 6 letter γ (lowercase) shares this name — it represents holding a gamma position with no motion.",
+    definition: "A position where the hands form a right angle (90 degrees apart on adjacent grid points). The Type 6 letter γ (lowercase) shares this name. It represents holding a gamma position with no motion.",
     examples: ["gamma1: hands at N and E", "gamma5: hands at NE and NW (box mode)"],
     relatedTerms: ["alpha", "beta", "position"],
     category: "position"
@@ -50,20 +50,20 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "general"
   },
   "letter": {
-    definition: "The fundamental unit of TKA notation. Each letter encodes a specific combination of hand motions and prop rotations for one beat. There are currently 47 letters organized into 6 types (22 + 8 + 8 + 3 + 3 + 3). Future levels will add more letters for centric positions (Tau, Terra, etc.).",
+    definition: "The fundamental unit of TKA notation. Each letter encodes a specific combination of hand motions and prop rotations for one step. There are currently 47 letters organized into 6 types (22 + 8 + 8 + 3 + 3 + 3). Future levels will add more letters for centric positions (Tau, Terra, etc.).",
     examples: ["A is a Type 1 letter (both hands shift, both pro)", "Σ is a Type 2 letter (one shifts, one static)", "α is a Type 6 letter (both static)"],
     relatedTerms: ["pictograph", "variation", "type", "word"],
     category: "general"
   },
   "word": {
-    definition: "A sequence of TKA letters that spells out a choreographic phrase. Each letter in the word is one beat of motion. Words can be any length and may require bridge letters between certain transitions.",
-    examples: ["STORM is a 5-letter bridge-free word (5 beats)", "MONSTROUS is a 9-letter bridge-free word", "TRUST is a 5-letter word", "DJ is a 2-letter compound word"],
+    definition: "A sequence of TKA letters that spells out a choreographic phrase. Each letter in the word is one step of motion. Words can be any length and may require bridge letters between certain transitions.",
+    examples: ["STORM is a 5-letter bridge-free word (5 steps)", "MONSTROUS is a 9-letter bridge-free word", "TRUST is a 5-letter word", "DJ is a 2-letter compound word"],
     relatedTerms: ["letter", "sequence", "bridge", "compound"],
     category: "general"
   },
   "sequence": {
-    definition: "An ordered series of pictographs representing choreography. A sequence includes a start position (beat 0) followed by one pictograph per letter in the word. The visual output is called a choreo card.",
-    examples: ["A 4-letter word produces a sequence with 5 pictographs (start + 4 beats)", "Sequences can be rendered as grid layouts or single-row strips"],
+    definition: "An ordered series of pictographs representing choreography. A sequence includes a start position (step 0) followed by one pictograph per letter in the word. The visual output is called a choreo card.",
+    examples: ["A 4-letter word produces a sequence with 5 pictographs (start + 4 steps)", "Sequences can be rendered as grid layouts or single-row strips"],
     relatedTerms: ["word", "pictograph", "step", "loop"],
     category: "general"
   },
@@ -80,7 +80,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "general"
   },
   "level": {
-    definition: "A progressive difficulty tier that unlocks new positions, grid modes, turn counts, and orientations. Level 1: 0 turns only. Level 2: whole turns (0-3). Level 3: half turns and float. Level 4: centric grid with center point (tau, terra positions, not yet implemented). Level 5: skewed grid (zeta, eta positions). Level 6: interradial orientations (clockIn, clockOut, counterIn, counterOut — completes single-grid orientation freedom). Level 7: conjoined grids (dual grids sharing a junction point, new position combinations, bridges to 3D). Level 8: atomics (two props on different spinning planes simultaneously). Level 9: Rubik's cube tech (in-between points across intersecting planes, same expansion skewed brought to single-plane).",
+    definition: "A progressive difficulty tier that unlocks new positions, grid modes, turn counts, and orientations. Level 1: 0 turns only. Level 2: whole turns (0-3). Level 3: half turns and float. Level 4: centric grid with center point (tau, terra positions, not yet implemented). Level 5: skewed grid (zeta, eta positions). Level 6: interradial orientations (clockIn, clockOut, counterIn, counterOut: completes single-grid orientation freedom). Level 7: conjoined grids (dual grids sharing a junction point, new position combinations, bridges to 3D). Level 8: atomics (two props on different spinning planes simultaneously). Level 9: Rubik's cube tech (in-between points across intersecting planes, same expansion skewed brought to single-plane).",
     examples: ["Level 1: alpha, beta, gamma positions with 0 turns only", "Level 4: introduces center point with centric grid", "Level 5: introduces zeta, eta positions with skewed grid", "Level 6: interradial orientations double angular precision (completes single-grid 2D)", "Level 7: conjoined grids expand the spatial canvas with dual grids, bridging to 3D", "Level 8: one prop on wall plane, one on wheel plane (atomics)", "Level 9: skewed-equivalent access to in-between points across multiple planes"],
     relatedTerms: ["turns", "position", "orientation", "spinning-plane", "atomic", "rubiks-cube", "conjoined-grid"],
     category: "general"
@@ -92,7 +92,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "notation"
   },
   "pads": {
-    definition: "The priority order — Pro, Anti, Dash, Static — that determines which motion occupies the high (top) slot and which occupies the low (bottom) slot of a pictograph's turns column. When the two hands have different motion types, the higher-priority type goes in the high slot: pro beats anti beats dash beats static. For pro/anti hybrids (C, F, I, L, O, R, U, V) this means pro-high / anti-low. For Type 2 (W, X, Y, Z, Σ, Δ, θ, Ω): shift-high / static-low. For Type 3 (W-, X-, Y-, Z-, Σ-, Δ-, θ-, Ω-): shift-high / dash-low. For Type 4 (Φ, Ψ, Λ): dash-high / static-low. When motion types match — A, B, D, E, G, H, J, K, M, N, P, Q, dual-dashes (Φ-, Ψ-, Λ-), statics (α, β, Γ) — left goes high and right goes low. S and T are the exception among matching-type hybrids: leading hand goes high, following hand goes low. The TKA software handles placement automatically. Defined in the Level 2 Guide (Glyphs / PADS section). Implemented implicitly in the codebase via per-letter-type branches in TurnColorInterpreter and TurnsTupleGenerator — no explicit PADS constant array exists.",
+    definition: "The priority order (Pro, Anti, Dash, Static) that determines which motion occupies the high (top) slot and which occupies the low (bottom) slot of a pictograph's turns column. When the two hands have different motion types, the higher-priority type goes in the high slot: pro beats anti beats dash beats static. For pro/anti hybrids (C, F, I, L, O, R, U, V) this means pro-high / anti-low. For Type 2 (W, X, Y, Z, Σ, Δ, θ, Ω): shift-high / static-low. For Type 3 (W-, X-, Y-, Z-, Σ-, Δ-, θ-, Ω-): shift-high / dash-low. For Type 4 (Φ, Ψ, Λ): dash-high / static-low. When motion types match, A, B, D, E, G, H, J, K, M, N, P, Q, dual-dashes (Φ-, Ψ-, Λ-), statics (α, β, Γ), left goes high and right goes low. S and T are the exception among matching-type hybrids: leading hand goes high, following hand goes low. The TKA software handles placement automatically. Defined in the Level 2 Guide (Glyphs / PADS section). Implemented implicitly in the codebase via per-letter-type branches in TurnColorInterpreter and TurnsTupleGenerator. No explicit PADS constant array exists.",
     examples: [
       "C-High-One: pro hand has 1 turn, anti hand has 0 (high = pro per PADS)",
       "R(fl, 0): float marker in high slot means the float was applied to the pro hand (pro-high / anti-low for hybrids)",
@@ -114,7 +114,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "notation"
   },
   "low-slot": {
-    definition: "The lower of the two turn-number slots in a TKA glyph, sitting beneath the high-slot. Which hand occupies the low slot is determined by PADS priority (takes whichever motion type is lower — anti, dash, or static depending on the pair), by right-hand convention when motion types match, or by the following hand for S and T. Complement of high-slot.",
+    definition: "The lower of the two turn-number slots in a TKA glyph, sitting beneath the high-slot. Which hand occupies the low slot is determined by PADS priority (takes whichever motion type is lower: anti, dash, or static depending on the pair), by right-hand convention when motion types match, or by the following hand for S and T. Complement of high-slot.",
     examples: [
       "In C(1,0), the '0' in the low slot belongs to the anti motion",
       "In Φ(1,0), the '0' in the low slot belongs to the static hand (dash beats static)",
@@ -124,38 +124,38 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "notation"
   },
   "rotational-relationship": {
-    definition: "The geometric relationship between the rotation directions of two simultaneously-rotating props in a single beat. When both hands rotate, their directions form either a 'Same' relationship (same direction relative to each other) or an 'Opp' relationship (opposite directions). Notated with a same-dot (above the letter) or opp-dot (below). Only meaningful when both props are actively rotating — pictographs with only one rotating prop have no rotational relationship to describe. Lambda (Λ, Λ-) and Gamma (Γ) pictographs do NOT use rotational-relationship — they use opening/closing instead, which supersedes (rather than coexists with) same/opp because gamma's right-angle asymmetry requires a different disambiguation. In the codebase, this is derived at render time by comparing blueMotion.rotationDirection to redMotion.rotationDirection; it is not a stored field.",
+    definition: "The geometric relationship between the rotation directions of two simultaneously-rotating props in a single step. When both hands rotate, their directions form either a 'Same' relationship (same direction relative to each other) or an 'Opp' relationship (opposite directions). Notated with a same-dot (above the letter) or opp-dot (below). Only meaningful when both props are actively rotating. Pictographs with only one rotating prop have no rotational relationship to describe. Lambda (Λ, Λ-) and Gamma (Γ) pictographs do NOT use rotational-relationship. They use opening/closing instead, which supersedes (rather than coexists with) same/opp because gamma's right-angle asymmetry requires a different disambiguation. In the codebase, this is derived at render time by comparing blueMotion.rotationDirection to redMotion.rotationDirection; it is not a stored field.",
     examples: [
       "W(s,0,1): shift and static both rotate in the same direction → same-dot above the W",
       "X(o,1,1): shift and static rotate in opposite directions → opp-dot below the X",
       "Φ(1,0): only the dash rotates → no rotational relationship, no dot",
-      "Λ(0,1,op): rotating hand is opening — opening/closing replaces same/opp for Lambda"
+      "Λ(0,1,op): rotating hand is opening. Opening/closing replaces same/opp for Lambda"
     ],
     relatedTerms: ["same-dot", "opp-dot", "opening", "closing", "glyph-anatomy"],
     category: "rotation"
   },
   "same-dot": {
-    definition: "A dot placed above a letter in a TKA glyph to mark the rotational relationship as 'Same' — both rotating props are spinning in the same direction relative to each other. Encoded in code as an (s) parameter (e.g., W(s,0,1)). Read aloud as '[Letter]-Same' — for example, W with a same-dot is spoken 'W-Same'. Applied to Type 2, Type 3, Type 4, Type 5, and Type 6 pictographs when both hands rotate. Does NOT apply to Lambda (Λ, Λ-) or Gamma (Γ), which use opening/closing instead. Complement of opp-dot.",
+    definition: "A dot placed above a letter in a TKA glyph to mark the rotational relationship as 'Same': both rotating props are spinning in the same direction relative to each other. Encoded in code as an (s) parameter (e.g., W(s,0,1)). Read aloud as '[Letter]-Same'. For example, W with a same-dot is spoken 'W-Same'. Applied to Type 2, Type 3, Type 4, Type 5, and Type 6 pictographs when both hands rotate. Does NOT apply to Lambda (Λ, Λ-) or Gamma (Γ), which use opening/closing instead. Complement of opp-dot.",
     examples: [
-      "W(s,0,1): W with same-dot above, 0 turns on shift, 1 on static — 'W-Same-Low-One'",
-      "Ψ-(s,1,1): Psi-Dash with same-dot, 1 turn on each hand — 'Psi-Dash-Same-One-One'",
-      "α(s,1,1): alpha with same-dot, 1 turn each — 'Alpha-Same-One-One'"
+      "W(s,0,1): W with same-dot above, 0 turns on shift, 1 on static ('W-Same-Low-One')",
+      "Ψ-(s,1,1): Psi-Dash with same-dot, 1 turn on each hand ('Psi-Dash-Same-One-One')",
+      "α(s,1,1): alpha with same-dot, 1 turn each ('Alpha-Same-One-One')"
     ],
     relatedTerms: ["opp-dot", "rotational-relationship", "glyph-anatomy"],
     category: "notation"
   },
   "opp-dot": {
-    definition: "A dot placed below a letter in a TKA glyph to mark the rotational relationship as 'Opp' — the two rotating props are spinning in opposite directions relative to each other. Encoded in code as an (o) parameter (e.g., X(o,1,1)). Read aloud as '[Letter]-Opp' — for example, X with an opp-dot is spoken 'X-Opp'. Same application scope as same-dot. Does NOT apply to Lambda or Gamma. Complement of same-dot.",
+    definition: "A dot placed below a letter in a TKA glyph to mark the rotational relationship as 'Opp': the two rotating props are spinning in opposite directions relative to each other. Encoded in code as an (o) parameter (e.g., X(o,1,1)). Read aloud as '[Letter]-Opp'. For example, X with an opp-dot is spoken 'X-Opp'. Same application scope as same-dot. Does NOT apply to Lambda or Gamma. Complement of same-dot.",
     examples: [
-      "X(o,1,1): X with opp-dot below, 1 turn on each hand — 'X-Opp-One-One'",
-      "Θ-(o,1,1): Theta-Dash with opp-dot, 1 turn each — 'Theta-Dash-Opp-One-One'",
-      "Φ(o,1,1): Phi with opp-dot — both dash and static rotating in opposite directions"
+      "X(o,1,1): X with opp-dot below, 1 turn on each hand ('X-Opp-One-One')",
+      "Θ-(o,1,1): Theta-Dash with opp-dot, 1 turn each ('Theta-Dash-Opp-One-One')",
+      "Φ(o,1,1): Phi with opp-dot. Both dash and static rotating in opposite directions"
     ],
     relatedTerms: ["same-dot", "rotational-relationship", "glyph-anatomy"],
     category: "notation"
   },
   "opening": {
-    definition: "A per-hand designation for a rotating prop in a Lambda (Λ), Lambda-Dash (Λ-), or Gamma (Γ) pictograph. 'Opening' means that if the hand's rotational trajectory were extrapolated into a subsequent pro-shift, the motion would resolve toward an alpha position (hands at opposite grid points — spatially 'open'). Each rotating hand is independently opening or closing; a pictograph can have mixed states (e.g., blue opening + red closing). Required because these pictographs' opening/closing variants cannot be produced from each other by rotation, reflection, or mirroring (a core TKA invariant), and same/opp rotational relationship cannot capture the distinction — gamma's right-angle geometry creates asymmetric outcomes. Encoded in code as an 'op' flag in the turn tuple (e.g., Λ(0,1,op) for single-rotating-hand, Λ-(1,1,op,cl) for both rotating). In the codebase, derived at render time from (endLocation, otherHandEndLocation, rotationDirection) lookups in PropRotationStateTracker.ts — not stored on MotionData. Complement of closing.",
+    definition: "A per-hand designation for a rotating prop in a Lambda (Λ), Lambda-Dash (Λ-), or Gamma (Γ) pictograph. 'Opening' means that if the hand's rotational trajectory were extrapolated into a subsequent pro-shift, the motion would resolve toward an alpha position (hands at opposite grid points, spatially 'open'). Each rotating hand is independently opening or closing; a pictograph can have mixed states (e.g., blue opening + red closing). Required because these pictographs' opening/closing variants cannot be produced from each other by rotation, reflection, or mirroring (a core TKA invariant), and same/opp rotational relationship cannot capture the distinction. Gamma's right-angle geometry creates asymmetric outcomes. Encoded in code as an 'op' flag in the turn tuple (e.g., Λ(0,1,op) for single-rotating-hand, Λ-(1,1,op,cl) for both rotating). In the codebase, derived at render time from (endLocation, otherHandEndLocation, rotationDirection) lookups in PropRotationStateTracker.ts, not stored on MotionData. Complement of closing.",
     examples: [
       "Λ(0,1,op): Lambda with 1-turn static hand whose trajectory would resolve to alpha",
       "Λ-(1,1,op,cl): Lambda-Dash with blue hand opening (toward alpha), red hand closing (toward beta)",
@@ -165,7 +165,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "notation"
   },
   "closing": {
-    definition: "A per-hand designation for a rotating prop in a Lambda (Λ), Lambda-Dash (Λ-), or Gamma (Γ) pictograph. 'Closing' means that if the hand's rotational trajectory were extrapolated into a subsequent pro-shift, the motion would resolve toward a beta position (hands at the same grid point — spatially 'closed'). Each rotating hand is independently opening or closing. Encoded in code as a 'cl' flag in the turn tuple. Complement of opening. See opening for the full rationale (alpha-vs-beta trajectory, codebase implementation in PropRotationStateTracker.ts).",
+    definition: "A per-hand designation for a rotating prop in a Lambda (Λ), Lambda-Dash (Λ-), or Gamma (Γ) pictograph. 'Closing' means that if the hand's rotational trajectory were extrapolated into a subsequent pro-shift, the motion would resolve toward a beta position (hands at the same grid point, spatially 'closed'). Each rotating hand is independently opening or closing. Encoded in code as a 'cl' flag in the turn tuple. Complement of opening. See opening for the full rationale (alpha-vs-beta trajectory, codebase implementation in PropRotationStateTracker.ts).",
     examples: [
       "Λ(0,1,cl): Lambda with 1-turn static hand whose trajectory would resolve to beta",
       "Λ-(1,1,cl,cl): Lambda-Dash with both hands closing (both trajectories resolve to beta)",
@@ -177,32 +177,32 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   "thumb-switch": {
     definition: "One flip of the thumb-end's reference orientation during a motion (e.g., thumb in → thumb out). The Level 2 Guide's primary pedagogical counting framework for teaching turns: every motion has a base thumb-switch count, and each additional turn adds exactly one more thumb switch. Provides a discrete, physically-verifiable check during practice rather than requiring students to track abstract angular rotation.",
     examples: [
-      "Isolation (0-turn pro shift): 0 switches — thumb stays in throughout",
-      "Antispin (0-turn anti shift): 1 switch — in → out",
-      "1-turn antispin: 2 switches — in → out → in",
-      "2-turn antispin: 3 switches — in → out → in → out",
+      "Isolation (0-turn pro shift): 0 switches (thumb stays in throughout)",
+      "Antispin (0-turn anti shift): 1 switch (in → out)",
+      "1-turn antispin: 2 switches (in → out → in)",
+      "2-turn antispin: 3 switches (in → out → in → out)",
       "Base dash: 1 switch (in → out)",
-      "1-turn dash: 2 switches (in → out → in — back to start orientation)",
+      "1-turn dash: 2 switches (in → out → in, back to start orientation)",
       "2-turn static: 2 switches (in → out → in)"
     ],
     relatedTerms: ["turn", "orientation", "pro", "anti", "dash", "static", "isolation"],
     category: "rotation"
   },
   "linear-extension": {
-    definition: "A repeated-dash choreo pattern where the hand travels in a straight line through the center to the opposite grid point with one turn added per beat (a 1-turn dash executed on repeat). Named 'linear extension' because the pattern extends along a linear hand path rather than a curved one. Iconic because with double staves, the prop's two ends exhibit opposite rotation relationships relative to the linear hand path — one end behaves like a prospin, the other like an antispin. The Level 2 Guide recommends focusing on the antispin half to ensure the hand passes directly through the center point.",
+    definition: "A repeated-dash choreo pattern where the hand travels in a straight line through the center to the opposite grid point with one turn added per step (a 1-turn dash executed on repeat). Named 'linear extension' because the pattern extends along a linear hand path rather than a curved one. Iconic because with double staves, the prop's two ends exhibit opposite rotation relationships relative to the linear hand path: one end behaves like a prospin, the other like an antispin. The Level 2 Guide recommends focusing on the antispin half to ensure the hand passes directly through the center point.",
     examples: [
-      "Repeated 1-turn dashes: N→S→N→S with one turn per beat",
-      "The prop's two ends: one end prospins, the other antispins — focus on the antispin end for timing"
+      "Repeated 1-turn dashes: N→S→N→S with one turn per step",
+      "The prop's two ends: one end prospins, the other antispins. Focus on the antispin end for timing"
     ],
     relatedTerms: ["dash", "turn", "thumb-switch"],
     category: "motion"
   },
   "leading": {
-    definition: "The hand that drives or initiates a Quarter-Same gamma motion. Applies to the Type 1 gamma-to-gamma letters S, T, U, and V, which have an inherent leader/follower asymmetry. For S and T (matching motion types pro|pro or anti|anti), the glyph's high slot belongs to the leading hand and the low slot to the following hand — this is how their base forms are disambiguated. For U and V (pro|anti hybrid), the leading/following asymmetry physically exists but the glyph slots follow the pro/anti PADS rule instead (pro-high / anti-low). Counterpart to following. Note: as of 2026-04-19, leading/following is a pedagogical concept from the Level 2 Guide that is not represented in the TKA software pipeline — the code distinguishes hands only by color (blue/red). See also: leader-follower.",
+    definition: "The hand that drives or initiates a Quarter-Same gamma motion. Applies to the Type 1 gamma-to-gamma letters S, T, U, and V, which have an inherent leader/follower asymmetry. For S and T (matching motion types pro|pro or anti|anti), the glyph's high slot belongs to the leading hand and the low slot to the following hand. This is how their base forms are disambiguated. For U and V (pro|anti hybrid), the leading/following asymmetry physically exists but the glyph slots follow the pro/anti PADS rule instead (pro-high / anti-low). Counterpart to following. Note: as of 2026-04-19, leading/following is a pedagogical concept from the Level 2 Guide that is not represented in the TKA software pipeline. The code distinguishes hands only by color (blue/red). See also: leader-follower.",
     examples: [
       "S-High-One: leading hand has 1 turn (leading occupies the high slot for S and T)",
       "T-Low-One: following hand has 1 turn, leading has 0",
-      "U-High-One: leading hand has 1 turn — but here the high slot is pro, not leader, because U is pro|anti hybrid"
+      "U-High-One: leading hand has 1 turn, but here the high slot is pro, not leader, because U is pro|anti hybrid"
     ],
     relatedTerms: ["following", "leader-follower", "gamma", "high-slot", "pads"],
     category: "position"
@@ -235,19 +235,19 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "general"
   },
   "pro": {
-    definition: "A prop rotation type where the prop rotates in the same direction as the hand's arc. Also called 'prospin'. At 0 turns, center-relative orientation is preserved (e.g. in stays in) — this specific case is called an 'isolation', where the prop rotates with the arc creating the visual effect of a fixed point (distinct from float, which holds absolute spatial angle). At higher turn counts, the parity rules apply: even turns (0, 2) preserve orientation, odd turns (1, 3) reverse it.",
+    definition: "A prop rotation type where the prop rotates in the same direction as the hand's arc. Also called 'prospin'. At 0 turns, center-relative orientation is preserved (e.g. in stays in). This specific case is called an 'isolation', where the prop rotates with the arc creating the visual effect of a fixed point (distinct from float, which holds absolute spatial angle). At higher turn counts, the parity rules apply: even turns (0, 2) preserve orientation, odd turns (1, 3) reverse it.",
     examples: ["Hand shifts W to N clockwise, prop rotates clockwise with the arc", "0-turn pro: center-relative orientation preserved (isolation)", "1-turn pro: orientation reverses", "2-turn pro: orientation preserved again"],
     relatedTerms: ["anti", "float", "half-float", "isolation", "rotation"],
     category: "rotation"
   },
   "anti": {
-    definition: "A prop rotation type where the prop rotates opposite to the hand's arc. Also called 'antispin'. Creates petal-like patterns in continuous motion. At 0 turns, orientation reverses (e.g. in becomes out). At higher turn counts, the parity rules apply: even turns (0, 2) reverse orientation, odd turns (1, 3) preserve it — the opposite of pro.",
+    definition: "A prop rotation type where the prop rotates opposite to the hand's arc. Also called 'antispin'. Creates petal-like patterns in continuous motion. At 0 turns, orientation reverses (e.g. in becomes out). At higher turn counts, the parity rules apply: even turns (0, 2) reverse orientation, odd turns (1, 3) preserve it, the opposite of pro.",
     examples: ["Hand shifts W to N clockwise, prop rotates counter-clockwise against the arc", "0-turn anti: orientation reverses (in becomes out)", "1-turn anti: orientation preserved", "2-turn anti: orientation reverses again"],
     relatedTerms: ["pro", "float", "half-float", "rotation"],
     category: "rotation"
   },
   "isolation": {
-    definition: "Pro motion at 0 turns. The prop's center-relative orientation remains constant as the hand moves — the prop rotates with the arc, creating the visual effect of a fixed point while the hand orbits around it. Distinct from float, where the prop literally holds its absolute spatial angle. With additional turns, the motion is still pro but no longer an isolation since the prop visibly rotates beyond the base rate.",
+    definition: "Pro motion at 0 turns. The prop's center-relative orientation remains constant as the hand moves: the prop rotates with the arc, creating the visual effect of a fixed point while the hand orbits around it. Distinct from float, where the prop literally holds its absolute spatial angle. With additional turns, the motion is still pro but no longer an isolation since the prop visibly rotates beyond the base rate.",
     examples: ["Pro at 0 turns during a shift: center-relative orientation preserved, prop appears fixed", "DJ compound uses isolation (pro/pro at 0 turns)"],
     relatedTerms: ["pro", "turns", "rotation"],
     category: "rotation"
@@ -265,13 +265,13 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "rotation"
   },
   "float": {
-    definition: "A prop rotation type where the prop does not rotate at all during a shift — it holds its absolute spatial angle. Float only applies to shifts because it requires a curved hand path; without a curve, there is no distinction between float and 0-turn static. Because the hand traces an arc while the prop holds still, the center-relative orientation changes even though there is no prop rotation. Mathematically equivalent to -0.5 turns from base rotation, which also makes float the symmetry boundary between pro and anti — going past float means you've crossed into the opposite motion type.",
-    examples: ["Hand moves from W to N, prop maintains its exact facing in space", "Center-relative orientation changes as the hand arcs (e.g., 'in' may become 'clock')", "Only meaningful during shifts — a non-moving or straight-line hand path has no float distinction"],
+    definition: "A prop rotation type where the prop does not rotate at all during a shift: it holds its absolute spatial angle. Float only applies to shifts because it requires a curved hand path; without a curve, there is no distinction between float and 0-turn static. Because the hand traces an arc while the prop holds still, the center-relative orientation changes even though there is no prop rotation. Mathematically equivalent to -0.5 turns from base rotation, which also makes float the symmetry boundary between pro and anti. Going past float means you've crossed into the opposite motion type.",
+    examples: ["Hand moves from W to N, prop maintains its exact facing in space", "Center-relative orientation changes as the hand arcs (e.g., 'in' may become 'clock')", "Only meaningful during shifts: a non-moving or straight-line hand path has no float distinction"],
     relatedTerms: ["half-float", "pro", "anti", "shift", "rotation", "orientation"],
     category: "rotation"
   },
   "half-float": {
-    definition: "A prop rotation state at -0.25 turns from the base rotation — halfway between float (no rotation, -0.5 turns) and the base form (0 turns). The prop rotates in the motion's direction (pro or anti) but less than the base amount, producing an interradial orientation change (45 degrees) instead of the full cardinal change (90 degrees). Only meaningful at Level 6, where quarter-turn subdivision and interradial orientations exist. The name is mathematically literal: half the turn offset of a float. Like float, half-float applies only to shifts (curved hand paths).",
+    definition: "A prop rotation state at -0.25 turns from the base rotation: halfway between float (no rotation, -0.5 turns) and the base form (0 turns). The prop rotates in the motion's direction (pro or anti) but less than the base amount, producing an interradial orientation change (45 degrees) instead of the full cardinal change (90 degrees). Only meaningful at Level 6, where quarter-turn subdivision and interradial orientations exist. The name is mathematically literal: half the turn offset of a float. Like float, half-float applies only to shifts (curved hand paths).",
     examples: ["Pro shift E to N with half-float: orientation ends at counterIn instead of in (0 turns) or counter (float)", "Half-float is -0.25 turns; float is -0.5 turns; the name reflects the halved offset", "Completing the L6 turn continuum: ... float (-0.5) → half-float (-0.25) → base (0) → +0.25 → +0.5 ..."],
     relatedTerms: ["float", "pro", "anti", "shift", "interradial", "turns"],
     category: "rotation"
@@ -289,7 +289,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "motion"
   },
   "dash": {
-    definition: "A hand motion type where the hand moves in a straight line to the diametrically opposite grid point (180 degrees across the grid). At 0 turns, the prop does not rotate — it translates along the straight path without spinning. Unlike shifts (curved arcs), dashes follow straight lines, so pro/anti/float distinctions do not apply. At 1+ turns, the prop rotates CW or CCW during the traverse.",
+    definition: "A hand motion type where the hand moves in a straight line to the diametrically opposite grid point (180 degrees across the grid). At 0 turns, the prop does not rotate: it translates along the straight path without spinning. Unlike shifts (curved arcs), dashes follow straight lines, so pro/anti/float distinctions do not apply. At 1+ turns, the prop rotates CW or CCW during the traverse.",
     examples: ["N to S is a dash", "NE to SW is a dash", "Type 4 and Type 5 letters use dashes"],
     relatedTerms: ["static", "shift", "hash", "motion"],
     category: "motion"
@@ -307,15 +307,15 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "rotation"
   },
   "orientation": {
-    definition: "The facing direction of a prop relative to the performer's center point. Eight possible values across the level system. Cardinal orientations (all levels): in (toward center), out (away from center), clock (clockwise-facing), counter (counter-clockwise-facing). Interradial orientations (Level 6+): clockIn, clockOut, counterIn, counterOut — the four orientations at 45 degrees between cardinal orientations.",
+    definition: "The facing direction of a prop relative to the performer's center point. Eight possible values across the level system. Cardinal orientations (all levels): in (toward center), out (away from center), clock (clockwise-facing), counter (counter-clockwise-facing). Interradial orientations (Level 6+): clockIn, clockOut, counterIn, counterOut, the four orientations at 45 degrees between cardinal orientations.",
     examples: ["Pro at 0 turns preserves orientation (in stays in)", "Anti at 0 turns switches orientation (in becomes out)", "Level 6 adds clockIn, clockOut, counterIn, counterOut between base orientations"],
     relatedTerms: ["pro", "anti", "turns", "rotation", "level"],
     category: "rotation"
   },
   "step": {
-    definition: "A single pictograph in a sequence, regardless of its duration. Each step represents what both hands and props do during that moment. Steps are the fundamental unit of a sequence.",
-    examples: ["A 4-step sequence has 4 pictographs", "Step 0 is the start position"],
-    relatedTerms: ["pictograph", "sequence"],
+    definition: "The fundamental unit of a sequence: one step = one letter = one pictograph. A sequence of N letters has N steps of motion plus a start position (step 0). Each step shows what both hands and props do during that moment, regardless of its duration.",
+    examples: ["A 4-letter word is 4 steps long", "Step 0 is the start position (no motion yet)", "Each step corresponds to one pictograph in the choreo card"],
+    relatedTerms: ["letter", "pictograph", "sequence"],
     category: "general"
   },
   "dual-shift": {
@@ -415,13 +415,13 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "rotation"
   },
   "vtg": {
-    definition: "Vulcan Tech Gospel — an older, widely-adopted notation framework for flow arts created by Noel Yee and spinners at the Vulcan Lofts in Oakland, CA. TKA uses VTG as a secondary notation layer. VTG is ground-referenced: the 'downbeat' (south/bottom of the circle) is the anchor point for all timing and direction classifications. 'Same/opposite' in VTG refers to hand path direction (both hands arc the same way vs opposite ways), not prop rotation direction.",
+    definition: "Vulcan Tech Gospel: an older, widely-adopted notation framework for flow arts that emerged from the poi community at the Vulcan Lofts in Oakland, CA. TKA uses VTG as a secondary notation layer. VTG is ground-referenced: the 'downbeat' (south/bottom of the circle) is the anchor point for all timing and direction classifications. 'Same/opposite' in VTG refers to hand path direction (both hands arc the same way vs opposite ways), not prop rotation direction.",
     examples: ["Split-Same (SS): props 180° out of phase, hands arc same way", "Together-Same (TS): props in sync, hands arc same way", "Split-Opposite (SO): props out of phase, hands arc opposite ways", "Together-Opposite (TO): props in sync, hands arc opposite ways"],
     relatedTerms: ["split", "tog", "downbeat", "timing"],
     category: "notation"
   },
   "split": {
-    definition: "A VTG timing classification where the two props are 180 degrees out of phase — one is at the downbeat (south) when the other is at the top. In TKA terms, split timing corresponds to alpha positions (hands at opposite points).",
+    definition: "A VTG timing classification where the two props are 180 degrees out of phase: one is at the downbeat (south) when the other is at the top. In TKA terms, split timing corresponds to alpha positions (hands at opposite points).",
     examples: ["Letters A, B, C (alpha to alpha) are always split-same", "DJ compound can be split-opp depending on variation"],
     relatedTerms: ["tog", "vtg", "alpha", "downbeat"],
     category: "notation"
@@ -469,7 +469,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "notation"
   },
   "reversal": {
-    definition: "A directional change in a TKA sequence. There are three distinct types: hand reversal (hand returns to previous point, prop continues — switches pro/anti), prop reversal (hand continues, prop reverses direction — switches pro/anti), and full reversal (both hand and prop retrace — maintains pro/anti). Reversals are indicated by colored dots on the left edge of the pictograph.",
+    definition: "A directional change in a TKA sequence. There are three distinct types: hand reversal (hand returns to previous point, prop continues, switches pro/anti), prop reversal (hand continues, prop reverses direction, switches pro/anti), and full reversal (both hand and prop retrace, maintains pro/anti). Reversals are indicated by colored dots on the left edge of the pictograph.",
     examples: ["Hand reversal: hand goes back, prop keeps spinning same way. Switches prospin to antispin.", "Prop reversal: hand continues forward, prop switches direction.", "Full reversal: everything rewinds. Pro stays pro, anti stays anti.", "Colored dots appear on the left edge of the pictograph when a reversal occurs"],
     relatedTerms: ["hand-reversal", "prop-reversal", "full-reversal", "rotation"],
     category: "motion"
@@ -523,7 +523,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "sequence"
   },
   "rewound": {
-    definition: "A LOOP transformation where the second half plays in reverse — hands trace their path backwards to return home. Like pressing rewind on a video. Not to be confused with rotated, where hands continue forward in the same direction.",
+    definition: "A LOOP transformation where the second half plays in reverse: hands trace their path backwards to return home. Like pressing rewind on a video. Not to be confused with rotated, where hands continue forward in the same direction.",
     examples: ["First half: A→B→C→D. Second half: D→C→B→A (rewound back home)"],
     relatedTerms: ["loop", "rotated", "full-reversal"],
     category: "sequence"
@@ -543,11 +543,11 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     benefit: "Add movement quality, handle longer staves, create dynamic contrast"
   },
   "thumb-orientation": {
-    definition: "Tracking whether thumbs point inward or outward on each beat to verify prop rotation.",
+    definition: "Tracking whether thumbs point inward or outward on each step to verify prop rotation.",
     examples: ["thumbs-in: starting position with thumbs toward center", "thumbs-out: thumbs away from center"],
     relatedTerms: ["orientation", "pro", "anti"],
     category: "execution",
-    importance: "Track rotations and check position on every beat"
+    importance: "Track rotations and check position on every step"
   },
   "loop": {
     definition: "A circular sequence that returns to its starting position through transformations. Six base transformations (rotated, mirrored, flipped, swapped, inverted, rewound) can be combined into compound types like mirrored-swapped or rotated-inverted. The word repeats with transformations applied until it arrives back home.",
@@ -567,15 +567,9 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     relatedTerms: ["pro", "anti", "inverted", "letter"],
     category: "general"
   },
-  "beat": {
-    definition: "The fundamental timing unit in TKA. One beat = one letter = one pictograph. A sequence of N letters has N beats of motion plus a start position (beat 0). Each beat shows what both hands and props do during that moment.",
-    examples: ["A 4-letter word is 4 beats long", "Beat 0 is the start position (no motion yet)", "Each beat corresponds to one pictograph in the choreo card"],
-    relatedTerms: ["step", "letter", "pictograph", "sequence"],
-    category: "general"
-  },
   "choreo-card": {
-    definition: "The visual output of sequence generation — a composite image showing all pictographs in a sequence arranged in a grid or strip layout. Includes optional header (word, difficulty), beat numbers, reversal indicators, and footer (username, notes, date).",
-    examples: ["A 4-letter word produces a choreo card with 5 pictographs (start + 4 beats)", "Grid layout arranges pictographs in rows, strip layout puts them in a single row"],
+    definition: "The visual output of sequence generation: a composite image showing all pictographs in a sequence arranged in a grid or strip layout. Includes optional header (word, difficulty), step numbers, reversal indicators, and footer (username, notes, date).",
+    examples: ["A 4-letter word produces a choreo card with 5 pictographs (start + 4 steps)", "Grid layout arranges pictographs in rows, strip layout puts them in a single row"],
     relatedTerms: ["sequence", "pictograph", "word"],
     category: "notation"
   },
@@ -605,13 +599,13 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   "halved": {
     definition: "A LOOP slice size where the sequence is divided into two halves of 180 degrees each. The transformation is applied once to create the second half, completing a 360-degree cycle. Used with the rotated LOOP type.",
-    examples: ["A 4-letter word halved: first 4 beats + transformed 4 beats = 8-beat LOOP", "Each half covers 180 degrees of the full rotation"],
+    examples: ["A 4-letter word halved: first 4 steps + transformed 4 steps = 8-step LOOP", "Each half covers 180 degrees of the full rotation"],
     relatedTerms: ["quartered", "loop", "rotated"],
     category: "sequence"
   },
   "quartered": {
     definition: "A LOOP slice size where the sequence is divided into four quarters of 90 degrees each. The transformation is applied three times to create quarters 2-4, completing a 360-degree cycle. Used with the rotated LOOP type.",
-    examples: ["A 4-letter word quartered: 4 beats repeated 4 times = 16-beat LOOP", "Each quarter covers 90 degrees of the full rotation"],
+    examples: ["A 4-letter word quartered: 4 steps repeated 4 times = 16-step LOOP", "Each quarter covers 90 degrees of the full rotation"],
     relatedTerms: ["halved", "loop", "rotated"],
     category: "sequence"
   },
@@ -622,7 +616,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "general"
   },
   "conjoined-grid": {
-    definition: "A Level 7 concept where two grids share a junction point, expanding the spatial canvas and bridging to 3D. Each grid shows one hand's motion. The junction point creates new position combinations that can't exist on a single grid — including patterns with two center points. Uses existing terminology (alpha, beta, gamma, etc.) to express new spatial relationships across the paired grids. Placed after interradials (L6) so all orientation freedom is complete before expanding beyond one grid.",
+    definition: "A Level 7 concept where two grids share a junction point, expanding the spatial canvas and bridging to 3D. Each grid shows one hand's motion. The junction point creates new position combinations that can't exist on a single grid, including patterns with two center points. Uses existing terminology (alpha, beta, gamma, etc.) to express new spatial relationships across the paired grids. Placed after interradials (L6) so all orientation freedom is complete before expanding beyond one grid.",
     examples: ["Two grids sharing a north/south junction, blue hand on grid A, red hand on grid B", "Layouts: left-right, top-bottom, diagonal arrangements", "Patterns where hands are spatially further apart than a single grid allows"],
     relatedTerms: ["level", "centric", "position"],
     category: "grid"
@@ -640,7 +634,7 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "general"
   },
   "hash": {
-    definition: "A hand motion type where the hand moves in a straight line to or from the center grid point. Hash is **dash-** (dash with a minus modifier) — the same straight-line traverse as a dash, but covering half the distance (center to perimeter or perimeter to center). 'Hash' is the official name for dash-, just as 'skew' is the official name for shift+/-. Introduced in Level 4 with centric grid mode. Same rotation physics as dash: at 0 turns, no rotation (1 state); at 1+ turns, CW or CCW (2 states per turn count). Pro/anti/float distinctions do not apply (straight line, not curved arc).",
+    definition: "A hand motion type where the hand moves in a straight line to or from the center grid point. Hash is **dash-** (dash with a minus modifier): the same straight-line traverse as a dash, but covering half the distance (center to perimeter or perimeter to center). 'Hash' is the official name for dash-, just as 'skew' is the official name for shift+/-. Introduced in Level 4 with centric grid mode. Same rotation physics as dash: at 0 turns, no rotation (1 state); at 1+ turns, CW or CCW (2 states per turn count). Pro/anti/float distinctions do not apply (straight line, not curved arc).",
     examples: ["N to center is a hash (dash-)", "Center to E is a hash", "Hash = dash- = half-dash, same physics as dash"],
     relatedTerms: ["dash", "shift", "static", "centric", "tau", "motion", "hand-path-modifier"],
     category: "motion"
@@ -652,13 +646,13 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "rotation"
   },
   "base-rotation": {
-    definition: "The inherent prop rotation that occurs at 0 additional turns during any motion. Turn counts in TKA measure ADDITIONAL rotation on top of this base. For shifts (curved arcs), the arc causes center-relative angular change even at 0 turns — 0-turn pro and 0-turn anti are two different states because the prop either rotates with or against the arc. For dashes, hashes, and statics (straight lines or no movement), there is no arc, so base rotation at 0 turns means truly no rotation — producing exactly 1 state, not 2.",
+    definition: "The inherent prop rotation that occurs at 0 additional turns during any motion. Turn counts in TKA measure ADDITIONAL rotation on top of this base. For shifts (curved arcs), the arc causes center-relative angular change even at 0 turns. 0-turn pro and 0-turn anti are two different states because the prop either rotates with or against the arc. For dashes, hashes, and statics (straight lines or no movement), there is no arc, so base rotation at 0 turns means truly no rotation, producing exactly 1 state, not 2.",
     examples: ["0-turn pro shift: prop rotates with the arc (base rotation preserves orientation)", "0-turn anti shift: prop rotates against the arc (base rotation reverses orientation)", "0-turn dash: no rotation, no direction (just one state)"],
     relatedTerms: ["turns", "pro", "anti", "shift", "dash", "orientation"],
     category: "rotation"
   },
   "hand-path-modifier": {
-    definition: "The +/- system that extends or shortens standard hand paths. Applies to both shifts and dashes. For shifts: skew+ (longer arc), skew- (shorter arc). For dashes: dash- (to/from center, called 'hash'), dash+ (cross-grid, L7), dash++ (cross-grid to opposite perimeter, L7). The modifier is displayed per-hand in the turns column of the TKA glyph. Modifiers do NOT change the letter type classification — dash and dash- are both in the 'dash' family.",
+    definition: "The +/- system that extends or shortens standard hand paths. Applies to both shifts and dashes. For shifts: skew+ (longer arc), skew- (shorter arc). For dashes: dash- (to/from center, called 'hash'), dash+ (cross-grid, L7), dash++ (cross-grid to opposite perimeter, L7). The modifier is displayed per-hand in the turns column of the TKA glyph. Modifiers do NOT change the letter type classification. Dash and dash- are both in the 'dash' family.",
     examples: ["Skew+ (shift+): S to NE, extended arc spanning 3 segments", "Dash- (hash): N to center, shortened straight line", "Dash+ (L7): perimeter to center of other grid"],
     relatedTerms: ["shift", "dash", "hash", "skew", "hand-path"],
     category: "motion"
@@ -671,50 +665,38 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
   },
   "leader-follower": {
     definition: "A distinction that arises in asymmetric positions (gamma, zeta, eta) when both hands shift the same direction. One hand is directionally 'ahead' of the other, creating a leader and a follower. This matters for letter assignment because the leader and follower can have different turn values. In the TKA glyph, the leader's turn number appears on top, the follower's on bottom. Leader/follower does NOT apply to opposite-direction movement (hands diverge/converge symmetrically) or to symmetric positions (alpha, beta). Leader/follower is combinatorially equivalent to mixed motion types: it doubles the variation space the same way that having one pro and one anti does.",
-    examples: ["In gamma, same-direction shifts create leader/follower — requires S, T, U, V letters", "In alpha (symmetric), no leader/follower — uses A through L", "Opposite-direction shifts in any position have no leader/follower", "S,T,U,V each have the same variation count as hybrids (C, F, I, L, O) because leader/follower doubles the space"],
+    examples: ["In gamma, same-direction shifts create leader/follower. Requires S, T, U, V letters", "In alpha (symmetric), no leader/follower. Uses A through L", "Opposite-direction shifts in any position have no leader/follower", "S,T,U,V each have the same variation count as hybrids (C, F, I, L, O) because leader/follower doubles the space"],
     relatedTerms: ["gamma", "zeta", "eta", "position", "symmetry-invariance", "leading", "following"],
     category: "position"
   },
   "symmetry-invariance": {
     definition: "The founding design principle that a pictograph represents the same letter under rotation, reflection, and color swap. This minimizes the alphabet by treating spatially equivalent arrangements as identical. The principle holds for symmetric positions (alpha, beta) and opposite-direction movement. It breaks for same-direction movement in asymmetric positions (gamma), which is why the quarter-same group has 4 letters (S,T,U,V) instead of the usual 3.",
-    examples: ["Rotate a pictograph card — same letter", "Mirror a pictograph — same letter", "Swap red/blue — same letter (except STUV hybrids)", "U and V exist because color-swapping a quarter-same hybrid changes which motion type leads"],
+    examples: ["Rotate a pictograph card: same letter", "Mirror a pictograph: same letter", "Swap red/blue: same letter (except STUV hybrids)", "U and V exist because color-swapping a quarter-same hybrid changes which motion type leads"],
     relatedTerms: ["leader-follower", "dual-shift", "gamma"],
     category: "general"
   },
   "caps": {
-    definition: "Continuous Assembly Patterns (CAPs) — a concept from the poi community coined by Damien (Zaltymbunk) on the Home of Poi forums. Originally intended as ANY composite cyclic pattern, but the community narrowed 'cap' to mean the C-CAP (extension + antispin petal alternation, kidney-bean shape). Key figures: Damien (coined), Alien Jon (promoted), Nick Woolsey/PlayPoi (popularized as 'Capped Antispin Patterns'), DrexFactor (documented), Charlie Cushing (8-step CAP, 9-Square Theory). CAPs and LOOPs are parallel concepts, not parent/child. Neither is a subset of the other.",
-    examples: ["C-CAP: the kidney-bean pattern most spinners call 'a cap'", "CAPs compose per-hand trajectories (overlay left path + right path)", "LOOPs compose per-beat snapshots (one letter = both hands)"],
+    definition: "Continuous Assembly Patterns (CAPs): a concept coined on the Home of Poi forums. Originally intended as ANY composite cyclic pattern, but the poi community narrowed 'cap' to mean the C-CAP (extension + antispin petal alternation, kidney-bean shape). CAPs and LOOPs are parallel concepts, not parent/child. Neither is a subset of the other.",
+    examples: ["C-CAP: the kidney-bean pattern most spinners call 'a cap'", "CAPs compose per-hand trajectories (overlay left path + right path)", "LOOPs compose per-step snapshots (one letter = both hands)"],
     relatedTerms: ["loop", "compound", "vtg"],
     category: "sequence"
   },
-  "lorq-nichols": {
-    definition: "Lorq Nichols (Sir Lorq) — influential flow arts educator who created the Shape Matrix, Tech Tiles, 324 Patterns (27 arm paths x 12 shapes x 3 planes), 9 Flower Families, 144 Atomic Hybrids, the Book of P.H.A.T. (with Brian Thompson, David Cantor, and Noel Yee), and the 3 Planes System. His Shape Matrix — a multiplication table cross-referencing left-hand and right-hand flower patterns — is conceptually adjacent to TKA's per-beat both-hands encoding. Austen took Lorq's class in 2017, likely planting seeds for TKA's enumerative approach.",
-    examples: ["Shape Matrix: cross-reference L/R hand patterns", "324 Patterns: 27 arm paths x 12 shapes x 3 planes", "3 Planes System: wall, wheel, floor"],
-    relatedTerms: ["vtg", "caps"],
-    category: "general"
-  },
   "quarter-time": {
-    definition: "A misnomer for gamma patterns (M through V) in VTG vocabulary. It describes a 90-degree phase offset between hands, NOT a timing or duration change. VTG's split and tog have formal phase designations, but quarter time never received equivalent formal naming. It was strapped onto VTG's framework by later practitioners (Jonah and others) without integration into the original four-category system. In TKA, these patterns are simply the gamma letters — no special 'quarter time' designation needed.",
+    definition: "A misnomer for gamma patterns (M through V) in VTG vocabulary. It describes a 90-degree phase offset between hands, NOT a timing or duration change. VTG's split and tog have formal phase designations, but quarter time never received equivalent formal naming. It was strapped onto VTG's framework by later practitioners without integration into the original four-category system. In TKA, these patterns are simply the gamma letters. No special 'quarter time' designation needed.",
     examples: ["'Quarter time' = 90-degree phase offset, not a timing change", "In TKA, these are just gamma letters (M through V)", "VTG never formally integrated QT into its core four categories"],
     relatedTerms: ["vtg", "gamma"],
     category: "notation"
   },
   "tau-dash": {
-    definition: "The Type 4 letter τ- (tau-dash). One hand dashes while the other is static, with the static hand at center. Distinct from other Type 4 letters (Φ, Ψ, Λ) because the static hand position is center, not perimeter. τ- has NO Type 5 (dual-dash) variant because a hand at center cannot perform a standard dash — there is no 'opposite' of center on the grid.",
+    definition: "The Type 4 letter τ- (tau-dash). One hand dashes while the other is static, with the static hand at center. Distinct from other Type 4 letters (Φ, Ψ, Λ) because the static hand position is center, not perimeter. τ- has NO Type 5 (dual-dash) variant because a hand at center cannot perform a standard dash: there is no 'opposite' of center on the grid.",
     examples: ["τ-: one hand dashes, static hand at center", "No τ-- exists (can't dual-dash from center)", "Type 4 = one dashes, one static"],
     relatedTerms: ["dash", "tau", "centric"],
     category: "letterType"
   },
   "elemental-model": {
-    definition: "A mnemonic framework mapping VTG's timing/direction categories to classical elements plus two additions. The original four elements (Earth, Water, Air, Fire) were popularized by Leonardo Icaza and taught by Ronan McLoughlin. Austen Cloud expanded it with Sun and Moon to cover gamma patterns. Same-direction elements (Earth, Water, Sun) are grid-mode invariant. Opposite-direction elements (Air, Fire, Moon) permute when switching between diamond and box mode.",
+    definition: "A mnemonic framework mapping VTG's timing/direction categories to classical elements plus two additions. The original four elements (Earth, Water, Air, Fire) come from the poi community's VTG teaching tradition. TKA expands the model with Sun and Moon to cover gamma patterns. Same-direction elements (Earth, Water, Sun) are grid-mode invariant. Opposite-direction elements (Air, Fire, Moon) permute when switching between diamond and box mode.",
     examples: ["Earth = tog-same (G,H,I), Water = split-same (A,B,C), Air = tog-opp, Fire = split-opp", "Sun = quarter-same (S,T,U,V), Moon = quarter-opp (MP,NQ,OR compounds)", "Diamond DJ = Air/Fire, but Box DJ = Moon"],
     relatedTerms: ["vtg", "quarter-time", "gamma", "compound-letters"],
     category: "notation"
-  },
-  "leonardo-icaza": {
-    definition: "Leonardo Icaza (@poidanceflow on Instagram), Vancouver BC-based poi spinner who coined 'body tracer' and defined horizontal stacking for poi. Popularized the elemental model that maps VTG timing/direction categories to classical elements (Earth, Water, Air, Fire). Featured in 'The Art of Flow' (2012 documentary). Teaching primarily via Instagram and in-person workshops. DrexFactor called him 'The Most Influential Poi Spinner You've Never Heard Of.'",
-    examples: ["Coined 'body tracer'", "Defined horizontal stacking", "Popularized the 4-element VTG mapping"],
-    relatedTerms: ["elemental-model", "vtg", "lorq-nichols"],
-    category: "general"
   }
 } as const satisfies Record<string, GlossaryEntry>;

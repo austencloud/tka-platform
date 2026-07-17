@@ -1,14 +1,14 @@
 <script lang="ts">
   /**
-   * Type 2 — Shift — Level 2 body page 7 (manifest `t2-shift`), faithful to old
+   * Type 2 - Shift - Level 2 body page 7 (manifest `t2-shift`), faithful to old
    * p8. Type 2 hybrids combine a shift and a static motion; PADS puts the shift
    * high and the static low. Three breakdown strips (all from W variation [3]:
-   * blue w→w static, red n→e pro cw — MCP-verified):
+   * blue w→w static, red n→e pro cw - MCP-verified):
    *
-   *   W¹  "W-High-One"       — 1 turn on the shift (red). Simple: the static hand is still.
-   *   W₁• "W-Same Low-One"   — 1 turn on the static hand (blue) spinning the SAME
+   *   W¹  "W-High-One"       - 1 turn on the shift (red). Simple: the static hand is still.
+   *   W₁• "W-Same Low-One"   - 1 turn on the static hand (blue) spinning the SAME
    *                            sense as the shift (cw) → Same relationship, dot ABOVE.
-   *   •W₁ "W-Opp Low-One"    — 1 turn on the static hand spinning OPPOSITE (ccw) →
+   *   •W₁ "W-Opp Low-One"    - 1 turn on the static hand spinning OPPOSITE (ccw) →
    *                            Opposite relationship, dot BELOW.
    *
    * High slot glyph = red, low = blue (as on the S/T page). The same/opp dot is

@@ -96,12 +96,21 @@
   .mkt-shell {
     position: relative;
     min-height: 100vh;
-    overflow-x: hidden;
+    /* clip, not hidden: `overflow-x: hidden` computes overflow-y to `auto`,
+       which makes this shell a (never-scrolling) scroll container and silently
+       disables position:sticky for every descendant on every marketing page.
+       `clip` clips decorative horizontal overflow identically without creating
+       a scroll container, so sticky elements track the real window scroll. */
+    overflow-x: clip;
     color: var(--theme-text, #ffffff);
-    /* Single source of truth for the marketing display serif. Every page under
-       this chrome (landing sections, guide hub, editorial page titles, shop)
-       resolves its headings from this token, so the face can't drift per-page.
-       The 500 weight is self-hosted app-wide (app.html → /fonts/css/playfair.css). */
+    /* Two-tier display type, both self-hosted app-wide (app.html):
+       --page-title-font  → the brand's Fraunces wonky italic, for each page's
+         top-level h1/title (matches the landing hero wordmark). Set italic +
+         the wonk variation-settings at the title site (see .page-title).
+       --landing-heading-font → Playfair Display 500, for section-level headings
+         (h2s) under a page title. Keeps a clear h1 vs h2 hierarchy.
+       One token each, so neither face can drift per-page. */
+    --page-title-font: "Fraunces", Georgia, serif;
     --landing-heading-font: "Playfair Display", Georgia, serif;
   }
 

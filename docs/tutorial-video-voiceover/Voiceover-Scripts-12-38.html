@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TKA Tutorial Scripts 12–38 — Drafts</title>
+<style>
+:root{
+  --paper:#f7f7f4; --panel:#ffffff; --ink:#191c1e; --ink-soft:#41474c; --meta:#6a7178;
+  --hair:#e0e2dd; --blue:#2f5fd0; --blue-deep:#1e3d8f; --red:#c9402f;
+  --slot-bg:#faf3e3; --slot-edge:#c78a1f; --slot-ink:#6e4d0d;
+  --sans:"Bahnschrift","DIN Alternate","Segoe UI",system-ui,sans-serif;
+  --serif:"Palatino Linotype",Palatino,Georgia,serif;
+  --mono:"Cascadia Code",Consolas,ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --paper:#16181b; --panel:#1e2125; --ink:#e8e6e1; --ink-soft:#b7bcc1; --meta:#8a9199;
+  --hair:#2c3036; --blue:#7d9fe8; --blue-deep:#a9c0f0; --red:#e0705f;
+  --slot-bg:#2a2416; --slot-edge:#d9a13a; --slot-ink:#e3c07a;
+}}
+:root[data-theme="light"]{
+  --paper:#f7f7f4; --panel:#ffffff; --ink:#191c1e; --ink-soft:#41474c; --meta:#6a7178;
+  --hair:#e0e2dd; --blue:#2f5fd0; --blue-deep:#1e3d8f; --red:#c9402f;
+  --slot-bg:#faf3e3; --slot-edge:#c78a1f; --slot-ink:#6e4d0d;
+}
+:root[data-theme="dark"]{
+  --paper:#16181b; --panel:#1e2125; --ink:#e8e6e1; --ink-soft:#b7bcc1; --meta:#8a9199;
+  --hair:#2c3036; --blue:#7d9fe8; --blue-deep:#a9c0f0; --red:#e0705f;
+  --slot-bg:#2a2416; --slot-edge:#d9a13a; --slot-ink:#e3c07a;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--serif);line-height:1.6}
+.wrap{max-width:860px;margin:0 auto;padding:0 22px 100px}
+header{padding:44px 0 22px;border-bottom:2px solid var(--ink)}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--red);margin:0 0 8px}
+h1{font-family:var(--sans);font-size:clamp(28px,5vw,44px);line-height:1.02;margin:0;text-wrap:balance}
+h1 span{color:var(--blue)}
+.stand{color:var(--ink-soft);font-size:16px;margin:12px 0 0;max-width:62ch}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin:16px 0 0;font-family:var(--sans);font-size:13px;color:var(--meta)}
+.legend .slot{font-size:12px}
+nav{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:5px;padding:9px 0;
+  background:color-mix(in srgb,var(--paper) 90%,transparent);backdrop-filter:blur(5px);
+  border-bottom:1px solid var(--hair)}
+nav a{font-family:var(--mono);font-size:12px;color:var(--blue-deep);text-decoration:none;
+  padding:3px 8px;border:1px solid var(--hair);border-radius:3px}
+nav a:hover,nav a:focus-visible{background:var(--panel);border-color:var(--blue);outline:none}
+h2.part{font-family:var(--sans);font-size:24px;margin:56px 0 6px;padding-top:22px;border-top:2px solid var(--ink);text-wrap:balance}
+h2.oq{font-family:var(--sans);font-size:20px;margin:56px 0 10px;padding-top:22px;border-top:2px dashed var(--slot-edge);color:var(--slot-ink)}
+h3{font-family:var(--sans);font-size:19px;margin:42px 0 4px;color:var(--blue-deep);scroll-margin-top:56px}
+p{max-width:66ch;margin:13px 0}
+.goal{color:var(--meta);font-style:italic;font-size:14.5px;margin:2px 0 16px;max-width:66ch}
+.cue{font-family:var(--mono);font-size:12.5px;color:var(--meta);margin:16px 0 6px;letter-spacing:.02em}
+.slot{display:inline;background:var(--slot-bg);color:var(--slot-ink);border-left:3px solid var(--slot-edge);
+  padding:1px 6px 1px 8px;border-radius:2px;font-family:var(--sans);font-size:.92em}
+.slot b{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--slot-edge);margin-right:5px}
+code{font-family:var(--mono);font-size:.9em;color:var(--red)}
+b{color:var(--ink)}
+.tw{overflow-x:auto;margin:16px 0}
+table{border-collapse:collapse;font-size:14.5px;min-width:340px}
+th,td{text-align:left;padding:7px 14px;border-bottom:1px solid var(--hair)}
+thead th{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--meta)}
+td:first-child{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--blue-deep)}
+td:last-child{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--meta)}
+ol{max-width:66ch;padding-left:22px}
+ol li{margin:9px 0;color:var(--ink-soft)}
+ol li b{color:var(--ink)}
+</style>
+<div class="wrap">
+<header>
+  <p class="eyebrow">The Kinetic Alphabet · Draft — awaiting body-knowledge pass</p>
+  <h1>Tutorial Scripts <span>12–38</span></h1>
+  <p class="stand">Guideline voiceover scripts completing Type 1 and running through Types 2–6,
+  notation, turns, and sequences. Spoken text is grounded against the knowledge base;
+  amber slots are yours to fill.</p>
+  <div class="legend"><span>CUE — stage direction, not spoken</span><span class="slot"><b>AUSTEN</b> body knowledge needed</span></div>
+</header>
+<nav aria-label="Scripts"><a href="#s12" title="12 — Letter G">12</a><a href="#s13" title="13 — Letter H">13</a><a href="#s14" title="14 — Letter I">14</a><a href="#s15" title="15 — Gamma">15</a><a href="#s16" title="16 — Letter S">16</a><a href="#s17" title="17 — Letter T">17</a><a href="#s18" title="18 — Letters U &amp; V">18</a><a href="#s19" title="19 — MP">19</a><a href="#s20" title="20 — NQ">20</a><a href="#s21" title="21 — OR">21</a><a href="#s22" title="22 — Type 1 Wrap Up">22</a><a href="#s23" title="23 — Type 2: One Hand Rests">23</a><a href="#s24" title="24 — Σ and Δ (from alpha)">24</a><a href="#s25" title="25 — Θ and Ω (from beta)">25</a><a href="#s26" title="26 — W, X, Y, Z (from gamma)">26</a><a href="#s27" title="27 — Type 3: The Dash Letters">27</a><a href="#s28" title="28 — Type 4: Φ, Ψ, Λ">28</a><a href="#s29" title="29 — Type 5: Dual Dashes + the ΦΨ Compound">29</a><a href="#s30" title="30 — Type 6: Statics: α, β, γ">30</a><a href="#s31" title="31 — Alphabet Wrap: The Type Table">31</a><a href="#s32" title="32 — Reading a Glyph">32</a><a href="#s33" title="33 — Orientation Algebra">33</a><a href="#s34" title="34 — Turns (Level 2)">34</a><a href="#s35" title="35 — Half Turns and Floats (Level 3)">35</a><a href="#s36" title="36 — Words">36</a><a href="#s37" title="37 — LOOPs">37</a><a href="#s38" title="38 — Your First Deck">38</a></nav>
+<h2 class="part">Part III — Together-Same (G, H, I)</h2>
+<p>The beta family. Same triple as A, B, C — two isolations, two anti-spins, the hybrid — but the hands travel together instead of apart. All three letters start in beta and end in beta, so like A, B, C they repeat on their own. No compounds needed.</p>
+<h3 id="s12">12 — Letter G</h3>
+<p class="goal">Goal: introduce the beta family, tog-same isolations = G, the contrast with A, continuous repeats, both directions.</p>
+<p>Back in the compound videos I gave you a shortcut: you can narrow any letter down by where it ends. Ends in alpha, it's one of the first six. Ends in beta, it's G through L. We've already met D, E, F and J, K, L — they live inside the compounds. That leaves three letters that never leave beta: G, H, and I.</p>
+<p>This video is G.</p>
+<p class="cue">CUE — start in beta</p>
+<p>Start in beta — hands stacked on one point, both staves radiating out from the center, acting like a single staff. <span class="slot"><b>AUSTEN</b> your preferred beta and thumb convention for this family — the compound videos started thumbs in at low beta.</span></p>
+<p>For G, both hands isolate at the same time, traveling the same direction, and land stacked together on a new point. Beta to beta. That's G.</p>
+<p>Compare that to A. In A the hands were apart and stayed apart — split, same direction. In G they're together and they stay together. Same two isolations, different neighborhood.</p>
+<p class="cue">CUE — continuous</p>
+<p>Do it again — G. And again — G. <span class="slot"><b>AUSTEN</b> does continuous G run into a twist the way A did? If yes, your fix goes right here, same beat structure as the A video. If it flows clean, say so on camera — the contrast with A is a teaching moment.</span></p>
+<p>Now the other direction. <span class="slot"><b>AUSTEN</b> reverse-direction walkthrough with your landmarks.</span></p>
+<p class="cue">CUE — counts</p>
+<p>Put a count on it, both directions. One, two, three, four. And back: one, two, three, four.</p>
+<p>These are together-same isolations. One unit of together-same isolations is the letter G. Next video — same hand path, and you already know what's coming.</p>
+<h3 id="s13">13 — Letter H</h3>
+<p class="goal">Goal: H = two anti-spins on the G hand path, the orientation rule paying off at beta, negative space, both directions.</p>
+<p>H follows the exact same hand path as G. The only change — you know this pattern by now — two anti-spins instead of two isolations.</p>
+<p class="cue">CUE — beta, thumbs in</p>
+<p>Start in beta, thumbs in. Both hands anti-spin at the same time, traveling the same direction, and land stacked on the next point. Beta to beta. That's H.</p>
+<p>Remember the orientation rule from the Positions video: isolations keep their orientation, anti-spins swap it. G kept you thumbs-in the whole way around. H flips you every single unit. Thumbs in — H — thumbs out. H — thumbs in again. In, out, in, out. Glance at your thumbs at any moment and you know whether you're on track.</p>
+<p class="cue">CUE — negative space</p>
+<p><span class="slot"><b>AUSTEN</b> where negative space shows up in H — which shoulder pocket, which end leads, whether the stacked staves need anything like the elbow trick from B, and whether an above/below sneak applies. This is the heart of the video and it's all body knowledge.</span></p>
+<p class="cue">CUE — both directions + counts</p>
+<p>Run it the other way. <span class="slot"><b>AUSTEN</b> reverse-direction landmarks.</span> Then a count, both directions: one, two, three, four. One, two, three, four.</p>
+<p>Two anti-spins, together, same direction — that's H. One more letter at beta, and it's one you can already predict.</p>
+<h3 id="s14">14 — Letter I</h3>
+<p class="goal">Goal: I = the hybrid at beta, predicted from the pattern before it's shown; convention pick; twice the variations; the G/H/I triple recap as proof the pattern generalizes.</p>
+<p>Before I show you this letter, try to predict it. At alpha we had A — two isolations. B — two anti-spins. C — one of each. You just did G — two isolations — and H — two anti-spins. So the third letter at beta has to be one hand isolating while the other anti-spins. That's I.</p>
+<p>The pattern I gave you in the first wrap up — iso, anti, hybrid — isn't just an alpha thing. It runs through the whole alphabet, and you just used it to predict a letter you'd never seen.</p>
+<p class="cue">CUE — beta, pick the convention</p>
+<p>Like C, the hands are doing different jobs, so I has twice as many variations as G or H. Pick a convention and keep it for the whole video. <span class="slot"><b>AUSTEN</b> your pick — the C video used right hand isolates, left hand anti-spins.</span></p>
+<p>One hand isolates, the other anti-spins, both traveling the same direction, landing stacked on the next point. Beta to beta. That's I.</p>
+<p>Watch the thumbs as you go. The isolating hand keeps its orientation; the anti-spinning hand swaps every unit. In and in — then in and out. Mixed orientations are normal for hybrids. You saw the same thing in C.</p>
+<p class="cue">CUE — continuous + the fix</p>
+<p><span class="slot"><b>AUSTEN</b> continuous I — where it binds, your fix, whether the above/below options from B and C carry over.</span></p>
+<p class="cue">CUE — swap the jobs</p>
+<p>Now swap the roles — the other hand isolates, the other anti-spins — and run it again. That's your homework letter, the same way C was: every direction, both role assignments.</p>
+<p class="cue">CUE — counts</p>
+<p>One, two, three, four.</p>
+<p>And that's the beta family. G — two isolations. H — two anti-spins. I — the hybrid. Together, same direction, never leaving beta. The same triple as A, B, C, one neighborhood over. Next stop is the last position on the grid: gamma.</p>
+<h2 class="part">Part IV — Gamma (M through V)</h2>
+<p>The biggest neighborhood in the alphabet: ten letters end in gamma. Four run the same direction and repeat on their own (S, T, U, V — with a surprise in the hybrid slot). Six run opposite directions and pair into compounds (MP, NQ, OR) — exactly the way D, E, F paired with J, K, L.</p>
+<h3 id="s15">15 — Gamma</h3>
+<p class="goal">Goal: gamma as a first-class position; the L with staves; moving into gamma; why gamma gets its own series; the quarter-cycle offset that defines everything in it.</p>
+<p>We've spent this whole series so far in two positions. Hands apart — alpha. Hands together — beta. The third position has been waiting, and it gets a whole series of its own. Gamma: the right angle.</p>
+<p class="cue">CUE — gamma with staves</p>
+<p>Put your hands on two adjacent points — one out to the side, one straight ahead. Each staff radiates out from the center, and together they make an L. That's gamma. Rotate the whole shape to any corner of the grid — still gamma. <span class="slot"><b>AUSTEN</b> a short on-camera tour of gamma placements, mirroring the "this is alpha, this is alpha" tour from video 1.</span></p>
+<p class="cue">CUE — moving into gamma</p>
+<p><span class="slot"><b>AUSTEN</b> the alpha→gamma and beta→gamma demos — which motions you want on camera. Production note: this alpha→gamma demo is the footage the reworked Grid video needs for its ending. Shoot it clean.</span></p>
+<p>Why does gamma get its own series? Count the letters. Six letters end in alpha. Six end in beta. <b>Ten</b> end in gamma — M through V. And gamma has one idea the other positions don't have.</p>
+<p>Here it is. Think about how far apart your hands are around the grid. In alpha, they're half a cycle apart — opposite points. In beta, zero — same point. Gamma sits exactly in between: a quarter of a cycle apart. Some spinner communities call the gamma patterns quarter time. The name's a little misleading — your timing doesn't change, the hands still move on the same beats. What changes is the offset: one hand runs a quarter-cycle away from the other, the whole time. Every letter in this series comes from that offset.</p>
+<p>Next video, the first gamma letter: S.</p>
+<h3 id="s16">16 — Letter S</h3>
+<p class="goal">Goal: quarter-same isolations = S; the offset in motion; cousin of A and G; continuous; both directions.</p>
+<p>This is the letter S.</p>
+<p>Start in gamma. <span class="slot"><b>AUSTEN</b> your preferred on-camera gamma and thumb convention for this family.</span></p>
+<p>For S, both hands isolate at the same time, traveling the same direction, holding that quarter-cycle offset the whole way. You land in a new gamma — the L walks to a new corner of the grid. Gamma to gamma. That's S.</p>
+<p>You've now done this exact move in three neighborhoods. Hands apart — that was A. Hands stacked — that was G. Hands a quarter apart — S. Same two isolations every time. The position is the only thing that changed.</p>
+<p class="cue">CUE — continuous</p>
+<p>Keep it going. S, S, S, S. The L keeps walking around the grid. <span class="slot"><b>AUSTEN</b> twist/no-twist reality for continuous S, your fix if needed, and the reverse-direction walkthrough.</span></p>
+<p class="cue">CUE — counts</p>
+<p>Count it, both directions. One, two, three, four. Back the other way — one, two, three, four.</p>
+<p>Quarter-time, same direction, two isolations — the letter S. And you can already guess what's next.</p>
+<h3 id="s17">17 — Letter T</h3>
+<p class="goal">Goal: T = two anti-spins at the quarter offset; orientation flips; negative space; cousin of B and H; the tease that the pattern is about to break.</p>
+<p>T is to S what B was to A and H was to G. Same hand path, two anti-spins.</p>
+<p class="cue">CUE — gamma, thumbs in</p>
+<p>Start in gamma, thumbs in. Both hands anti-spin, same direction, holding the quarter offset, and the L lands on the next corner. Gamma to gamma. That's T.</p>
+<p>Orientation rule, one more time: anti-spins swap. Thumbs in — T — thumbs out — T — thumbs in. If your thumbs aren't alternating, one of your hands is sneaking in an isolation.</p>
+<p class="cue">CUE — negative space</p>
+<p><span class="slot"><b>AUSTEN</b> negative-space pockets for T — with the hands a quarter apart, where the pass-throughs land and which side needs care.</span></p>
+<p class="cue">CUE — both directions + counts</p>
+<p>Both directions, with a count. One, two, three, four. Other way: one, two, three, four.</p>
+<p>Two anti-spins at the quarter offset — T. Now. If the alphabet followed its usual pattern, the next video would be one hybrid letter and we'd wrap the group. Gamma has a surprise for you instead.</p>
+<h3 id="s18">18 — Letters U &amp; V</h3>
+<p class="goal">Goal: the doubled hybrid — gamma's four-letter group; why the quarter offset splits the hybrid in two; U and V walkthroughs; alternating homework.</p>
+<p>Everywhere else in the alphabet, the triple went iso, anti, hybrid — three letters. A, B, C. G, H, I. So after S and T you'd expect one hybrid. Gamma gives you two: U and V.</p>
+<p>Here's the difference. In C — and in I — one hand isolates, one anti-spins, and that's the whole letter. <span class="slot"><b>AUSTEN</b> verify this framing — the draft's claim is that at the quarter offset the two role assignments become genuinely different motions, so each gets its own letter, where C and I covered both assignments under one name. If your explanation for WHY is different — lead/trail hand, which hand owns the offset — this paragraph is yours to rewrite.</span> At the quarter offset, which hand does which job changes the motion. So each assignment gets its own letter. U is one assignment. V is the other. Same shape, jobs swapped.</p>
+<p class="cue">CUE — U</p>
+<p><span class="slot"><b>AUSTEN</b> which role assignment is U for your on-camera convention, thumbs, where it binds.</span> One hand isolates, the other anti-spins, same direction, quarter offset. Gamma to gamma. That's U. Watch the thumbs: steady on the isolating hand, alternating on the anti hand — mixed orientation, same as C and I.</p>
+<p class="cue">CUE — V</p>
+<p>Now swap the jobs. The hand that was isolating anti-spins; the hand that was anti-spinning isolates. Same path. That's V. <span class="slot"><b>AUSTEN</b> one sentence on how U and V actually feel different in the body — this is the money line of the video.</span></p>
+<p class="cue">CUE — alternate + counts</p>
+<p>U, then V, back and forth, both directions — that's the homework. One, two, three, four.</p>
+<p>And that completes the same-direction side of gamma: S, T, U, V. Iso, anti, and a hybrid for each role assignment. Four letters where every other group has three. Next up, the opposite-direction side — and just like beta had its compounds, gamma has three of its own.</p>
+<h3 id="s19">19 — MP</h3>
+<p class="goal">Goal: quarter-opposite; M through R pair into compounds like D–F/J–L did; MP = gamma's isolation loop, cousin of DJ; the full DJ-style progression.</p>
+<p>Remember how the compounds worked. A, B, C repeat cleanly on their own. D, E, F don't — each one is half a cycle, so it needs a partner: D plus J, E plus K, F plus L. The exact same thing happens at gamma. S, T, U, V repeat cleanly — same direction. The other six gamma letters — M, N, O, P, Q, R — run the hands in opposite directions, and each one alone is half a cycle. M pairs with P. N pairs with Q. O pairs with R.</p>
+<p>And they inherit the same triple, one level up. MP is the isolation loop. NQ is the anti-spin loop. OR is the hybrid. Cousins of DJ, EK, and FL — one position over. Canon has mnemonics for these too, if you want the memory hook: Magic Potion, Never Quit, Open Road.</p>
+<p>This video is MP — the isolation loop.</p>
+<p class="cue">CUE — gamma start</p>
+<p><span class="slot"><b>AUSTEN</b> starting gamma and thumb convention.</span> Both hands isolate, opposite directions. M carries you from one gamma to another — that's half the cycle. <span class="slot"><b>AUSTEN</b> your visual language for how M reads — does it open, travel, unfold?</span> Then P: both hands isolate back the other way, and you're home. M, P. That's one full cycle. Again — M, P. Reverse it — M, P.</p>
+<p class="cue">CUE — continuous — the crossing choice</p>
+<p><span class="slot"><b>AUSTEN</b> the continuous version — DJ solved this with the crossing-hands choice (right in front, then left in front, then alternating). Does MP have the same fork? This section mirrors that structure if so: one side, other side, alternate.</span></p>
+<p class="cue">CUE — body turns</p>
+<p><span class="slot"><b>AUSTEN</b> body turns with MP — DJ did four beats facing front, four through the right turn, four through the left, landing the 12-count. If MP turns the same way, reuse that structure and the "four and four and four is twelve" line.</span></p>
+<p class="cue">CUE — the other vantage</p>
+<p><span class="slot"><b>AUSTEN</b> DJ closed with the split-opposite vantage from side beta. Is there an equivalent second vantage for MP — a different gamma entry that changes the feel? If yes it goes here; if not, cut this section.</span></p>
+<p class="cue">CUE — full run with count</p>
+<p>Now the whole thing, less talking. <span class="slot"><b>AUSTEN</b> count structure — 12 if the turn structure matches DJ.</span></p>
+<p class="cue">CUE — thumbs out</p>
+<p>And all of it works thumbs out instead. Same shape, different feel. M, P. M, P.</p>
+<h3 id="s20">20 — NQ</h3>
+<p class="goal">Goal: NQ = gamma's anti-spin loop, cousin of EK; orientation flips every unit; negative-space pass-throughs; body turns; both vantages if they exist.</p>
+<p>This is NQ — the anti-spin loop. N matches with Q exactly the way E matched with K. N travels from one gamma to the other through two anti-spins, opposite directions. Q brings you home the same way.</p>
+<p class="cue">CUE — gamma, thumbs in</p>
+<p>Start thumbs in. Anti-spin both hands, opposite directions — N — and you've crossed to the far gamma, thumbs out. Back through — Q — thumbs in, home. Open N, close Q. Just like EK, the anti-spins mean your orientation flips on every unit, and negative space is where this loop lives.</p>
+<p><span class="slot"><b>AUSTEN</b> the negative-space pass-throughs for N and Q — EK's version had the thumb ends riding the shoulder pockets on the open and the staves passing under the arms on the close. Where are the equivalent pockets at the quarter offset?</span></p>
+<p class="cue">CUE — continuous, one side then the other</p>
+<p><span class="slot"><b>AUSTEN</b> continuous NQ with the leading-hand choice, one side then the other, then alternating — mirroring the EK video's structure.</span></p>
+<p class="cue">CUE — body turns</p>
+<p><span class="slot"><b>AUSTEN</b> turns — EK switched variations for turns (thumb ends outside the body instead of through negative space). Does NQ need an equivalent swap?</span></p>
+<p class="cue">CUE — count</p>
+<p>Whole thing, less talking. <span class="slot"><b>AUSTEN</b> count.</span></p>
+<p>That's NQ. One loop left, and if you've been following the pattern, you already know what it is.</p>
+<h3 id="s21">21 — OR</h3>
+<p class="goal">Goal: OR = gamma's hybrid loop, cousin of FL and C; one hand isolates, one anti-spins, opposite directions; role assignments as homework; the series' last new motion.</p>
+<p>Last compound of the series: OR — the hybrid loop. One hand isolates, one hand anti-spins, opposite directions, and O plus R closes the cycle. It's the gamma cousin of FL, the same way FL was the loop cousin of C.</p>
+<p class="cue">CUE — convention</p>
+<p>Keep one convention for the whole video. <span class="slot"><b>AUSTEN</b> your role pick — FL used right hand isolates, left anti-spins.</span> Everything works with the roles swapped; that's homework, same as always.</p>
+<p class="cue">CUE — open O, close R</p>
+<p>O — the isolating hand travels one way, the anti-spinning hand the other, and you've crossed to the far gamma. <span class="slot"><b>AUSTEN</b> thumb checkpoints — FL's were: in on beta, mixed on F, in again on L. What are they here?</span> R — back home. O, R. Again. O, R. Reverse it.</p>
+<p class="cue">CUE — continuous with the leading-hand fork</p>
+<p><span class="slot"><b>AUSTEN</b> continuous OR — FL forked on which hand leads in front and flipped between versions at the low point. The equivalent fork here.</span></p>
+<p class="cue">CUE — body turns + count</p>
+<p><span class="slot"><b>AUSTEN</b> turns and the count — FL ran the 12-count with role swaps to even out both sides. Mirror that if OR turns the same way.</span></p>
+<p class="cue">CUE — outro</p>
+<p>That's OR — and that's all three gamma loops. MP the isolation loop, NQ the anti-spin loop, OR the hybrid. The same iso, anti, hybrid pattern as A, B, C — as G, H, I — as DJ, EK, FL. One video left, and it's the big one: the whole map.</p>
+<h3 id="s22">22 — Type 1 Wrap Up</h3>
+<p class="goal">Goal: the complete Type 1 map; the ends-in rule; the triple everywhere; the doubled hybrid as the one exception; compounds close cycles; the inference trick now works across the whole family; sign-off.</p>
+<p>Let's zoom all the way out, because you now hold the entire first family of the alphabet — every letter from A to V.</p>
+<p>The map. Six letters end in alpha. Six end in beta. Ten end in gamma. The moment you see where a motion ends, you know its neighborhood.</p>
+<p>The pattern. Iso, anti, hybrid — everywhere. A, B, C. G, H, I. M, N, O. P, Q, R. The one exception: the same-direction gamma group, where the hybrid splits in two and you get four letters — S, T, U, V.</p>
+<p>The loops. When a letter closes its own cycle, it repeats on its own — A, B, C, G, H, I, S, T, U, V. When it doesn't, it has a partner: DJ, EK, FL between beta and alpha. MP, NQ, OR inside gamma.</p>
+<p>So the trick from the first wrap up now works across twenty-two letters. Someone names any Type 1 letter, and you can reconstruct its neighbors, its position, and whether it needs a partner — from one piece of information.</p>
+<p>That's Type 1. Both hands shifting, every beat, every way between alpha, beta, and gamma. Everything past this — dashes, statics, one hand moving without the other — builds on what you just learned. I hope this series was useful. Tell me what landed and what I could do better. See you in the next one.</p>
+<h2 class="oq">Open domain questions (for Austen — I could not ground these)</h2>
+<p>Flagging these explicitly rather than guessing. Each one is a <code>[AUSTEN]</code> slot above; this is the consolidated list:</p>
+<ol><li><b>Twist behavior of the new families.</b> A hits a twist wall; B and C have fixes. Whether G/H/I, S/T/U/V, and the gamma compounds bind the same way is body knowledge the knowledge base doesn't encode.</li>
+<li><b>Negative-space geometry at beta and gamma.</b> All pocket/pass-through descriptions in the first 11 scripts came from your footage. None exists for these letters.</li>
+<li><b>The U-vs-V "why."</b> The knowledge base confirms U and V are distinct letters (opposite role assignments of the quarter-same hybrid) but not the teaching explanation for why the split happens at gamma and nowhere else. Script 18 proposes one framing; verify or rewrite it.</li>
+<li><b>Second vantage for gamma compounds.</b> DJ/EK/FL each got a split-opposite section from side beta. Whether MP/NQ/OR have an equivalent alternate-entry vantage worth teaching is unknown — scripts 19–21 carry an optional section for it.</li>
+<li><b>Alpha→gamma / beta→gamma transition demos</b> (video 15). Which specific motions you want on camera; the knowledge base confirms the positions, not your preferred demonstration.</li></ol>
+<h2 class="part">Part V — One Hand at a Time (Types 2 &amp; 3)</h2>
+<h3 id="s23">23 — Type 2: One Hand Rests</h3>
+<p class="goal">Goal: the second of the six combinations from video 1 finally gets its name; shift + static; Type 2 letters as the connectors between neighborhoods; the eight letters preview.</p>
+<p>All the way back in the first video, I showed you six ways two hands can combine: shift, dash, or static, in every pairing. The entire alphabet so far — A through V — came from just one of those six: both hands shifting. That's why it's called Type 1.</p>
+<p>Today the second combination gets its letters. One hand shifts. The other stays static, holding its point. That's Type 2.</p>
+<p class="cue">CUE — demo — one hand shifts, one rests</p>
+<p>And Type 2 has a job Type 1 doesn't. Every Type 1 letter kept you inside a neighborhood or cycled you through a fixed route. Type 2 letters are the connectors — one hand moves, the geometry between your hands changes, and you walk from one position family into another. Alpha into gamma. Beta into gamma. Gamma back out to alpha.</p>
+<p>There are eight of them: four Greek — sigma, delta, theta, omega — and four you already know from English — W, X, Y, Z. Where they sit isn't random. <span class="slot"><b>AUSTEN</b> your preferred framing for how the eight split — the next three videos group them by starting family: Σ/Δ from alpha, Θ/Ω from beta, W/X/Y/Z from gamma.</span></p>
+<p>One more new idea before the letters. When both hands rotate in a Type 2 motion, the two props either spin the same direction or opposite directions — and the alphabet writes that down with a dot: a dot above the letter for same, below for opposite. Sigma-same. Sigma-opp. You'll see it on the pictographs starting now. <span class="slot"><b>AUSTEN</b> whether to introduce the dot here or defer to video 32 — it's spoken here because Type 2 is where it first applies.</span></p>
+<p>Next video: the two letters that walk you out of alpha.</p>
+<h3 id="s24">24 — Σ and Δ (from alpha)</h3>
+<p class="goal">Goal: the alpha-start Type 2 pair; static hand as anchor; pro vs anti on the shifting hand; the dot in practice.</p>
+<p>Start in alpha, hands apart. This is home base for two letters: sigma and delta.</p>
+<p class="cue">CUE — sigma</p>
+<p>Keep one hand static — it's the anchor. The other hand shifts to an adjacent point, and now your hands sit at a right angle. You just walked from alpha into gamma with one motion. That's sigma. <span class="slot"><b>AUSTEN</b> which rotation your canonical sigma uses on the shifting hand, thumb checkpoints, and the sigma/delta distinction as you teach it — the knowledge base holds the letter data; the on-camera contrast is yours.</span></p>
+<p class="cue">CUE — delta</p>
+<p>Delta is sigma's sibling from the same start. <span class="slot"><b>AUSTEN</b> the delta walkthrough and what separates it from sigma in the body — same anchor idea, different shift.</span></p>
+<p class="cue">CUE — both, with the dot</p>
+<p>Now watch the two props when both are rotating. Same direction — that's the same-dot version. Opposite — the opp-dot. Two letters, each with both flavors.</p>
+<p class="cue">CUE — drill + counts</p>
+<p>Anchor left, shift right. Anchor right, shift left. Both directions. One, two, three, four.</p>
+<p>Sigma and delta: your exits from alpha. Next, the exits from beta.</p>
+<h3 id="s25">25 — Θ and Ω (from beta)</h3>
+<p class="goal">Goal: the beta-start pair; unstacking; theta and omega; drills both hands.</p>
+<p>Hands stacked in beta. Two letters start their lives here: theta and omega.</p>
+<p class="cue">CUE — theta</p>
+<p>One hand holds the stack point. The other shifts away to an adjacent point — and the stack unstacks into a right angle. Beta into gamma, one motion. That's theta. <span class="slot"><b>AUSTEN</b> canonical theta — which hand leaves, rotation, thumbs.</span></p>
+<p class="cue">CUE — omega</p>
+<p>Omega, same start, same anchor idea. <span class="slot"><b>AUSTEN</b> the omega walkthrough and the theta/omega contrast.</span></p>
+<p class="cue">CUE — same/opp + drill</p>
+<p>Same-dot and opp-dot versions, both letters. Then drill it: anchor left, anchor right, both directions. One, two, three, four.</p>
+<p>Theta and omega: the exits from beta. Which leaves the biggest neighborhood — and it gets four letters, not two.</p>
+<h3 id="s26">26 — W, X, Y, Z (from gamma)</h3>
+<p class="goal">Goal: the gamma-start four; why gamma gets twice as many Type 2 letters; W walkthrough as the model; X, Y, Z; the family drilled.</p>
+<p>Gamma — the right angle — is where the last four Type 2 letters live: W, X, Y, and Z. Why four here when alpha and beta each got two? Remember the gamma series: the right angle is the position where the hands' roles genuinely differ. Which hand rests and which hand travels matters more here, and the alphabet gives the variations their own names. <span class="slot"><b>AUSTEN</b> verify this framing — same caveat as the U/V video; if your explanation differs, rewrite this sentence.</span></p>
+<p class="cue">CUE — W</p>
+<p>Start in gamma. One hand holds. The other shifts — and the right angle opens out into a line. Hands apart: you've walked from gamma into alpha. That's W. <span class="slot"><b>AUSTEN</b> canonical W, thumbs, rotation.</span></p>
+<p class="cue">CUE — X, Y, Z</p>
+<p><span class="slot"><b>AUSTEN</b> the X, Y, Z walkthroughs and what distinguishes the four — this is the densest slot in the series; the knowledge base confirms the letters exist with pro and anti variants but the on-camera taxonomy is yours.</span></p>
+<p class="cue">CUE — family drill</p>
+<p>All four, both anchors, both directions. One, two, three, four.</p>
+<p>That's Type 2 complete: eight letters, one hand resting, every road between the neighborhoods. Next — what happens when the resting hand stops resting and cuts straight across.</p>
+<h3 id="s27">27 — Type 3: The Dash Letters</h3>
+<p class="goal">Goal: shift + dash; the "-" suffix as part of the letter name; the eight Type 3 letters mirror the Type 2 eight; spoken form "Z-dash".</p>
+<p>Type 3 is Type 2 with the lazy hand fired. One hand still shifts — but the other, instead of holding its point, dashes: straight across the grid to the opposite point. Shift plus dash.</p>
+<p>The names are the easiest in the alphabet: take the eight Type 2 letters and add a dash. Sigma-dash. Delta-dash. Theta-dash. Omega-dash. W-dash, X-dash, Y-dash, Z-dash. The dash is part of the letter's name — when you see Z with a little dash after it, you say "Z-dash," and you know exactly what it is: Z's shift, plus a dash underneath it.</p>
+<p class="cue">CUE — first Type 3 demo</p>
+<p><span class="slot"><b>AUSTEN</b> your entry letter for Type 3 and the walkthrough — which pairing teaches the shift-over-dash coordination most cleanly, where the timing trap is, and whether the dash hand needs its own drill first.</span></p>
+<p class="cue">CUE — same/opp dot</p>
+<p>The dot rule carries over: both hands rotating, same direction or opposite, dot above or below.</p>
+<p class="cue">CUE — drills</p>
+<p><span class="slot"><b>AUSTEN</b> the drill progression across the eight — presumably not all eight in one video at full depth; pick the representatives and assign the rest as homework, the way C's variations were homework.</span></p>
+<p>One, two, three, four. That's Type 3 — and with it, every letter where BOTH hands travel. Three combinations left, and they're quicker.</p>
+<h2 class="part">Part VI — Dashes and Statics (Types 4, 5, 6)</h2>
+<h3 id="s28">28 — Type 4: Φ, Ψ, Λ</h3>
+<p class="goal">Goal: dash + static; three letters, one per position family; phi, psi, lambda; the opening/closing idea for lambda.</p>
+<p>Type 4: one hand dashes straight across, the other holds. Dash plus static. Three letters — and by now you can guess how they're organized. One per neighborhood.</p>
+<p class="cue">CUE — psi</p>
+<p>From alpha: psi. Hands apart, one dashes across while the other holds — and the hands come together. Alpha into beta. <span class="slot"><b>AUSTEN</b> canonical psi walkthrough.</span></p>
+<p class="cue">CUE — phi</p>
+<p>From beta: phi. One hand dashes out of the stack while the other holds — hands apart. Beta into alpha. Phi and psi are partners, the same way D and J were: one opens, one closes, and together they cycle. <span class="slot"><b>AUSTEN</b> whether to teach the ΦΨ compound here or hold it for video 29 — the knowledge base lists it as the dash compound.</span></p>
+<p class="cue">CUE — lambda</p>
+<p>From gamma: lambda. One hand dashes, the other holds, and the right angle lands on a new right angle. Gamma to gamma. Lambda is also where a new pair of words enters your vocabulary: instead of same and opposite, lambda's variations are described as opening or closing — does the moving motion resolve toward hands- apart, or toward hands-together? <span class="slot"><b>AUSTEN</b> how deep to go on opening/closing on camera — the full logic lives in the glyph video (32).</span></p>
+<p class="cue">CUE — drill all three</p>
+<p>Psi, phi, lambda. Both hand assignments. One, two, three, four.</p>
+<h3 id="s29">29 — Type 5: Dual Dashes + the ΦΨ Compound</h3>
+<p class="goal">Goal: both hands dash; phi-dash, psi-dash, lambda-dash; the dash compound closes the arc; the alphabet's speed limit joke slot.</p>
+<p>Type 5: both hands dash at once. Everything crosses the grid simultaneously. Three letters again, one per family — phi-dash, psi-dash, lambda-dash — same naming trick as Type 3: the base letter, plus a dash.</p>
+<p class="cue">CUE — the three, briskly</p>
+<p><span class="slot"><b>AUSTEN</b> walkthroughs — dual dashes are mechanically simple but collision- prone; where the traffic problem is and how you route around it is the whole video.</span></p>
+<p class="cue">CUE — the ΦΨ compound</p>
+<p>And here's the last compound of the alphabet: phi plus psi. Beta to alpha, alpha to beta, one hand dashing each way while the other rests — a complete cycle out of pure dashes, the dash cousin of DJ. <span class="slot"><b>AUSTEN</b> verify the on-camera mechanics; the knowledge base confirms ΦΨ as the dash compound: one hand dashes, one stays static.</span></p>
+<p>One, two, three, four.</p>
+<h3 id="s30">30 — Type 6: Statics: α, β, γ</h3>
+<p class="goal">Goal: holding a position is a letter; why notation needs stillness; the three statics; the wink that "doing nothing" completes the six combinations.</p>
+<p>The last motion type is the easiest one to perform and the strangest one to accept: nobody moves. Both hands static. And yes — that's a letter. Three of them, actually, and you already know their names, because they're the positions themselves: alpha, beta, gamma. Lowercase.</p>
+<p>Hold alpha for a beat — that's the letter alpha. Hold beta — beta. Hold gamma — gamma.</p>
+<p>Why write down nothing? Because sequences live on beats. A pause isn't the absence of choreography — it's a beat you chose to hold, and if the alphabet couldn't spell it, every sequence with a rest in it would be unwritable. Music has rests. So do we.</p>
+<p class="cue">CUE — a sequence with a held beat</p>
+<p><span class="slot"><b>AUSTEN</b> a short on-camera phrase using a static mid-sequence — the moment the viewer feels the rest as a choice.</span></p>
+<p>And with that, all six combinations from video one have their letters. Both shift — Type 1. Shift and static — Type 2. Shift and dash — Type 3. Dash and static — Type 4. Both dash — Type 5. Both static — Type 6. The alphabet is closed. Next video, we hang the whole thing on one wall.</p>
+<h3 id="s31">31 — Alphabet Wrap: The Type Table</h3>
+<p class="goal">Goal: the complete type table as one picture; every letter has a home; the count; the door to notation.</p>
+<p>Let's put the entire alphabet on screen at once.</p>
+<p class="cue">CUE — the full type table</p>
+<p>Type 1 — both hands shift. A through V. The families you know: the alpha letters, the beta letters, the gamma letters, and the compounds that stitch them into loops.</p>
+<p>Type 2 — shift plus static. Sigma, delta, theta, omega, W, X, Y, Z. The connectors.</p>
+<p>Type 3 — shift plus dash. The same eight, dashed.</p>
+<p>Type 4 — dash plus static. Phi, psi, lambda.</p>
+<p>Type 5 — both dash. Phi-dash, psi-dash, lambda-dash.</p>
+<p>Type 6 — both static. Alpha, beta, gamma — the positions, held.</p>
+<p>Every combination of shift, dash, and static, for two hands — named. When you see any motion now, you can place it: which hands moved, how, and therefore which type, which family, which letter. That was the promise of the first video, kept.</p>
+<p>What we haven't done is learn to READ. The letters on these pictographs carry numbers, dots, and marks we've been walking past all series. Next video, we learn what every one of them means.</p>
+<h2 class="part">Part VII — Reading and Writing</h2>
+<h3 id="s32">32 — Reading a Glyph</h3>
+<p class="goal">Goal: glyph = letter + everything around it; the two turn slots; PADS; the same/opp dot formally; opening/closing formally; spoken forms; the "don't sweat it, the software places it" reassurance.</p>
+<p>You can perform every letter in the alphabet. Now let's learn to read one, completely — because on a real pictograph, the letter never travels alone. The letter plus everything around it is called a glyph, and every mark on it means one thing.</p>
+<p class="cue">CUE — a glyph, zoomed</p>
+<p>To the right of the letter: two small stacked slots. Top slot, bottom slot. Each holds a number — how many extra turns each hand adds. We haven't used turns yet; that's the next part of the series. For now: two slots, one per hand.</p>
+<p>Which hand goes on top? There's a priority order, and it spells PADS: pro, anti, dash, static. Whichever of the two motions sits higher on that list takes the high slot. A hybrid like C — one pro, one anti — puts pro on top. A Type 2 letter — shift and static — puts the shift on top. When both hands do the same thing, like A or B, the rule defaults to left hand high, right hand low. <span class="slot"><b>AUSTEN</b> S and T are the documented exception — leader high, follower low. Decide whether that level of detail makes the cut on camera.</span></p>
+<p class="cue">CUE — the dot</p>
+<p>The dot you've seen since Type 2: above the letter, both props rotate the same direction — spoken "same." Below, opposite — spoken "opp." No dot means only one prop is rotating, so there's nothing to compare.</p>
+<p class="cue">CUE — opening/closing</p>
+<p>And lambda and gamma trade the dot for opening and closing — per hand: is the rotating motion resolving toward hands-apart, or hands-together?</p>
+<p class="cue">CUE — spoken forms</p>
+<p>Reading aloud: C with one turn in the high slot is "C-high-one." W, same-dot, one turn in the low slot: "W-same-low-one." In casual conversation, drop the modifiers — it's just C, just W. Nobody spells the whole glyph at a fire jam.</p>
+<p>One reassurance before you panic-memorize: the TKA software places all of this for you. You don't have to write glyphs — you have to recognize what they're telling you. Focus on the motions.</p>
+<h3 id="s33">33 — Orientation Algebra</h3>
+<p class="goal">Goal: the iso-keeps/anti-swaps rule from video 2 grows into the full system; what each motion type does to orientation; predicting your end state from the page; checking yourself mid-sequence.</p>
+<p>Way back in the Positions video I gave you one rule: isolations keep their orientation, anti-spins swap it. That rule was the seed of something bigger, and now that you have all six types, here's the whole plant.</p>
+<p>Every motion type has a fixed effect on your orientation — which way your thumb points at the end:</p>
+<p>A pro — an isolation — preserves it. Start thumb-in, end thumb-in.</p>
+<p>An anti swaps it. In becomes out.</p>
+<p>A dash swaps it too — cross the grid, and your relationship to the center flips. <span class="slot"><b>AUSTEN</b> verify the on-camera phrasing here — the knowledge base grounds this as: anti and dash reverse orientation at their base; pro preserves it.</span></p>
+<p>A static changes nothing, because nothing moved.</p>
+<p class="cue">CUE — reading a sequence off the page</p>
+<p>So here's the superpower. Take any written sequence. Before you move at all, walk the letters: pro, keep. Anti, swap. Dash, swap. Static, keep. You now know your orientation at every beat — including the last one — without touching a staff. And mid-sequence, one glance at your thumbs tells you whether you're on script or one swap behind.</p>
+<p class="cue">CUE — worked example</p>
+<p><span class="slot"><b>AUSTEN</b> pick a short real sequence and walk it on camera, thumb checkpoints at every beat — the payoff demo.</span></p>
+<p>That's orientation algebra. Next part of the series, we finally spend the numbers in those turn slots.</p>
+<h2 class="part">Part VIII — Turns (Levels 2 and 3)</h2>
+<h3 id="s34">34 — Turns (Level 2)</h3>
+<p class="goal">Goal: what a turn actually is; 1 turn = 180° added; turns live per-hand in the glyph slots; same letter, new flavors; level framing.</p>
+<p>Everything so far has been Level 1: the base form of every motion, zero turns. Level 2 unlocks one dial: the turn.</p>
+<p>A turn is extra prop rotation added on top of a motion's base. One turn means one hundred eighty degrees of additional rotation. Two turns, a full extra rotation. Level 2 uses whole turns: zero, one, two, or three.</p>
+<p class="cue">CUE — same letter, 0 vs 1 turn</p>
+<p>Watch the same letter twice. <span class="slot"><b>AUSTEN</b> your demo letter — base form, then with one turn on one hand.</span> Same hand path, same position, same letter — the prop just works harder on the way. That's why turns live in those two glyph slots instead of changing the letter: the letter is WHERE you go; turns are how much the prop spins getting there.</p>
+<p>And they're per-hand. One turn on the pro hand and none on the anti is a different pictograph than the reverse — "C-high-one" and "C-low-one" are different moves, not mirror images.</p>
+<p class="cue">CUE — orientation callback</p>
+<p>One tie-back to the algebra video: an odd number of turns swaps your orientation; an even number keeps it. Your thumb-check still works — it just counts turns now too. <span class="slot"><b>AUSTEN</b> verify phrasing; grounded as odd whole turns reverse orientation.</span></p>
+<p><span class="slot"><b>AUSTEN</b> drill progression — which letters take turns first, and the pitfalls.</span></p>
+<h3 id="s35">35 — Half Turns and Floats (Level 3)</h3>
+<p class="goal">Goal: halves split the dial; the float as its own motion quality; fl in the slot; the pro/anti boundary idea; where the foundation arc completes.</p>
+<p>Level 3 splits the dial in half — half turns now count: a half, one and a half, two and a half. A half turn is ninety degrees of added rotation, and it lands you sideways: orientations you couldn't reach on whole turns. <span class="slot"><b>AUSTEN</b> on-camera demo + your language for the in-between orientations.</span></p>
+<p>And Level 3 introduces one genuinely new motion quality: the float. A float doesn't rotate with your hand path and doesn't fight it — the prop holds its absolute angle in space while your hand carries it. In the glyph's turn slot it isn't a number; it's written "fl."</p>
+<p class="cue">CUE — pro vs float vs anti, side by side</p>
+<p>Here's the deep way to see it: pro and anti are two directions of effort, and the float is the boundary between them — the zero point where the prop neither follows nor resists. <span class="slot"><b>AUSTEN</b> your preferred demo for making the boundary visible; this framing is grounded but the demonstration is yours.</span></p>
+<p>Whole turns, half turns, floats: that completes the foundation arc of the level system. Everything after this — new grid points, new orientations, new planes — is new territory, not new dials. But first, let's actually USE the alphabet. Next part: sequences.</p>
+<h2 class="part">Part IX — Sequences and LOOPs</h2>
+<h3 id="s36">36 — Words</h3>
+<p class="goal">Goal: letters chain into words; end position feeds start position; legal transitions; reading a word off the app; first choreography.</p>
+<p>Every video until now taught you letters. This one teaches you to spell.</p>
+<p>A word is letters performed back to back, one per beat. And there's exactly one rule of spelling: each letter has to start where the previous letter ended. Ends in beta? The next letter must start in beta. That's the entire grammar.</p>
+<p class="cue">CUE — a 4-letter word, slow</p>
+<p><span class="slot"><b>AUSTEN</b> your demo word — something from the app with a clean flow.</span> Watch the seams: the end position of each beat IS the start position of the next. The word isn't four moves — it's one path with four names.</p>
+<p>This is why you learned the ends-in rule so early. Ends in alpha: the next beat can be any letter that starts in alpha. The map you memorized for recognizing letters is the same map that tells you what can come next. Recognition and composition are the same skill, run in opposite directions.</p>
+<p class="cue">CUE — the app</p>
+<p><span class="slot"><b>AUSTEN</b> a short beat of the TKA app building the word — pictographs chaining left to right.</span></p>
+<p>Spell something. Any letters, any length, one rule. Next video: what happens when a word bites its own tail.</p>
+<h3 id="s37">37 — LOOPs</h3>
+<p class="goal">Goal: circular words; the LOOP idea; a taste of the transformation types (rotated, mirrored, swapped); why loops are the performance unit; keep the algebra out.</p>
+<p>Some words end where they began. Perform the last beat and you're standing in your starting position, ready to run it again — forever. That's a LOOP.</p>
+<p>You've been doing them since the compound videos: DJ is a loop. So is MP. But loops go far beyond compounds, because a loop isn't just circular — the good ones are built from a pattern that transforms.</p>
+<p class="cue">CUE — examples</p>
+<p>Take a short seed and rotate it: the second half is the first half, carried to new points around the grid. Or mirror it: the second half is the first half flipped left to right. Or swap it: the hands trade jobs — whatever blue did, red does. Rotated, mirrored, swapped — hearing a loop's name tells you how it was built. <span class="slot"><b>AUSTEN</b> one on-camera demo per transformation, using loops from the app — and note the "turn" terminology guard: a loop's rotation slice is "180 degrees," never "half turn."</span></p>
+<p>Why care? Because on stage and at the jam, you don't perform letters — you perform loops. They're the riffs. A four-beat loop you can hold for a minute is worth more than forty beats you can do once.</p>
+<p class="cue">CUE — outro</p>
+<p>And there's a gift waiting in the app: the loops have already been counted, organized, and dealt into decks. Next video — the last of this series — you get your starter deck.</p>
+<h3 id="s38">38 — Your First Deck</h3>
+<p class="goal">Goal: the Level 1 quartered rotated LOOP deck; 2-beat seed × 4 rotations; 64 per starting position; how to practice with cards; series sign-off.</p>
+<p>Here's where the whole series has been heading.</p>
+<p>Take everything you know — the letters, the spelling rule, the loop idea — and apply three constraints: Level 1, zero turns. The rotation keeps going the same direction the whole time. And the loop closes in eight beats with quarter symmetry: you pick just TWO beats, and the grid rotates them ninety degrees, then ninety more, then ninety more, back to start. Two beats of your choosing, four times around. That's the whole recipe.</p>
+<p class="cue">CUE — one card, performed</p>
+<p><span class="slot"><b>AUSTEN</b> perform one deck sequence on camera, seed first, then the full eight beats.</span></p>
+<p>How many of these exist? From each starting position — exactly sixty-four. Not about sixty-four: the math closes at sixty-four, whether you start from alpha, beta, or gamma. The alphabet is finite, the rules are strict, and the whole space has been counted and dealt into a deck of cards you can hold.</p>
+<p class="cue">CUE — the cards</p>
+<p>Pull a card. Read the seed — two beats, you can read glyphs now. Walk the orientation algebra. Perform it four times around. That's practice, that's a warm-up game, that's choreography you can deal at random and own in an afternoon.</p>
+<p>Sixty-four cards, three starting positions, every one built from letters you already speak. The alphabet was the vocabulary. This is your first book.</p>
+<p>Thanks for making it all the way here. Tell me what landed and what I could do better — and I'll see you at Level 2.</p>
+<h2 class="oq">Open domain questions (for Austen)</h2>
+<ol><li><b>Per-letter mechanics for Types 2–5.</b> The knowledge base grounds letter identities, start→end families, pro/anti variants, and PADS/dot/op-cl notation — but not the on-camera walkthroughs. Scripts 24–29 lean hardest on <code>[AUSTEN]</code> slots for this reason.</li>
+<li><b>Why gamma gets four Type 2 letters</b> (W/X/Y/Z vs two per other family) — script 26 proposes the role-asymmetry framing by analogy to U/V; verify.</li>
+<li><b>Dash orientation effect</b> (script 33) — grounded as "anti/dash reverse orientation at base"; confirm your preferred spoken phrasing.</li>
+<li><b>Where the same/opp dot is introduced</b> — script 23 (first applicability) vs script 32 (notation home). Both carry it; cut one.</li>
+<li><b>The ΦΨ compound placement</b> — script 28 (with phi/psi) vs 29 (with duals). Drafted in 29; move if the flow reads better early.</li></ol>
+
+</div>
+
+</html>

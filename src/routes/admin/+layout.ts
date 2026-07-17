@@ -18,11 +18,23 @@ export const load: LayoutLoad = async () => {
     return {};
   }
 
-  const { isInitialized, isAdmin } = await import(
+  const { isInitialized, isAdmin, initializeAuthListener } = await import(
     "$lib/shared/auth/state/auth-state.svelte"
   );
 
-  // Wait for auth to initialize (Firebase needs to resolve the token)
+  // On a direct load / hard refresh this guard runs BEFORE the root layout
+  // mounts, so nothing has started auth init yet — polling alone would time
+  // out and bounce real admins. Kick it off here; the call is memoized, so
+  // the root layout's later initialize() reuses the same in-flight promise.
+  try {
+    await initializeAuthListener();
+  } catch {
+    // Init failure falls through to the poll + isAdmin check below,
+    // which redirects — same outcome as an unauthenticated user.
+  }
+
+  // Wait for auth to initialize (the listener callback flips `initialized`
+  // once the user's role/claims are resolved)
   if (!isInitialized()) {
     await new Promise<void>((resolve) => {
       const check = setInterval(() => {

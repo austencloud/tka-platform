@@ -9,7 +9,7 @@
   const heroDemoSequence = demoJson as unknown as SequenceData;
 
   const DESCRIPTION =
-    "Flow Arts Composer is a free web app for building flow arts choreography. Construct sequences beat by beat, generate them from parameters, animate them, and share them. Supports staff, fans, clubs, hoops, buugeng, and more.";
+    "Flow Arts Composer is a free web app for building flow arts choreography. Construct sequences step by step, generate them from parameters, animate them, and share them. Supports staff, fans, clubs, hoops, buugeng, and more.";
 
   // The tunnel and play-with-it stacks are heavy canvas machinery — mount
   // each only when its section approaches the viewport.
@@ -88,7 +88,7 @@
     "screenshot": "https://tkaflowarts.com/branding/og-image.png",
     "inLanguage": "en-US",
     "featureList": [
-      "Construct sequences beat by beat with only valid options presented",
+      "Construct sequences step by step with only valid options presented",
       "Generate sequences from parameters",
       "Animate sequences in 2D with trails and effects",
       "Watch sequences in a 3D viewer with full scenes",
@@ -145,7 +145,7 @@
         "@type": "HowToStep",
         "position": 3,
         "name": "Build your sequence",
-        "text": "Add movements by selecting start positions, hand motions, and transitions. Each beat is represented as a pictograph."
+        "text": "Add movements by selecting start positions, hand motions, and transitions. Each step is represented as a pictograph."
       },
       {
         "@type": "HowToStep",
@@ -186,7 +186,7 @@
   <div class="lede">
     <p>
       Flow Arts Composer is a free web app for building flow arts choreography. Construct
-      sequences beat by beat, generate them from parameters, watch them animate, and share
+      sequences step by step, generate them from parameters, watch them animate, and share
       them with other flow artists. It supports staff, fans, clubs, hoops, buugeng, and
       more, all built on The Kinetic Alphabet notation system.
     </p>
@@ -209,11 +209,11 @@
 
   <section class="editorial-section" style="--accent: #6366f1">
     <span class="section-kicker">Construct</span>
-    <h2 class="section-title">Build it beat by beat</h2>
+    <h2 class="section-title">Build it step by step</h2>
     <div class="prose">
       <p>
-        Pick a starting position and tap through the options. Each tap adds a beat, and
-        every beat animates the moment you add it. You're never presented with an invalid
+        Pick a starting position and tap through the options. Each tap adds a step, and
+        every step animates the moment you add it. You're never presented with an invalid
         option: the app tracks what's physically possible so you don't have to. You create,
         then approve or reject what you made.
       </p>

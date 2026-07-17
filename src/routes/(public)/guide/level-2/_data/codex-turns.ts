@@ -2,7 +2,7 @@
  * Level 2 turn-codex cell builder.
  *
  * The Level 2 codex pages (old p17–34) are grids of every letter of a type, each
- * shown with a specific turn tuple applied — e.g. p17 is "1|0": one turn on one
+ * shown with a specific turn tuple applied - e.g. p17 is "1|0": one turn on one
  * hand. Rather than hand-author 32 pictographs per page, we reuse the same data
  * path the interactive codex reader uses:
  *
@@ -37,7 +37,7 @@ function highSlotColor(base: PictographData): MotionColor {
   if (b && r && b !== r) {
     return PADS.indexOf(b) < PADS.indexOf(r) ? MotionColor.BLUE : MotionColor.RED;
   }
-  return MotionColor.BLUE; // matching-type: left/blue high (S/T leader exception — see header)
+  return MotionColor.BLUE; // matching-type: left/blue high (S/T leader exception - see header)
 }
 
 const otherColor = (c: MotionColor) => (c === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE);
@@ -107,7 +107,7 @@ export type OpenClose = "open" | "close";
  * (Λ-, Type 5 dual-dash) and Gamma (Γ, Type 6 static). These letters use
  * opening/closing instead of same/opp: the turning hand's spin direction resolves
  * its trajectory toward alpha (open) or beta (close). We set the turning hand's
- * rotation direction to encode it — CW = open, CCW = close by convention.
+ * rotation direction to encode it - CW = open, CCW = close by convention.
  *
  * Accuracy-pass flag: the open↔CW / close↔CCW mapping is a convention here; the
  * true assignment is geometry-dependent (PropRotationStateTracker lookup tables).

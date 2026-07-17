@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * Codex 2/2 — Type 2/3 — Level 2 body page 33 (manifest `codex-2-2-t23`), faithful
+   * Codex 2/2 - Type 2/3 - Level 2 body page 33 (manifest `codex-2-2-t23`), faithful
    * to old p33. p21 split-column layout with 2 turns on each hand (`²₂`), Same (rows
    * 1–2) and Opp (rows 3–4).
    */

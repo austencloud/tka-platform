@@ -45,7 +45,7 @@ export function removeStep(
   createModuleState.pushUndoSnapshot(UndoOperationType.REMOVE_BEATS, {
     stepIndex,
     stepsRemoved: stepsToRemove,
-    description: `Remove beat ${stepIndex} and ${stepsToRemove - 1} subsequent steps`,
+    description: `Remove step ${stepIndex} and ${stepsToRemove - 1} subsequent steps`,
   });
 
   // Remove the beat and all subsequent steps with staggered animation

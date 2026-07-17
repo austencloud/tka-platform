@@ -25,12 +25,12 @@ export function analyzeSelection(
 ): FirstBeatAnalysisResult {
   // No-op if selecting beat 1
   if (stepNumber === 1) {
-    return { action: "no-op", reason: "That's already Beat 1" };
+    return { action: "no-op", reason: "That's already Step 1" };
   }
 
   // Invalid beat number
   if (stepNumber < 1) {
-    return { action: "no-op", reason: "Invalid beat number" };
+    return { action: "no-op", reason: "Invalid step number" };
   }
 
   // For circular sequences, reorder immediately (no steps removed)
@@ -53,13 +53,13 @@ export function getResultMessage(
     return {
       success: true,
       stepsRemoved,
-      message: `Beat ${stepNumber} is now first. Removed ${stepsRemoved} beat${stepsRemoved > 1 ? "s" : ""}.`,
+      message: `Step ${stepNumber} is now first. Removed ${stepsRemoved} step${stepsRemoved > 1 ? "s" : ""}.`,
     };
   }
 
   return {
     success: true,
     stepsRemoved: 0,
-    message: `Beat ${stepNumber} is now beat 1`,
+    message: `Step ${stepNumber} is now step 1`,
   };
 }

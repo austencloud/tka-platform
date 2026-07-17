@@ -2,13 +2,13 @@
  * Exact mid-motion (halfway) staff poses for the Level 2 breakdown strips.
  *
  * Rather than hand-tune each intermediate staff angle, this asks the REAL
- * animation engine where a prop is at stepProgress 0.5 — the same math the
- * live animator uses — so the printed "pause here" frame matches playback
+ * animation engine where a prop is at stepProgress 0.5 - the same math the
+ * live animator uses - so the printed "pause here" frame matches playback
  * exactly, turns included.
  *
  * `interpolatePropAngles` returns, per hand:
- *   centerPathAngle   — hand-center orbit angle
- *   staffRotationAngle — the staff's own rotation
+ *   centerPathAngle   - hand-center orbit angle
+ *   staffRotationAngle - the staff's own rotation
  * `calculatePropCenter`'s recipe (radius = gridHalfwayOffset 150 at the 950
  * viewBox) converts the orbit angle to a viewBox point; the staff SVG is then
  * drawn `translate(cx,cy) rotate(deg) translate(-126.4,-38.9)` (its crossbar
@@ -113,7 +113,7 @@ export function halfwayPose(m: HalfwayMotion, color: MotionColor = MotionColor.R
 
   const result = interpolatePropAngles(step, 0.5);
   const angles = color === MotionColor.BLUE ? result.blueAngles : result.redAngles;
-  // Static motion with 0 turns never moves — no meaningful halfway; caller
+  // Static motion with 0 turns never moves - no meaningful halfway; caller
   // should not request one, but guard anyway.
   if (!angles) return { cx: CENTER, cy: CENTER, deg: 0 };
 

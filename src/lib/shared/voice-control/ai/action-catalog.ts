@@ -44,12 +44,12 @@ export const ACTION_CATALOG: ActionDefinition[] = [
   {
     category: "playback",
     action: "next",
-    description: "Advance to the next step/beat in the sequence",
+    description: "Advance to the next step in the sequence",
   },
   {
     category: "playback",
     action: "previous",
-    description: "Go back to the previous step/beat in the sequence",
+    description: "Go back to the previous step in the sequence",
   },
   {
     category: "playback",

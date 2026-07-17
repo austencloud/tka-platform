@@ -1,11 +1,11 @@
 <script lang="ts">
   /**
-   * Reader companion — the right-hand panel that live-animates the sequence a
+   * Reader companion - the right-hand panel that live-animates the sequence a
    * page hands up. Wraps the standalone InlineAnimationPlayer in MINIMAL chrome
-   * (tap-to-play canvas + thin progress line + hover badge — the showcase idiom,
+   * (tap-to-play canvas + thin progress line + hover badge - the showcase idiom,
    * feedback_minimal_player_chrome); NOT the retired UnifiedTimeline scrubber.
    *
-   * Tempo (Guide Companion v2, 2026-07-10): BPM chips demoted off the top —
+   * Tempo (Guide Companion v2, 2026-07-10): BPM chips demoted off the top -
    * a small "N BPM" button below the animator opens BpmQuickPopover in a
    * bits-ui Popover, same wrapping pattern as PracticeBar.svelte:190 (content
    * primitive is reused; NO sequence-viewer chrome internals imported).
@@ -13,10 +13,10 @@
    * Admin-only additions: Copy-for-AI in the header (hand a broken sequence to
    * Claude instead of describing it) and an edit action row (Replace via
    * SequencePickerModal, Revert/Reset via guide-overrides.svelte). Edits persist
-   * in Firestore for every reader after refresh — see guide-overrides.svelte.ts.
+   * in Firestore for every reader after refresh - see guide-overrides.svelte.ts.
    *
    * P2 (Guide Companion v2): Transform (mirror/color-swap/rotate) opens a
-   * bits-ui Popover menu — same wrapping pattern as the BPM popover above —
+   * bits-ui Popover menu - same wrapping pattern as the BPM popover above -
    * and reuses the existing pure transform services (decoupled from
    * CreateModuleContext, so safe to call from a guide route):
    *   - mirrorSequence / swapColors from sequence-transformer.ts (module-level
@@ -27,18 +27,18 @@
    * (QScanPage.svelte `openInComposer`): stash the SequenceData under the
    * `tka-pending-edit-sequence` localStorage key that
    * deep-link-sequence-handler.ts already reads on construct-tab mount, then
-   * navigate. No sequence-viewer chrome imported — just the handoff data path.
+   * navigate. No sequence-viewer chrome imported - just the handoff data path.
    *
    * P3 (Guide Companion v2): "Edit steps" swaps the animator area for an
-   * inline editing sub-panel — a mini strip of tappable PictographContainer
+   * inline editing sub-panel - a mini strip of tappable PictographContainer
    * cells (tap step N to truncate + rebuild from there) plus an embedded
    * OptionPicker (hideFilters, simplified grid). Edits stage locally
-   * (stagedStrip, plain $state — no per-tap Firestore writes); Save converts
+   * (stagedStrip, plain $state - no per-tap Firestore writes); Save converts
    * the staged strip through sequenceToStrip/guide-inline-edit and calls
    * saveOverride once. OptionPicker takes only currentSequence/currentGridMode
-   * props (no CreateModuleContext dependency — verified by grep, no
+   * props (no CreateModuleContext dependency - verified by grep, no
    * getContext/setContext in option-picker/), so it's safe to embed directly
-   * here. Plain `{#if editing}` swap, not <Crossfade> — the picker is heavy/
+   * here. Plain `{#if editing}` swap, not <Crossfade> - the picker is heavy/
    * stateful (per crossfade-primitive.md, remounting is fine here since there's
    * no state to preserve across the swap, but a keyed crossfade would be the
    * wrong tool for a full sub-panel replacement anyway).
@@ -98,25 +98,25 @@
     /** Live playback step from the player, forwarded so the reader can ring the
      *  matching on-screen strip cell (see GuideActiveStep). */
     onStep?: (currentStep: number) => void;
-    /** Animated prop — hand for the hand chapters, staff for staff strips, or
+    /** Animated prop - hand for the hand chapters, staff for staff strips, or
      *  any PropType from the codex page's prop selector (the engine keys on
      *  this explicit prop, not motion.propType). */
     propType?: "hand" | "staff" | PropType;
-    /** The clicked strip's identity — the key an override saves/reverts/resets
+    /** The clicked strip's identity - the key an override saves/reverts/resets
      *  under. Null when nothing is clicked yet. */
     stripKey?: string | null;
     /** Human page label for the Copy-for-AI header ("Guide: Level 1 › <title> › <word>"). */
     pageTitle?: string;
     /** Guide level for the Copy-for-AI header prefix ("Level 1" | "Level 2"). */
     levelLabel?: string;
-    /** True while the reader's active page is the interactive Codex sheet —
+    /** True while the reader's active page is the interactive Codex sheet -
      *  renders GuideCodexControls above the player region (or above the "click
      *  a sequence" hint, if nothing's been clicked yet). */
     isCodexMode?: boolean;
-    /** True in the reader's mobile (≤720px container) layout — the companion
+    /** True in the reader's mobile (≤720px container) layout - the companion
      *  renders as a hero-animator bottom sheet with an overflow region instead
      *  of the desktop right-panel layout. Owned by GuideReader (single source
-     *  of truth for the 720px cutoff — see reader-mobile.md notes there). */
+     *  of truth for the 720px cutoff - see reader-mobile.md notes there). */
     isMobile?: boolean;
     /** Show the α/β/γ start→end position indicator on the animator for the
      *  clicked strip (guide hand-path exploration; resolved by GuideReader). */
@@ -125,12 +125,12 @@
 
   // Mobile sheet: compact (animator + slim bar) vs expanded (overflow region
   // with BPM/admin/codex controls revealed above the animator). Local to this
-  // component per spec — the reader learns the sheet's rendered height via a
+  // component per spec - the reader learns the sheet's rendered height via a
   // ResizeObserver on its own wrapper element, not by reading this flag.
   let overflowOpen = $state(false);
 
   // Respect the OS reduced-motion setting: don't auto-start playback for those
-  // users — they get the player paused with a visible play control instead.
+  // users - they get the player paused with a visible play control instead.
   const prefersReducedMotion =
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -140,7 +140,7 @@
   let transformOpen = $state(false);
   let transformBusy = $state(false);
 
-  // Inline step editing (P3) — staged locally; nothing hits Firestore until Save.
+  // Inline step editing (P3) - staged locally; nothing hits Firestore until Save.
   let editing = $state(false);
   let stagedStrip = $state<StepData[] | null>(null);
   let editSaving = $state(false);
@@ -151,7 +151,7 @@
   const editPropTypeOverride = $derived(propType === "staff" ? PropType.STAFF : PropType.HAND);
 
   // Revert availability is fetched lazily (Firestore read) whenever a new
-  // strip is clicked while signed in as admin — cached in the override module
+  // strip is clicked while signed in as admin - cached in the override module
   // so the button can read it synchronously.
   $effect(() => {
     const key = stripKey;
@@ -200,7 +200,7 @@
     }
   }
 
-  /** Mirror / Color Swap / Rotate — pure transform services, decoupled from
+  /** Mirror / Color Swap / Rotate - pure transform services, decoupled from
    *  CreateModuleContext, so callable directly from this public guide route.
    *  rotateSequenceGeometry's `steps` unit is 45°; 90° = 2 steps. */
   async function runTransform(kind: TransformKind) {
@@ -234,7 +234,7 @@
     }
   }
 
-  /** Composer handoff — identical mechanism to QScanPage.svelte's
+  /** Composer handoff - identical mechanism to QScanPage.svelte's
    *  `openInComposer`: stash the SequenceData under the well-known pending-edit
    *  key (deep-link-sequence-handler.ts reads it on construct-tab mount), then
    *  navigate. No sequence-viewer chrome imported. */
@@ -243,13 +243,13 @@
     try {
       localStorage.setItem(PENDING_EDIT_SEQUENCE_KEY, JSON.stringify(sequence));
     } catch {
-      // Storage unavailable (private mode) — still navigate; the composer
+      // Storage unavailable (private mode) - still navigate; the composer
       // just starts empty.
     }
     void goto("/create/construct");
   }
 
-  /** Enter edit mode — stage the current sequence's flat strip locally. */
+  /** Enter edit mode - stage the current sequence's flat strip locally. */
   function startEdit() {
     if (!sequence || !stripKey) return;
     stagedStrip = sequenceToStrip(sequence);
@@ -262,7 +262,7 @@
     stagedStrip = truncateStripAt(stagedStrip, stepNumber);
   }
 
-  /** OptionPicker selection — append the picked pictograph as the next step. */
+  /** OptionPicker selection - append the picked pictograph as the next step. */
   function handleEditOptionSelected(option: PictographData) {
     if (!stagedStrip) return;
     stagedStrip = appendStep(stagedStrip, option);
@@ -293,7 +293,7 @@
 
 {#snippet editPanel()}
   <div class="edit-panel">
-    <div class="edit-strip" role="group" aria-label="Staged steps — tap a step to rebuild from there">
+    <div class="edit-strip" role="group" aria-label="Staged steps: tap a step to rebuild from there">
       {#each stagedStrip ?? [] as box, i (box.id ?? i)}
         {@const stepNumber = box.stepNumber ?? 0}
         <button
@@ -301,7 +301,7 @@
           class="edit-cell"
           class:is-start={stepNumber === 0}
           onclick={() => handleTruncateAt(stepNumber)}
-          aria-label={stepNumber === 0 ? "Start position" : `Step ${stepNumber} — tap to rebuild from here`}
+          aria-label={stepNumber === 0 ? "Start position" : `Step ${stepNumber}: tap to rebuild from here`}
         >
           <PictographContainer
             pictographData={box}
@@ -547,7 +547,7 @@
     color: var(--theme-text, #e8e6f0);
   }
 
-  /* Mobile hero-animator sheet — the bottom sheet sizes itself off this
+  /* Mobile hero-animator sheet - the bottom sheet sizes itself off this
    * layout (sheet-bar + expandable sheet-scroll + fixed-square animator);
    * GuideReader's aside just anchors it to the bottom and clips overflow.
    * See scroll-sync in GuideReader (scrollCellIntoBand) which reacts to this
@@ -611,7 +611,7 @@
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: -2px;
   }
-  /* Expandable region above the animator — always mounted so the height
+  /* Expandable region above the animator - always mounted so the height
    * change is a CSS transition, not a mount/unmount (spec: height/max-height
    * transition, collapsed under reduced-motion). */
   .sheet-scroll {
@@ -640,11 +640,11 @@
     overflow: hidden;
     padding: 0.6rem 0.75rem 0.75rem;
   }
-  /* The hero — a clean square driven by the smaller of "half the viewport
+  /* The hero - a clean square driven by the smaller of "half the viewport
    * height" and "the sheet's own width", per spec. */
   .sheet-animator {
     flex: 0 0 auto;
-    /* 100% would be indeterminate here — the companion's ancestor chain up
+    /* 100% would be indeterminate here - the companion's ancestor chain up
      * to the sheet is height:auto, so a percentage has nothing definite to
      * resolve against. 100vw is definite and, on mobile, equal to the
      * sheet's own width (it spans edge-to-edge), so this still yields "the
@@ -719,7 +719,7 @@
     outline-offset: -2px;
   }
 
-  /* The player fills the panel — the canvas is the hero, no centering margins. */
+  /* The player fills the panel - the canvas is the hero, no centering margins. */
   .body {
     flex: 1;
     min-height: 0;
@@ -740,7 +740,7 @@
     text-align: center;
   }
 
-  /* Tempo — the full BpmChips (big tap-tempo number + preset chips), below the
+  /* Tempo - the full BpmChips (big tap-tempo number + preset chips), below the
      animator. Fills the panel width. */
   .tempo-row {
     flex: 0 0 auto;
@@ -794,7 +794,7 @@
     cursor: not-allowed;
   }
 
-  /* Admin edit actions — an even 3-column grid so N buttons form clean rows
+  /* Admin edit actions - an even 3-column grid so N buttons form clean rows
      (was flex-wrap, which stranded a lone button on its own row). */
   .admin-row {
     flex: 0 0 auto;
@@ -847,7 +847,7 @@
     }
   }
 
-  /* Inline pictograph editing (P3) — mini strip + embedded OptionPicker. */
+  /* Inline pictograph editing (P3) - mini strip + embedded OptionPicker. */
   .edit-panel {
     flex: 1;
     min-height: 0;

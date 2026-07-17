@@ -90,7 +90,7 @@ export const actionHelpContent: ActionHelpItem[] = [
     color: "#f43f5e",
     shortDesc: "Rewind the sequence backwards",
     fullDesc:
-      "Like rewinding a video! Takes the end position as your new start, then plays every beat backwards. Turns flip direction (clockwise becomes counter-clockwise). Note: This will change the letters or word of your sequence!",
+      "Like rewinding a video! Takes the end position as your new start, then plays every step backwards. Turns flip direction (clockwise becomes counter-clockwise). Note: This will change the letters or word of your sequence!",
     category: "transform",
   },
 
@@ -102,7 +102,7 @@ export const actionHelpContent: ActionHelpItem[] = [
     color: "#14b8a6",
     shortDesc: "Apply turn patterns",
     fullDesc:
-      "Applies a turn pattern across your entire sequence. Turn patterns let you create consistent rhythms by setting how many turns (0, 0.5, 1, 1.5, 2, 2.5, or 3) each beat has. Choose from presets like 'All Half Turns' or 'Alternating 1-2' or create your own custom pattern.",
+      "Applies a turn pattern across your entire sequence. Turn patterns let you create consistent rhythms by setting how many turns (0, 0.5, 1, 1.5, 2, 2.5, or 3) each step has. Choose from presets like 'All Half Turns' or 'Alternating 1-2' or create your own custom pattern.",
     category: "pattern",
   },
   {
@@ -112,7 +112,7 @@ export const actionHelpContent: ActionHelpItem[] = [
     color: "#0ea5e9",
     shortDesc: "CW/CCW patterns",
     fullDesc:
-      "Sets the rotation direction pattern for your sequence. Control whether each beat rotates clockwise (CW) or counter-clockwise (CCW). Choose from presets like 'All Clockwise', 'Alternating', or create custom direction patterns for each beat.",
+      "Sets the rotation direction pattern for your sequence. Control whether each step rotates clockwise (CW) or counter-clockwise (CCW). Choose from presets like 'All Clockwise', 'Alternating', or create custom direction patterns for each step.",
     category: "pattern",
   },
   {
@@ -134,17 +134,17 @@ export const actionHelpContent: ActionHelpItem[] = [
     color: "#22c55e",
     shortDesc: "Complete to start",
     fullDesc:
-      "Extends your sequence back to its starting position using a LOOP pattern. When the last beat's position matches the first beat's position group, you can choose from different LOOP types (like Mirrored, Swapped, or Rotated) to loop your sequence.",
+      "Extends your sequence back to its starting position using a LOOP pattern. When the last step's position matches the first step's position group, you can choose from different LOOP types (like Mirrored, Swapped, or Rotated) to loop your sequence.",
     category: "tool",
   },
   {
     id: "shift-start",
     icon: "fa-forward",
-    name: "First Beat",
+    name: "First Step",
     color: "#06b6d4",
-    shortDesc: "Pick new beat 1",
+    shortDesc: "Pick new step 1",
     fullDesc:
-      "Changes which beat is the starting point of your sequence. Tap any beat to make it the new 'Beat 1' - the sequence will be reordered so that beat plays first. Great for finding the best entry point into a pattern or creating variations from the same movements.",
+      "Changes which step is the starting point of your sequence. Tap any step to make it the new 'Step 1' - the sequence will be reordered so that step plays first. Great for finding the best entry point into a pattern or creating variations from the same movements.",
     category: "tool",
   },
 ];

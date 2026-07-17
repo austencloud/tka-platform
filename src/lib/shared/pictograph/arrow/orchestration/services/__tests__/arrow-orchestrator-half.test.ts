@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
+import { setDefaultOverrideResolver } from "$lib/shared/pictograph/arrow/positioning/placement/services/arrow-placer";
 import { calculateArrowPoint } from "$lib/shared/pictograph/arrow/orchestration/services/arrow-positioning-orchestrator";
 import { calculateSegmentRotation } from "$lib/shared/pictograph/arrow/positioning/calculation/services/segment-rotation";
 import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator";
@@ -60,6 +61,26 @@ describe("orchestrator — segment frames bypass the letter-adjustment machinery
     const [x, y] = await calculateArrowPoint(picto, motion);
     expect(x).toBeCloseTo(initial.x, 6);
     expect(y).toBeCloseTo(initial.y, 6);
+  });
+});
+
+describe("orchestrator — segment adjustments are GLYPH-LOCAL (rotate with the glyph)", () => {
+  afterEach(() => setDefaultOverrideResolver(null));
+
+  it("rotates an authored _half adjustment by the segment rotation before applying", async () => {
+    // Inject a known glyph-local nudge via the default-override seam (the same
+    // seam Firestore admin overrides use).
+    setDefaultOverrideResolver((_g, motionType, placementKey, turns) =>
+      motionType === "pro_half" && placementKey === "pro" && turns === "1" ? [10, 0] : null
+    );
+    const { picto, motion } = segmentPictograph();
+    const location = arrowLocationCalculator.calculateLocation(motion, picto);
+    const initial = getInitialPosition(motion, location);
+    const [x, y, rotation] = await calculateArrowPoint(picto, motion);
+    // PRO cw -> not mirrored; local (10, 0) rotated by R.
+    const rad = (rotation * Math.PI) / 180;
+    expect(x).toBeCloseTo(initial.x + 10 * Math.cos(rad), 6);
+    expect(y).toBeCloseTo(initial.y + 10 * Math.sin(rad), 6);
   });
 });
 

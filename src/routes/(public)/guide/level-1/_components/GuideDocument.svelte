@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * The Level 1 guide as ONE ordered page sequence — the single source of truth
+   * The Level 1 guide as ONE ordered page sequence - the single source of truth
    * for what pages exist and in what order. Both the print route (stacked pages)
    * and the book route (StPageFlip scaled pages) render this, so the two can
    * never drift in contents or order.
@@ -40,7 +40,7 @@
   const SUPPORT_QR = "/guide/level-1/images/_shared/qr-support.png";
   const SUPPORT_URL = "tkaflowarts.com/support";
 
-  // ── Edit-mode offsets (pt) — every front-matter block drags/deletes ────────
+  // ── Edit-mode offsets (pt) - every front-matter block drags/deletes ────────
   const S = 816 / 612;
   type Off = { x: number; y: number };
   const zero = (): Off => ({ x: 0, y: 0 });
@@ -90,7 +90,7 @@
 </script>
 
 <!-- Load the guide typefaces via a real <link> (robust) rather than relying on
-     the @import in guide.css, which Vite can drop when bundling per route — that
+     the @import in guide.css, which Vite can drop when bundling per route - that
      was making Tangerine fall back to Segoe Script on /print but not /book. -->
 <svelte:head>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -207,7 +207,7 @@
        title normally comes from the manifest (entry.title) and is rendered by
        GuidePage, so a page's heading and its TOC row can never drift. A
        `selfTitled` page paints its own header(s) instead (multi-section pages),
-       so GuidePage's single title is suppressed — the TOC still uses entry.title.
+       so GuidePage's single title is suppressed - the TOC still uses entry.title.
        Pages with neither built nor proof keep the standard placeholder. -->
   {@render page({
     kind: "body",
@@ -221,7 +221,7 @@
 {/each}
 
 <style>
-  /* Cover — full-bleed GuideCover. aspect-ratio gives the box a concrete height
+  /* Cover - full-bleed GuideCover. aspect-ratio gives the box a concrete height
      (width × 11/8.5) so the cover's height:100% layout fills the page. */
   .cover-fill {
     width: 100%;
@@ -231,7 +231,7 @@
   /* Front-matter pages (white interior, ink-cheap). flex:1 + min-height:0 makes
      it fill the page body BELOW the header (not a fixed 9.4in that overflows the
      header and shoves content low), so content centres in the true remaining
-     space — header pinned top, QR/text dead-centre under it. */
+     space - header pinned top, QR/text dead-centre under it. */
   .frontmatter {
     flex: 1 1 auto;
     min-height: 0;
@@ -293,7 +293,7 @@
     letter-spacing: 0.01em;
     color: #2a2a2a;
   }
-  /* Support page: centred sentence-per-line. :global — the .ln spans now live in
+  /* Support page: centred sentence-per-line. :global - the .ln spans now live in
      an {@html} string, which Svelte's scoped CSS does not reach. */
   .support :global(.ln) {
     display: block;
@@ -301,7 +301,7 @@
 
   /* ── Read Me First (authored letter, not a textbook block) ─────────────
      A framed column: margin:auto centres it in the page body so there's even
-     breathing room top, bottom, and both sides — intentionally placed. */
+     breathing room top, bottom, and both sides - intentionally placed. */
   .read-me {
     max-width: 5.4in;
     margin: auto;
@@ -337,7 +337,7 @@
     margin-top: 0.3in !important;
     line-height: 1.4;
   }
-  /* :global — the sign-off .rm-sig span lives in an {@html} string (unscoped). */
+  /* :global - the sign-off .rm-sig span lives in an {@html} string (unscoped). */
   .read-me :global(.rm-sig) {
     font-family: "Fraunces", Georgia, serif;
     font-style: italic;

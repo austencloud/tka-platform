@@ -1,13 +1,13 @@
 <script lang="ts">
   /**
-   * The Grid — body page 1, a faithful reproduction of the original proof PDF
+   * The Grid - body page 1, a faithful reproduction of the original proof PDF
    * (level-1-v05.pdf, page 7). Layout is DATA-DRIVEN from the PDF's own text-box
    * coordinates: every text run was extracted with its (x, y, w) in PDF points
    * (612×792pt page) and placed here at the exact same spot.
    *
    * The sheet is 816×1056px (8.5×11in @96dpi), so 1pt = 4/3px. The root is an
    * absolute layer over the whole GuidePage, so coordinates map straight to the
-   * sheet — text lands where Austen intentionally placed it. The page renders
+   * sheet - text lands where Austen intentionally placed it. The page renders
    * fullBleed (no GuidePage header), so the title is just another positioned run.
    *
    * Grids reuse the canonical renderer (GridSvg) forced to light mode
@@ -93,10 +93,10 @@
   ]);
 
   // The three point descriptions as SINGLE selectable text blocks (bold term
-  // inline, explicit line breaks) — not per-word runs that fragment + gap when
+  // inline, explicit line breaks) - not per-word runs that fragment + gap when
   // selected. Positioned at the proof's first-line origin; lh = proof line pitch.
   // The three point descriptions as ONE selectable block (was three separate
-  // blocks) — a blank line separates each, bold term inline.
+  // blocks) - a blank line separates each, bold term inline.
   let PARAS = $state([
     {
       x: 30.7,
@@ -138,7 +138,7 @@
   // straight callout arrows below line up with the real pictograph's points.
   const DIAG = { x: 294.3, y: 210.8, w: 300, h: 300 };
   // Bottom minis measured off the proof: 159.5pt squares at x 35.5 / 225 / 414.5,
-  // top y589 (bottom 748.5, ~12pt above the footer — the proof's tight, even gap).
+  // top y589 (bottom 748.5, ~12pt above the footer - the proof's tight, even gap).
   const MINI = { y: 589, w: 159.5, h: 159.5 };
   const minis: { x: number; type: "diamond" | "box" | "merged" }[] = [
     { x: 35.5, type: "diamond" },
@@ -152,10 +152,10 @@
 {#snippet figure(type: "diamond" | "box" | "merged")}
   {@const gridLabel =
     type === "diamond"
-      ? "Diamond grid — four points at north, east, south, and west"
+      ? "Diamond grid: four points at north, east, south, and west"
       : type === "box"
-        ? "Box grid — four points on the diagonals"
-        : "8-point grid — diamond and box combined"}
+        ? "Box grid: four points on the diagonals"
+        : "8-point grid: diamond and box combined"}
   <svg class="fig" viewBox="0 0 950 950" role="img" aria-label={gridLabel}>
     <desc>{gridLabel}</desc>
     <rect width="950" height="950" fill="#ffffff" />
@@ -341,19 +341,19 @@
     outline: 1.5px solid #3730a3;
     outline-offset: 1px;
   }
-  /* The + / = operators between the bottom minis — heavy, centred in their box. */
+  /* The + / = operators between the bottom minis - heavy, centred in their box. */
   .run.op {
     text-align: center;
     font-weight: 700;
     color: #1a1a1a;
   }
-  /* Section headings (Diamond / Box / 8-point grid) — display serif (unchanged). */
+  /* Section headings (Diamond / Box / 8-point grid) - display serif (unchanged). */
   .run.s {
     font-family: var(--guide-display);
     font-style: italic;
     font-weight: 600;
   }
-  /* Page title is the shared .guide-title (guide.css) — no per-page title rule. */
+  /* Page title is the shared .guide-title (guide.css) - no per-page title rule. */
 
   .diagram,
   .mini {
@@ -369,12 +369,12 @@
   .fig :global(.grid-container) {
     opacity: 1;
   }
-  /* The proof shows points only — drop the connecting grid lines. */
+  /* The proof shows points only - drop the connecting grid lines. */
   .fig :global(line) {
     display: none;
   }
 
-  /* Callout arrows overlay — full sheet, drawn in PDF (612×792) space. */
+  /* Callout arrows overlay - full sheet, drawn in PDF (612×792) space. */
   .arrows {
     position: absolute;
     inset: 0;
@@ -383,7 +383,7 @@
     pointer-events: none;
     overflow: visible;
   }
-  /* Only the arrow lines (direct children) — NOT the marker's triangle path. */
+  /* Only the arrow lines (direct children) - NOT the marker's triangle path. */
   .arrows > path {
     fill: none;
     stroke: #222;

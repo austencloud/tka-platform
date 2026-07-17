@@ -56,7 +56,7 @@
     { icon: "fa-download", label: "Export your animations & cards" },
     { icon: "fa-bookmark", label: "Save your work, safely" },
     { icon: "fa-cloud-arrow-up", label: "Sync across devices" },
-    { icon: "fa-wand-magic-sparkles", label: "Longer sequences, up to 64 beats" },
+    { icon: "fa-wand-magic-sparkles", label: "Longer sequences, up to 64 steps" },
   ];
 
   // SocialAuthCompact handles Google internally but delegates Facebook to the

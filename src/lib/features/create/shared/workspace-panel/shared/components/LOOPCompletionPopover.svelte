@@ -92,7 +92,7 @@
 
 <div class="popover-content" role="region" aria-label="LOOP completion options">
   {#if !hasSufficientBeats}
-    <p class="empty-message">Add more beats to see LOOP options.</p>
+    <p class="empty-message">Add more steps to see LOOP options.</p>
   {:else}
     {#if currentLoopLabel}
       <div class="loop-status">

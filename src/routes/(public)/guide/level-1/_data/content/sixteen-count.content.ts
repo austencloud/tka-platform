@@ -14,7 +14,7 @@ import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { bakeReversals } from "../guide-sequence-adapter";
 
-// Verbatim prose lifted from _pages/SixteenCountPage.svelte (Austen's words — never AI-written);
+// Verbatim prose lifted from _pages/SixteenCountPage.svelte (Austen's words - never AI-written);
 // pictograph construction is a FAITHFUL COPY of that same file's step authoring (same
 // helpers, same locations/orientations → identical staff pictographs), minus the
 // reader-only wiring (selection, overrides, click-to-animate, sheet geometry).
@@ -72,7 +72,7 @@ type SeqDef = {
 };
 const SEQS: SeqDef[] = [
   {
-    // GΘOZ ×4 — Rotated + Swapped LOOP; both props CCW throughout.
+    // GΘOZ ×4 - Rotated + Swapped LOOP; both props CCW throughout.
     key: "sc-gtoz",
     word: "GΘOZ ×4",
     steps: [
@@ -95,7 +95,7 @@ const SEQS: SeqDef[] = [
     ],
   },
   {
-    // EΔQY ×4 — Rotated + Mirrored + Swapped LOOP; blue CCW, red CW.
+    // EΔQY ×4 - Rotated + Mirrored + Swapped LOOP; blue CCW, red CW.
     key: "sc-eqdy",
     word: "EΔQY ×4",
     steps: [
@@ -150,7 +150,7 @@ const startBox = (q: SeqDef): StepData =>
   }) as unknown as StepData;
 
 // Each sequence's full strip (start + 16 steps), reversal dots derived from
-// the motions themselves via bakeReversals (never hand-authored) — matching
+// the motions themselves via bakeReversals (never hand-authored) - matching
 // SixteenCountPage.svelte's PICTO_FLAGS.showReversals: true. Constant
 // per-hand prop rotation (statics inert) means bakeReversals derives no
 // flags here, matching the artboard.
@@ -159,7 +159,7 @@ const seqStrip = (q: SeqDef): PictographData[] => {
   return [authored[0], ...bakeReversals(authored.slice(1))] as unknown as PictographData[];
 };
 
-/** STAFF props with reversal dots — matching SixteenCountPage's PICTO_FLAGS. */
+/** STAFF props with reversal dots - matching SixteenCountPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF, showReversals: true } as const;
 
 export const sixteenCountContent: GuideBlock[] = [

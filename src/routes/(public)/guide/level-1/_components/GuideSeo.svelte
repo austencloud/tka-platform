@@ -1,6 +1,6 @@
 <script lang="ts">
   /**
-   * One SEO surface for every indexable guide page — canonical URL, Open Graph,
+   * One SEO surface for every indexable guide page - canonical URL, Open Graph,
    * Twitter card, and a schema.org JSON-LD graph (the learning resource / course
    * + author + publisher + breadcrumb trail). Pages pass structured props; this
    * owns the head markup so no guide page hand-rolls meta tags (and so the

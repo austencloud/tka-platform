@@ -100,6 +100,10 @@ let cleanupSubscriptionListener: (() => void) | null = hmrAuthData?.cleanupSubsc
 // Without this guard, every file save in dev triggers ~12 Firestore reads.
 let childServicesInitialized = hmrAuthData?.childServicesInitialized ?? false;
 
+// Shared in-flight init promise — declared before the HMR re-wire block below,
+// which calls initializeAuthListener() during module evaluation.
+let authInitPromise: Promise<void> | null = null;
+
 if (import.meta.hot) {
   import.meta.hot.dispose((data) => {
     data.authState = { ..._state };
@@ -269,8 +273,23 @@ async function initializeSubscriptionListener(user: User): Promise<void> {
 /**
  * Initialize the auth state listener
  * Sets up Firebase onAuthStateChanged and orchestrates auth flows
+ *
+ * Memoized: callers race for this (the /admin route-guard load runs before the
+ * root layout mounts, so it can't rely on +layout.svelte having called it).
+ * Concurrent calls share one in-flight promise instead of wiring two listeners.
  */
-export async function initializeAuthListener(): Promise<void> {
+export function initializeAuthListener(): Promise<void> {
+  if (!authInitPromise) {
+    authInitPromise = doInitializeAuthListener().catch((error) => {
+      // Allow retry after a failed init instead of caching the rejection forever
+      authInitPromise = null;
+      throw error;
+    });
+  }
+  return authInitPromise;
+}
+
+async function doInitializeAuthListener(): Promise<void> {
   if (cleanupAuthListener) {
     console.warn("⚠️ [authState] Auth listener already initialized");
     return;
@@ -359,9 +378,16 @@ export async function initializeAuthListener(): Promise<void> {
     auth,
     async (user) => {
       // Immediately reflect user in state so UI updates even if
-      // downstream Firestore/network operations hang (common in Tauri desktop)
+      // downstream Firestore/network operations hang (common in Tauri desktop).
+      // Deliberately NOT setting initialized here: consumers (e.g. the /admin
+      // route guard) treat initialized as "role/claims are resolved", and the
+      // claims aren't read until a few lines down — flipping it early made the
+      // guard see isAdmin=false mid-window and bounce admins to the landing.
+      // The claim read below is a local token-cache lookup (no network), so
+      // initialized still flips within the same tick chain at the state
+      // assignment that carries the resolved role.
       if (user !== _state.user) {
-        _state = { ..._state, user, initialized: true };
+        _state = { ..._state, user };
       }
 
       // ── Fast path: cached claims → set state → unblock UI ──

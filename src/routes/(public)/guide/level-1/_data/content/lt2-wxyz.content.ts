@@ -1,7 +1,7 @@
 /**
  * Single source for the Type 2 Shift Letters SEO doorway (manifest id
  * "lt2-wxyz"). Prose is lifted VERBATIM from
- * _pages/Type2ShiftLettersPage.svelte (Austen's words — never AI-written);
+ * _pages/Type2ShiftLettersPage.svelte (Austen's words - never AI-written);
  * the pictograph construction is a FAITHFUL COPY of that same file's
  * static+shift derivation (same helpers, same locations/orientations →
  * identical staff pictographs), minus the reader-only wiring (selection,
@@ -28,7 +28,7 @@ const { IN, OUT } = Orientation;
 const CW = RotationDirection.CLOCKWISE;
 const CCW = RotationDirection.COUNTER_CLOCKWISE;
 
-// ── Motion authoring — copied from Type2ShiftLettersPage.svelte ────────────
+// ── Motion authoring - copied from Type2ShiftLettersPage.svelte ────────────
 const HP_CW = new Set(["s-w", "w-n", "n-e", "e-s"]);
 const hpDir = (from: GridLocation, to: GridLocation) => (HP_CW.has(`${from}-${to}`) ? CW : CCW);
 const redShift = (from: GridLocation, to: GridLocation, anti: boolean, so: Orientation) => {
@@ -95,7 +95,7 @@ const startFor = (blueLoc: GridLocation, redLoc: GridLocation, id: string, lette
     },
   }) as unknown as StepData;
 
-// ── The four letter boxes — γ→α OPEN, γ→β CLOSE, α→γ CLOSE, β→γ OPEN ───────
+// ── The four letter boxes - γ→α OPEN, γ→β CLOSE, α→γ CLOSE, β→γ OPEN ───────
 type BoxDef = { label: string; tag: "OPEN" | "CLOSE"; cells: CellDef[] };
 const BOXES: BoxDef[] = [
   {
@@ -136,7 +136,7 @@ const boxGroup = (box: BoxDef, key: string): PictographData[] =>
   box.cells.map((c) => step(c, `${key}-${c.name}`, null)) as unknown as PictographData[];
 
 // ── The two word rows: red cycles the CCW loop e→n→w→s→e from the shared γ
-// Start; blue rests — copied from Type2ShiftLettersPage.svelte. ────────────
+// Start; blue rests - copied from Type2ShiftLettersPage.svelte. ────────────
 const RED_CCW: [GridLocation, GridLocation][] = [
   [E, N],
   [N, W],
@@ -158,14 +158,14 @@ const rowCell = (r: RowDef, i: number): CellDef => ({
   so: r.anti && i % 2 === 1 ? OUT : IN,
 });
 // Type2ShiftLettersPage's PICTO_FLAGS keeps showReversals off, so the strip
-// is used directly — no bakeReversals needed for the display.
+// is used directly - no bakeReversals needed for the display.
 const rowStrip = (r: RowDef): PictographData[] =>
   [
     startFor(SO_, E, "t2w-start"),
     ...[0, 1, 2, 3].map((i) => step(rowCell(r, i), `${r.key}-s-${i + 1}`, i + 1)),
   ] as unknown as PictographData[];
 
-/** STAFF props, TKA letter glyph on — matching Type2ShiftLettersPage's PICTO_FLAGS. */
+/** STAFF props, TKA letter glyph on - matching Type2ShiftLettersPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF } as const;
 
 export const lt2WxyzContent: GuideBlock[] = [
@@ -183,10 +183,10 @@ export const lt2WxyzContent: GuideBlock[] = [
       "Their letters are organized by end position: α, β, then γ.<br>" +
       "These can also be categorized by opening or closing.",
   },
-  { kind: "pictographGroup", items: boxGroup(BOXES[0]!, "t2-a"), flowCols: 2, render: RENDER, caption: "γ→α OPEN — W, X" },
-  { kind: "pictographGroup", items: boxGroup(BOXES[1]!, "t2-b"), flowCols: 2, render: RENDER, caption: "γ→β CLOSE — Y, Z" },
-  { kind: "pictographGroup", items: boxGroup(BOXES[2]!, "t2-c"), flowCols: 2, render: RENDER, caption: "α→γ CLOSE — Sigma, Delta" },
-  { kind: "pictographGroup", items: boxGroup(BOXES[3]!, "t2-d"), flowCols: 2, render: RENDER, caption: "β→γ OPEN — Theta, Omega" },
+  { kind: "pictographGroup", items: boxGroup(BOXES[0]!, "t2-a"), flowCols: 2, render: RENDER, caption: "γ→α OPEN: W, X" },
+  { kind: "pictographGroup", items: boxGroup(BOXES[1]!, "t2-b"), flowCols: 2, render: RENDER, caption: "γ→β CLOSE: Y, Z" },
+  { kind: "pictographGroup", items: boxGroup(BOXES[2]!, "t2-c"), flowCols: 2, render: RENDER, caption: "α→γ CLOSE: Sigma, Delta" },
+  { kind: "pictographGroup", items: boxGroup(BOXES[3]!, "t2-d"), flowCols: 2, render: RENDER, caption: "β→γ OPEN: Theta, Omega" },
   {
     kind: "prose",
     html: "When we arrange them in continuous motions, we get the words WΣYΘ and XΔZΩ.",
@@ -199,7 +199,7 @@ export const lt2WxyzContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2", "3", "4"],
     card: true,
     render: RENDER,
-    caption: "WΣYΘ — pro",
+    caption: "WΣYΘ: pro",
   },
   {
     kind: "pictographGroup",
@@ -209,7 +209,7 @@ export const lt2WxyzContent: GuideBlock[] = [
     stepLabels: ["Start", "1", "2", "3", "4"],
     card: true,
     render: RENDER,
-    caption: "XΔZΩ — anti",
+    caption: "XΔZΩ: anti",
   },
   {
     kind: "prose",
