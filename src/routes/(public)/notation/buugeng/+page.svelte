@@ -51,8 +51,8 @@
         performer's control. The core of The Kinetic Alphabet applies. The nine grid
         positions, the letters, and the timing and direction system describe buugeng
         choreography the same way they describe staff choreography, and
-        <a href="/composer">Flow Arts Composer</a> can render a written sequence with
-        buugeng.
+        <a href="/composer">Flow Arts Composer</a>, free software for flow arts
+        choreography, can render a written sequence with buugeng.
       </p>
       <p>
         Every term is defined in the <a href="/glossary">glossary</a>, and the

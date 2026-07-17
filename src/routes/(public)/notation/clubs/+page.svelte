@@ -52,7 +52,8 @@
         fully under your control. So the core of The Kinetic Alphabet applies as written.
         The nine grid positions, the letters, and the timing and direction system describe
         club choreography the same way they describe staff choreography, and
-        <a href="/composer">Flow Arts Composer</a> can render a sequence with clubs.
+        the <a href="/composer">Flow Arts Composer</a> software can render a sequence
+        with clubs.
       </p>
       <p>
         New to the system? Start with the <a href="/guide">guide</a>, and keep the

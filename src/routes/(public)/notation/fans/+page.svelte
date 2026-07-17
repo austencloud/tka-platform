@@ -52,8 +52,8 @@
         positions, the letters, and the timing and direction system all describe fan
         choreography exactly the way they describe staff choreography. A sequence written
         as letters is prop-agnostic, and the animator in
-        <a href="/composer">Flow Arts Composer</a> can render it with fans instead of
-        staves.
+        <a href="/composer">Flow Arts Composer</a>, TKA's choreography software, can
+        render it with fans instead of staves.
       </p>
       <p>
         If a term is unfamiliar, the <a href="/glossary">glossary</a> defines all of them,
