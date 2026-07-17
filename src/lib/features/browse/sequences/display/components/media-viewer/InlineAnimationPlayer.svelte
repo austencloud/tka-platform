@@ -101,6 +101,9 @@
     fill = false,
     showPositionGlyph = false,
     onStepChange = undefined,
+    scrubbable = false,
+    singlePlay = false,
+    beatIndicators = true,
   }: {
     sequence: SequenceData;
     autoPlay?: boolean;
@@ -139,6 +142,28 @@
      * to make the animation as large as possible in the panel.
      */
     fill?: boolean;
+    /**
+     * Upgrade the minimal-chrome progress LINE into a seekable scrubber (drag/
+     * click/keyboard to seek). Scrubbing pauses playback; releasing resumes it
+     * only if it was already playing (SequenceProgressBar's onScrubStart/
+     * onScrubEnd contract). Off by default — existing minimal-chrome callers
+     * (gallery/Arena embeds) keep the display-only line. Spec:
+     * docs/superpowers/specs/2026-07-17-scrubbable-guide-showcases-design.md.
+     */
+    scrubbable?: boolean;
+    /**
+     * Play through once, then rest on the end pose instead of looping. Tapping
+     * the canvas (or the hover badge) while resting on the end replays from the
+     * start. Off by default so every existing looping caller is byte-identical.
+     */
+    singlePlay?: boolean;
+    /**
+     * Show the canvas's Start/End text overlay (GlyphOverlay's isAtStartPosition/
+     * isAtEndPosition indicator). On by default (unchanged for every existing
+     * caller); the guide showcase turns it off — the on-screen strip already
+     * labels "Start"/steps, so the canvas overlay is redundant there.
+     */
+    beatIndicators?: boolean;
   } = $props();
 
   const minimal = $derived(chrome === "minimal");
@@ -302,6 +327,31 @@
     untrack(() => cb(step));
   });
 
+  // Autoplay: fires at most once per successfully-loaded sequence, whenever
+  // `autoPlay` is true. Reactive to the PROP (not just read once at load time)
+  // so a caller whose `autoPlay` starts false and flips true later — the guide
+  // showcase, which waits for its first scroll-into-view before playing — gets
+  // its one autoplay exactly when that happens. Existing static `autoPlay={true}`
+  // callers (gallery, Arena) behave identically to before: this fires once, at
+  // load, after the same 300ms settle delay the old inline call used.
+  let autoPlayedForLoadId: string | null = null;
+  $effect(() => {
+    if (!autoPlay || !playbackController || !animationState.sequenceData) return;
+    const loadId = lastLoadedSequenceId;
+    if (autoPlayedForLoadId === loadId) return;
+    if (animationState.isPlaying) {
+      autoPlayedForLoadId = loadId;
+      return;
+    }
+    autoPlayedForLoadId = loadId;
+    const pc = playbackController;
+    setTimeout(() => {
+      untrack(() => {
+        if (pc === playbackController) pc.togglePlayback();
+      });
+    }, 300);
+  });
+
   // Watch for sequence changes and reload animation
   // Only triggers when sequence ID changes, not on every state update
   $effect(() => {
@@ -317,12 +367,12 @@
         // Reset state and reload
         animationState.reset();
         lastLoadedSequenceId = sequenceId ?? null;
-        loadAnimation(autoPlay);
+        loadAnimation();
       });
     }
   });
 
-  async function loadAnimation(shouldAutoPlay: boolean = false) {
+  async function loadAnimation() {
     if (!sequenceService || !playbackController || !sequence) return;
 
     loading = true;
@@ -336,8 +386,11 @@
         throw new Error("Failed to load sequence data");
       }
 
-      // Initialize playback
-      animationState.setShouldLoop(true);
+      // Initialize playback. singlePlay reverses the loop flag: rest on the
+      // end pose instead of looping (the `shouldLoop` seam the controller
+      // already implements — see animation-playback-controller.ts's
+      // shouldLoop branches in onAnimationUpdate/runStepPlaybackTick).
+      animationState.setShouldLoop(!singlePlay);
       const success = playbackController.initialize(
         fullSequence,
         animationState
@@ -348,13 +401,7 @@
       }
 
       // Note: playbackController.initialize() already sets normalized sequence data on the state
-
-      // Auto-start only if explicitly requested (initial load with autoPlay prop)
-      if (shouldAutoPlay) {
-        setTimeout(() => {
-          playbackController?.togglePlayback();
-        }, 300);
-      }
+      // Autoplay is handled by the reactive $effect above (fires once per load).
     } catch (err) {
       console.error("Failed to load animation:", err);
       error = err instanceof Error ? err.message : "Failed to load animation";
@@ -389,14 +436,51 @@
     return seq;
   }
 
+  // Single-play "ended" check: past the final beat's motion (mirrors the
+  // currentLetter/getEndPositionLetter end-hold check above).
+  function isAtEnd(): boolean {
+    const stepCount = animationState.sequenceData?.steps?.length ?? 0;
+    return stepCount > 0 && animationState.currentStep >= stepCount + 0.99;
+  }
+
   function togglePlayback() {
-    playbackController?.togglePlayback();
+    if (!playbackController) return;
+    // Single-play rests on the end pose instead of looping — tapping/hover-
+    // badge "play" from there must replay from the start, not silently no-op
+    // (togglePlayback() alone would start the loop already-at-end and stop it
+    // again on the very next tick). Gated to singlePlay so every looping
+    // caller (shouldLoop=true) keeps today's exact resume-from-pause behavior.
+    if (singlePlay && !animationState.isPlaying && isAtEnd()) {
+      playbackController.stop();
+    }
+    playbackController.togglePlayback();
   }
 
   function handleBpmChange(newBpm: number) {
     bpm = newBpm;
     const speed = newBpm / DEFAULT_BPM;
     playbackController?.setSpeed(speed);
+  }
+
+  // ── Scrub (seekable progress line) ──────────────────────────────────────
+  // SequenceProgressBar's onSeek reports a 0..1 ratio; AnimatorCanvas's own
+  // playbackAdapter (created internally from currentStep/steps) converts that
+  // ratio into a target STEP number before calling onProgressBarSeek — so this
+  // handler receives a step, not a ratio. seekToStep() is the exact seam
+  // UnifiedTimeline's own scrubber uses (mixes in the current fraction for an
+  // integer beat, honors an exact fraction otherwise) and keeps the loop
+  // running if it was already running.
+  let wasPlayingBeforeScrub = false;
+  function handleScrubStart() {
+    wasPlayingBeforeScrub = animationState.isPlaying;
+    if (wasPlayingBeforeScrub) playbackController?.togglePlayback();
+  }
+  function handleScrubEnd() {
+    if (wasPlayingBeforeScrub) playbackController?.togglePlayback();
+    wasPlayingBeforeScrub = false;
+  }
+  function handleSeek(targetStep: number) {
+    playbackController?.seekToStep(targetStep);
   }
 </script>
 
@@ -434,7 +518,11 @@
         hoverHint={minimal ? "badge" : "none"}
         fillContainer={fill}
         hideHeader={fill}
-        hideProgressBar={fill}
+        hideProgressBar={fill && !scrubbable}
+        onProgressBarSeek={scrubbable ? handleSeek : null}
+        onProgressBarScrubStart={scrubbable ? handleScrubStart : null}
+        onProgressBarScrubEnd={scrubbable ? handleScrubEnd : null}
+        {beatIndicators}
       />
     </div>
 

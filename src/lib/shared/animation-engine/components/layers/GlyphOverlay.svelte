@@ -181,12 +181,21 @@ CSS class .dark-mode triggers styling, with fallback to :global(:root.dark).
       />
     {/if}
 
-    <!-- Step number with cross-fade -->
+    <!-- Step number cross-fade. Both texts sit at the SAME svg coordinates
+         (StepNumber.svelte: x=50,y=50), so a simultaneous in+out fade (the
+         Crossfade primitive's default "crossfade" mode) double-exposes two
+         overlapping, both-legible words mid-transition — most visible on the
+         Start/End swap. The Crossfade component itself can't wrap this: it
+         renders an HTML <div>, invalid inside this <svg>/<g> tree. This ports
+         its "swap" mode's timing by hand (out fully completes before in
+         starts — in:fade delay = out's full duration, matching Crossfade's
+         own inDelay = duration computation for mode="swap") so the words
+         never overlap. See crossfade-primitive.md. -->
     {#if stepNumbersVisible || isAtStartPosition || isAtEndPosition}
       {#key stepKey}
         <g
           class="beat-number-group"
-          in:fade={{ duration: FADE_DURATION, easing: cubicOut }}
+          in:fade={{ duration: FADE_DURATION, delay: FADE_DURATION, easing: cubicOut }}
           out:fade={{ duration: FADE_DURATION, easing: cubicOut }}
         >
           <StepNumber
