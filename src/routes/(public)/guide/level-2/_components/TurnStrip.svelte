@@ -94,9 +94,12 @@
      * The showcase's live playhead ratio (0..1 across the whole sequence).
      * null (default) = no highlight, so every existing caller (ch20/ch21
      * sections that don't forward it through their `strip` snippet) renders
-     * byte-identical. Bands per spec decision 4: start [0,.15), halfway
-     * [.4,.6], end (.85,1]; the "combined" full-motion frame lights in the
-     * gaps between named checkpoints (i.e. while actually mid-motion).
+     * byte-identical. The highlight walks the BREAKDOWN frames in step with
+     * the playhead: each frame depicts a specific moment (start=0, a pose at
+     * its own fraction, halfway=0.5, end=1) and the frame nearest the playhead
+     * lights. The "combined" summary frame has no single moment — it never
+     * lights from the scrub (only on companion-click), so the scrub can't
+     * highlight the end result mid-motion.
      */
     activeT?: number | null;
   } = $props();
@@ -105,24 +108,53 @@
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
 
-  type ActiveBand = "start" | "mid" | "end" | "combined" | null;
-  const activeBand = $derived.by((): ActiveBand => {
+  // The playhead fraction each breakdown frame depicts, or null for the
+  // "combined" summary (no single moment — excluded from the scrub highlight).
+  function frameNominalT(frame: TurnStripFrame): number | null {
+    switch (frame.kind) {
+      case "start":
+        return 0;
+      case "end":
+        return 1;
+      case "half":
+        return 0.5;
+      case "pose":
+        return frame.t;
+      case "dual-pose":
+        return frame.poses[0]?.t ?? 0.5;
+      case "combined":
+        return null;
+    }
+  }
+
+  // The index of the breakdown frame nearest the live playhead — a full
+  // nearest-checkpoint partition of [0,1], so the scrub walks start ->
+  // (quarter ->) halfway -> (three-quarter ->) end with no gaps. The prior
+  // fixed narrow bands left wide gaps that fell through to the "combined"
+  // end-result frame mid-scrub (the reported bug), and never reached the
+  // quarter/three-quarter frames of the 6-frame dash breakdowns at all.
+  const activeCheckpointIndex = $derived.by((): number | null => {
     const t = activeT;
     if (t === null || t === undefined) return null;
-    if (t >= 0 && t < 0.15) return "start";
-    if (t > 0.85 && t <= 1) return "end";
-    if (t >= 0.4 && t <= 0.6) return "mid";
-    return "combined";
+    let bestIdx: number | null = null;
+    let bestDist = Infinity;
+    frames.forEach((frame, i) => {
+      const nt = frameNominalT(frame);
+      if (nt === null) return;
+      const d = Math.abs(nt - t);
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
+    });
+    return bestIdx;
   });
 
-  function isFrameActive(frame: TurnStripFrame): boolean {
+  function isFrameActive(frame: TurnStripFrame, i: number): boolean {
+    // Companion click (open-the-drawer) rings the combined frame regardless of
+    // the scrub playhead; the scrub itself only rings breakdown frames.
     if (frame.kind === "combined" && activeStep?.key === frame.animKey) return true;
-    const band = activeBand;
-    if (band === null) return false;
-    if (band === "start") return frame.kind === "start";
-    if (band === "end") return frame.kind === "end";
-    if (band === "mid") return frame.kind === "half" || frame.kind === "pose" || frame.kind === "dual-pose";
-    return frame.kind === "combined";
+    return activeCheckpointIndex === i;
   }
 
   // ── Pose-frame accessibility text ───────────────────────────────────────
@@ -171,7 +203,7 @@
   {#each frames as frame, i (i)}
     <div class="turn-frame">
       <span class="frame-cap top">{frame.frameLabel ?? ""}</span>
-      <div class="frame-box" class:guide-step-active={isFrameActive(frame)}>
+      <div class="frame-box" class:guide-step-active={isFrameActive(frame, i)}>
         {#if frame.kind === "pose"}
           <div class="pose-box" role="img" aria-label={poseAriaLabel(frame.motion, frame.t)}>
             <PoseFrame motion={frame.motion} t={frame.t} arrow={{ tStart: frame.arrowStart, tEnd: frame.t }} />
