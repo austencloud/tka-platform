@@ -108,7 +108,7 @@
   /* Ultrawide: the hero holds its own against the 4K type step — height-keyed
      so it scales with the screen (the host column caps the width). After the
      base rules so it wins by source order. */
-  @media (min-width: 2200px) {
+  @media (min-width: 1680px) {
     .hero-demo {
       max-width: min(52vh, 100%);
     }

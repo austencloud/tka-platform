@@ -109,7 +109,7 @@
   /* Ultrawide: mirrors PlayWithItInner's 4K step (showcase cap, canvas
      height key, panel width). Must sit AFTER the 920px block so these win
      by source order. */
-  @media (min-width: 2200px) {
+  @media (min-width: 1680px) {
     .showcase {
       max-width: min(2600px, 94vw);
     }

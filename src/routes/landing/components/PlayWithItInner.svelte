@@ -374,7 +374,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
      widens so it doesn't read skinny beside a ~1500px spinner. Sits AFTER the
      base .panel-slot/.canvas-area rules so it wins by source order. Keep in
      sync with PlayWithItSkeleton (the shared structural placeholder). */
-  @media (min-width: 2200px) {
+  @media (min-width: 1680px) {
     .showcase.with-sidebar {
       max-width: min(2600px, 94vw);
     }

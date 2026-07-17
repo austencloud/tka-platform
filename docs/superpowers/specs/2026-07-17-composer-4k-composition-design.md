@@ -120,6 +120,24 @@ Every geometry change above has a skeleton that must mirror it, by construction:
       1924 real window (all sub-2200 geometry unchanged) + 390 phone (stack order + widths hold)
 - [ ] Austen's taste pass on the physical 4K monitor
 
+## Addendum 2: the DPI reality check (same day)
+
+Austen's actual browser reports a ~1904px CSS viewport — a 4K monitor at
+Windows' default 200% scaling halves the CSS pixels, so a `min-width: 2200px`
+query NEVER fires on real 4K hardware at default settings. All the emulated
+"3840" verification below tested a viewport his monitor never reports.
+
+Fix: every ultrawide block moved 2200 -> 1680px (public-editorial.css + the
+composer demos + PlayWithIt Inner/Skeleton + SequenceHeroDemo). 1680 catches
+4K-at-200% (~1920 CSS), 1440p, and full-screen 1920 desktops; laptops stay
+base. The vh-keyed stages make the same rules proportionate across that whole
+range. Measured at his viewport (1904x1050, dpr2): hero 546, generate stages
+447, tunnel 756, fan 862 (6 cards @161), 3D 1454x817, no h-scroll.
+
+RULE OF THUMB for future "4K" work: design against CSS viewports ~1700-2000
+(what 4K hardware actually reports), not 3840. Physical-4K CSS viewports of
+3840 only exist at 100% scaling, which almost nobody runs.
+
 ## Addendum: the scale pass (same day)
 
 Austen's verdict on v1: "not nearly what I was hoping." Diagnosis on screenshots:

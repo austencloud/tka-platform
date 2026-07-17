@@ -124,7 +124,7 @@
   /* Ultrawide: the duo column has the room — the kaleidoscope becomes a
      near-viewport moment (height-keyed, so it scales with the screen).
      Keep in sync with the page's .sk-stage-square placeholder. */
-  @media (min-width: 2200px) {
+  @media (min-width: 1680px) {
     .stage {
       max-width: min(72vh, 100%);
     }

@@ -411,11 +411,16 @@
   }
 }
 
-/* ── 4K / ultrawide ──
+/* ── 4K / big desktop ──
    The 46rem column with capped type clamps reads as a miniature essay strip on
-   a 4K monitor (688px of content in a 3840px viewport). One type step up and a
-   wider — still readable — measure. Nothing below 2200px moves. */
-@media (min-width: 2200px) {
+   a big monitor. One type step up, a wider — still readable — measure, and the
+   demo tiers (duo-max / cinema / wide) engage.
+   BREAKPOINT NOTE: a 4K monitor at Windows' default 200% scaling reports a
+   ~1920px CSS viewport — a 2200px query never fires there. 1680 catches
+   4K-at-200%, 1440p-at-100%, and full-screen 1920 desktops; laptops stay on
+   the base design. Stages below are vh-keyed, so they stay proportionate
+   across this whole range. */
+@media (min-width: 1680px) {
   .editorial {
     /* 25vw == 60rem (960px) at 3840; fluid past 4K instead of re-freezing. */
     max-width: max(60rem, 25vw);

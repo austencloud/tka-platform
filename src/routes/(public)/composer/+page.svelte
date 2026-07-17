@@ -600,7 +600,7 @@
     max-width: min(30rem, 100%);
     border-radius: 18px;
   }
-  @media (min-width: 2200px) {
+  @media (min-width: 1680px) {
     .sk-stage-square {
       /* Height-keyed: the kaleidoscope is a near-viewport moment on 4K. */
       max-width: min(72vh, 100%);
@@ -742,7 +742,7 @@
 
   /* Ultrawide type steps for page-local text — after the base rules so they
      win by source order. */
-  @media (min-width: 2200px) {
+  @media (min-width: 1680px) {
     .demo-hint {
       font-size: 1.05rem;
     }

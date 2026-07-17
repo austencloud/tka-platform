@@ -217,7 +217,7 @@
 
   /* Ultrawide: the pair fills the duo's demo column (~1200px per stage at
      3840), so the supporting cast scales with it. */
-  @media (min-width: 2200px) {
+  @media (min-width: 1680px) {
     .stages {
       gap: 1.5rem;
     }

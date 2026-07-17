@@ -168,7 +168,7 @@
   }
   /* Ultrawide: height-capped so the cinema band fills the screen without
      outgrowing it. Mirrors the page's .sk-stage-wide placeholder. */
-  @media (min-width: 2200px) {
+  @media (min-width: 1680px) {
     .stage {
       max-width: min(100%, calc(78vh * 16 / 9));
       margin-inline: auto;
