@@ -125,14 +125,30 @@ all. The work is exposing and wiring existing seams, not building new ones.
       double-expose.
 
 ### Phase B - the sync (notation follows the playhead)
-- [ ] B1: SequenceShowcase derives playhead t (onStepChange + the controller's
-      fractional progress; extend the callback to report the fraction if
-      step-only proves too coarse for 2-beat showcase sequences) and hands it
-      to the strip.
-- [ ] B2: TurnStrip `activeT` frame highlighting per decision 4, using the
-      `.guide-step-active` ring.
-- [ ] B3: GuideStepStrip beat-N highlighting through the existing active-cell
-      mechanism (no new visual language).
+- [x] B1 (2026-07-17): SequenceShowcase derives playhead `t` from
+      `onStepChange` - confirmed the callback ALREADY reports a continuous
+      fractional beat every frame (animationState.currentStep, re-read every
+      time the $effect's dependency changes, not just on integer boundaries),
+      so no callback-signature change was needed. Computed `activeT` (0..1
+      ratio, mirrors SequenceProgressBar's own progress formula minus the
+      loop-wrap modulo) and `activeBeat` (integer, 0 = start); hands `activeT`
+      to `{@render strip(activeT)}` and `activeBeat` to the 3 direct
+      `<GuideStepStrip>` render sites.
+- [x] B2 (2026-07-17): TurnStrip gains `activeT` + band-based frame
+      highlighting (start/mid/end per decision 4, "combined" lights in the
+      gaps between named checkpoints) via `class:guide-step-active` on
+      `.frame-box` (moved the pre-existing companion-driven combined-cell
+      ring up to the same spot, OR'd together). Wired activeT through all 9
+      TurnStrip call sites across the 8 ch20/ch21 section files (one-line
+      `{#snippet strip(t)}` + `activeT={t}` each) - outside strict file
+      ownership (only their captions were listed, for C2), but done anyway
+      since B2 is otherwise dead code and C2 touches these same files next;
+      flagged in the handoff report.
+- [x] B3 (2026-07-17): GuideStepStrip gains `activeBeat` (null default,
+      byte-identical for FlowFrame, its only other caller) highlighting the
+      matching cell via the same `.guide-step-active` global ring, applied on
+      `.pic-card` with a beat-number computed per render call site (0 = start
+      box, 1..N = steps in reading order).
 
 ### Phase C - presentation polish
 - [ ] C1: Level-2 chapter h1 in the guide script font; GuideSection

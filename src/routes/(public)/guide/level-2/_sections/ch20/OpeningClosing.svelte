@@ -145,15 +145,15 @@
 
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={highOpenSequence} items={[]} bpm={60}>
-      {#snippet strip()}
-        <TurnStrip frames={highOpenFrames} caption="Lam-High-One opening: start, halfway, end, full motion" />
+      {#snippet strip(t)}
+        <TurnStrip frames={highOpenFrames} activeT={t} caption="Lam-High-One opening: start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={highCloseSequence} items={[]} bpm={60}>
-      {#snippet strip()}
-        <TurnStrip frames={highCloseFrames} caption="Lam-High-One closing: start, halfway, end, full motion" />
+      {#snippet strip(t)}
+        <TurnStrip frames={highCloseFrames} activeT={t} caption="Lam-High-One closing: start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>
@@ -166,15 +166,15 @@
 
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={lowOpenSequence} items={[]} bpm={60}>
-      {#snippet strip()}
-        <TurnStrip frames={lowOpenFrames} caption="Lam-Low-One opening: start, halfway, end, full motion" />
+      {#snippet strip(t)}
+        <TurnStrip frames={lowOpenFrames} activeT={t} caption="Lam-Low-One opening: start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={lowCloseSequence} items={[]} bpm={60}>
-      {#snippet strip()}
-        <TurnStrip frames={lowCloseFrames} caption="Lam-Low-One closing: start, halfway, end, full motion" />
+      {#snippet strip(t)}
+        <TurnStrip frames={lowCloseFrames} activeT={t} caption="Lam-Low-One closing: start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>

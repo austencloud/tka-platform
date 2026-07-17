@@ -160,9 +160,10 @@
 
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={quartersSequence} items={[]} bpm={60}>
-      {#snippet strip()}
+      {#snippet strip(t)}
         <TurnStrip
           frames={quartersFrames}
+          activeT={t}
           caption="Dash with 2 turns, south to north, broken into quarters: start, quarter, halfway, three-quarter, end, full motion"
         />
       {/snippet}
@@ -185,9 +186,10 @@
 
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={halvesSequence} items={[]} bpm={60}>
-      {#snippet strip()}
+      {#snippet strip(t)}
         <TurnStrip
           frames={halvesFrames}
+          activeT={t}
           caption="The same dash with 2 turns, broken in half: start, halfway, end, full motion"
         />
       {/snippet}

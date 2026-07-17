@@ -129,8 +129,8 @@
 
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={staticSequence} items={[]} bpm={60}>
-      {#snippet strip()}
-        <TurnStrip frames={staticFrames} caption="Static with 2 turns, held at east: start, halfway, end, full motion" />
+      {#snippet strip(t)}
+        <TurnStrip frames={staticFrames} activeT={t} caption="Static with 2 turns, held at east: start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>

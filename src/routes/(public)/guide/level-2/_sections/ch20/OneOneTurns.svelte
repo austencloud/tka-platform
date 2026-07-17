@@ -150,29 +150,29 @@
 
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={dSequence} items={[]} bpm={60}>
-      {#snippet strip()}
-        <TurnStrip frames={dFrames} caption="D-One-One: both hands with a turn, start, halfway, end, full motion" />
+      {#snippet strip(t)}
+        <TurnStrip frames={dFrames} activeT={t} caption="D-One-One: both hands with a turn, start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={iSequence} items={[]} bpm={60}>
-      {#snippet strip()}
-        <TurnStrip frames={iFrames} caption="I-One-One: both hands with a turn, start, halfway, end, full motion" />
+      {#snippet strip(t)}
+        <TurnStrip frames={iFrames} activeT={t} caption="I-One-One: both hands with a turn, start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={nSequence} items={[]} bpm={60}>
-      {#snippet strip()}
-        <TurnStrip frames={nFrames} caption="N-One-One: both hands with a turn, start, halfway, end, full motion" />
+      {#snippet strip(t)}
+        <TurnStrip frames={nFrames} activeT={t} caption="N-One-One: both hands with a turn, start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={vSequence} items={[]} bpm={60}>
-      {#snippet strip()}
-        <TurnStrip frames={vFrames} caption="V-One-One: both hands with a turn, start, halfway, end, full motion" />
+      {#snippet strip(t)}
+        <TurnStrip frames={vFrames} activeT={t} caption="V-One-One: both hands with a turn, start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>
