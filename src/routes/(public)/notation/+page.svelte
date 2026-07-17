@@ -147,6 +147,23 @@
     </div>
   </section>
 
+  <section class="editorial-section" style="--accent: #a855f7">
+    <h2 class="section-title">Notation by Prop</h2>
+    <div class="prose">
+      <p>
+        TKA was designed around double staves, and other dual-wielded props you grip
+        directly speak the same language. Each prop page covers what carries over, what
+        changes, and how to write your first sequence:
+      </p>
+      <ul>
+        <li><a href="/notation/fans">Fan notation</a></li>
+        <li><a href="/notation/clubs">Club notation</a></li>
+        <li><a href="/notation/buugeng">Buugeng notation</a></li>
+        <li><a href="/notation/poi">Poi and TKA: what works</a></li>
+      </ul>
+    </div>
+  </section>
+
   <section class="editorial-section" style="--accent: #06b6d4">
     <h2 class="section-title">Where to Start</h2>
     <div class="prose">
