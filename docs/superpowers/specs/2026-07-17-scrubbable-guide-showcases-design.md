@@ -134,16 +134,28 @@ all. The work is exposing and wiring existing seams, not building new ones.
       loop-wrap modulo) and `activeBeat` (integer, 0 = start); hands `activeT`
       to `{@render strip(activeT)}` and `activeBeat` to the 3 direct
       `<GuideStepStrip>` render sites.
-- [x] B2 (2026-07-17): TurnStrip gains `activeT` + band-based frame
-      highlighting (start/mid/end per decision 4, "combined" lights in the
-      gaps between named checkpoints) via `class:guide-step-active` on
-      `.frame-box` (moved the pre-existing companion-driven combined-cell
-      ring up to the same spot, OR'd together). Wired activeT through all 9
-      TurnStrip call sites across the 8 ch20/ch21 section files (one-line
-      `{#snippet strip(t)}` + `activeT={t}` each) - outside strict file
-      ownership (only their captions were listed, for C2), but done anyway
-      since B2 is otherwise dead code and C2 touches these same files next;
-      flagged in the handoff report.
+- [x] B2 (2026-07-17): TurnStrip gains `activeT` frame highlighting via
+      `class:guide-step-active` on `.frame-box` (moved the pre-existing
+      companion-driven combined-cell ring up to the same spot). Wired activeT
+      through all 9 TurnStrip call sites across the 8 ch20/ch21 section files
+      (one-line `{#snippet strip(t)}` + `activeT={t}` each) - outside strict
+      file ownership (only their captions were listed, for C2), but done
+      anyway since B2 is otherwise dead code and C2 touches these same files
+      next; flagged in the handoff report.
+      CORRECTION (2026-07-17, Austen-reported): the original fixed narrow
+      bands (start [0,.15), mid [.4,.6], end (.85,1], combined = the gaps) were
+      wrong twice over - the wide gaps lit the "combined" END-RESULT frame
+      through most of the scrub (Austen: "it highlights the end result instead
+      of the halfway/start/end"), and the three hardcoded bands never reached
+      the quarter/three-quarter POSE frames of the 6-frame dash breakdowns.
+      Replaced with a nearest-checkpoint partition: each breakdown frame
+      declares the moment it depicts (start=0, pose=frame.t, half=.5, end=1;
+      combined=null, excluded), and the frame nearest the playhead lights -
+      a full cover of [0,1] that walks every checkpoint and never rings the
+      combined summary from a scrub. Verified live (index-level probe): 4-frame
+      strip walks start->halfway->end; 6-frame dash walks
+      start->quarter->halfway->three-quarter->end; combined stays unlit
+      throughout (only companion-click rings it).
 - [x] B3 (2026-07-17): GuideStepStrip gains `activeBeat` (null default,
       byte-identical for FlowFrame, its only other caller) highlighting the
       matching cell via the same `.guide-step-active` global ring, applied on
