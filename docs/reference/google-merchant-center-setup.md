@@ -74,7 +74,31 @@ Business description:
 | Description | 54 flow sequences printed as playing cards. Pick a transformation flavor and build your LOOP deck. | Three printed decks, every card color-coded by its timing and direction family. |
 
 Preorder note: Merchant Center preorder availability requires an availability date.
-Use the planned ship date; update when it firms up.
+The site's stated ship date is October 1 (LoopDeckConfiguratorPage/DeckArchitectPage:
+"Preorder now. Decks ship October 1."), so enter **2026-10-01**. Update if it slips.
+
+Product identifiers: the decks are small-batch handmade prints with no GTIN/UPC. Check
+"I don't have a GTIN, UPC, EAN, JAN or ISBN" and let Google auto-assign, or enter the
+listing slug (loop-deck, tka-1-learning-letters, ...) as the SKU.
+
+Shipping values (source of truth: `firebase-functions/src/merch/checkoutParams.ts`):
+US free, Canada $14.00, International $25.00, worldwide address collection.
+
+Product images: do NOT use `/branding/og-image.png` — it is the app marketing banner
+(headline, CTA buttons, FREE badge) and violates the no-promotional-overlay image
+policy. Merchant-ready images composed from the real card renders live in
+`C:/Users/Austen/Downloads/merchant-images/`:
+
+- `loop-deck-fan.png` (2200x1800, five real cards fanned, white background) plus
+  `loop-deck-card.png` (single card, 822x1122) as an additional view
+- `tka-1-learning-letters.png`, `tka-2-writing-words.png`,
+  `tka-3-speaking-sentences.png` (same fan treatment from the baked shop covers)
+
+Known bug found while capturing (2026-07-16): the baked shop covers for TKA 3 on
+Firebase Storage are byte-identical to TKA 2's (verified by sha256 of
+`shop-covers/tka-2.../0.png` vs `shop-covers/tka-3.../0.png`). TKA 3 should show
+half-turn variations. The coverCards reseed ran but the PNG bake for tka-3 did not.
+Re-run the cover bake for tka-3-speaking-sentences, then regenerate its merchant image.
 
 ## Claude-in-Chrome walkthrough prompt
 
