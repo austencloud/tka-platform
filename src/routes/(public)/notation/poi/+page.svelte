@@ -53,7 +53,7 @@
         from a tether, and its motion is continuous and momentum-driven.
       </p>
       <p>
-        So here's where the line is. The alphabet can generate lots and lots of patterns.
+        The line sits at momentum. The alphabet can generate lots and lots of patterns.
         Only some of them can be achieved with poi, and only when the pattern's rotational
         value stays relatively consistent, because momentum needs continuity. Patterns
         that hold an orientation, reverse on a dime, or change rotation speed abruptly are

@@ -1,7 +1,12 @@
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
   import OpenChapter from "$lib/shared/landing/components/OpenChapter.svelte";
+  import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
+  import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import "$lib/shared/landing/styles/public-editorial.css";
+
+  const demoSequence = demoJson as unknown as SequenceData;
 
   const TITLE = "Buugeng Notation | The Kinetic Alphabet for Buugeng";
   const DESCRIPTION =
@@ -43,22 +48,34 @@
     <p class="page-subtitle">Dual-ended, like staves</p>
   </header>
 
-  <section class="editorial-section" style="--accent: #22c55e">
+  <section class="editorial-section has-duo" style="--accent: #22c55e">
     <h2 class="section-title">Buugeng Work Like Staves</h2>
-    <div class="prose">
-      <p>
-        Buugeng have two ends, which puts them in the staff family alongside props like
-        eight rings and double contact ball. That matters because the dual-ended
-        properties that make staves the system's home apply to buugeng directly: the
-        isolation and antispin collapse, the two visible references, the whole notation.
-        The <a href="/notation/staves">staff page</a> explains those properties;
-        everything there transfers. The grid positions, the letters, and the timing and
-        direction system apply unchanged, and <a href="/composer">Flow Arts Composer</a>
-        can render a written sequence with buugeng.
-      </p>
-      <!-- Animation-example slot: same demo sequence rendered with buugeng.
-           Drops in when the per-prop demo component exists (see
-           2026-07-16-per-prop-notation-pages-design.md, out of scope note). -->
+    <div class="section-duo">
+      <div class="duo-copy">
+        <div class="prose">
+          <p>
+            Buugeng have two ends, which puts them in the staff family alongside props
+            like eight rings and double contact ball. That matters because the dual-ended
+            properties that make staves the system's home apply to buugeng directly: the
+            isolation and antispin collapse, the two visible references, the whole
+            notation. The <a href="/notation/staves">staff page</a> explains those
+            properties; everything there transfers. The grid positions, the letters, and
+            the timing and direction system apply unchanged.
+          </p>
+          <p>
+            The player beside this is the same demo sequence every prop page uses, spun
+            on buugeng.
+          </p>
+        </div>
+      </div>
+      <div class="duo-demo">
+        <SequenceHeroDemo
+          sequence={demoSequence}
+          note="the demo sequence, on buugeng"
+          bluePropType="buugeng"
+          redPropType="buugeng"
+        />
+      </div>
     </div>
   </section>
 

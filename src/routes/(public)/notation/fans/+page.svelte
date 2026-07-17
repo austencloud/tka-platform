@@ -1,7 +1,12 @@
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
   import OpenChapter from "$lib/shared/landing/components/OpenChapter.svelte";
+  import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
+  import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import "$lib/shared/landing/styles/public-editorial.css";
+
+  const demoSequence = demoJson as unknown as SequenceData;
 
   const TITLE = "Fan Spinning Notation | The Kinetic Alphabet for Fans";
   const DESCRIPTION =
@@ -43,22 +48,34 @@
     <p class="page-subtitle">The Kinetic Alphabet, applied to fans</p>
   </header>
 
-  <section class="editorial-section" style="--accent: #22c55e">
+  <section class="editorial-section has-duo" style="--accent: #22c55e">
     <h2 class="section-title">What Carries Over</h2>
-    <div class="prose">
-      <p>
-        Fans are single-ended props, so they translate the same way clubs do: pretend
-        you're holding a staff with one end cut off and do everything exactly the same.
-        A fan's orientation is the same concept as a staff's thumb orientation, and the
-        flat face makes it easy to read at a glance. The grid positions, the letters, and
-        the timing and direction system apply unchanged, and
-        <a href="/composer">Flow Arts Composer</a> can render a written sequence with
-        fans. The <a href="/notation/clubs">club page</a> explains the single-ended story
-        in full, and the <a href="/glossary">glossary</a> defines every term.
-      </p>
-      <!-- Animation-example slot: same demo sequence rendered with fans.
-           Drops in when the per-prop demo component exists (see
-           2026-07-16-per-prop-notation-pages-design.md, out of scope note). -->
+    <div class="section-duo">
+      <div class="duo-copy">
+        <div class="prose">
+          <p>
+            Fans are single-ended props, so they translate the same way clubs do: pretend
+            you're holding a staff with one end cut off and do everything exactly the
+            same. A fan's orientation is the same concept as a staff's thumb orientation,
+            and the flat face makes it easy to read at a glance. The grid positions, the
+            letters, and the timing and direction system apply unchanged. The
+            <a href="/notation/clubs">club page</a> explains the single-ended story in
+            full, and the <a href="/glossary">glossary</a> defines every term.
+          </p>
+          <p>
+            The player beside this is the same demo sequence every prop page uses, spun
+            on fans.
+          </p>
+        </div>
+      </div>
+      <div class="duo-demo">
+        <SequenceHeroDemo
+          sequence={demoSequence}
+          note="the demo sequence, on fans"
+          bluePropType="fan"
+          redPropType="fan"
+        />
+      </div>
     </div>
   </section>
 

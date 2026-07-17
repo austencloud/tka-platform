@@ -1,7 +1,13 @@
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
   import OpenChapter from "$lib/shared/landing/components/OpenChapter.svelte";
+  import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
+  import MandalaContrast from "$lib/shared/landing/components/MandalaContrast.svelte";
+  import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import "$lib/shared/landing/styles/public-editorial.css";
+
+  const demoSequence = demoJson as unknown as SequenceData;
 
   const TITLE = "Club Spinning Notation | The Kinetic Alphabet for Clubs";
   const DESCRIPTION =
@@ -58,43 +64,67 @@
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #14b8a6">
+  <section class="editorial-section has-duo" style="--accent: #14b8a6">
     <h2 class="section-title">The Translation Rule</h2>
-    <div class="prose">
-      <p>
-        Translating The Kinetic Alphabet from staves to clubs takes one sentence: pretend
-        you're holding a staff and one end of it is invisible, or got cut off, and do
-        everything exactly the way you would with the staff. A club's orientation is the
-        same concept as a staff's thumb orientation. The grid positions, the letters, and
-        the timing and direction system apply unchanged, and
-        <a href="/composer">Flow Arts Composer</a> can render a written sequence with
-        clubs.
-      </p>
+    <div class="section-duo">
+      <div class="duo-copy">
+        <div class="prose">
+          <p>
+            Translating The Kinetic Alphabet from staves to clubs takes one sentence:
+            pretend you're holding a staff and one end of it is invisible, or got cut off,
+            and do everything exactly the way you would with the staff. A club's
+            orientation is the same concept as a staff's thumb orientation. The grid
+            positions, the letters, and the timing and direction system apply unchanged.
+          </p>
+          <p>
+            The player beside this proves it: the same demo sequence every prop page
+            uses, spun on clubs, letter for letter.
+          </p>
+        </div>
+      </div>
+      <div class="duo-demo">
+        <SequenceHeroDemo
+          sequence={demoSequence}
+          note="the demo sequence, on clubs"
+          bluePropType="club"
+          redPropType="club"
+        />
+      </div>
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #ec4899">
+  <section class="editorial-section has-duo" style="--accent: #ec4899">
     <h2 class="section-title">One End, Two Moves</h2>
-    <div class="prose">
-      <p>
-        Here's what changes when the second end disappears. On a staff, an isolation and
-        an extension are one motion: the thumb end isolates while the pinky end extends.
-        A club can only do one of those at a time, so the club world has two distinct
-        moves, an isolation and an extension, that look completely different despite
-        having the same underlying mathematical geometry.
-      </p>
-      <p>
-        Antispin splits the same way. A club's antispin reads as a vertical flower or a
-        horizontal flower depending on its orientation through the pattern, which is
-        exactly what the VTG terms vertical antispin and horizontal antispin name. On a
-        staff those variants collapse, because both ends are always covered. The
-        <a href="/notation/staves">staff page</a> tells that side of the story. You can
-        see the split yourself in the composer: same letter, pro motion with zero turns,
-        flip the start orientation from in to out, and the pattern changes shape.
-      </p>
-      <!-- Animation-example slot: staff/club mandala pair on the same letter
-           (iso vs extension, vanti vs hanti). Drops in when the per-prop demo
-           component exists (see 2026-07-16-per-prop-notation-pages-design.md). -->
+    <div class="section-duo flip">
+      <div class="duo-copy">
+        <div class="prose">
+          <p>
+            On a staff, an isolation and an extension are one motion: the thumb end
+            isolates while the pinky end extends. A club can only do one of those at a
+            time, so the club world has two distinct moves, an isolation and an
+            extension, that look completely different despite having the same underlying
+            mathematical geometry.
+          </p>
+          <p>
+            Antispin splits the same way. A club's antispin reads as a vertical flower or
+            a horizontal flower depending on its orientation through the pattern, which
+            is exactly what the VTG terms vertical antispin and horizontal antispin name.
+            On a staff those variants collapse, because both ends are always covered. The
+            <a href="/notation/staves">staff page</a> tells that side of the story.
+          </p>
+          <p>
+            The mandalas beside this trace the same sequence twice. With staves, both
+            ends of each prop leave a path. With clubs, only one end does, and half the
+            pattern disappears.
+          </p>
+        </div>
+      </div>
+      <div class="duo-demo">
+        <MandalaContrast
+          sequence={demoSequence}
+          note="one sequence, traced by both ends of a staff and the single end of a club"
+        />
+      </div>
     </div>
   </section>
 

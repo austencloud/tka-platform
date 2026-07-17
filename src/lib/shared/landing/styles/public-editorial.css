@@ -122,6 +122,42 @@
     inset 0 1px 0 oklch(0.5 0.04 270 / 0.06);
 }
 
+/* ── demo duo ──
+   A section whose prose sits BESIDE a live demonstration (animation player,
+   mandala, pictograph) instead of above a lonely centered figure. The section
+   breaks out of the 46rem essay column symmetrically (position+translate, so
+   the scroll-reveal's transform animation is unaffected), and the two cells
+   sit side by side from 1100px up. This is the wide-screen answer for
+   demonstration-heavy pages: on 4K the demo fills the measure instead of the
+   page reading like a stretched mobile column. */
+.editorial-section.has-duo {
+  position: relative;
+  left: 50%;
+  translate: -50% 0;
+  width: min(76rem, 92vw);
+}
+.section-duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2.2rem;
+  align-items: center;
+}
+.section-duo > .duo-copy {
+  max-width: 46rem;
+}
+@media (min-width: 1100px) {
+  .section-duo {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    gap: clamp(2.5rem, 4vw, 5rem);
+  }
+  .section-duo.flip > .duo-copy {
+    order: 2;
+  }
+  .section-duo.flip > .duo-demo {
+    order: 1;
+  }
+}
+
 .section-title {
   font-size: clamp(1.45rem, 1.15rem + 0.95vw, 1.95rem);
   font-weight: 680;

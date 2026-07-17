@@ -18,7 +18,19 @@
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
-  let { sequence, note }: { sequence: SequenceData; note: string } = $props();
+  let {
+    sequence,
+    note,
+    bluePropType,
+    redPropType,
+  }: {
+    sequence: SequenceData;
+    note: string;
+    /** Optional prop-type override so per-prop pages can render the same
+        sequence with fans/clubs/buugeng instead of the default staves. */
+    bluePropType?: string;
+    redPropType?: string;
+  } = $props();
 
   const word = simplifyRepeatedWord(sequence.word);
 
@@ -47,6 +59,8 @@
         autoPlay: true,
         chrome: "minimal",
         fill: true,
+        bluePropType,
+        redPropType,
       }}
     />
   </div>

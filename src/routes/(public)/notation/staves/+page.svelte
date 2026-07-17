@@ -1,6 +1,11 @@
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
+  import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
+  import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import "$lib/shared/landing/styles/public-editorial.css";
+
+  const demoSequence = demoJson as unknown as SequenceData;
 
   const TITLE = "Double Staff Notation | The Kinetic Alphabet for Staves";
   const DESCRIPTION =
@@ -55,19 +60,28 @@
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #14b8a6">
+  <section class="editorial-section has-duo" style="--accent: #14b8a6">
     <h2 class="section-title">Staves Are Geometry</h2>
-    <div class="prose">
-      <p>
-        A staff is a straight line, or a combination of lines if you count the thumb end.
-        That makes it easy to draw, and it stays out of the arrows' way, which is why
-        staff pictographs read so clean. Each staff has two visible ends, a thumb end and
-        a pinky end. Put two staves next to each other and they form one extra-long
-        straight line: easy to visualize, easy to remember.
-      </p>
-      <!-- Animation-example slot: same demo sequence rendered with staves.
-           Drops in when the per-prop demo component exists (see
-           2026-07-16-per-prop-notation-pages-design.md, out of scope note). -->
+    <div class="section-duo">
+      <div class="duo-copy">
+        <div class="prose">
+          <p>
+            A staff is a straight line, or a combination of lines if you count the thumb
+            end. That makes it easy to draw, and it stays out of the arrows' way, which is
+            why staff pictographs read so clean. Each staff has two visible ends, a thumb
+            end and a pinky end. Put two staves next to each other and they form one
+            extra-long straight line: easy to visualize, easy to remember.
+          </p>
+          <p>
+            The sequence beside this is real notation, playing back on staves. Every prop
+            page plays the same sequence with its own prop, so you can compare like for
+            like.
+          </p>
+        </div>
+      </div>
+      <div class="duo-demo">
+        <SequenceHeroDemo sequence={demoSequence} note="the demo sequence, on staves" />
+      </div>
     </div>
   </section>
 
@@ -75,13 +89,13 @@
     <h2 class="section-title">The Collapse</h2>
     <div class="prose">
       <p>
-        Here's the biggest difference between a dual-ended prop and a single-ended one.
         Hold a staff with the thumb end at center and perform an isolation: while the
         thumb end isolates, the pinky end performs an extension. One motion, both shapes
         at once. Do the same move with a club and you have to pick, because a club only
         has one end that can do a thing at a time. So the club world has two moves, an
         isolation and an extension, that look completely different despite having the
-        same underlying mathematical geometry. On a staff they collapse into one.
+        same underlying mathematical geometry. On a staff they collapse into one. No other
+        single property separates dual-ended props from single-ended ones as sharply.
       </p>
       <p>
         The same collapse happens with antispin. A club's antispin forms a vertical or a
