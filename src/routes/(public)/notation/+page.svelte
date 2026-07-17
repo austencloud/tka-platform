@@ -163,6 +163,24 @@
     </div>
   </section>
 
+  <section class="editorial-section" style="--accent: #8b5cf6">
+    <h2 class="section-title">Notation by Prop</h2>
+    <div class="prose">
+      <p>
+        The alphabet is one system, but every prop meets it differently. Staves are what it
+        was built for. Fans, clubs, and buugeng inherit the core and raise their own grip
+        questions. Poi reaches a restricted subset. Each prop has its own page:
+      </p>
+    </div>
+    <nav class="prop-links" aria-label="Notation by prop">
+      <a class="prop-link" href="/notation/staves">Double Staves</a>
+      <a class="prop-link" href="/notation/fans">Fans</a>
+      <a class="prop-link" href="/notation/clubs">Clubs</a>
+      <a class="prop-link" href="/notation/buugeng">Buugeng</a>
+      <a class="prop-link" href="/notation/poi">Poi</a>
+    </nav>
+  </section>
+
   <div class="cta-card">
     <h3>Ready to create?</h3>
     <p>Flow Arts Composer is free to use. No download required.</p>
@@ -174,6 +192,48 @@
 </div>
 
 <style>
+  /* Same pill treatment as the glossary's jump-nav chips (component-scoped
+     there too) — a known editorial pattern, not a new primitive. */
+  .prop-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-top: 1.2rem;
+  }
+  .prop-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0.5rem 1.15rem;
+    font-size: 0.9rem;
+    font-weight: 550;
+    color: oklch(0.9 0.015 270);
+    text-decoration: none;
+    background: oklch(0.2 0.02 270 / 0.4);
+    border: 1px solid oklch(0.45 0.04 270 / 0.2);
+    border-radius: 999px;
+    transition:
+      transform 160ms ease,
+      border-color 160ms ease,
+      background 160ms ease;
+  }
+  .prop-link:hover,
+  .prop-link:focus-visible {
+    transform: translateY(-1px);
+    background: oklch(0.26 0.03 275 / 0.5);
+    border-color: oklch(0.6 0.12 275 / 0.5);
+    outline: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .prop-link {
+      transition: none;
+    }
+    .prop-link:hover,
+    .prop-link:focus-visible {
+      transform: none;
+    }
+  }
+
   .section-head {
     display: flex;
     align-items: flex-start;
