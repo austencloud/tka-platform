@@ -4,8 +4,14 @@
   stripe frame, accent coloring), used as deck cover art in the shop grid, the
   /shop hero, and the configurators. What the fan shows IS what prints.
 
-  Decorative by design: covers render inside links/option buttons, so the fan
+  Decorative by default: covers render inside links/option buttons, so the fan
   is `inert` + aria-hidden; the host element carries the accessible label.
+  With `onCardClick` set, each card instead becomes a real focusable button
+  (the composer promo fan → card-anatomy explainer modal).
+
+  Hover model: the row's geometry NEVER changes — only the card under the
+  pointer pops (bottom-anchored scale + z-raise). Any spread/shift moved cards
+  under a stationary cursor and caused mis-hovers and mis-clicks.
 
   Card count responds to container width (3–6), capped by maxCards. Cards
   auto-scale UP from cardWidth to fill the container (ultrawide screens get a
@@ -24,6 +30,7 @@
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { renderCoverFront, renderCoverBack } from "../services/cover-front-renderer";
   import { DEFAULT_SHOP_PROP, bakedCoverUrl } from "../domain/shop-prop-options";
+  import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 
   interface Props {
     cards: readonly CoverCard[];
@@ -41,11 +48,11 @@
     /** Show EXACTLY this many cards regardless of width (e.g. the trilogy tile
         always fans all six element families). Cards scale down to fit. */
     exactCount?: number;
-    /** Disable hover spread/lift (e.g. tiny tiles). */
+    /** Disable the hover pop (e.g. tiny tiles). */
     interactive?: boolean;
     /** Decorative fans are `inert` so the host link/button owns pointer
         events and a11y. Set false for a standalone fan that should respond to
-        hover itself — the fan then plays its own pick-a-card lift/spread (the
+        hover itself — the fan then plays its own pick-a-card pop (the
         marketing page's Choreo Card flourish). */
     inert?: boolean;
     /** Deal-in choreography: cards mount as a stacked pile and sweep into the
@@ -57,6 +64,11 @@
     /** Which card face to render. Backs skip the baked-URL shortcut (bakes are
         fronts only) and render through the live back pipeline. */
     face?: "front" | "back";
+    /** When set, each card becomes a real, focusable button that calls this
+        with the card — turning the decorative fan into an interactive one (the
+        `aria-hidden`/`inert` decorative shell is dropped). Used by the composer
+        promo fan to open the "what's on the card" explainer. */
+    onCardClick?: (card: CoverCard) => void;
   }
   let {
     cards,
@@ -72,18 +84,28 @@
     deal = false,
     dealNonce = 0,
     face = "front",
+    onCardClick,
   }: Props = $props();
+
+  // Accessible label for the clickable card — the simplified word (repeated
+  // words collapse to their smallest form per TKA canon).
+  const cardLabel = (c: CoverCard) => {
+    const w = c.sequence?.word ? simplifyRepeatedWord(c.sequence.word) : "";
+    return w ? `What's on the ${w} card` : "What's on this card";
+  };
 
   let boxW = $state(0);
 
-  // Fit-based layout: cards ALWAYS share the measured box (sized against the
-  // hover-open span, overlap 0.18 → each extra card shows 82%, plus ~5% tilt
-  // slack), so a fan can never spill its container — the old minimum-width
-  // floor overflowed the 390px configurator. Card count drops (min 3) while a
-  // card would fall below cardWidth; at 3 cards they shrink instead.
-  // exactCount skips the count reduction and always shrinks to fit.
-  // Non-interactive fans have no hover spread, so they size against the REST
-  // overlap (0.48 pitch) instead — touch layouts get ~20% bigger cards.
+  // Fit-based layout: cards ALWAYS share the measured box, so a fan can never
+  // spill its container — the old minimum-width floor overflowed the 390px
+  // configurator. Card count drops (min 3) while a card would fall below
+  // cardWidth; at 3 cards they shrink instead. exactCount skips the count
+  // reduction and always shrinks to fit.
+  // Interactive fans keep the conservative 0.82 pitch sizing (historically the
+  // hover-open span; the spread is gone but the slack now absorbs the hover
+  // pop's scale-up on end cards, and changing it would resize every tuned shop
+  // surface). Non-interactive fans size against the REST overlap (0.48 pitch)
+  // — touch layouts get ~20% bigger cards.
   const spreadPitch = $derived(interactive ? 0.82 : 0.48);
   // Tilt slack: at ±12° a 5:7 card's rotated bounding box is ~27% wider than
   // the card (w·cos12° + 1.4w·sin12°). Short rest-pitch fans carry few cards,
@@ -176,15 +198,23 @@
   });
 </script>
 
+<!-- The card's rendered face (image once loaded, shimmer placeholder before). -->
+{#snippet cardFace(card: CoverCard)}
+  {#if urls[cardKey(card)]}
+    <img class="card-img" src={urls[cardKey(card)]} alt="" draggable="false" />
+  {:else}
+    <div class="card-pending"></div>
+  {/if}
+{/snippet}
+
 <div
   class="fan"
   class:interactive
   class:dealing={deal && !reducedMotion}
   bind:clientWidth={boxW}
-  inert={inert || undefined}
-  aria-hidden="true"
+  inert={(inert && !onCardClick) || undefined}
+  aria-hidden={onCardClick ? undefined : "true"}
   style:--overlap="{-Math.round(cardW * 0.52)}px"
-  style:--overlap-open="{-Math.round(cardW * 0.18)}px"
 >
   <!-- Key carries the slot index: catalog sequence ids repeat across flavor
        catalogs, so a sampled variety hand can hold two cards with the same
@@ -199,10 +229,17 @@
         style:transition-delay={deal && dealt ? `${i * DEAL_STAGGER}ms` : undefined}
       >
         <div class="card-box" style:width="{cardW}px">
-          {#if urls[cardKey(card)]}
-            <img class="card-img" src={urls[cardKey(card)]} alt="" draggable="false" />
+          {#if onCardClick}
+            <button
+              type="button"
+              class="card-hit"
+              aria-label={cardLabel(card)}
+              onclick={() => onCardClick?.(card)}
+            >
+              {@render cardFace(card)}
+            </button>
           {:else}
-            <div class="card-pending"></div>
+            {@render cardFace(card)}
           {/if}
         </div>
       </div>
@@ -220,20 +257,44 @@
   }
 
   .fan-slot {
+    position: relative;
+    z-index: 0;
+    /* RELEASE choreography (this base state governs the unhover transition):
+       the card tucks back with the deal animation's spring — it undershoots
+       below rest size, then settles. The z-drop is discrete and repaints the
+       whole overlap with the right neighbor, so it can never be smooth; timed
+       at the bottom of the undershoot (~0.18s, where motion peaks) it reads as
+       the card slipping back INTO the fan instead of a static snap after the
+       shrink (which is exactly how it read when delayed to the end). */
     transition:
-      margin 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-      transform 0.25s ease;
+      transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+      z-index 0s 0.18s;
+    /* Pop grows AROUND the card's base, never sliding it away from the
+       pointer. Bottom-center origin means every edge either stays put (bottom)
+       or moves outward — the hit area under a stationary cursor only ever
+       grows, so hover can't flicker and a click can't land on a neighbor. */
+    transform-origin: bottom center;
   }
   .fan-slot + .fan-slot {
     margin-left: var(--overlap);
   }
-  .fan.interactive:hover .fan-slot + .fan-slot {
-    margin-left: var(--overlap-open);
-  }
-  .fan.interactive .fan-slot:hover {
-    transform: translateY(-14px) scale(1.04);
+  /* Card-hand hover: the ROW never moves (no spread, no shift — moving cards
+     under a stationary cursor is what caused mis-hover/mis-clicks). Only the
+     card under the pointer responds: it rises above its neighbors and scales
+     up from its base, fully revealing itself. Same pop on keyboard focus.
+     Rise is snappy and immediate (no z delay in this direction — the pop-in
+     motion carries it); the springy exit lives on the base state above. */
+  .fan.interactive .fan-slot:hover,
+  .fan.interactive .fan-slot:focus-within {
+    transform: scale(1.14);
     z-index: 9;
-    position: relative;
+    transition:
+      transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+      z-index 0s 0s;
+  }
+  .fan.interactive .fan-slot:hover .card-box,
+  .fan.interactive .fan-slot:focus-within .card-box {
+    box-shadow: 0 14px 34px rgba(0, 0, 0, 0.5);
   }
 
   .fan-tilt {
@@ -259,6 +320,30 @@
     overflow: hidden;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
     background: #f4f4f4;
+    /* Shadow deepens in step with the hover pop. */
+    transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Clickable overlay: fills the card box so the whole card is the hit target
+     and the overscanned image positions against it exactly as it does against
+     .card-box. Transparent, inherits the rounded corners. */
+  .card-hit {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: none;
+    border-radius: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .card-hit:focus-visible {
+    outline: 3px solid oklch(0.8 0.13 275);
+    outline-offset: 3px;
   }
 
   .card-img {
@@ -302,13 +387,13 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .fan-slot {
+    .fan-slot,
+    .card-box {
       transition: none;
     }
-    .fan.interactive:hover .fan-slot + .fan-slot {
-      margin-left: var(--overlap);
-    }
-    .fan.interactive .fan-slot:hover {
+    /* No pop motion — the shadow deepen stays as a static hover cue. */
+    .fan.interactive .fan-slot:hover,
+    .fan.interactive .fan-slot:focus-within {
       transform: none;
     }
     .card-img {

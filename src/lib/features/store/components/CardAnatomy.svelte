@@ -28,11 +28,24 @@
     highlight = null,
     onhighlight,
     face = "both",
+    sequence = undefined,
+    frontUrl = undefined,
+    showShuffle = true,
   }: {
     highlight?: string | null;
     onhighlight?: (id: string | null) => void;
     /** "both" = desktop side-by-side; "front"/"back" = mobile single face. */
     face?: "both" | "front" | "back";
+    /** Drive a SPECIFIC card instead of the self-loaded/shuffled example. When
+     *  set, the onMount auto-load and the shuffle button are skipped, and this
+     *  sequence's real front + live back are shown (the click-to-explain modal
+     *  path). Absent ⇒ the marketing page's self-chosen, shuffleable card. */
+    sequence?: SequenceData;
+    /** Baked front image for `sequence` (instant). Rendered on the fly when
+     *  omitted but a `sequence` is given. */
+    frontUrl?: string;
+    /** Show the "Shuffle another card" button. Off when driven by `sequence`. */
+    showShuffle?: boolean;
   } = $props();
 
   const showFront = $derived(face === "both" || face === "front");
@@ -47,6 +60,39 @@
   type Shown = { sequence: SequenceData; frontUrl: string; stepCount: number };
   let shown = $state<Shown | null>(null);
   let shuffling = $state(false);
+
+  // External-card mode: reflect the caller-supplied sequence into `shown`
+  // (re-seeding when a different card is clicked). Uses the baked front when
+  // provided, otherwise renders one through the same path shuffle uses.
+  $effect(() => {
+    if (!sequence) return; // page mode — onMount picks the example instead
+    const seq = sequence;
+    const baked = frontUrl;
+    let cancelled = false;
+    (async () => {
+      let front = baked;
+      if (!front) {
+        try {
+          const { renderCoverFront } = await import("../services/cover-front-renderer");
+          const { PropType } = await import(
+            "$lib/shared/pictograph/prop/domain/enums/prop-type"
+          );
+          front = await renderCoverFront(
+            { sequence: seq },
+            { deckName: "Choreo Cards", propType: PropType.STAFF },
+          );
+        } catch (error) {
+          console.warn("[CardAnatomy] front render failed for supplied card", error);
+          front = "";
+        }
+      }
+      if (cancelled) return;
+      shown = { sequence: seq, frontUrl: front ?? "", stepCount: seq.steps?.length ?? 8 };
+    })();
+    return () => {
+      cancelled = true;
+    };
+  });
 
   const frontRegions = $derived(shown ? computeFrontRegions(shown.stepCount) : null);
 
@@ -77,6 +123,7 @@
   }
 
   onMount(async () => {
+    if (sequence) return; // external-card mode seeds `shown` via the $effect above
     try {
       const products = await loadActiveProducts();
       for (const p of products) {
@@ -299,6 +346,7 @@
     {/if}
     </div>
 
+    {#if showShuffle}
     <div class="shuffle-bar">
       <button type="button" class="shuffle-btn" onclick={shuffle} disabled={shuffling}>
         {#if shuffling}
@@ -310,6 +358,7 @@
         {/if}
       </button>
     </div>
+    {/if}
   </div>
 
   <ContextMenu {menuState} items={menuItems} onClose={() => (menuState = { open: false })} />
