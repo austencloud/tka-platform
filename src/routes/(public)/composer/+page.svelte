@@ -4,11 +4,20 @@
   import ComposerGenerateDemo from "./_components/ComposerGenerateDemo.svelte";
   import FanSkeleton from "./_components/FanSkeleton.svelte";
   import PlayWithItSkeleton from "../../landing/components/PlayWithItSkeleton.svelte";
-  import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+  import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { generatePerVisitDemo } from "./_data/per-visit-demo";
   import "$lib/shared/landing/styles/public-editorial.css";
 
-  const heroDemoSequence = demoJson as unknown as SequenceData;
+  // Per-visit demo: freshly generated for every visitor (no canonical
+  // example). All sequence demos wait on this — their skeletons hold the
+  // footprint, so the late arrival never shifts the page.
+  let demoSeq = $state<SequenceData | null>(null);
+  onMount(() => {
+    void generatePerVisitDemo().then((seq) => {
+      demoSeq = seq;
+    });
+  });
 
   const DESCRIPTION =
     "Flow Arts Composer is a free web app for building flow arts choreography. Construct sequences step by step, generate them from parameters, animate them, and share them. Supports staff, fans, clubs, hoops, buugeng, and more.";
@@ -203,7 +212,7 @@
 
     <div class="hero-stage">
       <SequenceHeroDemo
-        sequence={heroDemoSequence}
+        sequence={demoSeq}
         note="a rotated LOOP from the generator, animating live"
       />
     </div>
@@ -253,7 +262,7 @@
         </div>
       </div>
       <div class="duo-demo">
-        <ComposerGenerateDemo />
+        <ComposerGenerateDemo sequence={demoSeq} />
       </div>
     </div>
   </section>
@@ -275,7 +284,8 @@
       <div class="duo-demo" use:activateTunnelWhenNear>
         <LazyMount
           loader={() => import("./_components/ComposerTunnelDemo.svelte")}
-          active={tunnelActive}
+          active={tunnelActive && !!demoSeq}
+          props={{ sequence: demoSeq }}
         >
           {#snippet placeholder()}
             <!-- Same footprint as ComposerTunnelDemo: square stage capped at
@@ -373,7 +383,8 @@
     <div class="breakout cinema" use:activate3DWhenNear>
       <LazyMount
         loader={() => import("./_components/Composer3DViewerDemo.svelte")}
-        active={viewer3DActive}
+        active={viewer3DActive && !!demoSeq}
+        props={{ sequence: demoSeq }}
       >
         {#snippet placeholder()}
           <!-- Same footprint as Composer3DViewerDemo: 16:9 stage plus two

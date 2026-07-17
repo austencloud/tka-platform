@@ -26,12 +26,16 @@
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
-  import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import {
+    createSequenceData,
+    type SequenceData,
+  } from "$lib/shared/foundation/domain/models/sequence-data";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
-  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+
+  /** The per-visit demo sequence, provided by the page (no baked canon). */
+  let { sequence: sourceSequence }: { sequence: SequenceData } = $props();
 
   // ── contexts (must be set during component init, not onMount) ────────────
   const viewer = createViewer3DState();
@@ -41,10 +45,10 @@
 
   const sequence = createSequenceData({
     id: "composer-3d-demo",
-    name: (demoJson as { word: string }).word,
-    word: (demoJson as { word: string }).word,
-    steps: (demoJson as { steps: unknown[] }).steps as StepData[],
-    gridMode: (demoJson as { gridMode?: string }).gridMode as never,
+    name: sourceSequence.word,
+    word: sourceSequence.word,
+    steps: sourceSequence.steps,
+    gridMode: sourceSequence.gridMode,
   });
 
   // ── scene switcher ────────────────────────────────────────────────────────

@@ -26,10 +26,14 @@
   } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-state";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import {
+    createSequenceData,
+    type SequenceData,
+  } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { ViewerPlaybackState } from "$lib/shared/sequence-viewer/domain/viewer-prop-groups";
-  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+
+  /** The per-visit demo sequence, provided by the page (no baked canon). */
+  let { sequence: sourceSequence }: { sequence: SequenceData } = $props();
 
   let playing = $state(true);
   let fold = $state(4);
@@ -41,10 +45,10 @@
 
   const sequence = createSequenceData({
     id: "composer-tunnel-demo",
-    name: (demoJson as { word: string }).word,
-    word: (demoJson as { word: string }).word,
-    steps: (demoJson as { steps: unknown[] }).steps as StepData[],
-    gridMode: (demoJson as { gridMode?: string }).gridMode as never,
+    name: sourceSequence.word,
+    word: sourceSequence.word,
+    steps: sourceSequence.steps,
+    gridMode: sourceSequence.gridMode,
   });
 
   const controller = new TunnelViewController({ getSequence: () => sequence });

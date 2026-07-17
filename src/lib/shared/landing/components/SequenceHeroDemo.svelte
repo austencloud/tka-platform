@@ -24,7 +24,10 @@
     bluePropType,
     redPropType,
   }: {
-    sequence: SequenceData;
+    /** Null while the host is still producing the sequence (e.g. /composer's
+        per-visit generated demo) — the stage box and caption line keep their
+        reserved footprint and the player mounts when it lands. */
+    sequence: SequenceData | null;
     note: string;
     /** Optional prop-type override so per-prop pages can render the same
         sequence with fans/clubs/buugeng instead of the default staves. */
@@ -32,7 +35,7 @@
     redPropType?: string;
   } = $props();
 
-  const word = simplifyRepeatedWord(sequence.word);
+  const word = $derived(sequence ? simplifyRepeatedWord(sequence.word) : "");
 
   let active = $state(false);
 
@@ -53,7 +56,7 @@
         import(
           "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
         )}
-      {active}
+      active={active && !!sequence}
       props={{
         sequence,
         autoPlay: true,
@@ -64,7 +67,9 @@
       }}
     />
   </div>
-  <figcaption>
+  <!-- Line is always reserved; it becomes visible only once the word is
+       known, so the note never shifts sideways when the word lands. -->
+  <figcaption class:pending={!sequence}>
     <span class="tka-font demo-word">{word}</span>
     <span class="demo-note">{note}</span>
   </figcaption>
@@ -103,6 +108,10 @@
 
   .demo-note {
     font-style: italic;
+  }
+
+  figcaption.pending {
+    visibility: hidden;
   }
 
   /* Ultrawide: the hero holds its own against the 4K type step — height-keyed
