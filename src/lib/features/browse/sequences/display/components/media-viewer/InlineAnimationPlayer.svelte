@@ -336,7 +336,15 @@
   // load, after the same 300ms settle delay the old inline call used.
   let autoPlayedForLoadId: string | null = null;
   $effect(() => {
-    if (!autoPlay || !playbackController || !animationState.sequenceData) return;
+    // Guard order is load-bearing: `servicesReady` and `sequenceData` are
+    // REACTIVE and must be read before the plain (non-$state)
+    // `playbackController` variable. Short-circuiting on the plain variable
+    // first leaves this effect with no reactive dependency that changes when
+    // the async load completes, so an `autoPlay` that was already true (the
+    // showcase scrolled into view before load finished) would arm once, miss,
+    // and never retry.
+    if (!autoPlay || !servicesReady || !animationState.sequenceData) return;
+    if (!playbackController) return;
     const loadId = lastLoadedSequenceId;
     if (autoPlayedForLoadId === loadId) return;
     if (animationState.isPlaying) {
