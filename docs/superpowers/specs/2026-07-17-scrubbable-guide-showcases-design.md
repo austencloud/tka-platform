@@ -173,19 +173,43 @@ all. The work is exposing and wiring existing seams, not building new ones.
       spec's Open Calls, same as the caption text in the commit body.
 
 ### Verification bar (per verification-protocol + the 2026-07-16 collapse lesson)
-- [ ] Geometry AND interaction proven in a live browser by the orchestrator:
-      screenshots at 1440 + 390; a scrub drag visibly moves the props; strip
-      frames light in sync; reduced-motion emulation shows no autoplay.
+- [x] (2026-07-17, orchestrator, live browser) Interaction proven end to end -
+      but only AFTER catching and fixing two real bugs the implementation
+      shipped with, which no static verification caught:
+      1. Autoplay never fired: the reactive-autoplay effect's guard read the
+         plain (non-$state) `playbackController` before any reactive state, so
+         an `autoPlay` already true before the async load finished (the
+         showcase case, always) left the effect with no dependency that
+         changes on load completion. Fixed by guard reordering (reactive
+         `servicesReady`/`sequenceData` reads first) in
+         InlineAnimationPlayer.svelte.
+      2. Scrubbing collapsed to the motion's start pose: `seekToStep` clamped
+         to `totalSteps`, but the controller's own timeline extends to
+         `totalSteps + 1` (the end hold) - for 1-beat showcase sequences the
+         entire second half of the scrub range was unreachable (debug-logged:
+         adapter target 1.93 -> clamped to 1.0). Fixed at the canonical
+         source (animation-playback-controller.ts seekToStep clamp).
+      Verified after fixes: autoplay-once on first view; rest on end pose (no
+      loop); tap replays from start; scrub at 25/50/75/98% rings
+      combined/halfway/combined/end with the canvas posing correctly (50% =
+      staff on the travel diagonal - screenshot captured); release holds
+      position; reduced-motion (matchMedia shim + reload) = zero autoplay,
+      start pose held; narrow-viewport stacking correct.
 - [x] (2026-07-17) `npm run check` clean (0 errors/warnings); reflow-contract
       + sequence-viewer-shell-contract tests green (25/25); `build:fast`
       green; prerendered `.svelte-kit/cloudflare/guide/level-2/turns.html`
       confirmed structurally correct - strips/canvas-box reservations/new
       captions present server-side, InlineAnimationPlayer markup absent
       (client-only, as designed).
-- [ ] No layout shift on mount/scrub (no-layout-shift.md self-check) -
-      executor reasoned through the CSS (scrub line lives inside the existing
-      reserved `.canvas-box` square; no width/height contracts touched) but
-      this needs the orchestrator's live-browser confirmation above.
+- [x] (2026-07-17) No layout shift on mount/scrub (no-layout-shift.md
+      self-check) - confirmed live at both wide and narrow widths.
+
+### Known nits (follow-up, not blocking)
+- [ ] Slider display at single-play end-rest reads 0 (the bar's loop-wrap
+      modulo maps completion back to 0) and settles a few percent below the
+      drag ratio after release - knob position can mislead while the pose is
+      correct. Fix belongs in SequenceProgressBar's display formula for
+      non-looping consumers.
 
 ## File ownership
 

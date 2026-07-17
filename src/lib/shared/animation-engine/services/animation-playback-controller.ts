@@ -238,8 +238,13 @@ export class AnimationPlaybackController {
     // Cancel any animated seek in progress
     this.animationTarget = null;
 
-    // Clamp step to valid range
-    const clampedStep = Math.max(0, Math.min(step, this.state.totalSteps));
+    // Clamp step to the controller's own valid range, which extends ONE PAST
+    // the last motion beat: the timeline is [0 = start pose, 1..N = beats,
+    // N+1 = the end hold] (see animationEndStep = totalSteps + 1 in the tick
+    // path). Clamping to totalSteps here truncated the final beat's interior -
+    // for a 1-beat guide showcase that made the entire second half of the
+    // scrub range collapse to the beat's start pose.
+    const clampedStep = Math.max(0, Math.min(step, this.state.totalSteps + 1));
 
     // If the caller passed an integer beat (e.g. step-cell click), preserve
     // the current fractional offset so playback continues smoothly from the
