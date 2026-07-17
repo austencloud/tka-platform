@@ -13,6 +13,11 @@ import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { bakeReversals } from "../guide-sequence-adapter";
+import {
+  alphaGammaPool,
+  betaGammaPool,
+  gammaBetaPool,
+} from "../example-pools/type2-loops-pools";
 
 // Verbatim prose lifted from _pages/Type2LoopsPage.svelte (Austen's words - never AI-written);
 // pictograph construction is a FAITHFUL COPY of that same file's step authoring (same
@@ -173,11 +178,76 @@ const loopStrip = (l: LoopDef): PictographData[] => {
 /** STAFF props with reversal dots - matching Type2LoopsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF, showReversals: true } as const;
 
+// Build each print example's strip ONCE - the card's `items` and the pool's
+// entry 0 (the default, prerendered example) are the SAME strip.
+const bstxStrip = loopStrip(LOOPS[0]!);
+const eduzStrip = loopStrip(LOOPS[1]!);
+const oyhtStrip = loopStrip(LOOPS[2]!);
+
+// No per-slot prose was ever authored for this trio - the shared prose above
+// (the two flow blocks) covers all three and stays put. Entry-0 proseHtml
+// below is a placeholder pending Austen's curation pass (rollout spec section
+// 2c): a neutral factual sentence naming the word and its travel family, no
+// motion/color/direction claims until verified against step data.
 export const type2LoopsContent: GuideBlock[] = [
   { kind: "heading", level: 1, text: "Type 2 LOOPs" },
   { kind: "prose", html: "These words use the Type 2 letters to travel between α/β and γ." },
   { kind: "prose", html: "Since each repetition is rotated by 180°, these are all <em>Rotated LOOPs</em>." },
-  { kind: "pictographGroup", items: loopStrip(LOOPS[0]!), flowCols: 3, card: true, render: RENDER, caption: LOOPS[0]!.word },
-  { kind: "pictographGroup", items: loopStrip(LOOPS[1]!), flowCols: 3, card: true, render: RENDER, caption: LOOPS[1]!.word },
-  { kind: "pictographGroup", items: loopStrip(LOOPS[2]!), flowCols: 3, card: true, render: RENDER, caption: LOOPS[2]!.word },
+  {
+    kind: "pictographGroup",
+    items: bstxStrip,
+    flowCols: 3,
+    card: true,
+    render: RENDER,
+    caption: LOOPS[0]!.word,
+    pool: {
+      entries: [
+        {
+          word: "BΣTX",
+          loopLabel: "Rotated",
+          proseHtml: "BΣTX is the print example for this slot: a Rotated LOOP that travels between alpha and gamma.",
+          items: bstxStrip,
+        },
+        ...alphaGammaPool,
+      ],
+    },
+  },
+  {
+    kind: "pictographGroup",
+    items: eduzStrip,
+    flowCols: 3,
+    card: true,
+    render: RENDER,
+    caption: LOOPS[1]!.word,
+    pool: {
+      entries: [
+        {
+          word: "EΔUZ",
+          loopLabel: "Rotated",
+          proseHtml: "EΔUZ is the print example for this slot: a Rotated LOOP that travels between beta and gamma.",
+          items: eduzStrip,
+        },
+        ...betaGammaPool,
+      ],
+    },
+  },
+  {
+    kind: "pictographGroup",
+    items: oyhtStrip,
+    flowCols: 3,
+    card: true,
+    render: RENDER,
+    caption: LOOPS[2]!.word,
+    pool: {
+      entries: [
+        {
+          word: "OYHΘ",
+          loopLabel: "Rotated",
+          proseHtml: "OYHΘ is the print example for this slot: a Rotated LOOP that travels between gamma and beta.",
+          items: oyhtStrip,
+        },
+        ...gammaBetaPool,
+      ],
+    },
+  },
 ];

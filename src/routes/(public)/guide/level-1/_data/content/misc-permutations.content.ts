@@ -13,6 +13,11 @@ import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { bakeReversals } from "../guide-sequence-adapter";
+import {
+  mirroredPool,
+  rotatedSwappedPool,
+  mirroredSwappedPool,
+} from "../example-pools/misc-permutations-pools";
 
 // Verbatim prose lifted from _pages/Type1LoopsPage.svelte (Austen's words - never AI-written);
 // pictograph construction is a FAITHFUL COPY of that same file's step authoring (same
@@ -165,22 +170,81 @@ const loopStrip = (l: LoopDef): PictographData[] => {
 /** STAFF props with reversal dots - matching Type1LoopsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF, showReversals: true } as const;
 
+// Build each print example's strip ONCE - the card's `items` and the pool's
+// entry 0 (the default, prerendered example) are the SAME strip.
+const djiiStrip = loopStrip(LOOPS[0]!);
+const bblfStrip = loopStrip(LOOPS[1]!);
+const kiecStrip = loopStrip(LOOPS[2]!);
+
+// The per-example ("In this example of…") prose that used to sit in the flow
+// (DJII preceding its card, KIEC following its card) now rides with entry 0 of
+// each pool - it explains THIS specific instance, so it belongs to the
+// example, not the section. `proseHtml` renders as plain text (SequenceShowcase
+// interpolates it directly, no `<br>`/`<em>`), so the wording moves verbatim
+// but the markup is dropped.
 export const miscPermutationsContent: GuideBlock[] = [
   { kind: "heading", level: 1, text: "Type 1 LOOPs" },
   {
-    kind: "prose",
-    html:
-      "In this example of DJII, the graphs in the second repetition (steps 5-8) mirror the<br>" +
-      "graphs in the first repetition (steps 1-4), classifying it as a <em>Mirrored LOOP</em>.",
+    kind: "pictographGroup",
+    items: djiiStrip,
+    flowCols: 3,
+    card: true,
+    render: RENDER,
+    caption: LOOPS[0]!.word,
+    pool: {
+      entries: [
+        {
+          word: "DJII",
+          loopLabel: "Mirrored",
+          proseHtml:
+            "In this example of DJII, the graphs in the second repetition (steps 5-8) mirror the graphs in the first repetition (steps 1-4), classifying it as a Mirrored LOOP.",
+          items: djiiStrip,
+        },
+        ...mirroredPool,
+      ],
+    },
   },
-  { kind: "pictographGroup", items: loopStrip(LOOPS[0]!), flowCols: 3, card: true, render: RENDER, caption: LOOPS[0]!.word },
   { kind: "prose", html: "Swapped & Rotated LOOP" },
-  { kind: "pictographGroup", items: loopStrip(LOOPS[1]!), flowCols: 3, card: true, render: RENDER, caption: LOOPS[1]!.word },
-  { kind: "pictographGroup", items: loopStrip(LOOPS[2]!), flowCols: 3, card: true, render: RENDER, caption: LOOPS[2]!.word },
   {
-    kind: "prose",
-    html:
-      "In this example of KIEC, the colors are swapped in the second half,<br>" +
-      "so it is classified as a <em>Swapped & Mirrored LOOP</em>.",
+    kind: "pictographGroup",
+    items: bblfStrip,
+    flowCols: 3,
+    card: true,
+    render: RENDER,
+    caption: LOOPS[1]!.word,
+    pool: {
+      entries: [
+        {
+          word: "BBLF",
+          loopLabel: "Swapped & Rotated",
+          // Placeholder prose pending Austen's curation pass - no authored
+          // per-slot prose exists for BBLF today (rollout spec section 2c);
+          // no motion/color/direction claims until verified against step data.
+          proseHtml: "BBLF is the print example for this slot: a Swapped & Rotated LOOP.",
+          items: bblfStrip,
+        },
+        ...rotatedSwappedPool,
+      ],
+    },
+  },
+  {
+    kind: "pictographGroup",
+    items: kiecStrip,
+    flowCols: 3,
+    card: true,
+    render: RENDER,
+    caption: LOOPS[2]!.word,
+    pool: {
+      entries: [
+        {
+          word: "KIEC",
+          loopLabel: "Swapped & Mirrored",
+          proseHtml:
+            "In this example of KIEC, the colors are swapped in the second half, so it is classified as a Swapped & Mirrored LOOP.",
+          items: kiecStrip,
+        },
+        ...mirroredSwappedPool,
+      ],
+    },
   },
 ];

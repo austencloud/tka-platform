@@ -1,0 +1,2020 @@
+{
+  "createdAt": "2026-07-17",
+  "page": "misc-permutations",
+  "note": "Type 1 LOOPs page. Recipe: constraintPreset smooth + motionTypeFilter no-dash + mustNotContainLetters [Type 2 set, alpha, beta, gamma] forces pure Type 1 words. Steps captured verbatim from MCP generate_sequence (beat keys mapped to step). Phase 0 findings recorded in the rollout spec: mustContainLetters is a post-hoc filter in loop mode (fails instead of steering); startPosition may be overridden by loop closure; server still runs pre-fix engine so closure retries may be needed.",
+  "generationDefaults": {
+    "constraintPreset": "smooth",
+    "motionTypeFilter": "no-dash",
+    "mustNotContainLetters": [
+      "W",
+      "X",
+      "Y",
+      "Z",
+      "Σ",
+      "Δ",
+      "Θ",
+      "Ω",
+      "α",
+      "β",
+      "γ"
+    ],
+    "level": 1,
+    "gridMode": "diamond",
+    "length": 8,
+    "tool": "mcp generate_sequence"
+  },
+  "slots": {
+    "mirrored": {
+      "defaultEntry": "DJII (original print example, stays default; its authored prose moves into entry 0 on migration)",
+      "candidates": [
+        {
+          "word": "OROTOROT",
+          "loopType": "mirrored",
+          "prose": "OROT never leaves the four gamma points. The first half rotates everything counter-clockwise, and the mirrored half runs the same letters clockwise. Watch the red hand: it drops into anti only on the T steps.",
+          "verified": [
+            "steps 1-4: every rotation ccw (both hands)",
+            "steps 5-8: every rotation cw (both hands)",
+            "blue anti on all 8 steps",
+            "red pro on all steps except 4 and 8 (T), which are anti",
+            "all positions gamma"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "γ",
+              "pos": "gamma15→gamma15",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "O",
+              "pos": "gamma15→gamma5",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "R",
+              "pos": "gamma5→gamma11",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "O",
+              "pos": "gamma11→gamma1",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "T",
+              "pos": "gamma1→gamma3",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "O",
+              "pos": "gamma3→gamma13",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "R",
+              "pos": "gamma13→gamma7",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "O",
+              "pos": "gamma7→gamma9",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "T",
+              "pos": "gamma9→gamma15",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "UUUMUUUM",
+          "loopType": "mirrored",
+          "prose": "In UUUM the hands always rotate opposite ways: blue clockwise, red counter-clockwise. The mirrored half flips both at once, so each hand ends up running the other's direction.",
+          "verified": [
+            "every moving step: blue and red rotate opposite directions",
+            "steps 1-4: blue cw, red ccw; steps 5-8: blue ccw, red cw",
+            "red pro on all 8 steps",
+            "blue anti on U steps (1,2,3,5,6,7), pro on M steps (4,8)"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "γ",
+              "pos": "gamma13→gamma13",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "U",
+              "pos": "gamma13→gamma11",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "U",
+              "pos": "gamma11→gamma9",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "U",
+              "pos": "gamma9→gamma15",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "M",
+              "pos": "gamma15→gamma5",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "U",
+              "pos": "gamma5→gamma7",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "U",
+              "pos": "gamma7→gamma1",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "U",
+              "pos": "gamma1→gamma3",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "M",
+              "pos": "gamma3→gamma13",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "IIIIIIII",
+          "loopType": "mirrored",
+          "prose": "Eight I steps in a row. With a single letter, the mirror is pure direction: blue runs clockwise through the first half and counter-clockwise through the second, and red does the reverse.",
+          "verified": [
+            "letter I on all 8 steps",
+            "blue cw on steps 1-4, ccw on steps 5-8",
+            "red ccw on steps 1-4, cw on steps 5-8",
+            "all positions beta"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "β",
+              "pos": "beta3→beta3",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "I",
+              "pos": "beta3→beta1",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "I",
+              "pos": "beta1→beta7",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "I",
+              "pos": "beta7→beta5",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "I",
+              "pos": "beta5→beta7",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "I",
+              "pos": "beta7→beta1",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "I",
+              "pos": "beta1→beta3",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "I",
+              "pos": "beta3→beta5",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "I",
+              "pos": "beta5→beta3",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "AAABAAAB",
+          "loopType": "mirrored",
+          "prose": "AAAB keeps both hands matched on every step, so the mirror is easy to read: three pro steps and one anti, clockwise on the way out and counter-clockwise on the way home.",
+          "verified": [
+            "both hands share the same motion type and direction on every step",
+            "steps 1-3 and 5-7 (A): pro; steps 4 and 8 (B): anti",
+            "steps 1-4 cw, steps 5-8 ccw",
+            "all positions alpha"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "α",
+              "pos": "alpha3→alpha3",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "A",
+              "pos": "alpha3→alpha5",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "A",
+              "pos": "alpha5→alpha7",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "A",
+              "pos": "alpha7→alpha1",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "B",
+              "pos": "alpha1→alpha7",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "A",
+              "pos": "alpha7→alpha5",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "A",
+              "pos": "alpha5→alpha3",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "A",
+              "pos": "alpha3→alpha1",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "B",
+              "pos": "alpha1→alpha3",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "rotated-swapped": {
+      "defaultEntry": "BBLF (original print example, stays default; page currently ties only a bare label to it, so entry-0 prose gets drafted at migration)",
+      "candidates": [
+        {
+          "word": "IIIIIIII",
+          "loopType": "rotated_swapped",
+          "label": "Swapped & Rotated",
+          "prose": "The same word can close a LOOP more than one way. This IIII repeats with the colors swapped: blue takes over red's pro role at the seam, and the positions come back rotated 180°.",
+          "verified": [
+            "letter I on all 8 steps",
+            "steps 1-3: blue anti, red pro; steps 5-7: blue pro, red anti (roles exchanged)",
+            "second-half positions are the first half's rotated 180°",
+            "engine header: LOOP: rotated, swapped"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "β",
+              "pos": "beta7→beta7",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "I",
+              "pos": "beta7→beta5",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "I",
+              "pos": "beta5→beta3",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "I",
+              "pos": "beta3→beta1",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "I",
+              "pos": "beta1→beta3",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "I",
+              "pos": "beta3→beta1",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "I",
+              "pos": "beta1→beta7",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "I",
+              "pos": "beta7→beta5",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "I",
+              "pos": "beta5→beta7",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "HHHGHHHG",
+          "loopType": "rotated_swapped",
+          "label": "Swapped & Rotated",
+          "prose": "In HHHG every rotation is clockwise from start to finish. Nothing flips at the seam; the second half repeats the word rotated 180° with the colors swapped, and the motion carries straight through.",
+          "verified": [
+            "all 8 moving steps cw on both hands",
+            "both hands share the same motion type on every step",
+            "H steps anti, G steps (4, 8) pro",
+            "engine header: LOOP: rotated, swapped"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "β",
+              "pos": "beta7→beta7",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "H",
+              "pos": "beta7→beta5",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "H",
+              "pos": "beta5→beta3",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "H",
+              "pos": "beta3→beta1",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "G",
+              "pos": "beta1→beta3",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "H",
+              "pos": "beta3→beta1",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "H",
+              "pos": "beta1→beta7",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "H",
+              "pos": "beta7→beta5",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "G",
+              "pos": "beta5→beta7",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "FLFLFLFL",
+          "loopType": "rotated_swapped",
+          "label": "Swapped & Rotated",
+          "prose": "FLFL is built from the compound letters F and L, so the hands cross between alpha and beta on every step, all of it counter-clockwise. At the seam the hands trade pro and anti; that trade is the swap.",
+          "verified": [
+            "every moving rotation ccw",
+            "word alternates F (beta→alpha) and L (alpha→beta)",
+            "steps 1-3: blue pro, red anti; steps 5-7: blue anti, red pro",
+            "engine header: LOOP: rotated, swapped"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "β",
+              "pos": "beta1→beta1",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "F",
+              "pos": "beta1→alpha3",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "L",
+              "pos": "alpha3→beta5",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "F",
+              "pos": "beta5→alpha7",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "L",
+              "pos": "alpha7→beta5",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "F",
+              "pos": "beta5→alpha3",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "L",
+              "pos": "alpha3→beta1",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "F",
+              "pos": "beta1→alpha7",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "L",
+              "pos": "alpha7→beta1",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "EKEJEKEJ",
+          "loopType": "rotated_swapped",
+          "label": "Swapped & Rotated",
+          "prose": "EKEJ pairs the compound letters E, K, and J. The hands rotate opposite ways and both flip at the seam, and only the J steps break out of anti.",
+          "verified": [
+            "every moving step: hands rotate opposite directions",
+            "steps 1-4: blue ccw, red cw; steps 5-8: blue cw, red ccw",
+            "anti on both hands except J steps (4, 8), which are pro",
+            "engine header: LOOP: rotated, swapped"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "β",
+              "pos": "beta1→beta1",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "E",
+              "pos": "beta1→alpha7",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "K",
+              "pos": "alpha7→beta5",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "E",
+              "pos": "beta5→alpha3",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "J",
+              "pos": "alpha3→beta5",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "E",
+              "pos": "beta5→alpha7",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "K",
+              "pos": "alpha7→beta1",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "E",
+              "pos": "beta1→alpha3",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "J",
+              "pos": "alpha3→beta1",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "mirrored-swapped": {
+      "defaultEntry": "KIEC (original print example, stays default; its authored after-prose moves into entry 0 on migration)",
+      "candidates": [
+        {
+          "word": "LFLFLFLF",
+          "loopType": "mirrored_swapped",
+          "label": "Swapped & Mirrored",
+          "prose": "LFLF runs clockwise out and counter-clockwise back, like any mirror. The swap is layered on top: blue starts as the pro hand and hands that role to red at the seam.",
+          "verified": [
+            "steps 1-4 cw, steps 5-8 ccw (both hands)",
+            "steps 1-3: blue pro, red anti; steps 5-7: blue anti, red pro",
+            "word alternates L (alpha→beta) and F (beta→alpha)",
+            "engine header: LOOP: mirrored, swapped"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "α",
+              "pos": "alpha5→alpha5",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "L",
+              "pos": "alpha5→beta3",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "F",
+              "pos": "beta3→alpha1",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "L",
+              "pos": "alpha1→beta7",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "F",
+              "pos": "beta7→alpha1",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "L",
+              "pos": "alpha1→beta7",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "F",
+              "pos": "beta7→alpha5",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "L",
+              "pos": "alpha5→beta3",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "F",
+              "pos": "beta3→alpha5",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "BBBBBBBB",
+          "loopType": "mirrored_swapped",
+          "label": "Swapped & Mirrored",
+          "prose": "Eight B steps, every one anti on both hands. When both hands do the same thing, swapping the colors changes nothing, so the mirror does the visible work: counter-clockwise out, clockwise back.",
+          "verified": [
+            "letter B on all 8 steps, anti on both hands throughout",
+            "steps 1-4 ccw, steps 5-8 cw",
+            "both hands share direction on every step",
+            "engine header: LOOP: mirrored, swapped"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "α",
+              "pos": "alpha3→alpha3",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "B",
+              "pos": "alpha3→alpha5",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "B",
+              "pos": "alpha5→alpha7",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "B",
+              "pos": "alpha7→alpha1",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "B",
+              "pos": "alpha1→alpha3",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "B",
+              "pos": "alpha3→alpha1",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "B",
+              "pos": "alpha1→alpha7",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "B",
+              "pos": "alpha7→alpha5",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "B",
+              "pos": "alpha5→alpha3",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "EKEJEKEJ",
+          "loopType": "mirrored_swapped",
+          "label": "Swapped & Mirrored",
+          "prose": "This EKEJ never flips direction: blue holds counter-clockwise and red holds clockwise for all eight steps. The seam shows in where the letters land, not in the rotation.",
+          "verified": [
+            "blue ccw on all 8 moving steps; red cw on all 8",
+            "anti on both hands except J steps (4, 8), which are pro",
+            "E steps travel beta→alpha; K and J steps travel alpha→beta",
+            "engine header: LOOP: mirrored, swapped"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "β",
+              "pos": "beta7→beta7",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "E",
+              "pos": "beta7→alpha5",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "K",
+              "pos": "alpha5→beta3",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "E",
+              "pos": "beta3→alpha1",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "J",
+              "pos": "alpha1→beta3",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "E",
+              "pos": "beta3→alpha1",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "K",
+              "pos": "alpha1→beta7",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "E",
+              "pos": "beta7→alpha5",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "J",
+              "pos": "alpha5→beta7",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "CCCCCCCC",
+          "loopType": "mirrored_swapped",
+          "label": "Swapped & Mirrored",
+          "prose": "A solid line of C. Blue holds counter-clockwise and red holds clockwise the whole way; what trades between the hands is pro and anti, since C is the hybrid letter.",
+          "verified": [
+            "letter C on all 8 steps",
+            "blue ccw on all 8 moving steps; red cw on all 8",
+            "steps 1-3: blue anti, red pro; steps 4-7: blue pro, red anti; step 8: blue anti, red pro",
+            "engine header: LOOP: mirrored, swapped"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "α",
+              "pos": "alpha5→alpha5",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "C",
+              "pos": "alpha5→alpha7",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "C",
+              "pos": "alpha7→alpha1",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "C",
+              "pos": "alpha1→alpha3",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "C",
+              "pos": "alpha3→alpha1",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "C",
+              "pos": "alpha1→alpha7",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "C",
+              "pos": "alpha7→alpha5",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "C",
+              "pos": "alpha5→alpha3",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "C",
+              "pos": "alpha3→alpha5",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
