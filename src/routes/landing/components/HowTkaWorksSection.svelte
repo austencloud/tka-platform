@@ -394,11 +394,13 @@
     margin: 0 auto 40px;
   }
 
-  /* One row of six equal cards - the progression reads left to right */
+  /* One row of six equal cards - the progression reads left to right. The gap
+     breathes with the viewport so the row survives down to the 920px split
+     entry (Z Fold unfolded) without wrapping. */
   .cards-row {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 16px;
+    gap: clamp(10px, 1.3vw, 16px);
   }
 
   /* Individual card */
@@ -407,7 +409,7 @@
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 16px;
-    padding: 24px 16px 20px;
+    padding: 24px clamp(10px, 1.3vw, 16px) 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -524,8 +526,10 @@
   }
 
   /* Tablet: 3 across, 2 rows. The progression wraps onto a second row instead
-     of scrolling sideways — every step stays on screen. */
-  @media (max-width: 1100px) {
+     of scrolling sideways — every step stays on screen. Holds right up to the
+     920px split entry (fold/iPad-landscape class), where the single-row
+     progression takes over in the same move as the hero split. */
+  @media (max-width: 919px) {
     .cards-row {
       grid-template-columns: repeat(3, 1fr);
       gap: 14px;
