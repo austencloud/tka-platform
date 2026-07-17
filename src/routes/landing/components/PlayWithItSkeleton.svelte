@@ -111,7 +111,8 @@
      by source order. */
   @media (min-width: 1680px) {
     .showcase {
-      max-width: min(2600px, 94vw);
+      /* Mirror PlayWithItInner's cinema-band cap (175rem == 2800px). */
+      max-width: min(2800px, 94vw);
     }
     .sk-canvas {
       max-height: min(1500px, 72vh);

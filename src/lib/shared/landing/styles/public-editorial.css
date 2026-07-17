@@ -19,7 +19,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.85rem;
+  font-size: clamp(0.85rem, 0.8rem + 0.12vw, 1rem);
   letter-spacing: 0.01em;
   color: oklch(0.62 0.02 270);
   text-decoration: none;
@@ -59,7 +59,9 @@
   margin: 0 0 0.6rem;
 }
 .page-subtitle {
-  font-size: 1.1rem;
+  /* One continuous ramp; caps at a readable size, never grows with the 4K
+     canvas. See the ramp table in the proportionate-scale spec. */
+  font-size: clamp(1.1rem, 0.95rem + 0.2vw, 1.3rem);
   color: oklch(0.62 0.02 270);
   margin: 0;
 }
@@ -79,7 +81,7 @@
   text-align: center;
 }
 .lede p {
-  font-size: clamp(1.05rem, 1rem + 0.4vw, 1.25rem);
+  font-size: clamp(1.05rem, 1rem + 0.4vw, 1.35rem);
   line-height: 1.65;
   color: oklch(0.7 0.01 270);
   margin: 0 0 0.9rem;
@@ -95,15 +97,17 @@
    fading accent spine is gone — decoration was doing structure's job.) */
 .editorial-section {
   position: relative;
-  margin: 0 0 4rem;
+  /* Fluid rhythm: 64px on laptops, ~72px at 1920, 112px cap at 3600 — a ramp,
+     not a discrete jump at the big-screen breakpoint. */
+  margin: 0 0 clamp(4rem, 1.6rem + 2.4vw, 7rem);
 }
 .editorial-section:not(.panel) {
   border-top: 1px solid oklch(0.6 0.02 270 / 0.14);
-  padding-top: 2rem;
+  padding-top: clamp(2rem, 1rem + 1vw, 3rem);
 }
 .section-kicker {
   display: block;
-  font-size: 0.72rem;
+  font-size: clamp(0.72rem, 0.66rem + 0.14vw, 0.88rem);
   font-weight: 640;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -196,7 +200,7 @@
 }
 
 .section-title {
-  font-size: clamp(1.45rem, 1.15rem + 0.95vw, 1.95rem);
+  font-size: clamp(1.45rem, 1.15rem + 0.95vw, 2.3rem);
   font-weight: 680;
   font-variation-settings: "opsz" 24;
   letter-spacing: -0.02em;
@@ -211,12 +215,17 @@
 
 /* ── prose ── */
 .prose {
-  font-size: clamp(0.99rem, 0.95rem + 0.2vw, 1.12rem);
+  font-size: clamp(0.99rem, 0.95rem + 0.2vw, 1.2rem);
   line-height: 1.72;
   color: oklch(0.78 0.012 270);
   font-weight: 400;
 }
 .prose p {
+  /* Reading measure that tracks font size and user zoom (satisfies WCAG 1.4.4),
+     tuned to ~66 rendered characters. Inter is narrow — its glyphs run ~0.43em,
+     so 1ch (the "0" advance) holds ~1.45 average characters; 46ch lands ~66-68
+     real characters, the readability sweet spot. */
+  max-width: min(100%, 46ch);
   margin: 0 0 1.2rem;
 }
 .prose p:last-child {
@@ -249,6 +258,7 @@
   position: relative;
   padding-left: 1.4rem;
   margin-bottom: 0.75rem;
+  font-size: clamp(0.99rem, 0.95rem + 0.2vw, 1.2rem);
   color: oklch(0.78 0.012 270);
 }
 .bullet-list li::before {
@@ -278,11 +288,12 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.85rem;
+  font-size: clamp(0.85rem, 0.8rem + 0.15vw, 1rem);
   font-weight: 500;
   color: oklch(0.9 0.015 270);
   text-decoration: none;
-  padding: 0.5rem 0.9rem;
+  /* em padding so the chip grows with its own text, not a separate rule */
+  padding: 0.55em 0.95em;
   background: color-mix(
     in oklch,
     var(--accent, oklch(0.7 0.13 275)) 7%,
@@ -326,12 +337,13 @@
   -webkit-backdrop-filter: blur(14px);
 }
 .cta-card h3 {
-  font-size: 1.5rem;
+  font-size: clamp(1.5rem, 1.3rem + 0.5vw, 2rem);
   font-weight: 650;
   margin: 0 0 0.5rem;
   color: oklch(0.95 0.01 270);
 }
 .cta-card p {
+  font-size: clamp(1rem, 0.95rem + 0.15vw, 1.15rem);
   color: oklch(0.7 0.01 270);
   margin: 0 0 1.5rem;
 }
@@ -339,11 +351,12 @@
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
-  font-size: 1.05rem;
+  font-size: clamp(1.05rem, 1rem + 0.12vw, 1.2rem);
   font-weight: 650;
   color: #fff;
   text-decoration: none;
-  padding: 0.95rem 1.9rem;
+  /* em padding so the button scales with its own label */
+  padding: 0.9em 1.8em;
   border-radius: 13px;
   background: linear-gradient(135deg, #6f8cff, #8b6cff);
   box-shadow: 0 14px 32px oklch(0.45 0.18 275 / 0.4);
@@ -421,22 +434,30 @@
    the base design. Stages below are vh-keyed, so they stay proportionate
    across this whole range. */
 @media (min-width: 1680px) {
+  /* Big-screen tier is COMPOSITION-ONLY. Every text role is one continuous
+     clamp ramp in the base rules above, capped at a readable size — nothing
+     here re-sizes type. The tier caps-and-centers the reading column, widens
+     visual bands, holds duos in conversation, and steps the display-scale page
+     title for centered marketing headers. */
   .editorial {
-    /* 25vw == 60rem (960px) at 3840; fluid past 4K instead of re-freezing. */
-    max-width: max(60rem, 25vw);
+    /* Cap-and-center: the reading column holds at 60rem; margins absorb the
+       rest of a 4K/ultrawide canvas (the Apple/Stripe/Linear/Vercel pattern). */
+    max-width: 60rem;
   }
   /* Duo sections claim real width: 110rem == 1760px at 3840. The copy keeps
-     its measure and centers in its column. duo-max is the full-bleed tier for
-     demo-first pages (composer): the demos there are live stages that scale
-     with the column, so they can carry 88vw. */
+     its measure and centers in its column. */
   .editorial .has-duo {
     width: min(110rem, 88vw);
   }
+  /* duo-max (composer demo-first sections) caps at 160rem == 2560px: copy and
+     the live demo stay in one composition instead of drifting a half-meter
+     apart on a 3840 screen. */
   .editorial .has-duo.duo-max {
-    width: min(88vw, 3600px);
+    width: min(88vw, 160rem);
   }
+  /* A 112px gutter reads as one composition; a 192px one reads as two islands. */
   .section-duo {
-    gap: clamp(3rem, 5vw, 7rem);
+    gap: clamp(3rem, 4vw, 6rem);
   }
   .section-duo > .duo-copy {
     justify-self: center;
@@ -448,80 +469,30 @@
     width: min(110rem, 88vw);
   }
   .editorial .has-duo.duo-uw.duo-max {
-    width: min(88vw, 3600px);
+    width: min(88vw, 160rem);
   }
   .has-duo.duo-uw .section-duo {
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-    gap: clamp(3rem, 5vw, 7rem);
+    gap: clamp(3rem, 4vw, 6rem);
   }
   .has-duo.duo-uw .section-duo > .duo-copy {
     margin-inline: 0;
   }
-  /* Band steps: wide = roomy grid band, cinema = full stage band (88vw — the
-     stage inside owns its height cap so it never outgrows the viewport). */
+  /* Band steps: wide = roomy grid band; cinema = full stage band, capped at
+     175rem == 2800px so a 16:9 live scene fills it while the stage inside owns
+     its own 78vh height cap and never outgrows the viewport. */
   .editorial .breakout.wide {
     --breakout-width: min(96rem, 92vw);
   }
   .editorial .breakout.cinema {
-    --breakout-width: min(88vw, 3600px);
+    --breakout-width: min(88vw, 175rem);
   }
-  /* Screenful rhythm: the demos are near-viewport moments now, so the gaps
-     between sections scale with them. */
-  .editorial-section {
-    margin-bottom: 8rem;
-  }
-  .editorial-section:not(.panel) {
-    padding-top: 3rem;
-  }
-  .editorial .back-link {
-    font-size: 1rem;
-  }
+  /* Centered marketing headers (about/roots/notation) get a bounded display
+     step. Floor equals the base ramp's cap (4.2rem) so the 1680 seam has zero
+     jump; caps at 5rem == 80px. The composer split-hero title is instead
+     container-tracked in the composer page styles. */
   .page-title {
-    /* 3vw == 115px at 3840 — a display-scale hero, not a scaled-up laptop
-       heading; keeps growing on 5K/6K. */
-    font-size: clamp(4.2rem, 3vw, 8.5rem);
-  }
-  .page-subtitle {
-    font-size: 1.5rem;
-  }
-  .lede {
-    max-width: max(52rem, 21.7vw);
-  }
-  .lede p {
-    font-size: 1.6rem;
-  }
-  .section-kicker {
-    font-size: 0.95rem;
-  }
-  .section-title {
-    /* Landing h2 steps to 3.6rem at this width; editorial sections sit just
-       under it so page titles stay the loudest voice. */
-    font-size: 3.2rem;
-  }
-  .prose {
-    /* 0.6vw == 23px at 3840; ramps gently on wider screens. */
-    font-size: clamp(1.3rem, 0.6vw, 1.7rem);
-  }
-  .bullet-list li {
-    font-size: 1.25rem;
-    padding-left: 1.7rem;
-  }
-  .resource-chip {
-    font-size: 1rem;
-    padding: 0.6rem 1.1rem;
-  }
-  .cta-card h3 {
-    font-size: 1.9rem;
-  }
-  .cta-card p {
-    font-size: 1.2rem;
-  }
-  .cta-button {
-    font-size: 1.2rem;
-    padding: 1.1rem 2.2rem;
-  }
-  .creator-credit {
-    font-size: 0.95rem;
+    font-size: clamp(4.2rem, 2.4rem + 1.5vw, 5rem);
   }
 }
 

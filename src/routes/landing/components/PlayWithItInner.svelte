@@ -376,7 +376,10 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
      sync with PlayWithItSkeleton (the shared structural placeholder). */
   @media (min-width: 1680px) {
     .showcase.with-sidebar {
-      max-width: min(2600px, 94vw);
+      /* Aligns to the composer/landing cinema band cap (175rem == 2800px) so
+         the showcase never limits the band; the canvas height cap below is the
+         real size governor. */
+      max-width: min(2800px, 94vw);
     }
     .canvas-area {
       max-height: min(1500px, 72vh);

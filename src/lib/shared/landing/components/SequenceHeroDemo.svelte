@@ -131,12 +131,12 @@
     justify-content: center;
     gap: 0.55rem;
     margin-top: 0.8rem;
-    font-size: 0.85rem;
+    font-size: clamp(0.85rem, 0.8rem + 0.12vw, 1rem);
     color: oklch(0.6 0.02 270);
   }
 
   .demo-word {
-    font-size: 1.05rem;
+    font-size: clamp(1.05rem, 1rem + 0.15vw, 1.25rem);
     color: oklch(0.88 0.03 270);
   }
 
@@ -162,7 +162,7 @@
     gap: 0.55rem;
     min-height: 44px;
     padding: 0 1.4rem;
-    font-size: 0.95rem;
+    font-size: clamp(0.95rem, 0.9rem + 0.12vw, 1.08rem);
     font-weight: 650;
     font-family: inherit;
     color: oklch(0.9 0.015 270);
@@ -186,23 +186,18 @@
     cursor: default;
   }
 
-  /* Ultrawide: the hero holds its own against the 4K type step — height-keyed
-     so it scales with the screen (the host column caps the width). After the
-     base rules so it wins by source order. */
+  /* Ultrawide: the hero holds its own against the big-screen composition —
+     height-keyed so it scales with the screen, capped at 78rem so a very tall
+     display doesn't blow the stage past what the player fills. Type is on the
+     base ramps above; this block is layout-only. After the base rules so it
+     wins by source order. */
   @media (min-width: 1680px) {
     .hero-demo {
-      max-width: min(60vh, 100%);
-    }
-    figcaption {
-      font-size: 1.05rem;
-    }
-    .demo-word {
-      font-size: 1.3rem;
+      max-width: min(60vh, 78rem);
     }
     .reroll-button {
       min-height: 52px;
       padding: 0 1.8rem;
-      font-size: 1.08rem;
     }
   }
 

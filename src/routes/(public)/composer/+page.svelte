@@ -568,11 +568,12 @@
     display: inline-flex;
     align-items: center;
     gap: 0.6rem;
-    font-size: 1.05rem;
+    font-size: clamp(1.05rem, 1rem + 0.12vw, 1.2rem);
     font-weight: 650;
     color: oklch(0.9 0.015 270);
     text-decoration: none;
-    padding: 0.95rem 1.9rem;
+    /* em padding matches .cta-button — scales with the label, not a 1680 rule */
+    padding: 0.9em 1.8em;
     border-radius: 13px;
     background: oklch(0.3 0.04 270 / 0.18);
     border: 1px solid oklch(0.5 0.06 270 / 0.3);
@@ -725,7 +726,7 @@
      row. */
   .demo-hint {
     margin: -0.7rem 0 1.4rem;
-    font-size: 0.8rem;
+    font-size: clamp(0.8rem, 0.76rem + 0.12vw, 0.95rem);
     color: oklch(0.62 0.02 270);
     text-align: center;
   }
@@ -759,12 +760,12 @@
     min-height: 6.5rem;
   }
   .bento-text strong {
-    font-size: 1rem;
+    font-size: clamp(1rem, 0.95rem + 0.15vw, 1.2rem);
     font-weight: 650;
     color: oklch(0.92 0.02 270);
   }
   .bento-text span {
-    font-size: 0.88rem;
+    font-size: clamp(0.88rem, 0.84rem + 0.12vw, 1.05rem);
     line-height: 1.5;
     color: oklch(0.68 0.015 270);
   }
@@ -773,9 +774,9 @@
     margin-top: 2rem;
   }
   .cards-heading {
-    margin: 0 0 0.4rem;
+    margin: 0 0 clamp(0.4rem, 0.1rem + 0.4vw, 1.2rem);
     text-align: center;
-    font-size: 1.15rem;
+    font-size: clamp(1.15rem, 1rem + 0.45vw, 1.6rem);
     font-weight: 650;
     color: oklch(0.92 0.02 270);
   }
@@ -805,31 +806,21 @@
     }
   }
 
-  /* Ultrawide type steps for page-local text — after the base rules so they
-     win by source order. */
-  @media (min-width: 1680px) {
-    .demo-hint {
-      font-size: 1.05rem;
-    }
-    .cards-heading {
-      font-size: 1.7rem;
-      margin-bottom: 1.2rem;
-    }
-  }
-
   /* ── split hero (big tier) ──
      Copy left, the live notation player right — the page's duo grammar
      applied to the hero. Base (below 1680px) has NO .hero-duo styles, so the
      stacked centered hero is untouched. The row spacers (1fr) center the copy
-     block against the player. */
+     block against the player. The duo width caps at 152rem (2432px) so the
+     stage cell hugs the player instead of leaving a lake of dead black, and
+     the copy column widens with the viewport. */
   @media (min-width: 1680px) {
     .hero-duo {
       position: relative;
       left: 50%;
       translate: -50% 0;
-      width: min(88vw, 3600px);
+      width: min(88vw, 152rem);
       display: grid;
-      grid-template-columns: minmax(0, 46rem) minmax(0, 1fr);
+      grid-template-columns: minmax(0, clamp(46rem, 30vw, 58rem)) minmax(0, 1fr);
       grid-template-rows: 1fr auto auto auto 1fr;
       grid-template-areas:
         ".      stage"
@@ -837,13 +828,21 @@
         "lede   stage"
         "ctas   stage"
         ".      stage";
-      column-gap: clamp(3rem, 5vw, 7rem);
+      column-gap: clamp(3rem, 4vw, 6rem);
       margin-bottom: 3.6rem;
     }
     .hero-duo > .editorial-header {
       grid-area: header;
       text-align: left;
       margin: 0 0 0.4rem;
+      /* Container-track the title: it sizes to THIS column's width, not the
+         viewport, so "Flow Arts Composer" stays one line and grows only as the
+         column grows. 9cqi lands on the base cap (67px) at a 736px column, so
+         the 1680 seam has no jump; caps at 5rem (80px). */
+      container-type: inline-size;
+    }
+    .hero-duo :global(.page-title) {
+      font-size: clamp(4.2rem, 9cqi, 5rem);
     }
     .hero-duo > .lede {
       grid-area: lede;

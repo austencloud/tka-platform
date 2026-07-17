@@ -160,11 +160,11 @@
     flex-wrap: wrap;
     gap: 0.55rem;
     margin-top: 0.8rem;
-    font-size: 0.85rem;
+    font-size: clamp(0.85rem, 0.8rem + 0.12vw, 1rem);
     color: oklch(0.6 0.02 270);
   }
   .caption-word {
-    font-size: 1.05rem;
+    font-size: clamp(1.05rem, 1rem + 0.15vw, 1.25rem);
     color: oklch(0.88 0.03 270);
   }
   .caption-note {
@@ -188,7 +188,7 @@
     gap: 0.65rem;
     min-height: 48px;
     padding: 0 1.8rem;
-    font-size: 1.02rem;
+    font-size: clamp(1.02rem, 0.97rem + 0.12vw, 1.18rem);
     font-weight: 650;
     font-family: inherit;
     color: #fff;
@@ -212,7 +212,7 @@
   }
 
   .retry-note {
-    font-size: 0.82rem;
+    font-size: clamp(0.82rem, 0.78rem + 0.1vw, 0.95rem);
     color: oklch(0.65 0.02 270);
     font-style: italic;
     visibility: hidden;
@@ -227,18 +227,14 @@
     }
   }
 
-  /* Ultrawide: the pair fills the duo's demo column (~1200px per stage at
-     3840), so the supporting cast scales with it. */
+  /* Ultrawide: the pair fills the duo's demo column, so the supporting layout
+     opens up. Type is on the base ramps above; this block is layout-only. */
   @media (min-width: 1680px) {
     .stages {
       gap: 1.5rem;
     }
     .caption-row {
-      font-size: 1.05rem;
       margin-top: 1.1rem;
-    }
-    .caption-word {
-      font-size: 1.35rem;
     }
     .action-row {
       margin-top: 1.7rem;
@@ -246,10 +242,6 @@
     .generate-button {
       min-height: 58px;
       padding: 0 2.2rem;
-      font-size: 1.18rem;
-    }
-    .retry-note {
-      font-size: 0.95rem;
     }
   }
 
