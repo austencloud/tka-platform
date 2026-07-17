@@ -13,8 +13,24 @@
  */
 
 import * as admin from "firebase-admin";
+import { singleScanMessage, digestMessage } from "./scanDigestMessages";
 
 const db = admin.firestore();
+
+/** Admins to notify, keyed by uid, deduped across role/isAdmin queries. */
+async function loadAdmins(): Promise<
+  Map<string, FirebaseFirestore.DocumentData>
+> {
+  const [roleSnap, flagSnap] = await Promise.all([
+    db.collection("users").where("role", "==", "admin").get(),
+    db.collection("users").where("isAdmin", "==", true).get(),
+  ]);
+  const admins = new Map<string, FirebaseFirestore.DocumentData>();
+  for (const doc of [...roleSnap.docs, ...flagSnap.docs]) {
+    admins.set(doc.id, doc.data());
+  }
+  return admins;
+}
 
 /** Pulse notification type → preference key on users/{uid}.notificationPreferences */
 const PULSE_PREF_KEYS: Record<string, string> = {
@@ -53,15 +69,7 @@ export function isAdminData(
 export async function notifyAdmins(
   input: AdminNotificationInput
 ): Promise<number> {
-  const [roleSnap, flagSnap] = await Promise.all([
-    db.collection("users").where("role", "==", "admin").get(),
-    db.collection("users").where("isAdmin", "==", true).get(),
-  ]);
-
-  const admins = new Map<string, FirebaseFirestore.DocumentData>();
-  for (const doc of [...roleSnap.docs, ...flagSnap.docs]) {
-    admins.set(doc.id, doc.data());
-  }
+  const admins = await loadAdmins();
 
   const prefKey = PULSE_PREF_KEYS[input.type];
   let written = 0;
@@ -95,4 +103,118 @@ export async function notifyAdmins(
   );
 
   return written;
+}
+
+export interface ScanDigestInput {
+  /** The scanned short code (latest scan). */
+  code: string;
+  /** Simplified word/label for the scanned card. */
+  label: string;
+  /** Signed-in non-admin scanner's display name; null when anonymous. */
+  scannerName: string | null;
+  /** The scanner's uid — used only to skip pinging the admin about their own scan. */
+  fromUserId: string | null;
+  city: string | null;
+  country: string | null;
+  lat: number | null;
+  lng: number | null;
+  /** Coalescing window length in ms and its minute label. */
+  windowMs: number;
+  windowMinutes: number;
+  /** Injected Date.now() (deterministic in tests). */
+  now: number;
+}
+
+/**
+ * Coalesce QR scans into one rolling digest per admin.
+ *
+ * A burst of scans must not produce a burst of pushes ("a ton of reds"). We
+ * exploit the trigger topology: onNewNotification fires on document CREATE only.
+ * So the digest is a per-admin doc with a deterministic id keyed to a fixed
+ * window bucket, upserted transactionally:
+ *
+ *   - first scan in the window  → set   (fires onNewNotification → one push),
+ *                                        message = full single-scan detail.
+ *   - later scans in the window → update (no trigger, no push), accumulating
+ *                                        count + distinct cities; once count > 1
+ *                                        the message becomes the digest form.
+ *
+ * The deterministic doc id makes concurrent scans idempotent — two scans in the
+ * same bucket resolve to the same ref and serialize through the transaction.
+ */
+export async function notifyAdminsScanDigest(
+  input: ScanDigestInput
+): Promise<void> {
+  const admins = await loadAdmins();
+  const bucket = Math.floor(input.now / input.windowMs);
+  const docId = `qr-scan-digest-${bucket}`;
+
+  const latest = {
+    shortCode: input.code,
+    scanCity: input.city,
+    scanCountry: input.country,
+    scanLat: input.lat,
+    scanLng: input.lng,
+  };
+
+  await Promise.all(
+    [...admins.entries()].map(async ([adminId, adminData]) => {
+      if (input.fromUserId && adminId === input.fromUserId) return;
+      const prefs = adminData.notificationPreferences as
+        | Record<string, boolean>
+        | undefined;
+      if (prefs && prefs.adminQrScan === false) return;
+
+      const ref = db
+        .collection("users")
+        .doc(adminId)
+        .collection("notifications")
+        .doc(docId);
+
+      await db.runTransaction(async (tx) => {
+        const cur = await tx.get(ref);
+        if (!cur.exists) {
+          tx.set(ref, {
+            userId: adminId,
+            type: "admin-qr-scan",
+            message: singleScanMessage({
+              label: input.label,
+              scannerName: input.scannerName,
+              city: input.city,
+              country: input.country,
+            }),
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            read: false,
+            scanCount: 1,
+            cities: input.city ? [input.city] : [],
+            codes: [input.code],
+            ...latest,
+            ...(input.fromUserId ? { fromUserId: input.fromUserId } : {}),
+            ...(input.scannerName ? { fromUserName: input.scannerName } : {}),
+          });
+          return;
+        }
+
+        const d = cur.data() ?? {};
+        const scanCount =
+          (typeof d.scanCount === "number" ? d.scanCount : 1) + 1;
+        const cities: string[] = Array.isArray(d.cities) ? [...d.cities] : [];
+        if (input.city && !cities.includes(input.city)) cities.push(input.city);
+        const codes: string[] = Array.isArray(d.codes) ? [...d.codes] : [];
+        if (!codes.includes(input.code)) codes.push(input.code);
+
+        tx.update(ref, {
+          message: digestMessage(scanCount, cities.length, input.windowMinutes),
+          scanCount,
+          cities,
+          codes,
+          ...latest,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          // Re-surface the single running digest as unread; no push (updates
+          // don't trigger onNewNotification), so still just one "red".
+          read: false,
+        });
+      });
+    })
+  );
 }
