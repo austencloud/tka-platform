@@ -75,6 +75,19 @@ const BREAKDOWN: BD[] = [
 const breakdownSteps = (): PictographData[] =>
   BREAKDOWN.map((b) => box(b.m, null, `t3-${b.key}`)) as unknown as PictographData[];
 
+// The DISPLAY breakdown shows 4 poses (start/half/end/combined) - only "start"
+// and "combined" are a real playable pair (half/end are static poses with no
+// stepNumber of their own). This is the animation-only strip: same real
+// motion data as `combined` above, just given explicit stepNumber 0/1.
+const breakdownSequenceItems = (): PictographData[] => {
+  const start = BREAKDOWN.find((b) => b.key === "start")!;
+  const combined = BREAKDOWN.find((b) => b.key === "combined")!;
+  return [
+    box(start.m, 0, "t3-anim-start"),
+    box(combined.m, 1, "t3-anim-combined"),
+  ] as unknown as PictographData[];
+};
+
 // ── Sequences: Start + 8, alpha→gamma and beta→gamma ──────────────────────────
 type Cell = { m: Move; step: number } | null;
 const c = (m: Move, step: number): Cell => ({ m, step });
@@ -146,6 +159,8 @@ export const hmType34Content: GuideBlock[] = [
     items: breakdownSteps(),
     flowCols: 4,
     layout: "strip",
+    card: true,
+    sequenceItems: breakdownSequenceItems(),
     render: RENDER,
     caption: "start → halfway → end = combined",
   },
@@ -157,9 +172,9 @@ export const hmType34Content: GuideBlock[] = [
       "The following sequences demonstrate their capabilities.<br>" +
       "This one explores alpha → gamma:",
   },
-  { kind: "pictographGroup", items: stripSteps(SEQ1), flowCols: 5, render: RENDER, caption: "α → γ" },
+  { kind: "pictographGroup", items: stripSteps(SEQ1), flowCols: 5, card: true, render: RENDER, caption: "α → γ" },
   { kind: "prose", html: "And this one shows beta → gamma:" },
-  { kind: "pictographGroup", items: stripSteps(SEQ2), flowCols: 5, render: RENDER, caption: "β → γ" },
+  { kind: "pictographGroup", items: stripSteps(SEQ2), flowCols: 5, card: true, render: RENDER, caption: "β → γ" },
   {
     kind: "prose",
     html:
