@@ -185,15 +185,20 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
      column on mobile (under the canvas, above the dock) and full-width below
      the stage row on desktop so the whole sequence is visible without scroll. -->
 {#snippet stepStripBlock()}
-  {#if playback?.animationState?.sequenceData && notationCells.length > 0}
-    <StepStrip
-      cells={notationCells}
-      currentStep={playback?.animationState?.currentStep ?? 0}
-      {bpm}
-      bluePropType={currentPropType}
-      redPropType={currentPropType}
-    />
-  {/if}
+  <!-- The reserve box holds the strip's fixed 124px frame (StepStrip
+       viewportHeight) from first paint, so the strip landing after playback
+       init never reflows the showcase (no-layout-shift). -->
+  <div class="strip-reserve">
+    {#if playback?.animationState?.sequenceData && notationCells.length > 0}
+      <StepStrip
+        cells={notationCells}
+        currentStep={playback?.animationState?.currentStep ?? 0}
+        {bpm}
+        bluePropType={currentPropType}
+        redPropType={currentPropType}
+      />
+    {/if}
+  </div>
 {/snippet}
 
 <div class="play-inner">
@@ -342,6 +347,13 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     display: flex;
     flex-direction: column;
     min-height: 0;
+  }
+
+  /* StepStrip renders at its fixed 124px viewportHeight; this box owns that
+     height even before the sequence lands. */
+  .strip-reserve {
+    min-height: 124px;
+    flex-shrink: 0;
   }
 
   .canvas-area {

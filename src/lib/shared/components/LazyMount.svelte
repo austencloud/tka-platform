@@ -24,14 +24,21 @@
    * instead of paying the network + (in dev) on-demand-transform cost on click.
    * The same `import()` literal is reused, so Vite maps it to the correct hashed
    * chunk in production too (unlike modulepreload source-path hacks).
+   *
+   * `placeholder`: rendered until the component mounts — including during SSR/
+   * prerender, so the static HTML reserves the loaded component's footprint at
+   * first paint. Pass a skeleton whose GEOMETRY matches the loaded component
+   * exactly (same aspect boxes, same chrome heights); the swap then causes zero
+   * layout shift by construction (no-layout-shift.md).
    */
-  import type { Component } from "svelte";
+  import type { Component, Snippet } from "svelte";
 
   let {
     loader,
     active = false,
     prefetch = false,
     props = {},
+    placeholder,
   }: {
     /** Dynamic import of the component module. */
     loader: () => Promise<{ default: Component<any> }>;
@@ -41,6 +48,8 @@
     prefetch?: boolean;
     /** Props forwarded to the loaded component. */
     props?: Record<string, unknown>;
+    /** Same-footprint skeleton shown (and SSR'd) until the component mounts. */
+    placeholder?: Snippet;
   } = $props();
 
   let Loaded = $state<Component<any> | null>(null);
@@ -78,4 +87,6 @@
 
 {#if Loaded}
   <Loaded {...props} />
+{:else if placeholder}
+  {@render placeholder()}
 {/if}

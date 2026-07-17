@@ -117,9 +117,11 @@
       <i class="fas {generating ? 'fa-circle-notch fa-spin' : 'fa-dice'}" aria-hidden="true"></i>
       <span>{generating ? "Generating..." : "Generate a new one"}</span>
     </button>
-    {#if failedOnce}
-      <span class="retry-note">That draw came up empty. Hit it again.</span>
-    {/if}
+    <!-- Line is always reserved; only visibility toggles, so the rare empty
+         draw doesn't nudge the section (no-layout-shift). -->
+    <span class="retry-note" class:shown={failedOnce} aria-live="polite">
+      That draw came up empty. Hit it again.
+    </span>
   </div>
 </div>
 
@@ -204,6 +206,10 @@
     font-size: 0.82rem;
     color: oklch(0.65 0.02 270);
     font-style: italic;
+    visibility: hidden;
+  }
+  .retry-note.shown {
+    visibility: visible;
   }
 
   @media (max-width: 560px) {

@@ -2,6 +2,8 @@
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
   import ComposerGenerateDemo from "./_components/ComposerGenerateDemo.svelte";
+  import FanSkeleton from "./_components/FanSkeleton.svelte";
+  import PlayWithItSkeleton from "../../landing/components/PlayWithItSkeleton.svelte";
   import demoJson from "$lib/shared/landing/data/demo-sequence.json";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import "$lib/shared/landing/styles/public-editorial.css";
@@ -255,7 +257,16 @@
       <LazyMount
         loader={() => import("./_components/ComposerTunnelDemo.svelte")}
         active={tunnelActive}
-      />
+      >
+        {#snippet placeholder()}
+          <!-- Same footprint as ComposerTunnelDemo: 1.6rem top margin, square
+               stage capped at 30rem, then the 52px performer row. -->
+          <div class="sk-demo sk-tunnel" aria-hidden="true">
+            <div class="sk-stage sk-stage-square"></div>
+            <div class="sk-pill sk-pill-tunnel"></div>
+          </div>
+        {/snippet}
+      </LazyMount>
     </div>
   </section>
 
@@ -283,7 +294,13 @@
         <LazyMount
           loader={() => import("./_components/ComposerChoreoCardsDemo.svelte")}
           active={choreoCardsActive}
-        />
+        >
+          {#snippet placeholder()}
+            <!-- Same skeleton the demo shows while its catalog loads — the
+                 chunk swap is pixel-identical. -->
+            <FanSkeleton />
+          {/snippet}
+        </LazyMount>
       </div>
       <div class="prose">
         <p>
@@ -321,8 +338,23 @@
       <LazyMount
         loader={() => import("./_components/Composer3DViewerDemo.svelte")}
         active={viewer3DActive}
-      />
+      >
+        {#snippet placeholder()}
+          <!-- Same footprint as Composer3DViewerDemo: 16:9 stage plus two
+               stacked 52px control rows. The curtain gradient matches the
+               demo's own boot state so the swap reads as one load. -->
+          <div class="sk-demo" aria-hidden="true">
+            <div class="sk-stage sk-stage-wide"></div>
+            <div class="sk-pill sk-pill-viewer"></div>
+            <div class="sk-pill sk-pill-viewer"></div>
+          </div>
+        {/snippet}
+      </LazyMount>
     </div>
+    <p class="demo-hint">
+      Drag to orbit. Switch the scene, or multiply into a ring. This is the real
+      viewer, running live.
+    </p>
     <div class="resource-row">
       <a href="/create" class="resource-chip" data-sveltekit-reload>Open a sequence in 3D</a>
     </div>
@@ -437,7 +469,13 @@
       <LazyMount
         loader={() => import("../../landing/components/PlayWithItInner.svelte")}
         active={playWithItActive}
-      />
+      >
+        {#snippet placeholder()}
+          <!-- Shared structural skeleton — same footprint as PlayWithItInner's
+               showcase at every breakpoint (also used by the landing host). -->
+          <PlayWithItSkeleton />
+        {/snippet}
+      </LazyMount>
     </div>
   </section>
 
@@ -497,10 +535,102 @@
     margin-block: 0.4rem 1.4rem;
   }
 
-  /* Reserve the showcase's footprint before the lazy chunk mounts so the
-     sections below don't jump (no-layout-shift). */
+  /* The showcase's footprint is reserved by PlayWithItSkeleton (same geometry
+     as the loaded component). The slot is a flex column so that on phones —
+     where PlayWithItInner fills the height it's given — the definite height
+     below actually reaches it (no-layout-shift). */
   .playwithit-slot {
-    min-height: min(34rem, 80vh);
+    display: flex;
+    flex-direction: column;
+  }
+  @media (max-width: 600px) {
+    .playwithit-slot {
+      height: min(34rem, 80vh);
+    }
+  }
+
+  /* ── lazy-demo skeletons ──
+     Each mirrors its loaded component's geometry exactly (stage box + control
+     rows), so the chunk mount paints INTO already-reserved space instead of
+     pushing the page down. Control pills are 52px = SegmentedControl's 44px
+     touch-target segments + 3px padding + 1px border, top and bottom. */
+  .sk-demo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: sk-pulse 1.8s ease-in-out infinite;
+  }
+  /* = .tunnel-demo margin-top in ComposerTunnelDemo */
+  .sk-tunnel {
+    margin-top: 1.6rem;
+  }
+  .sk-stage {
+    width: 100%;
+    border-radius: 16px;
+    border: 1px solid oklch(0.4 0.04 270 / 0.16);
+    background: radial-gradient(
+      circle at 50% 42%,
+      oklch(0.2 0.035 270) 0%,
+      oklch(0.11 0.02 270) 70%
+    );
+  }
+  /* = ComposerTunnelDemo .stage */
+  .sk-stage-square {
+    aspect-ratio: 1;
+    max-width: min(30rem, 100%);
+    border-radius: 18px;
+  }
+  /* = Composer3DViewerDemo .stage */
+  .sk-stage-wide {
+    aspect-ratio: 16 / 9;
+  }
+  .sk-pill {
+    height: 52px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  /* = ComposerTunnelDemo .fold-row */
+  .sk-pill-tunnel {
+    margin-top: 1rem;
+    width: min(100%, 22rem);
+  }
+  /* = Composer3DViewerDemo .control-row (two stacked, 0.8rem gap → the second
+     row carries the gap as margin) */
+  .sk-pill-viewer {
+    margin-top: 1rem;
+    width: min(100%, 30rem);
+  }
+  .sk-pill-viewer + .sk-pill-viewer {
+    margin-top: 0.8rem;
+  }
+
+  @keyframes sk-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.55;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-demo {
+      animation: none;
+    }
+  }
+
+  /* Static caption under the 3D viewer slot — lives in the page (not the lazy
+     chunk) so it's part of first paint and never pops in. Margins tuned so the
+     rhythm matches the hint's old in-component position: 0.7rem below the
+     controls (1.4rem breakout bottom margin − 0.7rem), 1.4rem above the next
+     row. */
+  .demo-hint {
+    margin: -0.7rem 0 1.4rem;
+    font-size: 0.8rem;
+    color: oklch(0.62 0.02 270);
+    text-align: center;
   }
 
   /* ── feature bento ──
@@ -555,6 +685,9 @@
   .cards-fan {
     margin: 0.4rem auto 1.4rem;
     max-width: 40rem;
+    /* Size container so FanSkeleton's cqw-based card widths (which mirror
+       DeckFanCover's fit math) resolve against the fan's actual box. */
+    container-type: inline-size;
   }
 
   @media (prefers-reduced-motion: reduce) {

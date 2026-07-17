@@ -94,11 +94,12 @@
   </div>
 
   <div class="fold-row">
+    <span class="control-label">Performers</span>
     <SegmentedControl
       options={[
-        { value: "2", label: "2 performers" },
-        { value: "4", label: "4 performers" },
-        { value: "8", label: "8 performers" },
+        { value: "2", label: "2" },
+        { value: "4", label: "4" },
+        { value: "8", label: "8" },
       ]}
       value={String(fold)}
       onchange={(v) => (fold = Number(v))}
@@ -146,11 +147,24 @@
     color: #fff;
   }
 
+  /* Deterministic footprint: capped width, one-line labels, so the row is
+     always exactly one 52px control tall — the page's tunnel skeleton
+     reserves this exact height (no-layout-shift). */
   .fold-row {
     display: flex;
+    align-items: center;
     justify-content: center;
-    gap: 0.6rem;
+    gap: 0.55rem;
     margin-top: 1rem;
+    width: min(100%, 22rem);
+    margin-inline: auto;
+  }
+  .control-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: oklch(0.6 0.02 270);
   }
 
 </style>

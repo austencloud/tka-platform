@@ -148,7 +148,6 @@
       <SegmentedControl options={COUNTS} value={count} onchange={setCount} color="accent" size="sm" />
     </div>
   </div>
-  <p class="hint">Drag to orbit. Switch the scene, or multiply into a ring. This is the real viewer, running live.</p>
 </div>
 
 <style>
@@ -179,17 +178,22 @@
     animation: curtain-pulse 1.6s ease-in-out infinite;
   }
 
+  /* Deterministic footprint: the two rows always stack (never a wrap-dependent
+     one-or-two-row layout), each exactly one 52px control tall — the page's
+     viewer skeleton reserves this exact height (no-layout-shift). */
   .control-rows {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.8rem 1.6rem;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
     margin-top: 1rem;
+    width: 100%;
   }
   .control-row {
     display: flex;
     align-items: center;
     gap: 0.55rem;
+    width: min(100%, 30rem);
   }
   .control-label {
     font-size: 0.78rem;
@@ -197,13 +201,6 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: oklch(0.6 0.02 270);
-  }
-
-  .hint {
-    margin: 0.7rem 0 0;
-    font-size: 0.8rem;
-    color: oklch(0.62 0.02 270);
-    text-align: center;
   }
 
   @keyframes curtain-pulse {
