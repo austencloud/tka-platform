@@ -2,7 +2,7 @@
   ComposerTunnelDemo
 
   The Tunnel section's live embed: the real kaleidoscope renderer
-  (TunnelArtView) multiplying the CΨΩX fixture across a 4-fold ring.
+  (TunnelArtView) multiplying the baked demo fixture across a 4-fold ring.
 
   Follows TunnelDetailPreview's per-instance seam (the proven pattern for
   mounting the tunnel outside the sequence viewer): local TunnelViewController,
@@ -41,7 +41,7 @@
 
   const sequence = createSequenceData({
     id: "composer-tunnel-demo",
-    name: "CΨΩX",
+    name: (demoJson as { word: string }).word,
     word: (demoJson as { word: string }).word,
     steps: (demoJson as { steps: unknown[] }).steps as StepData[],
     gridMode: (demoJson as { gridMode?: string }).gridMode as never,

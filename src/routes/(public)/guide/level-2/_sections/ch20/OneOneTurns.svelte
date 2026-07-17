@@ -151,28 +151,28 @@
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={dSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={dFrames} activeT={t} caption="D-One-One: both hands with a turn, start, halfway, end, full motion" />
+        <TurnStrip frames={dFrames} activeT={t} caption="D-One-One - both hands prospin together, watch them turn in sync, ending with thumbs out" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={iSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={iFrames} activeT={t} caption="I-One-One: both hands with a turn, start, halfway, end, full motion" />
+        <TurnStrip frames={iFrames} activeT={t} caption="I-One-One - one hand prospins while the other antispins at the same time, ending with mixed thumb references" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={nSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={nFrames} activeT={t} caption="N-One-One: both hands with a turn, start, halfway, end, full motion" />
+        <TurnStrip frames={nFrames} activeT={t} caption="N-One-One - both hands antispin together, watch them turn in sync, ending with thumbs in" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={vSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={vFrames} activeT={t} caption="V-One-One: both hands with a turn, start, halfway, end, full motion" />
+        <TurnStrip frames={vFrames} activeT={t} caption="V-One-One - one hand antispins while the other prospins at the same time, ending with mixed thumb references" />
       {/snippet}
     </SequenceShowcase>
   </div>

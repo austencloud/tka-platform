@@ -51,6 +51,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/notation",
   "/composer",
   "/glossary",
+  "/faq",
   "/guide",
   "/privacy",
   "/roots",

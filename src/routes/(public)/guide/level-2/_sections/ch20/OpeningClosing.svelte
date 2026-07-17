@@ -146,14 +146,14 @@
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={highOpenSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={highOpenFrames} activeT={t} caption="Lam-High-One opening: start, halfway, end, full motion" />
+        <TurnStrip frames={highOpenFrames} activeT={t} caption="Opening - the dashing hand carries the turn; its spin resolves toward alpha, hands finishing apart" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={highCloseSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={highCloseFrames} activeT={t} caption="Lam-High-One closing: start, halfway, end, full motion" />
+        <TurnStrip frames={highCloseFrames} activeT={t} caption="Closing - the dashing hand carries the turn; its spin resolves toward beta, hands finishing together" />
       {/snippet}
     </SequenceShowcase>
   </div>
@@ -167,14 +167,14 @@
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={lowOpenSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={lowOpenFrames} activeT={t} caption="Lam-Low-One opening: start, halfway, end, full motion" />
+        <TurnStrip frames={lowOpenFrames} activeT={t} caption="Opening - the static hand carries the turn this time; its spin resolves toward alpha, hands finishing apart" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={lowCloseSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={lowCloseFrames} activeT={t} caption="Lam-Low-One closing: start, halfway, end, full motion" />
+        <TurnStrip frames={lowCloseFrames} activeT={t} caption="Closing - the static hand carries the turn this time; its spin resolves toward beta, hands finishing together" />
       {/snippet}
     </SequenceShowcase>
   </div>

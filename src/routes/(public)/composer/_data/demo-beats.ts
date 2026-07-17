@@ -1,7 +1,7 @@
 /**
  * Derives pictograph demo data for the /composer marketing page from the
- * baked CΨΩX fixture (see $lib/shared/landing/data/demo-sequence.json — one
- * real released rotated LOOP).
+ * baked demo fixture (see $lib/shared/landing/data/demo-sequence.json — one
+ * real rotated LOOP from the app's own generation engine).
  *
  * The guide's pictograph components take PictographData; the fixture's steps
  * are StepData with the same motion payloads, so the mapping is a projection.
@@ -18,7 +18,7 @@ type RawStep = {
   motions: Record<string, unknown>;
 };
 
-/** One of each letter in the demo word (C Ψ Ω X), for the Learn section's
+/** One of each letter in the demo word's base half, for the Learn section's
  *  letter-pairing row. */
 export const DEMO_LETTER_BEATS: PictographData[] = (demoJson.steps as unknown as RawStep[])
   .slice(0, 4)

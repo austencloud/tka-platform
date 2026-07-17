@@ -7,25 +7,24 @@
  * (a Google policy violation: schema must match on-page content). A fourth,
  * divergent 4-item list sat dead in routes/landing/components/FAQSection.svelte.
  *
- * Now both /about and the landing page render `FaqInterview`, which draws its
- * visible list AND its JSON-LD from this single array. Edit copy here once.
+ * The FAQ now lives on its own page (/faq, linked from the header's Learn
+ * menu) rendered by `FaqInterview`, which draws its visible list AND its
+ * JSON-LD from this single array. Edit copy here once.
  *
- * Every item follows claim → proof → door: prose answers a real visitor's
- * hesitation in their own voice, a `demo` renders live proof where the answer
- * makes a claim (see FaqPictographDemo / FaqReadTest), and a `cta` routes the
- * reader to the next step. The JSON-LD serializes question + answer prose
- * only, so the schema always matches the visible text; demos and CTAs are
- * extra on-page content, which the FAQ rich-result policy allows.
+ * Answers are prose in the visitor's register; a `cta` routes the reader to
+ * the next step where the answer genuinely hands off somewhere. One door per
+ * destination across the whole list, so the page doesn't read as a wall of
+ * buttons. The JSON-LD serializes question + answer prose only, so the schema
+ * always matches the visible text; CTAs are extra on-page content, which the
+ * FAQ rich-result policy allows.
  * Design: docs/superpowers/specs/2026-07-16-interactive-faq-design.md
  */
 
 export type FaqCta = { label: string; href: string };
-export type FaqDemo = "pictograph" | "read-test";
 
 export type FaqItem = {
   question: string;
   answer: string;
-  demo?: FaqDemo;
   cta?: FaqCta;
 };
 
@@ -33,22 +32,18 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "What is The Kinetic Alphabet?",
     answer:
-      "Notation for flow arts: a way to write prop movement down instead of relying on video alone. Each beat becomes one pictograph showing hand positions on a grid, the motion each hand makes, and the prop's orientation. String them together and you have choreography you can read, edit, and hand to another spinner.",
-    demo: "pictograph",
+      "Notation for flow arts: a way to write prop movement down instead of relying on video alone. Each step becomes one pictograph showing hand positions on a grid, the motion each hand makes, and the prop's orientation. String them together and you have choreography you can read, edit, and hand to another spinner.",
     cta: { label: "Watch a sequence build", href: "/#how-it-works" },
   },
   {
     question: "Do I have to memorize letters and symbols first?",
     answer:
       "No. Pictographs read visually: the grid shows where your hands can be, the arrows show where they go. The letters are names for patterns, useful once you want to compare and remix sequences. Nothing needs to be memorized before you can follow along.",
-    demo: "read-test",
-    cta: { label: "Start Level 1", href: "/learn/guide" },
   },
   {
     question: "I learn moves from videos. Why would I need notation?",
     answer:
-      "Video shows one performance from one angle. Notation shows the structure underneath it. Once a sequence is written down you can change one beat and see exactly what follows, trade it with someone who has never seen the original, or come back in a year and read it cold. A recording and sheet music do different jobs. Musicians keep both.",
-    cta: { label: "Open the composer", href: "/composer" },
+      "Video shows one performance from one angle. Notation shows the structure underneath it. Once a sequence is written down you can change one step and see exactly what follows, trade it with someone who has never seen the original, or come back in a year and read it cold. A recording and sheet music do different jobs. Musicians keep both.",
   },
   {
     question: "I've never spun a prop. Where do I start?",
@@ -59,7 +54,7 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "Does it work with my prop?",
     answer:
-      "If you dual-wield it and grip it directly, yes. TKA is built for double staff and also supports clubs, fans, hoops, mini hoops, and buugeng, each rendered with proper rotations and hand positions. The spinner further up this page lets you switch between them live.",
+      "If you dual-wield it and grip it directly, yes. TKA is built for double staff and also supports clubs, fans, hoops, mini hoops, and buugeng, each rendered with proper rotations and hand positions. The interactive spinner on the home page lets you switch between them live.",
     cta: { label: "Try props in the spinner", href: "/#play-with-it" },
   },
   {
@@ -72,7 +67,6 @@ export const FAQ_ITEMS: FaqItem[] = [
     question: "Can I share what I make?",
     answer:
       "Yes. Export sequences as images, PDFs, animated GIFs, or videos, share a link straight to Instagram, or publish to the community gallery for other artists to find and remix.",
-    cta: { label: "Open the composer", href: "/composer" },
   },
 ];
 

@@ -38,10 +38,12 @@
   }
   let choreoCardsActive = $state(false);
   let viewer3DActive = $state(false);
+  let arcadeActive = $state(false);
   const activateTunnelWhenNear = activateWhenNear(() => (tunnelActive = true));
   const activatePlayWithItWhenNear = activateWhenNear(() => (playWithItActive = true));
   const activateChoreoCardsWhenNear = activateWhenNear(() => (choreoCardsActive = true));
   const activate3DWhenNear = activateWhenNear(() => (viewer3DActive = true));
+  const activateArcadeWhenNear = activateWhenNear(() => (arcadeActive = true));
 
 
   const ROADMAP = [
@@ -290,20 +292,28 @@
 
   <section class="editorial-section" style="--accent: #f59e0b">
     <span class="section-kicker">Learn</span>
-    <h2 class="section-title">Absorb the language by osmosis</h2>
+    <h2 class="section-title">Learn the language by playing it</h2>
     <div class="prose">
       <p>
-        Every pictograph in the app appears with its letter. Use Composer long enough and
-        the alphabet sinks in the way your first language did: repeated exposure, not
-        flashcards. You never have to memorize a single letter to use any of it.
+        The app ships with an arcade of games built from the alphabet: read pictographs,
+        name words performed in front of you, match sequences to the mandalas they draw.
+        Every level awards stars and keeps your best score. Here's a round, live:
       </p>
     </div>
-    <div class="prose">
-      <p>
-        The Kinetic Alphabet maps the whole territory of grid-based prop movement, so your
-        skills don't develop holes. The app splits that territory into levels. Work at
-        level 1 if that's where you are, or push into the weirder corners as you climb.
-      </p>
+    <div class="arcade-slot" use:activateArcadeWhenNear>
+      <LazyMount
+        loader={() => import("./_components/ComposerArcadeDemo.svelte")}
+        active={arcadeActive}
+      >
+        {#snippet placeholder()}
+          <!-- Same footprint as ComposerArcadeDemo: one HUD line (real text
+               metrics, hidden) plus the fixed-height quiz stage. -->
+          <div class="sk-demo sk-arcade" aria-hidden="true">
+            <div class="sk-arcade-hud">Score 0</div>
+            <div class="sk-stage sk-stage-arcade"></div>
+          </div>
+        {/snippet}
+      </LazyMount>
     </div>
 
     <div class="cards-block has-duo duo-max">
@@ -330,7 +340,7 @@
             <p>
               Choreo Cards put a sequence on a physical card: the word, every step, the
               mandalas, and a QR that opens it in Composer with any prop at any speed. Shuffle a
-              deck and the same osmosis happens away from the app, one card in your hand at a
+              deck and the game keeps going away from the app, one card in your hand at a
               time. Every card the app builds can print, and the decks in the shop are already
               composed and ready to spin.
             </p>
@@ -635,6 +645,26 @@
     margin-top: 1rem;
     width: min(100%, 22rem);
   }
+  /* = ComposerArcadeDemo: 36rem column, one HUD text line (hidden, real
+     metrics), then the fixed-height quiz stage. */
+  .sk-arcade {
+    display: block;
+    max-width: 36rem;
+    margin: 1.6rem auto 0;
+  }
+  .sk-arcade-hud {
+    text-align: center;
+    font-size: 0.82rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 0.7rem;
+    visibility: hidden;
+  }
+  .sk-stage-arcade {
+    height: min(680px, 82vh);
+    border-radius: 18px;
+  }
+
   /* = Composer3DViewerDemo .control-row (two stacked, 0.8rem gap → the second
      row carries the gap as margin) */
   .sk-pill-viewer {

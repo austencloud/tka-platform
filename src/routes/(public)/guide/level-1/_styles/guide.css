@@ -143,6 +143,23 @@
   grid-column: full;
 }
 
+/* Level-2 chapter title (level-2/turns, level-2/double-turns) - a bare <h1>
+   rendered directly under .guide-content (GuideCompanionHost is display:
+   contents), unlike level-1 pages whose h1 lives inside GuidePageHost's
+   .topic-hero, and unlike level-2's OWN landing page whose h1 sits inside a
+   .landing wrapper (so :first-of-type here doesn't touch either). Adopts the
+   guide's calligraphic script font for parity with level-1's topic heroes
+   instead of the generic Inter sans .guide-content h1 rule above. Ledger C1. */
+.guide-content > h1:first-of-type {
+  font-family: var(--guide-script, "Cormorant Garamond", Georgia, serif);
+  font-weight: var(--guide-script-weight, 700);
+  font-variation-settings: normal;
+  letter-spacing: 0;
+  line-height: 0.95;
+  font-size: clamp(3rem, 2rem + 5vw, 4.6rem);
+  padding: 2rem 0 1.5rem;
+}
+
 .guide-content h2 {
   font-family: 'Inter', system-ui, sans-serif;
   font-size: clamp(1.3rem, 1rem + 0.8vw, 1.75rem);
@@ -225,6 +242,24 @@
 .guide-section > * {
   grid-column: prose;
   padding: 0 2rem;
+}
+
+/* Title + subtitle read as ONE heading unit, not two independently-spaced
+   headings: the generic .guide-content h3 rule above sizes its top margin
+   (2rem) for an in-body subheading, which reads as a gap between a section's
+   own title and subtitle when h3 immediately follows h2. Tighten that pairing
+   and center both to match the already-centered body prose these sections use
+   throughout (e.g. ch20/ch21's `.section-body p { text-align: center }`) -
+   left-aligned headings over centered prose read as misaligned. Ledger C1. */
+.guide-section > h2,
+.guide-section > h3 {
+  text-align: center;
+}
+.guide-section > h2 + h3 {
+  margin-top: 0.35rem;
+}
+.guide-section > h2 {
+  margin-bottom: 0.35rem;
 }
 
 /* === Scroll-driven section reveals === */

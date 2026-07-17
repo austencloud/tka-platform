@@ -163,7 +163,7 @@
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={proSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={proFrames} activeT={t} caption="Prospin with a turn, east to south: start, halfway, end, full motion" />
+        <TurnStrip frames={proFrames} activeT={t} caption="Prospin: the staff's spin matches its arc, so the turn and the shift from east to south blend into one curl" />
       {/snippet}
     </SequenceShowcase>
   </div>
@@ -183,7 +183,7 @@
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={antiSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={antiFrames} activeT={t} caption="Antispin with a turn, east to south: start, halfway, end, full motion" />
+        <TurnStrip frames={antiFrames} activeT={t} caption="Antispin: the staff's spin fights its arc, curling back against the shift from east to south" />
       {/snippet}
     </SequenceShowcase>
   </div>

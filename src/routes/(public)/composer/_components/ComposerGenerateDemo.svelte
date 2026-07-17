@@ -8,7 +8,7 @@
 
   Engine + player + mandala chunks are all dynamically imported so the
   prerendered page pays nothing until the section is reached (player/mandala
-  mount on idle with the baked CΨΩX fixture; the engine chunk loads on the
+  mount on idle with the baked demo fixture; the engine chunk loads on the
   first button tap). Stages are fixed aspect-ratio so nothing shifts.
 -->
 <script lang="ts">

@@ -2,7 +2,7 @@
   Composer3DViewerDemo
 
   The real 3D sequence viewer, live and interactive, embedded standalone on the
-  prerendered marketing page. Drag to orbit; it autoplays the CΨΩX fixture and
+  prerendered marketing page. Drag to orbit; it autoplays the baked demo fixture and
   lets you swap the environment it performs in.
 
   Standalone recipe (no app shell): provide the mandatory viewer-3d context
@@ -41,7 +41,7 @@
 
   const sequence = createSequenceData({
     id: "composer-3d-demo",
-    name: "CΨΩX",
+    name: (demoJson as { word: string }).word,
     word: (demoJson as { word: string }).word,
     steps: (demoJson as { steps: unknown[] }).steps as StepData[],
     gridMode: (demoJson as { gridMode?: string }).gridMode as never,

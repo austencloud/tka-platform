@@ -103,6 +103,7 @@
     "/support",
     "/composer",
     "/glossary",
+    "/faq",
     "/learn/staff-spinning-choreography",
   ]);
   // /notation is a subtree: the hub plus the per-prop pages (/notation/staves,

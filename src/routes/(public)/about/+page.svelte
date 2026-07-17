@@ -1,5 +1,4 @@
 <script lang="ts">
-  import FaqInterview from "$lib/shared/landing/components/FaqInterview.svelte";
   import PositionTrioGrid from "$lib/shared/landing/components/PositionTrioGrid.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
@@ -124,9 +123,6 @@
     ]
   }
   </script>`}
-
-  <!-- FAQPage JSON-LD is emitted by <FaqInterview emitSchema> below, generated
-       from the canonical FAQ_ITEMS so schema and visible answers never drift. -->
 </svelte:head>
 
 <div class="editorial">
@@ -154,19 +150,14 @@
       </section>
     {/each}
 
-    <!-- Frequently Asked Questions (visible FAQ for search + AI overviews).
-         Visible answers AND the FAQPage JSON-LD both come from FAQ_ITEMS. -->
-    <FaqInterview
-      emitSchema
-      mode="stack"
-      dense
-      heading="Frequently Asked Questions"
-    />
-
-    <!-- CTA -->
+    <!-- CTA. The FAQ moved to its own page (/faq, in the header's Learn menu);
+         the pointer below keeps the path discoverable from here. -->
     <div class="cta-card">
       <h3>Ready to create?</h3>
-      <p>Flow Arts Composer is free to use. No download required.</p>
+      <p>
+        Flow Arts Composer is free to use. No download required. Still have
+        questions? The <a href="/faq" class="faq-link">FAQ</a> covers the common ones.
+      </p>
       <a href="/create" class="cta-button" data-sveltekit-reload>
         <span>Open Flow Arts Composer</span>
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
@@ -174,3 +165,20 @@
     </div>
     <p class="creator-credit">Created by Austen Cloud • 2022–present</p>
   </div>
+
+<style>
+  /* In-sentence FAQ pointer inside the CTA card: same treatment as .prose
+     links (public-editorial.css), which don't reach inside .cta-card. */
+  .cta-card .faq-link {
+    color: oklch(0.8 0.12 275);
+    text-decoration: none;
+    border-bottom: 1px solid oklch(0.8 0.12 275 / 0.35);
+    transition:
+      border-color 160ms ease,
+      color 160ms ease;
+  }
+  .cta-card .faq-link:hover {
+    color: oklch(0.9 0.06 275);
+    border-bottom-color: oklch(0.8 0.12 275 / 0.85);
+  }
+</style>
