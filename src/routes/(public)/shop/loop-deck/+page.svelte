@@ -27,6 +27,7 @@
       lowPrice: "35",
       highPrice: "55",
       availability: "https://schema.org/PreOrder",
+      itemCondition: "https://schema.org/NewCondition",
       url: CANONICAL,
     },
   }).replace(/</g, "\\u003c");
