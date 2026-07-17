@@ -182,7 +182,7 @@
            prerendered (crawlable); only the animation is browser-gated, inside
            SequenceShowcase. -->
       {@const scard = item.card}
-      {@const sseq = groupSequence(scard.items)}
+      {@const sseq = groupSequence(scard.sequenceItems ?? scard.items)}
       <div class="flow-showcase" class:compact={item.variant === "compact"}>
         <SequenceShowcase
           sequence={sseq}

@@ -22,12 +22,13 @@ Source: full SEO audit (4-agent codebase sweep + live-site probe). Austen approv
 - svelte-check: `Type1HybridPage.svelte:10` (PLAIN_QUARTER_SAME_EXPLANATION no longer exported from @tka/domain — likely in-flight domain refactor)
 
 ### Wave 2 — content (after Wave 1)
-- [ ] W2-1: Per-prop pillar pages: fans, clubs, hoop, buugeng (modeled on /notation + /learn/staff-spinning-choreography)
-- [ ] W2-2: Poi explainer page ("why poi works differently in TKA") targeting "poi notation"
-- [ ] W2-3: Question-intent pages (e.g. "how to write down staff choreography")
+- [x] W2-1: Per-prop pages shipped: /notation/fans, /notation/clubs, /notation/buugeng (hub-and-spoke under /notation, Article + BreadcrumbList JSON-LD, MCP-grounded copy). HOOP DEFERRED: MCP prop topic does not list hoop as a supported static prop — needs Austen's domain ruling before a page can claim it (no-fabrication).
+- [x] W2-2: /notation/poi explainer — honest subset framing (radial vs momentum, MCP-grounded), Poi Lab stated as planned-not-built
+- [x] W2-3: Question-intent folded into each prop page as an H2 ("How Do You Write Down X Choreography?") instead of separate thin pages — one strong page beats three thin ones
 - [ ] W2-4: Sequence-page thin-content + og:image programmatic pass
-- [x] W2-5: "flow arts software" commercial cluster: /composer retitle + description + JSON-LD keywords, keyword configs, FAQ entry, varied link web (2026-07-16, feat/flow-arts-software-seo)
-- [x] W2-6: /roots/software lineage page: fact-verified roster (VTG app, LAB simulators, VisualSpinner3D, today's tools), sitemap entry, /roots cross-link (2026-07-16, feat/flow-arts-software-seo)
+- [x] W2-5: /notation hub gains "Notation by Prop" section linking all four; sitemap lists all four at 0.8
+- [x] W2-6: "flow arts software" commercial cluster: /composer retitle + description + JSON-LD keywords, keyword configs, FAQ entry, varied link web (2026-07-16, feat/flow-arts-software-seo)
+- [x] W2-7: /roots/software lineage page: fact-verified roster (VTG app, Paper Tools, LAB simulators, VisualSpinner3D, today's tools), screenshots, submission form + admin ping, sitemap entry, /roots cross-link (2026-07-17, feat/flow-arts-software-seo)
 
 ### Wave 3 — verification + external
 - [ ] W3-1: One full `npm run check` + `npm run build`; grep built HTML for new links

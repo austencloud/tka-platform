@@ -128,6 +128,18 @@ export type GuideBlock =
        * Spec: docs/superpowers/specs/2026-07-16-guide-example-pools-design.md.
        */
       pool?: { entries: PoolEntry[] };
+      /**
+       * Playable strip when it differs from the DISPLAY `items`. Some motion
+       * breakdowns show more frames than the animation needs - e.g. a
+       * start/end/combined triptych (staff-motions) or a start/halfway/end/
+       * combined quad (a Cross-Shift breakdown): only the start pose and the
+       * combined full-motion step are a real playable pair, the intermediate
+       * frames are poses with no `stepNumber` of their own. When present, the
+       * canvas plays `stripToSequence(sequenceItems)` while the strip still
+       * renders `items` unchanged. Omit when `items` already form a playable
+       * sequence (a normal Start+steps strip) - the common case.
+       */
+      sequenceItems?: PictographData[];
       /** Flow render hints (prop family + which system adornments to show). */
       render?: PictographRender;
       sheet?: PtHint;

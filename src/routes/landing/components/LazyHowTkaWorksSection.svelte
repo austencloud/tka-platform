@@ -97,11 +97,12 @@
     padding: 80px 24px;
   }
 
-  /* Single 6-column row matching the real card layout */
+  /* Single 6-column row matching the real card layout (gap clamp mirrors
+     HowTkaWorksSection so the skeleton doesn't jump on swap) */
   .sk-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
-    gap: 16px;
+    gap: clamp(10px, 1.3vw, 16px);
   }
 
   /* Each card: visible enough that users know content is loading */
@@ -156,7 +157,7 @@
     background: rgba(255, 255, 255, 0.15);
   }
 
-  @media (max-width: 1100px) {
+  @media (max-width: 919px) {
     .sk-grid {
       display: flex;
       overflow: hidden;

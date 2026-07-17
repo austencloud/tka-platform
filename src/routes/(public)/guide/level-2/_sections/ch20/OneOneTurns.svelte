@@ -149,28 +149,28 @@
   </div>
 
   <div class="showcase-wrap">
-    <SequenceShowcase variant="compact" sequence={dSequence} items={[]} bpm={60}>
+    <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={dSequence} items={[]} bpm={60}>
       {#snippet strip()}
         <TurnStrip frames={dFrames} caption="D-One-One: both hands with a turn, start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
-    <SequenceShowcase variant="compact" sequence={iSequence} items={[]} bpm={60}>
+    <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={iSequence} items={[]} bpm={60}>
       {#snippet strip()}
         <TurnStrip frames={iFrames} caption="I-One-One: both hands with a turn, start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
-    <SequenceShowcase variant="compact" sequence={nSequence} items={[]} bpm={60}>
+    <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={nSequence} items={[]} bpm={60}>
       {#snippet strip()}
         <TurnStrip frames={nFrames} caption="N-One-One: both hands with a turn, start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
-    <SequenceShowcase variant="compact" sequence={vSequence} items={[]} bpm={60}>
+    <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={vSequence} items={[]} bpm={60}>
       {#snippet strip()}
         <TurnStrip frames={vFrames} caption="V-One-One: both hands with a turn, start, halfway, end, full motion" />
       {/snippet}
@@ -218,9 +218,15 @@
     margin-top: 0;
   }
   .showcase-wrap {
+    /* The showcase inside is a container-query container (container-type:
+       inline-size), so it has ZERO intrinsic width - this wrapper must get a
+       DEFINITE width from the grid (width: 100% + justify-self), never
+       shrink-to-fit (auto width + auto margins collapsed it to its padding). */
     grid-column: full-start / full-end;
-    max-width: 56rem;
-    margin: 1.9rem auto;
+    width: 100%;
+    max-width: 76rem;
+    justify-self: center;
+    margin: 1.9rem 0;
     padding: 0 2rem;
   }
 </style>

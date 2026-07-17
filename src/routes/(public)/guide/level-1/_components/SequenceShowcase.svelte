@@ -190,7 +190,12 @@
   {/if}
 {/snippet}
 
-<section class="showcase" class:compact={variant === "compact"} bind:this={rootEl}>
+<section
+  class="showcase"
+  class:compact={variant === "compact"}
+  class:has-strip={!!strip}
+  bind:this={rootEl}
+>
   {#if variant === "compact"}
     <!-- One tight band: canvas | (label over strip). Hugs its content and
          centres - a caption-sized label gets no empty text column. -->
@@ -257,8 +262,11 @@
 <style>
   .showcase {
     /* Its own inline-size container: the banner's stacking rules respond to the
-       showcase's real width, wherever the host places it. */
+       showcase's real width, wherever the host places it. Inline-size
+       containment zeroes intrinsic width, so the showcase must fill its host
+       (width: 100%) - a shrink-to-fit host collapses it to nothing. */
     container-type: inline-size;
+    width: 100%;
     display: flex;
     flex-direction: column;
     /* The showcase's internal rhythm: banner ↔ strip. Deliberately TIGHTER than
@@ -413,6 +421,20 @@
   }
   .compact .canvas-box {
     flex: 0 0 clamp(190px, 24cqw, 250px);
+  }
+  /* Strip-override compact (e.g. level-2's TurnStrip breakdown): the band
+     fills the host and the strip column grows beside the canvas. fit-content
+     sizing is impossible here - the strip is itself an inline-size container
+     with zero intrinsic width, so hugging it collapses the whole band. */
+  .compact.has-strip .compact-band {
+    width: 100%;
+  }
+  .compact.has-strip .canvas-box {
+    flex: 0 0 clamp(220px, 26cqw, 320px);
+  }
+  .compact.has-strip .compact-right {
+    flex: 1 1 0;
+    min-width: 0;
   }
   .compact-right {
     display: flex;
