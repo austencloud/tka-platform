@@ -13,11 +13,25 @@
   // example). All sequence demos wait on this — their skeletons hold the
   // footprint, so the late arrival never shifts the page.
   let demoSeq = $state<SequenceData | null>(null);
+  let rerollingDemo = $state(false);
   onMount(() => {
     void generatePerVisitDemo().then((seq) => {
       demoSeq = seq;
     });
   });
+
+  // The hero's dice button: generate a fresh sequence and swap it in place.
+  // The hero player is keyed on sequence id, so it reloads onto the new draw
+  // without a page refresh.
+  async function rerollDemo() {
+    if (rerollingDemo) return;
+    rerollingDemo = true;
+    try {
+      demoSeq = await generatePerVisitDemo();
+    } finally {
+      rerollingDemo = false;
+    }
+  }
 
   const DESCRIPTION =
     "Flow Arts Composer is a free web app for building flow arts choreography. Construct sequences step by step, generate them from parameters, animate them, and share them. Supports staff, fans, clubs, hoops, buugeng, and more.";
@@ -214,6 +228,8 @@
       <SequenceHeroDemo
         sequence={demoSeq}
         note="a rotated LOOP from the generator, animating live"
+        onReroll={rerollDemo}
+        rerolling={rerollingDemo}
       />
     </div>
 

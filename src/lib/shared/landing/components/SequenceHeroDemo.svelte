@@ -23,6 +23,8 @@
     note,
     bluePropType,
     redPropType,
+    onReroll,
+    rerolling = false,
   }: {
     /** Null while the host is still producing the sequence (e.g. /composer's
         per-visit generated demo) — the stage box and caption line keep their
@@ -33,6 +35,12 @@
         sequence with fans/clubs/buugeng instead of the default staves. */
     bluePropType?: string;
     redPropType?: string;
+    /** When provided, a dice button appears that asks the host to swap in a
+        freshly generated sequence in place (no page reload). Notation pages
+        omit it, so their static demo is unchanged. */
+    onReroll?: () => void;
+    /** Host-owned in-flight flag while a reroll generates. */
+    rerolling?: boolean;
   } = $props();
 
   const word = $derived(sequence ? simplifyRepeatedWord(sequence.word) : "");
@@ -49,36 +57,62 @@
   });
 </script>
 
-<figure class="hero-demo">
-  <div class="demo-stage">
-    <LazyMount
-      loader={() =>
-        import(
-          "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
-        )}
-      active={active && !!sequence}
-      props={{
-        sequence,
-        autoPlay: true,
-        chrome: "minimal",
-        fill: true,
-        bluePropType,
-        redPropType,
-      }}
-    />
-  </div>
-  <!-- Line is always reserved; it becomes visible only once the word is
-       known, so the note never shifts sideways when the word lands. -->
-  <figcaption class:pending={!sequence}>
-    <span class="tka-font demo-word">{word}</span>
-    <span class="demo-note">{note}</span>
-  </figcaption>
-</figure>
+<div class="hero-demo">
+  <figure class="demo-figure">
+    <div class="demo-stage">
+      <!-- Keyed by sequence id so a reroll swaps the player onto the new
+           sequence with a clean mount (mirrors ComposerGenerateDemo). The
+           aspect-ratio box holds during the swap, so no layout shift. -->
+      {#key sequence?.id}
+        <LazyMount
+          loader={() =>
+            import(
+              "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
+            )}
+          active={active && !!sequence}
+          props={{
+            sequence,
+            autoPlay: true,
+            chrome: "minimal",
+            fill: true,
+            bluePropType,
+            redPropType,
+          }}
+        />
+      {/key}
+    </div>
+    <!-- Line is always reserved; it becomes visible only once the word is
+         known, so the note never shifts sideways when the word lands. -->
+    <figcaption class:pending={!sequence}>
+      <span class="tka-font demo-word">{word}</span>
+      <span class="demo-note">{note}</span>
+    </figcaption>
+  </figure>
+
+  {#if onReroll}
+    <div class="reroll-row">
+      <button
+        type="button"
+        class="reroll-button"
+        onclick={onReroll}
+        disabled={rerolling || !sequence}
+      >
+        <i class="fas {rerolling ? 'fa-circle-notch fa-spin' : 'fa-dice'}" aria-hidden="true"></i>
+        <span>{rerolling ? "Rolling..." : "Roll a new one"}</span>
+      </button>
+    </div>
+  {/if}
+</div>
 
 <style>
   .hero-demo {
     margin: 2.4rem auto 0;
     max-width: min(26rem, 100%);
+  }
+  /* Figure holds only the image + its caption (a11y: figcaption stays the
+     figure's last child). The reroll control is a sibling below it. */
+  .demo-figure {
+    margin: 0;
   }
   .demo-stage {
     position: relative;
@@ -114,6 +148,44 @@
     visibility: hidden;
   }
 
+  /* Composer-only dice: a real button (clickables-look-like-buttons), quiet
+     fill so the player stays the hero. Always present once rendered, so no
+     shift when the host toggles the rolling state. */
+  .reroll-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+  }
+  .reroll-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-height: 44px;
+    padding: 0 1.4rem;
+    font-size: 0.95rem;
+    font-weight: 650;
+    font-family: inherit;
+    color: oklch(0.9 0.015 270);
+    border: 1px solid oklch(0.5 0.06 270 / 0.3);
+    border-radius: 12px;
+    background: oklch(0.3 0.04 270 / 0.18);
+    cursor: pointer;
+    transition:
+      transform 160ms ease,
+      border-color 160ms ease,
+      background 160ms ease,
+      opacity 160ms ease;
+  }
+  .reroll-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    background: oklch(0.34 0.05 270 / 0.26);
+    border-color: oklch(0.6 0.08 270 / 0.5);
+  }
+  .reroll-button:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
   /* Ultrawide: the hero holds its own against the 4K type step — height-keyed
      so it scales with the screen (the host column caps the width). After the
      base rules so it wins by source order. */
@@ -126,6 +198,20 @@
     }
     .demo-word {
       font-size: 1.3rem;
+    }
+    .reroll-button {
+      min-height: 52px;
+      padding: 0 1.8rem;
+      font-size: 1.08rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reroll-button {
+      transition: none;
+    }
+    .reroll-button:hover:not(:disabled) {
+      transform: none;
     }
   }
 </style>
