@@ -1,0 +1,793 @@
+{
+  "createdAt": "2026-07-17",
+  "wave": 1,
+  "pages": {
+    "misc-permutations": {
+      "note": "Type 1 LOOPs page. Recipe: constraintPreset smooth + motionTypeFilter no-dash + mustNotContainLetters [Type 2 set, alpha, beta, gamma] forces pure Type 1 words. Steps captured verbatim from MCP generate_sequence (beat keys mapped to step). Phase 0 findings recorded in the rollout spec: mustContainLetters is a post-hoc filter in loop mode (fails instead of steering); startPosition may be overridden by loop closure; server still runs pre-fix engine so closure retries may be needed.",
+      "generationDefaults": {
+        "constraintPreset": "smooth",
+        "motionTypeFilter": "no-dash",
+        "mustNotContainLetters": ["W", "X", "Y", "Z", "Σ", "Δ", "Θ", "Ω", "α", "β", "γ"],
+        "level": 1,
+        "gridMode": "diamond",
+        "length": 8,
+        "tool": "mcp generate_sequence"
+      },
+      "curationFlags": [
+        "IIII appears in BOTH the mirrored and rotated-swapped slots (different instances). Pedagogically neat (same word, two closures) but may read samey on one page; likely cut one.",
+        "EKEJ appears in BOTH the rotated-swapped and mirrored-swapped slots (different instances). Same consideration.",
+        "FLFLFLFL (rotated-swapped) and LFLFLFLF (mirrored-swapped) are the same letter family reversed. Same consideration."
+      ],
+      "slots": {
+        "mirrored": {
+          "defaultEntry": "DJII (original print example, stays default; its authored prose moves into entry 0 on migration)",
+          "candidates": [
+            {
+              "word": "OROTOROT",
+              "loopType": "mirrored",
+              "prose": "OROT never leaves the four gamma points. The first half rotates everything counter-clockwise, and the mirrored half runs the same letters clockwise. Watch the red hand: it drops into anti only on the T steps.",
+              "verified": [
+                "steps 1-4: every rotation ccw (both hands)",
+                "steps 5-8: every rotation cw (both hands)",
+                "blue anti on all 8 steps",
+                "red pro on all steps except 4 and 8 (T), which are anti",
+                "all positions gamma"
+              ],
+              "steps": [
+                { "step": 0, "letter": "γ", "pos": "gamma15→gamma15", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "O", "pos": "gamma15→gamma5", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "R", "pos": "gamma5→gamma11", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "O", "pos": "gamma11→gamma1", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 4, "letter": "T", "pos": "gamma1→gamma3", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 5, "letter": "O", "pos": "gamma3→gamma13", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 6, "letter": "R", "pos": "gamma13→gamma7", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 7, "letter": "O", "pos": "gamma7→gamma9", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 8, "letter": "T", "pos": "gamma9→gamma15", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } }
+              ]
+            },
+            {
+              "word": "UUUMUUUM",
+              "loopType": "mirrored",
+              "prose": "In UUUM the hands always rotate opposite ways: blue clockwise, red counter-clockwise. The mirrored half flips both at once, so each hand ends up running the other's direction.",
+              "verified": [
+                "every moving step: blue and red rotate opposite directions",
+                "steps 1-4: blue cw, red ccw; steps 5-8: blue ccw, red cw",
+                "red pro on all 8 steps",
+                "blue anti on U steps (1,2,3,5,6,7), pro on M steps (4,8)"
+              ],
+              "steps": [
+                { "step": 0, "letter": "γ", "pos": "gamma13→gamma13", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "U", "pos": "gamma13→gamma11", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "U", "pos": "gamma11→gamma9", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "U", "pos": "gamma9→gamma15", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 4, "letter": "M", "pos": "gamma15→gamma5", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 5, "letter": "U", "pos": "gamma5→gamma7", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 6, "letter": "U", "pos": "gamma7→gamma1", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 7, "letter": "U", "pos": "gamma1→gamma3", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 8, "letter": "M", "pos": "gamma3→gamma13", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } }
+              ]
+            },
+            {
+              "word": "IIIIIIII",
+              "loopType": "mirrored",
+              "prose": "Eight I steps in a row. With a single letter, the mirror is pure direction: blue runs clockwise through the first half and counter-clockwise through the second, and red does the reverse.",
+              "verified": [
+                "letter I on all 8 steps",
+                "blue cw on steps 1-4, ccw on steps 5-8",
+                "red ccw on steps 1-4, cw on steps 5-8",
+                "all positions beta"
+              ],
+              "steps": [
+                { "step": 0, "letter": "β", "pos": "beta3→beta3", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "I", "pos": "beta3→beta1", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "I", "pos": "beta1→beta7", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "I", "pos": "beta7→beta5", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 4, "letter": "I", "pos": "beta5→beta7", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 5, "letter": "I", "pos": "beta7→beta1", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 6, "letter": "I", "pos": "beta1→beta3", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 7, "letter": "I", "pos": "beta3→beta5", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 8, "letter": "I", "pos": "beta5→beta3", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } }
+              ]
+            },
+            {
+              "word": "AAABAAAB",
+              "loopType": "mirrored",
+              "prose": "AAAB keeps both hands matched on every step, so the mirror is easy to read: three pro steps and one anti, clockwise on the way out and counter-clockwise on the way home.",
+              "verified": [
+                "both hands share the same motion type and direction on every step",
+                "steps 1-3 and 5-7 (A): pro; steps 4 and 8 (B): anti",
+                "steps 1-4 cw, steps 5-8 ccw",
+                "all positions alpha"
+              ],
+              "steps": [
+                { "step": 0, "letter": "α", "pos": "alpha3→alpha3", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "A", "pos": "alpha3→alpha5", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "A", "pos": "alpha5→alpha7", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "A", "pos": "alpha7→alpha1", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 4, "letter": "B", "pos": "alpha1→alpha7", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 5, "letter": "A", "pos": "alpha7→alpha5", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 6, "letter": "A", "pos": "alpha5→alpha3", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 7, "letter": "A", "pos": "alpha3→alpha1", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 8, "letter": "B", "pos": "alpha1→alpha3", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } }
+              ]
+            }
+          ]
+        },
+        "rotated-swapped": {
+          "defaultEntry": "BBLF (original print example, stays default; page currently ties only a bare label to it, so entry-0 prose gets drafted at migration)",
+          "candidates": [
+            {
+              "word": "IIIIIIII",
+              "loopType": "rotated_swapped",
+              "label": "Swapped & Rotated",
+              "prose": "The same word can close a LOOP more than one way. This IIII repeats with the colors swapped: blue takes over red's pro role at the seam, and the positions come back rotated 180°.",
+              "verified": [
+                "letter I on all 8 steps",
+                "steps 1-3: blue anti, red pro; steps 5-7: blue pro, red anti (roles exchanged)",
+                "second-half positions are the first half's rotated 180°",
+                "engine header: LOOP: rotated, swapped"
+              ],
+              "steps": [
+                { "step": 0, "letter": "β", "pos": "beta7→beta7", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "I", "pos": "beta7→beta5", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "I", "pos": "beta5→beta3", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "I", "pos": "beta3→beta1", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 4, "letter": "I", "pos": "beta1→beta3", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 5, "letter": "I", "pos": "beta3→beta1", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 6, "letter": "I", "pos": "beta1→beta7", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 7, "letter": "I", "pos": "beta7→beta5", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 8, "letter": "I", "pos": "beta5→beta7", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } }
+              ]
+            },
+            {
+              "word": "HHHGHHHG",
+              "loopType": "rotated_swapped",
+              "label": "Swapped & Rotated",
+              "prose": "In HHHG every rotation is clockwise from start to finish. Nothing flips at the seam; the second half repeats the word rotated 180° with the colors swapped, and the motion carries straight through.",
+              "verified": [
+                "all 8 moving steps cw on both hands",
+                "both hands share the same motion type on every step",
+                "H steps anti, G steps (4, 8) pro",
+                "engine header: LOOP: rotated, swapped"
+              ],
+              "steps": [
+                { "step": 0, "letter": "β", "pos": "beta7→beta7", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "H", "pos": "beta7→beta5", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 2, "letter": "H", "pos": "beta5→beta3", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 3, "letter": "H", "pos": "beta3→beta1", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 4, "letter": "G", "pos": "beta1→beta3", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 5, "letter": "H", "pos": "beta3→beta1", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 6, "letter": "H", "pos": "beta1→beta7", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 7, "letter": "H", "pos": "beta7→beta5", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 8, "letter": "G", "pos": "beta5→beta7", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } }
+              ]
+            },
+            {
+              "word": "FLFLFLFL",
+              "loopType": "rotated_swapped",
+              "label": "Swapped & Rotated",
+              "prose": "FLFL is built from the compound letters F and L, so the hands cross between alpha and beta on every step, all of it counter-clockwise. At the seam the hands trade pro and anti; that trade is the swap.",
+              "verified": [
+                "every moving rotation ccw",
+                "word alternates F (beta→alpha) and L (alpha→beta)",
+                "steps 1-3: blue pro, red anti; steps 5-7: blue anti, red pro",
+                "engine header: LOOP: rotated, swapped"
+              ],
+              "steps": [
+                { "step": 0, "letter": "β", "pos": "beta1→beta1", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "F", "pos": "beta1→alpha3", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 2, "letter": "L", "pos": "alpha3→beta5", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 3, "letter": "F", "pos": "beta5→alpha7", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 4, "letter": "L", "pos": "alpha7→beta5", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 5, "letter": "F", "pos": "beta5→alpha3", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 6, "letter": "L", "pos": "alpha3→beta1", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 7, "letter": "F", "pos": "beta1→alpha7", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 8, "letter": "L", "pos": "alpha7→beta1", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } }
+              ]
+            },
+            {
+              "word": "EKEJEKEJ",
+              "loopType": "rotated_swapped",
+              "label": "Swapped & Rotated",
+              "prose": "EKEJ pairs the compound letters E, K, and J. The hands rotate opposite ways and both flip at the seam, and only the J steps break out of anti.",
+              "verified": [
+                "every moving step: hands rotate opposite directions",
+                "steps 1-4: blue ccw, red cw; steps 5-8: blue cw, red ccw",
+                "anti on both hands except J steps (4, 8), which are pro",
+                "engine header: LOOP: rotated, swapped"
+              ],
+              "steps": [
+                { "step": 0, "letter": "β", "pos": "beta1→beta1", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "E", "pos": "beta1→alpha7", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 2, "letter": "K", "pos": "alpha7→beta5", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 3, "letter": "E", "pos": "beta5→alpha3", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 4, "letter": "J", "pos": "alpha3→beta5", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 5, "letter": "E", "pos": "beta5→alpha7", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 6, "letter": "K", "pos": "alpha7→beta1", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 7, "letter": "E", "pos": "beta1→alpha3", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 8, "letter": "J", "pos": "alpha3→beta1", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } }
+              ]
+            }
+          ]
+        },
+        "mirrored-swapped": {
+          "defaultEntry": "KIEC (original print example, stays default; its authored after-prose moves into entry 0 on migration)",
+          "candidates": [
+            {
+              "word": "LFLFLFLF",
+              "loopType": "mirrored_swapped",
+              "label": "Swapped & Mirrored",
+              "prose": "LFLF runs clockwise out and counter-clockwise back, like any mirror. The swap is layered on top: blue starts as the pro hand and hands that role to red at the seam.",
+              "verified": [
+                "steps 1-4 cw, steps 5-8 ccw (both hands)",
+                "steps 1-3: blue pro, red anti; steps 5-7: blue anti, red pro",
+                "word alternates L (alpha→beta) and F (beta→alpha)",
+                "engine header: LOOP: mirrored, swapped"
+              ],
+              "steps": [
+                { "step": 0, "letter": "α", "pos": "alpha5→alpha5", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "L", "pos": "alpha5→beta3", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 2, "letter": "F", "pos": "beta3→alpha1", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 3, "letter": "L", "pos": "alpha1→beta7", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 4, "letter": "F", "pos": "beta7→alpha1", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 5, "letter": "L", "pos": "alpha1→beta7", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 6, "letter": "F", "pos": "beta7→alpha5", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 7, "letter": "L", "pos": "alpha5→beta3", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 8, "letter": "F", "pos": "beta3→alpha5", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } }
+              ]
+            },
+            {
+              "word": "BBBBBBBB",
+              "loopType": "mirrored_swapped",
+              "label": "Swapped & Mirrored",
+              "prose": "Eight B steps, every one anti on both hands. When both hands do the same thing, swapping the colors changes nothing, so the mirror does the visible work: counter-clockwise out, clockwise back.",
+              "verified": [
+                "letter B on all 8 steps, anti on both hands throughout",
+                "steps 1-4 ccw, steps 5-8 cw",
+                "both hands share direction on every step",
+                "engine header: LOOP: mirrored, swapped"
+              ],
+              "steps": [
+                { "step": 0, "letter": "α", "pos": "alpha3→alpha3", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "B", "pos": "alpha3→alpha5", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 2, "letter": "B", "pos": "alpha5→alpha7", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 3, "letter": "B", "pos": "alpha7→alpha1", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 4, "letter": "B", "pos": "alpha1→alpha3", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 5, "letter": "B", "pos": "alpha3→alpha1", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 6, "letter": "B", "pos": "alpha1→alpha7", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 7, "letter": "B", "pos": "alpha7→alpha5", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 8, "letter": "B", "pos": "alpha5→alpha3", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } }
+              ]
+            },
+            {
+              "word": "EKEJEKEJ",
+              "loopType": "mirrored_swapped",
+              "label": "Swapped & Mirrored",
+              "prose": "This EKEJ never flips direction: blue holds counter-clockwise and red holds clockwise for all eight steps. The seam shows in where the letters land, not in the rotation.",
+              "verified": [
+                "blue ccw on all 8 moving steps; red cw on all 8",
+                "anti on both hands except J steps (4, 8), which are pro",
+                "E steps travel beta→alpha; K and J steps travel alpha→beta",
+                "engine header: LOOP: mirrored, swapped"
+              ],
+              "steps": [
+                { "step": 0, "letter": "β", "pos": "beta7→beta7", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "E", "pos": "beta7→alpha5", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 2, "letter": "K", "pos": "alpha5→beta3", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 3, "letter": "E", "pos": "beta3→alpha1", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 4, "letter": "J", "pos": "alpha1→beta3", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 5, "letter": "E", "pos": "beta3→alpha1", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 6, "letter": "K", "pos": "alpha1→beta7", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 7, "letter": "E", "pos": "beta7→alpha5", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 8, "letter": "J", "pos": "alpha5→beta7", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } }
+              ]
+            },
+            {
+              "word": "CCCCCCCC",
+              "loopType": "mirrored_swapped",
+              "label": "Swapped & Mirrored",
+              "prose": "A solid line of C. Blue holds counter-clockwise and red holds clockwise the whole way; what trades between the hands is pro and anti, since C is the hybrid letter.",
+              "verified": [
+                "letter C on all 8 steps",
+                "blue ccw on all 8 moving steps; red cw on all 8",
+                "steps 1-3: blue anti, red pro; steps 4-7: blue pro, red anti; step 8: blue anti, red pro",
+                "engine header: LOOP: mirrored, swapped"
+              ],
+              "steps": [
+                { "step": 0, "letter": "α", "pos": "alpha5→alpha5", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "C", "pos": "alpha5→alpha7", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "C", "pos": "alpha7→alpha1", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "C", "pos": "alpha1→alpha3", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 4, "letter": "C", "pos": "alpha3→alpha1", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 5, "letter": "C", "pos": "alpha1→alpha7", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 6, "letter": "C", "pos": "alpha7→alpha5", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 7, "letter": "C", "pos": "alpha5→alpha3", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 8, "letter": "C", "pos": "alpha3→alpha5", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "type2-loops": {
+      "note": "Type 2 LOOPs page: rotated loops that travel between alpha/beta and gamma via Type 2 connector letters. Recipe: loopType rotated + smooth + no-dash + startPosition in the slot's family; travel through gamma verified per candidate (no direct constraint exists). Slots keyed by the start family of the page's three print examples (BΣTX alpha, EΔUZ beta, OYHΘ gamma).",
+      "generationDefaults": {
+        "constraintPreset": "smooth",
+        "motionTypeFilter": "no-dash",
+        "loopType": "rotated",
+        "level": 1,
+        "gridMode": "diamond",
+        "length": 8,
+        "tool": "mcp generate_sequence"
+      },
+      "curationFlags": [
+        "OYΘT (gamma slot) is one letter away from the page's own default OYHΘ. Either a feature (minimal variation) or too close; Austen's call.",
+        "Three candidates are ALL-Type-2 words (ΩXΔZ beta slot, ZΩXΔ and WΔZΘ gamma slot). Strong teaching value but three of them may be repetitive across one page.",
+        "Page's shared trio prose stays as flow prose; per-slot entry-0 prose must be drafted at migration (none exists today)."
+      ],
+      "slots": {
+        "alpha-gamma": {
+          "defaultEntry": "BΣTX (original print example, stays default; entry-0 prose drafted at migration)",
+          "candidates": [
+            {
+              "word": "KΩXCKΩXC",
+              "loopType": "rotated",
+              "prose": "KΩXC uses Ω and X to dip through gamma and come back. The blue hand keeps moving counter-clockwise the whole way while red rests through both Type 2 steps.",
+              "verified": [
+                "red static on steps 2,3,6,7 (the Ω and X steps)",
+                "blue rotates ccw on all 8 steps",
+                "red moving steps (1,4,5,8) all cw",
+                "route per half: alpha→beta→gamma→alpha"
+              ],
+              "steps": [
+                { "step": 0, "letter": "α", "pos": "alpha3→alpha3", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "K", "pos": "alpha3→beta1", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 2, "letter": "Ω", "pos": "beta1→gamma9", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" } },
+                { "step": 3, "letter": "X", "pos": "gamma9→alpha1", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" } },
+                { "step": 4, "letter": "C", "pos": "alpha1→alpha7", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 5, "letter": "K", "pos": "alpha7→beta5", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 6, "letter": "Ω", "pos": "beta5→gamma13", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" } },
+                { "step": 7, "letter": "X", "pos": "gamma13→alpha5", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" } },
+                { "step": 8, "letter": "C", "pos": "alpha5→alpha3", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } }
+              ]
+            },
+            {
+              "word": "BBΔWBBΔW",
+              "loopType": "rotated",
+              "prose": "BBΔW warms up with two B steps, then Δ sends the red hand out to gamma and W brings it home while blue holds still. Every rotation in the word is counter-clockwise.",
+              "verified": [
+                "blue static on steps 3,4,7,8 (the Δ and W steps)",
+                "every moving rotation ccw (both hands)",
+                "gamma visited on steps 3 and 7",
+                "B steps (1,2,5,6) anti on both hands"
+              ],
+              "steps": [
+                { "step": 0, "letter": "α", "pos": "alpha7→alpha7", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "B", "pos": "alpha7→alpha1", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 2, "letter": "B", "pos": "alpha1→alpha3", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 3, "letter": "Δ", "pos": "alpha3→gamma13", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 4, "letter": "W", "pos": "gamma13→alpha3", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 5, "letter": "B", "pos": "alpha3→alpha5", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 6, "letter": "B", "pos": "alpha5→alpha7", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 7, "letter": "Δ", "pos": "alpha7→gamma9", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 8, "letter": "W", "pos": "gamma9→alpha7", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } }
+              ]
+            },
+            {
+              "word": "ΣYFBΣYFB",
+              "loopType": "rotated",
+              "prose": "In ΣYFB the red hand does a full lap: Σ lifts it to gamma, Y drops it to beta, then F and B walk it back through alpha. Blue joins in only for the back half of each word.",
+              "verified": [
+                "blue static on steps 1,2 and 5,6 (the Σ and Y steps)",
+                "red moves on all 8 steps, every rotation cw",
+                "route per half: alpha→gamma→beta→alpha",
+                "blue moving steps (3,4,7,8) all cw"
+              ],
+              "steps": [
+                { "step": 0, "letter": "α", "pos": "alpha5→alpha5", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "Σ", "pos": "alpha5→gamma15", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "Y", "pos": "gamma15→beta1", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "F", "pos": "beta1→alpha3", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 4, "letter": "B", "pos": "alpha3→alpha1", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 5, "letter": "Σ", "pos": "alpha1→gamma11", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 6, "letter": "Y", "pos": "gamma11→beta5", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 7, "letter": "F", "pos": "beta5→alpha7", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 8, "letter": "B", "pos": "alpha7→alpha5", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } }
+              ]
+            },
+            {
+              "word": "CΔZDCΔZD",
+              "loopType": "rotated",
+              "prose": "CΔZD tours all three position families: Δ climbs from alpha to gamma, Z drops to beta, and D carries both hands back. Blue rests through the two Type 2 crossings.",
+              "verified": [
+                "blue static on steps 2,3,6,7 (the Δ and Z steps)",
+                "red moves on all 8 steps, every rotation cw",
+                "each half visits alpha, gamma, and beta",
+                "blue moving steps (1,4,5,8) all ccw"
+              ],
+              "steps": [
+                { "step": 0, "letter": "α", "pos": "alpha1→alpha1", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "C", "pos": "alpha1→alpha7", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 2, "letter": "Δ", "pos": "alpha7→gamma5", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 3, "letter": "Z", "pos": "gamma5→beta3", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 4, "letter": "D", "pos": "beta3→alpha5", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 5, "letter": "C", "pos": "alpha5→alpha3", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 6, "letter": "Δ", "pos": "alpha3→gamma1", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 7, "letter": "Z", "pos": "gamma1→beta7", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 8, "letter": "D", "pos": "beta7→alpha1", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } }
+              ]
+            }
+          ]
+        },
+        "beta-gamma": {
+          "defaultEntry": "EΔUZ (original print example, stays default; entry-0 prose drafted at migration)",
+          "candidates": [
+            {
+              "word": "DJΘZDJΘZ",
+              "loopType": "rotated",
+              "prose": "DJΘZ opens with the compound pair D and J, then Θ pokes into gamma and Z snaps back to beta. Blue sits out the gamma trip entirely.",
+              "verified": [
+                "blue static on steps 3,4,7,8 (the Θ and Z steps)",
+                "blue pro cw on steps 1,2,5,6 (D and J)",
+                "red moves on all 8 steps, every rotation ccw",
+                "gamma visited on steps 3 and 7"
+              ],
+              "steps": [
+                { "step": 0, "letter": "β", "pos": "beta3→beta3", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "D", "pos": "beta3→alpha1", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "J", "pos": "alpha1→beta7", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "Θ", "pos": "beta7→gamma13", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 4, "letter": "Z", "pos": "gamma13→beta7", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 5, "letter": "D", "pos": "beta7→alpha5", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 6, "letter": "J", "pos": "alpha5→beta3", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 7, "letter": "Θ", "pos": "beta3→gamma9", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 8, "letter": "Z", "pos": "gamma9→beta3", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } }
+              ]
+            },
+            {
+              "word": "FΣYHFΣYH",
+              "loopType": "rotated",
+              "prose": "FΣYH slips from beta down to alpha, rides Σ and Y through gamma, and squares back up with H. Red never stops moving; blue only works the F and H steps.",
+              "verified": [
+                "blue static on steps 2,3 and 6,7 (the Σ and Y steps)",
+                "red moves on all 8 steps, every rotation ccw",
+                "H steps (4,8) anti on both hands",
+                "route per half: beta→alpha→gamma→beta"
+              ],
+              "steps": [
+                { "step": 0, "letter": "β", "pos": "beta5→beta5", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "F", "pos": "beta5→alpha3", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "Σ", "pos": "alpha3→gamma1", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "Y", "pos": "gamma1→beta7", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 4, "letter": "H", "pos": "beta7→beta1", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 5, "letter": "F", "pos": "beta1→alpha7", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 6, "letter": "Σ", "pos": "alpha7→gamma5", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 7, "letter": "Y", "pos": "gamma5→beta3", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 8, "letter": "H", "pos": "beta3→beta5", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } }
+              ]
+            },
+            {
+              "word": "ΩXΔZΩXΔZ",
+              "loopType": "rotated",
+              "prose": "Every letter in ΩXΔZ is a Type 2 letter, so one hand is always resting: blue carries Ω and X, red answers with Δ and Z. The word zigzags from beta through gamma to alpha and back.",
+              "verified": [
+                "word is entirely Type 2 letters",
+                "blue moves only on steps 1,2,5,6 (Ω and X); red moves only on steps 3,4,7,8 (Δ and Z)",
+                "route per half: beta→gamma→alpha→gamma→beta",
+                "blue moving rotations cw; red moving rotations ccw"
+              ],
+              "steps": [
+                { "step": 0, "letter": "β", "pos": "beta1→beta1", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "Ω", "pos": "beta1→gamma1", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "X", "pos": "gamma1→alpha1", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "Δ", "pos": "alpha1→gamma11", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 4, "letter": "Z", "pos": "gamma11→beta5", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 5, "letter": "Ω", "pos": "beta5→gamma5", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" } },
+                { "step": 6, "letter": "X", "pos": "gamma5→alpha5", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" } },
+                { "step": 7, "letter": "Δ", "pos": "alpha5→gamma15", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 8, "letter": "Z", "pos": "gamma15→beta1", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } }
+              ]
+            },
+            {
+              "word": "IΩXJIΩXJ",
+              "loopType": "rotated",
+              "prose": "IΩXJ frames its gamma trip with Type 1 letters: I sets up at beta, Ω and X carry the red hand through gamma to alpha, and J rejoins both hands at beta.",
+              "verified": [
+                "blue static on steps 2,3,6,7 (the Ω and X steps)",
+                "red moves on all 8 steps, every rotation cw",
+                "J steps (4,8) pro on both hands",
+                "route per half: beta→gamma→alpha→beta"
+              ],
+              "steps": [
+                { "step": 0, "letter": "β", "pos": "beta7→beta7", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "I", "pos": "beta7→beta5", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 2, "letter": "Ω", "pos": "beta5→gamma11", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 3, "letter": "X", "pos": "gamma11→alpha1", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 4, "letter": "J", "pos": "alpha1→beta3", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 5, "letter": "I", "pos": "beta3→beta1", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 6, "letter": "Ω", "pos": "beta1→gamma15", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 7, "letter": "X", "pos": "gamma15→alpha5", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 8, "letter": "J", "pos": "alpha5→beta7", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } }
+              ]
+            }
+          ]
+        },
+        "gamma-beta": {
+          "defaultEntry": "OYHΘ (original print example, stays default; entry-0 prose drafted at migration)",
+          "candidates": [
+            {
+              "word": "SSWΔSSWΔ",
+              "loopType": "rotated",
+              "prose": "SSWΔ cruises the gamma points with two S steps, then W crosses to alpha and Δ dives back in. The red hand rests through both crossings.",
+              "verified": [
+                "red static on steps 3,4,7,8 (the W and Δ steps)",
+                "every moving rotation ccw",
+                "S steps (1,2,5,6) pro on both hands",
+                "alpha visited between the W and Δ steps in each half"
+              ],
+              "steps": [
+                { "step": 0, "letter": "γ", "pos": "gamma5→gamma5", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "S", "pos": "gamma5→gamma3", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "S", "pos": "gamma3→gamma1", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "W", "pos": "gamma1→alpha1", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" } },
+                { "step": 4, "letter": "Δ", "pos": "alpha1→gamma1", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" } },
+                { "step": 5, "letter": "S", "pos": "gamma1→gamma7", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 6, "letter": "S", "pos": "gamma7→gamma5", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 7, "letter": "W", "pos": "gamma5→alpha5", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" } },
+                { "step": 8, "letter": "Δ", "pos": "alpha5→gamma5", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" } }
+              ]
+            },
+            {
+              "word": "ZΩXΔZΩXΔ",
+              "loopType": "rotated",
+              "prose": "ZΩXΔ is Type 2 letters end to end, bouncing from gamma to beta, back through gamma, and out to alpha. The hands trade the work every two steps, and every rotation is counter-clockwise.",
+              "verified": [
+                "word is entirely Type 2 letters",
+                "red moves on steps 1,4,5,8 (Z and Δ); blue moves on steps 2,3,6,7 (Ω and X)",
+                "every moving rotation ccw",
+                "route per half: gamma→beta→gamma→alpha→gamma"
+              ],
+              "steps": [
+                { "step": 0, "letter": "γ", "pos": "gamma11→gamma11", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "Z", "pos": "gamma11→beta5", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 2, "letter": "Ω", "pos": "beta5→gamma13", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" } },
+                { "step": 3, "letter": "X", "pos": "gamma13→alpha5", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" } },
+                { "step": 4, "letter": "Δ", "pos": "alpha5→gamma15", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 5, "letter": "Z", "pos": "gamma15→beta1", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 6, "letter": "Ω", "pos": "beta1→gamma9", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" } },
+                { "step": 7, "letter": "X", "pos": "gamma9→alpha1", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" } },
+                { "step": 8, "letter": "Δ", "pos": "alpha1→gamma11", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } }
+              ]
+            },
+            {
+              "word": "OYΘTOYΘT",
+              "loopType": "rotated",
+              "prose": "OYΘT stays close to home: O and T hold the gamma points while Y and Θ trade a quick visit to beta. Every rotation runs clockwise.",
+              "verified": [
+                "blue static on steps 2,3,6,7 (the Y and Θ steps)",
+                "every moving rotation cw",
+                "T steps (4,8) anti on both hands",
+                "beta visited at the end of each Y step"
+              ],
+              "steps": [
+                { "step": 0, "letter": "γ", "pos": "gamma1→gamma1", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "O", "pos": "gamma1→gamma11", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "Y", "pos": "gamma11→beta5", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "Θ", "pos": "beta5→gamma7", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 4, "letter": "T", "pos": "gamma7→gamma5", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 5, "letter": "O", "pos": "gamma5→gamma15", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 6, "letter": "Y", "pos": "gamma15→beta1", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 7, "letter": "Θ", "pos": "beta1→gamma3", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 8, "letter": "T", "pos": "gamma3→gamma1", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } }
+              ]
+            },
+            {
+              "word": "WΔZΘWΔZΘ",
+              "loopType": "rotated",
+              "prose": "WΔZΘ swings wide: W reaches out to alpha, Δ comes back, Z drops to beta, and Θ returns to gamma. Whichever hand isn't crossing simply waits.",
+              "verified": [
+                "word is entirely Type 2 letters",
+                "red moves on steps 1,4,5,8 (W and Θ); blue moves on steps 2,3,6,7 (Δ and Z)",
+                "route per half: gamma→alpha→gamma→beta→gamma",
+                "red moving rotations ccw (pro); blue moving rotations cw (anti)"
+              ],
+              "steps": [
+                { "step": 0, "letter": "γ", "pos": "gamma15→gamma15", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "W", "pos": "gamma15→alpha5", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "Δ", "pos": "alpha5→gamma13", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "Z", "pos": "gamma13→beta5", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" } },
+                { "step": 4, "letter": "Θ", "pos": "beta5→gamma11", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 5, "letter": "W", "pos": "gamma11→alpha1", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 6, "letter": "Δ", "pos": "alpha1→gamma9", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" } },
+                { "step": 7, "letter": "Z", "pos": "gamma9→beta1", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" } },
+                { "step": 8, "letter": "Θ", "pos": "beta1→gamma15", "blue": { "type": "static", "dir": "noRotation", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    "gamma-loops": {
+      "note": "Gamma LOOPs page: rotated loops that never leave gamma. Recipe: loopType rotated + smooth + no-dash + gamma start + mustNotContainLetters [Type 2 set, alpha, beta, gamma] (with no connectors available, the word cannot leave gamma; verified per candidate anyway). POOL SIZE 7, NOT 12: the level-1 smooth gamma word space is small and draws started repeating (UUUU, OROO, MPMN all came back twice); quality over padding. Candidates split across slots by letter family to match each slot's default.",
+      "generationDefaults": {
+        "constraintPreset": "smooth",
+        "motionTypeFilter": "no-dash",
+        "loopType": "rotated",
+        "mustNotContainLetters": ["W", "X", "Y", "Z", "Σ", "Δ", "Θ", "Ω", "α", "β", "γ"],
+        "level": 1,
+        "gridMode": "diamond",
+        "length": 8,
+        "tool": "mcp generate_sequence"
+      },
+      "curationFlags": [
+        "Slot pools are 2-3 deep here instead of 4 (small word space; see note).",
+        "Single-letter words (VVVV, UUUU, SSST near-single) overlap in spirit with the lt1-gamma-words page's pinned MPMP/SSSS gallery; the LOOP framing is different but Austen may want more mixed words instead.",
+        "Page's shared trio prose stays as flow prose; per-slot entry-0 prose must be drafted at migration (none exists today). The hardcoded shared start box in gamma-loops.content.ts (Γ, blue S / red E) applies to the AUTHORED strips only; pooled entries carry their own start boxes."
+      ],
+      "slots": {
+        "sotr": {
+          "defaultEntry": "SOTR (original print example, stays default; entry-0 prose drafted at migration)",
+          "candidates": [
+            {
+              "word": "SSSTSSST",
+              "loopType": "rotated",
+              "prose": "SSST is same-direction the whole way: both hands run clockwise on every step, pro through the S steps with a single anti T to close each half.",
+              "verified": [
+                "all positions gamma",
+                "every rotation cw on both hands",
+                "S steps (1,2,3,5,6,7) pro on both hands; T steps (4,8) anti"
+              ],
+              "steps": [
+                { "step": 0, "letter": "γ", "pos": "gamma7→gamma7", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "S", "pos": "gamma7→gamma1", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "S", "pos": "gamma1→gamma3", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "S", "pos": "gamma3→gamma5", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 4, "letter": "T", "pos": "gamma5→gamma3", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 5, "letter": "S", "pos": "gamma3→gamma5", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 6, "letter": "S", "pos": "gamma5→gamma7", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 7, "letter": "S", "pos": "gamma7→gamma1", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 8, "letter": "T", "pos": "gamma1→gamma7", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } }
+              ]
+            },
+            {
+              "word": "OROOOROO",
+              "loopType": "rotated",
+              "prose": "In OROO both hands circle clockwise while trading roles: blue holds pro and red holds anti until the fourth letter of each half swaps them.",
+              "verified": [
+                "all positions gamma",
+                "every rotation cw on both hands",
+                "blue pro on steps 1-3 and 5-7, anti on 4 and 8; red the reverse"
+              ],
+              "steps": [
+                { "step": 0, "letter": "γ", "pos": "gamma13→gamma13", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "O", "pos": "gamma13→gamma3", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 2, "letter": "R", "pos": "gamma3→gamma9", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 3, "letter": "O", "pos": "gamma9→gamma7", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 4, "letter": "O", "pos": "gamma7→gamma9", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 5, "letter": "O", "pos": "gamma9→gamma7", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 6, "letter": "R", "pos": "gamma7→gamma13", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 7, "letter": "O", "pos": "gamma13→gamma3", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 8, "letter": "O", "pos": "gamma3→gamma13", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } }
+              ]
+            },
+            {
+              "word": "RORRRORR",
+              "loopType": "rotated",
+              "prose": "RORR runs everything counter-clockwise. Blue carries pro and red carries anti, and they hand those roles across on the last R of each half.",
+              "verified": [
+                "all positions gamma",
+                "every rotation ccw on both hands",
+                "blue pro on steps 1-3 and 5-7, anti on 4 and 8; red the reverse"
+              ],
+              "steps": [
+                { "step": 0, "letter": "γ", "pos": "gamma15→gamma15", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "R", "pos": "gamma15→gamma1", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 2, "letter": "O", "pos": "gamma1→gamma11", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 3, "letter": "R", "pos": "gamma11→gamma5", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 4, "letter": "R", "pos": "gamma5→gamma11", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 5, "letter": "R", "pos": "gamma11→gamma5", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 6, "letter": "O", "pos": "gamma5→gamma15", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 7, "letter": "R", "pos": "gamma15→gamma1", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 8, "letter": "R", "pos": "gamma1→gamma15", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } }
+              ]
+            }
+          ]
+        },
+        "vpuq": {
+          "defaultEntry": "VPUQ (original print example, stays default; entry-0 prose drafted at migration)",
+          "candidates": [
+            {
+              "word": "VVVVVVVV",
+              "loopType": "rotated",
+              "prose": "Eight V steps with the hands split: blue clockwise, red counter-clockwise. Pro and anti trade hands once per half.",
+              "verified": [
+                "all positions gamma",
+                "blue cw and red ccw on every step",
+                "blue pro on steps 1-3 and 5-7, anti on 4 and 8; red the reverse"
+              ],
+              "steps": [
+                { "step": 0, "letter": "γ", "pos": "gamma5→gamma5", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "V", "pos": "gamma5→gamma7", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 2, "letter": "V", "pos": "gamma7→gamma1", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 3, "letter": "V", "pos": "gamma1→gamma3", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 4, "letter": "V", "pos": "gamma3→gamma1", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 5, "letter": "V", "pos": "gamma1→gamma3", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 6, "letter": "V", "pos": "gamma3→gamma5", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 7, "letter": "V", "pos": "gamma5→gamma7", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } },
+                { "step": 8, "letter": "V", "pos": "gamma7→gamma5", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } }
+              ]
+            },
+            {
+              "word": "UUUUUUUU",
+              "loopType": "rotated",
+              "prose": "A straight run of U: blue clockwise against red counter-clockwise on every step, with the pro and anti roles crossing over at each half's final step.",
+              "verified": [
+                "all positions gamma",
+                "blue cw and red ccw on every step",
+                "blue anti on steps 1-3 and 5-7, pro on 4 and 8; red the reverse"
+              ],
+              "steps": [
+                { "step": 0, "letter": "γ", "pos": "gamma9→gamma9", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "U", "pos": "gamma9→gamma15", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "U", "pos": "gamma15→gamma13", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "U", "pos": "gamma13→gamma11", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" } },
+                { "step": 4, "letter": "U", "pos": "gamma11→gamma13", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" } },
+                { "step": 5, "letter": "U", "pos": "gamma13→gamma11", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 6, "letter": "U", "pos": "gamma11→gamma9", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 7, "letter": "U", "pos": "gamma9→gamma15", "blue": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" }, "red": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" } },
+                { "step": 8, "letter": "U", "pos": "gamma15→gamma9", "blue": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" }, "red": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" } }
+              ]
+            }
+          ]
+        },
+        "mvnu": {
+          "defaultEntry": "MVNU (original print example, stays default; entry-0 prose drafted at migration)",
+          "candidates": [
+            {
+              "word": "MPMNMPMN",
+              "loopType": "rotated",
+              "prose": "MPMN keeps the hands rotating opposite ways for all eight steps, blue counter-clockwise and red clockwise. The N steps flip both hands to anti for one step at a time.",
+              "verified": [
+                "all positions gamma",
+                "blue ccw and red cw on every step",
+                "N steps (4,8) anti on both hands; M and P steps pro on both hands"
+              ],
+              "steps": [
+                { "step": 0, "letter": "γ", "pos": "gamma3→gamma3", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "M", "pos": "gamma3→gamma13", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 2, "letter": "P", "pos": "gamma13→gamma7", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 3, "letter": "M", "pos": "gamma7→gamma9", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } },
+                { "step": 4, "letter": "N", "pos": "gamma9→gamma7", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 5, "letter": "M", "pos": "gamma7→gamma9", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 6, "letter": "P", "pos": "gamma9→gamma3", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 7, "letter": "M", "pos": "gamma3→gamma13", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 8, "letter": "N", "pos": "gamma13→gamma3", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } }
+              ]
+            },
+            {
+              "word": "NQNMNQNM",
+              "loopType": "rotated",
+              "prose": "NQNM leans anti: N and Q keep both hands in anti while each M resets them to pro for a single step. The hands hold opposite directions the whole way.",
+              "verified": [
+                "all positions gamma",
+                "blue ccw and red cw on every step",
+                "N and Q steps (1,2,3,5,6,7) anti on both hands; M steps (4,8) pro"
+              ],
+              "steps": [
+                { "step": 0, "letter": "γ", "pos": "gamma9→gamma9", "blue": { "type": "static", "dir": "noRotation", "ori": "in→in" }, "red": { "type": "static", "dir": "noRotation", "ori": "in→in" } },
+                { "step": 1, "letter": "N", "pos": "gamma9→gamma7", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 2, "letter": "Q", "pos": "gamma7→gamma13", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 3, "letter": "N", "pos": "gamma13→gamma3", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 4, "letter": "M", "pos": "gamma3→gamma13", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "out→out" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "out→out" } },
+                { "step": 5, "letter": "N", "pos": "gamma13→gamma3", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 6, "letter": "Q", "pos": "gamma3→gamma9", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "in→out" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "in→out" } },
+                { "step": 7, "letter": "N", "pos": "gamma9→gamma7", "blue": { "type": "anti", "dir": "ccw", "turns": 0, "ori": "out→in" }, "red": { "type": "anti", "dir": "cw", "turns": 0, "ori": "out→in" } },
+                { "step": 8, "letter": "M", "pos": "gamma7→gamma9", "blue": { "type": "pro", "dir": "ccw", "turns": 0, "ori": "in→in" }, "red": { "type": "pro", "dir": "cw", "turns": 0, "ori": "in→in" } }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  }
+}
