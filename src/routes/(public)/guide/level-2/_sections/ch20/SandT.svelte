@@ -135,28 +135,28 @@
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={sHighSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={sHighFrames} activeT={t} caption="S-High-One: turn on the leading hand, start, halfway, end, full motion" />
+        <TurnStrip frames={sHighFrames} activeT={t} caption="S-High-One - both hands prospin; the leading hand carries the turn, the following hand only travels" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={sLowSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={sLowFrames} activeT={t} caption="S-Low-One: turn on the following hand, start, halfway, end, full motion" />
+        <TurnStrip frames={sLowFrames} activeT={t} caption="S-Low-One - both hands prospin; the following hand carries the turn, the leading hand only travels" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={tHighSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={tHighFrames} activeT={t} caption="T-High-One: turn on the leading hand, start, halfway, end, full motion" />
+        <TurnStrip frames={tHighFrames} activeT={t} caption="T-High-One - both hands antispin; the leading hand carries the turn, the following hand only travels" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={tLowSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={tLowFrames} activeT={t} caption="T-Low-One: turn on the following hand, start, halfway, end, full motion" />
+        <TurnStrip frames={tLowFrames} activeT={t} caption="T-Low-One - both hands antispin; the following hand carries the turn, the leading hand only travels" />
       {/snippet}
     </SequenceShowcase>
   </div>

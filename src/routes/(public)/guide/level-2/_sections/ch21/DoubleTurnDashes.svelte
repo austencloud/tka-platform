@@ -164,7 +164,7 @@
         <TurnStrip
           frames={quartersFrames}
           activeT={t}
-          caption="Dash with 2 turns, south to north, broken into quarters: start, quarter, halfway, three-quarter, end, full motion"
+          caption="Broken into quarters so you can catch the staff spinning through the straight crossing from south to north"
         />
       {/snippet}
     </SequenceShowcase>
@@ -190,7 +190,7 @@
         <TurnStrip
           frames={halvesFrames}
           activeT={t}
-          caption="The same dash with 2 turns, broken in half: start, halfway, end, full motion"
+          caption="The same motion in half instead of quarters - the staff has already completed one full rotation by the midpoint"
         />
       {/snippet}
     </SequenceShowcase>

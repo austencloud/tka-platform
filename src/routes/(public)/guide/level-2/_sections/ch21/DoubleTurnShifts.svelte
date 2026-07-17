@@ -165,7 +165,7 @@
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={proSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={proFrames} activeT={t} caption="Prospin with 2 turns, east to south: start, halfway, end, full motion" />
+        <TurnStrip frames={proFrames} activeT={t} caption="Prospin, 2 turns: the staff spins twice around while still tracing one arc from east to south" />
       {/snippet}
     </SequenceShowcase>
   </div>
@@ -184,7 +184,7 @@
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={antiSequence} items={[]} bpm={60}>
       {#snippet strip(t)}
-        <TurnStrip frames={antiFrames} activeT={t} caption="Antispin with 2 turns, east to south, broken into thirds: start, one-third, two-thirds, end, full motion" />
+        <TurnStrip frames={antiFrames} activeT={t} caption="Antispin, 2 turns, broken into thirds so you can catch the staff fighting its own arc the whole way from east to south" />
       {/snippet}
     </SequenceShowcase>
   </div>
