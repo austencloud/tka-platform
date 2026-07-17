@@ -99,10 +99,12 @@ guardrail: their names appear only in body copy and H2s, never title/meta).
 
 **Structure (era-based lineage):**
 
-1. **The VTG era** — the VTG app across versions, correct credits per the
-   flow-arts-wiki research synthesis: Kevin "NCK" built the first version,
-   Michael Caden Pike built v3, Alien Jon made the animations, Noel Yee
-   collaborated on it.
+1. **The VTG era** — the VTG app across versions. AMENDED post-research: the
+   Kevin "NCK" first-version and Alien Jon animation credits are podcast-sourced
+   only and could not be confirmed by any live source, so the shipped page
+   credits only what the store listings verify (current release by Michael
+   Caden Pike and Noel Yee) and says "multiple versions with different
+   developers" for the rest. Revisit if tutorials.firestaff.net comes back up.
 2. **The LAB family** — Pike's simulators: Poi LAB, Double Staff LAB, Hoop
    Twinz LAB, Tutting Lab. Status noted (live/delisted), store links where
    they exist.
