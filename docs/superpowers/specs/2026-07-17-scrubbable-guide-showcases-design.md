@@ -151,20 +151,41 @@ all. The work is exposing and wiring existing seams, not building new ones.
       box, 1..N = steps in reading order).
 
 ### Phase C - presentation polish
-- [ ] C1: Level-2 chapter h1 in the guide script font; GuideSection
-      heading/subtitle hierarchy pass (spacing + alignment).
-- [ ] C2: Level-2 caption rewrite drafts (say what to notice, e.g. "The staff
-      points along the travel diagonal at halfway - not at the grid");
-      Austen approves wording before merge.
+- [x] C1 (2026-07-17): guide.css gains `.guide-content > h1:first-of-type`
+      (targets the level-2 chapter h1 - a bare `<h1>` rendered directly under
+      `.guide-content` via GuideCompanionHost's `display:contents` - without
+      touching level-1's `.topic-hero h1` or level-2's own landing page h1,
+      both of which sit inside a wrapper and don't match `:first-of-type`
+      there) adopting `var(--guide-script)`, matching level-1's topic-hero
+      treatment. GuideSection heading/subtitle pass: `.guide-section > h2 +
+      h3` tightens the subtitle's top margin (was inheriting the generic
+      in-body-subheading 2rem gap) and both are centered to match the
+      already-centered body prose these sections use throughout (ch20/ch21's
+      `.section-body p { text-align: center }` - left headings over centered
+      prose read as misaligned).
+- [x] C2 (2026-07-17): all 21 level-2 caption strings (8 ch20/ch21 section
+      files) rewritten from frame-name enumeration ("start, halfway, end,
+      full motion") to observation-first prose, grounded in each strip's
+      actual motion data (pro/anti/static/dash + turns-per-hand, verified
+      against each file's own motion-data construction, not assumed from the
+      word alone) and MCP `get_term_definition` for pro/anti/dash/static/
+      opening/closing. DRAFTS - wording pending Austen's approval per the
+      spec's Open Calls, same as the caption text in the commit body.
 
 ### Verification bar (per verification-protocol + the 2026-07-16 collapse lesson)
 - [ ] Geometry AND interaction proven in a live browser by the orchestrator:
       screenshots at 1440 + 390; a scrub drag visibly moves the props; strip
       frames light in sync; reduced-motion emulation shows no autoplay.
-- [ ] `npm run check` clean; reflow-contract + any player tests green; build
-      green; prerendered HTML unchanged where SSR is concerned (player is
-      client-only).
-- [ ] No layout shift on mount/scrub (no-layout-shift.md self-check).
+- [x] (2026-07-17) `npm run check` clean (0 errors/warnings); reflow-contract
+      + sequence-viewer-shell-contract tests green (25/25); `build:fast`
+      green; prerendered `.svelte-kit/cloudflare/guide/level-2/turns.html`
+      confirmed structurally correct - strips/canvas-box reservations/new
+      captions present server-side, InlineAnimationPlayer markup absent
+      (client-only, as designed).
+- [ ] No layout shift on mount/scrub (no-layout-shift.md self-check) -
+      executor reasoned through the CSS (scrub line lives inside the existing
+      reserved `.canvas-box` square; no width/height contracts touched) but
+      this needs the orchestrator's live-browser confirmation above.
 
 ## File ownership
 
