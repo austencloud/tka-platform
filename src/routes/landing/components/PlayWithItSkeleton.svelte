@@ -77,13 +77,6 @@
     }
   }
 
-  /* Ultrawide: mirrors PlayWithItInner's .showcase.with-sidebar 4K step. */
-  @media (min-width: 2200px) {
-    .showcase {
-      max-width: min(1960px, 94vw);
-    }
-  }
-
   @media (min-width: 920px) {
 
     .sk-stage-row {
@@ -110,6 +103,22 @@
     /* Desktop has the sidebar instead of the bottom dock. */
     .sk-dock {
       display: none;
+    }
+  }
+
+  /* Ultrawide: mirrors PlayWithItInner's 4K step (showcase cap, canvas
+     height key, panel width). Must sit AFTER the 920px block so these win
+     by source order. */
+  @media (min-width: 2200px) {
+    .showcase {
+      max-width: min(2600px, 94vw);
+    }
+    .sk-canvas {
+      max-height: min(1500px, 72vh);
+    }
+    .sk-panel {
+      flex: 0 0 440px;
+      max-width: 440px;
     }
   }
 

@@ -74,7 +74,7 @@
       {cards}
       deckName="TKA Shop"
       cardWidth={128}
-      maxCardWidth={210}
+      maxCardWidth={280}
       deal
       inert={false}
       onCardClick={openCard}

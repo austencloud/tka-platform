@@ -229,7 +229,7 @@
 
   <!-- duo-uw: stacked (same as always) below 2200px; on ultrawide the copy
        sits beside the player+mandala pair instead of above it. -->
-  <section class="editorial-section has-duo duo-uw" style="--accent: #ec4899">
+  <section class="editorial-section has-duo duo-uw duo-max" style="--accent: #ec4899">
     <div class="section-duo">
       <div class="duo-copy">
         <span class="section-kicker">Generate</span>
@@ -248,7 +248,7 @@
     </div>
   </section>
 
-  <section class="editorial-section has-duo" style="--accent: #14b8a6">
+  <section class="editorial-section has-duo duo-max" style="--accent: #14b8a6">
     <div class="section-duo flip">
       <div class="duo-copy">
         <span class="section-kicker">Multiply</span>
@@ -298,7 +298,7 @@
       </p>
     </div>
 
-    <div class="cards-block has-duo">
+    <div class="cards-block has-duo duo-max">
       <h3 class="cards-heading">The alphabet leaves the screen</h3>
       <!-- demo-star: fan first in source (phones keep fan-above-copy), copy
            takes the narrower left column from 1100px up. -->
@@ -602,7 +602,14 @@
   }
   @media (min-width: 2200px) {
     .sk-stage-square {
-      max-width: min(40rem, 100%);
+      /* Height-keyed: the kaleidoscope is a near-viewport moment on 4K. */
+      max-width: min(72vh, 100%);
+    }
+    /* 16:9 stage capped by height so the band never outgrows the screen;
+       centered in the cinema band. Mirrors Composer3DViewerDemo .stage. */
+    .sk-stage-wide {
+      max-width: min(100%, calc(78vh * 16 / 9));
+      margin-inline: auto;
     }
   }
   /* = Composer3DViewerDemo .stage */
@@ -730,6 +737,18 @@
     }
     .cta-secondary:hover {
       transform: none;
+    }
+  }
+
+  /* Ultrawide type steps for page-local text — after the base rules so they
+     win by source order. */
+  @media (min-width: 2200px) {
+    .demo-hint {
+      font-size: 1.05rem;
+    }
+    .cards-heading {
+      font-size: 1.7rem;
+      margin-bottom: 1.2rem;
     }
   }
 </style>

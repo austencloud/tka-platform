@@ -421,20 +421,29 @@
     max-width: max(60rem, 25vw);
   }
   /* Duo sections claim real width: 110rem == 1760px at 3840. The copy keeps
-     its 46rem measure and centers in its column. */
+     its measure and centers in its column. duo-max is the full-bleed tier for
+     demo-first pages (composer): the demos there are live stages that scale
+     with the column, so they can carry 88vw. */
   .editorial .has-duo {
     width: min(110rem, 88vw);
+  }
+  .editorial .has-duo.duo-max {
+    width: min(88vw, 3600px);
   }
   .section-duo {
     gap: clamp(3rem, 5vw, 7rem);
   }
   .section-duo > .duo-copy {
     justify-self: center;
+    max-width: 48rem;
   }
   /* duo-uw engages its side-by-side layout here (stacked below): copy 5fr,
      demo 7fr — the wide-demo split these sections exist for. */
   .editorial .has-duo.duo-uw {
     width: min(110rem, 88vw);
+  }
+  .editorial .has-duo.duo-uw.duo-max {
+    width: min(88vw, 3600px);
   }
   .has-duo.duo-uw .section-duo {
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
@@ -443,40 +452,50 @@
   .has-duo.duo-uw .section-duo > .duo-copy {
     margin-inline: 0;
   }
-  /* Band steps: wide = roomy grid band (1280px), cinema = full stage band
-     (50vw == 1920px at 3840, capped at 1960 past 5K — matches the landing's
-     HowTkaWorks ceiling). */
+  /* Band steps: wide = roomy grid band, cinema = full stage band (88vw — the
+     stage inside owns its height cap so it never outgrows the viewport). */
   .editorial .breakout.wide {
-    --breakout-width: min(80rem, 92vw);
+    --breakout-width: min(96rem, 92vw);
   }
   .editorial .breakout.cinema {
-    --breakout-width: min(max(66rem, 50vw), 1960px);
+    --breakout-width: min(88vw, 3600px);
+  }
+  /* Screenful rhythm: the demos are near-viewport moments now, so the gaps
+     between sections scale with them. */
+  .editorial-section {
+    margin-bottom: 8rem;
+  }
+  .editorial-section:not(.panel) {
+    padding-top: 3rem;
   }
   .editorial .back-link {
     font-size: 1rem;
   }
   .page-title {
-    /* 2.25vw == 86.4px (5.4rem) at 3840; keeps growing on 5K/6K. */
-    font-size: clamp(4.2rem, 2.25vw, 8rem);
+    /* 3vw == 115px at 3840 — a display-scale hero, not a scaled-up laptop
+       heading; keeps growing on 5K/6K. */
+    font-size: clamp(4.2rem, 3vw, 8.5rem);
   }
   .page-subtitle {
-    font-size: 1.35rem;
+    font-size: 1.5rem;
   }
   .lede {
     max-width: max(52rem, 21.7vw);
   }
   .lede p {
-    font-size: 1.5rem;
+    font-size: 1.6rem;
   }
   .section-kicker {
-    font-size: 0.85rem;
+    font-size: 0.95rem;
   }
   .section-title {
-    font-size: 2.4rem;
+    /* Landing h2 steps to 3.6rem at this width; editorial sections sit just
+       under it so page titles stay the loudest voice. */
+    font-size: 3.2rem;
   }
   .prose {
-    /* 0.542vw == 20.8px (1.3rem) at 3840; ramps gently on wider screens. */
-    font-size: clamp(1.3rem, 0.542vw, 1.6rem);
+    /* 0.6vw == 23px at 3840; ramps gently on wider screens. */
+    font-size: clamp(1.3rem, 0.6vw, 1.7rem);
   }
   .bullet-list li {
     font-size: 1.25rem;

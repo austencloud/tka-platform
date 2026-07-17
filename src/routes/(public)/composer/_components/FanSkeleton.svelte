@@ -9,7 +9,7 @@
   nothing below the fan ever moves (no-layout-shift.md).
 
   GEOMETRY — derived from DeckFanCover's fit math with the composer demo's
-  props (cardWidth 128, maxCardWidth 210, interactive):
+  props (cardWidth 128, maxCardWidth 280, interactive):
 
     cardW(n) = boxW / ((1 + 0.82·(n−1)) · 1.05)   (spreadPitch · tiltSlack)
     count n drops 6 → 5 → 4 → 3 while cardW(n) < 128
@@ -22,8 +22,8 @@
   fractional-width sliver rounds toward the TALLER reservation (air above
   the fan for <1px of widths, never overflow). Card widths per band are
   100cqw / ((1 + 0.82·(n−1)) · 1.05). The host's duo column can now exceed
-  40rem, so maxCardWidth (210) binds once boxW ≥ 210 · 5.355 = 1124.55 —
-  the final band pins the card at 210px.
+  40rem, so maxCardWidth (280) binds once boxW ≥ 280 · 5.355 = 1499.4 —
+  the final band pins the card at 280px.
 
   If DeckFanCover's spreadPitch/tiltSlack/padding or the demo's card props
   change, re-derive these numbers — they are that math, in CSS.
@@ -69,10 +69,10 @@
       --sk-card-w: 18.674cqw;
     }
   }
-  @container (min-width: 1124.55px) {
+  @container (min-width: 1499.4px) {
     .sk-fan {
-      /* maxCardWidth ceiling: fitW(6) would exceed 210px here */
-      --sk-card-w: 210px;
+      /* maxCardWidth ceiling: fitW(6) would exceed 280px here */
+      --sk-card-w: 280px;
     }
   }
 

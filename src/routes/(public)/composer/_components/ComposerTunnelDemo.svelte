@@ -121,11 +121,12 @@
     overflow: hidden;
     border: 1px solid oklch(0.4 0.04 270 / 0.18);
   }
-  /* Ultrawide: the duo column has the room — let the kaleidoscope earn it.
+  /* Ultrawide: the duo column has the room — the kaleidoscope becomes a
+     near-viewport moment (height-keyed, so it scales with the screen).
      Keep in sync with the page's .sk-stage-square placeholder. */
   @media (min-width: 2200px) {
     .stage {
-      max-width: min(40rem, 100%);
+      max-width: min(72vh, 100%);
     }
   }
 

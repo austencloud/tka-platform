@@ -75,14 +75,6 @@
     margin: 2.4rem auto 0;
     max-width: min(26rem, 100%);
   }
-  /* Ultrawide: the hero holds its own against the 4K type step (public
-     editorial pages scale their measure and headings at this breakpoint). */
-  @media (min-width: 2200px) {
-    .hero-demo {
-      max-width: min(34rem, 100%);
-    }
-  }
-
   .demo-stage {
     position: relative;
     aspect-ratio: 1;
@@ -111,5 +103,20 @@
 
   .demo-note {
     font-style: italic;
+  }
+
+  /* Ultrawide: the hero holds its own against the 4K type step — height-keyed
+     so it scales with the screen (the host column caps the width). After the
+     base rules so it wins by source order. */
+  @media (min-width: 2200px) {
+    .hero-demo {
+      max-width: min(52vh, 100%);
+    }
+    figcaption {
+      font-size: 1.05rem;
+    }
+    .demo-word {
+      font-size: 1.3rem;
+    }
   }
 </style>

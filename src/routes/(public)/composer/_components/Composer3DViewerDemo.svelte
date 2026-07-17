@@ -166,6 +166,14 @@
     background: oklch(0.12 0.02 270);
     border: 1px solid oklch(0.4 0.04 270 / 0.16);
   }
+  /* Ultrawide: height-capped so the cinema band fills the screen without
+     outgrowing it. Mirrors the page's .sk-stage-wide placeholder. */
+  @media (min-width: 2200px) {
+    .stage {
+      max-width: min(100%, calc(78vh * 16 / 9));
+      margin-inline: auto;
+    }
+  }
 
   .stage-curtain {
     position: absolute;

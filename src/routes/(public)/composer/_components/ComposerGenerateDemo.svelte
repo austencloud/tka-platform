@@ -215,6 +215,32 @@
     }
   }
 
+  /* Ultrawide: the pair fills the duo's demo column (~1200px per stage at
+     3840), so the supporting cast scales with it. */
+  @media (min-width: 2200px) {
+    .stages {
+      gap: 1.5rem;
+    }
+    .caption-row {
+      font-size: 1.05rem;
+      margin-top: 1.1rem;
+    }
+    .caption-word {
+      font-size: 1.35rem;
+    }
+    .action-row {
+      margin-top: 1.7rem;
+    }
+    .generate-button {
+      min-height: 58px;
+      padding: 0 2.2rem;
+      font-size: 1.18rem;
+    }
+    .retry-note {
+      font-size: 0.95rem;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .generate-button {
       transition: none;

@@ -120,7 +120,34 @@ Every geometry change above has a skeleton that must mirror it, by construction:
       1924 real window (all sub-2200 geometry unchanged) + 390 phone (stack order + widths hold)
 - [ ] Austen's taste pass on the physical 4K monitor
 
-## Measured results (2026-07-17, Chrome emulation)
+## Addendum: the scale pass (same day)
+
+Austen's verdict on v1: "not nearly what I was hoping." Diagnosis on screenshots:
+the layout moved but the SCALE didn't — 471-638px stages and 38px titles on a
+3840px screen still read as a laptop page with air around it. Fix: everything
+keyed to the viewport, not rem.
+
+- Stages height-keyed: tunnel 72vh (1553px), 3D stage capped 78vh (2993x1683),
+  Play-with-it canvas 72vh (panel 440px, showcase cap 2600), hero 52vh
+  (column-capped at 912px), Generate stages ~940px each.
+- Composer duos get `.duo-max` (88vw, cap 3600px); generic `.has-duo` keeps
+  110rem so notation pages don't inflate. `.cinema` now 88vw; `.wide` 96rem.
+- Type: page title 3vw (115px @ 3840), section titles 3.2rem, kicker 0.95rem,
+  prose 0.6vw, lede 1.6rem; component captions/buttons step at 2200 too.
+- Cards: maxCardWidth 210 -> 280 (FanSkeleton ceiling band 1499.4px).
+- Rhythm: section margin 8rem + padding-top 3rem at 2200.
+- CSS gotcha fixed twice: an @media (min-width: 2200px) block adds NO
+  specificity — it must sit AFTER the base rules it overrides or the base
+  wins by source order (bit PlayWithIt panel/canvas, hero captions, page
+  demo-hint/cards-heading).
+
+Verified: svelte-check 0/0; 3840 emulation (numbers below); 1920 unchanged
+from v1 (hero 416, tunnel 478, fan 621/138, 3D 1054, margins 64px).
+
+| 3840 v2 | hero 912; gen stages 939; tunnel 1553; fan col 1782, cards 280;
+3D 2993x1683; showcase 2598; title 115px; section titles 51px; prose 23px |
+
+## Measured results (2026-07-17, Chrome emulation, v1 layout pass)
 
 | Width | Result |
 |---|---|

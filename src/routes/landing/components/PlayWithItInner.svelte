@@ -320,14 +320,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   .showcase.with-sidebar {
     max-width: min(1600px, 94vw);
   }
-  /* Ultrawide: step up with the composer/landing 4K bands. Keep in sync with
-     PlayWithItSkeleton (the shared structural placeholder). */
-  @media (min-width: 2200px) {
-    .showcase.with-sidebar {
-      max-width: min(1960px, 94vw);
-    }
-  }
-
   /* Stage row holds the spinner + the AnimationPanel sidebar side by side.
      On mobile it collapses (display:contents) so the stage column flows
      directly in the showcase's column, preserving the bottom-dock layout. */
@@ -375,6 +367,24 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Ultrawide: step up with the composer/landing 4K bands — the canvas is
+     height-keyed so the whole showcase scales with the screen, and the panel
+     widens so it doesn't read skinny beside a ~1500px spinner. Sits AFTER the
+     base .panel-slot/.canvas-area rules so it wins by source order. Keep in
+     sync with PlayWithItSkeleton (the shared structural placeholder). */
+  @media (min-width: 2200px) {
+    .showcase.with-sidebar {
+      max-width: min(2600px, 94vw);
+    }
+    .canvas-area {
+      max-height: min(1500px, 72vh);
+    }
+    .panel-slot {
+      flex: 0 0 440px;
+      max-width: 440px;
+    }
   }
 
   .canvas-wrapper {
