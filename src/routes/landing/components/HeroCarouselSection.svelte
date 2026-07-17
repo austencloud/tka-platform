@@ -343,7 +343,7 @@
       </a>
     </nav>
 
-    <!-- Secondary paths — only rendered in the ≥1200px split (display:none
+    <!-- Secondary paths — only rendered in the ≥920px split (display:none
          below), so the mobile single-CTA row is untouched. Icons match the
          SiteHeader nav so the labels read consistently. -->
     <nav class="hero-quicklinks" aria-label="Explore">
@@ -898,12 +898,14 @@
   }
 
   /* ── Wide screens: two-column split hero ────────────────────────────────────
-     ≥1200px only. The lonely centred column becomes [copy | video]: the name,
-     tagline, CTA and quick links anchor the left; the portrait video grows into
-     a real hero on the right. Bounded to 1240px and centred so a 4K monitor
-     reads as one balanced composition instead of a tiny island in a sea of
-     space. Nothing in here can touch the <1200px layout. */
-  @media (min-width: 1200px) {
+     ≥920px, aligned with PlayWithIt's split so the page commits to desktop in
+     one move (Z Fold unfolded ~928px and iPad landscape live in this band).
+     The lonely centred column becomes [copy | video]: the name, tagline, CTA
+     and quick links anchor the left; the portrait video grows into a real hero
+     on the right. Bounded to 1240px and centred so a 4K monitor reads as one
+     balanced composition instead of a tiny island in a sea of space. Nothing
+     in here can touch the <920px layout. */
+  @media (min-width: 920px) {
     .hero-carousel {
       display: grid;
       grid-template-columns: minmax(300px, 440px) auto;
@@ -967,6 +969,25 @@
       width: auto;
       height: min(62vh, 640px);
       max-height: none;
+    }
+  }
+
+  /* ── Split entry band: 920–1199px (Z Fold unfolded, iPad landscape) ─────────
+     The 640px stage (512px wide) plus the 300px copy floor leaves ~10px of
+     slack at 920 once a classic scrollbar takes its cut. A shorter stage and
+     tighter gap buy that margin back, and the title steps down so 48px type
+     isn't wedged into a 300px column. */
+  @media (min-width: 920px) and (max-width: 1199px) {
+    .hero-carousel {
+      column-gap: clamp(32px, 4vw, 56px);
+    }
+
+    .hero-title {
+      font-size: clamp(2.5rem, 3.9vw, 3rem);
+    }
+
+    .carousel-stage {
+      height: min(62vh, 560px);
     }
   }
 
