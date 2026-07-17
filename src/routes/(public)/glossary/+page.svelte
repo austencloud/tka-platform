@@ -160,8 +160,9 @@
     return view === "all" || view === key;
   }
 
-  // The sidebar always shows the FULL index (that's its job); it only narrows
-  // under an active search.
+  // The sidebar rail is a CATEGORY nav (terms live in the master list only,
+  // never twice on screen); under an active search its counts become
+  // per-category match counts.
   const sidebarGroups = $derived(filtering ? searchGroups : data.groups);
 
   const isDesktop = () =>
@@ -219,7 +220,17 @@
       if (filtering) query = "";
       enterView(catKey);
       await tick();
-      document.querySelector(".view-head")?.scrollIntoView({ block: "start" });
+      // Land with the page title and category header visible. scrollIntoView
+      // on .view-head with block:"start" shoved the header under the fixed
+      // SiteHeader and left the auto-selected first row at the viewport top
+      // (the jump-south bug, 2026-07-17); the whole drilled view starts at
+      // the top of the page, so page-top IS the section start.
+      if (window.scrollY > 0) {
+        const reduced = window.matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        ).matches;
+        window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
+      }
       return;
     }
     await reveal(slug, e);
@@ -304,7 +315,8 @@
 </svelte:head>
 
 <div class="glossary-shell">
-  <!-- ── desktop sidebar: the whole lexicon, always in reach ── -->
+  <!-- ── desktop sidebar: search + category nav (terms render once, in the
+       master list — the rail never repeats them) ── -->
   <aside class="glossary-sidebar" aria-label="Glossary navigation">
     <GlossaryNav
       groups={sidebarGroups}
@@ -312,6 +324,7 @@
       bind:query
       activeSlug={selected}
       activeCat={view}
+      showCats={!landingShown}
       onNavigate={handleNav}
     />
   </aside>
