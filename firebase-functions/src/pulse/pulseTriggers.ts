@@ -272,3 +272,25 @@ export const pulseCollectionCreated = onDocumentCreated(
     });
   }
 );
+
+/** A visitor submitted a tool for the /roots/software lineage list. */
+export const pulseSoftwareSubmission = onDocumentCreated(
+  "software_submissions/{submissionId}",
+  async (event) => {
+    const snap = event.data;
+    if (!snap) return;
+    const sub = snap.data();
+    const name = (sub.name as string) || "an unnamed tool";
+    const url = (sub.url as string) || "";
+
+    await notifyAdmins({
+      type: "admin-software-submission",
+      message: `Software list submission: "${name}"${url ? ` (${url})` : ""}`,
+      data: {
+        submissionId: event.params.submissionId,
+        toolName: name,
+        toolUrl: url,
+      },
+    });
+  }
+);

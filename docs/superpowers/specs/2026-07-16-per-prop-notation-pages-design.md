@@ -179,18 +179,24 @@ reduced-motion safe).
 
 ## Ledger
 
-- [ ] OpenChapter.svelte component
-- [ ] /notation/staves page
-- [ ] /notation/fans page
-- [ ] /notation/clubs page
-- [ ] /notation/buugeng page
-- [ ] /notation/poi page
-- [ ] /notation hub "Notation by Prop" section
-- [ ] SiteFooter Props column (+ responsive grid change)
-- [ ] MARKETING_SUBTREES promotion for /notation
-- [ ] sitemap.xml entries
-- [ ] Copy pass: MCP grounding + em-dash grep + writing-guide pass
-- [ ] Browser verification (5 routes x mobile/desktop, footer, 4K)
+- [x] OpenChapter.svelte component
+- [x] /notation/staves page
+- [x] /notation/fans page
+- [x] /notation/clubs page
+- [x] /notation/buugeng page
+- [x] /notation/poi page
+- [x] /notation hub "Notation by Prop" section
+- [x] SiteFooter Props column (+ responsive grid change; extra 820px
+      breakpoint added so 4 columns don't cram between 560 and 1024)
+- [x] MARKETING_SUBTREES promotion for /notation (removed the exact entry)
+- [x] sitemap.xml entries (verified in served /sitemap.xml)
+- [x] Copy pass: grounded in MCP `static-props` + `vtg-deep` topics; em-dash
+      grep clean (only code comments); unilateral/bilateral claims from
+      prop-classification.ts
+- [x] Browser verification: 5 routes SSR with correct titles/canonical/JSON-LD,
+      OpenChapter on exactly fans/clubs/buugeng, zero console errors/warnings,
+      footer grid 1-col @360 / 2x2 @700 / 5-track @1440, no horizontal
+      overflow, screenshots of OpenChapter + hub chips + footer
 - [ ] Commit (pathspec), cherry-pick to main, push
 
 ## Out of scope (named, not silent)

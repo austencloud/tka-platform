@@ -62,6 +62,7 @@ const PREF_KEY_MAP: Record<string, string> = {
   "admin-user-returned": "adminUserReturned",
   "admin-qr-scan": "adminQrScan",
   "admin-content-created": "adminContentCreated",
+  "admin-software-submission": "adminSoftwareSubmission",
   "moderation-warning": "moderationWarning",
   "system-announcement": "systemAnnouncement",
 };

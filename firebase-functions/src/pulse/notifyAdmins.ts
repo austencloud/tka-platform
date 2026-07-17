@@ -38,6 +38,7 @@ const PULSE_PREF_KEYS: Record<string, string> = {
   "admin-user-returned": "adminUserReturned",
   "admin-qr-scan": "adminQrScan",
   "admin-content-created": "adminContentCreated",
+  "admin-software-submission": "adminSoftwareSubmission",
 };
 
 export interface AdminNotificationInput {

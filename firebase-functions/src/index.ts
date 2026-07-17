@@ -20,6 +20,7 @@ export {
   pulseScanActivity,
   pulseSequenceCreated,
   pulseCollectionCreated,
+  pulseSoftwareSubmission,
 } from "./pulse/pulseTriggers";
 export { onFollowCreated, onFollowDeleted } from "./social/onFollowChange";
 

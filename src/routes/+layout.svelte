@@ -101,12 +101,13 @@
     "/about",
     "/roots",
     "/support",
-    "/notation",
     "/composer",
     "/glossary",
     "/learn/staff-spinning-choreography",
   ]);
-  const MARKETING_SUBTREES = ["/shop"];
+  // /notation is a subtree: the hub plus the per-prop pages (/notation/staves,
+  // /notation/fans, ...) all render the same persistent chrome.
+  const MARKETING_SUBTREES = ["/shop", "/notation"];
   const isMarketing = $derived.by(() => {
     const p = page.url.pathname;
     if (MARKETING_EXACT.has(p)) return true;

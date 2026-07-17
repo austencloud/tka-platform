@@ -63,6 +63,12 @@ export const FAQ_ITEMS: FaqItem[] = [
     cta: { label: "Try props in the spinner", href: "/#play-with-it" },
   },
   {
+    question: "Is there software for flow arts choreography?",
+    answer:
+      "Yes. Flow Arts Composer is free flow arts software that runs in your browser. Build sequences step by step, generate them from parameters, animate them with any supported prop, and share the results. Everything you make is written in The Kinetic Alphabet, so it stays readable and editable instead of trapped in a video.",
+    cta: { label: "Open Flow Arts Composer", href: "/composer" },
+  },
+  {
     question: "Is Flow Arts Composer free?",
     answer:
       "Yes. Building sequences, animating them, and browsing the community library are free, and the core stays free. A premium tier is planned down the line to help sustain the project, but it isn't live yet.",

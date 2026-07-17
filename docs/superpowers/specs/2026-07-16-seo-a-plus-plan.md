@@ -27,6 +27,8 @@ Source: full SEO audit (4-agent codebase sweep + live-site probe). Austen approv
 - [x] W2-3: Question-intent folded into each prop page as an H2 ("How Do You Write Down X Choreography?") instead of separate thin pages — one strong page beats three thin ones
 - [ ] W2-4: Sequence-page thin-content + og:image programmatic pass
 - [x] W2-5: /notation hub gains "Notation by Prop" section linking all four; sitemap lists all four at 0.8
+- [x] W2-6: "flow arts software" commercial cluster: /composer retitle + description + JSON-LD keywords, keyword configs, FAQ entry, varied link web (2026-07-16, feat/flow-arts-software-seo)
+- [x] W2-7: /roots/software lineage page: fact-verified roster (VTG app, Paper Tools, LAB simulators, VisualSpinner3D, today's tools), screenshots, submission form + admin ping, sitemap entry, /roots cross-link (2026-07-17, feat/flow-arts-software-seo)
 
 ### Wave 3 — verification + external
 - [ ] W3-1: One full `npm run check` + `npm run build`; grep built HTML for new links

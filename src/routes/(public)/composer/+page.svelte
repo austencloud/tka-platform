@@ -9,7 +9,7 @@
   const heroDemoSequence = demoJson as unknown as SequenceData;
 
   const DESCRIPTION =
-    "Flow Arts Composer is a free web app for building flow arts choreography. Construct sequences step by step, generate them from parameters, animate them, and share them. Supports staff, fans, clubs, hoops, buugeng, and more.";
+    "Flow Arts Composer is free flow arts software for building choreography in your browser. Construct sequences step by step, generate them from parameters, animate them, and share them. Supports staff, fans, clubs, hoops, buugeng, and more.";
 
   // The tunnel and play-with-it stacks are heavy canvas machinery — mount
   // each only when its section approaches the viewport.
@@ -57,19 +57,19 @@
 </script>
 
 <svelte:head>
-  <title>Flow Arts Composer | Choreography App for Staff, Fans, Clubs & More</title>
+  <title>Flow Arts Composer | Free Flow Arts Software for Choreography</title>
   <meta name="description" content={DESCRIPTION} />
   <link rel="canonical" href="https://tkaflowarts.com/composer" />
 
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="The Kinetic Alphabet" />
   <meta property="og:url" content="https://tkaflowarts.com/composer" />
-  <meta property="og:title" content="Flow Arts Composer | Choreography App for Flow Arts" />
+  <meta property="og:title" content="Flow Arts Composer | Free Flow Arts Software for Choreography" />
   <meta property="og:description" content={DESCRIPTION} />
   <meta property="og:image" content="https://tkaflowarts.com/branding/og-image.png" />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Flow Arts Composer | Choreography App for Flow Arts" />
+  <meta name="twitter:title" content="Flow Arts Composer | Free Flow Arts Software for Choreography" />
   <meta name="twitter:description" content={DESCRIPTION} />
   <meta name="twitter:image" content="https://tkaflowarts.com/branding/og-image.png" />
 
@@ -82,6 +82,7 @@
     "description": "${DESCRIPTION}",
     "url": "https://tkaflowarts.com/composer",
     "applicationCategory": "EducationalApplication",
+    "keywords": "flow arts software, flow arts choreography software, flow arts app",
     "operatingSystem": "Any (Web Browser)",
     "browserRequirements": "Requires JavaScript. Works on Chrome, Firefox, Safari, Edge.",
     "image": "https://tkaflowarts.com/branding/og-image.png",
@@ -179,13 +180,14 @@
   <header class="editorial-header">
     <h1 class="page-title">Flow Arts Composer</h1>
     <p class="page-subtitle">
-      The flow arts choreography app built on <a href="/notation">The Kinetic Alphabet</a>
+      Free flow arts software for choreography, built on <a href="/notation">The Kinetic Alphabet</a>
     </p>
   </header>
 
   <div class="lede">
     <p>
-      Flow Arts Composer is a free web app for building flow arts choreography. Construct
+      Flow Arts Composer is free flow arts software for building choreography in your
+      browser. Construct
       sequences step by step, generate them from parameters, watch them animate, and share
       them with other flow artists. It supports staff, fans, clubs, hoops, buugeng, and
       more, all built on The Kinetic Alphabet notation system.

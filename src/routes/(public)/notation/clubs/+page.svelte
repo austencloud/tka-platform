@@ -1,25 +1,27 @@
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
+  import OpenChapter from "$lib/shared/landing/components/OpenChapter.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
-  const TITLE = "Club Notation for Flow Arts | The Kinetic Alphabet";
+  const TITLE = "Club Spinning Notation | The Kinetic Alphabet for Clubs";
   const DESCRIPTION =
-    "Write down club choreography with The Kinetic Alphabet. Clubs are gripped directly, so TKA's grid positions, letters, and turns all apply to a pair of clubs.";
+    "How The Kinetic Alphabet applies to club spinning: what carries over from the staff-built system, what clubs change, and the per-prop questions still open.";
+  const URL = "https://tkaflowarts.com/notation/clubs";
 </script>
 
-<Seo title={TITLE} description={DESCRIPTION} canonical="https://tkaflowarts.com/notation/clubs" ogType="article">
+<Seo title={TITLE} description={DESCRIPTION} canonical={URL} ogType="article">
   {@html `<script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "Article",
-    "headline": "Club Notation for Flow Arts",
-    "url": "https://tkaflowarts.com/notation/clubs",
+    "headline": "Club Spinning Notation",
+    "url": "${URL}",
     "description": "${DESCRIPTION}",
     "inLanguage": "en-US",
     "author": { "@type": "Person", "name": "Austen Cloud", "url": "https://tkaflowarts.com/about" },
     "publisher": { "@type": "Organization", "name": "The Kinetic Alphabet", "url": "https://tkaflowarts.com/" }
   }
-  <\/script>`}
+  </script>`}
   {@html `<script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -27,72 +29,76 @@
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://tkaflowarts.com/" },
       { "@type": "ListItem", "position": 2, "name": "Notation", "item": "https://tkaflowarts.com/notation" },
-      { "@type": "ListItem", "position": 3, "name": "Clubs", "item": "https://tkaflowarts.com/notation/clubs" }
+      { "@type": "ListItem", "position": 3, "name": "Clubs", "item": "${URL}" }
     ]
   }
-  <\/script>`}
+  </script>`}
 </Seo>
 
 <div class="editorial">
+  <a class="back-link" href="/notation">← Flow Arts Notation</a>
+
   <header class="editorial-header">
-    <h1 class="page-title">Club Notation</h1>
-    <p class="page-subtitle">Writing club choreography in The Kinetic Alphabet</p>
+    <h1 class="page-title">Club Spinning Notation</h1>
+    <p class="page-subtitle">The Kinetic Alphabet, applied to clubs</p>
   </header>
 
   <section class="editorial-section" style="--accent: #22c55e">
-    <h2 class="section-title">Clubs Speak TKA</h2>
+    <h2 class="section-title">What Carries Over</h2>
     <div class="prose">
       <p>
-        The Kinetic Alphabet writes choreography for dual-wielded props that you grip
-        directly. A club in each hand qualifies. It points somewhere on the grid, it
-        rotates on the way to the next position, and you control both. That is all TKA
-        needs: every position, letter, and turn count in the system applies.
+        This page is about dual-wielded club spinning, one club in each hand, not toss
+        juggling. Held that way, clubs are static props: gripped directly, orientation
+        fully under your control. So the core of The Kinetic Alphabet applies as written.
+        The nine grid positions, the letters, and the timing and direction system describe
+        club choreography the same way they describe staff choreography, and
+        the <a href="/composer">Flow Arts Composer</a> software can render a sequence
+        with clubs.
+      </p>
+      <p>
+        New to the system? Start with the <a href="/guide">guide</a>, and keep the
+        <a href="/glossary">glossary</a> nearby.
+      </p>
+      <!-- Animation-example slot: same demo sequence rendered with clubs.
+           Drops in when the per-prop demo component exists (see
+           2026-07-16-per-prop-notation-pages-design.md, out of scope note). -->
+    </div>
+  </section>
+
+  <section class="editorial-section" style="--accent: #14b8a6">
+    <h2 class="section-title">What Clubs Change</h2>
+    <div class="prose">
+      <p>
+        A club has one reference end, the body, and a handle you grip. That is a real
+        departure from the staff's dual-end system, where a consistent thumb reference and
+        a consistent pinky reference are both visible at all times.
+        <a href="/notation/staves">Double staff notation</a> explains why those two
+        references are the foundation everything else stands on.
+      </p>
+      <p>
+        Club spinning also carries its own grip tradition and its own body mechanics.
+        Mapping the alphabet onto that vocabulary, honestly and precisely, is per-prop work
+        that still needs its practitioner.
       </p>
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #f59e0b">
-    <h2 class="section-title">From Juggling to the Grid</h2>
-    <div class="prose">
-      <p>
-        Clubs carry juggling history with them, and so does TKA. Part of the system's
-        lineage runs through siteswap, the numeric notation jugglers use to write down
-        throw patterns. TKA borrows that instinct, writing movement as symbols you can
-        read back, and applies it to props that stay in your hands. The full family tree
-        is on the <a href="/roots">roots page</a>.
-      </p>
-    </div>
-  </section>
-
-  <section class="editorial-section" style="--accent: #ec4899">
-    <h2 class="section-title">How Do You Write Down Club Choreography?</h2>
-    <div class="prose">
-      <p>
-        One beat at a time. Pick a start position: alpha (hands at opposite points), beta
-        (hands at the same point), or gamma (hands at a right angle). Each beat is one
-        letter: a pictograph that records where each hand travels and how each club
-        rotates on the way. The letters chain into a word, and the word is the sequence.
-      </p>
-      <p>
-        Paper works. <a href="/composer">Flow Arts Composer</a> works faster: build the
-        sequence beat by beat, watch it animate, and save it to your collection.
-      </p>
-    </div>
-  </section>
-
-  <section class="editorial-section" style="--accent: #06b6d4">
-    <h2 class="section-title">Where to Start</h2>
-    <div class="prose">
-      <p>
-        The <a href="/guide">guide</a> introduces the grid, the positions, and the
-        letters. The <a href="/glossary">glossary</a> defines every term in the system.
-        Between the two, nothing in a written sequence should stay mysterious for long.
-      </p>
-    </div>
-  </section>
+  <OpenChapter prop="Clubs">
+    <p>
+      I trained double staves, and that's where my authority ends. Club grips are their own
+      language, and I'm not going to write an authoritative chapter in a language I don't
+      speak.
+    </p>
+    <p>
+      What's proven: the positions, letters, and timing carry over to any static prop, and
+      the composer renders clubs today. What's open: the club grip language and the body
+      mechanics unique to clubs. If clubs are your language, this chapter is yours to
+      write.
+    </p>
+  </OpenChapter>
 
   <div class="cta-card">
-    <h3>Ready to write your first club sequence?</h3>
+    <h3>Try a sequence with clubs</h3>
     <p>Flow Arts Composer is free to use. No download required.</p>
     <a href="/create" class="cta-button" data-sveltekit-reload>
       <span>Open Flow Arts Composer</span>

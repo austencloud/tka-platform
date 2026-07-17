@@ -82,6 +82,7 @@ const PULSE_TITLES: Record<string, string> = {
   "admin-user-returned": "User Returned",
   "admin-new-user-signup": "New Signup",
   "admin-content-created": "New Content",
+  "admin-software-submission": "Software submission",
 };
 
 /**

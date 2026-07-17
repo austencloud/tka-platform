@@ -51,6 +51,16 @@
       ],
     },
     {
+      title: "Props",
+      links: [
+        { label: "Double Staves", href: "/notation/staves" },
+        { label: "Fans", href: "/notation/fans" },
+        { label: "Clubs", href: "/notation/clubs" },
+        { label: "Buugeng", href: "/notation/buugeng" },
+        { label: "Poi", href: "/notation/poi" },
+      ],
+    },
+    {
       title: "Shop",
       links: [
         { label: "How Choreo Cards Work", href: "/shop/choreography-cards" },
@@ -245,21 +255,28 @@
     color: #ff8a9d;
   }
 
-  /* ≥560px: link columns sit side by side under the brand block. */
+  /* ≥560px: the four link columns form a 2×2 grid under the brand block. */
   @media (min-width: 560px) {
     .cols {
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
     }
     .brand {
       grid-column: 1 / -1;
     }
   }
 
+  /* ≥820px: all four link columns in one row under the brand. */
+  @media (min-width: 820px) {
+    .cols {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
   /* ≥1024px: brand joins the row; bottom bar splits left/right. */
   @media (min-width: 1024px) {
     .cols {
-      grid-template-columns: 1.6fr repeat(3, 1fr);
-      gap: clamp(40px, 5vw, 96px);
+      grid-template-columns: 1.6fr repeat(4, 1fr);
+      gap: clamp(32px, 3.5vw, 84px);
     }
     .brand {
       grid-column: auto;

@@ -114,7 +114,7 @@ export const LANDING_SEO_CONFIG = {
   description:
     "TKA is a flow arts notation system for documenting and sharing choreography with dual wielded props - staff, fans, clubs, hoops, buugeng.",
   keywords:
-    "flow arts notation, flow arts notation system, dual wielded props, staff notation, fan notation, club notation, TKA, The Kinetic Alphabet, TKA notation, TKA flow arts, prop notation, movement notation",
+    "flow arts notation, flow arts notation system, dual wielded props, staff notation, fan notation, club notation, TKA, The Kinetic Alphabet, TKA notation, TKA flow arts, prop notation, movement notation, flow arts software, flow arts choreography software",
   author: "Austen Cloud",
   language: "en",
   type: "website",
@@ -133,7 +133,7 @@ export const APP_SEO_CONFIG = {
   description:
     "Create, animate, and share flow arts sequences with Flow Arts Composer - the free choreography app for staff, clubs, fans, hoops, buugeng, and swords.",
   keywords:
-    "Flow Arts Composer, TKA app, TKA flow arts, flow arts app, sequence creator, staff choreography, club manipulation, fan spinning, buugeng patterns",
+    "Flow Arts Composer, TKA app, TKA flow arts, flow arts app, sequence creator, staff choreography, club manipulation, fan spinning, buugeng patterns, flow arts software, flow arts choreography software",
   author: "Austen Cloud",
   language: "en",
   type: "website",

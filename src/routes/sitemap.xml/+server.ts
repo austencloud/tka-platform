@@ -14,14 +14,16 @@ const pages = [
   // Pillar pages (SEO content roadmap)
   { url: "composer", priority: "0.9", changefreq: "monthly" },
   { url: "notation", priority: "0.9", changefreq: "monthly" },
-  // Per-prop notation pages (hub-and-spoke under /notation)
-  { url: "notation/fans", priority: "0.8", changefreq: "monthly" },
-  { url: "notation/clubs", priority: "0.8", changefreq: "monthly" },
-  { url: "notation/buugeng", priority: "0.8", changefreq: "monthly" },
-  { url: "notation/poi", priority: "0.8", changefreq: "monthly" },
+  // Per-prop notation pages (2026-07-16-per-prop-notation-pages-design.md)
+  { url: "notation/staves", priority: "0.7", changefreq: "monthly" },
+  { url: "notation/fans", priority: "0.7", changefreq: "monthly" },
+  { url: "notation/clubs", priority: "0.7", changefreq: "monthly" },
+  { url: "notation/buugeng", priority: "0.7", changefreq: "monthly" },
+  { url: "notation/poi", priority: "0.7", changefreq: "monthly" },
   { url: "glossary", priority: "0.8", changefreq: "monthly" },
   { url: "learn/staff-spinning-choreography", priority: "0.8", changefreq: "monthly" },
   { url: "roots", priority: "0.8", changefreq: "monthly" },
+  { url: "roots/software", priority: "0.7", changefreq: "monthly" },
   // Marketing
   { url: "about", priority: "0.6", changefreq: "monthly" },
   // /support is noindex (see support/+page.svelte) — omitted to avoid a
