@@ -1,5 +1,5 @@
 import type { GuideBlock } from "../guide-content-blocks";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
   MotionType,
   MotionColor,
@@ -80,6 +80,19 @@ const ROWS: RowDef[] = [
 const rowItems = (row: RowDef): PictographData[] =>
   [row.start, row.end, row.combined] as unknown as PictographData[];
 
+// DISPLAY shows all 3 real poses (start · end · combined); only start and
+// combined form a real playable pair (end has no stepNumber of its own - it's
+// a pose, not a chained step). Animation-only strip, same real motion data.
+// `redStaff` only sets the red hand (this page teaches single-staff isolation);
+// the animation engine's both-required step contract needs a blue motion on
+// every step, so an invisible placeholder fills it - same recipe
+// negative-space.content.ts uses for its single-staff sequences.
+const rowSequenceItems = (row: RowDef): PictographData[] =>
+  [
+    { ...row.start, stepNumber: 0, motions: { ...row.start.motions, blue: createPlaceholderMotion(MotionColor.BLUE, { location: row.start.motions.red.startLocation }) } },
+    { ...row.combined, stepNumber: 1, motions: { ...row.combined.motions, blue: createPlaceholderMotion(MotionColor.BLUE, { location: row.start.motions.red.startLocation }) } },
+  ] as unknown as PictographData[];
+
 /** STAFF props, TKA letter glyph off - matching StaffMotionsPage's PICTO_FLAGS (showTKA: false). */
 const RENDER = { propType: PropType.STAFF, showTKA: false } as const;
 
@@ -104,6 +117,8 @@ export const staffMotionsContent: GuideBlock[] = [
     items: rowItems(ROWS[0]!),
     flowCols: 3,
     layout: "strip",
+    card: true,
+    sequenceItems: rowSequenceItems(ROWS[0]!),
     render: RENDER,
     caption: "start · end · combined",
   },
@@ -120,6 +135,8 @@ export const staffMotionsContent: GuideBlock[] = [
     items: rowItems(ROWS[1]!),
     flowCols: 3,
     layout: "strip",
+    card: true,
+    sequenceItems: rowSequenceItems(ROWS[1]!),
     render: RENDER,
     caption: "start · end · combined",
   },
@@ -132,6 +149,8 @@ export const staffMotionsContent: GuideBlock[] = [
     items: rowItems(ROWS[2]!),
     flowCols: 3,
     layout: "strip",
+    card: true,
+    sequenceItems: rowSequenceItems(ROWS[2]!),
     render: RENDER,
     caption: "start · end · combined",
   },

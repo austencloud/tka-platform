@@ -1,6 +1,6 @@
 import type { GuideBlock } from "../guide-content-blocks";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { MotionType, MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { createMotionData, createPlaceholderMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import { MotionType, MotionColor, Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -11,10 +11,11 @@ const { NORTH: N, EAST: E, SOUTH: SO_, WEST: W } = GridLocation;
 // (blue hand only; the renderer's hand-path mode floats the shifts into the
 // canonical float arrows, dash gets the system dash arrow, static shows the
 // resting hand).
-const singleHand = (id: string, type: MotionType, from: GridLocation, to: GridLocation) => ({
+const singleHand = (id: string, type: MotionType, from: GridLocation, to: GridLocation, stepNumber?: number) => ({
   id: `hm-${id}`,
   letter: null,
   gridMode: GridMode.DIAMOND,
+  ...(stepNumber === undefined ? {} : { stepNumber }),
   motions: {
     blue: createMotionData({
       motionType: type,
@@ -29,12 +30,39 @@ const singleHand = (id: string, type: MotionType, from: GridLocation, to: GridLo
 
 // The five motion-demo boxes, in the source page's own order (HandMotionsPage.svelte
 // `boxes` array) - sheet geometry (x/y) dropped, the box's word kept as its caption.
+// "Start" and "Static" hold in place (from === to) - no travel, so they stay a
+// single illustrative pictograph. "Shift" (both directions) and "Dash" are real
+// hand-path motions, so each becomes a tiny playable Start+1 strip below.
 const DEMOS = [
   { caption: "Start", data: singleHand("start", MotionType.STATIC, W, W) },
-  { caption: "Shift", data: singleHand("shift-cw", MotionType.PRO, W, N) },
-  { caption: "Shift", data: singleHand("shift-ccw", MotionType.PRO, W, SO_) },
-  { caption: "Dash", data: singleHand("dash", MotionType.DASH, W, E) },
   { caption: "Static", data: singleHand("static", MotionType.STATIC, W, W) },
+];
+
+/**
+ * A real hand-path demo (Shift/Dash): Start pose + the demo's own motion,
+ * playable. The animation engine's both-required step contract needs a red
+ * motion on every step even though this is a single-hand (blue-only) demo -
+ * an invisible placeholder (createPlaceholderMotion) satisfies it without
+ * rendering a second hand, same recipe negative-space.content.ts uses.
+ */
+const motionDemo = (id: string, type: MotionType, from: GridLocation, to: GridLocation, caption: string) => {
+  const withRedPlaceholder = (step: ReturnType<typeof singleHand>) => ({
+    ...step,
+    motions: { ...step.motions, red: createPlaceholderMotion(MotionColor.RED, { location: from, orientation: Orientation.IN }) },
+  });
+  return {
+    id,
+    caption,
+    items: [
+      withRedPlaceholder(singleHand(`${id}-start`, MotionType.STATIC, from, from, 0)),
+      withRedPlaceholder(singleHand(`${id}-step`, type, from, to, 1)),
+    ] as unknown as PictographData[],
+  };
+};
+const MOTION_DEMOS = [
+  motionDemo("hm-shift-cw", MotionType.PRO, W, N, "Shift"),
+  motionDemo("hm-shift-ccw", MotionType.PRO, W, SO_, "Shift"),
+  motionDemo("hm-dash", MotionType.DASH, W, E, "Dash"),
 ];
 
 /** HAND props, TKA letter glyph off - matching HandMotionsPage's PICTO_FLAGS (showTKA={false}). */
@@ -50,12 +78,28 @@ export const handMotionsContent: GuideBlock[] = [
       "The arrow shows the direction of motion.<br>" +
       "The hand shows the end position.",
   },
-  ...DEMOS.map((d) => ({
+  {
     kind: "pictograph" as const,
-    data: d.data as unknown as PictographData,
+    data: DEMOS[0]!.data as unknown as PictographData,
+    render: RENDER,
+    caption: DEMOS[0]!.caption,
+  },
+  ...MOTION_DEMOS.map((d) => ({
+    kind: "pictographGroup" as const,
+    items: d.items,
+    flowCols: 2,
+    layout: "strip" as const,
+    stepLabels: ["Start", "1"],
+    card: true,
     render: RENDER,
     caption: d.caption,
   })),
+  {
+    kind: "pictograph" as const,
+    data: DEMOS[1]!.data as unknown as PictographData,
+    render: RENDER,
+    caption: DEMOS[1]!.caption,
+  },
   { kind: "prose", html: "Move to an<br>adjacent point" },
   { kind: "prose", html: "Move to the<br>opposite point" },
   { kind: "prose", html: "Stay at the<br>current point" },

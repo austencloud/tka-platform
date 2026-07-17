@@ -134,6 +134,7 @@ export const hmType2Content: GuideBlock[] = [
     flowCols: 5,
     layout: "strip",
     stepLabels: ["Start", "1", "2", "3", "4"],
+    card: true,
     render: RENDER,
     caption: SEQ_WORDS[0],
   },
@@ -144,9 +145,9 @@ export const hmType2Content: GuideBlock[] = [
       "They alternate the shifting hand.<br>" +
       "Here, they are shifting in the same direction:",
   },
-  { kind: "pictographGroup", items: stripSteps(STRIPS[1]!), flowCols: 5, render: RENDER, caption: SEQ_WORDS[1] },
+  { kind: "pictographGroup", items: stripSteps(STRIPS[1]!), flowCols: 5, card: true, render: RENDER, caption: SEQ_WORDS[1] },
   { kind: "prose", html: "And here, they are shifting in opposite directions." },
-  { kind: "pictographGroup", items: stripSteps(STRIPS[2]!), flowCols: 5, render: RENDER, caption: SEQ_WORDS[2] },
+  { kind: "pictographGroup", items: stripSteps(STRIPS[2]!), flowCols: 5, card: true, render: RENDER, caption: SEQ_WORDS[2] },
   {
     kind: "prose",
     html:
