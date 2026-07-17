@@ -85,15 +85,45 @@
     frames,
     picTheme = "light",
     caption,
+    activeT = null,
   }: {
     frames: TurnStripFrame[];
     picTheme?: "light" | "dark";
     caption?: string;
+    /**
+     * The showcase's live playhead ratio (0..1 across the whole sequence).
+     * null (default) = no highlight, so every existing caller (ch20/ch21
+     * sections that don't forward it through their `strip` snippet) renders
+     * byte-identical. Bands per spec decision 4: start [0,.15), halfway
+     * [.4,.6], end (.85,1]; the "combined" full-motion frame lights in the
+     * gaps between named checkpoints (i.e. while actually mid-motion).
+     */
+    activeT?: number | null;
   } = $props();
 
   const selection = getSequenceSelection();
   const activeStep = getGuideActiveStep();
   const emitSequence = getGuideSequenceClick();
+
+  type ActiveBand = "start" | "mid" | "end" | "combined" | null;
+  const activeBand = $derived.by((): ActiveBand => {
+    const t = activeT;
+    if (t === null || t === undefined) return null;
+    if (t >= 0 && t < 0.15) return "start";
+    if (t > 0.85 && t <= 1) return "end";
+    if (t >= 0.4 && t <= 0.6) return "mid";
+    return "combined";
+  });
+
+  function isFrameActive(frame: TurnStripFrame): boolean {
+    if (frame.kind === "combined" && activeStep?.key === frame.animKey) return true;
+    const band = activeBand;
+    if (band === null) return false;
+    if (band === "start") return frame.kind === "start";
+    if (band === "end") return frame.kind === "end";
+    if (band === "mid") return frame.kind === "half" || frame.kind === "pose" || frame.kind === "dual-pose";
+    return frame.kind === "combined";
+  }
 
   // ── Pose-frame accessibility text ───────────────────────────────────────
   // "pose" and the null-fallback "half" frames aren't real StepData, so they
@@ -141,7 +171,7 @@
   {#each frames as frame, i (i)}
     <div class="turn-frame">
       <span class="frame-cap top">{frame.frameLabel ?? ""}</span>
-      <div class="frame-box">
+      <div class="frame-box" class:guide-step-active={isFrameActive(frame)}>
         {#if frame.kind === "pose"}
           <div class="pose-box" role="img" aria-label={poseAriaLabel(frame.motion, frame.t)}>
             <PoseFrame motion={frame.motion} t={frame.t} arrow={{ tStart: frame.arrowStart, tEnd: frame.t }} />
@@ -163,7 +193,6 @@
             class="tka-seq-cell combined-cell"
             class:is-hovered={selection?.isHovered(frame.animKey)}
             class:is-selected={selection?.isSelected(frame.animKey)}
-            class:guide-step-active={activeStep?.key === frame.animKey}
           >
             <GuidePictograph data={frame.step} size="md" eager forceTheme={picTheme} propType={PropType.STAFF} />
             <SelectionHit

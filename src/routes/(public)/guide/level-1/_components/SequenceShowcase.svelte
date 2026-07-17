@@ -76,7 +76,7 @@
      * exists to refresh GuideStepStrip's own items - a fixed strip snippet has
      * no per-entry variant to cycle to) - if both are passed, `pool` is ignored.
      */
-    strip?: Snippet;
+    strip?: Snippet<[number]>;
   } = $props();
 
   const propType = $derived(render?.propType ?? PropType.HAND);
@@ -114,7 +114,40 @@
   let near = $state(false);
   let inView = $state(false);
 
+  // ── Loop etiquette (spec decision 3) ────────────────────────────────────
+  // Play ONCE, the first time the canvas actually scrolls into view (not just
+  // "near" — near only gates lazy-mount) — never on later re-scrolls, and
+  // never at all under prefers-reduced-motion (static start pose + play badge
+  // instead). `hasEnteredView` is sticky: it flips true once and stays there.
+  let reducedMotion = $state(false);
+  let hasEnteredView = $state(false);
+  $effect(() => {
+    if (inView && !hasEnteredView) hasEnteredView = true;
+  });
+  const shouldAutoPlay = $derived(!reducedMotion && hasEnteredView);
+
+  // ── Playhead sync (spec decision 4 / ledger B1) ─────────────────────────
+  // The live 1-based fractional beat from InlineAnimationPlayer.onStepChange,
+  // converted to a 0..1 ratio across the whole sequence (same zero-based/
+  // modulo-free shape as SequenceProgressBar's own `progress` derivation,
+  // minus the loop-wrap modulo — single-play showcases never wrap) and to an
+  // integer "beat N" (0 = start) for GuideStepStrip's per-cell highlight.
+  let liveStep = $state(0);
+  function handleStepChange(step: number) {
+    liveStep = step;
+  }
+  const totalBeats = $derived(curSequence?.steps?.length ?? 0);
+  const activeT = $derived.by(() => {
+    if (totalBeats <= 0) return 0;
+    const zeroBased = liveStep < 1 ? 0 : liveStep - 1;
+    return Math.max(0, Math.min(1, zeroBased / totalBeats));
+  });
+  const activeBeat = $derived(liveStep < 1 ? 0 : Math.floor(liveStep));
+
   onMount(() => {
+    if (typeof window !== "undefined" && "matchMedia" in window) {
+      reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    }
     const el = rootEl;
     if (!el) return;
     if (typeof IntersectionObserver === "undefined") {
@@ -155,10 +188,14 @@
       sequence={curSequence}
       chrome="minimal"
       fill={true}
-      autoPlay={true}
+      autoPlay={shouldAutoPlay}
       externalBpm={bpm}
       bluePropType={propType}
       redPropType={propType}
+      scrubbable
+      singlePlay
+      beatIndicators={false}
+      onStepChange={handleStepChange}
     />
   {/if}
 {/snippet}
@@ -205,11 +242,11 @@
       </div>
       <div class="compact-right">
         {#if strip}
-          {@render strip()}
+          {@render strip(activeT)}
         {:else}
           <!-- The label rides in the strip's start ROW - beside the start box,
                filling the band the tab layout leaves free. -->
-          <GuideStepStrip {items} {stepLabels} {render} {picTheme} startAside={text} />
+          <GuideStepStrip {items} {stepLabels} {render} {picTheme} startAside={text} {activeBeat} />
         {/if}
       </div>
     </div>
@@ -225,16 +262,16 @@
     </div>
 
     {#if strip}
-      {@render strip()}
+      {@render strip(activeT)}
     {:else if hasPool}
       <!-- Every pool entry has the same step count → the same strip height, so a
            keyed Crossfade swaps cleanly with zero layout shift (crossfade rule:
            cheap identical-height content, not the heavy no-remount path). -->
       <Crossfade key={exampleIndex} duration={DURATION.normal}>
-        <GuideStepStrip items={curItems} {stepLabels} {render} {picTheme} />
+        <GuideStepStrip items={curItems} {stepLabels} {render} {picTheme} {activeBeat} />
       </Crossfade>
     {:else}
-      <GuideStepStrip {items} {stepLabels} {render} {picTheme} />
+      <GuideStepStrip {items} {stepLabels} {render} {picTheme} {activeBeat} />
     {/if}
   {/if}
 

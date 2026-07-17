@@ -134,29 +134,29 @@
 
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={sHighSequence} items={[]} bpm={60}>
-      {#snippet strip()}
-        <TurnStrip frames={sHighFrames} caption="S-High-One: turn on the leading hand, start, halfway, end, full motion" />
+      {#snippet strip(t)}
+        <TurnStrip frames={sHighFrames} activeT={t} caption="S-High-One: turn on the leading hand, start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={sLowSequence} items={[]} bpm={60}>
-      {#snippet strip()}
-        <TurnStrip frames={sLowFrames} caption="S-Low-One: turn on the following hand, start, halfway, end, full motion" />
+      {#snippet strip(t)}
+        <TurnStrip frames={sLowFrames} activeT={t} caption="S-Low-One: turn on the following hand, start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={tHighSequence} items={[]} bpm={60}>
-      {#snippet strip()}
-        <TurnStrip frames={tHighFrames} caption="T-High-One: turn on the leading hand, start, halfway, end, full motion" />
+      {#snippet strip(t)}
+        <TurnStrip frames={tHighFrames} activeT={t} caption="T-High-One: turn on the leading hand, start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={tLowSequence} items={[]} bpm={60}>
-      {#snippet strip()}
-        <TurnStrip frames={tLowFrames} caption="T-Low-One: turn on the following hand, start, halfway, end, full motion" />
+      {#snippet strip(t)}
+        <TurnStrip frames={tLowFrames} activeT={t} caption="T-Low-One: turn on the following hand, start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>

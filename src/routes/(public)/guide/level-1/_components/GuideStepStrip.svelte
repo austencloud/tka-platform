@@ -34,6 +34,7 @@
     render,
     picTheme = "light",
     startAside,
+    activeBeat = null,
   }: {
     items: PictographData[];
     /** Per-cell labels ("Start", "1", …), parallel to `items`. Omitted → unlabeled. */
@@ -50,6 +51,14 @@
      * - so the text always has that band to live in.
      */
     startAside?: Snippet;
+    /**
+     * The beat currently playing (0 = start box, 1..N = steps), from the
+     * showcase's live scrub/playback position. Rings that cell with the
+     * existing `.guide-step-active` style (guide.css - the same ring the
+     * companion's click-to-animate uses). null (default) = no highlight, so
+     * every existing caller (FlowFrame) renders byte-identical.
+     */
+    activeBeat?: number | null;
   } = $props();
 
   const r = $derived({
@@ -130,9 +139,9 @@
   const cellWidth = $derived(layout.cellW ? `${layout.cellW}px` : undefined);
 </script>
 
-{#snippet stepCell(pos: PictographData, label: string | undefined)}
+{#snippet stepCell(pos: PictographData, label: string | undefined, beatNumber: number | null = null)}
   <div class="strip-cell" style:width={cellWidth}>
-    <div class="pic-card">
+    <div class="pic-card" class:guide-step-active={activeBeat != null && beatNumber === activeBeat}>
       <GuidePictograph
         data={pos}
         size="sm"
@@ -161,21 +170,21 @@
     {#if startAside}<div class="start-aside bare">{@render startAside()}</div>{/if}
     <div class="strip scroll">
       {#each items as pos, n (pos.id ?? n)}
-        {@render stepCell(pos, stepLabels?.[n])}
+        {@render stepCell(pos, stepLabels?.[n], startBox ? n : n + 1)}
       {/each}
     </div>
   {:else}
     <div class="unit" class:start-column={layout.mode === "column"} class:start-tab={layout.mode === "row"}>
       {#if startBox && layout.mode === "column"}
         <div class="start-slot">
-          {@render stepCell(startBox, stepLabels?.[0])}
+          {@render stepCell(startBox, stepLabels?.[0], 0)}
         </div>
       {:else if startBox}
         <!-- The tab: start box fused onto the grid's top-left, the label
              filling the band beside it. -->
         <div class="start-row">
           <div class="start-slot">
-            {@render stepCell(startBox, stepLabels?.[0])}
+            {@render stepCell(startBox, stepLabels?.[0], 0)}
           </div>
           {#if startAside}<div class="start-aside">{@render startAside()}</div>{/if}
         </div>
@@ -186,7 +195,7 @@
         {#each layout.rows as row, ri (ri)}
           <div class="strip">
             {#each row as pos, ci (pos.id ?? ri * layout.cols + ci)}
-              {@render stepCell(pos, stepLabels?.[labelOffset + ri * layout.cols + ci])}
+              {@render stepCell(pos, stepLabels?.[labelOffset + ri * layout.cols + ci], ri * layout.cols + ci + 1)}
             {/each}
           </div>
         {/each}

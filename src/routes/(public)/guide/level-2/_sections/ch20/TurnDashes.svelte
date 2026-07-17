@@ -129,8 +129,8 @@
 
   <div class="showcase-wrap">
     <SequenceShowcase variant="compact" render={{ propType: PropType.STAFF }} sequence={dashSequence} items={[]} bpm={60}>
-      {#snippet strip()}
-        <TurnStrip frames={dashFrames} caption="Dash with a turn, south to north: start, halfway, end, full motion" />
+      {#snippet strip(t)}
+        <TurnStrip frames={dashFrames} activeT={t} caption="Dash with a turn, south to north: start, halfway, end, full motion" />
       {/snippet}
     </SequenceShowcase>
   </div>
