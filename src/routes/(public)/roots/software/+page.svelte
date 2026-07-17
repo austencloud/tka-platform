@@ -431,10 +431,14 @@
     text-align: center;
   }
 
-  @media (max-width: 480px) {
+  /* Below the width where all four LAB shots fit on one row, go straight to
+     2-up: the auto-fit middle ground wraps as a 3+1 orphan row. */
+  @media (max-width: 640px) {
     .shot-strip.phones {
       grid-template-columns: repeat(2, 1fr);
     }
+  }
+  @media (max-width: 480px) {
     .shot-strip.mixed {
       grid-template-columns: 1fr;
     }
