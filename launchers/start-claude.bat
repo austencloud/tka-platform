@@ -4,7 +4,7 @@ set "REPO_ROOT=%~dp0.."
 set "SHORTCUT_DIR=%USERPROFILE%\launchers"
 set "SHORTCUT=%SHORTCUT_DIR%\TKA Platform.lnk"
 set "BAT_FILE=%~f0"
-set "ICON=E:\launchers\icons\tka-platform.ico"
+set "ICON=%REPO_ROOT%\scripts\launchers\icons\tka-platform.ico"
 
 if not exist "%SHORTCUT%" (
     if not exist "%SHORTCUT_DIR%" mkdir "%SHORTCUT_DIR%"
