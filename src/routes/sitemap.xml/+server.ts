@@ -23,6 +23,7 @@ const pages = [
   { url: "glossary", priority: "0.8", changefreq: "monthly" },
   { url: "learn/staff-spinning-choreography", priority: "0.8", changefreq: "monthly" },
   { url: "roots", priority: "0.8", changefreq: "monthly" },
+  { url: "roots/software", priority: "0.7", changefreq: "monthly" },
   // Marketing
   { url: "about", priority: "0.6", changefreq: "monthly" },
   // /support is noindex (see support/+page.svelte) — omitted to avoid a

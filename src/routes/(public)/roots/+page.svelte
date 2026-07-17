@@ -182,6 +182,19 @@
       </div>
     </section>
 
+    <!-- Software lineage -->
+    <section class="editorial-section" style="--accent: #06b6d4">
+      <h2 class="section-title">The Software Lineage</h2>
+      <div class="prose">
+        <p>
+          TKA is also not the first software built for flow artists. The
+          <a href="/roots/software">history of flow arts software</a> covers the
+          reference apps and simulators that came before Flow Arts Composer, who built
+          them, and where they are now.
+        </p>
+      </div>
+    </section>
+
     <!-- CTA -->
     <div class="cta-card">
       <h3>See what the roots grew into</h3>
