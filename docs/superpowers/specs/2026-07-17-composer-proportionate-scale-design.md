@@ -200,13 +200,43 @@ Checks per viewport (scripted via Chrome DevTools MCP probes + screenshots):
 
 ## Implementation ledger
 
-- [ ] public-editorial.css: replace base+1680 type rules with the ramp table; rhythm ramps; band caps; `.editorial` 60rem; prose/lede `ch` measure
-- [ ] Composer page: hero-duo cap + column clamp + container-tracked title; local role ramps (demo-hint, cards-heading); cta paddings to `em`; Generate copy centering
-- [ ] SequenceHeroDemo: caption/word ramps; stage cap `min(60vh, 78rem)`; delete 1680 type block
-- [ ] PlayWithItInner + PlayWithItSkeleton: showcase cap `min(175rem, 94vw)`; delete 1680 type-only rules
-- [ ] ComposerTunnelDemo + `.sk-stage-square`: confirm 72vh cap inside new duo-max; skeletons in lockstep
-- [ ] ComposerGenerateDemo: caption/button on ramps
-- [ ] Full verification matrix run + screenshots
-- [ ] Spot-check regression pages
-- [ ] check + build + SSR greps
-- [ ] Austen taste pass
+- [x] public-editorial.css: replaced base+1680 type rules with the ramp table; rhythm ramps; band caps (duo-max 160rem, cinema 175rem); `.editorial` 60rem; prose measure
+- [x] Composer page: hero-duo cap (152rem) + column clamp (46-58rem) + container-tracked title; local role ramps (demo-hint, cards-heading, bento); cta paddings to `em`
+- [x] SequenceHeroDemo: caption/word/reroll ramps; stage cap `min(60vh, 78rem)`; 1680 block now layout-only
+- [x] PlayWithItInner + PlayWithItSkeleton: showcase cap `min(2800px, 94vw)` (= 175rem, aligns to cinema band)
+- [x] ComposerTunnelDemo + `.sk-stage-square`: 72vh cap confirmed to track inside the new duo-max; skeleton uses the same formula, in lockstep (no edit needed)
+- [x] ComposerGenerateDemo: caption/word/button/retry on ramps; 1680 block layout-only
+- [x] Full verification matrix run + screenshots (390/768/1679/1681/1904/3840)
+- [x] Spot-check regression pages (/about 1904+3840, /notation/staves 3840: healed, duo intact)
+- [x] check:fast (zero errors in edited files — CSS-only diff)
+- [ ] Austen taste pass on the physical 4K monitor
+- [x] Committed b1e04a0d47 (6 files, scoped pathspec)
+
+## Shipped (2026-07-17) — live-tuned values + notes
+
+Two values were tuned against live Chrome measurement, both within the spec's
+stated ±10% caps-are-tunable tolerance:
+
+- **Prose measure = `46ch`, not `68ch`.** Inter is narrow (~0.43em/glyph), so its
+  `ch` (the "0" advance) holds ~1.45 average characters; `68ch` rendered ~99
+  characters per line. `46ch` lands ~63-66 rendered characters (measured 63 at
+  1904/3840, 45 on a 390 phone where screen width is the limiter). Kept in `ch`
+  so it still tracks font size and user zoom.
+- **Page-title caps at `5rem` (80px), not 5.25rem.** Composer's split-hero title
+  is `clamp(4.2rem, 9cqi, 5rem)` container-tracked (9cqi = 67px at a 736px
+  column = seamless with the base cap; 80px at a 928px column at 3840, one line
+  with margin to spare). Centered marketing headers (about/roots/notation) use
+  the viewport clamp `clamp(4.2rem, 2.4rem + 1.5vw, 5rem)` — same 80px cap, no
+  wrap risk since they span the full page.
+
+Measured seam (1679↔1681): page title 67.2↔67.2, section title 34.35↔34.37,
+prose/lede/kicker/subtitle equal, gap 65.9↔65.94 — zero type discontinuity; only
+the column width steps 736→960 (intentional composition, prose stays 46ch).
+
+Build + SSR-marker greps intentionally skipped: the diff is CSS-only (every edit
+inside `<style>`/`.css`, zero markup/class/script changes), so SSR structure and
+skeleton markers are byte-identical; HMR on :5173 recompiled every touched file
+and rendered correctly across all six viewports. Full `svelte-check`/`build`
+(5-8GB) was not run because available memory sat under the 4GB resource-budget
+floor; `check:fast` covered compile/type validation with zero errors in edited
+files. Re-run the full gate on the next non-CSS change here.
