@@ -105,10 +105,10 @@
   </section>
 
   <section class="editorial-section" style="--accent: #14b8a6">
-    <h2 class="section-title">How I Show People</h2>
+    <h2 class="section-title">The Thirty-Second Demo</h2>
     <div class="prose">
       <p>
-        When someone asks me what TKA is at a jam, I usually just open my phone. Look: you
+        The fastest explanation of TKA happens at a jam, on a phone. Look: you
         can construct a sequence by going boop, boop, boop, and there's your sequence. Play
         it back, and it's animated. Add effects and props. Then it gets cooler: you can
         generate sequences. Put in your name, generate your name as a sequence, play it
@@ -124,8 +124,8 @@
     <div class="prose">
       <p>
         This was built on a foundation of what Vulcan Tech Gospel did before it. VTG holds
-        the basis for this. TKA is the child of VTG in a way, and we pay respects to it by
-        taking it further, not by claiming what we're doing is in a completely different
+        the basis for this. TKA is the child of VTG in a way, and it pays respects by
+        taking the framework further, not by claiming to be in a completely different
         ballpark. What TKA does has unique properties VTG cannot and would not ever cover.
         The full lineage, with sources, lives on the <a href="/roots">roots page</a>.
       </p>

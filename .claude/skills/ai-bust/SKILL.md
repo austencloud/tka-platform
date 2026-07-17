@@ -71,6 +71,19 @@ Flag any paragraph starting with:
 - "painting a picture"
 - "crafting your..."
 
+### Category 6.5: Unsigned First Person
+
+Added 2026-07-17 (Austen): *"We should stick with facts. Avoid using anything
+with I as a pronoun — the user shouldn't have to ask who is writing this."*
+
+Flag `I / I'd / I've / my / me / we / our / us` in site copy that carries no
+byline or signature. The reader can't tell who "I" is, so the voice reads as
+an anonymous narrator (another generation tell). Fix: restate as fact
+("I trained double staves" → "The Kinetic Alphabet was developed on double
+staves"; "how we teach staves" → "how staves are taught"). First person is
+fine only in signed content (about page, quoted testimony, bylined posts).
+Severity: **HIGH**.
+
 ### Category 7: Structural / Template Tells (page- and site-level)
 
 Added 2026-07-17 after Austen caught the per-prop notation pages reading as

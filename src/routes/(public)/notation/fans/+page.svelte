@@ -83,24 +83,24 @@
         assumption. A fold doesn't travel through the grid's two-dimensional space at
         all: it leaves the plane, passes through 3D space, and lands back where it
         started with your hand orientation switched from front to back. Hand orientation
-        isn't a concept in The Kinetic Alphabet yet. I have ideas about mapping the full
-        hand orientation matrix into pictographs. They haven't been incorporated, and
-        folds are so fundamental to fans that this page has to say so plainly: until that
-        piece lands, the notation captures less of fan spinning than fan spinners
-        deserve.
+        isn't a concept in The Kinetic Alphabet yet. Mapping the full hand orientation
+        matrix into pictographs is on the drawing board, not in the system, and folds are
+        so fundamental to fans that this page has to say so plainly: until that piece
+        lands, the notation captures less of fan spinning than fan spinners deserve.
       </p>
     </div>
   </section>
 
   <OpenChapter prop="Fans">
     <p>
-      I trained double staves. Fan grips are a language I only half speak, and half
-      fluency isn't enough to write a chapter people will train from.
+      The Kinetic Alphabet was developed on double staves. Fan grips are their own
+      language, and secondhand fluency isn't enough to write a chapter people will
+      train from.
     </p>
     <p>
       The translation rule, the letters, and the timing are proven, and the composer
       renders fans today. The grip vocabulary, the folds, and the body mechanics that
-      belong to fans alone are open territory. If that territory is yours, write me.
+      belong to fans alone are open territory. If that territory is yours, claim it.
     </p>
   </OpenChapter>
 

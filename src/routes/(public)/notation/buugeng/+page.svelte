@@ -64,9 +64,9 @@
             Two things are worth saying anyway. Buugeng are large, and sometimes strange
             and unwieldy, because they curve around. And finger spinning with buugeng is
             well established. A lot of Kinetic Alphabet patterns might be hard to finger
-            spin. Definitely not impossible. It's not my forte, so I'll just say it: feel
-            free to finger spin to your heart's desire. The strict thumb-orientation
-            discipline belongs to how we teach staves, and once you can read the turn
+            spin. Definitely not impossible. So, plainly: finger spin to your heart's
+            desire. The strict thumb-orientation
+            discipline belongs to how staves are taught, and once you can read the turn
             value off any pictograph it stops mattering even there.
           </p>
         </div>
@@ -86,8 +86,8 @@
     <p>
       What this page doesn't cover is the part buugeng artists care most about: the grip
       vocabulary, the finger spinning technique, the way the curves change body
-      mechanics. I trained double staves, and that chapter needs someone who trained
-      these.
+      mechanics. The notation was worked out on double staves, and that chapter needs
+      someone who trained buugeng.
     </p>
     <p>If buugeng are your language, come write it.</p>
   </OpenChapter>

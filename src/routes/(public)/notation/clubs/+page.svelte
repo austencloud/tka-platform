@@ -112,8 +112,8 @@
 
   <OpenChapter prop="Clubs">
     <p>
-      The geometry above is solid ground. Club grip technique is not, because I trained
-      double staves, and clubs ask for finger spinning and grip changes the staff
+      The geometry above is solid ground. Club grip technique is not: the alphabet grew
+      up on double staves, and clubs ask for finger spinning and grip changes the staff
       pedagogy deliberately avoids.
     </p>
     <p>
