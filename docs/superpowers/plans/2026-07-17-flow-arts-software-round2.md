@@ -23,7 +23,7 @@
 - Rewrite: `src/routes/(public)/roots/software/+page.svelte` (complete replacement below)
 - Add (already on disk, just commit): `static/roots/software/*.webp` (10 files)
 
-- [ ] **Step 6.1:** Replace the ENTIRE contents of `src/routes/(public)/roots/software/+page.svelte` with:
+- [x] **Step 6.1:** Replace the ENTIRE contents of `src/routes/(public)/roots/software/+page.svelte` with:
 
 ```svelte
 <script lang="ts">
@@ -476,7 +476,7 @@
 </style>
 ```
 
-- [ ] **Step 6.2: Commit** (assets + page):
+- [x] **Step 6.2: Commit** (assets + page):
 
 ```bash
 git add static/roots/software "src/routes/(public)/roots/software/+page.svelte"
@@ -493,7 +493,7 @@ NOTE: this commit will fail to build until Task 7 creates `SoftwareSubmitForm.sv
 - Create: `src/lib/shared/landing/services/software-submissions.ts`
 - Create: `src/lib/shared/landing/components/SoftwareSubmitForm.svelte`
 
-- [ ] **Step 7.1:** Create `src/lib/shared/landing/services/software-submissions.ts`:
+- [x] **Step 7.1:** Create `src/lib/shared/landing/services/software-submissions.ts`:
 
 ```ts
 // Public "submit your flow arts software" capture for /roots/software. A
@@ -521,7 +521,7 @@ export async function submitSoftware(
 }
 ```
 
-- [ ] **Step 7.2:** Create `src/lib/shared/landing/components/SoftwareSubmitForm.svelte`:
+- [x] **Step 7.2:** Create `src/lib/shared/landing/components/SoftwareSubmitForm.svelte`:
 
 ```svelte
 <!--
@@ -747,7 +747,7 @@ export async function submitSoftware(
 </style>
 ```
 
-- [ ] **Step 7.3: Commit** (BEFORE Task 6's commit, see ordering note):
+- [x] **Step 7.3: Commit** (BEFORE Task 6's commit, see ordering note):
 
 ```bash
 git add src/lib/shared/landing/services/software-submissions.ts src/lib/shared/landing/components/SoftwareSubmitForm.svelte
@@ -766,7 +766,7 @@ git commit -m "feat(landing): public software-submission form + service (waitlis
 - Modify: `firebase-functions/src/push/onNewNotification.ts` (`PULSE_TITLES`, line ~80)
 - Modify: `firebase-functions/src/index.ts` (export the new trigger next to `pulseCollectionCreated`, line ~22)
 
-- [ ] **Step 8.1:** In `firestore.rules`, insert AFTER the closing brace of the `shop_waitlist` match block:
+- [x] **Step 8.1:** In `firestore.rules`, insert AFTER the closing brace of the `shop_waitlist` match block:
 
 ```
     // Public "submit your flow arts software" capture (/roots/software).
@@ -785,7 +785,7 @@ git commit -m "feat(landing): public software-submission form + service (waitlis
     }
 ```
 
-- [ ] **Step 8.2:** Append to `firebase-functions/src/pulse/pulseTriggers.ts` after `pulseCollectionCreated`:
+- [x] **Step 8.2:** Append to `firebase-functions/src/pulse/pulseTriggers.ts` after `pulseCollectionCreated`:
 
 ```ts
 /** A visitor submitted a tool for the /roots/software lineage list. */
@@ -811,29 +811,29 @@ export const pulseSoftwareSubmission = onDocumentCreated(
 );
 ```
 
-- [ ] **Step 8.3:** In `notifyAdmins.ts` add to `PULSE_PREF_KEYS`:
+- [x] **Step 8.3:** In `notifyAdmins.ts` add to `PULSE_PREF_KEYS`:
 
 ```ts
   "admin-software-submission": "adminSoftwareSubmission",
 ```
 
-- [ ] **Step 8.4:** In `pushDispatcher.ts` add to `PREF_KEY_MAP` (same key style as the other admin-* entries there):
+- [x] **Step 8.4:** In `pushDispatcher.ts` add to `PREF_KEY_MAP` (same key style as the other admin-* entries there):
 
 ```ts
   "admin-software-submission": "adminSoftwareSubmission",
 ```
 
-- [ ] **Step 8.5:** In `onNewNotification.ts` add to `PULSE_TITLES`:
+- [x] **Step 8.5:** In `onNewNotification.ts` add to `PULSE_TITLES`:
 
 ```ts
   "admin-software-submission": "Software submission",
 ```
 
-- [ ] **Step 8.6:** In `firebase-functions/src/index.ts`, add `pulseSoftwareSubmission,` to the import/export list next to `pulseCollectionCreated`.
+- [x] **Step 8.6:** In `firebase-functions/src/index.ts`, add `pulseSoftwareSubmission,` to the import/export list next to `pulseCollectionCreated`.
 
-- [ ] **Step 8.7:** Typecheck the functions package: run `npx tsc --noEmit -p firebase-functions/tsconfig.json` from the worktree root (or `npm run build` inside `firebase-functions/` if that script exists — check its package.json). Report the output.
+- [x] **Step 8.7:** Typecheck the functions package: run `npx tsc --noEmit -p firebase-functions/tsconfig.json` from the worktree root (or `npm run build` inside `firebase-functions/` if that script exists — check its package.json). Report the output.
 
-- [ ] **Step 8.8: Commit:**
+- [x] **Step 8.8: Commit:**
 
 ```bash
 git commit -m "feat(pulse): software_submissions collection rule + admin ping trigger" -- firestore.rules firebase-functions/src/pulse/pulseTriggers.ts firebase-functions/src/pulse/notifyAdmins.ts firebase-functions/src/push/pushDispatcher.ts firebase-functions/src/push/onNewNotification.ts firebase-functions/src/index.ts
@@ -843,7 +843,7 @@ git commit -m "feat(pulse): software_submissions collection rule + admin ping tr
 
 ### Task 9: Spec addendum
 
-- [ ] **Step 9.1:** Append to `docs/superpowers/specs/2026-07-16-flow-arts-software-seo-design.md`:
+- [x] **Step 9.1:** Append to `docs/superpowers/specs/2026-07-16-flow-arts-software-seo-design.md`:
 
 ```markdown
 
@@ -868,7 +868,7 @@ git commit -m "feat(pulse): software_submissions collection rule + admin ping tr
   firebase-functions must be deployed before submissions persist and ping.
 ```
 
-- [ ] **Step 9.2: Commit:**
+- [x] **Step 9.2: Commit:**
 
 ```bash
 git commit -m "docs(spec): round 2 addendum (screenshots, roster changes, submission form)" -- docs/superpowers/specs/2026-07-16-flow-arts-software-seo-design.md

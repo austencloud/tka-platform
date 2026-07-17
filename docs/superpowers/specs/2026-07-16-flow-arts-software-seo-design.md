@@ -155,3 +155,23 @@ length. `/roots` gets a short cross-link section pointing here.
 - [x] seo-winning-strategy.md software cluster section
 - [x] seo-a-plus-plan.md ledger entries
 - [x] Verification pass (check, em-dash grep, phrase-placement grep)
+
+## Round 2 (2026-07-17, Austen's review)
+
+- Screenshots added: app promo images pulled from each tool's own Google Play
+  listing (clean app UI, credited and linked in captions/chips), plus browser
+  captures of the web tools. Assets in `static/roots/software/`. Galleries are
+  fixed-aspect (no layout shift), 2-up phones on iPhone SE, crisp at 4K.
+- Taylor Flows REMOVED: Austen judged it not part of the historical software
+  lineage (recent platform-built tutorial app, no notation/simulation lineage).
+- Flow Arts Meet Up elevated: Ty Roachford's community app got real traction;
+  now a named entry in Today with its screenshot.
+- New "Paper Tools" section: Lorq Nichols' Spin Science systems (Shape Matrix,
+  324 Patterns, 144 Atomic Hybrids, 9 Flower Families, Book of P.H.A.T.).
+  Not software, and the page says so; they earn their place as the printed
+  generation of pattern tools.
+- "Add to This List" section: public no-auth submission form
+  (SoftwareSubmitForm -> software_submissions collection, cloned from the
+  shop_waitlist pattern) + pulseSoftwareSubmission trigger pinging Austen via
+  the existing notifyAdmins/FCM path. NEEDS DEPLOY: firestore.rules and
+  firebase-functions must be deployed before submissions persist and ping.
