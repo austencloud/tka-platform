@@ -284,7 +284,6 @@
         class="assembly-stage"
         data-step={activeStep}
         aria-label={activeDefinition.stageLabel}
-        onpointerdown={engage}
       >
         <div
           class="stage-layer pictograph-layer"
@@ -560,7 +559,7 @@
     content: "";
   }
 
-  .step-control {
+  .how-tka-works :global(.step-control) {
     position: relative;
     display: grid;
     grid-template-columns: 48px minmax(0, 1fr);
@@ -577,21 +576,21 @@
     text-align: left;
   }
 
-  .step-control:first-of-type {
+  .how-tka-works :global(.step-control:first-of-type) {
     border-top: 1px solid var(--assembly-line);
   }
 
-  .step-control:hover {
+  .how-tka-works :global(.step-control:hover) {
     color: #fff;
   }
 
-  .step-control:focus-visible {
+  .how-tka-works :global(.step-control:focus-visible) {
     outline: 2px solid #fff;
     outline-offset: 5px;
     border-radius: 4px;
   }
 
-  .step-control[data-state="on"] {
+  .how-tka-works :global(.step-control[data-state="on"]) {
     border-color: var(--assembly-line-strong);
     color: #fff;
     font-weight: 650;
@@ -623,11 +622,11 @@
     transform: translateX(-50%);
   }
 
-  .step-control[data-state="on"] .step-number {
+  .how-tka-works :global(.step-control[data-state="on"] .step-number) {
     color: #fff;
   }
 
-  .step-control[data-state="on"] .step-number::before {
+  .how-tka-works :global(.step-control[data-state="on"] .step-number::before) {
     width: 13px;
     height: 13px;
     border-color: var(--assembly-blue);
@@ -746,7 +745,7 @@
       min-height: 470px;
     }
 
-    .step-control {
+    .how-tka-works :global(.step-control) {
       min-height: 62px;
     }
   }
@@ -805,7 +804,7 @@
       display: none;
     }
 
-    .step-control {
+    .how-tka-works :global(.step-control) {
       grid-template-columns: 36px minmax(0, 1fr);
       min-height: 64px;
       padding: 7px 8px;
@@ -814,7 +813,7 @@
       border-bottom: 1px solid var(--assembly-line);
     }
 
-    .step-control:first-of-type {
+    .how-tka-works :global(.step-control:first-of-type) {
       border-top: 0;
     }
 
@@ -889,7 +888,7 @@
       height: min(90%, 700px);
     }
 
-    .step-control {
+    .how-tka-works :global(.step-control) {
       min-height: 82px;
     }
 
