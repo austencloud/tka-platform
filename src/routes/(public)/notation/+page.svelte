@@ -364,28 +364,22 @@
     </div>
 
     <figure class="matrix-figure">
-      <div
-        class="shape-matrix-graphic"
-        role="img"
-        aria-label="A twelve by twelve grid with left-hand driving styles across the columns and right-hand driving styles down the rows. The diagonal, where both hands use the same style, is highlighted."
-      >
-        <span class="matrix-axis matrix-axis-x"
-          >Left-hand driving styles (12)</span
-        >
-        <span class="matrix-axis matrix-axis-y"
-          >Right-hand driving styles (12)</span
-        >
-        <div class="shape-matrix" aria-hidden="true">
-          {#each Array.from({ length: 144 }) as _, i (i)}
-            <span class="mx-cell" class:diag={i % 12 === Math.floor(i / 12)}
-            ></span>
-          {/each}
-        </div>
-      </div>
+      <img
+        class="matrix-img"
+        src="/notation/lorq-144-shape-matrix.webp"
+        width="1400"
+        height="1812"
+        alt="Lorq Nichols' 144 Shape Matrix: a twelve by twelve grid of even-petaled flower shapes. Columns are twelve right-hand driving styles, rows are twelve left-hand styles, grouped by 1:1, 1:3, and 1:5 hand-to-prop ratios."
+        loading="lazy"
+      />
       <figcaption>
-        The 144 Shape Matrix: twelve left-hand styles across, twelve right-hand
-        styles down, so 144 pairings. The diagonal is matched styles (basic
-        shapes); every off-diagonal cell is a hybrid.
+        The real 144 Shape Matrix: twelve right-hand driving styles across,
+        twelve left-hand styles down, grouped by 1:1, 1:3, and 1:5 hand-to-prop
+        ratios. The diagonal, both hands on the same style, holds the basic
+        shapes; every other cell is a hybrid. Diagram by
+        <a href="https://sirlorq.com" target="_blank" rel="noopener noreferrer"
+          >Lorq Nichols</a
+        >.
       </figcaption>
     </figure>
 
@@ -724,60 +718,17 @@
     padding: 0 0.15em;
   }
 
-  /* ── Shape Matrix grid (Lorq) ──
-     The real 144 Shape Matrix: a 12x12 of left-hand style against right-hand
-     style. Diagonal (matched styles) accented; off-diagonal are hybrids. */
+  /* ── Shape Matrix figure (Lorq Nichols' real 144 diagram) ── */
   .matrix-figure {
     margin: 1.8rem auto;
-    max-width: 27rem;
+    max-width: min(34rem, 92%);
   }
-  .shape-matrix-graphic {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: 0.55rem;
-  }
-  .matrix-axis {
-    color: oklch(0.68 0.02 270);
-    font-family: "Inter", system-ui, sans-serif;
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-  .matrix-axis-x {
-    grid-column: 2;
-    text-align: center;
-  }
-  .matrix-axis-y {
-    grid-row: 2;
-    align-self: center;
-    justify-self: center;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-  }
-  .shape-matrix {
-    grid-column: 2;
-    grid-row: 2;
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: 2px;
-    padding: 0.9rem;
-    background: oklch(0.16 0.018 270 / 0.5);
-    border: 1px solid oklch(0.4 0.04 270 / 0.16);
+  .matrix-img {
+    display: block;
+    width: 100%;
+    height: auto;
     border-radius: 14px;
-  }
-  .mx-cell {
-    aspect-ratio: 1;
-    border-radius: 2px;
-    background: oklch(0.24 0.03 270 / 0.6);
-  }
-  .mx-cell.diag {
-    background: color-mix(
-      in oklch,
-      var(--accent, oklch(0.7 0.13 275)) 55%,
-      oklch(0.24 0.03 270)
-    );
+    box-shadow: 0 10px 34px oklch(0.05 0.02 270 / 0.4);
   }
   .matrix-figure figcaption {
     margin-top: 0.7rem;
@@ -785,5 +736,13 @@
     line-height: 1.5;
     color: oklch(0.6 0.02 270);
     text-align: center;
+  }
+  .matrix-figure figcaption a {
+    color: oklch(0.8 0.12 275);
+    text-decoration: none;
+    border-bottom: 1px solid oklch(0.8 0.12 275 / 0.4);
+  }
+  .matrix-figure figcaption a:hover {
+    border-bottom-color: oklch(0.8 0.12 275 / 0.9);
   }
 </style>

@@ -37,10 +37,7 @@ export class PoiOptionFilterDecorator {
         // Check transition if we have a previous pictograph
         const prevBlue = previousPictograph?.motions?.blue;
         if (prevBlue?.propType === PropType.POI) {
-          const transitionResult = validateTransition(
-            prevBlue,
-            blueMotion
-          );
+          const transitionResult = validateTransition(prevBlue, blueMotion);
           if (!transitionResult.isValid) {
             return false;
           }
@@ -57,10 +54,7 @@ export class PoiOptionFilterDecorator {
         // Check transition if we have a previous pictograph
         const prevRed = previousPictograph?.motions?.red;
         if (prevRed?.propType === PropType.POI) {
-          const transitionResult = validateTransition(
-            prevRed,
-            redMotion
-          );
+          const transitionResult = validateTransition(prevRed, redMotion);
           if (!transitionResult.isValid) {
             return false;
           }

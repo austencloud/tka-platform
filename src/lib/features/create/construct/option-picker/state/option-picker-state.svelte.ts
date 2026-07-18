@@ -49,7 +49,20 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
     containerHeight: 600,
   });
 
-  function getMotionFingerprint(m: { startLocation?: string; endLocation?: string; startOrientation?: string; endOrientation?: string; motionType?: string; rotationDirection?: string; turns?: number | string } | undefined | null): string {
+  function getMotionFingerprint(
+    m:
+      | {
+          startLocation?: string;
+          endLocation?: string;
+          startOrientation?: string;
+          endOrientation?: string;
+          motionType?: string;
+          rotationDirection?: string;
+          turns?: number | string;
+        }
+      | undefined
+      | null
+  ): string {
     if (!m) return "x";
     return `${m.startLocation}.${m.endLocation}.${m.startOrientation}.${m.endOrientation}.${m.motionType}.${m.rotationDirection}.${m.turns}`;
   }
