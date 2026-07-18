@@ -67,7 +67,6 @@ export const FAQ_ITEMS: FaqItem[] = [
     question: "Is Flow Arts Composer free?",
     answer:
       "Yes. Building sequences, animating them, and browsing the community library are free, and the core stays free. A premium tier is planned down the line to help sustain the project, but it isn't live yet.",
-    cta: { label: "Start building", href: "/composer" },
   },
   {
     question: "Can I share what I make?",
