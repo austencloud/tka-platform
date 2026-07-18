@@ -74,7 +74,8 @@ one caps the machine.
 ## What this rule does NOT do
 
 - It does not gate worktrees. Worktrees are directories; they cost nothing
-  until a server or check runs inside them. `worktree-workflow.md` stands.
+  until a server or check runs inside them. (As of 2026-07-18 worktrees are no
+  longer mandatory — work on main directly; see `worktree-workflow.md`.)
 - It does not license killing OTHER sessions' processes. A live session's
   server or in-flight check belongs to that session; contention gets surfaced
   to Austen, not resolved by fratricide.
@@ -86,7 +87,8 @@ one caps the machine.
 - Starting a `svelte-check` while another is running anywhere on the machine.
 - Any heavy spawn when available memory is under 4 GB.
 - Killing `:5173` or another live session's processes to free budget.
-- "Fixing" overload by avoiding worktrees — wrong lever; see incident above.
+- Blaming overload on worktrees — the cost centers are dev servers and checks,
+  not worktrees (which are retired as the default anyway).
 
 ## Related
 

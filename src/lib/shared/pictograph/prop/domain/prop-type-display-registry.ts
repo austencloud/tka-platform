@@ -189,8 +189,9 @@ export const DEACTIVATED_PROP_TYPES: ReadonlySet<PropType> = new Set([
   PropType.CONTACTBALL,
   PropType.BIGCONTACTBALL,
   PropType.BIGDOUBLECONTACTBALL,
-  // Poi is a club.svg placeholder pending its own icon + design.
-  // (Fractalgeng was removed from the codebase entirely 2026-06-30.)
+  // Poi stays deactivated for the category pickers (still a club.svg placeholder
+  // pending its own icon). BentoPropGrid re-includes it for dev/admin only, to
+  // exercise the poi-legal composer filter. (Fractalgeng removed 2026-06-30.)
   PropType.POI,
 ]);
 
@@ -491,8 +492,10 @@ export function toggleBigVariant(propType: PropType): PropType {
  *
  * Curation: props NOT listed here are simply absent from the picker. Simple
  * Staff (backend thumb-orientation prop), Staff V2, and Hand (hand-path teaching
- * only) stay fully wired elsewhere but off the picker. Poi is retired via
- * DEACTIVATED_PROP_TYPES. (Fractalgeng was removed from the codebase entirely.)
+ * only) stay fully wired elsewhere but off the picker. Poi IS listed here but
+ * dark-gated in BentoPropGrid (dev/admin only, matching the poi-legal filter
+ * gate), so the public picker still omits it while the filter is validated.
+ * (Fractalgeng was removed from the codebase entirely.)
  *
  * Rendering filters by isPropActive, so deactivating a listed prop hides it
  * without editing this list.
@@ -536,6 +539,8 @@ export const PROP_PICKER_SECTIONS: { label: string; props: PropType[] }[] = [
       PropType.QUIAD,
       PropType.TRIQUETRA,
       PropType.TRIQUETRA2,
+      // Dark-gated to dev/admin in BentoPropGrid — see the docstring above.
+      PropType.POI,
     ],
   },
 ];

@@ -20,6 +20,13 @@
   } from "$lib/shared/pictograph/prop/domain/prop-type-display-registry";
   import PropTypeButton from "./PropTypeButton.svelte";
   import { isPropUnlocked } from "$lib/shared/gamification/state/prop-collection-state.svelte";
+  import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
+
+  // Poi is deactivated for the public picker but re-enabled for dev/admin so the
+  // poi-legal composer filter can be exercised — same gate as the filter itself
+  // (isPoiComposerFilterEnabled in apply-poi-legal-filter.ts). Kept inline to
+  // avoid a shared→feature import.
+  const poiPickerEnabled = $derived(import.meta.env.DEV || isAdmin());
 
   let {
     selectedPropType,
@@ -47,7 +54,9 @@
   const sections = $derived(
     PROP_PICKER_SECTIONS.map((s) => ({
       label: s.label,
-      props: s.props.filter(isPropActive),
+      props: s.props.filter((p) =>
+        p === PropType.POI ? poiPickerEnabled : isPropActive(p),
+      ),
     })).filter((s) => s.props.length > 0),
   );
 
