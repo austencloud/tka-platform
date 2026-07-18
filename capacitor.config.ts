@@ -3,7 +3,11 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.tkaflowarts.composer',
   appName: 'Flow Arts Composer',
-  webDir: 'build',
+  // SvelteKit's adapter-cloudflare emits the built client + app shell here
+  // (there is no top-level build/ dir). Capacitor bundles this as the native
+  // web assets. The 25 +server API routes can't run in the native shell (no
+  // worker); the app's core is client-side Firebase, which works offline-first.
+  webDir: '.svelte-kit/cloudflare',
   server: {
     androidScheme: 'https'
   },
