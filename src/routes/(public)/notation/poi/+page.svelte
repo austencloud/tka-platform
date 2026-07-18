@@ -46,44 +46,51 @@
     <div class="prose">
       <p>Some of it.</p>
       <p>
-        The Kinetic Alphabet was built to take advantage of what static dual-wielded
-        props can do: hold any orientation for as long as you want, move to any location
-        in any orientation, reverse on a dime, all without owing anything to momentum. A
-        poi head is the opposite case. It hangs from a tether, its motion is continuous,
-        and it answers to swing and gravity as much as to your hand. So the alphabet can
-        generate lots and lots of patterns, and poi can perform some of them, and only
-        when the pattern's rotational value stays relatively consistent, because momentum
-        needs continuity. Holds, hard reversals, and abrupt speed changes are outside
-        what a tethered head can do. That makes The Kinetic Alphabet a generator poi
-        spinners can draw from rather than an ideal system for describing poi patterns,
-        and this site won't pretend otherwise.
+        The Kinetic Alphabet was built to take advantage of what static
+        dual-wielded props can do: hold any orientation for as long as you want,
+        move to any location in any orientation, reverse on a dime, all without
+        owing anything to momentum. A poi head is the opposite case. It hangs
+        from a tether, its motion is continuous, and it answers to swing and
+        gravity as much as to your hand. So the alphabet can generate lots and
+        lots of patterns, and poi can perform some of them, and only when the
+        pattern's rotational value stays relatively consistent, because momentum
+        needs continuity. Holds, hard reversals, and abrupt speed changes are
+        outside what a tethered head can do. That makes The Kinetic Alphabet a
+        generator poi spinners can draw from rather than an ideal system for
+        describing poi patterns, and this site won't pretend otherwise.
       </p>
       <p>
-        The frame of reference splits the same way, and it's worth a moment because it
-        explains why the two worlds notate differently at all. TKA is a radial system:
-        every orientation is measured from the prop to the performer's center point, not
-        relative to the ground. Poi tradition grew up in gravity's frame. VTG, the
-        Vulcan Tech Gospel, anchors its classifications to the downbeat at the bottom of
-        the circle, a ground reference through and through, which is exactly right for a
-        prop that swings. Neither frame is wrong. They're built for different physics.
+        The frame of reference splits the same way, and it's worth a moment
+        because it explains why the two worlds notate differently at all. TKA is
+        a radial system: every orientation is measured from the prop to the
+        performer's center point, not relative to the ground. Poi tradition grew
+        up in gravity's frame. VTG, the Vulcan Tech Gospel, anchors its
+        classifications to the downbeat at the bottom of the circle, a ground
+        reference through and through, which is exactly right for a prop that
+        swings. Neither frame is wrong. They're built for different physics.
       </p>
       <p>
-        And the two systems are family, not rivals. TKA is built on VTG, created by Noel
-        Yee and spinners at the Vulcan Lofts in Oakland, and VTG's four timing and
-        direction categories are fully encoded in TKA's Type 1 letters. If you already
-        think in split-same and tog-opposite, you already read part of this alphabet. If
-        you spin poi and want notation that was born for your prop, VTG is that system,
-        and TKA honors it rather than replacing it. The full lineage, with sources, lives
-        on the <a href="/roots">roots page</a>.
+        And the two systems are family, not rivals. TKA is built on VTG, created
+        by Noel Yee and spinners at the Vulcan Lofts in Oakland, and VTG's four
+        timing and direction categories are fully encoded in TKA's Type 1
+        letters. If you already think in split-same and tog-opposite, you
+        already read part of this alphabet. If you spin poi and want notation
+        that was born for your prop, VTG is that system, and TKA honors it
+        rather than replacing it. The full lineage, with sources, lives on the <a
+          href="/notation">notation page</a
+        >.
       </p>
       <p>
-        A Poi Lab module is planned for Flow Arts Composer to identify the poi-legal
-        subset of the alphabet, meaning which sequences a momentum-based prop can
-        actually perform. Planned, not built, and it will be presented as working only
-        when it is. In the meantime the <a href="/guide">guide</a>, the
-        <a href="/glossary">glossary</a>, and the <a href="/notation">notation
-        overview</a> all read fine through a poi spinner's eyes, and the
-        momentum-friendly slice of what you build in the composer will be spinnable.
+        A Poi Lab module is planned for Flow Arts Composer to identify the
+        poi-legal subset of the alphabet, meaning which sequences a
+        momentum-based prop can actually perform. Planned, not built, and it
+        will be presented as working only when it is. In the meantime the <a
+          href="/guide">guide</a
+        >, the
+        <a href="/glossary">glossary</a>, and the
+        <a href="/notation">notation overview</a> all read fine through a poi spinner's
+        eyes, and the momentum-friendly slice of what you build in the composer will
+        be spinnable.
       </p>
     </div>
   </section>

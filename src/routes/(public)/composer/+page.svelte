@@ -63,11 +63,14 @@
   let viewer3DActive = $state(false);
   let arcadeActive = $state(false);
   const activateTunnelWhenNear = activateWhenNear(() => (tunnelActive = true));
-  const activatePlayWithItWhenNear = activateWhenNear(() => (playWithItActive = true));
-  const activateChoreoCardsWhenNear = activateWhenNear(() => (choreoCardsActive = true));
+  const activatePlayWithItWhenNear = activateWhenNear(
+    () => (playWithItActive = true)
+  );
+  const activateChoreoCardsWhenNear = activateWhenNear(
+    () => (choreoCardsActive = true)
+  );
   const activate3DWhenNear = activateWhenNear(() => (viewer3DActive = true));
   const activateArcadeWhenNear = activateWhenNear(() => (arcadeActive = true));
-
 
   const ROADMAP = [
     {
@@ -78,8 +81,14 @@
       label: "3D performance composing",
       detail: "build entire acts with virtual performers",
     },
-    { label: "Camera practice overlay", detail: "spin in front of your camera, get feedback" },
-    { label: "Higher levels", detail: "three of the system's nine levels are in the app so far" },
+    {
+      label: "Camera practice overlay",
+      detail: "spin in front of your camera, get feedback",
+    },
+    {
+      label: "Higher levels",
+      detail: "three of the system's nine levels are in the app so far",
+    },
   ];
 </script>
 
@@ -91,14 +100,26 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="The Kinetic Alphabet" />
   <meta property="og:url" content="https://tkaflowarts.com/composer" />
-  <meta property="og:title" content="Flow Arts Composer | Free Flow Arts Software for Choreography" />
+  <meta
+    property="og:title"
+    content="Flow Arts Composer | Free Flow Arts Software for Choreography"
+  />
   <meta property="og:description" content={DESCRIPTION} />
-  <meta property="og:image" content="https://tkaflowarts.com/branding/og-image.png" />
+  <meta
+    property="og:image"
+    content="https://tkaflowarts.com/branding/og-image.png"
+  />
 
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Flow Arts Composer | Free Flow Arts Software for Choreography" />
+  <meta
+    name="twitter:title"
+    content="Flow Arts Composer | Free Flow Arts Software for Choreography"
+  />
   <meta name="twitter:description" content={DESCRIPTION} />
-  <meta name="twitter:image" content="https://tkaflowarts.com/branding/og-image.png" />
+  <meta
+    name="twitter:image"
+    content="https://tkaflowarts.com/branding/og-image.png"
+  />
 
   {@html `<script type="application/ld+json">
   {
@@ -212,16 +233,19 @@
     <header class="editorial-header">
       <h1 class="page-title">Flow Arts Composer</h1>
       <p class="page-subtitle">
-        Free flow arts software for choreography, built on <a href="/notation">The Kinetic Alphabet</a>
+        Free flow arts software for choreography, built on <a href="/notation"
+          >The Kinetic Alphabet</a
+        >
       </p>
     </header>
 
     <div class="lede">
       <p>
-        Flow Arts Composer is free flow arts software for building choreography in your browser. Construct
-        sequences step by step, generate them from parameters, watch them animate, and share
-        them with other flow artists. It supports staff, fans, clubs, hoops, buugeng, and
-        more, all built on The Kinetic Alphabet notation system.
+        Flow Arts Composer is free flow arts software for building choreography
+        in your browser. Construct sequences step by step, generate them from
+        parameters, watch them animate, and share them with other flow artists.
+        It supports staff, fans, clubs, hoops, buugeng, and more, all built on
+        The Kinetic Alphabet notation system.
       </p>
     </div>
 
@@ -250,31 +274,35 @@
     <h2 class="section-title">Build it step by step</h2>
     <div class="prose">
       <p>
-        Pick a starting position and tap through the options. Each tap adds a step, and
-        every step animates the moment you add it. You're never presented with an invalid
-        option: the app tracks what's physically possible so you don't have to. You create,
-        then approve or reject what you made.
+        Pick a starting position and tap through the options. Each tap adds a
+        step, and every step animates the moment you add it. You're never
+        presented with an invalid option: the app tracks what's physically
+        possible so you don't have to. You create, then approve or reject what
+        you made.
       </p>
       <p>
-        Before this existed, notating a sequence meant writing it out with red and blue
-        pens and checking every transition by hand. Composer does the bookkeeping. You do
-        the creating.
+        Before this existed, notating a sequence meant writing it out with red
+        and blue pens and checking every transition by hand. Composer does the
+        bookkeeping. You do the creating.
       </p>
     </div>
   </section>
 
   <!-- duo-uw: stacked (same as always) below 2200px; on ultrawide the copy
        sits beside the player+mandala pair instead of above it. -->
-  <section class="editorial-section has-duo duo-uw duo-max" style="--accent: #ec4899">
+  <section
+    class="editorial-section has-duo duo-uw duo-max"
+    style="--accent: #ec4899"
+  >
     <div class="section-duo">
       <div class="duo-copy">
         <span class="section-kicker">Generate</span>
         <h2 class="section-title">Or skip the building entirely</h2>
         <div class="prose">
           <p>
-            Set your parameters, hit generate, and a valid sequence lands in front of you.
-            Watch it animate, keep it if you like it, run it again if you don't. Every
-            sequence draws its own mandala. Try it:
+            Set your parameters, hit generate, and a valid sequence lands in
+            front of you. Watch it animate, keep it if you like it, run it again
+            if you don't. Every sequence draws its own mandala. Try it:
           </p>
         </div>
       </div>
@@ -291,10 +319,10 @@
         <h2 class="section-title">Unfold it into a tunnel</h2>
         <div class="prose">
           <p>
-            Every sequence can unfold into a tunnel: the same choreography multiplied across
-            two, four, or eight performers in a ring, with mirrors, echoes, and staggered
-            canons on top. What starts as one pattern becomes a stage full of them. This is
-            running live:
+            Every sequence can unfold into a tunnel: the same choreography
+            multiplied across two, four, or eight performers in a ring, with
+            mirrors, echoes, and staggered canons on top. What starts as one
+            pattern becomes a stage full of them. This is running live:
           </p>
         </div>
       </div>
@@ -322,9 +350,10 @@
     <h2 class="section-title">Learn the language by playing it</h2>
     <div class="prose">
       <p>
-        The app ships with an arcade of games built from the alphabet: read pictographs,
-        name words performed in front of you, match sequences to the mandalas they draw.
-        Every level awards stars and keeps your best score. Here's a round, live:
+        The app ships with an arcade of games built from the alphabet: read
+        pictographs, name words performed in front of you, match sequences to
+        the mandalas they draw. Every level awards stars and keeps your best
+        score. Here's a round, live:
       </p>
     </div>
     <div class="arcade-slot" use:activateArcadeWhenNear>
@@ -351,7 +380,8 @@
         <div class="duo-demo">
           <div class="cards-fan" use:activateChoreoCardsWhenNear>
             <LazyMount
-              loader={() => import("./_components/ComposerChoreoCardsDemo.svelte")}
+              loader={() =>
+                import("./_components/ComposerChoreoCardsDemo.svelte")}
               active={choreoCardsActive}
             >
               {#snippet placeholder()}
@@ -365,11 +395,12 @@
         <div class="duo-copy">
           <div class="prose">
             <p>
-              Choreo Cards put a sequence on a physical card: the word, every step, the
-              mandalas, and a QR that opens it in Composer with any prop at any speed. Shuffle a
-              deck and the game keeps going away from the app, one card in your hand at a
-              time. Every card the app builds can print, and the decks in the shop are already
-              composed and ready to spin.
+              Choreo Cards put a sequence on a physical card: the word, every
+              step, the mandalas, and a QR that opens it in Composer with any
+              prop at any speed. Shuffle a deck and the game keeps going away
+              from the app, one card in your hand at a time. Every card the app
+              builds can print, and the decks in the shop are already composed
+              and ready to spin.
             </p>
           </div>
           <div class="hero-ctas cards-ctas">
@@ -391,10 +422,11 @@
     <h2 class="section-title">Watch it performed in 3D</h2>
     <div class="prose">
       <p>
-        Any sequence plays back in a full 3D scene: a performer spinning your choreography
-        on a stage you can orbit. The one below is running live. Drag to look around, drop it
-        into a different environment, or multiply it into a ring performing in unison. The 2D
-        notation is the score. The 3D viewer is the performance.
+        Any sequence plays back in a full 3D scene: a performer spinning your
+        choreography on a stage you can orbit. The one below is running live.
+        Drag to look around, drop it into a different environment, or multiply
+        it into a ring performing in unison. The 2D notation is the score. The
+        3D viewer is the performance.
       </p>
     </div>
     <div class="breakout cinema" use:activate3DWhenNear>
@@ -420,7 +452,9 @@
       viewer, running live.
     </p>
     <div class="resource-row">
-      <a href="/create" class="resource-chip" data-sveltekit-reload>Open a sequence in 3D</a>
+      <a href="/create" class="resource-chip" data-sveltekit-reload
+        >Open a sequence in 3D</a
+      >
     </div>
   </section>
 
@@ -435,42 +469,58 @@
         <div class="bento-cell text-only">
           <div class="bento-text">
             <strong>Community gallery</strong>
-            <span>real public sequences shared across the community, filterable by level</span>
+            <span
+              >real public sequences shared across the community, filterable by
+              level</span
+            >
           </div>
         </div>
 
         <div class="bento-cell text-only">
           <div class="bento-text">
             <strong>Image and video export</strong>
-            <span>render any sequence as an image or a video, straight from the viewer</span>
+            <span
+              >render any sequence as an image or a video, straight from the
+              viewer</span
+            >
           </div>
         </div>
 
         <div class="bento-cell text-only">
           <div class="bento-text">
             <strong>QR share links</strong>
-            <span>every export carries a scan code that opens the sequence on any phone</span>
+            <span
+              >every export carries a scan code that opens the sequence on any
+              phone</span
+            >
           </div>
         </div>
 
         <div class="bento-cell text-only">
           <div class="bento-text">
             <strong>Library</strong>
-            <span>collections and smart collections for everything you save</span>
+            <span
+              >collections and smart collections for everything you save</span
+            >
           </div>
         </div>
 
         <div class="bento-cell text-only">
           <div class="bento-text">
             <strong>Props</strong>
-            <span>eleven supported: staff, fan, hoop, buugeng, triad, club, sword, double star, eight rings, guitar, quiad</span>
+            <span
+              >eleven supported: staff, fan, hoop, buugeng, triad, club, sword,
+              double star, eight rings, guitar, quiad</span
+            >
           </div>
         </div>
 
         <div class="bento-cell text-only">
           <div class="bento-text">
             <strong>Games</strong>
-            <span>an arcade built from the alphabet, with best scores to chase</span>
+            <span
+              >an arcade built from the alphabet, with best scores to chase</span
+            >
           </div>
         </div>
 
@@ -506,15 +556,15 @@
     <h2 class="section-title">Built on The Kinetic Alphabet</h2>
     <div class="prose">
       <p>
-        The Kinetic Alphabet exists on paper. It existed before this app, and it works
-        without it: two pens and a notebook are enough to record choreography. Composer is
-        an instrument built for that language. And like any instrument, you don't have to
-        read the music to play it. The app handles the letters. You handle the movement.
+        The Kinetic Alphabet exists on paper. It existed before this app, and it
+        works without it: two pens and a notebook are enough to record
+        choreography. Composer is an instrument built for that language. And
+        like any instrument, you don't have to read the music to play it. The
+        app handles the letters. You handle the movement.
       </p>
     </div>
     <div class="resource-row">
       <a href="/notation" class="resource-chip">Read about the notation</a>
-      <a href="/roots" class="resource-chip">Where it came from</a>
       <a href="/about" class="resource-chip">About the project</a>
     </div>
   </section>
@@ -524,9 +574,9 @@
     <h2 class="section-title">Play with it right here</h2>
     <div class="prose">
       <p>
-        This is the app in miniature, running live. Swap effects, props, and tempo with
-        the same controls the real thing gives you. The strip along the bottom is the
-        sequence's notation, keeping time with the animation.
+        This is the app in miniature, running live. Swap effects, props, and
+        tempo with the same controls the real thing gives you. The strip along
+        the bottom is the sequence's notation, keeping time with the animation.
       </p>
     </div>
     <div class="breakout cinema playwithit-slot" use:activatePlayWithItWhenNear>

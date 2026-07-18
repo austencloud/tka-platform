@@ -54,19 +54,22 @@
       <div class="duo-copy">
         <div class="prose">
           <p>
-            First, what this page is not about: toss juggling. This is dual-wielded club
-            spinning, one club in each hand, gripped the whole time. Held that way, clubs
-            are the base prop of the single-ended family. They're the easiest prop to
-            explain the single-ended story with, and they're the core of Vulcan Tech
-            Gospel, the framework The Kinetic Alphabet is built on. The lineage lives on
-            the <a href="/roots">roots page</a>.
+            First, what this page is not about: toss juggling. This is
+            dual-wielded club spinning, one club in each hand, gripped the whole
+            time. Held that way, clubs are the base prop of the single-ended
+            family. They're the easiest prop to explain the single-ended story
+            with, and they're the core of Vulcan Tech Gospel, the framework The
+            Kinetic Alphabet is built on. The lineage lives on the <a
+              href="/notation">notation page</a
+            >.
           </p>
           <p>
-            Translating the alphabet from staves to clubs takes one sentence. Pretend
-            you're holding a staff whose other end is invisible, or got cut off, and do
-            everything exactly the way you would with the staff. A club's orientation is
-            the staff's thumb orientation, and the rest follows: same grid, same letters,
-            same timing, as the player beside this shows.
+            Translating the alphabet from staves to clubs takes one sentence.
+            Pretend you're holding a staff whose other end is invisible, or got
+            cut off, and do everything exactly the way you would with the staff.
+            A club's orientation is the staff's thumb orientation, and the rest
+            follows: same grid, same letters, same timing, as the player beside
+            this shows.
           </p>
         </div>
       </div>
@@ -87,16 +90,18 @@
       <div class="duo-copy">
         <div class="prose">
           <p>
-            The two mandalas trace the identical sequence. In the staff render, both ends
-            of each prop leave a path. In the club render, one does. Half the pattern is
-            gone, and that missing half is where the single-ended vocabulary comes from.
-            On a staff, an isolation and an extension are one motion, the thumb end
-            isolating while the pinky end extends. A club can only do one at a time, so
-            club spinners know them as two moves that look nothing alike despite
-            identical underlying geometry. Antispin splits too: a club's antispin reads
-            as a vertical or a horizontal flower depending on its orientation through the
-            pattern, which is exactly what VTG's vertical antispin and horizontal
-            antispin name. On a staff those distinctions fold away. The
+            The two mandalas trace the identical sequence. In the staff render,
+            both ends of each prop leave a path. In the club render, one does.
+            Half the pattern is gone, and that missing half is where the
+            single-ended vocabulary comes from. On a staff, an isolation and an
+            extension are one motion, the thumb end isolating while the pinky
+            end extends. A club can only do one at a time, so club spinners know
+            them as two moves that look nothing alike despite identical
+            underlying geometry. Antispin splits too: a club's antispin reads as
+            a vertical or a horizontal flower depending on its orientation
+            through the pattern, which is exactly what VTG's vertical antispin
+            and horizontal antispin name. On a staff those distinctions fold
+            away. The
             <a href="/notation/staves">staff page</a> tells that side.
           </p>
         </div>
@@ -112,13 +117,13 @@
 
   <OpenChapter prop="Clubs">
     <p>
-      The geometry above is solid ground. Club grip technique is not: the alphabet grew
-      up on double staves, and clubs ask for finger spinning and grip changes the staff
-      pedagogy deliberately avoids.
+      The geometry above is solid ground. Club grip technique is not: the
+      alphabet grew up on double staves, and clubs ask for finger spinning and
+      grip changes the staff pedagogy deliberately avoids.
     </p>
     <p>
-      That vocabulary deserves an author who lives in it. If clubs are your language,
-      this chapter is yours to write.
+      That vocabulary deserves an author who lives in it. If clubs are your
+      language, this chapter is yours to write.
     </p>
   </OpenChapter>
 

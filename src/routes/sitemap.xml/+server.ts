@@ -64,8 +64,13 @@ const pages = [
   // Per-letter notation pages with baked pictographs (2026-07-14-image-seo-google-images-design.md)
   { url: "notation/letters", priority: "0.7", changefreq: "monthly" },
   { url: "glossary", priority: "0.8", changefreq: "monthly" },
-  { url: "learn/staff-spinning-choreography", priority: "0.8", changefreq: "monthly" },
-  { url: "roots", priority: "0.8", changefreq: "monthly" },
+  {
+    url: "learn/staff-spinning-choreography",
+    priority: "0.8",
+    changefreq: "monthly",
+  },
+  // /roots redirects (301) to /notation and is intentionally omitted here, same
+  // convention as /landing above — a redirected URL doesn't self-list.
   { url: "roots/software", priority: "0.7", changefreq: "monthly" },
   // Marketing
   { url: "about", priority: "0.6", changefreq: "monthly" },
@@ -116,11 +121,15 @@ async function getCuratedSequenceUrls(): Promise<string[]> {
   try {
     const { getAdminDb } = await import("$lib/server/firebaseAdmin");
     const db = getAdminDb();
-    const snapshot = await db.collection("deckReleases/counter/manifests").get();
+    const snapshot = await db
+      .collection("deckReleases/counter/manifests")
+      .get();
 
     const ids = new Set<string>();
     for (const doc of snapshot.docs) {
-      const sequences = doc.data()?.sequences as { sequenceId?: string }[] | undefined;
+      const sequences = doc.data()?.sequences as
+        | { sequenceId?: string }[]
+        | undefined;
       if (!Array.isArray(sequences)) continue;
       for (const card of sequences) {
         if (card?.sequenceId) ids.add(card.sequenceId);

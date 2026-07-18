@@ -1,7 +1,7 @@
 # Flow Arts Notation Page — Merge `/notation` + `/roots` into a Comparative Lineage
 
 **Date:** 2026-07-17
-**Status:** Brainstormed with Austen this session; awaiting spec review
+**Status:** Implemented 2026-07-18; factual and copy audit complete
 **Branch:** `feat/notation-roots-merge` (worktree `C:/worktrees/tka-platform/notation-redesign`)
 
 ## The Problem
@@ -10,7 +10,7 @@
 or two tidy paragraphs (`What It Is`, `The Thirty-Second Demo`, `Built on VTG`,
 `It Started on Paper`, `Where to Start`, `Notation by Prop`, CTA). That uniform
 header-per-bite-sized-topic rhythm is the exact structural tell `ai-bust` flags as
-AI-authored. The page *asserts* everything and *shows* almost nothing — the only
+AI-authored. The page _asserts_ everything and _shows_ almost nothing — the only
 live artifact is the hero demo. No worked examples.
 
 `/roots` overlaps it: "what TKA is built on" (VTG, siteswap, music theory,
@@ -21,7 +21,7 @@ the `public-editorial.css` breakout system (`has-duo` / `breakout` / `cinema`) t
 `/composer` uses sits unused here.
 
 Austen's direction (this session): merge the two into one honest, comparative page
-on the *family* of flow-arts notation systems. Give credence to what came before,
+on the _family_ of flow-arts notation systems. Give credence to what came before,
 position TKA as a de-facto peer (not the be-all-end-all; no FAQ-conqueror framing),
 **show an example for every claim** instead of uniform prose, and take real
 advantage of 4K by reconfiguring the layout — not inflating the type. This is the
@@ -38,7 +38,7 @@ Chosen with Austen over the two alternatives:
   into a mostly-historical read.
 - **B — lineage is a supporting section** (page stays "here's TKA, go start," opens
   with credence). Keeps the entry/conversion job, less bold.
-- **Hybrid-A (selected):** the lineage is the *emotional and structural opening* —
+- **Hybrid-A (selected):** the lineage is the _emotional and structural opening_ —
   TKA among peers, shown with examples — and then resolves into "and here's what TKA
   uniquely does; go try it." `/roots` folds in.
 
@@ -48,13 +48,13 @@ Chosen with Austen over the two alternatives:
 
 1. **Opening — the family, not the pitch.** Writing flow down is an old, unsolved
    problem; many have taken a run at it. Humble framing up front, no product pitch.
-2. **What came before — the verified lineage, each *shown*.** The load-bearing
-   section (detail below). Every system is *shown* (a real example of how *it*
+2. **What came before — the verified lineage, each _shown_.** The load-bearing
+   section (detail below). Every system is _shown_ (a real example of how _it_
    writes a move down), not just named. `/roots`' influence material folds in here,
    reframed as "the family this belongs to." **TKA appears inside this list as one
    member.**
 3. **Where TKA fits.** The lineage resolves into TKA's specific contribution — the
-   one that makes prop choreography *readable like sheet music* (the exact gap
+   one that makes prop choreography _readable like sheet music_ (the exact gap
    `/roots/software` already names: "the one thing missing is notation"). Framed as
    "here's what TKA adds," never "TKA is the answer."
 4. **See it work.** The existing live demo (`SequenceHeroDemo`, real pictographs).
@@ -70,15 +70,15 @@ they are a map, not proof — only web-verified, sourced systems ship,** each wi
 real citation (a `resource-chip`, same as `/roots/software`). No unverified claim
 goes on the page.
 
-| System | Creator | How it notates a move | Show it as | Verified source |
-|---|---|---|---|---|
-| **VTG** | Noel Yee / Vulcan Lofts (~2010) | Timing (tog/split) × Direction (same/opp) taxonomy + snapshots + 1:1/1:3/1:5 shape ratios | The SS/TS/SO/TO 2×2 | drexfactor.com, noelyee.com, Wikipedia "Poi definitions" |
-| **QFT** | Charlie Cushing (~2011), doc. by Drex | 8 positions numbered 1–8 clockwise around the circle; a move = origin→destination (e.g. `8 ⇒ 1`) + hand/radius/direction | The numbered circle + one `8 ⇒ 1` move | [drexfactor.com QFT guide](https://drexfactor.com/weirdscience/2011/05/18/beginners_guide_poi_qft_notation) |
-| **Lorq Nichols / Spin Science** | Lorq Nichols | Shape Matrix (8×8 L-hand × R-hand grid), Book of P.H.A.T., 324 Patterns — visual/combinatorial | The Shape-Matrix grid idea | [sirlorq.wordpress.com](https://sirlorq.wordpress.com/about-2/) (NOT spinscience.xyz — cert expired) |
-| **PoiNotation** | Tiffany Fong (2016) | A Scala text DSL that compiles written syntax into circular-motion building blocks; a CS course project, never shipped | A short code-like syntax line | [github.com/tiffanyfong/PoiNotation](https://github.com/tiffanyfong/PoiNotation) |
-| **Siteswap** | Magnusson & Tiemann (~1985) | Numeric per-beat throw-timing for *juggling*; Beever's Generalised Siteswap (~2000) adds orientation rows | The ancestor idea (one symbol per beat), honestly framed as juggling, not spinning | jugglinglab.org, Wikipedia, juggle.fandom.com |
-| **9-Square Theory** | Charlie Cushing | Quantizes motion onto a 3×3 grid around the body | Optional; the 3×3 grid | drexfactor.com |
-| **TKA** | Austen Cloud | Letters + pictographs on a 9-point grid, center-referenced; beats spell speakable words | A real pictograph | (self) |
+| System                          | Creator                                                                                                | How it notates a move                                                                                                                     | Show it as                             | Verified source                                                                                                                          |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **VTG**                         | Noel Yee / Vulcan Lofts (~2010)                                                                        | Timing (tog/split) × Direction (same/opp) taxonomy + snapshots + 1:1/1:3/1:5 shape ratios                                                 | The SS/TS/SO/TO 2×2                    | drexfactor.com, noelyee.com, Wikipedia "Poi definitions"                                                                                 |
+| **QFT**                         | Charlie Cushing (~2011), documented by DrexFactor                                                      | 8 at the top, then 1 through 7 clockwise; a move records origin, destination, hand-path radius, and direction                             | The numbered circle + one `8 ⇒ 1` move | [DrexFactor QFT guide](https://drexfactor.com/weirdscience/2011/05/18/beginners_guide_poi_qft_notation)                                  |
+| **Lorq Nichols / Spin Science** | Lorq Nichols, with named collaborators on related catalogs                                             | The 144 Shape Matrix crosses 12 left-hand and 12 right-hand driving styles; 324 Patterns and P.H.A.T. are separate catalogs               | A labeled 12×12 Shape Matrix           | [144 Shape Matrix](https://sirlorq.wordpress.com/2014/07/16/144-shape-matrix-even-petaled-flowers-rework/)                               |
+| **PoiNotation**                 | Tiffany Fong (2016)                                                                                    | A Scala DSL with documented move properties plus `~` concatenation and `*` repetition; the public repository ends with the course release | The exact README syntax example        | [github.com/tiffanyfong/PoiNotation](https://github.com/tiffanyfong/PoiNotation)                                                         |
+| **Siteswap**                    | Independent early-to-mid-1980s branches around Paul Klimek, the Caltech group, and the Cambridge group | Numeric per-beat scheduling for _juggling_; an analogy for TKA's beat structure, not a claimed ancestor                                   | A `531` example                        | [Allen Knutson's Siteswap FAQ](https://www.jonglage.net/theorie/notation/siteswap-avancee/refs/Allen%20Knutson%20-%20Siteswap%20FAQ.pdf) |
+| **9-Square Theory**             | Charlie Cushing                                                                                        | Quantizes motion onto a 3×3 grid around the body                                                                                          | Optional; the 3×3 grid                 | drexfactor.com                                                                                                                           |
+| **TKA**                         | Austen Cloud                                                                                           | Letters + pictographs on a 9-point grid, center-referenced; beats spell speakable words                                                   | A real pictograph                      | (self)                                                                                                                                   |
 
 Clock notation ("3 o'clock") is the informal folk shorthand everyone already uses —
 worth a one-line nod as the un-authored baseline QFT formalized, not a system with a
@@ -86,14 +86,13 @@ creator to cite.
 
 ### The centerpiece device — the "Rosetta row"
 
-**One simple move shown in 3 notations side by side:** QFT's `8 ⇒ 1`, VTG's
-tog-same, and the TKA pictograph for the same motion. The reader *sees* that TKA is
-one dialect among many, and *sees* why the pictograph is the readable one. This is
-the credence framing and the de-facto-peer framing and the "examples for everything"
-principle, all in a single visual. It is the emotional core of the page.
+**Three movement views shown side by side:** QFT's `8 ⇒ 1`, VTG's split-same
+quadrant, and TKA's letter A pictograph. VTG and TKA overlap on timing and hand-path
+direction; QFT records absolute circle positions. The row shows what each system
+chooses to put on the page without pretending the three examples are equivalent.
 
-- Rec: **3 systems** in the row (QFT, VTG, TKA) — legible; 4 crowds it. *(Decision 2
-  below.)*
+- Rec: **3 systems** in the row (QFT, VTG, TKA) — legible; 4 crowds it. _(Decision 2
+  below.)_
 - The TKA cell uses a real pictograph (MCP `generate_pictograph` at authoring time,
   saved as an asset — never a hand-drawn fake). QFT/VTG cells are lightweight inline
   SVG or a sourced screenshot in a `shot-strip`.
@@ -108,7 +107,7 @@ principle, all in a single visual. It is the emotional core of the page.
    Not a mini-course on the entry page.
 3. **Kill the AI tone by construction:** no uniform `<h2>` + two-paragraphs rhythm.
    Every claim carries a real example (a prior-system sample, a pictograph, the
-   Rosetta row, a live demo), and section *shapes vary* (prose, side-by-side duo,
+   Rosetta row, a live demo), and section _shapes vary_ (prose, side-by-side duo,
    comparison rows). Structural variety is the fix, not reworded copy. **All final
    user-facing copy gets an `ai-bust` pass before ship** (and a grep for em dashes
    per `no-em-dashes` before handover).
@@ -138,16 +137,16 @@ Nothing new is created. Confirmed by reading the current pages this session:
 
 ## `/roots` merge + information architecture
 
-- **`/notation` absorbs `/roots`' influence content** (VTG, siteswap-as-ancestor,
+- **`/notation` absorbs `/roots`' influence content** (VTG, siteswap as an analogy,
   music theory) into section 2 + a short "what TKA is built on" beat inside "Where
   TKA fits."
 - **`/roots` → 301 redirect to `/notation`.** It becomes redundant once its content
   lives in `/notation`, and `/notation` owns the "flow arts notation" head term.
-  *(Decision 1 below — the alternative is a thin `/roots` stub.)*
+  _(Decision 1 below — the alternative is a thin `/roots` stub.)_
 - **`/roots/software` stays at its URL** (established, indexed, link equity). It is
   the software sibling and is not moved under `/notation`. Its breadcrumb + any
   "roots page" cross-links currently pointing at `/roots` get re-pointed at
-  `/notation`. *(Decision 3 below.)*
+  `/notation`. _(Decision 3 below.)_
 - **Redirect + link mechanics to handle:** `src/config/domains.ts`
   (`MARKETING_EXACT` / `PUBLIC_PATH_PREFIXES` — `/roots` is currently a public
   prefix; the new redirect must not orphan `/roots/software`), the sitemap
@@ -187,11 +186,8 @@ because the same research produced it.
 - `ai-bust` pass + em-dash grep on all final copy before ship.
 - Existing `seo-head-contract` / sitemap unit tests still green.
 
-## Open questions for spec review
+## Implemented decisions
 
-1. **`/roots` → 301 to `/notation`, or keep a thin `/roots` "influences" stub?**
-   Recommendation: **301** — it kills the thin distinction and keeps the content in
-   one place. Risk (inbound links to `/roots`) is covered by the redirect.
-2. **Rosetta row: 3 systems (QFT, VTG, TKA) or 4 (add Lorq's Shape Matrix)?**
-   Recommendation: **3** — legibility.
-3. **Keep `/roots/software` at its URL** (rec: yes) vs move it under `/notation`?
+1. `/roots` returns a permanent redirect to `/notation`.
+2. The Rosetta row uses QFT, VTG, and TKA; the Shape Matrix follows as its own figure.
+3. `/roots/software` keeps its established URL and is linked from `/notation`.
