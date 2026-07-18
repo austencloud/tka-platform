@@ -1,10 +1,4 @@
-<!--
-  LazyHowTkaWorksSection.svelte
-
-  Lazy wrapper around HowTkaWorksSection. Shows a visible skeleton while loading,
-  then dynamically imports and mounts the real section. Handles its own reveal
-  animation (not gated behind scroll-reveal) to avoid double-observer issues on iOS.
--->
+<!-- The placeholder mirrors the compact heading and three-proof strip. -->
 <script lang="ts">
   import type { Component } from "svelte";
 
@@ -24,8 +18,8 @@
       .then((mod) => {
         InnerComponent = mod.default;
       })
-      .catch((err) => {
-        console.error("[LazyHowTkaWorksSection] Failed to load:", err);
+      .catch((error) => {
+        console.error("[LazyHowTkaWorksSection] Failed to load:", error);
         loadFailed = true;
       })
       .finally(() => {
@@ -38,42 +32,45 @@
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry?.isIntersecting) {
-          observer.disconnect();
-          revealed = true;
-          loadComponent();
-        }
+        if (!entry?.isIntersecting) return;
+        observer.disconnect();
+        revealed = true;
+        loadComponent();
       },
       { rootMargin: "200px" }
     );
 
     observer.observe(sectionEl);
-
     return () => observer.disconnect();
   });
 </script>
 
-<!-- id anchors the FAQ's "Watch a sequence build" CTA (/#how-it-works); it lives
-     on this always-present wrapper, not the lazily-mounted inner section, so the
-     anchor resolves even before the section loads. -->
-<div bind:this={sectionEl} class="lazy-section" class:revealed id="how-it-works">
+<div
+  bind:this={sectionEl}
+  class="lazy-section"
+  class:revealed
+  id="how-it-works"
+>
   {#if InnerComponent}
     <InnerComponent />
   {:else if loadFailed}
     <div class="how-section-placeholder" aria-label="Failed to load section">
-      <p class="placeholder-message">Couldn't load this section.</p>
-      <button class="retry-btn" onclick={loadComponent}>
+      <p>Couldn't load this section.</p>
+      <button onclick={loadComponent}>
         <i class="fas fa-redo" aria-hidden="true"></i>
         Try again
       </button>
     </div>
   {:else}
-    <!-- Structural skeleton - visible pulsing cards while loading -->
-    <div class="how-section-skeleton skeleton-pulse" aria-hidden="true">
-      <div class="sk-grid">
-        {#each { length: 6 } as _}
-          <div class="sk-card"></div>
-        {/each}
+    <div class="how-section-skeleton" aria-hidden="true">
+      <div class="sk-intro">
+        <div class="sk-heading"></div>
+        <div class="sk-copy"></div>
+      </div>
+      <div class="sk-proof-strip">
+        <div class="sk-proof"></div>
+        <div class="sk-proof"></div>
+        <div class="sk-proof"></div>
       </div>
     </div>
   {/if}
@@ -81,9 +78,12 @@
 
 <style>
   .lazy-section {
+    scroll-margin-top: 88px;
     opacity: 0;
-    transform: translateY(32px);
-    transition: opacity 0.7s ease, transform 0.7s ease;
+    transform: translateY(24px);
+    transition:
+      opacity 0.5s ease,
+      transform 0.5s ease;
   }
 
   .lazy-section.revealed {
@@ -92,94 +92,135 @@
   }
 
   .how-section-skeleton {
-    max-width: 1400px;
+    --sk-surface: rgba(255, 255, 255, 0.08);
+    --sk-height: clamp(280px, 24vw, 360px);
+
+    box-sizing: border-box;
+    width: min(calc(100% - 48px), 1480px);
     margin: 0 auto;
-    padding: 80px 24px;
+    padding: 64px 0 72px;
   }
 
-  /* Single 6-column row matching the real card layout (gap clamp mirrors
-     HowTkaWorksSection so the skeleton doesn't jump on swap) */
-  .sk-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: clamp(10px, 1.3vw, 16px);
+  .sk-intro {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 40px;
+    margin-bottom: 28px;
   }
 
-  /* Each card: visible enough that users know content is loading */
-  .sk-card {
-    aspect-ratio: 0.85;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  @keyframes skeleton-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
-
-  .skeleton-pulse {
+  .sk-heading,
+  .sk-copy,
+  .sk-proof {
+    background: var(--sk-surface);
     animation: skeleton-pulse 1.8s ease-in-out infinite;
   }
 
-  /* Error / retry state */
+  .sk-heading {
+    width: min(330px, 40%);
+    height: clamp(42px, 4vw, 58px);
+    border-radius: 7px;
+  }
+
+  .sk-copy {
+    width: min(400px, 34%);
+    height: 16px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+  }
+
+  .sk-proof-strip {
+    display: grid;
+    height: var(--sk-height);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 22px;
+  }
+
+  .sk-proof + .sk-proof {
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .sk-proof:last-child {
+    background: rgba(0, 0, 0, 0.22);
+  }
+
   .how-section-placeholder {
     display: flex;
+    min-height: 320px;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 16px;
-    padding: 80px 24px;
+    padding: 56px 24px;
     text-align: center;
   }
 
-  .placeholder-message {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-min, 14px);
+  .how-section-placeholder p {
     margin: 0;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-min, 14px);
   }
 
-  .retry-btn {
+  .how-section-placeholder button {
     display: inline-flex;
+    min-height: 44px;
     align-items: center;
     gap: 8px;
     padding: 10px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.35);
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: transparent;
     color: var(--theme-text, #fff);
-    font-size: var(--font-size-min, 14px);
     cursor: pointer;
-    transition: background 0.2s ease;
+    font-size: var(--font-size-min, 14px);
   }
 
-  .retry-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
+  .how-section-placeholder button:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 4px;
   }
 
-  @media (max-width: 919px) {
-    .sk-grid {
-      display: flex;
-      overflow: hidden;
-      gap: 14px;
+  @keyframes skeleton-pulse {
+    0%,
+    100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.9;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .lazy-section {
+      scroll-margin-top: 72px;
     }
 
-    .sk-card {
-      flex: 0 0 220px;
-    }
-  }
-
-  @media (max-width: 768px) {
     .how-section-skeleton {
-      padding: 48px 16px;
+      --sk-height: clamp(176px, 49vw, 210px);
+
+      width: min(calc(100% - 32px), 680px);
+      padding: 48px 0 56px;
     }
 
-    .sk-card {
-      flex-basis: 200px;
+    .sk-intro {
+      display: block;
+      margin-bottom: 22px;
     }
 
-    .how-section-placeholder {
-      padding: 48px 16px;
+    .sk-heading {
+      width: min(280px, 72%);
+      height: 46px;
+    }
+
+    .sk-copy {
+      width: 82%;
+      margin-top: 14px;
+    }
+
+    .sk-proof-strip {
+      border-radius: 14px;
     }
   }
 
@@ -190,7 +231,9 @@
       transition: none;
     }
 
-    .skeleton-pulse {
+    .sk-heading,
+    .sk-copy,
+    .sk-proof {
       animation: none;
     }
   }

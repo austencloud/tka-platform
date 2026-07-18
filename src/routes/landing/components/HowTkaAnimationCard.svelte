@@ -8,8 +8,7 @@
   No controls, no overlays - just the raw canvas filling its container.
 -->
 <script lang="ts">
-
-import { createAnimationPlaybackController } from "$lib/features/compose/services/animation-playback-controller-factory";
+  import { createAnimationPlaybackController } from "$lib/features/compose/services/animation-playback-controller-factory";
   import { onMount, onDestroy, tick } from "svelte";
   import type { Component } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -23,17 +22,24 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { shouldEnableAssemblyPlayback } from "./how-tka-assembly-model";
 
   interface Props {
     sequence: SequenceData;
     propType?: PropType;
+    active?: boolean;
   }
 
-  let { sequence, propType = PropType.STAFF }: Props = $props();
+  let { sequence, propType = PropType.STAFF, active = false }: Props = $props();
 
-  // Lazy loading via IntersectionObserver
+  // Loading and playback are both gated. Merely mounting the hidden playback
+  // stage must not initialize the animation engine.
   let containerRef: HTMLElement | null = null;
   let hasStartedLoading = $state(false);
+  let sectionVisible = $state(false);
+  let documentVisible = $state(true);
+  let reducedMotion = $state(false);
+  let initializing = $state(false);
 
   // Animation engine state. Ephemeral so this teaching card runs at a fixed
   // 60 BPM and never inherits — or overwrites — the user's saved playback prefs.
@@ -48,7 +54,9 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
   // Per-instance visibility manager so this card's settings don't conflict
   // with other AnimatorCanvas instances on the same page (e.g. PlayWithItInner).
   // Ephemeral: no localStorage persistence, no global dark-class sync.
-  const visibilityManager = new AnimationVisibilityStateManager({ ephemeral: true });
+  const visibilityManager = new AnimationVisibilityStateManager({
+    ephemeral: true,
+  });
 
   // Apply prop type to all motions in the sequence
   function applyPropType(seq: SequenceData): SequenceData {
@@ -57,7 +65,9 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
       return {
         ...data,
         motions: {
-          blue: data.motions.blue ? { ...data.motions.blue, propType } : undefined,
+          blue: data.motions.blue
+            ? { ...data.motions.blue, propType }
+            : undefined,
           red: data.motions.red ? { ...data.motions.red, propType } : undefined,
         },
       };
@@ -72,7 +82,9 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
   // Derived values for AnimatorCanvas
   let derivedStartPosition = $derived.by(() => {
     if (!animationState.sequenceData || !startPositionDeriver) return null;
-    return startPositionDeriver.getOrDeriveStartPosition(animationState.sequenceData);
+    return startPositionDeriver.getOrDeriveStartPosition(
+      animationState.sequenceData
+    );
   });
 
   let currentLetter = $derived.by(() => {
@@ -80,7 +92,13 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
     const step = animationState.currentStep;
     if (step < 1) return derivedStartPosition?.letter || null;
     if (animationState.sequenceData.steps?.length > 0) {
-      const idx = Math.max(0, Math.min(Math.floor(step) - 1, animationState.sequenceData.steps.length - 1));
+      const idx = Math.max(
+        0,
+        Math.min(
+          Math.floor(step) - 1,
+          animationState.sequenceData.steps.length - 1
+        )
+      );
       return animationState.sequenceData.steps[idx]?.letter || null;
     }
     return null;
@@ -91,32 +109,77 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
     const step = animationState.currentStep;
     if (step < 1) return derivedStartPosition || null;
     if (animationState.sequenceData.steps?.length > 0) {
-      const idx = Math.max(0, Math.min(Math.floor(step) - 1, animationState.sequenceData.steps.length - 1));
+      const idx = Math.max(
+        0,
+        Math.min(
+          Math.floor(step) - 1,
+          animationState.sequenceData.steps.length - 1
+        )
+      );
       return animationState.sequenceData.steps[idx] || null;
     }
     return null;
   });
 
   let gridMode = $derived(animationState.sequenceData?.gridMode ?? null);
+  let playbackEnabled = $derived(
+    shouldEnableAssemblyPlayback({
+      active,
+      sectionVisible,
+      documentVisible,
+      reducedMotion,
+    })
+  );
 
-  // IntersectionObserver: only initialize when visible
   onMount(() => {
     if (!containerRef) return;
 
+    const updateDocumentVisibility = () => {
+      documentVisible = !document.hidden;
+    };
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateMotionPreference = () => {
+      reducedMotion = motionQuery.matches;
+    };
+
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting && !hasStartedLoading) {
-          hasStartedLoading = true;
-          initializeAnimation();
-          observer.disconnect();
-        }
+      ([entry]) => {
+        sectionVisible = entry?.isIntersecting ?? false;
       },
       { rootMargin: "200px", threshold: 0.1 }
     );
 
+    updateDocumentVisibility();
+    updateMotionPreference();
+    document.addEventListener("visibilitychange", updateDocumentVisibility);
+    motionQuery.addEventListener("change", updateMotionPreference);
     observer.observe(containerRef);
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      document.removeEventListener(
+        "visibilitychange",
+        updateDocumentVisibility
+      );
+      motionQuery.removeEventListener("change", updateMotionPreference);
+    };
+  });
+
+  $effect(() => {
+    if (!playbackEnabled) {
+      if (animationState.isPlaying) playbackController?.togglePlayback();
+      return;
+    }
+
+    if (!hasStartedLoading && !initializing) {
+      hasStartedLoading = true;
+      void initializeAnimation();
+      return;
+    }
+
+    if (animationReady && !animationState.isPlaying) {
+      playbackController?.togglePlayback();
+    }
   });
 
   onDestroy(() => {
@@ -125,6 +188,8 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
   });
 
   async function initializeAnimation() {
+    initializing = true;
+    animationError = false;
     try {
       // Configure for a clean, dark, no-frills look
       animationSettings.setTrackingMode(TrackingMode.BOTH_ENDS);
@@ -149,9 +214,8 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
       if (!success) throw new Error("Playback init failed");
 
       // Dynamically import the animation canvas - keeps it out of the initial bundle
-      const mod = await import(
-        "$lib/shared/animation-engine/components/AnimatorCanvas.svelte"
-      );
+      const mod =
+        await import("$lib/shared/animation-engine/components/AnimatorCanvas.svelte");
       AnimatorCanvasComponent = mod.default as Component;
 
       animationReady = true;
@@ -159,10 +223,14 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
 
       animationState.setPlaybackMode("continuous");
       animationState.setCurrentStep(1);
-      playbackController.togglePlayback();
+      if (playbackEnabled && !animationState.isPlaying) {
+        playbackController.togglePlayback();
+      }
     } catch (err) {
       console.error("[HowTkaAnimationCard] Failed to initialize:", err);
       animationError = true;
+    } finally {
+      initializing = false;
     }
   }
 </script>
@@ -227,5 +295,4 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     font-size: var(--font-size-sm, 0.875rem);
   }
-
 </style>
