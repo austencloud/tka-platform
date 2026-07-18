@@ -1,5 +1,4 @@
 <script lang="ts">
-  import EditorialNav from "$lib/shared/landing/components/EditorialNav.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   let { data } = $props();
@@ -80,9 +79,9 @@
   {@html `<script type="application/ld+json">${breadcrumbLd}</` + `script>`}
 </svelte:head>
 
-<EditorialNav />
-
 <div class="editorial">
+  <a class="back-link" href="/notation">← Flow Arts Notation</a>
+
   <header class="editorial-header">
     <h1 class="page-title">The Kinetic Alphabet Letters</h1>
     <p class="page-subtitle">All 47 flow arts notation pictographs</p>

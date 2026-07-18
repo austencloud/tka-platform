@@ -1,5 +1,4 @@
 <script lang="ts">
-  import EditorialNav from "$lib/shared/landing/components/EditorialNav.svelte";
   import { LETTER_IMAGE_SIZE } from "$lib/shared/seo/notation-letters";
   import "$lib/shared/landing/styles/public-editorial.css";
 
@@ -60,8 +59,6 @@
   {@html `<script type="application/ld+json">${imageObjectLd}</` + `script>`}
   {@html `<script type="application/ld+json">${breadcrumbLd}</` + `script>`}
 </svelte:head>
-
-<EditorialNav />
 
 <div class="editorial">
   <nav class="crumbs" aria-label="Breadcrumb">
