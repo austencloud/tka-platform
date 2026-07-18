@@ -212,7 +212,7 @@ Expected: FAIL because NotationSequenceStage.svelte is absent.
       import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
       import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
       import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  
+
       let { sequence }: { sequence: SequenceData } = $props();
     </script>
 
@@ -288,7 +288,7 @@ Expected: FAIL because NotationLayoutStudy.svelte is absent.
       import NotationRosetta from "./NotationRosetta.svelte";
       import NotationShapeMatrix from "./NotationShapeMatrix.svelte";
       import NotationSequenceStage from "./NotationSequenceStage.svelte";
-  
+
       type LayoutMode = "atlas" | "cinematic";
       let { layoutMode, sequence }: {
         layoutMode: LayoutMode;
@@ -441,7 +441,7 @@ Expected: FAIL because +page.svelte is absent.
       import demoJson from "$lib/shared/landing/data/demo-sequence.json";
       import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
       import NotationLayoutStudy from "./_components/NotationLayoutStudy.svelte";
-  
+
       type LayoutMode = "atlas" | "cinematic";
       const layoutOptions: Array<{ value: LayoutMode; label: string }> = [
         { value: "atlas", label: "Editorial Atlas" },
