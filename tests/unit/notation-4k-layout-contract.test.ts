@@ -56,4 +56,18 @@ describe("notation 4K layout lab artifacts", () => {
     expect(source).toContain('[data-layout="atlas"]');
     expect(source).toContain('[data-layout="cinematic"]');
   });
+
+  it("uses native chrome and controls without duplicating the study", () => {
+    const source = read("src/routes/test/notation-4k/+page.svelte");
+    expect(source).toContain(
+      'import MarketingChrome from "$lib/shared/landing/components/MarketingChrome.svelte"'
+    );
+    expect(source).toContain(
+      'import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte"'
+    );
+    expect(source.match(/<NotationLayoutStudy\b/g)).toHaveLength(1);
+    expect(source).toContain('let layoutMode = $state<LayoutMode>("atlas")');
+    expect(source).toContain('content="noindex, nofollow"');
+    expect(source).toContain("value={layoutMode}");
+  });
 });
