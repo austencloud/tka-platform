@@ -296,6 +296,16 @@
     animation-play-state: paused;
   }
 
+  /* Big-screen tier (a 4K monitor at 200% reports ~1920 CSS px): the arcade
+     tiles grow so the strip fills a wide canvas instead of parading small
+     laptop-sized machines. Matches the composer-4k breakpoint (1680). */
+  @media (min-width: 1680px) {
+    .games-strip {
+      --tile-w: 344px;
+      --tile-h: 328px;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .stage-fill {
       transition: none;

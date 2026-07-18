@@ -80,7 +80,7 @@
           data={matrixData}
           rowAxis={matrixAxis}
           colAxis={matrixAxis}
-          maxCellPx={96}
+          maxCellPx={190}
           onselect={() => {}}
         />
       {:else}
@@ -173,9 +173,11 @@
   .matrix-frame {
     position: relative;
     width: 100%;
-    max-width: 620px;
+    /* The Shape Matrix is the star of this wing — let it fill a wide band and
+       grow with the viewport instead of a 620px laptop box. */
+    max-width: min(100%, 1040px);
     margin-inline: auto;
-    height: clamp(360px, 60vw, 540px);
+    height: clamp(380px, 60vh, 1000px);
     border-radius: 16px;
     overflow: hidden;
     border: 1px solid oklch(0.5 0.03 270 / 0.18);
@@ -193,7 +195,7 @@
 
   .tile-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
     gap: clamp(0.9rem, 0.6rem + 1vw, 1.4rem);
   }
   .stage {

@@ -145,11 +145,6 @@
 </script>
 
 <section class="generate-section">
-  <header class="intro">
-    <h2 class="title">Generate</h2>
-    <p class="lede">Set four parameters, tap Generate, watch a fresh rotated LOOP play back.</p>
-  </header>
-
   {#if browser}
     <div class="demo-grid">
       <div class="controls">
@@ -245,23 +240,11 @@
     flex-direction: column;
     gap: 1.4rem;
     width: 100%;
-    max-width: 1040px;
+    /* Fills the duo demo cell (or a wide band); no small hard cap that strands
+       the 4K canvas. */
+    max-width: min(100%, 1280px);
     margin-inline: auto;
     color: oklch(0.9 0.02 270);
-  }
-
-  .intro {
-    text-align: center;
-  }
-  .title {
-    font-size: clamp(1.5rem, 1.3rem + 0.9vw, 2.2rem);
-    font-weight: 750;
-    margin: 0;
-  }
-  .lede {
-    margin: 0.4rem 0 0;
-    font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.1rem);
-    color: oklch(0.68 0.02 270);
   }
 
   .demo-grid {
@@ -286,7 +269,9 @@
     gap: 0.75rem;
   }
   .card-cell {
-    height: 132px;
+    /* Viewport-keyed: the container-query cards grow their internals on a big
+       screen instead of holding a fixed laptop size. */
+    height: clamp(128px, 12vh, 188px);
     min-width: 0;
     min-height: 0;
   }

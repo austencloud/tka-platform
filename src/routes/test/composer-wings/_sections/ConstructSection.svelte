@@ -145,7 +145,9 @@
     align-items: center;
     gap: 14px;
     width: 100%;
-    max-width: 780px;
+    /* Fills a wide showcase band; capped so the 3 start tiles stay ~one-third
+       each rather than sprawling on a 4K canvas. */
+    max-width: min(100%, 1040px);
     margin: 0 auto;
     text-align: center;
     color: var(--theme-text, #fff);
@@ -199,7 +201,9 @@
 
   .picker-container {
     width: 100%;
-    height: clamp(320px, 50vh, 520px);
+    /* Viewport-keyed so the start tiles + option grid grow with the screen
+       instead of sitting small on a big monitor. */
+    height: clamp(340px, 54vh, 720px);
   }
 
   /* The option grid caps its tile size; in a tall picker it top-aligns because
