@@ -284,9 +284,9 @@ If sequence loading fails, keep the rail and stage geometry. Show a concise mess
 
 Primary files:
 
-- `src/lib/features/landing/components/HowTkaWorksSection.svelte`
-- `src/lib/features/landing/components/LazyHowTkaWorksSection.svelte`
-- `src/lib/features/landing/components/HowTkaAnimationCard.svelte`
+- `src/routes/landing/components/HowTkaWorksSection.svelte`
+- `src/routes/landing/components/LazyHowTkaWorksSection.svelte`
+- `src/routes/landing/components/HowTkaAnimationCard.svelte`
 
 Possible focused additions:
 
