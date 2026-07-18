@@ -8,8 +8,7 @@
   No controls, no overlays - just the raw canvas filling its container.
 -->
 <script lang="ts">
-
-import { createAnimationPlaybackController } from "$lib/features/compose/services/animation-playback-controller-factory";
+  import { createAnimationPlaybackController } from "$lib/features/compose/services/animation-playback-controller-factory";
   import { onMount, onDestroy, tick } from "svelte";
   import type { Component } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
@@ -23,17 +22,23 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
   } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
   import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { shouldEnableAssemblyPlayback } from "./how-tka-assembly-model";
 
   interface Props {
     sequence: SequenceData;
     propType?: PropType;
+    active?: boolean;
   }
 
-  let { sequence, propType = PropType.STAFF }: Props = $props();
+  let { sequence, propType = PropType.STAFF, active = false }: Props = $props();
 
-  // Lazy loading via IntersectionObserver
+  // Loading and playback are both gated. Merely mounting the hidden playback
+  // stage must not initialize the animation engine.
   let containerRef: HTMLElement | null = null;
   let hasStartedLoading = $state(false);
+  let sectionVisible = $state(false);
+  let documentVisible = $state(true);
+  let initializing = $state(false);
 
   // Animation engine state. Ephemeral so this teaching card runs at a fixed
   // 60 BPM and never inherits — or overwrites — the user's saved playback prefs.
@@ -98,25 +103,49 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
   });
 
   let gridMode = $derived(animationState.sequenceData?.gridMode ?? null);
+  let playbackEnabled = $derived(
+    shouldEnableAssemblyPlayback({ active, sectionVisible, documentVisible })
+  );
 
-  // IntersectionObserver: only initialize when visible
   onMount(() => {
     if (!containerRef) return;
 
+    const updateDocumentVisibility = () => {
+      documentVisible = !document.hidden;
+    };
+
     const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting && !hasStartedLoading) {
-          hasStartedLoading = true;
-          initializeAnimation();
-          observer.disconnect();
-        }
+      ([entry]) => {
+        sectionVisible = entry?.isIntersecting ?? false;
       },
       { rootMargin: "200px", threshold: 0.1 }
     );
 
+    updateDocumentVisibility();
+    document.addEventListener("visibilitychange", updateDocumentVisibility);
     observer.observe(containerRef);
 
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", updateDocumentVisibility);
+    };
+  });
+
+  $effect(() => {
+    if (!playbackEnabled) {
+      if (animationState.isPlaying) playbackController?.togglePlayback();
+      return;
+    }
+
+    if (!hasStartedLoading && !initializing) {
+      hasStartedLoading = true;
+      void initializeAnimation();
+      return;
+    }
+
+    if (animationReady && !animationState.isPlaying) {
+      playbackController?.togglePlayback();
+    }
   });
 
   onDestroy(() => {
@@ -125,6 +154,8 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
   });
 
   async function initializeAnimation() {
+    initializing = true;
+    animationError = false;
     try {
       // Configure for a clean, dark, no-frills look
       animationSettings.setTrackingMode(TrackingMode.BOTH_ENDS);
@@ -159,10 +190,14 @@ import { createAnimationPlaybackController } from "$lib/features/compose/service
 
       animationState.setPlaybackMode("continuous");
       animationState.setCurrentStep(1);
-      playbackController.togglePlayback();
+      if (playbackEnabled && !animationState.isPlaying) {
+        playbackController.togglePlayback();
+      }
     } catch (err) {
       console.error("[HowTkaAnimationCard] Failed to initialize:", err);
       animationError = true;
+    } finally {
+      initializing = false;
     }
   }
 </script>
