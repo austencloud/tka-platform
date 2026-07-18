@@ -53,7 +53,9 @@
   // Per-instance visibility manager so this card's settings don't conflict
   // with other AnimatorCanvas instances on the same page (e.g. PlayWithItInner).
   // Ephemeral: no localStorage persistence, no global dark-class sync.
-  const visibilityManager = new AnimationVisibilityStateManager({ ephemeral: true });
+  const visibilityManager = new AnimationVisibilityStateManager({
+    ephemeral: true,
+  });
 
   // Apply prop type to all motions in the sequence
   function applyPropType(seq: SequenceData): SequenceData {
@@ -62,7 +64,9 @@
       return {
         ...data,
         motions: {
-          blue: data.motions.blue ? { ...data.motions.blue, propType } : undefined,
+          blue: data.motions.blue
+            ? { ...data.motions.blue, propType }
+            : undefined,
           red: data.motions.red ? { ...data.motions.red, propType } : undefined,
         },
       };
@@ -77,7 +81,9 @@
   // Derived values for AnimatorCanvas
   let derivedStartPosition = $derived.by(() => {
     if (!animationState.sequenceData || !startPositionDeriver) return null;
-    return startPositionDeriver.getOrDeriveStartPosition(animationState.sequenceData);
+    return startPositionDeriver.getOrDeriveStartPosition(
+      animationState.sequenceData
+    );
   });
 
   let currentLetter = $derived.by(() => {
@@ -85,7 +91,13 @@
     const step = animationState.currentStep;
     if (step < 1) return derivedStartPosition?.letter || null;
     if (animationState.sequenceData.steps?.length > 0) {
-      const idx = Math.max(0, Math.min(Math.floor(step) - 1, animationState.sequenceData.steps.length - 1));
+      const idx = Math.max(
+        0,
+        Math.min(
+          Math.floor(step) - 1,
+          animationState.sequenceData.steps.length - 1
+        )
+      );
       return animationState.sequenceData.steps[idx]?.letter || null;
     }
     return null;
@@ -96,7 +108,13 @@
     const step = animationState.currentStep;
     if (step < 1) return derivedStartPosition || null;
     if (animationState.sequenceData.steps?.length > 0) {
-      const idx = Math.max(0, Math.min(Math.floor(step) - 1, animationState.sequenceData.steps.length - 1));
+      const idx = Math.max(
+        0,
+        Math.min(
+          Math.floor(step) - 1,
+          animationState.sequenceData.steps.length - 1
+        )
+      );
       return animationState.sequenceData.steps[idx] || null;
     }
     return null;
@@ -127,7 +145,10 @@
 
     return () => {
       observer.disconnect();
-      document.removeEventListener("visibilitychange", updateDocumentVisibility);
+      document.removeEventListener(
+        "visibilitychange",
+        updateDocumentVisibility
+      );
     };
   });
 
@@ -180,9 +201,8 @@
       if (!success) throw new Error("Playback init failed");
 
       // Dynamically import the animation canvas - keeps it out of the initial bundle
-      const mod = await import(
-        "$lib/shared/animation-engine/components/AnimatorCanvas.svelte"
-      );
+      const mod =
+        await import("$lib/shared/animation-engine/components/AnimatorCanvas.svelte");
       AnimatorCanvasComponent = mod.default as Component;
 
       animationReady = true;
@@ -262,5 +282,4 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
     font-size: var(--font-size-sm, 0.875rem);
   }
-
 </style>
