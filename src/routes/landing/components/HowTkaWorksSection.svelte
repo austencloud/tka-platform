@@ -282,6 +282,7 @@
 
       <div
         class="assembly-stage"
+        role="region"
         data-step={activeStep}
         aria-label={activeDefinition.stageLabel}
       >
@@ -541,7 +542,7 @@
     border-radius: 14px;
   }
 
-  .step-rail {
+  .how-tka-works :global(.step-rail) {
     position: relative;
     display: grid;
     align-content: center;
@@ -549,7 +550,7 @@
     padding: 22px 0;
   }
 
-  .step-rail::before {
+  .how-tka-works :global(.step-rail)::before {
     position: absolute;
     top: 10%;
     bottom: 10%;
@@ -793,14 +794,14 @@
       height: 90%;
     }
 
-    .step-rail {
+    .how-tka-works :global(.step-rail) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
       padding: 0;
       border-top: 1px solid var(--assembly-line);
       border-left: 1px solid var(--assembly-line);
     }
 
-    .step-rail::before {
+    .how-tka-works :global(.step-rail)::before {
       display: none;
     }
 

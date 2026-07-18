@@ -14,7 +14,9 @@ describe("How TKA assembly architecture", () => {
     expect(source).toContain("<ToggleGroup.Root");
     expect(source).toContain('type="single"');
     expect(source).toContain('aria-live="polite"');
+    expect(source).toContain('role="region"');
     expect(source).toContain(":global(.step-control)");
+    expect(source).toContain(":global(.step-rail)");
     expect(source).not.toContain("onpointerdown={engage}");
     expect(source).not.toContain('class="step-card"');
   });
