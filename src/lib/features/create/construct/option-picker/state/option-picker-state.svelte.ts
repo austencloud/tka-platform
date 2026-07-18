@@ -20,10 +20,21 @@ export interface OptionPickerStateConfig {
   optionLoader: OptionLoader;
   filterService: OptionFilter;
   optionSorter: OptionSorter;
+  /**
+   * Optional post-filter applied to the visible options (after continuity
+   * filtering, before sorting). Used to hide moves that are illegal for the
+   * active prop (poi). Defaults to the identity, so behavior is unchanged when
+   * not provided.
+   */
+  poiFilter?: (
+    options: readonly PictographData[],
+    previous: PictographData | null
+  ) => PictographData[];
 }
 
 export function createOptionPickerState(config: OptionPickerStateConfig) {
   const { optionLoader, filterService, optionSorter } = config;
+  const poiFilter = config.poiFilter ?? ((opts: readonly PictographData[]) => [...opts]);
 
   // Core reactive state
   let state = $state<OptionPickerState>("ready");
@@ -103,6 +114,10 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
         currentSequence
       );
     }
+
+    // Hide moves the active prop (poi) can't legally do. Identity for non-poi
+    // props or when the gate is off.
+    filteredResults = poiFilter(filteredResults, currentSequence.at(-1) ?? null);
 
     // Apply sorting
     if (sortMethod) {
@@ -186,6 +201,10 @@ export function createOptionPickerState(config: OptionPickerStateConfig) {
         currentSequence
       );
     }
+
+    // Hide moves the active prop (poi) can't legally do. Identity for non-poi
+    // props or when the gate is off.
+    filteredResults = poiFilter(filteredResults, currentSequence.at(-1) ?? null);
 
     // Apply sorting
     if (sortMethod) {

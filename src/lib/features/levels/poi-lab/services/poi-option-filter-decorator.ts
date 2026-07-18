@@ -1,73 +1,72 @@
 /**
  * Poi Option Filter Decorator
  *
- * Filters pictograph options to only include poi-legal moves.
+ * Filters pictograph options to only poi-legal moves, evaluated per hand. A hand
+ * is constrained only when its active prop type is poi; an absent motion imposes
+ * no constraint (single-hand steps). Neither hand poi → no filtering.
+ *
+ * Active prop types are passed in rather than read off the motion: raw options
+ * are not stamped with the user's prop type until later (prepareBatch), so the
+ * legality decision must come from the current settings.
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { validateMotion, validateTransition } from "./poi-constraint-validator";
 
-export class PoiOptionFilterDecorator {
-  constructor() {}
+export interface ActivePropTypes {
+  // A hand may have no prop type set; only `PropType.POI` is constrained, so an
+  // undefined type is treated as "not poi" (no constraint).
+  bluePropType: PropType | undefined;
+  redPropType: PropType | undefined;
+}
 
+export class PoiOptionFilterDecorator {
   filterPoiLegalOptions(
     options: readonly PictographData[],
-    previousPictograph: PictographData | null
+    previousPictograph: PictographData | null,
+    activeProps: ActivePropTypes
   ): PictographData[] {
+    const blueIsPoi = activeProps.bluePropType === PropType.POI;
+    const redIsPoi = activeProps.redPropType === PropType.POI;
+
+    // Neither hand is poi — nothing to constrain.
+    if (!blueIsPoi && !redIsPoi) {
+      return [...options];
+    }
+
     return options.filter((option) => {
-      const blueMotion = option.motions?.blue;
-      const redMotion = option.motions?.red;
-
-      const blueIsPoi = blueMotion?.propType === PropType.POI;
-      const redIsPoi = redMotion?.propType === PropType.POI;
-
-      // If neither motion is poi, option passes through
-      if (!blueIsPoi && !redIsPoi) {
-        return true;
+      if (
+        blueIsPoi &&
+        !this.isHandLegal(option.motions?.blue, previousPictograph?.motions?.blue)
+      ) {
+        return false;
       }
-
-      // Validate blue poi motion
-      if (blueIsPoi && blueMotion) {
-        const blueResult = validateMotion(blueMotion);
-        if (!blueResult.isValid) {
-          return false;
-        }
-
-        // Check transition if we have a previous pictograph
-        const prevBlue = previousPictograph?.motions?.blue;
-        if (prevBlue?.propType === PropType.POI) {
-          const transitionResult = validateTransition(
-            prevBlue,
-            blueMotion
-          );
-          if (!transitionResult.isValid) {
-            return false;
-          }
-        }
+      if (
+        redIsPoi &&
+        !this.isHandLegal(option.motions?.red, previousPictograph?.motions?.red)
+      ) {
+        return false;
       }
-
-      // Validate red poi motion
-      if (redIsPoi && redMotion) {
-        const redResult = validateMotion(redMotion);
-        if (!redResult.isValid) {
-          return false;
-        }
-
-        // Check transition if we have a previous pictograph
-        const prevRed = previousPictograph?.motions?.red;
-        if (prevRed?.propType === PropType.POI) {
-          const transitionResult = validateTransition(
-            prevRed,
-            redMotion
-          );
-          if (!transitionResult.isValid) {
-            return false;
-          }
-        }
-      }
-
       return true;
     });
+  }
+
+  /**
+   * A poi hand is legal when its motion (if present) is a legal poi motion and,
+   * when a previous beat exists, the transition into it is legal. An absent
+   * motion imposes no constraint.
+   */
+  private isHandLegal(
+    motion: MotionData | undefined,
+    previousMotion: MotionData | undefined
+  ): boolean {
+    if (!motion) return true;
+    if (!validateMotion(motion).isValid) return false;
+    if (previousMotion && !validateTransition(previousMotion, motion).isValid) {
+      return false;
+    }
+    return true;
   }
 }

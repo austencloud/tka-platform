@@ -24,6 +24,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
   import { calculateDeviceAwareSize } from "../services/option-grid-fit-calculator";
 
   import { createOptionPickerState } from "../state/option-picker-state.svelte";
+  import { applyPoiLegalComposerFilter } from "$lib/features/levels/poi-lab/services/apply-poi-legal-filter";
   import type { OptionLoader } from "$lib/features/create/construct/option-picker/services/option-loader";
   import type { OptionSorter } from "$lib/features/create/construct/option-picker/services/option-sorter";
   import type { OrganizedSection, SortMethod } from "$lib/features/create/construct/option-picker/domain/option-picker-types";
@@ -336,6 +337,7 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
         optionLoader: loader,
         filterService: filter,
         optionSorter: sorter,
+        poiFilter: applyPoiLegalComposerFilter,
       });
 
       // Initialize with the prop value BEFORE marking ready
