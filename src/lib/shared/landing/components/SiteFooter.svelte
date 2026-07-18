@@ -46,6 +46,7 @@
       links: [
         { label: "Guide", href: "/guide" },
         { label: "Glossary", href: "/glossary" },
+        { label: "FAQ", href: "/faq" },
         { label: "Staff Choreography", href: "/learn/staff-spinning-choreography" },
         { label: "Double Staff Codex", href: "/guide/codex" },
       ],
@@ -54,8 +55,8 @@
       title: "Props",
       links: [
         { label: "Double Staves", href: "/notation/staves" },
-        { label: "Fans", href: "/notation/fans" },
         { label: "Clubs", href: "/notation/clubs" },
+        { label: "Fans", href: "/notation/fans" },
         { label: "Buugeng", href: "/notation/buugeng" },
         { label: "Poi", href: "/notation/poi" },
       ],

@@ -97,3 +97,27 @@ The visitor experiences competence instead of being promised it.
 - **`/about` (card variant):** gets the same items, demos included (they lazy-load on open).
 - **Section slot discipline:** FAQ does NOT get a spinner or animation — Play With It owns
   "watch it move"; FAQ proofs are static renders plus the one tap interaction.
+
+## Addendum 3 (2026-07-17): dedicated page, demos removed
+
+Austen's review of the shipped interview layout redirected the design:
+
+- **The FAQ is now its own page, `/faq`**, linked from the header's Learn menu and the
+  footer's Learn column, instead of a landing-page section ("slapped on the landing page").
+  The landing route no longer renders any FAQ; `/about` dropped its embedded copy and points
+  to `/faq` from the CTA card. FAQPage JSON-LD is emitted only on `/faq`, matching its
+  visible content. New public routes need BOTH registries: `MARKETING_EXACT` in
+  `src/routes/+layout.svelte` (chrome) and `PUBLIC_PATH_PREFIXES` in `src/config/domains.ts`
+  (landing-lite boot; missing it boots the full app shell with the "Connecting to cloud"
+  splash over the page).
+- **Pictograph demos and the read-test quiz are REMOVED** (`FaqPictographDemo`,
+  `FaqReadTest`, `faq-pictographs.ts` deleted). Rejected on copy grounds: "dot to its
+  arrowhead" isn't how anyone talks, "north in spinner terms" isn't what spinners say,
+  and the canonical unit is a **step, never a beat** (answers corrected accordingly).
+- **Layout is a single centered reading column** (`FaqInterview`, 42rem measure): question in
+  the site serif, answer, then a door button in the reading flow. The two-column interview
+  grid died because a short question next to a tall answer leaves unexplained voids, and
+  full-width CTAs stranded whitespace to their right.
+- **One door per destination across the whole list** (contract-tested), so the page doesn't
+  read as a wall of repeated buttons. Doors: `/#how-it-works`, `/learn/guide`,
+  `/#play-with-it`, `/composer`.

@@ -199,6 +199,36 @@ reduced-motion safe).
       overflow, screenshots of OpenChapter + hub chips + footer
 - [ ] Commit (pathspec), cherry-pick to main, push
 
+## Interview rewrite (2026-07-16, same day)
+
+Austen rejected the first copy pass ("canonical prop" framing read as
+staff superiority). All five pages were rewritten from a live interview.
+The theses now on the pages, in his words:
+
+- Two prop families: dual-ended (staves base; buugeng, eight rings, double
+  contact ball) and single-ended (clubs base, core of VTG; fans, triads).
+- Translation rule: hold an imaginary staff with one end cut off; a
+  single-ended prop's orientation = the staff's thumb orientation.
+- The collapse: isolation+extension are one staff motion, two distinct club
+  moves; vanti/hanti likewise (VTG V1 p.4 shapes, MCP-verified).
+- Staves teach fastest because 8 orientations read as 4: less information,
+  not superiority. Single-ended props display more and explore a wider
+  complexity range.
+- The no-fingerspin/no-regrip rule is staff pedagogy, a scaffold that stops
+  mattering once you can read turn values. Finger spinning is established
+  and welcomed on buugeng.
+- Fans: folds (planar props crossing through 3D, hand orientation flips
+  front/back) are fundamental to fans and not yet notatable; hand
+  orientation matrix is a named missing piece.
+- Poi: patterns are poi-capable only when rotational value stays relatively
+  consistent; TKA is a generator poi can draw from, not an ideal poi
+  description system.
+
+A parallel session had shipped its own per-prop pages to main (SEO A+ plan);
+the branch merge kept THIS implementation. Main gets the interview rewrite
+after Austen reviews the branch copy — do not merge the copy to main before
+his sign-off.
+
 ## Out of scope (named, not silent)
 
 - Per-prop animation demos (slot reserved; needs a demo-sequence-per-prop

@@ -5,7 +5,6 @@
   import PlayWithItSection from "./landing/components/PlayWithItSection.svelte";
   import GuidesSection from "./landing/components/GuidesSection.svelte";
   import ShopCtaSection from "./landing/components/ShopCtaSection.svelte";
-  import FaqInterview from "$lib/shared/landing/components/FaqInterview.svelte";
 
   onMount(() => {
     // Cosmic background + SiteHeader are provided by MarketingChrome (root layout).
@@ -160,8 +159,8 @@
   <!-- SoftwareApplication + HowTo JSON-LD moved to /composer — Flow Arts
        Composer is its own entity with its own page; this page is TKA's. -->
 
-  <!-- FAQPage JSON-LD is emitted by <FaqInterview emitSchema> in the body, from
-       the canonical FAQ_ITEMS, so the schema matches the visible on-page FAQ. -->
+  <!-- The FAQ lives on its own page (/faq, in the header's Learn menu); its
+       FAQPage JSON-LD is emitted there, matching that page's visible content. -->
 
 </svelte:head>
 
@@ -185,10 +184,6 @@
       <hr class="divider" />
       <div class="scroll-reveal">
         <ShopCtaSection />
-      </div>
-      <hr class="divider" />
-      <div class="scroll-reveal">
-        <FaqInterview emitSchema />
       </div>
     </main>
   </div>

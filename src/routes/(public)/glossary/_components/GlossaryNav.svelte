@@ -1,12 +1,17 @@
 <script lang="ts">
   /**
-   * The glossary's contents panel - the same job GuideSidebar does for the
-   * guide, adapted to a lexicon: an optional filter box, every term grouped
-   * by category, and live highlighting of the term currently being read
-   * (scroll-spy signal supplied by the page). Hosted twice by +page.svelte:
-   * in the desktop sticky sidebar and inside the mobile Contents drawer
-   * (drawer hides the search box because the sticky mobile bar already has
-   * one bound to the same query).
+   * The glossary's contents panel: an optional filter box plus one row per
+   * CATEGORY. Categories only, deliberately - the master list right beside
+   * this rail already shows every term of the open category with a teaser,
+   * so listing the same terms here read as the page saying everything twice
+   * (Austen, 2026-07-16). The rail's actual jobs are jumping between
+   * categories and hosting the search box; term-level access lives in the
+   * master list and the global filter.
+   *
+   * Hosted twice by +page.svelte: in the desktop sticky sidebar and inside
+   * the mobile Contents drawer (drawer hides the search box because the
+   * sticky mobile bar already has one bound to the same query). While a
+   * filter is active the counts become per-category match counts.
    */
   type NavTerm = { term: string; slug: string };
   type NavGroup = {
@@ -23,6 +28,7 @@
     activeSlug = "",
     activeCat = "",
     showSearch = true,
+    showCats = true,
     onNavigate,
   }: {
     /** Already-filtered groups (the page owns the filtering). */
@@ -30,31 +36,24 @@
     /** Unfiltered term count, for the "N of M" line while filtering. */
     total: number;
     query?: string;
+    /** Currently selected term - highlights the category containing it. */
     activeSlug?: string;
     /** The page's current drill view ("landing" | "all" | category key) -
-     *  highlights the matching category heading. */
+     *  highlights the matching category row. */
     activeCat?: string;
     showSearch?: boolean;
-    /** Fired when any link is activated (term slug or `cat-*` section slug).
-     *  The host owns what happens: reveal the term / drill the category /
-     *  close the drawer. It may preventDefault the anchor jump. */
+    /** Hide the category rows (the glossary landing view hides them because
+     *  its category CARDS are the nav there - same list twice is the exact
+     *  redundancy this component exists to avoid). */
+    showCats?: boolean;
+    /** Fired when a category row is activated (its `cat-*` section slug).
+     *  The host owns what happens: drill the category / close the drawer.
+     *  It may preventDefault the anchor jump. */
     onNavigate?: (slug: string, e: MouseEvent) => void;
   } = $props();
 
   const shown = $derived(groups.reduce((n, g) => n + g.terms.length, 0));
   const filtering = $derived(query.trim().length > 0);
-
-  let listEl: HTMLElement | undefined = $state();
-
-  // Keep the active term's link in view as the reader scrolls the article.
-  // 'nearest' means no movement at all while the link is already visible,
-  // so this never fights a reader who is scrolling the nav itself.
-  $effect(() => {
-    if (!activeSlug || !listEl) return;
-    listEl
-      .querySelector(`a[data-slug="${CSS.escape(activeSlug)}"]`)
-      ?.scrollIntoView({ block: "nearest" });
-  });
 </script>
 
 <div class="gnav">
@@ -86,41 +85,27 @@
     {#if filtering}{shown} of {total} terms{:else}{total} terms{/if}
   </p>
 
-  <nav class="gnav-list" aria-label="Glossary contents" bind:this={listEl}>
-    {#each groups as g (g.key)}
-      {@const groupActive =
-        g.key === activeCat || g.terms.some((t) => t.slug === activeSlug)}
-      <div class="gnav-group">
+  {#if showCats}
+    <nav class="gnav-list" aria-label="Glossary categories">
+      {#each groups as g (g.key)}
+        {@const groupActive =
+          g.key === activeCat || g.terms.some((t) => t.slug === activeSlug)}
         <a
-          class="gnav-heading"
+          class="gnav-cat"
           class:active={groupActive}
+          aria-current={groupActive ? "true" : undefined}
           href={`#${g.sectionSlug}`}
           onclick={(e) => onNavigate?.(g.sectionSlug, e)}
         >
-          <span>{g.label}</span>
+          <span class="gnav-label">{g.label}</span>
           <span class="gnav-n">{g.terms.length}</span>
         </a>
-        <ul>
-          {#each g.terms as t (t.slug)}
-            <li>
-              <a
-                data-slug={t.slug}
-                class:active={t.slug === activeSlug}
-                aria-current={t.slug === activeSlug ? "location" : undefined}
-                href={`#${t.slug}`}
-                onclick={(e) => onNavigate?.(t.slug, e)}
-              >
-                {t.term}
-              </a>
-            </li>
-          {/each}
-        </ul>
-      </div>
-    {/each}
-    {#if !groups.length}
-      <p class="gnav-empty">No terms match "{query.trim()}".</p>
-    {/if}
-  </nav>
+      {/each}
+      {#if !groups.length}
+        <p class="gnav-empty">No terms match "{query.trim()}".</p>
+      {/if}
+    </nav>
+  {/if}
 </div>
 
 <style>
@@ -202,7 +187,7 @@
     color: oklch(0.55 0.02 270);
   }
 
-  /* ── term list ── */
+  /* ── category rows ── */
   .gnav-list {
     min-height: 0;
     overflow-y: auto;
@@ -219,65 +204,55 @@
     border-radius: 3px;
   }
 
-  .gnav-group {
-    margin-bottom: 0.85rem;
-  }
-  .gnav-heading {
+  .gnav-cat {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
-    padding: 0.45rem 0.65rem;
-    font-size: 0.75rem;
-    font-weight: 640;
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
-    color: oklch(0.6 0.03 270);
-    text-decoration: none;
-    border-radius: 8px;
-    transition: color 160ms ease;
-  }
-  .gnav-heading:hover {
-    color: oklch(0.85 0.04 272);
-  }
-  .gnav-heading.active {
-    color: oklch(0.8 0.12 275);
-  }
-  .gnav-n {
-    font-weight: 500;
-    letter-spacing: 0;
-    color: oklch(0.5 0.02 270);
-  }
-
-  .gnav-group ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-  .gnav-group li a {
-    position: relative;
-    display: block;
-    padding: 0.42rem 0.65rem 0.42rem 1rem;
-    font-size: 0.875rem;
-    line-height: 1.35;
-    color: oklch(0.72 0.015 270);
+    gap: 0.6rem;
+    min-height: 44px;
+    padding: 0.5rem 0.75rem 0.5rem 0.9rem;
+    margin-bottom: 2px;
+    font-size: 0.92rem;
+    font-weight: 560;
+    line-height: 1.3;
+    color: oklch(0.75 0.015 270);
     text-decoration: none;
     border-left: 2px solid oklch(0.45 0.04 270 / 0.18);
-    border-radius: 0 8px 8px 0;
+    border-radius: 0 10px 10px 0;
     transition: color 140ms ease, background 140ms ease, border-color 140ms ease;
   }
-  .gnav-group li a:hover {
+  .gnav-cat:hover {
     color: oklch(0.94 0.01 270);
     background: oklch(0.24 0.03 272 / 0.35);
   }
-  .gnav-group li a.active {
+  .gnav-cat.active {
     color: oklch(0.95 0.03 275);
     background: oklch(0.28 0.05 275 / 0.35);
     border-left-color: oklch(0.7 0.14 275);
   }
-  .gnav-group li a:focus-visible {
+  .gnav-cat:focus-visible {
     outline: 2px solid oklch(0.65 0.13 275);
     outline-offset: -2px;
+  }
+  .gnav-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .gnav-n {
+    flex-shrink: 0;
+    font-size: 0.78rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: oklch(0.6 0.05 274);
+    background: oklch(0.3 0.06 274 / 0.3);
+    border-radius: 999px;
+    padding: 0.1rem 0.55rem;
+  }
+  .gnav-cat.active .gnav-n {
+    color: oklch(0.82 0.09 275);
+    background: oklch(0.34 0.08 275 / 0.4);
   }
 
   .gnav-empty {
@@ -294,11 +269,12 @@
     .gnav-count {
       font-size: 0.9rem;
     }
-    .gnav-heading {
-      font-size: 0.9rem;
+    .gnav-cat {
+      font-size: 1.08rem;
+      min-height: 50px;
     }
-    .gnav-group li a {
-      font-size: 1.05rem;
+    .gnav-n {
+      font-size: 0.9rem;
     }
     .gnav-empty {
       font-size: 1.05rem;
@@ -307,8 +283,7 @@
 
   @media (prefers-reduced-motion: reduce) {
     .gnav-search input,
-    .gnav-heading,
-    .gnav-group li a {
+    .gnav-cat {
       transition: none;
     }
   }

@@ -105,10 +105,10 @@
   </section>
 
   <section class="editorial-section" style="--accent: #14b8a6">
-    <h2 class="section-title">How I Show People</h2>
+    <h2 class="section-title">The Thirty-Second Demo</h2>
     <div class="prose">
       <p>
-        When someone asks me what TKA is at a jam, I usually just open my phone. Look: you
+        The fastest explanation of TKA happens at a jam, on a phone. Look: you
         can construct a sequence by going boop, boop, boop, and there's your sequence. Play
         it back, and it's animated. Add effects and props. Then it gets cooler: you can
         generate sequences. Put in your name, generate your name as a sequence, play it
@@ -124,8 +124,8 @@
     <div class="prose">
       <p>
         This was built on a foundation of what Vulcan Tech Gospel did before it. VTG holds
-        the basis for this. TKA is the child of VTG in a way, and we pay respects to it by
-        taking it further, not by claiming what we're doing is in a completely different
+        the basis for this. TKA is the child of VTG in a way, and it pays respects by
+        taking the framework further, not by claiming to be in a completely different
         ballpark. What TKA does has unique properties VTG cannot and would not ever cover.
         The full lineage, with sources, lives on the <a href="/roots">roots page</a>.
       </p>
@@ -144,23 +144,6 @@
       </p>
       <!-- Image slot: hand-drawn archival TKA pages. Austen has photos of the
            originals above his desk; add when he provides them. -->
-    </div>
-  </section>
-
-  <section class="editorial-section" style="--accent: #a855f7">
-    <h2 class="section-title">Notation by Prop</h2>
-    <div class="prose">
-      <p>
-        TKA was designed around double staves, and other dual-wielded props you grip
-        directly speak the same language. Each prop page covers what carries over, what
-        changes, and how to write your first sequence:
-      </p>
-      <ul>
-        <li><a href="/notation/fans">Fan notation</a></li>
-        <li><a href="/notation/clubs">Club notation</a></li>
-        <li><a href="/notation/buugeng">Buugeng notation</a></li>
-        <li><a href="/notation/poi">Poi and TKA: what works</a></li>
-      </ul>
     </div>
   </section>
 
@@ -185,15 +168,17 @@
     <h2 class="section-title">Notation by Prop</h2>
     <div class="prose">
       <p>
-        The alphabet is one system, but every prop meets it differently. Staves are what it
-        was built for. Fans, clubs, and buugeng inherit the core and raise their own grip
-        questions. Poi reaches a restricted subset. Each prop has its own page:
+        The alphabet is one system, and props meet it in two families. Dual-ended props
+        like staves show two references at once, so distinctions collapse and patterns
+        are easier to read. Single-ended props like clubs and fans show one, so the same
+        math unfolds into more visible variety. Poi rely on momentum and reach a
+        restricted subset. Each prop has its own page:
       </p>
     </div>
     <nav class="prop-links" aria-label="Notation by prop">
       <a class="prop-link" href="/notation/staves">Double Staves</a>
-      <a class="prop-link" href="/notation/fans">Fans</a>
       <a class="prop-link" href="/notation/clubs">Clubs</a>
+      <a class="prop-link" href="/notation/fans">Fans</a>
       <a class="prop-link" href="/notation/buugeng">Buugeng</a>
       <a class="prop-link" href="/notation/poi">Poi</a>
     </nav>

@@ -2,7 +2,7 @@
   Composer3DViewerDemo
 
   The real 3D sequence viewer, live and interactive, embedded standalone on the
-  prerendered marketing page. Drag to orbit; it autoplays the CΨΩX fixture and
+  prerendered marketing page. Drag to orbit; it autoplays the baked demo fixture and
   lets you swap the environment it performs in.
 
   Standalone recipe (no app shell): provide the mandatory viewer-3d context
@@ -26,12 +26,16 @@
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
   import { setScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
-  import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import {
+    createSequenceData,
+    type SequenceData,
+  } from "$lib/shared/foundation/domain/models/sequence-data";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { BackgroundType } from "@austencloud/backgrounds";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
-  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+
+  /** The per-visit demo sequence, provided by the page (no baked canon). */
+  let { sequence: sourceSequence }: { sequence: SequenceData } = $props();
 
   // ── contexts (must be set during component init, not onMount) ────────────
   const viewer = createViewer3DState();
@@ -41,10 +45,10 @@
 
   const sequence = createSequenceData({
     id: "composer-3d-demo",
-    name: "CΨΩX",
-    word: (demoJson as { word: string }).word,
-    steps: (demoJson as { steps: unknown[] }).steps as StepData[],
-    gridMode: (demoJson as { gridMode?: string }).gridMode as never,
+    name: sourceSequence.word,
+    word: sourceSequence.word,
+    steps: sourceSequence.steps,
+    gridMode: sourceSequence.gridMode,
   });
 
   // ── scene switcher ────────────────────────────────────────────────────────
@@ -148,7 +152,6 @@
       <SegmentedControl options={COUNTS} value={count} onchange={setCount} color="accent" size="sm" />
     </div>
   </div>
-  <p class="hint">Drag to orbit. Switch the scene, or multiply into a ring. This is the real viewer, running live.</p>
 </div>
 
 <style>
@@ -167,6 +170,14 @@
     background: oklch(0.12 0.02 270);
     border: 1px solid oklch(0.4 0.04 270 / 0.16);
   }
+  /* Ultrawide: height-capped so the cinema band fills the screen without
+     outgrowing it. Mirrors the page's .sk-stage-wide placeholder. */
+  @media (min-width: 1680px) {
+    .stage {
+      max-width: min(100%, calc(78vh * 16 / 9));
+      margin-inline: auto;
+    }
+  }
 
   .stage-curtain {
     position: absolute;
@@ -179,17 +190,22 @@
     animation: curtain-pulse 1.6s ease-in-out infinite;
   }
 
+  /* Deterministic footprint: the two rows always stack (never a wrap-dependent
+     one-or-two-row layout), each exactly one 52px control tall — the page's
+     viewer skeleton reserves this exact height (no-layout-shift). */
   .control-rows {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.8rem 1.6rem;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
     margin-top: 1rem;
+    width: 100%;
   }
   .control-row {
     display: flex;
     align-items: center;
     gap: 0.55rem;
+    width: min(100%, 30rem);
   }
   .control-label {
     font-size: 0.78rem;
@@ -197,13 +213,6 @@
     letter-spacing: 0.04em;
     text-transform: uppercase;
     color: oklch(0.6 0.02 270);
-  }
-
-  .hint {
-    margin: 0.7rem 0 0;
-    font-size: 0.8rem;
-    color: oklch(0.62 0.02 270);
-    text-align: center;
   }
 
   @keyframes curtain-pulse {

@@ -88,10 +88,15 @@ spec for its pool.
       GΘSZ and CΣVX prose colors swapped to match). Standing rule from the
       incident: pool candidates are saved to disk AT GENERATION TIME, never
       held only in conversation context.
-- [ ] Austen curates pilot slate (keep/cut/edit) ← NEXT
-- [ ] Pool file format + build script
-- [ ] SequenceShowcase cycle affordance (crossfade + layout-shift design)
-- [ ] Remaining 8 pages' pools (batch after pilot format approval)
+- [x] Pilot format APPROVED (Austen, 2026-07-16: "I really like how this
+      turned out"). Detailed keep/cut/edit pass per candidate still open.
+- [x] Pool file format + adapter shipped with the pilot
+      (`permutations.pool.json` + `pool-adapter.ts`)
+- [x] SequenceShowcase cycle affordance shipped with the pilot
+- [x] Full-guide slot-level audit + rollout plan →
+      `2026-07-16-guide-example-pools-rollout.md` (22 remaining slots, all
+      level-1; waves 1-4, capability probes, adapter generalization)
+- [ ] Remaining pages' pools: execute per the rollout spec's wave plan
 - [x] words.content.ts classification confirmed (2026-07-16): REFRESHABLE, but a
       special shape — its three card blocks are one arbitrary word ("We'll use
       the word AABB as an example") in three starting orientations, so a pool

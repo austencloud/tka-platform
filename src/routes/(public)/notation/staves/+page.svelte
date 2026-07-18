@@ -1,10 +1,15 @@
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
+  import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
+  import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import "$lib/shared/landing/styles/public-editorial.css";
+
+  const demoSequence = demoJson as unknown as SequenceData;
 
   const TITLE = "Double Staff Notation | The Kinetic Alphabet for Staves";
   const DESCRIPTION =
-    "How The Kinetic Alphabet notates double staff spinning: the thumb and pinky reference system, the technique that preserves it, and exactly what the notation writes down.";
+    "How The Kinetic Alphabet notates double staff spinning: why the system started on staves, the isolation and antispin collapse, and why fewer visual combinations make it the fastest prop to learn on.";
   const URL = "https://tkaflowarts.com/notation/staves";
 </script>
 
@@ -43,87 +48,81 @@
   </header>
 
   <section class="editorial-section" style="--accent: #22c55e">
-    <h2 class="section-title">The Canonical Prop</h2>
     <div class="prose">
       <p>
-        The Kinetic Alphabet was built for double staves. When it was first made it was
-        called the Double Staff Alphabet. Staves are simple straight lines, so they're easy
-        to draw on a page, and a staff looks the same in a pictograph whether its
-        orientation is in or out. Single-ended props don't have that property. Every
-        pictograph in the system renders cleanly because the prop underneath it is a staff.
+        Before the software existed, The Kinetic Alphabet was made with pens. Pens are
+        essentially double staves you can hold in one hand, so for the first couple of
+        years the whole system lived on paper: draw a little grid, spend a long time
+        building a sequence with a red pen and a blue pen, then draw the arrows in the
+        same two colors. When a sequence worked, it got a page. That's the entire origin
+        story. Not a whiteboard, not an app. Two pens.
+      </p>
+      <p>
+        Staves stuck because staves are geometry. A staff is a straight line, or a
+        combination of lines if you count the thumb end, so it's easy to draw and it
+        stays out of the arrows' way, which is why staff pictographs read so clean. Put
+        two staves next to each other and they form one extra-long straight line. Easy to
+        visualize. Easy to remember.
       </p>
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #14b8a6">
-    <h2 class="section-title">The Thumb and Pinky References</h2>
-    <div class="prose">
-      <p>
-        Each staff has two visible ends. One end is your consistent thumb reference, the
-        other is your consistent pinky reference. With proper technique, these references
-        never have to change. That dual-end landmark system is the foundation of the entire
-        orientation framework: you always know which way the prop is pointing because you
-        can see both ends and their relationship to your grip.
-      </p>
-      <p>
-        Fans show their orientation on a visible flat face, and clubs have a clear handle
-        end, but neither gives you two consistent references at once. Staves do. That's why
-        the system starts here.
-      </p>
+  <section class="editorial-section has-duo" style="--accent: #14b8a6">
+    <div class="section-duo">
+      <div class="duo-copy">
+        <div class="prose">
+          <p>
+            The deeper reason the system starts on staves takes a minute to see, and it
+            starts with the fact that each staff has two visible ends, a thumb end and a
+            pinky end. Hold a staff with the thumb end at center and perform an
+            isolation. While the thumb end isolates, the pinky end performs an extension.
+            One motion, both shapes at once. Try the same move with a club and you have
+            to pick, because a club only has one end that can do a thing at a time,
+            which is why club spinners have two moves, an isolation and an extension,
+            that look completely different despite identical underlying geometry. On a
+            staff they collapse into one thing. Antispin folds the same way: the
+            vertical-flower and horizontal-flower variants that VTG names for one-ended
+            props are always both covered on a staff. The
+            <a href="/notation/clubs">club page</a> walks the other side of this story.
+          </p>
+          <p>
+            The collapse runs all the way down. A fan or a club visibly points in one of
+            eight directions, all the information on display. A staff radiating from
+            center makes those eight orientations look like four, and since orientation
+            never changes which letter a pictograph is, patterns get easier to tell apart
+            and the concepts get easier to absorb. Single-ended props show more and
+            explore the wider complexity range. Staves show less.
+          </p>
+          <p>That's the whole trick. Less to look at, faster to learn.</p>
+        </div>
+      </div>
+      <div class="duo-demo">
+        <SequenceHeroDemo sequence={demoSequence} note="the demo sequence, on staves" />
+      </div>
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #ec4899">
-    <h2 class="section-title">The Technique That Keeps Them</h2>
-    <div class="prose">
-      <p>Two techniques keep the thumb and pinky references consistent through every movement:</p>
-      <ol>
-        <li>
-          Negative space above and below the shoulder: using the open space around your body
-          to transition the prop without regripping.
-        </li>
-        <li>
-          Body turns: rotating your body to pass the prop into the plane behind you,
-          accomplishing moves that would otherwise force a grip change.
-        </li>
-      </ol>
-      <p>
-        These aren't optional refinements. They're how the movements are executed while the
-        orientation reference system stays intact.
-      </p>
-    </div>
-  </section>
-
-  <section class="editorial-section" style="--accent: #f59e0b">
-    <h2 class="section-title">What the Notation Writes Down</h2>
+  <section class="editorial-section" style="--accent: #8b5cf6">
     <div class="prose">
       <p>
-        The parameter space is precise and finite: nine grid locations (eight around the
-        perimeter plus center), eight orientations measured from your center point rather
-        than from the ground, and rotation in increments down to 45 degrees. Each beat gets
-        one letter that captures both hands at once.
+        One admission, better stated here than discovered later: the staff pedagogy is
+        strict on purpose. No finger spinning, no grip changes. You keep your thumb and
+        pinky references by using the negative space above and below the shoulder, and by
+        turning your body to pass into the plane behind you. Other props require finger
+        spinning and grip changes, and the system recognizes and allows that. The
+        strictness belongs to how staves are taught, and even there it's a
+        scaffold, not a law. Once you've absorbed the math of how orientations change
+        well enough to spot the turn value in any pictograph, the strictness stops
+        mattering and it becomes about what the prop can effectively do under its own
+        limitations.
       </p>
       <p>
-        Just as important is what it does not enumerate: grip changes, body movement,
-        behind-the-back passes, tosses, or contact rolling. TKA is for dual-wielded props.
-        Contact staff, balancing and rolling a staff on the body, is a different art and
-        not part of the system. Every term used here is defined in the
-        <a href="/glossary">glossary</a>.
-      </p>
-      <!-- Animation-example slot: same demo sequence rendered with staves.
-           Drops in when the per-prop demo component exists (see
-           2026-07-16-per-prop-notation-pages-design.md, out of scope note). -->
-    </div>
-  </section>
-
-  <section class="editorial-section" style="--accent: #06b6d4">
-    <h2 class="section-title">Go Deeper</h2>
-    <div class="prose">
-      <p>
-        Ready to actually learn? <a href="/learn/staff-spinning-choreography">Learn staff
-        choreography</a> walks the path from your first isolation to written sequences. The
-        <a href="/guide">guide</a> introduces every concept in order, and the
-        <a href="/guide/codex">Double Staff Codex</a> collects the pictographs themselves.
+        When you're ready to actually learn, <a href="/learn/staff-spinning-choreography">learn
+        staff choreography</a> walks from your first isolation to written sequences, the
+        <a href="/guide">guide</a> introduces every concept in order, the
+        <a href="/guide/codex">Double Staff Codex</a> collects the pictographs
+        themselves, and the <a href="/glossary">glossary</a> defines every term used on this
+        page.
       </p>
     </div>
   </section>

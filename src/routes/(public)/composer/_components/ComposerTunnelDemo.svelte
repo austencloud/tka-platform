@@ -2,7 +2,7 @@
   ComposerTunnelDemo
 
   The Tunnel section's live embed: the real kaleidoscope renderer
-  (TunnelArtView) multiplying the CΨΩX fixture across a 4-fold ring.
+  (TunnelArtView) multiplying the baked demo fixture across a 4-fold ring.
 
   Follows TunnelDetailPreview's per-instance seam (the proven pattern for
   mounting the tunnel outside the sequence viewer): local TunnelViewController,
@@ -26,10 +26,14 @@
   } from "$lib/shared/sequence-viewer/tunnel/tunnel-view-state";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { setEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
-  import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import {
+    createSequenceData,
+    type SequenceData,
+  } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { ViewerPlaybackState } from "$lib/shared/sequence-viewer/domain/viewer-prop-groups";
-  import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-  import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+
+  /** The per-visit demo sequence, provided by the page (no baked canon). */
+  let { sequence: sourceSequence }: { sequence: SequenceData } = $props();
 
   let playing = $state(true);
   let fold = $state(4);
@@ -41,10 +45,10 @@
 
   const sequence = createSequenceData({
     id: "composer-tunnel-demo",
-    name: "CΨΩX",
-    word: (demoJson as { word: string }).word,
-    steps: (demoJson as { steps: unknown[] }).steps as StepData[],
-    gridMode: (demoJson as { gridMode?: string }).gridMode as never,
+    name: sourceSequence.word,
+    word: sourceSequence.word,
+    steps: sourceSequence.steps,
+    gridMode: sourceSequence.gridMode,
   });
 
   const controller = new TunnelViewController({ getSequence: () => sequence });
@@ -94,11 +98,12 @@
   </div>
 
   <div class="fold-row">
+    <span class="control-label">Performers</span>
     <SegmentedControl
       options={[
-        { value: "2", label: "2 performers" },
-        { value: "4", label: "4 performers" },
-        { value: "8", label: "8 performers" },
+        { value: "2", label: "2" },
+        { value: "4", label: "4" },
+        { value: "8", label: "8" },
       ]}
       value={String(fold)}
       onchange={(v) => (fold = Number(v))}
@@ -109,10 +114,7 @@
 </div>
 
 <style>
-  .tunnel-demo {
-    margin-top: 1.6rem;
-  }
-
+  /* Spacing to the prose above is owned by the host's duo grid gap. */
   .stage {
     position: relative;
     aspect-ratio: 1;
@@ -122,6 +124,14 @@
     border-radius: 18px;
     overflow: hidden;
     border: 1px solid oklch(0.4 0.04 270 / 0.18);
+  }
+  /* Ultrawide: the duo column has the room — the kaleidoscope becomes a
+     near-viewport moment (height-keyed, so it scales with the screen).
+     Keep in sync with the page's .sk-stage-square placeholder. */
+  @media (min-width: 1680px) {
+    .stage {
+      max-width: min(72vh, 100%);
+    }
   }
 
   .pause-toggle {
@@ -146,11 +156,24 @@
     color: #fff;
   }
 
+  /* Deterministic footprint: capped width, one-line labels, so the row is
+     always exactly one 52px control tall — the page's tunnel skeleton
+     reserves this exact height (no-layout-shift). */
   .fold-row {
     display: flex;
+    align-items: center;
     justify-content: center;
-    gap: 0.6rem;
+    gap: 0.55rem;
     margin-top: 1rem;
+    width: min(100%, 22rem);
+    margin-inline: auto;
+  }
+  .control-label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: oklch(0.6 0.02 270);
   }
 
 </style>

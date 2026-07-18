@@ -8,22 +8,30 @@
 
   Engine + player + mandala chunks are all dynamically imported so the
   prerendered page pays nothing until the section is reached (player/mandala
-  mount on idle with the baked CΨΩX fixture; the engine chunk loads on the
-  first button tap). Stages are fixed aspect-ratio so nothing shifts.
+  mount on idle, seeded with the page's per-visit generated sequence; the
+  engine chunk loads on the first button tap). Stages are fixed aspect-ratio
+  so nothing shifts.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import { DEMO_SEQUENCE } from "../_data/demo-beats";
 
-  let current = $state<SequenceData>(DEMO_SEQUENCE);
+  /** The page's per-visit demo sequence seeds the stages; null while it is
+      still generating (the fixed-aspect stages hold the footprint). */
+  let { sequence }: { sequence: SequenceData | null } = $props();
+
+  let current = $state<SequenceData | null>(null);
   let generating = $state(false);
   let failedOnce = $state(false);
   let active = $state(false);
 
-  const word = $derived(simplifyRepeatedWord(current.word ?? ""));
+  $effect(() => {
+    if (!current && sequence) current = sequence;
+  });
+
+  const word = $derived(current ? simplifyRepeatedWord(current.word ?? "") : "");
 
   onMount(() => {
     if (typeof requestIdleCallback !== "undefined") {
@@ -72,22 +80,22 @@
 <div class="generate-demo">
   <div class="stages">
     <div class="stage">
-      {#key current.id}
+      {#key current?.id}
         <LazyMount
           loader={() =>
             import(
               "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
             )}
-          {active}
+          active={active && !!current}
           props={{ sequence: current, autoPlay: true, chrome: "minimal", fill: true }}
         />
       {/key}
     </div>
     <div class="stage">
-      {#key current.id}
+      {#key current?.id}
         <LazyMount
           loader={() => import("$lib/shared/mandala/components/SequenceMandala.svelte")}
-          {active}
+          active={active && !!current}
           props={{
             sequence: current,
             size: 420,
@@ -107,7 +115,8 @@
     </div>
   </div>
 
-  <div class="caption-row">
+  <!-- Reserved line; visible once the word is known (no sideways shift). -->
+  <div class="caption-row" class:pending={!current}>
     <span class="tka-font caption-word">{word}</span>
     <span class="caption-note">and its mandala</span>
   </div>
@@ -117,17 +126,16 @@
       <i class="fas {generating ? 'fa-circle-notch fa-spin' : 'fa-dice'}" aria-hidden="true"></i>
       <span>{generating ? "Generating..." : "Generate a new one"}</span>
     </button>
-    {#if failedOnce}
-      <span class="retry-note">That draw came up empty. Hit it again.</span>
-    {/if}
+    <!-- Line is always reserved; only visibility toggles, so the rare empty
+         draw doesn't nudge the section (no-layout-shift). -->
+    <span class="retry-note" class:shown={failedOnce} aria-live="polite">
+      That draw came up empty. Hit it again.
+    </span>
   </div>
 </div>
 
 <style>
-  .generate-demo {
-    margin-top: 1.8rem;
-  }
-
+  /* Spacing to the prose above is owned by the host's duo grid gap. */
   .stages {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -152,15 +160,18 @@
     flex-wrap: wrap;
     gap: 0.55rem;
     margin-top: 0.8rem;
-    font-size: 0.85rem;
+    font-size: clamp(0.85rem, 0.8rem + 0.12vw, 1rem);
     color: oklch(0.6 0.02 270);
   }
   .caption-word {
-    font-size: 1.05rem;
+    font-size: clamp(1.05rem, 1rem + 0.15vw, 1.25rem);
     color: oklch(0.88 0.03 270);
   }
   .caption-note {
     font-style: italic;
+  }
+  .caption-row.pending {
+    visibility: hidden;
   }
 
   .action-row {
@@ -177,7 +188,7 @@
     gap: 0.65rem;
     min-height: 48px;
     padding: 0 1.8rem;
-    font-size: 1.02rem;
+    font-size: clamp(1.02rem, 0.97rem + 0.12vw, 1.18rem);
     font-weight: 650;
     font-family: inherit;
     color: #fff;
@@ -201,14 +212,36 @@
   }
 
   .retry-note {
-    font-size: 0.82rem;
+    font-size: clamp(0.82rem, 0.78rem + 0.1vw, 0.95rem);
     color: oklch(0.65 0.02 270);
     font-style: italic;
+    visibility: hidden;
+  }
+  .retry-note.shown {
+    visibility: visible;
   }
 
   @media (max-width: 560px) {
     .stages {
       grid-template-columns: 1fr;
+    }
+  }
+
+  /* Ultrawide: the pair fills the duo's demo column, so the supporting layout
+     opens up. Type is on the base ramps above; this block is layout-only. */
+  @media (min-width: 1680px) {
+    .stages {
+      gap: 1.5rem;
+    }
+    .caption-row {
+      margin-top: 1.1rem;
+    }
+    .action-row {
+      margin-top: 1.7rem;
+    }
+    .generate-button {
+      min-height: 58px;
+      padding: 0 2.2rem;
     }
   }
 

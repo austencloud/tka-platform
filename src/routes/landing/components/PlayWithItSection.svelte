@@ -7,6 +7,7 @@
 -->
 <script lang="ts">
   import type { Component } from "svelte";
+  import PlayWithItSkeleton from "./PlayWithItSkeleton.svelte";
 
   // Lazy-loaded heavy component - typed as Component<any> because the inner
   // component manages its own state and is rendered without props.
@@ -48,22 +49,10 @@
   {#if InnerComponent}
     <InnerComponent />
   {:else}
-    <!-- Structural skeleton - same showcase proportions as PlayWithItInner.
+    <!-- Structural skeleton — same footprint as PlayWithItInner at every
+         breakpoint (shared with the /composer host so both stay in sync).
          Stops pulsing if the lazy import failed (nothing is coming). -->
-    <div class="showcase skeleton-showcase" class:load-failed={loadFailed} aria-hidden="true">
-      <div class="sk-stage-row">
-        <div class="sk-canvas"></div>
-        <!-- Desktop (≥920px) only: placeholder for the AnimationPanel sidebar so
-             the skeleton's footprint matches the loaded with-sidebar layout and
-             the lazy swap doesn't reflow the page. -->
-        <div class="sk-panel"></div>
-      </div>
-      <div class="sk-beat-strip">
-        {#each { length: 5 } as _}
-          <div class="sk-beat-cell"></div>
-        {/each}
-      </div>
-    </div>
+    <PlayWithItSkeleton failed={loadFailed} />
   {/if}
 </section>
 
@@ -89,112 +78,6 @@
     margin: 0 0 40px;
     max-width: 480px;
     margin-inline: auto;
-  }
-
-  /* ── Skeleton showcase ───────────────────────────────────────────────────── */
-
-  /*
-   * Matches the .showcase container in PlayWithItInner exactly:
-   * column-flex, max 800px, border-radius 16px, dark border + shadow.
-   */
-  .showcase {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    max-width: 800px;
-    margin: 0 auto;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.35);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-  }
-
-  /* Canvas - square aspect-ratio matching .canvas-area */
-  .sk-canvas {
-    width: 100%;
-    aspect-ratio: 1;
-    max-height: 640px;
-    background: rgba(255, 255, 255, 0.02);
-    flex-shrink: 0;
-  }
-
-  /* Mobile default: the row wrapper dissolves and the canvas flows in the
-     showcase column, exactly as before. The sidebar placeholder only exists on
-     desktop. */
-  .sk-stage-row {
-    display: contents;
-  }
-
-  .sk-panel {
-    display: none;
-  }
-
-  /* Desktop (matches PlayWithItInner's 920px isDesktopLayout breakpoint): the
-     loaded showcase renders canvas + 380px AnimationPanel sidebar at
-     min(1600px, 94vw) wide. Mirror that footprint in the skeleton so the lazy
-     import swap doesn't shift the layout. Constraints copied from
-     .showcase.with-sidebar / .canvas-area in PlayWithItInner. */
-  @media (min-width: 920px) {
-    .showcase {
-      max-width: min(1600px, 94vw);
-    }
-
-    .sk-stage-row {
-      display: flex;
-      flex-direction: row;
-      align-items: stretch;
-      width: 100%;
-    }
-
-    .sk-canvas {
-      flex: 1 1 auto;
-      min-width: 0;
-      width: auto;
-      max-height: min(1100px, 70vh);
-    }
-
-    .sk-panel {
-      display: block;
-      flex: 0 0 380px;
-      max-width: 380px;
-      background: rgba(255, 255, 255, 0.02);
-      border-left: 1px solid rgba(255, 255, 255, 0.06);
-    }
-  }
-
-  /* Beat strip - same padding/height as the real strip */
-  .sk-beat-strip {
-    display: flex;
-    gap: 6px;
-    padding: 12px 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(0, 0, 0, 0.2);
-    flex-shrink: 0;
-    overflow: hidden;
-  }
-
-  /* Individual beat placeholder cells */
-  .sk-beat-cell {
-    flex: 0 0 72px;
-    width: 72px;
-    height: 72px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1.5px solid rgba(255, 255, 255, 0.06);
-  }
-
-  @keyframes skeleton-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
-
-  .skeleton-showcase {
-    animation: skeleton-pulse 1.8s ease-in-out infinite;
-  }
-
-  .skeleton-showcase.load-failed {
-    animation: none;
   }
 
   /* 4K / ultrawide: heading scale to match the rest of the scaled page. */
@@ -233,30 +116,6 @@
 
     .subtitle {
       margin: 0;
-    }
-
-    /* Skeleton showcase mirrors the real one's flex-fill so there's no jump. */
-    .showcase {
-      flex: 1 1 auto;
-      min-height: 0;
-      max-width: 100%;
-      border-radius: 12px;
-    }
-
-    .sk-canvas {
-      max-height: 400px;
-    }
-
-    .sk-beat-cell {
-      flex: 0 0 56px;
-      width: 56px;
-      height: 56px;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .skeleton-showcase {
-      animation: none;
     }
   }
 </style>

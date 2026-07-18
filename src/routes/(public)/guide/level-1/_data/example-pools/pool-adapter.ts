@@ -1,17 +1,27 @@
 /**
- * Example-pool adapter - turns the curated pilot JSON (verbatim MCP
+ * Example-pool adapter - turns a page's curated pool JSON (verbatim MCP
  * generate_sequence step data) into playable PictographData[] strips using the
- * SAME canonical primitives the hand-authored permutations content uses
+ * SAME canonical primitives the hand-authored guide content uses
  * (createMotionData, getGridPositionFromLocations, bakeReversals). One faithful
  * path, so a pooled example renders byte-for-byte like an authored one.
  *
- * Provenance: src/.../example-pools/README.md → the design spec
- * (docs/superpowers/specs/2026-07-16-guide-example-pools-design.md). The JSON is
- * the single source; do not hand-edit strips here.
+ * `buildPools()` is the factory: it's a pure function over ANY page's pool
+ * JSON (one JSON per page, same schema - see README.md), so every future
+ * `<page>.pool.json` reuses this one adapter instead of a per-page fork. The
+ * permutations page was the pilot; its named exports below (`mirroredPool`,
+ * `rotatedPool`, `swappedPool`, ...) are now thin wrappers over the factory so
+ * `permutations.content.ts` and its tests don't need to change.
+ *
+ * Provenance: src/.../example-pools/README.md → the rollout spec
+ * (docs/superpowers/specs/2026-07-16-guide-example-pools-rollout.md, section
+ * 2b) and the parent design spec
+ * (docs/superpowers/specs/2026-07-16-guide-example-pools-design.md). Each
+ * page's JSON is the single source for that page; do not hand-edit strips
+ * here.
  *
  * Nomenclature: a `step` is one pictograph in a sequence. Never "beat".
  */
-import poolJson from "./permutations.pool.json";
+import permutationsPoolJson from "./permutations.pool.json";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import {
@@ -39,17 +49,29 @@ import { bakeReversals } from "../guide-sequence-adapter";
 export type { PoolEntry };
 
 // ── Raw JSON shapes ────────────────────────────────────────────────────────
+// Shared by every page's pool JSON (one JSON per page, same schema - rollout
+// spec section 2a). `RawPool` is deliberately loose on `generationDefaults`
+// (only `gridMode` is read today; the rest is provenance for humans, not the
+// adapter).
 type RawHand = { type: string; dir: string; turns?: number; ori: string };
 type RawStep = { step: number; letter: string; pos: string; blue: RawHand; red: RawHand };
-type RawEntry = {
+export type RawEntry = {
   word: string;
   loopType: string;
   period?: string;
+  /** Explicit display label. Compound classifications (e.g. "Swapped &
+   *  Mirrored") can't be derived from loopType/period alone, so a candidate
+   *  may carry its label outright. When absent, loopLabel() falls back to the
+   *  existing derivation. */
+  label?: string;
   prose: string;
   steps: RawStep[];
 };
-type RawSlot = { defaultEntry: string; candidates: RawEntry[] };
-type RawPool = { slots: Record<string, RawSlot> };
+export type RawSlot = { defaultEntry: string; candidates: RawEntry[] };
+export type RawPool = {
+  slots: Record<string, RawSlot>;
+  generationDefaults?: { gridMode?: string };
+};
 
 // PoolEntry is defined in guide-content-blocks.ts (the content-model hub) and
 // re-exported above.
@@ -86,6 +108,18 @@ function toPosition(s: string): GridPosition {
 function req<T>(v: T | undefined, msg: string): T {
   if (v === undefined) throw new Error(`pool-adapter: ${msg}`);
   return v;
+}
+
+const GRID_MODE_VALUES = new Set<string>(Object.values(GridMode));
+
+/** Diamond stays the default for every page - none of the rollout's 22 slots
+ *  generate box or skewed. A pool JSON can opt into a different grid mode via
+ *  `generationDefaults.gridMode`; an unrecognized or absent value falls back
+ *  to diamond rather than throwing, since this is provenance metadata, not a
+ *  hard requirement. */
+function resolveGridMode(raw: string | undefined): GridMode {
+  if (raw && GRID_MODE_VALUES.has(raw)) return raw as GridMode;
+  return GridMode.DIAMOND;
 }
 
 /**
@@ -149,7 +183,8 @@ function handMotion(
   color: MotionColor,
   h: RawHand,
   from: GridLocation,
-  to: GridLocation
+  to: GridLocation,
+  gridMode: GridMode
 ): MotionData {
   const { start: so, end: eo } = parsePair(h.ori, "orientation");
   return createMotionData({
@@ -162,7 +197,7 @@ function handMotion(
     turns: h.turns ?? 0,
     color,
     propType: PropType.STAFF,
-    gridMode: GridMode.DIAMOND,
+    gridMode,
   });
 }
 
@@ -171,8 +206,11 @@ function handMotion(
  * StepData per step 1..n (locations from the inverted positions, motion fields
  * from the JSON), then bakeReversals over the steps - exactly the shape
  * permutations.content.ts builds by hand.
+ *
+ * `gridMode` defaults to diamond (every rollout slot uses diamond); a factory
+ * caller can pass the pool's resolved `generationDefaults.gridMode` instead.
  */
-export function entryToStrip(entry: RawEntry): PictographData[] {
+export function entryToStrip(entry: RawEntry, gridMode: GridMode = GridMode.DIAMOND): PictographData[] {
   const steps = entry.steps;
   if (!steps.length) throw new Error(`pool-adapter: ${entry.word} has no steps`);
 
@@ -181,13 +219,13 @@ export function entryToStrip(entry: RawEntry): PictographData[] {
   const startBox = {
     id: `pool-${entry.word}-0`,
     letter: toLetter(s0.letter),
-    gridMode: GridMode.DIAMOND,
+    gridMode,
     stepNumber: 0,
     startPosition: getGridPositionFromLocations(startLoc.blue, startLoc.red),
     endPosition: getGridPositionFromLocations(startLoc.blue, startLoc.red),
     motions: {
-      blue: handMotion(MotionColor.BLUE, s0.blue, startLoc.blue, startLoc.blue),
-      red: handMotion(MotionColor.RED, s0.red, startLoc.red, startLoc.red),
+      blue: handMotion(MotionColor.BLUE, s0.blue, startLoc.blue, startLoc.blue, gridMode),
+      red: handMotion(MotionColor.RED, s0.red, startLoc.red, startLoc.red, gridMode),
     },
   } as unknown as StepData;
 
@@ -200,13 +238,13 @@ export function entryToStrip(entry: RawEntry): PictographData[] {
       return {
         id: `pool-${entry.word}-${s.step}`,
         letter: toLetter(s.letter),
-        gridMode: GridMode.DIAMOND,
+        gridMode,
         stepNumber: s.step,
         startPosition: getGridPositionFromLocations(from.blue, from.red),
         endPosition: getGridPositionFromLocations(to.blue, to.red),
         motions: {
-          blue: handMotion(MotionColor.BLUE, s.blue, from.blue, to.blue),
-          red: handMotion(MotionColor.RED, s.red, from.red, to.red),
+          blue: handMotion(MotionColor.BLUE, s.blue, from.blue, to.blue, gridMode),
+          red: handMotion(MotionColor.RED, s.red, from.red, to.red, gridMode),
         },
       } as unknown as StepData;
     });
@@ -217,9 +255,13 @@ export function entryToStrip(entry: RawEntry): PictographData[] {
   return [startBox, ...baked] as unknown as PictographData[];
 }
 
-/** Semantic label for the slot/entry. Rotated carries its rotation slice
- *  (halved = 180°, quartered = 90°); "turns" is never used for loop rotation. */
+/** Semantic label for the slot/entry. An explicit `label` on the candidate
+ *  wins outright - it exists for compound classifications ("Swapped &
+ *  Mirrored") that the derivation below can't reconstruct from loopType/period
+ *  alone. Otherwise: Rotated carries its rotation slice (halved = 180°,
+ *  quartered = 90°); "turns" is never used for loop rotation. */
 export function loopLabel(entry: RawEntry): string {
+  if (entry.label) return entry.label;
   if (entry.loopType === "rotated") {
     const deg = entry.period === "halved" ? "180°" : entry.period === "quartered" ? "90°" : "";
     return deg ? `Rotated ${deg}` : "Rotated";
@@ -229,11 +271,17 @@ export function loopLabel(entry: RawEntry): string {
   return entry.loopType;
 }
 
-/** Entries that failed to adapt (unmapped letter / non-inverting position) are
- *  EXCLUDED and recorded here, so one bad candidate never breaks the page. */
-export const flaggedEntries: { slot: string; word: string; reason: string }[] = [];
+/** An entry that failed to adapt (unmapped letter / non-inverting position).
+ *  The factory EXCLUDES it from the slot's pool and records it here, so one
+ *  bad candidate never breaks the page. */
+export type FlaggedEntry = { slot: string; word: string; reason: string };
 
-function buildSlot(slotKey: string, slot: RawSlot | undefined): PoolEntry[] {
+function buildSlot(
+  slotKey: string,
+  slot: RawSlot | undefined,
+  gridMode: GridMode,
+  flagged: FlaggedEntry[]
+): PoolEntry[] {
   const out: PoolEntry[] = [];
   for (const entry of slot?.candidates ?? []) {
     try {
@@ -241,10 +289,10 @@ function buildSlot(slotKey: string, slot: RawSlot | undefined): PoolEntry[] {
         word: entry.word,
         loopLabel: loopLabel(entry),
         proseHtml: entry.prose,
-        items: entryToStrip(entry),
+        items: entryToStrip(entry, gridMode),
       });
     } catch (err) {
-      flaggedEntries.push({
+      flagged.push({
         slot: slotKey,
         word: entry.word,
         reason: err instanceof Error ? err.message : String(err),
@@ -254,13 +302,42 @@ function buildSlot(slotKey: string, slot: RawSlot | undefined): PoolEntry[] {
   return out;
 }
 
-const slots = (poolJson as RawPool).slots;
+/**
+ * The factory: a pure function over any page's pool JSON (one JSON per page,
+ * same schema - README.md / rollout spec section 2a). Builds every slot's
+ * `PoolEntry[]` and collects flagged candidates across all slots. Each page
+ * gets a thin module: `import json from "./<page>.pool.json"; export const
+ * pools = buildPools(json);`.
+ */
+export function buildPools(pool: RawPool): {
+  pools: Record<string, PoolEntry[]>;
+  flagged: FlaggedEntry[];
+} {
+  const gridMode = resolveGridMode(pool.generationDefaults?.gridMode);
+  const flagged: FlaggedEntry[] = [];
+  const pools: Record<string, PoolEntry[]> = {};
+  for (const [slotKey, slot] of Object.entries(pool.slots)) {
+    pools[slotKey] = buildSlot(slotKey, slot, gridMode, flagged);
+  }
+  return { pools, flagged };
+}
+
+// ── Permutations page: compatibility wrapper over the factory ──────────────
+// permutations.content.ts imports mirroredPool/rotatedPool/swappedPool by
+// name; keeping these as thin wrappers means that file and its tests need no
+// changes for the factory generalization.
+const permutationsRaw = permutationsPoolJson as RawPool;
+const permutationsBuilt = buildPools(permutationsRaw);
 
 /** Raw candidate slates, exposed for tests (and re-adaptation). */
-export const rawSlots = slots;
+export const rawSlots = permutationsRaw.slots;
+
+/** Entries that failed to adapt for the permutations page. Empty when every
+ *  candidate adapts cleanly (the expected steady state). */
+export const flaggedEntries: FlaggedEntry[] = permutationsBuilt.flagged;
 
 /** Adapter candidates (entries 1..N) per slot. The content file prepends
  *  entry 0 (the original print example). */
-export const mirroredPool: PoolEntry[] = buildSlot("mirrored", slots.mirrored);
-export const rotatedPool: PoolEntry[] = buildSlot("rotated", slots.rotated);
-export const swappedPool: PoolEntry[] = buildSlot("swapped", slots.swapped);
+export const mirroredPool: PoolEntry[] = permutationsBuilt.pools.mirrored ?? [];
+export const rotatedPool: PoolEntry[] = permutationsBuilt.pools.rotated ?? [];
+export const swappedPool: PoolEntry[] = permutationsBuilt.pools.swapped ?? [];

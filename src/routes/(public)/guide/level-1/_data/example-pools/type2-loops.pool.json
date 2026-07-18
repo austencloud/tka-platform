@@ -1,0 +1,1999 @@
+{
+  "createdAt": "2026-07-17",
+  "page": "type2-loops",
+  "note": "Type 2 LOOPs page: rotated loops that travel between alpha/beta and gamma via Type 2 connector letters. Recipe: loopType rotated + smooth + no-dash + startPosition in the slot's family; travel through gamma verified per candidate (no direct constraint exists). Slots keyed by the start family of the page's three print examples (BΣTX alpha, EΔUZ beta, OYHΘ gamma).",
+  "generationDefaults": {
+    "constraintPreset": "smooth",
+    "motionTypeFilter": "no-dash",
+    "loopType": "rotated",
+    "level": 1,
+    "gridMode": "diamond",
+    "length": 8,
+    "tool": "mcp generate_sequence"
+  },
+  "slots": {
+    "alpha-gamma": {
+      "defaultEntry": "BΣTX (original print example, stays default; entry-0 prose drafted at migration)",
+      "candidates": [
+        {
+          "word": "KΩXCKΩXC",
+          "loopType": "rotated",
+          "prose": "KΩXC uses Ω and X to dip through gamma and come back. The blue hand keeps moving counter-clockwise the whole way while red rests through both Type 2 steps.",
+          "verified": [
+            "red static on steps 2,3,6,7 (the Ω and X steps)",
+            "blue rotates ccw on all 8 steps",
+            "red moving steps (1,4,5,8) all cw",
+            "route per half: alpha→beta→gamma→alpha"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "α",
+              "pos": "alpha3→alpha3",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "K",
+              "pos": "alpha3→beta1",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "Ω",
+              "pos": "beta1→gamma9",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "X",
+              "pos": "gamma9→alpha1",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "C",
+              "pos": "alpha1→alpha7",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "K",
+              "pos": "alpha7→beta5",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "Ω",
+              "pos": "beta5→gamma13",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "X",
+              "pos": "gamma13→alpha5",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "C",
+              "pos": "alpha5→alpha3",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "BBΔWBBΔW",
+          "loopType": "rotated",
+          "prose": "BBΔW warms up with two B steps, then Δ sends the red hand out to gamma and W brings it home while blue holds still. Every rotation in the word is counter-clockwise.",
+          "verified": [
+            "blue static on steps 3,4,7,8 (the Δ and W steps)",
+            "every moving rotation ccw (both hands)",
+            "gamma visited on steps 3 and 7",
+            "B steps (1,2,5,6) anti on both hands"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "α",
+              "pos": "alpha7→alpha7",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "B",
+              "pos": "alpha7→alpha1",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "B",
+              "pos": "alpha1→alpha3",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "Δ",
+              "pos": "alpha3→gamma13",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "W",
+              "pos": "gamma13→alpha3",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "B",
+              "pos": "alpha3→alpha5",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "B",
+              "pos": "alpha5→alpha7",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "Δ",
+              "pos": "alpha7→gamma9",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "W",
+              "pos": "gamma9→alpha7",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "ΣYFBΣYFB",
+          "loopType": "rotated",
+          "prose": "In ΣYFB the red hand does a full lap: Σ lifts it to gamma, Y drops it to beta, then F and B walk it back through alpha. Blue joins in only for the back half of each word.",
+          "verified": [
+            "blue static on steps 1,2 and 5,6 (the Σ and Y steps)",
+            "red moves on all 8 steps, every rotation cw",
+            "route per half: alpha→gamma→beta→alpha",
+            "blue moving steps (3,4,7,8) all cw"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "α",
+              "pos": "alpha5→alpha5",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "Σ",
+              "pos": "alpha5→gamma15",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "Y",
+              "pos": "gamma15→beta1",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "F",
+              "pos": "beta1→alpha3",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "B",
+              "pos": "alpha3→alpha1",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "Σ",
+              "pos": "alpha1→gamma11",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "Y",
+              "pos": "gamma11→beta5",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "F",
+              "pos": "beta5→alpha7",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "B",
+              "pos": "alpha7→alpha5",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "CΔZDCΔZD",
+          "loopType": "rotated",
+          "prose": "CΔZD tours all three position families: Δ climbs from alpha to gamma, Z drops to beta, and D carries both hands back. Blue rests through the two Type 2 crossings.",
+          "verified": [
+            "blue static on steps 2,3,6,7 (the Δ and Z steps)",
+            "red moves on all 8 steps, every rotation cw",
+            "each half visits alpha, gamma, and beta",
+            "blue moving steps (1,4,5,8) all ccw"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "α",
+              "pos": "alpha1→alpha1",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "C",
+              "pos": "alpha1→alpha7",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "Δ",
+              "pos": "alpha7→gamma5",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "Z",
+              "pos": "gamma5→beta3",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "D",
+              "pos": "beta3→alpha5",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "C",
+              "pos": "alpha5→alpha3",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "Δ",
+              "pos": "alpha3→gamma1",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "Z",
+              "pos": "gamma1→beta7",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "D",
+              "pos": "beta7→alpha1",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "beta-gamma": {
+      "defaultEntry": "EΔUZ (original print example, stays default; entry-0 prose drafted at migration)",
+      "candidates": [
+        {
+          "word": "DJΘZDJΘZ",
+          "loopType": "rotated",
+          "prose": "DJΘZ opens with the compound pair D and J, then Θ pokes into gamma and Z snaps back to beta. Blue sits out the gamma trip entirely.",
+          "verified": [
+            "blue static on steps 3,4,7,8 (the Θ and Z steps)",
+            "blue pro cw on steps 1,2,5,6 (D and J)",
+            "red moves on all 8 steps, every rotation ccw",
+            "gamma visited on steps 3 and 7"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "β",
+              "pos": "beta3→beta3",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "D",
+              "pos": "beta3→alpha1",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "J",
+              "pos": "alpha1→beta7",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "Θ",
+              "pos": "beta7→gamma13",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "Z",
+              "pos": "gamma13→beta7",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "D",
+              "pos": "beta7→alpha5",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "J",
+              "pos": "alpha5→beta3",
+              "blue": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "Θ",
+              "pos": "beta3→gamma9",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "Z",
+              "pos": "gamma9→beta3",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "FΣYHFΣYH",
+          "loopType": "rotated",
+          "prose": "FΣYH slips from beta down to alpha, rides Σ and Y through gamma, and squares back up with H. Red never stops moving; blue only works the F and H steps.",
+          "verified": [
+            "blue static on steps 2,3 and 6,7 (the Σ and Y steps)",
+            "red moves on all 8 steps, every rotation ccw",
+            "H steps (4,8) anti on both hands",
+            "route per half: beta→alpha→gamma→beta"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "β",
+              "pos": "beta5→beta5",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "F",
+              "pos": "beta5→alpha3",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "Σ",
+              "pos": "alpha3→gamma1",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "Y",
+              "pos": "gamma1→beta7",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "H",
+              "pos": "beta7→beta1",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "F",
+              "pos": "beta1→alpha7",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "Σ",
+              "pos": "alpha7→gamma5",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "Y",
+              "pos": "gamma5→beta3",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "H",
+              "pos": "beta3→beta5",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "ΩXΔZΩXΔZ",
+          "loopType": "rotated",
+          "prose": "Every letter in ΩXΔZ is a Type 2 letter, so one hand is always resting: blue carries Ω and X, red answers with Δ and Z. The word zigzags from beta through gamma to alpha and back.",
+          "verified": [
+            "word is entirely Type 2 letters",
+            "blue moves only on steps 1,2,5,6 (Ω and X); red moves only on steps 3,4,7,8 (Δ and Z)",
+            "route per half: beta→gamma→alpha→gamma→beta",
+            "blue moving rotations cw; red moving rotations ccw"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "β",
+              "pos": "beta1→beta1",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "Ω",
+              "pos": "beta1→gamma1",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "X",
+              "pos": "gamma1→alpha1",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "Δ",
+              "pos": "alpha1→gamma11",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "Z",
+              "pos": "gamma11→beta5",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "Ω",
+              "pos": "beta5→gamma5",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "X",
+              "pos": "gamma5→alpha5",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "Δ",
+              "pos": "alpha5→gamma15",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "Z",
+              "pos": "gamma15→beta1",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "IΩXJIΩXJ",
+          "loopType": "rotated",
+          "prose": "IΩXJ frames its gamma trip with Type 1 letters: I sets up at beta, Ω and X carry the red hand through gamma to alpha, and J rejoins both hands at beta.",
+          "verified": [
+            "blue static on steps 2,3,6,7 (the Ω and X steps)",
+            "red moves on all 8 steps, every rotation cw",
+            "J steps (4,8) pro on both hands",
+            "route per half: beta→gamma→alpha→beta"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "β",
+              "pos": "beta7→beta7",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "I",
+              "pos": "beta7→beta5",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "Ω",
+              "pos": "beta5→gamma11",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "X",
+              "pos": "gamma11→alpha1",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "J",
+              "pos": "alpha1→beta3",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "I",
+              "pos": "beta3→beta1",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "Ω",
+              "pos": "beta1→gamma15",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "X",
+              "pos": "gamma15→alpha5",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "J",
+              "pos": "alpha5→beta7",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "gamma-beta": {
+      "defaultEntry": "OYHΘ (original print example, stays default; entry-0 prose drafted at migration)",
+      "candidates": [
+        {
+          "word": "SSWΔSSWΔ",
+          "loopType": "rotated",
+          "prose": "SSWΔ cruises the gamma points with two S steps, then W crosses to alpha and Δ dives back in. The red hand rests through both crossings.",
+          "verified": [
+            "red static on steps 3,4,7,8 (the W and Δ steps)",
+            "every moving rotation ccw",
+            "S steps (1,2,5,6) pro on both hands",
+            "alpha visited between the W and Δ steps in each half"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "γ",
+              "pos": "gamma5→gamma5",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "S",
+              "pos": "gamma5→gamma3",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "S",
+              "pos": "gamma3→gamma1",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "W",
+              "pos": "gamma1→alpha1",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "Δ",
+              "pos": "alpha1→gamma1",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "S",
+              "pos": "gamma1→gamma7",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "S",
+              "pos": "gamma7→gamma5",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "W",
+              "pos": "gamma5→alpha5",
+              "blue": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "Δ",
+              "pos": "alpha5→gamma5",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "ZΩXΔZΩXΔ",
+          "loopType": "rotated",
+          "prose": "ZΩXΔ is Type 2 letters end to end, bouncing from gamma to beta, back through gamma, and out to alpha. The hands trade the work every two steps, and every rotation is counter-clockwise.",
+          "verified": [
+            "word is entirely Type 2 letters",
+            "red moves on steps 1,4,5,8 (Z and Δ); blue moves on steps 2,3,6,7 (Ω and X)",
+            "every moving rotation ccw",
+            "route per half: gamma→beta→gamma→alpha→gamma"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "γ",
+              "pos": "gamma11→gamma11",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "Z",
+              "pos": "gamma11→beta5",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "Ω",
+              "pos": "beta5→gamma13",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "X",
+              "pos": "gamma13→alpha5",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "Δ",
+              "pos": "alpha5→gamma15",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "Z",
+              "pos": "gamma15→beta1",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "Ω",
+              "pos": "beta1→gamma9",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "X",
+              "pos": "gamma9→alpha1",
+              "blue": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "Δ",
+              "pos": "alpha1→gamma11",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "OYΘTOYΘT",
+          "loopType": "rotated",
+          "prose": "OYΘT stays close to home: O and T hold the gamma points while Y and Θ trade a quick visit to beta. Every rotation runs clockwise.",
+          "verified": [
+            "blue static on steps 2,3,6,7 (the Y and Θ steps)",
+            "every moving rotation cw",
+            "T steps (4,8) anti on both hands",
+            "beta visited at the end of each Y step"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "γ",
+              "pos": "gamma1→gamma1",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "O",
+              "pos": "gamma1→gamma11",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "Y",
+              "pos": "gamma11→beta5",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "Θ",
+              "pos": "beta5→gamma7",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "T",
+              "pos": "gamma7→gamma5",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "O",
+              "pos": "gamma5→gamma15",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "Y",
+              "pos": "gamma15→beta1",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "Θ",
+              "pos": "beta1→gamma3",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "out→out"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→out"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "T",
+              "pos": "gamma3→gamma1",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              }
+            }
+          ]
+        },
+        {
+          "word": "WΔZΘWΔZΘ",
+          "loopType": "rotated",
+          "prose": "WΔZΘ swings wide: W reaches out to alpha, Δ comes back, Z drops to beta, and Θ returns to gamma. Whichever hand isn't crossing simply waits.",
+          "verified": [
+            "word is entirely Type 2 letters",
+            "red moves on steps 1,4,5,8 (W and Θ); blue moves on steps 2,3,6,7 (Δ and Z)",
+            "route per half: gamma→alpha→gamma→beta→gamma",
+            "red moving rotations ccw (pro); blue moving rotations cw (anti)"
+          ],
+          "steps": [
+            {
+              "step": 0,
+              "letter": "γ",
+              "pos": "gamma15→gamma15",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 1,
+              "letter": "W",
+              "pos": "gamma15→alpha5",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 2,
+              "letter": "Δ",
+              "pos": "alpha5→gamma13",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 3,
+              "letter": "Z",
+              "pos": "gamma13→beta5",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 4,
+              "letter": "Θ",
+              "pos": "beta5→gamma11",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 5,
+              "letter": "W",
+              "pos": "gamma11→alpha1",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 6,
+              "letter": "Δ",
+              "pos": "alpha1→gamma9",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "in→out"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 7,
+              "letter": "Z",
+              "pos": "gamma9→beta1",
+              "blue": {
+                "type": "anti",
+                "dir": "cw",
+                "turns": 0,
+                "ori": "out→in"
+              },
+              "red": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            },
+            {
+              "step": 8,
+              "letter": "Θ",
+              "pos": "beta1→gamma15",
+              "blue": {
+                "type": "static",
+                "dir": "noRotation",
+                "turns": 0,
+                "ori": "in→in"
+              },
+              "red": {
+                "type": "pro",
+                "dir": "ccw",
+                "turns": 0,
+                "ori": "in→in"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

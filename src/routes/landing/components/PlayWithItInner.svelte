@@ -185,15 +185,20 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
      column on mobile (under the canvas, above the dock) and full-width below
      the stage row on desktop so the whole sequence is visible without scroll. -->
 {#snippet stepStripBlock()}
-  {#if playback?.animationState?.sequenceData && notationCells.length > 0}
-    <StepStrip
-      cells={notationCells}
-      currentStep={playback?.animationState?.currentStep ?? 0}
-      {bpm}
-      bluePropType={currentPropType}
-      redPropType={currentPropType}
-    />
-  {/if}
+  <!-- The reserve box holds the strip's fixed 124px frame (StepStrip
+       viewportHeight) from first paint, so the strip landing after playback
+       init never reflows the showcase (no-layout-shift). -->
+  <div class="strip-reserve">
+    {#if playback?.animationState?.sequenceData && notationCells.length > 0}
+      <StepStrip
+        cells={notationCells}
+        currentStep={playback?.animationState?.currentStep ?? 0}
+        {bpm}
+        bluePropType={currentPropType}
+        redPropType={currentPropType}
+      />
+    {/if}
+  </div>
 {/snippet}
 
 <div class="play-inner">
@@ -315,7 +320,6 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   .showcase.with-sidebar {
     max-width: min(1600px, 94vw);
   }
-
   /* Stage row holds the spinner + the AnimationPanel sidebar side by side.
      On mobile it collapses (display:contents) so the stage column flows
      directly in the showcase's column, preserving the bottom-dock layout. */
@@ -344,6 +348,13 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     min-height: 0;
   }
 
+  /* StepStrip renders at its fixed 124px viewportHeight; this box owns that
+     height even before the sequence lands. */
+  .strip-reserve {
+    min-height: 124px;
+    flex-shrink: 0;
+  }
+
   .canvas-area {
     position: relative;
     width: 100%;
@@ -356,6 +367,27 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
     display: flex;
     align-items: center;
     justify-content: center;
+  }
+
+  /* Ultrawide: step up with the composer/landing 4K bands — the canvas is
+     height-keyed so the whole showcase scales with the screen, and the panel
+     widens so it doesn't read skinny beside a ~1500px spinner. Sits AFTER the
+     base .panel-slot/.canvas-area rules so it wins by source order. Keep in
+     sync with PlayWithItSkeleton (the shared structural placeholder). */
+  @media (min-width: 1680px) {
+    .showcase.with-sidebar {
+      /* Aligns to the composer/landing cinema band cap (175rem == 2800px) so
+         the showcase never limits the band; the canvas height cap below is the
+         real size governor. */
+      max-width: min(2800px, 94vw);
+    }
+    .canvas-area {
+      max-height: min(1500px, 72vh);
+    }
+    .panel-slot {
+      flex: 0 0 440px;
+      max-width: 440px;
+    }
   }
 
   .canvas-wrapper {

@@ -13,6 +13,7 @@ import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
 import { bakeReversals } from "../guide-sequence-adapter";
+import { sotrPool, vpuqPool, mvnuPool } from "../example-pools/gamma-loops-pools";
 
 // Verbatim prose lifted from _pages/GammaLoopsPage.svelte (Austen's words - never AI-written);
 // pictograph construction is a FAITHFUL COPY of that same file's step authoring (same
@@ -157,6 +158,20 @@ const loopStrip = (l: LoopDef): PictographData[] => {
 /** STAFF props with reversal dots - matching GammaLoopsPage's PICTO_FLAGS. */
 const RENDER = { propType: PropType.STAFF, showReversals: true } as const;
 
+// Build each print example's strip ONCE - the card's `items` and the pool's
+// entry 0 (the default, prerendered example) are the SAME strip. Note the
+// shared hardcoded start box (Γ, blue S / red E) baked into `startBox` above
+// applies only to these AUTHORED strips; pooled entries carry their own start
+// boxes via the adapter.
+const sotrStrip = loopStrip(LOOPS[0]!);
+const vpuqStrip = loopStrip(LOOPS[1]!);
+const mvnuStrip = loopStrip(LOOPS[2]!);
+
+// No per-slot prose was ever authored for this trio - the shared prose blocks
+// above/below cover all three and stay put. Entry-0 proseHtml below is a
+// placeholder pending Austen's curation pass (rollout spec section 2c): a
+// neutral factual sentence naming the word and its classification, no
+// motion/color/direction claims until verified against step data.
 export const gammaLoopsContent: GuideBlock[] = [
   { kind: "heading", level: 1, text: "Gamma LOOPs" },
   {
@@ -166,9 +181,63 @@ export const gammaLoopsContent: GuideBlock[] = [
       "In these examples, each word ends in gamma position on the opposite side.<br>" +
       "By repeating the word from there, we return to home position.",
   },
-  { kind: "pictographGroup", items: loopStrip(LOOPS[0]!), flowCols: 3, card: true, render: RENDER, caption: LOOPS[0]!.word },
-  { kind: "pictographGroup", items: loopStrip(LOOPS[1]!), flowCols: 3, card: true, render: RENDER, caption: LOOPS[1]!.word },
-  { kind: "pictographGroup", items: loopStrip(LOOPS[2]!), flowCols: 3, card: true, render: RENDER, caption: LOOPS[2]!.word },
+  {
+    kind: "pictographGroup",
+    items: sotrStrip,
+    flowCols: 3,
+    card: true,
+    render: RENDER,
+    caption: LOOPS[0]!.word,
+    pool: {
+      entries: [
+        {
+          word: "SOTR",
+          loopLabel: "Rotated",
+          proseHtml: "SOTR is the print example for this slot: a Rotated LOOP that never leaves gamma.",
+          items: sotrStrip,
+        },
+        ...sotrPool,
+      ],
+    },
+  },
+  {
+    kind: "pictographGroup",
+    items: vpuqStrip,
+    flowCols: 3,
+    card: true,
+    render: RENDER,
+    caption: LOOPS[1]!.word,
+    pool: {
+      entries: [
+        {
+          word: "VPUQ",
+          loopLabel: "Rotated",
+          proseHtml: "VPUQ is the print example for this slot: a Rotated LOOP that never leaves gamma.",
+          items: vpuqStrip,
+        },
+        ...vpuqPool,
+      ],
+    },
+  },
+  {
+    kind: "pictographGroup",
+    items: mvnuStrip,
+    flowCols: 3,
+    card: true,
+    render: RENDER,
+    caption: LOOPS[2]!.word,
+    pool: {
+      entries: [
+        {
+          word: "MVNU",
+          loopLabel: "Rotated",
+          proseHtml: "MVNU is the print example for this slot: a Rotated LOOP that never leaves gamma.",
+          items: mvnuStrip,
+        },
+        ...mvnuPool,
+      ],
+    },
+  },
   {
     kind: "prose",
     html:

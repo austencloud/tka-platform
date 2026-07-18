@@ -1,13 +1,17 @@
 import { describe, it, expect } from "vitest";
+import { readdirSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import {
   entryToStrip,
   loopLabel,
+  buildPools,
   flaggedEntries,
   rawSlots,
   mirroredPool,
   rotatedPool,
   swappedPool,
 } from "../../src/routes/(public)/guide/level-1/_data/example-pools/pool-adapter";
+import type { RawPool } from "../../src/routes/(public)/guide/level-1/_data/example-pools/pool-adapter";
 import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   GridLocation,
@@ -160,4 +164,99 @@ describe("loopLabel", () => {
       loopLabel({ word: "x", loopType: "rotated", period: "quartered", prose: "", steps: [] }),
     ).toBe("Rotated 90°");
   });
+
+  it("an explicit label wins over the derivation (compound classifications)", () => {
+    expect(
+      loopLabel({
+        word: "x",
+        loopType: "rotated_swapped",
+        label: "Swapped & Mirrored",
+        prose: "",
+        steps: [],
+      }),
+    ).toBe("Swapped & Mirrored");
+  });
+});
+
+// ── Factory sweep: every *.pool.json in example-pools/, not just permutations
+// ── ─────────────────────────────────────────────────────────────────────────
+// The rollout (docs/superpowers/specs/2026-07-16-guide-example-pools-rollout.md,
+// section 6) adds a page pool JSON per guide page. This sweep reads the
+// directory at test time - drop a new <page>.pool.json in and it's covered
+// automatically, no test file edits required.
+const poolsDir = resolve(
+  process.cwd(),
+  "src/routes/(public)/guide/level-1/_data/example-pools",
+);
+const poolFiles = readdirSync(poolsDir).filter((f) => f.endsWith(".pool.json"));
+const poolsByFile = poolFiles.map((file) => ({
+  file,
+  raw: JSON.parse(readFileSync(resolve(poolsDir, file), "utf-8")) as RawPool,
+}));
+
+describe("factory sweep: every pool JSON builds cleanly", () => {
+  it("found at least one *.pool.json to sweep (permutations, at minimum)", () => {
+    expect(poolFiles.length).toBeGreaterThan(0);
+  });
+
+  for (const { file, raw } of poolsByFile) {
+    describe(file, () => {
+      const { flagged } = buildPools(raw);
+
+      it("adapts every candidate with zero flagged entries", () => {
+        expect(flagged).toEqual([]);
+      });
+
+      for (const [slotKey, slot] of Object.entries(raw.slots)) {
+        for (const candidate of slot.candidates) {
+          it(`${slotKey}/${candidate.word}: start box derives from step 0, positions round-trip`, () => {
+            const strip = entryToStrip(candidate) as unknown as StepData[];
+
+            // Start box derives from step 0 (or the first step, if 0 is absent).
+            const s0 = candidate.steps.find((s) => s.step === 0) ?? candidate.steps[0]!;
+            expect(strip[0]!.stepNumber).toBe(0);
+            expect(strip[0]! as unknown as { letter: string }).toMatchObject({
+              letter: s0.letter,
+            });
+
+            // Every position this candidate actually uses round-trips through
+            // the canonical location <-> position deriver. This is the same
+            // invariant assertPositionInverseIsUnique proves by exhaustive
+            // enumeration; here it's checked against the real positions each
+            // candidate names, so a curated typo ("beta9" for a position that
+            // doesn't exist) fails loudly instead of silently degrading.
+            for (const step of candidate.steps) {
+              const [startName, endName] = step.pos.split("→").map((s) => s.trim());
+              for (const name of [startName, endName]) {
+                const [blue, red] = getGridLocationsFromPosition(name as GridPosition);
+                expect(getGridPositionFromLocations(blue, red)).toBe(name);
+              }
+            }
+          });
+        }
+      }
+    });
+  }
+});
+
+describe("prose hygiene: every candidate in every pool JSON", () => {
+  // Only the compound "half turn(s)" / "quarter turn(s)" is banned here. Prop
+  // turns and body turns are legitimate uses of "turn" elsewhere in the guide
+  // (tka-domain.md); this regex targets only the loop-rotation misnomer these
+  // pool pages describe (rotated 180°/90°, never "half turns"/"quarter turns").
+  const BANNED_LOOP_ROTATION_MISNOMER = /\b(half|quarter)[- ]turns?\b/i;
+  // Built from a code point, not typed literally, so this file never contains
+  // the character it's banning.
+  const EM_DASH_CHAR = String.fromCodePoint(8212);
+
+  for (const { file, raw } of poolsByFile) {
+    for (const [slotKey, slot] of Object.entries(raw.slots)) {
+      for (const candidate of slot.candidates) {
+        it(`${file} ${slotKey}/${candidate.word}: prose has no em dash and no half/quarter-turn misnomer`, () => {
+          expect(candidate.prose.includes(EM_DASH_CHAR)).toBe(false);
+          expect(candidate.prose).not.toMatch(BANNED_LOOP_ROTATION_MISNOMER);
+        });
+      }
+    }
+  }
 });

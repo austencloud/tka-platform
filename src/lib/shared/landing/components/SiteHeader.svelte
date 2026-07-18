@@ -150,6 +150,7 @@
       items: [
         { label: "Guide", href: "/guide", icon: "fa-book-open", desc: "Level 1, free on the web" },
         { label: "Glossary", href: "/glossary", icon: "fa-spell-check", desc: "Every TKA term, defined" },
+        { label: "FAQ", href: "/faq", icon: "fa-circle-question", desc: "Common questions, answered" },
         { label: "Staff Choreography", href: "/learn/staff-spinning-choreography", icon: "fa-graduation-cap", desc: "Why TKA starts with staves" },
       ],
     },

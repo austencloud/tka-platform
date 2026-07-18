@@ -9,12 +9,15 @@
 
   Mounted via LazyMount only when the Learn section nears the viewport, so the
   deal-in flourish lands on arrival and the prerendered HTML stays lean. Until
-  the covers load, a rotated skeleton fan reserves the space (no layout shift).
+  the covers load, FanSkeleton holds the fan's exact footprint — the SAME
+  skeleton the page renders as this chunk's LazyMount placeholder, so neither
+  the chunk swap nor the catalog landing moves anything (no-layout-shift.md).
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import DeckFanCover from "$lib/features/store/components/DeckFanCover.svelte";
   import CardAnatomyModal from "$lib/features/store/components/CardAnatomyModal.svelte";
+  import FanSkeleton from "./FanSkeleton.svelte";
   import type { CoverCard } from "$lib/features/store/domain/models/product";
 
   let cards = $state<CoverCard[]>([]);
@@ -71,73 +74,51 @@
       {cards}
       deckName="TKA Shop"
       cardWidth={128}
-      maxCardWidth={210}
+      maxCardWidth={280}
       deal
       inert={false}
       onCardClick={openCard}
     />
   {:else if failed}
-    <p class="quiet-note">The decks are loading. Open the shop to see the full fan.</p>
-  {:else}
-    <div class="sk-fan" aria-hidden="true">
-      {#each [0, 1, 2, 3, 4] as i (i)}
-        <div class="sk-card" style:transform="rotate({-12 + 6 * i}deg)"></div>
-      {/each}
+    <!-- The static skeleton keeps holding the fan's footprint so the failure
+         note doesn't collapse the section (no-layout-shift). -->
+    <div class="failed-stage">
+      <FanSkeleton shimmer={false} />
+      <p class="quiet-note">The decks are loading. Open the shop to see the full fan.</p>
     </div>
+  {:else}
+    <FanSkeleton />
   {/if}
 </div>
 
 <CardAnatomyModal bind:open={modalOpen} card={selectedCard} onclose={() => (modalOpen = false)} />
 
 <style>
+  /* Height comes from the content: FanSkeleton and the loaded DeckFanCover
+     share the same fit math, so every state renders the same footprint. */
   .cards-stage {
     display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    min-height: 250px;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .failed-stage {
+    position: relative;
+  }
+  .failed-stage > :global(.sk-fan) {
+    opacity: 0.35;
   }
 
   .quiet-note {
-    align-self: center;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0;
     text-align: center;
     font-style: italic;
     font-size: 0.85rem;
-    color: oklch(0.6 0.02 270);
-  }
-
-  /* Rotated blank cards holding the fan's space until the covers land. */
-  .sk-fan {
-    display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    padding: 18px 0 10px;
-  }
-  .sk-card {
-    width: 118px;
-    aspect-ratio: 5 / 7;
-    border-radius: 6px;
-    transform-origin: bottom center;
-    background: linear-gradient(110deg, #ececf2 40%, #f8f8fc 50%, #ececf2 60%);
-    background-size: 220% 100%;
-    animation: sk-shimmer 1.4s linear infinite;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
-  }
-  .sk-card + .sk-card {
-    margin-left: -61px;
-  }
-
-  @keyframes sk-shimmer {
-    from {
-      background-position: 130% 0;
-    }
-    to {
-      background-position: -90% 0;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .sk-card {
-      animation: none;
-    }
+    color: oklch(0.75 0.02 270);
   }
 </style>

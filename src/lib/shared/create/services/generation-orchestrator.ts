@@ -97,6 +97,7 @@ export class GenerationOrchestrator {
         ? String(options.startPosition.startPosition)
         : undefined,
       blockedStartPositions: options.blockedStartPositions?.map(String),
+      mustNotContainLetters: options.mustNotContainLetters?.map(String),
       maxTurnIntensity: options.turnIntensity,
       blueStartOrientation: options.blueStartOrientation,
       redStartOrientation: options.redStartOrientation,
@@ -165,6 +166,7 @@ export class GenerationOrchestrator {
         ? String(options.startPosition.startPosition)
         : undefined,
       blockedStartPositions: options.blockedStartPositions?.map(String),
+      mustNotContainLetters: options.mustNotContainLetters?.map(String),
       maxTurnIntensity: options.turnIntensity,
       blueStartOrientation: options.blueStartOrientation,
       redStartOrientation: options.redStartOrientation,

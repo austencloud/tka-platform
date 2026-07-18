@@ -2,11 +2,36 @@
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
   import ComposerGenerateDemo from "./_components/ComposerGenerateDemo.svelte";
-  import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+  import FanSkeleton from "./_components/FanSkeleton.svelte";
+  import PlayWithItSkeleton from "../../landing/components/PlayWithItSkeleton.svelte";
+  import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { generatePerVisitDemo } from "./_data/per-visit-demo";
   import "$lib/shared/landing/styles/public-editorial.css";
 
-  const heroDemoSequence = demoJson as unknown as SequenceData;
+  // Per-visit demo: freshly generated for every visitor (no canonical
+  // example). All sequence demos wait on this — their skeletons hold the
+  // footprint, so the late arrival never shifts the page.
+  let demoSeq = $state<SequenceData | null>(null);
+  let rerollingDemo = $state(false);
+  onMount(() => {
+    void generatePerVisitDemo().then((seq) => {
+      demoSeq = seq;
+    });
+  });
+
+  // The hero's dice button: generate a fresh sequence and swap it in place.
+  // The hero player is keyed on sequence id, so it reloads onto the new draw
+  // without a page refresh.
+  async function rerollDemo() {
+    if (rerollingDemo) return;
+    rerollingDemo = true;
+    try {
+      demoSeq = await generatePerVisitDemo();
+    } finally {
+      rerollingDemo = false;
+    }
+  }
 
   const DESCRIPTION =
     "Flow Arts Composer is free flow arts software for building choreography in your browser. Construct sequences step by step, generate them from parameters, animate them, and share them. Supports staff, fans, clubs, hoops, buugeng, and more.";
@@ -36,10 +61,12 @@
   }
   let choreoCardsActive = $state(false);
   let viewer3DActive = $state(false);
+  let arcadeActive = $state(false);
   const activateTunnelWhenNear = activateWhenNear(() => (tunnelActive = true));
   const activatePlayWithItWhenNear = activateWhenNear(() => (playWithItActive = true));
   const activateChoreoCardsWhenNear = activateWhenNear(() => (choreoCardsActive = true));
   const activate3DWhenNear = activateWhenNear(() => (viewer3DActive = true));
+  const activateArcadeWhenNear = activateWhenNear(() => (arcadeActive = true));
 
 
   const ROADMAP = [
@@ -177,36 +204,45 @@
 </svelte:head>
 
 <div class="editorial">
-  <header class="editorial-header">
-    <h1 class="page-title">Flow Arts Composer</h1>
-    <p class="page-subtitle">
-      Free flow arts software for choreography, built on <a href="/notation">The Kinetic Alphabet</a>
-    </p>
-  </header>
+  <!-- Hero: stacked and centered by default; from 1680px up it splits into a
+       duo — copy left, the live notation player right — matching the duo
+       grammar of the sections below. Source order is unchanged, so nothing
+       below the breakpoint moves. -->
+  <div class="hero-duo">
+    <header class="editorial-header">
+      <h1 class="page-title">Flow Arts Composer</h1>
+      <p class="page-subtitle">
+        Free flow arts software for choreography, built on <a href="/notation">The Kinetic Alphabet</a>
+      </p>
+    </header>
 
-  <div class="lede">
-    <p>
-      Flow Arts Composer is free flow arts software for building choreography in your
-      browser. Construct
-      sequences step by step, generate them from parameters, watch them animate, and share
-      them with other flow artists. It supports staff, fans, clubs, hoops, buugeng, and
-      more, all built on The Kinetic Alphabet notation system.
-    </p>
-  </div>
+    <div class="lede">
+      <p>
+        Flow Arts Composer is free flow arts software for building choreography in your browser. Construct
+        sequences step by step, generate them from parameters, watch them animate, and share
+        them with other flow artists. It supports staff, fans, clubs, hoops, buugeng, and
+        more, all built on The Kinetic Alphabet notation system.
+      </p>
+    </div>
 
-  <SequenceHeroDemo
-    sequence={heroDemoSequence}
-    note="a rotated LOOP from the generator, animating live"
-  />
+    <div class="hero-stage">
+      <SequenceHeroDemo
+        sequence={demoSeq}
+        note="a rotated LOOP from the generator, animating live"
+        onReroll={rerollDemo}
+        rerolling={rerollingDemo}
+      />
+    </div>
 
-  <div class="hero-ctas">
-    <a href="/create" class="cta-button" data-sveltekit-reload>
-      <span>Open Composer</span>
-      <i class="fas fa-arrow-right" aria-hidden="true"></i>
-    </a>
-    <a href="/notation" class="cta-secondary">
-      <span>See the notation</span>
-    </a>
+    <div class="hero-ctas">
+      <a href="/create" class="cta-button" data-sveltekit-reload>
+        <span>Open Composer</span>
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </a>
+      <a href="/notation" class="cta-secondary">
+        <span>See the notation</span>
+      </a>
+    </div>
   </div>
 
   <section class="editorial-section" style="--accent: #6366f1">
@@ -227,83 +263,125 @@
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #ec4899">
-    <span class="section-kicker">Generate</span>
-    <h2 class="section-title">Or skip the building entirely</h2>
-    <div class="prose">
-      <p>
-        Set your parameters, hit generate, and a valid sequence lands in front of you.
-        Watch it animate, keep it if you like it, run it again if you don't. Every
-        sequence draws its own mandala. Try it:
-      </p>
-    </div>
-    <div class="breakout">
-      <ComposerGenerateDemo />
+  <!-- duo-uw: stacked (same as always) below 2200px; on ultrawide the copy
+       sits beside the player+mandala pair instead of above it. -->
+  <section class="editorial-section has-duo duo-uw duo-max" style="--accent: #ec4899">
+    <div class="section-duo">
+      <div class="duo-copy">
+        <span class="section-kicker">Generate</span>
+        <h2 class="section-title">Or skip the building entirely</h2>
+        <div class="prose">
+          <p>
+            Set your parameters, hit generate, and a valid sequence lands in front of you.
+            Watch it animate, keep it if you like it, run it again if you don't. Every
+            sequence draws its own mandala. Try it:
+          </p>
+        </div>
+      </div>
+      <div class="duo-demo">
+        <ComposerGenerateDemo sequence={demoSeq} />
+      </div>
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #14b8a6">
-    <span class="section-kicker">Multiply</span>
-    <h2 class="section-title">Unfold it into a tunnel</h2>
-    <div class="prose">
-      <p>
-        Every sequence can unfold into a tunnel: the same choreography multiplied across
-        two, four, or eight performers in a ring, with mirrors, echoes, and staggered
-        canons on top. What starts as one pattern becomes a stage full of them. This is
-        running live:
-      </p>
-    </div>
-    <div class="breakout" use:activateTunnelWhenNear>
-      <LazyMount
-        loader={() => import("./_components/ComposerTunnelDemo.svelte")}
-        active={tunnelActive}
-      />
+  <section class="editorial-section has-duo duo-max" style="--accent: #14b8a6">
+    <div class="section-duo flip">
+      <div class="duo-copy">
+        <span class="section-kicker">Multiply</span>
+        <h2 class="section-title">Unfold it into a tunnel</h2>
+        <div class="prose">
+          <p>
+            Every sequence can unfold into a tunnel: the same choreography multiplied across
+            two, four, or eight performers in a ring, with mirrors, echoes, and staggered
+            canons on top. What starts as one pattern becomes a stage full of them. This is
+            running live:
+          </p>
+        </div>
+      </div>
+      <div class="duo-demo" use:activateTunnelWhenNear>
+        <LazyMount
+          loader={() => import("./_components/ComposerTunnelDemo.svelte")}
+          active={tunnelActive && !!demoSeq}
+          props={{ sequence: demoSeq }}
+        >
+          {#snippet placeholder()}
+            <!-- Same footprint as ComposerTunnelDemo: square stage capped at
+                 30rem (40rem on ultrawide), then the 52px performer row. -->
+            <div class="sk-demo" aria-hidden="true">
+              <div class="sk-stage sk-stage-square"></div>
+              <div class="sk-pill sk-pill-tunnel"></div>
+            </div>
+          {/snippet}
+        </LazyMount>
+      </div>
     </div>
   </section>
 
   <section class="editorial-section" style="--accent: #f59e0b">
     <span class="section-kicker">Learn</span>
-    <h2 class="section-title">Absorb the language by osmosis</h2>
+    <h2 class="section-title">Learn the language by playing it</h2>
     <div class="prose">
       <p>
-        Every pictograph in the app appears with its letter. Use Composer long enough and
-        the alphabet sinks in the way your first language did: repeated exposure, not
-        flashcards. You never have to memorize a single letter to use any of it.
+        The app ships with an arcade of games built from the alphabet: read pictographs,
+        name words performed in front of you, match sequences to the mandalas they draw.
+        Every level awards stars and keeps your best score. Here's a round, live:
       </p>
     </div>
-    <div class="prose">
-      <p>
-        The Kinetic Alphabet maps the whole territory of grid-based prop movement, so your
-        skills don't develop holes. The app splits that territory into levels. Work at
-        level 1 if that's where you are, or push into the weirder corners as you climb.
-      </p>
+    <div class="arcade-slot" use:activateArcadeWhenNear>
+      <LazyMount
+        loader={() => import("./_components/ComposerArcadeDemo.svelte")}
+        active={arcadeActive}
+      >
+        {#snippet placeholder()}
+          <!-- Same footprint as ComposerArcadeDemo: one HUD line (real text
+               metrics, hidden) plus the fixed-height quiz stage. -->
+          <div class="sk-demo sk-arcade" aria-hidden="true">
+            <div class="sk-arcade-hud">Score 0</div>
+            <div class="sk-stage sk-stage-arcade"></div>
+          </div>
+        {/snippet}
+      </LazyMount>
     </div>
 
-    <div class="cards-block">
+    <div class="cards-block has-duo duo-max">
       <h3 class="cards-heading">The alphabet leaves the screen</h3>
-      <div class="cards-fan" use:activateChoreoCardsWhenNear>
-        <LazyMount
-          loader={() => import("./_components/ComposerChoreoCardsDemo.svelte")}
-          active={choreoCardsActive}
-        />
-      </div>
-      <div class="prose">
-        <p>
-          Choreo Cards put a sequence on a physical card: the word, every step, the
-          mandalas, and a QR that opens it in Composer with any prop at any speed. Shuffle a
-          deck and the same osmosis happens away from the app, one card in your hand at a
-          time. Every card the app builds can print, and the decks in the shop are already
-          composed and ready to spin.
-        </p>
-      </div>
-      <div class="hero-ctas">
-        <a href="/shop/choreography-cards" class="cta-button">
-          <span>See how Choreo Cards work</span>
-          <i class="fas fa-arrow-right" aria-hidden="true"></i>
-        </a>
-        <a href="/shop" class="cta-secondary">
-          <span>Browse the decks</span>
-        </a>
+      <!-- demo-star: fan first in source (phones keep fan-above-copy), copy
+           takes the narrower left column from 1100px up. -->
+      <div class="section-duo demo-star">
+        <div class="duo-demo">
+          <div class="cards-fan" use:activateChoreoCardsWhenNear>
+            <LazyMount
+              loader={() => import("./_components/ComposerChoreoCardsDemo.svelte")}
+              active={choreoCardsActive}
+            >
+              {#snippet placeholder()}
+                <!-- Same skeleton the demo shows while its catalog loads — the
+                     chunk swap is pixel-identical. -->
+                <FanSkeleton />
+              {/snippet}
+            </LazyMount>
+          </div>
+        </div>
+        <div class="duo-copy">
+          <div class="prose">
+            <p>
+              Choreo Cards put a sequence on a physical card: the word, every step, the
+              mandalas, and a QR that opens it in Composer with any prop at any speed. Shuffle a
+              deck and the game keeps going away from the app, one card in your hand at a
+              time. Every card the app builds can print, and the decks in the shop are already
+              composed and ready to spin.
+            </p>
+          </div>
+          <div class="hero-ctas cards-ctas">
+            <a href="/shop/choreography-cards" class="cta-button">
+              <span>See how Choreo Cards work</span>
+              <i class="fas fa-arrow-right" aria-hidden="true"></i>
+            </a>
+            <a href="/shop" class="cta-secondary">
+              <span>Browse the decks</span>
+            </a>
+          </div>
+        </div>
       </div>
     </div>
   </section>
@@ -319,12 +397,28 @@
         notation is the score. The 3D viewer is the performance.
       </p>
     </div>
-    <div class="breakout" use:activate3DWhenNear>
+    <div class="breakout cinema" use:activate3DWhenNear>
       <LazyMount
         loader={() => import("./_components/Composer3DViewerDemo.svelte")}
-        active={viewer3DActive}
-      />
+        active={viewer3DActive && !!demoSeq}
+        props={{ sequence: demoSeq }}
+      >
+        {#snippet placeholder()}
+          <!-- Same footprint as Composer3DViewerDemo: 16:9 stage plus two
+               stacked 52px control rows. The curtain gradient matches the
+               demo's own boot state so the swap reads as one load. -->
+          <div class="sk-demo" aria-hidden="true">
+            <div class="sk-stage sk-stage-wide"></div>
+            <div class="sk-pill sk-pill-viewer"></div>
+            <div class="sk-pill sk-pill-viewer"></div>
+          </div>
+        {/snippet}
+      </LazyMount>
     </div>
+    <p class="demo-hint">
+      Drag to orbit. Switch the scene, or multiply into a ring. This is the real
+      viewer, running live.
+    </p>
     <div class="resource-row">
       <a href="/create" class="resource-chip" data-sveltekit-reload>Open a sequence in 3D</a>
     </div>
@@ -336,7 +430,7 @@
     <div class="prose">
       <p>Every one of these is live in the app today.</p>
     </div>
-    <div class="breakout">
+    <div class="breakout wide">
       <div class="bento">
         <div class="bento-cell text-only">
           <div class="bento-text">
@@ -435,11 +529,17 @@
         sequence's notation, keeping time with the animation.
       </p>
     </div>
-    <div class="breakout playwithit-slot" use:activatePlayWithItWhenNear>
+    <div class="breakout cinema playwithit-slot" use:activatePlayWithItWhenNear>
       <LazyMount
         loader={() => import("../../landing/components/PlayWithItInner.svelte")}
         active={playWithItActive}
-      />
+      >
+        {#snippet placeholder()}
+          <!-- Shared structural skeleton — same footprint as PlayWithItInner's
+               showcase at every breakpoint (also used by the landing host). -->
+          <PlayWithItSkeleton />
+        {/snippet}
+      </LazyMount>
     </div>
   </section>
 
@@ -469,11 +569,12 @@
     display: inline-flex;
     align-items: center;
     gap: 0.6rem;
-    font-size: 1.05rem;
+    font-size: clamp(1.05rem, 1rem + 0.12vw, 1.2rem);
     font-weight: 650;
     color: oklch(0.9 0.015 270);
     text-decoration: none;
-    padding: 0.95rem 1.9rem;
+    /* em padding matches .cta-button — scales with the label, not a 1680 rule */
+    padding: 0.9em 1.8em;
     border-radius: 13px;
     background: oklch(0.3 0.04 270 / 0.18);
     border: 1px solid oklch(0.5 0.06 270 / 0.3);
@@ -488,21 +589,147 @@
     border-color: oklch(0.6 0.08 270 / 0.5);
   }
 
-  /* ── breakout band ──
-     Prose keeps the 46rem editorial measure; visual bands escape it and
-     center on the viewport, up to 66rem. min() with the viewport term keeps
-     phones untouched (band == column width there). */
-  .breakout {
-    --breakout-width: min(66rem, calc(100vw - 2.2rem));
-    width: var(--breakout-width);
-    margin-inline: calc((100% - var(--breakout-width)) / 2);
-    margin-block: 0.4rem 1.4rem;
+  /* .breakout (+ .wide / .cinema band steps) now lives in public-editorial.css
+     as a shared primitive — this page was its first consumer. */
+
+  /* Duo helpers: below the duo breakpoints the copy block centers in the
+     stacked section, matching the page's centered essay column. */
+  @media (max-width: 1099.98px) {
+    .section-duo > .duo-copy {
+      margin-inline: auto;
+    }
+  }
+  /* CTAs inside a duo copy cell: the .hero-ctas defaults carry hero-scale
+     margins (2.2rem/3.6rem) that would pad the whole section. */
+  .cards-ctas {
+    margin: 1.8rem 0 0;
   }
 
-  /* Reserve the showcase's footprint before the lazy chunk mounts so the
-     sections below don't jump (no-layout-shift). */
+  /* The showcase's footprint is reserved by PlayWithItSkeleton (same geometry
+     as the loaded component). The slot is a flex column so that on phones —
+     where PlayWithItInner fills the height it's given — the definite height
+     below actually reaches it (no-layout-shift). */
   .playwithit-slot {
-    min-height: min(34rem, 80vh);
+    display: flex;
+    flex-direction: column;
+  }
+  @media (max-width: 600px) {
+    .playwithit-slot {
+      height: min(34rem, 80vh);
+    }
+  }
+
+  /* ── lazy-demo skeletons ──
+     Each mirrors its loaded component's geometry exactly (stage box + control
+     rows), so the chunk mount paints INTO already-reserved space instead of
+     pushing the page down. Control pills are 52px = SegmentedControl's 44px
+     touch-target segments + 3px padding + 1px border, top and bottom. */
+  .sk-demo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    animation: sk-pulse 1.8s ease-in-out infinite;
+  }
+  .sk-stage {
+    width: 100%;
+    border-radius: 16px;
+    border: 1px solid oklch(0.4 0.04 270 / 0.16);
+    background: radial-gradient(
+      circle at 50% 42%,
+      oklch(0.2 0.035 270) 0%,
+      oklch(0.11 0.02 270) 70%
+    );
+  }
+  /* = ComposerTunnelDemo .stage (30rem cap, 40rem on ultrawide — keep in
+     sync with the component) */
+  .sk-stage-square {
+    aspect-ratio: 1;
+    max-width: min(30rem, 100%);
+    border-radius: 18px;
+  }
+  @media (min-width: 1680px) {
+    .sk-stage-square {
+      /* Height-keyed: the kaleidoscope is a near-viewport moment on 4K. */
+      max-width: min(72vh, 100%);
+    }
+    /* 16:9 stage capped by height so the band never outgrows the screen;
+       centered in the cinema band. Mirrors Composer3DViewerDemo .stage. */
+    .sk-stage-wide {
+      max-width: min(100%, calc(78vh * 16 / 9));
+      margin-inline: auto;
+    }
+  }
+  /* = Composer3DViewerDemo .stage */
+  .sk-stage-wide {
+    aspect-ratio: 16 / 9;
+  }
+  .sk-pill {
+    height: 52px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  /* = ComposerTunnelDemo .fold-row */
+  .sk-pill-tunnel {
+    margin-top: 1rem;
+    width: min(100%, 22rem);
+  }
+  /* = ComposerArcadeDemo: 36rem column, one HUD text line (hidden, real
+     metrics), then the fixed-height quiz stage. */
+  .sk-arcade {
+    display: block;
+    max-width: 36rem;
+    margin: 1.6rem auto 0;
+  }
+  .sk-arcade-hud {
+    text-align: center;
+    font-size: 0.82rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 0.7rem;
+    visibility: hidden;
+  }
+  .sk-stage-arcade {
+    height: min(680px, 82vh);
+    border-radius: 18px;
+  }
+
+  /* = Composer3DViewerDemo .control-row (two stacked, 0.8rem gap → the second
+     row carries the gap as margin) */
+  .sk-pill-viewer {
+    margin-top: 1rem;
+    width: min(100%, 30rem);
+  }
+  .sk-pill-viewer + .sk-pill-viewer {
+    margin-top: 0.8rem;
+  }
+
+  @keyframes sk-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.55;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sk-demo {
+      animation: none;
+    }
+  }
+
+  /* Static caption under the 3D viewer slot — lives in the page (not the lazy
+     chunk) so it's part of first paint and never pops in. Margins tuned so the
+     rhythm matches the hint's old in-component position: 0.7rem below the
+     controls (1.4rem breakout bottom margin − 0.7rem), 1.4rem above the next
+     row. */
+  .demo-hint {
+    margin: -0.7rem 0 1.4rem;
+    font-size: clamp(0.8rem, 0.76rem + 0.12vw, 0.95rem);
+    color: oklch(0.62 0.02 270);
+    text-align: center;
   }
 
   /* ── feature bento ──
@@ -534,12 +761,12 @@
     min-height: 6.5rem;
   }
   .bento-text strong {
-    font-size: 1rem;
+    font-size: clamp(1rem, 0.95rem + 0.15vw, 1.2rem);
     font-weight: 650;
     color: oklch(0.92 0.02 270);
   }
   .bento-text span {
-    font-size: 0.88rem;
+    font-size: clamp(0.88rem, 0.84rem + 0.12vw, 1.05rem);
     line-height: 1.5;
     color: oklch(0.68 0.015 270);
   }
@@ -548,15 +775,27 @@
     margin-top: 2rem;
   }
   .cards-heading {
-    margin: 0 0 0.4rem;
+    margin: 0 0 clamp(0.4rem, 0.1rem + 0.4vw, 1.2rem);
     text-align: center;
-    font-size: 1.15rem;
+    font-size: clamp(1.15rem, 1rem + 0.45vw, 1.6rem);
     font-weight: 650;
     color: oklch(0.92 0.02 270);
   }
   .cards-fan {
     margin: 0.4rem auto 1.4rem;
     max-width: 40rem;
+    /* Size container so FanSkeleton's cqw-based card widths (which mirror
+       DeckFanCover's fit math) resolve against the fan's actual box. */
+    container-type: inline-size;
+  }
+  /* Inside the duo (≥1100px) the fan fills its grid column — 6/11 of the
+     duo width, which lands near today's 40rem at ordinary desktops and
+     reaches ~900px (a six-card fan) on ultrawide. */
+  @media (min-width: 1100px) {
+    .cards-fan {
+      max-width: none;
+      margin: 0;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -565,6 +804,66 @@
     }
     .cta-secondary:hover {
       transform: none;
+    }
+  }
+
+  /* ── split hero (big tier) ──
+     Copy left, the live notation player right — the page's duo grammar
+     applied to the hero. Base (below 1680px) has NO .hero-duo styles, so the
+     stacked centered hero is untouched. The row spacers (1fr) center the copy
+     block against the player. The duo width caps at 152rem (2432px) so the
+     stage cell hugs the player instead of leaving a lake of dead black, and
+     the copy column widens with the viewport. */
+  @media (min-width: 1680px) {
+    .hero-duo {
+      position: relative;
+      left: 50%;
+      translate: -50% 0;
+      width: min(88vw, 152rem);
+      display: grid;
+      grid-template-columns: minmax(0, clamp(46rem, 30vw, 58rem)) minmax(0, 1fr);
+      grid-template-rows: 1fr auto auto auto 1fr;
+      grid-template-areas:
+        ".      stage"
+        "header stage"
+        "lede   stage"
+        "ctas   stage"
+        ".      stage";
+      column-gap: clamp(3rem, 4vw, 6rem);
+      margin-bottom: 3.6rem;
+    }
+    .hero-duo > .editorial-header {
+      grid-area: header;
+      text-align: left;
+      margin: 0 0 0.4rem;
+      /* Container-track the title: it sizes to THIS column's width, not the
+         viewport, so "Flow Arts Composer" stays one line and grows only as the
+         column grows. 9cqi lands on the base cap (67px) at a 736px column, so
+         the 1680 seam has no jump; caps at 5rem (80px). */
+      container-type: inline-size;
+    }
+    .hero-duo :global(.page-title) {
+      font-size: clamp(4.2rem, 9cqi, 5rem);
+    }
+    .hero-duo > .lede {
+      grid-area: lede;
+      text-align: left;
+      margin: 0 0 0.8rem;
+      max-width: 42rem;
+    }
+    .hero-duo > .hero-stage {
+      grid-area: stage;
+      align-self: center;
+    }
+    /* The demo's own top margin exists for the stacked layout; in the
+       vertically-centered cell it would push the player off-center. */
+    .hero-duo > .hero-stage :global(.hero-demo) {
+      margin-top: 0;
+    }
+    .hero-duo > .hero-ctas {
+      grid-area: ctas;
+      justify-content: flex-start;
+      margin: 1.4rem 0 0;
     }
   }
 </style>
