@@ -359,29 +359,51 @@
         the Book of P.H.A.T., for Patterns, Hybrids, and Transitions, built with
         Brian Thompson, David Cantor, and Noel Yee. Charts, not an app, doing
         what a simulator does: lay the space out so you can find what you have
-        not tried.
+        not tried. The same grid can be drawn straight from TKA's notation, one
+        shape per cell.
       </p>
     </div>
 
-    <figure class="matrix-figure">
-      <img
-        class="matrix-img"
-        src="/notation/lorq-144-shape-matrix.webp"
-        width="1400"
-        height="1812"
-        alt="Lorq Nichols' 144 Shape Matrix: a twelve by twelve grid of even-petaled flower shapes. Columns are twelve right-hand driving styles, rows are twelve left-hand styles, grouped by 1:1, 1:3, and 1:5 hand-to-prop ratios."
-        loading="lazy"
-      />
-      <figcaption>
-        The real 144 Shape Matrix: twelve right-hand driving styles across,
-        twelve left-hand styles down, grouped by 1:1, 1:3, and 1:5 hand-to-prop
-        ratios. The diagonal, both hands on the same style, holds the basic
-        shapes; every other cell is a hybrid. Diagram by
-        <a href="https://sirlorq.com" target="_blank" rel="noopener noreferrer"
-          >Lorq Nichols</a
-        >.
-      </figcaption>
-    </figure>
+    <div class="has-duo matrix-pair-wrap">
+      <div class="matrix-pair">
+        <figure class="matrix-figure">
+          <img
+            class="matrix-img"
+            src="/notation/lorq-144-shape-matrix.webp"
+            width="1400"
+            height="1812"
+            alt="Lorq Nichols' 144 Shape Matrix: a twelve by twelve grid of even-petaled flower shapes. Columns are twelve right-hand driving styles, rows are twelve left-hand styles, grouped by 1:1, 1:3, and 1:5 hand-to-prop ratios."
+            loading="lazy"
+          />
+          <figcaption>
+            The real 144 Shape Matrix: twelve right-hand driving styles across,
+            twelve left-hand styles down, grouped by 1:1, 1:3, and 1:5
+            hand-to-prop ratios. The diagonal, both hands on the same style,
+            holds the basic shapes; every other cell is a hybrid. Diagram by
+            <a href="https://sirlorq.com" target="_blank" rel="noopener noreferrer"
+              >Lorq Nichols</a
+            >.
+          </figcaption>
+        </figure>
+        <figure class="matrix-figure">
+          <img
+            class="matrix-img"
+            src="/notation/tka-144-shape-matrix.webp"
+            width="1400"
+            height="1401"
+            alt="The Kinetic Alphabet's own 144 shape matrix rendered live: a twelve by twelve grid where twelve blue-hand flowers down the side overlap twelve red-hand flowers across the top, one combined shape per cell."
+            loading="lazy"
+          />
+          <figcaption>
+            The same combinatorial table, drawn live from the alphabet. Twelve
+            blue-hand flowers down, twelve red-hand flowers across, each cell
+            overlapping the two into one shape. The diagonal holds the matched
+            pairs; every other cell is a hybrid, the same structure Lorq charted,
+            rendered from TKA's own notation.
+          </figcaption>
+        </figure>
+      </div>
+    </div>
 
     <div class="prose">
       <div class="resource-row">
@@ -744,5 +766,34 @@
   }
   .matrix-figure figcaption a:hover {
     border-bottom-color: oklch(0.8 0.12 275 / 0.9);
+  }
+
+  /* Lorq's paper chart and TKA's live render, one composition. Stacks on
+     narrow screens; two-up from 900px; the has-duo band lets the pair claim
+     breakout width on 4K instead of the 34rem single-column cap. */
+  .matrix-pair-wrap {
+    margin-block: 1.8rem 0.6rem;
+  }
+  .matrix-pair {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.8rem 2.4rem;
+    align-items: start;
+    justify-items: center;
+  }
+  @media (min-width: 900px) {
+    .matrix-pair {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+  }
+  .matrix-pair .matrix-figure {
+    margin: 0;
+    width: 100%;
+    max-width: min(42rem, 100%);
+  }
+  /* Hairline frame so the dark TKA matrix reads as a panel on the dark page;
+     invisible on Lorq's white chart. */
+  .matrix-img {
+    border: 1px solid oklch(1 0 0 / 0.08);
   }
 </style>
