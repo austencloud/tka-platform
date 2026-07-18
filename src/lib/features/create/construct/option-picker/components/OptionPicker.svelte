@@ -5,12 +5,11 @@ Single responsibility: Coordinate option loading, preparation, and selection.
 Delegates all rendering to child components.
 -->
 <script lang="ts">
-
-import { getOptionFilter } from "$lib/features/create/construct/option-picker/get-option-filter";
-import { getOptionLoader } from "$lib/features/create/construct/option-picker/get-option-loader";
-import { organizePictographs } from "$lib/features/create/construct/option-picker/services/option-organizer";
-import { getOptionSorter } from "$lib/features/create/construct/option-picker/get-option-sorter";
-import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-provider";
+  import { getOptionFilter } from "$lib/features/create/construct/option-picker/get-option-filter";
+  import { getOptionLoader } from "$lib/features/create/construct/option-picker/get-option-loader";
+  import { organizePictographs } from "$lib/features/create/construct/option-picker/services/option-organizer";
+  import { getOptionSorter } from "$lib/features/create/construct/option-picker/get-option-sorter";
+  import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-provider";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
@@ -27,8 +26,14 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
   import { applyPoiLegalComposerFilter } from "$lib/features/levels/poi-lab/services/apply-poi-legal-filter";
   import type { OptionLoader } from "$lib/features/create/construct/option-picker/services/option-loader";
   import type { OptionSorter } from "$lib/features/create/construct/option-picker/services/option-sorter";
-  import type { OrganizedSection, SortMethod } from "$lib/features/create/construct/option-picker/domain/option-picker-types";
-  import type { DeviceAwareSizingParams, DeviceAwareSizingResult } from "../services/types";
+  import type {
+    OrganizedSection,
+    SortMethod,
+  } from "$lib/features/create/construct/option-picker/domain/option-picker-types";
+  import type {
+    DeviceAwareSizingParams,
+    DeviceAwareSizingResult,
+  } from "../services/types";
   import type { PreparedPictographData } from "$lib/shared/pictograph/option/prepared-pictograph-data";
   import type { PictographPreparer } from "../services/pictograph-preparer";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
@@ -141,7 +146,13 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
     let turned = noTurns
       ? filtered
       : filtered.map((o) =>
-          applyPendingTurnsToOption(o, blueTurns, redTurns, blueRotation, redRotation)
+          applyPendingTurnsToOption(
+            o,
+            blueTurns,
+            redTurns,
+            blueRotation,
+            redRotation
+          )
         );
 
     // When Continuous is on, drop any dash/static option whose chosen spin
@@ -172,8 +183,16 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
   // Services
   let preparer: PictographPreparer | null = null;
   let hapticService = $state<HapticFeedback | null>(null);
-  let sizerService = $state<((params: DeviceAwareSizingParams) => DeviceAwareSizingResult) | null>(null);
-  let organizerService = $state<((pictographs: PictographData[], sortMethod: SortMethod) => OrganizedSection[]) | null>(null);
+  let sizerService = $state<
+    ((params: DeviceAwareSizingParams) => DeviceAwareSizingResult) | null
+  >(null);
+  let organizerService = $state<
+    | ((
+        pictographs: PictographData[],
+        sortMethod: SortMethod
+      ) => OrganizedSection[])
+    | null
+  >(null);
 
   // Dark Mode tracking - needed to re-prepare props when theme changes
   let darkMode = $state(false);
@@ -351,7 +370,9 @@ import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-
     } catch (error) {
       console.error("Failed to initialize option picker:", error);
       initError =
-        error instanceof Error ? error.message : "Failed to initialize option picker";
+        error instanceof Error
+          ? error.message
+          : "Failed to initialize option picker";
     }
   }
 
