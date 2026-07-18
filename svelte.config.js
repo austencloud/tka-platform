@@ -83,6 +83,15 @@ const config = {
       handleHttpError: ({ path, message, status }) => {
         // PWA splash screens and icons may not exist yet
         if (path.startsWith("/pwa/")) return;
+        // Generated/synced asset dirs (notation reference images, thumbnail
+        // caches) are populated from cloud during release and are absent from a
+        // clean CI checkout, so a missing one must not fail the whole build.
+        if (
+          path.startsWith("/notation/") ||
+          path.startsWith("/thumbnails/") ||
+          path.startsWith("/Explore_thumbnails/")
+        )
+          return;
         // SPA routes hit during crawl return 500 because they need client-side JS —
         // the adapter-static fallback handles them at runtime
         if (status === 500) return;

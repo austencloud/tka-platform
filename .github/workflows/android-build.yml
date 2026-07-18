@@ -41,6 +41,19 @@ jobs:
           DISABLE_PWA: "true"
         run: pnpm run build
 
+      - name: Trim heavy assets for lean mobile bundle
+        run: |
+          DIR=.svelte-kit/cloudflare
+          echo "Before trim: $(du -sh "$DIR" | cut -f1)"
+          # 3D scene models, museum assets, downloadable guide PDFs, and
+          # character animation packs are streamed from the CDN on the web and
+          # don't belong inside the APK — bundling them blew past Play's 200MB
+          # download cap. The interactive guide/ learn content stays. The SSR
+          # worker + Cloudflare routing files are dead weight in the native shell.
+          rm -rf "$DIR/models" "$DIR/assets/museum" "$DIR/guides" "$DIR/animations"
+          rm -f "$DIR/_worker.js" "$DIR/_routes.json" "$DIR/_headers" "$DIR/_redirects"
+          echo "After trim:  $(du -sh "$DIR" | cut -f1)"
+
       - name: Sync Capacitor
         run: npx cap sync android
 
