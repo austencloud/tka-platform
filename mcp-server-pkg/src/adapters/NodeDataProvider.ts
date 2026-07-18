@@ -21,7 +21,7 @@ const __dirname = path.dirname(__filename);
 // Resolve package root where assets/ lives
 const isCompiled = __dirname.includes("dist");
 const PACKAGE_ROOT = isCompiled
-  ? path.resolve(__dirname, "../../..") // dist/src/adapters -> package root
+  ? path.resolve(__dirname, "..") // dist/index.js (esbuild bundle) -> package root
   : path.resolve(__dirname, "../.."); // src/adapters -> package root
 const ASSETS_ROOT = path.resolve(PACKAGE_ROOT, "assets");
 

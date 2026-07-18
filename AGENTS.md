@@ -92,3 +92,58 @@ Suggest `/compact` at 70% context.
 ## Architecture Docs
 
 Loaded on demand, not every session. See `docs/architecture/` — currently `save-paths.md` (save paths, public index sync, browse gallery cache).
+
+---
+
+# Codex Onboarding (read this before non-trivial work)
+
+You are Codex, working in the same repo as Claude Code. The sections above are the shared house rules. The sections below are what a Codex agent specifically needs to not step on anything.
+
+## The enforced rule canon lives in `.claude/rules/`
+
+The rules above are a summary. The authoritative, enforced set is in `.claude/rules/*.md`. They are not optional and they are not Claude-specific. Read the relevant one before the matching work. The load-bearing ones:
+
+- `never-hand-roll.md` (MASTER) — 500+ components exist. Grep before you build anything. Two searches (internal + external) then justify. Do not rebuild what exists.
+- `autonomy-and-completeness.md` — answer your own questions from the code, finish the task, do not ask what a grep would tell you.
+- `verification-protocol.md` + `no-fabrication.md` + `no-assumption-without-evidence.md` — every "done"/"fixed" needs proof in the same message. Never claim a file/function/behavior exists without grep or Read output in the same turn.
+- `mcp-ground-truth.md` — never state a TKA domain fact (letter behavior, VTG, position, pictograph) from memory. It must come from an MCP call. See the MCP section below for the catch on this machine.
+- `commit-only-your-own-changes.md` — the git index is SHARED across parallel agents. Always `git commit -m "..." -- <explicit paths>`. Never a bare `git commit`, never `git add -A`/`.`/`-u`.
+- `worktree-workflow.md` — branch/parallel work happens in a git worktree outside the watched checkout, not by editing the primary checkout.
+- `fast-iteration-loop.md` + `resource-budget.md` — no full `npm run check`/`build` in the inner loop; capture check output once then grep it; reuse a running dev server before spawning one; one `svelte-check` machine-wide.
+- Design/UI rules: `no-checkboxes.md`, `chip-primitives.md`, `crossfade-primitive.md`, `no-layout-shift.md`, `clickables-look-like-buttons.md`, `clickable-links.md`, `simplified-word-display.md`, `sequence-viewer-shell.md`, `primitive-discovery.md`.
+- Domain rules: `tka-domain.md`, `verify-at-canonical-source.md`.
+
+When in doubt, `ls .claude/rules/` and read the one whose name matches your task.
+
+## Working alongside live Claude sessions (coexistence)
+
+Austen runs several agents against this repo at once. Assume other work is in flight.
+
+- **Port 5173 is Austen's dev server. Never start, stop, restart, or kill it.** It serves HTTPS/2 (h2) only — every localhost URL, curl, and link is `https://`, never `http://` (http returns ERR_EMPTY_RESPONSE). To see your own change in a browser, run your own server on a free port: `vite --port 5174`. Diagnose his with `curl -k https://localhost:5173/...`.
+- **Shared git index.** Scope every commit with an explicit pathspec (see `commit-only-your-own-changes.md`). Do not stage or revert files you did not touch — they belong to another session.
+- **Worktrees for branches.** Do not switch the primary checkout off `main`. See `worktree-workflow.md`.
+- **Windows shell.** Primary shell is PowerShell. A Git Bash tool exists but never query system processes or run bare `find` from it (it walks from `/`). Use PowerShell for process/registry work.
+- **This is a pnpm workspace** (`packageManager` in `package.json`; `packages/*` are members). Do not `rm -rf node_modules` in a worktree whose `node_modules` is a junction to the primary.
+
+## MCP: full domain toolset is wired (server `flow-arts`, 43 tools)
+
+`mcp-ground-truth.md` says all TKA domain facts must come from an MCP call. That is fully satisfied for Codex: the `flow-arts` server (the in-repo Flow Arts Knowledge MCP v3.0.0) is registered globally in `~/.codex/config.toml` → `[mcp_servers.flow-arts]`, launched as `node --import tsx <repo>/mcp-server/index.ts` with `cwd` pinned to `mcp-server/`. It exposes the same 43 tools Claude uses, including the VTG family (`get_vtg_pattern`, `get_vtg_shape`, `get_vtg_category`, `get_vtg_transition`, `get_vtg_transition_between`, `list_vtg_categories`, `search_vtg`, `tka_to_vtg`, `vtg_to_tka`), `get_domain_topic`, the educational tools (`get_letter_explanation`, `get_term_definition`, `get_pictograph_data`, `get_position_info`, `compare_letters`, …), generation (`generate_sequence`, `generate_pictograph`, LOOP tools), and presets/preferences.
+
+Verified 2026-07-17 end to end: Codex called `list_available_letters` (→ 47) and `list_vtg_categories` (→ the six VTG categories). There is no remaining domain-tool gap versus Claude.
+
+**Run mode:** the server runs through `tsx` (its `dev` mode), not the built `dist/` — the full server consumes workspace packages as raw TS source, which `tsx` resolves natively and the compiled `dist` does not. Native `canvas` (3.2.1, N-API prebuilt) is installed in `mcp-server/node_modules`, so rendering tools also work. If you pull changes that touch `mcp-server/` or its workspace deps, nothing to rebuild — tsx picks up source; just restart Codex. `codex mcp list` shows what is wired.
+
+**Fallback (for future maintainers):** a self-contained canvas-free bundle also exists at `mcp-server-pkg/dist/index.js` (`@austencloud/tka-domain-mcp`, 32 tools, no VTG / no `get_domain_topic`). Its five package-root path computations were fixed for the esbuild bundle layout (`resolve(__dirname, "..")` not `"../../.."`); rebuild with `node mcp-server-pkg/build.mjs`. If the `flow-arts` server ever breaks, `codex mcp add flow-arts -- node <repo>/mcp-server-pkg/dist/index.js` restores the core toolset.
+
+## Codex operational notes
+
+- **The right-click menu and taskbar launcher start Codex with `--dangerously-bypass-approvals-and-sandbox`** (the analogue of Claude's `--dangerously-skip-permissions`): no approval prompts, no sandbox. That is deliberate for a trusted local dev box. Installer/launcher: `launchers/install-codex-context-menu.ps1`, `launchers/start-codex.bat`. Re-run the installer if an npm update relocates the `codex` shim.
+- **Model:** to use the 5.6 model, run `/model` inside the TUI and pick it, or launch `codex -m <model-id>`. Codex remembers your last choice as the default in `~/.codex/config.toml`.
+- **First run needs auth:** `codex login` (ChatGPT sign-in) or `codex login --with-api-key`. Only Austen can complete this. Check state with `codex login status`.
+- **Config lives in `~/.codex/config.toml`.** `codex doctor` diagnoses install/auth/config health.
+- **Skills for Codex** already exist under `.agents/skills/` (the agent-agnostic mirror of `.claude/skills/`).
+- **Restart Codex to pick up new MCP config or a moved binary.**
+
+## Memory
+
+Claude keeps a persistent memory at `C:\Users\Austen\.claude\projects\C--tka-platform\memory\` (index: `MEMORY.md`). It is not machine-readable canon, but skimming `MEMORY.md` is the fastest way to learn non-obvious project state (in-flight releases, known-broken paths like the `canvas` native issue, domain conventions). Codex does not write to it.

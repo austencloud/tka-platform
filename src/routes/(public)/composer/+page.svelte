@@ -807,62 +807,76 @@
   }
 
   /* ── split hero (big tier) ──
-     Copy left, the live notation player right — the page's duo grammar
-     applied to the hero. Base (below 1680px) has NO .hero-duo styles, so the
-     stacked centered hero is untouched. The row spacers (1fr) center the copy
-     block against the player. The duo width caps at 152rem (2432px) so the
-     stage cell hugs the player instead of leaving a lake of dead black, and
-     the copy column widens with the viewport. */
+     A centered title band spans the top; below it the description and CTAs sit
+     beside the live notation player. Giving the stage a header directly above
+     it — instead of the title floating off in a side column — is what stops the
+     player from reading as "out of the blue" against the nav. Base (below
+     1680px) has NO .hero-duo styles, so the stacked centered hero is untouched.
+     The header spans both columns and centers; spacer rows (1fr) center the
+     copy block vertically against the taller player; copy and stage each hug
+     the center gutter (justify-self end/start) so the pair stays one
+     conversation, not two islands, at any width up to the 130rem cap. */
   @media (min-width: 1680px) {
     .hero-duo {
       position: relative;
       left: 50%;
       translate: -50% 0;
-      width: min(88vw, 152rem);
+      width: min(90vw, 130rem);
       display: grid;
-      grid-template-columns: minmax(0, clamp(46rem, 30vw, 58rem)) minmax(0, 1fr);
-      grid-template-rows: 1fr auto auto auto 1fr;
+      /* Content-sized columns centered as a unit. A 1fr/1fr split gave each
+         column half the width and anchored the copy right / player left, so the
+         narrower player left MORE void on its outer (right) side than the 40rem
+         text block did on its outer (left) side. Sizing columns to their content
+         and centering the pair (justify-content) makes the two outer voids equal
+         by construction, whatever the copy/player width difference is. */
+      grid-template-columns: auto auto;
+      grid-template-rows: auto 1fr auto auto 1fr;
       grid-template-areas:
+        "header header"
         ".      stage"
-        "header stage"
         "lede   stage"
         "ctas   stage"
         ".      stage";
+      justify-content: center;
       column-gap: clamp(3rem, 4vw, 6rem);
+      /* Breathing room above the title so it clears the nav, and the stage no
+         longer hugs the top of the page. */
+      padding-top: clamp(1.5rem, 2.5vw, 3.5rem);
       margin-bottom: 3.6rem;
     }
+    /* Centered identity band above BOTH columns. Base .editorial-header is
+       already centered and the base 1680 .page-title ramp (4.2→5rem) is the
+       centered-marketing-header ramp, so the title needs no local size rule. */
     .hero-duo > .editorial-header {
       grid-area: header;
-      text-align: left;
-      margin: 0 0 0.4rem;
-      /* Container-track the title: it sizes to THIS column's width, not the
-         viewport, so "Flow Arts Composer" stays one line and grows only as the
-         column grows. 9cqi lands on the base cap (67px) at a 736px column, so
-         the 1680 seam has no jump; caps at 5rem (80px). */
-      container-type: inline-size;
-    }
-    .hero-duo :global(.page-title) {
-      font-size: clamp(4.2rem, 9cqi, 5rem);
+      text-align: center;
+      margin: 0 0 clamp(2rem, 3vw, 3.25rem);
     }
     .hero-duo > .lede {
       grid-area: lede;
       text-align: left;
-      margin: 0 0 0.8rem;
-      max-width: 42rem;
-    }
-    .hero-duo > .hero-stage {
-      grid-area: stage;
-      align-self: center;
-    }
-    /* The demo's own top margin exists for the stacked layout; in the
-       vertically-centered cell it would push the player off-center. */
-    .hero-duo > .hero-stage :global(.hero-demo) {
-      margin-top: 0;
+      margin: 0;
+      /* Definite width so the auto column resolves to it cleanly. */
+      width: 40rem;
+      max-width: 100%;
     }
     .hero-duo > .hero-ctas {
       grid-area: ctas;
       justify-content: flex-start;
       margin: 1.4rem 0 0;
+      width: 40rem;
+      max-width: 100%;
+    }
+    .hero-duo > .hero-stage {
+      grid-area: stage;
+      align-self: center;
+    }
+    /* Definite player width (so the auto column resolves) — height-keyed at
+       60vh, capped near the copy width so the two read as peers, and its own top
+       margin (for the stacked layout) is zeroed in the centered cell. */
+    .hero-duo > .hero-stage :global(.hero-demo) {
+      width: min(60vh, 44rem);
+      margin-top: 0;
     }
   }
 </style>

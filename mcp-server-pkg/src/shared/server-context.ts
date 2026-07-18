@@ -123,11 +123,11 @@ export function saveAndOpenImage(pngBuffer: Buffer, label: string): string {
 
 
 // Resolve paths relative to the package root
-// When compiled, __dirname is dist/src/shared
+// When compiled, esbuild bundles everything to dist/index.js, so __dirname is dist
 // When running source, __dirname is src/shared
 const isCompiled = __dirname.includes("dist");
 const PACKAGE_ROOT = isCompiled
-  ? path.resolve(__dirname, "../../..") // dist/src/shared -> package root
+  ? path.resolve(__dirname, "..") // dist/index.js (esbuild bundle) -> package root
   : path.resolve(__dirname, "../.."); // src/shared -> package root
 const ASSETS_ROOT = path.resolve(PACKAGE_ROOT, "assets");
 

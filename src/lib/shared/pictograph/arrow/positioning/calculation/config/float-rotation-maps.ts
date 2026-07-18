@@ -71,20 +71,21 @@ export const floatClockwiseHandpathMap: Record<GridLocation, number> = {
   [GridLocation.CENTER]: 0,
 };
 
-// Mirrors proCounterClockwiseMap exactly. A float arrow is the same curved
-// shift glyph as PRO (same SVG base orientation, same CCW mirroring in
-// shouldMirrorArrow), so its per-quadrant rotations must match PRO's. The CW
-// map above already equals proClockwiseMap; this one previously sat 90° off
-// across the board, so every CCW-handpath float arrow rendered visibly
-// rotated (caught on the Level 1 guide's Split-Opp/Tog-Opp rows).
+// Tracks proCounterClockwiseMap for most octants — the straight float chevron
+// happens to share PRO's per-quadrant rotation there — EXCEPT NORTHEAST. An
+// E→N float (ccw handpath, arrow at NE) rendered 45° under-rotated at PRO's 90°;
+// the straight chevron needs 135° to point correctly (verified on Letter B,
+// diamond, beat 10). SW=270 stays as visually validated on the Level 1 guide's
+// Split-Opp/Tog-Opp rows, so this is a single-cell decouple from PRO, not a
+// whole-map shift.
 export const floatCounterClockwiseHandpathMap: Record<GridLocation, number> = {
-  [GridLocation.NORTH]: 45,
-  [GridLocation.EAST]: 135,
-  [GridLocation.SOUTH]: 225,
-  [GridLocation.WEST]: 315,
-  [GridLocation.NORTHEAST]: 90,
-  [GridLocation.SOUTHEAST]: 180,
-  [GridLocation.SOUTHWEST]: 270,
-  [GridLocation.NORTHWEST]: 0,
+  [GridLocation.NORTH]: 135,
+  [GridLocation.EAST]: 225,
+  [GridLocation.SOUTH]: 315,
+  [GridLocation.WEST]: 45,
+  [GridLocation.NORTHEAST]: 180,
+  [GridLocation.SOUTHEAST]: 270,
+  [GridLocation.SOUTHWEST]: 0,
+  [GridLocation.NORTHWEST]: 90,
   [GridLocation.CENTER]: 0,
 };

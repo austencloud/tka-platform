@@ -12,14 +12,14 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.52.0",
+    "@flow-arts/core": "file:../packages/flow-arts-core",
     "@modelcontextprotocol/sdk": "^1.0.0",
     "@resvg/resvg-js": "^2.6.0",
-    "@flow-arts/core": "file:../packages/flow-arts-core",
     "@tka/domain": "file:../packages/domain",
-    "@vtg/domain": "file:../packages/vtg-domain",
     "@tka/render-composition": "file:../packages/render-composition",
     "@tka/render-core": "file:../packages/render-core",
     "@tka/sequence-engine": "file:../packages/sequence-engine",
+    "@vtg/domain": "file:../packages/vtg-domain",
     "canvas": "^3.2.1",
     "zod": "^3.25.0"
   },
