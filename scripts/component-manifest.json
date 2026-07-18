@@ -1,6 +1,6 @@
 {
   "summary": {
-    "generatedAt": "2026-07-18T17:43:56.718Z",
+    "generatedAt": "2026-07-18T17:49:20.960Z",
     "thresholds": {
       "EXTRACT_SCORE": 600,
       "LEAN_SCRIPT": 350,
@@ -1333,8 +1333,8 @@
     },
     {
       "file": "lib/features/create/construct/option-picker/components/OptionPicker.svelte",
-      "total": 455,
-      "scriptLines": 367,
+      "total": 457,
+      "scriptLines": 369,
       "templateLines": 45,
       "styleLines": 43,
       "stateCount": 14,
@@ -1342,7 +1342,7 @@
       "effectCount": 5,
       "functionCount": 11,
       "childComponents": 6,
-      "diseaseScore": 440,
+      "diseaseScore": 442,
       "species": "logic",
       "action": "ok",
       "reason": "below the disease-score gate",
