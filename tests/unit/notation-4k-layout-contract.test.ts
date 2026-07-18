@@ -42,4 +42,18 @@ describe("notation 4K layout lab artifacts", () => {
     expect(source).toContain("{#each sequence.steps as step, index (step.id)}");
     expect(source).not.toMatch(/\{#if\s+layoutMode/);
   });
+
+  it("switches composition on one shared content tree", () => {
+    const source = read(
+      "src/routes/test/notation-4k/_components/NotationLayoutStudy.svelte"
+    );
+    expect(source).toContain("data-layout={layoutMode}");
+    expect(source.match(/<NotationRosetta\b/g)).toHaveLength(1);
+    expect(source.match(/<NotationShapeMatrix\b/g)).toHaveLength(1);
+    expect(source.match(/<NotationSequenceStage\b/g)).toHaveLength(1);
+    expect(source).not.toMatch(/\{#if\s+layoutMode/);
+    expect(source).toContain("@container notation-study (min-width: 96rem)");
+    expect(source).toContain('[data-layout="atlas"]');
+    expect(source).toContain('[data-layout="cinematic"]');
+  });
 });
