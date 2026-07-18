@@ -21,7 +21,15 @@ beforeAll(() => {
   outDir = mkdtempSync(join(tmpdir(), "bake-test-"));
 });
 afterAll(() => {
-  rmSync(outDir, { recursive: true, force: true });
+  // Best-effort temp cleanup. On Windows the image-encoding native code can
+  // still hold a handle to the just-written files, so rmSync throws EPERM;
+  // retry a few times and never let teardown fail the suite (the OS reclaims
+  // tmpdir regardless).
+  try {
+    rmSync(outDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 150 });
+  } catch {
+    // leftover temp dir is harmless; ignore
+  }
 });
 
 describe("bake-notation-images encode pipeline", () => {
