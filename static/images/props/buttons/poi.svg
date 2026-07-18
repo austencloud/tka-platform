@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 150">
+  <!-- cord connecting the finger loop to the weighted head -->
+  <rect x="64" y="69" width="134" height="12" rx="6" style="fill:#2e3192"/>
+  <!-- finger loop -->
+  <circle cx="44" cy="75" r="30" style="fill:none;stroke:#2e3192;stroke-width:13"/>
+  <!-- weighted head -->
+  <circle cx="240" cy="75" r="52" style="fill:#2e3192"/>
+</svg>

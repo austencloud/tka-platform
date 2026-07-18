@@ -173,8 +173,7 @@ export const PROP_TYPE_DISPLAY_REGISTRY: Record<PropType, PropTypeDisplayInfo> =
     },
 
     // === POI FAMILY (Momentum-based) ===
-    // Uses club.svg as placeholder until proper poi SVG (~175px) is created
-    [PropType.POI]: { label: "Poi", image: "/images/props/buttons/club.svg", category: "novelty" },
+    [PropType.POI]: { label: "Poi", image: "/images/props/buttons/poi.svg", category: "novelty" },
   } as const;
 
 /**
@@ -189,9 +188,9 @@ export const DEACTIVATED_PROP_TYPES: ReadonlySet<PropType> = new Set([
   PropType.CONTACTBALL,
   PropType.BIGCONTACTBALL,
   PropType.BIGDOUBLECONTACTBALL,
-  // Poi stays deactivated for the category pickers (still a club.svg placeholder
-  // pending its own icon). BentoPropGrid re-includes it for dev/admin only, to
-  // exercise the poi-legal composer filter. (Fractalgeng removed 2026-06-30.)
+  // Poi stays deactivated for the category pickers. BentoPropGrid re-includes it
+  // for dev/admin only, to exercise the poi-legal composer filter.
+  // (Fractalgeng removed 2026-06-30.)
   PropType.POI,
 ]);
 
