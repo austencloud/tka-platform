@@ -9,10 +9,10 @@ import * as path from "path";
 import type { UserPresetsFile, UserSequencePreset } from "./types.js";
 
 // Resolve data directory relative to the package root
-// import.meta.dirname: src/core/user-presets or dist/src/core/user-presets
+// import.meta.dirname: src/core/user-presets (dev) or dist (esbuild bundle)
 const isCompiled = import.meta.dirname.includes("dist");
 const PACKAGE_ROOT = isCompiled
-  ? path.resolve(import.meta.dirname, "../../../..") // dist/src/core/user-presets -> package root
+  ? path.resolve(import.meta.dirname, "..") // dist/index.js (esbuild bundle) -> package root
   : path.resolve(import.meta.dirname, "../../.."); // src/core/user-presets -> package root
 const DATA_DIR = path.resolve(PACKAGE_ROOT, "data");
 const PRESETS_FILE = path.join(DATA_DIR, "user-presets.json");

@@ -157,6 +157,11 @@
   );
 
   const landingShown = $derived(!filtering && view === "landing");
+  // The category rail (left sidebar) only earns its column once a drill-down
+  // destination is chosen. On the landing view — even while filtering — the
+  // page is a centered hub with its own search, so the empty rail is gone and
+  // the content sits centered instead of shoved right by an 18rem placeholder.
+  const landingView = $derived(view === "landing");
   const selectedEntry = $derived(
     selected ? (slugToEntry.get(selected) ?? null) : null
   );
@@ -343,9 +348,11 @@
   {@html `<script type="application/ld+json">${jsonLd}</script>`}
 </svelte:head>
 
-<div class="glossary-shell">
+<div class="glossary-shell" class:landing-hub={landingView}>
   <!-- ── desktop sidebar: search + category nav (terms render once, in the
-       master list — the rail never repeats them) ── -->
+       master list — the rail never repeats them). Hidden on the landing view
+       (no drill-down destination yet), where the hub's own centered search
+       stands in for it. ── -->
   <aside class="glossary-sidebar" aria-label="Glossary navigation">
     <GlossaryNav
       groups={sidebarGroups}
@@ -405,6 +412,34 @@
         Every term in The Kinetic Alphabet, defined. Pick a category or search.
       </p>
     </div>
+
+    <!-- Landing hub search (desktop): stands in for the hidden sidebar search
+         while no category is drilled. Bound to the same query, keyed to the
+         landing view so it stays mounted (and keeps focus) as you type. On
+         mobile the sticky .mobile-bar owns search, so this is desktop-only. -->
+    {#if landingView}
+      <div class="hub-search">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <input
+          data-glossary-search
+          type="search"
+          placeholder="Filter terms"
+          aria-label="Filter glossary terms"
+          autocomplete="off"
+          bind:value={query}
+        />
+        {#if filtering}
+          <button
+            type="button"
+            class="hub-clear"
+            aria-label="Clear filter"
+            onclick={() => (query = "")}
+          >
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        {/if}
+      </div>
+    {/if}
 
     {#if filtering}
       <p class="filter-status" aria-live="polite">
@@ -646,6 +681,22 @@
       margin-left: auto;
       margin-right: auto;
     }
+    /* Landing hub: no drill-down destination chosen yet, so the category rail
+       is gone. The shell collapses to one column and the hub centers at a
+       readable measure — the title and cards sit centered instead of shoved
+       right by an empty 18rem placeholder. Drilling into a category restores
+       the two-column workspace. */
+    .glossary-shell.landing-hub {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .glossary-shell.landing-hub .glossary-sidebar {
+      display: none;
+    }
+    .glossary-shell.landing-hub .editorial {
+      max-width: 64rem;
+      margin-left: auto;
+      margin-right: auto;
+    }
   }
   /* 4K / ultrawide: wider rail and list, larger type, same fluid layout. */
   @media (min-width: 2200px) {
@@ -763,6 +814,78 @@
   .mb-contents:focus-visible {
     outline: 2px solid oklch(0.65 0.13 275);
     outline-offset: 2px;
+  }
+
+  /* ── landing hub search (desktop only; mobile uses the sticky .mobile-bar) ── */
+  .hub-search {
+    display: none;
+  }
+  @media (min-width: 1024px) {
+    .hub-search {
+      position: relative;
+      display: flex;
+      align-items: center;
+      max-width: 30rem;
+      margin: 0 auto 2.2rem;
+    }
+    .hub-search > i {
+      position: absolute;
+      left: 1.1rem;
+      font-size: 0.85rem;
+      color: oklch(0.55 0.02 270);
+      pointer-events: none;
+    }
+    .hub-search input {
+      width: 100%;
+      min-height: 48px;
+      padding: 0.6rem 2.8rem;
+      font: inherit;
+      font-size: 1rem;
+      color: oklch(0.94 0.01 270);
+      background: oklch(0.18 0.02 270 / 0.55);
+      border: 1px solid oklch(0.45 0.04 270 / 0.25);
+      border-radius: 999px;
+      outline: none;
+      transition: border-color 160ms ease, background 160ms ease;
+    }
+    .hub-search input::placeholder {
+      color: oklch(0.55 0.02 270);
+    }
+    .hub-search input:focus-visible {
+      border-color: oklch(0.65 0.13 275 / 0.7);
+      background: oklch(0.2 0.025 272 / 0.6);
+    }
+    .hub-search input::-webkit-search-cancel-button {
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .hub-clear {
+      all: unset;
+      box-sizing: border-box;
+      position: absolute;
+      right: 2px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      min-height: 44px;
+      border-radius: 999px;
+      color: oklch(0.65 0.02 270);
+      cursor: pointer;
+    }
+    .hub-clear:hover {
+      color: oklch(0.9 0.02 270);
+    }
+    .hub-clear:focus-visible {
+      outline: 2px solid oklch(0.65 0.13 275);
+      outline-offset: -4px;
+    }
+  }
+  @media (min-width: 2200px) {
+    .hub-search input {
+      min-height: 54px;
+      font-size: 1.1rem;
+    }
   }
 
   /* ── landing: category cards ── */
@@ -1279,7 +1402,8 @@
     .browse-all,
     .term-row,
     .row-chev,
-    .row-body {
+    .row-body,
+    .hub-search input {
       transition: none;
     }
     .back-top:hover,

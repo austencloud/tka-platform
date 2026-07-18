@@ -41,8 +41,6 @@
     }
   });
 
-  const LENGTHS = [8, 12, 16] as const;
-
   async function generate() {
     if (generating) return;
     generating = true;
@@ -54,12 +52,15 @@
         import("$lib/shared/pictograph/grid/domain/enums/grid-enums"),
         import("$lib/shared/pictograph/prop/domain/enums/prop-type"),
       ]);
-      const length = LENGTHS[Math.floor(Math.random() * LENGTHS.length)] ?? 8;
+      // Same favorite preset as the per-visit demo: 16-count, level two, max
+      // turn intensity, rotated, QUARTERED — a 4-glyph title every tap, never an
+      // overwhelming one. Only the letters change from one draw to the next.
       const seq = await generationOrchestrator.generateSequence({
         mode: models.GenerationMode.CIRCULAR,
         loopType: circular.LOOPType.ROTATED,
-        period: circular.Period.HALVED,
-        length,
+        period: circular.Period.QUARTERED,
+        length: 16,
+        turnIntensity: 3,
         gridMode: grid.GridMode.DIAMOND,
         propType: prop.PropType.STAFF,
         difficulty: models.DifficultyLevel.INTERMEDIATE,

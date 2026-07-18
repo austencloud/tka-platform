@@ -41,10 +41,11 @@ const TIMEOUTS = {
   INITIAL_LOAD: 30000,
   SPA_RELOAD_SETTLE: 1500,
   PUBLIC_ROUTE_SETTLE: 3000,
-  // Stabilization
-  SELECTOR_WAIT: 8000,
+  // Stabilization — generous because vite dev compiles heavy modules on-demand
+  // on first visit; a short wait captures the mid-compile "Loading…" state.
+  SELECTOR_WAIT: 25000,
   NETWORK_IDLE: 5000,
-  LOADING_DISAPPEAR: 8000,
+  LOADING_DISAPPEAR: 25000,
   FINAL_SETTLE: 500,
 } as const;
 
@@ -479,17 +480,34 @@ async function stabilize(page: Page, route: RouteConfig): Promise<void> {
   // 4. Wait for fonts to finish loading (guard against navigation destroying context)
   await page.evaluate(() => document.fonts.ready).catch(() => {});
 
-  // 5. Also wait for generic "Loading" text (used by some component loading states)
-  try {
-    const loading = page.locator("text=Loading");
-    if (await loading.isVisible({ timeout: 300 }).catch(() => false)) {
-      await loading.waitFor({
-        state: "hidden",
-        timeout: TIMEOUTS.LOADING_DISAPPEAR,
-      });
-    }
-  } catch {
-    // Not present, fine
+  // 5. Wait for any VISIBLE "Loading…" placeholder (module lazy-load / route
+  //    fallback) to actually disappear. In vite dev mode a heavy module can sit
+  //    on this for many seconds while its chunk compiles; a fixed probe races it
+  //    and captures mid-load, so poll until the leaf "Loading…" node is gone.
+  const loadingDeadline = Date.now() + TIMEOUTS.LOADING_DISAPPEAR;
+  while (Date.now() < loadingDeadline) {
+    const stillLoading = await page
+      .evaluate(() => {
+        const visible = (el: Element) => {
+          const r = el.getBoundingClientRect();
+          const s = getComputedStyle(el);
+          return (
+            r.width > 0 &&
+            r.height > 0 &&
+            s.visibility !== "hidden" &&
+            s.display !== "none" &&
+            s.opacity !== "0"
+          );
+        };
+        return Array.from(document.querySelectorAll("body *")).some((el) => {
+          if (el.children.length > 0) return false; // leaf text nodes only
+          const t = (el.textContent || "").trim();
+          return /^loading[.…\s]*$/i.test(t) && visible(el);
+        });
+      })
+      .catch(() => false);
+    if (!stillLoading) break;
+    await page.waitForTimeout(500);
   }
 
   // 6. Freeze animations for deterministic screenshots.

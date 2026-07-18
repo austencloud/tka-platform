@@ -1,0 +1,113 @@
+---
+description: Use when user pastes sequence data (beat notation, JSON, natural language) and wants it added to their Firestore library
+argument-hint: "[paste sequence data or say 'add to library']"
+---
+
+# Add to Library
+
+**Args:** `$ARGUMENTS`
+
+Import a sequence into the user's Firestore library from any input format.
+
+## Trigger
+
+- `/add-to-library` with sequence data pasted
+- User says "add this to my library" alongside sequence data
+- User pastes sequence beat notation and asks to save/import it
+
+## Workflow
+
+### 1. Parse input
+
+Accept any of these formats and convert to the JSON schema documented in `format-reference.md`:
+
+| Format | How to parse |
+|--------|-------------|
+| **Structured beat notation** | Parse header block for metadata. Parse each beat line: extract letter, startPosition, endPosition, and per-hand motion fields (motionType, rotationDirection, startLocation, endLocation, turns, startOrientation, endOrientation). |
+| **Raw JSON** | Validate it has `word` and `steps[]`. Normalize field names if needed. Pass through. |
+| **Natural language** | Extract what you can. Ask one focused question for anything genuinely ambiguous. |
+| **MCP generate_sequence output** | Already in the right format. Extract and pass through. |
+
+### 2. Extract metadata
+
+From the input, determine:
+- **word** — sequence name (from header or filename)
+- **gridMode** — diamond (default), box, or skewed
+- **circularity** — if last beat's `endPosition` == start position, it's circular
+- **loopType** — rotated, mirrored, swapped, inverted, or compound (e.g. mirrored_swapped)
+- **difficulty** — if stated
+- **tags** — if stated
+
+### 3. Confidence gate
+
+If you're confident in all metadata: proceed without asking.
+If something is ambiguous (e.g. loop type not stated but sequence looks circular): ask one focused question.
+If input is clearly incomplete (missing motion data): ask what's missing.
+
+### 4. Build JSON
+
+Construct the JSON object matching the schema in `format-reference.md`. Key rules:
+
+- Every step needs: `beat`, `letter`, `startPosition`, `endPosition`, `motions.blue`, `motions.red`
+- Every motion needs: `color`, `motionType`, `rotationDirection`, `startLocation`, `endLocation`, `turns`, `startOrientation`, `endOrientation`
+- `rotationDirection` for static/dash without spin = `"noRotation"` (camelCase, not snake_case)
+- Wrap in `{ "word": "...", "gridMode": "...", "startPosition": "...", "steps": [...] }`
+
+### 5. Write temp file and import
+
+```bash
+# Write JSON to temp file
+# (use Write tool to create tmp-import-<word>.json)
+
+# Run import with appropriate flags
+node scripts/import-sequence.cjs tmp-import-<word>.json [--circular] [--loop-type <type>] [--notes "<tagline>"] [--visibility private]
+
+# Clean up temp file (PowerShell: Remove-Item, Bash: rm)
+```
+
+Flag rules:
+- `--circular` — add when sequence is circular (endPosition == startPosition)
+- `--loop-type X` — add when loop type is known (from input metadata or detection)
+- `--notes "text"` — add when user provides a tagline or description
+- `--visibility` — always `private` unless user says otherwise
+
+### 6. Report result
+
+On success, report:
+- Sequence word/name
+- Firestore path: `users/{uid}/sequences/{id}`
+- Sequence ID
+- Metadata applied (circularity, loop type, grid mode)
+
+On failure, show error and suggest fixes.
+
+## Beat notation grammar
+
+The structured format looks like this:
+
+```
+# WORD
+id: <uuid>
+owner: <name>
+<N> beats | difficulty: <level> | loop: <type> | grid: <mode>
+tags: <comma-separated>
+
+## Beats
+<beat#> <letter> <startPos>><endPos>
+  blue: <motionType> <rotDir> <startLoc>><endLoc> t=<turns> <startOri>><endOri>
+  red:  <motionType> <rotDir> <startLoc>><endLoc> t=<turns> <startOri>><endOri>
+```
+
+Field mappings:
+- `motionType`: pro, anti, dash, static, float → use as-is
+- `rotDir`: cw, ccw, no → map `no` to `"noRotation"`
+- `loc`: n, e, s, w, ne, se, sw, nw, c → use as-is
+- `ori`: in, out, cw, ccw → map `cw` to `"clock"`, `ccw` to `"counter"` (orientation namespace, not rotation)
+- `t=<N>`: turns value (integer or decimal)
+- Positions: alpha1, beta3, gamma5 etc. → use as-is
+
+**Orientation mapping warning:** In the beat notation, `ori` values `cw`/`ccw` mean `clock`/`counter` (the orientation enum), NOT rotation direction. The `in`/`out` values map directly.
+
+## Dry-run option
+
+If user asks to preview before saving, add `--dry-run` flag. Shows what would be saved without writing to Firestore.

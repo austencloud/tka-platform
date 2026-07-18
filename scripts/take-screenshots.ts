@@ -9,6 +9,7 @@
 import { execSync } from "child_process";
 import { existsSync, mkdirSync, rmSync, readdirSync } from "fs";
 import http from "http";
+import https from "https";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -117,9 +118,27 @@ if (portable) env.SCREENSHOT_PORTABLE = "true";
 
 // ─── Preflight Checks ───────────────────────────────────────────────────────
 
-function checkDevServer(): Promise<boolean> {
-  // Use 127.0.0.1 explicitly — Node 18+ resolves "localhost" to IPv6 (::1) first,
-  // but Vite only binds to IPv4 by default, causing ERR_CONNECTION_REFUSED.
+// Use 127.0.0.1 explicitly — Node 18+ resolves "localhost" to IPv6 (::1) first,
+// but Vite only binds to IPv4 by default, causing ERR_CONNECTION_REFUSED.
+function probeHttps(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const req = https.get(
+      "https://127.0.0.1:5173",
+      { timeout: 5000, rejectUnauthorized: false },
+      (res) => {
+        res.resume();
+        resolve(res.statusCode !== undefined && res.statusCode < 500);
+      }
+    );
+    req.on("error", () => resolve(false));
+    req.on("timeout", () => {
+      req.destroy();
+      resolve(false);
+    });
+  });
+}
+
+function probeHttp(): Promise<boolean> {
   return new Promise((resolve) => {
     const req = http.get("http://127.0.0.1:5173", { timeout: 5000 }, (res) => {
       res.resume();
@@ -131,6 +150,13 @@ function checkDevServer(): Promise<boolean> {
       resolve(false);
     });
   });
+}
+
+// The dev server runs HTTPS/h2 when the mkcert dev cert exists (.cert/), else
+// HTTP/1.1 (fresh clone / CI). Try https first (self-signed cert → skip
+// verification), then fall back to http.
+async function checkDevServer(): Promise<boolean> {
+  return (await probeHttps()) || probeHttp();
 }
 
 function checkPlaywrightBrowsers(): boolean {

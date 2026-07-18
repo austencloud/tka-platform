@@ -196,11 +196,11 @@ export class StandaloneRenderer {
 
   constructor() {
     // Resolve to the package root where assets/ lives
-    // When compiled: dist/src/core -> go up 3 levels to package root
+    // When compiled: esbuild bundles to dist/index.js -> go up 1 level to package root
     // When dev (tsx): src/core -> go up 2 levels to package root
     const inDist = __dirname.includes("dist");
     const packageRoot = inDist
-      ? join(__dirname, "../../..")  // dist/src/core -> package root
+      ? join(__dirname, "..")        // dist/index.js (esbuild bundle) -> package root
       : join(__dirname, "../..");    // src/core -> package root
     this.assetsRoot = join(packageRoot, "assets");
   }

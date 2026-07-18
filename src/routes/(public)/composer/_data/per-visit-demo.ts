@@ -22,10 +22,11 @@ import demoJson from "$lib/shared/landing/data/demo-sequence.json";
 
 export const FALLBACK_DEMO = demoJson as unknown as SequenceData;
 
-const LENGTHS = [8, 12, 16] as const;
 const MAX_ROLLS = 10;
-/** Reject wallpaper draws (AAAA, BBBABBBA) that read as a broken demo. */
-const MIN_UNIQUE_LETTERS = 4;
+/** Reject wallpaper draws. The favorite preset is a 16-count QUARTERED loop, so
+ * the word is a 4-step seed repeated 4× — require ≥3 distinct letters in that
+ * seed so the title reads as a phrase (ΧΚΔΛ), not alternation (ΧΚΧΚ). */
+const MIN_UNIQUE_LETTERS = 3;
 /** "Not entirely Greek": at least this fraction of steps must render as a
  * familiar Latin glyph (dash variants of Latin letters count — the glyph a
  * visitor sees is still the Latin capital). */
@@ -45,12 +46,18 @@ export async function generatePerVisitDemo(): Promise<SequenceData> {
     let best: SequenceData | null = null;
     let bestScore = -1;
     for (let roll = 0; roll < MAX_ROLLS; roll++) {
-      const length = LENGTHS[Math.floor(Math.random() * LENGTHS.length)] ?? 8;
+      // Austen's favorite showcase preset: 16-count, level two (intermediate),
+      // max turn intensity, rotated, QUARTERED loop. Quartered on a 16-count is
+      // a 4-step seed repeated four times, so simplifyRepeatedWord renders a
+      // tidy 4-glyph title instead of an overwhelming one — the whole reason
+      // this preset drives the public demo canvases. Only the letters vary from
+      // one roll to the next; the shape is fixed.
       const seq = await generationOrchestrator.generateSequence({
         mode: models.GenerationMode.CIRCULAR,
         loopType: circular.LOOPType.ROTATED,
-        period: circular.Period.HALVED,
-        length,
+        period: circular.Period.QUARTERED,
+        length: 16,
+        turnIntensity: 3,
         gridMode: grid.GridMode.DIAMOND,
         propType: prop.PropType.STAFF,
         difficulty: models.DifficultyLevel.INTERMEDIATE,

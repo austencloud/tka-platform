@@ -6,7 +6,22 @@
  */
 
 import { defineConfig } from "@playwright/test";
+import { existsSync } from "fs";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 import { filterDevices, toLandscape, type DevicePreset } from "./devices";
+
+// Mirror vite.config.ts: the dev server runs HTTPS/h2 when the mkcert dev cert
+// exists (.cert/), else HTTP/1.1 (fresh clone / CI). Match its protocol so the
+// captures hit the same origin the browser does.
+const __dir = dirname(fileURLToPath(import.meta.url));
+const certDir = resolve(__dir, "../../.cert");
+const useHttps =
+  existsSync(resolve(certDir, "dev-cert.pem")) &&
+  existsSync(resolve(certDir, "dev-key.pem"));
+const baseURL = useHttps
+  ? "https://127.0.0.1:5173"
+  : "http://127.0.0.1:5173";
 
 function resolveDevices(): DevicePreset[] {
   const filter = process.env.SCREENSHOT_DEVICE_FILTER;
@@ -41,7 +56,10 @@ export default defineConfig({
   reporter: [["list"]],
 
   use: {
-    baseURL: "http://127.0.0.1:5173",
+    baseURL,
+    // The mkcert dev cert is self-signed; Playwright's bundled Chromium doesn't
+    // trust the local CA, so accept it explicitly.
+    ignoreHTTPSErrors: true,
     trace: "off",
     screenshot: "off",
     video: "off",

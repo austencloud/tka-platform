@@ -21,9 +21,9 @@ import { GridLocation, GridMode, MotionType, Orientation } from "./enums.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Package root: src/core -> package root (or dist/src/core -> package root)
+// Package root: src/core -> package root (dev), or dist/index.js -> package root (esbuild bundle)
 const inDist = __dirname.includes("dist");
-const PACKAGE_ROOT = inDist ? join(__dirname, "../../..") : join(__dirname, "../..");
+const PACKAGE_ROOT = inDist ? join(__dirname, "..") : join(__dirname, "../..");
 const ASSETS_ROOT = join(PACKAGE_ROOT, "assets");
 
 

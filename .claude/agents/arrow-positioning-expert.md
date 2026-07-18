@@ -112,11 +112,21 @@ When both hands end at the same grid point (beta position), props need pixel off
 
 Code: `src/lib/shared/render/core/calculations/beta-offset.ts` (canonical; see prop-positioning-expert)
 
+### Rotation Angle (the SVG `rotationAngle`, SEPARATE from x/y placement)
+
+The tier cascade above and directional tuples decide the arrow's **x/y position**. The arrow's **rotation angle** is computed independently by `ArrowRotationCalculator.calculateRotation` (`arrow/positioning/calculation/services/arrow-rotation-calculator.ts`), which switches on motion type: pro/anti/static/dash each have a branch; `float` routes to `calculateFloatRotation` (lines ~208-250).
+
+Float rotation is a **pure map lookup keyed by geometric handpath direction** (start→end location, via `calculateHandpathDirection`), NOT by prop-rotation direction or prefloat fields — those are never read. `selectFloatMap(handpath)` picks `floatClockwiseHandpathMap` / `floatCounterClockwiseHandpathMap` in `.../calculation/config/float-rotation-maps.ts`; the value is `map[arrowLocation]`. Non-adjacent/cross-grid pairs fall to `calculateSkewedFloatRotation` (atan2, base assumption "0° = East"). Float rotation has **no JSON/Firestore override** (unlike static/dash) — it is 100% code.
+
+**Float ≠ PRO glyph (2026-07-17).** The float maps used to be hard-locked equal to the PRO maps (`pro-anti-rotation-maps.ts`) on the premise "float is the same glyph as PRO." It is not — `static/images/arrows/float.svg` is a straight diagonal chevron; PRO is a curved arc. They coincidentally share most per-octant rotations, but the **ccw NORTHEAST** cell diverges: an E→N float (ccw handpath, arrow at NE) rendered 45° under-rotated at PRO's 90°; it is now **135°**. This is a single-cell decouple, NOT a whole-map shift — ccw SW=270 stays as visually validated (Level 1 guide Split-Opp/Tog-Opp rows), and two known-good values (SW=270, NE=135) rule out a uniform shift. The parity guard in `tests/unit/arrow-adjustment/HandPathFloatSeparation.test.ts` now asserts `floatCCW === {...proCCW, ne:135}`. If more float octants are reported off, get one visually-confirmed sample per octant before touching values — do not assume a systematic shift.
+
 ### Key Files
 
 | Purpose | Path |
 |---------|------|
 | Main orchestrator | `arrow/orchestration/services/arrow-positioning-orchestrator.ts` |
+| Rotation-angle calculator (float map lookup) | `arrow/positioning/calculation/services/arrow-rotation-calculator.ts` |
+| Float rotation maps | `arrow/positioning/calculation/config/float-rotation-maps.ts` |
 | Adjustment calculator | `arrow/positioning/calculation/services/arrow-adjustment-calculator.ts` |
 | Location calculator (segment short-circuit) | `arrow/positioning/calculation/services/arrow-location-calculator.ts` |
 | Segment rotation | `arrow/positioning/calculation/services/segment-rotation.ts` |
