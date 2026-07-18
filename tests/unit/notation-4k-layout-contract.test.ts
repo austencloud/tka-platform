@@ -27,4 +27,19 @@ describe("notation 4K layout lab artifacts", () => {
     expect(source).toContain("Right-hand driving styles (12)");
     expect(source).toContain("as _, i (i)");
   });
+
+  it("composes one real live player with real rendered beats", () => {
+    const source = read(
+      "src/routes/test/notation-4k/_components/NotationSequenceStage.svelte"
+    );
+    expect(source).toContain(
+      'import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte"'
+    );
+    expect(source).toContain(
+      'import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte"'
+    );
+    expect(source.match(/<SequenceHeroDemo\b/g)).toHaveLength(1);
+    expect(source).toContain("{#each sequence.steps as step, index (step.id)}");
+    expect(source).not.toMatch(/\{#if\s+layoutMode/);
+  });
 });
