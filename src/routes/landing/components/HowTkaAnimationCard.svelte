@@ -38,6 +38,7 @@
   let hasStartedLoading = $state(false);
   let sectionVisible = $state(false);
   let documentVisible = $state(true);
+  let reducedMotion = $state(false);
   let initializing = $state(false);
 
   // Animation engine state. Ephemeral so this teaching card runs at a fixed
@@ -122,7 +123,12 @@
 
   let gridMode = $derived(animationState.sequenceData?.gridMode ?? null);
   let playbackEnabled = $derived(
-    shouldEnableAssemblyPlayback({ active, sectionVisible, documentVisible })
+    shouldEnableAssemblyPlayback({
+      active,
+      sectionVisible,
+      documentVisible,
+      reducedMotion,
+    })
   );
 
   onMount(() => {
@@ -130,6 +136,10 @@
 
     const updateDocumentVisibility = () => {
       documentVisible = !document.hidden;
+    };
+    const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updateMotionPreference = () => {
+      reducedMotion = motionQuery.matches;
     };
 
     const observer = new IntersectionObserver(
@@ -140,7 +150,9 @@
     );
 
     updateDocumentVisibility();
+    updateMotionPreference();
     document.addEventListener("visibilitychange", updateDocumentVisibility);
+    motionQuery.addEventListener("change", updateMotionPreference);
     observer.observe(containerRef);
 
     return () => {
@@ -149,6 +161,7 @@
         "visibilitychange",
         updateDocumentVisibility
       );
+      motionQuery.removeEventListener("change", updateMotionPreference);
     };
   });
 
