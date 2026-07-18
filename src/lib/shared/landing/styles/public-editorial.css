@@ -51,7 +51,11 @@
   font-family: var(--page-title-font, "Fraunces", Georgia, serif);
   font-style: italic;
   font-weight: 700;
-  font-variation-settings: "opsz" 144, "wght" 700, "SOFT" 0, "WONK" 1;
+  font-variation-settings:
+    "opsz" 144,
+    "wght" 700,
+    "SOFT" 0,
+    "WONK" 1;
   font-size: clamp(2.6rem, 1.9rem + 2.4vw, 4.2rem);
   letter-spacing: -0.015em;
   line-height: 1.05;
@@ -107,11 +111,15 @@
 }
 .section-kicker {
   display: block;
-  font-size: clamp(0.72rem, 0.66rem + 0.14vw, 0.88rem);
+  font-size: clamp(0.75rem, 0.68rem + 0.14vw, 0.88rem);
   font-weight: 640;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: color-mix(in oklch, var(--accent, oklch(0.7 0.13 275)) 62%, oklch(0.72 0.01 270));
+  color: color-mix(
+    in oklch,
+    var(--accent, oklch(0.7 0.13 275)) 62%,
+    oklch(0.72 0.01 270)
+  );
   margin: 0 0 0.55rem;
 }
 .editorial-section.panel {
@@ -287,6 +295,9 @@
 .resource-chip {
   display: inline-flex;
   align-items: center;
+  /* 44px minimum touch target (design-system floor). */
+  min-height: 44px;
+  box-sizing: border-box;
   gap: 0.5rem;
   font-size: clamp(0.85rem, 0.8rem + 0.15vw, 1rem);
   font-weight: 500;

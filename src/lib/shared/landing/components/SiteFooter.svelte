@@ -36,7 +36,6 @@
       links: [
         { label: "Notation", href: "/notation" },
         { label: "Composer", href: "/composer" },
-        { label: "Roots", href: "/roots" },
         { label: "About", href: "/about" },
         { label: "Endless LOOPs", href: "/endless-spinner" },
       ],
@@ -47,7 +46,10 @@
         { label: "Guide", href: "/guide" },
         { label: "Glossary", href: "/glossary" },
         { label: "FAQ", href: "/faq" },
-        { label: "Staff Choreography", href: "/learn/staff-spinning-choreography" },
+        {
+          label: "Staff Choreography",
+          href: "/learn/staff-spinning-choreography",
+        },
         { label: "Double Staff Codex", href: "/guide/codex" },
       ],
     },
@@ -80,7 +82,9 @@
   <div class="inner">
     <div class="cols">
       <div class="brand">
-        <a href="/" class="wordmark" aria-label="The Kinetic Alphabet, Home">TKA</a>
+        <a href="/" class="wordmark" aria-label="The Kinetic Alphabet, Home"
+          >TKA</a
+        >
         <p class="tagline">Notation for flow arts.</p>
         <a class="composer-cta" href="/create" data-sveltekit-reload>
           <i class="fas fa-rocket" aria-hidden="true"></i>
@@ -101,18 +105,28 @@
     </div>
 
     <div class="bottom">
-      <p class="legal-line">© {year} The Kinetic Alphabet · Made by Austen Cloud</p>
+      <p class="legal-line">
+        © {year} The Kinetic Alphabet · Made by Austen Cloud
+      </p>
       <nav class="bottom-links" aria-label="Support and legal links">
-        <a href="/support"><i class="fas fa-heart heart" aria-hidden="true"></i> Support</a>
+        <a href="/support"
+          ><i class="fas fa-heart heart" aria-hidden="true"></i> Support</a
+        >
         <a href="/create?sheet=auth" data-sveltekit-reload>Sign in</a>
         <a href="/terms" onclick={(e) => handleLegalClick(e, "terms")}>Terms</a>
-        <a href="/privacy" onclick={(e) => handleLegalClick(e, "privacy")}>Privacy</a>
+        <a href="/privacy" onclick={(e) => handleLegalClick(e, "privacy")}
+          >Privacy</a
+        >
       </nav>
     </div>
   </div>
 </footer>
 
-<LegalSheet isOpen={sheetOpen} type={sheetType} onClose={() => (sheetOpen = false)} />
+<LegalSheet
+  isOpen={sheetOpen}
+  type={sheetType}
+  onClose={() => (sheetOpen = false)}
+/>
 
 <style>
   .site-footer {
@@ -121,7 +135,11 @@
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     /* Quiet grounding gradient so the columns read over any cosmic-canvas
        brightness without a hard panel edge. */
-    background: linear-gradient(180deg, rgba(8, 8, 20, 0.1), rgba(8, 8, 20, 0.55));
+    background: linear-gradient(
+      180deg,
+      rgba(8, 8, 20, 0.1),
+      rgba(8, 8, 20, 0.55)
+    );
   }
 
   .inner {
@@ -172,7 +190,10 @@
     text-decoration: none;
     font-size: 0.9rem;
     font-weight: 600;
-    transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+    transition:
+      border-color 0.2s ease,
+      background 0.2s ease,
+      color 0.2s ease;
   }
   .composer-cta:hover,
   .composer-cta:focus-visible {

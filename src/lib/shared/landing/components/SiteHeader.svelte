@@ -109,7 +109,8 @@
     mobileOpen = false;
     await ensureAuthLoaded();
     if (!AuthModalComp) {
-      AuthModalComp = (await import("../../auth/components/AuthModal.svelte")).default;
+      AuthModalComp = (await import("../../auth/components/AuthModal.svelte"))
+        .default;
     }
     authModalOpen = true;
   }
@@ -148,24 +149,51 @@
       label: "Learn",
       icon: "fa-book-open",
       items: [
-        { label: "Guide", href: "/guide", icon: "fa-book-open", desc: "Level 1, free on the web" },
-        { label: "Glossary", href: "/glossary", icon: "fa-spell-check", desc: "Every TKA term, defined" },
-        { label: "FAQ", href: "/faq", icon: "fa-circle-question", desc: "Common questions, answered" },
-        { label: "Staff Choreography", href: "/learn/staff-spinning-choreography", icon: "fa-graduation-cap", desc: "Why TKA starts with staves" },
+        {
+          label: "Guide",
+          href: "/guide",
+          icon: "fa-book-open",
+          desc: "Level 1, free on the web",
+        },
+        {
+          label: "Glossary",
+          href: "/glossary",
+          icon: "fa-spell-check",
+          desc: "Every TKA term, defined",
+        },
+        {
+          label: "FAQ",
+          href: "/faq",
+          icon: "fa-circle-question",
+          desc: "Common questions, answered",
+        },
+        {
+          label: "Staff Choreography",
+          href: "/learn/staff-spinning-choreography",
+          icon: "fa-graduation-cap",
+          desc: "Why TKA starts with staves",
+        },
       ],
     },
     {
       label: "Shop",
       icon: "fa-bag-shopping",
       items: [
-        { label: "How Choreo Cards Work", href: "/shop/choreography-cards", icon: "fa-qrcode" },
+        {
+          label: "How Choreo Cards Work",
+          href: "/shop/choreography-cards",
+          icon: "fa-qrcode",
+        },
         { label: "LOOP Deck", href: "/shop/loop-deck", icon: "fa-layer-group" },
         { label: "T&D Trilogy", href: "/shop/tnd-trilogy", icon: "fa-clone" },
-        { label: "Starter Pack", href: "/shop/starter-pack", icon: "fa-box-open" },
+        {
+          label: "Starter Pack",
+          href: "/shop/starter-pack",
+          icon: "fa-box-open",
+        },
         { label: "Browse the Shop", href: "/shop", icon: "fa-bag-shopping" },
       ],
     },
-    { label: "Roots", href: "/roots", icon: "fa-seedling" },
     { label: "About", href: "/about", icon: "fa-circle-info" },
   ];
 
@@ -173,7 +201,9 @@
     return "items" in entry;
   }
 
-  const ALL_HREFS = NAV.flatMap((e) => (isGroup(e) ? e.items.map((i) => i.href) : [e.href]));
+  const ALL_HREFS = NAV.flatMap((e) =>
+    isGroup(e) ? e.items.map((i) => i.href) : [e.href]
+  );
 
   function isActive(href: string): boolean {
     const path = page.url?.pathname ?? "";
@@ -233,7 +263,8 @@
   $effect(() => {
     if (!accountOpen) return;
     function onPointer(e: PointerEvent) {
-      if (accountEl && !accountEl.contains(e.target as Node)) accountOpen = false;
+      if (accountEl && !accountEl.contains(e.target as Node))
+        accountOpen = false;
     }
     document.addEventListener("pointerdown", onPointer);
     return () => document.removeEventListener("pointerdown", onPointer);
@@ -261,11 +292,16 @@
     <nav class="desktop-nav" aria-label="Main navigation">
       {#each NAV as entry}
         {#if isGroup(entry)}
-          <NavDropdown label={entry.label} items={entry.items} active={groupActive(entry)} />
+          <NavDropdown
+            label={entry.label}
+            items={entry.items}
+            active={groupActive(entry)}
+          />
         {:else}
           <a href={entry.href} class:active={isActive(entry.href)}>
             {entry.label}
-            {#if isActive(entry.href)}<span class="ind" aria-hidden="true"></span>{/if}
+            {#if isActive(entry.href)}<span class="ind" aria-hidden="true"
+              ></span>{/if}
           </a>
         {/if}
       {/each}
@@ -288,7 +324,11 @@
                 <span class="acct-name">{displayName}</span>
                 {#if email}<span class="acct-email">{email}</span>{/if}
               </div>
-              <button class="acct-signout" role="menuitem" onclick={handleSignOut}>
+              <button
+                class="acct-signout"
+                role="menuitem"
+                onclick={handleSignOut}
+              >
                 <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
                 Sign out
               </button>
@@ -296,9 +336,13 @@
           {/if}
         </div>
       {:else}
-        <button type="button" class="signin auth-slot" onclick={openSignIn}>Sign in</button>
+        <button type="button" class="signin auth-slot" onclick={openSignIn}
+          >Sign in</button
+        >
       {/if}
-      <a class="cta" href="/create" data-sveltekit-reload>Open Flow Arts Composer</a>
+      <a class="cta" href="/create" data-sveltekit-reload
+        >Open Flow Arts Composer</a
+      >
     </nav>
 
     <button
@@ -325,66 +369,76 @@
   aria-label="Mobile navigation"
   aria-hidden={!mobileOpen}
 >
-    <ul class="m-list">
-      {#each NAV as entry, i}
-        <li style="--i:{i}">
-          {#if isGroup(entry)}
-            {@const expanded = expandedGroup === entry.label}
-            <button
-              class="m-group-btn"
-              class:active={groupActive(entry)}
-              aria-expanded={expanded}
-              onclick={() => (expandedGroup = expanded ? null : entry.label)}
-            >
-              <i class="fas {entry.icon} m-icon" aria-hidden="true"></i>
-              <span class="m-label">{entry.label}</span>
-              <i class="fas fa-chevron-down m-chev" class:m-chev-up={expanded} aria-hidden="true"></i>
-            </button>
-            <div class="m-sub" class:expanded>
-              <ul class="m-sub-inner">
-                {#each entry.items as item}
-                  <li>
-                    <a href={item.href} class:active={isActive(item.href)}>
-                      <i class="fas {item.icon} m-icon m-sub-icon" aria-hidden="true"></i>
-                      <span class="m-label">{item.label}</span>
-                      <i class="fas fa-chevron-right m-chev" aria-hidden="true"></i>
-                    </a>
-                  </li>
-                {/each}
-              </ul>
-            </div>
-          {:else}
-            <a href={entry.href} class:active={isActive(entry.href)}>
-              <i class="fas {entry.icon} m-icon" aria-hidden="true"></i>
-              <span class="m-label">{entry.label}</span>
-              <i class="fas fa-chevron-right m-chev" aria-hidden="true"></i>
-            </a>
-          {/if}
-        </li>
-      {/each}
-    </ul>
-
-    <div class="m-actions" style="--i:{NAV.length}">
-      <a class="m-cta" href="/create" data-sveltekit-reload onclick={close}>
-        <i class="fas fa-rocket" aria-hidden="true"></i>
-        <span>Open Flow Arts Composer</span>
-      </a>
-      {#if authReady && isFullAccount}
-        <div class="m-identity">
-          <RobustAvatar src={photoURL} name={displayName} customSize={32} />
-          <div class="m-id-info">
-            <span class="m-id-name">{displayName}</span>
-            {#if email}<span class="m-id-email">{email}</span>{/if}
+  <ul class="m-list">
+    {#each NAV as entry, i}
+      <li style="--i:{i}">
+        {#if isGroup(entry)}
+          {@const expanded = expandedGroup === entry.label}
+          <button
+            class="m-group-btn"
+            class:active={groupActive(entry)}
+            aria-expanded={expanded}
+            onclick={() => (expandedGroup = expanded ? null : entry.label)}
+          >
+            <i class="fas {entry.icon} m-icon" aria-hidden="true"></i>
+            <span class="m-label">{entry.label}</span>
+            <i
+              class="fas fa-chevron-down m-chev"
+              class:m-chev-up={expanded}
+              aria-hidden="true"
+            ></i>
+          </button>
+          <div class="m-sub" class:expanded>
+            <ul class="m-sub-inner">
+              {#each entry.items as item}
+                <li>
+                  <a href={item.href} class:active={isActive(item.href)}>
+                    <i
+                      class="fas {item.icon} m-icon m-sub-icon"
+                      aria-hidden="true"
+                    ></i>
+                    <span class="m-label">{item.label}</span>
+                    <i class="fas fa-chevron-right m-chev" aria-hidden="true"
+                    ></i>
+                  </a>
+                </li>
+              {/each}
+            </ul>
           </div>
+        {:else}
+          <a href={entry.href} class:active={isActive(entry.href)}>
+            <i class="fas {entry.icon} m-icon" aria-hidden="true"></i>
+            <span class="m-label">{entry.label}</span>
+            <i class="fas fa-chevron-right m-chev" aria-hidden="true"></i>
+          </a>
+        {/if}
+      </li>
+    {/each}
+  </ul>
+
+  <div class="m-actions" style="--i:{NAV.length}">
+    <a class="m-cta" href="/create" data-sveltekit-reload onclick={close}>
+      <i class="fas fa-rocket" aria-hidden="true"></i>
+      <span>Open Flow Arts Composer</span>
+    </a>
+    {#if authReady && isFullAccount}
+      <div class="m-identity">
+        <RobustAvatar src={photoURL} name={displayName} customSize={32} />
+        <div class="m-id-info">
+          <span class="m-id-name">{displayName}</span>
+          {#if email}<span class="m-id-email">{email}</span>{/if}
         </div>
-        <button class="m-signin m-signout" onclick={handleSignOut}>
-          <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
-          Sign out
-        </button>
-      {:else if authReady}
-        <button type="button" class="m-signin" onclick={openSignIn}>Sign in</button>
-      {/if}
-    </div>
+      </div>
+      <button class="m-signin m-signout" onclick={handleSignOut}>
+        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+        Sign out
+      </button>
+    {:else if authReady}
+      <button type="button" class="m-signin" onclick={openSignIn}
+        >Sign in</button
+      >
+    {/if}
+  </div>
 </nav>
 
 <!-- In-place sign-in modal (centered BaseModal). Lazy-loaded on first Sign in
@@ -408,7 +462,10 @@
     backdrop-filter: blur(16px) saturate(160%);
     -webkit-backdrop-filter: blur(16px) saturate(160%);
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    transition: background 0.3s ease, border-color 0.3s ease, height 0.3s ease;
+    transition:
+      background 0.3s ease,
+      border-color 0.3s ease,
+      height 0.3s ease;
   }
   header.scrolled {
     background: rgba(13, 13, 28, 0.92);
@@ -523,7 +580,9 @@
     background: none;
     cursor: pointer;
     line-height: 0;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition:
+      border-color 0.2s ease,
+      box-shadow 0.2s ease;
   }
   .avatar-btn:hover,
   .avatar-btn:focus-visible {
@@ -586,7 +645,9 @@
     font-size: 0.88rem;
     font-weight: 500;
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
   }
   .acct-signout:hover,
   .acct-signout:focus-visible {
@@ -648,18 +709,28 @@
     z-index: 195; /* below the header bar (200) so the logo + X stay on top */
     flex-direction: column;
     overflow-y: auto;
-    padding: calc(64px + env(safe-area-inset-top)) 24px calc(28px + env(safe-area-inset-bottom));
-    background: radial-gradient(120% 90% at 50% 0%, #1d1d3a 0%, #14142b 55%, #0f0f22 100%);
+    padding: calc(64px + env(safe-area-inset-top)) 24px
+      calc(28px + env(safe-area-inset-bottom));
+    background: radial-gradient(
+      120% 90% at 50% 0%,
+      #1d1d3a 0%,
+      #14142b 55%,
+      #0f0f22 100%
+    );
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+    transition:
+      opacity 0.3s ease,
+      visibility 0s linear 0.3s;
   }
   .mobile-nav.open {
     opacity: 1;
     visibility: visible;
-    transition: opacity 0.32s ease, visibility 0s;
+    transition:
+      opacity 0.32s ease,
+      visibility 0s;
   }
 
   .m-list {
@@ -688,7 +759,10 @@
     font-size: 1.4rem;
     font-weight: 600;
     border: 1px solid transparent;
-    transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+    transition:
+      background 0.18s ease,
+      border-color 0.18s ease,
+      transform 0.18s ease;
   }
   .m-list a:hover,
   .m-list a:focus-visible {
@@ -721,7 +795,9 @@
     font-weight: 600;
     border: 1px solid transparent;
     cursor: pointer;
-    transition: background 0.18s ease, border-color 0.18s ease;
+    transition:
+      background 0.18s ease,
+      border-color 0.18s ease;
   }
   .m-group-btn:hover,
   .m-group-btn:focus-visible {
@@ -813,7 +889,9 @@
     font-size: 1.05rem;
     font-weight: 700;
     box-shadow: 0 8px 26px rgba(111, 140, 255, 0.45);
-    transition: filter 0.18s ease, transform 0.18s ease;
+    transition:
+      filter 0.18s ease,
+      transform 0.18s ease;
   }
   .m-cta:hover {
     filter: brightness(1.07);

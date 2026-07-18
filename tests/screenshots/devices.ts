@@ -210,11 +210,11 @@ export const PUBLIC_ROUTES: RouteConfig[] = [
     waitSelector: ".terms-page",
   },
   {
-    path: "/roots",
-    label: "roots",
+    path: "/notation",
+    label: "notation",
     requiresAuth: false,
     isModule: false,
-    waitSelector: ".roots-page",
+    waitSelector: ".editorial .page-title",
   },
 ];
 

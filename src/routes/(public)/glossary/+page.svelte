@@ -12,9 +12,18 @@
   // that get a pictograph thumbnail in their detail view. Fixed-size PNGs,
   // present from first paint — no layout shift.
   const POSITION_THUMBS: Record<string, { src: string; alt: string }> = {
-    alpha: { src: "/images/position_images/alpha.png", alt: "Alpha position pictograph" },
-    beta: { src: "/images/position_images/beta.png", alt: "Beta position pictograph" },
-    gamma: { src: "/images/position_images/gamma.png", alt: "Gamma position pictograph" },
+    alpha: {
+      src: "/images/position_images/alpha.png",
+      alt: "Alpha position pictograph",
+    },
+    beta: {
+      src: "/images/position_images/beta.png",
+      alt: "Beta position pictograph",
+    },
+    gamma: {
+      src: "/images/position_images/gamma.png",
+      alt: "Gamma position pictograph",
+    },
   };
 
   const TITLE =
@@ -67,7 +76,12 @@
       {
         "@type": "BreadcrumbList",
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Home", item: "https://tkaflowarts.com/" },
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://tkaflowarts.com/",
+          },
           { "@type": "ListItem", position: 2, name: "Glossary", item: URL },
         ],
       },
@@ -129,7 +143,9 @@
           .filter((g) => g.terms.length > 0)
   );
   const matchCount = $derived(
-    filtering ? searchGroups.reduce((n, g) => n + g.terms.length, 0) : data.total
+    filtering
+      ? searchGroups.reduce((n, g) => n + g.terms.length, 0)
+      : data.total
   );
   const matchSlugs = $derived(
     filtering
@@ -206,8 +222,13 @@
     await tick();
     const el = document.getElementById(slug);
     if (!el) return;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "nearest" });
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    el.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth",
+      block: "nearest",
+    });
     history.replaceState(null, "", `#${slug}`);
   }
 
@@ -282,7 +303,9 @@
   }
 
   function backToTop() {
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
     window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
   }
 </script>
@@ -303,13 +326,19 @@
   <meta property="og:url" content={URL} />
   <meta property="og:title" content={TITLE} />
   <meta property="og:description" content={DESCRIPTION} />
-  <meta property="og:image" content="https://tkaflowarts.com/branding/og-image.png" />
+  <meta
+    property="og:image"
+    content="https://tkaflowarts.com/branding/og-image.png"
+  />
 
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@tkaflowarts" />
   <meta name="twitter:title" content={TITLE} />
   <meta name="twitter:description" content={DESCRIPTION} />
-  <meta name="twitter:image" content="https://tkaflowarts.com/branding/og-image.png" />
+  <meta
+    name="twitter:image"
+    content="https://tkaflowarts.com/branding/og-image.png"
+  />
 
   {@html `<script type="application/ld+json">${jsonLd}</script>`}
 </svelte:head>
@@ -372,7 +401,9 @@
     </header>
 
     <div class="lede">
-      <p>Every term in The Kinetic Alphabet, defined. Pick a category or search.</p>
+      <p>
+        Every term in The Kinetic Alphabet, defined. Pick a category or search.
+      </p>
     </div>
 
     {#if filtering}
@@ -400,20 +431,31 @@
     {#if landingShown}
       <nav class="cat-cards" aria-label="Browse by category">
         {#each data.groups as g (g.key)}
-          <button type="button" class="cat-card" onclick={() => enterView(g.key)}>
+          <button
+            type="button"
+            class="cat-card"
+            onclick={() => enterView(g.key)}
+          >
             <span class="cc-top">
               <span class="cc-label">{g.label}</span>
               <span class="cc-count">{g.terms.length}</span>
             </span>
             <span class="cc-sample">
-              {g.terms.slice(0, 3).map((t) => t.term).join(" · ")}
+              {g.terms
+                .slice(0, 3)
+                .map((t) => t.term)
+                .join(" · ")}
             </span>
             <i class="fa-solid fa-arrow-right cc-arrow" aria-hidden="true"></i>
           </button>
         {/each}
       </nav>
       <div class="landing-all">
-        <button type="button" class="browse-all" onclick={() => enterView("all")}>
+        <button
+          type="button"
+          class="browse-all"
+          onclick={() => enterView("all")}
+        >
           Browse all {data.total} terms
         </button>
       </div>
@@ -437,7 +479,8 @@
                   <li
                     id={t.slug}
                     class="term-item"
-                    class:hit-hidden={matchSlugs !== null && !matchSlugs.has(t.slug)}
+                    class:hit-hidden={matchSlugs !== null &&
+                      !matchSlugs.has(t.slug)}
                   >
                     <button
                       type="button"
@@ -448,7 +491,10 @@
                     >
                       <dfn class="row-name">{t.term}</dfn>
                       <span class="row-teaser">{t.definition}</span>
-                      <i class="fa-solid fa-chevron-down row-chev" aria-hidden="true"></i>
+                      <i
+                        class="fa-solid fa-chevron-down row-chev"
+                        aria-hidden="true"
+                      ></i>
                     </button>
                     <!-- mobile accordion body; the full entry lives in the DOM
                          at every breakpoint (crawlable), desktop just hides it
@@ -472,7 +518,11 @@
           {#if filtering && matchCount === 0}
             <div class="no-results">
               <p>No terms match "{query.trim()}".</p>
-              <button type="button" class="no-results-clear" onclick={() => (query = "")}>
+              <button
+                type="button"
+                class="no-results-clear"
+                onclick={() => (query = "")}
+              >
                 Clear filter
               </button>
             </div>
@@ -497,20 +547,30 @@
 
     <div class="cta-card">
       <h3>See the notation in motion</h3>
-      <p>These terms come alive in the composer. Build a sequence and watch it animate.</p>
-      <a class="cta-button" href="/composer">Open the Composer <i class="fa-solid fa-arrow-right"></i></a>
+      <p>
+        These terms come alive in the composer. Build a sequence and watch it
+        animate.
+      </p>
+      <a class="cta-button" href="/composer"
+        >Open the Composer <i class="fa-solid fa-arrow-right"></i></a
+      >
     </div>
 
     <p class="creator-credit">
       A reference for <a href="/notation">Flow Arts Notation</a> ·
-      <a href="/roots">Roots</a> · <a href="/guide">Guide</a>
+      <a href="/guide">Guide</a>
     </p>
   </div>
 </div>
 
 <!-- ── mobile Contents drawer ── -->
 {#if drawerOpen}
-  <div class="drawer" role="dialog" aria-modal="true" aria-label="Glossary contents">
+  <div
+    class="drawer"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Glossary contents"
+  >
     <div class="drawer-head">
       <span class="drawer-title">Contents</span>
       <button
@@ -538,7 +598,12 @@
 {/if}
 
 {#if showBackTop && !drawerOpen}
-  <button type="button" class="back-top" aria-label="Back to top" onclick={backToTop}>
+  <button
+    type="button"
+    class="back-top"
+    aria-label="Back to top"
+    onclick={backToTop}
+  >
     <i class="fa-solid fa-arrow-up" aria-hidden="true"></i>
   </button>
 {/if}
@@ -722,7 +787,10 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     cursor: pointer;
-    transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+    transition:
+      border-color 160ms ease,
+      background 160ms ease,
+      transform 160ms ease;
   }
   .cat-card:hover {
     background: oklch(0.19 0.025 272 / 0.55);
@@ -774,7 +842,9 @@
     transform: translateY(-50%);
     font-size: 0.85rem;
     color: oklch(0.55 0.06 274);
-    transition: transform 160ms ease, color 160ms ease;
+    transition:
+      transform 160ms ease,
+      color 160ms ease;
   }
   .cat-card:hover .cc-arrow {
     color: oklch(0.8 0.12 275);
@@ -797,7 +867,9 @@
     border: 1px solid oklch(0.5 0.07 273 / 0.35);
     border-radius: 999px;
     cursor: pointer;
-    transition: border-color 160ms ease, color 160ms ease;
+    transition:
+      border-color 160ms ease,
+      color 160ms ease;
   }
   .browse-all:hover {
     color: oklch(0.92 0.04 274);
@@ -830,7 +902,9 @@
     border: 1px solid oklch(0.5 0.06 272 / 0.35);
     border-radius: 999px;
     cursor: pointer;
-    transition: border-color 160ms ease, background 160ms ease;
+    transition:
+      border-color 160ms ease,
+      background 160ms ease;
   }
   .back-btn:hover {
     background: oklch(0.28 0.05 273 / 0.6);
@@ -915,7 +989,9 @@
     cursor: pointer;
     border-left: 2px solid transparent;
     border-radius: 0 10px 10px 0;
-    transition: background 140ms ease, border-color 140ms ease;
+    transition:
+      background 140ms ease,
+      border-color 140ms ease;
   }
   .term-row:hover {
     background: oklch(0.22 0.025 272 / 0.4);
@@ -955,7 +1031,9 @@
   .row-chev {
     font-size: 0.7rem;
     color: oklch(0.55 0.03 270);
-    transition: transform 200ms ease, color 160ms ease;
+    transition:
+      transform 200ms ease,
+      color 160ms ease;
   }
   .term-row[aria-expanded="true"] .row-chev {
     transform: rotate(180deg);
@@ -1125,7 +1203,9 @@
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     cursor: pointer;
-    transition: background 160ms ease, transform 160ms ease;
+    transition:
+      background 160ms ease,
+      transform 160ms ease;
   }
   .back-top:hover {
     background: oklch(0.28 0.05 273 / 0.85);

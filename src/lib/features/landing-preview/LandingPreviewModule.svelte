@@ -22,7 +22,7 @@
     { id: "landing", label: "Landing", icon: "fa-rocket" },
     { id: "videos", label: "Videos", icon: "fa-film" },
     { id: "about", label: "About", icon: "fa-info-circle" },
-    { id: "roots", label: "Roots", icon: "fa-seedling" },
+    { id: "notation", label: "Notation", icon: "fa-language" },
     { id: "terms", label: "Terms", icon: "fa-file-contract" },
     { id: "privacy", label: "Privacy", icon: "fa-shield-alt" },
     { id: "curator", label: "Curator", icon: "fa-video" },
@@ -34,9 +34,10 @@
   // component so the tab renders the "Failed to load page" fallback instead of
   // crashing — no `as any` suppression hiding the missing route.
   const pageLoaders = {
-    landing: (): Promise<{ default: null }> => Promise.resolve({ default: null }),
+    landing: (): Promise<{ default: null }> =>
+      Promise.resolve({ default: null }),
     about: () => import("../../../routes/(public)/about/+page.svelte"),
-    roots: () => import("../../../routes/(public)/roots/+page.svelte"),
+    notation: () => import("../../../routes/(public)/notation/+page.svelte"),
     terms: () => import("../../../routes/(public)/terms/+page.svelte"),
     privacy: () => import("../../../routes/(public)/privacy/+page.svelte"),
   };
@@ -46,7 +47,7 @@
     "/": "landing",
     "/landing": "landing",
     "/about": "about",
-    "/roots": "roots",
+    "/notation": "notation",
     "/terms": "terms",
     "/privacy": "privacy",
   };
@@ -54,7 +55,6 @@
   // Dev-only components (not public pages)
   import VideoGalleryPrototypes from "./components/VideoGalleryPrototypes.svelte";
   import VideoCurator from "./components/VideoCurator.svelte";
-
 
   const STORAGE_KEY = "tka-landing-theme";
   const DEFAULT_BACKGROUND = BackgroundType.COSMIC;
@@ -82,13 +82,15 @@
     const loader = pageLoaders[tab as keyof typeof pageLoaders];
     if (loader) {
       isLoading = true;
-      loader().then((module) => {
-        loadedPage = module.default;
-        isLoading = false;
-      }).catch(() => {
-        loadedPage = null;
-        isLoading = false;
-      });
+      loader()
+        .then((module) => {
+          loadedPage = module.default;
+          isLoading = false;
+        })
+        .catch(() => {
+          loadedPage = null;
+          isLoading = false;
+        });
     }
   });
 
@@ -122,13 +124,18 @@
     // Block any other internal navigation that would leave the preview
     if (href.startsWith("/") && !routeToTab[href]) {
       event.preventDefault();
-      console.warn(`Landing Preview: Blocked navigation to ${href} (not a previewable route)`);
+      console.warn(
+        `Landing Preview: Blocked navigation to ${href} (not a previewable route)`
+      );
     }
   }
 
   onMount(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && Object.values(BackgroundType).includes(saved as BackgroundType)) {
+    if (
+      saved &&
+      Object.values(BackgroundType).includes(saved as BackgroundType)
+    ) {
       currentBackground = saved as BackgroundType;
     }
     applyThemeForBackground(currentBackground);
@@ -137,9 +144,11 @@
 
   // Route path for current tab
   const routePath = $derived(
-    devOnlyTabs.includes(currentTab) ? "(dev only)" :
-    currentTab === "landing" ? "/landing" :
-    `/${currentTab}`
+    devOnlyTabs.includes(currentTab)
+      ? "(dev only)"
+      : currentTab === "landing"
+        ? "/landing"
+        : `/${currentTab}`
   );
 </script>
 
@@ -150,7 +159,7 @@
       <button
         class="internal-tab"
         class:active={currentTab === tab.id}
-        onclick={() => currentTab = tab.id}
+        onclick={() => (currentTab = tab.id)}
         role="tab"
         aria-selected={currentTab === tab.id}
       >
@@ -167,12 +176,7 @@
       Route: <code>{routePath}</code>
     </span>
     {#if !devOnlyTabs.includes(currentTab)}
-      <a
-        href={routePath}
-        target="_blank"
-        rel="noopener"
-        class="open-link"
-      >
+      <a href={routePath} target="_blank" rel="noopener" class="open-link">
         Open in new tab
         <i class="fas fa-external-link-alt" aria-hidden="true"></i>
       </a>
@@ -182,7 +186,12 @@
   <!-- Content area with link interception -->
   <!-- svelte-ignore a11y_click_events_have_key_events -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <div class="content-area" bind:this={contentArea} onclick={handleLinkClick} role="main">
+  <div
+    class="content-area"
+    bind:this={contentArea}
+    onclick={handleLinkClick}
+    role="main"
+  >
     {#if currentTab === "videos"}
       <VideoGalleryPrototypes />
     {:else if currentTab === "curator"}
@@ -363,5 +372,4 @@
   .error-state i {
     font-size: 32px;
   }
-
 </style>

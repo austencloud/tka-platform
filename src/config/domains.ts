@@ -12,7 +12,13 @@ import { Capacitor } from "@capacitor/core";
  * Site mode determines which experience to render.
  * Extensible for future portals without breaking changes.
  */
-export type SiteMode = "loading" | "app" | "landing" | "embed" | "kiosk" | "edu";
+export type SiteMode =
+  | "loading"
+  | "app"
+  | "landing"
+  | "embed"
+  | "kiosk"
+  | "edu";
 
 // Landing/brand domain
 export const LANDING_DOMAIN = "https://tkaflowarts.com";
@@ -27,10 +33,7 @@ export const APP_DOMAIN = "https://tkaflowarts.com";
  */
 // Paths that are NOT the app - landing page and standalone public routes.
 // Everything else (including module paths like /festivals/map) is app mode.
-const LANDING_PATHS = new Set([
-  "/",
-  "/landing",
-]);
+const LANDING_PATHS = new Set(["/", "/landing"]);
 
 const PUBLIC_PATH_PREFIXES = [
   "/embed",
@@ -54,6 +57,8 @@ const PUBLIC_PATH_PREFIXES = [
   "/faq",
   "/guide",
   "/privacy",
+  // /roots redirects to /notation (see routes/(public)/roots/+page.ts), but the
+  // prefix stays so /roots/software still resolves in public/landing mode.
   "/roots",
   "/support",
   "/terms",

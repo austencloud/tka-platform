@@ -99,7 +99,10 @@
   const MARKETING_EXACT = new Set([
     "/",
     "/about",
-    "/roots",
+    // /roots is a 301 redirect to /notation (routes/(public)/roots/+page.ts) and
+    // never renders its own chrome, so it's intentionally absent here. /roots/software
+    // is a standalone kept page (not part of the redirect) and needs its own entry.
+    "/roots/software",
     "/support",
     "/composer",
     "/glossary",
@@ -112,7 +115,9 @@
   const isMarketing = $derived.by(() => {
     const p = page.url.pathname;
     if (MARKETING_EXACT.has(p)) return true;
-    return MARKETING_SUBTREES.some((root) => p === root || p.startsWith(root + "/"));
+    return MARKETING_SUBTREES.some(
+      (root) => p === root || p.startsWith(root + "/")
+    );
   });
 
   $effect(() => {
@@ -126,9 +131,12 @@
    * ModuleRenderer.moduleLoaders. Unlisted segments fall through to lazy load.
    */
   const URL_TO_MODULE: Record<string, () => Promise<unknown>> = {
-    create: () => import("$lib/features/create/shared/components/CreateModule.svelte"),
-    generate: () => import("$lib/features/create/shared/components/CreateModule.svelte"),
-    browse: () => import("$lib/features/browse/shared/components/BrowseModule.svelte"),
+    create: () =>
+      import("$lib/features/create/shared/components/CreateModule.svelte"),
+    generate: () =>
+      import("$lib/features/create/shared/components/CreateModule.svelte"),
+    browse: () =>
+      import("$lib/features/browse/shared/components/BrowseModule.svelte"),
     compose: () => import("$lib/features/compose/ComposeModule.svelte"),
     animate: () => import("$lib/features/compose/ComposeModule.svelte"),
     museum: () => import("$lib/features/museum/MuseumModule.svelte"),
@@ -172,16 +180,16 @@
       authState: import("$lib/shared/auth/state/auth-state.svelte"),
       i18n: import("$lib/shared/i18n/i18n.svelte.js"),
       posthog: import("$lib/shared/analytics/services/posthog"),
-      modalUrlState: import("$lib/shared/application/state/ui/modal-url-state.svelte"),
+      modalUrlState:
+        import("$lib/shared/application/state/ui/modal-url-state.svelte"),
       cacheBuster: import("$lib/shared/utils/cache-buster"),
     };
     // Prod-only: preload MainApp too. In dev, AppShellLoader's own import() is
     // fast enough - adding it here pulls too many deps into initial parallel
     // fetch and slows DI.
     if (import.meta.env.PROD) {
-      (common as Record<string, Promise<unknown>>).mainApp = import(
-        "$lib/shared/application/components/MainApplication.svelte"
-      );
+      (common as Record<string, Promise<unknown>>).mainApp =
+        import("$lib/shared/application/components/MainApplication.svelte");
     }
     return common;
   }
@@ -237,7 +245,8 @@
     initI18n();
 
     // Analytics: PostHog (same instance as app mode - lightweight, no DI needed)
-    const { initPostHog } = await import("$lib/shared/analytics/services/posthog");
+    const { initPostHog } =
+      await import("$lib/shared/analytics/services/posthog");
     void initPostHog();
 
     // Landing doesn't need DI container or auth - mark ready immediately
@@ -245,7 +254,10 @@
 
     return () => {
       if (window.visualViewport) {
-        window.visualViewport.removeEventListener("resize", updateViewportHeight);
+        window.visualViewport.removeEventListener(
+          "resize",
+          updateViewportHeight
+        );
       }
       window.removeEventListener("resize", updateViewportHeight);
     };
@@ -268,10 +280,12 @@
     if (typeof (window as any).__tkaLoadProgress === "function") {
       (window as any).__tkaLoadProgress(72, "Starting up...");
     } else {
-      const loadingScreen = document.getElementById('app-loading');
+      const loadingScreen = document.getElementById("app-loading");
       if (loadingScreen) {
-        loadingScreen.classList.add('loaded');
-        loadingScreen.addEventListener('transitionend', () => loadingScreen.remove());
+        loadingScreen.classList.add("loaded");
+        loadingScreen.addEventListener("transitionend", () =>
+          loadingScreen.remove()
+        );
       }
     }
 
@@ -301,17 +315,23 @@
 
     // Initialize native Capacitor plugins (status bar, keyboard, splash, lifecycle).
     // No-op on web - the isNative check inside returns immediately.
-    const { getNativeInitializer } = await import("$lib/shared/platform/get-native-initializer");
-    getNativeInitializer().initialize().catch((err: unknown) =>
-      console.warn("[Layout] Native init skipped:", err)
-    );
+    const { getNativeInitializer } =
+      await import("$lib/shared/platform/get-native-initializer");
+    getNativeInitializer()
+      .initialize()
+      .catch((err: unknown) =>
+        console.warn("[Layout] Native init skipped:", err)
+      );
 
     // Initialize desktop Tauri features (window state, updater).
     // No-op on web/mobile - the isDesktop check inside returns immediately.
-    const { getDesktopInitializer } = await import("$lib/shared/desktop/get-desktop-initializer");
-    getDesktopInitializer().initialize().catch((err: unknown) =>
-      console.warn("[Layout] Desktop init skipped:", err)
-    );
+    const { getDesktopInitializer } =
+      await import("$lib/shared/desktop/get-desktop-initializer");
+    getDesktopInitializer()
+      .initialize()
+      .catch((err: unknown) =>
+        console.warn("[Layout] Desktop init skipped:", err)
+      );
 
     // Prefetch browse data so it's ready before the user navigates there.
     // Uses requestIdleCallback to avoid competing with the active module's load.
@@ -327,7 +347,8 @@
       // constrained connection, skip the fresh Firestore sync; otherwise sync in
       // the background so the gallery is up to date before the user opens it.
       try {
-        const { getGalleryPrefetcher } = await import("$lib/features/browse/shared/get-gallery-prefetcher");
+        const { getGalleryPrefetcher } =
+          await import("$lib/features/browse/shared/get-gallery-prefetcher");
         const prefetcher = getGalleryPrefetcher();
         if (prefetcher && typeof prefetcher.prefetch === "function") {
           prefetcher
@@ -382,7 +403,8 @@
     bootProfiler.end("i18n");
 
     // Modal URL state
-    const { initModalUrlState, cleanupModalUrlState } = await imports.modalUrlState;
+    const { initModalUrlState, cleanupModalUrlState } =
+      await imports.modalUrlState;
     initModalUrlState();
 
     // Viewport height
@@ -431,7 +453,9 @@
       bootProfiler.mark("thumbnail-manifest");
       import("$lib/shared/browse/services/cloud-thumbnail-cache")
         .then(({ loadManifest }) => loadManifest())
-        .catch((error) => console.warn("Cloud thumbnail manifest failed:", error))
+        .catch((error) =>
+          console.warn("Cloud thumbnail manifest failed:", error)
+        )
         .finally(() => bootProfiler.end("thumbnail-manifest"));
 
       // Secondary UI components (banners, prompts) - slot in when ready
@@ -468,8 +492,14 @@
       cleanupModalUrlState();
 
       if (window.visualViewport) {
-        window.visualViewport.removeEventListener("resize", updateViewportHeight);
-        window.visualViewport.removeEventListener("scroll", updateViewportHeight);
+        window.visualViewport.removeEventListener(
+          "resize",
+          updateViewportHeight
+        );
+        window.visualViewport.removeEventListener(
+          "scroll",
+          updateViewportHeight
+        );
       }
       window.removeEventListener("resize", updateViewportHeight);
     };
@@ -493,15 +523,16 @@
       };
 
       window.addEventListener("popstate", onPopState);
-      backGuardCleanup = () => window.removeEventListener("popstate", onPopState);
+      backGuardCleanup = () =>
+        window.removeEventListener("popstate", onPopState);
     }
 
     siteMode = detectSiteMode();
 
     // Retro routes get a lightweight bootstrap: Firebase + auth + DI container,
     // but skip prefetch, analytics, moderation banners, modal state, web vitals.
-    const isRetroRoute = ["/1989", "/1995", "/1998", "/2003"].some(
-      (r) => window.location.pathname.startsWith(r)
+    const isRetroRoute = ["/1989", "/1995", "/1998", "/2003"].some((r) =>
+      window.location.pathname.startsWith(r)
     );
     if (isRetroRoute) {
       const loadingScreen = document.getElementById("app-loading");

@@ -5,19 +5,80 @@
  * into the app bundle. Keep in sync with tests/screenshots/devices.ts.
  */
 
-import type { DeviceInfo, ModuleGroup, RouteNode, CaptureRequest, CaptureStartResult, CaptureJobStatus } from "./types";
+import type {
+  DeviceInfo,
+  ModuleGroup,
+  RouteNode,
+  CaptureRequest,
+  CaptureStartResult,
+  CaptureJobStatus,
+} from "./types";
 
 // Hardcoded device list - mirrors tests/screenshots/devices.ts
 const DEVICES: DeviceInfo[] = [
-  { slug: "iphone-se", name: "iPhone SE", width: 375, height: 667, category: "phone" },
-  { slug: "iphone-16-pro", name: "iPhone 16 Pro", width: 393, height: 852, category: "phone" },
-  { slug: "iphone-16-pro-max", name: "iPhone 16 Pro Max", width: 430, height: 932, category: "phone" },
-  { slug: "galaxy-s24", name: "Galaxy S24", width: 360, height: 780, category: "phone" },
-  { slug: "galaxy-s24-ultra", name: "Galaxy S24 Ultra", width: 412, height: 915, category: "phone" },
-  { slug: "ipad-mini", name: "iPad Mini", width: 768, height: 1024, category: "tablet" },
-  { slug: "ipad-air", name: "iPad Air", width: 820, height: 1180, category: "tablet" },
-  { slug: "desktop-hd", name: "Desktop HD", width: 1366, height: 768, category: "desktop" },
-  { slug: "desktop-fhd", name: "Desktop FHD", width: 1920, height: 1080, category: "desktop" },
+  {
+    slug: "iphone-se",
+    name: "iPhone SE",
+    width: 375,
+    height: 667,
+    category: "phone",
+  },
+  {
+    slug: "iphone-16-pro",
+    name: "iPhone 16 Pro",
+    width: 393,
+    height: 852,
+    category: "phone",
+  },
+  {
+    slug: "iphone-16-pro-max",
+    name: "iPhone 16 Pro Max",
+    width: 430,
+    height: 932,
+    category: "phone",
+  },
+  {
+    slug: "galaxy-s24",
+    name: "Galaxy S24",
+    width: 360,
+    height: 780,
+    category: "phone",
+  },
+  {
+    slug: "galaxy-s24-ultra",
+    name: "Galaxy S24 Ultra",
+    width: 412,
+    height: 915,
+    category: "phone",
+  },
+  {
+    slug: "ipad-mini",
+    name: "iPad Mini",
+    width: 768,
+    height: 1024,
+    category: "tablet",
+  },
+  {
+    slug: "ipad-air",
+    name: "iPad Air",
+    width: 820,
+    height: 1180,
+    category: "tablet",
+  },
+  {
+    slug: "desktop-hd",
+    name: "Desktop HD",
+    width: 1366,
+    height: 768,
+    category: "desktop",
+  },
+  {
+    slug: "desktop-fhd",
+    name: "Desktop FHD",
+    width: 1920,
+    height: 1080,
+    category: "desktop",
+  },
 ];
 
 // Hardcoded route list - mirrors tests/screenshots/devices.ts
@@ -27,23 +88,73 @@ const ROUTES: RouteNode[] = [
   { label: "about", moduleId: "public", requiresAuth: false },
   { label: "privacy", moduleId: "public", requiresAuth: false },
   { label: "terms", moduleId: "public", requiresAuth: false },
-  { label: "roots", moduleId: "public", requiresAuth: false },
+  { label: "notation", moduleId: "public", requiresAuth: false },
   // Create
-  { label: "create--construct", moduleId: "create", tabId: "construct", requiresAuth: true },
-  { label: "create--generate", moduleId: "create", tabId: "generate", requiresAuth: true },
-  { label: "create--spell", moduleId: "create", tabId: "spell", requiresAuth: true },
+  {
+    label: "create--construct",
+    moduleId: "create",
+    tabId: "construct",
+    requiresAuth: true,
+  },
+  {
+    label: "create--generate",
+    moduleId: "create",
+    tabId: "generate",
+    requiresAuth: true,
+  },
+  {
+    label: "create--spell",
+    moduleId: "create",
+    tabId: "spell",
+    requiresAuth: true,
+  },
   // Browse
-  { label: "browse--gallery", moduleId: "browse", tabId: "gallery", requiresAuth: true },
-  { label: "browse--creators", moduleId: "browse", tabId: "creators", requiresAuth: true },
+  {
+    label: "browse--gallery",
+    moduleId: "browse",
+    tabId: "gallery",
+    requiresAuth: true,
+  },
+  {
+    label: "browse--creators",
+    moduleId: "browse",
+    tabId: "creators",
+    requiresAuth: true,
+  },
   // Compose
-  { label: "compose--arrange", moduleId: "compose", tabId: "arrange", requiresAuth: true },
+  {
+    label: "compose--arrange",
+    moduleId: "compose",
+    tabId: "arrange",
+    requiresAuth: true,
+  },
   // Learn
-  { label: "learn--concepts", moduleId: "learn", tabId: "concepts", requiresAuth: true },
+  {
+    label: "learn--concepts",
+    moduleId: "learn",
+    tabId: "concepts",
+    requiresAuth: true,
+  },
   // Train
-  { label: "train--practice", moduleId: "train", tabId: "practice", requiresAuth: true },
+  {
+    label: "train--practice",
+    moduleId: "train",
+    tabId: "practice",
+    requiresAuth: true,
+  },
   // Settings
-  { label: "settings--profile", moduleId: "settings", tabId: "profile", requiresAuth: true },
-  { label: "settings--theme", moduleId: "settings", tabId: "theme", requiresAuth: true },
+  {
+    label: "settings--profile",
+    moduleId: "settings",
+    tabId: "profile",
+    requiresAuth: true,
+  },
+  {
+    label: "settings--theme",
+    moduleId: "settings",
+    tabId: "theme",
+    requiresAuth: true,
+  },
   // Feedback
   { label: "feedback", moduleId: "feedback", requiresAuth: true },
 ];
@@ -95,7 +206,9 @@ export function getModuleGroups(): ModuleGroup[] {
   return groups;
 }
 
-export async function startCapture(request: CaptureRequest): Promise<CaptureStartResult> {
+export async function startCapture(
+  request: CaptureRequest
+): Promise<CaptureStartResult> {
   const response = await fetch("/screenshots/capture", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -111,7 +224,9 @@ export async function startCapture(request: CaptureRequest): Promise<CaptureStar
   }
 
   if (!response.ok) {
-    const data = await response.json().catch(() => ({ error: "Unknown error" }));
+    const data = await response
+      .json()
+      .catch(() => ({ error: "Unknown error" }));
     throw new Error(data.error || `HTTP ${response.status}`);
   }
 
