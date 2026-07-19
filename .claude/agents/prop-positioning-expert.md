@@ -219,9 +219,72 @@ Your job:
   `pictograph-preparer.ts`): drop a missing asset in and it renders on the next
   cache miss — no hard reload needed. Before that fix a failed load poisoned the
   cache under its `blue/redPropType` key for the SPA session.
-- **OPEN FOLLOW-UP — poi beta-offset classification unresolved.** poi is in
-  NEITHER copy of `SMALL_UNILATERAL_PROPS` (`prop-classification.ts` and its
-  render-core twin), so it defaults to non-unilateral/default-offset beta
-  behavior. Rendering works regardless, but whether poi's beta overlap should
-  mirror contactball (unilateral) is an MCP-grounded domain call — verify
-  against canonical data before trusting poi at beta (both hands same point).
+
+### Prop Anchor Convention — Confirmed Mechanism (2026-07-18, poi club-ification)
+
+The render pipeline anchors EVERY prop SVG at **raw `viewBox` width/2, height/2**
+— nothing else. Confirmed by reading the actual code path, not assumed:
+`PropSvgLoader.parsePropSvg` (`prop/services/prop-svg-loader.ts:243-267`)
+regex-parses the `viewBox` attribute and returns
+`center: { x: width/2, y: height/2 }`. That `center` flows straight into
+`Canvas2DDirectRenderer.drawProps` → `drawElementWithTransform`
+(`render/services/canvas-2d-transform-helper.ts:95-132`), which does
+`translate(x,y) → rotate → mirror → scale → translate(-centerX,-centerY) →
+drawImage(img, 0, 0, viewBoxWidth, viewBoxHeight)`. No `getBBox()`, no visible-
+content introspection, anywhere in this path.
+
+Two things this rules out for PROPS specifically:
+- **`#centerPoint` is never read for props.** That id is an ARROW-only
+  convention (`arrow/rendering/services/arrow-svg-parser.ts:42-44`,
+  `arrow-svg-color-transformer.ts:67`). `svg-color-utils.ts`'s
+  `removeCenterPoint` option strips the circle from the DOM purely for display
+  cleanup (it would render as a stray dot); it has no effect on where a prop
+  is anchored. `staff.svg`'s `<circle id="centerPoint">` is a leftover/authoring
+  aid, not something the prop loader consults.
+- **A `fill:none` mirror-reserve path (club.svg, pmmaball.svg, contactball.svg
+  all have one) is NOT functionally required by this pipeline.** It's
+  authoring-convention parity for any OTHER bbox-aware consumer (SVG editors,
+  hypothetical future getBBox-based tooling) — cheap insurance, not load-
+  bearing here. Keep including it on new unilateral props for consistency, but
+  don't waste time debugging it as a positioning mechanism if a prop looks
+  wrong — the viewBox-center math above is the only lever that matters.
+
+**The unilateral-prop authoring recipe** (grip-on-one-end props: club, ball
+family, poi): put the grip feature AT viewBox `(width/2, height/2)`, extend the
+visible "business end" to ONE side only, and size the reach so the outer edge
+lands at (or near) the viewBox boundary on that side — i.e. **reach ≈
+viewBox_width / 2**. This is true of club.svg (grip≈129.3, tip=258.67, viewBox
+width=258.67) and the ball family (grip=150, ball edge=300, viewBox
+width=300). A **bilateral** prop (staff) instead extends visible geometry on
+BOTH sides from the same center, so it visually spans the full viewBox with
+the grip genuinely in the middle. "Half the size like a club" (Austen,
+2026-07-18) = same per-side reach math, but painted on one side instead of
+two. `poi.svg` follows this recipe exactly: knob r=8 at (150,75), cord+ball
+extend to +x only, ball outer edge at x=300 (reach=150=viewBox_width/2),
+mirror-reserve `fill:none` cord+ball on the −x side.
+
+- **RESOLVED — poi beta-offset classification.** poi is now in
+  `SMALL_UNILATERAL_PROPS` in all three live copies (kept in sync by hand,
+  no build step unifies them):
+  `src/lib/shared/pictograph/prop/domain/enums/prop-classification.ts`,
+  `src/lib/shared/render/core/constants/prop-classification.ts` (the copy
+  `beta-offset.ts` actually imports for the in-app PropPlacer path), and
+  `packages/render-core/src/constants/prop-classification.ts` (consumed by
+  the Node-side MCP renderer via `@tka/render-core`'s built `dist/` — rebuild
+  that package's `dist` after editing its `src`, `dist/` is gitignored so a
+  local `npm run build` there is the only way the Node path picks it up).
+  Ground truth check: the Flow Arts Knowledge MCP (`get_term_definition`,
+  `get_domain_topic`) has **no poi-specific entry** — poi isn't canonical TKA
+  (project rules: "NOT poi... Poi Lab is planned, not built"). So this
+  classification is a structural-analogy judgment (poi has one visible
+  weighted mass per hand, same shape family as club/contactball), not an
+  MCP-grounded fact — flag it for Austen's sign-off if the beta-overlap
+  behavior looks wrong in practice, don't treat it as settled domain canon.
+  Also note: `isSmallProp`/`isBigProp` in the pictograph/prop/domain/enums
+  copy are dead code (defined, zero call sites anywhere in `src/`) — adding a
+  prop to `SMALL_UNILATERAL_PROPS` does NOT drive any rendering scale factor.
+  The only things classification drives are (1) `isUnilateralProp` → beta-
+  offset Gate 5 skip, and (2) `getBetaOffsetSize`'s bucket (poi got the
+  default 21.11px bucket, not club/eightrings' 15.83px one). Visual SIZE is
+  100% a function of the SVG's own viewBox geometry, set independently in the
+  render asset — see the anchor convention above.

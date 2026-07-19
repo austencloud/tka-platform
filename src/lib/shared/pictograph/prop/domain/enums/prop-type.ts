@@ -81,6 +81,7 @@ export enum PropType {
 
   // === POI FAMILY (Momentum-based) ===
   // Poi uses physics constraints - see PoiConstraintValidator
-  // Uses club.svg as placeholder until proper poi SVG (~175px) is created
+  // Render asset: static/images/props/pictograph/poi.svg - knob gripped at
+  // viewBox center, ball sticks out (club-style single-ended geometry).
   POI = "poi",
 }

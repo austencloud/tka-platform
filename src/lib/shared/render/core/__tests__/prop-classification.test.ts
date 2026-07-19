@@ -16,7 +16,7 @@ import {
 
 describe("isUnilateralProp", () => {
   it("recognizes small and big unilateral props", () => {
-    for (const p of ["fan", "club", "minihoop", "triad", "torch", "contactball"]) {
+    for (const p of ["fan", "club", "minihoop", "triad", "torch", "contactball", "poi"]) {
       expect(isUnilateralProp(p)).toBe(true);
     }
     for (const p of ["bighoop", "bigfan", "bigtriad", "bigtorch"]) {

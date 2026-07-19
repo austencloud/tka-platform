@@ -29,6 +29,7 @@ export const SMALL_UNILATERAL_PROPS = [
   "chicken",
   "torch",
   "contactball",
+  "poi", // single weighted end, gripped at the knob - same shape as contactball/club
 ] as const;
 
 /**
