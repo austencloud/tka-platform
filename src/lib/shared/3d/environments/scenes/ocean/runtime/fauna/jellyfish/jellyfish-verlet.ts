@@ -172,12 +172,7 @@ export function createPointConstraint(
       p0[ix + 1] = p1[ix + 1] = buf[1]!;
       p0[ix + 2] = p1[ix + 2] = buf[2]!;
     },
-    setPosition(x: number, y: number, z: number) {
-      buf[0] = x;
-      buf[1] = y;
-      buf[2] = z;
-    },
-  } as Constraint & { setPosition: (x: number, y: number, z: number) => void };
+  };
 }
 
 export class ParticleSystem {

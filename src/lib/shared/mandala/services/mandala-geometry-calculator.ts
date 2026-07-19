@@ -434,8 +434,7 @@ function generatePathPoints(
 	tipOffset: TipOffset,
 	gridRadius: number,
 	samplesPerBeat: number,
-	options?: MandalaPathOptions,
-	forceSamplesPerBeat?: number
+	options?: MandalaPathOptions
 ): MandalaPoint[] {
 	const points: MandalaPoint[] = [];
 
@@ -497,16 +496,12 @@ function generatePathPoints(
 			endpoints.startStaffAngle + endpoints.staffRotationDelta
 		);
 
-		// Adaptive sampling: more samples for high-turn motions. Callers that
-		// need a fixed sample count per beat (e.g. a uniform-time physics
-		// timeline) pass forceSamplesPerBeat to bypass the turn-count scaling.
+		// Adaptive sampling: more samples for high-turn motions
 		const turnCount = motion.turns;
-		const samples =
-			forceSamplesPerBeat ??
-			Math.max(
-				samplesPerBeat,
-				samplesPerBeat * Math.ceil(Math.max(1, turnCount))
-			);
+		const samples = Math.max(
+			samplesPerBeat,
+			samplesPerBeat * Math.ceil(Math.max(1, turnCount))
+		);
 
 		const pathShape = resolvePathShape(motion.motionType, rawMotion?.pathShape, options);
 
@@ -622,36 +617,6 @@ export function calculateMorphed(
 		red: pointSetsToPaths(redSets),
 		purple: [],
 	};
-}
-
-/**
- * Raw hand/tip point set for one color at a fixed samples-per-beat rate,
- * evenly spaced in motion-progress time across every beat (no adaptive
- * turn-count scaling). Used by the poi-lab hand-path sampler, which needs a
- * uniform timeline to drive a constant-timestep physics sim — `calculate()`
- * only exposes SVG path strings, not the underlying points, and its adaptive
- * sampling would make beat durations inconsistent in sample-count terms.
- */
-export function computeUniformHandPath(
-	steps: readonly StepLike[],
-	hand: "blue" | "red",
-	tipOffset: { dx: number; dy: number },
-	samplesPerBeat: number
-): MandalaPoint[] {
-	const stepsWithMotions = steps.filter(
-		(s) => isVisibleMotion(s.motions?.blue) || isVisibleMotion(s.motions?.red)
-	);
-	if (stepsWithMotions.length === 0) return [];
-
-	return generatePathPoints(
-		stepsWithMotions,
-		hand,
-		tipOffset,
-		MANDALA_GRID_RADIUS,
-		samplesPerBeat,
-		undefined,
-		samplesPerBeat
-	);
 }
 
 export function calculate(

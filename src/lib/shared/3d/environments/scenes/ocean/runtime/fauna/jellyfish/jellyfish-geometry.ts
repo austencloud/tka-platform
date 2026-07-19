@@ -16,7 +16,7 @@ import {
   createAxisConstraint,
   createPointConstraint,
   type Constraint,
-} from "$lib/shared/physics/verlet";
+} from "./jellyfish-verlet";
 import {
   normalVert,
   bulbFrag,
