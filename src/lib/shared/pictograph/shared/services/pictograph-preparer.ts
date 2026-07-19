@@ -73,12 +73,43 @@ export class PictographPreparer {
 
     try {
       const prepared = await preparePromise;
-      this.prepareCache.set(cacheKey, prepared);
+      // Don't poison the cache with a partial/failed prop-asset load (e.g. a
+      // missing or unparseable prop SVG). calculateProps() swallows per-color
+      // load errors and silently omits that color's asset/position so one
+      // bad prop doesn't break the whole pictograph — but caching that
+      // "successful, prop just missing" result would permanently hide the
+      // prop under this key for the life of this singleton, even after the
+      // underlying asset is fixed. Skip the cache write so the next request
+      // for this key retries the load instead.
+      if (!this.hasPropLoadFailure(pictograph, prepared)) {
+        this.prepareCache.set(cacheKey, prepared);
+      }
 
       return { ...pictograph, _prepared: prepared };
     } finally {
       this.pendingPrepares.delete(cacheKey);
     }
+  }
+
+  /**
+   * True when a visible motion that should have produced a rendered prop
+   * (has propPlacementData) ended up with no entry in propAssets — i.e. its
+   * SVG failed to load or parse. Mirrors the early-return/skip conditions in
+   * calculateProps() so this check stays in lockstep with what actually gets
+   * populated.
+   */
+  private hasPropLoadFailure(
+    pictograph: PictographData,
+    prepared: PreparedRenderData
+  ): boolean {
+    const motions = pictograph.motions;
+    if (!motions) return false;
+    for (const [color, motion] of Object.entries(motions)) {
+      if (!isVisibleMotion(motion)) continue;
+      if (!motion.propPlacementData) continue;
+      if (!prepared.propAssets[color]) return true;
+    }
+    return false;
   }
 
   private async doPrepare(
