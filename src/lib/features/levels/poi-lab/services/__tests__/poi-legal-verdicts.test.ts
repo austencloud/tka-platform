@@ -2,8 +2,10 @@ import { describe, it, expect } from "vitest";
 import { createPoiLegalVerdicts, pairKey } from "../poi-legal-verdicts.svelte";
 import { flowerKey, type Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
 
-const blue: Flower = { style: "pro", turns: 0, ori: "in", grid: "diamond", petals: 0 };
-const red: Flower = { style: "anti", turns: 0.5, ori: "out", grid: "diamond", petals: 3 };
+// Box-grid flowers: absent from the seeded data file, so these tests stay
+// independent of whatever diamond verdicts are committed.
+const blue: Flower = { style: "pro", turns: 0, ori: "in", grid: "box", petals: 0 };
+const red: Flower = { style: "anti", turns: 0.5, ori: "out", grid: "box", petals: 3 };
 
 describe("pairKey", () => {
 	it("composes both flowerKeys, blue first", () => {
@@ -35,9 +37,9 @@ describe("poi legal verdict store", () => {
 		const file = store.serialize();
 		expect(file.version).toBe(1);
 		const keys = Object.keys(file.verdicts);
-		expect(keys).toHaveLength(2);
 		expect([...keys].sort((a, b) => a.localeCompare(b))).toEqual(keys);
 		expect(file.verdicts[pairKey(blue, red)]).toBe("legal");
+		expect(file.verdicts[pairKey(red, blue)]).toBe("legal");
 	});
 
 	it("cycling back to unjudged removes the key from the serialized file", () => {
@@ -47,6 +49,6 @@ describe("poi legal verdict store", () => {
 		store.cycle(blue, red);
 		store.cycle(blue, red); // full cycle back to unjudged
 		expect(store.serialize().verdicts[pairKey(blue, red)]).toBeUndefined();
-		expect(store.judgedCount()).toBe(0);
+		expect(store.serialize().verdicts[pairKey(red, blue)]).toBeUndefined();
 	});
 });
