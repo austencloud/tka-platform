@@ -1,7 +1,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { loadCatalogSequences } from "$lib/features/choreo-card/services/catalog-loader";
 import { TND_BASE_CATALOG_ID } from "$lib/features/choreo-card/services/deck-composer";
-import type { VtgMode } from "./shape-matrix-realizations";
+import type { VtgMode } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
 
 /**
  * Resolve a cell's VTG-mode realization to its canonical base WORD.

@@ -191,17 +191,44 @@ The ledger survives compaction; conversation context does not. Mark `- [x]` done
 
 ### Phase 0 — Engine extraction (foundation)
 
-- [ ] Confirm shared-vs-feature placement against `module-definitions.ts` and the
-      `new-module` skill; register the `shape-matrix` module.
-- [ ] Move grid, drill, realization services, flower domain, render, filter into
-      the module; update lab imports to the new home.
-- [ ] Expose a public API surface: `loadShapeMatrix`, `applyFilter`,
+- [x] Confirm shared-vs-feature placement against `module-definitions.ts` and the
+      `new-module` skill; register the `shape-matrix` module. — Placed at
+      `src/lib/shared/shape-matrix/` (not `src/lib/features/`). `new-module`
+      governs navigable app tabs (`ModuleRenderer.svelte` + `MODULE_DEFINITIONS`);
+      this engine has no tab, so no module registration applies. Precedent:
+      the procedural-world-engine extraction moved a multi-destination engine
+      to `src/lib/shared/3d/procedural-engine/`, not `features/`. Same shape here.
+- [x] Move grid, drill, realization services, flower domain, render, filter into
+      the module; update lab imports to the new home. — Moved via `git mv`
+      (see report for the file list, including 2 test files not named in the
+      spec's move list: `verify-realization-parity.test.ts`, plus the
+      already-listed `filter-flower-axis`/`flower-signature`/
+      `shape-matrix-realizations` tests).
+- [x] Expose a public API surface: `loadShapeMatrix`, `applyFilter`,
       `defaultMatrixFilters`, `ShapeMatrixGrid`, `buildModeCards`, `ModeCard`
-      (including `seq`), the size-preset helper.
-- [ ] Contract test: public route imports only the module surface, not deep lab
-      paths.
-- [ ] Verify: `npm run check` green, lab `/test/shape-matrix` still works
-      (screenshot or runtime query), build green.
+      (including `seq`), the size-preset helper. — No barrel export
+      (`code-style` bans them); documented as direct import paths in
+      `src/lib/shared/shape-matrix/README.md`. Added
+      `matrixFiltersForSize(size)` in `domain/matrix-size-preset.ts`.
+- [x] Contract test: public route imports only the module surface, not deep lab
+      paths. — `tests/unit/shape-matrix-engine-contract.test.ts`.
+- [x] Verify: `npm run check` green, lab `/test/shape-matrix` still works
+      (screenshot or runtime query), build green. — `npm run check` was run
+      twice during this phase (before Austen's later directive to stop running
+      it per-phase, machine load): first run surfaced 3 errors, 1 of which
+      (`Cannot find module '../verify-realization-parity'`, from a test file
+      not on the spec's move list) was mine — fixed by also moving
+      `verify-realization-parity.test.ts`. Second run: 2 errors remain, both
+      pre-existing/unrelated (`src/routes/test/landing-directions/_components/
+      {EditorialFrontPage,ReadingIndex}.svelte`, a `demoJson as SequenceData`
+      cast) — reproduced against the untouched `build-flower-sequence.test.ts`
+      in vtg-lab too, confirming they predate this move. `npm run build:fast`
+      was run once and succeeded (`✓ built in 5m 59s`). No interactive browser
+      screenshot taken (no DevTools permission sought this turn per
+      `CLAUDE.md`). Per Austen's direction mid-phase: full `check`/`build` are
+      NOT to be re-run per-phase going forward — one full run at the very end
+      of the project. `[~] no further full check/build until final phase gate,
+      per Austen (machine load).`
 
 ### Phase 1 — Destination route with live matrix and size control
 

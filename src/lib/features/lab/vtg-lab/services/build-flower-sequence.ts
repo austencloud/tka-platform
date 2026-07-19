@@ -2,7 +2,7 @@ import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence
 import type { CsvEdge } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
 import { applyVariationDescriptor } from "$lib/features/choreo-card/services/deck-variation";
 import { prepareMandalaClubSequence } from "./prepare-mandala-club-sequence";
-import { flowerTurnPattern, type Flower } from "../domain/flower-signature";
+import { flowerTurnPattern, type Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
 
 /**
  * archetype (two-hand pure-pro or pure-anti seed) + flower → a single-hand
