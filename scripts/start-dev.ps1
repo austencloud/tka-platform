@@ -56,7 +56,19 @@ function Stop-ProcessTree($processId) {
 }
 
 # Pre-boot sweep: anything already listening on :5173 is a stale server from a
-# previous run — tree-kill it so this boot owns the port.
+# previous run — tree-kill it so this boot owns the port. If pm2 supervises
+# tka-dev, stop it through pm2 FIRST: killing its vite directly makes pm2
+# respawn it instantly, and the respawn wins the race for :5173 (manual boots
+# then die with "port already in use"). Skipped when we ARE the pm2 child
+# (TKA_PM2 set by start-dev-pm2.cjs) — pm2 stop would stop ourselves.
+function Stop-Pm2App {
+    if ($env:TKA_PM2) { return }
+    $pm2 = Get-Command pm2 -ErrorAction SilentlyContinue
+    if ($pm2) {
+        Write-Status "Stopping pm2 app tka-dev (manual run takes over; 'pm2 start tka-dev' to hand back)."
+        & pm2 stop tka-dev 2>$null | Out-Null
+    }
+}
 function Clear-Port5173 {
     $owners = Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue |
         Select-Object -ExpandProperty OwningProcess -Unique
@@ -97,6 +109,7 @@ $tunnelProc = $null
 # into this console and keeps node in this process tree, so console Ctrl+C and
 # VS Code "terminate" both reach it. WorkingDirectory is the repo root.
 $repoRoot = Split-Path -Parent $PSScriptRoot
+Stop-Pm2App
 Clear-Port5173
 Write-Status "Starting Vite dev server..."
 Write-Line ""
