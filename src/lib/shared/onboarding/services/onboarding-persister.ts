@@ -25,6 +25,10 @@ import {
   getModuleOnboardingKey,
   getModuleOnboardingTimestampKey,
 } from "../config/storage-keys";
+import {
+  safeLocalStorageSetItem,
+  removeLocalStorageItem,
+} from "$lib/shared/foundation/services/storage-manager";
 
 const LAST_SEEN_VERSION_KEY = "tka-last-seen-version";
 
@@ -117,23 +121,27 @@ export class OnboardingPersister {
   private saveToLocalStorage(status: OnboardingStatus): void {
     if (typeof localStorage === "undefined") return;
 
+    // Every write below is guarded (safeLocalStorageSetItem/removeLocalStorageItem
+    // swallow a quota/private-browsing throw) so a full local store can never
+    // abort this method partway through and skip the Firebase write that
+    // saveStatus() makes right after calling it.
     // App-wide
     if (status.appCompleted) {
-      localStorage.setItem(ONBOARDING_COMPLETED_KEY, "true");
+      safeLocalStorageSetItem(ONBOARDING_COMPLETED_KEY, "true");
     } else {
-      localStorage.removeItem(ONBOARDING_COMPLETED_KEY);
+      removeLocalStorageItem(ONBOARDING_COMPLETED_KEY);
     }
 
     if (status.appSkipped) {
-      localStorage.setItem(ONBOARDING_SKIPPED_KEY, "true");
+      safeLocalStorageSetItem(ONBOARDING_SKIPPED_KEY, "true");
     } else {
-      localStorage.removeItem(ONBOARDING_SKIPPED_KEY);
+      removeLocalStorageItem(ONBOARDING_SKIPPED_KEY);
     }
 
     if (status.appCompletedAt) {
-      localStorage.setItem(ONBOARDING_COMPLETED_AT_KEY, status.appCompletedAt);
+      safeLocalStorageSetItem(ONBOARDING_COMPLETED_AT_KEY, status.appCompletedAt);
     } else {
-      localStorage.removeItem(ONBOARDING_COMPLETED_AT_KEY);
+      removeLocalStorageItem(ONBOARDING_COMPLETED_AT_KEY);
     }
 
     // Per-module
@@ -142,23 +150,23 @@ export class OnboardingPersister {
       const timestampKey = getModuleOnboardingTimestampKey(moduleId);
 
       if (moduleStatus.completed) {
-        localStorage.setItem(key, "true");
+        safeLocalStorageSetItem(key, "true");
       } else {
-        localStorage.removeItem(key);
+        removeLocalStorageItem(key);
       }
 
       if (moduleStatus.completedAt) {
-        localStorage.setItem(timestampKey, moduleStatus.completedAt);
+        safeLocalStorageSetItem(timestampKey, moduleStatus.completedAt);
       } else {
-        localStorage.removeItem(timestampKey);
+        removeLocalStorageItem(timestampKey);
       }
     }
 
     // Last seen version
     if (status.lastSeenVersion) {
-      localStorage.setItem(LAST_SEEN_VERSION_KEY, status.lastSeenVersion);
+      safeLocalStorageSetItem(LAST_SEEN_VERSION_KEY, status.lastSeenVersion);
     } else {
-      localStorage.removeItem(LAST_SEEN_VERSION_KEY);
+      removeLocalStorageItem(LAST_SEEN_VERSION_KEY);
     }
   }
 

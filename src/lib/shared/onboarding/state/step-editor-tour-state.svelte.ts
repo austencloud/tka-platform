@@ -6,6 +6,10 @@
  */
 
 import { AUTO_TOURS_ENABLED } from "../domain/onboarding-flags";
+import {
+  safeLocalStorageSetItem,
+  removeLocalStorageItem,
+} from "$lib/shared/foundation/services/storage-manager";
 
 const TOUR_COMPLETED_KEY = "tka-step-editor-tour-completed";
 
@@ -84,14 +88,14 @@ function createStepEditorTourState() {
       if (!isBrowser) return;
       data.isActive = false;
       data.hasCompleted = true;
-      localStorage.setItem(TOUR_COMPLETED_KEY, "true");
+      safeLocalStorageSetItem(TOUR_COMPLETED_KEY, "true");
     },
 
     skip() {
       if (!isBrowser) return;
       data.isActive = false;
       data.hasCompleted = true;
-      localStorage.setItem(TOUR_COMPLETED_KEY, "true");
+      safeLocalStorageSetItem(TOUR_COMPLETED_KEY, "true");
     },
 
     /** Replay the tour (from help button) */
@@ -106,7 +110,7 @@ function createStepEditorTourState() {
       data.hasCompleted = false;
       data.isActive = false;
       data.currentStopIndex = 0;
-      localStorage.removeItem(TOUR_COMPLETED_KEY);
+      removeLocalStorageItem(TOUR_COMPLETED_KEY);
     },
   };
 }

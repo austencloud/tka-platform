@@ -9,6 +9,10 @@
  */
 
 import { CARD_REGISTRY, type GeneratorCardId } from "$lib/shared/create/domain/card-registry";
+import {
+  safeLocalStorageSetItem,
+  removeLocalStorageItem,
+} from "$lib/shared/foundation/services/storage-manager";
 
 const TOUR_COMPLETED_KEY = "tka-generate-tour-completed";
 const TOUR_INDEX_KEY = "tka-generate-tour-index";
@@ -129,7 +133,7 @@ function createGenerateTourState() {
     advance() {
       if (data.currentStopIndex < STOPS.length - 1) {
         data.currentStopIndex++;
-        if (isBrowser) localStorage.setItem(TOUR_INDEX_KEY, String(data.currentStopIndex));
+        if (isBrowser) safeLocalStorageSetItem(TOUR_INDEX_KEY, String(data.currentStopIndex));
       } else {
         this.complete();
       }
@@ -139,7 +143,7 @@ function createGenerateTourState() {
     retreat() {
       if (data.currentStopIndex > 0) {
         data.currentStopIndex--;
-        if (isBrowser) localStorage.setItem(TOUR_INDEX_KEY, String(data.currentStopIndex));
+        if (isBrowser) safeLocalStorageSetItem(TOUR_INDEX_KEY, String(data.currentStopIndex));
       }
     },
 
@@ -147,8 +151,9 @@ function createGenerateTourState() {
       if (!isBrowser) return;
       data.isActive = false;
       data.hasCompleted = true;
-      localStorage.setItem(TOUR_COMPLETED_KEY, "true");
-      localStorage.removeItem(TOUR_INDEX_KEY);
+      // Guarded so a quota error never blocks the cloud sync below.
+      safeLocalStorageSetItem(TOUR_COMPLETED_KEY, "true");
+      removeLocalStorageItem(TOUR_INDEX_KEY);
       void syncToCloud();
     },
 
@@ -156,8 +161,8 @@ function createGenerateTourState() {
       if (!isBrowser) return;
       data.isActive = false;
       data.hasCompleted = true;
-      localStorage.setItem(TOUR_COMPLETED_KEY, "true");
-      localStorage.removeItem(TOUR_INDEX_KEY);
+      safeLocalStorageSetItem(TOUR_COMPLETED_KEY, "true");
+      removeLocalStorageItem(TOUR_INDEX_KEY);
       void syncToCloud();
     },
 
@@ -170,7 +175,7 @@ function createGenerateTourState() {
       if (data.wasOffered) return;
       data.wasOffered = true;
       if (isBrowser) {
-        localStorage.setItem(TOUR_OFFERED_KEY, "true");
+        safeLocalStorageSetItem(TOUR_OFFERED_KEY, "true");
       }
       void syncToCloud();
     },
@@ -180,7 +185,7 @@ function createGenerateTourState() {
       const index = STOPS.indexOf(stop);
       if (index >= 0) {
         data.currentStopIndex = index;
-        if (isBrowser) localStorage.setItem(TOUR_INDEX_KEY, String(index));
+        if (isBrowser) safeLocalStorageSetItem(TOUR_INDEX_KEY, String(index));
       }
     },
 
@@ -188,7 +193,7 @@ function createGenerateTourState() {
     restart() {
       data.isActive = true;
       data.currentStopIndex = 0;
-      if (isBrowser) localStorage.removeItem(TOUR_INDEX_KEY);
+      if (isBrowser) removeLocalStorageItem(TOUR_INDEX_KEY);
     },
 
     /**
@@ -225,20 +230,20 @@ function createGenerateTourState() {
           const cloud = docSnap.data();
           if (cloud.completed) {
             data.hasCompleted = true;
-            localStorage.setItem(TOUR_COMPLETED_KEY, "true");
+            safeLocalStorageSetItem(TOUR_COMPLETED_KEY, "true");
           }
           if (cloud.offered) {
             data.wasOffered = true;
-            localStorage.setItem(TOUR_OFFERED_KEY, "true");
+            safeLocalStorageSetItem(TOUR_OFFERED_KEY, "true");
           }
         } else {
           // Brand-new account (or first sign-in on this browser for it): clear
           // any inherited local flags so a new user still gets the offer.
           data.hasCompleted = false;
           data.wasOffered = false;
-          localStorage.removeItem(TOUR_COMPLETED_KEY);
-          localStorage.removeItem(TOUR_OFFERED_KEY);
-          localStorage.removeItem(TOUR_INDEX_KEY);
+          removeLocalStorageItem(TOUR_COMPLETED_KEY);
+          removeLocalStorageItem(TOUR_OFFERED_KEY);
+          removeLocalStorageItem(TOUR_INDEX_KEY);
         }
 
         data.cloudSynced = true;
@@ -264,9 +269,9 @@ function createGenerateTourState() {
       data.wasOffered = false;
       data.isActive = false;
       data.currentStopIndex = 0;
-      localStorage.removeItem(TOUR_COMPLETED_KEY);
-      localStorage.removeItem(TOUR_OFFERED_KEY);
-      localStorage.removeItem(TOUR_INDEX_KEY);
+      removeLocalStorageItem(TOUR_COMPLETED_KEY);
+      removeLocalStorageItem(TOUR_OFFERED_KEY);
+      removeLocalStorageItem(TOUR_INDEX_KEY);
     },
   };
 }

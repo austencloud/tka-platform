@@ -66,6 +66,23 @@ export function safeLocalStorageSet<T>(key: string, value: T): void {
   }
 }
 
+/**
+ * Raw (non-JSON-encoded) localStorage.setItem, guarded against a throw
+ * (QuotaExceededError in a full/private-browsing store). Use this - not
+ * safeLocalStorageSet - for callers that already write/read plain strings
+ * directly (flags like "true", ISO timestamps, numeric strings) rather than
+ * JSON-encoded values; wrapping those in safeLocalStorageSet would change
+ * the stored format and break every other localStorage.getItem() reading
+ * the same key. See onboarding state modules for the primary caller.
+ */
+export function safeLocalStorageSetItem(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch (error) {
+    console.warn(`Failed to set localStorage value for key "${key}":`, error);
+  }
+}
+
 export function removeSessionStorageItem(key: string): void {
   try {
     sessionStorage.removeItem(key);

@@ -11,6 +11,10 @@
 
 import { getOnboardingPersister } from "$lib/shared/onboarding/get-onboarding-persister";
 import type { OnboardingPersister } from "../services/onboarding-persister";
+import {
+  safeLocalStorageSetItem,
+  removeLocalStorageItem,
+} from "$lib/shared/foundation/services/storage-manager";
 
 // Lazy service resolution to avoid circular dependencies
 let _onboardingService: OnboardingPersister | null = null;
@@ -79,11 +83,13 @@ export function hasCompletedModuleOnboarding(moduleId: string): boolean {
  * Updates localStorage immediately (synchronous) and syncs to Firebase (async).
  */
 export function markModuleOnboardingComplete(moduleId: string): void {
-  // Always update localStorage immediately for synchronous access
+  // Always update localStorage immediately for synchronous access. Guarded
+  // (safeLocalStorageSetItem swallows a quota/private-browsing throw) so a
+  // full local store never blocks the Firebase sync below.
   const key = getModuleOnboardingKey(moduleId);
   const timestampKey = getModuleOnboardingTimestampKey(moduleId);
-  localStorage.setItem(key, "true");
-  localStorage.setItem(timestampKey, new Date().toISOString());
+  safeLocalStorageSetItem(key, "true");
+  safeLocalStorageSetItem(timestampKey, new Date().toISOString());
 
   // Also sync to Firebase via service (non-blocking)
   const service = getOnboardingService();
@@ -98,8 +104,8 @@ export function markModuleOnboardingComplete(moduleId: string): void {
 export function resetModuleOnboarding(moduleId: string): void {
   const key = getModuleOnboardingKey(moduleId);
   const timestampKey = getModuleOnboardingTimestampKey(moduleId);
-  localStorage.removeItem(key);
-  localStorage.removeItem(timestampKey);
+  removeLocalStorageItem(key);
+  removeLocalStorageItem(timestampKey);
 
   // Also sync to Firebase via service (non-blocking)
   const service = getOnboardingService();
@@ -113,14 +119,14 @@ export function resetModuleOnboarding(moduleId: string): void {
  */
 export function resetAllOnboarding(): void {
   // App-wide
-  localStorage.removeItem(ONBOARDING_COMPLETED_KEY);
-  localStorage.removeItem(ONBOARDING_COMPLETED_AT_KEY);
-  localStorage.removeItem(ONBOARDING_SKIPPED_KEY);
+  removeLocalStorageItem(ONBOARDING_COMPLETED_KEY);
+  removeLocalStorageItem(ONBOARDING_COMPLETED_AT_KEY);
+  removeLocalStorageItem(ONBOARDING_SKIPPED_KEY);
 
   // Per-module
   Object.values(MODULE_ONBOARDING_KEYS).forEach((key) => {
-    localStorage.removeItem(key);
-    localStorage.removeItem(key.replace("-completed", "-completed-at"));
+    removeLocalStorageItem(key);
+    removeLocalStorageItem(key.replace("-completed", "-completed-at"));
   });
 
   // Also sync to Firebase via service (non-blocking)

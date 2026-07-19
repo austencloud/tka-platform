@@ -22,6 +22,7 @@
     getTabIntroContent,
     type TabIntroPage,
   } from "../config/tab-intro-content";
+  import { safeLocalStorageSetItem } from "$lib/shared/foundation/services/storage-manager";
 
   interface Props {
     moduleId: string;
@@ -101,9 +102,10 @@
     hapticService?.trigger("selection");
     isVisible = false;
 
-    // Persist dismissal
+    // Persist dismissal. Guarded so a quota/private-browsing throw never
+    // blocks the onDismiss callback below.
     if (typeof localStorage !== "undefined") {
-      localStorage.setItem(storageKey, "true");
+      safeLocalStorageSetItem(storageKey, "true");
     }
 
     onDismiss?.();
