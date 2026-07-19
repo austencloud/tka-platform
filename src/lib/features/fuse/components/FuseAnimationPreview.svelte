@@ -1,197 +1,213 @@
 <!--
-  FuseAnimationPreview.svelte
-
-  Shows a live animation preview driven entirely by the shared fuse clock.
-  Does NOT run its own playback loop - instead, reactively calls
-  calculateStateForStep() when currentStep changes.
+  The one live canvas in Fuse. The shared Fuse clock supplies a continuous
+  step, while this component owns only animation-engine initialization.
 -->
 <script lang="ts">
+  import { onDestroy, onMount, untrack } from "svelte";
+  import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import { createPlaybackControllerFactory } from "$lib/shared/animation-engine/create-playback-controller-factory";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
+  import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
 
-import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-motion-loader";
-	import { onMount, onDestroy, untrack } from "svelte";
-	import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
-	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-	import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
-	import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
-	import { createPlaybackControllerFactory } from "$lib/shared/animation-engine/create-playback-controller-factory";
+  let {
+    sequence,
+    currentStep = 0,
+    isPlaying = false,
+    onError,
+  }: {
+    sequence: SequenceData;
+    currentStep?: number;
+    isPlaying?: boolean;
+    onError?: (error: Error) => void;
+  } = $props();
 
-	let {
-		sequence,
-		bpm = 60,
-		onControllerReady,
-		propColor,
-		currentStep = 0,
-	}: {
-		sequence: SequenceData;
-		bpm?: number;
-		onControllerReady?: (controller: AnimationPlaybackController) => void;
-		propColor?: "blue" | "red";
-		currentStep?: number;
-	} = $props();
+  let controller = $state<AnimationPlaybackController | null>(null);
+  const animState = createAnimationPanelState({ ephemeral: true });
+  let initialized = $state(false);
+  let totalSteps = $state(0);
+  let loading = $state(true);
+  let error = $state<string | null>(null);
+  let initializationGeneration = 0;
+  let destroyed = false;
 
-	let controller = $state<AnimationPlaybackController | null>(null);
-	const animState = createAnimationPanelState();
-	let initialized = $state(false);
-	let totalSteps = $state(0);
+  const animCurrentStep = $derived(animState.currentStep);
+  const bluePropState = $derived(animState.bluePropState);
+  const redPropState = $derived(animState.redPropState);
+  const sequenceData = $derived(animState.sequenceData ?? sequence);
 
-	let loading = $state(true);
-	let error = $state<string | null>(null);
+  const stepData = $derived.by(() => {
+    const activeSequence = sequenceData;
+    if (!activeSequence) return null;
+    if (animCurrentStep < 1) return activeSequence.startPosition ?? null;
+    const index = Math.min(
+      Math.max(0, Math.floor(animCurrentStep) - 1),
+      (activeSequence.steps.length || 1) - 1
+    );
+    return activeSequence.steps[index] ?? null;
+  });
 
-	// Derived state from animState for canvas props
-	const animCurrentStep = $derived(animState.currentStep);
-	const bluePropState = $derived(animState.bluePropState);
-	const redPropState = $derived(animState.redPropState);
-	const sequenceData = $derived(animState.sequenceData ?? sequence);
+  const gridMode = $derived(sequenceData?.gridMode ?? sequence.gridMode);
 
-	const stepData = $derived.by(() => {
-		const seq = sequenceData;
-		if (!seq) return null;
-		if (animCurrentStep < 1) return seq.startPosition ?? null;
-		const idx = Math.min(Math.max(0, Math.floor(animCurrentStep) - 1), (seq.steps?.length ?? 1) - 1);
-		return seq.steps?.[idx] ?? null;
-	});
+  function failInitialization(message: string, cause: unknown): void {
+    const failure = cause instanceof Error ? cause : new Error(String(cause));
+    error = message;
+    loading = false;
+    initialized = false;
+    onError?.(failure);
+  }
 
-	const letter = $derived(stepData?.letter ?? null);
-	const gridMode = $derived(sequenceData?.gridMode ?? sequence?.gridMode);
+  onMount(() => {
+    try {
+      controller = createPlaybackControllerFactory();
+    } catch (cause) {
+      failInitialization("Preview unavailable", cause);
+    }
+  });
 
-	onMount(async () => {
-		try {
-			controller = createPlaybackControllerFactory();
-			loading = false;
-		} catch (err) {
-			console.error("Failed to initialize fuse animation preview:", err);
-			error = "Failed to load animation";
-			loading = false;
-		}
-	});
+  onDestroy(() => {
+    destroyed = true;
+    initializationGeneration += 1;
+    controller?.dispose();
+    animState.dispose();
+  });
 
-	onDestroy(() => {
-		controller?.dispose();
-		animState.dispose();
-	});
+  $effect(() => {
+    const activeController = controller;
+    const inputSequence = sequence;
+    if (!activeController) return;
 
-	// Initialize controller with sequence (but do NOT start its playback loop)
-	$effect(() => {
-		void controller;
+    const generation = ++initializationGeneration;
+    let cancelled = false;
+    loading = true;
+    error = null;
+    initialized = false;
+    totalSteps = 0;
 
-		if (!controller) return;
+    void (async () => {
+      try {
+        if (animState.isPlaying) activeController.togglePlayback();
+        animState.reset();
 
-		untrack(async () => {
-			// Stop any existing playback
-			if (animState.isPlaying) controller!.togglePlayback();
-			animState.reset();
+        const fullSequence = await ensureMotionData(inputSequence);
+        if (cancelled || destroyed || generation !== initializationGeneration) {
+          return;
+        }
+        if (!fullSequence) {
+          failInitialization(
+            "Preview unavailable",
+            new Error("Sequence motion data could not be loaded")
+          );
+          return;
+        }
 
-			const fullSeq = await ensureMotionData(sequence);
-			if (!fullSeq) {
-				error = "Failed to load sequence motion data";
-				return;
-			}
+        animState.setShouldLoop(true);
+        if (!activeController.initialize(fullSequence, animState)) {
+          failInitialization(
+            "Preview unavailable",
+            new Error("The animation controller rejected the fused sequence")
+          );
+          return;
+        }
 
-			animState.setShouldLoop(true);
-			const ok = controller!.initialize(fullSeq, animState);
-			if (!ok) {
-				error = "Failed to initialize playback";
-				return;
-			}
+        totalSteps = fullSequence.steps.length || 1;
+        initialized = true;
+        loading = false;
 
-			totalSteps = fullSeq.steps?.length ?? 1;
-			initialized = true;
+        const beat = untrack(() => currentStep);
+        const initialBeat = beat > 0 ? (beat % totalSteps) + 1 : 0;
+        activeController.calculateStateForStep(initialBeat);
+        animState.setCurrentStep(initialBeat);
+      } catch (cause) {
+        if (cancelled || destroyed || generation !== initializationGeneration) {
+          return;
+        }
+        failInitialization("Preview unavailable", cause);
+      }
+    })();
 
-			onControllerReady?.(controller!);
+    return () => {
+      cancelled = true;
+    };
+  });
 
-			// Do NOT call togglePlayback() - the shared clock drives this
-			// Just calculate initial state
-			const stepCount = totalSteps;
-			if (stepCount > 0 && currentStep > 0) {
-				const wrappedBeat = (Math.floor(currentStep) % stepCount) + 1;
-				controller!.calculateStateForStep(wrappedBeat);
-			} else {
-				controller!.calculateStateForStep(0);
-			}
-		});
-	});
+  // calculateStateForStep reads the shared clock without starting a second
+  // playback loop. Pausing Fuse therefore pauses every visual beat together.
+  $effect(() => {
+    const beat = currentStep;
+    const activeController = controller;
+    if (!initialized || !activeController || totalSteps <= 0) return;
 
-	// Drive animation from the shared clock - this is the only beat source.
-	// calculateStateForStep computes interpolated prop states for the given beat
-	// without running an internal rAF loop.
-	$effect(() => {
-		const beat = currentStep;
-		if (!initialized || !controller || totalSteps <= 0) return;
-
-		untrack(() => {
-			// The animation engine convention: beat 0 = start position, 1..N = motion steps.
-			// Shared clock beat is a continuous float. Wrap into sequence length,
-			// then add 1 to skip past the start position into motion space.
-			const wrappedWithFraction = (beat % totalSteps) + 1;
-			controller!.calculateStateForStep(wrappedWithFraction);
-			animState.setCurrentStep(wrappedWithFraction);
-		});
-	});
+    untrack(() => {
+      const wrappedBeat = (beat % totalSteps) + 1;
+      activeController.calculateStateForStep(wrappedBeat);
+      animState.setCurrentStep(wrappedBeat);
+    });
+  });
 </script>
 
-<div class="fuse-animation-preview">
-	{#if loading}
-		<div class="state-msg">
-			<i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-			<span>Loading animation...</span>
-		</div>
-	{:else if error}
-		<div class="state-msg error">
-			<span>{error}</span>
-		</div>
-	{:else}
-		<div class="canvas-wrap">
-			<AnimatorCanvas
-				blueProp={propColor === "red" ? null : bluePropState}
-				redProp={propColor === "blue" ? null : redPropState}
-				gridVisible={true}
-				{gridMode}
-				letter={null}
-				{stepData}
-				{sequenceData}
-				{currentStep}
-				isPlaying={true}
-				word={null}
-				hideProgressBar={true}
-				hideTkaGlyph={true}
-				hideStepNumbers={true}
-				progressBarVariant="minimal"
-				fillContainer={true}
-			/>
-		</div>
-	{/if}
+<div class="fuse-animation-preview" aria-hidden="true">
+  {#if loading}
+    <div class="state-message">
+      <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+      <span>Preparing preview...</span>
+    </div>
+  {:else if error}
+    <div class="state-message error-message">{error}</div>
+  {:else}
+    <div class="canvas-wrap">
+      <AnimatorCanvas
+        blueProp={bluePropState}
+        redProp={redPropState}
+        gridVisible={true}
+        {gridMode}
+        letter={null}
+        {stepData}
+        {sequenceData}
+        currentStep={animCurrentStep}
+        {isPlaying}
+        word={null}
+        hideProgressBar={true}
+        hideTkaGlyph={true}
+        hideStepNumbers={true}
+        progressBarVariant="minimal"
+        fillContainer={true}
+      />
+    </div>
+  {/if}
 </div>
 
 <style>
-	.fuse-animation-preview {
-		width: 100%;
-		height: 100%;
-		position: relative;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
+  .fuse-animation-preview,
+  .canvas-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
 
-	.canvas-wrap {
-		position: relative;
-		width: 100%;
-		height: 100%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
+  .state-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--settings-spacing-sm, 8px);
+    min-height: 180px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-min, 14px);
+  }
 
-	.state-msg {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		gap: 8px;
-		color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-		font-size: var(--font-size-sm, 14px);
-	}
+  .error-message {
+    color: var(--semantic-error, #fca5a5);
+  }
 
-	.state-msg.error {
-		color: var(--semantic-error, #fca5a5);
-	}
+  @media (prefers-reduced-motion: reduce) {
+    .fa-spin {
+      animation: none;
+    }
+  }
 </style>

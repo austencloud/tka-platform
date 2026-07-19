@@ -1,121 +1,198 @@
 /**
- * Fuse Shuffle Pool
+ * One side of the Fuse discovery deck.
  *
- * Owns one panel's shuffle deck: loads public sequences filtered by step
- * length, shuffles them into a random order, and steps through the pool.
- * Presentation-free so FusePanel can mount the card display wherever the
- * layout needs it (inline on desktop, inside a drawer on phones) without
- * the pool resetting.
- *
- * Factory + getter-accessor pattern; deps injected, never resolved here.
+ * Loading is staged before it touches the visible card. The parent Fuse state
+ * can therefore prepare a new source and its combined preview, then commit
+ * both in the same update. This is what keeps a path name from getting ahead
+ * of the animation the user is looking at.
  */
 
-import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
-export interface FuseShufflePoolDeps {
-	browseLoader: PublicSequencesLoader;
-	/** Reactive getter for the desired step length; pool reloads when it changes. */
-	getLength: () => number;
-	onCurrentItemChange?: (seq: SequenceData | null) => void;
+export type FuseSide = "blue" | "red";
+
+export type FuseBrowseLoader = Pick<
+  PublicSequencesLoader,
+  "loadSequenceMetadata" | "loadFullSequenceData"
+>;
+
+export interface StagedFuseCandidate {
+  sequence: SequenceData;
+  poolPosition: number;
+  nextCursor: number;
 }
 
-export function createFuseShufflePool(deps: FuseShufflePoolDeps) {
-	const { browseLoader, getLength, onCurrentItemChange } = deps;
+export interface FuseHistoryEntry {
+  sequence: SequenceData;
+  poolPosition: number;
+}
 
-	let pool = $state<SequenceData[]>([]);
-	let currentItem = $state<SequenceData | null>(null);
-	let loading = $state(true);
-	let poolIndex = $state(0);
+interface FuseShufflePoolDeps {
+  browseLoader: FuseBrowseLoader;
+  side: FuseSide;
+  random?: () => number;
+}
 
-	async function loadPool(length: number) {
-		loading = true;
-		try {
-			const allSequences = await browseLoader.loadSequenceMetadata();
+function sequenceLength(sequence: SequenceData): number {
+  if (sequence.steps.length > 0) return sequence.steps.length;
+  return sequence.sequenceLength ?? 0;
+}
 
-			let filtered = allSequences;
-			if (length > 0) {
-				filtered = allSequences.filter((s: SequenceData) => {
-					const seqLen = s.sequenceLength ?? s.steps?.length ?? 0;
-					return seqLen === length;
-				});
-				if (filtered.length === 0) filtered = allSequences;
-			}
+function hasRequiredSideData(sequence: SequenceData, side: FuseSide): boolean {
+  return side === "blue" ? !!sequence.blueSoloProp : !!sequence.redSoloProp;
+}
 
-			// Fisher-Yates shuffle
-			for (let i = filtered.length - 1; i > 0; i--) {
-				const j = Math.floor(Math.random() * (i + 1));
-				[filtered[i], filtered[j]] = [filtered[j]!, filtered[i]!];
-			}
+function shuffledCopy(
+  sequences: readonly SequenceData[],
+  random: () => number
+): SequenceData[] {
+  const shuffled = [...sequences];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const target = Math.floor(random() * (index + 1));
+    [shuffled[index], shuffled[target]] = [shuffled[target]!, shuffled[index]!];
+  }
+  return shuffled;
+}
 
-			pool = filtered;
-			poolIndex = 0;
-			currentItem = pool[0] ?? null;
-			onCurrentItemChange?.(currentItem);
+export function createFuseShufflePool({
+  browseLoader,
+  side,
+  random = Math.random,
+}: FuseShufflePoolDeps) {
+  let pool = $state<SequenceData[]>([]);
+  let requestedLength = $state(0);
+  let nextCursor = $state(0);
+  let currentItem = $state<SequenceData | null>(null);
+  let currentPosition = $state(0);
+  let history = $state<FuseHistoryEntry[]>([]);
+  let historyIndex = $state(-1);
+  let revision = $state(0);
 
-			// Pre-load full step data for the first item
-			if (currentItem) {
-				loadFullData(currentItem);
-			}
-		} catch (err) {
-			console.error("Failed to load sequences for fuse shuffle:", err);
-			pool = [];
-			currentItem = null;
-			onCurrentItemChange?.(null);
-		} finally {
-			loading = false;
-		}
-	}
+  function reset(sequences: readonly SequenceData[], length: number): void {
+    requestedLength = length;
+    pool = shuffledCopy(
+      sequences.filter((sequence) => sequenceLength(sequence) === length),
+      random
+    );
+    nextCursor = 0;
+    currentItem = null;
+    currentPosition = 0;
+    history = [];
+    historyIndex = -1;
+  }
 
-	async function loadFullData(item: SequenceData) {
-		if (item.steps && item.steps.length > 0) return;
-		try {
-			const full = await browseLoader.loadFullSequenceData(
-				item.word || item.name,
-				item.id
-			);
-			if (full) {
-				const idx = pool.indexOf(item);
-				if (idx >= 0) pool[idx] = full;
-				if (currentItem === item) {
-					currentItem = full;
-					onCurrentItemChange?.(full);
-				}
-			}
-		} catch {
-			// Keep metadata-only version
-		}
-	}
+  async function hydrateCandidate(
+    candidate: SequenceData
+  ): Promise<SequenceData | null> {
+    if (candidate.steps.length > 0 && hasRequiredSideData(candidate, side)) {
+      return candidate;
+    }
 
-	function shuffle() {
-		if (pool.length === 0) return;
-		poolIndex = (poolIndex + 1) % pool.length;
-		currentItem = pool[poolIndex] ?? null;
-		onCurrentItemChange?.(currentItem);
-		if (currentItem) loadFullData(currentItem);
-	}
+    const hydrated = await browseLoader.loadFullSequenceData(
+      candidate.word || candidate.name,
+      candidate.id
+    );
+    return hydrated;
+  }
 
-	// Reload whenever the requested length changes (also runs on init)
-	$effect(() => {
-		const length = getLength();
-		loadPool(length);
-	});
+  /**
+   * Find the next usable entry without changing the visible source. The deck
+   * cursor advances only when the parent commits the returned candidate.
+   */
+  async function stageNext(): Promise<StagedFuseCandidate | null> {
+    if (pool.length === 0) return null;
 
-	return {
-		get currentItem() {
-			return currentItem;
-		},
-		get loading() {
-			return loading;
-		},
-		get poolSize() {
-			return pool.length;
-		},
-		get poolIndex() {
-			return poolIndex;
-		},
-		shuffle,
-	};
+    const startCursor = nextCursor;
+    for (let offset = 0; offset < pool.length; offset += 1) {
+      const poolIndex = (startCursor + offset) % pool.length;
+      const candidate = pool[poolIndex]!;
+      const hydrated = await hydrateCandidate(candidate);
+
+      if (
+        !hydrated ||
+        sequenceLength(hydrated) !== requestedLength ||
+        hydrated.steps.length === 0 ||
+        !hasRequiredSideData(hydrated, side)
+      ) {
+        continue;
+      }
+
+      return {
+        sequence: hydrated,
+        poolPosition: poolIndex + 1,
+        nextCursor: (poolIndex + 1) % pool.length,
+      };
+    }
+
+    return null;
+  }
+
+  function commit(candidate: StagedFuseCandidate, resetHistory: boolean): void {
+    nextCursor = candidate.nextCursor;
+    currentItem = candidate.sequence;
+    currentPosition = candidate.poolPosition;
+
+    if (resetHistory) {
+      history = [
+        {
+          sequence: candidate.sequence,
+          poolPosition: candidate.poolPosition,
+        },
+      ];
+      historyIndex = 0;
+    } else {
+      const retainedHistory = history.slice(0, historyIndex + 1);
+      history = [
+        ...retainedHistory,
+        {
+          sequence: candidate.sequence,
+          poolPosition: candidate.poolPosition,
+        },
+      ];
+      historyIndex = history.length - 1;
+    }
+
+    revision += 1;
+  }
+
+  function peekPrevious(): FuseHistoryEntry | null {
+    return historyIndex > 0 ? (history[historyIndex - 1] ?? null) : null;
+  }
+
+  function commitPrevious(): SequenceData | null {
+    const previous = peekPrevious();
+    if (!previous) return null;
+
+    historyIndex -= 1;
+    currentItem = previous.sequence;
+    currentPosition = previous.poolPosition;
+    revision += 1;
+    return previous.sequence;
+  }
+
+  return {
+    get sequence() {
+      return currentItem;
+    },
+    get poolSize() {
+      return pool.length;
+    },
+    get poolPosition() {
+      return currentPosition;
+    },
+    get canGoBack() {
+      return historyIndex > 0;
+    },
+    get revision() {
+      return revision;
+    },
+    reset,
+    stageNext,
+    commit,
+    peekPrevious,
+    commitPrevious,
+  };
 }
 
 export type FuseShufflePool = ReturnType<typeof createFuseShufflePool>;

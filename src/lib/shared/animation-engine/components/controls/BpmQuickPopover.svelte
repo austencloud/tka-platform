@@ -27,7 +27,13 @@
     onClose?: () => void;
   }
 
-  let { bpm, min = PLAYBACK_MIN_BPM, max = PLAYBACK_MAX_BPM, onBpmChange, onClose }: Props = $props();
+  let {
+    bpm,
+    min = PLAYBACK_MIN_BPM,
+    max = PLAYBACK_MAX_BPM,
+    onBpmChange,
+    onClose,
+  }: Props = $props();
 
   function clamp(v: number): number {
     return Math.max(min, Math.min(max, v));
@@ -181,8 +187,16 @@
     transform: scale(0.96);
   }
   .bq-preset.active {
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 28%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 55%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 28%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 55%,
+      transparent
+    );
     color: color-mix(in srgb, var(--theme-accent, #c4b5fd) 82%, white);
   }
   @media (hover: hover) and (pointer: fine) {
@@ -202,7 +216,7 @@
     gap: 8px;
   }
   .bq-exact-label {
-    font-size: 11px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -235,10 +249,14 @@
   .bq-exact-input:focus-visible {
     outline: 2px solid var(--theme-accent, #6366f1);
     outline-offset: 1px;
-    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 55%, transparent);
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 55%,
+      transparent
+    );
   }
   .bq-exact-unit {
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.6px;
@@ -248,8 +266,13 @@
     height: var(--min-touch-target, 44px);
     padding: 0 14px;
     border-radius: 10px;
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 22%, transparent);
-    border: 1.5px solid color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 22%,
+      transparent
+    );
+    border: 1.5px solid
+      color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
     color: color-mix(in srgb, var(--theme-accent, #c4b5fd) 85%, white);
     font-size: 12px;
     font-weight: 700;
@@ -285,8 +308,16 @@
     -webkit-tap-highlight-color: transparent;
   }
   .bq-tap.tapping {
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 20%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #8b5cf6) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 20%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 50%,
+      transparent
+    );
     color: color-mix(in srgb, var(--theme-accent, #c4b5fd) 82%, white);
   }
   @media (hover: hover) and (pointer: fine) {

@@ -15,7 +15,7 @@
    * />
    */
 
-  type ColorPreset = "default" | "cyan";
+  type ColorPreset = "default" | "cyan" | "fuse";
 
   interface Props {
     label: string;
@@ -23,6 +23,11 @@
     color?: ColorPreset;
     fullWidth?: boolean;
     disabled?: boolean;
+    /** Keeps an unavailable action discoverable in the keyboard order. */
+    ariaDisabled?: boolean;
+    ariaDescribedBy?: string;
+    busy?: boolean;
+    busyLabel?: string;
     onclick: () => void;
   }
 
@@ -32,8 +37,17 @@
     color = "default",
     fullWidth = false,
     disabled = false,
+    ariaDisabled = false,
+    ariaDescribedBy,
+    busy = false,
+    busyLabel = label,
     onclick,
   }: Props = $props();
+
+  function handleClick(): void {
+    if (disabled || ariaDisabled || busy) return;
+    onclick();
+  }
 </script>
 
 <button
@@ -41,12 +55,16 @@
   class:full-width={fullWidth}
   data-color={color}
   {disabled}
-  {onclick}
+  aria-disabled={ariaDisabled || busy || undefined}
+  aria-describedby={ariaDescribedBy}
+  aria-busy={busy || undefined}
+  onclick={handleClick}
+  type="button"
 >
   {#if icon}
     <i class="fas {icon}" aria-hidden="true"></i>
   {/if}
-  <span>{label}</span>
+  <span>{busy ? busyLabel : label}</span>
 </button>
 
 <style>
@@ -60,11 +78,14 @@
     background: var(--action-gradient);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
     border-radius: 20px;
-    color: #ffffff;
+    color: var(--action-text, #ffffff);
     font-size: 0.9rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    transition:
+      transform var(--duration-normal) ease,
+      box-shadow var(--duration-normal) ease,
+      opacity var(--duration-normal) ease;
     box-shadow: var(--action-shadow);
     -webkit-tap-highlight-color: transparent;
   }
@@ -78,20 +99,26 @@
   }
 
   /* Disabled state */
-  .action-button:disabled {
+  .action-button:disabled,
+  .action-button[aria-disabled="true"],
+  .action-button[aria-busy="true"] {
     opacity: 0.5;
     cursor: not-allowed;
   }
 
   /* Hover - ONLY on devices that support hover (not touch) */
   @media (hover: hover) {
-    .action-button:hover:not(:disabled) {
+    .action-button:hover:not(:disabled):not([aria-disabled="true"]):not(
+        [aria-busy="true"]
+      ) {
       transform: translateY(-1px);
       box-shadow: var(--action-shadow-hover);
     }
   }
 
-  .action-button:active:not(:disabled) {
+  .action-button:active:not(:disabled):not([aria-disabled="true"]):not(
+      [aria-busy="true"]
+    ) {
     transform: scale(0.98);
   }
 
@@ -115,6 +142,15 @@
     --action-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
     --action-shadow-hover: 0 6px 16px rgba(6, 182, 212, 0.4);
     --action-focus: #06b6d4;
+  }
+
+  /* Color: Fuse (Orange with a dark foreground that clears AAA contrast) */
+  .action-button[data-color="fuse"] {
+    --action-gradient: linear-gradient(135deg, #f59e0b, #fb923c 50%, #f47d20);
+    --action-text: #0b0b0f;
+    --action-shadow: 0 4px 12px rgba(234, 88, 12, 0.28);
+    --action-shadow-hover: 0 6px 16px rgba(234, 88, 12, 0.38);
+    --action-focus: var(--theme-text, #0b0b0f);
   }
 
   /* Reduced motion */

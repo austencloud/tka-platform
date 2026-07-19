@@ -256,6 +256,15 @@ export const APP_MODULES: RouteConfig[] = [
     tabId: "assemble",
     waitSelector: ".assembler-tab",
   },
+  {
+    path: "/app",
+    label: "create--fuse",
+    requiresAuth: true,
+    isModule: true,
+    moduleId: "create",
+    tabId: "fuse",
+    waitSelector: ".fuse-workspace",
+  },
 
   // ── Browse module ──────────────────────────────────────────────────────────
   {

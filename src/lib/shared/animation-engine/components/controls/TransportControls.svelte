@@ -20,6 +20,7 @@
     onStepFullBeatBackward,
     onStepFullBeatForward,
     onRestartToStart,
+    disabled = false,
   }: {
     isPlaying?: boolean;
     /** How long step buttons glow after click (ms). 0 to disable. */
@@ -31,11 +32,18 @@
     onStepFullBeatForward?: () => void;
     /** When provided, replaces the full-beat-backward button with a restart-to-start button */
     onRestartToStart?: () => void;
+    disabled?: boolean;
   } = $props();
 
   /** Show step buttons only when at least one step handler is provided */
   const hasStepControls = $derived(
-    !!(onStepHalfBeatBackward || onStepHalfBeatForward || onStepFullBeatBackward || onStepFullBeatForward || onRestartToStart)
+    !!(
+      onStepHalfBeatBackward ||
+      onStepHalfBeatForward ||
+      onStepFullBeatBackward ||
+      onStepFullBeatForward ||
+      onRestartToStart
+    )
   );
 
   // Step glow state
@@ -46,7 +54,10 @@
     if (!stepGlowMs) return;
     if (glowTimer) clearTimeout(glowTimer);
     glowingBtn = btn;
-    glowTimer = setTimeout(() => { glowingBtn = null; glowTimer = null; }, stepGlowMs);
+    glowTimer = setTimeout(() => {
+      glowingBtn = null;
+      glowTimer = null;
+    }, stepGlowMs);
   }
 
   onDestroy(() => {
@@ -59,10 +70,14 @@
     <!-- Half Beat Back (secondary - outer position) -->
     <button
       class="step-btn step-half"
-      class:stepping={glowingBtn === 'hb'}
-      onclick={() => { glow('hb'); onStepHalfBeatBackward?.(); }}
+      class:stepping={glowingBtn === "hb"}
+      onclick={() => {
+        glow("hb");
+        onStepHalfBeatBackward?.();
+      }}
       type="button"
       aria-label="Previous half step"
+      {disabled}
     >
       <i class="fas fa-chevron-left" aria-hidden="true"></i>
     </button>
@@ -71,20 +86,28 @@
     {#if onRestartToStart}
       <button
         class="step-btn step-full"
-        class:stepping={glowingBtn === 'fb'}
-        onclick={() => { glow('fb'); onRestartToStart(); }}
+        class:stepping={glowingBtn === "fb"}
+        onclick={() => {
+          glow("fb");
+          onRestartToStart();
+        }}
         type="button"
         aria-label="Restart from beginning"
+        {disabled}
       >
         <i class="fas fa-backward-fast" aria-hidden="true"></i>
       </button>
     {:else}
       <button
         class="step-btn step-full"
-        class:stepping={glowingBtn === 'fb'}
-        onclick={() => { glow('fb'); onStepFullBeatBackward?.(); }}
+        class:stepping={glowingBtn === "fb"}
+        onclick={() => {
+          glow("fb");
+          onStepFullBeatBackward?.();
+        }}
         type="button"
         aria-label="Previous full step"
+        {disabled}
       >
         <i class="fas fa-angles-left" aria-hidden="true"></i>
       </button>
@@ -98,6 +121,7 @@
     onclick={onPlaybackToggle}
     aria-label={isPlaying ? "Pause animation" : "Play animation"}
     type="button"
+    {disabled}
   >
     <i class="fas {isPlaying ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>
   </button>
@@ -106,10 +130,14 @@
     <!-- Full Step Forward (primary - adjacent to play) -->
     <button
       class="step-btn step-full"
-      class:stepping={glowingBtn === 'ff'}
-      onclick={() => { glow('ff'); onStepFullBeatForward?.(); }}
+      class:stepping={glowingBtn === "ff"}
+      onclick={() => {
+        glow("ff");
+        onStepFullBeatForward?.();
+      }}
       type="button"
       aria-label="Next full step"
+      {disabled}
     >
       <i class="fas fa-angles-right" aria-hidden="true"></i>
     </button>
@@ -117,10 +145,14 @@
     <!-- Half Step Forward (secondary - outer position) -->
     <button
       class="step-btn step-half"
-      class:stepping={glowingBtn === 'hf'}
-      onclick={() => { glow('hf'); onStepHalfBeatForward?.(); }}
+      class:stepping={glowingBtn === "hf"}
+      onclick={() => {
+        glow("hf");
+        onStepHalfBeatForward?.();
+      }}
       type="button"
       aria-label="Next half step"
+      {disabled}
     >
       <i class="fas fa-chevron-right" aria-hidden="true"></i>
     </button>
@@ -163,7 +195,7 @@
   }
 
   @media (hover: hover) and (pointer: fine) {
-    .step-btn:hover {
+    .step-btn:hover:not(:disabled) {
       background: var(--theme-card-hover-bg);
       border-color: var(--theme-stroke-strong);
       color: var(--theme-text, var(--theme-text));
@@ -177,11 +209,19 @@
     transition-duration: 0ms;
   }
 
+  .step-btn:disabled,
+  .play-pause-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+  }
+
   .step-btn.stepping {
     border-color: var(--theme-accent);
     background: color-mix(in srgb, var(--theme-accent) 15%, transparent);
     color: var(--theme-text);
-    box-shadow: 0 0 10px color-mix(in srgb, var(--theme-accent) 30%, transparent);
+    box-shadow: 0 0 10px
+      color-mix(in srgb, var(--theme-accent) 30%, transparent);
   }
 
   /* Play/Pause Button - Uses semantic success/error colors */
@@ -215,7 +255,7 @@
   }
 
   @media (hover: hover) and (pointer: fine) {
-    .play-pause-btn:hover {
+    .play-pause-btn:hover:not(:disabled) {
       transform: scale(1.05);
       background: var(--theme-card-hover-bg);
       border-color: var(--theme-accent, rgba(139, 92, 246, 0.6));
@@ -224,13 +264,14 @@
         inset 0 1px 0 var(--theme-card-hover-bg);
     }
 
-    .play-pause-btn.playing:hover {
+    .play-pause-btn.playing:hover:not(:disabled) {
       background: var(--theme-card-hover-bg);
       border-color: var(--theme-accent, rgba(139, 92, 246, 0.7));
       color: var(--theme-accent, #a78bfa);
       box-shadow:
         0 4px 16px var(--theme-shadow),
-        0 0 16px color-mix(in srgb, var(--theme-accent, #8b5cf6) 35%, transparent),
+        0 0 16px
+          color-mix(in srgb, var(--theme-accent, #8b5cf6) 35%, transparent),
         inset 0 1px 0 var(--theme-card-hover-bg);
     }
   }
