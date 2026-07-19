@@ -45,12 +45,12 @@ is the exact AuthNudge fragmentation flagged 2026-06-18, still unfixed.
 
 ## Acceptance criteria
 
-- [ ] Grep shows one phrasing of the account ask across all nudge entries + button (no "Sign up free" / "Create Account - free" variants).
-- [ ] Export gate modal copy references exporting, not saving (runtime or string trace); the `export` nudge string has a live call site.
-- [ ] Zero dead nudge strings (every centralized string has a call site; grep proof).
-- [ ] The save-cap toast draws from the centralized copy, not a local duplicate.
-- [ ] Loop-locked nudge either glosses the jargon or is gated behind a LOOP explanation.
-- [ ] All new/changed strings pass a writing-guide check (no em dashes/superlatives/AI-isms).
+- [x] Grep shows one phrasing of the account ask across all nudge entries + button (no "Sign up free" / "Create Account - free" variants). — `grep -rn "Sign up free|Create Account - free|Sign up to unlock" src` returns zero live hits (only the "no longer used" reference comment in auth-nudge-trigger.ts); all 8 AUTH_NUDGE_TEXTS entries contain "create a free account" (asserted in `tests/unit/auth/auth-nudge-trigger.test.ts`); `AuthNudge.svelte` button reads `"Create account"`. Also found and fixed two additional hand-rolled duplicates outside the 9-entry set (`generate-actions.svelte.ts:193,466`, "Capped to 8 beats. Sign up free for up to 64.") — rewired to `AUTH_NUDGE_TEXTS["beat-cap-guest"]`.
+- [x] Export gate modal copy references exporting, not saving (runtime or string trace); the `export` nudge string has a live call site. — `ensureFullAccountForExport()` now calls `authDrawerState.show("signup", "export")`; `AuthModal.svelte` reads `authDrawerState.reason` and swaps its subtitle to `AUTH_NUDGE_TEXTS.export` ("Create a free account to export your sequences.") when set, else the generic "Free. Save your work." pitch.
+- [x] Zero dead nudge strings (every centralized string has a call site; grep proof). — `generate-cap` (exact duplicate of `beat-cap-guest`, zero call sites) deleted from the type + record; remaining 8 all have live call sites: `save` (library-save-service.ts:142), `beat-cap-guest` (3 AuthNudge sites + 2 generate-actions.svelte.ts toasts), `export` (export-gate.ts:20), `module:learn`/`module:library`/`module:settings` (ModuleRenderer.svelte:323-327), `edit-community` (collections-state.svelte.ts:228, pre-existing), `loop-locked-guest` (loop-guest-gate.ts:54, GeneratePanel.svelte:305). `tests/unit/auth/auth-nudge-trigger.test.ts` locks the 8-key set.
+- [x] The save-cap toast draws from the centralized copy, not a local duplicate. — `library-save-service.ts:142` now calls `toast.info(AUTH_NUDGE_TEXTS.save, 6000)`; the `save` entry interpolates `GUEST_SAVE_CAP` rather than a hardcoded number.
+- [x] Loop-locked nudge either glosses the jargon or is gated behind a LOOP explanation. — Glossed inline: `"Rotated LOOPs, sequences that return to their starting position with each repeat rotated 180°, are free."` Grounded via MCP `get_term_definition("loop")` + `get_domain_topic("caps vs loops")` and the guide's existing framing (`Type2LoopsPage.svelte`: "each repetition is rotated by 180°"). `loop-guest-gate.ts`'s category-lock reason now reads this same centralized string instead of a local duplicate.
+- [x] All new/changed strings pass a writing-guide check (no em dashes/superlatives/AI-isms). — No em dashes (asserted in the test), no "unlock" (blacklisted verb), no "Whether you're", no hedging. Manually checked against `docs/reference/ai-writing-guide.md`.
 - [ ] Final copy confirmed by Austen before ship.
 - [ ] `npm run check` clean.
 

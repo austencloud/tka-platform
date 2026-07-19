@@ -18,6 +18,8 @@
   import EmailAuthTabs from "./EmailAuthTabs.svelte";
   import { signInWithFacebook } from "$lib/shared/auth/services/authenticator";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+  import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
 
   function handleGoogleOneTapError(error: Error) {
     console.error("[AuthModal] Google One Tap sign-in failed", error);
@@ -34,6 +36,17 @@
 
   let authMode = $state<"signin" | "signup">("signup");
   let showEmailAuth = $state(false);
+
+  // Why this modal opened (e.g. "export"), read from the shared drawer state
+  // rather than piped down as a prop - MainApplication mounts this modal off
+  // authDrawerState.open/initialMode without a reason prop, so this component
+  // reads the same state directly instead of waiting on a prop threaded
+  // through the host. Falls back to the generic pitch when nothing set it.
+  const subtitle = $derived(
+    authMode === "signup" && authDrawerState.reason
+      ? AUTH_NUDGE_TEXTS[authDrawerState.reason]
+      : "Free. Save your work."
+  );
 
   // Facebook sign-in failure surfaced inline, mirroring AuthSheet/SocialAuthCompact.
   let facebookError = $state<string | null>(null);
@@ -109,7 +122,7 @@
       <div class="auth-heading">
         {#if authMode === "signup"}
           <h2>Create your account</h2>
-          <p class="auth-subtitle">Free. Save your work.</p>
+          <p class="auth-subtitle">{subtitle}</p>
         {:else}
           <h2>Welcome back</h2>
           <p class="auth-subtitle">Sign in to continue.</p>

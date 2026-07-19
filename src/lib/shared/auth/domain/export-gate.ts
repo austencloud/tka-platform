@@ -17,6 +17,6 @@ import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte
  */
 export function ensureFullAccountForExport(): boolean {
   if (authState.isAuthenticated && !authState.isAnonymous) return true;
-  authDrawerState.show("signup");
+  authDrawerState.show("signup", "export");
   return false;
 }
