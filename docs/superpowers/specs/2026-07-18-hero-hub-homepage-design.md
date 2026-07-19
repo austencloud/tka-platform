@@ -112,3 +112,34 @@ evidence, `npm run check` clean).
 - Sketches for visual reference: `/sketches/2026-07-18-hub-launchpad.html`
   and `-v2.html` (throwaway; the real build uses real components per
   `visualization-routing.md`).
+
+## Build ledger (2026-07-18 session)
+
+Public-gate resolution (recon-verified): Library/Gallery (`/browse/*`), Museum
+(`/museum`), Play (`/learn/play`), Practice (`/train`) tiles cut — routes are
+app-mode. `/guide/level-1` is a retired 308 redirect — not linked. `/store` and
+`/demo` are not destinations. Hero pointer target: `/about`. Hero player is the
+only animation-engine instance on the page (Composer tile uses a static
+SequenceMandala instead of a second player).
+
+- [x] Hero: `HomeHero.svelte` + `per-visit-demo.ts` promoted to shared landing data
+- [x] Launchpad grid: manifest + grid + tile + glow/press/magnetic actions
+- [x] `+page.svelte` rewire (head kept verbatim, funnel sections unwired)
+- [x] Contract test: `tests/unit/homepage-public-links-contract.test.ts` (6/6)
+- [x] Verify: vitest 6/6 + SSR curl (200; H1, caption, all 18 hrefs, funnel gone) +
+      rules audit clean + `npm run check` (see commit)
+- [x] Fable review pass: actions made SSR-inert via dynamic `/card` imports
+      (decoupled from the uncommitted package patch another session has in
+      flight), tile-link focus-visible ring added, tile surface paint switched
+      from `--theme-card-bg` (near-opaque black on cosmic) to the literal
+      landing glass, transitions consolidated so un-hover/dim eases back
+- [x] Austen round 1: H1 recomposed to display title + subline ("The Kinetic
+      Alphabet" / "Notation for flow arts", both inside the one h1); one-viewport
+      split composition at >=1680px (hero left pane, grid right pane,
+      height-keyed rows) with a >=2200px 4K scale tier and fluid bound
+      (recompose-don't-scale per the 2026-07-15 4K spec); scoped checks adopted
+      (check:fast + targeted vitest) after full-check exhaustion feedback
+- [~] Visual/interaction pass (tilt/glow/press feel, split composition at
+      1920/2560/3840, mobile) awaits Austen's eyes on the live page — browser
+      verification is permission-gated
+- [x] Scoped commit + push

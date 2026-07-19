@@ -6,7 +6,7 @@
   import PlayWithItSkeleton from "../../landing/components/PlayWithItSkeleton.svelte";
   import { onMount } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import { generatePerVisitDemo } from "./_data/per-visit-demo";
+  import { generatePerVisitDemo } from "$lib/shared/landing/data/per-visit-demo";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   // Per-visit demo: freshly generated for every visitor (no canonical

@@ -1,35 +1,6 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import HeroCarouselSection from "./landing/components/HeroCarouselSection.svelte";
-  import LazyHowTkaWorksSection from "./landing/components/LazyHowTkaWorksSection.svelte";
-  import PlayWithItSection from "./landing/components/PlayWithItSection.svelte";
-  import GuidesSection from "./landing/components/GuidesSection.svelte";
-  import ShopCtaSection from "./landing/components/ShopCtaSection.svelte";
-
-  onMount(() => {
-    // Cosmic background + SiteHeader are provided by MarketingChrome (root layout).
-
-    // Scroll-triggered reveal animations for all sections below the hero
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("revealed");
-            observer.unobserve(entry.target);
-          }
-        }
-      },
-      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
-    );
-
-    requestAnimationFrame(() => {
-      document.querySelectorAll(".scroll-reveal").forEach((el) => {
-        observer.observe(el);
-      });
-    });
-
-    return () => observer.disconnect();
-  });
+  import HomeHero from "$lib/shared/landing/components/HomeHero.svelte";
+  import LaunchpadGrid from "$lib/shared/landing/components/launchpad/LaunchpadGrid.svelte";
 </script>
 
 <svelte:head>
@@ -169,22 +140,9 @@
   <a href="#main-content" class="skip-link">Skip to main content</a>
 
   <div class="content-layer">
-    <HeroCarouselSection />
-    <main id="main-content">
-      <hr class="divider" />
-      <LazyHowTkaWorksSection />
-      <hr class="divider" />
-      <div class="scroll-reveal">
-        <PlayWithItSection />
-      </div>
-      <hr class="divider" />
-      <div class="scroll-reveal">
-        <GuidesSection />
-      </div>
-      <hr class="divider" />
-      <div class="scroll-reveal">
-        <ShopCtaSection />
-      </div>
+    <HomeHero />
+    <main id="main-content" class="launchpad-main">
+      <LaunchpadGrid />
     </main>
   </div>
 </div>
@@ -228,29 +186,35 @@
     z-index: 1;
   }
 
-  .divider {
-    border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.07);
-    margin: 0;
+  .launchpad-main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1.25rem;
   }
 
-  /* Scroll-triggered reveal animations */
-  :global(.scroll-reveal) {
-    opacity: 0;
-    transform: translateY(32px);
-    transition: opacity 0.7s ease, transform 0.7s ease;
-  }
+  /* Split tier: hero (left pane) + launchpad grid (right pane) compose into
+     ONE viewport on wide screens — a practitioner on a 1080p/1440p/4K display
+     sees the whole front door without scrolling. Recomposition, not scaling
+     (per the 4K landing spec's wave-3 rule). Below 1680px the stacked layout
+     above is untouched. The bound stays fluid (62vw beyond ~2840px wide) so
+     the composition keeps growing at 4K/5K instead of re-freezing. */
+  @media (min-width: 1680px) {
+    .content-layer {
+      display: grid;
+      grid-template-columns: minmax(520px, 5fr) 7fr;
+      column-gap: clamp(2.5rem, 4vw, 5.5rem);
+      align-items: center;
+      max-width: max(1760px, 62vw);
+      margin-inline: auto;
+      padding-inline: clamp(1.5rem, 2.5vw, 4rem);
+      /* ~76px allowance for the sticky MarketingChrome header. min-height,
+         not height: a shorter window still scrolls instead of clipping. */
+      min-height: calc(100svh - 76px);
+    }
 
-  :global(.scroll-reveal.revealed) {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    :global(.scroll-reveal) {
-      opacity: 1;
-      transform: none;
-      transition: none;
+    .launchpad-main {
+      max-width: none;
+      padding: 0;
     }
   }
 </style>
