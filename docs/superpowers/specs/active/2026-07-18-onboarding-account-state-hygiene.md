@@ -48,13 +48,13 @@ treated as cloud-authoritative on identity change** — and one fix pattern.
 
 ## Acceptance criteria
 
-- [ ] `phase` is derived from `hasCompleted` only; the two cannot diverge (unit test: seed permutations).
-- [ ] `appEntryState.syncFromCloud()` is called at auth boot next to the sibling syncs (grep proof).
-- [ ] A missing `appEntry` doc resets `hasCompleted`→false (new account on reused device is NOT auto-completed).
-- [ ] A missing `passwordOnboarding` doc resets `hasPassword`→false (magic-link account on reused device gets flagged `required`).
-- [ ] `deleteAccount()` routes through `authState.signOut()` (grep proof; no raw `signOut` import in account-manager for this path).
-- [ ] Onboarded user on a second device: no onboarding modal (runtime or state-driven test).
-- [ ] `npm run check` clean.
+- [x] `phase` is derived from `hasCompleted` only; the two cannot diverge (unit test: seed permutations). Evidence: `app-entry-state.svelte.ts` now derives BOTH `hasCompleted` and `phase` from one shared `isOnboarded` seed expression (`completedFlag || (firstRunDone && !AUTO_TOURS_ENABLED)`) — a literal one-directional "phase = f(hasCompleted)" can't carry the wizard-active-vs-tutorial-prompt distinction (hasCompleted alone doesn't encode firstRunDone), so both derive from the same seed instead, which satisfies the actual invariant (can never disagree) per this task's explicit guidance. `tests/unit/onboarding/app-entry-state.test.ts`'s seed-derivation describe block (5 tests incl. the named divergence-bug regression) — passing.
+- [x] `appEntryState.syncFromCloud()` is called at auth boot next to the sibling syncs (grep proof). Evidence: `auth-boot-orchestrator.ts` — new block added directly after the `passwordOnboardingState.syncFromCloud()` wiring, same `.then()/.catch()` + `markCloudSyncComplete()` fallback pattern.
+- [x] A missing `appEntry` doc resets `hasCompleted`→false (new account on reused device is NOT auto-completed). Evidence: `app-entry-state.svelte.ts` `syncFromCloud()` else-branch; `tests/unit/onboarding/app-entry-state.test.ts` "resets a stale local hasCompleted=true when the cloud doc is missing" — passing.
+- [x] A missing `passwordOnboarding` doc resets `hasPassword`→false (magic-link account on reused device gets flagged `required`). Evidence: `password-onboarding-state.svelte.ts` `syncFromCloud()` else-branch; `tests/unit/onboarding/password-onboarding-state.test.ts` — 3 tests passing, including the `required`-survives case.
+- [x] `deleteAccount()` routes through `authState.signOut()` (grep proof; no raw `signOut` import in account-manager for this path). Evidence: `account-manager.ts` — `signOut` removed from the `firebase/auth` import; `await authState.signOut().catch(() => {})` replaces the raw call.
+- [~] Onboarded user on a second device: no onboarding modal (runtime or state-driven test). State-driven equivalent covered (missing-doc branch confirms `hasCompleted` stays/becomes correct pre-modal-render), but no live two-device runtime verification was run — that needs an authenticated Chrome DevTools session across two profiles, out of scope for a unit-test-only executor pass. Flagging for the orchestrator/Austen to runtime-verify if desired.
+- [ ] `npm run check` clean. Left for the orchestrator's machine-wide check gate per this task's instructions.
 
 ## Verification
 
