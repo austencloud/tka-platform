@@ -328,21 +328,86 @@ The ledger survives compaction; conversation context does not. Mark `- [x]` done
 
 ### Phase 3 — Responsive and mobile drawer
 
-- [ ] `isMobile` via `BREAKPOINTS.MOBILE` plus resize listener on the route.
-- [ ] Drill uses `Drawer` with `placement={isMobile ? 'bottom' : 'right'}`.
-- [ ] Size default Medium on mobile; grid density adapts.
-- [ ] Verify: emulate a phone viewport, confirm bottom-sheet drill and the size
-      default (screenshot); confirm desktop right-panel drill (screenshot).
+- [x] `isMobile` via `BREAKPOINTS.MOBILE` plus resize listener on the route. —
+      No shared media-query hook exists; grepped for one (`MediaQuery`,
+      `matchMedia`, `isMobile`) and found every consumer (ArrangeTab,
+      InboxDrawer, CreateModule, etc.) hand-rolls its own local state per the
+      spec's own note ("The `/notation` route has no device plumbing
+      today"). Followed the `ArrangeTab.svelte`-style inline `resize`
+      listener (closest existing idiom using a raw listener rather than
+      `matchMedia`), but read the initial value from `BREAKPOINTS.MOBILE`
+      instead of a hand-rolled `768` — `isMobile` is `$state`-initialized
+      directly from `window.innerWidth < BREAKPOINTS.MOBILE` (so the correct
+      value is present on first client render, no flash), then a
+      `$effect`-scoped `resize` listener keeps it live.
+- [x] Drill uses `Drawer` with `placement={isMobile ? 'bottom' : 'right'}`. —
+      Re-hosted `ShapeMatrixDrill` inside `Drawer` + `DrawerHeader`,
+      following the `GalleryFilterSheet.svelte` idiom verbatim: outer
+      `style:--drawer-width={isMobile ? "100vw" : "min(640px, 48vw)"}`
+      wrapper, `.drill-sheet-content` fixed `height: calc(85dvh - 60px)`
+      on mobile / `flex:1` under `[data-placement="right"]` on desktop,
+      `--sheet-width: var(--drawer-width, ...)` on the drawer class. Tile
+      click sets `selectedPair` and opens the drawer (`drillOpen = true`);
+      closing (backdrop/escape/header X) sets `drillOpen = false` but
+      deliberately does NOT null `selectedPair` — matches
+      `GalleryFilterSheet`'s pattern of not clearing sheet state on close, so
+      re-opening the same tile shows the same six without a rebuild flash;
+      a NEW tile click always overwrites `selectedPair` regardless.
+      `ShapeMatrixDrill` needed a re-host adjustment (not a rebuild): its
+      `.drill`/`.drill-stage` were sized off `vh` units for the old
+      full-page-below-the-grid placement; changed to `height:100%` /
+      `flex:1; min-height:0` so it fills the Drawer's fixed-height box
+      instead of fighting it (documented in the component's header comment).
+- [x] Size default Medium on mobile; grid density adapts. — `size` is
+      `$state`-initialized from `isMobile ? "medium" : "large"` (mirrors the
+      `isMobile` initializer above) — an INITIAL value only; the resize
+      effect never re-touches `size` once set, so a later manual choice is
+      never fought. Grid density: `ShapeMatrixGrid.svelte` has no explicit
+      density prop to invent one for — it already self-adapts, measuring its
+      own `wrapW`/`wrapH` via `bind:clientWidth`/`clientHeight` and computing
+      `cell = Math.max(44, Math.min(maxCellPx, fit))`, i.e. it auto-shrinks
+      cells to fit whatever viewport it's given (down to the 44px AAA
+      touch-target floor) with no code change needed; the mobile default of
+      Medium (64 tiles) additionally keeps the grid smaller than Large by
+      itself.
+- [~] Verify: emulate a phone viewport, confirm bottom-sheet drill and the size
+      default (screenshot); confirm desktop right-panel drill (screenshot). —
+      Not run: no interactive DevTools permission sought this turn. Verified
+      statically instead: `npx vitest run
+      tests/unit/shape-matrix-engine-contract.test.ts` (4/4, unaffected by
+      this phase — no module-surface changes), grepped the diff for banned
+      patterns (no `checkbox`, no em dash in user-visible template/string
+      text — the only em dashes are in `<script>`/CSS comments, matching the
+      pre-existing comment style in this same file), and no "half turn"/
+      "quarter turn" phrasing. Ask Austen to open
+      [localhost:5173/notation/shape-matrix](https://localhost:5173/notation/shape-matrix):
+      resize the window below 768px (or DevTools device emulation) and
+      confirm (a) the size control lands on Medium by default, (b) clicking a
+      tile opens the drill as a bottom sheet that doesn't overflow the
+      viewport, (c) at desktop width a fresh load defaults to Large and a
+      tile click opens the drill as a right-side panel, (d) picking one of
+      the six and hitting Back inside the sheet doesn't resize or shift it.
 
 ### Phase 4 — `/notation` teaser and IA
 
-- [ ] Demote Lorq to a small reference figure inside the arc.
-- [ ] Render the bounded live Small matrix as the teaser.
-- [ ] Add the "Explore the full shape matrix" call to action to the destination.
-- [ ] Update `/notation` source-contract tests (matrix assertion moves to the
-      destination; teaser asserts preview plus call to action).
-- [ ] Verify: `/notation` renders the teaser and call to action (screenshot);
-      contract tests green; AI-copy check on new copy.
+- [x] Demote Lorq to a small reference figure inside the arc.
+- [x] Render the bounded live Small matrix as the teaser
+      (`ShapeMatrixTeaser.svelte`, Small size, 1:1 band, 16 tiles).
+- [x] Add the "Explore the full shape matrix" call to action to `/notation`
+      (button-styled `<a>` reusing the page's `.cta-button` idiom, target is
+      the destination). Deep-linking a specific cell was checked and skipped:
+      `/notation/shape-matrix` has no query-param entry point yet, only
+      component `$state`.
+- [x] Update `/notation` source-contract tests (matrix assertion moved to the
+      destination in `tests/unit/notation-roots-remediation-contract.test.ts`;
+      teaser test asserts preview plus call to action). Note: the old
+      144-cell assertion in that file was already failing before this phase
+      (stale from a prior static-image pass on `/notation`) — it is replaced
+      here, not loosened.
+- [~] Verify: contract tests green (proven via `npx vitest run`). Screenshot /
+      browser confirmation still pending — needs Austen's go-ahead per
+      `CLAUDE.md` Browser Verification (ask before interactive DevTools use).
+      AI-bust pass applied to the new copy in this turn.
 
 ## Fable Dispatch Guidance
 

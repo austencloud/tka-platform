@@ -1,5 +1,6 @@
 <script lang="ts">
   import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
+  import ShapeMatrixTeaser from "$lib/shared/shape-matrix/components/ShapeMatrixTeaser.svelte";
   import demoJson from "$lib/shared/landing/data/demo-sequence.json";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import "$lib/shared/landing/styles/public-editorial.css";
@@ -357,52 +358,30 @@
         rest are hybrids. It sits alongside his other catalogs: the 324
         Patterns, counted a different way from arm paths and club shapes, and
         the Book of P.H.A.T., for Patterns, Hybrids, and Transitions, built with
-        Brian Thompson, David Cantor, and Noel Yee. Charts, not an app, doing
-        what a simulator does: lay the space out so you can find what you have
-        not tried. The same grid can be drawn straight from TKA's notation, one
-        shape per cell.
+        Brian Thompson, David Cantor, and Noel Yee. A paper chart, doing what a
+        simulator does now: lay the space out so you can find what you have
+        not tried.
       </p>
     </div>
 
-    <div class="has-duo matrix-pair-wrap">
-      <div class="matrix-pair">
-        <figure class="matrix-figure">
-          <img
-            class="matrix-img"
-            src="/notation/lorq-144-shape-matrix.webp"
-            width="1400"
-            height="1812"
-            alt="Lorq Nichols' 144 Shape Matrix: a twelve by twelve grid of even-petaled flower shapes. Columns are twelve right-hand driving styles, rows are twelve left-hand styles, grouped by 1:1, 1:3, and 1:5 hand-to-prop ratios."
-            loading="lazy"
-          />
-          <figcaption>
-            The real 144 Shape Matrix: twelve right-hand driving styles across,
-            twelve left-hand styles down, grouped by 1:1, 1:3, and 1:5
-            hand-to-prop ratios. The diagonal, both hands on the same style,
-            holds the basic shapes; every other cell is a hybrid. Diagram by
-            <a href="https://sirlorq.com" target="_blank" rel="noopener noreferrer"
-              >Lorq Nichols</a
-            >.
-          </figcaption>
-        </figure>
-        <figure class="matrix-figure">
-          <img
-            class="matrix-img"
-            src="/notation/tka-144-shape-matrix.webp"
-            width="1500"
-            height="1581"
-            alt="The Kinetic Alphabet's own 144 shape matrix, rendered live: a twelve by twelve grid of blue-hand flowers down against red-hand flowers across, grouped into three hand-to-prop ratios (1:1, 1:3, 1:5). Each ratio runs the same four starts in order: extension, antispin, isolation, antispin. Each cell overlaps its two flowers into one shape."
-            loading="lazy"
-          />
-          <figcaption>
-            The same table drawn live from the alphabet. Each ratio runs the same
-            four starts, in the same order every group: extension, antispin,
-            isolation, antispin. The diagonal is the matched blue-and-red start;
-            every other cell overlaps the two into a hybrid.
-          </figcaption>
-        </figure>
-      </div>
-    </div>
+    <figure class="matrix-figure lorq-figure">
+      <img
+        class="matrix-img"
+        src="/notation/lorq-144-shape-matrix.webp"
+        width="1400"
+        height="1812"
+        alt="Lorq Nichols' 144 Shape Matrix: a twelve by twelve grid of even-petaled flower shapes. Columns are twelve right-hand driving styles, rows are twelve left-hand styles, grouped by 1:1, 1:3, and 1:5 hand-to-prop ratios."
+        loading="lazy"
+      />
+      <figcaption>
+        Lorq Nichols' 144 Shape Matrix, charted in 2012: twelve right-hand
+        driving styles across, twelve left-hand styles down, grouped by 1:1,
+        1:3, and 1:5 hand-to-prop ratios. Diagram by
+        <a href="https://sirlorq.com" target="_blank" rel="noopener noreferrer"
+          >Lorq Nichols</a
+        >.
+      </figcaption>
+    </figure>
 
     <div class="prose">
       <div class="resource-row">
@@ -425,6 +404,22 @@
           <i class="fas fa-external-link-alt ext" aria-hidden="true"></i>
         </a>
       </div>
+      <p>
+        TKA can draw that same table live, one pictograph per cell, and every
+        cell opens onto the moves that build it. The corner below is real:
+        the 1:1 ratio, sixteen cells, running right now.
+      </p>
+    </div>
+
+    <div class="matrix-teaser-wrap">
+      <ShapeMatrixTeaser />
+      <a href="/notation/shape-matrix" class="cta-button matrix-teaser-cta">
+        <span>Explore the full shape matrix</span>
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </a>
+    </div>
+
+    <div class="prose">
       <p>
         In 2016 Tiffany Fong took the most literal swing at it. PoiNotation,
         written in Scala for a computer science course, treats a move as a set
@@ -767,41 +762,31 @@
     border-bottom-color: oklch(0.8 0.12 275 / 0.9);
   }
 
-  /* Lorq's paper chart and TKA's live render, one composition. Stacks on
-     narrow screens; two-up from 900px; the has-duo band lets the pair claim
-     breakout width on 4K instead of the 34rem single-column cap. */
-  .matrix-pair-wrap {
-    margin-block: 1.8rem 0.6rem;
-  }
-  .matrix-pair {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1.8rem;
-    align-items: start;
-    justify-items: center;
-  }
-  .matrix-pair .matrix-figure {
-    margin: 0;
-    width: 100%;
-    max-width: min(42rem, 100%);
-  }
-  /* Two-up from 900px: columns hug each figure and the pair centers as one
-     composition, so the charts sit together instead of drifting to the band
-     edges on wide screens. */
-  @media (min-width: 900px) {
-    .matrix-pair {
-      grid-template-columns: auto auto;
-      justify-content: center;
-      gap: clamp(1.5rem, 2.5vw, 2.75rem);
-    }
-    .matrix-pair .matrix-figure {
-      width: min(42rem, 42vw);
-      max-width: none;
-    }
-  }
-  /* Hairline frame so the dark TKA matrix reads as a panel on the dark page;
+  /* Hairline frame so a dark matrix panel would read against the page;
      invisible on Lorq's white chart. */
   .matrix-img {
     border: 1px solid oklch(1 0 0 / 0.08);
+  }
+
+  /* Lorq's paper chart demoted to a small reference figure inside the arc,
+     not the full-width duo it used to share with a second static image. */
+  .matrix-figure.lorq-figure {
+    max-width: min(20rem, 80%);
+  }
+
+  /* Live teaser: reserved-height stage (inside ShapeMatrixTeaser) plus the
+     call-to-action button, stacked and centered. The stage itself owns its
+     no-layout-shift box; this wrapper only handles spacing. */
+  .matrix-teaser-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.4rem;
+    margin: 2rem 0;
+  }
+  .matrix-teaser-cta {
+    /* .cta-button below already defines the button look; this narrows its
+       margin-top reset since it's not inside .cta-card here. */
+    margin: 0;
   }
 </style>
