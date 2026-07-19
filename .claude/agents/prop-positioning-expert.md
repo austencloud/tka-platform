@@ -192,3 +192,36 @@ Your job:
 - **The render-core copy of `beta-offset.ts` is the canonical implementation.**
 - **`PictographPreparer` caches prepared data by a key that excludes motion visibility** — so if a fix needs the preparer to branch on visibility, the cache key must be extended.
 - **Motion visibility must NEVER be solved by stripping motion data before arrow positioning** — dashes read cross-motion data (e.g. the other motion's `startLocation`/`endLocation`) to disambiguate rotation direction and mirroring. Stripping blue would corrupt red's dash arrow.
+
+## Prop Render Assets (SVG loading) — added 2026-07-18 (poi activation)
+
+- **Two separate SVG dirs, do not confuse them.** Picker button icon =
+  `static/images/props/buttons/{propType}.svg`. The prop **drawn inside the
+  pictograph** = `static/images/props/pictograph/{propType}.svg`.
+  `prop-svg-loader.ts:106` resolves the pictograph path (no call site passes
+  `useGridVersion:true`, so that is always the render path).
+- **"Prop selected but nothing draws" ⇒ suspect a missing/invalid render asset
+  FIRST**, not a gating or classification bug. Failure shape (poi, 2026-07-18):
+  the render SVG was absent, SvelteKit's dev server SPA-**falls back to
+  `index.html`** (HTTP 200, `content-type: text/html`), so `response.ok`
+  passes; `parsePropSvg` then finds no `<svg>` and throws "Invalid SVG", which
+  is caught → `svgData:null` → `PictographPreparer.calculateProps` silently
+  `return`s for that hand (no crash, no UI error, prop just absent). A 200 does
+  NOT mean the asset exists — grep the body for `<svg`.
+- **Render prop SVGs must be FILLS-ONLY to recolor.** `applyColorToSvg`
+  (`src/lib/shared/utils/svg-color-utils.ts`) swaps `fill="…"` / `fill:…`
+  (`#2e3192`, case-insensitive) to the hand's blue/red, but strokes only when
+  `transformStroke:true` (default **false**). A stroked cord/handle stays dark
+  while the fills recolor. Don't add a prop to `SELECTIVE_COLOR_PROP_TYPES`
+  (torch/sword two-tone only) unless you want partial coloring. viewBox center
+  = grid point; no `centerPoint` element needed for this pipeline.
+- **Failed prop-asset loads are no longer cached** (fix `5a2fc53fe6`,
+  `pictograph-preparer.ts`): drop a missing asset in and it renders on the next
+  cache miss — no hard reload needed. Before that fix a failed load poisoned the
+  cache under its `blue/redPropType` key for the SPA session.
+- **OPEN FOLLOW-UP — poi beta-offset classification unresolved.** poi is in
+  NEITHER copy of `SMALL_UNILATERAL_PROPS` (`prop-classification.ts` and its
+  render-core twin), so it defaults to non-unilateral/default-offset beta
+  behavior. Rendering works regardless, but whether poi's beta overlap should
+  mirror contactball (unilateral) is an MCP-grounded domain call — verify
+  against canonical data before trusting poi at beta (both hands same point).
