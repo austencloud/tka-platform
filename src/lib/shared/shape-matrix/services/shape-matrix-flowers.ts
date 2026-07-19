@@ -1,9 +1,9 @@
 import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
 import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
 import { getTipPoints } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
-import { resolveRotationStyleMatrices } from "./resolve-rotation-style-matrices";
+import { resolveRotationStyleMatrices } from "$lib/features/lab/vtg-lab/services/resolve-rotation-style-matrices";
 import { loadDiamondEdges } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
-import { buildFlowerSequence } from "./build-flower-sequence";
+import { buildFlowerSequence } from "$lib/features/lab/vtg-lab/services/build-flower-sequence";
 import { buildFlowerAxis, flowerKey, type Flower } from "../domain/flower-signature";
 
 export interface ShapeMatrixData {

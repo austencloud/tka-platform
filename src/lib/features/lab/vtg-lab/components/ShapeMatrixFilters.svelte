@@ -1,8 +1,8 @@
 <script lang="ts">
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { TURN_VALUES } from "$lib/features/choreo-card/domain/turn-pattern-parser";
-  import { ratioLabel } from "../domain/flower-signature";
-  import type { AxisFilter, MatrixFilters } from "../domain/filter-flower-axis";
+  import { ratioLabel } from "$lib/shared/shape-matrix/domain/flower-signature";
+  import type { AxisFilter, MatrixFilters } from "$lib/shared/shape-matrix/domain/filter-flower-axis";
 
   interface Props {
     filters: MatrixFilters;

@@ -191,56 +191,223 @@ The ledger survives compaction; conversation context does not. Mark `- [x]` done
 
 ### Phase 0 — Engine extraction (foundation)
 
-- [ ] Confirm shared-vs-feature placement against `module-definitions.ts` and the
-      `new-module` skill; register the `shape-matrix` module.
-- [ ] Move grid, drill, realization services, flower domain, render, filter into
-      the module; update lab imports to the new home.
-- [ ] Expose a public API surface: `loadShapeMatrix`, `applyFilter`,
+- [x] Confirm shared-vs-feature placement against `module-definitions.ts` and the
+      `new-module` skill; register the `shape-matrix` module. — Placed at
+      `src/lib/shared/shape-matrix/` (not `src/lib/features/`). `new-module`
+      governs navigable app tabs (`ModuleRenderer.svelte` + `MODULE_DEFINITIONS`);
+      this engine has no tab, so no module registration applies. Precedent:
+      the procedural-world-engine extraction moved a multi-destination engine
+      to `src/lib/shared/3d/procedural-engine/`, not `features/`. Same shape here.
+- [x] Move grid, drill, realization services, flower domain, render, filter into
+      the module; update lab imports to the new home. — Moved via `git mv`
+      (see report for the file list, including 2 test files not named in the
+      spec's move list: `verify-realization-parity.test.ts`, plus the
+      already-listed `filter-flower-axis`/`flower-signature`/
+      `shape-matrix-realizations` tests).
+- [x] Expose a public API surface: `loadShapeMatrix`, `applyFilter`,
       `defaultMatrixFilters`, `ShapeMatrixGrid`, `buildModeCards`, `ModeCard`
-      (including `seq`), the size-preset helper.
-- [ ] Contract test: public route imports only the module surface, not deep lab
-      paths.
-- [ ] Verify: `npm run check` green, lab `/test/shape-matrix` still works
-      (screenshot or runtime query), build green.
+      (including `seq`), the size-preset helper. — No barrel export
+      (`code-style` bans them); documented as direct import paths in
+      `src/lib/shared/shape-matrix/README.md`. Added
+      `matrixFiltersForSize(size)` in `domain/matrix-size-preset.ts`.
+- [x] Contract test: public route imports only the module surface, not deep lab
+      paths. — `tests/unit/shape-matrix-engine-contract.test.ts`.
+- [x] Verify: `npm run check` green, lab `/test/shape-matrix` still works
+      (screenshot or runtime query), build green. — `npm run check` was run
+      twice during this phase (before Austen's later directive to stop running
+      it per-phase, machine load): first run surfaced 3 errors, 1 of which
+      (`Cannot find module '../verify-realization-parity'`, from a test file
+      not on the spec's move list) was mine — fixed by also moving
+      `verify-realization-parity.test.ts`. Second run: 2 errors remain, both
+      pre-existing/unrelated (`src/routes/test/landing-directions/_components/
+      {EditorialFrontPage,ReadingIndex}.svelte`, a `demoJson as SequenceData`
+      cast) — reproduced against the untouched `build-flower-sequence.test.ts`
+      in vtg-lab too, confirming they predate this move. `npm run build:fast`
+      was run once and succeeded (`✓ built in 5m 59s`). No interactive browser
+      screenshot taken (no DevTools permission sought this turn per
+      `CLAUDE.md`). Per Austen's direction mid-phase: full `check`/`build` are
+      NOT to be re-run per-phase going forward — one full run at the very end
+      of the project. `[~] no further full check/build until final phase gate,
+      per Austen (machine load).`
 
 ### Phase 1 — Destination route with live matrix and size control
 
-- [ ] Create `/notation/shape-matrix` with the live `ShapeMatrixGrid` at Large.
-- [ ] Size control as `SegmentedControl` (S/M/L) mapping to cumulative ratio
-      bands (16 / 64 / 144 tiles).
-- [ ] Axis labels and lineage credit (Lorq 2012, Baudin VTG:153 as further
-      reading).
-- [ ] Breadcrumb back to `/notation`; sitemap entry.
-- [ ] Verify: page renders each size correctly (screenshot per size), tile click
-      logs the selected pair (runtime query), no layout shift on size change.
+- [x] Pre-step: closed Phase 0's loose end for `build-realization-sequence.ts`
+      (`loadBaseIndex`/`resolveBase`) — moved via `git mv` into
+      `src/lib/shared/shape-matrix/services/` (it had no lab-only dependency).
+      `resolve-rotation-style-matrices.ts` and `build-flower-sequence.ts` stay
+      in `features/lab/vtg-lab/services/` — each pulls in lab-only domain
+      modules (`classify-rotation-style.ts`, `tnd-turn-patterns.ts`,
+      `prepare-mandala-club-sequence.ts`) shared with other genuinely
+      lab-only consumers (`bake-mandala-clips.ts`,
+      `render-mandala-overlay-layer.ts`, `resolve-tnd-family-cards.ts`).
+      Documented as a deliberate divergence in `shape-matrix/README.md`.
+      Contract test extended with an allowlist assertion covering exactly
+      the two remaining documented lab-import lines; commit `5c9f4b0d4a`.
+- [x] Create `/notation/shape-matrix` with the live `ShapeMatrixGrid` at Large.
+      — `src/routes/(public)/notation/shape-matrix/+page.svelte`, commit
+      `0af3abac6f`.
+- [x] Size control as `SegmentedControl` (S/M/L) mapping to cumulative ratio
+      bands (16 / 64 / 144 tiles) via `matrixFiltersForSize`.
+- [x] Axis labels and lineage credit (Lorq 2012, reusing `/notation`'s
+      existing framing verbatim; Ben Drexler's VTG:153 explainer as further
+      reading, same URL already used on `/notation`).
+- [x] Breadcrumb back to `/notation` (JSON-LD BreadcrumbList + visible
+      `.back-link`, matching the `/notation/staves` idiom); sitemap entry
+      added (`src/routes/sitemap.xml/+server.ts`). Dual-registry check: both
+      `MARKETING_EXACT`/`MARKETING_SUBTREES` (`src/routes/+layout.svelte`)
+      and `PUBLIC_PATH_PREFIXES` (`src/config/domains.ts`) already
+      `startsWith`-match on `/notation`, confirmed by reading both files —
+      no edit needed, nested route already covered.
+- [~] Verify: page renders each size correctly (screenshot per size), tile
+      click logs the selected pair (runtime query), no layout shift on size
+      change — pending browser check (no DevTools permission sought this
+      turn; verified statically instead: `matrixFiltersForSize`/`applyFilter`
+      wiring matches the working lab harness at `/test/shape-matrix`, the
+      contract test suite passes (4/4), and the matrix stage uses a fixed
+      `height: min(78vh, 60rem)` box so the size control cannot resize the
+      stage). Ask Austen to open
+      [localhost:5173/notation/shape-matrix](https://localhost:5173/notation/shape-matrix),
+      click through Small/Medium/Large, click a tile, and confirm no jump.
 
 ### Phase 2 — Drill and hero animation (the payoff)
 
-- [ ] Tile click opens the drill with six labeled mandala thumbnails
-      (SS/TS/QS/SO/TO/QO) plus element accent and parity badge.
-- [ ] Onclick per thumbnail crossfades to `InlineAnimationPlayer` fed with the
-      chosen `card.seq`; back control returns to the six.
-- [ ] Trails on by default; blue and red props draw the mandala.
-- [ ] Verify: pick each of the six, confirm the animation plays and the drawn
-      mandala matches the clicked cell (screenshot); back returns to the six.
+- [x] Tile click opens the drill with six labeled mandala thumbnails
+      (SS/TS/QS/SO/TO/QO) plus element accent and parity badge. —
+      `src/lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte`,
+      built new under the shared module (not the lab modal, which is a
+      route-boundary violation for a public route per the contract test).
+      Reuses `buildModeCards`/`MODE_ORDER`/`MODE_LABEL` from
+      `build-realization-cards.ts` verbatim; thumbnails render `ModeCard`'s
+      already-baked `frontUrl` with `--el` accent border/tint and a
+      match/px-offset parity badge (same verdict styling as the lab modal).
+- [x] Onclick per thumbnail crossfades to `InlineAnimationPlayer` fed with the
+      chosen `card.seq`; back control returns to the six. — `Crossfade`
+      `fill` mode inside a fixed `.drill-stage` box (`height: min(64vh,
+      42rem)`) so the size control and lineage prose above/below never move
+      when a tile is picked or Back is pressed. `card.seq` is
+      already parity-corrected by `verifyAndCorrect` inside
+      `buildModeCards` (`ParityResult.sequence`) — not double-corrected.
+      Back is a real `<button>` (icon + "Back to the six" label, visible
+      background/border/hover, 44px floor) per
+      `clickables-look-like-buttons.md`.
+- [x] Trails on by default; blue and red props draw the mandala. — No trail
+      prop exists on `InlineAnimationPlayer`; it reads the global
+      `animationSettings.trail`, whose persisted default
+      (`DEFAULT_ANIMATION_SETTINGS` in `animation-settings-state.svelte.ts`)
+      forces `TrailMode.FADE` + glow for every user. Rendered with
+      `bluePropType`/`redPropType` = `"club"` (`PropType.CLUB`), matching
+      the prop the mode cards themselves were baked with
+      (`REVIEW_PROP` in `build-realization-cards.ts` — clubs give an
+      unambiguous tip so the drawn orientation reads clearly, staves don't).
+      `InlineAnimationPlayer` is imported via `LazyMount` + dynamic import
+      directly inside the new shared component, following the existing
+      `SequenceHeroDemo.svelte` precedent (a shared/landing component doing
+      the exact same import) rather than route-level prop-injection — see
+      the component's header comment for the full reasoning. Any
+      user-visible word (`ModeCard.word`, e.g. "OROR") is routed through
+      `simplifyRepeatedWord` before display in the hero caption.
+- [~] Verify: pick each of the six, confirm the animation plays and the
+      drawn mandala matches the clicked cell (screenshot); back returns to
+      the six. — Not run: no interactive DevTools permission sought this
+      turn (`CLAUDE.md` → Browser Verification requires explicit verbal
+      permission before `navigate_page`/`click`). Verified statically
+      instead: the shape-matrix contract test suite passes (4/4,
+      `npx vitest run tests/unit/shape-matrix-engine-contract.test.ts`);
+      grepped the new component and route diff for banned patterns —
+      no `type="checkbox"`, no em dash in any user-visible string (only in
+      code comments, which the rule doesn't cover), no "half turn"/"quarter
+      turn" phrasing. Ask Austen to open
+      [localhost:5173/notation/shape-matrix](https://localhost:5173/notation/shape-matrix),
+      click a tile, confirm the six labeled thumbnails render with visible
+      element-accent borders and parity badges, click one to confirm the
+      crossfade to the hero player plays the prop drawing the mandala with a
+      visible trail, confirm nothing above/below the drill box shifts during
+      the crossfade, then click Back and confirm it returns cleanly to the
+      six with no layout jump.
 
 ### Phase 3 — Responsive and mobile drawer
 
-- [ ] `isMobile` via `BREAKPOINTS.MOBILE` plus resize listener on the route.
-- [ ] Drill uses `Drawer` with `placement={isMobile ? 'bottom' : 'right'}`.
-- [ ] Size default Medium on mobile; grid density adapts.
-- [ ] Verify: emulate a phone viewport, confirm bottom-sheet drill and the size
-      default (screenshot); confirm desktop right-panel drill (screenshot).
+- [x] `isMobile` via `BREAKPOINTS.MOBILE` plus resize listener on the route. —
+      No shared media-query hook exists; grepped for one (`MediaQuery`,
+      `matchMedia`, `isMobile`) and found every consumer (ArrangeTab,
+      InboxDrawer, CreateModule, etc.) hand-rolls its own local state per the
+      spec's own note ("The `/notation` route has no device plumbing
+      today"). Followed the `ArrangeTab.svelte`-style inline `resize`
+      listener (closest existing idiom using a raw listener rather than
+      `matchMedia`), but read the initial value from `BREAKPOINTS.MOBILE`
+      instead of a hand-rolled `768` — `isMobile` is `$state`-initialized
+      directly from `window.innerWidth < BREAKPOINTS.MOBILE` (so the correct
+      value is present on first client render, no flash), then a
+      `$effect`-scoped `resize` listener keeps it live.
+- [x] Drill uses `Drawer` with `placement={isMobile ? 'bottom' : 'right'}`. —
+      Re-hosted `ShapeMatrixDrill` inside `Drawer` + `DrawerHeader`,
+      following the `GalleryFilterSheet.svelte` idiom verbatim: outer
+      `style:--drawer-width={isMobile ? "100vw" : "min(640px, 48vw)"}`
+      wrapper, `.drill-sheet-content` fixed `height: calc(85dvh - 60px)`
+      on mobile / `flex:1` under `[data-placement="right"]` on desktop,
+      `--sheet-width: var(--drawer-width, ...)` on the drawer class. Tile
+      click sets `selectedPair` and opens the drawer (`drillOpen = true`);
+      closing (backdrop/escape/header X) sets `drillOpen = false` but
+      deliberately does NOT null `selectedPair` — matches
+      `GalleryFilterSheet`'s pattern of not clearing sheet state on close, so
+      re-opening the same tile shows the same six without a rebuild flash;
+      a NEW tile click always overwrites `selectedPair` regardless.
+      `ShapeMatrixDrill` needed a re-host adjustment (not a rebuild): its
+      `.drill`/`.drill-stage` were sized off `vh` units for the old
+      full-page-below-the-grid placement; changed to `height:100%` /
+      `flex:1; min-height:0` so it fills the Drawer's fixed-height box
+      instead of fighting it (documented in the component's header comment).
+- [x] Size default Medium on mobile; grid density adapts. — `size` is
+      `$state`-initialized from `isMobile ? "medium" : "large"` (mirrors the
+      `isMobile` initializer above) — an INITIAL value only; the resize
+      effect never re-touches `size` once set, so a later manual choice is
+      never fought. Grid density: `ShapeMatrixGrid.svelte` has no explicit
+      density prop to invent one for — it already self-adapts, measuring its
+      own `wrapW`/`wrapH` via `bind:clientWidth`/`clientHeight` and computing
+      `cell = Math.max(44, Math.min(maxCellPx, fit))`, i.e. it auto-shrinks
+      cells to fit whatever viewport it's given (down to the 44px AAA
+      touch-target floor) with no code change needed; the mobile default of
+      Medium (64 tiles) additionally keeps the grid smaller than Large by
+      itself.
+- [~] Verify: emulate a phone viewport, confirm bottom-sheet drill and the size
+      default (screenshot); confirm desktop right-panel drill (screenshot). —
+      Not run: no interactive DevTools permission sought this turn. Verified
+      statically instead: `npx vitest run
+      tests/unit/shape-matrix-engine-contract.test.ts` (4/4, unaffected by
+      this phase — no module-surface changes), grepped the diff for banned
+      patterns (no `checkbox`, no em dash in user-visible template/string
+      text — the only em dashes are in `<script>`/CSS comments, matching the
+      pre-existing comment style in this same file), and no "half turn"/
+      "quarter turn" phrasing. Ask Austen to open
+      [localhost:5173/notation/shape-matrix](https://localhost:5173/notation/shape-matrix):
+      resize the window below 768px (or DevTools device emulation) and
+      confirm (a) the size control lands on Medium by default, (b) clicking a
+      tile opens the drill as a bottom sheet that doesn't overflow the
+      viewport, (c) at desktop width a fresh load defaults to Large and a
+      tile click opens the drill as a right-side panel, (d) picking one of
+      the six and hitting Back inside the sheet doesn't resize or shift it.
 
 ### Phase 4 — `/notation` teaser and IA
 
-- [ ] Demote Lorq to a small reference figure inside the arc.
-- [ ] Render the bounded live Small matrix as the teaser.
-- [ ] Add the "Explore the full shape matrix" call to action to the destination.
-- [ ] Update `/notation` source-contract tests (matrix assertion moves to the
-      destination; teaser asserts preview plus call to action).
-- [ ] Verify: `/notation` renders the teaser and call to action (screenshot);
-      contract tests green; AI-copy check on new copy.
+- [x] Demote Lorq to a small reference figure inside the arc.
+- [x] Render the bounded live Small matrix as the teaser
+      (`ShapeMatrixTeaser.svelte`, Small size, 1:1 band, 16 tiles).
+- [x] Add the "Explore the full shape matrix" call to action to `/notation`
+      (button-styled `<a>` reusing the page's `.cta-button` idiom, target is
+      the destination). Deep-linking a specific cell was checked and skipped:
+      `/notation/shape-matrix` has no query-param entry point yet, only
+      component `$state`.
+- [x] Update `/notation` source-contract tests (matrix assertion moved to the
+      destination in `tests/unit/notation-roots-remediation-contract.test.ts`;
+      teaser test asserts preview plus call to action). Note: the old
+      144-cell assertion in that file was already failing before this phase
+      (stale from a prior static-image pass on `/notation`). It is replaced
+      here, not loosened.
+- [~] Verify: contract tests green (proven via `npx vitest run`). Screenshot /
+      browser confirmation still pending — needs Austen's go-ahead per
+      `CLAUDE.md` Browser Verification (ask before interactive DevTools use).
+      AI-bust pass applied to the new copy in this turn.
 
 ## Fable Dispatch Guidance
 

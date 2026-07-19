@@ -21,6 +21,9 @@ const screenshotOrchestrator = readSource(
   "src/lib/features/lab/services/screenshot-orchestrator.ts"
 );
 const screenshotDevices = readSource("tests/screenshots/devices.ts");
+const shapeMatrixDestination = readSource(
+  "src/routes/(public)/notation/shape-matrix/+page.svelte"
+);
 const sitemap = readSource("src/routes/sitemap.xml/+server.ts");
 const componentManifest = readSource("scripts/component-manifest.json");
 
@@ -37,11 +40,37 @@ describe("notation lineage remediation", () => {
     );
   });
 
-  it("renders the 144 Shape Matrix with visible axis meaning", () => {
-    expect(notationPage).toContain("Array.from({ length: 144 })");
-    expect(notationPage).toContain("Left-hand driving styles (12)");
-    expect(notationPage).toContain("Right-hand driving styles (12)");
-    expect(notationPage).toContain("as _, i (i)");
+  it("moves the full 144 Shape Matrix to the /notation/shape-matrix destination", () => {
+    // Phase 4 (docs/superpowers/specs/2026-07-18-notation-shape-matrix-destination-design.md):
+    // the full interactive matrix (all three size presets, up to 144 cells)
+    // lives at the destination route, not on /notation itself.
+    expect(shapeMatrixDestination).toContain(
+      "$lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte"
+    );
+    expect(shapeMatrixDestination).toContain("matrixFiltersForSize");
+    expect(shapeMatrixDestination).toContain('{ value: "large", label: "Large · 144" }');
+  });
+
+  it("/notation shows a bounded live teaser plus a call to action to the destination", () => {
+    // Lorq Nichols' 2012 chart is demoted to a small reference figure, credited
+    // by name; the live teaser is the Small size (1:1, 16 tiles) engine grid;
+    // the call to action is a real button-styled link to the destination.
+    expect(notationPage).toContain(
+      '<figure class="matrix-figure lorq-figure">'
+    );
+    expect(notationPage).toContain("Lorq Nichols' 144 Shape Matrix, charted in 2012");
+    expect(notationPage).toContain(
+      'import ShapeMatrixTeaser from "$lib/shared/shape-matrix/components/ShapeMatrixTeaser.svelte";'
+    );
+    expect(notationPage).toContain("<ShapeMatrixTeaser />");
+    expect(notationPage).toContain(
+      '<a href="/notation/shape-matrix" class="cta-button matrix-teaser-cta">'
+    );
+    expect(notationPage).toContain("Explore the full shape matrix");
+    // The full-matrix static duo and its Array.from(144) render are gone from
+    // this page now that the destination owns the live interactive version.
+    expect(notationPage).not.toContain("Array.from({ length: 144 })");
+    expect(notationPage).not.toContain("tka-144-shape-matrix.webp");
   });
 
   it("uses real PoiNotation operators and links the retained software lineage", () => {

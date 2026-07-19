@@ -1,0 +1,52 @@
+# Shape Matrix Engine
+
+Shared engine for the interactive VTG shape matrix: the flower axis, the
+matrix grid, the six-realization drill, and cell rendering. Consumed by the
+`/notation/shape-matrix` public destination, the `/notation` teaser, and the
+lab dev harness (`src/routes/test/shape-matrix/+page.svelte`,
+`src/lib/features/lab/vtg-lab/`).
+
+No barrel export (`index.ts`) per this codebase's code-style convention —
+import each symbol from its module path directly.
+
+## Public surface
+
+| Symbol | Path |
+|---|---|
+| `loadShapeMatrix`, `ShapeMatrixData` | `$lib/shared/shape-matrix/services/shape-matrix-flowers` |
+| `applyFilter`, `defaultMatrixFilters`, `defaultAxisFilter`, `AxisFilter`, `MatrixFilters` | `$lib/shared/shape-matrix/domain/filter-flower-axis` |
+| `matrixFiltersForSize`, `MatrixSize` | `$lib/shared/shape-matrix/domain/matrix-size-preset` |
+| `ShapeMatrixGrid` (Svelte component, `onselect({blue,red})`) | `$lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte` |
+| `buildModeCards`, `ModeCard` (incl. `seq: SequenceData`) | `$lib/shared/shape-matrix/services/build-realization-cards` |
+| `MODE_ORDER`, `MODE_LABEL`, `VtgMode` | `$lib/shared/shape-matrix/services/shape-matrix-realizations` |
+| `verifyAndCorrect`, `ParityResult` | `$lib/shared/shape-matrix/services/verify-realization-parity` |
+| `renderCell`, `renderHeader` | `$lib/shared/shape-matrix/services/shape-matrix-render` |
+| `Flower`, `flowerKey`, `flowerLabel`, `buildFlowerAxis`, `ratioLabel`, `flowerTurnPattern` | `$lib/shared/shape-matrix/domain/flower-signature` |
+
+## Known lab-side dependencies (not extracted)
+
+As of the Phase 1 pre-step, `loadBaseIndex`/`resolveBase` moved into this
+module (`services/build-realization-sequence.ts` — it had no lab-only
+dependency, only `$lib/features/choreo-card/*` imports already used
+elsewhere in this module and the already-shared `VtgMode` type).
+
+Two helpers remain in `src/lib/features/lab/vtg-lab/services/` and are
+deliberately NOT moved:
+
+- `resolveRotationStyleMatrices`/`bakeVariationFront`/`bakeVariationBack`
+  (`resolve-rotation-style-matrices.ts`, imported by `shape-matrix-flowers.ts`
+  and `build-realization-cards.ts`) — imports `../domain/classify-rotation-style`
+  and `../domain/tnd-turn-patterns`, both lab-only domain modules shared with
+  other genuinely lab-only consumers (`bake-mandala-clips.ts`,
+  `render-mandala-overlay-layer.ts`, `resolve-tnd-family-cards.ts`).
+- `buildFlowerSequence` (`build-flower-sequence.ts`, imported by
+  `shape-matrix-flowers.ts`) — imports `./prepare-mandala-club-sequence`,
+  shared with `bake-mandala-clips.ts`.
+
+Forcing either move would drag `classify-rotation-style.ts`,
+`tnd-turn-patterns.ts`, and `prepare-mandala-club-sequence.ts` (and their
+other lab-only consumers) into this module, which is out of scope for the
+public destination. The contract test allowlists exactly these two import
+lines; any other `$lib/features/lab/` import inside this module is a
+violation. Flagged for a future extraction pass if a public route ever needs
+to bundle without the lab.
