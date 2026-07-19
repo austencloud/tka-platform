@@ -42,7 +42,7 @@
 
 <div class="tutorial-step">
   <div class="step-header">
-    <h1 class="title">Pick a starting position</h1>
+    <h1 id="tutorial-step-title" class="title">Pick a starting position</h1>
   </div>
 
   <div class="picker-container">

@@ -8,6 +8,7 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import { FocusTrap } from "$lib/shared/foundation/ui/drawer/focus-trap";
   import {
     createTutorialState,
     type CreateTutorialStep,
@@ -28,6 +29,24 @@
 
   let animateIn = $state(false);
   let hapticService: HapticFeedback | null = null;
+  let wizardEl = $state<HTMLDivElement | null>(null);
+
+  // Trap focus inside the wizard while it's open: focus moves to the wizard
+  // container on open, Tab is trapped within, everything else (MainInterface
+  // behind it) goes inert, and focus returns to the trigger on close. Empty
+  // inertExclusions — this is a full-page blocking takeover, not a panel
+  // beside persistent chrome, so nothing behind it should stay tabbable.
+  // Matches ErrorModal's top-level-modal wiring.
+  const focusTrap = new FocusTrap({
+    focusContainerOnInitial: true,
+    inertExclusions: [],
+  });
+
+  $effect(() => {
+    if (!wizardEl) return;
+    focusTrap.activate(wizardEl);
+    return () => focusTrap.deactivate();
+  });
 
   const STEP_ICONS: Record<CreateTutorialStep, string> = {
     "pick-start": "fa-crosshairs",
@@ -57,6 +76,15 @@
 
   // Step exit duration — the outgoing card lifts + fades before we swap.
   // Kept in sync with the .tutorial-step transition below.
+  //
+  // Carve-out (crossfade-primitive.md keep-separate): this is NOT routed
+  // through the shared <Crossfade> primitive. The entrance here is a
+  // translateY + scale SPRING (cubic-bezier overshoot, see
+  // `.animate-in :global(.tutorial-step)` below), driven by toggling the
+  // `animate-in` class on a timer. Crossfade's layers only support a plain
+  // opacity `fade` — swapping to it would drop the spring/scale entrance
+  // entirely, which is a feel change the P3 finding explicitly says not to
+  // force. Evaluated 2026-07-19 per the onboarding-accessibility spec.
   const STEP_EXIT_MS = 230;
 
   function prefersReducedMotion(): boolean {
@@ -140,7 +168,15 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="create-tutorial-wizard" class:animate-in={animateIn}>
+<div
+  class="create-tutorial-wizard"
+  class:animate-in={animateIn}
+  bind:this={wizardEl}
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="tutorial-step-title"
+  tabindex="-1"
+>
   <!-- Click-out backdrop: a click on the dark area around the card dismisses the
        tutorial (same as Skip). It sits behind the content; the card and the
        fixed controls are layered above it so their own clicks aren't swallowed.
@@ -164,8 +200,10 @@
   {/if}
   <button class="skip-button" onclick={handleSkip}>Skip tutorial</button>
 
-  <!-- Step content -->
-  <div class="step-container">
+  <!-- Step content. aria-live announces each step swap (title + body) to
+       screen readers without moving focus, per the tours' announcement
+       convention (CreateTutorialWizard / GeneratePanelTour / StepEditorTour). -->
+  <div class="step-container" aria-live="polite">
     {#if createTutorialState.currentStep === "pick-start"}
       <PickStartPositionStep onAdvance={handleAdvance} />
     {:else if createTutorialState.currentStep === "add-step"}
@@ -189,9 +227,14 @@
           <i class="fas {STEP_ICONS[step]}" aria-hidden="true"></i>
         </button>
       {:else}
+        <!-- role="img": a plain div has an implicit "generic" role, which
+             doesn't support naming — aria-label needs a nameable role
+             (axe aria-prohibited-attr). This dot is a graphical status
+             indicator (icon + label), same pattern as an icon-only image. -->
         <div
           class="dot"
           class:active={i === createTutorialState.currentStepIndex}
+          role="img"
           aria-label="Step {i + 1}: {step}"
         >
           <i class="fas {STEP_ICONS[step]}" aria-hidden="true"></i>
@@ -212,6 +255,15 @@
     background: rgba(0, 0, 0, 0.4);
     z-index: var(--z-priority);
     overflow-y: auto;
+  }
+
+  /* Programmatic focus target (tabindex=-1) — the wizard container is the
+     dialog root, not an interactive control, so suppress the focus ring the
+     global `:focus-visible` rule would otherwise draw around the whole
+     overlay. Matches Drawer.svelte / TutorialPrompt.svelte. */
+  .create-tutorial-wizard:focus,
+  .create-tutorial-wizard:focus-visible {
+    outline: none;
   }
 
   /* Transparent click-catcher for the dark area around the card. The visible
@@ -245,6 +297,7 @@
     position: fixed;
     top: 16px;
     left: 16px;
+    min-height: var(--min-touch-target, 44px);
     padding: 8px 16px;
     background: transparent;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -269,6 +322,7 @@
     position: fixed;
     top: 16px;
     right: 16px;
+    min-height: var(--min-touch-target, 44px);
     padding: 8px 16px;
     background: transparent;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));

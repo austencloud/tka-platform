@@ -51,7 +51,7 @@
 
 <div class="tutorial-step">
   <div class="step-header">
-    <h1 class="title">Add step {stepCount + 1} of {REQUIRED_STEPS}</h1>
+    <h1 id="tutorial-step-title" class="title">Add step {stepCount + 1} of {REQUIRED_STEPS}</h1>
     <p class="subtitle">Tap a step to add it.</p>
   </div>
 

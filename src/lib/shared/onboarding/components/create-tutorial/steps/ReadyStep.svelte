@@ -102,7 +102,7 @@
 
 <div class="tutorial-step">
   <div class="step-header">
-    <h1 class="title">Your workspace</h1>
+    <h1 id="tutorial-step-title" class="title">Your workspace</h1>
     <p class="subtitle">Here's where everything lives.</p>
   </div>
 
