@@ -133,6 +133,22 @@
       </p>
     </div>
 
+    <figure class="matrix-figure">
+      <img
+        class="matrix-img"
+        src="/notation/lorq-144-shape-matrix.webp"
+        width="1400"
+        height="1812"
+        alt="Lorq Nichols' 144 Shape Matrix: a twelve by twelve grid of even-petaled flower shapes. Columns are twelve right-hand driving styles, rows are twelve left-hand styles, grouped by 1:1, 1:3, and 1:5 hand-to-prop ratios."
+        loading="lazy"
+      />
+      <figcaption>
+        The original: Lorq Nichols' 144 Shape Matrix, 2012. Diagram by
+        <a href="https://sirlorq.com" target="_blank" rel="noopener noreferrer">Lorq Nichols</a>.
+        The live table below is TKA's rendering of the same space.
+      </figcaption>
+    </figure>
+
     <div class="size-control">
       <span id="matrix-size-label" class="size-control-label">Matrix size</span>
       <div class="size-control-body">
@@ -276,5 +292,35 @@
     --sheet-max-height: 85dvh;
     --sheet-border-radius-top-left: 16px;
     --sheet-border-radius-top-right: 16px;
+  }
+
+  /* Lorq Nichols' original 144 chart — the lineage figure above the live table.
+     Same figure idiom as /notation's reference figure. */
+  .matrix-figure {
+    margin: 1.8rem auto;
+    max-width: min(28rem, 92%);
+  }
+  .matrix-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 14px;
+    border: 1px solid oklch(1 0 0 / 0.08);
+    box-shadow: 0 10px 34px oklch(0.05 0.02 270 / 0.4);
+  }
+  .matrix-figure figcaption {
+    margin-top: 0.7rem;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: oklch(0.6 0.02 270);
+    text-align: center;
+  }
+  .matrix-figure figcaption a {
+    color: oklch(0.8 0.12 275);
+    text-decoration: none;
+    border-bottom: 1px solid oklch(0.8 0.12 275 / 0.4);
+  }
+  .matrix-figure figcaption a:hover {
+    border-bottom-color: oklch(0.8 0.12 275 / 0.9);
   }
 </style>
