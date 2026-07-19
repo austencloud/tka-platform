@@ -47,6 +47,7 @@ const flags = {
   purgeDemos: false,
   confirm: false,
   notes: null,
+  prop: null,
 };
 let jsonPath = null;
 
@@ -57,6 +58,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (a === "--purge-demos") flags.purgeDemos = true;
   else if (a === "--confirm") flags.confirm = true;
   else if (a === "--notes" && argv[i + 1]) flags.notes = argv[++i];
+  else if (a === "--prop" && argv[i + 1]) flags.prop = argv[++i];
   else if (!a.startsWith("--")) jsonPath = a;
 }
 
@@ -181,6 +183,13 @@ async function run() {
       demo: flags.demo,
     });
     data.contentHash = hash;
+    if (flags.prop) {
+      data.intendedProp = {
+        bluePropType: flags.prop,
+        redPropType: flags.prop,
+        catDogMode: false,
+      };
+    }
     seqId = id;
     libData = data;
     await seqCollection.doc(seqId).set(data);
@@ -238,7 +247,12 @@ async function run() {
     console.log(`Minted shortcode ${code}`);
   }
 
-  console.log(`https://tka.run/${code}`);
+  // The /q scan page reads ?bp=<propType> (validated against the PropType
+  // enum) and seeds the viewer's prop settings from it, overriding the staff
+  // default. intendedProp on the doc covers app-side loads; the param covers
+  // the scan route.
+  const propParam = flags.prop ? `?bp=${flags.prop}` : "";
+  console.log(`https://tka.run/${code}${propParam}`);
 }
 
 run()

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 150">
+  <!-- Mirror reserve (invisible): keeps the SVG's full geometric bbox symmetric
+       about the viewBox center, matching the club.svg / pmmaball.svg convention
+       for unilateral (single-ended) props. Not required by this pipeline's own
+       anchor math (PropSvgLoader.parsePropSvg anchors on raw viewBox width/2,
+       height/2 only - it never reads #centerPoint or a visible bbox for props),
+       kept for parity with any other bbox-aware consumer. -->
+  <rect x="56" y="73" width="90" height="4" rx="2" fill="none"/>
+  <circle cx="30" cy="75" r="30" fill="none"/>
+  <!-- cord: runs from the knob out to the ball -->
+  <rect x="154" y="73" width="90" height="4" rx="2" fill="#2E3192"/>
+  <!-- knob (grip) - sits at the viewBox center (150,75); this is the point the
+       hand holds, matching the club's grip-at-center convention instead of a
+       staff's held-in-the-middle span. -->
+  <circle cx="150" cy="75" r="8" fill="#2E3192"/>
+  <!-- weighted ball - sticks out from the grip toward the orientation
+       direction, reaching to the viewBox edge (grip-to-edge reach = 150,
+       exactly half the viewBox width) - the same "half a staff's reach, one
+       side only" proportion the club uses. -->
+  <circle cx="270" cy="75" r="30" fill="#2E3192"/>
+</svg>
