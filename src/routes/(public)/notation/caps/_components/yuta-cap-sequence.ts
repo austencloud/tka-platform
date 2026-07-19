@@ -65,12 +65,17 @@ const RED_LEGS: Leg[] = [
     rotation: RotationDirection.CLOCKWISE,
     pathShape: "arc",
   },
+  /* rotationDirection is the PROP's rotation, not the hand's travel: the
+     prop keeps spinning CW through the whole pattern. On the return half the
+     hand travels ccw (w>s>e) against that cw prop rotation — which is
+     exactly what makes these steps anti. Verified against a real app dump
+     of this sequence (letters V V N Q): anti cw w>s t=1, anti cw s>e t=1. */
   {
     start: GridLocation.WEST,
     end: GridLocation.SOUTH,
     type: MotionType.ANTI,
     turns: 1,
-    rotation: RotationDirection.COUNTER_CLOCKWISE,
+    rotation: RotationDirection.CLOCKWISE,
     pathShape: "concave",
   },
   {
@@ -78,7 +83,7 @@ const RED_LEGS: Leg[] = [
     end: GridLocation.EAST,
     type: MotionType.ANTI,
     turns: 1,
-    rotation: RotationDirection.COUNTER_CLOCKWISE,
+    rotation: RotationDirection.CLOCKWISE,
     pathShape: "concave",
   },
 ];
