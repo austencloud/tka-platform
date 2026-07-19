@@ -11,6 +11,7 @@
     type StepEditorTourStop,
   } from "../../state/step-editor-tour-state.svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import { FocusTrap } from "$lib/shared/foundation/ui/drawer/focus-trap";
 
   interface StopInfo {
     id: StepEditorTourStop;
@@ -67,6 +68,21 @@
     // Optional service
   }
 
+  let overlayEl = $state<HTMLDivElement | null>(null);
+
+  // Trap focus inside the coach-mark card while it's open: focus moves in on
+  // open, Tab is trapped, everything else goes inert (default exclusions —
+  // this tour anchors within the step editor panel, so nav/bottom-nav stay
+  // reachable, matching Drawer's default), and focus returns to the trigger
+  // on close.
+  const focusTrap = new FocusTrap({ focusContainerOnInitial: true });
+
+  $effect(() => {
+    if (!overlayEl) return;
+    focusTrap.activate(overlayEl);
+    return () => focusTrap.deactivate();
+  });
+
   function handleNext() {
     hapticService?.trigger("selection");
     stepEditorTourState.advance();
@@ -82,8 +98,11 @@
   <div
     class="tour-overlay"
     class:align-bottom={currentStopInfo.highlight === "preview"}
+    bind:this={overlayEl}
     role="dialog"
-    aria-label="Step editor tour"
+    aria-modal="true"
+    aria-labelledby="step-editor-tour-title"
+    tabindex="-1"
   >
     <!-- Click-away to skip (transparent, no dimming - sections handle their own dimming) -->
     <button
@@ -102,8 +121,14 @@
         <i class="fas {currentStopInfo.icon}" aria-hidden="true"></i>
       </div>
 
-      <h3 class="tour-title">{currentStopInfo.title}</h3>
-      <p class="tour-desc">{currentStopInfo.description}</p>
+      <!-- aria-live announces each stop's title + description to screen
+           readers on advance, without moving focus (tours' announcement
+           convention). display:contents keeps the two children in the
+           .tour-card flex flow so the gap spacing is unaffected. -->
+      <div class="tour-copy" aria-live="polite">
+        <h3 id="step-editor-tour-title" class="tour-title">{currentStopInfo.title}</h3>
+        <p class="tour-desc">{currentStopInfo.description}</p>
+      </div>
 
       <!-- Step dots -->
       <div class="tour-dots">
@@ -154,6 +179,20 @@
     border: none;
     cursor: pointer;
     padding: 0;
+  }
+
+  /* Programmatic focus target (tabindex=-1) — the overlay is the dialog root,
+     not an interactive control, so suppress the focus ring the global
+     `:focus-visible` rule would otherwise draw. Matches Drawer.svelte. */
+  .tour-overlay:focus,
+  .tour-overlay:focus-visible {
+    outline: none;
+  }
+
+  /* Keeps the title + description as direct participants in .tour-card's
+     flex flow (gap spacing unaffected) despite the aria-live wrapper. */
+  .tour-copy {
+    display: contents;
   }
 
   .tour-card {
