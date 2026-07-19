@@ -288,3 +288,20 @@ mirror-reserve `fill:none` cord+ball on the −x side.
   default 21.11px bucket, not club/eightrings' 15.83px one). Visual SIZE is
   100% a function of the SVG's own viewBox geometry, set independently in the
   render asset — see the anchor convention above.
+
+### Lean Stored Motions vs Placement Guards (2026-07-19, /q empty-cell bug)
+
+Sequences imported by scripts (scripts/show-sequence.mjs / import-sequence.cjs)
+store lean motions: motionType, locations, orientations, turns, but NO
+`arrowPlacementData`/`propPlacementData` (genuinely `undefined`, not `{}`).
+Two guards drop such motions silently:
+- `arrow-lifecycle-manager.ts` throws when `!motionData.arrowPlacementData` → arrow asset dropped
+- `pictograph-preparer.ts` `calculateProps` returns when `!motion.propPlacementData` → prop dropped
+
+Result: cells render grid + letter only. `{}` is truthy and passes both guards
+(the decode path emits `{}`, which is why URL-decoded sequences never hit this).
+Fix (commit fc1ad42df8): `sequence-hydrator.ts` `hydrateSequence` normalizes every
+motion (steps + startPosition) through `createMotionData`, which fills the default
+placement objects; idempotent for already-full motions. Any load path that builds
+SequenceData from lean stored steps WITHOUT `hydrateSequence` can still hit this.
+Regression test: `tests/unit/poi-scan-cell-prepare.test.ts`.
