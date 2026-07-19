@@ -54,6 +54,14 @@ Claude's recommendation: **D** (runner-up B). Rationale: home screen neighbors
 are mostly white/bright bubbles — navy pops; white serif at launcher size is
 the highest-contrast readable treatment; no dead white.
 
+**Chosen + shipped: F** (Austen, 2026-07-19). Pure mandala, no text — the
+label carries "Composer". Mandala sized to ~652px foreground (fills the
+66.7% launcher window with slight air), kept fully opaque on white paper so
+the red/blue arrows stay vivid (the alpha-from-darkness knockout dimmed them
+to pastel — first attempt discarded). Verified on the Fold 6 home screen:
+big vivid mandala filling the squircle, full "Composer" label.
+Render script: session scratchpad `build-F.mjs`.
+
 ## Codex handoff (if generative art route is chosen)
 
 Codex/GPT image generation can produce richer painterly icons. Constraints to
