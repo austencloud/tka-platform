@@ -186,9 +186,15 @@ runs under `tests/config/vitest.config.ts` — morph test relocated;
 pre-existing `prop-type-manager.layers.test.ts` has the same defect (flagged,
 not fixed here).
 
-Relayed follow-ups (queued): cap hero generation turns at 1.5–2 and allow
-level 3; finish launchpad tile media (pictograph-fade card, glossary
-dictionary animation, guide cover, alphabet strip).
+Relayed follow-ups (both DONE same day):
+- Generation tuning: turnIntensity 1.5 + DifficultyLevel.ADVANCED in
+  per-visit-demo.ts; verified live (turn pool 0/0.5/1/1.5/fl, max 1.5).
+- Launchpad tile media, all four bare tiles: PictographFadeCard (staff-choreo,
+  demo-sequence pictographs, 7s Crossfade), GlossaryDictionaryCard (glossary,
+  live GLOSSARY entries from @tka/domain, 7.5s), guide cover (BookCoverArt →
+  the real GuideCover), AlphabetMarquee (real 47-letter alphabet in the
+  tka-font, 48s loop). All LazyMount-gated, reduced-motion aware, staggered,
+  SSR links untouched, contract test green, verified in 1080p/4K captures.
 
 ## Build discovery (2026-07-19): why the hero never had trails
 

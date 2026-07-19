@@ -79,6 +79,34 @@
 								}}
 							/>
 						</span>
+					{:else if tile.media === "pictograph-fade"}
+						<span class="pictograph-fade-box">
+							<LazyMount
+								loader={() => import("./PictographFadeCard.svelte")}
+								{active}
+								props={{ steps: demoSequence.steps.slice(0, 4), startDelayMs: index * 900 }}
+							/>
+						</span>
+					{:else if tile.media === "dictionary"}
+						<span class="dictionary-box">
+							<LazyMount
+								loader={() => import("./GlossaryDictionaryCard.svelte")}
+								{active}
+								props={{ startDelayMs: index * 900 }}
+							/>
+						</span>
+					{:else if tile.media === "guide-cover"}
+						<span class="guide-cover-box">
+							<LazyMount
+								loader={() => import("$lib/features/store/components/BookCoverArt.svelte")}
+								{active}
+								props={{ width: "100%" }}
+							/>
+						</span>
+					{:else if tile.media === "alphabet-strip"}
+						<span class="alphabet-box">
+							<LazyMount loader={() => import("./AlphabetMarquee.svelte")} {active} />
+						</span>
 					{/if}
 				</span>
 			{/if}
@@ -268,6 +296,40 @@
 		opacity: 0.94;
 	}
 
+	/* Card framing lives here (not in PictographFadeCard.svelte), matching how
+	   .choreo-card-box frames ChoreoCard.svelte above: the wrapper owns
+	   position/rotation/shadow, the loaded component just fills the box. */
+	.pictograph-fade-box {
+		position: absolute;
+		inset: 9% 11%;
+		border-radius: 10px;
+		overflow: hidden;
+		background: #fdfcf9;
+		box-shadow: 0 14px 30px -16px rgba(0, 0, 0, 0.55);
+		rotate: -3deg;
+	}
+
+	/* Text stays clear of the corner mark (top) and the scrim/heading zone
+	   (bottom) — see LaunchpadTile's .body/.mark for those reserved areas. */
+	.dictionary-box {
+		position: absolute;
+		inset: 2.5rem 1.1rem 3.3rem;
+	}
+
+	.guide-cover-box {
+		position: absolute;
+		right: 8%;
+		top: 50%;
+		translate: 0 -50%;
+		width: 118px;
+	}
+
+	.alphabet-box {
+		position: absolute;
+		inset: 0;
+		opacity: 0.9;
+	}
+
 	/* Scrim + text, bottom-anchored, sits above the media layer. */
 	.body {
 		position: absolute;
@@ -430,6 +492,16 @@
 		.choreo-card-box {
 			width: 230px;
 			right: -4%;
+		}
+		.dictionary-box {
+			inset: 3.2rem 1.4rem 4rem;
+		}
+		.guide-cover-box {
+			width: 168px;
+		}
+		.pictograph-fade-box {
+			inset: 8% 10%;
+			border-radius: 14px;
 		}
 	}
 

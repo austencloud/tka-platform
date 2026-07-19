@@ -17,7 +17,14 @@ export interface LaunchpadTileDef {
 	/** FontAwesome solid icon class, e.g. "fa-pen-nib". */
 	icon: string;
 	/** Which live media embed (if any) fills the tile's decorative layer. */
-	media?: "mandala" | "choreo-card" | "pictograph";
+	media?:
+		| "mandala"
+		| "choreo-card"
+		| "pictograph"
+		| "pictograph-fade"
+		| "dictionary"
+		| "guide-cover"
+		| "alphabet-strip";
 	chips?: { label: string; href: string }[];
 	/** Opt this tile into the pointer-follow magnetic pull (composer only). */
 	magnetic?: boolean;
@@ -74,6 +81,7 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		span: "1x1",
 		color: "#60a5fa",
 		icon: "fa-map-signs",
+		media: "guide-cover",
 	},
 	{
 		id: "glossary",
@@ -83,6 +91,7 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		span: "1x1",
 		color: "#94a3b8",
 		icon: "fa-book-open",
+		media: "dictionary",
 	},
 	{
 		id: "alphabet",
@@ -92,6 +101,7 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		span: "1x1",
 		color: "#f472b6",
 		icon: "fa-font",
+		media: "alphabet-strip",
 	},
 	{
 		id: "staff-choreo",
@@ -101,6 +111,7 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		span: "1x1",
 		color: "#fbbf24",
 		icon: "fa-graduation-cap",
+		media: "pictograph-fade",
 	},
 ];
 
