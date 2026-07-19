@@ -12,42 +12,58 @@
     { number: "04", href: "#reading-library", label: "Library" },
   ];
 
-  const libraryLinks = [
+  const libraryGroups = [
     {
-      href: "/notation/letters",
-      section: "Reference",
-      title: "Letter index",
-      copy: "Every letter, its positions, and its motion.",
+      label: "Read",
+      links: [
+        {
+          href: "/learn/staff-spinning-choreography",
+          section: "Article",
+          title: "Staff choreography",
+          copy: "A practical introduction to phrases and transitions.",
+        },
+        {
+          href: "/about",
+          section: "Project",
+          title: "About TKA",
+          copy: "Who made the project and why it exists.",
+        },
+        {
+          href: "/faq",
+          section: "Reference",
+          title: "Questions",
+          copy: "Direct answers about TKA and Flow Arts Composer.",
+        },
+      ],
     },
     {
-      href: "/learn/staff-spinning-choreography",
-      section: "Article",
-      title: "Staff choreography",
-      copy: "A practical introduction to phrases and transitions.",
-    },
-    {
-      href: "/glossary",
-      section: "Reference",
-      title: "Glossary",
-      copy: "The vocabulary behind the notation and the app.",
-    },
-    {
-      href: "/shop/choreography-cards",
-      section: "Physical",
-      title: "Choreography cards",
-      copy: "Hold the notation, arrange it, and teach from it.",
-    },
-    {
-      href: "/about",
-      section: "Project",
-      title: "About TKA",
-      copy: "Who made the project and why it exists.",
-    },
-    {
-      href: "/faq",
-      section: "Reference",
-      title: "Questions",
-      copy: "Direct answers about TKA and Flow Arts Composer.",
+      label: "Explore",
+      links: [
+        {
+          href: "/notation/shape-matrix",
+          section: "Live table",
+          title: "The 144 shape matrix",
+          copy: "Lorq Nichols charted it in 2012. TKA draws every cell live.",
+        },
+        {
+          href: "/notation/letters",
+          section: "Reference",
+          title: "Letter index",
+          copy: "Every letter, its positions, and its motion.",
+        },
+        {
+          href: "/glossary",
+          section: "Reference",
+          title: "Glossary",
+          copy: "The vocabulary behind the notation and the app.",
+        },
+        {
+          href: "/shop/choreography-cards",
+          section: "Physical",
+          title: "Choreography cards",
+          copy: "Hold the notation, arrange it, and teach from it.",
+        },
+      ],
     },
   ];
 </script>
@@ -158,16 +174,21 @@
           <h2 id="reading-library-title">Keep going.</h2>
         </div>
 
-        <div class="library-grid">
-          {#each libraryLinks as link}
-            <a href={link.href}>
-              <span class="library-type">{link.section}</span>
-              <strong>{link.title}</strong>
-              <small>{link.copy}</small>
-              <span class="library-arrow" aria-hidden="true">↗</span>
-            </a>
-          {/each}
-        </div>
+        {#each libraryGroups as group}
+          <div class="library-group">
+            <h3 class="group-label">{group.label}</h3>
+            <div class="library-grid">
+              {#each group.links as link}
+                <a href={link.href}>
+                  <span class="library-type">{link.section}</span>
+                  <strong>{link.title}</strong>
+                  <small>{link.copy}</small>
+                  <span class="library-arrow" aria-hidden="true">↗</span>
+                </a>
+              {/each}
+            </div>
+          </div>
+        {/each}
       </section>
     </div>
   </div>
@@ -425,6 +446,19 @@
   .library-heading h2 {
     margin: 0;
     font-size: clamp(2rem, 1.7rem + 0.7vw, 2.8rem);
+  }
+
+  .library-group + .library-group {
+    margin-top: 2.4rem;
+  }
+
+  .group-label {
+    margin: 0 0 0.7rem;
+    color: var(--reading-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
   }
 
   .library-grid {

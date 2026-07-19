@@ -41,10 +41,19 @@ describe("landing direction mockups", () => {
       "/glossary",
       "/about",
       "/shop/choreography-cards",
+      "/notation/shape-matrix",
     ]) {
       expect(hasHref(href)).toBe(true);
     }
 
     expect(combinedDirections).not.toMatch(/href=[{]?['"]\/roots['"]/);
+  });
+
+  it("clusters the shelf into Read and Explore groups, matrix under Explore", () => {
+    for (const source of [frontPage, readingIndex]) {
+      expect(source).toContain('label: "Read"');
+      expect(source).toContain('label: "Explore"');
+      expect(source).toContain('href: "/notation/shape-matrix"');
+    }
   });
 });

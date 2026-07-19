@@ -12,26 +12,41 @@
     { label: "Learn", copy: "Read the alphabet through play." },
   ];
 
-  const references = [
+  const referenceGroups = [
     {
-      href: "/learn/staff-spinning-choreography",
-      title: "Staff choreography",
-      copy: "A written introduction to building phrases with a staff.",
+      label: "Read",
+      entries: [
+        {
+          href: "/learn/staff-spinning-choreography",
+          title: "Staff choreography",
+          copy: "A written introduction to building phrases with a staff.",
+        },
+        {
+          href: "/about",
+          title: "About TKA",
+          copy: "Who made the project and why it exists.",
+        },
+      ],
     },
     {
-      href: "/glossary",
-      title: "Glossary",
-      copy: "Positions, motions, letter types, and the rest of the vocabulary.",
-    },
-    {
-      href: "/about",
-      title: "About TKA",
-      copy: "Who made the project and why it exists.",
-    },
-    {
-      href: "/shop/choreography-cards",
-      title: "Choreography cards",
-      copy: "Put the notation on the table for practice or teaching.",
+      label: "Explore",
+      entries: [
+        {
+          href: "/notation/shape-matrix",
+          title: "The 144 shape matrix",
+          copy: "Lorq Nichols charted every even-petaled flower pairing in 2012. TKA draws the table live.",
+        },
+        {
+          href: "/glossary",
+          title: "Glossary",
+          copy: "Positions, motions, letter types, and the rest of the vocabulary.",
+        },
+        {
+          href: "/shop/choreography-cards",
+          title: "Choreography cards",
+          copy: "Put the notation on the table for practice or teaching.",
+        },
+      ],
     },
   ];
 </script>
@@ -76,6 +91,9 @@
         >
         <a class="inline-link" href="/notation/letters"
           >Browse the letter index</a
+        >
+        <a class="inline-link" href="/notation/shape-matrix"
+          >See the 144 shape matrix</a
         >
       </div>
     </div>
@@ -144,20 +162,27 @@
     <div class="reference-heading">
       <span class="chapter-number">04</span>
       <div>
-        <span class="section-kicker">Keep reading</span>
+        <span class="section-kicker">Keep going</span>
         <h2 id="front-reference">The rest of the shelf.</h2>
       </div>
     </div>
 
-    <div class="reference-list">
-      {#each references as reference}
-        <a href={reference.href}>
-          <span>
-            <strong>{reference.title}</strong>
-            <small>{reference.copy}</small>
-          </span>
-          <span class="reference-arrow" aria-hidden="true">↗</span>
-        </a>
+    <div class="reference-groups">
+      {#each referenceGroups as group}
+        <div class="reference-group">
+          <span class="group-label">{group.label}</span>
+          <div class="reference-list">
+            {#each group.entries as reference}
+              <a href={reference.href}>
+                <span>
+                  <strong>{reference.title}</strong>
+                  <small>{reference.copy}</small>
+                </span>
+                <span class="reference-arrow" aria-hidden="true">↗</span>
+              </a>
+            {/each}
+          </div>
+        </div>
       {/each}
     </div>
   </section>
@@ -200,7 +225,8 @@
 
   .eyebrow,
   .section-kicker,
-  .proof-label {
+  .proof-label,
+  .group-label {
     display: block;
     color: var(--front-muted);
     font-size: clamp(0.76rem, 0.72rem + 0.1vw, 0.88rem);
@@ -484,6 +510,14 @@
 
   .reference-heading h2 {
     font-size: clamp(2rem, 1.7rem + 0.8vw, 3rem);
+  }
+
+  .reference-group + .reference-group {
+    margin-top: 2.6rem;
+  }
+
+  .group-label {
+    margin-bottom: 0.6rem;
   }
 
   .reference-list {
