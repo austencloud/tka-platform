@@ -6,6 +6,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import AccountSetupStep from "./AccountSetupStep.svelte";
+  import { FocusTrap } from "$lib/shared/foundation/ui/drawer/focus-trap";
 
   interface Props {
     needsPassword: boolean;
@@ -16,15 +17,39 @@
   const { needsPassword, forcePreview = false, onComplete }: Props = $props();
 
   let animateIn = $state(false);
+  let wizardEl = $state<HTMLDivElement | null>(null);
 
   onMount(() => {
     requestAnimationFrame(() => {
       animateIn = true;
     });
   });
+
+  // Trap focus inside the wizard while it's open: focus moves to the wizard
+  // container on open, Tab is trapped within, everything else (MainInterface
+  // behind it) goes inert, and focus returns to the trigger on close. Empty
+  // inertExclusions — full-page blocking takeover, matches ErrorModal.
+  const focusTrap = new FocusTrap({
+    focusContainerOnInitial: true,
+    inertExclusions: [],
+  });
+
+  $effect(() => {
+    if (!wizardEl) return;
+    focusTrap.activate(wizardEl);
+    return () => focusTrap.deactivate();
+  });
 </script>
 
-<div class="account-setup-wizard" class:animate-in={animateIn}>
+<div
+  class="account-setup-wizard"
+  class:animate-in={animateIn}
+  bind:this={wizardEl}
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="account-setup-title"
+  tabindex="-1"
+>
   <div class="step-container">
     <AccountSetupStep {needsPassword} {forcePreview} {onComplete} />
   </div>
@@ -41,6 +66,15 @@
     background: var(--theme-panel-bg, rgba(0, 0, 0, 0.4));
     z-index: var(--z-priority);
     overflow-y: auto;
+  }
+
+  /* Programmatic focus target (tabindex=-1) — the wizard container is the
+     dialog root, not an interactive control, so suppress the focus ring the
+     global `:focus-visible` rule would otherwise draw around the whole
+     overlay. Matches Drawer.svelte / TutorialPrompt.svelte. */
+  .account-setup-wizard:focus,
+  .account-setup-wizard:focus-visible {
+    outline: none;
   }
 
   .step-container {

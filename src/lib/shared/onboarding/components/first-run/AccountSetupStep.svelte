@@ -139,7 +139,7 @@
     <i class="fas {icon}" aria-hidden="true"></i>
   </div>
 
-  <h1 class="title">{title}</h1>
+  <h1 id="account-setup-title" class="title">{title}</h1>
   <p class="subtitle">{subtitle}</p>
 
   <form class="setup-form" onsubmit={handleSubmit}>
