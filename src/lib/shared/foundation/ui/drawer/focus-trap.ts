@@ -124,15 +124,18 @@ export class FocusTrap {
       this.setInertOnSiblings(false);
     }
 
-    // Restore focus to previously focused element
-    if (this.options.returnFocusOnDeactivate && this.previouslyFocused) {
+    // Restore focus to previously focused element. Captured to a local
+    // BEFORE nulling `this.previouslyFocused` below — the deferred callback
+    // closes over `this`, not a snapshot, so reading `this.previouslyFocused`
+    // inside the timeout always saw the value this same method had already
+    // cleared, making focus restoration a silent no-op for every consumer
+    // (Drawer, ErrorModal, and the onboarding overlays alike).
+    const elementToRefocus = this.previouslyFocused;
+    if (this.options.returnFocusOnDeactivate && elementToRefocus) {
       // Use setTimeout to ensure focus restoration happens after any animations
       setTimeout(() => {
-        if (
-          this.previouslyFocused &&
-          document.body.contains(this.previouslyFocused)
-        ) {
-          this.previouslyFocused.focus();
+        if (document.body.contains(elementToRefocus)) {
+          elementToRefocus.focus();
         }
       }, 0);
     }
