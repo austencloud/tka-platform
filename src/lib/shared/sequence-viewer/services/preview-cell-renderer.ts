@@ -150,18 +150,11 @@ export async function renderCell(
         )
       : URL.createObjectURL(b);
 
-  try {
-    const cachedBlob = await pictographBlobCache.get(cacheKey);
-    if (cachedBlob) {
-      return toDisplayUrl(cachedBlob);
-    }
-  } catch {
-    // Cache miss or error, proceed to render
-  }
-
   // Cloud tier (scan-card / publish only). Derive the canonical, device-
-  // independent hash when either flag is active. probeCloud => try to download a
-  // pre-rendered image (cold scanner downloads instead of rasterizing).
+  // independent hash when either flag is active — BEFORE the IndexedDB check,
+  // because a locally-cached cell may still owe the cloud store its upload
+  // (see backfill below). probeCloud => try to download a pre-rendered image
+  // (cold scanner downloads instead of rasterizing).
   let cloudHash: string | null = null;
   if (options.probeCloud || options.uploadCanonical) {
     try {
@@ -169,6 +162,32 @@ export async function renderCell(
     } catch {
       cloudHash = null;
     }
+  }
+
+  try {
+    const cachedBlob = await pictographBlobCache.get(cacheKey);
+    if (cachedBlob) {
+      // Upload backfill (warm passes): a canonical cell can sit in IndexedDB
+      // while the cloud store lacks it — e.g. its original upload failed
+      // silently. A plain IDB-hit return would skip the upload forever, so
+      // when uploadCanonical is set, probe the store and upload the cached
+      // blob on a miss.
+      if (options.uploadCanonical && cloudHash) {
+        const hashForUpload = cloudHash;
+        try {
+          const cloudBlob = await pictographCloudCache.download(hashForUpload);
+          if (!cloudBlob) {
+            const webp = await pngBlobToWebp(cachedBlob);
+            await pictographCloudCache.upload(hashForUpload, webp);
+          }
+        } catch {
+          // Best-effort — never block display on the backfill.
+        }
+      }
+      return toDisplayUrl(cachedBlob);
+    }
+  } catch {
+    // Cache miss or error, proceed to render
   }
   if (options.probeCloud && cloudHash) {
     try {
@@ -243,11 +262,15 @@ export async function renderCell(
 
   // Crowd-source upload — ONLY when uploadCanonical (render-at-publish), so a
   // scan card's personal-preference render never pollutes the canonical store.
+  // Awaited so warm passes report done only after the blob actually landed;
+  // the save path already wraps the whole warm in fire-and-forget.
   if (options.uploadCanonical && cloudHash) {
-    const hashForUpload = cloudHash;
-    void pngBlobToWebp(blob)
-      .then((webp) => pictographCloudCache.upload(hashForUpload, webp))
-      .catch(() => {});
+    try {
+      const webp = await pngBlobToWebp(blob);
+      await pictographCloudCache.upload(cloudHash, webp);
+    } catch {
+      // Best-effort — display never blocks on a failed upload.
+    }
   }
 
   return toDisplayUrl(blob);

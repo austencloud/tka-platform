@@ -24,6 +24,11 @@
   } from "$lib/shared/browse/services/gallery-thumbnail-warmer";
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import { loadCanonicalTnDSequences } from "$lib/features/browse/gallery-home/canonical-tnd-pool";
+  import {
+    startScanCellWarm,
+    type CellWarmHandle,
+    type CellWarmProgress,
+  } from "$lib/features/library/services/warm-all-scan-cells";
 
   const ALL_PROPS: PropType[] = [
     PropType.STAFF,
@@ -116,6 +121,43 @@
 
   function cancel() {
     handle?.cancel();
+  }
+
+  // ── Scan-card cell warm (pictograph-cells cloud store) ──
+  let cellHandle = $state<CellWarmHandle | null>(null);
+  let cellProgress = $state<CellWarmProgress | null>(null);
+  let cellStartTime = $state(0);
+
+  const cellRunning = $derived(cellHandle !== null);
+
+  const cellPercent = $derived(
+    cellProgress && cellProgress.total > 0
+      ? Math.round((cellProgress.done / cellProgress.total) * 100)
+      : 0
+  );
+
+  const cellEta = $derived.by(() => {
+    const p = cellProgress;
+    if (!p || p.done === 0 || p.finished) return "";
+    const elapsed = Date.now() - cellStartTime;
+    const remaining = ((p.total - p.done) * elapsed) / p.done;
+    const m = Math.floor(remaining / 60000);
+    const s = Math.floor((remaining % 60000) / 1000);
+    return `${m}m ${s}s`;
+  });
+
+  function startCells() {
+    if (cellRunning) return;
+    cellStartTime = Date.now();
+    cellProgress = null;
+    cellHandle = startScanCellWarm((p) => {
+      cellProgress = p;
+      if (p.finished) cellHandle = null;
+    });
+  }
+
+  function cancelCells() {
+    cellHandle?.cancel();
   }
 </script>
 
@@ -219,6 +261,51 @@
         {/if}
       </section>
     {/if}
+
+    <header class="header section-gap">
+      <h1>Scan-Card Cell Warm</h1>
+      <p class="subtitle">
+        Render + upload the canonical per-pictograph cells
+        (<code>pictograph-cells/</code>) for every public sequence, so /q
+        scanners download images instead of rasterizing. Uses the exact
+        render-at-publish path (dark, intendedProp). Idempotent — re-runs only
+        upload misses.
+      </p>
+    </header>
+
+    <div class="controls">
+      {#if !cellRunning}
+        <button type="button" class="btn primary" onclick={startCells}>
+          Start cell warm (all public sequences)
+        </button>
+      {:else}
+        <button type="button" class="btn danger" onclick={cancelCells}>Stop</button>
+      {/if}
+    </div>
+
+    {#if cellProgress}
+      <section class="progress">
+        <div class="bar">
+          <div class="fill" style:width="{cellPercent}%"></div>
+        </div>
+        <div class="stats">
+          <span>{cellProgress.done.toLocaleString()} / {cellProgress.total.toLocaleString()} ({cellPercent}%)</span>
+          {#if !cellProgress.finished}<span>ETA {cellEta}</span>{/if}
+        </div>
+        <div class="tally">
+          <span class="failed">{cellProgress.failed} failed</span>
+        </div>
+        {#if cellProgress.current && !cellProgress.finished}
+          <div class="current">{cellProgress.current}</div>
+        {/if}
+        {#if cellProgress.finished}
+          <div class="done">
+            {cellProgress.cancelled ? "Cancelled" : "Done"} — cells live in the
+            cloud store; /q probes find them immediately (no manifest step).
+          </div>
+        {/if}
+      </section>
+    {/if}
   {/if}
 </div>
 
@@ -231,6 +318,11 @@
   }
   .header {
     margin-bottom: 1.5rem;
+  }
+  .section-gap {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.15));
   }
   .header h1 {
     margin: 0;

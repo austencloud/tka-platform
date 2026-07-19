@@ -79,4 +79,29 @@ describe("renderCell cloud tier", () => {
     await Promise.resolve();
     expect(cloudUpload).not.toHaveBeenCalled();
   });
+
+  it("uploadCanonical + IDB hit + cloud MISS: backfills the upload from the cached blob", async () => {
+    blobGet.mockResolvedValue(new Blob(["cached"], { type: "image/png" }));
+    cloudDownload.mockResolvedValue(null);
+    await renderCell(data, undefined, true, { size: 300, probeCloud: true, uploadCanonical: true });
+    expect(cloudDownload).toHaveBeenCalledWith("HASH");
+    expect(cloudUpload).toHaveBeenCalledWith("HASH", expect.any(Blob));
+    expect(poolRender).not.toHaveBeenCalled(); // cached blob reused, no re-render
+  });
+
+  it("uploadCanonical + IDB hit + cloud HIT: uploads nothing (idempotent re-warm)", async () => {
+    blobGet.mockResolvedValue(new Blob(["cached"], { type: "image/png" }));
+    cloudDownload.mockResolvedValue(new Blob(["cloud"], { type: "image/webp" }));
+    await renderCell(data, undefined, true, { size: 300, probeCloud: true, uploadCanonical: true });
+    expect(cloudUpload).not.toHaveBeenCalled();
+    expect(poolRender).not.toHaveBeenCalled();
+  });
+
+  it("plain IDB hit without uploadCanonical: never touches the cloud", async () => {
+    blobGet.mockResolvedValue(new Blob(["cached"], { type: "image/png" }));
+    await renderCell(data, undefined, true, { size: 300, probeCloud: true });
+    expect(cloudDownload).not.toHaveBeenCalled();
+    expect(cloudUpload).not.toHaveBeenCalled();
+    expect(poolRender).not.toHaveBeenCalled();
+  });
 });

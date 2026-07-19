@@ -148,6 +148,25 @@ service firebase.storage {
         && (request.auth.token.admin == true || request.auth.token.role == 'admin');
     }
 
+    // Canonical per-pictograph cell cache — pre-rendered WebP per unique
+    // pictograph (canonical visibility + 480px), keyed by content hash.
+    // Written at library save (render-at-publish) and by admin warm passes;
+    // read by /q scan cards so a cold scanner downloads instead of rasterizing.
+    // Structure: pictograph-cells/{hash}.webp
+    match /pictograph-cells/{fileName} {
+      // Anyone can read (public scan cards, guests included)
+      allow read: if true;
+      // Authenticated users can upload (render-at-publish / crowd-sourced)
+      allow create, update: if request.auth != null
+        // Only allow WebP images
+        && request.resource.contentType == 'image/webp'
+        // Canonical cells are small; cap well below thumbnail limit
+        && request.resource.size < 200 * 1024;
+      // Only admins can delete (cache clearing)
+      allow delete: if request.auth != null
+        && (request.auth.token.admin == true || request.auth.token.role == 'admin');
+    }
+
     // POI image library - users upload POV pattern images in the POV Pattern Lab
     // and the binaries land here. Metadata doc lives at
     // /users/{uid}/poi-images/{id} in Firestore.
