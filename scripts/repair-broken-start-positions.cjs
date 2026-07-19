@@ -45,7 +45,7 @@ function letterFromGrid(gridPos) {
   if (typeof gridPos !== "string") return null;
   if (gridPos.startsWith("alpha")) return "α";
   if (gridPos.startsWith("beta")) return "β";
-  if (gridPos.startsWith("gamma")) return "Γ";
+  if (gridPos.startsWith("gamma")) return "γ";
   return null;
 }
 

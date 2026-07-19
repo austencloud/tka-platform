@@ -236,7 +236,7 @@ function buildStartPositionObject(startPosInput, steps, sequenceId) {
   const letter = typeof gridPos === "string"
     ? gridPos.startsWith("alpha") ? "α"
     : gridPos.startsWith("beta") ? "β"
-    : gridPos.startsWith("gamma") ? "Γ"
+    : gridPos.startsWith("gamma") ? "γ"
     : null
     : null;
 

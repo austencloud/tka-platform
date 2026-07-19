@@ -1,5 +1,5 @@
 import type { Letter } from "../../../foundation/domain/models/letter";
-import { getLetterType } from "../../../foundation/domain/models/letter";
+import { getLetterType, normalizeLetter } from "../../../foundation/domain/models/letter";
 import { LetterType } from "../../../foundation/domain/models/letter-type";
 
 /**
@@ -26,27 +26,30 @@ export function getBaseLetter(letter: string): string {
  * Browser will handle URL encoding automatically during fetch.
  */
 export function getLetterImagePath(letter: Letter): string {
-  const letterType = getLetterType(letter);
+  // Historical data can carry legacy spellings (e.g. "Γ" for "γ"); the asset
+  // filenames are canonical, so resolve the alias before building the path.
+  const canonical = normalizeLetter(letter) ?? letter;
+  const letterType = getLetterType(canonical);
 
   // For dash letters, load the base letter from the parent type folder
   // Type3 letters (X-, W-, etc.) -> load from Type2
   // Type5 letters (Φ-, Ψ-, Λ-) -> load from Type4
   if (letterType === LetterType.TYPE3) {
-    const baseLetter = getBaseLetter(letter);
+    const baseLetter = getBaseLetter(canonical);
     return `/images/letters_trimmed/${LetterType.TYPE2}/${baseLetter}.svg`;
   }
 
   if (letterType === LetterType.TYPE5) {
-    const baseLetter = getBaseLetter(letter);
+    const baseLetter = getBaseLetter(canonical);
     return `/images/letters_trimmed/${LetterType.TYPE4}/${baseLetter}.svg`;
   }
 
   // TAU_DASH (τ-) is Type4, but its base letter τ lives in Type6.
   // The dash overlay is rendered separately by the Dash component.
-  if (letter === "τ-") {
+  if (canonical === "τ-") {
     return `/images/letters_trimmed/${LetterType.TYPE6}/τ.svg`;
   }
 
   // For all other letter types, use the combined SVG
-  return `/images/letters_trimmed/${letterType}/${letter}.svg`;
+  return `/images/letters_trimmed/${letterType}/${canonical}.svg`;
 }

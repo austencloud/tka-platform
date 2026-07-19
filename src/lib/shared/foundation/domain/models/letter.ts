@@ -144,14 +144,42 @@ const TYPE6_LETTERS: readonly Letter[] = [
 ];
 
 /**
- * Get the LetterType for any letter enum value
+ * Legacy spellings that exist in historical stored data but are not part of
+ * the canonical alphabet. The legacy desktop convention wrote the gamma
+ * start-position letter as uppercase "Γ" (U+0393); the canon is lowercase
+ * "γ" (U+03B3). import-sequence.cjs and repair-broken-start-positions.cjs
+ * copied that convention into Firestore docs and QR blobs, and printed cards
+ * embed the legacy form forever — so runtime normalization can never be
+ * removed even after the stored docs are repaired.
+ */
+const LEGACY_LETTER_ALIASES: Record<string, Letter> = {
+  Γ: Letter.GAMMA,
+};
+
+const CANONICAL_LETTERS = new Set<string>(Object.values(Letter));
+
+/**
+ * Resolve a raw letter string to its canonical Letter, mapping known legacy
+ * aliases. Returns null when the input is not a TKA letter at all.
+ */
+export function normalizeLetter(raw: string | null | undefined): Letter | null {
+  if (!raw) return null;
+  if (CANONICAL_LETTERS.has(raw)) return raw as Letter;
+  return LEGACY_LETTER_ALIASES[raw] ?? null;
+}
+
+/**
+ * Get the LetterType for any letter enum value.
+ * Tolerates known legacy aliases (so historical data renders instead of
+ * crashing) but still throws for genuinely unknown input.
  */
 export function getLetterType(letter: Letter): LetterType {
-  if (TYPE1_LETTERS.includes(letter)) return LetterType.TYPE1;
-  if (TYPE2_LETTERS.includes(letter)) return LetterType.TYPE2;
-  if (TYPE3_LETTERS.includes(letter)) return LetterType.TYPE3;
-  if (TYPE4_LETTERS.includes(letter)) return LetterType.TYPE4;
-  if (TYPE5_LETTERS.includes(letter)) return LetterType.TYPE5;
-  if (TYPE6_LETTERS.includes(letter)) return LetterType.TYPE6;
+  const canonical = LEGACY_LETTER_ALIASES[letter] ?? letter;
+  if (TYPE1_LETTERS.includes(canonical)) return LetterType.TYPE1;
+  if (TYPE2_LETTERS.includes(canonical)) return LetterType.TYPE2;
+  if (TYPE3_LETTERS.includes(canonical)) return LetterType.TYPE3;
+  if (TYPE4_LETTERS.includes(canonical)) return LetterType.TYPE4;
+  if (TYPE5_LETTERS.includes(canonical)) return LetterType.TYPE5;
+  if (TYPE6_LETTERS.includes(canonical)) return LetterType.TYPE6;
   throw new Error(`Unknown letter: ${letter}`);
 }

@@ -11,6 +11,7 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import { normalizeLetter } from "$lib/shared/foundation/domain/models/letter";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
 import { deriveGridMode } from "../../pictograph/grid/services/grid-mode-deriver";
 
@@ -75,8 +76,20 @@ export async function deriveLettersForSequence(
 async function deriveLetterForBeat(
   beat: StepData | StartPositionData
 ): Promise<StepData | StartPositionData> {
-  // Skip if letter is already set or if motions are missing
-  if (beat.letter !== null || !beat.motions.blue || !beat.motions.red) {
+  // Already lettered — but historical data may carry a legacy spelling
+  // (e.g. "Γ" for "γ", written by the legacy import/repair scripts).
+  // Normalize to canon instead of passing the alias downstream, where it
+  // would crash getLetterType in the glyph renderer.
+  if (beat.letter !== null) {
+    const canonical = normalizeLetter(beat.letter);
+    if (canonical && canonical !== beat.letter) {
+      return { ...beat, letter: canonical as StepData["letter"] };
+    }
+    return beat;
+  }
+
+  // Skip if motions are missing — nothing to derive from
+  if (!beat.motions.blue || !beat.motions.red) {
     return beat;
   }
 
