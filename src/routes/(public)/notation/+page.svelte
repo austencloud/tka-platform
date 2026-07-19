@@ -390,15 +390,15 @@
             class="matrix-img"
             src="/notation/tka-144-shape-matrix.webp"
             width="1500"
-            height="1532"
-            alt="The Kinetic Alphabet's own 144 shape matrix, rendered live: a twelve by twelve grid of blue-hand flowers down against red-hand flowers across, grouped into three spin ratios (1:1, 3:1, 5:1), each split into prospin and antispin, diamond and box. Each cell overlaps its two flowers into one shape."
+            height="1581"
+            alt="The Kinetic Alphabet's own 144 shape matrix, rendered live: a twelve by twelve grid of blue-hand flowers down against red-hand flowers across, grouped into three hand-to-prop ratios (1:1, 1:3, 1:5). Each ratio runs the same four starts in order: extension, antispin, isolation, antispin. Each cell overlaps its two flowers into one shape."
             loading="lazy"
           />
           <figcaption>
-            The same table drawn live from the alphabet, built to mirror Lorq's
-            structure: three spin ratios, each split into prospin and antispin,
-            diamond and 45-degree box. The diagonal is the matched blue-and-red
-            pair; every other cell overlaps the two into a hybrid.
+            The same table drawn live from the alphabet. Each ratio runs the same
+            four starts, in the same order every group: extension, antispin,
+            isolation, antispin. The diagonal is the matched blue-and-red start;
+            every other cell overlaps the two into a hybrid.
           </figcaption>
         </figure>
       </div>
