@@ -272,13 +272,59 @@ The ledger survives compaction; conversation context does not. Mark `- [x]` done
 
 ### Phase 2 — Drill and hero animation (the payoff)
 
-- [ ] Tile click opens the drill with six labeled mandala thumbnails
-      (SS/TS/QS/SO/TO/QO) plus element accent and parity badge.
-- [ ] Onclick per thumbnail crossfades to `InlineAnimationPlayer` fed with the
-      chosen `card.seq`; back control returns to the six.
-- [ ] Trails on by default; blue and red props draw the mandala.
-- [ ] Verify: pick each of the six, confirm the animation plays and the drawn
-      mandala matches the clicked cell (screenshot); back returns to the six.
+- [x] Tile click opens the drill with six labeled mandala thumbnails
+      (SS/TS/QS/SO/TO/QO) plus element accent and parity badge. —
+      `src/lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte`,
+      built new under the shared module (not the lab modal, which is a
+      route-boundary violation for a public route per the contract test).
+      Reuses `buildModeCards`/`MODE_ORDER`/`MODE_LABEL` from
+      `build-realization-cards.ts` verbatim; thumbnails render `ModeCard`'s
+      already-baked `frontUrl` with `--el` accent border/tint and a
+      match/px-offset parity badge (same verdict styling as the lab modal).
+- [x] Onclick per thumbnail crossfades to `InlineAnimationPlayer` fed with the
+      chosen `card.seq`; back control returns to the six. — `Crossfade`
+      `fill` mode inside a fixed `.drill-stage` box (`height: min(64vh,
+      42rem)`) so the size control and lineage prose above/below never move
+      when a tile is picked or Back is pressed. `card.seq` is
+      already parity-corrected by `verifyAndCorrect` inside
+      `buildModeCards` (`ParityResult.sequence`) — not double-corrected.
+      Back is a real `<button>` (icon + "Back to the six" label, visible
+      background/border/hover, 44px floor) per
+      `clickables-look-like-buttons.md`.
+- [x] Trails on by default; blue and red props draw the mandala. — No trail
+      prop exists on `InlineAnimationPlayer`; it reads the global
+      `animationSettings.trail`, whose persisted default
+      (`DEFAULT_ANIMATION_SETTINGS` in `animation-settings-state.svelte.ts`)
+      forces `TrailMode.FADE` + glow for every user. Rendered with
+      `bluePropType`/`redPropType` = `"club"` (`PropType.CLUB`), matching
+      the prop the mode cards themselves were baked with
+      (`REVIEW_PROP` in `build-realization-cards.ts` — clubs give an
+      unambiguous tip so the drawn orientation reads clearly, staves don't).
+      `InlineAnimationPlayer` is imported via `LazyMount` + dynamic import
+      directly inside the new shared component, following the existing
+      `SequenceHeroDemo.svelte` precedent (a shared/landing component doing
+      the exact same import) rather than route-level prop-injection — see
+      the component's header comment for the full reasoning. Any
+      user-visible word (`ModeCard.word`, e.g. "OROR") is routed through
+      `simplifyRepeatedWord` before display in the hero caption.
+- [~] Verify: pick each of the six, confirm the animation plays and the
+      drawn mandala matches the clicked cell (screenshot); back returns to
+      the six. — Not run: no interactive DevTools permission sought this
+      turn (`CLAUDE.md` → Browser Verification requires explicit verbal
+      permission before `navigate_page`/`click`). Verified statically
+      instead: the shape-matrix contract test suite passes (4/4,
+      `npx vitest run tests/unit/shape-matrix-engine-contract.test.ts`);
+      grepped the new component and route diff for banned patterns —
+      no `type="checkbox"`, no em dash in any user-visible string (only in
+      code comments, which the rule doesn't cover), no "half turn"/"quarter
+      turn" phrasing. Ask Austen to open
+      [localhost:5173/notation/shape-matrix](https://localhost:5173/notation/shape-matrix),
+      click a tile, confirm the six labeled thumbnails render with visible
+      element-accent borders and parity badges, click one to confirm the
+      crossfade to the hero player plays the prop drawing the mandala with a
+      visible trail, confirm nothing above/below the drill box shifts during
+      the crossfade, then click Back and confirm it returns cleanly to the
+      six with no layout jump.
 
 ### Phase 3 — Responsive and mobile drawer
 
