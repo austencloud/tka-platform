@@ -109,6 +109,7 @@
     onLoopComplete = undefined,
     trailSettingsOverride = null,
     tipEffectMap = undefined,
+    backgroundAlpha = 1,
   }: {
     sequence: SequenceData;
     autoPlay?: boolean;
@@ -185,6 +186,14 @@
      */
     trailSettingsOverride?: TrailSettings | null;
     /**
+     * Canvas background opacity, forwarded to AnimatorCanvas. At 0 the
+     * engine requests an alpha context and CanvasSurface goes fully
+     * transparent, so the host's own backdrop shows through — the
+     * shape-matrix drill uses this to keep its mandala layer visible
+     * underneath the props (same mechanism as the practice mirror).
+     */
+    backgroundAlpha?: number;
+    /**
      * Per-tip effect assignments forwarded to the canvas. Without at least
      * one "trails" entry the render loop's hasTrailTips gate keeps
      * effectiveTrailsVisible false, so NO trails draw regardless of trail
@@ -202,6 +211,9 @@
   let playbackController: AnimationPlaybackController | null = null;
   let servicesReady = $state(false);
   let loading = $state(true);
+  // Once true, reloads never return to the loading-state branch — see the
+  // template comment (unmounting the canvas there kills the engine mid-swap).
+  let hasLoadedOnce = $state(false);
   let error = $state<string | null>(null);
 
   // Animation state - each player gets its own
@@ -441,6 +453,7 @@
 
       // Note: playbackController.initialize() already sets normalized sequence data on the state
       // Autoplay is handled by the reactive $effect above (fires once per load).
+      hasLoadedOnce = true;
     } catch (err) {
       console.error("Failed to load animation:", err);
       error = err instanceof Error ? err.message : "Failed to load animation";
@@ -524,7 +537,13 @@
 </script>
 
 <div class="inline-animation-player">
-  {#if loading}
+  {#if loading && !hasLoadedOnce}
+    <!-- First load only. On RELOADS (sequence prop swap) this branch must NOT
+         fire: flipping to it unmounts AnimatorCanvas, which destroys the whole
+         engine — a fresh engine treats the prop-type override as a first-time
+         assignment, so the morph crossfade is suppressed and the swap pops.
+         Keeping the canvas mounted through reloads is what makes the in-place
+         sequence swap (and the hero act's prop morph) actually seamless. -->
     <div class="loading-state">
       <ProgressRing percent={-1} size={24} strokeWidth={3} />
       <span>Loading animation...</span>
@@ -549,6 +568,7 @@
         {isPlaying}
         onPlaybackToggle={togglePlayback}
         trailSettings={trailSettingsOverride ?? animationSettings.trail}
+        {backgroundAlpha}
         {tipEffectMap}
         {bluePropType}
         {redPropType}

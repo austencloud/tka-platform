@@ -12,10 +12,19 @@
   contract): a static engine-aligned MandalaHeroLayer canvas underneath, and
   InlineAnimationPlayer on top once an element is active. Both fill the same
   square, so the mandala's hand loci sit exactly under the prop's traced path
-  (mandala-hero.ts carries the bake-proven alignment math). The mandala dims to
-  a ghost (opacity 0.55, the bake's value) while the props animate over it with
-  the vivid HERO_TRAIL_PRESET — passed per-instance via trailSettingsOverride,
-  never by mutating the global animationSettings singleton.
+  (mandala-hero.ts carries the bake-proven alignment math). Three props make
+  the layering actually work — all three are load-bearing:
+  - backgroundAlpha: 0 — the player's canvas is TRANSPARENT (alpha context +
+    CanvasSurface data-transparent), so the mandala below stays visible while
+    the props draw over it. Without this the canvas paints an opaque
+    background and "replaces" the mandala (the 2026-07-19 bug).
+  - trailSettingsOverride: HERO_TRAIL_PRESET — vivid trail, per-instance,
+    never by mutating the global animationSettings singleton.
+  - tipEffectMap: HERO_TIP_EFFECT_MAP — the render loop's hasTrailTips gate
+    draws ZERO trails without a "trails" tip assignment, whatever the trail
+    settings say. Preset and map ship as a pair (see HomeHero).
+  The mandala dims to a ghost (opacity 0.55, the bake's value) while the
+  props animate over it.
 
   Element selection is STICKY across cell changes: picking a new cell rebuilds
   the six realizations (cheap — no PNG card bakes on this path, see
@@ -46,7 +55,10 @@
   import type { VtgMode } from "../services/shape-matrix-realizations";
   import type { MandalaPaths } from "$lib/shared/mandala/domain/mandala-types";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-  import { HERO_TRAIL_PRESET } from "$lib/shared/landing/data/hero-trail-preset";
+  import {
+    HERO_TRAIL_PRESET,
+    HERO_TIP_EFFECT_MAP,
+  } from "$lib/shared/landing/data/hero-trail-preset";
 
   interface Props {
     /** Nullable: the drill renders its own "Pick a cell" state before any click. */
@@ -171,6 +183,8 @@
                   bluePropType: "club",
                   redPropType: "club",
                   trailSettingsOverride: HERO_TRAIL_PRESET,
+                  tipEffectMap: HERO_TIP_EFFECT_MAP,
+                  backgroundAlpha: 0,
                 }}
               />
             </div>
