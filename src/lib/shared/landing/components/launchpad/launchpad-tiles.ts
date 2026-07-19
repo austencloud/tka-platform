@@ -19,6 +19,7 @@ export interface LaunchpadTileDef {
 	/** Which live media embed (if any) fills the tile's decorative layer. */
 	media?:
 		| "mandala"
+		| "loop-mandala"
 		| "choreo-card"
 		| "pictograph"
 		| "pictograph-fade"
@@ -82,6 +83,16 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		color: "#f97316",
 		icon: "fa-diagram-project",
 		media: "pictograph",
+	},
+	{
+		id: "loops",
+		href: "/notation/loops",
+		heading: "The LOOP Algebra",
+		descriptor: "Six ways for a sequence to return to where it started.",
+		span: "1x1",
+		color: "#36c3ff",
+		icon: "fa-rotate",
+		media: "loop-mandala",
 	},
 	{
 		id: "guide",

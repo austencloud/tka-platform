@@ -19,6 +19,7 @@
 	import type { LaunchpadTileDef } from "./launchpad-tiles";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 	import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+	import loopSeedsJson from "$lib/shared/loop-explorer/domain/curated-seeds.json";
 
 	let { tile, active, index }: { tile: LaunchpadTileDef; active: boolean; index: number } =
 		$props();
@@ -29,6 +30,13 @@
 	// authored directly against the SequenceData/StepData shape.
 	const demoSequence = demoJson as unknown as SequenceData;
 	const demoStep = demoSequence.steps[0];
+
+	// LOOPs tile only: a real, detector-verified Rotated/quartered example
+	// (A3's harness output) rather than the generic demo fixture — the tile's
+	// job is to prove it's live, so it draws an actual LOOP.
+	const loopDemoSequence = (
+		loopSeedsJson as unknown as Record<string, Record<string, SequenceData[]>>
+	).rotated?.quartered?.[0] as SequenceData | undefined;
 </script>
 
 <li
@@ -49,6 +57,20 @@
 								loader={() => import("$lib/shared/mandala/components/SequenceMandala.svelte")}
 								{active}
 								props={{ sequence: demoSequence, style: "stroke", animate: false, show: "both", size: 340 }}
+							/>
+						</span>
+					{:else if tile.media === "loop-mandala" && loopDemoSequence}
+						<span class="mandala-box">
+							<LazyMount
+								loader={() => import("$lib/shared/mandala/components/SequenceMandala.svelte")}
+								{active}
+								props={{
+									sequence: loopDemoSequence,
+									style: "stroke",
+									animate: true,
+									show: "both",
+									size: 340,
+								}}
 							/>
 						</span>
 					{:else if tile.media === "choreo-card"}

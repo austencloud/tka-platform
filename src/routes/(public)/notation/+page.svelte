@@ -2,10 +2,16 @@
   import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
   import ShapeMatrixTeaser from "$lib/shared/shape-matrix/components/ShapeMatrixTeaser.svelte";
   import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+  import loopSeedsJson from "$lib/shared/loop-explorer/domain/curated-seeds.json";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   const heroDemoSequence = demoJson as unknown as SequenceData;
+  // Same verified rotated/quartered example the /notation/loops hero uses —
+  // a real detector-checked LOOP, not a mockup.
+  const loopTeaserSequence = (
+    loopSeedsJson as unknown as Record<string, Record<string, SequenceData[]>>
+  ).rotated?.quartered?.[0] as SequenceData | undefined;
 
   // Every source verified live during the 2026-07-17 research pass and again in
   // the 2026-07-18 audit. Primary pages, not generic bios, so each link
@@ -459,6 +465,30 @@
           <i class="fas fa-external-link-alt ext" aria-hidden="true"></i>
         </a>
       </div>
+    </div>
+  </section>
+
+  <!-- LOOP algebra teaser: same live-demo-plus-CTA idiom as the Shape Matrix
+       teaser above, pointing at its own destination page. -->
+  <section class="editorial-section" style="--accent: #36c3ff">
+    <span class="section-kicker">Sequences that come back around</span>
+    <h2 class="section-title">The LOOP algebra</h2>
+    <div class="prose">
+      <p>
+        A LOOP is a sequence built to return to where it started, under one of six
+        transformations — mirror, flip, swap, invert, rewind, or rotate — alone or
+        stacked together. The destination page walks the fixed-point theorem behind it
+        and lets you build any verified combination live.
+      </p>
+    </div>
+    {#if loopTeaserSequence}
+      <SequenceHeroDemo sequence={loopTeaserSequence} note="a Rotated LOOP, live" />
+    {/if}
+    <div class="matrix-teaser-wrap">
+      <a href="/notation/loops" class="cta-button matrix-teaser-cta">
+        <span>Explore the LOOP algebra</span>
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </a>
     </div>
   </section>
 

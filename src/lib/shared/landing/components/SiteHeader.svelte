@@ -159,6 +159,12 @@
           icon: "fa-diagram-project",
           desc: "144 even-petaled flowers, decoded",
         },
+        {
+          label: "The LOOP Algebra",
+          href: "/notation/loops",
+          icon: "fa-rotate",
+          desc: "Six ways to return to where you started",
+        },
       ],
     },
     { label: "Composer", href: "/composer", icon: "fa-wand-magic-sparkles" },
