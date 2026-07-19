@@ -9,6 +9,7 @@
  *   node scripts/create-shortcodes-batch.js --file ids.txt
  */
 
+import { pathToFileURL } from "url";
 import { initFirestore } from "./lib/firestore-provider.js";
 
 const ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -23,8 +24,10 @@ function generateCode(length = CODE_LENGTH) {
   return code;
 }
 
-async function findExistingShortcode(db, sequenceId, isAdmin) {
-  if (isAdmin) {
+async function findExistingShortcode(db, sequenceId) {
+  // Works on both SDKs (client rules allow reading shortcodes). Without this
+  // check on the client path, every re-run minted a fresh duplicate code.
+  try {
     const snapshot = await db
       .collection("shortcodes")
       .where("sequenceId", "==", sequenceId)
@@ -33,6 +36,8 @@ async function findExistingShortcode(db, sequenceId, isAdmin) {
     if (!snapshot.empty) {
       return snapshot.docs[0].id;
     }
+  } catch {
+    // Rules may block the query for some callers; fall through to minting.
   }
   return null;
 }
@@ -67,11 +72,32 @@ async function createShortcode(db, sequenceId, publicDoc, sourceDoc, isAdmin, Fi
     const docRef = db.collection("shortcodes").doc(code);
 
     if (isAdmin) {
-      const existing = await docRef.get();
-      if (existing.exists) continue;
-      await docRef.set(record);
-      return code;
+      // Transaction guards against the duplicate-mint race: two concurrent
+      // runs for the same sequenceId each minted their own code (7KN5/DSV9,
+      // 2026-07-18). The admin SDK allows queries inside transactions, so we
+      // re-check for an existing code by sequenceId atomically, right before
+      // writing.
+      try {
+        const result = await db.runTransaction(async (tx) => {
+          const dup = await tx.get(
+            db.collection("shortcodes").where("sequenceId", "==", sequenceId).limit(1)
+          );
+          if (!dup.empty) return { code: dup.docs[0].id, existed: true };
+          const snap = await tx.get(docRef);
+          if (snap.exists) throw new Error("collision");
+          tx.set(docRef, record);
+          return { code, existed: false };
+        });
+        return result.code;
+      } catch (e) {
+        if (e.message === "collision") continue;
+        throw e;
+      }
     } else {
+      // Client SDK transactions cannot run queries, so re-check for an
+      // existing code as late as possible before the create transaction.
+      const dup = await findExistingShortcode(db, sequenceId);
+      if (dup) return dup;
       try {
         await db.runTransaction(async (tx) => {
           const snap = await tx.get(docRef);
@@ -154,7 +180,18 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error("Fatal:", err);
-  process.exit(1);
-});
+// Reused by scripts/show-sequence.mjs.
+export { findExistingShortcode, createShortcode };
+
+// Only run the CLI when invoked directly. The explicit exit(0) matters:
+// Firestore's gRPC/auth handles keep the Node event loop alive after main()
+// resolves, so without it this process never exits — which is what made
+// generate-qr.mjs (spawnSync of this script) hang forever after minting.
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error("Fatal:", err);
+      process.exit(1);
+    });
+}

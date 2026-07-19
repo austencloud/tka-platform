@@ -24,7 +24,6 @@ const { decomposeSequence } = require("./lib/compose-sequence.cjs");
 // Parse CLI args
 // ---------------------------------------------------------------------------
 
-const args = process.argv.slice(2);
 let jsonPath = null;
 let useStdin = false;
 let notes = null;
@@ -33,28 +32,31 @@ let dryRun = false;
 let forceCircular = null;
 let forceLoopType = null;
 
-for (let i = 0; i < args.length; i++) {
-  if (args[i] === "--stdin") {
-    useStdin = true;
-  } else if (args[i] === "--notes" && args[i + 1]) {
-    notes = args[++i];
-  } else if (args[i] === "--visibility" && args[i + 1]) {
-    visibility = args[++i];
-  } else if (args[i] === "--circular") {
-    forceCircular = true;
-  } else if (args[i] === "--loop-type" && args[i + 1]) {
-    forceLoopType = args[++i];
-  } else if (args[i] === "--dry-run") {
-    dryRun = true;
-  } else if (!args[i].startsWith("--")) {
-    jsonPath = args[i];
+function parseCliArgs() {
+  const args = process.argv.slice(2);
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--stdin") {
+      useStdin = true;
+    } else if (args[i] === "--notes" && args[i + 1]) {
+      notes = args[++i];
+    } else if (args[i] === "--visibility" && args[i + 1]) {
+      visibility = args[++i];
+    } else if (args[i] === "--circular") {
+      forceCircular = true;
+    } else if (args[i] === "--loop-type" && args[i + 1]) {
+      forceLoopType = args[++i];
+    } else if (args[i] === "--dry-run") {
+      dryRun = true;
+    } else if (!args[i].startsWith("--")) {
+      jsonPath = args[i];
+    }
   }
-}
 
-if (!jsonPath && !useStdin) {
-  console.error("Usage: node scripts/import-sequence.cjs <file.json> [--notes 'tagline'] [--circular] [--loop-type mirrored_swapped] [--dry-run]");
-  console.error("       echo '{...}' | node scripts/import-sequence.cjs --stdin");
-  process.exit(1);
+  if (!jsonPath && !useStdin) {
+    console.error("Usage: node scripts/import-sequence.cjs <file.json> [--notes 'tagline'] [--circular] [--loop-type mirrored_swapped] [--dry-run]");
+    console.error("       echo '{...}' | node scripts/import-sequence.cjs --stdin");
+    process.exit(1);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -272,9 +274,22 @@ function buildStartPositionObject(startPosInput, steps, sequenceId) {
   };
 }
 
-function buildFirestoreDoc(raw, admin, loopInfo) {
+/**
+ * Build the Firestore library document from raw sequence JSON.
+ *
+ * @param raw Raw sequence JSON ({word, gridMode, startPosition, steps})
+ * @param fieldValue Object with a serverTimestamp() factory (e.g. admin.firestore.FieldValue)
+ * @param loopInfo Result of detectLoop(raw), or null
+ * @param opts { visibility, notes, forceCircular, forceLoopType, demo }
+ */
+function buildFirestoreDoc(raw, fieldValue, loopInfo, opts = {}) {
+  const optVisibility = opts.visibility ?? visibility;
+  const optNotes = opts.notes ?? notes;
+  const optForceCircular = opts.forceCircular ?? forceCircular;
+  const optForceLoopType = opts.forceLoopType ?? forceLoopType;
+
   const sequenceId = `seq_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
-  const now = admin.firestore.FieldValue.serverTimestamp();
+  const now = fieldValue.serverTimestamp();
 
   const word = raw.word || "";
   const name = word;
@@ -292,8 +307,8 @@ function buildFirestoreDoc(raw, admin, loopInfo) {
   const manualCircular = lastStep && startGridPos
     ? lastStep.endPosition === startGridPos
     : false;
-  const isCircular = forceCircular != null
-    ? forceCircular
+  const isCircular = optForceCircular != null
+    ? optForceCircular
     : loopInfo != null
       ? loopInfo.isCircular
       : manualCircular;
@@ -322,27 +337,33 @@ function buildFirestoreDoc(raw, admin, loopInfo) {
     gridMode: raw.gridMode || "diamond",
     sequenceLength: steps.length,
     thumbnails: [],
-    tags: [],
+    tags: opts.demo ? ["demo"] : [],
     isFavorite: false,
     isCircular,
-    metadata: {},
+    // The publicSequences sync (sync-missing-public-sequences.js) queries
+    // metadata.visibility, so it must mirror the top-level field.
+    metadata: { visibility: optVisibility },
     ownerId: AUSTEN_UID,
-    visibility,
+    visibility: optVisibility,
     birthday: now,
     createdAt: now,
     updatedAt: now,
     _version: 1,
   };
 
+  if (opts.demo) {
+    doc.demo = true;
+  }
+
   // Add LOOP type — CLI override takes precedence over detector
-  if (forceLoopType) {
-    doc.loopType = forceLoopType;
+  if (optForceLoopType) {
+    doc.loopType = optForceLoopType;
   } else if (loopInfo?.loopType) {
     doc.loopType = loopInfo.loopType;
   }
 
-  if (notes) {
-    doc.notes = notes;
+  if (optNotes) {
+    doc.notes = optNotes;
   }
 
   // Compute compositional fields (blueSoloProp, redSoloProp, stepPairings)
@@ -365,6 +386,7 @@ function buildFirestoreDoc(raw, admin, loopInfo) {
 // ---------------------------------------------------------------------------
 
 async function main() {
+  parseCliArgs();
   const input = await readInput();
   let raw;
   try {
@@ -390,10 +412,8 @@ async function main() {
   }
 
   if (dryRun) {
-    const mockAdmin = {
-      firestore: { FieldValue: { serverTimestamp: () => "<SERVER_TIMESTAMP>" } },
-    };
-    const { id, data } = buildFirestoreDoc(raw, mockAdmin, loopInfo);
+    const mockFieldValue = { serverTimestamp: () => "<SERVER_TIMESTAMP>" };
+    const { id, data } = buildFirestoreDoc(raw, mockFieldValue, loopInfo);
     console.log(`\n[DRY RUN] Would save as: users/${AUSTEN_UID}/sequences/${id}`);
     console.log(`Fields: ${Object.keys(data).join(", ")}`);
     console.log(`Visibility: ${data.visibility}`);
@@ -420,7 +440,7 @@ async function main() {
   }
 
   const db = admin.firestore();
-  const { id, data } = buildFirestoreDoc(raw, admin, loopInfo);
+  const { id, data } = buildFirestoreDoc(raw, admin.firestore.FieldValue, loopInfo);
 
   const docPath = `users/${AUSTEN_UID}/sequences/${id}`;
   console.log(`\nSaving to: ${docPath}`);
@@ -440,9 +460,14 @@ async function main() {
   console.log(`ID: ${id}`);
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((err) => {
-    console.error("Error:", err);
-    process.exit(1);
-  });
+if (require.main === module) {
+  main()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error("Error:", err);
+      process.exit(1);
+    });
+}
+
+// Reused by scripts/show-sequence.mjs — keep signatures stable.
+module.exports = { AUSTEN_UID, detectLoop, buildFirestoreDoc };
