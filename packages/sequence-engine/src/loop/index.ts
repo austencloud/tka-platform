@@ -124,6 +124,25 @@ export {
   type OrientationCycleResult,
 } from "./detection/OrientationCycleDetector.js";
 
+// Pair-relation algebra — the canonical per-beat-pair transform tuples.
+// Additive export (2026-07-19, /notation/loops explorer): app-side consumers
+// (loop-explorer's relation-extractor) need the (beatA, beatB, transform)
+// data that already powers LOOPDetector internally, rather than re-deriving
+// the algebra app-side.
+export {
+  relationsForPair,
+  uniformRelationAtInterval,
+  uniformHalvedRelation,
+  detectRewoundPattern,
+  detectsInnerRotation,
+  type PairComponentId,
+  type RotationAngle,
+  type PairMotion,
+  type PairMotions,
+  type PairRelation,
+  type UniformRelation,
+} from "./detection/pair-relation.js";
+
 // Executor
 export {
   executeLOOP,
