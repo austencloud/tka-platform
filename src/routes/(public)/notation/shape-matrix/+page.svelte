@@ -3,6 +3,7 @@
   import Seo from "$lib/shared/components/Seo.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import ShapeMatrixGrid from "$lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte";
+  import ShapeMatrixDrill from "$lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte";
   import {
     loadShapeMatrix,
     type ShapeMatrixData,
@@ -12,7 +13,7 @@
     matrixFiltersForSize,
     type MatrixSize,
   } from "$lib/shared/shape-matrix/domain/matrix-size-preset";
-  import { flowerLabel, type Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
+  import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   const TITLE = "Interactive Shape Matrix | The Kinetic Alphabet";
@@ -33,9 +34,8 @@
   let data = $state<ShapeMatrixData | null>(null);
   let err = $state("");
 
-  // Phase 2 will replace this placeholder with the six-realization drill +
-  // hero animation. Kept minimal on purpose: the tile-click wiring (onselect
-  // → route state) is this phase's job, the payoff panel is the next one's.
+  // Phase 1 wired the tile-click (onselect → route state); Phase 2 renders
+  // the payoff below via ShapeMatrixDrill — the six realizations + hero player.
   let selectedPair = $state<{ blue: Flower; red: Flower } | null>(null);
 
   const rowAxis = $derived(
@@ -143,14 +143,8 @@
       {/if}
     </div>
 
-    {#if selectedPair}
-      <div class="selection-ack" role="status">
-        <p>
-          Selected: blue <strong>{flowerLabel(selectedPair.blue)}</strong> over red
-          <strong>{flowerLabel(selectedPair.red)}</strong>. The six timing-and-direction
-          realizations that draw this mandala are coming next.
-        </p>
-      </div>
+    {#if selectedPair && data}
+      <ShapeMatrixDrill pair={selectedPair} {data} />
     {/if}
   </section>
 </div>
@@ -216,18 +210,5 @@
   }
   .matrix-status.err {
     color: #fb8a8a;
-  }
-
-  .selection-ack {
-    margin-top: 1.2rem;
-    padding: 1rem 1.2rem;
-    border-radius: 12px;
-    background: oklch(0.16 0.018 270 / 0.5);
-    border: 1px solid oklch(0.4 0.04 270 / 0.16);
-    color: oklch(0.85 0.02 270);
-    font-size: clamp(0.9rem, 0.86rem + 0.14vw, 1.05rem);
-  }
-  .selection-ack strong {
-    color: oklch(0.95 0.02 270);
   }
 </style>
