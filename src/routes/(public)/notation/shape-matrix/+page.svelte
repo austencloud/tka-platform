@@ -8,6 +8,10 @@
     loadShapeMatrix,
     type ShapeMatrixData,
   } from "$lib/shared/shape-matrix/services/shape-matrix-flowers";
+  import {
+    MODE_ORDER,
+    MODE_LABEL,
+  } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
   import { applyFilter } from "$lib/shared/shape-matrix/domain/filter-flower-axis";
   import {
     matrixFiltersForSize,
@@ -40,10 +44,10 @@
   let data = $state<ShapeMatrixData | null>(null);
   let err = $state("");
 
-  // The drill pane is a permanent fixture of the instrument band (bespoke
-  // two-pane layout — replaced the Drawer host on Austen's direction,
-  // 2026-07-19): on wide screens matrix and realizations sit side by side; on
-  // narrow screens the pane stacks below and we scroll it into view on select.
+  // The realization panel is a permanent fixture of the instrument band
+  // (bespoke two-pane layout, Austen's direction 2026-07-19): on wide screens
+  // matrix and realizations sit side by side, top- and bottom-aligned; on
+  // narrow screens the panel stacks below and scrolls into view on select.
   let selectedPair = $state<{ blue: Flower; red: Flower } | null>(null);
   let drillPane = $state<HTMLElement | null>(null);
 
@@ -105,30 +109,33 @@
     <p class="page-subtitle">Every cell is live. Click one to open its realizations.</p>
   </header>
 
-  <section class="editorial-section" style="--accent: #f59e0b">
-    <!-- Lineage band: the story and the original chart side by side on wide
-         screens, stacked on narrow ones. -->
+  <section class="editorial-section shape-matrix-section" style="--accent: #f59e0b">
+    <!-- Lineage band: the story and the original chart side by side, sharing
+         the same rail as the instrument band below. -->
     <div class="lineage-band">
-      <div class="prose lineage-prose">
-        <p>
-          Lorq Nichols charted the 144 Shape Matrix in 2012: twelve left-hand driving
-          styles against twelve right-hand ones, the even-petaled prospin and antispin
-          shapes across the 1:1, 1:3, and 1:5 ratios. It was a paper chart, doing what
-          a simulator does today: lay the space out so you can find what you have not
-          tried. This page draws the same table live from the alphabet, one shape per
-          cell, and every cell is clickable.
-        </p>
-        <p>
-          The rows are blue-hand flowers, the columns red-hand flowers. Matched styles
-          on the diagonal are basic shapes; every other cell overlaps the two into a
-          hybrid. Further reading: Ben Drexler's VTG glossary entry
-          <a
-            href="https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained"
-            target="_blank"
-            rel="noopener noreferrer">VTG:153</a
-          >
-          gives the timing-and-direction vocabulary each cell's six realizations draw from.
-        </p>
+      <div class="lineage-copy">
+        <span class="section-kicker">The lineage</span>
+        <div class="prose lineage-prose">
+          <p>
+            Lorq Nichols charted the 144 Shape Matrix in 2012: twelve left-hand driving
+            styles against twelve right-hand ones, the even-petaled prospin and antispin
+            shapes across the 1:1, 1:3, and 1:5 ratios. It was a paper chart, doing what
+            a simulator does today: lay the space out so you can find what you have not
+            tried. This page draws the same table live from the alphabet, one shape per
+            cell, and every cell is clickable.
+          </p>
+          <p>
+            The rows are blue-hand flowers, the columns red-hand flowers. Matched styles
+            on the diagonal are basic shapes; every other cell overlaps the two into a
+            hybrid. Further reading: Ben Drexler's VTG glossary entry
+            <a
+              href="https://drexfactor.com/weirdscience/2015/11/25/vulcan_tech_gospel_vtg_explained"
+              target="_blank"
+              rel="noopener noreferrer">VTG:153</a
+            >
+            gives the timing-and-direction vocabulary each cell's six realizations draw from.
+          </p>
+        </div>
       </div>
 
       <figure class="matrix-figure">
@@ -148,38 +155,36 @@
       </figure>
     </div>
 
-    <!-- The instrument: live matrix and the realization pane as one two-pane
-         band, both always present. Bespoke to this page — no drawer, no
-         overlay, no reflow when a cell is picked. -->
+    <!-- The instrument: live matrix and the realization panel as one aligned
+         two-pane band. Header row carries the kickers and the size control;
+         the two panels share top and bottom edges and one surface treatment.
+         Accent stays in the kicker text only, per the editorial system. -->
     <div class="instrument">
-      <div class="matrix-pane">
-        <div class="matrix-toolbar">
-          <div class="size-control">
-            <span id="matrix-size-label" class="size-control-label">Matrix size</span>
-            <div class="size-control-body">
-              <SegmentedControl
-                options={SIZE_OPTIONS}
-                value={size}
-                onchange={(v) => (size = v)}
-                color="accent"
-              />
-            </div>
-          </div>
-          <div class="matrix-axis-labels" aria-hidden="true">
-            <span class="axis-label axis-label-blue">↓ Blue flower</span>
-            <span class="axis-label axis-label-red">Red flower →</span>
-          </div>
+      <div class="pane-head matrix-head">
+        <span class="section-kicker">The live table</span>
+        <div class="size-control" role="group" aria-label="Matrix size">
+          <SegmentedControl
+            options={SIZE_OPTIONS}
+            value={size}
+            onchange={(v) => (size = v)}
+            color="accent"
+          />
         </div>
+      </div>
 
-        <div class="matrix-stage">
-          {#if err}
-            <p class="matrix-status err">{err}</p>
-          {:else if !data}
-            <p class="matrix-status">Building flowers…</p>
-          {:else}
-            <ShapeMatrixGrid {data} {rowAxis} {colAxis} onselect={selectPair} />
-          {/if}
-        </div>
+      <div class="pane-head drill-head">
+        <span class="section-kicker">Realizations</span>
+        <span class="head-hint">six per cell</span>
+      </div>
+
+      <div class="matrix-stage">
+        {#if err}
+          <p class="matrix-status err">{err}</p>
+        {:else if !data}
+          <p class="matrix-status">Building flowers…</p>
+        {:else}
+          <ShapeMatrixGrid {data} {rowAxis} {colAxis} onselect={selectPair} />
+        {/if}
       </div>
 
       <aside class="drill-pane" bind:this={drillPane} aria-label="Cell realizations">
@@ -187,184 +192,78 @@
           <ShapeMatrixDrill pair={selectedPair} {data} />
         {:else}
           <div class="drill-empty">
-            <span class="drill-empty-mark" aria-hidden="true">✳</span>
-            <p class="drill-empty-title">Pick a cell</p>
+            <p class="drill-empty-lead">Pick a cell</p>
             <p class="drill-empty-sub">
-              Its six timing-and-direction realizations open here, and each one plays
-              the props drawing that shape.
+              Its six timing-and-direction realizations open here. Each one plays the
+              props drawing that shape.
             </p>
+            <div class="ghost-grid" aria-hidden="true">
+              {#each MODE_ORDER as m (m)}
+                <div class="ghost-card">
+                  <span class="ghost-code">{m}</span>
+                  <span class="ghost-label">{MODE_LABEL[m]}</span>
+                </div>
+              {/each}
+            </div>
           </div>
         {/if}
       </aside>
+
+      <p class="stage-caption">
+        Rows are <span class="cap-blue">blue-hand</span> flowers · columns are
+        <span class="cap-red">red-hand</span> flowers
+      </p>
     </div>
   </section>
 </div>
 
 <style>
-  /* ── Lineage band: side-by-side story + original chart on wide screens ── */
-  .lineage-band {
-    --band-width: min(88rem, calc(100vw - 3rem));
+  /* ── Shared rail ──
+     Both bands compute the same width from the instrument's parts (stage +
+     gap + panel), so their left and right edges align at every viewport. The
+     100vw term is capped generously below the visible width so the breakout
+     never spawns a horizontal scrollbar. */
+  .shape-matrix-section {
+    --stage-cap: min(78vh, 66rem);
+    --drill-w: clamp(30rem, 30vw, 44rem);
+    --pane-gap: 2rem;
+    --band-width: min(
+      calc(var(--stage-cap) + var(--pane-gap) + var(--drill-w)),
+      calc(100vw - 5rem)
+    );
+  }
+
+  .lineage-band,
+  .instrument {
     width: var(--band-width);
     margin-inline: calc((100% - var(--band-width)) / 2);
+  }
+
+  /* ── Lineage band ── */
+  .lineage-band {
     display: grid;
-    gap: 2rem 4rem;
+    gap: 2rem clamp(3rem, 6vw, 7rem);
     align-items: center;
-    margin-block: 0.4rem 1.6rem;
+    margin-block: 0.4rem 4.5rem;
   }
   @media (min-width: 1100px) {
     .lineage-band {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 30rem);
+      grid-template-columns: minmax(0, 1fr) minmax(0, clamp(28rem, 26vw, 40rem));
     }
   }
 
-  /* ── The instrument: matrix + realization pane, one wide band ── */
-  .instrument {
-    --band-width: min(160rem, calc(100vw - 3rem));
-    width: var(--band-width);
-    margin-inline: calc((100% - var(--band-width)) / 2);
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 1.4rem;
-    margin-block: 1.2rem 0;
-  }
-  @media (min-width: 1360px) {
-    .instrument {
-      grid-template-columns: minmax(0, 1fr) minmax(30rem, 44rem);
-      align-items: stretch;
-    }
+  /* Larger reading type than the base 46rem-column prose: this text sits in a
+     wide band and carries the whole story, so it earns the lede-adjacent size. */
+  .lineage-prose p {
+    max-width: 58ch;
+    font-size: clamp(1.02rem, 0.96rem + 0.22vw, 1.24rem);
+    line-height: 1.7;
   }
 
-  .matrix-pane {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 0;
-    /* The grid is ~square (12 flowers + header per side), so size the stage as
-       a centered square instead of letting it stretch into a wide rectangle
-       with dead space beside the grid. */
-    --stage-size: min(82vh, 66rem, 100%);
-  }
-
-  .matrix-toolbar {
-    width: var(--stage-size);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: end;
-    justify-content: space-between;
-    gap: 0.8rem 1.6rem;
-    margin-bottom: 0.8rem;
-  }
-
-  .size-control {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    min-width: min(24rem, 100%);
-  }
-  .size-control-label {
-    font-size: clamp(0.75rem, 0.7rem + 0.15vw, 0.85rem);
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    color: oklch(0.68 0.02 270);
-    text-transform: uppercase;
-  }
-  .size-control-body {
-    min-height: 44px;
-  }
-
-  .matrix-axis-labels {
-    display: flex;
-    gap: 1.6rem;
-    font-size: clamp(0.75rem, 0.7rem + 0.15vw, 0.85rem);
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    color: oklch(0.68 0.02 270);
-    padding-bottom: 0.4rem;
-  }
-  .axis-label-blue {
-    color: var(--prop-blue, oklch(0.68 0.14 255));
-  }
-  .axis-label-red {
-    color: var(--prop-red, oklch(0.68 0.16 25));
-  }
-
-  /* Fixed-height stage so the matrix box never resizes as the size preset or
-     load state changes — reserves the worst case (Large) up front
-     (no-layout-shift.md). The drill pane stretches to the same height, so the
-     two panes read as one instrument. */
-  .matrix-stage {
-    width: var(--stage-size);
-    aspect-ratio: 1 / 1;
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid oklch(0.4 0.04 270 / 0.16);
-  }
-  .matrix-status {
-    display: grid;
-    place-items: center;
-    height: 100%;
-    color: oklch(0.72 0.012 270);
-    background: #0a0f14;
-    margin: 0;
-  }
-  .matrix-status.err {
-    color: #fb8a8a;
-  }
-
-  /* ── Realization pane: bespoke sibling panel, always present ── */
-  .drill-pane {
-    border-radius: 16px;
-    border: 1px solid color-mix(in srgb, var(--accent, #f59e0b) 24%, transparent);
-    background:
-      linear-gradient(180deg, color-mix(in srgb, var(--accent, #f59e0b) 5%, transparent), transparent 34%),
-      #0a0f14;
-    padding: 1.1rem 1.2rem 1.2rem;
-    display: flex;
-    flex-direction: column;
-    min-height: 34rem;
-  }
-  @media (min-width: 1360px) {
-    .drill-pane {
-      /* Match the matrix stage's box (toolbar height accounted by stretch). */
-      min-height: 0;
-      height: auto;
-    }
-  }
-
-  .drill-empty {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    gap: 0.5rem;
-    padding: 2rem 1.4rem;
-  }
-  .drill-empty-mark {
-    font-size: 2.2rem;
-    color: color-mix(in srgb, var(--accent, #f59e0b) 65%, white);
-    opacity: 0.85;
-    margin-bottom: 0.4rem;
-  }
-  .drill-empty-title {
-    margin: 0;
-    font-size: clamp(1.05rem, 1rem + 0.2vw, 1.3rem);
-    font-weight: 700;
-    color: oklch(0.92 0.02 270);
-  }
-  .drill-empty-sub {
-    margin: 0;
-    max-width: 26rem;
-    font-size: clamp(0.85rem, 0.8rem + 0.12vw, 0.95rem);
-    line-height: 1.55;
-    color: oklch(0.68 0.02 270);
-  }
-
-  /* ── Lineage figure ── */
   .matrix-figure {
-    margin: 0 auto;
-    max-width: min(30rem, 92%);
+    margin: 0;
+    justify-self: center;
+    max-width: min(40rem, 100%);
   }
   .matrix-img {
     display: block;
@@ -388,5 +287,184 @@
   }
   .matrix-figure figcaption a:hover {
     border-bottom-color: oklch(0.8 0.12 275 / 0.9);
+  }
+
+  /* ── The instrument ──
+     2×2 grid: header row (kickers + size control), then the two panels
+     sharing top and bottom edges. The stage caption hangs below the stage
+     like a figure caption. */
+  .instrument {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--drill-w);
+    grid-template-areas:
+      "mhead dhead"
+      "stage drill"
+      "mcap  .";
+    column-gap: var(--pane-gap);
+    align-items: stretch;
+  }
+
+  .pane-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 44px;
+    margin-bottom: 0.9rem;
+  }
+  .pane-head .section-kicker {
+    margin: 0;
+  }
+  .matrix-head {
+    grid-area: mhead;
+    /* Kicker + size control read as one left-aligned cluster that clearly
+       belongs to the table — not pushed against the realization panel. */
+    justify-content: flex-start;
+    gap: 2rem;
+  }
+  .drill-head {
+    grid-area: dhead;
+  }
+  .head-hint {
+    font-size: clamp(0.75rem, 0.7rem + 0.12vw, 0.85rem);
+    color: oklch(0.58 0.015 270);
+    letter-spacing: 0.03em;
+  }
+
+  .size-control {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    /* Room for the three labels on one line each — the shared control wraps
+       labels when squeezed, which reads broken here. */
+    flex: 0 0 auto;
+    min-width: min(23rem, 100%);
+  }
+
+  /* The grid is ~square (12 flowers + header per side), so the stage is a
+     square. Reserved up front at its final size, so neither the size preset
+     nor load state ever moves the panels (no-layout-shift.md). */
+  .matrix-stage {
+    grid-area: stage;
+    width: min(var(--stage-cap), 100%);
+    aspect-ratio: 1 / 1;
+    justify-self: center;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid oklch(0.4 0.04 270 / 0.16);
+    background: #0a0f14;
+  }
+  .matrix-status {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    color: oklch(0.72 0.012 270);
+    margin: 0;
+  }
+  .matrix-status.err {
+    color: #fb8a8a;
+  }
+
+  .stage-caption {
+    grid-area: mcap;
+    justify-self: center;
+    margin: 0.7rem 0 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: oklch(0.6 0.02 270);
+    text-align: center;
+  }
+  .cap-blue {
+    color: var(--prop-blue, oklch(0.68 0.14 255));
+  }
+  .cap-red {
+    color: var(--prop-red, oklch(0.68 0.16 25));
+  }
+
+  /* ── Realization panel: same surface as the stage, a true sibling ── */
+  .drill-pane {
+    grid-area: drill;
+    border-radius: 16px;
+    border: 1px solid oklch(0.4 0.04 270 / 0.16);
+    background: #0a0f14;
+    padding: 1.1rem 1.2rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    scroll-margin-top: 90px;
+  }
+
+  /* Empty state: a ghost preview of the six mode cards, so the panel shows
+     what will appear instead of a void. Mirrors .mode-grid's metrics in
+     ShapeMatrixDrill so the swap to real cards lands in the same places. */
+  .drill-empty {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0.6rem 0.2rem 0;
+  }
+  .drill-empty-lead {
+    margin: 0 0 0.3rem;
+    font-size: clamp(1.05rem, 1rem + 0.2vw, 1.3rem);
+    font-weight: 700;
+    color: oklch(0.92 0.02 270);
+  }
+  .drill-empty-sub {
+    margin: 0 0 1.1rem;
+    max-width: 34rem;
+    font-size: clamp(0.85rem, 0.8rem + 0.12vw, 0.95rem);
+    line-height: 1.55;
+    color: oklch(0.68 0.02 270);
+  }
+  .ghost-grid {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+    /* Rows stretch so the six ghosts fill the panel's full height — the empty
+       state occupies the same real estate the six real cards will. */
+    grid-auto-rows: 1fr;
+    gap: 0.9rem;
+  }
+  .ghost-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-height: 8.5rem;
+    border: 1px dashed oklch(0.5 0.03 270 / 0.28);
+    border-radius: 12px;
+  }
+  .ghost-code {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: oklch(0.55 0.02 270);
+  }
+  .ghost-label {
+    font-size: 0.78rem;
+    color: oklch(0.48 0.015 270);
+  }
+
+  /* ── Stacked layout: the panel follows the stage, full width ── */
+  @media (max-width: 1359.98px) {
+    .instrument {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas:
+        "mhead"
+        "stage"
+        "mcap"
+        "dhead"
+        "drill";
+    }
+    .drill-head {
+      margin-top: 2.2rem;
+    }
+    .drill-pane {
+      min-height: 34rem;
+    }
   }
 </style>
