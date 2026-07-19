@@ -257,9 +257,9 @@ const BIGTORCH_TIP_POINTS: PropTipConfig = {
 // ─── Poi ──────────────────────────────────────────────────────────────────────
 
 const POI_TIP_POINTS: PropTipConfig = {
-  // Ball center sits 143 units from the grip (full handpoint-to-grid-center
-  // reach; see static/images/props/*/poi.svg).
-  points: [{ dx: 143, dy: 0 }],
+  // Ball center at 113 from the grip; its far edge (r30) touches the grid
+  // center at ori "in" (see static/images/props/*/poi.svg).
+  points: [{ dx: 113, dy: 0 }],
 };
 
 // ─── No tips (contact ball, hand) ─────────────────────────────────────────────

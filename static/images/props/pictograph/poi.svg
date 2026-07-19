@@ -1,14 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 150">
   <!-- Mirror reserve (invisible): keeps the geometric bbox symmetric about the
        viewBox center, matching the unilateral-prop convention. -->
-  <rect x="67" y="73" width="113" height="4" rx="2" fill="none"/>
-  <circle cx="37" cy="75" r="30" fill="none"/>
-  <!-- cord: starts at the grip (viewBox center, no offset) and runs the full
-       handpoint-to-grid-center distance (143 grid units at 1:1 scale). -->
-  <rect x="180" y="73" width="113" height="4" rx="2" fill="#2E3192"/>
+  <rect x="97" y="73" width="83" height="4" rx="2" fill="none"/>
+  <circle cx="67" cy="75" r="30" fill="none"/>
+  <!-- cord: starts at the grip (viewBox center, no offset). -->
+  <rect x="180" y="73" width="83" height="4" rx="2" fill="#2E3192"/>
   <!-- knob (grip) at the viewBox center (180,75) - the handpoint. -->
   <circle cx="180" cy="75" r="8" fill="#2E3192"/>
-  <!-- weighted ball centered 143 units from the grip, so the head sits at the
-       grid center when the prop points radially in. -->
-  <circle cx="323" cy="75" r="30" fill="#2E3192"/>
+  <!-- weighted ball: far edge at 143 units from the grip (handpoint-to-center
+       distance), so the tip TOUCHES the grid center at ori "in". -->
+  <circle cx="293" cy="75" r="30" fill="#2E3192"/>
 </svg>
