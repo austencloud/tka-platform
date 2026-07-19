@@ -56,13 +56,18 @@ export async function warmSequenceCells(
     }
   };
 
+  // All cells in parallel — renders are bounded by the worker pool's queue and
+  // probes/uploads multiplex over one HTTP/2 connection, so nothing here needs
+  // its own throttle. Serial-per-cell left the pool ~idle and put every
+  // upload's network latency on the critical path.
   const firstStep = steps[0];
   const startData = sequence.startPosition
     ?? (firstStep ? createStartPositionFromBeatStart(firstStep) : null);
-  if (startData) await warmOne(startData, undefined);
-
+  const cells: Promise<void>[] = [];
+  if (startData) cells.push(warmOne(startData, undefined));
   for (let i = 0; i < steps.length; i++) {
     const step = steps[i];
-    if (step) await warmOne(step, i + 1);
+    if (step) cells.push(warmOne(step, i + 1));
   }
+  await Promise.allSettled(cells);
 }

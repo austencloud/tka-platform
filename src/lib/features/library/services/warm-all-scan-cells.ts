@@ -35,9 +35,9 @@ export interface CellWarmHandle {
 
 export interface CellWarmDeps {
   loader?: Pick<PublicSequencesLoader, "loadSequenceMetadata">;
-  /** Concurrent sequences. Each sequence renders its cells serially; the
-   *  worker pool (≤4 workers) is the real ceiling. Kept low — this is a
-   *  leave-it-running admin pass, not a race. */
+  /** Concurrent sequences. Cells within a sequence already render in
+   *  parallel (bounded by the worker pool), so this mainly controls how much
+   *  probe/upload network latency overlaps with rendering. */
   concurrency?: number;
 }
 
@@ -64,7 +64,7 @@ export function startScanCellWarm(
     progress.total = sequences.length;
     onProgress({ ...progress });
 
-    const concurrency = Math.max(1, deps?.concurrency ?? 2);
+    const concurrency = Math.max(1, deps?.concurrency ?? 4);
     let next = 0;
 
     const runWorker = async (): Promise<void> => {

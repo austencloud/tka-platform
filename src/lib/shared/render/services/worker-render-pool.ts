@@ -95,7 +95,10 @@ export class WorkerRenderPool {
     }
 
     try {
-      const poolSize = Math.min(navigator.hardwareConcurrency || 2, 4);
+      // Scale to the machine: leave two threads for the main thread + browser,
+      // floor 2 so low-end devices still get a pool, cap 16 — beyond that the
+      // main-thread message serialization becomes the bottleneck, not raster.
+      const poolSize = Math.min(Math.max(2, (navigator.hardwareConcurrency || 4) - 2), 16);
 
       const workerEntries: WorkerEntry[] = [];
       const initPromises: Promise<void>[] = [];
