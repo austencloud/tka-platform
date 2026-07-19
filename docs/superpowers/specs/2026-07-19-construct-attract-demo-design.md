@@ -185,6 +185,22 @@ must model that. Replaced with:
   Codex's concurrent filter-docking refactor absorbed the same guard via
   `showStandaloneFilter()`).
 
+### Ghost personality (fifth pass — Austen 2026-07-19: "Are we really going
+### to program an entire personality for a fake mouse? yes yes we are")
+
+The play phase is a character beat, not a timer. After pressing Play the ghost:
+settles beside the stage and watches (2–3.5s) → taps to pause, holds the
+freeze, taps to resume → watches more → gets CURIOUS and presses a different
+prop tile (sometimes two — `PROP_SEL = ".prop-option:not(.active)"`, never the
+active one; the whole board re-skins live) → admires it → gets BORED and
+presses the real Build another button (`AGAIN_SEL = "[data-demo-again]"`), so
+even the cycle reset is a visible decision. All dwells are jittered
+(`base + Math.random() * spread`) — fixed timings read as a metronome, not a
+person. The prop it chose persists into the next build. `resetBoard()` at
+cycle top stays as the safety net if the button press ever misses.
+Verified live 2026-07-19: active prop flipped Staff→Club across cycles via the
+ghost's own press, and the next build started from a real Build another click.
+
 ### Cohesion pass (third pass — Austen 2026-07-19)
 
 - **One toy, framed twice**: `.workspace` and `.picker-pane` are both framed

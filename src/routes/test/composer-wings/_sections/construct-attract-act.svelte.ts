@@ -29,6 +29,12 @@ const PLAY_SEL = "[data-demo-play] button";
 // The play-phase canvas stage. The act "taps" it mid-playback to pause and
 // resume — teaching the tap-to-toggle interaction by demonstrating it.
 const STAGE_SEL = "[data-demo-stage]";
+// Prop tiles it can get curious about mid-play (never the already-active one —
+// pressing the same prop reads as a misclick, not a decision).
+const PROP_SEL = ".prop-option:not(.active)";
+// The Build another button — the act presses the REAL button when it's done
+// watching, so even the cycle reset is a visible decision, not a silent jump.
+const AGAIN_SEL = "[data-demo-again]";
 
 export interface GhostState {
   x: number;
@@ -67,15 +73,13 @@ export function createConstructAttractAct(opts: {
   stepMs?: number;
   doneMs?: number;
   travelMs?: number;
-  playMs?: number;
 }): ConstructAttractAct {
-  // Tune-by-eye pacing, one place (spec §Attract loop).
+  // Tune-by-eye pacing, one place (spec §Attract loop). Play-phase dwells are
+  // jittered inline in cycle() — a fixed watch length reads as a metronome.
   const STEP_MS = opts.stepMs ?? 1600;
   const DONE_MS = opts.doneMs ?? 2500;
   const TRAVEL_MS = opts.travelMs ?? 450;
   const PRESS_MS = 140;
-  // How long the act lets the built sequence animate before the next cycle.
-  const PLAY_MS = opts.playMs ?? 7000;
 
   const ghost = $state<GhostState>({ x: 0, y: 0, pressed: false, visible: false });
 
@@ -192,12 +196,13 @@ export function createConstructAttractAct(opts: {
       await moveAndPress(pick(options));
     }
 
-    // The payoff: press Play, let the sequence animate, then DEMONSTRATE the
-    // tap-to-toggle interaction — tap the canvas to pause, hold the freeze,
-    // tap again to resume — before the next cycle. Visitors learn the canvas
-    // is tappable by watching it happen. The ghost NEVER hides mid-cycle:
-    // between actions it parks beside the stage like a hand at rest, so the
-    // whole loop reads as one person continuously using the toy.
+    // The payoff, played with a personality: the ghost presses Play, settles
+    // in to watch, pauses the canvas to look closer, resumes, gets curious
+    // and flips through a prop or two mid-playback (the whole board re-skins
+    // live), watches a little more, gets bored, and presses Build another
+    // itself. Every beat is a visible decision; the ghost never leaves the
+    // screen, and dwell times are jittered so it reads as a person, not a
+    // metronome.
     await sleep(DONE_MS / 2);
     const play = await waitFor(PLAY_SEL, 4000);
     if (!play.length || dead) return;
@@ -206,14 +211,38 @@ export function createConstructAttractAct(opts: {
     const stage = await waitFor(STAGE_SEL, 4000);
     if (!stage.length || dead) return;
     await restBeside(stage[0]!);
-    await sleep(PLAY_MS * 0.45);
+    await sleep(2000 + Math.random() * 1500); // settle in, watch
+
     if (dead) return;
-    await moveAndPress(stage[0]!, opts.togglePlayback); // pause
-    await sleep(1400); // hold the freeze — a visible, deliberate decision
+    await moveAndPress(stage[0]!, opts.togglePlayback); // pause — look closer
+    await sleep(1200 + Math.random() * 800); // hold the freeze
     if (dead) return;
     await moveAndPress(stage[0]!, opts.togglePlayback); // resume
     await restBeside(stage[0]!);
-    await sleep(PLAY_MS * 0.55);
+    await sleep(1400 + Math.random() * 1000); // watch a little more
+
+    // Curiosity: try a different prop (sometimes two) while it plays.
+    const props = await waitFor(PROP_SEL, 2000);
+    if (props.length && !dead) {
+      const tries = Math.random() < 0.5 ? 2 : 1;
+      for (let i = 0; i < tries && !dead; i++) {
+        const fresh = await waitFor(PROP_SEL, 2000);
+        if (!fresh.length) break;
+        await moveAndPress(pick(fresh));
+        await sleep(1400 + Math.random() * 900); // admire the new prop
+      }
+      if (dead) return;
+      await restBeside(stage[0]!);
+      await sleep(1000 + Math.random() * 800);
+    }
+
+    // Bored now. Build another — pressed for real, like everything else.
+    if (dead) return;
+    const again = await waitFor(AGAIN_SEL, 2000);
+    if (again.length) {
+      await moveAndPress(again[0]!);
+      await sleep(300);
+    }
   }
 
   function start(): void {

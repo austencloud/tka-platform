@@ -389,7 +389,12 @@
               <ViewSequenceButton onclick={() => (playing = true)} />
             </span>
           {:else if phase === "play"}
-            <button type="button" class="cta-btn" onclick={reset}>
+            <button
+              type="button"
+              class="cta-btn"
+              data-demo-again
+              onclick={reset}
+            >
               <i class="fas fa-rotate-left" aria-hidden="true"></i>
               Build another
             </button>
