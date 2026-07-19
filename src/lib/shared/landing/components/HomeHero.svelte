@@ -46,7 +46,7 @@
   />
 
   <p class="hero-pointer">
-    New here? Start with <a href="/about" class="pointer-link">What is TKA?</a>.
+    New here? Start with <a href="/about" class="pointer-link">What is TKA?</a>
   </p>
 </section>
 
@@ -54,7 +54,11 @@
   .home-hero {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    /* stretch, NOT center: centered flex items shrink to fit-content, and the
+       demo stage's only in-flow content is its caption line, so centering
+       collapsed the whole player to ~285px. Children center themselves
+       (margin-inline auto + text-align). */
+    align-items: stretch;
     justify-content: center;
     text-align: center;
     /* Aim at roughly one viewport minus the header + enough for the grid
@@ -62,7 +66,9 @@
        sits above this section already, so this box does not add its own
        header padding on top of that. */
     min-height: calc(100svh - clamp(220px, 26vh, 320px));
-    padding: clamp(2rem, 5vh, 3.5rem) 1.25rem clamp(1.5rem, 4vh, 2.5rem);
+    /* Top padding clears the fixed MarketingChrome header (~64px) so the
+       title never slides under it when the content centers. */
+    padding: calc(64px + clamp(1.5rem, 3.5vh, 2.5rem)) 1.25rem clamp(1.5rem, 4vh, 2.5rem);
   }
 
   .home-hero-title {
@@ -151,6 +157,20 @@
       min-height: 0;
       height: 100%;
       padding: 1.5rem 0;
+    }
+    /* One-viewport budget: title (~200px) + caption/dice/pointer (~290px)
+       leave ~500px for the stage at 1080p. SequenceHeroDemo's own ultrawide
+       60vh cap is tuned for stacked pages and overflows the split pane. */
+    .home-hero :global(.hero-demo) {
+      max-width: min(48vh, 34rem);
+    }
+  }
+
+  /* 4K tier: the taller viewport affords a larger stage so the hero keeps
+     its weight against the scaled-up grid. */
+  @media (min-width: 2200px) {
+    .home-hero :global(.hero-demo) {
+      max-width: min(44vh, 46rem);
     }
   }
 </style>

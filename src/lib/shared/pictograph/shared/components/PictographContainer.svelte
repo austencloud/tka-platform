@@ -89,6 +89,9 @@ with pre-prepared data for better performance.
     darkMode = undefined,
     // Print Mode: pure white background for professional print output
     printMode = false,
+    // Transparent background: skip the background fill so the glyph floats
+    // on the host surface (decorative embeds on dark tiles).
+    transparentBackground = false,
     // Explicit prop types for export/thumbnail rendering
     // When provided, passed to PictographPreparer for consistency during async operations
     bluePropTypeOverride = undefined,
@@ -140,6 +143,8 @@ with pre-prepared data for better performance.
     darkMode?: boolean;
     /** Print Mode: pure white background for professional print output (Choreo Cards). */
     printMode?: boolean;
+    /** Skip the background fill so the glyph floats on the host surface. */
+    transparentBackground?: boolean;
     /** Explicit prop type for blue hand. Export/thumbnail rendering provides this for consistency. */
     bluePropTypeOverride?: PropType;
     /** Explicit prop type for red hand. Export/thumbnail rendering provides this for consistency. */
@@ -520,6 +525,7 @@ with pre-prepared data for better performance.
         {showArrow}
         darkMode={effectiveDarkMode}
         {printMode}
+        {transparentBackground}
         {onToggleTKA}
         {onToggleTnD}
         {onToggleElemental}
@@ -561,6 +567,7 @@ with pre-prepared data for better performance.
             {showArrow}
             darkMode={effectiveDarkMode}
             {printMode}
+            {transparentBackground}
             {onToggleTKA}
             {onToggleTnD}
             {onToggleElemental}

@@ -107,6 +107,11 @@
 <style>
   .hero-demo {
     margin: 2.4rem auto 0;
+    /* width, not just max-width: inside a column-flex host the auto inline
+       margins would otherwise shrink this to fit-content (the caption line,
+       ~290px). In block-context hosts width:100% + max-width is identical to
+       the old behavior. */
+    width: 100%;
     max-width: min(26rem, 100%);
   }
   /* Figure holds only the image + its caption (a11y: figcaption stays the

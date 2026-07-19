@@ -71,7 +71,12 @@
 								loader={() =>
 									import("$lib/shared/pictograph/shared/components/PictographContainer.svelte")}
 								{active}
-								props={{ pictographData: demoStep, disableTransitions: true }}
+								props={{
+									pictographData: demoStep,
+									disableTransitions: true,
+									darkMode: true,
+									transparentBackground: true,
+								}}
 							/>
 						</span>
 					{/if}

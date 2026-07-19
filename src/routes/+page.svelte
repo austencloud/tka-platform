@@ -207,14 +207,21 @@
       max-width: max(1760px, 62vw);
       margin-inline: auto;
       padding-inline: clamp(1.5rem, 2.5vw, 4rem);
-      /* ~76px allowance for the sticky MarketingChrome header. min-height,
-         not height: a shorter window still scrolls instead of clipping. */
-      min-height: calc(100svh - 76px);
+      /* The fixed MarketingChrome header overlays the top ~64px, so the
+         composition budgets for it: top padding pushes both panes clear, and
+         min-height (not height) lets a short window scroll instead of clip. */
+      padding-top: 76px;
+      min-height: 100svh;
     }
 
     .launchpad-main {
       max-width: none;
       padding: 0;
+      /* The base margin:0 auto must go: auto inline margins on a grid item
+         mean shrink-to-fit, and the tiles' content is absolutely positioned,
+         so the whole grid collapsed to its strip row's width (~390px). */
+      margin: 0;
+      width: 100%;
     }
   }
 </style>
