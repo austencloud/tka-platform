@@ -1,14 +1,24 @@
 /**
  * Onboarding Flags
  *
- * Auto-popping tours (the post-signup create tutorial prompt and the step
- * editor coach marks) are unfinished, so they stay off for now — a new user
- * goes straight to the app with zero interruptions. (The Fuse walkthrough
- * was deleted 2026-07-10.)
+ * Two independent switches gate the post-signup entry experience:
  *
- * Flip this to true when the tours are polished. Manual entry points are NOT
- * gated by this flag: every help button still replays its tour via restart(),
- * and the Settings "replay tutorial" path (appEntryState.replay) still works.
+ * - AUTO_TOURS_ENABLED (off): the step-editor coach-mark walkthroughs that
+ *   auto-pop while a user works. Unfinished, so they stay off — a new user
+ *   never gets interrupted mid-task by one of these. (The Fuse walkthrough
+ *   was deleted 2026-07-10.)
+ * - CREATE_TUTORIAL_ENABLED (on): the ONE cold-start guided-build offer shown
+ *   to a first-time guest landing on an empty Create (see
+ *   appEntryState.offerCreateTutorial). Finished and ship-ready, independent
+ *   of AUTO_TOURS_ENABLED.
+ *
+ * So the real behavior with today's flags is "zero auto-popping coach marks,
+ * plus exactly one opt-in tutorial offer" — not "zero interruptions."
+ *
+ * Flip AUTO_TOURS_ENABLED to true when the coach marks are polished. Manual
+ * entry points are NOT gated by either flag: every help button still replays
+ * its tour via restart(), and the Settings "replay tutorial" path
+ * (appEntryState.replay) still works regardless of these flags.
  */
 export const AUTO_TOURS_ENABLED = false;
 
