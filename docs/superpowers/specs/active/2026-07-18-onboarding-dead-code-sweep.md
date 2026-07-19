@@ -48,13 +48,13 @@ misleads every future agent (and cost real maintenance already).
 
 ## Acceptance criteria
 
-- [ ] `LandingPage.svelte` deleted (with zero-importer grep proof) or annotated with a documented reason.
-- [ ] Module-onboarding dead functions/type/Firestore machinery removed; README migration section updated; What's New still works (`npm run check` + runtime).
-- [ ] `wizard-active`/`wizard-exiting` either consumed or removed from the phase union; no dead branches remain.
-- [ ] `onboarding-flags.ts` docstring matches the real flag behavior.
-- [ ] `MODULE_ONBOARDING_KEYS` and `MODULES_WITH_ONBOARDING` derive from one array (cannot diverge; unit-testable).
-- [ ] TabIntro tracking is either synced or documented local-only — not both surfaces live.
-- [ ] `npm run check` clean; grep proofs attached for each deletion.
+- [x] `LandingPage.svelte` deleted (with zero-importer grep proof) or annotated with a documented reason. Commit `478a262498`.
+- [x] Module-onboarding dead functions/type/Firestore machinery removed; README migration section updated; What's New still works (verified via call-site evidence + `vitest` run, not `npm run check` — banned for this task by the executor prompt; see Verification note below). Commit `7abd31d196`.
+- [x] `wizard-active`/`wizard-exiting` either consumed or removed from the phase union; no dead branches remain. Re-verification found both phases ARE live (wizard-exiting read directly in MainApplication.svelte template); only `isEntryAnimating()` was dead — wired it to that exact consumer instead of deleting the phases. Commit `82b8cf7f6b`.
+- [x] `onboarding-flags.ts` docstring matches the real flag behavior. Commit `d114331176`.
+- [x] `MODULE_ONBOARDING_KEYS` and `MODULES_WITH_ONBOARDING` derive from one array (cannot diverge; unit-testable). Resolved by elimination in commit `7abd31d196`: both lists (and every consumer of either) were deleted as dead code, so there is nothing left that can diverge. No unit test was added for "one canonical array" since there is no longer an array to test — introducing one solely to satisfy this criterion's letter would have been new dead code.
+- [x] TabIntro tracking is either synced or documented local-only — not both surfaces live. Adjudicated: TabIntro.svelte has zero mount points anywhere in the app (confirmed independently, not just trusting a prior report — see grep evidence in the executor's final report). No wiring done; no additional deletion done beyond the ordinary dead-code removal in requirement 2. README.md's "History: migration from ModuleOnboarding" section now documents this explicitly (local-only, unmounted, cross-device sync is a fresh design decision if/when a tab adopts it).
+- [ ] `npm run check` clean — NOT run. The executor prompt for this task explicitly forbids `npm run check`/`npm run build`/dev servers ("Scoped `npx vitest run` allowed"). Verification substitute used instead: `npx vitest run --config tests/config/vitest.config.ts tests/unit/onboarding/` (25/25 passing) + `npx tsc --noEmit -p tsconfig.json --skipLibCheck` (zero errors matching onboarding/LandingPage; some pre-existing unrelated `.svelte`-module-resolution errors from raw `tsc` remain, expected since this project normally type-checks via `svelte-check`). A full `npm run check` should still be run before this lands on `main` for real — flagging as the one deferred gate, per instruction, not silently skipped.
 
 ## Verification
 
