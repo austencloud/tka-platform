@@ -12,7 +12,7 @@ with explicit pathspec only (`git commit -m "..." -- <your files>`). Never `git 
 - [ ] A1 Front doors: shape-matrix launchpad tile + NAV entry
 - [x] A2 loop-explorer services (generation, verification, relations, explanation)
 - [x] A3 Verification harness script + curated seed pool
-- [ ] B1 loop-explorer components (picker, showcase, explanation pane, linking)
+- [x] B1 loop-explorer components (picker, showcase, explanation pane, linking)
 - [ ] C1 /notation/loops page assembly + front doors for loops
 - [ ] V  Full typecheck + build + contract greps
 
