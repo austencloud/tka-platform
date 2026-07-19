@@ -440,7 +440,11 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    /* Contained toy, not a full-bleed slab: on ultrawide viewports the panel
+       caps out and centers, so the controls never drift apart into voids. */
     width: 100%;
+    max-width: 1360px;
+    margin-inline: auto;
     padding: clamp(16px, 2.2cqw, 28px);
     border-radius: 24px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -509,9 +513,12 @@
   }
 
   /* Real tiles, not thin bubbles: fixed control width so the four segments
-     come out as chunky squares that match the prop tiles' visual weight. */
+     come out as chunky squares that match the prop tiles' visual weight.
+     (Must be a hard px width — a min(100%, …) resolves against the
+     content-sized flex column and collapses the control to min-content.) */
   .turns-group :global(.segmented-control) {
-    width: min(100%, 224px);
+    width: 224px;
+    max-width: calc(100cqw - 40px);
   }
 
   .turns-group :global(.segment) {
@@ -547,8 +554,10 @@
     .demo-toolbar {
       align-items: end;
     }
+    /* Balanced toolbar ends: prop tiles anchor the left edge, the turn
+       pickers anchor the right — no orphan void trailing the turns. */
     .turns-pair {
-      justify-self: start;
+      justify-self: end;
     }
   }
 
