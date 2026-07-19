@@ -64,8 +64,22 @@
   setGuidePrintMode();
 
   // Sheet scale-to-fit-width (client-only; sheet is never the SSR default).
+  // Clamped at 1.9x - past that the print sheet's raster gets soft rather than
+  // crisp - not "no cap", so the 816px sheet doesn't float tiny at 4K but also
+  // doesn't get pushed past its native resolution.
   let sheetWrap = $state<HTMLDivElement>();
   let scale = $state(1);
+  // .sheet-scale sits centred in .sheet-wrap via `margin: 0 auto` at its OWN
+  // unscaled 816px width. Below scale 1, .sheet-wrap is narrower than 816px so
+  // the auto margins clamp to 0 (flush-left) and the scaled-down box exactly
+  // fills the wrap - no shift needed there. At/above scale 1, .sheet-wrap is
+  // wider than 816px so the margins DO centre the unscaled box - but
+  // transform-origin: top left then grows it rightward from that already-
+  // centred position as scale climbs, not from the wrap's centre. Shifting
+  // left by half the EXTRA width the upscale adds (816 * (scale - 1) / 2)
+  // re-centres it; max(0, ...) keeps the below-1 case untouched (already
+  // correct, needs zero shift).
+  const sheetShiftPx = $derived(408 * Math.max(0, scale - 1));
 
   // Effective page theme (drives dark-mode pictographs in the flow view). Mirrors
   // the CSS resolution: an explicit data-theme wins, else prefers-color-scheme.
@@ -76,7 +90,7 @@
     loadOverrides();
     const fit = () => {
       if (!sheetWrap) return;
-      scale = Math.min(1, sheetWrap.clientWidth / 816);
+      scale = Math.min(sheetWrap.clientWidth / 816, 1.9);
     };
     fit();
     const ro = new ResizeObserver(fit);
@@ -140,8 +154,11 @@
   {:else if Sheet}
     <!-- Print-friendly layout: the SAME built _pages sheet the book uses, scaled
          to fit width. Horizontal scroll guards narrow viewports. -->
-    <div class="sheet-wrap" bind:this={sheetWrap}>
-      <div class="sheet-scale" style="transform: scale({scale})">
+    <div class="sheet-wrap" bind:this={sheetWrap} style="height: {1056 * scale}px">
+      <div
+        class="sheet-scale"
+        style="transform: translateX(-{sheetShiftPx}px) scale({scale})"
+      >
         <GuidePage
           title={meta?.title}
           pageNumber={bodyIndex >= 0 ? bodyIndex + 1 : undefined}
@@ -241,11 +258,16 @@
     max-width: 18rem;
   }
 
-  /* Print-friendly sheet: fit-to-width scale, its own footprint box so the
-     scaled 816×1056 sheet doesn't leave a huge gap (transform doesn't shrink
-     layout size). Centered, horizontal scroll on very narrow screens. */
+  /* Print-friendly sheet: fit-to-width scale (up to 1.9x - see sheetShiftPx),
+     its own footprint box so the scaled 816×1056 sheet doesn't leave a gap OR
+     overlap the nav below (transform doesn't affect layout - .sheet-wrap's
+     height is bound to the live scaled height via inline style). Centered,
+     horizontal scroll on very narrow screens. max-width raised well past the
+     816*1.9=1550px the sheet needs at its cap, so wide/4K viewports actually
+     have room to reach it (816px's own max-width alone would cap fit-width
+     scale at ~1.1x, never reaching 1.9). */
   .sheet-wrap {
-    max-width: 60rem;
+    max-width: 112.5rem;
     margin: 1rem auto 0;
     padding: 0 1rem;
     overflow-x: auto;
@@ -254,9 +276,9 @@
     width: 816px;
     height: 1056px;
     transform-origin: top left;
-    /* Reserve the scaled footprint so following nav doesn't jump (no-layout-shift):
-       a wrapper of scaled height would need JS; instead the scroll container hugs
-       the unscaled box and the scale visually shrinks it. Height reserved below. */
+    /* Reserve the SCALED footprint on .sheet-wrap itself (bound in the markup to
+       1056 * scale) - see sheetShiftPx above for why the transform also carries a
+       translateX. */
     margin: 0 auto;
   }
 

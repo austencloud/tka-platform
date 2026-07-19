@@ -410,6 +410,7 @@
   .pic-card {
     position: relative;
     width: 100%;
+    aspect-ratio: 1;
     border: 1px solid color-mix(in oklab, var(--ink, #1a1a1a) 16%, transparent);
     border-radius: 12px;
     overflow: hidden;
@@ -546,6 +547,23 @@
   }
   .grid-fig :global(.grid-container) {
     opacity: 1;
+  }
+
+  /* Wide/4K ramp: FlowFrame's own reading measures stay narrow-centred (prose is
+     capped independently of this), but the card grids/figures below are square
+     content in a WIDE frame - below 1680px they're already sized right; above
+     it there's room to let them breathe rather than staying pinned to their
+     sub-1680 caps forever. Base (sub-1680) values above are untouched. */
+  @media (min-width: 1680px) {
+    .flow-grid {
+      max-width: 40rem;
+    }
+    .flow-grid-figure {
+      max-width: 24rem;
+    }
+    .flow-figure {
+      max-width: 20rem;
+    }
   }
 
   /* Palette is HOST-owned: the reader's flow page is always a white sheet (keep
