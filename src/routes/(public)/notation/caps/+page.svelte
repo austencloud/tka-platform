@@ -1,5 +1,6 @@
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
+  import YutaCapLiveDemo from "./_components/YutaCapLiveDemo.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   const TITLE = "CAPs: Continuous Assembly Patterns | The Kinetic Alphabet";
@@ -111,36 +112,112 @@
     <h1 class="page-title">CAPs: Continuous Assembly Patterns</h1>
     <p class="page-subtitle">
       Before this site formalized LOOPs, poi spinners were already composing
-      cyclic patterns. They named the idea first. This is their story, with the
-      original math.
+      cyclic patterns. They named the idea first. This is their story, told the
+      way it deserves: with the pattern spinning.
     </p>
   </header>
 
-  <!-- HERO: the Yuta CAP, drawn live -->
+  <!-- HERO: the Yuta CAP, drawn live by a club -->
   <section class="editorial-section" style="--accent: #38bdf8">
     <div class="cap-hero">
-      <img
-        class="cap-hero-trace"
-        src="/caps/yuta-cap.svg"
-        alt="The Yuta CAP drawn as a continuous curve: an extension arc joined to antispin petals"
-        width="720"
-        height="720"
-      />
+      <div class="cap-hero-stage">
+        <YutaCapLiveDemo />
+      </div>
       <div class="cap-hero-copy prose">
         <span class="section-kicker">One pattern, two fragments</span>
         <p>
-          This is the pattern the whole idea grew around. Half a cycle of
-          extension, half a cycle of antispin, joined into one closed curve:
-          <code>1 0 ; 1 3/4 ; 1/2</code> assembled with
-          <code>-1 4 ; 1 3/4 ; 1/2</code>. Spinners saw it in Yuta's spinning,
-          took it apart on a forum, and needed a name for what they found.
+          This is a CAP: a closed pattern assembled from fragments of simpler
+          ones. The club here is drawing the one the whole idea grew around.
+          Half a cycle of isolation, half a cycle of antispin, joined into a
+          single curve that repeats forever.
         </p>
         <p class="cap-credit">
-          Notation and construction: Damien (posting as Zaltymbunk),
-          <a href={THREAD_URL}>Home of Poi, 2009</a>. Curve redrawn from his
-          published parameters.
+          Spinners saw this pattern in Yuta's spinning and took it apart on a
+          forum. Notation and construction: Damien (posting as Zaltymbunk),
+          <a href={THREAD_URL}>Home of Poi, 2009</a>.
         </p>
       </div>
+    </div>
+  </section>
+
+  <!-- BREAK IT DOWN -->
+  <section class="editorial-section" style="--accent: #a78bfa">
+    <span class="section-kicker">Break it down</span>
+    <h2 class="section-title">Four steps, two fragments</h2>
+    <div class="prose">
+      <p>Slow the animation down and the curve splits cleanly in half.</p>
+    </div>
+    <ul class="bullet-list">
+      <li>
+        <strong>The isolation half.</strong> The hand carries the club from
+        east to south, then south to west. Zero turns: the club keeps pointing
+        away from center the whole way, so the tip sweeps a wide, even arc.
+      </li>
+      <li>
+        <strong>The antispin half.</strong> The hand retraces from west to
+        south, then south to east, and the club adds one full turn on each
+        step. That extra rotation against the hand's arc flowers the trace
+        into petals.
+      </li>
+      <li>
+        <strong>The join.</strong> End where you started, pointing the way you
+        started, and the curve closes. A closed curve repeats forever. That is
+        the whole trick, and it works for any pair of fragments that meet
+        cleanly.
+      </li>
+    </ul>
+    <div class="cap-lens-duo">
+      <figure class="cap-lens">
+        <img
+          src="/caps/yuta-cap.svg"
+          alt="The Yuta CAP drawn as a continuous curve: an isolation arc joined to antispin petals"
+          width="360"
+          height="360"
+          loading="lazy"
+        />
+        <figcaption>
+          The full trace, redrawn from Damien's published parameters:
+          <code>1 0 ; 1 3/4 ; 1/2</code> assembled with
+          <code>-1 4 ; 1 3/4 ; 1/2</code>.
+        </figcaption>
+      </figure>
+      <figure class="cap-lens">
+        <img
+          src="/caps/original/cap-yuta-halfcycle.jpg"
+          alt="Damien's original 2009 plot of the Yuta CAP with the two fragments in two colors"
+          width="360"
+          height="308"
+          loading="lazy"
+        />
+        <figcaption>
+          Damien's original 2009 plot of the same pattern, fragments in two
+          colors. <a href={THREAD_URL}>From the origin thread</a>.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- HOW TKA REFLECTS IT -->
+  <section class="editorial-section" style="--accent: #fbbf24">
+    <span class="section-kicker">What came before, reflected</span>
+    <h2 class="section-title">The Kinetic Alphabet reads the same movement</h2>
+    <div class="prose">
+      <p>
+        CAPs read paths: the shape a prop tip draws through space, composed one
+        hand at a time and overlaid. The Kinetic Alphabet arrived at the same
+        infinity from the other side. It reads steps: whole-body snapshots of
+        both hands at once, chained into speakable words. The four steps the
+        club performs above are exactly what TKA writes down as letters, and
+        its <a href="/notation/loops">LOOP algebra</a> is the machinery for
+        closing step chains into cycles that repeat forever, the same craving
+        CAPs answered in 2009.
+      </p>
+      <p>
+        Neither system contains the other. Damien himself drew the matching
+        distinction inside his own framework: serial assembly (CAPs) against
+        parallel superposition (hybrids). They are parallel discoveries about
+        the same infinity, seventeen years apart in their telling.
+      </p>
     </div>
   </section>
 
@@ -183,27 +260,21 @@
     </div>
   </section>
 
-  <!-- THE FRAMEWORK -->
-  <section class="editorial-section" style="--accent: #a78bfa">
-    <span class="section-kicker">The framework</span>
-    <h2 class="section-title">The math came with it</h2>
+  <!-- THE ORIGINAL MATH, KEPT LIGHT -->
+  <section class="editorial-section" style="--accent: #34d399">
+    <span class="section-kicker">The original math</span>
+    <h2 class="section-title">Damien's model, kept light</h2>
     <div class="section-duo">
-      <div class="prose">
+      <div class="prose duo-copy">
         <p>
-          CAPs did not arrive as vibes. Damien posted a full model: the
-          shoulder O, the hand M, the prop tip E, each on its own circle. Two
-          frequencies set a pattern's shape (arm turns and prop turns, negative
-          for antispin). Two radii set its scale (arm reach, and how far the
-          prop rides from the hand, in wrap fractions). A final number takes a
-          fragment of the cycle instead of the whole.
-        </p>
-        <p>
-          Every elementary pattern gets a name like
-          <code>θ1&nbsp;θ2&nbsp;;&nbsp;ρ1&nbsp;ρ2&nbsp;;&nbsp;d</code>. Flowers
-          fall out as the equal-radius case. Cycloids fall out where hand and
-          tip match ground speed. Feasibility rules fall out of which wraps a
-          human hand can actually hold. Then CAPs: take two or more of these,
-          cut them at the right fraction, and join them into one closed curve.
+          The idea arrived with a full model: shoulder, hand, and prop tip on
+          nested circles, two frequencies for a pattern's shape, two radii for
+          its scale, and a final fraction to take part of a cycle instead of
+          the whole. Every elementary pattern gets a short name like
+          <code>θ1&nbsp;θ2&nbsp;;&nbsp;ρ1&nbsp;ρ2&nbsp;;&nbsp;d</code>. The
+          drawings below are redrawn from his exact parameters, and they
+          explain the system better than the algebra ever could. We will leave
+          it at that.
         </p>
         <p class="cap-credit">
           Original model diagram: Damien (Zaltymbunk),
@@ -211,7 +282,7 @@
           imageshotel.org.
         </p>
       </div>
-      <figure class="cap-figure">
+      <figure class="cap-figure duo-demo">
         <img
           src="/caps/original/model.jpg"
           alt="Damien's original 2009 diagram: shoulder O, hand M, prop extremity E on nested circles with theta and rho annotations"
@@ -252,7 +323,7 @@
   </section>
 
   <!-- THE PEOPLE -->
-  <section class="editorial-section" style="--accent: #34d399">
+  <section class="editorial-section" style="--accent: #38bdf8">
     <span class="section-kicker">The people</span>
     <h2 class="section-title">Credit where it started</h2>
     <div class="cap-people">
@@ -319,57 +390,9 @@
     </p>
   </section>
 
-  <!-- CAPS VS LOOPS -->
-  <section class="editorial-section" style="--accent: #fbbf24">
-    <span class="section-kicker">Two lenses</span>
-    <h2 class="section-title">CAPs and LOOPs</h2>
-    <div class="cap-lens-duo">
-      <figure class="cap-lens">
-        <img
-          src="/caps/yuta-cap.svg"
-          alt="The Yuta CAP curve: what one hand's prop tip draws through space"
-          width="360"
-          height="360"
-          loading="lazy"
-        />
-        <figcaption>
-          <strong>The CAP lens reads paths.</strong> One hand's tip draws a
-          closed curve through space. Compose patterns serially in time, then
-          overlay the two hands.
-        </figcaption>
-      </figure>
-      <figure class="cap-lens">
-        <img
-          src="/caps/original/cap-yuta-halfcycle.jpg"
-          alt="Damien's original plot of the Yuta CAP with extension arc and antispin petals in two colors"
-          width="360"
-          height="308"
-          loading="lazy"
-        />
-        <figcaption>
-          <strong>The LOOP lens reads steps.</strong> The Kinetic Alphabet cuts
-          movement into per-step snapshots of both hands at once, then composes
-          the snapshots with transformations.
-          <a href="/notation/loops">See the LOOP algebra</a>.
-        </figcaption>
-      </figure>
-    </div>
-    <div class="prose">
-      <p>
-        The two systems answer the same craving, patterns you can spin forever,
-        from opposite directions. CAPs compose each hand's trajectory and
-        overlay the results. LOOPs compose whole-body moments and chain them
-        into speakable words. Damien himself drew a third distinction inside
-        his own framework: serial assembly (CAPs) against parallel
-        superposition (hybrids). Neither system contains the other. They are
-        parallel discoveries about the same infinity.
-      </p>
-    </div>
-  </section>
-
   <!-- MODERN MEDIA -->
   {#if MODERN_MEDIA.length > 0}
-    <section class="editorial-section" style="--accent: #38bdf8">
+    <section class="editorial-section" style="--accent: #a78bfa">
       <span class="section-kicker">Since then</span>
       <h2 class="section-title">CAPs on video, 2009 to now</h2>
       <div class="cap-media-grid">
@@ -455,16 +478,15 @@
     white-space: nowrap;
   }
 
+  /* Hero: the live stage takes the larger column; copy sits beside it. */
   .cap-hero {
     display: grid;
-    grid-template-columns: minmax(260px, 420px) 1fr;
-    gap: clamp(1.5rem, 4vw, 3rem);
+    grid-template-columns: minmax(320px, 640px) 1fr;
+    gap: clamp(1.5rem, 4vw, 3.5rem);
     align-items: center;
   }
-  .cap-hero-trace {
+  .cap-hero-stage {
     width: 100%;
-    height: auto;
-    aspect-ratio: 1;
   }
   .cap-credit {
     font-size: 0.85rem;
@@ -546,7 +568,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 2rem;
-    margin-bottom: 1.5rem;
+    margin-top: 1.5rem;
   }
   .cap-lens {
     margin: 0;
