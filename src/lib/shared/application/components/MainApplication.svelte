@@ -531,7 +531,7 @@ import type { SheetType } from "../../navigation/services/types";
            applies (e.g. a Google signup that already has a name + a login). -->
       <div class="fullscreen-overlay">
         {#await import("../../onboarding/components/first-run/AccountSetupWizard.svelte") then mod}
-          {#if (!firstRunState.isDone() || firstRunState.shouldShow) && appEntryState.phase === "wizard-exiting"}
+          {#if (!firstRunState.isDone() || firstRunState.shouldShow) && appEntryState.isEntryAnimating()}
             <div class="wizard-exit-wrapper">
               <mod.default
                 needsPassword={passwordOnboardingState.required}
