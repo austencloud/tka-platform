@@ -1,45 +1,18 @@
 <!--
   MandalaSection: TEST-page showcase (marketing preview, not shipping code).
 
-  BEAT A: the Shape Matrix baseline (real ShapeMatrixGrid, client-only).
-
-  BEAT B: the curated showcase. Renders CHOSEN_MANDALAS (baked by the Choose
-  button on /test/mandala-pick) with the real SequenceMandala, breathing. No auth.
-  Empty until picks are chosen; points at the picker until then.
+  The curated, breathing showcase: renders CHOSEN_MANDALAS (baked by the Choose
+  button on /test/mandala-pick) with the real SequenceMandala, undulating as they
+  turn. No auth. Empty until picks are chosen; points at the picker until then.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
-  import ShapeMatrixGrid from "$lib/features/lab/vtg-lab/components/ShapeMatrixGrid.svelte";
-  import {
-    loadShapeMatrix,
-    type ShapeMatrixData,
-  } from "$lib/features/lab/vtg-lab/services/shape-matrix-flowers";
-  import {
-    flowerKey,
-    type Flower,
-  } from "$lib/features/lab/vtg-lab/domain/flower-signature";
   import { CHOSEN_MANDALAS } from "./chosen-mandalas";
 
-  const MATRIX_KEYS = [
-    "anti-0.5-in-diamond",
-    "pro-1-in-diamond",
-    "anti-1.5-in-diamond",
-    "pro-2-in-diamond",
-    "anti-3-in-diamond",
-  ];
-
-  let matrixData = $state<ShapeMatrixData | null>(null);
-  let matrixErr = $state(false);
   let reducedMotion = $state(false);
   let sizes = $state<number[]>([]);
-
-  const matrixAxis = $derived.by((): Flower[] => {
-    if (!matrixData) return [];
-    const byKey = new Map(matrixData.axis.map((f) => [flowerKey(f), f]));
-    return MATRIX_KEYS.map((k) => byKey.get(k)).filter((f): f is Flower => !!f);
-  });
 
   onMount(() => {
     if (!browser) return;
@@ -47,57 +20,17 @@
     reducedMotion = mq.matches;
     const onMq = (e: MediaQueryListEvent) => (reducedMotion = e.matches);
     mq.addEventListener("change", onMq);
-
-    let disposed = false;
-    void (async () => {
-      try {
-        const data = await loadShapeMatrix();
-        if (!disposed) matrixData = data;
-      } catch (err) {
-        console.error("[MandalaSection] shape matrix load failed", err);
-        if (!disposed) matrixErr = true;
-      }
-    })();
-
-    return () => {
-      disposed = true;
-      mq.removeEventListener("change", onMq);
-    };
+    return () => mq.removeEventListener("change", onMq);
   });
 </script>
 
 <section class="depth-showcase">
-  <!-- BEAT A: the Shape Matrix, the structural baseline -->
-  <div class="beat">
-    <div class="beat-copy">
-      <h3 class="beat-heading">Every shape pairing has its own mandala</h3>
-      <p class="beat-caption">The Shape Matrix: every hand-shape against every hand-shape.</p>
-    </div>
-
-    <div class="matrix-frame" class:is-placeholder={!matrixData}>
-      {#if browser && matrixData && matrixAxis.length}
-        <ShapeMatrixGrid
-          data={matrixData}
-          rowAxis={matrixAxis}
-          colAxis={matrixAxis}
-          maxCellPx={190}
-          onselect={() => {}}
-        />
-      {:else}
-        <span class="frame-status">
-          {matrixErr ? "Shape matrix unavailable." : "Building the shape matrix…"}
-        </span>
-      {/if}
-    </div>
-  </div>
-
-  <!-- BEAT B: the curated, breathing showcase -->
   <div class="beat">
     <div class="beat-copy">
       <h3 class="beat-heading">Shapes only the Kinetic Alphabet can make</h3>
       <p class="beat-caption">
         Hand-picked from the collection, drawn live and breathing as they turn. Non-radial
-        orientations and reversed hand paths reach shapes the radial shape system never could.
+        orientations and reversed hand paths reach shapes older systems never could.
       </p>
     </div>
 
@@ -168,29 +101,6 @@
     font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.1rem);
     line-height: 1.55;
     color: oklch(0.68 0.02 270);
-  }
-
-  .matrix-frame {
-    position: relative;
-    width: 100%;
-    /* The Shape Matrix is the star of this wing — let it fill a wide band and
-       grow with the viewport instead of a 620px laptop box. */
-    max-width: min(100%, 1040px);
-    margin-inline: auto;
-    height: clamp(380px, 60vh, 1000px);
-    border-radius: 16px;
-    overflow: hidden;
-    border: 1px solid oklch(0.5 0.03 270 / 0.18);
-    box-shadow: 0 12px 30px oklch(0.1 0.02 270 / 0.35);
-    background: #0a0f14;
-  }
-  .matrix-frame.is-placeholder {
-    display: grid;
-    place-items: center;
-  }
-  .frame-status {
-    font-size: 0.9rem;
-    color: oklch(0.66 0.02 270);
   }
 
   .tile-grid {
