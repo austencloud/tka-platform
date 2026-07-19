@@ -15,6 +15,11 @@
  * devices. Mirrors first-run-state.svelte.ts.
  */
 
+import {
+  safeLocalStorageSetItem,
+  removeLocalStorageItem,
+} from "$lib/shared/foundation/services/storage-manager";
+
 const HAS_PASSWORD_KEY = "tka-has-password";
 const PASSWORD_REQUIRED_KEY = "tka-password-required";
 
@@ -73,7 +78,8 @@ function createPasswordOnboardingState() {
     markRequired(): void {
       if (!isBrowser || state.hasPassword) return;
       state.required = true;
-      localStorage.setItem(PASSWORD_REQUIRED_KEY, "true");
+      // Guarded so a quota error never blocks the cloud sync below.
+      safeLocalStorageSetItem(PASSWORD_REQUIRED_KEY, "true");
       // Persist so a returning session keeps requiring until satisfied.
       void this.syncToCloud();
     },
@@ -86,8 +92,8 @@ function createPasswordOnboardingState() {
       if (!isBrowser) return;
       state.hasPassword = true;
       state.required = false;
-      localStorage.setItem(HAS_PASSWORD_KEY, "true");
-      localStorage.removeItem(PASSWORD_REQUIRED_KEY);
+      safeLocalStorageSetItem(HAS_PASSWORD_KEY, "true");
+      removeLocalStorageItem(PASSWORD_REQUIRED_KEY);
       void this.syncToCloud();
     },
 
@@ -109,8 +115,8 @@ function createPasswordOnboardingState() {
       state.hasPassword = false;
       state.required = false;
       state.cloudSynced = false;
-      localStorage.removeItem(HAS_PASSWORD_KEY);
-      localStorage.removeItem(PASSWORD_REQUIRED_KEY);
+      removeLocalStorageItem(HAS_PASSWORD_KEY);
+      removeLocalStorageItem(PASSWORD_REQUIRED_KEY);
     },
 
     /**
@@ -147,14 +153,22 @@ function createPasswordOnboardingState() {
           state.required = cloudHasPassword ? false : cloudRequired || state.required;
 
           if (cloudHasPassword) {
-            localStorage.setItem(HAS_PASSWORD_KEY, "true");
-            localStorage.removeItem(PASSWORD_REQUIRED_KEY);
+            safeLocalStorageSetItem(HAS_PASSWORD_KEY, "true");
+            removeLocalStorageItem(PASSWORD_REQUIRED_KEY);
           } else if (state.required) {
-            localStorage.setItem(PASSWORD_REQUIRED_KEY, "true");
+            safeLocalStorageSetItem(PASSWORD_REQUIRED_KEY, "true");
           }
+        } else {
+          // Missing doc = brand-new account on this device (or first sign-in
+          // before any password-onboarding write ever landed). hasPassword
+          // must NOT survive from a prior account on a shared device - cloud
+          // is authoritative per account. `required` is left alone: a
+          // requirement flagged locally THIS session (markRequired, e.g. from
+          // the email-link completion path) must still survive until the
+          // user sets a password.
+          state.hasPassword = false;
+          removeLocalStorageItem(HAS_PASSWORD_KEY);
         }
-        // Missing doc: leave local state as-is (a requirement flagged this
-        // session must survive until the user sets a password).
 
         state.cloudSynced = true;
       } catch (error) {

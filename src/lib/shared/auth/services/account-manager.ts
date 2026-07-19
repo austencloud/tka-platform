@@ -1,6 +1,5 @@
 import {
   updatePassword,
-  signOut,
   EmailAuthProvider,
   reauthenticateWithCredential,
   deleteUser,
@@ -12,6 +11,7 @@ import {
   reauthenticateWithGoogle,
   reauthenticateWithFacebook,
 } from "./authenticator";
+import { authState } from "../state/auth-state.svelte";
 import type { HapticFeedback } from "../../application/services/haptic-feedback";
 
 /**
@@ -175,8 +175,13 @@ export class AccountManager {
     // Delete the Firebase Auth account
     await deleteUser(user);
 
-    // Sign out locally (belt-and-suspenders - deleteUser should invalidate session)
-    await signOut(auth).catch(() => {});
+    // Sign out through the app wrapper (not the raw Firebase SDK signOut) so
+    // onboarding cloud-sync state (app-entry, first-run, password-onboarding)
+    // gets reset the same way a normal sign-out resets it - otherwise the
+    // next account signed in on this device could inherit this account's
+    // already-resolved sync flags. Belt-and-suspenders: deleteUser() above
+    // should already invalidate the session.
+    await authState.signOut().catch(() => {});
 
     this.haptics.trigger("success");
   }

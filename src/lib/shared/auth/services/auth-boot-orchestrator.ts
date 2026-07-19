@@ -136,6 +136,25 @@ export async function initializeChildServices(
       }
     });
 
+  // Sync app-entry status FROM cloud (suppresses a re-offered create-tutorial
+  // prompt on a device where onboarding was already completed elsewhere).
+  // Previously write-only - this was the missing read-back call.
+  import("$lib/shared/onboarding/state/app-entry-state.svelte")
+    .then(async ({ appEntryState }) => {
+      const { getFirestoreInstance } = await import("$lib/shared/auth/firebase");
+      await getFirestoreInstance();
+      await appEntryState.syncFromCloud();
+    })
+    .catch(async (error) => {
+      console.warn("⚠️ [authState] App-entry sync failed:", error);
+      try {
+        const { appEntryState } = await import("$lib/shared/onboarding/state/app-entry-state.svelte");
+        appEntryState.markCloudSyncComplete();
+      } catch {
+        // Non-fatal; the pending offer would otherwise stay deferred forever
+      }
+    });
+
   // Initialize onboarding Firebase sync (non-blocking)
   import("$lib/shared/onboarding/config/storage-keys")
     .then(async (onboardingModule) => {
