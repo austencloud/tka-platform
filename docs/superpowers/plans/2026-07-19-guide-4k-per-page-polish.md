@@ -104,10 +104,21 @@ Legend: LOVELY = leave alone. Letters reference shared fixes above.
 
 ## Execution order
 
-1. [ ] AGENT-1: fixes A + B + C (pure file edits, scoped commit)
-2. [ ] Batched browser verification at 3840 + 1366 regression: codex,
-       hm-type56, lt2-wxyz, the-grid, hand-positions, one sheet-toggle topic
-       page. Sibling pages (29-35) spot-check ONE of them.
+1. [x] AGENT-1: fixes A + B + C (commit 15986ae7dd + corrections commit).
+       Corrections found in review/verification: (a) fix B's real cause is
+       guide.css's size-class width/height on .pictograph-wrapper beating the
+       component's width:100% - aspect-ratio on .pic-card alone leaves the
+       bands; the wrapper must fill the card. (b) sheet fit must measure the
+       content box, not clientWidth (padding overflow + shift-while-clamped
+       sliver). (c) codex standalone needed max-width:100% + clamped shift or
+       narrow viewports keep a phantom h-scroll. (d) NEW BUG: fit lived in
+       onMount, so flow pages toggled to "Page" never fitted (sheetWrap binds
+       after mount) - moved to an $effect keyed on the bind.
+2. [x] Batched browser verification at 3840 + 1366 done (2026-07-19, live DOM
+       measurements): all checklist items pass except "70-90% of content
+       track", which is unreachable by construction - the plan's own 1.9x
+       crisp cap yields 816*1.9=1550px, ~58% of the 4K content track. Cap wins;
+       revisit only if Austen wants a higher cap.
 3. [ ] D investigation (fresh session)
 4. [ ] E + optionals (2, 19) after Austen's visual sign-off
 5. [ ] Mobile overflow on 37 (separate phone-scope pass)

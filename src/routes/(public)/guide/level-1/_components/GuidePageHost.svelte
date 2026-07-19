@@ -86,16 +86,34 @@
   // Client-only - the prerendered HTML carries only pictograph aria-labels (the
   // SVG hydrates), so this never causes an SSR mismatch. Reactive to a theme toggle.
   let isDark = $state(false);
-  onMount(() => {
-    loadOverrides();
+
+  // Fit lives in an $effect keyed on the bind, NOT in onMount: on a flow-default
+  // page the sheet branch (and so sheetWrap) only mounts when the user toggles
+  // to "Page" - after onMount has already run. An onMount-only fit+observer
+  // never fires for it and the sheet stays stuck at scale 1 (masked pre-4K when
+  // 1 was also the cap; a visibly tiny sheet once upscaling exists).
+  $effect(() => {
+    const el = sheetWrap;
+    if (!el) return;
     const fit = () => {
-      if (!sheetWrap) return;
-      scale = Math.min(sheetWrap.clientWidth / 816, 1.9);
+      // Content-box width, not clientWidth: clientWidth includes .sheet-wrap's
+      // own inline padding, and a scale derived from it makes the scaled sheet
+      // overflow that padding (phantom horizontal scrollbar) - and fires the
+      // upscale shift while margin:auto is still clamped flush-left (clipped
+      // left edge on ~850px viewports). Content width keeps scale>1 exactly in
+      // sync with "margin:auto is actively centering".
+      const cs = getComputedStyle(el);
+      const inner = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+      scale = Math.min(inner / 816, 1.9);
     };
     fit();
     const ro = new ResizeObserver(fit);
-    if (sheetWrap) ro.observe(sheetWrap);
+    ro.observe(el);
+    return () => ro.disconnect();
+  });
 
+  onMount(() => {
+    loadOverrides();
     const root = document.documentElement;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const resolveTheme = () => {
@@ -108,7 +126,6 @@
     themeObs.observe(root, { attributes: true, attributeFilter: ["data-theme"] });
 
     return () => {
-      ro.disconnect();
       mq.removeEventListener("change", resolveTheme);
       themeObs.disconnect();
     };

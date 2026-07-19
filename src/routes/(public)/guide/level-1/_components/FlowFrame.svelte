@@ -420,6 +420,13 @@
     width: 100%;
   }
   .pic-card :global(.pictograph-wrapper) {
+    /* guide.css sizes wrappers by size class (.size-sm { width/height: 7.5rem })
+       at higher specificity than the component's own width: 100%. Inside a
+       pic-card the CARD is the sizer - the wrapper must fill it, or the frame
+       letterboxes its pictograph between gray side bands. */
+    width: 100% !important;
+    height: auto !important;
+    aspect-ratio: 1;
     max-width: none !important;
   }
 

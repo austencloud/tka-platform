@@ -17,16 +17,19 @@
   // nominal size, so a single measurement covers all of them.
   let sheetsEl = $state<HTMLDivElement>();
   let scale = $state(1);
-  // .sheets centers each (always-816px-wide) .sheet-wrap via flex
-  // `align-items: center`, so at ANY scale the box's own unscaled center
-  // already sits at the container's visual center. transform-origin: top left
-  // grows/shrinks .sheet-scale from ITS OWN top-left corner though, which
-  // moves that center - shifting by half the size delta (816 * (1 - scale) / 2)
-  // re-centers it. Unlike GuidePageHost's clamped version, this formula is
-  // continuous across both directions because flex centering (unlike
-  // margin: auto) doesn't clamp to flush-left when the box is wider than its
-  // container - it stays symmetric, so no max(0, ...) is needed here.
-  const shiftPx = $derived(408 * (1 - scale));
+  // .sheets flex-centers each .sheet-wrap; .sheet-wrap is 816px wide but capped
+  // at max-width: 100%, so on narrow viewports it shrinks to the viewport
+  // instead of leaving an 816px layout box hanging past the right edge
+  // (phantom horizontal scroll). That cap splits the geometry in two regimes,
+  // exactly like GuidePageHost's margin:auto version:
+  // - scale < 1 (viewport < 816): wrap hugs the viewport, .sheet-scale's
+  //   top-left origin sits at 0, and the scaled-down sheet exactly spans the
+  //   wrap - no shift needed.
+  // - scale >= 1: wrap is the full 816 and flex-centered, but transform-origin:
+  //   top left grows the sheet rightward from its already-centred left edge -
+  //   shift left by half the EXTRA width the upscale adds (816 * (scale-1) / 2)
+  //   to re-centre.
+  const shiftPx = $derived(-408 * Math.max(0, scale - 1));
 
   onMount(() => {
     const fit = () => {
@@ -107,10 +110,14 @@
 
   /* Reserves the SCALED footprint (bound in the markup to 1056 * scale) so a
      stack of upscaled sheets doesn't overlap the next one down (transform
-     doesn't affect layout). Fixed 816px width matches .sheet-scale's own
-     unscaled width, so flex `align-items: center` on .sheets centers it. */
+     doesn't affect layout). 816px matches .sheet-scale's own unscaled width so
+     flex `align-items: center` on .sheets centers it; max-width keeps the
+     layout box inside narrow viewports (the scaled-down sheet fits visually -
+     without the cap the untransformed 816px box adds phantom horizontal
+     scroll). */
   .sheet-wrap {
     width: 816px;
+    max-width: 100%;
   }
 
   /* The actual print-page artboard: fixed native size, scaled to fit via
