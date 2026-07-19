@@ -72,10 +72,15 @@ export async function generatePerVisitDemo(options?: {
         loopType: circular.LOOPType.ROTATED,
         period: circular.Period.QUARTERED,
         length: 16,
-        turnIntensity: 3,
+        // Turns capped at 1.5 with level 3 (advanced) allowed — Austen's
+        // 2026-07-19 tuning: max intensity 3 produced wild triple spins on
+        // the homepage act; advanced difficulty opens the half-turn pool
+        // (0/0.5/1/1.5/fl via TurnAllocator's cap filter), so the motion
+        // reads varied but composed.
+        turnIntensity: 1.5,
         gridMode: grid.GridMode.DIAMOND,
         propType: options?.propType ?? prop.PropType.STAFF,
-        difficulty: models.DifficultyLevel.INTERMEDIATE,
+        difficulty: models.DifficultyLevel.ADVANCED,
         constraintPreset: "smooth",
         ...(options?.startPosition ? { startPosition: options.startPosition } : {}),
       });
