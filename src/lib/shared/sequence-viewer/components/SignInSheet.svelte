@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { SignInReason } from "./auth-action-queue.svelte";
+  import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
   interface Props {
     open: boolean;
     reason: SignInReason | null;
@@ -10,14 +11,22 @@
 
   let { open, reason, webviewMode, onPrimaryAction, onDismiss }: Props = $props();
 
+  // publish/download/account are the only reasons that actually reach this
+  // sheet (gated-action-policy.ts requires a full account for them; the rest
+  // provision a guest identity silently and never prompt). Those three route
+  // through the centralized AUTH_NUDGE_TEXTS "create a free account" ask so
+  // this surface doesn't drift from AuthNudge's phrasing. save/favorite/
+  // remix/sendTo are unreachable today but keep local copy since they were
+  // never account-creation asks (they'd read "sign in", not "create an
+  // account", if a future caller ever wires them).
   const REASON_COPY: Record<SignInReason, string> = {
     save: "Sign in to save this to your library.",
     favorite: "Sign in to favorite this sequence.",
-    publish: "Sign in to publish this sequence.",
+    publish: AUTH_NUDGE_TEXTS["viewer-signin-publish"],
     remix: "Sign in to remix this sequence.",
     sendTo: "Sign in to send this to someone.",
-    download: "Create a free account to download this sequence.",
-    account: "Sign in to save your scans and build your library.",
+    download: AUTH_NUDGE_TEXTS["viewer-signin-download"],
+    account: AUTH_NUDGE_TEXTS["viewer-signin-account"],
   };
 
   const REASON_COPY_WEBVIEW: Record<SignInReason, string> = {

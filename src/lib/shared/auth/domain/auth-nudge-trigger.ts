@@ -8,7 +8,10 @@ export type AuthNudgeTrigger =
   | "module:library"
   | "module:settings"
   | "edit-community"
-  | "loop-locked-guest";
+  | "loop-locked-guest"
+  | "viewer-signin-publish"
+  | "viewer-signin-download"
+  | "viewer-signin-account";
 
 // One phrasing for the account ask across every entry: "Create a free
 // account to <do the specific thing>." The button that pairs with this copy
@@ -32,4 +35,14 @@ export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
   // not one angle.
   "loop-locked-guest":
     "Rotated LOOPs, sequences that return to their start by repeating the pattern rotated around the grid, are free. Create a free account for every LOOP type.",
+  // SignInSheet.svelte (sequence-viewer, /q scan funnel) - the three reasons
+  // that actually reach the sheet (publish/download require a full account
+  // per gated-action-policy.ts; account is the /q header chip's plain
+  // sign-in). save/favorite/remix/sendTo never prompt, so they keep their
+  // own local "Sign in to..." copy in SignInSheet.svelte - not an account
+  // ask, out of scope here.
+  "viewer-signin-publish": "Create a free account to publish this sequence.",
+  "viewer-signin-download": "Create a free account to download this sequence.",
+  "viewer-signin-account":
+    "Create a free account to save your scans and build your library.",
 };

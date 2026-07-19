@@ -22,7 +22,7 @@ const BANNED_PHRASES = [
 const entries = Object.entries(AUTH_NUDGE_TEXTS) as [AuthNudgeTrigger, string][];
 
 describe("AUTH_NUDGE_TEXTS — one phrasing for the account ask", () => {
-  it("has exactly the 8 live triggers (generate-cap deleted as a dead duplicate of beat-cap-guest)", () => {
+  it("has exactly the 11 live triggers (generate-cap deleted as a dead duplicate of beat-cap-guest; viewer-signin-* added for SignInSheet.svelte's consolidated account ask)", () => {
     expect(Object.keys(AUTH_NUDGE_TEXTS).sort()).toEqual(
       [
         "beat-cap-guest",
@@ -33,6 +33,9 @@ describe("AUTH_NUDGE_TEXTS — one phrasing for the account ask", () => {
         "module:library",
         "module:settings",
         "save",
+        "viewer-signin-account",
+        "viewer-signin-download",
+        "viewer-signin-publish",
       ].sort()
     );
   });
