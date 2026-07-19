@@ -33,7 +33,11 @@ export const FAQ_ITEMS: FaqItem[] = [
     question: "What is The Kinetic Alphabet?",
     answer:
       "Notation for flow arts: a way to write prop movement down instead of relying on video alone. Each step becomes one pictograph showing hand positions on a grid, the motion each hand makes, and the prop's orientation. String them together and you have choreography you can read, edit, and hand to another spinner.",
-    cta: { label: "Watch a sequence build", href: "/#how-it-works" },
+    // The hero + launchpad homepage (81b18e05d8) dropped the old marketing
+    // sections, so section anchors on "/" no longer exist — prerender's
+    // missing-id check fails the whole build on a dangling one. Link to pages,
+    // not homepage anchors.
+    cta: { label: "Watch a sequence build", href: "/composer" },
   },
   {
     question: "Do I have to memorize letters and symbols first?",
@@ -54,8 +58,8 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "Does it work with my prop?",
     answer:
-      "If you dual-wield it and grip it directly, yes. TKA is built for double staff and also supports clubs, fans, hoops, mini hoops, and buugeng, each rendered with proper rotations and hand positions. The interactive spinner on the home page lets you switch between them live.",
-    cta: { label: "Try props in the spinner", href: "/#play-with-it" },
+      "If you dual-wield it and grip it directly, yes. TKA is built for double staff and also supports clubs, fans, hoops, mini hoops, and buugeng, each rendered with proper rotations and hand positions. The Endless LOOPs spinner lets you switch between them live.",
+    cta: { label: "Try props in the spinner", href: "/endless-spinner" },
   },
   {
     question: "Is there software for flow arts choreography?",
