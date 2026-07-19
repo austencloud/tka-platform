@@ -43,7 +43,7 @@
 - Consumes: `resolveBase`, `loadBaseIndex` from `./build-realization-sequence`; `verifyAndCorrect` from `./verify-realization-parity`; `MODE_ORDER`, `MODE_LABEL`, `VtgMode` from `./shape-matrix-realizations`; `loadDiamondEdges` from `$lib/features/choreo-card/services/pictograph-letter-lookup`; `TND_BY_FAMILY`, `TnDElement` from `$lib/features/choreo-card/domain/tnd-element`; `CellOverlay`, `Flower` types as in `build-realization-cards.ts`.
 - Produces: `FAMILY_BY_MODE: Record<VtgMode, string>`, `interface ModeRealization { mode: VtgMode; modeLabel: string; word: string; element: TnDElement; seq: SequenceData }`, `buildModeRealizations(pair, overlay): Promise<ModeRealization[]>`. Task 4 consumes all three.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 // tests/unit/shape-matrix-elemental-drill.test.ts
@@ -66,12 +66,12 @@ describe("elemental drill mode mapping", () => {
 });
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `npx vitest run tests/unit/shape-matrix-elemental-drill.test.ts`
 Expected: FAIL (module `build-mode-realizations` not found).
 
-- [ ] **Step 3: Write the builder**
+- [x] **Step 3: Write the builder**
 
 ```ts
 // src/lib/shared/shape-matrix/services/build-mode-realizations.ts
@@ -140,12 +140,12 @@ export async function buildModeRealizations(
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 Run: `npx vitest run tests/unit/shape-matrix-elemental-drill.test.ts`
 Expected: PASS (1 test).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** (6fa06ba467, pushed)
 
 ```bash
 git pull --rebase
@@ -165,7 +165,7 @@ git commit -m "feat(shape-matrix): lean mode-realization builder for the element
 - Consumes: `renderMandalaToCanvas` from `$lib/shared/mandala/services/mandala-renderer`; `MANDALA_GRID_RADIUS`, `ENGINE_GRID_RADIUS`, `DARK_MOTION_*` constants from `$lib/shared/mandala/domain/mandala-constants`; `MandalaPaths`, `MandalaPalette` from `$lib/shared/mandala/domain/mandala-types`.
 - Produces: `alignScale(clubTipDx: number): number`; `drawAlignedMandala(ctx: CanvasRenderingContext2D, paths: MandalaPaths, sizePx: number, opts: { clubTipDx: number; opacity?: number }): void`; `<MandalaHeroLayer paths={MandalaPaths} clubTipDx={number} opacity={number} />` (absolutely-positioned canvas filling its parent square). Task 4 consumes the component.
 
-- [ ] **Step 1: Extend the test (failing)**
+- [x] **Step 1: Extend the test (failing)**
 
 ```ts
 // append to tests/unit/shape-matrix-elemental-drill.test.ts
@@ -184,9 +184,9 @@ describe("mandala hero alignment", () => {
 });
 ```
 
-- [ ] **Step 2: Run to verify it fails** — `npx vitest run tests/unit/shape-matrix-elemental-drill.test.ts` → FAIL (module not found).
+- [x] **Step 2: Run to verify it fails** — `npx vitest run tests/unit/shape-matrix-elemental-drill.test.ts` → FAIL (module not found).
 
-- [ ] **Step 3: Write the service**
+- [x] **Step 3: Write the service**
 
 ```ts
 // src/lib/shared/shape-matrix/services/mandala-hero.ts
@@ -250,9 +250,9 @@ export function drawAlignedMandala(
 }
 ```
 
-- [ ] **Step 4: Run to verify it passes** — `npx vitest run tests/unit/shape-matrix-elemental-drill.test.ts` → PASS (2 tests).
+- [x] **Step 4: Run to verify it passes** — `npx vitest run tests/unit/shape-matrix-elemental-drill.test.ts` → PASS (2 tests).
 
-- [ ] **Step 5: Write the component**
+- [x] **Step 5: Write the component**
 
 ```svelte
 <!-- src/lib/shared/shape-matrix/components/MandalaHeroLayer.svelte
@@ -315,7 +315,7 @@ export function drawAlignedMandala(
 </style>
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit** (cbab93d31e, pushed)
 
 ```bash
 git pull --rebase
@@ -333,7 +333,7 @@ git commit -m "feat(shape-matrix): engine-aligned mandala hero layer" -- src/lib
 - Consumes: `MODE_ORDER`, `VtgMode` from the services; `TND_BY_FAMILY` + `FAMILY_BY_MODE` (Task 1).
 - Produces: `<ElementChipRow selected={VtgMode | null} disabled={boolean} onpick={(mode: VtgMode | null) => void} />`. Clicking the active chip calls `onpick(null)` (deselect). Task 4 consumes.
 
-- [ ] **Step 1: Write the component**
+- [x] **Step 1: Write the component**
 
 Bespoke, NOT `FilterChipBase`/`SegmentedControl` — per the `chip-primitives.md` carve-out: per-option element colors + icon PNGs + stacked layout + a none-selected state SegmentedControl cannot represent. Cite the rule in the component comment exactly as below.
 
@@ -440,7 +440,7 @@ Bespoke, NOT `FilterChipBase`/`SegmentedControl` — per the `chip-primitives.md
 </style>
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit** (5783f8d950, pushed)
 
 ```bash
 git pull --rebase
@@ -474,14 +474,14 @@ Implementation notes (the parts with sharp edges):
 - Caption: one reserved line, `min-height: 1.5em`, `text-align: center`; element name colored `var(--el)` of the active element; never let it collapse (no-layout-shift).
 - Route changes: remove `{#if selectedPair && data}` gating — always `<ShapeMatrixDrill pair={selectedPair} {data} />` (pass `data!` only when loaded; while `!data` keep the panel's "Pick a cell" by passing `pair={null}` with a loaded=false guard — simplest: `{#if data}<ShapeMatrixDrill pair={selectedPair} {data} />{:else}<div class="drill-loading">Building flowers…</div>{/if}` with `.drill-loading` styled like the old `.drill-empty` hint). Delete `.drill-empty*`, `.ghost-*` markup and CSS from the route. Keep `bind:this={drillPane}` + the `scrollIntoView` behavior and `scroll-margin-top`.
 
-- [ ] **Step 1: Rework the drill component** per the contract above. Keep the file's commenting style; update the header comment to describe the elemental drill and cite the spec path.
-- [ ] **Step 2: Update the route** per the notes above.
-- [ ] **Step 3: Targeted tests still green**
+- [x] **Step 1: Rework the drill component** per the contract above. Keep the file's commenting style; update the header comment to describe the elemental drill and cite the spec path.
+- [x] **Step 2: Update the route** per the notes above.
+- [x] **Step 3: Targeted tests still green** (14/14 pass)
 
 Run: `npx vitest run tests/unit/shape-matrix-elemental-drill.test.ts tests/unit/shape-matrix-engine-contract.test.ts tests/unit/notation-roots-remediation-contract.test.ts`
 Expected: ALL PASS. If the engine contract fails on a new import, you introduced a lab deep-path — fix the import, do not loosen the test.
 
-- [ ] **Step 4: Grep proofs**
+- [x] **Step 4: Grep proofs**
 
 ```bash
 grep -n "type=\"checkbox\"" src/lib/shared/shape-matrix/components/*.svelte "src/routes/(public)/notation/shape-matrix/+page.svelte"   # expect: no matches
@@ -490,7 +490,7 @@ grep -n "\.word" src/lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte 
 grep -rn "half turn\|quarter turn" src/lib/shared/shape-matrix/ "src/routes/(public)/notation/shape-matrix/"                            # expect: no matches
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit** (33e42936ef, pushed)
 
 ```bash
 git pull --rebase
@@ -501,19 +501,19 @@ git commit -m "feat(shape-matrix): elemental drill replaces card thumbnails on t
 
 ### Task 5: Browser verification
 
-- [ ] **Step 1:** Open `https://localhost:5173/notation/shape-matrix` via Chrome DevTools MCP (Chrome is not pre-opened; launch it per the memory note — `--remote-debugging-port=9222` if attach fails). Wait for the grid (>100 imgs/canvases under `.matrix-stage`).
-- [ ] **Step 2:** Read-only checks: screenshot the panel's no-cell state (disabled chips + hint). Then ASK AUSTEN before driving clicks ("May I click a cell and the chips to verify the drill?" — interactive DevTools needs explicit permission in-conversation; if he already granted control this session, proceed).
-- [ ] **Step 3:** With permission: click a mid-matrix cell → screenshot (still mandala, full opacity, caption shows the pair). Click Water → screenshot after ~3s (props animating, VISIBLE glowing trail, mandala ghosted beneath, caption `Water · Split-Same · {word}`). Click Water again → back to still mandala. Click Fire, then a different cell → new shape animates in Fire without re-picking (sticky). Measure `document.documentElement.scrollWidth - clientWidth` → 0.
-- [ ] **Step 4:** Confirm alignment with evidence: with an element animating, `evaluate_script` the hero square's bounding box vs the AnimatorCanvas canvas box — same square (±1px). The trail should visibly ride the ghost mandala's loci in the screenshot; if it visibly diverges, STOP and report (alignment contract broken — do not hand-tune constants).
-- [ ] **Step 5:** If any screenshot cannot be produced, report exactly what Austen must check instead (verification-protocol.md). Commit nothing in this task.
+- [x] **Step 1:** Open `https://localhost:5173/notation/shape-matrix` via Chrome DevTools MCP (Chrome is not pre-opened; launch it per the memory note — `--remote-debugging-port=9222` if attach fails). Wait for the grid (>100 imgs/canvases under `.matrix-stage`).
+- [x] **Step 2:** Read-only checks: screenshot the panel's no-cell state (disabled chips + hint). Then ASK AUSTEN before driving clicks ("May I click a cell and the chips to verify the drill?" — interactive DevTools needs explicit permission in-conversation; if he already granted control this session, proceed).
+- [~] deferred (awaiting Austen's click permission) **Step 3:** With permission: click a mid-matrix cell → screenshot (still mandala, full opacity, caption shows the pair). Click Water → screenshot after ~3s (props animating, VISIBLE glowing trail, mandala ghosted beneath, caption `Water · Split-Same · {word}`). Click Water again → back to still mandala. Click Fire, then a different cell → new shape animates in Fire without re-picking (sticky). Measure `document.documentElement.scrollWidth - clientWidth` → 0.
+- [~] deferred (needs Step 3 clicks; static alignment contract test green) **Step 4:** Confirm alignment with evidence: with an element animating, `evaluate_script` the hero square's bounding box vs the AnimatorCanvas canvas box — same square (±1px). The trail should visibly ride the ghost mandala's loci in the screenshot; if it visibly diverges, STOP and report (alignment contract broken — do not hand-tune constants).
+- [x] **Step 5:** If any screenshot cannot be produced, report exactly what Austen must check instead (verification-protocol.md). Commit nothing in this task.
 
 ---
 
 ### Task 6: Elemental lineage credit (small, Austen may strike at review)
 
-- [ ] **Step 1:** In `src/routes/(public)/notation/+page.svelte`, at the end of the existing lineage/Shape-Matrix arc's prose (NOT the destination page), add one sentence: `The elemental lenses on the interactive matrix trace to Leonardo Icaza's four-element mapping of VTG timing and direction, taught on video by Ronan McLoughlin and extended with Sun and Moon by TKA.` No em dashes; plain prose; no links required.
-- [ ] **Step 2:** `npx vitest run tests/unit/notation-roots-remediation-contract.test.ts` → PASS.
-- [ ] **Step 3:** Commit: `git pull --rebase && git commit -m "feat(notation): credit the elemental model lineage" -- "src/routes/(public)/notation/+page.svelte"`
+- [x] **Step 1:** In `src/routes/(public)/notation/+page.svelte`, at the end of the existing lineage/Shape-Matrix arc's prose (NOT the destination page), add one sentence: `The elemental lenses on the interactive matrix trace to Leonardo Icaza's four-element mapping of VTG timing and direction, taught on video by Ronan McLoughlin and extended with Sun and Moon by TKA.` No em dashes; plain prose; no links required.
+- [x] **Step 2:** `npx vitest run tests/unit/notation-roots-remediation-contract.test.ts` → PASS (8/8).
+- [x] **Step 3:** Commit: `git pull --rebase && git commit -m "feat(notation): credit the elemental model lineage" -- "src/routes/(public)/notation/+page.svelte"`
 
 ---
 

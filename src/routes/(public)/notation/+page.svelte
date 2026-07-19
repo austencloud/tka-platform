@@ -407,7 +407,10 @@
       <p>
         TKA can draw that same table live, one pictograph per cell, and every
         cell opens onto the moves that build it. The corner below is real:
-        the 1:1 ratio, sixteen cells, running right now.
+        the 1:1 ratio, sixteen cells, running right now. The elemental lenses
+        on the interactive matrix trace to Leonardo Icaza's four-element
+        mapping of VTG timing and direction, taught on video by Ronan
+        McLoughlin and extended with Sun and Moon by TKA.
       </p>
     </div>
 
