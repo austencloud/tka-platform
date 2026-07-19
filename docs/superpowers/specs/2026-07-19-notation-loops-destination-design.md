@@ -63,6 +63,17 @@ visualizer is a later phase). Content, grounded in MCP `get_domain_topic("loop")
 - Honest novelty claim: known symmetry operations, applied to a movement space nobody
   formalized; the orientation-period structure has no prior art we know of. No superlatives.
 
+### 3.5 Lineage — CAPs (credit where due)
+
+Short section between theorem and deck. Grounded in MCP `get_term_definition("CAP")`:
+CAPs (Continuous Assembly Patterns) come from the poi community — coined by Damien
+(Zaltymbunk) on the Home of Poi forums, promoted by Alien Jon, popularized by Nick
+Woolsey/PlayPoi, documented by DrexFactor, extended by Charlie Cushing (8-step CAP,
+9-Square Theory). **CAPs and LOOPs are parallel concepts, not parent/child**: CAPs compose
+per-hand trajectories (overlay left path + right path); LOOPs compose per-beat snapshots
+(one letter = both hands). This page credits the lineage honestly and links to the
+dedicated CAP destination (separate spec — see Non-Goals).
+
 ### 4. The Deck — product woven in
 "The icon strip on every card back? Now you can read it." Physical card imagery, card-back
 icon strip decoded inline, CTA → `/shop/loop-deck`.
@@ -151,6 +162,9 @@ placement — consumed by a public route, not an app feature module).
 - Quartered slices for non-rotated combos (unsupported in the engine; gated).
 - Guide content migration — `/guide/level-1` LOOP pages stay as-is; this page links to
   them, doesn't replace them.
+- Thorough CAP treatment — own spec entirely (Austen, 2026-07-19). This page carries only
+  the lineage section (3.5) and a link; the CAP destination (likely `/notation/caps`) gets
+  its own brainstorm + spec.
 - Composer-embedded explorer — this is the public destination only.
 
 ## Phases
