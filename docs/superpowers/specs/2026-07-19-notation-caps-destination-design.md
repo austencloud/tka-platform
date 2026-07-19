@@ -69,16 +69,42 @@ Claim-by-claim status against public primary sources:
 - **Broad→narrow definition drift** — PARTIALLY SUPPORTED in substance; the specific
   "kidney bean" descriptor was NOT found in primary sources (may be Austen's/community
   verbal shorthand — fine to use, don't attribute it).
-- **⚠ OPEN: coiner identity.** MCP KB says "coined by Damien (Zaltymbunk)". Web sources
-  say Damien's HoP username is **French_Saltimbanque**, while **Zaltymbunk** appears as a
-  (possibly distinct) HoP contributor — "Trochoid Master", Toulouse/Angers — who authored
-  "The Math of CAPs" (hosted on DrexFactor) and writes "what's that i have called CAPs"
-  (itself a coinage-flavored claim). Possibly two people conflated in the KB; possibly one
-  person, two usernames ("Saltimbanque"→"Zaltymbunk" is a plausible respelling). The
-  origin thread (homeofpoi.com "What are CAP's?", topic 891193) is behind Cloudflare bot
-  protection — needs a human browser visit or Austen's personal knowledge. MUST be
-  resolved before the People section ships; if the KB is wrong, fix packages/domain (the
-  canonical source) too.
+- **✅ RESOLVED: coiner identity** (2026-07-19, primary source read via Austen's browser —
+  HoP topic 891193 read in full). In-thread: Alien Jon states he got the term from Damien;
+  an Alien Jon post quoted in-thread places the idea's germination at Burning Man 2007
+  with the OMCC crew (Noel, Greg, Jordan, Zan, Alien Jon), says **Damien
+  (French_Saltimbanque)** arrived with his CAP explorations and later coined the term on
+  HoP in the **Yuta move analysis thread**. **Zaltymbunk** posts in the same topic
+  claiming the naming ("what's that i have called CAPs") and presenting his trochoid
+  framework — `Theta1 Theta2 ; Rho1 Rho2 ; d` notation, rosettes vs cycloids, wrap-value
+  tables, antispin/inspin feasibility rules — and cites the Yuta-analysis patterns as his
+  own work context. Conclusion: **one person, Damien of Angers, France — two usernames**
+  (French_Saltimbanque / Zaltymbunk, the latter a respelling of Saltimbanque; forum title
+  "Trochoïd Master"). KB's "Damien (Zaltymbunk)" is correct. One inferential hop remains
+  (no post literally equates the two usernames) — page copy should say "posting as" both
+  names rather than asserting a legal identity. Optional KB enrichment (packages/domain):
+  add the French_Saltimbanque alias + Yuta-thread coinage locus + BM2007 OMCC context.
+
+### Thread yield beyond the coiner question (use on the page)
+
+- **Zaltymbunk's own duality**: hybrids = parallel composition (two poi patterns
+  superposed simultaneously); CAPs = serial composition (one poi's elementary patterns
+  assembled in time). This upgrades the comparison section from a pair to a **triangle**:
+  CAPs compose serially per hand · hybrids compose in parallel across hands · LOOPs
+  compose per-beat snapshots of both hands. TKA's lens is the third corner, not a
+  replacement for either.
+- His elementary-pattern definition: cyclic curve defined by harmonic component
+  (frequencies) + modulus component (radii), `Theta1 Theta2 ; Rho1 Rho2 ; d` — a real
+  notation system predating TKA's. The Story section should honor that CAPs came WITH
+  math, not just vibes ("The Math of CAPs" on DrexFactor is this framework).
+- DrexFactor in-thread defends framework-naming (his analogy: nonsense words like
+  "fluxions"/"Aleph numbers" that bundle concepts and enable transmission) — the exact
+  spirit of the LOOPs page; paraphrase, don't quote at length (forum posts are
+  copyrighted; one short quote max, attributed).
+- "Encyclo-poi-dia Vol. 2" contains a CAP chapter — citable print-era source.
+- Community texture: parallel evolution of names ("I thought those were called pac men").
+- Derek Faughn's plain-language definition (paraphrase): fractions of two or more moves
+  assembled into one continuously repeatable pattern.
 
 Canonical citation set for the page:
 1. The Math of CAPs — drexfactor.com/reference/math_caps (Zaltymbunk's framework)

@@ -1,0 +1,14 @@
+model.jpg|https://www.imageshotel.org/images/Zaltymbunk/model.jpg
+rosette-5petal-spin.gif|https://www.mathcurve.com/courbes2d/rosace/bolas%205%20pour%201%20spin.gif
+rosette-5petal-antispin.gif|https://www.mathcurve.com/courbes2d/rosace/bolas%205%20pour%201%20antispin.gif
+cycloid-1-4.gif|https://www.mathcurve.com/courbes2d/epicycloid/epicycloid4.gif
+cycloid-antispin-3foil.gif|https://www.mathcurve.com/courbes2d/hypocycloid/epicycloid3.gif
+pattern-2-neg5-rosette.gif|https://www.mathcurve.com/courbes2d/rosace/spiralesinusoidale5.gif
+pattern-2-neg5-cycloid.gif|https://www.mathcurve.com/courbes2d/hypocycloid/epicycloid6.gif
+pattern-3-2-rosette.gif|https://www.mathcurve.com/courbes2d/rosace/spiralesinusoidale16.gif
+pattern-3-2-cycloid.gif|https://www.mathcurve.com/courbes2d/epicycloid/epicycloid12.gif
+pattern-3-4-rosette.gif|https://www.mathcurve.com/courbes2d/rosace/spiralesinusoidale22.gif
+pattern-3-4-cycloid.gif|https://www.mathcurve.com/courbes2d/epicycloid/epicycloid13.gif
+cap-yuta-halfcycle.jpg|https://www.imageshotel.org/images/Zaltymbunk/capas40bis.jpg
+cap-yuta-3quarter.jpg|https://www.imageshotel.org/images/Zaltymbunk/capas40ter.jpg
+cap-1-3-composition.jpg|https://www.imageshotel.org/images/Zaltymbunk/capasis332bis.jpg

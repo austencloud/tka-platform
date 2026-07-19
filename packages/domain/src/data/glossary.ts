@@ -676,8 +676,8 @@ export const GLOSSARY: Record<string, GlossaryEntry> = {
     category: "general"
   },
   "caps": {
-    definition: "Continuous Assembly Patterns (CAPs): a concept coined on the Home of Poi forums. Originally intended as ANY composite cyclic pattern, but the poi community narrowed 'cap' to mean the C-CAP (extension + antispin petal alternation, kidney-bean shape). CAPs and LOOPs are parallel concepts, not parent/child. Neither is a subset of the other.",
-    examples: ["C-CAP: the kidney-bean pattern most spinners call 'a cap'", "CAPs compose per-hand trajectories (overlay left path + right path)", "LOOPs compose per-step snapshots (one letter = both hands)"],
+    definition: "Continuous Assembly Patterns (CAPs): coined by Damien of Angers, France (posting as French_Saltimbanque and Zaltymbunk) in the Yuta move analysis thread on the Home of Poi forums, from ideas germinated with the OMCC crew (Alien Jon, Noel, Greg, Jordan, Zan) at Burning Man 2007. Canonical definition: a cyclic pattern assembled from 2+ elementary patterns (trochoid building blocks notated θ1 θ2 ; ρ1 ρ2 ; d) iterated 1+ times — the SERIAL composition process, contrasted with hybrids (PARALLEL superposition, one pattern per hand). The community later narrowed everyday 'cap' to mean the C-CAP (extension + antispin petal alternation). CAPs and LOOPs are parallel concepts, not parent/child. Neither is a subset of the other.",
+    examples: ["C-CAP: the extension-arc + antispin-petal pattern most spinners call 'a cap'", "The Yuta CAP: 1 0 ; 1 3/4 ; 1/2 assembled with -1 4 ; 1 3/4 ; 1/2", "CAPs compose per-hand trajectories serially; hybrids compose across hands in parallel", "LOOPs compose per-step snapshots (one letter = both hands)"],
     relatedTerms: ["loop", "compound", "vtg"],
     category: "sequence"
   },
