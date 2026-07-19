@@ -55,9 +55,26 @@
 
 <style>
   .landing {
-    max-width: 600px;
+    /* rem (not the old 600px) so the landing rides guide.css's >=1680px root
+       ramp with the rest of the shell; 42rem also gives the chapter cards a
+       little more room at every size. */
+    max-width: 42rem;
     margin: 0 auto;
+    padding-top: 1.5rem;
     text-align: center;
+  }
+
+  /* Title in the guide's calligraphic script - parity with the hub's hero and
+     the level-1 topic heroes, instead of the generic Inter h1 the shared
+     .guide-content rule applies. */
+  .landing h1 {
+    font-family: var(--guide-script, "Cormorant Garamond", Georgia, serif);
+    font-weight: var(--guide-script-weight, 700);
+    font-variation-settings: normal;
+    letter-spacing: 0;
+    line-height: 0.95;
+    font-size: clamp(3rem, 2rem + 2vw, 4.6rem);
+    padding: 1.5rem 0 0.5rem;
   }
 
   /* The level-2 layout renders on the dark guide scroller background

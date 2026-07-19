@@ -83,7 +83,9 @@
   position: fixed;
   top: 64px;
   left: 0;
-  width: 220px;
+  /* 13.75rem == 220px at the 16px root; rem so the rail rides the >=1680px
+     root ramp below instead of freezing at laptop width. */
+  width: 13.75rem;
   height: calc(100vh - 64px);
   overflow-y: auto;
   overflow-x: clip;
@@ -97,7 +99,7 @@
 /* === Content: Full-bleed grid === */
 .guide-content {
   flex: 1;
-  margin-left: 220px;
+  margin-left: 13.75rem;
   display: grid;
   grid-template-columns:
     [full-start] minmax(1.5rem, 1fr)
@@ -112,6 +114,18 @@
 
 .guide-content > * {
   grid-column: prose;
+}
+
+/* The shared site footer renders BELOW .guide-layout (see GuideShell) so its
+   background bleeds full-width instead of ending at the centered composition's
+   edge. The bleed wrapper continues the guide's dark canvas behind the
+   footer's translucent grounding gradient. */
+.guide-footer-bleed {
+  background: oklch(0.13 0.015 270);
+  /* Contain the footer's own top margin (margin would otherwise collapse
+     through this wrapper and expose a band of body background between the
+     guide canvas and the footer). */
+  display: flow-root;
 }
 
 /* The crawl/flow route (GuidePageHost's <main>) spans the FULL content width so
@@ -284,7 +298,7 @@
 }
 
 .guide-diagram img {
-  max-width: 320px;
+  max-width: 20rem;
   width: 100%;
   height: auto;
   border-radius: 8px;
@@ -367,10 +381,11 @@
   text-align: center;
 }
 
-/* Sizes */
-.guide-pictograph.size-sm .pictograph-wrapper { width: 120px; height: 120px; }
-.guide-pictograph.size-md .pictograph-wrapper { width: 180px; height: 180px; }
-.guide-pictograph.size-lg .pictograph-wrapper { width: 280px; height: 280px; }
+/* Sizes - rem (7.5/11.25/17.5 == 120/180/280px at the 16px root) so cells ride
+   the >=1680px root ramp with the prose beside them. */
+.guide-pictograph.size-sm .pictograph-wrapper { width: 7.5rem; height: 7.5rem; }
+.guide-pictograph.size-md .pictograph-wrapper { width: 11.25rem; height: 11.25rem; }
+.guide-pictograph.size-lg .pictograph-wrapper { width: 17.5rem; height: 17.5rem; }
 
 /* === Sequence player === */
 .guide-sequence-player {
@@ -418,8 +433,8 @@
 }
 
 .guide-sequence-player .play-btn {
-  width: 36px;
-  height: 36px;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 50%;
   border: 2px solid oklch(0.60 0.04 270);
   background: none;
@@ -437,12 +452,12 @@
 
 .guide-sequence-player .beat-dots {
   display: flex;
-  gap: 4px;
+  gap: 0.25rem;
 }
 
 .guide-sequence-player .beat-dot {
-  width: 8px;
-  height: 8px;
+  width: 0.5rem;
+  height: 0.5rem;
   border-radius: 50%;
   background: oklch(0.30 0.02 270);
   cursor: pointer;
@@ -649,9 +664,9 @@
       [full-end];
   }
 
-  .guide-pictograph.size-sm .pictograph-wrapper { width: 100px; height: 100px; }
-  .guide-pictograph.size-md .pictograph-wrapper { width: 140px; height: 140px; }
-  .guide-pictograph.size-lg .pictograph-wrapper { width: 220px; height: 220px; }
+  .guide-pictograph.size-sm .pictograph-wrapper { width: 6.25rem; height: 6.25rem; }
+  .guide-pictograph.size-md .pictograph-wrapper { width: 8.75rem; height: 8.75rem; }
+  .guide-pictograph.size-lg .pictograph-wrapper { width: 13.75rem; height: 13.75rem; }
 
   .guide-pictograph-grid {
     overflow-x: auto;
@@ -665,5 +680,72 @@
 
   .guide-nav .chapter-title {
     min-height: 44px;
+  }
+}
+
+/* ══════════════════════════════════════════
+   4K / large desktop: lockstep fluid scaling
+   (spec 2026-07-19-guide-4k-lockstep-design)
+   ══════════════════════════════════════════ */
+@media (min-width: 1680px) {
+  /* Root font ramps 16px→24px from 1680→3840px viewport. Every rem/ch/em
+     measure in the shell (sidebar, 90ch prose track, FlowFrame's 62rem frame,
+     cards, nav, footer type) grows by the SAME multiplier, so no element can
+     outgrow its neighbours - the disjointed-4K failure is impossible by
+     construction. Scoped via :has to pages that mount the guide shell:
+     /book and /print import this file but never render .guide-layout, so
+     their fixed-inch artboards stay at the 16px root. */
+  html:has(.guide-layout) {
+    font-size: clamp(16px, calc(16px + (100vw - 1680px) * 8 / 2160), 24px);
+  }
+
+  /* Center the sidebar+content composition as ONE unit. The base layout pins
+     the rail to the viewport edge (position: fixed) and floats content in the
+     leftover width - at 4K that reads lopsided: a rail 2000px away from the
+     prose with a giant void on the right. In flow + sticky, the pair centers
+     with symmetric outer margins. */
+  .guide-layout {
+    justify-content: center;
+  }
+  .guide-sidebar {
+    position: sticky;
+    left: auto;
+    flex: 0 0 13.75rem;
+  }
+  .guide-content {
+    margin-left: 0;
+    flex: 0 1 118rem;
+    /* Same named tracks as the base grid, with a wider breakout budget so
+       visual material can ride past the prose measure (see below). */
+    grid-template-columns:
+      [full-start] minmax(1.5rem, 1fr)
+      [breakout-start] minmax(0, 14rem)
+      [prose-start] min(90ch, 100%)
+      [prose-end] minmax(0, 14rem)
+      [breakout-end] minmax(1.5rem, 1fr)
+      [full-end];
+  }
+
+  /* Visual material (diagrams, pictograph grids, players) spans the breakout
+     track; the prose beside it keeps its scaled measure. Both grow under the
+     same root ramp, so they always read as one composition. */
+  .guide-content > .guide-diagram,
+  .guide-content > .guide-pictograph-grid,
+  .guide-content > .guide-sequence-player,
+  .guide-section > .guide-diagram,
+  .guide-section > .guide-pictograph-grid,
+  .guide-section > .guide-sequence-player {
+    grid-column: breakout;
+  }
+
+  /* Header and footer content match the guide composition width
+     (13.75rem rail + 118rem content) instead of the site's 1720px cap,
+     which reads inset against the wider content between them. The header
+     has no global class of its own; on guide pages the only <header> with
+     an .inner child is SiteHeader's (.topic-hero has none), and the :has
+     scope keeps this off every other public page. */
+  html:has(.guide-layout) header > .inner,
+  html:has(.guide-layout) .site-footer > .inner {
+    max-width: min(131.75rem, 92vw);
   }
 }

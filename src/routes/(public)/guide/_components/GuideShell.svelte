@@ -73,12 +73,21 @@
 
   <main class="guide-content">
     {@render children()}
-    <!-- The guide subtree runs its own chrome (SiteHeader above, no
-         MarketingChrome), so it mounts the shared site footer itself - deep
-         guide pages are top Google entry points and need a way back out to
-         the rest of the site. -->
-    <SiteFooter />
   </main>
+</div>
+
+<!-- The guide subtree runs its own chrome (SiteHeader above, no
+     MarketingChrome), so it mounts the shared site footer itself - deep
+     guide pages are top Google entry points and need a way back out to the
+     rest of the site. Below .guide-layout (not inside .guide-content): the
+     >=1680px tier centers the sidebar+content composition, and a footer
+     inside that flex pair paints its background as an island ending at the
+     composition edge. Out here it bleeds full-width; its own .inner caps
+     the content (widened to the composition width in guide.css). The bleed
+     wrapper (styled in guide.css) continues the guide navy behind the
+     footer's translucent gradient. -->
+<div class="guide-footer-bleed">
+  <SiteFooter />
 </div>
 
 <style>

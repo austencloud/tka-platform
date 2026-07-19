@@ -186,10 +186,13 @@
   }
 
   /* ── Hero ─────────────────────────────────────────────────────────── */
+  /* Widths/spacing in rem so the whole hub rides guide.css's >=1680px root
+     ramp (16px→24px) in lockstep - values are 1:1 with the old px at the 16px
+     root, so nothing changes below 1680px. */
   .hero {
-    max-width: 760px;
+    max-width: 47.5rem;
     margin: 0 auto;
-    padding: 96px 24px 0;
+    padding: 6rem 1.5rem 0;
     text-align: center;
   }
   h1 {
@@ -208,8 +211,8 @@
     text-wrap: balance;
   }
   .lede {
-    max-width: 620px;
-    margin: 24px auto 0;
+    max-width: 38.75rem;
+    margin: 1.5rem auto 0;
     font-size: clamp(1.02rem, 2vw, 1.18rem);
     line-height: 1.65;
     color: rgba(236, 233, 245, 0.7);
@@ -221,17 +224,17 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    gap: 14px;
-    margin-top: 36px;
+    gap: 0.875rem;
+    margin-top: 2.25rem;
   }
   .btn {
     display: inline-flex;
     flex-direction: column;
     align-items: center;
     gap: 2px;
-    min-width: 200px;
+    min-width: 12.5rem;
     min-height: var(--min-touch-target, 44px);
-    padding: 14px 28px;
+    padding: 0.875rem 1.75rem;
     border-radius: 14px;
     text-decoration: none;
     font-weight: 700;
@@ -284,26 +287,26 @@
 
   /* ── More in the guide (Codex, staff choreography) ───────────────── */
   .more {
-    max-width: 760px;
-    margin: 96px auto 0;
-    padding: 0 24px;
+    max-width: 47.5rem;
+    margin: 6rem auto 0;
+    padding: 0 1.5rem;
     text-align: center;
   }
   .available-links {
     display: flex;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 1rem;
     justify-content: center;
-    margin-top: 24px;
+    margin-top: 1.5rem;
   }
   .guide-link {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    flex: 1 1 240px;
-    min-width: 240px;
-    max-width: 320px;
-    padding: 20px 24px;
+    flex: 1 1 15rem;
+    min-width: 15rem;
+    max-width: 20rem;
+    padding: 1.25rem 1.5rem;
     min-height: var(--min-touch-target, 44px);
     border-radius: 16px;
     background: rgba(20, 19, 38, 0.5);
@@ -343,14 +346,14 @@
 
   /* ── Notify ───────────────────────────────────────────────────────── */
   .notify {
-    padding: 16px 24px 104px;
+    padding: 1rem 1.5rem 6.5rem;
     display: flex;
     justify-content: center;
   }
   .notify-card {
     width: 100%;
-    max-width: 560px;
-    padding: 44px 40px 40px;
+    max-width: 35rem;
+    padding: 2.75rem 2.5rem 2.5rem;
     text-align: center;
     border-radius: 18px;
     background: rgba(20, 19, 38, 0.5);
@@ -366,13 +369,13 @@
     font-size: 1rem;
     line-height: 1.6;
     color: rgba(236, 233, 245, 0.6);
-    margin: 0 auto 24px;
-    max-width: 400px;
+    margin: 0 auto 1.5rem;
+    max-width: 25rem;
     text-wrap: pretty;
   }
 
   .notify-slot {
-    min-height: 96px;
+    min-height: 6rem;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -383,7 +386,7 @@
     display: flex;
     gap: 10px;
     width: 100%;
-    max-width: 440px;
+    max-width: 27.5rem;
   }
   .text-input {
     flex: 1;
@@ -486,23 +489,24 @@
       grid-template-areas:
         "hero hero"
         "more notify";
-      column-gap: 96px;
-      /* 45.8vw == 1760px at 3840; fluid past 4K. */
-      max-width: max(1760px, 45.8vw);
+      column-gap: 6rem;
+      /* rem so the composition rides guide.css's root ramp; at the 24px root
+         (3840px viewport) this is 2400px, centered in the guide-content track. */
+      max-width: 100rem;
       margin: 0 auto;
       align-items: start;
     }
     .hero {
       grid-area: hero;
-      max-width: 1100px;
+      max-width: 69rem;
       justify-self: center;
     }
     .more {
       grid-area: more;
       justify-self: end;
       text-align: left;
-      max-width: 640px;
-      margin-top: 96px;
+      max-width: 40rem;
+      margin-top: 6rem;
       padding: 0;
     }
     .more h2 {
@@ -516,7 +520,7 @@
     .guide-link {
       max-width: none;
       flex: 0 0 auto;
-      padding: 26px 30px;
+      padding: 1.625rem 1.875rem;
       gap: 8px;
     }
     .notify {
@@ -525,43 +529,24 @@
       align-self: stretch;
       display: flex;
       align-items: center;
-      margin-top: 96px;
+      margin-top: 6rem;
       padding: 0;
     }
 
-    h1 {
-      font-size: clamp(3.2rem, 2.2vw, 4.6rem);
-    }
+    /* No font-size bumps here anymore: the root ramp already scales every rem
+       size on this page; keeping the old explicit bumps would double-scale. */
     .lede {
-      max-width: 800px;
-      font-size: 1.45rem;
-    }
-    h2 {
-      font-size: 2.5rem;
-    }
-    .guide-link-title {
-      font-size: 1.7rem;
-    }
-    .guide-link-sub {
-      font-size: 1.15rem;
+      max-width: 50rem;
     }
     .notify-card {
-      max-width: 640px;
-      padding: 52px 48px 48px;
-    }
-    .notify-card h2 {
-      font-size: 2.1rem;
+      max-width: 40rem;
+      padding: 3.25rem 3rem 3rem;
     }
     .notify-intro {
-      font-size: 1.2rem;
-      max-width: 500px;
+      max-width: 31.25rem;
     }
     .notify-form {
-      max-width: 520px;
-    }
-    .text-input,
-    .notify-btn {
-      font-size: 1.05rem;
+      max-width: 32.5rem;
     }
   }
 
