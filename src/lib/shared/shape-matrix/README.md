@@ -23,14 +23,30 @@ import each symbol from its module path directly.
 | `renderCell`, `renderHeader` | `$lib/shared/shape-matrix/services/shape-matrix-render` |
 | `Flower`, `flowerKey`, `flowerLabel`, `buildFlowerAxis`, `ratioLabel`, `flowerTurnPattern` | `$lib/shared/shape-matrix/domain/flower-signature` |
 
-## Known lab-side dependencies (not extracted in Phase 0)
+## Known lab-side dependencies (not extracted)
 
-`build-realization-cards.ts` and `shape-matrix-flowers.ts` still import three
-helpers that remain in `src/lib/features/lab/vtg-lab/services/`:
-`resolveRotationStyleMatrices`/`bakeVariationFront`/`bakeVariationBack`
-(`resolve-rotation-style-matrices.ts`), `loadBaseIndex`/`resolveBase`
-(`build-realization-sequence.ts`), and `buildFlowerSequence`
-(`build-flower-sequence.ts`). The spec's Phase 0 move list did not include
-these three files, so this module currently has a reverse dependency back
-into the lab feature. Flagged for a future extraction pass if a public route
-ever needs to bundle without the lab.
+As of the Phase 1 pre-step, `loadBaseIndex`/`resolveBase` moved into this
+module (`services/build-realization-sequence.ts` — it had no lab-only
+dependency, only `$lib/features/choreo-card/*` imports already used
+elsewhere in this module and the already-shared `VtgMode` type).
+
+Two helpers remain in `src/lib/features/lab/vtg-lab/services/` and are
+deliberately NOT moved:
+
+- `resolveRotationStyleMatrices`/`bakeVariationFront`/`bakeVariationBack`
+  (`resolve-rotation-style-matrices.ts`, imported by `shape-matrix-flowers.ts`
+  and `build-realization-cards.ts`) — imports `../domain/classify-rotation-style`
+  and `../domain/tnd-turn-patterns`, both lab-only domain modules shared with
+  other genuinely lab-only consumers (`bake-mandala-clips.ts`,
+  `render-mandala-overlay-layer.ts`, `resolve-tnd-family-cards.ts`).
+- `buildFlowerSequence` (`build-flower-sequence.ts`, imported by
+  `shape-matrix-flowers.ts`) — imports `./prepare-mandala-club-sequence`,
+  shared with `bake-mandala-clips.ts`.
+
+Forcing either move would drag `classify-rotation-style.ts`,
+`tnd-turn-patterns.ts`, and `prepare-mandala-club-sequence.ts` (and their
+other lab-only consumers) into this module, which is out of scope for the
+public destination. The contract test allowlists exactly these two import
+lines; any other `$lib/features/lab/` import inside this module is a
+violation. Flagged for a future extraction pass if a public route ever needs
+to bundle without the lab.

@@ -4,7 +4,7 @@ import { loadDiamondEdges } from "$lib/features/choreo-card/services/pictograph-
 import { TND_BY_FAMILY } from "$lib/features/choreo-card/domain/tnd-element";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { bakeVariationFront, bakeVariationBack } from "$lib/features/lab/vtg-lab/services/resolve-rotation-style-matrices";
-import { loadBaseIndex, resolveBase } from "$lib/features/lab/vtg-lab/services/build-realization-sequence";
+import { loadBaseIndex, resolveBase } from "./build-realization-sequence";
 import { verifyAndCorrect } from "./verify-realization-parity";
 import { MODE_ORDER, MODE_LABEL, type VtgMode } from "./shape-matrix-realizations";
 import { type Flower } from "../domain/flower-signature";

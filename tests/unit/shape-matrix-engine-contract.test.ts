@@ -20,8 +20,21 @@ const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../
 
 const PUBLIC_ROUTES_DIR = "src/routes/(public)";
 const LAB_HARNESS_ROUTE = "src/routes/test/shape-matrix/+page.svelte";
+const SHAPE_MATRIX_MODULE_DIR = "src/lib/shared/shape-matrix";
 
 const VTG_LAB_DEEP_IMPORT = /\$lib\/features\/lab\/vtg-lab\//;
+const FEATURES_LAB_IMPORT = /\$lib\/features\/lab\//;
+
+// Documented, deliberate exceptions (see shape-matrix/README.md "Known
+// lab-side dependencies"): these two helpers drag in lab-only domain modules
+// shared with other genuinely lab-only consumers, so extracting them is out
+// of scope. Any OTHER `$lib/features/lab/` import inside the module is a
+// violation.
+const ALLOWED_LAB_IMPORT_LINES = new Set([
+  'import { bakeVariationFront, bakeVariationBack } from "$lib/features/lab/vtg-lab/services/resolve-rotation-style-matrices";',
+  'import { resolveRotationStyleMatrices } from "$lib/features/lab/vtg-lab/services/resolve-rotation-style-matrices";',
+  'import { buildFlowerSequence } from "$lib/features/lab/vtg-lab/services/build-flower-sequence";',
+]);
 
 function read(rel: string): string {
   return readFileSync(path.join(repoRoot, rel), "utf8");
@@ -69,5 +82,19 @@ describe("shape-matrix engine contract", () => {
     expect(source).not.toContain("$lib/features/lab/vtg-lab/services/shape-matrix-flowers");
     expect(source).not.toContain("$lib/features/lab/vtg-lab/components/ShapeMatrixGrid.svelte");
     expect(source).not.toContain("$lib/features/lab/vtg-lab/domain/filter-flower-axis");
+  });
+
+  it("src/lib/shared/shape-matrix/** has no undocumented imports from src/lib/features/lab/", () => {
+    const files = walk(SHAPE_MATRIX_MODULE_DIR);
+    const violations: string[] = [];
+    for (const f of files) {
+      const lines = read(f).split("\n");
+      for (const line of lines) {
+        if (FEATURES_LAB_IMPORT.test(line) && !ALLOWED_LAB_IMPORT_LINES.has(line.trim())) {
+          violations.push(`${f}: ${line.trim()}`);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
   });
 });
