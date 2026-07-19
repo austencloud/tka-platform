@@ -6,8 +6,8 @@
  * Syncs local progress to cloud on authentication.
  *
  * Scope: app-wide completion/skip status, and the What's New "last seen
- * version" high-water mark. There is no per-module or per-tab tracking —
- * the per-module surface (a `modules` sub-object keyed by module id) was
+ * version" high-water mark. There is no per-module or per-tab tracking.
+ * The per-module surface (a `modules` sub-object keyed by module id) was
  * removed 2026-07-19 as dead code; it served the deprecated
  * `ModuleOnboarding.svelte` carousel. Its planned replacement,
  * `TabIntro.svelte`'s local-only per-tab dismissal, was never adopted by any
