@@ -53,6 +53,7 @@
 
   let cards = $state<ModeCard[]>([]);
   let loading = $state(true);
+  let buildError = $state(false);
   let selected = $state<ModeCard | null>(null);
 
   // Rebuild the six realizations whenever a new cell is clicked. Reset the
@@ -69,12 +70,23 @@
       clubTipDx: data.clubTipDx,
     };
 
+    buildError = false;
     let cancelled = false;
     (async () => {
-      const built = await buildModeCards(p, overlay);
-      if (!cancelled) {
-        cards = built;
-        loading = false;
+      try {
+        const built = await buildModeCards(p, overlay);
+        if (!cancelled) {
+          cards = built;
+          loading = false;
+        }
+      } catch (err) {
+        // Without this, a rejected build leaves "Building realizations…" up
+        // forever with no signal — the exact failure Austen hit on 2026-07-18.
+        console.error("shape-matrix drill build failed", err);
+        if (!cancelled) {
+          buildError = true;
+          loading = false;
+        }
       }
     })();
     return () => {
@@ -125,7 +137,9 @@
           </p>
         </div>
       {:else if loading}
-        <div class="status">Building realizations…</div>
+        <div class="status">Building realizations… first build takes a few seconds.</div>
+      {:else if buildError}
+        <div class="status">Could not build the realizations for this cell. Reload and try again.</div>
       {:else if cards.length === 0}
         <div class="status">No realizations found for this pair.</div>
       {:else}
