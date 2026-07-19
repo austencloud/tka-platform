@@ -336,30 +336,14 @@ async function doInitializeAuthListener(): Promise<void> {
 
   await authReady;
 
-  // Complete a pending magic-link sign-in BEFORE wiring the main listener, so
-  // its first fire reflects the signed-in (or anon→linked) user. The magic
-  // link lands deep in the app (e.g. /create), where the EmailLinkAuth form
-  // isn't mounted — this is the global completion that runs on every route.
-  try {
-    const { completeEmailLinkSignIn } = await import(
-      "../services/email-link-completion"
-    );
-    const result = await completeEmailLinkSignIn();
-    if (result.completed) {
-      void import("$lib/shared/toast/state/toast-state.svelte").then(
-        ({ toast }) => toast.success("Signed in! Welcome.")
-      );
-    } else if (result.errorCode && result.errorCode !== "auth/missing-email") {
-      void import("$lib/shared/toast/state/toast-state.svelte").then(
-        ({ toast }) =>
-          toast.error(
-            "That sign-in link is invalid or expired. Request a new one."
-          )
-      );
-    }
-  } catch (error) {
-    console.warn("⚠️ [authState] Magic-link completion failed:", error);
-  }
+  // A pending magic-link sign-in is NOT auto-completed here anymore. Consuming
+  // the single-use oobCode on page load let a corporate link-prescanner burn
+  // it before the human ever clicked, silently breaking sign-in (2026-07-18
+  // security audit). Completion now waits for explicit confirmation via
+  // EmailLinkConfirmModal (mounted globally in AppShellLoader.svelte), which
+  // calls completeEmailLinkSignIn() itself once the user clicks "Finish
+  // signing in". That call flips Firebase's auth state, which this listener
+  // (wired below) picks up like any other sign-in.
 
   const { isDesktop } = await import("$lib/shared/desktop/is-desktop");
   const isDesktopEnv = isDesktop();

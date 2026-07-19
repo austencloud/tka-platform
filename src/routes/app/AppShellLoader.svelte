@@ -26,3 +26,12 @@
 {:else}
   <LoadingGate />
 {/if}
+
+<!-- Magic-link sign-in confirm step. Self-gated (no-ops unless the URL
+     carries a pending Firebase email-sign-in link), mounted here rather than
+     MainApplication.svelte so it catches the link before MainApp finishes
+     loading. See EmailLinkConfirmModal.svelte for why completion requires an
+     explicit click. -->
+{#await import("$lib/shared/auth/components/EmailLinkConfirmModal.svelte") then mod}
+  <mod.default />
+{/await}

@@ -1,11 +1,18 @@
 /**
  * Magic-link (email-link) sign-in completion.
  *
- * Detects a Firebase email-link in the current URL and completes sign-in.
- * Safe to call on ANY route / app entry point — it no-ops when the URL is not a
- * magic link. This is the single source of truth for completion: both the app
- * bootstrap (so a link landing on /create completes regardless of which surface
- * is mounted) and the EmailLinkAuth form call it.
+ * Two phases, deliberately split so the single-use oobCode is never consumed
+ * without a human in the loop:
+ *
+ *  - Detection (`isEmailLinkPending`, `getSavedEmailForSignIn`) is read-only
+ *    and safe to call anywhere, including at app boot. It never talks to
+ *    Firebase Auth beyond the local `isSignInWithEmailLink` URL check.
+ *  - Completion (`completeEmailLinkSignIn`) consumes the oobCode via
+ *    Firebase Auth. It must only run after the user explicitly confirms
+ *    (EmailLinkConfirmModal's "Finish signing in" button) — never
+ *    automatically on page load. Auto-completing on load let a corporate
+ *    link-prescanner burn the single-use code before the human ever clicked,
+ *    silently breaking sign-in.
  *
  * Handles the anonymous-upgrade path (link the email credential onto the
  * surviving anon user, preserving uid + data) and the email-already-in-use
@@ -32,10 +39,38 @@ export interface EmailLinkCompletionResult {
 const EMAIL_FOR_SIGN_IN_KEY = "emailForSignIn";
 
 /**
- * Complete a pending email-link sign-in from the current URL.
- * Returns `{ completed: false }` with no error when there's nothing to do.
+ * Whether the current URL carries an unconsumed Firebase email-sign-in link.
+ * Read-only — never touches the oobCode. Safe to call at any point (app
+ * boot, route change) to decide whether to show the confirm interstitial.
  */
-export async function completeEmailLinkSignIn(): Promise<EmailLinkCompletionResult> {
+export function isEmailLinkPending(): boolean {
+  if (typeof window === "undefined") return false;
+  return isSignInWithEmailLink(auth, window.location.href);
+}
+
+/**
+ * The email saved on this device when the link was requested, or null if the
+ * link was opened on a different device (or a different browser/profile).
+ * Read-only.
+ */
+export function getSavedEmailForSignIn(): string | null {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(EMAIL_FOR_SIGN_IN_KEY);
+}
+
+/**
+ * Complete a pending email-link sign-in from the current URL. This is the
+ * code-consuming call — only invoke it after explicit user confirmation
+ * (EmailLinkConfirmModal), never automatically.
+ *
+ * Returns `{ completed: false }` with no error when there's nothing to do.
+ * `explicitEmail` is used when the device has no saved email (the link was
+ * opened on a different device) — the confirm modal collects it via an
+ * in-page field rather than `window.prompt`.
+ */
+export async function completeEmailLinkSignIn(
+  explicitEmail?: string
+): Promise<EmailLinkCompletionResult> {
   if (typeof window === "undefined") return { completed: false };
 
   const link = window.location.href;
@@ -51,11 +86,9 @@ export async function completeEmailLinkSignIn(): Promise<EmailLinkCompletionResu
   }
 
   // Email is saved on the device that requested the link. If it's missing the
-  // link was opened on a different device — prompt to prevent session fixation.
-  let savedEmail = window.localStorage.getItem(EMAIL_FOR_SIGN_IN_KEY);
-  if (!savedEmail) {
-    savedEmail = window.prompt("Please enter your email address to confirm:");
-  }
+  // link was opened on a different device — the caller must supply one from
+  // an in-page field (collected via the confirm modal), not window.prompt.
+  const savedEmail = window.localStorage.getItem(EMAIL_FOR_SIGN_IN_KEY) ?? explicitEmail ?? null;
   if (!savedEmail) {
     return {
       completed: false,

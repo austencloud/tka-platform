@@ -2,57 +2,26 @@
   /**
    * Passwordless Email Link Authentication
    *
-   * Sends a branded magic link via Cloud Function + Brevo, then completes
-   * sign-in using Firebase Auth. Completion is delegated to the shared
-   * email-link-completion service (the app bootstrap calls the same service so
-   * a link landing on any route completes); this onMount is the fallback for
-   * when the form itself is shown with a magic link in the URL.
+   * Sends a branded magic link via Cloud Function + Brevo. Completion (the
+   * step that consumes the single-use oobCode) is NOT handled here anymore —
+   * it lives entirely in EmailLinkConfirmModal.svelte (mounted globally in
+   * AppShellLoader.svelte), which requires an explicit "Finish signing in"
+   * click before calling the code-consuming Firebase API. This form used to
+   * also auto-complete on mount as a fallback; that was a second unattended
+   * consumption path with the same link-prescanner risk the confirm modal
+   * exists to close, so it was removed rather than kept as a fallback.
    */
 
   import { httpsCallable } from "firebase/functions";
   import { getFunctionsInstance } from "../firebase";
-  import { completeEmailLinkSignIn } from "../services/email-link-completion";
-  import { onMount } from "svelte";
-  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   let email = $state("");
   let loading = $state(false);
   let error = $state<string | null>(null);
   let success = $state<string | null>(null);
-
-  // Fallback completion path: if the form is mounted with a magic link in the
-  // URL (the app bootstrap normally completes it first on any route), finish
-  // sign-in via the shared service and surface any error in this form.
-  onMount(async () => {
-    try {
-      const result = await completeEmailLinkSignIn();
-      if (!result.completed && result.errorCode) {
-        if (
-          result.errorCode === "auth/invalid-action-code" ||
-          result.errorCode === "auth/expired-action-code"
-        ) {
-          error =
-            "This link is invalid or has expired. Please request a new one.";
-          toast.error("This link is invalid or expired. Request a new one.");
-        } else if (result.errorCode === "auth/invalid-email") {
-          error = "Invalid email address.";
-          toast.error("Invalid email address.");
-        } else if (result.errorCode !== "auth/missing-email") {
-          error = result.errorMessage || "Failed to sign in. Please try again.";
-          toast.error("Sign-in failed. Please try again.");
-        }
-      }
-    } catch (err) {
-      console.error(
-        "❌ [email-link] Unexpected error during sign-in check:",
-        err
-      );
-      error = "An unexpected error occurred. Please try again.";
-      toast.error("Sign-in failed. Please try again.");
-    }
-  });
 
   async function sendEmailLink() {
     loading = true;
