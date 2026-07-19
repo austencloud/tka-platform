@@ -1,10 +1,10 @@
 # Fuse Guided Mixer Design
 
-**Date:** 2026-07-19  
-**Status:** Ready for Fable implementation  
-**Owner:** Fable  
-**Area:** Create module, Fuse tab  
-**Supersedes:** The conflicting layout, animation, and tour decisions in [2026-07-10-fuse-facelift-design.md](./2026-07-10-fuse-facelift-design.md). The shared sequence viewer result, independent Blue and Red shuffling, and pure fusion service remain valid.
+- **Date:** 2026-07-19
+- **Status:** Ready for Fable implementation
+- **Owner:** Fable
+- **Area:** Create module, Fuse tab
+- **Supersedes:** The conflicting layout, animation, and tour decisions in [2026-07-10-fuse-facelift-design.md](./2026-07-10-fuse-facelift-design.md). The shared sequence viewer result, independent Blue and Red shuffling, and pure fusion service remain valid.
 
 ## Decision
 
@@ -178,12 +178,9 @@ Use a native labeled `<select>` for length. Seven options do not fit a compact c
 
 The existing `HelpButton` opens a `Drawer` with three short sections:
 
-1. **Set the length**  
-   Both path pools use the same step count.
-2. **Shuffle either path**  
-   Back returns to the last path you saw.
-3. **Fuse and open**  
-   The result opens in the sequence viewer.
+1. **Set the length:** Both path pools use the same step count.
+2. **Shuffle either path:** Back returns to the last path you saw.
+3. **Fuse and open:** The result opens in the sequence viewer.
 
 The help drawer is always available. It does not appear automatically, persist a dismissed state, or block the first interaction.
 

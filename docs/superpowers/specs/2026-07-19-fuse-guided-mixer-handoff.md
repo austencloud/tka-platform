@@ -1,11 +1,11 @@
 # Fuse Guided Mixer: Handoff
 
-**Date:** 2026-07-19  
-**From:** Codex  
-**To:** Fable  
-**Branch:** `main`  
-**Design spec:** [2026-07-19-fuse-guided-mixer-design.md](./2026-07-19-fuse-guided-mixer-design.md)  
-**Design commit:** `78e7bcbae570e1df752aebce1a00d2b5e2611c7e`
+- **Date:** 2026-07-19
+- **From:** Codex
+- **To:** Fable
+- **Branch:** `main`
+- **Design spec:** [2026-07-19-fuse-guided-mixer-design.md](./2026-07-19-fuse-guided-mixer-design.md)
+- **Design commit:** `78e7bcbae570e1df752aebce1a00d2b5e2611c7e`
 
 ## Mission
 
