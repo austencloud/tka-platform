@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Orbit — homepage hub concept sketch</title>
+<style>
+  :root {
+    --bg0: #05060d; --bg1: #0b1026; --ink: #f4f2ff; --dim: #a7acd6;
+    --stroke: rgba(255,255,255,.14);
+    --composer: #ffb347; --notation: #4be0cf; --guide: #e0a860; --gallery: #cf74e0;
+    --museum: #e6c65c; --play: #39ff9d; --practice: #6fa8ff;
+  }
+  :root[data-theme="light"] { --bg0: #161a2c; --bg1: #232a45; --ink: #f7f5ff; --dim: #c2c6ea; }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { --bg0: #161a2c; --bg1: #232a45; --ink: #f7f5ff; --dim: #c2c6ea; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: var(--ink);
+    background: radial-gradient(120% 90% at 50% 30%, var(--bg1) 0%, var(--bg0) 70%);
+  }
+  a { color: inherit; }
+  .sr-only { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+  /* ── caption strip ── */
+  .caption {
+    position: fixed; top:0; left:0; right:0; z-index: 50;
+    display:flex; align-items:baseline; gap:.6rem; flex-wrap:wrap;
+    padding: .5rem 1rem; background: rgba(5,6,13,.7); backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--stroke); font-size: .78rem;
+  }
+  .caption h1 { margin:0; font-size:.92rem; letter-spacing:.06em; text-transform:uppercase; font-weight:700; }
+  .caption span { color: var(--dim); }
+
+  /* ── stage ── */
+  .stage { position:absolute; inset:0; }
+  .starfield { position:absolute; inset:0; z-index:0; }
+  .starfield i { position:absolute; inset:0; border-radius:50%; background:transparent; }
+  .starfield .far { animation: drift 140s linear infinite; }
+  .starfield .near { animation: drift 90s linear infinite reverse; }
+  @keyframes drift { from{ transform:translate(0,0);} to{ transform:translate(-4vmin,-4vmin);} }
+
+  .orbit-system { position:absolute; inset:0; }
+
+  /* ── sun (Composer) ── */
+  .sun {
+    position:absolute; top:50%; left:50%; width: 108px; height:108px;
+    transform: translate(-50%,-50%) scale(var(--scale,1));
+    border-radius:50%; display:grid; place-items:center; text-decoration:none;
+    background: radial-gradient(circle at 38% 32%, #fff2d6, var(--composer) 55%, #b8631f 100%);
+    box-shadow: 0 0 60px 18px rgba(255,179,71,.45), 0 0 0 1px rgba(255,255,255,.2);
+    animation: sun-pulse 6s ease-in-out infinite;
+    transition: transform .32s cubic-bezier(.34,1.56,.64,1), box-shadow .32s ease, filter .32s ease;
+    z-index: 20;
+  }
+  @keyframes sun-pulse { 0%,100%{ box-shadow:0 0 60px 18px rgba(255,179,71,.45), 0 0 0 1px rgba(255,255,255,.2);} 50%{ box-shadow:0 0 78px 26px rgba(255,179,71,.62), 0 0 0 1px rgba(255,255,255,.28);} }
+  .sun.active { --scale: 1.08; }
+  .sun.dimmed { opacity:.4; filter:saturate(.5) brightness(.7); }
+  .sun .body-face { font-size:1.8rem; filter: drop-shadow(0 0 10px #fff6dd); pointer-events:none; }
+  .sun .body-name { margin:0; font-size:.72rem; letter-spacing:.03em; pointer-events:none; }
+
+  /* ── orbit rings ── */
+  .ring { position:absolute; top:50%; left:50%; width:0; height:0; animation-duration: var(--duration); animation-timing-function: linear; animation-iteration-count: infinite; animation-delay: var(--delay,0s); }
+  .ring.cw { animation-name: orbit-cw; }
+  .ring.ccw { animation-name: orbit-ccw; }
+  .ring .anchor { position:absolute; top:0; left:0; width:0; height:0; animation-duration: var(--duration); animation-timing-function:linear; animation-iteration-count: infinite; animation-delay: var(--delay,0s); }
+  .ring.cw .anchor { animation-name: counter-ccw; }
+  .ring.ccw .anchor { animation-name: counter-cw; }
+  @keyframes orbit-cw { from{ transform: rotate(0deg) translateX(var(--radius)); } to{ transform: rotate(360deg) translateX(var(--radius)); } }
+  @keyframes orbit-ccw { from{ transform: rotate(0deg) translateX(var(--radius)); } to{ transform: rotate(-360deg) translateX(var(--radius)); } }
+  @keyframes counter-ccw { from{ transform: rotate(0deg);} to{ transform: rotate(-360deg);} }
+  @keyframes counter-cw { from{ transform: rotate(0deg);} to{ transform: rotate(360deg);} }
+
+  /* ── orbiting bodies ── */
+  .body {
+    position:absolute; top:0; left:0; width: 62px; height:62px;
+    transform: translate(-50%,-50%) scale(var(--scale,1));
+    border-radius:50%; display:grid; place-items:center; text-decoration:none; color:var(--ink);
+    box-shadow: 0 0 0 1px rgba(255,255,255,.12), 0 0 22px 2px var(--glow);
+    transition: transform .32s cubic-bezier(.34,1.56,.64,1), box-shadow .32s ease, filter .32s ease, opacity .32s ease;
+    z-index: 10;
+  }
+  .body.active { --scale: 1.16; z-index: 25; box-shadow: 0 0 0 1.5px rgba(255,255,255,.4), 0 0 46px 10px var(--glow); }
+  .body.dimmed { opacity:.32; filter: saturate(.5) brightness(.68); }
+  .body .body-face { font-size:1.15rem; pointer-events:none; filter: drop-shadow(0 0 6px var(--glow)); }
+  .body .asset-note {
+    position:absolute; top:100%; margin-top:.5rem; font-size:.55rem; font-family: ui-monospace, "Consolas", monospace;
+    color: rgba(244,242,255,.5); white-space:nowrap; pointer-events:none;
+  }
+  .body[data-key="notation"] { background: radial-gradient(circle at 35% 30%, #d8fff8, var(--notation) 60%, #0f6f63); --glow: rgba(75,224,207,.55); background-image: radial-gradient(circle at 35% 30%, #d8fff8, var(--notation) 60%, #0f6f63), repeating-linear-gradient(115deg, rgba(255,255,255,.16) 0 2px, transparent 2px 9px); }
+  .body[data-key="guide"] { background: radial-gradient(circle at 35% 30%, #fff2da, var(--guide) 60%, #7a4c1c); --glow: rgba(224,168,96,.55); }
+  .body[data-key="gallery"] { background: radial-gradient(circle at 35% 30%, #fbe4ff, var(--gallery) 60%, #6b1f7a); --glow: rgba(207,116,224,.55); background-image: radial-gradient(circle at 35% 30%, #fbe4ff, var(--gallery) 60%, #6b1f7a), repeating-conic-gradient(from 0deg, rgba(255,255,255,.22) 0deg 4deg, transparent 4deg 20deg); }
+  .body[data-key="museum"] { background: radial-gradient(circle at 35% 30%, #fff7d6, var(--museum) 60%, #7a5e13); --glow: rgba(230,198,92,.55); }
+  .body[data-key="museum"]::before { content:""; position:absolute; inset:-55% -8%; border:2px solid rgba(230,198,92,.55); border-radius:50%; transform: scaleY(.32) rotate(-14deg); pointer-events:none; }
+  .body[data-key="museum"] .moon { position:absolute; top:50%; left:50%; width:7px; height:7px; border-radius:50%; background:#eef2ff; box-shadow:0 0 6px 2px rgba(238,242,255,.85); animation: moon-orbit 5s linear infinite; pointer-events:none; }
+  @keyframes moon-orbit { from{ transform: translate(-50%,-50%) rotate(0deg) translateX(24px);} to{ transform: translate(-50%,-50%) rotate(360deg) translateX(24px);} }
+  .body[data-key="play"] { background: radial-gradient(circle at 35% 30%, #dfffef, var(--play) 60%, #0a5c37); --glow: rgba(57,255,157,.6); }
+  .body[data-key="practice"] { background: radial-gradient(circle at 35% 30%, #e2edff, var(--practice) 60%, #1c4a8f); --glow: rgba(111,168,255,.55); width:48px; height:48px; }
+
+  /* ── label chip ── */
+  .label-chip { position:fixed; z-index:60; transform: translate(-50%,-130%); pointer-events:none; opacity:0; transition: opacity .18s ease; text-align:center; }
+  .label-chip.shown { opacity:1; }
+  .label-chip strong { display:block; font-size:.86rem; letter-spacing:.02em; padding:.15rem .6rem; border-radius:999px; background:rgba(10,11,22,.85); border:1px solid var(--stroke); white-space:nowrap; }
+  .label-chip span { display:block; margin-top:.3rem; font-size:.68rem; color:var(--dim); white-space:nowrap; }
+
+  /* ── custom cursor ── */
+  .cursor { position:fixed; top:0; left:0; z-index:70; width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%; background:var(--ink); pointer-events:none; transition: width .18s ease, height .18s ease, margin .18s ease, background .18s ease, border-color .18s ease; }
+  .cursor.over { width:56px; height:56px; margin:-28px 0 0 -28px; background:transparent; border:2px solid var(--ink); display:grid; place-items:center; font-size:.6rem; letter-spacing:.12em; }
+  .cursor.over::after { content:"ENTER"; }
+  @media (pointer: coarse) { .cursor { display:none; } }
+
+  .body.launching { animation: press-punch .38s ease; }
+  @keyframes press-punch { 0%{ transform: translate(-50%,-50%) scale(var(--scale,1));} 40%{ transform: translate(-50%,-50%) scale(.86);} 100%{ transform: translate(-50%,-50%) scale(1.3); opacity:0;} }
+  .sun.launching { animation: sun-press-punch .38s ease; }
+  @keyframes sun-press-punch { 0%{ transform: translate(-50%,-50%) scale(var(--scale,1));} 40%{ transform: translate(-50%,-50%) scale(.9);} 100%{ transform: translate(-50%,-50%) scale(1.25); opacity:0;} }
+
+  /* ── ground control rail ── */
+  .rail { position:fixed; left:1rem; bottom:1rem; z-index:40; width: min(280px, 46vw); max-height: 62vh; overflow-y:auto; background:rgba(8,9,18,.72); backdrop-filter: blur(10px); border:1px solid var(--stroke); border-radius: 14px; padding: .8rem .9rem; }
+  .rail h2 { margin:0 0 .5rem; font-size:.68rem; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); }
+  .rail ul { list-style:none; margin:0; padding:0; display:grid; gap:.15rem; }
+  .rail a { display:block; padding:.4rem .5rem; border-radius:8px; text-decoration:none; }
+  .rail a:hover, .rail a:focus-visible { background: rgba(255,255,255,.08); }
+  .rail h3 { margin:0; font-size:.86rem; font-weight:650; }
+  .rail p { margin:.1rem 0 0; font-size:.7rem; color:var(--dim); }
+
+  @media (max-width: 760px) {
+    html, body { overflow:auto; }
+    .orbit-system, .cursor, .label-chip, .starfield { display:none; }
+    .caption { position:sticky; }
+    .rail { position:static; width:auto; max-height:none; margin: 4.2rem 1rem 2rem; border-radius:16px; }
+    .rail ul { gap:.5rem; }
+    .rail a { padding:.9rem 1rem; min-height:44px; border:1px solid var(--stroke); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ring, .ring .anchor, .sun, .starfield i, .body[data-key="museum"] .moon { animation: none !important; }
+    .body, .sun { transition: none !important; }
+  }
+  html.tab-hidden .ring, html.tab-hidden .ring .anchor, html.tab-hidden .sun, html.tab-hidden .starfield i { animation-play-state: paused; }
+</style>
+</head>
+<body>
+
+  <div class="caption">
+    <h1>Orbit</h1>
+    <span>concept sketch — for Fable 5 / review only</span>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="starfield" id="starfield" aria-hidden="true"><i class="far"></i><i class="near"></i></div>
+
+    <div class="orbit-system">
+      <a class="sun body" href="/composer" data-key="composer" data-label="Composer" data-desc="Build sequences — the core product">
+        <span class="body-face" aria-hidden="true">&#9737;</span>
+        <span class="body-name" aria-hidden="true">Composer</span>
+        <span class="sr-only">Composer — build sequences, the core product</span>
+      </a>
+
+      <div class="ring cw" style="--radius:19vmin; --duration:42s; --delay:-6s;">
+        <div class="anchor"><a class="body" href="/notation" data-key="notation" data-label="Notation" data-desc="Letters, VTG shapes &amp; the grammar under every pictograph">
+          <span class="body-face" aria-hidden="true">&#9670;</span>
+          <span class="sr-only">Notation — letters, VTG shapes and the grammar under every pictograph</span>
+        </a></div>
+      </div>
+
+      <div class="ring ccw" style="--radius:25vmin; --duration:58s; --delay:-18s;">
+        <div class="anchor"><a class="body" href="/guide" data-key="guide" data-label="Guide" data-desc="Level 1 &rarr; Level 2 &rarr; the Codex">
+          <span class="body-face" aria-hidden="true">&#9776;</span>
+          <span class="sr-only">Guide — Level 1 through Level 2 to the Codex</span>
+        </a></div>
+      </div>
+
+      <div class="ring cw" style="--radius:31vmin; --duration:68s; --delay:-40s;">
+        <div class="anchor"><a class="body" href="/browse/gallery" data-key="gallery" data-label="Gallery" data-desc="Community mandalas, browsable">
+          <span class="body-face" aria-hidden="true">&#10047;</span>
+          <span class="asset-note">[SequenceMandala texture]</span>
+          <span class="sr-only">Gallery — community mandalas, browsable</span>
+        </a></div>
+      </div>
+
+      <div class="ring ccw" style="--radius:37vmin; --duration:84s; --delay:-12s;">
+        <div class="anchor"><a class="body" href="/museum" data-key="museum" data-label="Museum" data-desc="Walk the Kinetic Archive, sequence by sequence">
+          <span class="moon" aria-hidden="true"></span>
+          <span class="body-face" aria-hidden="true">&#9791;</span>
+          <span class="asset-note">[Environment3D scene crop / FramedSequence]</span>
+          <span class="sr-only">Museum — walk the Kinetic Archive, sequence by sequence</span>
+        </a></div>
+      </div>
+
+      <div class="ring cw" style="--radius:43vmin; --duration:50s; --delay:-30s;">
+        <div class="anchor"><a class="body" href="/learn/play" data-key="play" data-label="Play" data-desc="Six games. Actual bests, not coin-flip scores.">
+          <span class="body-face" aria-hidden="true">&#9654;</span>
+          <span class="sr-only">Play — six games with real bests, not coin-flip scores</span>
+        </a></div>
+      </div>
+
+      <div class="ring ccw" style="--radius:14vmin; --duration:30s; --delay:-4s;">
+        <div class="anchor"><a class="body" href="/train" data-key="practice" data-label="Practice" data-desc="AR mirror, CV judgment, step by step">
+          <span class="body-face" aria-hidden="true">&#9679;</span>
+          <span class="sr-only">Practice — AR mirror and CV judgment, step by step</span>
+        </a></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="label-chip" id="labelChip" aria-hidden="true"><strong id="labelChipName"></strong><span id="labelChipDesc"></span></div>
+  <div class="cursor" id="cursor" aria-hidden="true"></div>
+
+  <nav class="rail" aria-label="All destinations">
+    <h2>Ground control &mdash; every destination</h2>
+    <ul>
+      <li><a href="/composer"><h3>Composer</h3><p>Build sequences, prop by prop</p></a></li>
+      <li><a href="/notation"><h3>Notation</h3><p>Letters, VTG &amp; the grammar underneath</p></a></li>
+      <li><a href="/guide"><h3>Guide</h3><p>Level 1, Level 2, the Codex</p></a></li>
+      <li><a href="/glossary"><h3>Glossary</h3><p>Every term, defined once, correctly</p></a></li>
+      <li><a href="/browse/library"><h3>Library</h3><p>Your saved sequences</p></a></li>
+      <li><a href="/browse/gallery"><h3>Gallery</h3><p>Community pictographs, browsable</p></a></li>
+      <li><a href="/museum"><h3>Museum</h3><p>The Kinetic Archive, walkable</p></a></li>
+      <li><a href="/learn/play"><h3>Play</h3><p>Six games, real bests</p></a></li>
+      <li><a href="/train"><h3>Practice</h3><p>AR mirror, CV judgment</p></a></li>
+      <li><a href="/shop"><h3>Shop &amp; Choreo Cards</h3><p>Physical decks &mdash; rings are the deck</p></a></li>
+      <li><a href="/about"><h3>About</h3><p>Why double staves, why TKA</p></a></li>
+      <li><a href="/faq"><h3>FAQ</h3><p>Answers before you have to ask</p></a></li>
+      <li><a href="/roots/software"><h3>Roots &mdash; Software</h3><p>How the composer got built</p></a></li>
+      <li><a href="/watch"><h3>Watch</h3><p>Sequences in motion</p></a></li>
+      <li><a href="/social"><h3>Social</h3><p>Find your circle</p></a></li>
+      <li><a href="/festivals"><h3>Festivals</h3><p>Where to spin next</p></a></li>
+      <li><a href="/tika"><h3>Tika</h3><p>Ask the AI tutor</p></a></li>
+      <li><a href="/retro"><h3>Retro</h3><p>DOS. Win95. The whole timeline.</p></a></li>
+    </ul>
+  </nav>
+
+<script>
+(function () {
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var stage = document.getElementById('stage');
+  var bodies = Array.prototype.slice.call(document.querySelectorAll('.body'));
+  var cursor = document.getElementById('cursor');
+  var chip = document.getElementById('labelChip');
+  var chipName = document.getElementById('labelChipName');
+  var chipDesc = document.getElementById('labelChipDesc');
+  var THRESHOLD = Math.min(window.innerWidth, window.innerHeight) * 0.32;
+
+  // starfield: a couple of cheap box-shadow dot layers
+  function paintLayer(el, count, size, opacity) {
+    var shadows = [];
+    for (var i = 0; i < count; i++) {
+      var x = (Math.random() * 100).toFixed(2) + 'vw';
+      var y = (Math.random() * 100).toFixed(2) + 'vh';
+      shadows.push(x + ' ' + y + ' 0 rgba(255,255,255,' + opacity + ')');
+    }
+    el.style.boxShadow = shadows.join(',');
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+  }
+  paintLayer(document.querySelector('.starfield .far'), 70, 1, 0.55);
+  paintLayer(document.querySelector('.starfield .near'), 40, 2, 0.8);
+
+  function clearActive() {
+    bodies.forEach(function (b) { b.classList.remove('active', 'dimmed'); });
+    chip.classList.remove('shown');
+  }
+
+  window.addEventListener('pointermove', function (e) {
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+    cursor.style.transform = 'translate(' + e.clientX + 'px,' + e.clientY + 'px)';
+
+    var nearest = null, nearestDist = Infinity;
+    bodies.forEach(function (b) {
+      var r = b.getBoundingClientRect();
+      var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+      var d = Math.hypot(e.clientX - cx, e.clientY - cy);
+      if (d < nearestDist) { nearestDist = d; nearest = { el: b, x: cx, y: cy }; }
+    });
+
+    if (nearest && nearestDist < THRESHOLD) {
+      bodies.forEach(function (b) { b.classList.toggle('dimmed', b !== nearest.el); b.classList.toggle('active', b === nearest.el); });
+      chipName.textContent = nearest.el.dataset.label;
+      chipDesc.textContent = nearest.el.dataset.desc;
+      chip.style.left = nearest.x + 'px';
+      chip.style.top = nearest.y + 'px';
+      chip.classList.add('shown');
+    } else {
+      clearActive();
+    }
+  }, { passive: true });
+
+  bodies.forEach(function (b) {
+    b.addEventListener('mouseenter', function () { cursor.classList.add('over'); });
+    b.addEventListener('mouseleave', function () { cursor.classList.remove('over'); });
+    b.addEventListener('click', function (e) {
+      if (e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return; // let the browser open it normally
+      e.preventDefault();
+      var href = b.getAttribute('href');
+      console.log('[Orbit] flying into', b.dataset.label, '→', href);
+      b.classList.add('launching');
+      window.setTimeout(function () { window.location.href = href; }, reduceMotion ? 0 : 380);
+    });
+  });
+
+  document.addEventListener('visibilitychange', function () {
+    document.documentElement.classList.toggle('tab-hidden', document.hidden);
+  });
+})();
+</script>
+</body>
+</html>

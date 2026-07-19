@@ -1,0 +1,228 @@
+<title>Launchpad — hub concept sketch</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<style>
+  :root{
+    --bg0:#05060d; --bg1:#0d1330; --tile-bg:rgba(255,255,255,.045); --tile-hover-bg:rgba(255,255,255,.075);
+    --tile-border:rgba(255,255,255,.1); --text:#e9eaf7; --muted:#9aa0c3; --accent:#a78bfa; --accent2:#22d3ee;
+    --glow:rgba(167,139,250,.38);
+  }
+  :root[data-theme="light"], @media (prefers-color-scheme: light){:root{
+    --bg0:#eef0fb; --bg1:#dfe2fa; --tile-bg:rgba(20,20,60,.045); --tile-hover-bg:rgba(20,20,60,.08);
+    --tile-border:rgba(20,20,60,.14); --text:#171a2e; --muted:#565b82; --glow:rgba(124,58,237,.22);
+  }}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg0);color:var(--text);font-family:-apple-system,"Segoe UI",Roboto,system-ui,sans-serif;overflow-x:hidden}
+  body{position:relative;min-height:100vh;padding-bottom:3rem}
+  body::before{content:"";position:fixed;inset:-10%;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(1.5px 1.5px at 8% 15%,#fff 60%,transparent),radial-gradient(1px 1px at 22% 60%,#fff 60%,transparent),
+      radial-gradient(1.5px 1.5px at 40% 25%,#fff 50%,transparent),radial-gradient(1px 1px at 63% 80%,#fff 55%,transparent),
+      radial-gradient(1.5px 1.5px at 78% 35%,#fff 55%,transparent),radial-gradient(1px 1px at 90% 65%,#fff 55%,transparent),
+      radial-gradient(1.5px 1.5px at 55% 90%,#fff 50%,transparent),radial-gradient(1px 1px at 12% 85%,#fff 55%,transparent),
+      linear-gradient(160deg,var(--bg0),var(--bg1) 55%,var(--bg0));
+    opacity:.55; animation:drift 60s linear infinite;
+  }
+  @keyframes drift{0%{background-position:0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0,0 0}100%{background-position:40px 30px,-30px 20px,20px -40px,-20px 30px,30px 40px,-40px -20px,20px 20px,-30px -30px,0 0}}
+  .strip{display:flex;gap:.6rem;align-items:baseline;justify-content:center;padding:.5rem 1rem;font-size:.72rem;
+    background:rgba(0,0,0,.35);border-bottom:1px solid var(--tile-border);color:var(--muted);flex-wrap:wrap}
+  :root[data-theme="light"] .strip{background:rgba(255,255,255,.5)}
+  .strip b{color:var(--text);font-weight:700;letter-spacing:.02em}
+  .hero{max-width:900px;margin:2.6rem auto 1.6rem;padding:0 1.2rem;text-align:center}
+  .hero h1{font-size:clamp(1.8rem,4vw,2.6rem);margin:0 0 .4rem;font-weight:800;letter-spacing:-.01em}
+  .hero h1 span{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .hero p{margin:0;color:var(--muted);font-size:.98rem}
+  .bento{max-width:1080px;margin:0 auto;padding:0 1.2rem}
+  .bento ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:110px;
+    grid-auto-flow:dense;gap:.9rem}
+  .tile{display:contents}
+  .t-composer,.t-library{grid-column:span 2;grid-row:span 2}
+  .t-museum,.t-shop{grid-column:span 2;grid-row:span 1}
+  .tile-inner{position:relative;display:flex;flex-direction:column;justify-content:flex-end;height:100%;padding:1rem 1.1rem;
+    border-radius:18px;border:1px solid var(--tile-border);background:var(--tile-bg);backdrop-filter:blur(14px);
+    text-decoration:none;color:inherit;overflow:hidden;isolation:isolate;cursor:pointer;
+    transform:perspective(900px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translate(var(--mtx,0px),var(--mty,0px)) scale(var(--press,1));
+    transition:transform .12s cubic-bezier(.34,1.56,.64,1),background .2s,opacity .25s,filter .25s;
+    animation:breathe 6s ease-in-out infinite; animation-delay:calc(var(--i,0) * .18s)}
+  .tile-inner:hover{background:var(--tile-hover-bg);box-shadow:0 22px 44px -18px rgba(0,0,0,.55)}
+  .bento ul:has(.tile-inner:hover) .tile-inner:not(:hover),
+  .rail ul:has(a:hover) a:not(:hover){opacity:.5;filter:saturate(.55)}
+  @keyframes breathe{0%,100%{--breath:1}50%{--breath:1.006}}
+  .tile-inner{scale:var(--breath,1) 1}
+  .glow{position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0;transition:opacity .25s;
+    background:radial-gradient(240px circle at var(--mx,50%) var(--my,50%),var(--glow),transparent 70%)}
+  .tile-inner:hover .glow{opacity:1}
+  .art{position:absolute;inset:0;z-index:-1;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .art-caption{position:absolute;bottom:.55rem;left:.9rem;right:.9rem;font-size:.62rem;color:var(--muted);opacity:.7;letter-spacing:.01em}
+  .meta h2{margin:0 0 .15rem;font-size:1.02rem;font-weight:700}
+  .meta h2 a{color:inherit;text-decoration:none}
+  .t-composer .meta h2,.t-library .meta h2,.t-museum .meta h2,.t-shop .meta h2{font-size:1.3rem}
+  .meta p{margin:0;font-size:.76rem;color:var(--muted);max-width:32ch}
+  .chips{display:flex;gap:.4rem;flex-wrap:wrap;margin-top:.4rem}
+  .chips a{font-size:.68rem;color:var(--accent2);text-decoration:none;border:1px solid var(--tile-border);
+    padding:.15rem .5rem;border-radius:999px;background:rgba(0,0,0,.15)}
+  .chips a:hover{color:var(--text);border-color:var(--accent2)}
+  /* --- placeholder art per tile --- */
+  .beat-row{display:flex;gap:6px;padding:0 1.1rem}
+  .beat-row span{width:14px;height:14px;border-radius:4px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+    opacity:.25;animation:beat 1.6s ease-in-out infinite}
+  .beat-row span:nth-child(n){animation-delay:calc(var(--n) * .1s)}
+  @keyframes beat{0%,70%,100%{opacity:.22;transform:scaleY(.6)}20%{opacity:1;transform:scaleY(1)}}
+  .mandala{width:64%;aspect-ratio:1;opacity:.55}
+  .mandala circle,.mandala path{fill:none;stroke:url(#g1);stroke-width:1.1}
+  .mandala .spin{animation:spin 18s linear infinite;transform-origin:50% 50%}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .museum-crop{width:70%;height:60%;border-radius:10px;background:linear-gradient(155deg,rgba(167,139,250,.25),rgba(34,211,238,.15));
+    border:1px solid var(--tile-border);position:relative}
+  .museum-crop::after{content:"";position:absolute;inset:18%;border:1px solid rgba(255,255,255,.35);border-radius:4px}
+  .card-mini{width:58%;aspect-ratio:2.5/3.5;background:rgba(0,0,0,.2);border:1px solid var(--tile-border);border-radius:8px;
+    display:grid;grid-template-rows:auto 1fr auto;padding:6px}
+  .card-mini .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:3px}
+  .card-mini .grid3 span{background:linear-gradient(135deg,var(--accent),var(--accent2));opacity:.35;border-radius:2px;aspect-ratio:1}
+  .card-mini .qr{width:14px;height:14px;justify-self:end;background:repeating-linear-gradient(45deg,var(--text) 0 2px,transparent 2px 4px);opacity:.5}
+  .glyph{font-size:2.6rem;font-weight:800;opacity:.7;background:linear-gradient(160deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .grid-ring{position:absolute;width:70%;aspect-ratio:1;border-radius:50%;border:1px solid var(--tile-border)}
+  .icon1x1{font-size:1.5rem;opacity:.6;position:absolute;top:.9rem;right:1rem}
+  .rail{max-width:1080px;margin:1.4rem auto 0;padding:0 1.2rem}
+  .rail ul{list-style:none;display:flex;flex-wrap:wrap;gap:.5rem;margin:0;padding:0}
+  .rail a{font-size:.78rem;color:var(--muted);text-decoration:none;border:1px solid var(--tile-border);
+    background:var(--tile-bg);padding:.45rem .8rem;border-radius:10px;transition:color .2s,border-color .2s,opacity .25s,filter .25s}
+  .rail a:hover{color:var(--text);border-color:var(--accent2)}
+  .note{max-width:1080px;margin:1.6rem auto 0;padding:0 1.2rem;font-size:.68rem;color:var(--muted);opacity:.7}
+  @media (max-width:720px){
+    .bento ul{grid-template-columns:1fr;grid-auto-rows:auto}
+    .t-composer,.t-library,.t-museum,.t-shop{grid-column:span 1;grid-row:span 1}
+    .tile-inner{min-height:150px}
+    .tile-inner{transform:none !important}
+  }
+  @media (pointer:coarse){.tile-inner{transform:scale(var(--press,1)) !important}}
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none !important;transition:none !important}}
+</style>
+
+<div class="strip"><b>Launchpad</b> — concept sketch — for Fable 5 / review only</div>
+
+<div class="hero">
+  <h1>The TKA <span>Launchpad</span></h1>
+  <p>An unequal bento of living artifacts — hover to feel it, click to go there.</p>
+</div>
+
+<nav class="bento" aria-label="Primary destinations"><ul>
+  <li class="tile t-composer" style="--i:0"><a class="tile-inner" data-magnetic href="/composer">
+    <span class="glow"></span>
+    <div class="art"><div class="beat-row" aria-hidden="true">
+      <span style="--n:1"></span><span style="--n:2"></span><span style="--n:3"></span><span style="--n:4"></span>
+      <span style="--n:5"></span><span style="--n:6"></span><span style="--n:7"></span><span style="--n:8"></span>
+    </div><span class="art-caption">[SequenceHeroDemo: autoplaying sequence]</span></div>
+    <div class="meta"><h2>Composer</h2><p>Build a sequence letter by letter — the notation engine, live.</p></div>
+  </a></li>
+
+  <li class="tile t-library" style="--i:1"><div class="tile-inner">
+    <span class="glow"></span>
+    <div class="art"><svg class="mandala" viewBox="0 0 100 100" aria-hidden="true">
+      <defs><linearGradient id="g1" x1="0" x2="1"><stop offset="0" stop-color="#a78bfa"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs>
+      <g class="spin"><circle cx="50" cy="50" r="34"/><path d="M50 16 Q78 50 50 84 Q22 50 50 16 Z"/><circle cx="50" cy="50" r="18"/></g>
+    </svg><span class="art-caption">[SequenceMandala glyph]</span></div>
+    <div class="meta"><h2><a href="/browse/library">Library</a></h2><p>Every sequence traces its own mandala.</p>
+      <div class="chips"><a href="/browse/gallery">Gallery</a><a href="/browse/collections">Collections</a></div>
+    </div>
+  </div></li>
+
+  <li class="tile t-museum" style="--i:2"><a class="tile-inner" href="/museum">
+    <span class="glow"></span>
+    <div class="art"><div class="museum-crop" aria-hidden="true"></div>
+      <span class="art-caption">[Environment3D museum crop]</span></div>
+    <div class="meta"><h2>Museum</h2><p>Walk a gallery of sequences hung on the wall.</p></div>
+  </a></li>
+
+  <li class="tile t-shop" style="--i:3"><div class="tile-inner">
+    <span class="glow"></span>
+    <div class="art"><div class="card-mini" aria-hidden="true"><span class="qr"></span>
+      <div class="grid3"><span></span><span></span><span></span><span></span><span></span><span></span></div>
+      <span></span></div><span class="art-caption">[ChoreoCard]</span></div>
+    <div class="meta"><h2><a href="/shop/choreography-cards">Choreo Cards</a></h2><p>Physical decks of real sequences, printed.</p>
+      <div class="chips"><a href="/shop">Shop</a><a href="/shop/loop-deck">LOOP Deck</a></div>
+    </div>
+  </div></li>
+
+  <li class="tile" style="--i:4"><div class="tile-inner">
+    <span class="glow"></span><span class="grid-ring" aria-hidden="true"></span>
+    <div class="art"><span class="glyph" aria-hidden="true">Σ</span><span class="art-caption">[PictographRenderer letter]</span></div>
+    <div class="meta"><h2><a href="/notation">Notation</a></h2>
+      <div class="chips"><a href="/staves">Staves</a><a href="/clubs">Clubs</a><a href="/fans">Fans</a><a href="/buugeng">Buugeng</a><a href="/poi">Poi</a></div>
+    </div>
+  </div></li>
+
+  <li class="tile" style="--i:5"><a class="tile-inner" href="/guide"><span class="glow"></span>
+    <span class="icon1x1" aria-hidden="true">📖</span>
+    <div class="meta"><h2>Guide</h2><p>Learn the system from zero.</p></div>
+  </a></li>
+
+  <li class="tile" style="--i:6"><a class="tile-inner" href="/learn/play"><span class="glow"></span>
+    <span class="icon1x1" aria-hidden="true">🕹️</span>
+    <div class="meta"><h2>Play</h2><p>Six games, real bests.</p></div>
+  </a></li>
+
+  <li class="tile" style="--i:7"><a class="tile-inner" href="/train"><span class="glow"></span>
+    <span class="icon1x1" aria-hidden="true">🎯</span>
+    <div class="meta"><h2>Practice</h2><p>Drill against your own library.</p></div>
+  </a></li>
+
+  <li class="tile" style="--i:8"><a class="tile-inner" href="/glossary"><span class="glow"></span>
+    <span class="icon1x1" aria-hidden="true">🔎</span>
+    <div class="meta"><h2>Glossary</h2><p>Every term, defined precisely.</p></div>
+  </a></li>
+
+  <li class="tile" style="--i:9"><a class="tile-inner" href="/about"><span class="glow"></span>
+    <span class="icon1x1" aria-hidden="true">✦</span>
+    <div class="meta"><h2>About</h2><p>Why this notation exists.</p></div>
+  </a></li>
+</ul></nav>
+
+<nav class="rail" aria-label="More destinations"><ul>
+  <li><a href="/faq">FAQ</a></li><li><a href="/roots/software">Roots — Software</a></li>
+  <li><a href="/compose">Compose</a></li><li><a href="/choreo">Choreo</a></li>
+  <li><a href="/watch">Watch</a></li><li><a href="/arena">Arena</a></li>
+  <li><a href="/social">Social</a></li><li><a href="/festivals">Festivals</a></li>
+  <li><a href="/levels">Levels</a></li><li><a href="/hand-paths">Hand Paths</a></li>
+  <li><a href="/video">Video</a></li><li><a href="/stage">Stage</a></li>
+  <li><a href="/tika">Tika</a></li><li><a href="/retro">Retro</a></li>
+</ul></nav>
+
+<p class="note">Bracketed labels stand in for live components (SequenceHeroDemo, SequenceMandala, ChoreoCard, Environment3D, PictographRenderer) — this file has zero framework, zero network calls.</p>
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"TKA Flow Arts Composer","url":"https://tkaflowarts.com/"}
+</script>
+
+<script>
+(function(){
+  var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var coarse = matchMedia('(pointer: coarse)').matches;
+  var tiles = document.querySelectorAll('.tile-inner');
+  tiles.forEach(function(t){
+    if (!reduced && !coarse) {
+      t.addEventListener('pointermove', function(e){
+        var r = t.getBoundingClientRect();
+        var x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+        t.style.setProperty('--rx', ((0.5 - y) * 10).toFixed(2) + 'deg');
+        t.style.setProperty('--ry', ((x - 0.5) * 10).toFixed(2) + 'deg');
+        t.style.setProperty('--mx', (x * 100).toFixed(1) + '%');
+        t.style.setProperty('--my', (y * 100).toFixed(1) + '%');
+        if (t.hasAttribute('data-magnetic')) {
+          t.style.setProperty('--mtx', ((x - 0.5) * 14).toFixed(1) + 'px');
+          t.style.setProperty('--mty', ((y - 0.5) * 14).toFixed(1) + 'px');
+        }
+      });
+      t.addEventListener('pointerleave', function(){
+        t.style.setProperty('--rx', '0deg'); t.style.setProperty('--ry', '0deg');
+        t.style.setProperty('--mtx', '0px'); t.style.setProperty('--mty', '0px');
+      });
+    }
+    t.addEventListener('pointerdown', function(){ t.style.setProperty('--press', '.96'); });
+    ['pointerup','pointerleave','pointercancel'].forEach(function(ev){
+      t.addEventListener(ev, function(){ t.style.setProperty('--press', '1'); });
+    });
+  });
+})();
+</script>

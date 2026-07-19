@@ -1,0 +1,403 @@
+<title>Launchpad v2 — hub concept sketch</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<style>
+  :root {
+    --bg0: #04050c; --bg1: #0a0d24; --bg2: #120a2c;
+    --ink: #f2f1fb; --muted: #9ba1cc; --faint: #6b6f96;
+    --stroke: rgba(255,255,255,.09); --stroke-hi: rgba(255,255,255,.22);
+    --tile: rgba(255,255,255,.028); --tile-hi: rgba(255,255,255,.06);
+    --sheen: rgba(255,255,255,.5);
+    /* per-destination signature */
+    --c-composer: #a78bfa; --c-library: #f472b6; --c-museum: #fbbf24;
+    --c-shop: #34d399; --c-notation: #22d3ee; --c-guide: #60a5fa;
+    --c-play: #a3e635; --c-practice: #fb7185; --c-glossary: #94a3b8;
+    --c-about: #e2e8f0; --c-watch: #f97316;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      --bg0: #eceaf6; --bg1: #e0def4; --bg2: #e8e2f6;
+      --ink: #14162b; --muted: #565b82; --faint: #7c80a4;
+      --stroke: rgba(20,20,50,.1); --stroke-hi: rgba(20,20,50,.24);
+      --tile: rgba(255,255,255,.5); --tile-hi: rgba(255,255,255,.75);
+      --sheen: rgba(255,255,255,.9);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg0: #eceaf6; --bg1: #e0def4; --bg2: #e8e2f6;
+    --ink: #14162b; --muted: #565b82; --faint: #7c80a4;
+    --stroke: rgba(20,20,50,.1); --stroke-hi: rgba(20,20,50,.24);
+    --tile: rgba(255,255,255,.5); --tile-hi: rgba(255,255,255,.75); --sheen: rgba(255,255,255,.9);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg0); color: var(--ink); overflow-x: hidden; min-height: 100vh;
+    font-family: "Segoe UI", -apple-system, Roboto, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* drifting aurora mesh + fine grain, no assets */
+  .aurora { position: fixed; inset: -20%; z-index: -2; pointer-events: none; filter: blur(38px); opacity: .85;
+    background:
+      radial-gradient(38vw 34vw at 18% 12%, color-mix(in oklch, var(--c-composer) 55%, transparent), transparent 70%),
+      radial-gradient(34vw 30vw at 82% 20%, color-mix(in oklch, var(--c-notation) 50%, transparent), transparent 70%),
+      radial-gradient(40vw 40vw at 70% 88%, color-mix(in oklch, var(--c-library) 45%, transparent), transparent 72%),
+      radial-gradient(30vw 30vw at 22% 82%, color-mix(in oklch, var(--c-shop) 42%, transparent), transparent 72%),
+      linear-gradient(155deg, var(--bg1), var(--bg0) 60%, var(--bg2));
+    animation: auroraDrift 34s ease-in-out infinite alternate; }
+  @keyframes auroraDrift { from { transform: translate3d(-2%, -1%, 0) scale(1.02); } to { transform: translate3d(3%, 2%, 0) scale(1.08); } }
+  .grain { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: .05; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+
+  .strip { display: flex; gap: .5rem; justify-content: center; align-items: baseline; flex-wrap: wrap;
+    padding: .5rem 1rem; font-size: .7rem; color: var(--faint); border-bottom: 1px solid var(--stroke);
+    background: color-mix(in oklch, var(--bg0) 60%, transparent); backdrop-filter: blur(8px); }
+  .strip b { color: var(--muted); font-weight: 700; letter-spacing: .04em; }
+
+  header.hero { max-width: 1180px; margin: 3.2rem auto 1.8rem; padding: 0 1.4rem; }
+  .hero .kicker { font-size: .74rem; letter-spacing: .32em; text-transform: uppercase; color: var(--faint); margin: 0 0 .7rem; }
+  .hero h1 { margin: 0; font-weight: 800; letter-spacing: -.03em; line-height: .96;
+    font-size: clamp(2.6rem, 7vw, 5.4rem); }
+  .hero h1 em { font-style: normal; background: linear-gradient(100deg, var(--c-composer), var(--c-notation) 55%, var(--c-library));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { margin: 1rem 0 0; max-width: 44ch; color: var(--muted); font-size: clamp(1rem, 1.4vw, 1.18rem); line-height: 1.5; }
+
+  main { max-width: 1180px; margin: 0 auto; padding: 0 1.4rem 4rem; }
+  .bento { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem;
+    grid-template-columns: repeat(4, 1fr); grid-auto-rows: 128px; grid-auto-flow: dense; }
+  .s2x2 { grid-column: span 2; grid-row: span 2; }
+  .s2x1 { grid-column: span 2; grid-row: span 1; }
+
+  .tile { position: relative; border-radius: 22px; overflow: hidden; isolation: isolate;
+    border: 1px solid var(--stroke); background: var(--tile);
+    box-shadow: 0 1px 0 0 var(--stroke-hi) inset, 0 18px 40px -28px rgba(0,0,0,.8);
+    transform: perspective(1000px) rotateX(var(--rx,0)) rotateY(var(--ry,0)) translateZ(0);
+    transition: transform .22s cubic-bezier(.22,1,.36,1), border-color .3s, box-shadow .3s, opacity .3s, filter .3s;
+    will-change: transform; }
+  .tile::after { /* top specular sheen */ content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 3;
+    background: linear-gradient(160deg, var(--sheen), transparent 32%); opacity: .12; mix-blend-mode: overlay; }
+  .tile:hover { border-color: color-mix(in oklch, var(--c) 55%, var(--stroke-hi)); box-shadow: 0 1px 0 0 var(--stroke-hi) inset, 0 34px 60px -30px color-mix(in oklch, var(--c) 40%, black); }
+  /* neighbors recede when one is focused */
+  .bento:has(.tile:hover) .tile:not(:hover) { opacity: .58; filter: saturate(.7); }
+  .cover { position: absolute; inset: 0; z-index: 2; border-radius: inherit; }
+  .cover:focus-visible { outline: 2px solid var(--c); outline-offset: -4px; }
+  .spot { position: absolute; inset: 0; z-index: 1; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .3s;
+    background: radial-gradient(280px circle at var(--mx,50%) var(--my,50%), color-mix(in oklch, var(--c) 40%, transparent), transparent 68%); }
+  .tile:hover .spot { opacity: 1; }
+
+  .viz { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
+  .viz canvas, .viz svg { width: 100%; height: 100%; display: block; }
+
+  .body { position: absolute; left: 0; right: 0; bottom: 0; z-index: 2; padding: 1.05rem 1.15rem; pointer-events: none;
+    background: linear-gradient(to top, color-mix(in oklch, var(--bg0) 78%, transparent), transparent); }
+  .mark { position: absolute; top: .95rem; left: 1.15rem; z-index: 2; width: 26px; height: 26px; color: var(--c); opacity: .9; pointer-events: none; }
+  .mark svg { width: 100%; height: 100%; display: block; stroke: currentColor; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .body h2 { margin: 0; font-size: 1.02rem; font-weight: 720; letter-spacing: -.01em; }
+  .s2x2 .body h2, .s2x1 .body h2 { font-size: 1.42rem; }
+  .body p { margin: .28rem 0 0; font-size: .8rem; color: var(--muted); max-width: 34ch; line-height: 1.4; }
+  .s2x2 .body p { font-size: .92rem; }
+  .live { display: inline-flex; align-items: center; gap: .35rem; font-size: .62rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--c); vertical-align: middle; margin-left: .5rem; }
+  .live::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c); animation: blink 2s ease-in-out infinite; }
+  @keyframes blink { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+  .chips { display: flex; flex-wrap: wrap; gap: .38rem; margin-top: .6rem; pointer-events: auto; }
+  .chips a { font-size: .7rem; color: var(--ink); text-decoration: none; padding: .22rem .6rem; border-radius: 999px;
+    border: 1px solid var(--stroke-hi); background: color-mix(in oklch, var(--bg0) 55%, transparent); transition: background .2s, color .2s, border-color .2s; }
+  .chips a:hover { color: var(--c); border-color: var(--c); background: color-mix(in oklch, var(--c) 14%, transparent); }
+
+  /* signature color hookup */
+  .t-composer { --c: var(--c-composer); } .t-library { --c: var(--c-library); }
+  .t-museum { --c: var(--c-museum); } .t-shop { --c: var(--c-shop); }
+  .t-notation { --c: var(--c-notation); } .t-guide { --c: var(--c-guide); }
+  .t-play { --c: var(--c-play); } .t-practice { --c: var(--c-practice); }
+  .t-glossary { --c: var(--c-glossary); } .t-about { --c: var(--c-about); } .t-watch { --c: var(--c-watch); }
+
+  /* museum: layered framed depth */
+  .museum-wall { position: absolute; inset: 0; display: grid; place-items: center;
+    background: radial-gradient(120% 100% at 50% 120%, color-mix(in oklch, var(--c-museum) 20%, transparent), transparent 60%); transform-style: preserve-3d; }
+  .frame { position: absolute; border: 2px solid color-mix(in oklch, var(--c-museum) 60%, var(--stroke-hi)); border-radius: 6px;
+    background: color-mix(in oklch, var(--c-museum) 10%, transparent); }
+  .frame.f1 { width: 30%; aspect-ratio: 2.5/3.5; transform: translate(-72%, 4%) rotateY(18deg); }
+  .frame.f2 { width: 34%; aspect-ratio: 2.5/3.5; transform: translateY(-6%); box-shadow: 0 20px 40px -20px color-mix(in oklch, var(--c-museum) 50%, black); }
+  .frame.f3 { width: 30%; aspect-ratio: 2.5/3.5; transform: translate(72%, 4%) rotateY(-18deg); }
+
+  /* choreo card: real-ish printed card */
+  .card { position: absolute; inset: 0; display: grid; place-items: center; }
+  .card-face { width: 46%; aspect-ratio: 2.5/3.5; border-radius: 9px; padding: 8px; display: grid; grid-template-rows: auto 1fr auto; gap: 6px;
+    background: linear-gradient(160deg, color-mix(in oklch, var(--c-shop) 22%, var(--bg1)), var(--bg1));
+    border: 1px solid color-mix(in oklch, var(--c-shop) 40%, var(--stroke-hi)); box-shadow: 0 16px 36px -18px color-mix(in oklch, var(--c-shop) 40%, black);
+    transform: rotate(-5deg); }
+  .card-face .top { display: flex; justify-content: space-between; align-items: center; font-size: .5rem; color: var(--muted); letter-spacing: .06em; }
+  .card-face .qr { width: 16px; height: 16px; background:
+      conic-gradient(from 0deg, var(--ink) 0 25%, transparent 0 50%, var(--ink) 0 75%, transparent 0);
+    background-size: 5px 5px; opacity: .7; border-radius: 2px; }
+  .card-face .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .card-face .grid3 i { aspect-ratio: 1; border-radius: 3px; background: color-mix(in oklch, var(--c-shop) 55%, transparent);
+    box-shadow: 0 0 0 1px var(--stroke) inset; }
+  .card-face .word { font-size: .58rem; text-align: center; color: var(--ink); font-weight: 700; letter-spacing: .1em; }
+
+  /* notation glyph */
+  .glyph-stage { position: absolute; inset: 0; display: grid; place-items: center; }
+  .glyph-stage .ring { position: absolute; width: 58%; aspect-ratio: 1; border-radius: 50%; border: 1px dashed color-mix(in oklch, var(--c-notation) 45%, var(--stroke)); animation: spin 24s linear infinite; }
+  .glyph-stage .ring.r2 { width: 40%; border-style: solid; animation-duration: 16s; animation-direction: reverse; }
+  .glyph-stage .glyph { font-size: 3.4rem; font-weight: 800; line-height: 1; letter-spacing: -.04em;
+    background: linear-gradient(150deg, var(--c-notation), var(--c-guide)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .rail { max-width: 1180px; margin: 0 auto; padding: 1.4rem 1.4rem 0; }
+  .rail h2 { font-size: .68rem; letter-spacing: .2em; text-transform: uppercase; color: var(--faint); margin: 0 0 .7rem; }
+  .rail ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
+  .rail a { font-size: .82rem; color: var(--muted); text-decoration: none; padding: .5rem .9rem; border-radius: 11px;
+    border: 1px solid var(--stroke); background: var(--tile); transition: color .2s, border-color .2s, background .2s, transform .2s; }
+  .rail a:hover { color: var(--ink); border-color: var(--stroke-hi); background: var(--tile-hi); transform: translateY(-2px); }
+  .note { max-width: 1180px; margin: 1.8rem auto 0; padding: 0 1.4rem; font-size: .66rem; color: var(--faint); }
+
+  @media (max-width: 780px) {
+    .bento { grid-template-columns: 1fr 1fr; grid-auto-rows: 118px; }
+    .s2x2 { grid-column: span 2; grid-row: span 2; } .s2x1 { grid-column: span 2; }
+    .tile { transform: none !important; }
+    .bento:has(.tile:hover) .tile:not(:hover) { opacity: 1; filter: none; }
+  }
+  @media (max-width: 480px) { .bento { grid-template-columns: 1fr; } .s2x2, .s2x1 { grid-column: span 1; } }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition-duration: .01ms !important; } }
+</style>
+
+<div class="aurora" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+<div class="strip"><b>Launchpad v2</b> — concept sketch — live canvas artifacts — for Fable 5 / review only</div>
+
+<header class="hero">
+  <p class="kicker">The Kinetic Alphabet</p>
+  <h1>Pick a <em>direction</em>.</h1>
+  <p>Every tile is a real piece of the system, moving. Hover to feel it. Click to go there.</p>
+</header>
+
+<main>
+  <ul class="bento">
+    <!-- COMPOSER — live sequence canvas -->
+    <li class="tile t-composer s2x2" data-tilt data-magnetic>
+      <a class="cover" href="/composer" aria-labelledby="t-composer"></a>
+      <span class="spot"></span>
+      <div class="viz"><canvas data-viz="sequence"></canvas></div>
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 18 L4 6 M4 6 L11 12 L4 18 M13 6 L20 6 M13 12 L20 12 M13 18 L20 18"/></svg></span>
+      <div class="body"><h2 id="t-composer">Composer <span class="live">live</span></h2>
+        <p>Build a sequence letter by letter. The notation engine, running right here.</p></div>
+    </li>
+
+    <!-- LIBRARY — live mandala canvas -->
+    <li class="tile t-library s2x2" data-tilt>
+      <a class="cover" href="/browse/library" aria-labelledby="t-library"></a>
+      <span class="spot"></span>
+      <div class="viz"><canvas data-viz="mandala"></canvas></div>
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4 Q19 12 12 20 Q5 12 12 4 Z"/><circle cx="12" cy="12" r="3"/></svg></span>
+      <div class="body"><h2 id="t-library">Library</h2>
+        <p>Every sequence you save draws its own mandala fingerprint.</p>
+        <div class="chips"><a href="/browse/gallery">Gallery</a><a href="/browse/collections">Collections</a><a href="/museum">Museum</a></div>
+      </div>
+    </li>
+
+    <!-- MUSEUM — layered framed depth -->
+    <li class="tile t-museum s2x1" data-tilt>
+      <a class="cover" href="/museum" aria-labelledby="t-museum"></a>
+      <span class="spot"></span>
+      <div class="viz"><div class="museum-wall" aria-hidden="true"><span class="frame f1"></span><span class="frame f2"></span><span class="frame f3"></span></div></div>
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 21 L21 21 M5 21 L5 10 M10 21 L10 10 M14 21 L14 10 M19 21 L19 10 M4 10 L20 10 L12 4 Z"/></svg></span>
+      <div class="body"><h2 id="t-museum">Museum</h2><p>Walk a gallery of sequences hung on the wall.</p></div>
+    </li>
+
+    <!-- SHOP — printed card -->
+    <li class="tile t-shop s2x1" data-tilt>
+      <a class="cover" href="/shop/choreography-cards" aria-labelledby="t-shop"></a>
+      <span class="spot"></span>
+      <div class="viz"><div class="card" aria-hidden="true"><div class="card-face">
+        <div class="top"><span>L7</span><span class="qr"></span></div>
+        <div class="grid3"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="word">FΨ</div></div></div></div>
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="12" height="17" rx="2"/><rect x="8" y="4" width="12" height="17" rx="2"/></svg></span>
+      <div class="body"><h2 id="t-shop">Choreo Cards</h2><p>Physical decks of real sequences, printed to order.</p>
+        <div class="chips"><a href="/shop">Shop</a><a href="/shop/loop-deck">LOOP Deck</a></div>
+      </div>
+    </li>
+
+    <!-- NOTATION -->
+    <li class="tile t-notation s2x1" data-tilt>
+      <a class="cover" href="/notation" aria-labelledby="t-notation"></a>
+      <span class="spot"></span>
+      <div class="viz"><div class="glyph-stage" aria-hidden="true"><span class="ring"></span><span class="ring r2"></span><span class="glyph">Σ</span></div></div>
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 4 L18 4 L9 12 L18 20 L6 20"/></svg></span>
+      <div class="body"><h2 id="t-notation">Notation</h2>
+        <div class="chips"><a href="/staves">Staves</a><a href="/clubs">Clubs</a><a href="/fans">Fans</a><a href="/buugeng">Buugeng</a></div>
+      </div>
+    </li>
+
+    <!-- small tiles -->
+    <li class="tile t-play" data-tilt>
+      <a class="cover" href="/learn/play" aria-labelledby="t-play"></a><span class="spot"></span>
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 5 L19 12 L8 19 Z"/></svg></span>
+      <div class="body"><h2 id="t-play">Play</h2><p>Six games. Real bests.</p></div>
+    </li>
+    <li class="tile t-practice" data-tilt>
+      <a class="cover" href="/train" aria-labelledby="t-practice"></a><span class="spot"></span>
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 2 L12 5 M12 19 L12 22 M2 12 L5 12 M19 12 L22 12"/></svg></span>
+      <div class="body"><h2 id="t-practice">Practice</h2><p>Drill your own library.</p></div>
+    </li>
+    <li class="tile t-guide" data-tilt>
+      <a class="cover" href="/guide" aria-labelledby="t-guide"></a><span class="spot"></span>
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 5 Q9 3 12 5 Q15 3 20 5 L20 19 Q15 17 12 19 Q9 17 4 19 Z M12 5 L12 19"/></svg></span>
+      <div class="body"><h2 id="t-guide">Guide</h2><p>Learn from zero.</p></div>
+    </li>
+    <li class="tile t-glossary" data-tilt>
+      <a class="cover" href="/glossary" aria-labelledby="t-glossary"></a><span class="spot"></span>
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M16 16 L21 21"/></svg></span>
+      <div class="body"><h2 id="t-glossary">Glossary</h2><p>Every term, exact.</p></div>
+    </li>
+    <li class="tile t-about" data-tilt>
+      <a class="cover" href="/about" aria-labelledby="t-about"></a><span class="spot"></span>
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 L14 10 L21 12 L14 14 L12 21 L10 14 L3 12 L10 10 Z"/></svg></span>
+      <div class="body"><h2 id="t-about">About</h2><p>Why this exists.</p></div>
+    </li>
+    <li class="tile t-watch" data-tilt>
+      <a class="cover" href="/watch" aria-labelledby="t-watch"></a><span class="spot"></span>
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M10 9 L15 12 L10 15 Z"/></svg></span>
+      <div class="body"><h2 id="t-watch">Watch</h2><p>Sequences in motion.</p></div>
+    </li>
+  </ul>
+
+  <nav class="rail" aria-label="More destinations">
+    <h2>Everywhere else</h2>
+    <ul>
+      <li><a href="/faq">FAQ</a></li><li><a href="/roots/software">Roots — Software</a></li>
+      <li><a href="/compose">Compose</a></li><li><a href="/choreo">Choreo</a></li>
+      <li><a href="/arena">Arena</a></li><li><a href="/social">Social</a></li>
+      <li><a href="/festivals">Festivals</a></li><li><a href="/levels">Levels</a></li>
+      <li><a href="/hand-paths">Hand Paths</a></li><li><a href="/video">Video</a></li>
+      <li><a href="/stage">Stage</a></li><li><a href="/tika">Tika</a></li>
+      <li><a href="/retro">Retro</a></li>
+    </ul>
+  </nav>
+
+  <p class="note">Canvas visuals (sequence + mandala) render live from math; museum/card/notation are CSS stand-ins for real components (Environment3D, ChoreoCard, PictographRenderer). Zero framework, zero network calls — single self-contained file.</p>
+</main>
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"Flow Arts Composer","url":"https://tkaflowarts.com/"}
+</script>
+
+<script>
+(function () {
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var coarse = matchMedia('(pointer: coarse)').matches;
+
+  /* ---- pointer: tilt + spotlight + magnetic ---- */
+  document.querySelectorAll('.tile[data-tilt]').forEach(function (t) {
+    if (reduce || coarse) return;
+    t.addEventListener('pointermove', function (e) {
+      var r = t.getBoundingClientRect();
+      var x = (e.clientX - r.left) / r.width, y = (e.clientY - r.top) / r.height;
+      t.style.setProperty('--ry', ((x - .5) * 9).toFixed(2) + 'deg');
+      t.style.setProperty('--rx', ((.5 - y) * 9).toFixed(2) + 'deg');
+      t.style.setProperty('--mx', (x * 100).toFixed(1) + '%');
+      t.style.setProperty('--my', (y * 100).toFixed(1) + '%');
+    });
+    t.addEventListener('pointerleave', function () {
+      t.style.setProperty('--rx', '0deg'); t.style.setProperty('--ry', '0deg');
+    });
+  });
+
+  /* ---- crisp canvas sizing ---- */
+  function fit(cv) {
+    var r = cv.getBoundingClientRect();
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.width = Math.max(1, Math.round(r.width * dpr));
+    cv.height = Math.max(1, Math.round(r.height * dpr));
+    var ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx: ctx, w: r.width, h: r.height };
+  }
+
+  /* ---- live sequence: two staves tracing a diamond grid, with trails ---- */
+  function sequenceViz(cv) {
+    var g = fit(cv), ctx = g.ctx, W = g.w, H = g.h;
+    var cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.32;
+    var pts = [[0, -1], [1, 0], [0, 1], [-1, 0]]; // N E S W
+    var trail = [];
+    function grid() {
+      ctx.save(); ctx.globalAlpha = .5; ctx.strokeStyle = 'rgba(167,139,250,.22)'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.stroke();
+      pts.forEach(function (p) { ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + p[0] * R, cy + p[1] * R); ctx.stroke();
+        ctx.beginPath(); ctx.arc(cx + p[0] * R, cy + p[1] * R, 3, 0, Math.PI * 2); ctx.fillStyle = 'rgba(167,139,250,.5)'; ctx.fill(); });
+      ctx.restore();
+    }
+    function frame(t) {
+      ctx.clearRect(0, 0, W, H); grid();
+      var a1 = t * 0.0011, a2 = -t * 0.0016 + 1.2;
+      var bx = cx + Math.cos(a1) * R * 0.9, by = cy + Math.sin(a1) * R * 0.9; // blue prop
+      var rx = cx + Math.cos(a2) * R * 0.62, ry = cy + Math.sin(a2) * R * 0.62; // red prop
+      trail.push([bx, by, rx, ry]); if (trail.length > 26) trail.shift();
+      trail.forEach(function (p, i) {
+        var al = i / trail.length;
+        ctx.globalAlpha = al * .5;
+        ctx.strokeStyle = '#60a5fa'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p[0], p[1], 2.5, 0, 6.3); ctx.stroke();
+        ctx.strokeStyle = '#fb7185'; ctx.beginPath(); ctx.arc(p[2], p[3], 2.5, 0, 6.3); ctx.stroke();
+      });
+      ctx.globalAlpha = 1;
+      // staves (line through center-ish, ends = thumb/pinky refs)
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = '#93c5fd'; ctx.lineWidth = 3.5;
+      ctx.beginPath(); ctx.moveTo(cx - (bx - cx) * .35, cy - (by - cy) * .35); ctx.lineTo(bx, by); ctx.stroke();
+      ctx.strokeStyle = '#fda4af';
+      ctx.beginPath(); ctx.moveTo(cx - (rx - cx) * .35, cy - (ry - cy) * .35); ctx.lineTo(rx, ry); ctx.stroke();
+      // glowing tips
+      ctx.fillStyle = '#dbeafe'; ctx.beginPath(); ctx.arc(bx, by, 4, 0, 6.3); ctx.fill();
+      ctx.fillStyle = '#ffe4e6'; ctx.beginPath(); ctx.arc(rx, ry, 4, 0, 6.3); ctx.fill();
+    }
+    return { frame: frame, refit: function () { g = fit(cv); ctx = g.ctx; W = g.w; H = g.h; cx = W / 2; cy = H / 2; R = Math.min(W, H) * 0.32; } };
+  }
+
+  /* ---- live mandala: n-fold kaleidoscope, slowly evolving ---- */
+  function mandalaViz(cv) {
+    var g = fit(cv), ctx = g.ctx, W = g.w, H = g.h;
+    function frame(t) {
+      ctx.clearRect(0, 0, W, H);
+      var cx = W / 2, cy = H / 2, n = 12, base = Math.min(W, H) * 0.42;
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * 0.00016);
+      for (var k = 0; k < n; k++) {
+        ctx.rotate((Math.PI * 2) / n);
+        for (var s = -1; s <= 1; s += 2) { // mirror
+          ctx.save(); ctx.scale(1, s);
+          var hue = 300 + 40 * Math.sin(t * 0.0004 + k * 0.5);
+          ctx.strokeStyle = 'hsla(' + hue + ',85%,72%,0.6)'; ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          for (var i = 0; i <= 20; i++) {
+            var p = i / 20;
+            var rad = base * (0.2 + 0.8 * p);
+            var wob = Math.sin(p * 6 + t * 0.001) * base * 0.08 * Math.sin(t * 0.0003 + k);
+            var x = Math.cos(p * 1.4) * rad + wob;
+            var y = Math.sin(p * 1.4) * rad;
+            i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+          }
+          ctx.stroke(); ctx.restore();
+        }
+      }
+      ctx.restore();
+    }
+    return { frame: frame, refit: function () { g = fit(cv); ctx = g.ctx; W = g.w; H = g.h; } };
+  }
+
+  var vizzes = [];
+  document.querySelectorAll('canvas[data-viz]').forEach(function (cv) {
+    var kind = cv.getAttribute('data-viz');
+    var v = kind === 'sequence' ? sequenceViz(cv) : mandalaViz(cv);
+    vizzes.push(v);
+    if (reduce) v.frame(1200); // one static frame
+  });
+
+  if (!reduce) {
+    var running = true;
+    document.addEventListener('visibilitychange', function () { running = !document.hidden; if (running) requestAnimationFrame(loop); });
+    function loop(t) { if (!running) return; vizzes.forEach(function (v) { v.frame(t); }); requestAnimationFrame(loop); }
+    requestAnimationFrame(loop);
+    var rt; window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { vizzes.forEach(function (v) { v.refit(); }); }, 150); });
+  }
+})();
+</script>

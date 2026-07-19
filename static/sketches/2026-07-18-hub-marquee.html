@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex" />
+<title>Marquee — homepage hub concept sketch</title>
+<style>
+  :root{
+    --bg:#07070d; --bg2:#0d0e1c; --ink:#eef0fb; --dim:#9198c2; --faint:#585e86;
+    --stroke:rgba(255,255,255,.1); --accent:#8b8cff;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; overflow-x:hidden; }
+  body{
+    background:radial-gradient(120% 70% at 50% -8%, #171a3a 0%, var(--bg2) 42%, var(--bg) 100%);
+    background-attachment:fixed;
+    color:var(--ink);
+    font-family:"Segoe UI","Helvetica Neue",Arial,system-ui,sans-serif;
+    line-height:1.4;
+  }
+  a{ color:inherit; text-decoration:none; }
+
+  /* ── caption strip ── */
+  .capstrip{
+    position:sticky; top:0; z-index:40;
+    display:flex; gap:.6rem; align-items:center; flex-wrap:wrap;
+    padding:.5rem 1.2rem; font-size:.72rem; letter-spacing:.03em; color:var(--dim);
+    background:rgba(7,7,13,.86); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--stroke);
+  }
+  .capstrip b{ color:var(--ink); font-weight:700; }
+  .capstrip .tag{ color:#ffb050; }
+
+  /* ── custom cursor ── */
+  .cursor{
+    position:fixed; left:0; top:0; width:2.6rem; height:2.6rem; margin:-1.3rem 0 0 -1.3rem;
+    border-radius:50%; border:1px solid rgba(255,255,255,.5);
+    display:flex; align-items:center; justify-content:center;
+    font-size:.6rem; font-weight:700; letter-spacing:.08em; color:var(--ink);
+    pointer-events:none; z-index:60; opacity:0;
+    transition:opacity .2s ease, width .25s cubic-bezier(.2,.8,.2,1), height .25s cubic-bezier(.2,.8,.2,1),
+      margin .25s cubic-bezier(.2,.8,.2,1), background .25s ease, border-color .25s ease;
+  }
+  body.has-cursor .cursor{ opacity:1; }
+  .cursor span{ opacity:0; transition:opacity .18s ease; }
+  .cursor.over{
+    width:5.4rem; height:5.4rem; margin:-2.7rem 0 0 -2.7rem;
+    background:rgba(255,255,255,.06); border-color:var(--accent);
+  }
+  .cursor.over span{ opacity:1; }
+
+  /* ── full-bleed reveal layer ── */
+  .reveal-layer{ position:fixed; inset:0; z-index:1; pointer-events:none; }
+  .reveal{
+    position:absolute; inset:0; opacity:0; transition:opacity .32s ease;
+    background:
+      repeating-linear-gradient(135deg, rgba(255,255,255,.05) 0 2px, transparent 2px 26px),
+      radial-gradient(60% 60% at 50% 45%, color-mix(in srgb, var(--accent) 55%, transparent), transparent 72%),
+      linear-gradient(160deg, color-mix(in srgb, var(--accent) 30%, #07070d) 0%, #07070d 75%);
+  }
+  .reveal.show{ opacity:.55; }
+  .reveal-frame{
+    position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.4rem;
+  }
+  .reveal-eyebrow{ font-size:.62rem; letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.65); }
+  .reveal-label{
+    font-family:ui-monospace,Consolas,monospace; font-size:.85rem; color:rgba(255,255,255,.9);
+    border:1px dashed rgba(255,255,255,.35); padding:.35rem .8rem; border-radius:.4rem;
+  }
+
+  /* ── header ── */
+  .head{ position:relative; z-index:2; max-width:74rem; margin:0 auto; padding:2.4rem 1.6rem .6rem; }
+  .eyebrow{ margin:0; font-size:.78rem; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); }
+  .eyebrow b{ color:var(--dim); }
+
+  /* ── headline marquee list ── */
+  .marquee{ position:relative; z-index:2; max-width:74rem; margin:0 auto; padding:.6rem 1.6rem 2.4rem; }
+  .headline-list{ list-style:none; margin:0; padding:0; }
+  .headline-list > li{ border-top:1px solid var(--stroke); transition:opacity .3s ease; --skew:0deg; --dx:0px; --dy:0px; }
+  .headline-list > li:last-child{ border-bottom:1px solid var(--stroke); }
+  .marquee.has-active .headline-list > li:not(.active){ opacity:.35; }
+  .headline-list a{ display:flex; align-items:center; gap:1.4rem; padding:1.1rem 0; position:relative; }
+  body.has-cursor .headline-list a{ cursor:none; }
+
+  .row-thumb{
+    display:none; flex:0 0 3.6rem; height:3.6rem; border-radius:.6rem;
+    background:
+      repeating-linear-gradient(135deg, rgba(255,255,255,.08) 0 2px, transparent 2px 10px),
+      linear-gradient(160deg, var(--accent), rgba(255,255,255,.05));
+  }
+  .row-body{ flex:1; min-width:0; }
+  .idx{ font-variant-numeric:tabular-nums; font-size:.72rem; color:var(--faint); letter-spacing:.08em; }
+  .word{
+    margin:.1rem 0 0; font-weight:900; text-transform:uppercase; line-height:.92;
+    font-size:clamp(2.6rem, 10vw, 7.4rem); letter-spacing:-.02em; color:var(--ink);
+    transform:translate(var(--dx), var(--dy)) skewX(var(--skew));
+    transition:transform .28s cubic-bezier(.2,.8,.2,1), letter-spacing .28s ease, color .28s ease;
+  }
+  li.active .word{ --skew:-6deg; letter-spacing:.01em; color:var(--accent); }
+  .word .fill{ display:inline-block; transition:transform .12s ease; }
+  a:active .fill{ transform:scale(.97); }
+  .sub{ display:block; margin-top:.25rem; font-size:.88rem; color:var(--dim); max-width:34ch; }
+  .underline{
+    position:absolute; left:0; right:0; bottom:0; height:2px; background:var(--accent);
+    transform:scaleX(0); transform-origin:left; transition:transform .35s ease;
+  }
+  a:hover .underline, a:focus-visible .underline, li.active .underline{ transform:scaleX(1); }
+
+  @media (prefers-reduced-motion:no-preference){
+    .headline-list > li:nth-child(odd) .fill{ animation:breathe 7s ease-in-out infinite; }
+    .headline-list > li:nth-child(even) .fill{ animation:breathe 7s ease-in-out infinite 1.4s; }
+  }
+  @keyframes breathe{ 0%,100%{ opacity:1; } 50%{ opacity:.86; } }
+
+  /* ── secondary list ── */
+  .secondary-head{ margin:1.6rem 0 .6rem; font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--faint); }
+  .secondary-list{ list-style:none; margin:0; padding:0; display:flex; flex-wrap:wrap; gap:.4rem 1.6rem; }
+  .secondary-list a{
+    display:inline-block; padding:.35rem 0; font-weight:700; text-transform:uppercase;
+    font-size:clamp(1.05rem, 2.6vw, 1.5rem); letter-spacing:-.01em; color:var(--dim);
+    transition:transform .22s ease, color .22s ease, letter-spacing .22s ease;
+  }
+  .secondary-list a:hover, .secondary-list a:focus-visible{
+    color:var(--ink); transform:skewX(-6deg); letter-spacing:.01em;
+  }
+
+  .foot{ position:relative; z-index:2; max-width:74rem; margin:0 auto; padding:1rem 1.6rem 3rem; font-size:.72rem; color:var(--faint); }
+
+  /* ── mobile ── */
+  @media (max-width:720px){
+    .reveal-layer{ display:none; }
+    .row-thumb{ display:block; }
+    .word{ font-size:clamp(1.9rem, 9vw, 2.8rem); transform:none !important; }
+    li.active .word{ color:var(--accent); }
+    .sub{ font-size:.78rem; }
+    body.has-cursor .headline-list a{ cursor:auto; }
+  }
+
+  /* ── reduced motion ── */
+  @media (prefers-reduced-motion:reduce){
+    .headline-list > li{ --dx:0px !important; --dy:0px !important; --skew:0deg !important; }
+    .word{ transition:color .2s ease; }
+    .word .fill, .secondary-list a{ animation:none !important; transition:color .2s ease; transform:none !important; }
+    .cursor{ display:none; }
+    .reveal{ transition:opacity .18s linear; }
+  }
+</style>
+</head>
+<body>
+
+<div class="capstrip"><b>Marquee</b> — concept sketch — for Fable 5 / review only <span class="tag">· not shipped</span></div>
+<div class="cursor" id="cursor" aria-hidden="true"><span>OPEN</span></div>
+
+<div class="reveal-layer" id="revealLayer" aria-hidden="true">
+  <div class="reveal" data-key="composer" style="--accent:#8b8cff"><div class="reveal-frame"><span class="reveal-eyebrow">live preview</span><span class="reveal-label">[live SequenceHeroDemo]</span></div></div>
+  <div class="reveal" data-key="notation" style="--accent:#35c7d6"><div class="reveal-frame"><span class="reveal-eyebrow">letter glyph</span><span class="reveal-label">[PictographRenderer]</span></div></div>
+  <div class="reveal" data-key="guide" style="--accent:#f0a83c"><div class="reveal-frame"><span class="reveal-eyebrow">curriculum</span><span class="reveal-label">[Guide Codex — level pages]</span></div></div>
+  <div class="reveal" data-key="library" style="--accent:#4ec98a"><div class="reveal-frame"><span class="reveal-eyebrow">flow trace</span><span class="reveal-label">[SequenceMandala]</span></div></div>
+  <div class="reveal" data-key="museum" style="--accent:#ec6ba8"><div class="reveal-frame"><span class="reveal-eyebrow">walkable room</span><span class="reveal-label">[Environment3D crop — desktop, lazy]</span></div></div>
+  <div class="reveal" data-key="play" style="--accent:#ff6b5e"><div class="reveal-frame"><span class="reveal-eyebrow">arcade</span><span class="reveal-label">[Play Arcade — live scores]</span></div></div>
+  <div class="reveal" data-key="practice" style="--accent:#5eb8ff"><div class="reveal-frame"><span class="reveal-eyebrow">drill</span><span class="reveal-label">[Practice camera overlay]</span></div></div>
+  <div class="reveal" data-key="shop" style="--accent:#ffd23f"><div class="reveal-frame"><span class="reveal-eyebrow">printed deck</span><span class="reveal-label">[ChoreoCard]</span></div></div>
+</div>
+
+<div class="head">
+  <p class="eyebrow"><b>Flow Arts Composer</b> — the navigation is the content</p>
+</div>
+
+<nav class="marquee" aria-label="Destinations" id="marquee">
+  <ol class="headline-list">
+    <li data-reveal="composer" style="--accent:#8b8cff">
+      <a href="/composer"><span class="row-thumb" aria-hidden="true"></span><span class="row-body">
+        <span class="idx">01</span>
+        <h2 class="word"><span class="fill">Composer</span></h2>
+        <span class="sub">Build a sequence, watch it move.</span></span><span class="underline"></span></a>
+    </li>
+    <li data-reveal="notation" style="--accent:#35c7d6">
+      <a href="/notation"><span class="row-thumb" aria-hidden="true"></span><span class="row-body">
+        <span class="idx">02</span>
+        <h2 class="word"><span class="fill">Notation</span></h2>
+        <span class="sub">The alphabet — staves, clubs, buugeng, fans, poi.</span></span><span class="underline"></span></a>
+    </li>
+    <li data-reveal="guide" style="--accent:#f0a83c">
+      <a href="/guide"><span class="row-thumb" aria-hidden="true"></span><span class="row-body">
+        <span class="idx">03</span>
+        <h2 class="word"><span class="fill">Guide</span></h2>
+        <span class="sub">Learn the system, level by level.</span></span><span class="underline"></span></a>
+    </li>
+    <li data-reveal="library" style="--accent:#4ec98a">
+      <a href="/browse/library"><span class="row-thumb" aria-hidden="true"></span><span class="row-body">
+        <span class="idx">04</span>
+        <h2 class="word"><span class="fill">Library</span></h2>
+        <span class="sub">Every sequence, searchable.</span></span><span class="underline"></span></a>
+    </li>
+    <li data-reveal="museum" style="--accent:#ec6ba8">
+      <a href="/museum"><span class="row-thumb" aria-hidden="true"></span><span class="row-body">
+        <span class="idx">05</span>
+        <h2 class="word"><span class="fill">Museum</span></h2>
+        <span class="sub">Walk through what you've made.</span></span><span class="underline"></span></a>
+    </li>
+    <li data-reveal="play" style="--accent:#ff6b5e">
+      <a href="/learn/play"><span class="row-thumb" aria-hidden="true"></span><span class="row-body">
+        <span class="idx">06</span>
+        <h2 class="word"><span class="fill">Play</span></h2>
+        <span class="sub">Games built on real notation.</span></span><span class="underline"></span></a>
+    </li>
+    <li data-reveal="practice" style="--accent:#5eb8ff">
+      <a href="/train"><span class="row-thumb" aria-hidden="true"></span><span class="row-body">
+        <span class="idx">07</span>
+        <h2 class="word"><span class="fill">Practice</span></h2>
+        <span class="sub">Drill sequences against the clock.</span></span><span class="underline"></span></a>
+    </li>
+    <li data-reveal="shop" style="--accent:#ffd23f">
+      <a href="/shop"><span class="row-thumb" aria-hidden="true"></span><span class="row-body">
+        <span class="idx">08</span>
+        <h2 class="word"><span class="fill">Shop</span></h2>
+        <span class="sub">Choreo Cards, printed and shipped.</span></span><span class="underline"></span></a>
+    </li>
+  </ol>
+
+  <p class="secondary-head">Also here</p>
+  <ol class="secondary-list">
+    <li><a href="/glossary">Glossary</a></li>
+    <li><a href="/about">About</a></li>
+    <li><a href="/faq">FAQ</a></li>
+    <li><a href="/roots/software">Roots</a></li>
+    <li><a href="/watch">Watch</a></li>
+    <li><a href="/social">Social</a></li>
+    <li><a href="/festivals">Festivals</a></li>
+    <li><a href="/tika">Tika</a></li>
+    <li><a href="/retro">Retro</a></li>
+  </ol>
+</nav>
+
+<p class="foot">Concept sketch — real routes, placeholder art. Full-bleed reveal shown on hover/focus of a headline row (desktop only); mobile shows a fixed inline thumbnail instead.</p>
+
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"Flow Arts Composer","url":"https://tkaflowarts.com/"}
+</script>
+
+<script>
+(function(){
+  var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var fine = matchMedia('(pointer: fine)').matches;
+  var mobileQ = function(){ return matchMedia('(max-width: 720px)').matches; };
+  var nav = document.getElementById('marquee');
+  var revealLayer = document.getElementById('revealLayer');
+  var cursor = document.getElementById('cursor');
+  var rows = nav.querySelectorAll('.headline-list > li');
+
+  if (fine) {
+    document.body.classList.add('has-cursor');
+    window.addEventListener('pointermove', function(e){
+      cursor.style.transform = 'translate3d(' + e.clientX + 'px,' + e.clientY + 'px,0)';
+    });
+  }
+
+  rows.forEach(function(li){
+    var a = li.querySelector('a');
+    var key = li.getAttribute('data-reveal');
+    var panel = revealLayer.querySelector('[data-key="' + key + '"]');
+
+    function activate(){
+      nav.classList.add('has-active');
+      li.classList.add('active');
+      if (panel) panel.classList.add('show');
+      if (fine) cursor.classList.add('over');
+    }
+    function deactivate(){
+      li.classList.remove('active');
+      if (panel) panel.classList.remove('show');
+      cursor.classList.remove('over');
+      if (!nav.querySelector('.headline-list > li.active')) nav.classList.remove('has-active');
+      li.style.setProperty('--dx', '0px');
+      li.style.setProperty('--dy', '0px');
+    }
+
+    a.addEventListener('pointerenter', activate);
+    a.addEventListener('pointerleave', deactivate);
+    a.addEventListener('focus', activate);
+    a.addEventListener('blur', deactivate);
+
+    if (!reduced) {
+      a.addEventListener('pointermove', function(e){
+        if (mobileQ()) return;
+        var r = a.getBoundingClientRect();
+        var dx = ((e.clientX - (r.left + r.width / 2)) / r.width) * 14;
+        var dy = ((e.clientY - (r.top + r.height / 2)) / r.height) * 10;
+        li.style.setProperty('--dx', dx.toFixed(1) + 'px');
+        li.style.setProperty('--dy', dy.toFixed(1) + 'px');
+      });
+    }
+  });
+})();
+</script>
+
+</body>
+</html>
