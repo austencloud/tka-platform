@@ -36,6 +36,7 @@ import { openAuthDialog } from "$lib/shared/auth/state/auth-ui-state.svelte";
 import type { Sharer } from "../../../shared/share/services/sharer";
 import type { R2VideoUploader } from "../../../shared/share/services/r2-video-uploader";
 import type { LibraryRepository } from "$lib/shared/library/services/library-repository";
+import { markSequenceSyncStatus } from "./library-sync-retry";
 
 /** How long the "Saved!" success state lingers before the overlay dismisses. */
 const SUCCESS_STATE_LINGER_MS = 800;
@@ -166,6 +167,13 @@ export class LibrarySaveService {
       tags: [...tags],
       thumbnails: thumbnailUrl ? [thumbnailUrl] : [...(sequence.thumbnails ?? [])],
       isFavorite: false,
+      // Cloud sync hasn't happened yet - the background Firestore write below
+      // flips this to "synced"/"failed" once it settles. Lets the library UI
+      // show a quiet badge instead of a silent "Saved!" for content that's
+      // only in Dexie so far. See docs/superpowers/specs/active/
+      // 2026-07-18-onboarding-silent-work-loss.md.
+      syncStatus: "pending",
+      pendingSyncMetadata: { visibility, notes: notes ?? "" },
     };
     try {
       // JSON round-trip strips Firestore Timestamps and other non-cloneable objects
@@ -305,11 +313,16 @@ export class LibrarySaveService {
   ): Promise<void> {
     try {
       await this.libraryRepository.saveSequenceWithMetadata(sequence, metadata);
+      await markSequenceSyncStatus(sequence.id, "synced");
     } catch (error) {
       if (error instanceof LibraryError && error.code === "ALREADY_EXISTS") {
         toast.info("This exact sequence is already in your library.");
+        // The content is already safe in Firestore under an existing doc -
+        // this save didn't create a duplicate, but nothing was lost.
+        await markSequenceSyncStatus(sequence.id, "synced");
       } else {
         console.warn("[LibrarySaveService] Firestore sync failed (data safe in Dexie):", error);
+        await markSequenceSyncStatus(sequence.id, "failed");
       }
     }
   }

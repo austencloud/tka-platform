@@ -31,6 +31,7 @@ Variation support:
   import { untrack } from "svelte";
   import PropAwareThumbnail from "$lib/shared/browse/components/PropAwareThumbnail.svelte";
   import VariationPill from "./VariationPill.svelte";
+  import SyncStatusBadge from "./SyncStatusBadge.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
   import { adminDeleteSequence } from "$lib/shared/library/services/admin-sequence-actions";
@@ -331,6 +332,8 @@ Variation support:
       userName={displayedSequence.ownerDisplayName}
     />
   </div>
+
+  <SyncStatusBadge status={displayedSequence.syncStatus} />
 
   <VariationPill
     currentIndex={currentVariationIndex}

@@ -273,6 +273,10 @@
     if (!preloadedImports) preloadedImports = startAppImports();
     const imports = preloadedImports;
 
+    // Set inside runDeferred() once library-sync-retry loads; unsubscribed
+    // in this function's cleanup below.
+    let unsubscribeLibrarySyncRetry: (() => void) | undefined;
+
     const { bootProfiler } = await imports.bootProfiler;
     bootProfiler.mark("total-init");
 
@@ -458,6 +462,20 @@
         )
         .finally(() => bootProfiler.end("thumbnail-manifest"));
 
+      // Library sync retry - one pass now, one more on every reconnect, for
+      // sequences a guest/user saved whose background Firestore sync never
+      // landed (offline, transient error). See docs/superpowers/specs/
+      // active/2026-07-18-onboarding-silent-work-loss.md.
+      bootProfiler.mark("library-sync-retry");
+      import("$lib/features/library/services/library-sync-retry")
+        .then(({ initLibrarySyncRetry }) => {
+          unsubscribeLibrarySyncRetry = initLibrarySyncRetry();
+        })
+        .catch((error) =>
+          console.warn("Library sync retry init failed:", error)
+        )
+        .finally(() => bootProfiler.end("library-sync-retry"));
+
       // Secondary UI components (banners, prompts) - slot in when ready
       bootProfiler.mark("ui-components");
       Promise.all([
@@ -490,6 +508,7 @@
     return () => {
       authState.cleanup();
       cleanupModalUrlState();
+      unsubscribeLibrarySyncRetry?.();
 
       if (window.visualViewport) {
         window.visualViewport.removeEventListener(

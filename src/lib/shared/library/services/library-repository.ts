@@ -466,6 +466,10 @@ export class LibraryRepository {
       startPosition: libSeq.startPosition ?? undefined,
       startingPosition: undefined,
       startingPositionGroup: undefined,
+      // Local-only Dexie sync bookkeeping (see SequenceData) - meaningless on
+      // the server and must never leak into the cloud doc.
+      syncStatus: undefined,
+      pendingSyncMetadata: undefined,
       contentHash: incomingHash,
       // Tag the basis incomingHash was computed under so cross-version saves
       // lazy-rehash instead of spuriously forking. Only alongside a real hash

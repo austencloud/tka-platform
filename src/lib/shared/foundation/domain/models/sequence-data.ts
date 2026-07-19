@@ -194,6 +194,32 @@ export interface SequenceData {
   readonly blueSoloHash?: string;
   /** Hash of the red performer's solo prop path only */
   readonly redSoloHash?: string;
+
+  // === Local-only cloud sync bookkeeping (Dexie record, never Firestore) ===
+  /**
+   * Cloud sync state of this Dexie record, set at save time by
+   * LibrarySaveService and retried by library-sync-retry.ts. "synced" once
+   * the background Firestore write behind the save succeeded (or the
+   * content already existed there under another doc), "pending"
+   * immediately after the optimistic Dexie write while that sync is in
+   * flight, "failed" if it errored. Undefined for sequences that never went
+   * through the save flow (e.g. other users' public sequences).
+   * Local-only — stripped before every Firestore write in
+   * LibraryRepository.saveSequence so it never reaches the cloud doc.
+   */
+  readonly syncStatus?: "synced" | "pending" | "failed";
+  /**
+   * Save-time visibility + notes snapshot, kept alongside syncStatus so a
+   * retried sync (browser `online` event / app boot) can reconstruct the
+   * same Firestore write instead of guessing defaults. Deliberately a
+   * literal union rather than importing SequenceVisibility from
+   * library-sequence.ts, which would create a foundation -> library layering
+   * import. Local-only — same stripping as syncStatus.
+   */
+  readonly pendingSyncMetadata?: {
+    readonly visibility: "private" | "unlisted" | "public";
+    readonly notes: string;
+  };
 }
 
 export function createSequenceData(
