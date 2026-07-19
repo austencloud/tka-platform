@@ -27,6 +27,15 @@ was granted for republication. Before any of these ship on the public page:
 3. Keep them as linked citations only (image → source URL).
 Archive-and-study is fine; publishing is a separate decision gated on one of the above.
 
+## External archival status (2026-07-19)
+
+- **Origin thread: NO Wayback Machine snapshot exists.** Save Page Now returned HTTP 520
+  (archive.org server errors) on repeated attempts; archive.today returned HTTP 429
+  (rate-limited). **Retry both periodically** — until one succeeds, this directory plus
+  `thread-transcript.md` is the only known preservation.
+- The Math of CAPs (drexfactor.com/reference/math_caps): Wayback snapshot 2019-02-10.
+- PlayPoi Learning CAPs: Wayback snapshot 2026-01-19.
+
 ## Files (thread order)
 
 | File | Original URL | What it shows (per post text) |

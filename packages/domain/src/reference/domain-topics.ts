@@ -572,6 +572,65 @@ The six LOOP transformations have no CAP equivalent. Charlie Cushing's 8-Step CA
 **The per-hand model is not "early learning" or "backwards"** -- it's a different cognitive preference. The Assembler tab bridges for people who think per-hand.`,
   },
 
+  "caps-origins": {
+    title: "CAPs — Origins, the Trochoid Framework, and the Home of Poi Deliberations (2007-2009)",
+    content: `## CAPs: Origins and the Trochoid Framework
+
+Primary source: "What are CAP's?" — Home of Poi forums, topic 891193, read in full 2026-07-19. Images archived in the tka-platform repo (docs/research/caps-archive/). As of 2026-07-19 the thread has NO Internet Archive snapshot (HoP's bot protection has kept crawlers out) — this entry and the repo archive may be the only structured preservation of it.
+
+### The coinage
+
+At Burning Man 2007, the OMCC crew (Noel, Greg, Jordan, Zan, Alien Jon, and others) began germinating the ideas that became modern poi theory. Damien — a French spinner from Angers posting as French_Saltimbanque and Zaltymbunk (forum title "Trochoïd Master") — arrived with his explorations of composite cyclic patterns, and later coined the term CAPs (Continuous Assembly Patterns) on Home of Poi in the Yuta move analysis thread. Alien Jon, in the origin thread: "I got the term from Damien." Alien Jon liked the term, started using it, and spread it.
+
+### The canonical definition (Damien/Zaltymbunk)
+
+A CAP must be cyclic, and is the assembly of 2 (or more) elementary patterns iterated one (or more) times.
+
+An **elementary pattern** is a cyclic curve uniquely defined by:
+- **Harmonic component**: θ1 (arm turns) and θ2 (prop turns; negative = antispin)
+- **Modulus component**: ρ1 (arm radius; 1 = arm stretched) and ρ2 (prop radius as a wrap fraction)
+- **Division**: d, the fraction of the full cycle used (0 < d ≤ 1)
+
+Notation: **θ1 θ2 ; ρ1 ρ2 ; d**. Modeled on three points: O the shoulder, M the hand ("Main" in French), E the prop extremity (Ebis = a staff's other end).
+
+Special modulus cases:
+- **Rosettes**: ρ1 = ρ2 (the classic inspin/antispin flowers, e.g. 1 4 ; 1 1 and 1 -6 ; 1 1)
+- **Cycloids**: hand and prop tip move at equal ground-frame speeds — ρ2/ρ1 = |θ1/(θ1+θ2)|. Not all are feasible: with a stretched arm, ρ2 only takes discrete wrap values (1/5, 1/4, 1/3, 2/5, 1/2, 3/5, 2/3, 3/4, 4/5, 1 — from two-hands-one-finger down to no wrap)
+
+Feasibility rules (poi): inspin needs |θ2| > |θ1|/2. The antispin rule's inequality is garbled in the surviving page render, but his exclusion list (1 -1, 1 -2, 2 -2 through 2 -4, 3 -3 through 3 -5, 4 -4, 4 -5, 5 -5 excluded; 1 -3, 2 -5 feasible) reconstructs it as |θ1| < |θ2|/2. He defined "feasible" strictly: possible from ANY starting position. Danny_ (Brighton) pushed back with edge cases — 1 -2 possible but unstable, cycloids "close enough" — and noted his own alternative notation referencing prop rotation against the ground rather than the arm.
+
+The famous **Yuta CAP** (the proto-C-CAP): 1 0 ; 1 3/4 ; 1/2 assembled with -1 4 ; 1 3/4 ; 1/2 — an extension half-cycle joined to an antispin fragment.
+
+### The CAP/hybrid duality
+
+Damien framed two composition processes (his framing invoked the brain's hemispheres):
+- **Hybrids** = PARALLEL superposition — two patterns at once, one per hand
+- **CAPs** = SERIAL assembly — one prop's elementary patterns joined in time
+
+A finished CAP is itself a pattern, so it can be fed back into hybridisation. Compare LOOPs (see caps-vs-loops topic): LOOPs compose per-step snapshots of both hands — a third composition process neither CAP nor hybrid covers.
+
+### The deliberations (community texture, all from the origin thread)
+
+- Alien Jon: CAPs are "a way of thinking about movement," not a move — assembling fractional building blocks of simpler-symmetry moves into complexly layered ones. Ridiculed over-labeling: calling a repeated circle a CAP is like insisting a circle is "an ellipse whose foci are an infinitesimal distance apart."
+- DyamiTK (skeptic): the community over-uses big terms it can perform but cannot explain.
+- DrexFactor (rebuttal): umbrella terms like CAP work like "fluxions" or "Aleph numbers" — nonsense words that bundle concepts, give learners a map, and predict movements nobody has done yet. Not a fan of the term; a fan of what it accomplishes.
+- Derek Faughn's plain definition: fractions of two or more moves connected into one continuously repeatable pattern.
+- -sandy- (Bristol): "I thought those were called pac men? meh, parallel evolution."
+- Mother_Natures_Son: antispin cycloids are line isolations; point-isolated antispin makes diamonds and triangles.
+- aston (South Africa): proposed front-to-back CAPs (top/bottom flower halves instead of left/right) — wall-plane-adjacent thinking, 17 years early.
+- Encyclo-poi-dia Vol. 2 already carried a full CAP chapter at the time.
+
+The term later narrowed in community usage to the **C-CAP** (extension + antispin petal alternation) — documented by DrexFactor (2012 tutorial) and taught by Nick Woolsey/PlayPoi as "Capped Antispin Patterns" (2016).
+
+### Sources
+
+- What are CAP's? — homeofpoi.com/en/community/forums/topics/891193 (origin thread; no Wayback snapshot as of 2026-07-19)
+- The Math of CAPs — drexfactor.com/reference/math_caps (Zaltymbunk's framework; Wayback: 2019)
+- Basic Poi Dancing Tutorial: C-CAPs — DrexFactor, 2012
+- Learning CAPs (Capped Antispin Patterns) — PlayPoi/Nick Woolsey, 2016 (Wayback: 2026-01)
+- Tutorial: Double Staff 8-Step CAP Recipe — DrexFactor, 2016 ("The idea comes to us from Charlie's 9-square theory")`,
+  },
+
   "vtg-deep": {
     title: "VTG (Vulcan Tech Gospel) Deep Dive",
     content: `## VTG (Vulcan Tech Gospel) Deep Dive
