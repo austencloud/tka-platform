@@ -16,11 +16,19 @@ export interface FadeState {
 }
 
 export class Canvas2DFadeManager {
-  private readonly FADE_DURATION_MS = 300;
+  // Default (300ms) matches the original glyph-only behavior. Prop morph fades
+  // pass a longer duration (~400ms) so a whole-shape swap reads as a morph
+  // rather than a flash — see Canvas2DAnimationRenderer's
+  // blue/redPropMorphFadeManager.
+  private readonly fadeDurationMs: number;
 
   private isFading: boolean = false;
   private fadeProgress: number = 0;
   private fadeStartTime: number | null = null;
+
+  constructor(fadeDurationMs: number = 300) {
+    this.fadeDurationMs = fadeDurationMs;
+  }
 
   /**
    * Start a new fade transition
@@ -57,7 +65,7 @@ export class Canvas2DFadeManager {
     }
 
     const elapsed = currentTime - this.fadeStartTime;
-    this.fadeProgress = Math.min(elapsed / this.FADE_DURATION_MS, 1);
+    this.fadeProgress = Math.min(elapsed / this.fadeDurationMs, 1);
 
     const currentAlpha = this.fadeProgress;
     const previousAlpha = 1 - this.fadeProgress;

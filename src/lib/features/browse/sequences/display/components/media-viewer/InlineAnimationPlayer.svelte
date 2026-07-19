@@ -13,6 +13,8 @@
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
+  import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { getSequenceRepository } from "$lib/shared/create/get-sequence-repository";
@@ -104,6 +106,9 @@
     scrubbable = false,
     singlePlay = false,
     beatIndicators = true,
+    onLoopComplete = undefined,
+    trailSettingsOverride = null,
+    tipEffectMap = undefined,
   }: {
     sequence: SequenceData;
     autoPlay?: boolean;
@@ -164,6 +169,30 @@
      * labels "Start"/steps, so the canvas overlay is redundant there.
      */
     beatIndicators?: boolean;
+    /**
+     * Fires every time the loop wraps back to its start (not just once at
+     * the end — a seamlessly-loopable sequence never truly "ends"). The
+     * homepage hero attract act uses this boundary to decide when to swap
+     * in the next sequence/prop; other hosts (gallery, Arena) omit it.
+     */
+    onLoopComplete?: () => void;
+    /**
+     * Overrides the trail settings passed to the canvas. Null (default)
+     * keeps today's behavior for every existing caller: the global
+     * `animationSettings.trail` singleton. Set this instead of mutating
+     * that singleton directly — the hero's vivid preset must not leak into
+     * the in-app Compose panel, which reads the same singleton.
+     */
+    trailSettingsOverride?: TrailSettings | null;
+    /**
+     * Per-tip effect assignments forwarded to the canvas. Without at least
+     * one "trails" entry the render loop's hasTrailTips gate keeps
+     * effectiveTrailsVisible false, so NO trails draw regardless of trail
+     * settings — this player historically never passed one, which is why
+     * inline surfaces showed no trails. The hero passes a cell-wide trails
+     * map; hosts that omit it keep today's trail-less behavior.
+     */
+    tipEffectMap?: TipEffectMap;
   } = $props();
 
   const minimal = $derived(chrome === "minimal");
@@ -281,6 +310,7 @@
         orchestrator,
         loop
       );
+      playbackController.onLoopComplete(() => onLoopComplete?.());
 
       servicesReady = true;
     } catch (err) {
@@ -291,6 +321,7 @@
   });
 
   onDestroy(() => {
+    playbackController?.offLoopComplete();
     playbackController?.dispose();
     animationState.dispose();
   });
@@ -517,7 +548,8 @@
         currentStep={animationState.currentStep}
         {isPlaying}
         onPlaybackToggle={togglePlayback}
-        trailSettings={animationSettings.trail}
+        trailSettings={trailSettingsOverride ?? animationSettings.trail}
+        {tipEffectMap}
         {bluePropType}
         {redPropType}
         positionGlyphVisible={showPositionGlyph}

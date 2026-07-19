@@ -18,6 +18,8 @@
  * sequence for the notation prop pages.
  */
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import demoJson from "$lib/shared/landing/data/demo-sequence.json";
 
 export const FALLBACK_DEMO = demoJson as unknown as SequenceData;
@@ -33,7 +35,20 @@ const MIN_UNIQUE_LETTERS = 3;
 const MIN_FAMILIAR_FRACTION = 0.5;
 const FAMILIAR_GLYPH = /^[A-Z]-?$/;
 
-export async function generatePerVisitDemo(): Promise<SequenceData> {
+export async function generatePerVisitDemo(options?: {
+  /** Prop to generate for. Defaults to staff (the original per-visit draw). */
+  propType?: PropType;
+  /**
+   * Constrains the roll to start at this exact grid position. The hero
+   * attract act (hero-act.svelte.ts) uses this to chain sequences: a
+   * CIRCULAR loop's end pose equals its start pose, so passing the
+   * currently-playing sequence's `startPosition` here guarantees the next
+   * draw picks up where the current one left off instead of teleporting.
+   * `SequenceData.startPosition` (a `StartPositionData`) is structurally a
+   * `PictographData` — no mapping needed, pass it straight through.
+   */
+  startPosition?: PictographData | null;
+}): Promise<SequenceData> {
   try {
     const [{ generationOrchestrator }, models, circular, grid, prop] = await Promise.all([
       import("$lib/shared/create/services/generation-orchestrator"),
@@ -59,9 +74,10 @@ export async function generatePerVisitDemo(): Promise<SequenceData> {
         length: 16,
         turnIntensity: 3,
         gridMode: grid.GridMode.DIAMOND,
-        propType: prop.PropType.STAFF,
+        propType: options?.propType ?? prop.PropType.STAFF,
         difficulty: models.DifficultyLevel.INTERMEDIATE,
         constraintPreset: "smooth",
+        ...(options?.startPosition ? { startPosition: options.startPosition } : {}),
       });
       // Plain-ify reactive proxies before handing to players/canvases.
       const plain = JSON.parse(JSON.stringify(seq)) as SequenceData;

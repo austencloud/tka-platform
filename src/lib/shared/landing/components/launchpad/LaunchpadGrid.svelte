@@ -121,6 +121,9 @@
 		.bento {
 			grid-template-columns: 1fr;
 		}
+		.strip {
+			grid-template-columns: repeat(2, 1fr);
+		}
 		/* Full-width single column: every span still reads as one row-wide
 		   card; the 2x2 tile keeps its extra height (two rows tall) rather
 		   than collapsing to the same height as a 1x1. */
@@ -165,21 +168,26 @@
 		}
 	}
 
-	/* ---- secondary strip ---- */
+	/* ---- secondary strip ----
+	   The bento's baseboard: a full-width row of equal-width segments flush
+	   with the bento's left and right edges, instead of a left-aligned flex
+	   wrap that left dead space to the right (feedback 2026-07-19). */
 	.strip {
 		list-style: none;
 		margin: 0;
 		padding: 0;
-		display: flex;
-		flex-wrap: wrap;
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
 		gap: 0.6rem;
 	}
 	.strip li {
 		margin: 0;
 	}
 	.strip a {
-		display: inline-flex;
+		display: flex;
 		align-items: center;
+		justify-content: center;
+		width: 100%;
 		min-height: 44px;
 		padding: 0 1rem;
 		border-radius: 12px;

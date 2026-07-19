@@ -137,11 +137,34 @@ flush with the bento's left and right edges.
 
 ## Build ledger
 
-- [ ] A. Engine prop crossfade
-- [ ] B. Player props (onLoopComplete, trailSettingsOverride)
-- [ ] C. hero-act.svelte.ts factory + unit tests
-- [ ] D. SequenceHeroDemo/HomeHero wiring (de-key, pass-throughs, caption crossfade, externalBpm pin)
-- [ ] E. Vivid trail preset (screenshot-verified)
-- [ ] F. Strip segment row
-- [ ] Scoped checks green, geometry re-measured, committed with explicit pathspec
-- [ ] Austen visual pass on the live act
+- [x] A. Engine prop crossfade (fade manager parameterized, 400ms; both hot-swap
+      sites; phantom-first-assignment guard; 75/75 engine tests)
+- [x] B. Player props (onLoopComplete, trailSettingsOverride, plus tipEffectMap —
+      see discovery below)
+- [x] C. hero-act.svelte.ts factory + 10 unit tests
+- [x] D. SequenceHeroDemo/HomeHero wiring (de-key, pass-throughs, caption
+      crossfade, externalBpm pin)
+- [x] E. Vivid trail preset (screenshot-verified at 1080p)
+- [x] F. Strip segment row (measured flush: 0px left/right vs bento at 1080p + 4K)
+- [x] Scoped checks green (check:fast: only pre-existing shape-matrix errors),
+      geometry re-measured, committed with explicit pathspec
+- [~] Austen visual pass on the live act (morph feel, trail intensity, pacing)
+
+## Build discovery (2026-07-19): why the hero never had trails
+
+Trail SETTINGS were never the problem — the singleton defaults to FADE+GLOW.
+The render loop gates trails on `hasTrailTips(tipEffectMap)`
+(`animation-render-loop.ts:983`, helper at :87), and an empty map returns
+false, so `effectiveTrailsVisible` stayed false on every surface that doesn't
+pass tip-effect assignments — InlineAnimationPlayer included. (The CAPTURE
+side treats an empty map as all-tips-trail; the RENDER side treats it as
+none. Asymmetry predates this work.) Fix: `tipEffectMap` prop threaded
+through InlineAnimationPlayer → AnimatorCanvas; the hero passes
+`HERO_TIP_EFFECT_MAP = setCellWide({}, "trails")` from hero-trail-preset.ts.
+Hosts that omit the prop keep their historical trail-less behavior.
+
+Runtime proof of the act (headless Playwright, 75s watch): word timeline
+ΑΣΥ-Φ → KEΔW (10.1s, one pass of the 8-count fallback) → Θ-Y-ΘW (27.5s) →
+AΣZF (45.1s) → AΣRX (61.8s); ~17s cadence = one 16-count pass + swap; fans
+on screen after advance 1, staves again after advance 4 (cycle wrapped);
+zero page errors; trails visible in all captures.

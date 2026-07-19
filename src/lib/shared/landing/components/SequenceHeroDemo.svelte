@@ -11,12 +11,27 @@
   LazyMount and only starts importing after hydration hits idle. The stage
   box is fixed with aspect-ratio so the prose below never shifts when the
   player mounts (no-layout-shift rule).
+
+  The LazyMount below is NOT keyed on the sequence id. InlineAnimationPlayer
+  already reloads its own animation in place whenever its `sequence` prop's
+  id changes (its own $effect, InlineAnimationPlayer.svelte:365-381) — no
+  remount needed. LazyMount forwards prop updates into an already-mounted
+  child reactively (proven by existing load-bearing usages: GeneratePanel
+  reads a live `isDesktop` through it, CreationWorkspaceArea reads live
+  `animatingStepNumber`/`currentDisplayWord` through it — both would be
+  visibly frozen after first mount if LazyMount's `{...props}` spread wasn't
+  reactive). Keying here would remount the whole player — and the whole
+  animation engine chunk-load again — on every reroll/act advance instead of
+  swapping a prop.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
+  import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 
   let {
     sequence,
@@ -25,6 +40,10 @@
     redPropType,
     onReroll,
     rerolling = false,
+    onLoopComplete,
+    trailSettingsOverride = null,
+    tipEffectMap = undefined,
+    externalBpm,
   }: {
     /** Null while the host is still producing the sequence (e.g. /composer's
         per-visit generated demo) — the stage box and caption line keep their
@@ -41,6 +60,24 @@
     onReroll?: () => void;
     /** Host-owned in-flight flag while a reroll generates. */
     rerolling?: boolean;
+    /** Forwarded to InlineAnimationPlayer. The homepage hero attract act
+        wires this to advance its walk on every loop wraparound; every other
+        host omits it and pays no cost (InlineAnimationPlayer no-ops when
+        absent). */
+    onLoopComplete?: () => void;
+    /** Forwarded to InlineAnimationPlayer. Null (default) keeps today's
+        behavior for every host that omits it: the global trail settings
+        singleton. The hero passes its own vivid preset here instead of
+        mutating that singleton (which the in-app Compose panel also reads). */
+    trailSettingsOverride?: TrailSettings | null;
+    /** Forwarded to InlineAnimationPlayer. Trails only render for tips with a
+        "trails" assignment (the render loop's hasTrailTips gate) — the hero
+        passes a cell-wide map; hosts that omit it get no trails, as before. */
+    tipEffectMap?: TipEffectMap;
+    /** Forwarded to InlineAnimationPlayer to pin playback tempo externally.
+        The hero pins this at 60 so a visitor's persisted Compose speed can't
+        skew the marketing surface. Omit to use the player's own default. */
+    externalBpm?: number | null;
   } = $props();
 
   const word = $derived(sequence ? simplifyRepeatedWord(sequence.word) : "");
@@ -60,31 +97,37 @@
 <div class="hero-demo">
   <figure class="demo-figure">
     <div class="demo-stage">
-      <!-- Keyed by sequence id so a reroll swaps the player onto the new
-           sequence with a clean mount (mirrors ComposerGenerateDemo). The
-           aspect-ratio box holds during the swap, so no layout shift. -->
-      {#key sequence?.id}
-        <LazyMount
-          loader={() =>
-            import(
-              "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
-            )}
-          active={active && !!sequence}
-          props={{
-            sequence,
-            autoPlay: true,
-            chrome: "minimal",
-            fill: true,
-            bluePropType,
-            redPropType,
-          }}
-        />
-      {/key}
+      <!-- Not keyed on sequence id — the mounted player reloads onto a new
+           sequence in place (see script comment above). The aspect-ratio box
+           holds constant regardless, so no layout shift either way. -->
+      <LazyMount
+        loader={() =>
+          import(
+            "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
+          )}
+        active={active && !!sequence}
+        props={{
+          sequence,
+          autoPlay: true,
+          chrome: "minimal",
+          fill: true,
+          bluePropType,
+          redPropType,
+          onLoopComplete,
+          trailSettingsOverride,
+          tipEffectMap,
+          externalBpm: externalBpm ?? null,
+        }}
+      />
     </div>
     <!-- Line is always reserved; it becomes visible only once the word is
-         known, so the note never shifts sideways when the word lands. -->
+         known, so the note never shifts sideways when the word lands. Only
+         the word crossfades (it's the part that actually changes between
+         sequences) — the note is host-owned static text. -->
     <figcaption class:pending={!sequence}>
-      <span class="tka-font demo-word">{word}</span>
+      <Crossfade key={word}>
+        <span class="tka-font demo-word">{word}</span>
+      </Crossfade>
       <span class="demo-note">{note}</span>
     </figcaption>
   </figure>

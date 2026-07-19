@@ -62,6 +62,19 @@ export interface IAnimationRenderer {
   loadPropTextures(propType: string): Promise<void>;
 
   /**
+   * Start the blue-hand prop morph crossfade (previous sprite fades out, new
+   * sprite fades in, at the identical transform). Call only from a genuine
+   * prop-type hot-swap, after loadPerColorPropTextures has resolved — never
+   * on the initial load or a dark-mode-only reload. No-op if there is no
+   * previous sprite to fade from.
+   */
+  startBluePropMorphFade(): void;
+
+  /** Red-hand counterpart of startBluePropMorphFade — independent so one hand
+   *  can morph while the other holds steady. */
+  startRedPropMorphFade(): void;
+
+  /**
    * Load different prop types for blue and red props
    * @param bluePropType - Type of prop for blue hand
    * @param redPropType - Type of prop for red hand

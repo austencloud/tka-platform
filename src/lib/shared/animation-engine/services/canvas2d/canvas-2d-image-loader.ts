@@ -26,6 +26,13 @@ export class Canvas2DImageLoader {
   private gridImage: HTMLImageElement | null = null;
   private glyphImage: HTMLImageElement | null = null;
   private previousGlyphImage: HTMLImageElement | null = null;
+  // Retained on every per-color prop load (mirrors previousGlyphImage), so the
+  // renderer always has the pre-swap sprite available for a morph crossfade.
+  // Stashing here does not itself start a fade — prop-type-manager decides
+  // that, at the hot-swap sites only, so a dark-mode-only reload or the
+  // initial load never trigger one even though a "previous" image exists.
+  private previousBluePropImage: HTMLImageElement | null = null;
+  private previousRedPropImage: HTMLImageElement | null = null;
 
   // Additional tunnel layer prop images (lazily populated)
   private additionalLayerImages: Array<{
@@ -140,6 +147,10 @@ export class Canvas2DImageLoader {
         width: redPropData.width,
         height: redPropData.height,
       };
+
+      // Save the pre-swap sprites for a morph crossfade (see field comment).
+      this.previousBluePropImage = this.bluePropImage;
+      this.previousRedPropImage = this.redPropImage;
 
       // Swap references
       this.bluePropImage = newBlueImage;
@@ -341,6 +352,14 @@ export class Canvas2DImageLoader {
     return this.redPropImage;
   }
 
+  getPreviousBluePropImage(): HTMLImageElement | null {
+    return this.previousBluePropImage;
+  }
+
+  getPreviousRedPropImage(): HTMLImageElement | null {
+    return this.previousRedPropImage;
+  }
+
   getAdditionalLayerImages(layerIndex: number): {
     blue: HTMLImageElement | null;
     red: HTMLImageElement | null;
@@ -384,10 +403,20 @@ export class Canvas2DImageLoader {
     this.previousGlyphImage = null;
   }
 
+  clearPreviousBluePropImage(): void {
+    this.previousBluePropImage = null;
+  }
+
+  clearPreviousRedPropImage(): void {
+    this.previousRedPropImage = null;
+  }
+
   destroy(): void {
     // Clear all image references (allows garbage collection)
     this.bluePropImage = null;
     this.redPropImage = null;
+    this.previousBluePropImage = null;
+    this.previousRedPropImage = null;
     this.additionalLayerImages.length = 0;
     this.additionalLayerDimensions.length = 0;
     this.gridImage = null;

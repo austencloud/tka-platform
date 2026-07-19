@@ -145,6 +145,12 @@ export class Canvas2DAnimationRenderer {
   private bluePropFadeManager: Canvas2DVisibilityFadeManager;
   private redPropFadeManager: Canvas2DVisibilityFadeManager;
   private trailsFadeManager: Canvas2DVisibilityFadeManager;
+  // Prop-type hot-swap morph crossfade (previous sprite -> new sprite at the
+  // same transform). Independent per color so blue can morph while red holds
+  // steady. Distinct from bluePropFadeManager/redPropFadeManager above, which
+  // fade prop VISIBILITY (motion toggles), not a sprite swap.
+  private bluePropMorphFadeManager: Canvas2DFadeManager;
+  private redPropMorphFadeManager: Canvas2DFadeManager;
 
   private lastBlueTransform: RenderedPropTransform | null = null;
   private lastRedTransform: RenderedPropTransform | null = null;
@@ -172,6 +178,11 @@ export class Canvas2DAnimationRenderer {
     this.bluePropFadeManager = new Canvas2DVisibilityFadeManager(300, 200);
     this.redPropFadeManager = new Canvas2DVisibilityFadeManager(300, 200);
     this.trailsFadeManager = new Canvas2DVisibilityFadeManager(350, 250);
+    // ~400ms so a whole-shape prop swap reads as morphing in the hand rather
+    // than a flash — longer than the 300ms glyph fade, which crosses much
+    // smaller glyph artwork.
+    this.bluePropMorphFadeManager = new Canvas2DFadeManager(400);
+    this.redPropMorphFadeManager = new Canvas2DFadeManager(400);
   }
 
   /**
@@ -248,6 +259,25 @@ export class Canvas2DAnimationRenderer {
     );
   }
 
+  /**
+   * Start the blue-hand prop morph crossfade. Called by PropTypeManager from
+   * a genuine hot-swap site only, once the new texture has already loaded —
+   * never from the initial load or a dark-mode-only reload. No-op if the
+   * image loader has no previous blue sprite to fade from (nothing swapped).
+   */
+  startBluePropMorphFade(): void {
+    if (this.imageLoader.getPreviousBluePropImage()) {
+      this.bluePropMorphFadeManager.startFadeTransition();
+    }
+  }
+
+  /** Red-hand counterpart of startBluePropMorphFade. */
+  startRedPropMorphFade(): void {
+    if (this.imageLoader.getPreviousRedPropImage()) {
+      this.redPropMorphFadeManager.startFadeTransition();
+    }
+  }
+
   async loadAdditionalLayerPropTextures(
     layerIndex: number,
     bluePropType: string,
@@ -289,7 +319,9 @@ export class Canvas2DAnimationRenderer {
       this.propsFadeManager.isTransitionInProgress() ||
       this.bluePropFadeManager.isTransitionInProgress() ||
       this.redPropFadeManager.isTransitionInProgress() ||
-      this.trailsFadeManager.isTransitionInProgress()
+      this.trailsFadeManager.isTransitionInProgress() ||
+      this.bluePropMorphFadeManager.isFadingInProgress() ||
+      this.redPropMorphFadeManager.isFadingInProgress()
     );
   }
 
@@ -397,10 +429,18 @@ export class Canvas2DAnimationRenderer {
     const selectedLayer = params.tunnelSelectedLayer ?? null;
     if (blueAlpha > 0 && params.blueProp) {
       ctx.save();
-      ctx.globalAlpha = blueAlpha * spotlightFactor(selectedLayer, 0);
+      const blueBaseAlpha = blueAlpha * spotlightFactor(selectedLayer, 0);
+      ctx.globalAlpha = blueBaseAlpha;
 
-      // Primary blue prop
+      // Primary blue prop. On a prop-type hot-swap, cross-fade the previous
+      // sprite into the new one at the SAME transform (same propState +
+      // dimensions + canvasSize drive both renderProp calls below), which is
+      // what reads as the prop morphing in the hand instead of a hard cut.
       const bluePropImage = this.imageLoader.getBluePropImage();
+      const previousBluePropImage = this.imageLoader.getPreviousBluePropImage();
+      const blueMorphFade = this.bluePropMorphFadeManager.updateFadeProgress(
+        params.currentTime
+      );
       if (bluePropImage) {
         const blueTransform = this.calculatePropTransform(params.blueProp, params.bluePropDimensions, canvasSize);
         this.lastBlueTransform = {
@@ -409,6 +449,20 @@ export class Canvas2DAnimationRenderer {
           angle: params.bluePropType?.toLowerCase() === "hand" ? 0 : blueTransform.rotation,
           scaleFactor: gridScaleFactor,
         };
+
+        if (previousBluePropImage && !blueMorphFade.isComplete) {
+          ctx.globalAlpha = blueBaseAlpha * blueMorphFade.previousAlpha;
+          this.renderProp(
+            ctx,
+            params.blueProp,
+            previousBluePropImage,
+            params.bluePropDimensions,
+            canvasSize,
+            params.bluePropFlipped ?? false,
+            params.bluePropType
+          );
+          ctx.globalAlpha = blueBaseAlpha * blueMorphFade.currentAlpha;
+        }
         this.renderProp(
           ctx,
           params.blueProp,
@@ -418,6 +472,12 @@ export class Canvas2DAnimationRenderer {
           params.bluePropFlipped ?? false,
           params.bluePropType
         );
+        // Restore the base alpha — sphere shading and tunnel layers below are
+        // not part of the morph and must render at full (unfaded) alpha.
+        ctx.globalAlpha = blueBaseAlpha;
+      }
+      if (blueMorphFade.isComplete && previousBluePropImage) {
+        this.imageLoader.clearPreviousBluePropImage();
       }
 
       // Screen-space sphere shading (stays fixed as prop rotates)
@@ -460,10 +520,15 @@ export class Canvas2DAnimationRenderer {
     const redAlpha = propsFadeState.alpha * redFadeState.alpha;
     if (redAlpha > 0 && params.redProp) {
       ctx.save();
-      ctx.globalAlpha = redAlpha * spotlightFactor(selectedLayer, 0);
+      const redBaseAlpha = redAlpha * spotlightFactor(selectedLayer, 0);
+      ctx.globalAlpha = redBaseAlpha;
 
-      // Primary red prop
+      // Primary red prop — same morph cross-fade treatment as blue above.
       const redPropImage = this.imageLoader.getRedPropImage();
+      const previousRedPropImage = this.imageLoader.getPreviousRedPropImage();
+      const redMorphFade = this.redPropMorphFadeManager.updateFadeProgress(
+        params.currentTime
+      );
       if (redPropImage) {
         const redTransform = this.calculatePropTransform(params.redProp, params.redPropDimensions, canvasSize);
         this.lastRedTransform = {
@@ -472,6 +537,20 @@ export class Canvas2DAnimationRenderer {
           angle: params.redPropType?.toLowerCase() === "hand" ? 0 : redTransform.rotation,
           scaleFactor: gridScaleFactor,
         };
+
+        if (previousRedPropImage && !redMorphFade.isComplete) {
+          ctx.globalAlpha = redBaseAlpha * redMorphFade.previousAlpha;
+          this.renderProp(
+            ctx,
+            params.redProp,
+            previousRedPropImage,
+            params.redPropDimensions,
+            canvasSize,
+            params.redPropFlipped ?? false,
+            params.redPropType
+          );
+          ctx.globalAlpha = redBaseAlpha * redMorphFade.currentAlpha;
+        }
         this.renderProp(
           ctx,
           params.redProp,
@@ -481,6 +560,10 @@ export class Canvas2DAnimationRenderer {
           params.redPropFlipped ?? false,
           params.redPropType
         );
+        ctx.globalAlpha = redBaseAlpha;
+      }
+      if (redMorphFade.isComplete && previousRedPropImage) {
+        this.imageLoader.clearPreviousRedPropImage();
       }
 
       // Screen-space sphere shading (stays fixed as prop rotates)
@@ -799,6 +882,8 @@ export class Canvas2DAnimationRenderer {
     this.bluePropFadeManager.reset();
     this.redPropFadeManager.reset();
     this.trailsFadeManager.reset();
+    this.bluePropMorphFadeManager.reset();
+    this.redPropMorphFadeManager.reset();
     this.imageLoader.destroy();
     this.appManager.destroy();
     this.tintedGridCanvas = null;

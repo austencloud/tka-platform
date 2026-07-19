@@ -7,27 +7,26 @@
 
   The fixture (FALLBACK_DEMO, a real sequence) is the initial content and is
   present at SSR — the caption word renders before JS runs, unlike the
-  composer host which starts null and generates on mount. No auto-reroll on
-  mount here; a visitor sees a real notated sequence immediately, and can
-  reroll into a fresh one with the dice button SequenceHeroDemo already owns.
+  composer host which starts null and generates on mount. Once hydrated, the
+  hero attract act (hero-act.svelte.ts) takes over: it walks through a small
+  cycle of props, one freshly generated LOOP at a time, handing off at each
+  loop boundary. The dice button still works as an immediate "advance now."
 -->
 <script lang="ts">
+  import { onMount } from "svelte";
   import SequenceHeroDemo from "./SequenceHeroDemo.svelte";
-  import { FALLBACK_DEMO, generatePerVisitDemo } from "$lib/shared/landing/data/per-visit-demo";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { createHeroAct } from "$lib/shared/landing/data/hero-act.svelte";
+  import { HERO_TRAIL_PRESET, HERO_TIP_EFFECT_MAP } from "$lib/shared/landing/data/hero-trail-preset";
 
-  let demoSeq = $state<SequenceData>(FALLBACK_DEMO);
-  let rerolling = $state(false);
+  const heroAct = createHeroAct();
 
-  async function reroll() {
-    if (rerolling) return;
-    rerolling = true;
-    try {
-      demoSeq = await generatePerVisitDemo();
-    } finally {
-      rerolling = false;
-    }
-  }
+  onMount(() => {
+    heroAct.start();
+  });
+
+  // Pinned so a visitor's persisted Compose playback speed can't skew the
+  // marketing surface — every visitor sees the act at the same tempo.
+  const HERO_BPM = 60;
 </script>
 
 <section class="home-hero">
@@ -39,10 +38,16 @@
   </h1>
 
   <SequenceHeroDemo
-    sequence={demoSeq}
+    sequence={heroAct.sequence}
     note="played straight from its notation"
-    onReroll={reroll}
-    rerolling={rerolling}
+    onReroll={heroAct.advanceNow}
+    rerolling={heroAct.rerolling}
+    bluePropType={heroAct.propType}
+    redPropType={heroAct.propType}
+    onLoopComplete={heroAct.handleLoopComplete}
+    trailSettingsOverride={HERO_TRAIL_PRESET}
+    tipEffectMap={HERO_TIP_EFFECT_MAP}
+    externalBpm={HERO_BPM}
   />
 
   <p class="hero-pointer">

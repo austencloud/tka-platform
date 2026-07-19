@@ -113,6 +113,16 @@ export class PropTypeManager {
       newBlue !== this.propTypeOverrideBlue ||
       newRed !== this.propTypeOverrideRed
     ) {
+      // Per-color hot-swap flags for the morph crossfade below. Gated on
+      // propTypeOverrideBlue/Red already being non-null: the FIRST time an
+      // override is ever registered (mount, coming from null) is establishing
+      // initial state, not swapping an already-displayed prop, so it must not
+      // fade — only a genuine value-to-value change does.
+      const blueChanged =
+        this.propTypeOverrideBlue !== null && newBlue !== this.propTypeOverrideBlue;
+      const redChanged =
+        this.propTypeOverrideRed !== null && newRed !== this.propTypeOverrideRed;
+
       this.propTypeOverrideBlue = newBlue;
       this.propTypeOverrideRed = newRed;
       state.setBluePropType(newBlue);
@@ -148,6 +158,12 @@ export class PropTypeManager {
         // captured during the async gap with old prop dimensions
         this.trailCapturer?.clearTrails();
         this.trailsSuppressedUntilTextureLoad = false;
+        // Start the morph crossfade only for the color(s) whose type actually
+        // changed. loadPropTextures always reloads both colors together, but
+        // an unchanged color reloads a visually identical sprite, so there is
+        // nothing to fade there even though a "previous" image now exists.
+        if (blueChanged) this.animationRenderer?.startBluePropMorphFade();
+        if (redChanged) this.animationRenderer?.startRedPropMorphFade();
         if (state.isInitialized) {
           this.renderLoopService?.triggerRender(getFrameParams);
         }
@@ -175,6 +191,19 @@ export class PropTypeManager {
       this.propTypeChangeService?.state.textureReloadSignal ?? 0;
     if (textureSignal > 0 && textureSignal !== this.lastTextureReloadSignal) {
       this.lastTextureReloadSignal = textureSignal;
+
+      // Per-color hot-swap flags for the morph crossfade below, captured
+      // against AnimatorState's currently-displayed type BEFORE it's
+      // overwritten. This naturally excludes the mount-time sync (settings
+      // already loaded the correct type during initial load, so the "old"
+      // and "new" values here are equal and nothing fades) from a genuine
+      // later settings-driven change (old and new differ, so it fades).
+      const blueChanged =
+        this.propTypeChangeService != null &&
+        this.propTypeChangeService.state.bluePropType !== state.currentBluePropType;
+      const redChanged =
+        this.propTypeChangeService != null &&
+        this.propTypeChangeService.state.redPropType !== state.currentRedPropType;
 
       // CRITICAL: Sync prop type state AFTER checkForChanges() detected the new values
       // Otherwise loadPropTextures() would use stale values from the earlier syncServiceState() call
@@ -211,6 +240,9 @@ export class PropTypeManager {
       this.loadPropTextures(state, prevDarkMode).then(() => {
         this.trailCapturer?.clearTrails();
         this.trailsSuppressedUntilTextureLoad = false;
+        // Same per-color morph start as handleOverrides — see its comment.
+        if (blueChanged) this.animationRenderer?.startBluePropMorphFade();
+        if (redChanged) this.animationRenderer?.startRedPropMorphFade();
         // Trigger immediate re-render once new textures are ready
         if (state.isInitialized) {
           this.renderLoopService?.triggerRender(getFrameParams);
