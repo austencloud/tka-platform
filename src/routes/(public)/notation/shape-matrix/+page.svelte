@@ -8,10 +8,6 @@
     loadShapeMatrix,
     type ShapeMatrixData,
   } from "$lib/shared/shape-matrix/services/shape-matrix-flowers";
-  import {
-    MODE_ORDER,
-    MODE_LABEL,
-  } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
   import { applyFilter } from "$lib/shared/shape-matrix/domain/filter-flower-axis";
   import {
     matrixFiltersForSize,
@@ -188,24 +184,10 @@
       </div>
 
       <aside class="drill-pane" bind:this={drillPane} aria-label="Cell realizations">
-        {#if selectedPair && data}
+        {#if data}
           <ShapeMatrixDrill pair={selectedPair} {data} />
         {:else}
-          <div class="drill-empty">
-            <p class="drill-empty-lead">Pick a cell</p>
-            <p class="drill-empty-sub">
-              Its six timing-and-direction realizations open here. Each one plays the
-              props drawing that shape.
-            </p>
-            <div class="ghost-grid" aria-hidden="true">
-              {#each MODE_ORDER as m (m)}
-                <div class="ghost-card">
-                  <span class="ghost-code">{m}</span>
-                  <span class="ghost-label">{MODE_LABEL[m]}</span>
-                </div>
-              {/each}
-            </div>
-          </div>
+          <div class="drill-loading">Building flowers…</div>
         {/if}
       </aside>
 
@@ -395,58 +377,15 @@
     scroll-margin-top: 90px;
   }
 
-  /* Empty state: a ghost preview of the six mode cards, so the panel shows
-     what will appear instead of a void. Mirrors .mode-grid's metrics in
-     ShapeMatrixDrill so the swap to real cards lands in the same places. */
-  .drill-empty {
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    padding: 0.6rem 0.2rem 0;
-  }
-  .drill-empty-lead {
-    margin: 0 0 0.3rem;
-    font-size: clamp(1.05rem, 1rem + 0.2vw, 1.3rem);
-    font-weight: 700;
-    color: oklch(0.92 0.02 270);
-  }
-  .drill-empty-sub {
-    margin: 0 0 1.1rem;
-    max-width: 34rem;
-    font-size: clamp(0.85rem, 0.8rem + 0.12vw, 0.95rem);
-    line-height: 1.55;
-    color: oklch(0.68 0.02 270);
-  }
-  .ghost-grid {
+  /* Pre-data loading hint: the drill itself owns the "Pick a cell" empty
+     state once the flower data lands (ShapeMatrixDrill takes pair = null). */
+  .drill-loading {
     flex: 1;
     min-height: 0;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
-    /* Rows stretch so the six ghosts fill the panel's full height — the empty
-       state occupies the same real estate the six real cards will. */
-    grid-auto-rows: 1fr;
-    gap: 0.9rem;
-  }
-  .ghost-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-    min-height: 8.5rem;
-    border: 1px dashed oklch(0.5 0.03 270 / 0.28);
-    border-radius: 12px;
-  }
-  .ghost-code {
-    font-size: 1rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: oklch(0.55 0.02 270);
-  }
-  .ghost-label {
-    font-size: 0.78rem;
-    color: oklch(0.48 0.015 270);
+    place-items: center;
+    font-size: clamp(0.85rem, 0.8rem + 0.12vw, 0.95rem);
+    color: oklch(0.68 0.02 270);
   }
 
   /* ── Stacked layout: the panel follows the stage, full width ── */
