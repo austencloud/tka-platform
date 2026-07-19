@@ -26,10 +26,10 @@ export const AUTH_NUDGE_TEXTS: Record<AuthNudgeTrigger, string> = {
   "module:settings": "Create a free account to customize your settings.",
   "edit-community": "Create a free account to edit and remix sequences.",
   // Gloss inline rather than gating the nudge behind a LOOP explanation - a
-  // guest hits this mid-funnel, not after reading the guide. Framing matches
-  // the guide's own LOOP copy ("each repetition is rotated by 180°") and the
-  // MCP get_domain_topic("caps vs loops") definition: rotated positions
-  // continue in the same direction across 180-degree slices.
+  // guest hits this mid-funnel, not after reading the guide. Degree-free on
+  // purpose: rotated LOOPs span halved (180°) and quartered (90°) rotation
+  // (MCP get_domain_topic("rotated LOOP")), so the gloss names the mechanism,
+  // not one angle.
   "loop-locked-guest":
-    "Rotated LOOPs, sequences that return to their starting position with each repeat rotated 180°, are free. Create a free account for every LOOP type.",
+    "Rotated LOOPs, sequences that return to their start by repeating the pattern rotated around the grid, are free. Create a free account for every LOOP type.",
 };

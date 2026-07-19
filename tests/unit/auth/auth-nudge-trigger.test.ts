@@ -68,9 +68,12 @@ describe("AUTH_NUDGE_TEXTS — one phrasing for the account ask", () => {
     const text = AUTH_NUDGE_TEXTS["loop-locked-guest"];
     expect(text).toContain("Rotated LOOPs");
     // The gloss: a plain-language clause explaining what "rotated" means here,
-    // grounded in the domain framing (returns to start, rotated 180° per repeat).
+    // grounded in the domain framing (returns to start, pattern rotated per
+    // repeat). Deliberately degree-free: rotated LOOPs include both halved
+    // (180°) and quartered (90°) rotation, so naming one degree would be wrong.
     expect(text).toContain("return");
-    expect(text).toContain("180°");
+    expect(text).toContain("rotated");
+    expect(text).not.toContain("180°");
     // Domain rule: "turn" is reserved for prop/body turns, never a LOOP's
     // rotation slice (tka-domain.md). Word-boundary regex so "return"/
     // "returns" (legitimately part of the gloss) don't false-positive.
