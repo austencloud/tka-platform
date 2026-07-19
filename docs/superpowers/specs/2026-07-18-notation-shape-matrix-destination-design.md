@@ -402,7 +402,7 @@ The ledger survives compaction; conversation context does not. Mark `- [x]` done
       destination in `tests/unit/notation-roots-remediation-contract.test.ts`;
       teaser test asserts preview plus call to action). Note: the old
       144-cell assertion in that file was already failing before this phase
-      (stale from a prior static-image pass on `/notation`) — it is replaced
+      (stale from a prior static-image pass on `/notation`). It is replaced
       here, not loosened.
 - [~] Verify: contract tests green (proven via `npx vitest run`). Screenshot /
       browser confirmation still pending — needs Austen's go-ahead per
