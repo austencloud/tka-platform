@@ -2,6 +2,8 @@
   import { onMount } from "svelte";
   import Seo from "$lib/shared/components/Seo.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import DrawerHeader from "$lib/shared/foundation/ui/DrawerHeader.svelte";
   import ShapeMatrixGrid from "$lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte";
   import ShapeMatrixDrill from "$lib/shared/shape-matrix/components/ShapeMatrixDrill.svelte";
   import {
@@ -14,6 +16,7 @@
     type MatrixSize,
   } from "$lib/shared/shape-matrix/domain/matrix-size-preset";
   import type { Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
+  import { BREAKPOINTS } from "$lib/shared/device/domain/constants/device-constants";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   const TITLE = "Interactive Shape Matrix | The Kinetic Alphabet";
@@ -30,13 +33,32 @@
     { value: "large", label: "Large · 144" },
   ];
 
-  let size = $state<MatrixSize>("large");
+  // Read once at init (client render, real `window`) so the mobile default
+  // wins on first paint without an SSR/hydration mismatch; the resize effect
+  // below only updates `isMobile` afterward, never re-touches `size` — the
+  // Medium/Large default is an INITIAL value only, never fought once the
+  // visitor picks a size themselves (spec: Phase 3 size-default requirement).
+  let isMobile = $state(
+    typeof window !== "undefined" && window.innerWidth < BREAKPOINTS.MOBILE,
+  );
+  let size = $state<MatrixSize>(isMobile ? "medium" : "large");
   let data = $state<ShapeMatrixData | null>(null);
   let err = $state("");
 
   // Phase 1 wired the tile-click (onselect → route state); Phase 2 renders
-  // the payoff below via ShapeMatrixDrill — the six realizations + hero player.
+  // the payoff via ShapeMatrixDrill; Phase 3 hosts it in a Drawer (bottom
+  // sheet on mobile, right panel on desktop) instead of rendering inline.
   let selectedPair = $state<{ blue: Flower; red: Flower } | null>(null);
+  let drillOpen = $state(false);
+
+  $effect(() => {
+    if (typeof window === "undefined") return;
+    const check = () => {
+      isMobile = window.innerWidth < BREAKPOINTS.MOBILE;
+    };
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  });
 
   const rowAxis = $derived(
     data ? applyFilter(data.axis, matrixFiltersForSize(size).blue, false) : [],
@@ -138,15 +160,32 @@
           {data}
           {rowAxis}
           {colAxis}
-          onselect={(pair) => (selectedPair = pair)}
+          onselect={(pair) => {
+            selectedPair = pair;
+            drillOpen = true;
+          }}
         />
       {/if}
     </div>
-
-    {#if selectedPair && data}
-      <ShapeMatrixDrill pair={selectedPair} {data} />
-    {/if}
   </section>
+</div>
+
+<div style:--drawer-width={isMobile ? "100vw" : "min(640px, 48vw)"}>
+  <Drawer
+    isOpen={drillOpen}
+    placement={isMobile ? "bottom" : "right"}
+    class="shape-matrix-drill-drawer"
+    onOpenChange={(open) => {
+      if (!open) drillOpen = false;
+    }}
+  >
+    <DrawerHeader title="Shape matrix realizations" onClose={() => (drillOpen = false)} />
+    <div class="drill-sheet-content">
+      {#if selectedPair && data}
+        <ShapeMatrixDrill pair={selectedPair} {data} />
+      {/if}
+    </div>
+  </Drawer>
 </div>
 
 <style>
@@ -210,5 +249,32 @@
   }
   .matrix-status.err {
     color: #fb8a8a;
+  }
+
+  /* Drill sheet: fixed height (not max-height), same reasoning as
+     GalleryFilterSheet.svelte — the drill's grid-of-six and hero-player
+     screens differ in intrinsic height, and a content-sized sheet would
+     resize on every crossfade. ShapeMatrixDrill fills this box. */
+  .drill-sheet-content {
+    background: var(--theme-panel-bg);
+    overflow: hidden;
+    height: calc(85dvh - 60px);
+    padding: 0 1rem 1rem;
+  }
+
+  /* Right-placement drawer (desktop) is a full-height 100dvh panel — fill the
+     space under the header instead of the bottom-sheet's 85dvh figure. */
+  :global(.drawer-content[data-placement="right"]) .drill-sheet-content {
+    height: auto;
+    flex: 1;
+    min-height: 0;
+  }
+
+  :global(.shape-matrix-drill-drawer.drawer-content) {
+    --sheet-bg: var(--theme-panel-bg);
+    --sheet-width: var(--drawer-width, min(640px, 48vw));
+    --sheet-max-height: 85dvh;
+    --sheet-border-radius-top-left: 16px;
+    --sheet-border-radius-top-right: 16px;
   }
 </style>

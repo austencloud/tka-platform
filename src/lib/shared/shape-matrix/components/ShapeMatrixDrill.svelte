@@ -25,11 +25,17 @@
   its folder location, not a feature-internal component — so this follows the
   established pattern rather than route-level prop-injection.
 
-  Crossfade: `fill` mode inside `.drill-stage`, a fixed-height box, per
+  Crossfade: `fill` mode inside `.drill-stage`, a reserved box, per
   .claude/rules/crossfade-primitive.md and no-layout-shift.md — the grid and
   the hero player occupy the same reserved box, so neither the size control
   above nor anything below this component moves when a tile is picked or the
   user goes back.
+
+  Phase 3 re-hosts this component inside a Drawer (bottom sheet on mobile,
+  right panel on desktop — see the shape-matrix route). The drawer gives this
+  component a fixed-height flex box to fill (`GalleryFilterSheet` idiom), so
+  `.drill`/`.drill-stage` are flex-filled here rather than sized off `vh`
+  units, which would fight the drawer's own height budget.
 -->
 <script lang="ts">
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
@@ -150,11 +156,19 @@
 </section>
 
 <style>
+  /* Fills whatever height its host gives it. Standalone (pre-Phase-3) usage
+     had `margin-top` and no fixed parent height, relying on `.drill-stage`'s
+     own `vh`-derived height; the Drawer host now provides a fixed-height flex
+     box (GalleryFilterSheet idiom), so this flexes to fill it instead. */
   .drill {
-    margin-top: 1.6rem;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
   }
   .drill-header {
     margin-bottom: 0.8rem;
+    flex-shrink: 0;
   }
   .drill-header h2 {
     font-size: clamp(1.05rem, 1rem + 0.2vw, 1.3rem);
@@ -179,7 +193,8 @@
      control or lineage prose around this section (no-layout-shift.md). */
   .drill-stage {
     position: relative;
-    height: min(64vh, 42rem);
+    flex: 1;
+    min-height: 0;
     border-radius: 16px;
     overflow: hidden;
     border: 1px solid oklch(0.4 0.04 270 / 0.16);
