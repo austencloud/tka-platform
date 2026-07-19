@@ -390,6 +390,14 @@ import { getSyncRoomDiscovery } from "$lib/shared/lan-sync/get-sync-room-discove
     overflow: hidden;
     position: relative;
     background: transparent;
+    /* Edge-to-edge safe area (Android 15+ / iOS notch+cutout): the native
+       WebView draws behind the status bar and camera cutout. On mobile the
+       primary nav is the BOTTOM bar, so the top of the screen is raw module
+       content — reserve the top inset here or that content sits under the
+       cutout. --safe-area-inset-top comes from @capacitor/system-bars; env()
+       is the web/PWA fallback; both resolve to 0 on desktop and on pre-15
+       Android (where StatusBar already reserves the strip), so no double pad. */
+    padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
     transition:
       padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1),
       padding-top 0.2s ease;

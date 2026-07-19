@@ -22,6 +22,17 @@ const config: CapacitorConfig = {
       style: 'DARK',
       backgroundColor: '#0b1d2a'
     },
+    // Android 15+ (targetSdk 36) enforces edge-to-edge: the WebView renders
+    // behind the status bar + camera cutout, and the pre-15 opt-out is gone on
+    // Android 16. The System Bars core plugin (Capacitor 8.3.2+) reads the real
+    // insets from WindowInsetsCompat and injects --safe-area-inset-* CSS vars
+    // (Android WebView <140 returns wrong values for env(safe-area-inset-*), so
+    // the var is the reliable source). The app consumes them via CSS to reserve
+    // the cutout strip. Supersedes StatusBar overlays for edge-to-edge.
+    SystemBars: {
+      style: 'DARK',
+      insetsHandling: 'css'
+    },
     Keyboard: {
       resize: 'none',
       style: 'dark'
