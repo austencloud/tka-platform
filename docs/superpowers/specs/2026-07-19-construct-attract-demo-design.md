@@ -1,6 +1,6 @@
 # Construct Attract Demo — Design
 
-**Date:** 2026-07-19
+**Date:** 2026-07-19 (second pass same day — Austen review of the first build)
 **Status:** Approved direction (brainstormed with Austen; option C locked)
 **Scope:** Rework of the Construct section on the composer five-wings page
 (`src/routes/test/composer-wings/_sections/ConstructSection.svelte`), destined
@@ -33,6 +33,10 @@ clicking, so the demo shows nothing at all.
 
 ## Layout
 
+- **Toolbar strip above the side-by-side view (ADDED, second pass):** Prop
+  picker over the workspace half, Turns picker over the picker half. On the
+  wide layout the toolbar mirrors the demo-body's 2fr/3fr grid so each control
+  sits over the pane it affects; below ~1100px it wraps.
 - **≥ ~1100px:** workspace left, picker right (result reads first LTR; actions
   on the side the ghost taps). Grid split roughly 2fr / 3fr; both panes grow
   with the viewport so the 1680+ tier fills honestly.
@@ -53,11 +57,25 @@ mounts the REAL `WorkspaceGrid`
   `StepCell` renderers.
 - Steps convert via `pictographDataToStepData` (the create-tutorial's own
   converter); `calculateGridLayout(..., { manualColumnCount: 4 })` sizes the
-  grid from the measured pane.
+  grid from the measured pane. **Height clamp (second pass):** the calculator's
+  narrow few-steps branch (<650px container, ≤2 steps) sizes cells by width
+  only (mobile convention — a scroll container absorbs overflow); this demo's
+  frame is fixed-height and must never scroll, so the section caps
+  `cellSize ≤ (frameH − 40) / rows`. This was the "start position needs a
+  scrollbar" bug Austen hit: a 368px cell in a 300px frame.
 - The pane is a fixed-height frame (`.ws-frame`) so the footprint is reserved
   before anything is built — no layout shift (`no-layout-shift.md`).
-- Word line above the grid: "Your sequence · ΦΨ · step 2/4" with
-  `tabular-nums`; word always routed through `simplifyRepeatedWord`.
+- Word line above the grid: "Your sequence · ΦΨ · step 2/8" with
+  `tabular-nums`; word always routed through `simplifyRepeatedWord`. A **Play**
+  button (`data-demo-play`) shares the status row — slot always reserved,
+  visible once ≥1 step exists.
+
+### 8-count building (ADDED, second pass)
+
+Visitors can click up to **8 steps** (`MAX_STEPS = 8`, `STEP_COLUMNS = 4` → two
+clean rows beside the start column). The attract act still builds 4 per cycle
+so cycles stay snappy. Hitting the 8-step cap starts playback automatically;
+before that the Play button flips the section into the play phase.
 
 ### Prop policy (ADDED 2026-07-19, Austen review)
 
@@ -81,13 +99,40 @@ mounts the REAL `WorkspaceGrid`
   gained `bluePropTypeOverride`/`redPropTypeOverride`;
   `applyPoiLegalComposerFilter` gained the optional `propTypes` argument.
 
+### Turns policy (ADDED, second pass)
+
+- The first build silently inherited the user's **sticky Create-tab turns**
+  (`tka-option-picker-pending-turns` in localStorage — OptionPicker's pending
+  turns persist across reloads), which is how Austen saw red=1/blue=0 baked
+  into demo options. Same leak class as the poi prop leak; same fix shape.
+- A compact **Turns picker** (shared `SegmentedControl`, whole turns **0–3**
+  only — the demo deliberately skips half turns) sits in the toolbar over the
+  picker pane and applies to BOTH hands.
+- `OptionPicker` gained `blueTurnsOverride`/`redTurnsOverride` (additive,
+  default-off): an overridden picker uses the pinned turns for option
+  preparation and never reads or writes the sticky localStorage turns.
+
+### Play phase (REVISED, second pass — replaces the done card)
+
+"You built X — build another" was dead information. The build now ends in a
+**play phase**: the picker pane swaps to the real
+`AnimationPlayer` (`sequence-viewer/components/AnimationPlayer.svelte`,
+standalone mode — demo steps carry full motion data so no gallery lookup),
+`autoPlay`, minimal chrome (`showControls={false}`, `hideWordHeader`,
+`tapToToggle`), prop overrides passed through. The player's `onStepChange`
+drives `WorkspaceGrid.selectedStepNumber`, so the workspace highlights the
+currently-playing step (0 = start tile) via the canonical selection mechanism —
+the pictograph row and the animation read as one instrument. "Build another"
+survives as the single button under the player; entering play via the button
+or the 8-step cap are the only two paths.
+
 ### Picker pane
 
 - Unchanged primitives: `StartPositionPicker` (embedded) during `pick-start`,
   `OptionPicker` (`filterPredicate: isType1`, `hideFilters`) during `add-step`.
 - The phase swap now happens **inside the picker pane only**; the workspace
-  stays mounted throughout. Done state replaces the picker pane content with
-  the existing done card ("You built · WORD · Build another").
+  stays mounted throughout. The third phase is the play phase (see §Play
+  phase) — the done card is gone.
 
 ## Attract loop
 
@@ -114,6 +159,17 @@ swaps).
   `click`. The demo therefore taps exactly what a human could tap — validity
   comes from the real engine, and picker refactors can't silently desync a
   scripted path.
+- **Selector gotcha (found in Austen's review, second pass):** the option grid
+  renders `OptionCard` (`data-testid="option-card"`) only on the wide desktop
+  layout; the swipe/fallback layouts render `OptionViewerSection` tiles
+  (`data-testid="option-item"`). The demo pane uses the fallback, so the act's
+  `OPTION_SEL` matches BOTH. Matching only `option-card` was the bug that froze
+  the ghost at step 0 — `waitFor` timed out every cycle and the loop restarted
+  from the start position forever.
+- **Cycle ending (second pass):** after the last step the act presses the
+  section's real Play button (`[data-demo-play]`), hides the ghost, and lets
+  the built sequence animate for `PLAY_MS ≈ 7s` before resetting into the next
+  cycle — every attract cycle ends on the payoff, not a word card.
 - **Timing constants** live at the top of the act module (`STEP_MS ≈ 1600`,
   `DONE_MS ≈ 2500`, ghost travel ≈ 450ms eased). Tune-by-eye values, one
   place.

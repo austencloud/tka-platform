@@ -60,6 +60,11 @@ Delegates all rendering to child components.
      *  emptied by a user's poi setting. */
     bluePropTypeOverride?: PropType;
     redPropTypeOverride?: PropType;
+    /** Explicit pending turns (bypasses the sticky localStorage turns). Same
+     *  bypass convention as the prop overrides: an embedded/demo surface pins
+     *  its own turns so a user's sticky Create-tab turns never leak in. */
+    blueTurnsOverride?: number | "fl";
+    redTurnsOverride?: number | "fl";
   }
 
   const {
@@ -74,6 +79,8 @@ Delegates all rendering to child components.
     hideFilters = false,
     bluePropTypeOverride = undefined,
     redPropTypeOverride = undefined,
+    blueTurnsOverride = undefined,
+    redTurnsOverride = undefined,
   }: Props = $props();
 
   // State
@@ -114,8 +121,15 @@ Delegates all rendering to child components.
   let blueRotation = $state<RotationDirection>(loadedTurns.blueRotation);
   let redRotation = $state<RotationDirection>(loadedTurns.redRotation);
 
+  // An override pins the hand's turns; otherwise the sticky internal state runs.
+  const effectiveBlueTurns = $derived(blueTurnsOverride ?? blueTurns);
+  const effectiveRedTurns = $derived(redTurnsOverride ?? redTurns);
+
   // Persist every change so the picker reopens with the same sticky turns.
+  // Overridden surfaces never write — their pinned turns aren't the user's.
   $effect(() => {
+    if (blueTurnsOverride !== undefined || redTurnsOverride !== undefined)
+      return;
     pendingTurnsPersistence.setupAutoSave({
       blueTurns,
       redTurns,
@@ -151,14 +165,14 @@ Delegates all rendering to child components.
   ): Promise<PreparedPictographData[]> {
     // One tile per option: apply the chosen per-hand spin direction to dash/static
     // hands rather than fanning out CW/CCW tiles (keeps the grid scannable).
-    const noTurns = blueTurns === 0 && redTurns === 0;
+    const noTurns = effectiveBlueTurns === 0 && effectiveRedTurns === 0;
     let turned = noTurns
       ? filtered
       : filtered.map((o) =>
           applyPendingTurnsToOption(
             o,
-            blueTurns,
-            redTurns,
+            effectiveBlueTurns,
+            effectiveRedTurns,
             blueRotation,
             redRotation
           )
@@ -270,9 +284,9 @@ Delegates all rendering to child components.
       return;
     }
 
-    // Track sticky turns + spin directions so a change re-renders the options
-    const _blueTurns = blueTurns;
-    const _redTurns = redTurns;
+    // Track effective turns + spin directions so a change re-renders the options
+    const _blueTurns = effectiveBlueTurns;
+    const _redTurns = effectiveRedTurns;
     const _blueRotation = blueRotation;
     const _redRotation = redRotation;
     void _blueTurns;
@@ -433,8 +447,8 @@ Delegates all rendering to child components.
     {currentSequence}
     onSlotClicked={handleSlotClicked}
     lastClickedSlot={pickerState?.lastClickedSlot ?? null}
-    {blueTurns}
-    {redTurns}
+    blueTurns={effectiveBlueTurns}
+    redTurns={effectiveRedTurns}
     {blueRotation}
     {redRotation}
     onBlueTurnsChange={handleBlueTurnsChange}

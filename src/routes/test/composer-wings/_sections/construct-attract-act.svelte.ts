@@ -16,7 +16,15 @@
 
 const START_SEL =
   '[data-testid="start-position-picker"] .pictograph-container[role="button"]';
-const OPTION_SEL = '[data-testid="option-card"]';
+// The option grid renders OptionCard ("option-card") on the wide desktop layout
+// and OptionViewerSection tiles ("option-item") on the swipe/fallback layouts —
+// the demo pane uses the fallback, so the act must match BOTH. (Matching only
+// option-card was the bug that froze the act at step 0: waitFor timed out every
+// cycle and the loop restarted from the start position forever.)
+const OPTION_SEL = '[data-testid="option-card"], [data-testid="option-item"]';
+// The section's own Play button — the act presses it after the last step so
+// every attract cycle ends on the real payoff: the sequence animating.
+const PLAY_SEL = "[data-demo-play]";
 
 export interface GhostState {
   x: number;
@@ -47,12 +55,15 @@ export function createConstructAttractAct(opts: {
   stepMs?: number;
   doneMs?: number;
   travelMs?: number;
+  playMs?: number;
 }): ConstructAttractAct {
   // Tune-by-eye pacing, one place (spec §Attract loop).
   const STEP_MS = opts.stepMs ?? 1600;
   const DONE_MS = opts.doneMs ?? 2500;
   const TRAVEL_MS = opts.travelMs ?? 450;
   const PRESS_MS = 140;
+  // How long the act lets the built sequence animate before the next cycle.
+  const PLAY_MS = opts.playMs ?? 7000;
 
   const ghost = $state<GhostState>({ x: 0, y: 0, pressed: false, visible: false });
 
@@ -131,8 +142,14 @@ export function createConstructAttractAct(opts: {
       await moveAndPress(pick(options));
     }
 
-    // Word-emphasis moment: the section's done card is showing.
-    await sleep(DONE_MS);
+    // The payoff: press Play, then get out of the way while the built
+    // sequence animates and the workspace highlight walks the steps.
+    await sleep(DONE_MS / 2);
+    const play = await waitFor(PLAY_SEL, 4000);
+    if (!play.length || dead) return;
+    await moveAndPress(play[0]!);
+    ghost.visible = false;
+    await sleep(PLAY_MS);
   }
 
   function start(): void {
