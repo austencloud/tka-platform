@@ -34,6 +34,7 @@ import { createSpellModeState } from "$lib/features/create/generate/state/spell-
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { UIGenerationConfig } from "$lib/shared/create/utils/config-mapper";
+import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
 
 function makeConfig(overrides: Partial<UIGenerationConfig> = {}): UIGenerationConfig {
   return {
@@ -97,8 +98,11 @@ describe("onSpellGenerate — truncation toast (mirrors onGenerateClicked)", () 
 
     await actions.onSpellGenerate();
 
+    // Centralized copy (auth-nudge-trigger.ts) — the hand-rolled "Capped to 8
+    // beats. Sign up free for up to 64." duplicate was consolidated onto
+    // AUTH_NUDGE_TEXTS["beat-cap-guest"] (2026-07-18 nudge-copy spec).
     expect(toastInfoSpy).toHaveBeenCalledWith(
-      "Capped to 8 beats. Sign up free for up to 64.",
+      AUTH_NUDGE_TEXTS["beat-cap-guest"],
       5000,
     );
     expect(actions.lastGeneratedSequence?.steps.length).toBe(8);

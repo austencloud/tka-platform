@@ -38,6 +38,7 @@ import { guestLoopGate } from "$lib/shared/create/services/loop-guest-gate";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
 import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
@@ -187,7 +188,9 @@ export function createGenerationActionsState(
         // free-account nudge for the full 64-beat cap; signed-in users are
         // already at the 64 ceiling, so it's a neutral note with no upsell.
         if (tier === "guest") {
-          toast.info("Capped to 8 beats. Sign up free for up to 64.", 5000);
+          // Centralized copy (auth-nudge-trigger.ts) - same wording as the
+          // beat-cap nudge shown elsewhere, not a local duplicate.
+          toast.info(AUTH_NUDGE_TEXTS["beat-cap-guest"], 5000);
         } else {
           toast.info("Capped to 64 beats.", 5000);
         }
@@ -458,7 +461,9 @@ export function createGenerationActionsState(
         // already at the 64 ceiling, so it's a neutral note with no upsell.
         // Mirrors the identical block in onGenerateClicked above.
         if (spellTier === "guest") {
-          toast.info("Capped to 8 beats. Sign up free for up to 64.", 5000);
+          // Centralized copy (auth-nudge-trigger.ts) - same wording as the
+          // beat-cap nudge shown elsewhere, not a local duplicate.
+          toast.info(AUTH_NUDGE_TEXTS["beat-cap-guest"], 5000);
         } else {
           toast.info("Capped to 64 beats.", 5000);
         }

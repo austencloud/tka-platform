@@ -32,6 +32,7 @@ import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { isFullAccountUser } from "$lib/shared/auth/domain/access-tier";
 import { ensureGuestIdentity } from "$lib/shared/auth/services/guest-identity";
 import { GUEST_SAVE_CAP } from "$lib/shared/auth/domain/guest-access-config";
+import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
 import { openAuthDialog } from "$lib/shared/auth/state/auth-ui-state.svelte";
 import type { Sharer } from "../../../shared/share/services/sharer";
 import type { R2VideoUploader } from "../../../shared/share/services/r2-video-uploader";
@@ -136,10 +137,9 @@ export class LibrarySaveService {
       if (!alreadySaved) {
         const guestCount = await db.sequences.count();
         if (guestCount >= GUEST_SAVE_CAP) {
-          toast.info(
-            `Guests can save ${GUEST_SAVE_CAP}. Create a free account to save more.`,
-            6000
-          );
+          // Centralized copy (auth-nudge-trigger.ts) instead of a local
+          // duplicate - one source for the "guest hit the save cap" wording.
+          toast.info(AUTH_NUDGE_TEXTS.save, 6000);
           openAuthDialog();
           throw new LibraryError(
             `Guest save limit reached (${GUEST_SAVE_CAP}).`,

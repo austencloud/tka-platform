@@ -15,6 +15,7 @@
 import type { LOOPSpecWire } from "@tka/sequence-engine/loop";
 import { LOOPType, ROTATED_LOOP_TYPES } from "$lib/shared/foundation/domain/models/generation/circular-models";
 import { expanderMultiplier, specHasExpandInversion } from "./loop-type-utils";
+import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
 
 export type GuestLoopLock =
   | { locked: false }
@@ -46,7 +47,11 @@ export function guestLoopGate(
     return {
       locked: true,
       kind: "category",
-      reason: "Rotated LOOPs are free. Sign up to unlock mirrored, flipped, swapped, and inverted LOOPs.",
+      // Pulled from the centralized nudge copy (auth-nudge-trigger.ts) rather
+      // than a local duplicate, so the gloss on "Rotated LOOPs" lives in one
+      // place. This is the ONLY reason string wired to trigger="loop-locked-guest",
+      // so the value here IS what the guest sees, not a fallback.
+      reason: AUTH_NUDGE_TEXTS["loop-locked-guest"],
     };
   }
 
@@ -56,7 +61,7 @@ export function guestLoopGate(
       return {
         locked: true,
         kind: "length",
-        reason: `This LOOP needs at least ${min} beats. Guests cap at ${maxLength} — sign up free for up to 64.`,
+        reason: `This LOOP needs at least ${min} beats. Guests cap at ${maxLength}. Create a free account for up to 64 beats.`,
       };
     }
   }

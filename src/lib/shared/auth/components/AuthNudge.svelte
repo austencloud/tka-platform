@@ -14,7 +14,7 @@
   let { trigger, text: textOverride, onCreateAccount, onLogin, onDismiss }: Props = $props();
 
   const text = $derived(textOverride ?? AUTH_NUDGE_TEXTS[trigger]);
-  const buttonText = "Create Account - free";
+  const buttonText = "Create account";
 </script>
 
 <div class="auth-nudge" role="alert">
