@@ -4,12 +4,26 @@
  * Thin wrapper preserving `use:tilt` syntax while delegating to the shared package.
  */
 
-import { attachTiltEffect } from "@austencloud/backgrounds/card";
 import type { TiltEffectOptions } from "@austencloud/backgrounds/card";
 
 export type TiltOptions = TiltEffectOptions;
 
+// The /card barrel defines a Custom Element (extends HTMLElement) at module
+// scope, so it can only be evaluated in the browser. Actions run client-side
+// only, so a dynamic import here keeps the barrel out of the SSR module graph.
 export function tilt(node: HTMLElement, options: TiltOptions = {}) {
-	const handle = attachTiltEffect(node, options);
-	return { destroy: handle.destroy };
+	let destroyed = false;
+	let destroyHandle: (() => void) | undefined;
+
+	import("@austencloud/backgrounds/card").then(({ attachTiltEffect }) => {
+		if (destroyed) return;
+		destroyHandle = attachTiltEffect(node, options).destroy;
+	});
+
+	return {
+		destroy() {
+			destroyed = true;
+			destroyHandle?.();
+		},
+	};
 }
