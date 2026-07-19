@@ -3,6 +3,8 @@
   import { flowerKey, flowerLabel, type Flower } from "../domain/flower-signature";
   import { renderCell, renderHeader } from "../services/shape-matrix-render";
 
+  type CellVerdict = "legal" | "illegal" | "unsure";
+
   interface Props {
     data: ShapeMatrixData;
     /** Blue flowers to show as rows (already filtered). */
@@ -12,8 +14,19 @@
     /** Upper bound on a cell's edge; the actual size shrinks to fit the viewport. */
     maxCellPx?: number;
     onselect: (pair: { blue: Flower; red: Flower }) => void;
+    /** Alternative cell/header painter (e.g. the poi trail painter). Defaults to the club-style painter. */
+    painter?: {
+      cell: typeof renderCell;
+      header: typeof renderHeader;
+    };
+    /** Per-cell verdict tint (poi-legality curation). Null/undefined = no tint. */
+    overlayFor?: (blue: Flower, red: Flower) => CellVerdict | null | undefined;
+    /** Cells to de-emphasize (e.g. already-judged cells in a curation focus view). */
+    dimFor?: (blue: Flower, red: Flower) => boolean;
   }
-  let { data, rowAxis, colAxis, maxCellPx = 100, onselect }: Props = $props();
+  let { data, rowAxis, colAxis, maxCellPx = 100, onselect, painter, overlayFor, dimFor }: Props = $props();
+  const paintCell = painter?.cell ?? renderCell;
+  const paintHeader = painter?.header ?? renderHeader;
 
   // Measured viewport of the scroll container.
   let wrapW = $state(0);
@@ -35,14 +48,14 @@
   const RENDER_PX = 128;
 
   const headerSrc = (f: Flower, hand: "blue" | "red") =>
-    renderHeader((hand === "blue" ? data.blue : data.red).get(flowerKey(f))!, hand, RENDER_PX, data.clubTipDx);
+    paintHeader((hand === "blue" ? data.blue : data.red).get(flowerKey(f))!, hand, RENDER_PX, data.clubTipDx);
 
   const cellCache = new Map<string, string>();
   function cellSrc(b: Flower, r: Flower): string {
     const k = `${flowerKey(b)}__${flowerKey(r)}`;
     let url = cellCache.get(k);
     if (!url) {
-      url = renderCell(data.blue.get(flowerKey(b))!, data.red.get(flowerKey(r))!, RENDER_PX, data.clubTipDx);
+      url = paintCell(data.blue.get(flowerKey(b))!, data.red.get(flowerKey(r))!, RENDER_PX, data.clubTipDx);
       cellCache.set(k, url);
     }
     return url;
@@ -90,11 +103,16 @@
             </th>
             {#each colAxis as rf (flowerKey(rf))}
               {@const key = `${flowerKey(bf)}__${flowerKey(rf)}`}
+              {@const verdict = overlayFor?.(bf, rf) ?? null}
               <td class="cell-td">
                 <button
                   type="button"
                   class="cell"
                   class:sel={sel === key}
+                  class:v-legal={verdict === "legal"}
+                  class:v-illegal={verdict === "illegal"}
+                  class:v-unsure={verdict === "unsure"}
+                  class:dim={dimFor?.(bf, rf) ?? false}
                   use:watch={key}
                   aria-label={`blue ${flowerLabel(bf)} over red ${flowerLabel(rf)}`}
                   onclick={() => {
@@ -217,6 +235,23 @@
     width: 100%;
     height: 100%;
     display: block;
+  }
+
+  /* Verdict tints: inset ring + wash, so the cell box never changes size. */
+  .cell.v-legal {
+    box-shadow: inset 0 0 0 2px rgba(74, 222, 128, 0.85);
+    background: rgba(74, 222, 128, 0.12);
+  }
+  .cell.v-illegal {
+    box-shadow: inset 0 0 0 2px rgba(248, 113, 113, 0.85);
+    background: rgba(248, 113, 113, 0.14);
+  }
+  .cell.v-unsure {
+    box-shadow: inset 0 0 0 2px rgba(250, 204, 21, 0.8);
+    background: rgba(250, 204, 21, 0.1);
+  }
+  .cell.dim {
+    opacity: 0.25;
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -21,6 +21,7 @@ import each symbol from its module path directly.
 | `MODE_ORDER`, `MODE_LABEL`, `VtgMode` | `$lib/shared/shape-matrix/services/shape-matrix-realizations` |
 | `verifyAndCorrect`, `ParityResult` | `$lib/shared/shape-matrix/services/verify-realization-parity` |
 | `renderCell`, `renderHeader` | `$lib/shared/shape-matrix/services/shape-matrix-render` |
+| `renderPoiCell`, `renderPoiHeader` (poi light-trail painter; same signatures, swap via the grid's `painter` prop) | `$lib/shared/shape-matrix/services/shape-matrix-poi-render` |
 | `Flower`, `flowerKey`, `flowerLabel`, `buildFlowerAxis`, `ratioLabel`, `flowerTurnPattern` | `$lib/shared/shape-matrix/domain/flower-signature` |
 
 ## Known lab-side dependencies (not extracted)
