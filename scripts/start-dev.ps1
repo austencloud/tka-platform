@@ -44,6 +44,29 @@ function Wait-ForOrigin {
     return $false
 }
 
+# Stop-Process on the cmd wrapper leaves the pnpm/node grandchildren alive
+# (it is not a tree kill), and an orphaned vite holding :5173 pushes the next
+# boot to :5174 because `pnpm run dev` has no --strictPort — which silently
+# breaks the tunnel and every localhost:5173 consumer. taskkill /T takes the
+# whole tree down.
+function Stop-ProcessTree($processId) {
+    if ($processId) {
+        & taskkill.exe /PID $processId /T /F 2>$null | Out-Null
+    }
+}
+
+# Pre-boot sweep: anything already listening on :5173 is a stale server from a
+# previous run — tree-kill it so this boot owns the port.
+function Clear-Port5173 {
+    $owners = Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAction SilentlyContinue |
+        Select-Object -ExpandProperty OwningProcess -Unique
+    foreach ($ownerPid in $owners) {
+        Write-Status "Port 5173 held by PID $ownerPid - killing its process tree."
+        Stop-ProcessTree $ownerPid
+    }
+    if ($owners) { Start-Sleep -Seconds 2 }
+}
+
 # Main execution
 Write-Line ""
 Write-Line "========================================"
@@ -74,6 +97,7 @@ $tunnelProc = $null
 # into this console and keeps node in this process tree, so console Ctrl+C and
 # VS Code "terminate" both reach it. WorkingDirectory is the repo root.
 $repoRoot = Split-Path -Parent $PSScriptRoot
+Clear-Port5173
 Write-Status "Starting Vite dev server..."
 Write-Line ""
 $viteProc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c", "pnpm run dev" `
@@ -124,9 +148,9 @@ try {
 } finally {
     Write-Status "Shutting down..."
     if ($tunnelProc -and -not $tunnelProc.HasExited) {
-        Stop-Process -Id $tunnelProc.Id -Force -ErrorAction SilentlyContinue
+        Stop-ProcessTree $tunnelProc.Id
     }
     if ($viteProc -and -not $viteProc.HasExited) {
-        Stop-Process -Id $viteProc.Id -Force -ErrorAction SilentlyContinue
+        Stop-ProcessTree $viteProc.Id
     }
 }
