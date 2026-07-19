@@ -23,6 +23,7 @@
     type TabIntroPage,
   } from "../config/tab-intro-content";
   import { safeLocalStorageSetItem } from "$lib/shared/foundation/services/storage-manager";
+  import { FocusTrap } from "$lib/shared/foundation/ui/drawer/focus-trap";
 
   interface Props {
     moduleId: string;
@@ -56,6 +57,7 @@
   let hapticService: HapticFeedback | null = $state(null);
   let currentPageIndex = $state(0);
   let entranceTimer: ReturnType<typeof setTimeout> | null = null;
+  let overlayEl = $state<HTMLDivElement | null>(null);
 
   // Derived
   const currentPage = $derived(pages[currentPageIndex]);
@@ -96,6 +98,32 @@
       clearTimeout(entranceTimer);
       entranceTimer = null;
     }
+  });
+
+  // Reduced-motion gate for the entrance/page transitions below. Reactive
+  // (not computed once) so DevTools emulation mid-session is honored — CSS
+  // media queries can't cancel Svelte `transition:` directives, only their
+  // params can. Matches SequenceViewerShell.svelte / FeedbackTextarea.svelte.
+  let prefersReducedMotion = $state(false);
+  onMount(() => {
+    const mq = matchMedia("(prefers-reduced-motion: reduce)");
+    prefersReducedMotion = mq.matches;
+    const onReduceChange = () => (prefersReducedMotion = mq.matches);
+    mq.addEventListener("change", onReduceChange);
+    return () => mq.removeEventListener("change", onReduceChange);
+  });
+
+  // Trap focus inside the overlay while it's open: focus moves in on open,
+  // Tab is trapped, everything else goes inert (default exclusions — the
+  // overlay itself offsets around the desktop sidebar so it stays visible
+  // and usable, matching Drawer's default), and focus returns to the
+  // trigger on close.
+  const focusTrap = new FocusTrap({ focusContainerOnInitial: true });
+
+  $effect(() => {
+    if (!overlayEl) return;
+    focusTrap.activate(overlayEl);
+    return () => focusTrap.deactivate();
   });
 
   function dismiss() {
@@ -151,15 +179,41 @@
   }
 </script>
 
+{#snippet pageBody(page: TabIntroPage)}
+  {#if isStructuredContent(page.content)}
+    <!-- Structured content with optional intro text and bullet points -->
+    {#if page.content.text}
+      <p class="intro-lead">{page.content.text}</p>
+    {/if}
+    <ul class="intro-points">
+      {#each page.content.points as point}
+        <li>{point}</li>
+      {/each}
+    </ul>
+  {:else}
+    <!-- Simple string content -->
+    <p class="intro-description">{page.content}</p>
+  {/if}
+
+  <!-- Tip (if present) -->
+  {#if page.tip}
+    <div class="intro-tip">
+      <i class="fas fa-lightbulb" aria-hidden="true"></i>
+      <span>{page.tip}</span>
+    </div>
+  {/if}
+{/snippet}
+
 {#if isVisible && hasContent}
   <!-- Full-screen takeover - offset by sidebar width for proper centering -->
   <div
     class="tab-intro-overlay"
+    bind:this={overlayEl}
     role="dialog"
     aria-modal="true"
     aria-labelledby="tab-intro-title"
     style="--sidebar-offset: {sidebarOffset}px; --accent-color: {color};"
-    transition:fade={{ duration: 250 }}
+    transition:fade={{ duration: prefersReducedMotion ? 0 : 250 }}
   >
     <!-- Dismiss on background click -->
     <button
@@ -172,7 +226,11 @@
     <!-- Content container -->
     <div
       class="intro-content"
-      transition:fly={{ y: 30, duration: 350, delay: 50 }}
+      transition:fly={{
+        y: prefersReducedMotion ? 0 : 30,
+        duration: prefersReducedMotion ? 0 : 350,
+        delay: prefersReducedMotion ? 0 : 50,
+      }}
     >
       <!-- Icon - large and prominent -->
       <div class="intro-icon">
@@ -184,34 +242,32 @@
         {currentPage?.heading ?? title}
       </h1>
 
-      <!-- Page content -->
+      <!-- Page content. Ghost-sizer (ADR no-layout-shift.md #1): every page's
+           body is stacked invisibly in one grid cell so the wrap reserves the
+           TALLEST page's height permanently, not just during the transition
+           — a future 2-page config with differing bullet counts can't shove
+           the dots/action button below it. -->
       {#if currentPage}
-        {#key currentPageIndex}
-          <div class="intro-body" transition:fly={{ x: 20, duration: 200 }}>
-            {#if isStructuredContent(currentPage.content)}
-              <!-- Structured content with optional intro text and bullet points -->
-              {#if currentPage.content.text}
-                <p class="intro-lead">{currentPage.content.text}</p>
-              {/if}
-              <ul class="intro-points">
-                {#each currentPage.content.points as point}
-                  <li>{point}</li>
-                {/each}
-              </ul>
-            {:else}
-              <!-- Simple string content -->
-              <p class="intro-description">{currentPage.content}</p>
-            {/if}
-
-            <!-- Tip (if present) -->
-            {#if currentPage.tip}
-              <div class="intro-tip">
-                <i class="fas fa-lightbulb" aria-hidden="true"></i>
-                <span>{currentPage.tip}</span>
+        <div class="intro-body-wrap">
+          <div class="intro-body-sizer" aria-hidden="true">
+            {#each pages as page, index (index)}
+              <div class="intro-body">
+                {@render pageBody(page)}
               </div>
-            {/if}
+            {/each}
           </div>
-        {/key}
+          {#key currentPageIndex}
+            <div
+              class="intro-body intro-body-live"
+              transition:fly={{
+                x: prefersReducedMotion ? 0 : 20,
+                duration: prefersReducedMotion ? 0 : 200,
+              }}
+            >
+              {@render pageBody(currentPage)}
+            </div>
+          {/key}
+        </div>
       {/if}
 
       <!-- Pagination dots (for multi-page) -->
@@ -271,6 +327,15 @@
     cursor: pointer;
   }
 
+  /* Programmatic focus target (tabindex=-1, set implicitly by FocusTrap) —
+     the overlay is the dialog root, not an interactive control, so suppress
+     the focus ring the global `:focus-visible` rule would otherwise draw
+     around the whole takeover. Matches Drawer.svelte. */
+  .tab-intro-overlay:focus,
+  .tab-intro-overlay:focus-visible {
+    outline: none;
+  }
+
   .intro-content {
     position: relative;
     z-index: 1;
@@ -305,13 +370,38 @@
     color: white;
   }
 
+  /* Ghost-sizer stack: wrap sizes to the tallest page (sizer's own grid-stack
+     of every page, below), the live transitioning page overlays it in the
+     same cell. Neither the dots nor the action button below ever jump when
+     the active page's content is shorter than another page's. */
+  .intro-body-wrap {
+    position: relative;
+    display: grid;
+    margin-bottom: 24px;
+    max-width: 400px;
+    width: 100%;
+  }
+
+  .intro-body-wrap > .intro-body-sizer,
+  .intro-body-wrap > .intro-body-live {
+    grid-area: 1 / 1;
+  }
+
+  .intro-body-sizer {
+    display: grid;
+    visibility: hidden;
+  }
+
+  .intro-body-sizer > .intro-body {
+    grid-area: 1 / 1;
+  }
+
   .intro-body {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 16px;
-    margin-bottom: 24px;
-    max-width: 400px;
+    width: 100%;
   }
 
   .intro-lead {
@@ -384,26 +474,38 @@
 
   .pagination-dots {
     display: flex;
-    gap: 8px;
+    gap: 4px;
     margin-bottom: 24px;
   }
 
+  /* 24px hit area (2.5.8 floor) around an 8px visible dot, via a centered
+     ::before pseudo-element — the dot itself stays visually 8px. */
   .dot {
-    width: 8px;
-    height: 8px;
+    width: 24px;
+    height: 24px;
     padding: 0;
     border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dot::before {
+    content: "";
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
-    cursor: pointer;
     transition: all var(--duration-normal) ease;
   }
 
-  .dot:hover {
+  .dot:hover::before {
     background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.4));
   }
 
-  .dot.active {
+  .dot.active::before {
     background: var(--accent-color);
     box-shadow: 0 0 8px color-mix(in srgb, var(--accent-color) 60%, transparent);
   }
@@ -451,7 +553,7 @@
   @media (prefers-reduced-motion: reduce) {
     .intro-action,
     .intro-action i,
-    .dot,
+    .dot::before,
     .intro-body {
       transition: none;
     }
@@ -479,7 +581,7 @@
       margin-bottom: 24px;
     }
 
-    .intro-body {
+    .intro-body-wrap {
       margin-bottom: 32px;
       max-width: 440px;
     }
