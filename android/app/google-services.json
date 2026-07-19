@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "664225703033",
+    "firebase_url": "https://the-kinetic-alphabet-default-rtdb.firebaseio.com",
+    "project_id": "the-kinetic-alphabet",
+    "storage_bucket": "the-kinetic-alphabet.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:664225703033:android:1f68146814735f2cf760a8",
+        "android_client_info": {
+          "package_name": "com.tkaflowarts.composer"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "664225703033-1dca8nn31ej2racrdalkqlbf03d8fsko.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tkaflowarts.composer",
+            "certificate_hash": "fedbed7a4458261a8281b73bf22ff135b3fde814"
+          }
+        },
+        {
+          "client_id": "664225703033-vkueh7kq400kr63ml7drlr7bppp98pjq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA94pV8ZYZSsAgeusiin4vnjLb4fEON6uE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "664225703033-cl5fen7qfo2p7jdqm15qgurk5i870d0o.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -33,6 +33,16 @@ const config: CapacitorConfig = {
       style: 'DARK',
       insetsHandling: 'css'
     },
+    // Native Google (and future social) sign-in. In the WebView, Firebase's
+    // signInWithPopup falls back to a redirect through the auth handler domain
+    // and loses sessionStorage ("auth/missing-initial-state"), hanging on
+    // "Signing in…". This plugin uses the native Google SDK to return an ID
+    // token; skipNativeAuth keeps the JS Firebase SDK authoritative (the rest of
+    // the app relies on it) — we sign it in with signInWithCredential.
+    FirebaseAuthentication: {
+      skipNativeAuth: true,
+      providers: ['google.com']
+    },
     Keyboard: {
       resize: 'none',
       style: 'dark'

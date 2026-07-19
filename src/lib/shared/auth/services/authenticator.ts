@@ -68,6 +68,25 @@ export async function signInWithGoogle(): Promise<void> {
     await signInWithDesktopOAuth();
     return;
   }
+
+  // Native (Capacitor iOS/Android): signInWithPopup falls back to the WebView
+  // redirect flow, which loses sessionStorage across the auth-handler redirect
+  // (Firebase "auth/missing-initial-state") and hangs forever on "Signing in…".
+  // Use the native Google SDK to obtain an ID token, then sign the JS SDK in
+  // with the credential. skipNativeAuth (capacitor.config) keeps the JS Firebase
+  // SDK authoritative, matching every other auth path in the app.
+  const { isNative } = await import("$lib/shared/platform/services/platform-detector");
+  if (isNative()) {
+    const { FirebaseAuthentication } = await import("@capacitor-firebase/authentication");
+    const result = await FirebaseAuthentication.signInWithGoogle();
+    const idToken = result.credential?.idToken;
+    if (!idToken) {
+      throw new Error("Native Google sign-in did not return an ID token");
+    }
+    await signInWithGoogleCredential(idToken);
+    return;
+  }
+
   // getAuthInstance(), not the static `auth`: after an HMR app rotation the
   // static export can be bound to a terminated app, which signInWithPopup
   // rejects deep inside with auth/argument-error.
