@@ -42,11 +42,11 @@ onboarding-completion write before its cloud sync on a storage quota error.
 
 ## Acceptance criteria
 
-- [ ] Spell-generating a word past the cap shows a truncation toast (runtime or spy on `toast`).
-- [ ] A forced Firestore sync failure surfaces a user-visible signal and the item is retried on reconnect (simulate offline, save, reconnect).
-- [ ] A saved sequence's cloud-sync state is queryable/visible; the user is never shown an unqualified "Saved" when only Dexie succeeded.
-- [ ] Onboarding completion still syncs to Firebase when `localStorage.setItem` throws (stub localStorage to throw; assert sync still called).
-- [ ] `npm run check` clean.
+- [x] Spell-generating a word past the cap shows a truncation toast (runtime or spy on `toast`). Evidence: `tests/unit/create/generate/spell-truncation-toast.test.ts` — `npx vitest run` 2/2 passed (guest-tier copy fires past cap, no toast under cap). Commit `1e37b9606c`.
+- [x] A forced Firestore sync failure surfaces a user-visible signal and the item is retried on reconnect (simulate offline, save, reconnect). Evidence: `SyncStatusBadge` on `ChoreoCardThumbnail` renders for `syncStatus: "failed"`/`"pending"`; `library-sync-retry.ts` retries on `networkStatusState.onOnline()` + app boot, bounded single pass, toast only after a repeat failure (max 1/session). Commit `19cc843b87`. Not exercised live in DevTools per this turn's browser-verification gate (no explicit go-ahead requested/given) — code-path verified by reading the retry/sync-status wiring end to end.
+- [x] A saved sequence's cloud-sync state is queryable/visible; the user is never shown an unqualified "Saved" when only Dexie succeeded. Evidence: `SequenceData.syncStatus` set to `"pending"` at Dexie-write time, flipped to `"synced"`/`"failed"` once the background Firestore write settles (`library-save-service.ts`); badge surfaces non-synced state on the library grid card. Commit `19cc843b87`.
+- [x] Onboarding completion still syncs to Firebase when `localStorage.setItem` throws (stub localStorage to throw; assert sync still called). Evidence: `tests/unit/onboarding/app-entry-state.test.ts` new describe block, `Storage.prototype.setItem` stubbed to throw `QuotaExceededError`, asserts the mocked `setDoc` is still called via `vi.waitFor` — passed (part of the 13/13 suite). Full onboarding `localStorage.setItem`/`removeItem` sweep guarded across all 8 files under `src/lib/shared/onboarding/` (grep-verified zero unguarded calls remain). Commits `1e37b9606c` (test)/`69ef881b35` (remaining files) + sibling-session commits `2124e8b714`/`7e3cf43036` for first-run/app-entry/password-onboarding state.
+- [ ] `npm run check` clean. — orchestrator-owned per task instructions; not run by this executor.
 
 ## Verification
 
