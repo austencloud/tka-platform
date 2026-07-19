@@ -9,6 +9,7 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { onMount } from "svelte";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import { FocusTrap } from "$lib/shared/foundation/ui/drawer/focus-trap";
 
   interface Props {
     onAccept: () => void;
@@ -29,10 +30,23 @@
     }
     requestAnimationFrame(() => {
       animateIn = true;
-      // Move focus into the dialog so screen readers announce it and
-      // keyboard users start inside the prompt.
-      cardEl?.focus();
     });
+  });
+
+  // Trap focus inside the prompt while it's open: focus moves to the card on
+  // open (same target the old manual `cardEl?.focus()` used), Tab is trapped
+  // within, everything else goes inert, and focus returns to the trigger on
+  // close. Matches ErrorModal's top-level-modal wiring (empty inertExclusions
+  // — this is a full blocking prompt, not a panel beside persistent chrome).
+  const focusTrap = new FocusTrap({
+    focusContainerOnInitial: true,
+    inertExclusions: [],
+  });
+
+  $effect(() => {
+    if (!cardEl) return;
+    focusTrap.activate(cardEl);
+    return () => focusTrap.deactivate();
   });
 
   function handleAccept() {
