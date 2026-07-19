@@ -3,7 +3,7 @@
   import demoJson from "$lib/shared/landing/data/demo-sequence.json";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
-  const demoSequence = demoJson as SequenceData;
+  const demoSequence = demoJson as unknown as SequenceData;
 
   const indexEntries = [
     { number: "01", href: "#reading-notation", label: "Notation" },
