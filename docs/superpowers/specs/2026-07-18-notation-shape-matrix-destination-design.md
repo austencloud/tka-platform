@@ -232,14 +232,43 @@ The ledger survives compaction; conversation context does not. Mark `- [x]` done
 
 ### Phase 1 — Destination route with live matrix and size control
 
-- [ ] Create `/notation/shape-matrix` with the live `ShapeMatrixGrid` at Large.
-- [ ] Size control as `SegmentedControl` (S/M/L) mapping to cumulative ratio
-      bands (16 / 64 / 144 tiles).
-- [ ] Axis labels and lineage credit (Lorq 2012, Baudin VTG:153 as further
-      reading).
-- [ ] Breadcrumb back to `/notation`; sitemap entry.
-- [ ] Verify: page renders each size correctly (screenshot per size), tile click
-      logs the selected pair (runtime query), no layout shift on size change.
+- [x] Pre-step: closed Phase 0's loose end for `build-realization-sequence.ts`
+      (`loadBaseIndex`/`resolveBase`) — moved via `git mv` into
+      `src/lib/shared/shape-matrix/services/` (it had no lab-only dependency).
+      `resolve-rotation-style-matrices.ts` and `build-flower-sequence.ts` stay
+      in `features/lab/vtg-lab/services/` — each pulls in lab-only domain
+      modules (`classify-rotation-style.ts`, `tnd-turn-patterns.ts`,
+      `prepare-mandala-club-sequence.ts`) shared with other genuinely
+      lab-only consumers (`bake-mandala-clips.ts`,
+      `render-mandala-overlay-layer.ts`, `resolve-tnd-family-cards.ts`).
+      Documented as a deliberate divergence in `shape-matrix/README.md`.
+      Contract test extended with an allowlist assertion covering exactly
+      the two remaining documented lab-import lines; commit `5c9f4b0d4a`.
+- [x] Create `/notation/shape-matrix` with the live `ShapeMatrixGrid` at Large.
+      — `src/routes/(public)/notation/shape-matrix/+page.svelte`, commit
+      `0af3abac6f`.
+- [x] Size control as `SegmentedControl` (S/M/L) mapping to cumulative ratio
+      bands (16 / 64 / 144 tiles) via `matrixFiltersForSize`.
+- [x] Axis labels and lineage credit (Lorq 2012, reusing `/notation`'s
+      existing framing verbatim; Ben Drexler's VTG:153 explainer as further
+      reading, same URL already used on `/notation`).
+- [x] Breadcrumb back to `/notation` (JSON-LD BreadcrumbList + visible
+      `.back-link`, matching the `/notation/staves` idiom); sitemap entry
+      added (`src/routes/sitemap.xml/+server.ts`). Dual-registry check: both
+      `MARKETING_EXACT`/`MARKETING_SUBTREES` (`src/routes/+layout.svelte`)
+      and `PUBLIC_PATH_PREFIXES` (`src/config/domains.ts`) already
+      `startsWith`-match on `/notation`, confirmed by reading both files —
+      no edit needed, nested route already covered.
+- [~] Verify: page renders each size correctly (screenshot per size), tile
+      click logs the selected pair (runtime query), no layout shift on size
+      change — pending browser check (no DevTools permission sought this
+      turn; verified statically instead: `matrixFiltersForSize`/`applyFilter`
+      wiring matches the working lab harness at `/test/shape-matrix`, the
+      contract test suite passes (4/4), and the matrix stage uses a fixed
+      `height: min(78vh, 60rem)` box so the size control cannot resize the
+      stage). Ask Austen to open
+      [localhost:5173/notation/shape-matrix](https://localhost:5173/notation/shape-matrix),
+      click through Small/Medium/Large, click a tile, and confirm no jump.
 
 ### Phase 2 — Drill and hero animation (the payoff)
 
