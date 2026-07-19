@@ -40,6 +40,7 @@ import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-t
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
+import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import { orientationCycleExtender } from "$lib/features/create/generate/circular/services/orientation-cycle-extender";
 import { generateCircularExactLength } from "$lib/features/create/generate/circular/services/exact-length-loop-generator";
@@ -213,6 +214,17 @@ export function createGenerationActionsState(
       lastGeneratedConfig = currentConfig ? { ...currentConfig } : null;
       await updateWorkbenchWithSequence(generatedSequence);
       void getPropUnlockManager().recordCreation("generate");
+
+      // Log successful AI generation for analytics (non-critical)
+      try {
+        void logSequenceAction("generate", generatedSequence.id, {
+          sequenceWord: generatedSequence.word,
+          sequenceLength: generatedSequence.steps.length,
+          generationType: options.mode,
+        });
+      } catch {
+        // Silently fail - activity logging is non-critical
+      }
     } catch (error) {
       generationError =
         error instanceof Error ? error.message : "Unknown generation error";
@@ -441,6 +453,15 @@ export function createGenerationActionsState(
           ...loopedSequence,
           steps: loopedSequence.steps.slice(0, spellMaxBeats),
         };
+        // Truncation lost beats the spelled word implied. Guests get a
+        // free-account nudge for the full 64-beat cap; signed-in users are
+        // already at the 64 ceiling, so it's a neutral note with no upsell.
+        // Mirrors the identical block in onGenerateClicked above.
+        if (spellTier === "guest") {
+          toast.info("Capped to 8 beats. Sign up free for up to 64.", 5000);
+        } else {
+          toast.info("Capped to 64 beats.", 5000);
+        }
       }
 
       // Snapshot current state before replacing so the user can undo back to it
@@ -453,6 +474,17 @@ export function createGenerationActionsState(
       lastGeneratedConfig = currentConfig ? { ...currentConfig } : null;
       await updateWorkbenchWithSequence(loopedSequence);
       void getPropUnlockManager().recordCreation("generate");
+
+      // Log successful AI generation for analytics (non-critical)
+      try {
+        void logSequenceAction("generate", loopedSequence.id, {
+          sequenceWord: loopedSequence.word,
+          sequenceLength: loopedSequence.steps.length,
+          generationType: "spell",
+        });
+      } catch {
+        // Silently fail - activity logging is non-critical
+      }
     } catch (error) {
       generationError = error instanceof Error ? error.message : "Spell generation failed";
       spellState.setError(generationError);
