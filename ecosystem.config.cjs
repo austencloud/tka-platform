@@ -16,5 +16,18 @@ module.exports = {
       kill_timeout: 15000,
       windowsHide: true,
     },
+    {
+      // Laptop-only backup tunnel: dev2.tkaflowarts.com -> this machine's
+      // :5173. Not auto-started by `pm2 start ecosystem.config.cjs` on other
+      // machines unless explicitly started: pm2 start ecosystem.config.cjs --only tka-tunnel2
+      name: "tka-tunnel2",
+      script: "scripts/tunnel2-pm2.cjs",
+      cwd: __dirname,
+      autorestart: true,
+      min_uptime: 10000,
+      restart_delay: 3000,
+      kill_timeout: 10000,
+      windowsHide: true,
+    },
   ],
 };
