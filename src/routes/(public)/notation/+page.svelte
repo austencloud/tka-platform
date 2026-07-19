@@ -492,6 +492,38 @@
     </div>
   </section>
 
+  <!-- CAP history teaser: the parallel discovery, with the recreated Yuta
+       trace as its visual. Static image, no live demo — history page. -->
+  <section class="editorial-section" style="--accent: #f472b6">
+    <span class="section-kicker">The parallel discovery</span>
+    <h2 class="section-title">CAPs came first, from the poi world</h2>
+    <div class="section-duo">
+      <div class="prose">
+        <p>
+          In 2009, poi spinners on the Home of Poi forums named the same craving
+          from the other direction: Continuous Assembly Patterns, cyclic curves
+          assembled from fragments, complete with a trochoid notation. The CAP
+          page tells that story with the original math, the people who built it,
+          and the videos that carried it since.
+        </p>
+      </div>
+      <img
+        class="caps-teaser-trace"
+        src="/caps/yuta-cap.svg"
+        alt="The Yuta CAP: an extension arc joined to antispin petals, drawn as one closed curve"
+        width="280"
+        height="280"
+        loading="lazy"
+      />
+    </div>
+    <div class="matrix-teaser-wrap">
+      <a href="/notation/caps" class="cta-button matrix-teaser-cta">
+        <span>Read the CAP story</span>
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </a>
+    </div>
+  </section>
+
   <!-- Where TKA fits: peer framing, corrected grid + software lineage link. -->
   <section class="editorial-section" style="--accent: #14b8a6">
     <h2 class="section-title">What The Kinetic Alphabet adds</h2>
@@ -816,6 +848,13 @@
     align-items: center;
     gap: 1.4rem;
     margin: 2rem 0;
+  }
+
+  .caps-teaser-trace {
+    width: min(280px, 100%);
+    height: auto;
+    aspect-ratio: 1;
+    justify-self: center;
   }
   .matrix-teaser-cta {
     /* .cta-button below already defines the button look; this narrows its

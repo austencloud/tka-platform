@@ -165,6 +165,12 @@
           icon: "fa-rotate",
           desc: "Six ways to return to where you started",
         },
+        {
+          label: "CAPs",
+          href: "/notation/caps",
+          icon: "fa-circle-nodes",
+          desc: "The poi community's parallel discovery, 2009",
+        },
       ],
     },
     { label: "Composer", href: "/composer", icon: "fa-wand-magic-sparkles" },
