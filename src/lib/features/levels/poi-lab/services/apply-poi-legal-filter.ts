@@ -8,6 +8,7 @@
  */
 
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import { getSettings } from "$lib/shared/application/state/app-state.svelte";
 import { isAdmin } from "$lib/shared/auth/state/auth-state.svelte";
 import { getPoiOptionFilterDecorator } from "../get-poi-option-filter-decorator";
@@ -19,14 +20,17 @@ export function isPoiComposerFilterEnabled(): boolean {
 
 export function applyPoiLegalComposerFilter(
   options: readonly PictographData[],
-  previous: PictographData | null
+  previous: PictographData | null,
+  /** Explicit per-hand prop types (demo/preview surfaces that pin their own
+   *  prop, e.g. the composer construct demo). Falls back to user settings. */
+  propTypes?: { bluePropType?: PropType; redPropType?: PropType }
 ): PictographData[] {
   if (!isPoiComposerFilterEnabled()) {
     return [...options];
   }
   const settings = getSettings();
   return getPoiOptionFilterDecorator().filterPoiLegalOptions(options, previous, {
-    bluePropType: settings.bluePropType,
-    redPropType: settings.redPropType,
+    bluePropType: propTypes?.bluePropType ?? settings.bluePropType,
+    redPropType: propTypes?.redPropType ?? settings.redPropType,
   });
 }

@@ -3,6 +3,7 @@
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { getLetterBorderColorSafe } from "$lib/shared/pictograph/shared/utils/letter-border-utils";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { onMount } from "svelte";
@@ -11,10 +12,15 @@
     pictographDataSet,
     selectedPictograph = null,
     onPictographSelect,
+    bluePropTypeOverride = undefined,
+    redPropTypeOverride = undefined,
   }: {
     pictographDataSet: PictographData[];
     selectedPictograph?: PictographData | null;
     onPictographSelect: (pictograph: PictographData) => void;
+    /** Explicit prop types for demo/preview rendering (bypasses global settings). */
+    bluePropTypeOverride?: PropType;
+    redPropTypeOverride?: PropType;
   } = $props();
 
   // Animation disabled - positions appear instantly for speed
@@ -81,7 +87,11 @@
     >
       <!-- Render pictograph using Pictograph component -->
       <div class="pictograph-wrapper">
-        <PictographContainer {pictographData} />
+        <PictographContainer
+          {pictographData}
+          {bluePropTypeOverride}
+          {redPropTypeOverride}
+        />
       </div>
     </div>
   {/each}

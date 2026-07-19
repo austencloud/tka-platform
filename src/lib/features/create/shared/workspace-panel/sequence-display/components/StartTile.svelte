@@ -5,6 +5,7 @@
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import type { BuildModeId } from "$lib/shared/foundation/ui/ui-types";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import StepCell from "./StepCell.svelte";
 
   let {
@@ -18,6 +19,8 @@
     onDelete,
     animationEpoch = 0,
     isTimelineMode = false,
+    bluePropTypeOverride = undefined,
+    redPropTypeOverride = undefined,
   } = $props<{
     startPosition: StartPositionData | StepData;
     shouldAnimate?: boolean;
@@ -29,6 +32,10 @@
     onDelete?: (stepNumber: number) => void;
     animationEpoch?: number;
     isTimelineMode?: boolean;
+    /** Prop type overrides for demo/preview rendering (bypasses global
+     *  settings) — same convention as StepCell/PictographContainer. */
+    bluePropTypeOverride?: PropType;
+    redPropTypeOverride?: PropType;
   }>();
 
   const hapticService: HapticFeedback | null = getHapticFeedback();
@@ -70,6 +77,8 @@
     onDelete={() => onDelete?.(0)}
     {isTimelineMode}
     {animationEpoch}
+    {bluePropTypeOverride}
+    {redPropTypeOverride}
   />
 </div>
 

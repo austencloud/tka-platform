@@ -41,19 +41,45 @@ clicking, so the demo shows nothing at all.
   keeps a min-height only large enough for its own grid; the section never
   reserves void.
 
-### Workspace pane
+### Workspace pane (REVISED 2026-07-19, Austen review)
 
-- 5 cells reserved up front: 1 start-position cell + 4 step slots
-  (`MAX_STEPS = 4` unchanged). Slots render as faint dashed outlines until
-  filled — no layout shift as beats land (`no-layout-shift.md`).
-- Each filled cell renders the real pictograph. Renderer:
-  `GuidePictograph` (`src/routes/(public)/guide/level-1/_components/GuidePictograph.svelte`)
-  — already proven for static `PictographData` tiles in the harness Library
-  section. Cell chrome follows the `.tka-seq-cell` selection-primitive pattern
-  used across guide pages.
-- Word line above the grid (existing markup kept): "Your sequence · ΦΨ ·
-  step 2/4" with `tabular-nums` (already present). Word always routed through
-  `simplifyRepeatedWord` (already present).
+The first cut hand-rolled a 5-cell grid; rejected — the codebase has a
+canonical workspace layout and the demo must use it. The workspace pane now
+mounts the REAL `WorkspaceGrid`
+(`src/lib/features/create/shared/workspace-panel/sequence-display/components/WorkspaceGrid.svelte`):
+
+- **Start position owns column 1** (the canonical convention from
+  `grid-calculations.ts` — steps flow in columns 2+); real `StartTile` /
+  `StepCell` renderers.
+- Steps convert via `pictographDataToStepData` (the create-tutorial's own
+  converter); `calculateGridLayout(..., { manualColumnCount: 4 })` sizes the
+  grid from the measured pane.
+- The pane is a fixed-height frame (`.ws-frame`) so the footprint is reserved
+  before anything is built — no layout shift (`no-layout-shift.md`).
+- Word line above the grid: "Your sequence · ΦΨ · step 2/4" with
+  `tabular-nums`; word always routed through `simplifyRepeatedWord`.
+
+### Prop policy (ADDED 2026-07-19, Austen review)
+
+- A compact **prop picker** sits at the top of the workspace column: the
+  canonical five (staff, club, fan, triad, buugeng), staff pre-selected.
+  Reuses the store `PropPicker` radiogroup
+  (`src/lib/features/store/components/PropPicker.svelte`) with
+  `SHOP_PROP_OPTIONS` / `DEFAULT_SHOP_PROP`.
+- **Poi is impossible on this surface.** The poi UI-reduction system is its
+  own world; the composer demo never shows it, even when the user's global
+  setting is poi. The chosen demo prop flows as
+  `bluePropTypeOverride`/`redPropTypeOverride` through the whole chain —
+  `WorkspaceGrid → StartTile → StepCell`, `StartPositionPicker →
+  PictographGrid → PictographContainer`, and `OptionPicker` (prepare + the
+  poi-legality gate via `applyPoiLegalComposerFilter`'s new optional
+  `propTypes` param). Root cause this fixed: with global settings poi/poi the
+  poi-legal filter emptied the Type-1 option set and the demo stalled at
+  step 0.
+- Shared-primitive extensions made for this (all additive, default-off):
+  `OptionPicker` + `StartPositionPicker` + `PictographGrid` + `StartTile`
+  gained `bluePropTypeOverride`/`redPropTypeOverride`;
+  `applyPoiLegalComposerFilter` gained the optional `propTypes` argument.
 
 ### Picker pane
 

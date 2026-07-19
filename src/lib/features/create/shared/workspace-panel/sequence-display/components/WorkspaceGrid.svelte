@@ -356,6 +356,8 @@
               onDelete={onStepDelete}
               animationEpoch={displayState.animationEpoch}
               isTimelineMode={true}
+              {bluePropTypeOverride}
+              {redPropTypeOverride}
             />
           </div>
           {#each timelineStartMandalas as cell (cell.index)}
@@ -460,6 +462,8 @@
             onLongPress={onStepLongPress}
             onDelete={onStepDelete}
             animationEpoch={displayState.animationEpoch}
+            {bluePropTypeOverride}
+            {redPropTypeOverride}
           />
         </div>
       {/if}

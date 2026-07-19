@@ -6,6 +6,7 @@ Controls moved below the grid for better UX
 <script lang="ts">
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { HapticFeedback } from "$lib/shared/application/services/haptic-feedback";
   import { onMount } from "svelte";
@@ -35,6 +36,8 @@ Controls moved below the grid for better UX
     onNavigateToDefault,
     isSideBySideLayout = () => false,
     embedded = false,
+    bluePropTypeOverride = undefined,
+    redPropTypeOverride = undefined,
   } = $props<{
     startPositionState?: SimplifiedStartPositionState | null;
     onNavigateToAdvanced?: () => void;
@@ -45,6 +48,10 @@ Controls moved below the grid for better UX
     // picker's own hint + guide link so they don't duplicate — and so the guide
     // link can't replay the very tutorial it sits inside.
     embedded?: boolean;
+    /** Explicit prop types for demo/preview rendering (bypasses global
+     *  settings) — same convention as StepCell/PictographContainer. */
+    bluePropTypeOverride?: PropType;
+    redPropTypeOverride?: PropType;
   }>();
 
   // Create simplified state - use $derived to handle prop changes
@@ -249,6 +256,8 @@ Controls moved below the grid for better UX
                 pictographDataSet={pickerState.positions}
                 selectedPictograph={pickerState.selectedPosition}
                 onPictographSelect={handlePositionSelect}
+                {bluePropTypeOverride}
+                {redPropTypeOverride}
               />
             </div>
           </div>

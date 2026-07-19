@@ -12,6 +12,7 @@ Delegates all rendering to child components.
   import { getDarkModeProvider } from "$lib/shared/animation-engine/get-dark-mode-provider";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
   import type { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { onMount } from "svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
@@ -53,6 +54,12 @@ Delegates all rendering to child components.
     filterPredicate?: (option: PictographData) => boolean;
     /** Hide the All/Continuous filter UI (e.g. simplified tutorial grid) */
     hideFilters?: boolean;
+    /** Explicit prop types for demo/preview rendering (bypasses global
+     *  settings) — same convention as StepCell/PictographContainer. Also feeds
+     *  the poi-legality gate, so a surface pinned to a non-poi prop is never
+     *  emptied by a user's poi setting. */
+    bluePropTypeOverride?: PropType;
+    redPropTypeOverride?: PropType;
   }
 
   const {
@@ -65,6 +72,8 @@ Delegates all rendering to child components.
     isUndoingOption = false,
     filterPredicate,
     hideFilters = false,
+    bluePropTypeOverride = undefined,
+    redPropTypeOverride = undefined,
   }: Props = $props();
 
   // State
@@ -167,8 +176,8 @@ Delegates all rendering to child components.
 
     const s = getSettings();
     return preparer!.prepareBatch(turned, {
-      bluePropType: s.bluePropType,
-      redPropType: s.redPropType,
+      bluePropType: bluePropTypeOverride ?? s.bluePropType,
+      redPropType: redPropTypeOverride ?? s.redPropType,
     });
   }
 
@@ -356,7 +365,11 @@ Delegates all rendering to child components.
         optionLoader: loader,
         filterService: filter,
         optionSorter: sorter,
-        poiFilter: applyPoiLegalComposerFilter,
+        poiFilter: (opts, previous) =>
+          applyPoiLegalComposerFilter(opts, previous, {
+            bluePropType: bluePropTypeOverride,
+            redPropType: redPropTypeOverride,
+          }),
       });
 
       // Initialize with the prop value BEFORE marking ready
