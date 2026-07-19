@@ -45,6 +45,12 @@
   import WorkspaceGrid from "$lib/features/create/shared/workspace-panel/sequence-display/components/WorkspaceGrid.svelte";
   import { createStepGridDisplayState } from "$lib/features/create/shared/workspace-panel/sequence-display/state/step-grid-display-state.svelte";
   import { createScrollState } from "$lib/features/create/shared/workspace-panel/sequence-display/state/scroll-state.svelte";
+  import WordLabel from "$lib/features/create/shared/workspace-panel/sequence-display/components/WordLabel.svelte";
+  import ViewSequenceButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/ViewSequenceButton.svelte";
+  import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { DURATION } from "$lib/shared/transitions/transitions";
+  import { motionDuration } from "$lib/shared/transitions/motion";
+  import { slide } from "svelte/transition";
   import PropPicker from "$lib/features/store/components/PropPicker.svelte";
   import {
     SHOP_PROP_OPTIONS,
@@ -94,6 +100,12 @@
   const blueTurns = $derived(Number(blueTurnsValue));
   const redTurns = $derived(Number(redTurnsValue));
 
+  // The player's playback-toggle fn (via onTogglePlaybackRef). The attract act
+  // calls it to demonstrate tap-to-pause/tap-to-play on the canvas — the real
+  // tap listener is pointer-based, and the act must never dispatch synthetic
+  // pointer events (they'd trip the takeover listener).
+  let playerToggle: (() => void) | null = null;
+
   // The real start-position picker drives its own state object; we subscribe to
   // the user's pick and lift it into our local demo state (source "sync" changes
   // — e.g. our own clear on reset — are ignored, exactly like the tutorial step).
@@ -126,6 +138,7 @@
       act = createConstructAttractAct({
         getRoot: () => bandEl,
         resetBoard: reset,
+        togglePlayback: () => playerToggle?.(),
         stepsPerCycle: ATTRACT_STEPS,
       });
       io = new IntersectionObserver(
@@ -274,8 +287,15 @@
         options={SHOP_PROP_OPTIONS}
       />
     </div>
-    <div class="turns-pair">
-      <div class="tool-group turns-group">
+    <!-- Turns imply "you can change the playing sequence's turns" — not true
+         during playback, so they slide away for the play phase and return on
+         Build another. -->
+    {#if phase !== "play"}
+    <div
+      class="turns-pair"
+      transition:slide={{ duration: motionDuration(DURATION.normal) }}
+    >
+      <div class="tool-group turns-group blue">
         <span class="tool-label"
           ><span class="hand-dot blue" aria-hidden="true"></span>Blue
           turns</span
@@ -287,7 +307,7 @@
           color="blue"
         />
       </div>
-      <div class="tool-group turns-group">
+      <div class="tool-group turns-group red">
         <span class="tool-label"
           ><span class="hand-dot red" aria-hidden="true"></span>Red turns</span
         >
@@ -299,44 +319,36 @@
         />
       </div>
     </div>
+    {/if}
   </div>
 
   <div class="demo-body">
     <!-- WORKSPACE: the real WorkspaceGrid — start column + step columns. -->
     <div class="workspace">
-      <header class="demo-status" aria-live={tookOver ? "polite" : "off"}>
-        {#if phase === "pick-start"}
+      <!-- Canonical word display: the same WordLabel the real workspace shows
+           top-center (TKA glyphs, click-to-copy, letter highlighting during
+           playback). No step counter — the app doesn't count steps at you. -->
+      <header
+        class="demo-status word-label-area"
+        aria-live={tookOver ? "polite" : "off"}
+      >
+        {#if rawWord}
+          <WordLabel
+            word={rawWord}
+            activeStepNumber={phase === "play" && playingStepNumber
+              ? playingStepNumber
+              : null}
+          />
+        {:else}
           <p class="hint">
-            {#if act && !tookOver}
+            {#if phase === "pick-start" && act && !tookOver}
               Watch it build — or tap anything to take over.
-            {:else}
+            {:else if phase === "pick-start"}
               Pick a starting position to begin.
+            {:else}
+              Tap a pictograph to add it.
             {/if}
           </p>
-        {:else}
-          <p class="word-line">
-            <span class="word-label">Your sequence</span>
-            <span class="word">{displayWord || "—"}</span>
-            <span class="count">
-              Step <span class="num">{steps.length}</span>/<span class="num"
-                >{MAX_STEPS}</span
-              >
-            </span>
-          </p>
-          {#if phase === "add-step"}
-            <!-- Slot is always reserved; the button only becomes visible (and
-                 pressable) once there's something to play. No layout shift. -->
-            <button
-              type="button"
-              class="cta-btn play-btn"
-              data-demo-play
-              style:visibility={steps.length > 0 ? "visible" : "hidden"}
-              onclick={() => (playing = true)}
-            >
-              <i class="fas fa-play" aria-hidden="true"></i>
-              Play
-            </button>
-          {/if}
         {/if}
       </header>
 
@@ -360,6 +372,29 @@
             The sequence appears here as it's built.
           </p>
         {/if}
+      </div>
+
+      <!-- The app's ButtonPanel center zone, miniaturized: the canonical green
+           View/Play button sits bottom-center of the workspace; during play
+           the SAME slot crossfades to Build another (answers "where does Build
+           another go on wide screens" — the canonical action slot, not under
+           the canvas). -->
+      <div class="action-slot">
+        <Crossfade key={phase} duration={DURATION.normal}>
+          {#if phase === "add-step"}
+            <span
+              data-demo-play
+              style:visibility={steps.length > 0 ? "visible" : "hidden"}
+            >
+              <ViewSequenceButton onclick={() => (playing = true)} />
+            </span>
+          {:else if phase === "play"}
+            <button type="button" class="cta-btn" onclick={reset}>
+              <i class="fas fa-rotate-left" aria-hidden="true"></i>
+              Build another
+            </button>
+          {/if}
+        </Crossfade>
       </div>
     </div>
 
@@ -391,21 +426,24 @@
       {:else if playSequence}
         {#await import("$lib/shared/sequence-viewer/components/AnimationPlayer.svelte") then mod}
           <div class="play-pane">
-            <div class="player-frame">
+            <!-- No transport chrome: tap the canvas to pause/play (hoverHint
+                 teaches it on mouse, the act demonstrates it live), with the
+                 thin progress line as the only readout. -->
+            <div class="player-frame" data-demo-stage>
               <mod.default
                 sequence={playSequence}
                 autoPlay
                 showControls={false}
                 hideWordHeader
                 tapToToggle
+                progressLine
+                hoverHint="badge"
                 bluePropType={demoProp}
                 redPropType={demoProp}
                 onStepChange={handlePlayerStepChange}
+                onTogglePlaybackRef={(fn: () => void) => (playerToggle = fn)}
               />
             </div>
-            <button type="button" class="cta-btn" onclick={reset}>
-              Build another
-            </button>
           </div>
         {/await}
       {/if}
@@ -474,10 +512,19 @@
     min-width: 0;
   }
 
+  /* The pair fills whatever cell it's given; each hand's picker takes half.
+     Definite widths all the way down, so the controls' width:100% resolves
+     (the old content-sized column collapsed them to min-content). */
   .turns-pair {
     display: flex;
-    flex-wrap: wrap;
-    gap: 14px 24px;
+    gap: 14px 18px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .turns-group {
+    flex: 1 1 0;
+    min-width: 0;
   }
 
   .tool-label {
@@ -505,26 +552,80 @@
     background: var(--prop-red, #d84a4a);
   }
 
-  /* Denser prop tiles for this compact demo toolbar (the shop default 104px
-     basis is sized for configurator pages). */
+  /* Prop tiles GROW to fill their toolbar cell — edge-to-edge, no void after
+     the last tile. (Denser than the shop's 104px configurator basis.) */
   .tool-group :global(.prop-option) {
-    flex-basis: 84px;
+    flex: 1 1 84px;
     min-width: 72px;
   }
 
-  /* Real tiles, not thin bubbles: fixed control width so the four segments
-     come out as chunky squares that match the prop tiles' visual weight.
-     (Must be a hard px width — a min(100%, …) resolves against the
-     content-sized flex column and collapses the control to min-content.) */
+  /* ===== Per-hand glass turn pickers =====
+     Color-coding does the explaining: the blue picker IS blue, the red picker
+     IS red — tinted glass shells, and a glossy gradient indicator with a glow
+     for the selected count. */
   .turns-group :global(.segmented-control) {
-    width: 224px;
-    max-width: calc(100cqw - 40px);
+    width: 100%;
+    border-radius: 14px;
+    padding: 4px;
+    gap: 3px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .turns-group.blue :global(.segmented-control) {
+    background: color-mix(
+      in srgb,
+      var(--prop-blue, #4a7bd8) 10%,
+      rgba(255, 255, 255, 0.02)
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--prop-blue, #4a7bd8) 38%,
+      transparent
+    );
+  }
+
+  .turns-group.red :global(.segmented-control) {
+    background: color-mix(
+      in srgb,
+      var(--prop-red, #d84a4a) 10%,
+      rgba(255, 255, 255, 0.02)
+    );
+    border-color: color-mix(in srgb, var(--prop-red, #d84a4a) 38%, transparent);
+  }
+
+  .turns-group :global(.segmented-control .indicator) {
+    border-radius: 10px;
+  }
+
+  .turns-group.blue :global(.segmented-control .indicator) {
+    background: linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--prop-blue, #4a7bd8) 70%, white) 0%,
+      var(--prop-blue, #4a7bd8) 55%,
+      color-mix(in srgb, var(--prop-blue, #4a7bd8) 75%, black) 100%
+    );
+    box-shadow:
+      0 2px 14px color-mix(in srgb, var(--prop-blue, #4a7bd8) 55%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  }
+
+  .turns-group.red :global(.segmented-control .indicator) {
+    background: linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--prop-red, #d84a4a) 70%, white) 0%,
+      var(--prop-red, #d84a4a) 55%,
+      color-mix(in srgb, var(--prop-red, #d84a4a) 75%, black) 100%
+    );
+    box-shadow:
+      0 2px 14px color-mix(in srgb, var(--prop-red, #d84a4a) 55%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.35);
   }
 
   .turns-group :global(.segment) {
     min-height: 48px;
-    font-size: 1rem;
-    font-weight: 600;
+    font-size: 1.05rem;
+    font-weight: 650;
   }
 
   .demo-body {
@@ -554,11 +655,18 @@
     .demo-toolbar {
       align-items: end;
     }
-    /* Balanced toolbar ends: prop tiles anchor the left edge, the turn
-       pickers anchor the right — no orphan void trailing the turns. */
-    .turns-pair {
-      justify-self: end;
-    }
+  }
+
+  /* Both halves are framed sub-panels — defined edges instead of controls
+     floating in the shell. Symmetric margins INSIDE a visible frame read as a
+     stage; the same pixels outside one read as accidental void. */
+  .workspace,
+  .picker-pane {
+    border-radius: 18px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    background: rgba(255, 255, 255, 0.025);
+    padding: 12px 16px 14px;
+    box-sizing: border-box;
   }
 
   .workspace {
@@ -568,14 +676,15 @@
     min-width: 0;
   }
 
-  /* Status row reserves the CTA height so the Play button appearing (or the
-     hint swapping to the word line) never shifts the workspace below. */
+  /* Word row: the canonical WordLabel, centered like the real workspace.
+     Fixed height so hint ↔ word swaps never shift the grid below. WordLabel
+     reads --text-color (its default is a light-theme navy). */
   .demo-status {
-    min-height: 48px;
+    min-height: 52px;
     display: flex;
     align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
+    justify-content: center;
+    --text-color: var(--theme-text, #fff);
   }
 
   .hint {
@@ -584,36 +693,38 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
-  .word-line {
-    margin: 0;
-    display: inline-flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 10px 14px;
+  /* The ButtonPanel-center-zone slot: green play during building, Build
+     another during play. Height reserved — the crossfade never shifts the
+     grid above it. */
+  .action-slot {
+    min-height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  .word-label {
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  /* ===== Ghost hover mirror =====
+     The fake pointer can't trip CSS :hover, so the act tags its current
+     target with .ghost-hover and we mirror the real affordances: buttons
+     lift/brighten, and the canvas shows its pause/play badge — the ghost
+     reads as someone truly interacting. */
+  .construct-demo :global(.ghost-hover) {
+    filter: brightness(1.2);
   }
 
-  .word {
-    font-size: 1.4rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: var(--theme-text, #fff);
+  .construct-demo :global(button.ghost-hover) {
+    transform: scale(1.06);
   }
 
-  .count {
-    font-size: 0.85rem;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  /* Fully :global — the ghost-hover class is added at runtime by the act, so
+     a scoped selector would be pruned as "unused" at compile time and the
+     badge mirror would never ship. .construct-demo keeps it page-scoped. */
+  :global(.construct-demo .player-frame.ghost-hover .hover-hint) {
+    opacity: 1;
   }
 
-  /* Digits never jitter the layout as the count climbs. */
-  .num {
-    font-variant-numeric: tabular-nums;
+  :global(.construct-demo .player-frame.ghost-hover .hint-stack) {
+    transform: scale(1);
   }
 
   /* Fixed-height frame reserves the workspace footprint before anything is
@@ -646,10 +757,12 @@
 
   /* The picker still needs an explicit height for its internal grid-fit math,
      but far tighter than the old 54vh — and it now shares the row with the
-     workspace instead of floating alone in a void. */
+     workspace instead of floating alone in a void. Capped low enough that the
+     whole toy (header + toolbar + body) fits a laptop viewport without
+     scrolling — the first impression IS the fit. */
   .picker-pane {
     width: 100%;
-    height: clamp(320px, 42vh, 600px);
+    height: clamp(300px, 38vh, 540px);
   }
 
   /* The option grid caps its tile size; in a tall picker it top-aligns because
@@ -667,8 +780,6 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    padding: 8px 0;
   }
 
   .player-frame {
@@ -716,16 +827,13 @@
     transform: translateY(0);
   }
 
-  .play-btn i {
+  .cta-btn i {
     font-size: 0.8em;
   }
 
   @media (max-width: 480px) {
     .picker-pane {
       height: clamp(320px, 56vh, 520px);
-    }
-    .word {
-      font-size: 1.25rem;
     }
   }
 

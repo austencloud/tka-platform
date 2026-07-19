@@ -22,9 +22,13 @@ const START_SEL =
 // option-card was the bug that froze the act at step 0: waitFor timed out every
 // cycle and the loop restarted from the start position forever.)
 const OPTION_SEL = '[data-testid="option-card"], [data-testid="option-item"]';
-// The section's own Play button — the act presses it after the last step so
-// every attract cycle ends on the real payoff: the sequence animating.
-const PLAY_SEL = "[data-demo-play]";
+// The section's canonical green play button (ViewSequenceButton inside the
+// [data-demo-play] slot) — the act presses it after the last step so every
+// attract cycle ends on the real payoff: the sequence animating.
+const PLAY_SEL = "[data-demo-play] button";
+// The play-phase canvas stage. The act "taps" it mid-playback to pause and
+// resume — teaching the tap-to-toggle interaction by demonstrating it.
+const STAGE_SEL = "[data-demo-stage]";
 
 export interface GhostState {
   x: number;
@@ -50,6 +54,14 @@ export function createConstructAttractAct(opts: {
   getRoot: () => HTMLElement | null;
   /** Clears the section's board state (steps + start position). */
   resetBoard: () => void;
+  /**
+   * Toggles the player's playback (AnimationPlayer's onTogglePlaybackRef fn).
+   * The real tap-to-toggle listens for POINTER events, and the act must never
+   * dispatch synthetic pointerdown (that would trip the section's takeover
+   * capture listener) — so the ghost performs the press visually and this
+   * callback performs the toggle.
+   */
+  togglePlayback: () => void;
   /** Steps per cycle — matches the section's MAX_STEPS. */
   stepsPerCycle: number;
   stepMs?: number;
@@ -84,6 +96,37 @@ export function createConstructAttractAct(opts: {
 
   const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]!;
 
+  // The element the ghost is currently "hovering". Since a fake pointer can't
+  // trigger CSS :hover, the act marks its target with a .ghost-hover class and
+  // the section mirrors the real hover styles onto it — so buttons scale, the
+  // canvas shows its pause/play badge, and the ghost reads as a real hand.
+  let hovered: HTMLElement | null = null;
+  function setHover(el: HTMLElement | null): void {
+    if (hovered === el) return;
+    hovered?.classList.remove("ghost-hover");
+    hovered = el;
+    hovered?.classList.add("ghost-hover");
+  }
+
+  /** Glide the ghost to a resting point (no press, no hover target). */
+  async function moveTo(x: number, y: number): Promise<void> {
+    setHover(null);
+    ghost.x = x;
+    ghost.y = y;
+    ghost.visible = true;
+    await sleep(TRAVEL_MS + 60);
+  }
+
+  /** Park the ghost just inside an element's bottom-right corner — the "hand
+   *  at rest, watching" pose between actions. */
+  async function restBeside(el: HTMLElement): Promise<void> {
+    const root = opts.getRoot();
+    if (!root || dead) return;
+    const r = el.getBoundingClientRect();
+    const rr = root.getBoundingClientRect();
+    await moveTo(r.right - rr.left - 30, r.bottom - rr.top - 30);
+  }
+
   /** Poll the live picker DOM for visible targets (pickers load async). */
   async function waitFor(selector: string, timeoutMs = 8000): Promise<HTMLElement[]> {
     const t0 = performance.now();
@@ -102,7 +145,10 @@ export function createConstructAttractAct(opts: {
     return [];
   }
 
-  async function moveAndPress(el: HTMLElement): Promise<void> {
+  async function moveAndPress(
+    el: HTMLElement,
+    action?: () => void,
+  ): Promise<void> {
     const root = opts.getRoot();
     if (!root || dead) return;
     const r = el.getBoundingClientRect();
@@ -112,13 +158,17 @@ export function createConstructAttractAct(opts: {
     ghost.visible = true;
     await sleep(TRAVEL_MS + 60);
     if (dead) return;
+    setHover(el);
     ghost.pressed = true;
     await sleep(PRESS_MS);
     ghost.pressed = false;
     if (dead) return;
-    // Real click on a real target — programmatic click() fires no pointerdown,
-    // so the act can never trigger the section's own takeover listener.
-    el.click();
+    // Default: real click on a real target — programmatic click() fires no
+    // pointerdown, so the act can never trigger the section's own takeover
+    // listener. Callers pass `action` when the target's real interaction is
+    // pointer-based (the tap-to-toggle canvas) and click() wouldn't land.
+    if (action) action();
+    else el.click();
   }
 
   async function cycle(): Promise<void> {
@@ -142,14 +192,28 @@ export function createConstructAttractAct(opts: {
       await moveAndPress(pick(options));
     }
 
-    // The payoff: press Play, then get out of the way while the built
-    // sequence animates and the workspace highlight walks the steps.
+    // The payoff: press Play, let the sequence animate, then DEMONSTRATE the
+    // tap-to-toggle interaction — tap the canvas to pause, hold the freeze,
+    // tap again to resume — before the next cycle. Visitors learn the canvas
+    // is tappable by watching it happen. The ghost NEVER hides mid-cycle:
+    // between actions it parks beside the stage like a hand at rest, so the
+    // whole loop reads as one person continuously using the toy.
     await sleep(DONE_MS / 2);
     const play = await waitFor(PLAY_SEL, 4000);
     if (!play.length || dead) return;
     await moveAndPress(play[0]!);
-    ghost.visible = false;
-    await sleep(PLAY_MS);
+
+    const stage = await waitFor(STAGE_SEL, 4000);
+    if (!stage.length || dead) return;
+    await restBeside(stage[0]!);
+    await sleep(PLAY_MS * 0.45);
+    if (dead) return;
+    await moveAndPress(stage[0]!, opts.togglePlayback); // pause
+    await sleep(1400); // hold the freeze — a visible, deliberate decision
+    if (dead) return;
+    await moveAndPress(stage[0]!, opts.togglePlayback); // resume
+    await restBeside(stage[0]!);
+    await sleep(PLAY_MS * 0.55);
   }
 
   function start(): void {
@@ -168,6 +232,7 @@ export function createConstructAttractAct(opts: {
     },
     kill: () => {
       dead = true;
+      setHover(null);
       ghost.visible = false;
     },
     get dead() {

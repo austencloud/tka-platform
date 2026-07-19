@@ -62,6 +62,8 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 		hideProgressBar = false,
 		hideWordHeader = false,
 		tapToToggle = false,
+		progressLine = false,
+		hoverHint = "none" as "none" | "badge" | "pill" | "scrim",
 	}: {
 		sequence: SequenceData;
 		autoPlay?: boolean;
@@ -83,6 +85,13 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 		hideWordHeader?: boolean;
 		/** When true, a quick tap on the canvas body toggles play/pause (forwarded to AnimatorCanvas). */
 		tapToToggle?: boolean;
+		/** Swap the full UnifiedTimeline transport for the thin non-interactive
+		 *  progress LINE (SequenceProgressBar). For embedded/showcase players that
+		 *  pair it with tapToToggle. Forwarded to AnimatorCanvas. */
+		progressLine?: boolean;
+		/** Mouse-only hover affordance teaching "click the canvas to play/pause".
+		 *  Forwarded to AnimatorCanvas. */
+		hoverHint?: "none" | "badge" | "pill" | "scrim";
 	} = $props();
 
 	// Context for external control mode
@@ -320,6 +329,8 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 						progressBarVariant="minimal"
 						{hideProgressBar}
 						{tapToToggle}
+						{progressLine}
+						{hoverHint}
 					/>
 
 					{#if takeover.phase !== "idle"}
@@ -384,6 +395,8 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 					progressBarVariant="minimal"
 					{hideProgressBar}
 					{tapToToggle}
+					{progressLine}
+					{hoverHint}
 				/>
 
 				{#if takeover.phase !== "idle"}

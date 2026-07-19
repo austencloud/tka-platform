@@ -59,13 +59,11 @@
 
 <div class="page">
   <div class="editorial">
+    <!-- Harness chrome stays humble: one line, no hero block. The first thing
+         that should fill the viewport is the Construct demo, not a title. -->
     <header class="test-head">
       <p class="eyebrow">Test harness · not the live /composer page</p>
       <h1>Composer page — five wings, real components</h1>
-      <p class="lede-line">
-        Each section mounts the actual primitives and breaks out of the reading column to fill the
-        canvas. Scroll to load them.
-      </p>
     </header>
 
     <!-- WING 1: CREATE -->
@@ -209,28 +207,38 @@
     font-family: "Inter", system-ui, sans-serif;
   }
 
+  /* Above-the-fold discipline: this route has no fixed SiteHeader, so the
+     editorial's 88px clearance is dead space — reclaim it, and keep the
+     harness header + first section spacing tight enough that the Construct
+     demo lands fully inside the first viewport. */
+  .editorial {
+    padding-top: 24px;
+  }
+  .editorial-section:not(.panel) {
+    padding-top: 1.1rem;
+  }
+  .test-head + .wing-band {
+    margin-top: 0.9rem;
+  }
+
   /* Header keeps the harness voice; it rides inside the .editorial reading column. */
   .test-head {
     text-align: center;
-    margin-bottom: 2.5rem;
+    margin-bottom: 0.9rem;
   }
   .eyebrow {
     font-size: 0.72rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #f0a83c;
-    margin: 0 0 0.4rem;
+    margin: 0 0 0.25rem;
   }
   .test-head h1 {
-    font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.3rem);
-    font-weight: 720;
-    letter-spacing: -0.02em;
-    margin: 0 0 0.4rem;
-  }
-  .lede-line {
+    font-size: 1.05rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
     color: #9aa0c4;
-    max-width: 42rem;
-    margin: 0 auto;
+    margin: 0;
   }
 
   .wing-band {

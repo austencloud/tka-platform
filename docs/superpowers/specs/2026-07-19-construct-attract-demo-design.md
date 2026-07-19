@@ -126,6 +126,86 @@ the pictograph row and the animation read as one instrument. "Build another"
 survives as the single button under the player; entering play via the button
 or the 8-step cap are the only two paths.
 
+### Play phase chrome (REVISED, third pass — Austen 2026-07-19)
+
+The player's bottom transport (UnifiedTimeline: round pause button + fat
+scrubber) is GONE — the product teaches tap-the-canvas-to-toggle, and the demo
+must model that. Replaced with:
+
+- `progressLine` — new pass-through prop on `AnimationPlayer` →
+  `AnimatorCanvas`'s existing `progressLine` mode: the thin non-interactive
+  `SequenceProgressBar` line ("the simpler scrubber bar we incorporate
+  elsewhere") in the progress slot instead of UnifiedTimeline.
+- `hoverHint="badge"` — the existing mouse-only "click canvas to pause" glass
+  badge, also passed through.
+- The attract act now DEMONSTRATES the interaction: after pressing Play it
+  lets the sequence run ~45% of `PLAY_MS`, moves the ghost onto the canvas
+  (`[data-demo-stage]` on `.player-frame`), presses → pause, holds the freeze
+  1.4s, presses → resume, hides, lets the rest play. Because the real
+  tap-to-toggle is POINTER-event based and the act must never dispatch
+  synthetic pointerdown (it would trip the takeover capture listener), the
+  ghost press is visual only and the toggle happens via
+  `AnimationPlayer.onTogglePlaybackRef` — the section captures the toggle fn
+  and hands the act a `togglePlayback` callback. `moveAndPress` grew an
+  optional `action` param for exactly this (default stays `el.click()`).
+  Verified live: progress samples froze at 62 for ~2s with ghost opacity 1,
+  then resumed to 96 (2026-07-19).
+
+### Canon pass (fourth pass — Austen 2026-07-19)
+
+- **Turns hide during play.** Visible turn pickers imply "you can change the
+  playing sequence's turns" — false. `{#if phase !== "play"}` + `transition:slide`
+  (motionDuration-wrapped): they slide away when Play is pressed and return on
+  Build another.
+- **Canonical word display.** "YOUR SEQUENCE · word · Step 4/8" replaced by the
+  real workspace `WordLabel` (TKA glyphs, click-to-copy), centered like the app.
+  During play it gets `activeStepNumber` so the playing LETTER highlights in
+  the word — same letter-walk as practice. Step counter deleted (the app
+  doesn't count steps at you). Wrapper carries `word-label-area` (WordLabel's
+  overflow-measure anchor) and sets `--text-color` for the dark page.
+- **Canonical green play button.** The pill Play is gone; the real
+  `ViewSequenceButton` (ButtonPanel center-zone, success-green, breathing)
+  sits bottom-center of the workspace panel in an `.action-slot`. During play
+  the SAME slot crossfades (shared `Crossfade`, key=phase) to Build another —
+  which answers "where does Build another go on wide screens": the canonical
+  action slot, not under the canvas. Act's `PLAY_SEL` is now
+  `"[data-demo-play] button"` (the slot wraps the real button).
+- **Persistent ghost + real hover feedback.** The ghost never hides mid-cycle:
+  between actions it parks just inside the stage's bottom-right corner
+  (`restBeside`) like a hand at rest. Since a fake pointer can't trip CSS
+  `:hover`, the act tags its target with a `.ghost-hover` class (`setHover`)
+  and the section mirrors the affordances: generic brightness + button scale,
+  and `.player-frame.ghost-hover` forces the canvas hover badge visible.
+  Those mirror rules MUST be written fully `:global(...)` — the class is
+  runtime-added, so scoped selectors get pruned as "unused" at compile time.
+- **Option tiles shrank after the first pick — root cause.** Not arrows:
+  `OptionPickerContent.effectiveSwipeHeight` subtracted the 32px filter-header
+  once `currentSequence.length >= 2` without checking `hideFilters`, reserving
+  space for chrome that never renders (fixed to mirror the render condition;
+  Codex's concurrent filter-docking refactor absorbed the same guard via
+  `showStandaloneFilter()`).
+
+### Cohesion pass (third pass — Austen 2026-07-19)
+
+- **One toy, framed twice**: `.workspace` and `.picker-pane` are both framed
+  sub-panels (18px radius, theme stroke, faint fill) inside the shell —
+  defined edges instead of controls floating in shell void. Symmetric margins
+  inside a visible frame read as a stage; outside one they read as accident.
+- **Toolbar fills its cells**: prop tiles `flex: 1 1 84px` grow edge-to-edge
+  in the left cell; the turns pair fills the right cell, each hand's picker
+  `flex: 1 1 0`, control `width: 100%` (definite widths all the way down —
+  the old content-sized column collapsed `width:100%` to min-content).
+- **Glass per-hand turn pickers**: color does the explaining. Each
+  `SegmentedControl` gets a hand-tinted glass shell (10% prop color +
+  backdrop-blur, tinted border) and a glossy gradient indicator
+  (light→color→dark at 160deg) with a color glow + inset top highlight.
+  Section-scoped `:global` overrides; the shared control is untouched.
+- **Above the fold**: the harness page reclaims the 88px SiteHeader clearance
+  (this route has no SiteHeader), the hero header collapses to an eyebrow +
+  one small line, first wing band and section padding tighten, and
+  `.picker-pane` caps at `clamp(300px, 38vh, 540px)` — the whole toy fits a
+  784px-tall viewport with zero scroll (verified 2026-07-19).
+
 ### Picker pane
 
 - Unchanged primitives: `StartPositionPicker` (embedded) during `pick-start`,
