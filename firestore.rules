@@ -533,8 +533,21 @@ service cloud.firestore {
         || isOwner(userId)
         || isAdmin();
 
-      // Only the owner can create/update/delete their collections
-      allow create, update, delete: if isOwner(userId);
+      // Publishing (the resulting doc has isPublic == true) requires a full
+      // account — mirrors the isFullUser() gate publicSequences uses for its
+      // public-write path, so there is one publish predicate shape across
+      // the codebase. Firestore's update semantics carry unchanged fields
+      // into request.resource.data, so this also covers "already public,
+      // editing" (isPublic stays true) without a separate resource.data
+      // check. Private creates/edits and un-publishing (isPublic -> false)
+      // stay open to guests, same as the rest of the guest-tier
+      // "play/save is open" surface — the un-publish case always evaluates
+      // request.resource.data.isPublic != true and is never blocked.
+      allow create, update: if isOwner(userId)
+        && (request.resource.data.isPublic != true || isFullUser());
+
+      // Deleting never publishes anything; owner-only regardless of isPublic.
+      allow delete: if isOwner(userId);
     }
 
     // Followed collections - lightweight pointers to other users' public
@@ -556,29 +569,37 @@ service cloud.firestore {
       allow create, update, delete: if isOwner(userId);
     }
 
-    // User-created sequences (if stored at root level)
+    // Legacy root-level sequences path. The live app writes/reads
+    // users/{uid}/sequences exclusively (grep across src/, scripts/,
+    // functions/, api/ on 2026-07-19 found zero writers of collection(db,
+    // "sequences") at root). One live READER remains: the admin "preview
+    // another user" debug tool
+    // (src/lib/shared/debug/state/user-preview-state.svelte.ts fetchSequences,
+    // wired into the isAdmin()-gated AdminToolbar), which queries this path
+    // filtered by createdBy — so the block is tightened, not deleted, and
+    // gains an isPublic read gate instead of the previous unconditional
+    // `allow read: if true` (which let anyone read ANY sequence here,
+    // public or private, by id).
     match /sequences/{sequenceId} {
-      // ANYONE can read public sequences (no authentication required)
-      allow read: if true;
-
-      // Only the creator can modify their sequences
-      allow create: if isAuthenticated() && hasValidUserId();
-      allow update, delete: if isAuthenticated()
-        && resource.data.userId == request.auth.uid;
-    }
-
-    // User collections metadata (if stored at root level) - public-only read,
-    // owner/admin otherwise (same posture as the per-user collections above).
-    match /collections/{collectionId} {
       allow read: if resource.data.isPublic == true
         || (isAuthenticated() && resource.data.userId == request.auth.uid)
         || isAdmin();
 
-      // Only the creator can modify their collections
-      allow create: if isAuthenticated() && hasValidUserId();
-      allow update, delete: if isAuthenticated()
+      // Only a full-account creator can write here (mirrors the isFullUser()
+      // gate used everywhere else public/legacy content can be created).
+      allow create: if isFullUser() && hasValidUserId();
+      allow update, delete: if isFullUser()
         && resource.data.userId == request.auth.uid;
     }
+
+    // Legacy root-level /collections block DELETED 2026-07-19. Grep across
+    // src/, scripts/, functions/, api/, __/ for collection(db, "collections")
+    // / db.collection("collections") at root found zero readers or writers —
+    // the app's only "collections" access is the per-user subcollection
+    // (users/{uid}/collections, ruled above) and the users/{uid}/collections
+    // collection-group rule. See the security-hardening spec at
+    // docs/superpowers/specs/active/2026-07-18-onboarding-firestore-security.md
+    // for the grep evidence.
 
     // ============================================================================
     // MESSAGING COLLECTIONS

@@ -1,4 +1,7 @@
 import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
+import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
+import { isFullAccountUser } from "$lib/shared/auth/domain/access-tier";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 import { LIBRARY_LIMITS } from "$lib/shared/library/data/firestore-paths";
 import type { LibraryCollection } from "$lib/shared/library/domain/models/collection";
@@ -214,6 +217,19 @@ class CollectionsState {
 		// Smart collections are private-only in v1 — refuse publishing them.
 		const c = this.collections.find((col) => col.id === collectionId);
 		if (c?.kind === "smart") return false;
+
+		// Publishing requires a full account (firestore.rules denies a guest
+		// write that sets isPublic == true). Un-publishing (isPublic === false)
+		// stays open to guests — nobody but a full user could have published in
+		// the first place, so this only ever fires on the publish direction.
+		// Route to the signup drawer instead of firing a write the rules will
+		// reject, so the guest sees an explained nudge, not a silent failure.
+		if (isPublic && !isFullAccountUser(authState.isAuthenticated, authState.isAnonymous)) {
+			toast.info(AUTH_NUDGE_TEXTS["edit-community"]);
+			authDrawerState.show("signup");
+			return false;
+		}
+
 		try {
 			await updateCollection(collectionId, { isPublic });
 			return true;

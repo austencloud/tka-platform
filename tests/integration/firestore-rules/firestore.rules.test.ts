@@ -277,6 +277,134 @@ describe("collections: private is server-private, public is world-readable", () 
   });
 });
 
+describe("collections: publishing requires a full account (2026-07-18 hardening)", () => {
+  it("an anonymous guest CANNOT create a collection with isPublic == true", async () => {
+    const db = anonCtx().firestore();
+    await assertFails(
+      setDoc(doc(db, `users/${ANON_UID}/collections/pub`), {
+        ownerId: ANON_UID,
+        isPublic: true,
+        name: "Guest attempt",
+      })
+    );
+  });
+
+  it("an anonymous guest CAN create a private collection (isPublic == false)", async () => {
+    const db = anonCtx().firestore();
+    await assertSucceeds(
+      setDoc(doc(db, `users/${ANON_UID}/collections/priv`), {
+        ownerId: ANON_UID,
+        isPublic: false,
+        name: "Guest private",
+      })
+    );
+  });
+
+  it("an anonymous guest CANNOT convert an existing private collection to public", async () => {
+    const db = anonCtx().firestore();
+    await setDoc(doc(db, `users/${ANON_UID}/collections/c1`), {
+      ownerId: ANON_UID,
+      isPublic: false,
+      name: "Guest folder",
+    });
+    await assertFails(
+      setDoc(
+        doc(db, `users/${ANON_UID}/collections/c1`),
+        { isPublic: true },
+        { merge: true }
+      )
+    );
+  });
+
+  it("a full user CAN publish their own collection", async () => {
+    const db = fullCtx().firestore();
+    await assertSucceeds(
+      setDoc(doc(db, `users/${FULL_UID}/collections/pub`), {
+        ownerId: FULL_UID,
+        isPublic: true,
+        name: "Full user public",
+      })
+    );
+  });
+
+  it("a full user CAN edit a collection that stays public (isPublic untouched in the patch)", async () => {
+    const db = fullCtx().firestore();
+    await setDoc(doc(db, `users/${FULL_UID}/collections/pub2`), {
+      ownerId: FULL_UID,
+      isPublic: true,
+      name: "Before rename",
+    });
+    await assertSucceeds(
+      setDoc(
+        doc(db, `users/${FULL_UID}/collections/pub2`),
+        { name: "After rename" },
+        { merge: true }
+      )
+    );
+  });
+
+  it("a full user CAN un-publish (isPublic true -> false) their own collection", async () => {
+    const db = fullCtx().firestore();
+    await setDoc(doc(db, `users/${FULL_UID}/collections/pub3`), {
+      ownerId: FULL_UID,
+      isPublic: true,
+      name: "Going private",
+    });
+    await assertSucceeds(
+      setDoc(
+        doc(db, `users/${FULL_UID}/collections/pub3`),
+        { isPublic: false },
+        { merge: true }
+      )
+    );
+  });
+});
+
+describe("legacy root /sequences and /collections (2026-07-18 hardening)", () => {
+  it("an anonymous guest CANNOT create a root-level /sequences doc", async () => {
+    const db = anonCtx().firestore();
+    await assertFails(
+      setDoc(doc(db, `sequences/legacy1`), { userId: ANON_UID, steps: [] })
+    );
+  });
+
+  it("a full user CAN create a root-level /sequences doc", async () => {
+    const db = fullCtx().firestore();
+    await assertSucceeds(
+      setDoc(doc(db, `sequences/legacy2`), { userId: FULL_UID, steps: [] })
+    );
+  });
+
+  it("root /sequences is NOT world-readable without isPublic (private doc denied to a stranger)", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `sequences/priv1`), {
+        userId: FULL_UID,
+        isPublic: false,
+      });
+    });
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(db, `sequences/priv1`)));
+  });
+
+  it("root /sequences IS readable when isPublic == true", async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await setDoc(doc(ctx.firestore(), `sequences/pub1`), {
+        userId: FULL_UID,
+        isPublic: true,
+      });
+    });
+    const db = testEnv.unauthenticatedContext().firestore();
+    await assertSucceeds(getDoc(doc(db, `sequences/pub1`)));
+  });
+
+  it("root /collections is fully closed (block deleted — default deny)", async () => {
+    const db = fullCtx().firestore();
+    await assertFails(
+      setDoc(doc(db, `collections/c1`), { userId: FULL_UID, isPublic: true })
+    );
+  });
+});
+
 describe("journeyPoints: public read + create, no update/delete", () => {
   const SHORTCODE = "ABCD";
   const pointData = {

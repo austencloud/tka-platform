@@ -44,13 +44,13 @@ world-readable community feed.
 
 ## Acceptance criteria
 
-- [ ] An anonymous guest cannot create or convert a collection to `isPublic == true` (rules unit test via the emulator, or `firebase_validate_security_rules`).
-- [ ] A full user can still publish, edit, and un-publish their own collection.
-- [ ] Guest attempting to publish gets a client-side AuthNudge (not a raw rules error).
-- [ ] Legacy root `/sequences` `/collections` either removed or `isFullUser()`-gated; `/sequences` no longer world-readable without an `isPublic` gate.
-- [ ] No shipped `isFullUser()` surface was loosened (diff review).
+- [x] An anonymous guest cannot create or convert a collection to `isPublic == true` (rules unit test via the emulator, or `firebase_validate_security_rules`). — `npm run test:rules`: "an anonymous guest CANNOT create a collection with isPublic == true" + "...CANNOT convert an existing private collection to public" both pass against the live emulator.
+- [x] A full user can still publish, edit, and un-publish their own collection. — `npm run test:rules`: "a full user CAN publish", "...CAN edit a collection that stays public", "...CAN un-publish" all pass.
+- [x] Guest attempting to publish gets a client-side AuthNudge (not a raw rules error). — `collections-state.svelte.ts` `setPublic()` now gates on `isFullAccountUser()` before the write, toasts the existing `edit-community` copy, and opens `authDrawerState.show("signup")`.
+- [x] Legacy root `/sequences` `/collections` either removed or `isFullUser()`-gated; `/sequences` no longer world-readable without an `isPublic` gate. — `/collections` deleted (zero readers/writers found); `/sequences` tightened to `isFullUser()` writes + `isPublic`/owner/admin read gate (kept, not deleted — one live reader: the admin preview debug tool). See executor report for full grep evidence.
+- [x] No shipped `isFullUser()` surface was loosened (diff review). — diff touches only the 3 rule blocks named in Findings; `publicSequences`/`publicHandPaths`/`publicSoloProps`/conversations/videos/feedback/following/followers untouched.
 - [ ] `firebase deploy --only firestore:rules` completed (owner-authorized) — flag as a separate deploy step, do not claim done until deployed.
-- [ ] Email-link sign-in shows a "Finish signing in" confirm before consuming the code; wrong-device fallback uses an in-page field, not `window.prompt`.
+- [ ] Email-link sign-in shows a "Finish signing in" confirm before consuming the code; wrong-device fallback uses an in-page field, not `window.prompt`. — out of scope for this pass (owned by the executor touching `auth-state.svelte.ts`).
 
 ## Verification
 
