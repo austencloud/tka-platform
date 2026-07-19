@@ -8,7 +8,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/git-safety-check.js",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-safety-check.js\"",
             "timeout": 10,
             "statusMessage": "Git safety check..."
           }
@@ -19,7 +19,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/git-safety-check.js",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-safety-check.js\"",
             "timeout": 10,
             "statusMessage": "Git safety check..."
           }
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/dev-server-guard.js",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/dev-server-guard.js\"",
             "timeout": 10,
             "statusMessage": "Dev server guard..."
           }
@@ -41,7 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/bulk-replace-guard.js",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/bulk-replace-guard.js\"",
             "timeout": 10,
             "statusMessage": "Bulk replace guard..."
           }
@@ -52,7 +52,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node .claude/hooks/pre-commit-check.cjs",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-commit-check.cjs\"",
             "timeout": 120,
             "statusMessage": "Pre-commit type check..."
           }
