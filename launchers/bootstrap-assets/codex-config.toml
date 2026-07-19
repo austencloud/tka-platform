@@ -1,0 +1,72 @@
+# Codex CLI global config template (~/.codex/config.toml).
+# Curated from the primary dev box: model prefs, git marketplaces, plugins,
+# and the two MCP servers worth carrying to every machine. Machine-generated
+# state (notify hooks, node_repl runtime paths, hook trust hashes, pipe GUIDs)
+# is intentionally stripped; Codex regenerates all of it on first run.
+#
+# The bootstrap script copies this file into place only when no config.toml
+# exists yet, so a machine's own evolved config is never clobbered.
+
+model = "gpt-5.6-sol"
+model_reasoning_effort = "xhigh"
+personality = "pragmatic"
+
+[marketplaces.claude-plugins-official]
+source_type = "git"
+source = "https://github.com/anthropics/claude-plugins-official.git"
+
+[marketplaces.superpowers-dev]
+source_type = "git"
+source = "https://github.com/obra/superpowers.git"
+
+[plugins."claude-md-management@claude-plugins-official"]
+enabled = true
+
+[plugins."code-review@claude-plugins-official"]
+enabled = true
+
+[plugins."commit-commands@claude-plugins-official"]
+enabled = true
+
+[plugins."frontend-design@claude-plugins-official"]
+enabled = true
+
+[plugins."playground@claude-plugins-official"]
+enabled = true
+
+[plugins."session-report@claude-plugins-official"]
+enabled = true
+
+[plugins."skill-creator@claude-plugins-official"]
+enabled = true
+
+[plugins."superpowers@superpowers-dev"]
+enabled = true
+
+[plugins."context7@claude-plugins-official"]
+enabled = true
+
+# The OpenAI-side plugins (visualize, browser, documents, pdf, spreadsheets,
+# presentations, template-creator, sites, google-calendar, slack) live in
+# marketplaces the Codex desktop app provisions locally on first launch.
+# Re-enable them from the Codex app after it has run once; enabling them here
+# before their marketplaces exist would just produce resolution warnings.
+
+[features]
+js_repl = false
+
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = ["chrome-devtools-mcp@latest", "--browserUrl=http://127.0.0.1:9222"]
+
+[mcp_servers.flow-arts]
+command = "node"
+args = ["--import", "tsx", 'C:\tka-platform\mcp-server\index.ts']
+cwd = 'C:\tka-platform\mcp-server'
+startup_timeout_sec = 60.0
+
+[windows]
+sandbox = "elevated"
+
+[projects.'c:\tka-platform']
+trust_level = "trusted"

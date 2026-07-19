@@ -46,6 +46,11 @@ curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://dev.tkaflowarts.com
 - **Launcher / context menu:** `launchers/start-claude.bat` and
   `launchers/install-claude-context-menu.ps1` (registry `HKCU` key pointing at
   the Claude install — reinstalls move the path; rerun the installer script).
+- **Whole-machine setup:** `launchers/bootstrap-machine.ps1` replicates the
+  full agent scaffolding on a fresh machine (CLIs, context menus, launcher
+  shortcuts, global Claude/Codex config, pm2 stack, PrtSc→F13 remap). It is
+  idempotent, so it also works as a repair-everything pass here; assets live
+  in `launchers/bootstrap-assets/`.
 
 ## After any fix
 
