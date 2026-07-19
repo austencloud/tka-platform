@@ -12,7 +12,7 @@
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequencePersister } from "$lib/features/create/shared/services/sequence-persister";
-import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
+import { captureEvent } from "$lib/shared/analytics/services/posthog";
 import type { ActiveCreateModule } from "$lib/shared/foundation/ui/ui-types";
 
 export interface PersistenceState {
@@ -125,17 +125,18 @@ export function createSequencePersistenceCoordinator(
           activeBuildSection: cachedActiveTab,
         });
 
-        // Log sequence save for analytics (non-blocking)
+        // This is the 500ms-debounced autosave that runs on every beat edit,
+        // NOT a deliberate user action - captured as its own event so it
+        // never gets confused with (or inflates) the explicit "Save to
+        // Library" milestone, which fires sequence_save separately from
+        // save-panel-state.svelte.ts's handleSave().
         if (currentSequence) {
           try {
-            void logSequenceAction(
-              "save",
-              currentSequence.id,
-              {
-                sequenceWord: currentSequence.word,
-                sequenceLength: currentSequence.steps.length,
-              }
-            );
+            captureEvent("sequence_autosaved", {
+              sequence_id: currentSequence.id,
+              word: currentSequence.word,
+              beat_count: currentSequence.steps.length,
+            });
           } catch {
             // Silently fail - activity logging is non-critical
           }

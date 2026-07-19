@@ -12,6 +12,7 @@ import type { CreateModuleContext } from "../context/create-module-context";
 import { createComponentLogger } from "$lib/shared/utils/debug-logger";
 import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
 import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
+import { logSequenceAction } from "$lib/shared/analytics/services/posthog-activity-logger";
 
 type ContentModerator = { checkWord: (word: string) => ContentModerationResult };
 
@@ -272,6 +273,17 @@ export function createSavePanelState(deps: SavePanelDeps) {
       );
 
       logger.success("Sequence saved to library with ID:", result.sequenceId);
+
+      // Deliberate, user-initiated save - the discrete milestone counterpart
+      // to the debounced sequence_autosaved fired on every beat edit.
+      try {
+        void logSequenceAction("save", result.sequenceId, {
+          sequenceWord: tkaName,
+          sequenceLength: sequence.steps.length,
+        });
+      } catch {
+        // Silently fail - activity logging is non-critical
+      }
 
       // File the freshly-saved sequence into any collections chosen in the
       // picker. The sequence id only exists now, so this can't happen at pick

@@ -22,6 +22,7 @@ import { stashPendingLink } from "$lib/shared/auth/services/pending-credential-l
 import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
+import { captureEvent } from "$lib/shared/analytics/services/posthog";
 // LibrarySequence extends SequenceData, so it's accepted directly by
 // saveSequence(sequence: SequenceData). Imported from its canonical home —
 // library-repository.ts re-imports it but does not re-export it.
@@ -103,6 +104,10 @@ export async function notifyUpgradeSignup(): Promise<void> {
     // wondering whether their sequences survived the upgrade.
     toast.success("Account created. Your sequences are saved.");
     void getPropUnlockManager().mergeGuestCollection();
+    // Discrete guest→account conversion event, separate from identify() -
+    // fires exactly once here since this is the single call site for every
+    // in-place link path (Google/Facebook/Email + magic-link, native or web).
+    captureEvent("guest_upgraded_to_account", { status: "linked" });
     // Admin upgrade notifications are handled server-side by the
     // pulseUserActivity cloud function (fires when isAnonymous flips false
     // on the user doc). The old client-side notify was rules-denied.
@@ -119,6 +124,30 @@ export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
   const anon = auth.currentUser;
   if (!anon?.isAnonymous) throw new Error("No anonymous session to upgrade");
   const drafts = await captureAnonDrafts(anon.uid);
+
+  // Native: linkWithPopup dead-ends in the WebView (Google blocks WebView
+  // sign-in), so get the credential from the native SDK and link it directly.
+  // Unlike the popup path we hold the credential ourselves, so a collision
+  // signs into the existing account with that same credential — no
+  // credentialFromError needed.
+  const { isNative } = await import("$lib/shared/platform/services/platform-detector");
+  if (isNative()) {
+    const { nativeGoogleCredential } = await import("./native-google-auth");
+    const credential = await nativeGoogleCredential();
+    try {
+      await linkWithCredential(anon, credential);
+      void notifyUpgradeSignup();
+      return { status: "linked" };
+    } catch (error) {
+      if (isCollision(error)) {
+        await signInWithCredential(auth, credential);
+        captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
+        return { status: "collision-signed-in", importable: drafts };
+      }
+      throw error;
+    }
+  }
+
   const provider = new GoogleAuthProvider();
   provider.addScope("email");
   provider.addScope("profile");
@@ -131,6 +160,7 @@ export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
       const cred = GoogleAuthProvider.credentialFromError(error as AuthError);
       if (cred) await signInWithCredential(auth, cred);
       else throw error;
+      captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
       return { status: "collision-signed-in", importable: drafts };
     }
     throw error;
@@ -154,6 +184,7 @@ export async function upgradeAnonymousWithFacebook(): Promise<UpgradeResult> {
       const cred = FacebookAuthProvider.credentialFromError(error as AuthError);
       if (cred) await signInWithCredential(auth, cred);
       else throw error;
+      captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
       return { status: "collision-signed-in", importable: drafts };
     }
     // The Facebook email already belongs to a DIFFERENT provider's account
@@ -188,6 +219,7 @@ export async function upgradeAnonymousWithEmail(
   } catch (error) {
     if (isCollision(error)) {
       await signInWithEmailAndPassword(auth, email.trim(), password);
+      captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
       return { status: "collision-signed-in", importable: drafts };
     }
     throw error;
@@ -227,5 +259,6 @@ export async function upgradeMagicLinkCollision(
   const auth = await getAuthInstance();
   const drafts = await captureAnonDrafts(anonUid);
   await signInWithEmailLink(auth, email, link);
+  captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
   return drafts;
 }

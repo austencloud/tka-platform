@@ -530,13 +530,16 @@ async function doInitializeAuthListener(): Promise<void> {
           ? new Date(user.metadata.creationTime).getTime()
           : 0;
         const isNewSignup = Date.now() - creationTime < 60_000;
-        if (isNewSignup) {
-          const scanCode = getScanSourceCode();
-          if (scanCode) {
-            captureEvent("user_signed_up", {
-              scan_source_code: scanCode,
-            });
-          }
+        // Fires unconditionally for every new FULL-account signup so the team
+        // can measure signups-per-day without scan attribution gating it.
+        // Scan code is now an optional property, not a gate. Anonymous guests
+        // are excluded here - a guest converting to a full account fires its
+        // own guest_upgraded_to_account event (anonymous-upgrade.ts) instead,
+        // so a fresh anon session isn't miscounted as a signup.
+        if (isNewSignup && !user.isAnonymous) {
+          captureEvent("user_signed_up", {
+            scan_source_code: getScanSourceCode() ?? null,
+          });
         }
       } else {
         // User logged out - reset PostHog identity
@@ -644,6 +647,17 @@ export async function signOut(): Promise<void> {
       const { passwordOnboardingState } =
         await import("../../onboarding/state/password-onboarding-state.svelte");
       passwordOnboardingState.resetCloudSync();
+    } catch {
+      // Not loaded - that's ok
+    }
+
+    // Same for app-entry sync, so a different account signing in on this same
+    // session (no full reload) re-reads cloud state fresh instead of reusing
+    // the previous account's already-resolved cloudSynced gate.
+    try {
+      const { appEntryState } =
+        await import("../../onboarding/state/app-entry-state.svelte");
+      appEntryState.resetCloudSync();
     } catch {
       // Not loaded - that's ok
     }

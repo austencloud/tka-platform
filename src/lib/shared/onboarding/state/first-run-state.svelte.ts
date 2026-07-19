@@ -14,6 +14,12 @@
  * devices/browsers don't see the wizard again.
  */
 
+import { logOnboardingFirstRunCompleted } from "$lib/shared/analytics/services/onboarding-events";
+import {
+  safeLocalStorageSetItem,
+  removeLocalStorageItem,
+} from "$lib/shared/foundation/services/storage-manager";
+
 const FIRST_RUN_COMPLETED_KEY = "tka-first-run-completed";
 const FIRST_RUN_COMPLETED_AT_KEY = "tka-first-run-completed-at";
 const FIRST_RUN_SKIPPED_KEY = "tka-first-run-skipped";
@@ -116,14 +122,24 @@ function createFirstRunState() {
     markCompleted() {
       if (!isBrowser) return;
 
+      // Capture before this function flips it off below - an admin's "Preview
+      // First Run" run must not pollute real onboarding funnel analytics.
+      const wasPreview = state.previewMode;
+
       const now = new Date();
       state.hasCompleted = true;
       state.completedAt = now;
       state.shouldShow = false;
       state.previewMode = false;
 
-      localStorage.setItem(FIRST_RUN_COMPLETED_KEY, "true");
-      localStorage.setItem(FIRST_RUN_COMPLETED_AT_KEY, now.toISOString());
+      // Guarded so a full/private-browsing localStorage quota error never
+      // blocks the cloud sync below (see safeLocalStorageSetItem).
+      safeLocalStorageSetItem(FIRST_RUN_COMPLETED_KEY, "true");
+      safeLocalStorageSetItem(FIRST_RUN_COMPLETED_AT_KEY, now.toISOString());
+
+      if (!wasPreview) {
+        logOnboardingFirstRunCompleted({ source: "app_entry" });
+      }
 
       // Sync to cloud (non-blocking)
       this.syncToCloud();
@@ -139,7 +155,7 @@ function createFirstRunState() {
       state.shouldShow = false;
       state.previewMode = false;
 
-      localStorage.setItem(FIRST_RUN_SKIPPED_KEY, "true");
+      safeLocalStorageSetItem(FIRST_RUN_SKIPPED_KEY, "true");
 
       // Sync to cloud (non-blocking)
       this.syncToCloud();
@@ -166,9 +182,9 @@ function createFirstRunState() {
       state.previewMode = false;
       state.cloudSynced = false;
 
-      localStorage.removeItem(FIRST_RUN_COMPLETED_KEY);
-      localStorage.removeItem(FIRST_RUN_COMPLETED_AT_KEY);
-      localStorage.removeItem(FIRST_RUN_SKIPPED_KEY);
+      removeLocalStorageItem(FIRST_RUN_COMPLETED_KEY);
+      removeLocalStorageItem(FIRST_RUN_COMPLETED_AT_KEY);
+      removeLocalStorageItem(FIRST_RUN_SKIPPED_KEY);
     },
 
     /**
@@ -235,13 +251,13 @@ function createFirstRunState() {
 
             // Also update localStorage for consistency
             if (data.completed) {
-              localStorage.setItem(FIRST_RUN_COMPLETED_KEY, "true");
+              safeLocalStorageSetItem(FIRST_RUN_COMPLETED_KEY, "true");
             }
             if (data.skipped) {
-              localStorage.setItem(FIRST_RUN_SKIPPED_KEY, "true");
+              safeLocalStorageSetItem(FIRST_RUN_SKIPPED_KEY, "true");
             }
             if (data.completedAt) {
-              localStorage.setItem(
+              safeLocalStorageSetItem(
                 FIRST_RUN_COMPLETED_AT_KEY,
                 data.completedAt
               );
@@ -256,13 +272,13 @@ function createFirstRunState() {
           state.completedAt = null;
 
           // Clear localStorage to match
-          localStorage.removeItem(FIRST_RUN_COMPLETED_KEY);
-          localStorage.removeItem(FIRST_RUN_COMPLETED_AT_KEY);
-          localStorage.removeItem(FIRST_RUN_SKIPPED_KEY);
+          removeLocalStorageItem(FIRST_RUN_COMPLETED_KEY);
+          removeLocalStorageItem(FIRST_RUN_COMPLETED_AT_KEY);
+          removeLocalStorageItem(FIRST_RUN_SKIPPED_KEY);
 
           // Also clear the module cache so new users start on default module (create)
           // instead of inheriting previous user's last-visited module
-          localStorage.removeItem("tka-active-module-cache");
+          removeLocalStorageItem("tka-active-module-cache");
         }
 
         state.cloudSynced = true;
