@@ -389,17 +389,16 @@
           <img
             class="matrix-img"
             src="/notation/tka-144-shape-matrix.webp"
-            width="1400"
-            height="1401"
-            alt="The Kinetic Alphabet's own 144 shape matrix rendered live: a twelve by twelve grid where twelve blue-hand flowers down the side overlap twelve red-hand flowers across the top, one combined shape per cell."
+            width="1500"
+            height="1532"
+            alt="The Kinetic Alphabet's own 144 shape matrix, rendered live: a twelve by twelve grid of blue-hand flowers down against red-hand flowers across, grouped into three spin ratios (1:1, 3:1, 5:1), each split into prospin and antispin, diamond and box. Each cell overlaps its two flowers into one shape."
             loading="lazy"
           />
           <figcaption>
-            The same combinatorial table, drawn live from the alphabet. Twelve
-            blue-hand flowers down, twelve red-hand flowers across, each cell
-            overlapping the two into one shape. The diagonal holds the matched
-            pairs; every other cell is a hybrid, the same structure Lorq charted,
-            rendered from TKA's own notation.
+            The same table drawn live from the alphabet, built to mirror Lorq's
+            structure: three spin ratios, each split into prospin and antispin,
+            diamond and 45-degree box. The diagonal is the matched blue-and-red
+            pair; every other cell overlaps the two into a hybrid.
           </figcaption>
         </figure>
       </div>
@@ -777,19 +776,28 @@
   .matrix-pair {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 1.8rem 2.4rem;
+    gap: 1.8rem;
     align-items: start;
     justify-items: center;
-  }
-  @media (min-width: 900px) {
-    .matrix-pair {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    }
   }
   .matrix-pair .matrix-figure {
     margin: 0;
     width: 100%;
     max-width: min(42rem, 100%);
+  }
+  /* Two-up from 900px: columns hug each figure and the pair centers as one
+     composition, so the charts sit together instead of drifting to the band
+     edges on wide screens. */
+  @media (min-width: 900px) {
+    .matrix-pair {
+      grid-template-columns: auto auto;
+      justify-content: center;
+      gap: clamp(1.5rem, 2.5vw, 2.75rem);
+    }
+    .matrix-pair .matrix-figure {
+      width: min(42rem, 42vw);
+      max-width: none;
+    }
   }
   /* Hairline frame so the dark TKA matrix reads as a panel on the dark page;
      invisible on Lorq's white chart. */
