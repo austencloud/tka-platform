@@ -252,6 +252,7 @@ async function run() {
   // default. intendedProp on the doc covers app-side loads; the param covers
   // the scan route.
   const propParam = flags.prop ? `?bp=${flags.prop}` : "";
+  console.log(`https://localhost:5173/q/${code}${propParam}`);
   console.log(`https://tka.run/${code}${propParam}`);
 }
 
