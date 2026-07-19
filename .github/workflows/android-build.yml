@@ -54,6 +54,16 @@ jobs:
           rm -f "$DIR/_worker.js" "$DIR/_routes.json" "$DIR/_headers" "$DIR/_redirects"
           echo "After trim:  $(du -sh "$DIR" | cut -f1)"
 
+      - name: Generate native public env (_app/env.js)
+        # adapter-cloudflare serves $env/dynamic/public from the Worker at
+        # runtime (GET /_app/env.js). The trim step above deletes _worker.js, and
+        # the native shell has no Worker regardless — so without a STATIC
+        # _app/env.js the client's dynamic import 404s and ALL hydration dies
+        # (the app renders prerendered HTML but is frozen — no interactivity, no
+        # native boot-into-app). Materialize it from the PUBLIC_* vars. Must run
+        # after Trim and before cap sync.
+        run: node scripts/generate-native-env.mjs
+
       - name: Sync Capacitor
         run: npx cap sync android
 

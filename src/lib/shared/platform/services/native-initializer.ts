@@ -4,12 +4,16 @@ export class NativeInitializer {
 	async initialize(): Promise<void> {
 		if (!isNative()) return;
 
+		// initAppLifecycle navigates off the marketing landing (the native shell
+		// loads "/") into the app. Hide the splash only AFTER that navigation so
+		// the landing never flashes behind the splash on a cold start.
 		await Promise.allSettled([
 			this.initStatusBar(),
 			this.initKeyboard(),
-			this.initSplashScreen(),
 			this.initAppLifecycle(),
 		]);
+
+		await this.initSplashScreen();
 	}
 
 	private async initStatusBar(): Promise<void> {
@@ -55,8 +59,15 @@ export class NativeInitializer {
 		// Cold start: getLaunchUrl() returns the URL that opened the app.
 		// Warm resume: appUrlOpen fires when a new URL arrives while running.
 		const launchUrl = await App.getLaunchUrl();
-		if (launchUrl?.url) {
-			await this.handleDeepLink(launchUrl.url);
+		const openedViaDeepLink = launchUrl?.url
+			? await this.handleDeepLink(launchUrl.url)
+			: false;
+
+		// Normal cold start (tapped the app icon, no deep link): the native shell
+		// loads "/", which is the marketing landing. This is a standalone app, so
+		// boot straight into the Composer instead of showing the landing page.
+		if (!openedViaDeepLink) {
+			await this.bootIntoApp();
 		}
 
 		await App.addListener("appUrlOpen", async ({ url }) => {
@@ -64,11 +75,20 @@ export class NativeInitializer {
 		});
 	}
 
-	private async handleDeepLink(url: string): Promise<void> {
+	// Navigate off the "/" landing into the app's front page. replaceState so the
+	// Android back button from the app entry exits the app (via the backButton
+	// handler) rather than returning to the landing page.
+	private async bootIntoApp(): Promise<void> {
+		const { goto } = await import("$app/navigation");
+		await goto("/create", { replaceState: true });
+	}
+
+	// Returns true if the URL was a real deep link that navigated the app.
+	private async handleDeepLink(url: string): Promise<boolean> {
 		try {
 			const parsed = new URL(url);
 			let target = parsed.pathname + parsed.search + parsed.hash;
-			if (!target || target === "/") return;
+			if (!target || target === "/") return false;
 
 			// /q/{code} = QR scan. Open in-app sequence viewer, not landing page.
 			const qMatch = parsed.pathname.match(/^\/q\/([^/?#]+)/);
@@ -78,8 +98,10 @@ export class NativeInitializer {
 
 			const { goto } = await import("$app/navigation");
 			await goto(target);
+			return true;
 		} catch {
 			// Malformed URL — ignore.
+			return false;
 		}
 	}
 }
