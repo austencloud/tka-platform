@@ -74,6 +74,16 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		],
 	},
 	{
+		id: "shape-matrix",
+		href: "/notation/shape-matrix",
+		heading: "Shape Matrix",
+		descriptor: "144 even-petaled flowers, decoded as TKA notation.",
+		span: "1x1",
+		color: "#f97316",
+		icon: "fa-diagram-project",
+		media: "pictograph",
+	},
+	{
 		id: "guide",
 		href: "/guide",
 		heading: "The Guide",

@@ -143,7 +143,24 @@
   type NavEntry = NavLink | NavGroup;
 
   const NAV: NavEntry[] = [
-    { label: "Notation", href: "/notation", icon: "fa-language" },
+    {
+      label: "Notation",
+      icon: "fa-language",
+      items: [
+        {
+          label: "The Notation",
+          href: "/notation",
+          icon: "fa-language",
+          desc: "Positions and motions behind every letter",
+        },
+        {
+          label: "Shape Matrix",
+          href: "/notation/shape-matrix",
+          icon: "fa-diagram-project",
+          desc: "144 even-petaled flowers, decoded",
+        },
+      ],
+    },
     { label: "Composer", href: "/composer", icon: "fa-wand-magic-sparkles" },
     {
       label: "Learn",
