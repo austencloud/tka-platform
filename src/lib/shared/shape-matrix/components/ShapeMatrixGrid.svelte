@@ -84,7 +84,7 @@
   {#if rowAxis.length === 0 || colAxis.length === 0}
     <div class="empty">No flowers match the current filters.</div>
   {:else}
-    <table class="matrix" aria-label="Shape matrix — blue flower rows by red flower columns; activate a cell for its TKA realizations">
+    <table class="matrix" aria-label="Shape matrix: blue flower rows by red flower columns; activate a cell for its TKA realizations">
       <thead>
         <tr>
           <th class="corner" scope="col" aria-label="blue rows by red columns"></th>
