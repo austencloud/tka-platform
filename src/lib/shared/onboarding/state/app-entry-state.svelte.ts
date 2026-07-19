@@ -341,17 +341,15 @@ function createAppEntryState() {
         );
         const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.completed === true) {
-            state.hasCompleted = true;
-            state.phase = "complete";
-            safeLocalStorageSetItem(APP_ENTRY_COMPLETED_KEY, "true");
-          }
+        if (docSnap.exists() && docSnap.data().completed === true) {
+          state.hasCompleted = true;
+          state.phase = "complete";
+          safeLocalStorageSetItem(APP_ENTRY_COMPLETED_KEY, "true");
         } else {
-          // CRITICAL FIX: doc doesn't exist - brand new account on this
-          // device. Reset local state so it doesn't inherit a previous
-          // account's completed flag (shared/reused browser).
+          // CRITICAL FIX: no doc, or a doc without completed=true - this
+          // account has not finished entry. Reset local state so it doesn't
+          // inherit a previous account's completed flag (shared/reused
+          // browser). Cloud is authoritative per account, in both directions.
           state.hasCompleted = false;
           state.phase = "wizard-active";
           removeLocalStorageItem(APP_ENTRY_COMPLETED_KEY);
