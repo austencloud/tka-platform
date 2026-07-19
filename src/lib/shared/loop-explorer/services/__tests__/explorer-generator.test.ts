@@ -4,6 +4,16 @@ import { LOOPType, Period } from "$lib/shared/foundation/domain/models/generatio
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { generateVerifiedExample, MAX_ATTEMPTS } from "../explorer-generator";
 
+// generateVerifiedExample falls back to the real curated-seeds.json pool
+// (findCuratedSeed) on retry exhaustion — not injectable via
+// ExplorerGeneratorDeps. Stub it to null so the retry-exhaustion test below
+// exercises the "no fallback available" branch deterministically, regardless
+// of which (loopType, slice) pairs the harness has since populated real
+// seeds for (curated-seeds.json is regenerated data, not test fixture data).
+vi.mock("$lib/shared/loop-explorer/domain/curated-seeds", () => ({
+  findCuratedSeed: () => null,
+}));
+
 function fakeSequence(length: number): SequenceData {
   const steps = Array.from({ length }, (_, i) => ({
     id: `step-${i}`,

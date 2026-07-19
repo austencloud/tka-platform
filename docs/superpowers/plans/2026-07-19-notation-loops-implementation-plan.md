@@ -14,7 +14,7 @@ with explicit pathspec only (`git commit -m "..." -- <your files>`). Never `git 
 - [x] A3 Verification harness script + curated seed pool
 - [x] B1 loop-explorer components (picker, showcase, explanation pane, linking)
 - [x] C1 /notation/loops page assembly + front doors for loops
-- [ ] V  Full typecheck + build + contract greps
+- [x] V  Full typecheck + build + contract greps
 
 ## Task A1 — Shape-matrix front doors (independent)
 

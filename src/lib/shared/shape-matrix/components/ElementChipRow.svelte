@@ -16,11 +16,15 @@
     onpick: (mode: VtgMode | null) => void;
   } = $props();
 
+  // Matches the guard in build-mode-realizations.ts for the same lookup:
+  // FAMILY_BY_MODE/TND_BY_FAMILY are both keyed by generic `string`, so
+  // indexing is possibly-undefined to the type checker even though every
+  // VtgMode maps to a real family in practice. Filter rather than assert.
   const chips = MODE_ORDER.map((mode) => ({
     mode,
     label: MODE_LABEL[mode],
     el: TND_BY_FAMILY[FAMILY_BY_MODE[mode]],
-  }));
+  })).filter((c): c is typeof c & { el: NonNullable<typeof c.el> } => c.el !== undefined);
 
   function elementName(raw: string): string {
     return raw.charAt(0).toUpperCase() + raw.slice(1);
