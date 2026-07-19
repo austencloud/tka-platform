@@ -10,7 +10,10 @@ const { spawn, execSync } = require("child_process");
 const child = spawn(
   "cloudflared",
   ["tunnel", "run", "--url", "https://localhost:5173", "--no-tls-verify", "tka-dev2"],
-  { stdio: ["ignore", "inherit", "inherit"], shell: true }
+  // windowsHide here, not just in ecosystem config — pm2's own flag doesn't
+  // reach grandchildren, so without it the cloudflared console pops up as a
+  // visible window that "can't be closed" (pm2 respawns it on every X-click).
+  { stdio: ["ignore", "inherit", "inherit"], shell: true, windowsHide: true }
 );
 
 child.on("exit", (code) => process.exit(code ?? 1));

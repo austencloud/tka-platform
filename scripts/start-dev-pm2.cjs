@@ -15,6 +15,9 @@ const child = spawn(
     // Tells start-dev.ps1 it's running under pm2, so its manual-run takeover
     // (pm2 stop tka-dev) doesn't fire and stop ourselves.
     env: { ...process.env, TKA_PM2: "1" },
+    // Keep the powershell console invisible — pm2's windowsHide doesn't reach
+    // this grandchild, and a visible window + autorestart = "unclosable".
+    windowsHide: true,
   }
 );
 
