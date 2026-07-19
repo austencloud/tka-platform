@@ -199,8 +199,11 @@
       {/each}
     </div>
 
-    <!-- Info section - outer container holds layout, inner content transitions -->
-    <div class="tour-info">
+    <!-- Info section - outer container holds layout, inner content transitions.
+         aria-live is on this stable wrapper (not the {#key}'d child, which
+         gets destroyed/recreated) so screen readers announce each stop swap
+         without focus moving, per the tours' announcement convention. -->
+    <div class="tour-info" aria-live="polite">
       {#key generateTourState.currentStop}
         <div
           class="tour-info-content"
