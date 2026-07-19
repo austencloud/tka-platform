@@ -108,6 +108,11 @@
   .fuse-workspace {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    /* max-content rows, NOT auto: the workspace is a definite-height scroll
+       container, and auto rows in an overflowing grid collapse to the items'
+       minimum contribution (zero for the overflow-hidden cards), stacking the
+       cards on top of each other. max-content rows never shrink below content. */
+    grid-template-rows: repeat(4, max-content);
     grid-template-areas:
       "header"
       "blue"
@@ -127,6 +132,7 @@
   @container fuse (min-width: 600px) {
     .fuse-workspace {
       grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(3, max-content);
       grid-template-areas:
         "header header"
         "blue red"
@@ -135,7 +141,12 @@
     }
   }
 
-  @container fuse (min-width: 1100px) {
+  /* Locked desktop layout: fixed viewport, fr rows, cards shrink internally.
+     Requires real height — shorter windows keep the scrolling two-column
+     layout, where rows must stay content-sized. FuseSourceCard and
+     FusePreviewStage mirror this exact condition to apply min-height: 0
+     (a zero minimum contribution collapses auto rows in the scroll layouts). */
+  @container fuse (min-width: 1100px) and (min-height: 861px) {
     .fuse-workspace {
       grid-template-columns: minmax(330px, 2fr) minmax(0, 3fr);
       grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
@@ -145,14 +156,6 @@
         "red preview";
       align-content: stretch;
       overflow: hidden;
-    }
-  }
-
-  @container fuse (max-height: 860px) {
-    .fuse-workspace {
-      grid-template-rows: auto auto auto;
-      align-content: start;
-      overflow-y: auto;
     }
   }
 

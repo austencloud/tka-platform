@@ -489,7 +489,7 @@ const KEY_CHECKS: KeyCheck[] = [
   },
   {
     key: "MODERN_SETTINGS",
-    file: "src/lib/shared/settings/state/SettingsState.svelte.ts",
+    file: "src/lib/shared/settings/state/settings-state.svelte.ts",
     pattern: /"(tka-modern-web-settings)"/,
   },
 ];

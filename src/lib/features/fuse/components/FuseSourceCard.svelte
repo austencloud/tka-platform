@@ -160,7 +160,6 @@
     flex-direction: column;
     gap: var(--settings-spacing-md, 14px);
     min-width: 0;
-    min-height: 0;
     padding: var(--settings-spacing-md, 16px);
     overflow: hidden;
     border: 1px solid
@@ -386,7 +385,6 @@
     .source-card {
       padding: 14px;
       gap: 11px;
-      overflow: visible;
     }
 
     .source-actions {
@@ -401,6 +399,15 @@
 
     .notation-stage {
       min-height: 120px;
+    }
+  }
+
+  /* Locked desktop layout only (mirrors FuseLayout's fr-row condition).
+     min-height: 0 lets the card shrink inside its fr row; anywhere else it
+     zeroes the card's minimum contribution and collapses the auto grid rows. */
+  @container fuse (min-width: 1100px) and (min-height: 861px) {
+    .source-card {
+      min-height: 0;
     }
   }
 

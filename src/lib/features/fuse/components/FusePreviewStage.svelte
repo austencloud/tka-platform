@@ -164,7 +164,6 @@
     flex-direction: column;
     gap: var(--settings-spacing-md, 14px);
     min-width: 0;
-    min-height: 0;
     padding: var(--settings-spacing-md, 16px);
     overflow: hidden;
     border: 1px solid
@@ -398,7 +397,6 @@
   @container fuse (max-width: 599px) {
     .preview-stage {
       padding: 14px;
-      overflow: visible;
     }
 
     .preview-frame {
@@ -418,6 +416,15 @@
 
     .preview-frame {
       min-height: 320px;
+    }
+  }
+
+  /* Locked desktop layout only (mirrors FuseLayout's fr-row condition).
+     min-height: 0 lets the stage shrink inside its fr rows; anywhere else it
+     zeroes the stage's minimum contribution and collapses the auto grid rows. */
+  @container fuse (min-width: 1100px) and (min-height: 861px) {
+    .preview-stage {
+      min-height: 0;
     }
   }
 
