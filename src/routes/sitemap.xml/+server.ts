@@ -61,6 +61,7 @@ const pages = [
   { url: "notation/clubs", priority: "0.7", changefreq: "monthly" },
   { url: "notation/buugeng", priority: "0.7", changefreq: "monthly" },
   { url: "notation/poi", priority: "0.7", changefreq: "monthly" },
+  { url: "notation/shape-matrix", priority: "0.7", changefreq: "monthly" },
   // Per-letter notation pages with baked pictographs (2026-07-14-image-seo-google-images-design.md)
   { url: "notation/letters", priority: "0.7", changefreq: "monthly" },
   { url: "glossary", priority: "0.8", changefreq: "monthly" },
