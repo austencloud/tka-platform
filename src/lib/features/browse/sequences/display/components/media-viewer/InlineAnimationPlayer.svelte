@@ -110,6 +110,8 @@
     trailSettingsOverride = null,
     tipEffectMap = undefined,
     backgroundAlpha = 1,
+    hideTkaGlyph = false,
+    hideStepNumbers = false,
   }: {
     sequence: SequenceData;
     autoPlay?: boolean;
@@ -202,6 +204,10 @@
      * map; hosts that omit it keep today's trail-less behavior.
      */
     tipEffectMap?: TipEffectMap;
+    /** Hide the in-canvas letter glyph / step counter (chrome-free embeds
+     *  like the caps live hero — "a prop floating in space"). */
+    hideTkaGlyph?: boolean;
+    hideStepNumbers?: boolean;
   } = $props();
 
   const minimal = $derived(chrome === "minimal");
@@ -577,6 +583,8 @@
         progressLine={minimal}
         hoverHint={minimal ? "badge" : "none"}
         fillContainer={fill}
+        {hideTkaGlyph}
+        {hideStepNumbers}
         hideHeader={fill}
         hideProgressBar={fill && !scrubbable}
         onProgressBarSeek={scrubbable ? handleSeek : null}

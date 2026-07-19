@@ -52,6 +52,8 @@
       beatIndicators: false,
       bluePropType: "club",
       redPropType: "club",
+      hideTkaGlyph: true,
+      hideStepNumbers: true,
       trailSettingsOverride: trailSettings,
       tipEffectMap,
       backgroundAlpha: 0,

@@ -10,8 +10,8 @@
  *   3. anti W → S, 1 turn,  ccw  (antispin petal)
  *   4. anti S → E, 1 turn,  ccw  (antispin petal — closes the loop at east)
  *
- * One club, one hand: the blue hand is authored static-at-west and then hidden
- * by prepareMandalaClubSequence, the same solo-club transform the VTG lab uses.
+ * One club, one hand: the blue hand is authored static-at-west with
+ * isVisible:false, so engine and renderers skip it entirely.
  * Template lineage: buildGuideMotionSequence (guide-motion-configs.ts).
  */
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
@@ -32,7 +32,8 @@ import {
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
 import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { prepareMandalaClubSequence } from "$lib/features/lab/vtg-lab/services/prepare-mandala-club-sequence";
+
+type PathShape = "arc" | "linear" | "concave";
 
 interface Leg {
   start: GridLocation;
@@ -40,6 +41,11 @@ interface Leg {
   type: MotionType;
   turns: number;
   rotation: RotationDirection;
+  /* Per-motion pathShape WINS over the engine's motion-aware default
+     (resolvePathType returns it first), so it must match the motion type:
+     pro = arc, anti = concave. Forcing "arc" on the anti steps made them
+     render as pro-shaped sweeps (the 2026-07-19 bug). */
+  pathShape: PathShape;
 }
 
 const RED_LEGS: Leg[] = [
@@ -49,6 +55,7 @@ const RED_LEGS: Leg[] = [
     type: MotionType.PRO,
     turns: 0,
     rotation: RotationDirection.CLOCKWISE,
+    pathShape: "arc",
   },
   {
     start: GridLocation.SOUTH,
@@ -56,6 +63,7 @@ const RED_LEGS: Leg[] = [
     type: MotionType.PRO,
     turns: 0,
     rotation: RotationDirection.CLOCKWISE,
+    pathShape: "arc",
   },
   {
     start: GridLocation.WEST,
@@ -63,6 +71,7 @@ const RED_LEGS: Leg[] = [
     type: MotionType.ANTI,
     turns: 1,
     rotation: RotationDirection.COUNTER_CLOCKWISE,
+    pathShape: "concave",
   },
   {
     start: GridLocation.SOUTH,
@@ -70,6 +79,7 @@ const RED_LEGS: Leg[] = [
     type: MotionType.ANTI,
     turns: 1,
     rotation: RotationDirection.COUNTER_CLOCKWISE,
+    pathShape: "concave",
   },
 ];
 
@@ -80,6 +90,8 @@ function makeMotion(
   type: MotionType,
   turns: number,
   rotation: RotationDirection,
+  pathShape: PathShape,
+  isVisible: boolean,
 ): MotionData {
   return {
     motionType: type,
@@ -90,10 +102,10 @@ function makeMotion(
     turns,
     startOrientation: Orientation.OUT,
     endOrientation: Orientation.OUT,
-    isVisible: true,
+    isVisible,
     propType: PropType.CLUB,
     gridMode: GridMode.DIAMOND,
-    pathShape: "arc",
+    pathShape,
     arrowLocation: start,
     arrowPlacementData: {
       positionX: 0,
@@ -109,6 +121,8 @@ function makeMotion(
   };
 }
 
+/* The hidden hand: engine and renderers skip isVisible:false motions
+   entirely (isVisibleMotion guards), so this is a genuine solo club. */
 function staticBlue(): MotionData {
   return makeMotion(
     MotionColor.BLUE,
@@ -117,6 +131,8 @@ function staticBlue(): MotionData {
     MotionType.STATIC,
     0,
     RotationDirection.NO_ROTATION,
+    "arc",
+    false,
   );
 }
 
@@ -134,6 +150,8 @@ export function buildYutaCapSequence(): SequenceData {
         MotionType.STATIC,
         0,
         RotationDirection.NO_ROTATION,
+        "arc",
+        true,
       ),
     },
   };
@@ -158,11 +176,13 @@ export function buildYutaCapSequence(): SequenceData {
         leg.type,
         leg.turns,
         leg.rotation,
+        leg.pathShape,
+        true,
       ),
     },
   }));
 
-  const seq = createSequenceData({
+  return createSequenceData({
     id: "caps-yuta-live",
     name: "Yuta CAP",
     word: "yuta-cap",
@@ -170,6 +190,4 @@ export function buildYutaCapSequence(): SequenceData {
     startPosition,
     gridMode: GridMode.DIAMOND,
   });
-
-  return prepareMandalaClubSequence(seq, { show: "red", pathShape: "arc" });
 }

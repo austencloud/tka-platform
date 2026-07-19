@@ -206,11 +206,12 @@
         CAPs read paths: the shape a prop tip draws through space, composed one
         hand at a time and overlaid. The Kinetic Alphabet arrived at the same
         infinity from the other side. It reads steps: whole-body snapshots of
-        both hands at once, chained into speakable words. The four steps the
-        club performs above are exactly what TKA writes down as letters, and
-        its <a href="/notation/loops">LOOP algebra</a> is the machinery for
-        closing step chains into cycles that repeat forever, the same craving
-        CAPs answered in 2009.
+        both hands at once, chained into speakable words. One club alone is
+        not yet a letter; a letter needs both hands. Give this club a partner
+        and each of its four steps becomes one, and TKA's
+        <a href="/notation/loops">LOOP algebra</a> is the machinery for
+        closing chains of them into cycles that repeat forever, the same
+        craving CAPs answered in 2009.
       </p>
       <p>
         Neither system contains the other. Damien himself drew the matching
