@@ -7,8 +7,9 @@
  *
  * Previously also carried per-module completion (a `modules` sub-object).
  * Removed 2026-07-19 — it served the deprecated `ModuleOnboarding.svelte`
- * carousel and had zero remaining callers once TabIntro.svelte's
- * local-only per-tab dismissal replaced it.
+ * carousel. Its planned replacement, `TabIntro.svelte`'s local-only per-tab
+ * dismissal, was never adopted by any tab and was itself deleted 2026-07-19
+ * (see onboarding/README.md).
  */
 
 export interface OnboardingStatus {

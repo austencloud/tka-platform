@@ -9,12 +9,13 @@
  * What's New "last seen version" high-water mark (see
  * syncOnboardingFromCloud/syncOnboardingToCloud below).
  *
- * There is no per-module onboarding tracking here. That surface
- * (markModuleOnboardingComplete/hasCompletedModuleOnboarding + a Firestore
- * `modules` sub-object) was removed 2026-07-19 as dead code: it served the
- * old `ModuleOnboarding.svelte` carousel, which was deprecated in favor of
- * TabIntro.svelte's local-only per-tab dismissal (see onboarding/README.md)
- * and had zero remaining callers.
+ * There is no per-module or per-tab onboarding tracking here. The per-module
+ * surface (markModuleOnboardingComplete/hasCompletedModuleOnboarding + a
+ * Firestore `modules` sub-object) was removed 2026-07-19 as dead code: it
+ * served the old `ModuleOnboarding.svelte` carousel, which was deprecated in
+ * favor of a planned `TabIntro.svelte` per-tab dismissal. That replacement
+ * was never adopted by any tab (zero mount points from the day it shipped)
+ * and was itself deleted 2026-07-19 (see onboarding/README.md).
  */
 
 import { getOnboardingPersister } from "$lib/shared/onboarding/get-onboarding-persister";

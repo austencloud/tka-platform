@@ -23,8 +23,8 @@ export const desktopSidebarState = $state({
   // permanently cedes to the sidebar (64 rail / 220 pinned). Hover-expansion
   // is a purely visual overlay inside DesktopNavigationSidebar and NEVER
   // changes this value. All --desktop-sidebar-width consumers (MainInterface
-  // padding, drawer left edges, TabIntro, BrowseModule) align to this
-  // reserved edge by design.
+  // padding, drawer left edges, BrowseModule) align to this reserved edge by
+  // design.
   expandedWidth: 220, // Pinned sidebar width
   collapsedWidth: 64, // Rail width (icon-only)
   width: 220, // Current RESERVED width (computed from collapsed state)

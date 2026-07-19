@@ -249,21 +249,15 @@ async function loginWithCredentials(
 }
 
 async function suppressOnboarding(page: Page): Promise<void> {
-  // Build tab intro keys from the actual route configs to stay in sync
-  const tabIntroKeys = authRoutes
-    .filter((r) => r.moduleId && r.tabId)
-    .map((r) => `tabIntroSeen:${r.moduleId}:${r.tabId}`);
-
   await page.evaluate(
-    ([keys, storageKeys]) => {
+    (storageKeys) => {
       localStorage.setItem(storageKeys.LAST_SEEN_VERSION, "99.99.99");
       localStorage.setItem(storageKeys.LANDING_DISMISSED, "true");
       // Suppress first-run wizard (beta consent + onboarding steps)
       localStorage.setItem("tka-first-run-completed", "true");
       localStorage.setItem("tka-first-run-completed-at", new Date().toISOString());
-      keys.forEach((key) => localStorage.setItem(key, "true"));
     },
-    [tabIntroKeys, STORAGE_KEYS] as const
+    STORAGE_KEYS
   );
 }
 
