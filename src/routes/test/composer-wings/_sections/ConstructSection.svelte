@@ -18,9 +18,9 @@
   (staff default) and passes bluePropTypeOverride/redPropTypeOverride down the
   whole chain — the user's global prop setting (which may be poi) never reaches
   this demo. Poi is deliberately impossible here. Turns policy is the same
-  move: the demo pins whole turns (0-3) via its own picker and passes
-  blueTurnsOverride/redTurnsOverride, so the user's sticky Create-tab turns
-  (localStorage) never leak in.
+  move: the demo pins whole turns (0-3) via per-hand pickers (blue/red) and
+  passes blueTurnsOverride/redTurnsOverride, so the user's sticky Create-tab
+  turns (localStorage) never leak in.
 
   Fully self-contained — owns its own local $state and deliberately does NOT
   touch the shared create-tutorial singleton, so this preview can never collide
@@ -86,10 +86,13 @@
   // never the user's global setting.
   let demoProp = $state<PropType>(DEFAULT_SHOP_PROP);
 
-  // The demo's pinned turns — applied to BOTH hands, overriding the picker's
-  // sticky localStorage turns (same leak-proofing as the prop override).
-  let demoTurnsValue = $state<string>("0");
-  const demoTurns = $derived(Number(demoTurnsValue));
+  // The demo's pinned turns — one picker PER HAND (blue/red), overriding the
+  // picker's sticky localStorage turns (same leak-proofing as the prop
+  // override).
+  let blueTurnsValue = $state<string>("0");
+  let redTurnsValue = $state<string>("0");
+  const blueTurns = $derived(Number(blueTurnsValue));
+  const redTurns = $derived(Number(redTurnsValue));
 
   // The real start-position picker drives its own state object; we subscribe to
   // the user's pick and lift it into our local demo state (source "sync" changes
@@ -259,8 +262,9 @@
   onpointerdowncapture={takeover}
   onfocusincapture={takeover}
 >
+  <div class="demo-shell">
   <!-- Toolbar strip above the side-by-side view: prop over the workspace half,
-       turns over the picker half. -->
+       per-hand turns over the picker half. -->
   <div class="demo-toolbar">
     <div class="tool-group">
       <span class="tool-label">Prop</span>
@@ -270,14 +274,30 @@
         options={SHOP_PROP_OPTIONS}
       />
     </div>
-    <div class="tool-group turns-group">
-      <span class="tool-label">Turns</span>
-      <SegmentedControl
-        options={TURN_OPTIONS}
-        value={demoTurnsValue}
-        onchange={(v) => (demoTurnsValue = v)}
-        color="accent"
-      />
+    <div class="turns-pair">
+      <div class="tool-group turns-group">
+        <span class="tool-label"
+          ><span class="hand-dot blue" aria-hidden="true"></span>Blue
+          turns</span
+        >
+        <SegmentedControl
+          options={TURN_OPTIONS}
+          value={blueTurnsValue}
+          onchange={(v) => (blueTurnsValue = v)}
+          color="blue"
+        />
+      </div>
+      <div class="tool-group turns-group">
+        <span class="tool-label"
+          ><span class="hand-dot red" aria-hidden="true"></span>Red turns</span
+        >
+        <SegmentedControl
+          options={TURN_OPTIONS}
+          value={redTurnsValue}
+          onchange={(v) => (redTurnsValue = v)}
+          color="red"
+        />
+      </div>
     </div>
   </div>
 
@@ -364,8 +384,8 @@
             hideFilters
             bluePropTypeOverride={demoProp}
             redPropTypeOverride={demoProp}
-            blueTurnsOverride={demoTurns}
-            redTurnsOverride={demoTurns}
+            blueTurnsOverride={blueTurns}
+            redTurnsOverride={redTurns}
           />
         {/await}
       {:else if playSequence}
@@ -392,6 +412,8 @@
     </div>
   </div>
 
+  </div>
+
   {#if act}
     <GhostPointer
       x={act.ghost.x}
@@ -408,34 +430,75 @@
     position: relative;
     width: 100%;
     margin: 0 auto;
+    color: var(--theme-text, #fff);
+  }
+
+  /* The toy box: one framed panel holds the whole demo, so toolbar, workspace
+     and picker read as a single self-contained unit instead of controls
+     floating in the section void. */
+  .demo-shell {
     display: flex;
     flex-direction: column;
-    gap: 18px;
-    color: var(--theme-text, #fff);
+    gap: 16px;
+    width: 100%;
+    padding: clamp(16px, 2.2cqw, 28px);
+    border-radius: 24px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, rgba(16, 16, 26, 0.55)) 85%,
+      transparent
+    );
+    box-sizing: border-box;
   }
 
   /* ===== Toolbar strip ===== */
   .demo-toolbar {
     display: flex;
     flex-wrap: wrap;
-    justify-content: space-between;
     align-items: flex-end;
-    gap: 16px 32px;
+    gap: 14px 28px;
     width: 100%;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
   .tool-group {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     min-width: 0;
   }
 
+  .turns-pair {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px 24px;
+  }
+
   .tool-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-size: 0.8rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
+  }
+
+  .hand-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .hand-dot.blue {
+    background: var(--prop-blue, #4a7bd8);
+  }
+
+  .hand-dot.red {
+    background: var(--prop-red, #d84a4a);
   }
 
   /* Denser prop tiles for this compact demo toolbar (the shop default 104px
@@ -445,14 +508,22 @@
     min-width: 72px;
   }
 
+  /* Real tiles, not thin bubbles: fixed control width so the four segments
+     come out as chunky squares that match the prop tiles' visual weight. */
   .turns-group :global(.segmented-control) {
-    width: max-content;
+    width: min(100%, 224px);
+  }
+
+  .turns-group :global(.segment) {
+    min-height: 48px;
+    font-size: 1rem;
+    font-weight: 600;
   }
 
   .demo-body {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 16px;
     width: 100%;
   }
 
@@ -460,21 +531,23 @@
      first), picker right (the side the ghost taps). Both grow with the band —
      this is what fills the 1680+ tier instead of the old 54vh void. The
      toolbar mirrors the same columns so Prop sits over the workspace half and
-     Turns sits over the picker half. */
+     the per-hand turns sit over the picker half. Columns STRETCH so the
+     workspace frame matches the picker's height — no dead band under the
+     sequence. */
   @container (min-width: 1100px) {
     .demo-body,
     .demo-toolbar {
       display: grid;
       grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
-      gap: clamp(24px, 3cqw, 56px);
+      gap: 0 clamp(24px, 3cqw, 48px);
     }
     .demo-body {
-      align-items: center;
+      align-items: stretch;
     }
     .demo-toolbar {
       align-items: end;
     }
-    .turns-group {
+    .turns-pair {
       justify-self: start;
     }
   }
@@ -482,7 +555,7 @@
   .workspace {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 10px;
     min-width: 0;
   }
 
@@ -542,6 +615,17 @@
     flex-direction: column;
     justify-content: center;
     min-width: 0;
+  }
+
+  /* Side-by-side tier: the frame stretches to the picker column's height so
+     the left column has no dead band under the sequence. (Placed AFTER the
+     base rule — same specificity, source order decides.) */
+  @container (min-width: 1100px) {
+    .ws-frame {
+      flex: 1;
+      height: auto;
+      min-height: 240px;
+    }
   }
 
   .ws-empty {
