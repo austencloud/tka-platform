@@ -1623,6 +1623,42 @@
     }
   }
 
+  /* ── Mid tier: unfolded foldables + small tablets (640–899px) ──────
+     Z Fold unfolded portrait (~740cqw) and iPad portrait landed in the phone
+     tier: a 520px ribbon stranding 100px+ of dead space per side while the
+     stacked chooser forced a scroll. Two-up heroes (show-all spanning) and a
+     wrapping mini-grid pull the chooser back above the fold. Value screens
+     keep the phone list — capped and centered as ONE band with their header
+     so Back sits on the content edge, not the far stage edge (same shared-
+     band trick as the desktop tier). Sheet variant (≤480px drawer) can't
+     reach this tier. */
+  @container drill (min-width: 640px) and (max-width: 899.98px) {
+    .drill-stage {
+      max-width: 880px;
+    }
+    .hero-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .choice-tile.compact {
+      grid-column: 1 / -1;
+    }
+    .mini-grid {
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    }
+    /* Exactly six minis square up 3x2 — a 4+2 ragged break reads as an
+       accident, not a set (same rule as the desktop tier). */
+    .mini-grid:has(> :nth-child(6):last-child) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .drill-screen > .drill-head.with-back,
+    .drill-screen > .value-list,
+    .drill-screen > .letter-grid {
+      width: 100%;
+      max-width: 560px;
+      align-self: center;
+    }
+  }
+
   /* ── Desktop (wide container) ──────────────────────────────────────
      The drill was born mobile-first and shipped as a 520px ribbon on every
      screen size — on a 4K monitor that's a strip floating in empty ocean.
