@@ -359,6 +359,10 @@
   // Real profile photo per creator; RobustAvatar degrades to a monogram when a
   // creator has no photo, so the row is never a dead face.
   const creatorAvatars = $derived(pickCreatorAvatars(pool));
+  // The Creator mini tile fronts the top three creators' actual faces — every
+  // other tile previews real data (real cards, real dots, real glyphs); a
+  // generic fa-users icon was the one clip-art holdout.
+  const creatorTopThree = $derived(creatorValues.slice(0, 3).map((v) => v.value));
 
   // Single-value categories apply directly from the chooser (legacy behavior
   // for Favorites / Most Recent). Hidden at zero — never a dead end.
@@ -402,6 +406,11 @@
   // the 1024px static/cloud renders, so bigger boxes stay sharp.
   const PEEK_TIERS = {
     base: { fanW: 76, fanH: 92, shortW: 56, shortH: 84, longW: 118, longH: 84, collW: 44, collH: 34, levelW: 62, levelH: 56, creatorW: 44, creatorH: 54, badge: "18px" },
+    // Mid (640–899): hero tiles sit two-up at ~350px — NARROWER than the
+    // phone's full-width tiles, so fan/pair art stays base-sized. Only the
+    // collage grows: show-all spans the full row there, and the 2x2 stamp
+    // reads as an afterthought in it (the CSS lays it out 4-across).
+    mid: { fanW: 76, fanH: 92, shortW: 56, shortH: 84, longW: 118, longH: 84, collW: 52, collH: 40, levelW: 62, levelH: 56, creatorW: 44, creatorH: 54, badge: "18px" },
     // Level-screen art jumps hardest with width: on the desktop monument
     // columns a mini card is unreadable filler — at 150/200px the word and the
     // motions actually read, so the art argues for the level instead of
@@ -415,7 +424,9 @@
       ? PEEK_TIERS.ultra
       : drillWidth >= 900
         ? PEEK_TIERS.wide
-        : PEEK_TIERS.base,
+        : drillWidth >= 640
+          ? PEEK_TIERS.mid
+          : PEEK_TIERS.base,
   );
 
   function submitSearch(event: Event) {
@@ -613,7 +624,18 @@
               {#if creatorValues.length > 1}
                 <button class="mini-tile" type="button" onclick={() => (section = "author")}>
                   <span class="mini-art" aria-hidden="true">
-                    <i class="fas fa-users"></i>
+                    <span class="avatar-cluster">
+                      {#each creatorTopThree as name (name)}
+                        <RobustAvatar
+                          class="cluster-avatar"
+                          src={creatorAvatars.get(name)?.avatarUrl}
+                          googleId={creatorAvatars.get(name)?.ownerId}
+                          {name}
+                          alt=""
+                          customSize={26}
+                        />
+                      {/each}
+                    </span>
                   </span>
                   <span class="mini-main">
                     <span class="mini-title">Creator</span>
@@ -1295,6 +1317,21 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* ── Creator avatar cluster (mini-tile art) ────────────────────── */
+  /* Overlapped faces, most-prolific on top of the stack (first = leftmost,
+     painted over by the next via the negative margin + ring). */
+  .avatar-cluster {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+  .avatar-cluster > :global(.robust-avatar + .robust-avatar) {
+    margin-left: -9px;
+  }
+  .avatar-cluster :global(.cluster-avatar.robust-avatar) {
+    border: 2px solid rgba(12, 16, 24, 0.9);
+  }
+
   /* ── Family / loop color dots (mini-tile art) ──────────────────── */
   .element-dots {
     display: flex;
@@ -1649,6 +1686,13 @@
        accident, not a set (same rule as the desktop tier). */
     .mini-grid:has(> :nth-child(6):last-child) {
       grid-template-columns: repeat(3, 1fr);
+    }
+    /* Show-all spans the full row at this tier — the phone's 2x2 collage
+       stamp strands a dead middle in it. A 4-across strip (with the mid
+       PEEK's bigger cells) fills the horizontal air instead. */
+    .peek-collage {
+      grid-template-columns: repeat(4, auto);
+      margin-right: 0.6rem;
     }
     .drill-screen > .drill-head.with-back,
     .drill-screen > .value-list,
