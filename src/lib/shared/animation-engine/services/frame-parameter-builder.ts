@@ -175,6 +175,7 @@ export class FrameParameterBuilder {
     isSeamlesslyLoopable: false,
     sequenceContentHash: undefined,
     tipEffectMap: {},
+    trailsSuppressedUntilTextureLoad: false,
   };
 
   /**
@@ -213,6 +214,9 @@ export class FrameParameterBuilder {
     fp.currentStep = props.currentStep ?? 0;
     fp.virtualTime = props.virtualTime;
     fp.trailSettings = this.getEffectiveTrailSettings(state, trailsSuppressedUntilTextureLoad);
+    // Raw flag alongside the mode-OFF trailSettings above — see the field doc
+    // on RenderFrameParams for why AnimationRenderLoop needs both.
+    fp.trailsSuppressedUntilTextureLoad = trailsSuppressedUntilTextureLoad;
     fp.gridVisible = props.gridVisible ?? true;
     fp.gridMode = props.gridMode ?? GridMode.DIAMOND;
     fp.letter = props.letter ?? null;

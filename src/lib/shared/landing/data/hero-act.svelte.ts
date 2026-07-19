@@ -56,7 +56,20 @@ function nextPropInCycle(current: PropType): PropType {
   return PROP_CYCLE[(safeIndex + 1) % PROP_CYCLE.length] ?? PropType.STAFF;
 }
 
-export function createHeroAct() {
+export function createHeroAct(options?: {
+  /**
+   * How long after a sequence swap the prop override flips. Zero would flip
+   * the prop inside the player's post-swap start hold, where the engine's
+   * crossfade runs against a frozen pose and reads as a pop (2026-07-19
+   * feedback). Delaying it lands the morph in visible MOTION: the new word
+   * starts on the old prop, then the prop transforms mid-spin. Rendering a
+   * fan-generated sequence with staves for this window is safe — all static
+   * props share motion legality; the prop type is a rendering override.
+   * Tests pass 0 to keep the swap synchronous.
+   */
+  propMorphDelayMs?: number;
+}) {
+  const propMorphDelayMs = options?.propMorphDelayMs ?? 700;
   let current = $state<SequenceData>(FALLBACK_DEMO);
   let currentProp = $state<PropType>(PropType.STAFF);
   // True while a swap is in flight — drives the dice button's "Rolling..."
@@ -74,9 +87,12 @@ export function createHeroAct() {
   let started = false;
 
   /** Kicks off generation of the sequence that will follow `current`,
-   *  chained to start where `current`'s CIRCULAR loop ends. */
-  function prepareNext(): void {
-    const targetProp = nextPropInCycle(currentProp);
+   *  chained to start where `current`'s CIRCULAR loop ends. `fromProp` is the
+   *  prop the act is advancing INTO (during an advance the reactive
+   *  `currentProp` intentionally lags behind by the morph delay, so the next
+   *  target can't be derived from it there). */
+  function prepareNext(fromProp: PropType = currentProp): void {
+    const targetProp = nextPropInCycle(fromProp);
     preparedNextProp = targetProp;
     preparedNext = null;
     const chainedStartPosition = current.startPosition ?? null;
@@ -110,9 +126,17 @@ export function createHeroAct() {
         seq = await generatePerVisitDemo({ propType: prop, startPosition: chainedStartPosition });
       }
       current = seq;
-      currentProp = prop;
       passesSinceAdvance = 0;
-      prepareNext();
+      prepareNext(prop);
+      // Sequence first, prop second: the player swaps onto the new sequence
+      // immediately (start hold, chained pose), then — once motion is under
+      // way — the prop override flips and the engine's 900ms crossfade
+      // morphs it mid-spin, where it actually reads. `busy` stays true for
+      // the whole window so a dice press can't interleave a second advance.
+      if (propMorphDelayMs > 0) {
+        await new Promise<void>((resolve) => setTimeout(resolve, propMorphDelayMs));
+      }
+      currentProp = prop;
     } finally {
       busy = false;
     }

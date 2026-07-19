@@ -155,6 +155,18 @@ export interface RenderFrameParams {
    * deterministic trail capture and effect timing regardless of real-time
    * rendering performance. When provided, replaces performance.now(). */
   virtualTime?: number;
+  /**
+   * True while a prop-type hot-swap's texture reload is still in flight
+   * (PropTypeManager.trailsSuppressedUntilTextureLoad). Combined with the
+   * renderer's per-color morph-fade-in-progress accessors in
+   * AnimationRenderLoop to suppress the trail overlay's tip capture for the
+   * WHOLE mismatched-geometry window — async load AND the morph fade after
+   * it — not just the load half. Raw boolean (not baked into trailSettings.mode)
+   * because trailSettings.mode is also user-selectable (Off), which is a
+   * different, unrelated "no trails at all" state that must not be conflated
+   * with this transient per-swap suppression.
+   */
+  trailsSuppressedUntilTextureLoad?: boolean;
 }
 
 /**

@@ -1074,6 +1074,22 @@ export class AnimationRenderLoop {
       this.lastTrailFrameTime = currentTime;
       this.lastStampedTrailTime = currentTime;
 
+      // Suppress new tip captures for a color whose prop-type is mid hot-swap:
+      // either its texture is still loading (trailsSuppressedUntilTextureLoad,
+      // shared by both colors — they always reload together) or its morph
+      // crossfade is still running post-load (per-color — see
+      // isBluePropMorphFadeInProgress doc). Both windows have the SAME failure
+      // mode: the captured tip position uses the swap target's geometry while
+      // the on-screen sprite (old, fading-old, or fading-new) doesn't match it
+      // yet, which stamps a straight line across the mismatch. See
+      // ITrailOverlayCanvas.blueMorphSuppressed for what the overlay does with this.
+      const blueMorphSuppressed =
+        !!params.trailsSuppressedUntilTextureLoad ||
+        (this.renderer?.isBluePropMorphFadeInProgress() ?? false);
+      const redMorphSuppressed =
+        !!params.trailsSuppressedUntilTextureLoad ||
+        (this.renderer?.isRedPropMorphFadeInProgress() ?? false);
+
       trailOverlay.renderFrame({
         blueTrailPoints: effectiveBlueMotionVisible ? trailPoints.blue : [],
         redTrailPoints: effectiveRedMotionVisible ? trailPoints.red : [],
@@ -1093,6 +1109,8 @@ export class AnimationRenderLoop {
         tipEffectMap: params.tipEffectMap,
         loopDetected: this.loopDetectedThisFrame,
         isSeamlesslyLoopable: params.isSeamlesslyLoopable ?? false,
+        blueMorphSuppressed,
+        redMorphSuppressed,
       });
       }
     } else if (trailOverlay && !effectiveTrailsVisible && this.lastTrailFrameTime > 0) {

@@ -133,6 +133,16 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   private lastHasBlue = true;
   private lastHasRed = true;
 
+  // Track previous per-color morph-suppression (see blueMorphSuppressed doc
+  // on TrailOverlayRenderParams). Deliberately separate from lastHasBlue/Red
+  // above: the prop stays genuinely visible throughout a morph (hasBlue/Red
+  // never flip), so this can't reuse that transition detection — and unlike
+  // it, the suppression-lift reset below must NOT touch the accumulator
+  // (no epoch bump), because the whole point is letting the pre-morph trail
+  // keep decaying on screen instead of being wiped.
+  private lastBlueMorphSuppressed = false;
+  private lastRedMorphSuppressed = false;
+
   // Per-color tipId epoch. Bumped once the fade-out envelope reaches
   // zero, so the next fade-in allocates a fresh accumulator FBO rather
   // than inheriting the previous cycle's residual pixels. The idle FBO
@@ -242,6 +252,8 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       redProp,
       bluePropType,
       redPropType,
+      blueMorphSuppressed = false,
+      redMorphSuppressed = false,
     } = params;
 
     // Non-seamless loop wrap: the props teleport from the end position back to
@@ -328,6 +340,28 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     this.lastHasBlue = hasBlue;
     this.lastHasRed = hasRed;
 
+    // Morph-suppression LIFT (was suppressed, now isn't): reset that color's
+    // ring/tail so the next capture starts a fresh, disconnected segment at
+    // the new prop's tip geometry instead of connecting back to the frozen
+    // pre-suppression point. Deliberately does NOT touch blueTipEpoch/
+    // redTipEpoch or the backend — the accumulator keeps whatever it already
+    // has, decaying normally, which is what lets the pre-morph trail "fade
+    // away naturally" instead of being wiped like a hidden→visible re-entry.
+    if (!blueMorphSuppressed && this.lastBlueMorphSuppressed) {
+      this.blueLeftRing = [];
+      this.blueRightRing = [];
+      this.blueLeftTail = createTailState(leadingEdge);
+      this.blueRightTail = createTailState(leadingEdge);
+    }
+    if (!redMorphSuppressed && this.lastRedMorphSuppressed) {
+      this.redLeftRing = [];
+      this.redRightRing = [];
+      this.redLeftTail = createTailState(leadingEdge);
+      this.redRightTail = createTailState(leadingEdge);
+    }
+    this.lastBlueMorphSuppressed = blueMorphSuppressed;
+    this.lastRedMorphSuppressed = redMorphSuppressed;
+
     const blueIsBilateral = bluePropType ? isBilateralProp(bluePropType) : true;
     const redIsBilateral = redPropType ? isBilateralProp(redPropType) : true;
     const anyBilateral = blueIsBilateral || redIsBilateral;
@@ -383,12 +417,18 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // tracks the prop through the fade-out instead of freezing in place.
     const blueCaptureLive = hasBlue || blueAlpha > 0;
     const redCaptureLive = hasRed || redAlpha > 0;
-    if (blueProp && blueCaptureLive) {
+    // blueMorphSuppressed/redMorphSuppressed: skip the capture (freeze the tip
+    // in place) while that color's prop-type swap is in flight — see the
+    // TrailOverlayRenderParams doc. blueLeftMoved/rightMoved staying false
+    // feeds the normal "prop is stationary" path into advanceTail below, so
+    // the tail recedes/shrinks toward the frozen point exactly like a real
+    // stationary prop, instead of jumping to the new (mismatched) geometry.
+    if (blueProp && blueCaptureLive && !blueMorphSuppressed) {
       const r = this.capturePropTips(blueProp, canvasSize, bluePropType, 0, trackLeft && blueLeftTrails, trackRight && blueRightTrails);
       blueLeftMoved = r.leftMoved;
       blueRightMoved = r.rightMoved;
     }
-    if (redProp && redCaptureLive) {
+    if (redProp && redCaptureLive && !redMorphSuppressed) {
       const r = this.capturePropTips(redProp, canvasSize, redPropType, 1, trackLeft && redLeftTrails, trackRight && redRightTrails);
       redLeftMoved = r.leftMoved;
       redRightMoved = r.rightMoved;

@@ -3,12 +3,12 @@ import { describe, it, expect, vi } from "vitest";
 // getBaseMotionColors pulls the SVG generator chain; stub it to keep the
 // import light, same as prop-type-manager.layers.test.ts. Not exercised by
 // these tests (only additionalLayerColors calls it).
-vi.mock("./svg-generator", () => ({
+vi.mock("../svg-generator", () => ({
   getBaseMotionColors: () => ({ blue: "#1111ff", red: "#ff1111" }),
 }));
 
-import { PropTypeManager } from "./prop-type-manager";
-import { PropTypeChanger } from "./prop-type-changer.svelte";
+import { PropTypeManager } from "../prop-type-manager";
+import { PropTypeChanger } from "../prop-type-changer.svelte";
 
 /**
  * Regression/behavior guard for the hero-act prop crossfade (2026-07-19
@@ -17,6 +17,14 @@ import { PropTypeChanger } from "./prop-type-changer.svelte";
  * assignment (mount) and never for a color whose type didn't actually change.
  * loadPropTextures reloads both colors together regardless, but the fade
  * itself must be independent per color.
+ *
+ * Relocated into __tests__/ (2026-07-19, round 2) — the project's real
+ * vitest config (tests/config/vitest.config.ts) only includes
+ * "src/**\/__tests__/**\/*.test.ts"; a sibling *.test.ts file next to the
+ * source (the original location, and prop-type-manager.layers.test.ts's
+ * convention) never matches that glob and silently never runs under
+ * `npm run test`. Confirmed via `vitest run --config tests/config/vitest.config.ts
+ * <path>` reporting "No test files found" for the old location.
  */
 
 // Minimal AnimatorState double: a mutable current-type pair plus the setters

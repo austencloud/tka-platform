@@ -81,7 +81,7 @@ beforeEach(() => {
 
 describe("createHeroAct", () => {
   it("starts on the fallback sequence and staff, generating nothing until start() is called", async () => {
-    const act = createHeroAct();
+    const act = createHeroAct({ propMorphDelayMs: 0 });
     expect(act.sequence.id).toBe("fallback");
     expect(act.propType).toBe(PropType.STAFF);
     await flush();
@@ -93,7 +93,7 @@ describe("createHeroAct", () => {
   });
 
   it("start() pre-generates the next prop in the cycle, chained to the current start position", async () => {
-    const act = createHeroAct();
+    const act = createHeroAct({ propMorphDelayMs: 0 });
     act.start();
     await flush();
 
@@ -105,7 +105,7 @@ describe("createHeroAct", () => {
   });
 
   it("cycles STAFF -> FAN -> CLUB -> BUUGENG -> STAFF, wrapping around", async () => {
-    const act = createHeroAct();
+    const act = createHeroAct({ propMorphDelayMs: 0 });
     const seen: PropType[] = [act.propType];
 
     for (let i = 0; i < PROP_CYCLE.length; i++) {
@@ -128,7 +128,7 @@ describe("createHeroAct", () => {
   });
 
   it("every advance carries a distinct sequence id (the player keys its in-place reload on id)", async () => {
-    const act = createHeroAct();
+    const act = createHeroAct({ propMorphDelayMs: 0 });
     const ids: string[] = [act.sequence.id];
 
     for (let i = 0; i < PROP_CYCLE.length; i++) {
@@ -141,7 +141,7 @@ describe("createHeroAct", () => {
   });
 
   it("chains each generated sequence's startPosition to the immediately-preceding sequence's start position", async () => {
-    const act = createHeroAct();
+    const act = createHeroAct({ propMorphDelayMs: 0 });
 
     await act.advanceNow(); // STAFF -> FAN (fresh generation, chained off the fallback)
     await flush();
@@ -162,7 +162,7 @@ describe("createHeroAct", () => {
   });
 
   it("advanceNow reuses an already-prepared next sequence instead of generating a duplicate", async () => {
-    const act = createHeroAct();
+    const act = createHeroAct({ propMorphDelayMs: 0 });
     act.start();
     await flush(); // the FAN pre-generation lands
 
@@ -179,7 +179,7 @@ describe("createHeroAct", () => {
   });
 
   it("advanceNow generates fresh when nothing has been pre-generated yet", async () => {
-    const act = createHeroAct();
+    const act = createHeroAct({ propMorphDelayMs: 0 });
     // No start() call — nothing was ever pre-generated in the background.
     await act.advanceNow();
     await flush();
@@ -191,7 +191,7 @@ describe("createHeroAct", () => {
   });
 
   it("advances only once handleLoopComplete has fired PASSES_PER_SEQUENCE times with a ready next", async () => {
-    const act = createHeroAct();
+    const act = createHeroAct({ propMorphDelayMs: 0 });
     act.start();
     await flush(); // FAN pre-generation lands
     expect(act.propType).toBe(PropType.STAFF);
@@ -214,7 +214,7 @@ describe("createHeroAct", () => {
     });
     mocks.generatePerVisitDemo.mockReturnValueOnce(pending);
 
-    const act = createHeroAct();
+    const act = createHeroAct({ propMorphDelayMs: 0 });
     act.start();
     await flush();
     expect(mocks.generatePerVisitDemo).toHaveBeenCalledTimes(1);
@@ -237,6 +237,19 @@ describe("createHeroAct", () => {
     act.handleLoopComplete();
     await flush();
     expect(act.sequence.id).toBe("gen-fan");
+    expect(act.propType).toBe(PropType.FAN);
+  });
+
+  it("with a morph delay, the sequence swaps first and the prop flips after the delay", async () => {
+    const act = createHeroAct({ propMorphDelayMs: 25 });
+    act.start();
+    await flush();
+    const advancing = act.advanceNow();
+    await flush();
+    // Sequence already swapped; prop still the old one during the morph window.
+    expect(act.sequence.id).not.toBe("fallback");
+    expect(act.propType).toBe(PropType.STAFF);
+    await advancing;
     expect(act.propType).toBe(PropType.FAN);
   });
 });

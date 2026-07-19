@@ -143,6 +143,14 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   private lastHasBlue = true;
   private lastHasRed = true;
 
+  // Track previous per-color morph-suppression (see blueMorphSuppressed doc
+  // on TrailOverlayRenderParams). Separate from lastHasBlue/Red — the prop
+  // stays visible throughout a morph — and unlike that reset, lifting this
+  // must NOT clear the accumulator, so the pre-morph trail keeps fading via
+  // its normal decay instead of being wiped. Mirrors TrailOverlayWebGL2.
+  private lastBlueMorphSuppressed = false;
+  private lastRedMorphSuppressed = false;
+
   // Tracks whether a previous center position exists for the center-point
   // smoothing path (used by clearBuffers to reset inter-sequence state).
   private hasPrevCenter = false;
@@ -274,6 +282,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       redPropType,
       currentTime,
       additionalLayers,
+      blueMorphSuppressed = false,
+      redMorphSuppressed = false,
     } = params;
 
     // Non-seamless loop wrap: the props teleport from the end position back to
@@ -360,6 +370,23 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.lastHasBlue = hasBlue;
     this.lastHasRed = hasRed;
 
+    // Morph-suppression LIFT: reset that color's ring so the next capture
+    // starts a fresh, disconnected segment at the new prop's tip geometry.
+    // Deliberately does NOT clear the accumulator (unlike blueBecameVisible
+    // above) — the point is letting the pre-morph trail keep fading via its
+    // normal destination-out decay, not wiping it. See blueMorphSuppressed
+    // doc on TrailOverlayRenderParams.
+    if (!blueMorphSuppressed && this.lastBlueMorphSuppressed) {
+      this.blueLeftRing = [];
+      this.blueRightRing = [];
+    }
+    if (!redMorphSuppressed && this.lastRedMorphSuppressed) {
+      this.redLeftRing = [];
+      this.redRightRing = [];
+    }
+    this.lastBlueMorphSuppressed = blueMorphSuppressed;
+    this.lastRedMorphSuppressed = redMorphSuppressed;
+
     // Unilateral props (club, fan, etc.) only have one tip - force single-end
     const blueIsBilateral = bluePropType ? isBilateralProp(bluePropType) : true;
     const redIsBilateral = redPropType ? isBilateralProp(redPropType) : true;
@@ -416,10 +443,10 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     // so the ring doesn't keep growing invisibly in the background.
     const blueCaptureLive = hasBlue || blueFade.alpha > 0;
     const redCaptureLive = hasRed || redFade.alpha > 0;
-    if (blueProp && blueCaptureLive) {
+    if (blueProp && blueCaptureLive && !blueMorphSuppressed) {
       this.capturePropTips(blueProp, canvasSize, bluePropType, 0, trackLeft && blueLeftTrails, trackRight && blueRightTrails, currentTime);
     }
-    if (redProp && redCaptureLive) {
+    if (redProp && redCaptureLive && !redMorphSuppressed) {
       this.capturePropTips(redProp, canvasSize, redPropType, 1, trackLeft && redLeftTrails, trackRight && redRightTrails, currentTime);
     }
 
@@ -466,9 +493,14 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     // Advance each per-color accumulator: fade existing pixels, stamp
     // the current leading edge. Envelope doesn't touch the accumulator
     // contents - it only modulates the final composite alpha below.
+    // hasColor=false during morph suppression (not just blueCaptureLive) —
+    // this is the SAME "frozen trail fades out via the steps above" path
+    // advanceAccumulator already uses for a toggled-off prop, which is
+    // exactly what a suppressed morph needs: no new stamp, existing pixels
+    // keep decaying via the fade pass above it.
     this.advanceAccumulator(
       this.blueAccumCtx,
-      blueCaptureLive,
+      blueCaptureLive && !blueMorphSuppressed,
       blueFade.alpha > 0,
       this.blueLeftRing,
       this.blueRightRing,
@@ -481,7 +513,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     );
     this.advanceAccumulator(
       this.redAccumCtx,
-      redCaptureLive,
+      redCaptureLive && !redMorphSuppressed,
       redFade.alpha > 0,
       this.redLeftRing,
       this.redRightRing,

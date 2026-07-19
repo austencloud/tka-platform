@@ -45,6 +45,14 @@ import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/can
 import { Canvas2DFadeManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-fade-manager";
 import { Canvas2DGridFadeManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-grid-fade-manager";
 import { Canvas2DVisibilityFadeManager } from "./canvas2d/canvas-2d-visibility-fade-manager";
+import {
+  easeInOutCosine,
+  propMorphOutgoingScale,
+  propMorphIncomingScale,
+  propMorphGlowBlur,
+} from "./canvas2d/prop-morph-easing";
+import { getMotionColor } from "$lib/shared/utils/svg-color-utils";
+import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
 // Constants matching AnimatorCanvas EXACTLY
 const VIEWBOX_SIZE = 950;
@@ -178,11 +186,14 @@ export class Canvas2DAnimationRenderer {
     this.bluePropFadeManager = new Canvas2DVisibilityFadeManager(300, 200);
     this.redPropFadeManager = new Canvas2DVisibilityFadeManager(300, 200);
     this.trailsFadeManager = new Canvas2DVisibilityFadeManager(350, 250);
-    // ~400ms so a whole-shape prop swap reads as morphing in the hand rather
-    // than a flash — longer than the 300ms glyph fade, which crosses much
-    // smaller glyph artwork.
-    this.bluePropMorphFadeManager = new Canvas2DFadeManager(400);
-    this.redPropMorphFadeManager = new Canvas2DFadeManager(400);
+    // 900ms: a whole-shape prop swap has to READ as a transformation, not a
+    // flash. 400ms proved imperceptible in practice (2026-07-19, homepage
+    // attract act: the fade completed inside the post-swap start hold and the
+    // handoff still read as a pop). The fade never blocks motion — it only
+    // blends sprites at the live transform — so the longer window costs
+    // nothing except being visible, which is the point.
+    this.bluePropMorphFadeManager = new Canvas2DFadeManager(900);
+    this.redPropMorphFadeManager = new Canvas2DFadeManager(900);
   }
 
   /**
@@ -276,6 +287,22 @@ export class Canvas2DAnimationRenderer {
     if (this.imageLoader.getPreviousRedPropImage()) {
       this.redPropMorphFadeManager.startFadeTransition();
     }
+  }
+
+  /**
+   * True while the blue-hand prop morph crossfade is actively running.
+   * Consumed by the trail overlay (via AnimationRenderLoop) to suppress new
+   * tip captures for that color during the fade — the tip's screen position
+   * jumps between prop types' differing tip geometry, and stamping through
+   * that jump is what drew the reported straight-line artifact.
+   */
+  isBluePropMorphFadeInProgress(): boolean {
+    return this.bluePropMorphFadeManager.isFadingInProgress();
+  }
+
+  /** Red-hand counterpart of isBluePropMorphFadeInProgress. */
+  isRedPropMorphFadeInProgress(): boolean {
+    return this.redPropMorphFadeManager.isFadingInProgress();
   }
 
   async loadAdditionalLayerPropTextures(
@@ -451,7 +478,19 @@ export class Canvas2DAnimationRenderer {
         };
 
         if (previousBluePropImage && !blueMorphFade.isComplete) {
-          ctx.globalAlpha = blueBaseAlpha * blueMorphFade.previousAlpha;
+          // Ease the raw linear fade progress once, then drive alpha, scale,
+          // AND the glow pulse off the SAME eased value — a single coherent
+          // "morph phase" rather than three independently-timed curves. This
+          // is what makes it read as one transformation instead of a plain
+          // crossfade: the outgoing sprite dissolves outward (scales up as it
+          // fades), the incoming sprite condenses into place (scales up from
+          // below 1 as it fades in) and pulses a glow at the midpoint.
+          const blueEased = easeInOutCosine(blueMorphFade.currentAlpha);
+          const outgoingScale = propMorphOutgoingScale(blueEased);
+          const incomingScale = propMorphIncomingScale(blueEased);
+          const glowBlur = propMorphGlowBlur(blueEased, canvasSize, VIEWBOX_SIZE);
+
+          ctx.globalAlpha = blueBaseAlpha * (1 - blueEased);
           this.renderProp(
             ctx,
             params.blueProp,
@@ -459,19 +498,32 @@ export class Canvas2DAnimationRenderer {
             params.bluePropDimensions,
             canvasSize,
             params.bluePropFlipped ?? false,
+            params.bluePropType,
+            outgoingScale
+          );
+          ctx.globalAlpha = blueBaseAlpha * blueEased;
+          this.renderProp(
+            ctx,
+            params.blueProp,
+            bluePropImage,
+            params.bluePropDimensions,
+            canvasSize,
+            params.bluePropFlipped ?? false,
+            params.bluePropType,
+            incomingScale,
+            { blur: glowBlur, color: getMotionColor(MotionColor.BLUE, "dark") }
+          );
+        } else {
+          this.renderProp(
+            ctx,
+            params.blueProp,
+            bluePropImage,
+            params.bluePropDimensions,
+            canvasSize,
+            params.bluePropFlipped ?? false,
             params.bluePropType
           );
-          ctx.globalAlpha = blueBaseAlpha * blueMorphFade.currentAlpha;
         }
-        this.renderProp(
-          ctx,
-          params.blueProp,
-          bluePropImage,
-          params.bluePropDimensions,
-          canvasSize,
-          params.bluePropFlipped ?? false,
-          params.bluePropType
-        );
         // Restore the base alpha — sphere shading and tunnel layers below are
         // not part of the morph and must render at full (unfaded) alpha.
         ctx.globalAlpha = blueBaseAlpha;
@@ -539,7 +591,13 @@ export class Canvas2DAnimationRenderer {
         };
 
         if (previousRedPropImage && !redMorphFade.isComplete) {
-          ctx.globalAlpha = redBaseAlpha * redMorphFade.previousAlpha;
+          // Same eased "morph phase" treatment as blue above — see its comment.
+          const redEased = easeInOutCosine(redMorphFade.currentAlpha);
+          const outgoingScale = propMorphOutgoingScale(redEased);
+          const incomingScale = propMorphIncomingScale(redEased);
+          const glowBlur = propMorphGlowBlur(redEased, canvasSize, VIEWBOX_SIZE);
+
+          ctx.globalAlpha = redBaseAlpha * (1 - redEased);
           this.renderProp(
             ctx,
             params.redProp,
@@ -547,19 +605,32 @@ export class Canvas2DAnimationRenderer {
             params.redPropDimensions,
             canvasSize,
             params.redPropFlipped ?? false,
+            params.redPropType,
+            outgoingScale
+          );
+          ctx.globalAlpha = redBaseAlpha * redEased;
+          this.renderProp(
+            ctx,
+            params.redProp,
+            redPropImage,
+            params.redPropDimensions,
+            canvasSize,
+            params.redPropFlipped ?? false,
+            params.redPropType,
+            incomingScale,
+            { blur: glowBlur, color: getMotionColor(MotionColor.RED, "dark") }
+          );
+        } else {
+          this.renderProp(
+            ctx,
+            params.redProp,
+            redPropImage,
+            params.redPropDimensions,
+            canvasSize,
+            params.redPropFlipped ?? false,
             params.redPropType
           );
-          ctx.globalAlpha = redBaseAlpha * redMorphFade.currentAlpha;
         }
-        this.renderProp(
-          ctx,
-          params.redProp,
-          redPropImage,
-          params.redPropDimensions,
-          canvasSize,
-          params.redPropFlipped ?? false,
-          params.redPropType
-        );
         ctx.globalAlpha = redBaseAlpha;
       }
       if (redMorphFade.isComplete && previousRedPropImage) {
@@ -620,6 +691,13 @@ export class Canvas2DAnimationRenderer {
    * Render a prop at its calculated position with rotation
    * @param flipped - Whether to mirror the prop horizontally (for asymmetric props like Buugeng)
    * @param propType - The type of prop being rendered (used for prop-specific rules like hands never rotating)
+   * @param scaleMultiplier - Scales ONLY the drawn width/height (both halves of the
+   *   centered drawImage offset), so the sprite grows/shrinks about its own center
+   *   without touching translate/rotate/position. Default 1 = no change (the morph
+   *   crossfade is the only caller that passes a non-1 value).
+   * @param glow - Optional shadow (blur + color) applied to this draw only. Scoped
+   *   by the surrounding ctx.save()/restore() pair, so it never leaks to whatever
+   *   renders next — the morph's incoming-sprite glow pulse.
    */
   private renderProp(
     ctx: CanvasRenderingContext2D,
@@ -633,7 +711,9 @@ export class Canvas2DAnimationRenderer {
     dimensions: { width: number; height: number },
     canvasSize: number,
     flipped: boolean = false,
-    propType?: string
+    propType?: string,
+    scaleMultiplier: number = 1,
+    glow?: { blur: number; color: string }
   ): void {
     if (!image) return;
 
@@ -661,13 +741,32 @@ export class Canvas2DAnimationRenderer {
       ctx.scale(-1, 1);
     }
 
+    if (glow && glow.blur > 0) {
+      ctx.shadowBlur = glow.blur;
+      ctx.shadowColor = glow.color;
+    }
+
+    // Scaling both the drawn size AND its centered offset by the same factor
+    // keeps the sprite centered on the translate origin — this is what makes
+    // the scale read as "about its own center" rather than shifting position.
+    const drawWidth = transform.width * scaleMultiplier;
+    const drawHeight = transform.height * scaleMultiplier;
     ctx.drawImage(
       drawSource,
-      -transform.width / 2,
-      -transform.height / 2,
-      transform.width,
-      transform.height
+      -drawWidth / 2,
+      -drawHeight / 2,
+      drawWidth,
+      drawHeight
     );
+
+    if (glow && glow.blur > 0) {
+      // Belt-and-suspenders: ctx.restore() below already reverts shadow state,
+      // but clear it explicitly so nothing between here and restore() (there is
+      // nothing today, but this is the load-bearing line if that ever changes)
+      // can inherit it.
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = "transparent";
+    }
 
     ctx.restore();
   }

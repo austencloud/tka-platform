@@ -74,6 +74,13 @@ export class PlaybackSync {
   private prevIsPlaying: boolean = false;
   private prevGridMode: GridMode | null = null;
 
+  // Boundary facts of the sequence the trail overlay last drew for, retained
+  // for the seamless-handoff check in the content-hash block below.
+  // prevSequenceData can't serve this — it's overwritten with the incoming
+  // sequence at the top of update(), before that block compares anything.
+  private lastTrailSeqStartPosition: string | null = null;
+  private lastTrailSeqWasCircular = false;
+
   private previewDarkModeActive: boolean = false;
   private _prevTrailsActive: boolean = true;
   private _prevPropsVisible: boolean = true;
@@ -214,12 +221,35 @@ export class PlaybackSync {
     if (props.sequenceData && lifecycleManager.orchestrator) {
       const newHash = frameSystem.getSequenceContentHash(props.sequenceData);
       if (newHash !== frameSystem.lastSequenceContentHash) {
+        // Seamless handoff: the outgoing sequence was a CIRCULAR loop (end
+        // pose = start pose) and the incoming one starts at that same grid
+        // position — the hero attract act constructs exactly this by
+        // generating each next sequence with the current one's startPosition.
+        // The prop never teleports across such a boundary, so the ring-buffer
+        // points stay geometrically valid and the trail must NOT be wiped:
+        // clearBuffers() also wipes the overlay's accumulated pixels, which
+        // reads as the glow mandala vanishing in one frame at every handoff
+        // ("let the earlier trail fade away naturally" — 2026-07-19). Any
+        // discontinuous change (gallery switching sequences, first load)
+        // still clears exactly as before.
+        const newStart = props.sequenceData.startPosition?.startPosition ?? null;
+        const seamlessHandoff =
+          this.lastTrailSeqWasCircular &&
+          this.lastTrailSeqStartPosition != null &&
+          this.lastTrailSeqStartPosition === newStart;
+        this.lastTrailSeqStartPosition = newStart;
+        this.lastTrailSeqWasCircular = props.sequenceData.isCircular === true;
+
         lifecycleManager.orchestrator.initializeWithDomainData(props.sequenceData);
         frameSystem.lastSequenceContentHash = newHash;
 
         // Flush stale trail data so old ring buffer points don't draw
-        // artifact lines to the new prop positions.
-        effectSystem.trailOverlay?.clearBuffers();
+        // artifact lines to the new prop positions — unless the handoff is
+        // seamless (see above), where those points are still valid and the
+        // trail flows across the boundary.
+        if (!seamlessHandoff) {
+          effectSystem.trailOverlay?.clearBuffers();
+        }
         effectSystem.fireTipTracker?.reset();
         effectSystem.fireRenderer?.clearSimulation();
         effectSystem.charcoalRenderer?.clearSimulation();

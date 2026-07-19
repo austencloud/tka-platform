@@ -75,6 +75,17 @@ export interface IAnimationRenderer {
   startRedPropMorphFade(): void;
 
   /**
+   * True while the blue-hand morph crossfade is actively running. The render
+   * loop reads this to suppress the trail overlay's tip capture for that
+   * color through the whole fade — tip geometry differs between prop types,
+   * so stamping through the swap draws a straight-line artifact.
+   */
+  isBluePropMorphFadeInProgress(): boolean;
+
+  /** Red-hand counterpart of isBluePropMorphFadeInProgress. */
+  isRedPropMorphFadeInProgress(): boolean;
+
+  /**
    * Load different prop types for blue and red props
    * @param bluePropType - Type of prop for blue hand
    * @param redPropType - Type of prop for red hand

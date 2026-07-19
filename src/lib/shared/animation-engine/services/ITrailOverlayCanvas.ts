@@ -38,6 +38,28 @@ export interface TrailOverlayRenderParams {
    * must NOT be reset.
    */
   isSeamlesslyLoopable?: boolean;
+  /**
+   * True while that hand's prop-type is mid hot-swap — either the texture is
+   * still loading, or (post-load) its morph crossfade is still running. Tip
+   * geometry (getTipPoints/getTrailPointConfig) differs per prop type, so
+   * capturing a new point against the swap target's geometry while the OTHER
+   * hand's prop hasn't finished appearing stamps a straight line connecting
+   * the two different physical tip locations — the reported "trail jumps
+   * across in a straight line" artifact. While true: new tip captures for
+   * THIS color are skipped (the ring/tail freeze and recede as if the prop
+   * had stopped, so the existing trail shrinks/fades naturally instead of
+   * jumping); the already-stamped accumulator pixels are untouched and keep
+   * decaying every frame via the backend's normal per-frame decay. On the
+   * frame this flips back to false, that color's ring/tail are reset so the
+   * next capture starts a fresh, disconnected segment at the new geometry —
+   * WITHOUT touching the accumulator (unlike a hidden→visible transition,
+   * this never bumps the tip epoch / allocates a fresh FBO, because the goal
+   * is exactly to let the old trail keep fading, not wipe it). Default false
+   * — zero behavior change for callers that don't pass it.
+   */
+  blueMorphSuppressed?: boolean;
+  /** Red-hand counterpart of blueMorphSuppressed. */
+  redMorphSuppressed?: boolean;
 }
 
 export interface ITrailOverlayCanvas {

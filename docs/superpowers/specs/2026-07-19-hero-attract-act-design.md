@@ -150,6 +150,46 @@ flush with the bento's left and right edges.
       geometry re-measured, committed with explicit pathspec
 - [~] Austen visual pass on the live act (morph feel, trail intensity, pacing)
 
+## Round 2 (2026-07-19, Austen live feedback: "it pops" / "make it sexy")
+
+Root causes found and fixed:
+1. **The pop**: InlineAnimationPlayer's `{#if loading}` branch unmounted the
+   whole canvas subtree on every sequence reload — a fresh engine treats the
+   prop override as a first-time assignment and the fade is suppressed by
+   design. Fixed with `hasLoadedOnce`: the spinner gates only the FIRST load;
+   reloads keep the canvas (and engine) alive.
+2. **Imperceptible fade**: 400ms completed inside the post-swap start hold.
+   Now 900ms, and the act flips the prop ~700ms AFTER the sequence swap
+   (`propMorphDelayMs`), so the morph runs during visible motion.
+3. **Trail jump-line**: the legacy suppression seam (`trailSettings.mode=OFF`)
+   never gated the live path — the trail OVERLAY (WebGL2/Canvas) self-captures
+   and never reads mode. Per-color `blueMorphSuppressed`/`redMorphSuppressed`
+   now flow render-loop → overlay: capture freezes through texture-load AND
+   morph fade, the accumulated glow decays naturally (no wipe, no epoch bump),
+   and the lift resets rings/tails so the next capture starts a disconnected
+   fresh segment.
+4. **Trail wipe at handoff**: PlaybackSync cleared overlay buffers on every
+   sequence-content change. Now skipped for seamless handoffs (outgoing
+   sequence circular + incoming starts at the same grid position — exactly
+   what chaining constructs), so the mandala flows across the boundary.
+5. **Flourish**: one eased phase (cosine) drives alpha + scale + glow:
+   outgoing sprite dissolves outward (1→1.07), incoming condenses in
+   (0.92→1) with a motion-color glow pulse peaking mid-fade
+   (`canvas2d/prop-morph-easing.ts`, pure + unit-tested).
+
+Verified: 31 targeted tests green under the project vitest config (incl. new
+suppression-lifecycle and easing-curve tests); burst captures show the
+mid-morph blend at the chained hold, the prior trail persisting across the
+boundary and fading naturally, and no jump line; check:fast clean for all
+touched files. Test-config discovery: `*.test.ts` outside `__tests__/` never
+runs under `tests/config/vitest.config.ts` — morph test relocated;
+pre-existing `prop-type-manager.layers.test.ts` has the same defect (flagged,
+not fixed here).
+
+Relayed follow-ups (queued): cap hero generation turns at 1.5–2 and allow
+level 3; finish launchpad tile media (pictograph-fade card, glossary
+dictionary animation, guide cover, alphabet strip).
+
 ## Build discovery (2026-07-19): why the hero never had trails
 
 Trail SETTINGS were never the problem — the singleton defaults to FADE+GLOW.
