@@ -189,17 +189,13 @@
 </div>
 
 <style>
-  /* One rhythm: prose stays at reading width, only the anatomy diagram
-     goes wide. */
+  /* Prose spans the shell like everything else (Austen 2026-07-19); only
+     the anatomy diagram still manages its own breakout math. */
   .narrow {
-    max-width: 46rem;
     margin-inline: auto;
   }
 
   @media (min-width: 1100px) {
-    .editorial.wide {
-      max-width: 76rem;
-    }
     /* The anatomy diagram breaks out of the editorial reading column so the
        two faces and their legend columns get real width. CardAnatomyExplainer
        fills whatever width this wrapper hands it and picks its own layout. */

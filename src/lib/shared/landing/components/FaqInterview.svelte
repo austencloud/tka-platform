@@ -65,10 +65,9 @@
 </section>
 
 <style>
-  /* One reading column. The host page owns outer spacing and width; the
-     component only caps its own measure so it embeds cleanly anywhere. */
+  /* The host page owns outer spacing and width; the component fills it
+     (no reading-measure cap — Austen 2026-07-19). */
   .faq {
-    max-width: 42rem;
     margin: 0 auto;
   }
 
@@ -116,7 +115,6 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.74));
     font-size: 1rem;
     line-height: 1.7;
-    max-width: 65ch;
   }
 
   /* The door: a button, not a text link (clickables look like buttons).
@@ -161,9 +159,6 @@
      so both columns start on the same visual line. The host page widens
      the band this lives in (see /faq). */
   @media (min-width: 1500px) {
-    .faq {
-      max-width: none;
-    }
     .qa-list {
       columns: 2;
       column-gap: 4.5rem;
@@ -210,7 +205,6 @@
     }
     .answer {
       font-size: 1.28rem;
-      max-width: 68ch;
     }
     .faq-cta {
       min-height: 52px;

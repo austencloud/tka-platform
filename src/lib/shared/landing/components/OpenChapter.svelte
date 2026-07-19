@@ -39,7 +39,6 @@
 <style>
   .open-chapter {
     margin: 3.5rem auto;
-    max-width: 42rem;
     padding: 2rem 1.75rem 2.25rem;
     border: 2px dashed oklch(0.55 0.1 275 / 0.45);
     border-radius: 18px;

@@ -115,7 +115,6 @@
     font-size: 1rem;
     line-height: 1.7;
     text-wrap: pretty;
-    max-width: 64ch;
     color: oklch(0.8 0.012 270);
     margin: 0 0 0.9rem;
   }
@@ -124,7 +123,6 @@
     font-size: 0.92rem;
     line-height: 1.6;
     text-wrap: pretty;
-    max-width: 64ch;
     color: oklch(0.73 0.012 270);
     margin: 0 0 0.6rem;
   }
@@ -145,7 +143,6 @@
     font-size: 0.9rem;
     line-height: 1.55;
     text-wrap: pretty;
-    max-width: 60ch;
     color: oklch(0.7 0.015 270);
   }
   .td-examples li::before {
@@ -210,7 +207,6 @@
     }
     .td-def {
       font-size: 1.2rem;
-      max-width: 68ch;
     }
     .td-meta {
       font-size: 1.05rem;

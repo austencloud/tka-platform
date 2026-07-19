@@ -234,10 +234,10 @@
     }
   }
 
-  /* Larger reading type than the base 46rem-column prose: this text sits in a
-     wide band and carries the whole story, so it earns the lede-adjacent size. */
+  /* Larger reading type: this text sits in a wide band and carries the whole
+     story, so it earns the lede-adjacent size. No width cap — prose spans its
+     column (Austen 2026-07-19). */
   .lineage-prose p {
-    max-width: 58ch;
     font-size: clamp(1.02rem, 0.96rem + 0.22vw, 1.24rem);
     line-height: 1.7;
   }

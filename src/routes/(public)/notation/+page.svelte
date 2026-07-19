@@ -768,7 +768,6 @@
   /* ── code / notation line ── (siteswap string, real PoiNotation input) */
   .code-figure {
     margin: 1.6rem 0;
-    max-width: 46rem;
   }
   .notation-line {
     margin: 0;

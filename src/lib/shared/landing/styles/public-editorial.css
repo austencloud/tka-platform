@@ -8,7 +8,10 @@
 
 .editorial {
   position: relative;
-  max-width: 46rem;
+  /* Full-measure shell matching SiteHeader/SiteFooter. Narrow essay ribbons
+     are banned (Austen 2026-07-19): text spans the same width as the content
+     and chrome around it, and pages use the whole canvas on 4K. */
+  max-width: min(1720px, 92vw);
   margin: 0 auto;
   padding: 88px 1.5rem 5rem; /* top clears the fixed SiteHeader */
   font-family: "Inter", system-ui, sans-serif;
@@ -80,7 +83,6 @@
 
 /* ── lede ── */
 .lede {
-  max-width: 40rem;
   margin: 0 auto 3rem;
   text-align: center;
 }
@@ -136,26 +138,16 @@
 
 /* ── demo duo ──
    A section whose prose sits BESIDE a live demonstration (animation player,
-   mandala, pictograph) instead of above a lonely centered figure. The section
-   breaks out of the 46rem essay column symmetrically (position+translate, so
-   the scroll-reveal's transform animation is unaffected), and the two cells
-   sit side by side from 1100px up. This is the wide-screen answer for
-   demonstration-heavy pages: on 4K the demo fills the measure instead of the
-   page reading like a stretched mobile column. */
+   mandala, pictograph). The shell is already full-measure, so duos simply
+   fill it; the two cells sit side by side from 1100px up. */
 .editorial .has-duo {
-  position: relative;
-  left: 50%;
-  translate: -50% 0;
-  width: min(76rem, 92vw);
+  width: 100%;
 }
 .section-duo {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 2.2rem;
   align-items: center;
-}
-.section-duo > .duo-copy {
-  max-width: 46rem;
 }
 @media (min-width: 1100px) {
   .section-duo {
@@ -186,7 +178,7 @@
    Below that it renders as a stacked breakout-width band — for demos too wide
    to share a 1100px row (e.g. a pair of square stages). */
 .editorial .has-duo.duo-uw {
-  width: min(66rem, calc(100vw - 2.2rem));
+  width: 100%;
 }
 .has-duo.duo-uw .section-duo {
   grid-template-columns: minmax(0, 1fr);
@@ -197,13 +189,10 @@
 }
 
 /* ── breakout bands ──
-   Prose keeps the essay measure; visual bands escape it and center on the
-   viewport. `wide` and `cinema` step up on ultrawide only (4K block below):
-   wide = roomy grid band, cinema = full stage band. */
+   Historical opt-outs from the old narrow essay column. The shell is now
+   full-measure, so these simply fill it; classes stay for markup compat. */
 .editorial .breakout {
-  --breakout-width: min(66rem, calc(100vw - 2.2rem));
-  width: var(--breakout-width);
-  margin-inline: calc((100% - var(--breakout-width)) / 2);
+  width: 100%;
   margin-block: 0.4rem 1.4rem;
 }
 
@@ -229,11 +218,8 @@
   font-weight: 400;
 }
 .prose p {
-  /* Reading measure that tracks font size and user zoom (satisfies WCAG 1.4.4),
-     tuned to ~66 rendered characters. Inter is narrow — its glyphs run ~0.43em,
-     so 1ch (the "0" advance) holds ~1.45 average characters; 46ch lands ~66-68
-     real characters, the readability sweet spot. */
-  max-width: min(100%, 46ch);
+  /* No reading-measure cap: prose spans the same width as the content around
+     it (Austen 2026-07-19 — mismatched narrow text columns are banned). */
   margin: 0 0 1.2rem;
 }
 .prose p:last-child {
@@ -436,9 +422,9 @@
 }
 
 /* ── 4K / big desktop ──
-   The 46rem column with capped type clamps reads as a miniature essay strip on
-   a big monitor. One type step up, a wider — still readable — measure, and the
-   demo tiers (duo-max / cinema / wide) engage.
+   The shell is full-measure at every size; this tier adjusts COMPOSITION only:
+   duo gutters, the duo-uw side-by-side split, and the display step for page
+   titles.
    BREAKPOINT NOTE: a 4K monitor at Windows' default 200% scaling reports a
    ~1920px CSS viewport — a 2200px query never fires there. 1680 catches
    4K-at-200%, 1440p-at-100%, and full-screen 1920 desktops; laptops stay on
@@ -450,53 +436,18 @@
      here re-sizes type. The tier caps-and-centers the reading column, widens
      visual bands, holds duos in conversation, and steps the display-scale page
      title for centered marketing headers. */
-  .editorial {
-    /* Cap-and-center: the reading column holds at 60rem; margins absorb the
-       rest of a 4K/ultrawide canvas (the Apple/Stripe/Linear/Vercel pattern). */
-    max-width: 60rem;
-  }
-  /* Duo sections claim real width: 110rem == 1760px at 3840. The copy keeps
-     its measure and centers in its column. */
-  .editorial .has-duo {
-    width: min(110rem, 88vw);
-  }
-  /* duo-max (composer demo-first sections) caps at 160rem == 2560px: copy and
-     the live demo stay in one composition instead of drifting a half-meter
-     apart on a 3840 screen. */
-  .editorial .has-duo.duo-max {
-    width: min(88vw, 160rem);
-  }
   /* A 112px gutter reads as one composition; a 192px one reads as two islands. */
   .section-duo {
     gap: clamp(3rem, 4vw, 6rem);
   }
-  .section-duo > .duo-copy {
-    justify-self: center;
-    max-width: 48rem;
-  }
   /* duo-uw engages its side-by-side layout here (stacked below): copy 5fr,
      demo 7fr — the wide-demo split these sections exist for. */
-  .editorial .has-duo.duo-uw {
-    width: min(110rem, 88vw);
-  }
-  .editorial .has-duo.duo-uw.duo-max {
-    width: min(88vw, 160rem);
-  }
   .has-duo.duo-uw .section-duo {
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
     gap: clamp(3rem, 4vw, 6rem);
   }
   .has-duo.duo-uw .section-duo > .duo-copy {
     margin-inline: 0;
-  }
-  /* Band steps: wide = roomy grid band; cinema = full stage band, capped at
-     175rem == 2800px so a 16:9 live scene fills it while the stage inside owns
-     its own 78vh height cap and never outgrows the viewport. */
-  .editorial .breakout.wide {
-    --breakout-width: min(96rem, 92vw);
-  }
-  .editorial .breakout.cinema {
-    --breakout-width: min(88vw, 175rem);
   }
   /* Centered marketing headers (about/roots/notation) get a bounded display
      step. Floor equals the base ramp's cap (4.2rem) so the 1680 seam has zero

@@ -82,21 +82,12 @@
      reads as awkward furniture on a quiet text page; demos live behind
      the answer doors instead. */
   @media (min-width: 1500px) {
-    .faq-editorial {
-      max-width: 92rem;
-    }
     /* The closing card stays a readable centered band inside the wide
        spread (same treatment as the glossary's). */
     .faq-editorial :global(.cta-card) {
       max-width: 46rem;
       margin-left: auto;
       margin-right: auto;
-    }
-  }
-
-  @media (min-width: 2200px) {
-    .faq-editorial {
-      max-width: 112rem;
     }
   }
 </style>

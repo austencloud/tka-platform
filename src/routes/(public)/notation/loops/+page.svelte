@@ -379,11 +379,6 @@
     color: oklch(0.68 0.16 25);
   }
 
-  /* ── CAP credits ── */
-  .cap-credits {
-    max-width: 46ch;
-  }
-
   /* ── icon legend ── */
   .icon-legend {
     list-style: none;
@@ -392,7 +387,6 @@
     display: flex;
     flex-direction: column;
     gap: 0.7rem;
-    max-width: 34rem;
   }
   .legend-row {
     display: flex;

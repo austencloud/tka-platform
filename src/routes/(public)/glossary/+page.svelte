@@ -693,7 +693,6 @@
       display: none;
     }
     .glossary-shell.landing-hub .editorial {
-      max-width: 64rem;
       margin-left: auto;
       margin-right: auto;
     }
