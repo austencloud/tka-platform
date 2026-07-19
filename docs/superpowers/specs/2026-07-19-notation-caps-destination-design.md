@@ -38,13 +38,54 @@ Page structure (reuses the loops/shape-matrix destination skeleton — own `Seo`
    usage narrowed it to the C-CAP. Timeline treatment.
 3. **The People** — credit cards for the five named figures with their specific
    contributions (as listed in ground truth; nothing beyond it without verification).
-4. **CAPs vs LOOPs** — the conceptual comparison, side by side: per-hand trajectory
-   composition vs per-beat snapshot composition; what each lens captures that the other
-   cannot; parallel-not-parent/child stated plainly.
+4. **CAPs vs LOOPs — twin diagrams, one pattern** (decided 2026-07-19). Pick ONE pattern
+   that is both a CAP and a TKA-notatable sequence. Show it twice, side by side: left =
+   per-hand trajectory art (the CAP lens; animated SVG path-trace of the kidney-bean),
+   right = the real pictograph strip (the LOOP lens; real renderer, 8-count). Caption
+   thesis: same movement, two ways of seeing — CAPs read the paths, LOOPs read the beats.
+   Below the diagrams, a tight comparison table (composes what / unit / geometry /
+   community origin) and short prose. Parallel-not-parent/child stated plainly.
+   Interactive lens-toggle (crossfade between views) is the phase-3 upgrade, not v1.
 5. **CAP-space and TKA today** — honest scope statement: TKA formalizes LOOPs; CAP-space
    is adjacent territory the system does not yet notate. No colonizing claims.
 6. **Cross-links** — to `/notation/loops` (its lineage section links back here), the
    `/notation` hub, and the guide.
+
+## P1 Research Findings (2026-07-19 web verification pass)
+
+Claim-by-claim status against public primary sources:
+
+- **Alien Jon promoted** — VERIFIED (DrexFactor C-CAP tutorial credits his teaching
+  technique; multiple sources place him in the Burning Man 2007 theory group).
+- **Nick Woolsey / PlayPoi "Capped Antispin Patterns"** — VERIFIED (his 2016 tutorial is
+  literally titled that; "popularized" is inference from the tutorial's existence, not a
+  stated fact — phrase carefully).
+- **DrexFactor documented** — VERIFIED extensively (Tech Blogs 2009–2016, C-CAPs tutorial
+  2012, 8-Step CAP Recipe 2016).
+- **Charlie (Cushing) — 8-step CAP + 9-Square Theory** — VERIFIED for the attribution
+  ("The idea comes to us from Charlie's 9-square theory" — DrexFactor); surname "Cushing"
+  only in third-party sources (SpinMorePoi series, Instagram), never on a directly-read
+  DrexFactor/HoP page.
+- **Broad→narrow definition drift** — PARTIALLY SUPPORTED in substance; the specific
+  "kidney bean" descriptor was NOT found in primary sources (may be Austen's/community
+  verbal shorthand — fine to use, don't attribute it).
+- **⚠ OPEN: coiner identity.** MCP KB says "coined by Damien (Zaltymbunk)". Web sources
+  say Damien's HoP username is **French_Saltimbanque**, while **Zaltymbunk** appears as a
+  (possibly distinct) HoP contributor — "Trochoid Master", Toulouse/Angers — who authored
+  "The Math of CAPs" (hosted on DrexFactor) and writes "what's that i have called CAPs"
+  (itself a coinage-flavored claim). Possibly two people conflated in the KB; possibly one
+  person, two usernames ("Saltimbanque"→"Zaltymbunk" is a plausible respelling). The
+  origin thread (homeofpoi.com "What are CAP's?", topic 891193) is behind Cloudflare bot
+  protection — needs a human browser visit or Austen's personal knowledge. MUST be
+  resolved before the People section ships; if the KB is wrong, fix packages/domain (the
+  canonical source) too.
+
+Canonical citation set for the page:
+1. The Math of CAPs — drexfactor.com/reference/math_caps (Zaltymbunk's framework)
+2. Learning CAPs (Capped Antispin Patterns) — playpoi.com/learn/learning-caps-capped-antispin-patterns/
+3. Basic Poi Dancing Tutorial: C-CAPs — DrexFactor (2012)
+4. Tutorial: Double Staff 8-Step CAP Recipe — DrexFactor (2016)
+5. "What are CAP's?" — Home of Poi forums topic 891193 (origin thread; verify manually)
 
 ## Content Integrity Gate (hard requirement)
 
