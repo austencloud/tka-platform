@@ -7,12 +7,18 @@
  * Only actual .svelte components are gated — .svelte.ts runes modules and
  * plain .ts files pass through because they're fast to compile (esbuild)
  * and may use named exports that a simple stub can't satisfy.
+ *
+ * The SSR build additionally stubs a small list of browser-only npm packages
+ * (getSsrStubbedPackages) whose dynamic-import edges would otherwise be
+ * inlined into the 25 MiB-capped _worker.js by wrangler.
  */
 
 import type { Plugin, ResolvedConfig } from "vite";
 import {
   getDisabledFeatureModulePaths,
+  getSsrEmptiedRoutePaths,
   getSsrStubbedModulePaths,
+  getSsrStubbedPackages,
 } from "./feature-flags";
 
 const STUB_ID = "\0feature-gate-stub.js";
@@ -25,6 +31,8 @@ function normalize(p: string): string {
 export function featureGatePlugin(): Plugin {
   let isProductionBuild = false;
   let disabledModulePaths: string[] = [];
+  let stubbedPackages: string[] = [];
+  let emptiedRoutePaths: string[] = [];
 
   return {
     name: "vite-plugin-feature-gate",
@@ -42,6 +50,8 @@ export function featureGatePlugin(): Plugin {
       disabledModulePaths = isSsrBuild
         ? getSsrStubbedModulePaths()
         : getDisabledFeatureModulePaths();
+      stubbedPackages = isSsrBuild ? getSsrStubbedPackages() : [];
+      emptiedRoutePaths = isSsrBuild ? getSsrEmptiedRoutePaths() : [];
 
       if (disabledModulePaths.length > 0) {
         console.log(
@@ -51,7 +61,15 @@ export function featureGatePlugin(): Plugin {
     },
 
     async resolveId(source, importer, options) {
-      if (!isProductionBuild || !disabledModulePaths.length) return null;
+      if (!isProductionBuild) return null;
+
+      // Browser-only npm packages (SSR build only): sever the dynamic-import
+      // edge so wrangler doesn't inline the package into _worker.js.
+      if (stubbedPackages.includes(source)) {
+        return STUB_ID;
+      }
+
+      if (!disabledModulePaths.length) return null;
 
       const normalizedSource = normalize(source);
       if (!normalizedSource.endsWith(".svelte")) return null;
@@ -87,6 +105,21 @@ export function featureGatePlugin(): Plugin {
       if (id === STUB_ID) {
         return STUB_EXPORT;
       }
+
+      // SSR build: empty ssr=false route components instead of resolve-stubbing
+      // them — SvelteKit's build_server_nodes requires every route component to
+      // stay in the Vite manifest under its real filename. An empty string is a
+      // valid Svelte component with no import graph.
+      if (emptiedRoutePaths.length) {
+        const bare = normalize(id).split("?")[0]!;
+        if (
+          bare.endsWith(".svelte") &&
+          emptiedRoutePaths.some((prefix) => bare.includes(prefix))
+        ) {
+          return "";
+        }
+      }
+
       return null;
     },
   };

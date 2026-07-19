@@ -352,6 +352,57 @@ export function getSsrStubbedModulePaths(): string[] {
 }
 
 /**
+ * Route directory prefixes whose `.svelte` components are EMPTIED (not
+ * resolve-stubbed) in the SSR build.
+ *
+ * Route components can't go through the resolve-time stub: SvelteKit's
+ * build_server_nodes step looks every route component up in the Vite manifest
+ * by filename, and a resolve-level replacement removes it from the manifest
+ * ("Could not find file ... in Vite manifest"). Emptying the module source in
+ * the `load` hook keeps the file in the manifest while dropping its entire
+ * import graph.
+ *
+ * /test routes are `ssr = false` (src/routes/test/+layout.ts), so the server
+ * never renders their components — yet SvelteKit still emits a server entry
+ * per route and Vite bundles it into _worker.js. /test carried 1.28 MiB of
+ * entries plus test-only deps (pdfjs-dist, pdf-lib, the 600 KB chosen-mandalas
+ * showcase data), which is what tipped the Worker back over 25 MiB on
+ * 2026-07-18 (26.9 MiB, commit 19de86ec38). Emptying them server-side is free:
+ * ssr=false means the component is never rendered, and the client build keeps
+ * the real pages.
+ *
+ * Deliberately NOT the whole DEV_ONLY_ROUTE_PATTERNS list: the other dev
+ * routes (embed/, demo/, (dev)/, ...) inherit the root `ssr = true`, so an
+ * emptied component there WOULD render (blank) server-side. Only add a route
+ * dir here after verifying it sets `ssr = false`.
+ */
+export function getSsrEmptiedRoutePaths(): string[] {
+  return ["src/routes/test/"];
+}
+
+/**
+ * npm packages to stub in the SSR / server build.
+ *
+ * These are browser-only heavyweights reached exclusively through dynamic
+ * `import()` calls inside client-triggered flows (video export), but a dynamic
+ * import is still a build-graph edge, so wrangler inlines the whole package
+ * into `_worker.js`. Stubbing the bare specifier in the SSR build severs the
+ * edge; the client build keeps the real package.
+ *
+ * Only list packages whose exports are never evaluated at module scope in
+ * server-reachable code (dynamic-import-only consumers) — a stub that a server
+ * code path actually calls would throw at runtime, not at build time.
+ */
+export function getSsrStubbedPackages(): string[] {
+  return [
+    // WASM H.264 encoder (~1 MiB minified) — WebCodecs fallback for the video
+    // exporter. Dynamic-imported only in wasm-video-encoder.ts; never runs
+    // server-side (needs canvas + workers).
+    "h264-mp4-encoder",
+  ];
+}
+
+/**
  * Returns the list of route directory patterns for disabled features, plus
  * dev-only route patterns when building for production.
  *
