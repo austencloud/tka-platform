@@ -88,14 +88,26 @@ tabIntroSeen:create:generator → "true"
 tabIntroSeen:learn:concepts → "true"
 ```
 
-## Migration from ModuleOnboarding
+## History: migration from ModuleOnboarding
 
-The old `ModuleOnboarding.svelte` can be deprecated. To migrate:
+`TabIntro` replaced the old `ModuleOnboarding.svelte` carousel. That
+component, its content type (`ModuleOnboardingContent`/`TabInfo` in
+`domain/types.ts`), and its Firestore-synced per-module completion storage
+(`markModuleOnboardingComplete`/`hasCompletedModuleOnboarding` + a `modules`
+sub-object on the onboarding status doc, in `config/storage-keys.ts` and
+`services/onboarding-persister.ts`) were all removed 2026-07-19 as dead
+code — the migration below was never carried out for any tab, so
+`ModuleOnboarding.svelte` had already been deleted with zero remaining
+callers, and the storage layer it used outlived it.
 
-1. Remove `ModuleOnboarding` usage from module components
-2. Add `TabIntro` to each tab that needs an introduction
-3. Define intro content in `tab-intro-content.ts`
-4. Remove module-level onboarding state from `navigation-state.svelte.ts`
+**Current state:** `TabIntro.svelte` itself has zero mount points anywhere
+in the app — it isn't rendered by any tab today. Its dismissal tracking is
+local-only (`tabIntroSeen:${moduleId}:${tabId}` in localStorage, set inline
+in `TabIntro.svelte`'s `dismiss()`), with no cloud sync. If/when a tab
+adopts it, follow the usage guide above; if cross-device dismissal sync is
+wanted at that point, that's a fresh design decision, not a resurrection of
+the removed per-module Firestore API (which never distinguished tabs within
+a module — it only tracked module-level completion).
 
 ## Design Decisions
 

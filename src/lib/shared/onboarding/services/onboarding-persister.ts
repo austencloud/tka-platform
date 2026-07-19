@@ -4,6 +4,13 @@
  * Persists onboarding completion status to Firebase for authenticated users.
  * Falls back to localStorage for anonymous users.
  * Syncs local progress to cloud on authentication.
+ *
+ * Scope: app-wide completion/skip status, and the What's New "last seen
+ * version" high-water mark. There is no per-module tracking — that surface
+ * (a `modules` sub-object keyed by module id) was removed 2026-07-19 as dead
+ * code; it served the deprecated `ModuleOnboarding.svelte` carousel and had
+ * zero remaining callers once TabIntro.svelte's local-only per-tab
+ * dismissal replaced it.
  */
 
 import {
@@ -22,8 +29,6 @@ import {
   ONBOARDING_COMPLETED_KEY,
   ONBOARDING_COMPLETED_AT_KEY,
   ONBOARDING_SKIPPED_KEY,
-  getModuleOnboardingKey,
-  getModuleOnboardingTimestampKey,
 } from "../config/storage-keys";
 import {
   safeLocalStorageSetItem,
@@ -31,15 +36,6 @@ import {
 } from "$lib/shared/foundation/services/storage-manager";
 
 const LAST_SEEN_VERSION_KEY = "tka-last-seen-version";
-
-const MODULES_WITH_ONBOARDING = [
-  "browse",
-  "learn",
-  "create",
-  "compose",
-  "train",
-  "library",
-];
 
 export class OnboardingPersister {
   private cachedStatus: OnboardingStatus | null = null;
@@ -66,15 +62,10 @@ export class OnboardingPersister {
    * Create default empty onboarding status
    */
   private createDefaultStatus(): OnboardingStatus {
-    const modules: OnboardingStatus["modules"] = {};
-    for (const moduleId of MODULES_WITH_ONBOARDING) {
-      modules[moduleId] = { completed: false, completedAt: null };
-    }
     return {
       appCompleted: false,
       appSkipped: false,
       appCompletedAt: null,
-      modules,
       lastSeenVersion: null,
     };
   }
@@ -93,16 +84,6 @@ export class OnboardingPersister {
     const appCompletedAt =
       localStorage.getItem(ONBOARDING_COMPLETED_AT_KEY) || null;
 
-    const modules: OnboardingStatus["modules"] = {};
-    for (const moduleId of MODULES_WITH_ONBOARDING) {
-      const key = getModuleOnboardingKey(moduleId);
-      const timestampKey = getModuleOnboardingTimestampKey(moduleId);
-      modules[moduleId] = {
-        completed: localStorage.getItem(key) === "true",
-        completedAt: localStorage.getItem(timestampKey) || null,
-      };
-    }
-
     // Last seen version
     const lastSeenVersion = localStorage.getItem(LAST_SEEN_VERSION_KEY) || null;
 
@@ -110,7 +91,6 @@ export class OnboardingPersister {
       appCompleted,
       appSkipped,
       appCompletedAt,
-      modules,
       lastSeenVersion,
     };
   }
@@ -144,24 +124,6 @@ export class OnboardingPersister {
       removeLocalStorageItem(ONBOARDING_COMPLETED_AT_KEY);
     }
 
-    // Per-module
-    for (const [moduleId, moduleStatus] of Object.entries(status.modules)) {
-      const key = getModuleOnboardingKey(moduleId);
-      const timestampKey = getModuleOnboardingTimestampKey(moduleId);
-
-      if (moduleStatus.completed) {
-        safeLocalStorageSetItem(key, "true");
-      } else {
-        removeLocalStorageItem(key);
-      }
-
-      if (moduleStatus.completedAt) {
-        safeLocalStorageSetItem(timestampKey, moduleStatus.completedAt);
-      } else {
-        removeLocalStorageItem(timestampKey);
-      }
-    }
-
     // Last seen version
     if (status.lastSeenVersion) {
       safeLocalStorageSetItem(LAST_SEEN_VERSION_KEY, status.lastSeenVersion);
@@ -191,13 +153,6 @@ export class OnboardingPersister {
         status.appCompleted = data.appCompleted ?? false;
         status.appSkipped = data.appSkipped ?? false;
         status.appCompletedAt = data.appCompletedAt ?? null;
-        if (data.modules) {
-          for (const [moduleId, moduleStatus] of Object.entries(data.modules)) {
-            if (status.modules[moduleId]) {
-              status.modules[moduleId] = moduleStatus;
-            }
-          }
-        }
         // Last seen version
         status.lastSeenVersion = data.lastSeenVersion ?? null;
 
@@ -255,51 +210,6 @@ export class OnboardingPersister {
   }
 
   /**
-   * Check if a module's onboarding is completed (synchronous, uses cache/localStorage)
-   */
-  hasCompletedModule(moduleId: string): boolean {
-    // Check cache first
-    if (this.cachedStatus) {
-      return this.cachedStatus.modules[moduleId]?.completed ?? false;
-    }
-
-    // Fall back to localStorage for immediate check
-    if (typeof localStorage === "undefined") return false;
-    const key = getModuleOnboardingKey(moduleId);
-    return localStorage.getItem(key) === "true";
-  }
-
-  /**
-   * Mark a module's onboarding as completed
-   */
-  async markModuleCompleted(moduleId: string): Promise<void> {
-    const status = this.cachedStatus || (await this.loadStatus());
-    const now = new Date().toISOString();
-
-    if (!status.modules[moduleId]) {
-      status.modules[moduleId] = { completed: false, completedAt: null };
-    }
-    status.modules[moduleId].completed = true;
-    status.modules[moduleId].completedAt = now;
-
-    await this.saveStatus(status);
-  }
-
-  /**
-   * Reset a module's onboarding status
-   */
-  async resetModule(moduleId: string): Promise<void> {
-    const status = this.cachedStatus || (await this.loadStatus());
-
-    if (status.modules[moduleId]) {
-      status.modules[moduleId].completed = false;
-      status.modules[moduleId].completedAt = null;
-    }
-
-    await this.saveStatus(status);
-  }
-
-  /**
    * Check if app-wide onboarding is completed
    */
   hasCompletedApp(): boolean {
@@ -334,14 +244,6 @@ export class OnboardingPersister {
   }
 
   /**
-   * Reset all onboarding status
-   */
-  async resetAll(): Promise<void> {
-    const status = this.createDefaultStatus();
-    await this.saveStatus(status);
-  }
-
-  /**
    * Subscribe to real-time updates
    */
   async subscribe(
@@ -363,15 +265,6 @@ export class OnboardingPersister {
           status.appCompleted = data.appCompleted ?? false;
           status.appSkipped = data.appSkipped ?? false;
           status.appCompletedAt = data.appCompletedAt ?? null;
-          if (data.modules) {
-            for (const [moduleId, moduleStatus] of Object.entries(
-              data.modules
-            )) {
-              if (status.modules[moduleId]) {
-                status.modules[moduleId] = moduleStatus;
-              }
-            }
-          }
           // Last seen version
           status.lastSeenVersion = data.lastSeenVersion ?? null;
 
@@ -414,17 +307,6 @@ export class OnboardingPersister {
           localStatus.appSkipped || cloudStatus.appSkipped;
         mergedStatus.appCompletedAt =
           localStatus.appCompletedAt || cloudStatus.appCompletedAt || null;
-
-        // Per-module: prefer completed
-        for (const moduleId of MODULES_WITH_ONBOARDING) {
-          const local = localStatus.modules[moduleId];
-          const cloud = cloudStatus.modules?.[moduleId];
-
-          mergedStatus.modules[moduleId] = {
-            completed: local?.completed || cloud?.completed || false,
-            completedAt: local?.completedAt || cloud?.completedAt || null,
-          };
-        }
 
         // Last seen version: keep the higher one (numeric semver compare, so
         // "0.10.0" correctly beats "0.9.0" — a plain string compare gets this
