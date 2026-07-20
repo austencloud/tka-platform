@@ -30,6 +30,12 @@
     granularity: "solo",
     color: side,
   });
+  // Full desktop card: the notation stage is landscape, and autoFit reads that
+  // as "one long row" — 8 tiny cells with dead space below. Pin 4 step columns
+  // with the start position as a left column instead: fewer, bigger pictographs
+  // that fill the tall stage. Compact keeps auto (null).
+  const stepColumns = $derived<number | null>(full ? 4 : null);
+  const startLayout = $derived<"row" | "column" | null>(full ? "column" : null);
   const viewDisabled = $derived(source.isLoading || state.isFusing);
   const sourceControlsDisabled = $derived(
     state.isLoadingLength || state.pendingSide !== null || state.isFusing
@@ -66,7 +72,8 @@
           <ChoreoCard
             sequence={source.sequence}
             browseViewMode={viewMode}
-            columnCount={null}
+            columnCount={stepColumns}
+            startPositionLayoutOverride={startLayout}
             includeStartPosition={full}
             showMandala={full}
             showWord={false}
@@ -150,7 +157,8 @@
       <ChoreoCard
         sequence={nextSequence}
         browseViewMode={viewMode}
-        columnCount={null}
+        columnCount={stepColumns}
+        startPositionLayoutOverride={startLayout}
         includeStartPosition={full}
         showMandala={full}
         showWord={false}
