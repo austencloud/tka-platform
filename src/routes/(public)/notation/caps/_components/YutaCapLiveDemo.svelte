@@ -118,6 +118,7 @@
     hideStepNumbers: true,
     gridVisible,
     disableContextMenu: true,
+    interactive: false,
     visibilityManagerOverride: visibilityManager,
     trailSettingsOverride: trailSettings,
     tipEffectMap,

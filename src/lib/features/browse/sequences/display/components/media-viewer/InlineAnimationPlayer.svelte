@@ -116,6 +116,7 @@
     hideStepNumbers = false,
     gridVisible = true,
     disableContextMenu = false,
+    interactive = true,
     onTogglePlaybackRef = undefined,
     visibilityManagerOverride = undefined,
   }: {
@@ -224,6 +225,11 @@
     /** Suppress the canvas right-click / long-press settings menu so a locked
      *  public embed can't have its prop/effort/BPM changed out from under it. */
     disableContextMenu?: boolean;
+    /** Display-only mode. False strips ALL playback input from the minimal
+     *  chrome — no tap-to-toggle, no hover play/pause badge, no progress line —
+     *  so a locked hero is a pure continuous loop the visitor can't pause or
+     *  scrub. Default true (every existing minimal caller keeps tap-to-play). */
+    interactive?: boolean;
     /** Hands the internal play/pause toggle to the host (external keyboard
      *  control, demo acts). Same contract as AnimationPlayer's prop of the
      *  same name. */
@@ -607,7 +613,7 @@
     </div>
   {:else}
     <!-- Animation Canvas -->
-    <div class="canvas-container">
+    <div class="canvas-container" class:bare={backgroundAlpha === 0}>
       <AnimatorCanvas
         blueProp={animationState.bluePropState}
         redProp={animationState.redPropState}
@@ -628,9 +634,9 @@
         {bluePropType}
         {redPropType}
         positionGlyphVisible={showPositionGlyph}
-        tapToToggle={minimal}
-        progressLine={minimal}
-        hoverHint={minimal ? "badge" : "none"}
+        tapToToggle={minimal && interactive}
+        progressLine={minimal && interactive}
+        hoverHint={minimal && interactive ? "badge" : "none"}
         fillContainer={fill}
         {hideTkaGlyph}
         {hideStepNumbers}
@@ -688,6 +694,15 @@
     background: rgba(0, 0, 0, 0.2);
     border-radius: 8px;
     overflow: hidden;
+  }
+
+  /* backgroundAlpha === 0 means the caller wants a fully transparent surface so
+     the host backdrop shows through (the caps hero floating in space, the
+     shape-matrix mandala underneath the props). The dark backing + rounded frame
+     contradict that — drop them so nothing paints behind the transparent canvas. */
+  .canvas-container.bare {
+    background: transparent;
+    border-radius: 0;
   }
 
   .controls {
