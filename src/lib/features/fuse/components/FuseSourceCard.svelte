@@ -37,9 +37,9 @@
     onViewNotation: (side: FuseSide) => void;
   } = $props();
 
-  const { state } = getFuseContext();
+  const { state: fuseState } = getFuseContext();
   const settings = getSettings();
-  const source = $derived(side === "blue" ? state.blue : state.red);
+  const source = $derived(side === "blue" ? fuseState.blue : fuseState.red);
   const label = $derived(side === "blue" ? "Blue" : "Red");
   const viewMode = $derived<BrowseViewMode>({
     subject: "props",
@@ -55,25 +55,25 @@
   let stageW = $state(0);
   let stageH = $state(0);
   const startLayout = $derived<"row" | "column" | null>(full ? "column" : null);
-  const viewDisabled = $derived(source.isLoading || state.isFusing);
+  const viewDisabled = $derived(source.isLoading || fuseState.isFusing);
   const sourceControlsDisabled = $derived(
-    state.isLoadingLength || state.pendingSide !== null || state.isFusing
+    fuseState.isLoadingLength || fuseState.pendingSide !== null || fuseState.isFusing
   );
 
   // Symmetry mode: the driver keeps its source + controls; the follower renders
-  // the derived result (state.symmetryPreview) read-only, so this card shows the
+  // the derived result (fuseState.symmetryPreview) read-only, so this card shows the
   // fused follower hand and hides Back/Shuffle/overflow while symmetry is on.
   const isSymmetryFollower = $derived(
-    state.mode === "symmetry" && side !== state.driverSide
+    fuseState.mode === "symmetry" && side !== fuseState.driverSide
   );
   const displaySequence = $derived(
-    isSymmetryFollower ? state.symmetryPreview : source.sequence
+    isSymmetryFollower ? fuseState.symmetryPreview : source.sequence
   );
   const followerTransformLabel = $derived(
-    FUSE_TRANSFORMS.find((transform) => transform.id === state.transformId)
+    FUSE_TRANSFORMS.find((transform) => transform.id === fuseState.transformId)
       ?.label ?? "Mirror"
   );
-  const driverLabel = $derived(state.driverSide === "blue" ? "Blue" : "Red");
+  const driverLabel = $derived(fuseState.driverSide === "blue" ? "Blue" : "Red");
 
   // The playing beat, mapped to a 0-based step index, so the card cell for the
   // step currently on the animation canvas lights up in lockstep. The shared
@@ -82,7 +82,7 @@
   const stepCount = $derived(displaySequence?.steps.length ?? 0);
   const highlightIndex = $derived(
     stepCount > 0
-      ? Math.floor(((state.currentStep % stepCount) + stepCount) % stepCount)
+      ? Math.floor(((fuseState.currentStep % stepCount) + stepCount) % stepCount)
       : null
   );
 
@@ -160,7 +160,7 @@
         ? { blueSoloProp: solo }
         : { redSoloProp: solo }),
     });
-    await state.setSource(side, wrapped, {
+    await fuseState.setSource(side, wrapped, {
       kind: "library",
       id: sequence.id,
       word: sequence.word,
@@ -182,7 +182,7 @@
     sequence: SequenceData,
     label: string
   ): Promise<void> {
-    await state.setSource(side, sequence, { kind: "vtg", label });
+    await fuseState.setSource(side, sequence, { kind: "vtg", label });
   }
 
   const sourceMenuItems = $derived([
@@ -272,7 +272,7 @@
         variant="secondary"
         fullWidth={true}
         disabled={sourceControlsDisabled || !source.canGoBack}
-        onclick={() => state.previous(side)}
+        onclick={() => fuseState.previous(side)}
       >
         <i class="fas fa-arrow-rotate-left" aria-hidden="true"></i>
         Back
@@ -282,7 +282,7 @@
           variant="secondary"
           fullWidth={true}
           disabled={sourceControlsDisabled || !source.sequence}
-          onclick={() => void state.shuffle(side)}
+          onclick={() => void fuseState.shuffle(side)}
         >
           <i class="fas fa-shuffle" aria-hidden="true"></i>
           Shuffle
@@ -332,7 +332,7 @@
   <SequencePickerModal
     open
     title="Pick a {label} path"
-    requiredBeatCount={state.appliedLength}
+    requiredBeatCount={fuseState.appliedLength}
     onSelect={handleLibrarySelect}
     onClose={() => (pickerOpen = false)}
   />
