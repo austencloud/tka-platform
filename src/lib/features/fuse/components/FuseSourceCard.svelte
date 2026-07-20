@@ -15,6 +15,7 @@
     extractRedSoloProp,
   } from "$lib/shared/foundation/services/sequence-decomposer";
   import { getFuseContext } from "../context/fuse-context";
+  import { FUSE_TRANSFORMS } from "../state/fuse-state.svelte";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
 
   let {
@@ -56,11 +57,26 @@
     state.isLoadingLength || state.pendingSide !== null || state.isFusing
   );
 
+  // Symmetry mode: the driver keeps its source + controls; the follower renders
+  // the derived result (state.symmetryPreview) read-only, so this card shows the
+  // fused follower hand and hides Back/Shuffle/overflow while symmetry is on.
+  const isSymmetryFollower = $derived(
+    state.mode === "symmetry" && side !== state.driverSide
+  );
+  const displaySequence = $derived(
+    isSymmetryFollower ? state.symmetryPreview : source.sequence
+  );
+  const followerTransformLabel = $derived(
+    FUSE_TRANSFORMS.find((transform) => transform.id === state.transformId)
+      ?.label ?? "Mirror"
+  );
+  const driverLabel = $derived(state.driverSide === "blue" ? "Blue" : "Red");
+
   // The playing beat, mapped to a 0-based step index, so the card cell for the
   // step currently on the animation canvas lights up in lockstep. The shared
   // Fuse clock is a continuous float; floor(step % length) is the same index
   // FuseAnimationPreview paints.
-  const stepCount = $derived(source.sequence?.steps.length ?? 0);
+  const stepCount = $derived(displaySequence?.steps.length ?? 0);
   const highlightIndex = $derived(
     stepCount > 0
       ? Math.floor(((state.currentStep % stepCount) + stepCount) % stepCount)
@@ -145,10 +161,10 @@
 >
   {#if showInlineNotation}
     <div class="notation-stage">
-      {#if source.sequence}
+      {#if displaySequence}
         <div class="notation-scroll themed-scrollbar">
           <ChoreoCard
-            sequence={source.sequence}
+            sequence={displaySequence}
             browseViewMode={viewMode}
             columnCount={stepColumns}
             startPositionLayoutOverride={startLayout}
@@ -170,13 +186,13 @@
             fitWidth={true}
           />
         </div>
-      {:else if source.isLoading}
+      {:else if source.isLoading || isSymmetryFollower}
         <div class="notation-skeleton" aria-hidden="true"></div>
       {:else}
         <p class="notation-empty">No notation to show.</p>
       {/if}
 
-      {#if source.isLoading && source.sequence}
+      {#if source.isLoading && displaySequence && !isSymmetryFollower}
         <div class="notation-loading" aria-hidden="true">
           <i class="fas fa-shuffle fa-spin"></i>
         </div>
@@ -199,31 +215,38 @@
     {/if}
   {/if}
 
-  <div class="source-actions">
-    <PanelButton
-      variant="secondary"
-      fullWidth={true}
-      disabled={sourceControlsDisabled || !source.canGoBack}
-      onclick={() => state.previous(side)}
-    >
-      <i class="fas fa-arrow-rotate-left" aria-hidden="true"></i>
-      Back
-    </PanelButton>
-    <div class="shuffle-slot">
+  {#if isSymmetryFollower}
+    <div class="follower-note" role="status">
+      <i class="fas fa-link" aria-hidden="true"></i>
+      <span>{followerTransformLabel} of {driverLabel}</span>
+    </div>
+  {:else}
+    <div class="source-actions">
       <PanelButton
         variant="secondary"
         fullWidth={true}
-        disabled={sourceControlsDisabled || !source.sequence}
-        onclick={() => void state.shuffle(side)}
+        disabled={sourceControlsDisabled || !source.canGoBack}
+        onclick={() => state.previous(side)}
       >
-        <i class="fas fa-shuffle" aria-hidden="true"></i>
-        Shuffle
+        <i class="fas fa-arrow-rotate-left" aria-hidden="true"></i>
+        Back
       </PanelButton>
+      <div class="shuffle-slot">
+        <PanelButton
+          variant="secondary"
+          fullWidth={true}
+          disabled={sourceControlsDisabled || !source.sequence}
+          onclick={() => void state.shuffle(side)}
+        >
+          <i class="fas fa-shuffle" aria-hidden="true"></i>
+          Shuffle
+        </PanelButton>
+      </div>
+      <div class="source-menu">
+        <OverflowMenu items={sourceMenuItems} />
+      </div>
     </div>
-    <div class="source-menu">
-      <OverflowMenu items={sourceMenuItems} />
-    </div>
-  </div>
+  {/if}
 
   {#if source.revision > 1}
     {#key source.revision}
@@ -232,7 +255,7 @@
   {/if}
 </section>
 
-{#if showInlineNotation && nextSequence}
+{#if showInlineNotation && nextSequence && !isSymmetryFollower}
   {#key nextSequence}
     <div class="prewarm" aria-hidden="true">
       <ChoreoCard
@@ -381,6 +404,29 @@
     grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) auto;
     gap: var(--settings-spacing-sm, 8px);
     margin-top: auto;
+  }
+
+  /* Read-only footer for the derived follower in symmetry mode. Occupies the
+     same slot the action row would, at the touch-target height, so swapping in
+     and out of symmetry doesn't resize the card. */
+  .follower-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: var(--min-touch-target, 44px);
+    margin-top: auto;
+    padding: 0 12px;
+    border: 1px dashed
+      color-mix(in srgb, var(--source-color) 40%, var(--theme-stroke));
+    border-radius: var(--settings-radius-md, 14px);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    font-size: var(--font-size-compact, 0.8rem);
+    font-weight: 600;
+  }
+
+  .follower-note i {
+    color: color-mix(in srgb, var(--source-color) 80%, white);
   }
 
   /* The overflow menu anchors its dropdown to itself and opens upward, so it

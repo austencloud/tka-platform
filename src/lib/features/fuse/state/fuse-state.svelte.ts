@@ -13,6 +13,7 @@ import {
 import type { ErrorHandler } from "$lib/shared/application/services/error-handler";
 import {
   createSequenceData,
+  updateSequenceData,
   type SequenceData,
 } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SoloPropData } from "$lib/shared/foundation/domain/models/solo-prop-data";
@@ -25,7 +26,19 @@ import { createSoloProp } from "$lib/shared/foundation/services/solo-prop-factor
 import { getSequenceDisplayName } from "$lib/shared/foundation/services/word-deriver";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { isVisibleMotion } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  MotionColor,
+  type Orientation,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { swapMotionColor } from "$lib/shared/create/services/motion-transforms";
+import {
+  flipSequence,
+  invertSequence,
+  mirrorSequence,
+  rewindSequence,
+  rotateSequence,
+} from "$lib/shared/create/services/sequence-transformer";
 import { fusedDisplayName, fuseSequences } from "../services/sequence-fuser";
 import {
   createFuseShufflePool,
@@ -42,6 +55,54 @@ const STEP_PERSIST_INTERVAL_MS = 1000;
 
 export const FUSE_LENGTHS = [2, 4, 8, 12, 16, 24, 32] as const;
 export type FuseLength = (typeof FUSE_LENGTHS)[number];
+
+/** Top-of-tab Fuse mode. `shuffle` = two independent paths (the original
+ * behavior); `symmetry` = one driver path with the follower derived from it via
+ * a transform. Persisted per-device. */
+export type FuseMode = "shuffle" | "symmetry";
+
+/** The transforms the symmetry follower can derive through: the six LOOP-family
+ * singles plus three curated pairs. One is always active (default `mirror`). */
+export type FuseTransformId =
+  | "mirror"
+  | "flip"
+  | "rotate90"
+  | "rotate180"
+  | "invert"
+  | "rewind"
+  | "rotate-mirror"
+  | "mirror-invert"
+  | "rotate-invert";
+
+export interface FuseTransformOption {
+  id: FuseTransformId;
+  label: string;
+}
+
+/** Display catalog for the transform picker — a single source of truth shared by
+ * the picker UI and this state's apply logic (keyed by the same id union). */
+export const FUSE_TRANSFORMS: readonly FuseTransformOption[] = [
+  { id: "mirror", label: "Mirror" },
+  { id: "flip", label: "Flip" },
+  { id: "rotate90", label: "Rotate 90" },
+  { id: "rotate180", label: "Rotate 180" },
+  { id: "invert", label: "Invert" },
+  { id: "rewind", label: "Rewind" },
+  { id: "rotate-mirror", label: "Rotate + Mirror" },
+  { id: "mirror-invert", label: "Mirror + Invert" },
+  { id: "rotate-invert", label: "Rotate + Invert" },
+];
+
+function isFuseTransformId(value: unknown): value is FuseTransformId {
+  return (
+    typeof value === "string" &&
+    FUSE_TRANSFORMS.some((option) => option.id === value)
+  );
+}
+
+function fuseTransformLabel(id: FuseTransformId): string {
+  return FUSE_TRANSFORMS.find((option) => option.id === id)?.label ?? "Mirror";
+}
 
 export type FuseErrorKind =
   | "catalog"
@@ -106,6 +167,9 @@ interface PersistedFuseState {
   blue?: FusePersistedSelection;
   red?: FusePersistedSelection;
   currentStep?: number;
+  mode?: FuseMode;
+  driverSide?: FuseSide;
+  transformId?: FuseTransformId;
 }
 
 /** What initialize() hands setLength so a persisted pair is restored only on the
@@ -189,6 +253,15 @@ function readPersistedState(): PersistedFuseState {
     if (typeof record.length === "number") result.length = record.length;
     if (typeof record.currentStep === "number") {
       result.currentStep = record.currentStep;
+    }
+    if (record.mode === "shuffle" || record.mode === "symmetry") {
+      result.mode = record.mode;
+    }
+    if (record.driverSide === "blue" || record.driverSide === "red") {
+      result.driverSide = record.driverSide;
+    }
+    if (isFuseTransformId(record.transformId)) {
+      result.transformId = record.transformId;
     }
     const blue = parsePersistedSelection(record.blue);
     if (blue) result.blue = blue;
@@ -332,6 +405,17 @@ export function createFuseState({
     if (side === "blue") blueOrigin = null;
     else redOrigin = null;
   }
+
+  // Symmetry mode: one driver side keeps a source, the follower is derived from
+  // it via a transform. `symmetryPreview` is the fused derived result rendered by
+  // the follower card and animated (it is also assigned to previewSequence while
+  // symmetry is active). The pools underneath stay untouched, so exiting symmetry
+  // just rebuilds the independent preview from them.
+  let mode = $state<FuseMode>(persisted.mode ?? "shuffle");
+  let driverSide = $state<FuseSide>(persisted.driverSide ?? "blue");
+  let transformId = $state<FuseTransformId>(persisted.transformId ?? "mirror");
+  let symmetryPreview = $state<SequenceData | null>(null);
+  let symmetryGeneration = 0;
 
   let currentStep = $state(0);
   let clockRunning = $state(false);
@@ -537,6 +621,12 @@ export function createFuseState({
   function persistStep(): void {
     // Merge so the step write never drops the persisted pair, length, or bpm.
     persisted = { ...persisted, currentStep };
+    writePersistedState(persisted);
+  }
+
+  function persistModeState(): void {
+    // Merge so the mode write never drops the persisted pair, length, or step.
+    persisted = { ...persisted, mode, driverSide, transformId };
     writePersistedState(persisted);
   }
 
@@ -758,6 +848,9 @@ export function createFuseState({
             // Warm the next Shuffle for both sides so the first tap is instant.
             bluePool.prefetchNext();
             redPool.prefetchNext();
+            // A persisted symmetry session derives the follower over the restored
+            // independent pair once both pools are committed.
+            if (mode === "symmetry") void deriveFollower();
             if (resumeAfterLoad) startClock();
             return;
           } catch {
@@ -798,6 +891,7 @@ export function createFuseState({
       // Warm the next Shuffle for both sides so the first tap is instant.
       bluePool.prefetchNext();
       redPool.prefetchNext();
+      if (mode === "symmetry") void deriveFollower();
       if (resumeAfterLoad) startClock();
     } catch (loadError) {
       if (!isCurrentLengthGeneration(generation)) return;
@@ -867,6 +961,9 @@ export function createFuseState({
       // Shuffling changes one path at the beat already on screen. Resetting the
       // shared beat here made both props jump back to the start of the loop.
       readyMessage = sourceReadyMessage(side, candidate.sequence, false);
+      // In symmetry, a new driver source re-derives the follower over the top of
+      // the independent preview shuffle just published.
+      if (mode === "symmetry" && side === driverSide) void deriveFollower();
     } catch (shuffleError) {
       if (!isCurrentSideGeneration(side, generation)) return;
       const label = side === "blue" ? "Blue" : "Red";
@@ -949,6 +1046,8 @@ export function createFuseState({
       const redForPersist = side === "red" ? committed : counterpartSeq;
       persistSelection(blueForPersist, redForPersist, length);
       readyMessage = sourceReadyMessage(side, committed, false);
+      // A newly injected driver source re-derives the symmetry follower.
+      if (mode === "symmetry" && side === driverSide) void deriveFollower();
     } catch (sourceError) {
       if (!isCurrentSideGeneration(side, generation)) return;
       const label = side === "blue" ? "Blue" : "Red";
@@ -963,6 +1062,184 @@ export function createFuseState({
         pendingSide = null;
       }
     }
+  }
+
+  /** Apply one transform (single or curated pair) to just the driver hand. The
+   * pair transforms rotate 90° then compose with the second op, matching the
+   * curated symmetry set (Rotate+Mirror, Mirror+Invert, Rotate+Invert). */
+  async function applyDriverTransform(
+    sequence: SequenceData,
+    id: FuseTransformId,
+    hand: FuseSide
+  ): Promise<SequenceData> {
+    switch (id) {
+      case "mirror":
+        return mirrorSequence(sequence, hand);
+      case "flip":
+        return flipSequence(sequence, hand);
+      case "rotate90":
+        return rotateSequence(sequence, 2, hand);
+      case "rotate180":
+        return rotateSequence(sequence, 4, hand);
+      case "invert":
+        return invertSequence(sequence, hand);
+      case "rewind":
+        return rewindSequence(sequence, hand);
+      case "rotate-mirror":
+        return mirrorSequence(await rotateSequence(sequence, 2, hand), hand);
+      case "mirror-invert":
+        return invertSequence(await mirrorSequence(sequence, hand), hand);
+      case "rotate-invert":
+        return invertSequence(await rotateSequence(sequence, 2, hand), hand);
+    }
+  }
+
+  /**
+   * Derive the follower's solo path from the driver's sequence: transform the
+   * driver hand in place, recolor those transformed motions to the follower via
+   * swapMotionColor, then extract the follower solo from the recolored steps. The
+   * resulting solo path is color-agnostic; fuseSequences re-stamps the color when
+   * it fuses, but recoloring here keeps the extraction reading the right slot.
+   */
+  async function deriveFollowerSolo(
+    driverSequence: SequenceData,
+    driver: FuseSide,
+    id: FuseTransformId
+  ): Promise<SoloPropData> {
+    const follower: FuseSide = driver === "blue" ? "red" : "blue";
+    const transformed = await applyDriverTransform(driverSequence, id, driver);
+
+    // Only the driver hand was transformed, so `transformed`'s start position and
+    // its other-color (follower-color) motions still hold the original source's
+    // untouched follower hand. Recolor the transformed driver motions into the
+    // follower slot on every step, and drop the start position so extraction
+    // reads the path start from the recolored first step (not the stale source
+    // follower hand that would otherwise sit in startPosition.motions[follower]).
+    const recolored = updateSequenceData(transformed, {
+      steps: transformed.steps.map((step) => {
+        const driverMotion = step.motions[driver];
+        if (!isVisibleMotion(driverMotion)) return step;
+        const followerMotion = swapMotionColor(
+          driverMotion,
+          follower as MotionColor
+        );
+        return {
+          ...step,
+          motions: {
+            blue: driver === "blue" ? driverMotion : followerMotion,
+            red: driver === "red" ? driverMotion : followerMotion,
+          },
+        };
+      }),
+      startPosition: undefined,
+      startingPosition: undefined,
+    });
+
+    return follower === "blue"
+      ? extractBlueSoloProp(recolored)
+      : extractRedSoloProp(recolored);
+  }
+
+  function symmetryReadyMessage(): string {
+    const followerLabel = driverSide === "blue" ? "Red" : "Blue";
+    const driverLabel = driverSide === "blue" ? "Blue" : "Red";
+    return `${followerLabel} follows ${driverLabel} (${fuseTransformLabel(
+      transformId
+    )}).`;
+  }
+
+  /**
+   * Recompute the symmetry follower from the current driver source + transform,
+   * fuse it against the driver, and publish the result as both the follower
+   * card's rendered sequence and the live preview. A generation guard drops a
+   * stale derive if the driver, transform, or mode changed while it awaited.
+   */
+  async function deriveFollower(): Promise<void> {
+    if (disposed || mode !== "symmetry" || appliedLength === null) return;
+    const length = appliedLength;
+    const driverSequence = poolFor(driverSide).sequence;
+    const driverSolo =
+      driverSide === "blue"
+        ? driverSequence?.blueSoloProp
+        : driverSequence?.redSoloProp;
+    if (!driverSequence || !driverSolo) return;
+
+    const generation = ++symmetryGeneration;
+    try {
+      const followerSolo = await deriveFollowerSolo(
+        driverSequence,
+        driverSide,
+        transformId
+      );
+      if (disposed || generation !== symmetryGeneration || mode !== "symmetry") {
+        return;
+      }
+
+      const blueSolo = driverSide === "blue" ? driverSolo : followerSolo;
+      const redSolo = driverSide === "blue" ? followerSolo : driverSolo;
+      const preview = fuseSequences(blueSolo, redSolo, { maxSteps: length });
+      if (preview.steps.length !== length) return;
+      if (disposed || generation !== symmetryGeneration || mode !== "symmetry") {
+        return;
+      }
+
+      symmetryPreview = preview;
+      previewSequence = preview;
+      error = null;
+      readyMessage = symmetryReadyMessage();
+    } catch (deriveError) {
+      if (disposed || generation !== symmetryGeneration) return;
+      error = {
+        kind: "derivation",
+        message:
+          "Couldn't derive the symmetric path. Shuffle the driver and try again.",
+      };
+      reportUnexpected(error.message, deriveError, "derive-symmetry");
+    }
+  }
+
+  /** Rebuild the independent (shuffle-mode) preview from the two pools, used when
+   * leaving symmetry — the pools were never clobbered, so this restores exactly
+   * the two-path state that was showing before symmetry took over the preview. */
+  function restoreIndependentPreview(): void {
+    const blueSequence = bluePool.sequence;
+    const redSequence = redPool.sequence;
+    if (!blueSequence || !redSequence || appliedLength === null) return;
+    try {
+      previewSequence = createPreview(blueSequence, redSequence, appliedLength);
+      error = null;
+      readyMessage = "Both paths are ready.";
+    } catch (restoreError) {
+      reportPreviewFailure(restoreError);
+    }
+  }
+
+  function setMode(next: FuseMode): void {
+    if (next === mode) return;
+    mode = next;
+    persistModeState();
+    if (next === "symmetry") {
+      void deriveFollower();
+    } else {
+      // Cancel any in-flight derive and return to the independent two-path view.
+      symmetryGeneration += 1;
+      symmetryPreview = null;
+      restoreIndependentPreview();
+    }
+  }
+
+  function setDriver(side: FuseSide): void {
+    if (side === driverSide) return;
+    driverSide = side;
+    persistModeState();
+    if (mode === "symmetry") void deriveFollower();
+  }
+
+  function setTransform(id: FuseTransformId): void {
+    if (id === transformId) return;
+    transformId = id;
+    persistModeState();
+    if (mode === "symmetry") void deriveFollower();
   }
 
   function previous(side: FuseSide): void {
@@ -993,6 +1270,7 @@ export function createFuseState({
       // Back uses the same in-place swap as Shuffle, so playback stays on beat.
       error = null;
       readyMessage = sourceReadyMessage(side, previousEntry.sequence, true);
+      if (mode === "symmetry" && side === driverSide) void deriveFollower();
     } catch (previewError) {
       error = {
         kind: "preview",
@@ -1186,6 +1464,18 @@ export function createFuseState({
         error.kind !== "viewer"
       );
     },
+    get mode() {
+      return mode;
+    },
+    get driverSide() {
+      return driverSide;
+    },
+    get transformId() {
+      return transformId;
+    },
+    get symmetryPreview() {
+      return symmetryPreview;
+    },
     blue,
     red,
     initialize,
@@ -1194,6 +1484,9 @@ export function createFuseState({
     setSource,
     previous,
     retry,
+    setMode,
+    setDriver,
+    setTransform,
     buildFusedSequence,
     reportPreviewFailure,
     reportViewerFailure,
