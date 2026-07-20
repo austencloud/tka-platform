@@ -30,9 +30,6 @@
     granularity: "solo",
     color: side,
   });
-  const cardColumns = $derived(
-    (source.sequence?.steps.length ?? 0) <= 4 ? 2 : 4
-  );
   const viewDisabled = $derived(source.isLoading || state.isFusing);
   const sourceControlsDisabled = $derived(
     state.isLoadingLength || state.pendingSide !== null || state.isFusing
@@ -69,7 +66,7 @@
           <ChoreoCard
             sequence={source.sequence}
             browseViewMode={viewMode}
-            columnCount={cardColumns}
+            columnCount={null}
             includeStartPosition={full}
             showMandala={full}
             showWord={false}
@@ -153,7 +150,7 @@
       <ChoreoCard
         sequence={nextSequence}
         browseViewMode={viewMode}
-        columnCount={cardColumns}
+        columnCount={null}
         includeStartPosition={full}
         showMandala={full}
         showWord={false}
@@ -282,12 +279,14 @@
   /* Shuffle is the primary action, tinted in the path's color; the word "Blue"
      / "Red" is redundant with the tint, so the label is just "Shuffle". */
   .shuffle-slot :global(.panel-btn) {
-    border-color: color-mix(in srgb, var(--source-color) 52%, transparent);
+    border-color: color-mix(in srgb, var(--source-color) 78%, transparent);
     background: color-mix(
       in srgb,
-      var(--source-color) 16%,
+      var(--source-color) 34%,
       var(--theme-card-bg, #161821)
     );
+    color: var(--theme-text, #fff);
+    font-weight: 600;
   }
 
   .shuffle-slot :global(.panel-btn:focus-visible) {
@@ -345,7 +344,7 @@
     .shuffle-slot :global(.panel-btn:hover:not(:disabled)) {
       background: color-mix(
         in srgb,
-        var(--source-color) 24%,
+        var(--source-color) 46%,
         var(--theme-card-bg, #161821)
       );
     }

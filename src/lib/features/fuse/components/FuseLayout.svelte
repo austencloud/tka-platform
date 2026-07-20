@@ -185,7 +185,7 @@
      Requires real height on top of the fit layout's floor. */
   @container fuse (min-width: 1100px) and (min-height: 780px) {
     .fuse-workspace {
-      grid-template-columns: minmax(330px, 2fr) minmax(0, 3fr);
+      grid-template-columns: minmax(360px, 1.8fr) minmax(0, 3.2fr);
       grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);
       grid-template-areas:
         "header header"
