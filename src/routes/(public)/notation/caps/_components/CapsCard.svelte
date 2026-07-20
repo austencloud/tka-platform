@@ -11,6 +11,7 @@
 -->
 <script lang="ts">
   import { fade } from "svelte/transition";
+  import CapsAssembly from "./CapsAssembly.svelte";
 
   let {
     id,
@@ -53,18 +54,14 @@
     </button>
   </header>
 
-  <div class="card-body" in:fade={{ duration: 180, delay: 120 }}>
+  <div
+    class="card-body"
+    class:card-body--visual={id === "what-is"}
+    in:fade={{ duration: 180, delay: 120 }}
+  >
     {#if id === "what-is"}
-      <p class="lead">
-        A CAP is a closed loop one prop traces, assembled from two or more
-        simpler patterns joined end to end.
-      </p>
-      <p>
-        The pattern on the hub is the one the whole idea grew around: half a
-        cycle of extension, half a cycle of antispin, joined into a single curve
-        that repeats forever. Change the pieces or how they join and you get a
-        different CAP.
-      </p>
+      <p class="lead lead--tight">Two pieces, one loop. One prop traces both.</p>
+      <CapsAssembly />
     {:else}
       <p class="lead">Coming next.</p>
     {/if}
@@ -133,6 +130,19 @@
     gap: 1rem;
     justify-content: center;
     max-width: 62ch;
+  }
+  /* Visual cards (an animator fills the body) drop the reading-width cap and
+     the vertical centering so the stage can take the full panel. */
+  .card-body--visual {
+    max-width: none;
+    gap: 0.6rem;
+    justify-content: flex-start;
+    align-items: center;
+    text-align: center;
+  }
+  .lead--tight {
+    flex: 0 0 auto;
+    font-size: clamp(1.05rem, 1.4vw, 1.4rem) !important;
   }
   .card-body .lead {
     margin: 0;
