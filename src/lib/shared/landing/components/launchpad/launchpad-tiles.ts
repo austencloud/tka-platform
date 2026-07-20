@@ -77,10 +77,10 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 	// The grid's cell count must stay a multiple of 4 or the last row ships
 	// holes. 12 cells = three clean rows: composer 2x2, three 2x1s, two 1x1s.
 	// One tile per visitor question — do (Composer), hold (Choreo Cards),
-	// understand (Notation), go deeper (LOOPs + sibling chips), learn (Guide,
-	// Alphabet). Deep-cut notation destinations (Shape Matrix, CAPs) ride as
-	// chips here instead of holding their own tiles; reference material
-	// (Glossary, Staff Choreography) lives in the strip.
+	// understand (Notation), go deeper (LOOPs + sibling chips), learn (Guide),
+	// look up (Glossary). Deep-cut notation destinations (Shape Matrix, CAPs)
+	// ride as chips here instead of holding their own tiles; secondary
+	// destinations (Alphabet listing, Staff Choreography) live in the strip.
 	{
 		id: "loops",
 		href: "/notation/loops",
@@ -106,19 +106,19 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		media: "guide-cover",
 	},
 	{
-		id: "alphabet",
-		href: "/notation/letters",
-		heading: "The Alphabet",
-		descriptor: "Every letter, drawn as a pictograph.",
+		id: "glossary",
+		href: "/glossary",
+		heading: "Glossary",
+		descriptor: "TKA terms, defined.",
 		span: "1x1",
-		color: "#f472b6",
-		icon: "fa-font",
-		media: "alphabet-strip",
+		color: "#94a3b8",
+		icon: "fa-book-open",
+		media: "dictionary",
 	},
 ];
 
 export const STRIP_LINKS: { label: string; href: string }[] = [
-	{ label: "Glossary", href: "/glossary" },
+	{ label: "The Alphabet", href: "/notation/letters" },
 	{ label: "Staff Choreography", href: "/learn/staff-spinning-choreography" },
 	{ label: "FAQ", href: "/faq" },
 	{ label: "Software Roots", href: "/roots/software" },
