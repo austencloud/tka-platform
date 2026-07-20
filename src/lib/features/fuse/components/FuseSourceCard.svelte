@@ -289,7 +289,7 @@
         </PanelButton>
       </div>
       <div class="source-menu">
-        <OverflowMenu items={sourceMenuItems} />
+        <OverflowMenu items={sourceMenuItems} disabled={sourceControlsDisabled} />
       </div>
     </div>
   {/if}

@@ -14,14 +14,16 @@
 
   interface Props {
     items: MenuItem[];
+    disabled?: boolean;
   }
 
-  const { items }: Props = $props();
+  const { items, disabled = false }: Props = $props();
 
   let open = $state(false);
   let menuEl: HTMLElement | null = $state(null);
 
   function toggle() {
+    if (disabled) return;
     open = !open;
   }
 
@@ -56,6 +58,7 @@
   <button
     type="button"
     class="overflow-trigger"
+    {disabled}
     onclick={toggle}
     aria-label="More actions"
     aria-expanded={open}
@@ -106,7 +109,12 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  .overflow-trigger:hover {
+  .overflow-trigger:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .overflow-trigger:not(:disabled):hover {
     background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
     color: var(--theme-text, white);
   }

@@ -11,7 +11,7 @@
 
   const { state: fuseState } = getFuseContext();
   let detailOpen = $state(false);
-  let detailKind = $state<"help" | "notation">("help");
+  let detailKind = $state<"help" | "notation">("notation");
   let detailSide = $state<FuseSide>("blue");
   let containerElement = $state<HTMLDivElement | null>(null);
   let compact = $state(true);

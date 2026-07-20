@@ -2,8 +2,9 @@
   FuseTransformPicker — symmetry-mode controls.
 
   Two single-select SegmentedControls: which side drives (Blue/Red) and how the
-  follower derives from it (the six LOOP-family singles plus three curated
-  pairs). Both are owned + persisted by fuse-state; this picker only drives them.
+  follower derives from it (five of the six LOOP components — Swapped omitted —
+  with Rotated at 90°/180°, plus three curated pairs). Both are owned + persisted
+  by fuse-state; this picker only drives them.
   Shown by FuseLayout only while the tab is in symmetry mode.
 -->
 <script lang="ts">

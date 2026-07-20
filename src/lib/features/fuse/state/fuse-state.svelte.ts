@@ -61,8 +61,10 @@ export type FuseLength = (typeof FUSE_LENGTHS)[number];
  * a transform. Persisted per-device. */
 export type FuseMode = "shuffle" | "symmetry";
 
-/** The transforms the symmetry follower can derive through: the six LOOP-family
- * singles plus three curated pairs. One is always active (default `mirror`). */
+/** The transforms the symmetry follower can derive through: five of the six LOOP
+ * components (Swapped is the driver↔follower role-swap, not a follower transform,
+ * so it's omitted), with Rotated offered at both 90° and 180°, plus three curated
+ * pairs. One is always active (default `mirror`). */
 export type FuseTransformId =
   | "mirror"
   | "flip"
@@ -416,6 +418,10 @@ export function createFuseState({
   let transformId = $state<FuseTransformId>(persisted.transformId ?? "mirror");
   let symmetryPreview = $state<SequenceData | null>(null);
   let symmetryGeneration = 0;
+  // True while a symmetry follower derive is in flight. Blocks Fuse so a tap
+  // mid-derive can't build the driver's stale independent preview — deriveFollower
+  // is the sole writer of previewSequence in symmetry mode.
+  let isDeriving = $state(false);
 
   let currentStep = $state(0);
   let clockRunning = $state(false);
@@ -561,6 +567,7 @@ export function createFuseState({
       !isLoadingLength &&
       pendingSide === null &&
       !isFusing &&
+      !isDeriving &&
       (error === null || error.kind === "viewer")
     );
   }
@@ -954,7 +961,10 @@ export function createFuseState({
       // A shuffle replaces any injected source on this side; return it to the
       // random pool before persisting so the injected origin isn't written back.
       clearInjectedOrigin(side);
-      previewSequence = preview;
+      // In symmetry the driver's independent fusion is never shown — deriveFollower
+      // owns previewSequence — so skip publishing it (isDeriving keeps Fuse blocked
+      // until the derive lands).
+      if (!(mode === "symmetry" && side === driverSide)) previewSequence = preview;
       persistSelection(blue, red, appliedLength);
       // Warm the following candidate so the next Shuffle stays instant.
       pool.prefetchNext();
@@ -1016,11 +1026,18 @@ export function createFuseState({
 
     try {
       // Extract this side's solo. A two-hand source is decomposed; a single-hand
-      // source already carries the field.
+      // source already carries the field. VTG sources carry the varied path in
+      // `steps` — buildFlowerSequence rewrites steps, not solo-props — so any
+      // solo-prop on them is the pre-variation archetype's; re-extract from steps
+      // for VTG so the flower's turns + start orientation aren't dropped.
+      const carriedSolo =
+        side === "blue" ? source.blueSoloProp : source.redSoloProp;
       const solo =
-        side === "blue"
-          ? (source.blueSoloProp ?? extractBlueSoloProp(source))
-          : (source.redSoloProp ?? extractRedSoloProp(source));
+        origin.kind === "vtg" || !carriedSolo
+          ? side === "blue"
+            ? extractBlueSoloProp(source)
+            : extractRedSoloProp(source)
+          : carriedSolo;
 
       const injected: SequenceData =
         side === "blue"
@@ -1041,7 +1058,9 @@ export function createFuseState({
       pool.commitRestored(committed);
       // Record the origin before persisting so the injected solo is written.
       setInjectedOrigin(side, origin, solo);
-      previewSequence = preview;
+      // Symmetry: deriveFollower owns previewSequence; don't flash the driver's
+      // independent fusion (isDeriving keeps Fuse blocked until it resolves).
+      if (!(mode === "symmetry" && side === driverSide)) previewSequence = preview;
       const blueForPersist = side === "blue" ? committed : counterpartSeq;
       const redForPersist = side === "red" ? committed : counterpartSeq;
       persistSelection(blueForPersist, redForPersist, length);
@@ -1165,6 +1184,7 @@ export function createFuseState({
     if (!driverSequence || !driverSolo) return;
 
     const generation = ++symmetryGeneration;
+    isDeriving = true;
     try {
       const followerSolo = await deriveFollowerSolo(
         driverSequence,
@@ -1178,7 +1198,17 @@ export function createFuseState({
       const blueSolo = driverSide === "blue" ? driverSolo : followerSolo;
       const redSolo = driverSide === "blue" ? followerSolo : driverSolo;
       const preview = fuseSequences(blueSolo, redSolo, { maxSteps: length });
-      if (preview.steps.length !== length) return;
+      if (preview.steps.length !== length) {
+        // Length-preserving LOOP transforms never trip this today, but a future
+        // transform that changes step count must surface an error, not silently
+        // leave a stale follower while the status line still reads "ready".
+        error = {
+          kind: "derivation",
+          message:
+            "Couldn't derive the symmetric path at this length. Shuffle the driver and try again.",
+        };
+        return;
+      }
       if (disposed || generation !== symmetryGeneration || mode !== "symmetry") {
         return;
       }
@@ -1195,6 +1225,11 @@ export function createFuseState({
           "Couldn't derive the symmetric path. Shuffle the driver and try again.",
       };
       reportUnexpected(error.message, deriveError, "derive-symmetry");
+    } finally {
+      // Clear only if this derive is still the current one — a superseding derive
+      // (new driver/transform) owns the flag until it settles. Leaving symmetry
+      // clears it explicitly in setMode.
+      if (generation === symmetryGeneration) isDeriving = false;
     }
   }
 
@@ -1222,7 +1257,10 @@ export function createFuseState({
       void deriveFollower();
     } else {
       // Cancel any in-flight derive and return to the independent two-path view.
+      // Bumping the generation orphans the derive's finally, so clear isDeriving
+      // here or Fuse would stay blocked in shuffle mode.
       symmetryGeneration += 1;
+      isDeriving = false;
       symmetryPreview = null;
       restoreIndependentPreview();
     }
@@ -1265,7 +1303,7 @@ export function createFuseState({
         side === "red" ? previousEntry.sequence : counterpart.sequence;
       const preview = createPreview(blue, red, appliedLength);
       pool.commitPrevious();
-      previewSequence = preview;
+      if (!(mode === "symmetry" && side === driverSide)) previewSequence = preview;
       persistSelection(blue, red, appliedLength);
       // Back uses the same in-place swap as Shuffle, so playback stays on beat.
       error = null;

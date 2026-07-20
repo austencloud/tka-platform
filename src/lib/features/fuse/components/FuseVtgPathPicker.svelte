@@ -63,6 +63,7 @@
   let tiles = $state<Map<string, string>>(tileCache.get(side) ?? new Map());
   let busy = $state(false);
   let open = $state(true);
+  let pickError = $state<string | null>(null);
 
   $effect(() => {
     if (!browser) return;
@@ -95,6 +96,7 @@
   async function pick(flower: Flower): Promise<void> {
     if (busy) return;
     busy = true;
+    pickError = null;
     try {
       const [matrices, edges] = await Promise.all([
         resolveRotationStyleMatrices("diamond"),
@@ -105,6 +107,11 @@
       onSelect(solo, flowerLabel(flower));
       open = false;
       onClose();
+    } catch (error) {
+      // Without this the matrix/edge load or build throwing would be an unhandled
+      // rejection with no user-facing signal — the modal would just sit there.
+      pickError = "Couldn't build that path. Try another, or reopen the picker.";
+      console.error("[FuseVtgPathPicker] pick failed", error);
     } finally {
       busy = false;
     }
@@ -130,6 +137,9 @@
       <p class="picker-sub">
         {flowers.length} paths — each is one hand's rotational shape.
       </p>
+      {#if pickError}
+        <p class="picker-error" role="alert">{pickError}</p>
+      {/if}
     </div>
   {/snippet}
 
@@ -172,6 +182,12 @@
   .picker-sub {
     margin: 4px 0 0;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .picker-error {
+    margin: 6px 0 0;
+    color: var(--semantic-error, #fca5a5);
     font-size: var(--font-size-min, 0.875rem);
   }
 
