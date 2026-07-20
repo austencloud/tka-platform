@@ -492,3 +492,40 @@ moves and toggles off. Ghost motion fixes need Austen's visible-tab eyeball.
 
 Next wing: Generate — same attract-act model (motor layer already
 section-agnostic).
+
+## Generate wing: shared ghost + generate act (tenth pass, 2026-07-19)
+
+The attract model went from one-off to reusable:
+
+- **`attract-ghost.svelte.ts`** — the extracted section-agnostic core: ghost
+  state, human motor model (bowed rAF glides, distance-scaled durations,
+  off-center aims), the fingertip press gate, hover mirroring, jittered
+  dwells, browse-before-pick, hit-tested waitFor, the hidden-tab-proof frame
+  loop, and the full pause/park/resume lifecycle. `createAttractGhost` returns
+  the motor core plus `run(cycle)`, which wraps a section's script into the
+  armored loop and returns the section-facing handle (`AttractActHandle` —
+  same surface ConstructSection already consumed).
+- **`construct-attract-act.svelte.ts`** — now a thin script: its selectors +
+  personality cycle on top of the core. Public API unchanged; ConstructSection
+  untouched by the refactor.
+- **`generate-attract-act.svelte.ts`** — the new wing's script. Cycle: ponder
+  the cards, nudge 1–2 stepper zones (`.touch-zone.(in|de)crement-zone`, with
+  the :not(:disabled) filter keeping it off dead ends), sometimes flip the
+  diamond/box `.toggle-card`, press the real `.generate-button`, rest beside
+  the stage while the beam search thinks, watch the result, sometimes
+  tap-pause/resume via the player toggle ref. Every press is a real click on
+  a real control.
+- **GenerateSection wiring** mirrors Construct: capture pointerdown/focusin →
+  park-as-resume-button, GhostPointer overlay, reduced-motion skips the act,
+  IntersectionObserver gates start/visibility. The result player gets
+  `scrubbable` (InlineAnimationPlayer's existing seekable line) and the new
+  `onTogglePlaybackRef` prop (added to InlineAnimationPlayer — same contract
+  as AnimationPlayer's).
+
+Verified (hidden-tab probes): ghost mounts in the section; every act selector
+resolves against the live DOM (2 enabled increment zones — length correctly
+disabled at its cap — 3 decrement, 1 grid toggle, 1 generate button, stage);
+pressing them as the ghost would: length 8→6, grid Diamond→Box, generate
+ΛR→I with the scrub line at role="slider". Construct cell-seek re-verified
+post-refactor. Ghost MOTION needs the visible-tab eyeball (hidden tab freezes
+rAF and IntersectionObserver, so the act never starts there).
