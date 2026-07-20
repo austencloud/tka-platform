@@ -139,4 +139,25 @@ describe("deriveLettersForSequence with legacy alias", () => {
     const derived = await deriveLettersForSequence(sequence);
     expect(derived.steps[0]?.letter).toBe(Letter.GAMMA);
   });
+
+  it("keeps Latin B and Greek beta distinct in a scanned sequence word", async () => {
+    const letters = [Letter.B, Letter.BETA, Letter.GAMMA];
+    const sequence = createSequenceData({
+      word: "",
+      name: "",
+      steps: letters.map((letter, index) => ({
+        ...makeStaticStep(letter),
+        id: `step-${index + 1}`,
+        stepNumber: index + 1,
+      })),
+    });
+
+    const derived = await deriveLettersForSequence(sequence);
+
+    expect(derived.word).toBe("Bβγ");
+    expect([...derived.word]).toEqual(["B", "β", "γ"]);
+    expect(derived.word).toBe(
+      derived.steps.map((step) => step.letter).join("")
+    );
+  });
 });

@@ -216,7 +216,6 @@ export function buildCardDescriptors(
       props: {
         loopEnabled,
         currentLOOPType: config.loopType,
-        onLoopToggle: handlers.handleLoopToggle,
         onLOOPTypeChange: handlers.handleLOOPTypeChange,
         cardIndex: cardIndex++,
       },

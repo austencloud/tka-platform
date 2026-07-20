@@ -91,6 +91,8 @@ Uses organizer and sizer services for section grouping and sizing.
   // Wide layout (>= 750px): 8-column grouped vertical layout
   // Narrow layout (< 750px): Horizontal swipe layout between type sections
   const WIDE_LAYOUT_THRESHOLD = 750;
+  const CORNER_FILTER_MAX_WIDTH = 500;
+  const CORNER_FILTER_MAX_HEIGHT = 340;
   const shouldUseWideLayout = $derived(containerWidth >= WIDE_LAYOUT_THRESHOLD);
 
   // Column count: 8 for wide, 4 for narrow/swipe
@@ -226,6 +228,22 @@ Uses organizer and sizer services for section grouping and sizing.
       !isMobileStackedLayout()
   );
 
+  const showStandaloneFilter = $derived(() => {
+    return shouldShowFilterToggle() && !hideFilters && !useUnifiedHeader;
+  });
+
+  // Narrow cover screens and short picker areas need the pictographs more than
+  // they need a dedicated filter row. Both swipe variants reserve a 48px arrow
+  // gutter, so the compact icon can sit there without covering an option.
+  const shouldDockFilterInCorner = $derived(() => {
+    const hasArrowGutter = shouldUseSwipeLayout() || shouldUseCompact4x4();
+    const isSpaceConstrained =
+      containerWidth <= CORNER_FILTER_MAX_WIDTH ||
+      containerHeight <= CORNER_FILTER_MAX_HEIGHT;
+
+    return showStandaloneFilter() && hasArrowGutter && isSpaceConstrained;
+  });
+
   // For swipe layout: combine Types 4-6 into a single grouped panel
   const swipeSections = $derived(() => {
     const sections123 = types123Sections();
@@ -289,8 +307,9 @@ Uses organizer and sizer services for section grouping and sizing.
   // Calculate effective height for swipe layout accounting for UI chrome
   const effectiveSwipeHeight = $derived(() => {
     let height = containerHeight;
-    // Subtract filter header when visible
-    if (shouldShowFilterToggle()) {
+    // A centered filter owns a row. The corner version lives in the arrow
+    // gutter, so reserving another 32px would keep the pictographs needlessly low.
+    if (showStandaloneFilter() && !shouldDockFilterInCorner()) {
       height -= FILTER_HEADER_HEIGHT;
     }
     // Subtract swipe dots height (always present in swipe layout)
@@ -374,11 +393,16 @@ Uses organizer and sizer services for section grouping and sizing.
       {/if}
 
       <!-- Standalone filter pill: mobile/compact layouts only. -->
-      {#if shouldShowFilterToggle() && !hideFilters && !useUnifiedHeader}
-        <div class="filter-header" class:mobile={shouldUseSwipeLayout()}>
+      {#if showStandaloneFilter()}
+        <div
+          class="filter-header"
+          class:mobile={shouldUseSwipeLayout()}
+          class:corner={shouldDockFilterInCorner()}
+        >
           <button
             class="filter-toggle"
             class:mobile={shouldUseSwipeLayout()}
+            class:corner={shouldDockFilterInCorner()}
             class:continuous={isContinuousOnly}
             onclick={() => onToggleContinuous?.(!isContinuousOnly)}
             aria-label={isContinuousOnly
@@ -556,28 +580,12 @@ Uses organizer and sizer services for section grouping and sizing.
     position: relative;
   }
 
-  /* Short option-picker areas (iPhone SE: ~275px): a 4x4 grid of min-44px
-     touch targets + the dots row won't fit if the filter chip also claims a
-     full row. Float the chip into the top-left arrow gutter (icon-only) so the
-     grid reclaims that row. The grid stays centered, so symmetry is preserved,
-     and the gutter (reserved for the swipe arrow, which sits mid-height) means
-     the chip never covers a pictograph. Queries .option-picker-content. */
-  @container (max-height: 340px) {
-    .filter-header {
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: auto;
-      z-index: 5;
-    }
-    .filter-toggle.mobile {
-      min-width: var(--min-touch-target, 44px);
-      padding: 0;
-      gap: 0;
-    }
-    .filter-toggle .filter-label {
-      display: none;
-    }
+  .filter-header.corner {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: auto;
+    z-index: 5;
   }
 
   .filter-toggle {
@@ -638,6 +646,16 @@ Uses organizer and sizer services for section grouping and sizing.
     font-size: var(--font-size-compact);
     margin: 2px 0;
     border-radius: 12px;
+  }
+
+  .filter-toggle.corner {
+    min-width: var(--min-touch-target, 44px);
+    padding: 0;
+    gap: 0;
+  }
+
+  .filter-toggle.corner .filter-label {
+    display: none;
   }
 
   /* Accessibility: Respect user's motion preferences */

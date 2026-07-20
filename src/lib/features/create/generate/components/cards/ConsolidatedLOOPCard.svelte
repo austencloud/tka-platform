@@ -8,6 +8,7 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
   import {
     LOOPType,
   } from "$lib/shared/foundation/domain/models/generation/circular-models";
+  import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { parseLoopComponents } from "$lib/shared/create/services/loop-type-utils";
   import { onMount, getContext } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
@@ -17,14 +18,12 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
   let {
     loopEnabled,
     currentLOOPType,
-    onLoopToggle,
     onLOOPTypeChange,
     cardIndex = 0,
     headerFontSize = "9px",
   } = $props<{
     loopEnabled: boolean;
     currentLOOPType: LOOPType;
-    onLoopToggle: () => void;
     onLOOPTypeChange: (loopType: LOOPType) => void;
     cardIndex?: number;
     headerFontSize?: string;
@@ -37,9 +36,11 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
     hapticService = getHapticFeedback();
   });
 
-  // Selected components for the overlay
+  // Selected components for the overlay. When the loop is OFF, the overlay
+  // opens with nothing selected — the stale loopType (config keeps its last
+  // value; there's no "none" LOOPType) must not pre-highlight a component.
   const selectedComponents = $derived(
-    parseLoopComponents(currentLOOPType)
+    loopEnabled ? parseLoopComponents(currentLOOPType) : new Set<LOOPComponent>()
   );
 
   // Display value: "Off" or the LOOP type name
@@ -72,25 +73,15 @@ Shows "Off" when disabled, LOOP type name when enabled. Click opens the expanded
   function handleClick() {
     hapticService?.trigger("selection");
 
-    if (!loopEnabled) {
-      // Toggle on, then open overlay
-      onLoopToggle();
-      // Open after toggle takes effect (next tick)
-      queueMicrotask(() => {
-        panelState.openLOOPPanel(
-          currentLOOPType,
-          selectedComponents,
-          onLOOPTypeChange
-        );
-      });
-    } else {
-      // Already on - open the overlay to configure
-      panelState.openLOOPPanel(
-        currentLOOPType,
-        selectedComponents,
-        onLOOPTypeChange
-      );
-    }
+    // Open the selection overlay. When OFF, selectedComponents is empty so the
+    // grid opens fresh; picking a loop enables it (onLOOPTypeChange sets
+    // loopEnabled), and backing out without picking leaves the loop off — no
+    // pre-enable, no stale selection.
+    panelState.openLOOPPanel(
+      currentLOOPType,
+      selectedComponents,
+      onLOOPTypeChange
+    );
   }
 
   function handleKeydown(event: KeyboardEvent) {

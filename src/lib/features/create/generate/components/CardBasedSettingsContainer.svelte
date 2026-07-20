@@ -323,7 +323,9 @@ import { getLOOPParameterProvider } from "$lib/features/create/generate/shared/g
   }
 
   function handleLOOPTypeChange(loopType: LOOPType) {
-    const updates: Partial<UIGenerationConfig> = { loopType };
+    // Applying a loop type enables the loop. The card no longer pre-enables on
+    // tap, so this is the enable seam: pick a loop → on; back out → stays off.
+    const updates: Partial<UIGenerationConfig> = { loopType, loopEnabled: true };
 
     // Coerce period back to halved when switching to a loop type that
     // cannot support period 4 in the current context. Rewound is never

@@ -160,6 +160,18 @@ describe("Word Simplifier", () => {
       expect(compressedToDisplayString(segments)).toBe("(AB)×2(CD)×2");
     });
 
+    it("should detect adjacent transformed LOOP runs with dash letters", () => {
+      const segments = compressWord("HΨ-HΨ-HΨ-HΨ-GΨ-GΨ-GΨ-GΨ-");
+
+      expect(segments).toEqual([
+        { tokens: ["H", "Ψ-"], repeat: 4 },
+        { tokens: ["G", "Ψ-"], repeat: 4 },
+      ]);
+      expect(
+        segments.map((segment) => segment.tokens.join("")).join(" · ")
+      ).toBe("HΨ- · GΨ-");
+    });
+
     it("should handle full-word repetition as single segment", () => {
       const segments = compressWord("ABCABC");
       expect(segments).toEqual([{ tokens: ["A", "B", "C"], repeat: 2 }]);

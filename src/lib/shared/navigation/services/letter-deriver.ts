@@ -57,7 +57,10 @@ export async function deriveLettersForSequence(
         `word "${letters.join("")}" omits them and is incomplete`
     );
   }
-  const word = letters.join("").toUpperCase();
+  // Letter identity includes both alphabet and case: Latin B and Greek β are
+  // different TKA letters. Each beat is already canonical, so changing the
+  // assembled word's case would change the sequence the title describes.
+  const word = letters.join("");
 
   return {
     ...sequence,

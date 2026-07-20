@@ -60,6 +60,7 @@ export interface SequenceStateServices {
    * cross-tab data pollution.
    */
   tabId?: BuildModeId;
+  onCurrentSequenceChange?: (sequence: SequenceData | null) => void;
 }
 
 export function createSequenceState(services: SequenceStateServices) {
@@ -71,10 +72,11 @@ export function createSequenceState(services: SequenceStateServices) {
     sequenceValidationService,
     tabId, // Tab ID for persistence isolation
     ReversalDetector,
+    onCurrentSequenceChange,
   } = services;
 
   // Create sub-states
-  const coreState = createSequenceCoreState();
+  const coreState = createSequenceCoreState(onCurrentSequenceChange);
   const selectionState = createSequenceSelectionState();
   const arrowState = createSequenceArrowState();
   const animationState = createSequenceAnimationState();
@@ -404,8 +406,7 @@ export function createSequenceState(services: SequenceStateServices) {
     const sequence = coreState.currentSequence;
     if (sequence) {
       const steps = sequence.steps || [];
-      const startPosition =
-        sequence.startingPosition || sequence.startPosition;
+      const startPosition = sequence.startingPosition || sequence.startPosition;
 
       if (steps.length > 0) {
         return steps.map((beat: StepData) => beat).filter(Boolean);
@@ -417,7 +418,7 @@ export function createSequenceState(services: SequenceStateServices) {
         }
         // If it's a StartPositionData, don't include it in the steps array
         // (Start positions are not steps)
-         
+
         return [];
       }
     }

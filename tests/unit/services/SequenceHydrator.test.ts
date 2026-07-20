@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "fs";
+import { resolve } from "path";
 
-import { encodeSequenceWithCompression, decodeSequenceWithCompression } from "$lib/shared/navigation/services/sequence-encoder";
+import {
+  decodeSequenceFromQR,
+  decodeSequenceWithCompression,
+  encodeSequenceWithCompression,
+} from "$lib/shared/navigation/services/sequence-encoder";
 import { loopDetector } from "$lib/shared/create/services/loop-detector";
 import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
 
@@ -18,6 +24,19 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+
+function injectRealCsvData() {
+  const root = resolve(__dirname, "../../..");
+  const read = (filename: string) =>
+    readFileSync(resolve(root, "static/data/pictographs", filename), "utf8");
+  Object.assign(window, {
+    csvData: {
+      diamondData: read("DiamondPictographDataframe.csv"),
+      boxData: read("BoxPictographDataframe.csv"),
+      skewedData: read("SkewedPictographDataframe.csv"),
+    },
+  });
+}
 
 function makeStep(
   stepNumber: number,
@@ -114,6 +133,27 @@ function buildDiamondSequence(): SequenceData {
 }
 
 describe("hydrateSequence — encode/decode round-trip", () => {
+  it("keeps Type 6 letters in the displayed word for shortcode JM67", async () => {
+    injectRealCsvData();
+    const decoded = await decodeSequenceFromQR(
+      "s~q1:HYPQN1Z0M/2Q 5Q:66FLGKENKLPR21DEFMLG3:JZ.SR85W.5. KGU7$77$$QECQCE5R451ID00"
+    );
+
+    const hydrated = await hydrateSequence(decoded, {
+      loopDetector,
+    });
+
+    expect(hydrated.steps.map((step) => step.letter)).toEqual([
+      "β",
+      "β",
+      "Θ",
+      "γ",
+      "S",
+      "S",
+    ]);
+    expect(hydrated.word).toBe("ββΘγSS");
+  });
+
   it("restores gridMode, word, and per-step letter/positions after decode", async () => {
     const original = buildDiamondSequence();
 
@@ -142,7 +182,6 @@ describe("hydrateSequence — encode/decode round-trip", () => {
   });
 
   it("preserves fractional turns (0.5) through encode → decode", () => {
-
     const original = createSequenceData({
       word: "",
       name: "",

@@ -1,6 +1,20 @@
 <script lang="ts">
-  import { simplifyAndTruncate, simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+  import { onDestroy } from "svelte";
+  import {
+    compressWord,
+    simplifyAndTruncate,
+    simplifyRepeatedWord,
+  } from "$lib/shared/foundation/utils/word-simplifier";
+  import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
+  import type {
+    ContextMenuEntry,
+    ContextMenuState,
+  } from "$lib/shared/components/context-menu/context-menu-types";
   import type { LetterSource } from "$lib/shared/create/domain/spell-models";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+  import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
+  import { getPronunciationPlayer } from "$lib/shared/pronunciation/get-pronunciation-player";
+  import type { IPronunciationPlayer } from "$lib/shared/pronunciation/services/types";
   import { practiceAnimationStyle } from "../../../state/practice-animation-style.svelte";
   import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
@@ -36,6 +50,18 @@
   // State
   let showCopiedMessage = $state(false);
   let copiedTimeout: number | null = $state(null);
+  let menuState: ContextMenuState = $state({ open: false });
+
+  const LONG_PRESS_MS = 500;
+  const DRAG_THRESHOLD_PX = 8;
+  const FOLLOW_UP_EVENT_WINDOW_MS = 1_000;
+  let longPressTimer: number | null = null;
+  let longPressStartX = 0;
+  let longPressStartY = 0;
+  let longPressMoved = false;
+  let suppressClickUntil = 0;
+  let suppressContextMenuUntil = 0;
+  let pronunciationPlayer: IPronunciationPlayer | null = null;
 
   // Overflow detection state
   let labelElement: HTMLButtonElement | null = $state(null);
@@ -127,10 +153,45 @@
     isContextualMessage ? word : simplifyAndTruncate(word, 12)
   );
 
+  // LOOP transformations can produce adjacent repeated runs rather than one
+  // repeated whole word. Show each run once with the same separator used by
+  // animation headers, card glyphs, and exports.
+  const compressedSegments = $derived.by(() => {
+    if (!word || isContextualMessage) return null;
+    const segments = compressWord(word);
+    if (!segments.some((segment) => segment.repeat > 1)) return null;
+    const letterCount = segments.reduce(
+      (count, segment) => count + segment.tokens.length,
+      0
+    );
+    return letterCount <= 12 ? segments : null;
+  });
+
   // Full simplified word for copying (no truncation/ellipsis)
   const copyableWord = $derived(
-    isContextualMessage ? word : simplifyRepeatedWord(word)
+    isContextualMessage
+      ? word
+      : compressedSegments
+        ? compressedSegments
+            .map((segment) => segment.tokens.join(""))
+            .join(" · ")
+        : simplifyRepeatedWord(word)
   );
+
+  const wordMenuItems: ContextMenuEntry[] = [
+    {
+      id: "copy-word",
+      label: "Copy word",
+      icon: "fa-copy",
+      action: copyToClipboard,
+    },
+    {
+      id: "read-word-aloud",
+      label: "Read aloud",
+      icon: "fa-volume-high",
+      action: readWordAloud,
+    },
+  ];
 
   /**
    * Parse display word into TKA letter units (handles dash-letters like "Λ-")
@@ -152,13 +213,89 @@
     return letters;
   });
 
+  type DisplayUnit =
+    | {
+        kind: "letter";
+        letter: string;
+        letterIdx: number;
+        source: LetterSource | null;
+      }
+    | { kind: "dot" };
+
+  const displayUnits = $derived.by((): DisplayUnit[] => {
+    if (isContextualMessage) return [];
+
+    if (compressedSegments) {
+      const units: DisplayUnit[] = [];
+      let letterIdx = 0;
+      let sourceOffset = 0;
+
+      compressedSegments.forEach((segment, segmentIdx) => {
+        if (segmentIdx > 0) units.push({ kind: "dot" });
+        segment.tokens.forEach((letter, tokenIdx) => {
+          units.push({
+            kind: "letter",
+            letter,
+            letterIdx: letterIdx++,
+            source: letterSources?.[sourceOffset + tokenIdx] ?? null,
+          });
+        });
+        sourceOffset += segment.tokens.length * segment.repeat;
+      });
+
+      return units;
+    }
+
+    if (hasLetterSources) {
+      return letterSources!.map((source: LetterSource, letterIdx: number) => ({
+        kind: "letter" as const,
+        letter: source.letter,
+        letterIdx,
+        source,
+      }));
+    }
+
+    return parsedLetters.map((letter, letterIdx) => ({
+      kind: "letter" as const,
+      letter,
+      letterIdx,
+      source: null,
+    }));
+  });
+
   /**
-   * Active letter index with wrapping for circular sequences (0-indexed)
+   * Active letter index with wrapping for circular sequences (0-indexed).
+   * Compressed runs still follow the expanded beat count, then map each beat
+   * back to the representative letters visible in the label.
    */
   const activeLetterIndex = $derived.by(() => {
-    if (!hasActiveHighlighting || parsedLetters.length === 0) return -1;
+    if (!hasActiveHighlighting) return -1;
+    if (compressedSegments) {
+      const total = compressedSegments.reduce(
+        (count, segment) => count + segment.tokens.length * segment.repeat,
+        0
+      );
+      if (total === 0) return -1;
+
+      let expandedIndex = (activeStepNumber! - 1) % total;
+      let displayOffset = 0;
+      for (const segment of compressedSegments) {
+        const span = segment.tokens.length * segment.repeat;
+        if (expandedIndex < span) {
+          return displayOffset + (expandedIndex % segment.tokens.length);
+        }
+        expandedIndex -= span;
+        displayOffset += segment.tokens.length;
+      }
+      return -1;
+    }
+
+    const displayedLetterCount = displayUnits.filter(
+      (unit) => unit.kind === "letter"
+    ).length;
+    if (displayedLetterCount === 0) return -1;
     // activeStepNumber is 1-indexed, modulo to wrap around
-    return (activeStepNumber! - 1) % parsedLetters.length;
+    return (activeStepNumber! - 1) % displayedLetterCount;
   });
 
   // Bumped when on-demand glyph loads resolve, so getGlyphUrl re-reads the
@@ -168,8 +305,9 @@
   // The letters this label needs glyphs for, from whichever source is active.
   const neededTokens = $derived.by<string[]>(() => {
     if (isContextualMessage) return [];
-    if (hasLetterSources) return letterSources!.map((s: LetterSource) => s.letter);
-    return parsedLetters;
+    return displayUnits.flatMap((unit) =>
+      unit.kind === "letter" ? [unit.letter] : []
+    );
   });
 
   // The global startup warm (+layout) is deferred to idle, so the cache is
@@ -234,10 +372,148 @@
         showCopiedMessage = false;
         copiedTimeout = null;
       }, 2000);
-    } catch (err) {
-      console.error("Failed to copy word to clipboard:", err);
+    } catch (error) {
+      reportWordActionError(
+        "Couldn't copy the word. Check clipboard access and try again.",
+        "copy-word",
+        error
+      );
     }
   }
+
+  async function readWordAloud() {
+    if (!word || isContextualMessage) return;
+
+    try {
+      pronunciationPlayer ??= getPronunciationPlayer();
+      await pronunciationPlayer.speak(copyableWord);
+    } catch (error) {
+      reportWordActionError(
+        "Read aloud isn't available on this device.",
+        "read-word-aloud",
+        error
+      );
+    }
+  }
+
+  function reportWordActionError(
+    message: string,
+    action: string,
+    cause: unknown
+  ) {
+    const error =
+      cause instanceof Error ? cause : new Error(String(cause));
+    getErrorHandler().showUserError({
+      message,
+      technicalDetails: error.message,
+      error,
+      severity: "warning",
+      context: {
+        module: "create",
+        tab: "generate",
+        action,
+        additionalData: { word: copyableWord },
+      },
+    });
+  }
+
+  function openWordMenu(x: number, y: number) {
+    if (!word || isContextualMessage) return;
+    menuState = { open: true, x, y };
+  }
+
+  function openWordMenuAtLabel() {
+    const rect = labelElement?.getBoundingClientRect();
+    openWordMenu(
+      rect?.left ?? window.innerWidth / 2,
+      (rect?.bottom ?? window.innerHeight / 2) + 4
+    );
+  }
+
+  function closeWordMenu() {
+    menuState = { open: false };
+  }
+
+  function clearLongPressTimer() {
+    if (longPressTimer === null) return;
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+
+  function handlePointerDown(event: PointerEvent) {
+    if (
+      !word ||
+      isContextualMessage ||
+      event.button !== 0 ||
+      event.pointerType === "mouse"
+    ) {
+      return;
+    }
+
+    clearLongPressTimer();
+    longPressMoved = false;
+    longPressStartX = event.clientX;
+    longPressStartY = event.clientY;
+    longPressTimer = window.setTimeout(() => {
+      longPressTimer = null;
+      if (longPressMoved) return;
+
+      const now = Date.now();
+      suppressClickUntil = now + FOLLOW_UP_EVENT_WINDOW_MS;
+      suppressContextMenuUntil = now + FOLLOW_UP_EVENT_WINDOW_MS;
+      getHapticFeedback().impact("light");
+      openWordMenu(longPressStartX, longPressStartY);
+    }, LONG_PRESS_MS);
+  }
+
+  function handlePointerMove(event: PointerEvent) {
+    if (longPressTimer === null || longPressMoved) return;
+    const movedX = Math.abs(event.clientX - longPressStartX);
+    const movedY = Math.abs(event.clientY - longPressStartY);
+    if (movedX <= DRAG_THRESHOLD_PX && movedY <= DRAG_THRESHOLD_PX) return;
+
+    longPressMoved = true;
+    suppressClickUntil = Date.now() + FOLLOW_UP_EVENT_WINDOW_MS;
+    clearLongPressTimer();
+  }
+
+  function handlePointerEnd() {
+    clearLongPressTimer();
+    longPressMoved = false;
+  }
+
+  function handleLabelClick(event: MouseEvent) {
+    if (!word || isContextualMessage) return;
+    event.preventDefault();
+
+    if (Date.now() < suppressClickUntil) return;
+    if (menuState.open) {
+      closeWordMenu();
+      return;
+    }
+    openWordMenuAtLabel();
+  }
+
+  function handleContextMenu(event: MouseEvent) {
+    if (!word || isContextualMessage) return;
+    event.preventDefault();
+    event.stopPropagation();
+    clearLongPressTimer();
+
+    if (Date.now() < suppressContextMenuUntil) return;
+    suppressClickUntil = Date.now() + FOLLOW_UP_EVENT_WINDOW_MS;
+    if (event.clientX === 0 && event.clientY === 0) {
+      openWordMenuAtLabel();
+      return;
+    }
+    openWordMenu(event.clientX, event.clientY);
+  }
+
+  onDestroy(() => {
+    clearLongPressTimer();
+    if (copiedTimeout !== null) clearTimeout(copiedTimeout);
+    pronunciationPlayer?.cancel();
+  });
 </script>
 
 {#if shouldShowWordLabel}
@@ -250,64 +526,83 @@
       class:has-letter-sources={hasLetterSources}
       class:is-scaled={scaleFactor < 1}
       style:--scale-factor={scaleFactor}
-      onclick={copyToClipboard}
-      title={isContextualMessage ? word : `Click to copy '${copyableWord}' to clipboard`}
+      disabled={isContextualMessage}
+      onclick={handleLabelClick}
+      oncontextmenu={handleContextMenu}
+      onpointerdown={handlePointerDown}
+      onpointermove={handlePointerMove}
+      onpointerup={handlePointerEnd}
+      onpointercancel={handlePointerEnd}
+      onpointerleave={handlePointerEnd}
+      title={isContextualMessage ? word : `Open word actions for ${copyableWord}`}
+      aria-haspopup={isContextualMessage ? undefined : "menu"}
+      aria-expanded={isContextualMessage ? undefined : menuState.open}
       aria-label={isContextualMessage
         ? word
-        : `Current word: ${copyableWord}. Click to copy.`}
+        : `Current word: ${copyableWord}. Open word actions.`}
     >
-      {#if hasLetterSources && !isContextualMessage}
-        {#each letterSources as source, index (index)}
-          {@const url = getGlyphUrl(source.letter)}
-          <span
-            class="letter"
-            class:original={source.isOriginal}
-            class:bridge={!source.isOriginal}
-            class:active={hasActiveHighlighting && activeLetterIndex === index}
-          >
-            {#if url}
-              <img src={url} alt={source.letter} class="glyph-img" class:alpha-baseline={isAlphaGlyph(source.letter)} draggable="false" />
-              {#if isDashLetter(source.letter)}<span class="dash-bar"></span>{/if}
-            {:else}{source.letter}{/if}
-          </span>
-        {/each}
-      {:else if !isContextualMessage && parsedLetters.length > 0}
-        {#each parsedLetters as letter, index (index)}
-          {@const url = getGlyphUrl(letter)}
-          <span
-            class="letter"
-            class:playback={hasActiveHighlighting}
-            class:active={hasActiveHighlighting && activeLetterIndex === index}
-            class:active-intense={hasActiveHighlighting && activeLetterIndex === index && practiceAnimationStyle.current === 'intense'}
-            class:active-subtle={hasActiveHighlighting && activeLetterIndex === index && practiceAnimationStyle.current === 'subtle'}
-            class:active-glow-only={hasActiveHighlighting && activeLetterIndex === index && practiceAnimationStyle.current === 'glow-only'}
-            class:active-minimal={hasActiveHighlighting && activeLetterIndex === index && practiceAnimationStyle.current === 'minimal'}
-            class:active-wave={hasActiveHighlighting && activeLetterIndex === index && practiceAnimationStyle.current === 'wave'}
-          >
-            {#if url}
-              <img src={url} alt={letter} class="glyph-img" class:alpha-baseline={isAlphaGlyph(letter)} draggable="false" />
-              {#if isDashLetter(letter)}<span class="dash-bar"></span>{/if}
-            {:else}{letter}{/if}
-          </span>
-        {/each}
-      {:else if !isContextualMessage}
-        {#each parsedLetters as letter, index (index)}
-          {@const url = getGlyphUrl(letter)}
-          <span class="letter">
-            {#if url}
-              <img src={url} alt={letter} class="glyph-img" class:alpha-baseline={isAlphaGlyph(letter)} draggable="false" />
-              {#if isDashLetter(letter)}<span class="dash-bar"></span>{/if}
-            {:else}{letter}{/if}
-          </span>
+      {#if !isContextualMessage && displayUnits.length > 0}
+        {#each displayUnits as unit, index (index)}
+          {#if unit.kind === "dot"}
+            <span class="group-dot" aria-hidden="true"></span>
+          {:else}
+            {@const url = getGlyphUrl(unit.letter)}
+            <span
+              class="letter"
+              class:original={unit.source?.isOriginal === true}
+              class:bridge={unit.source?.isOriginal === false}
+              class:playback={hasActiveHighlighting && unit.source === null}
+              class:active={hasActiveHighlighting &&
+                activeLetterIndex === unit.letterIdx}
+              class:active-intense={hasActiveHighlighting &&
+                activeLetterIndex === unit.letterIdx &&
+                practiceAnimationStyle.current === "intense"}
+              class:active-subtle={hasActiveHighlighting &&
+                activeLetterIndex === unit.letterIdx &&
+                practiceAnimationStyle.current === "subtle"}
+              class:active-glow-only={hasActiveHighlighting &&
+                activeLetterIndex === unit.letterIdx &&
+                practiceAnimationStyle.current === "glow-only"}
+              class:active-minimal={hasActiveHighlighting &&
+                activeLetterIndex === unit.letterIdx &&
+                practiceAnimationStyle.current === "minimal"}
+              class:active-wave={hasActiveHighlighting &&
+                activeLetterIndex === unit.letterIdx &&
+                practiceAnimationStyle.current === "wave"}
+            >
+              {#if url}
+                <img
+                  src={url}
+                  alt={unit.letter}
+                  class="glyph-img"
+                  class:alpha-baseline={isAlphaGlyph(unit.letter)}
+                  draggable="false"
+                />
+                {#if isDashLetter(unit.letter)}<span class="dash-bar"
+                  ></span>{/if}
+              {:else}{unit.letter}{/if}
+            </span>
+          {/if}
         {/each}
       {:else}
         {displayWord}
       {/if}
+      {#if !isContextualMessage}
+        <i class="fas fa-chevron-down menu-indicator" aria-hidden="true"></i>
+      {/if}
     </button>
+
+    {#if !isContextualMessage}
+      <ContextMenu
+        {menuState}
+        items={wordMenuItems}
+        onClose={closeWordMenu}
+      />
+    {/if}
 
     {#if showCopiedMessage}
       <div class="copied-message" role="status" aria-live="polite">
-        Copied "{copyableWord}"!
+        Copied “{copyableWord}”
       </div>
     {/if}
   </div>
@@ -338,9 +633,13 @@
     font-size: clamp(1rem, 5cqi, 2.5rem);
     color: var(--text-color, #2c3e50);
     background: transparent;
-    border: none;
+    border: 1px solid transparent;
     cursor: pointer;
-    transition: all var(--duration-normal) ease;
+    transition:
+      background-color var(--duration-normal) ease,
+      border-color var(--duration-normal) ease,
+      box-shadow var(--duration-normal) ease,
+      transform var(--duration-normal) ease;
     border-radius: 8px;
     text-align: center;
     white-space: nowrap;
@@ -354,6 +653,10 @@
     vertical-align: middle;
     padding: 0 8px;
     margin: 0;
+    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
   }
 
   .word-label:hover {
@@ -372,6 +675,21 @@
     align-items: center;
     justify-content: center;
     gap: 0.12em;
+    min-height: var(--min-touch-target, 44px);
+    padding: 0.25rem 0.75rem;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
+  }
+
+  .word-label.has-word[aria-expanded="true"] {
+    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.1));
+    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.2));
+    box-shadow: 0 4px 14px var(--theme-shadow, rgba(0, 0, 0, 0.2));
+  }
+
+  .word-label:focus-visible {
+    outline: 2px solid var(--theme-accent, #a855f7);
+    outline-offset: 2px;
   }
 
   /* Apply dynamic scale factor when overflow is detected */
@@ -410,6 +728,22 @@
     background: transparent;
     transform: none;
     cursor: default;
+  }
+
+  .word-label.contextual-message:disabled {
+    opacity: 1;
+  }
+
+  .menu-indicator {
+    margin-left: 0.25em;
+    font-size: 0.4em;
+    opacity: 0.55;
+    flex-shrink: 0;
+    transition: transform var(--duration-fast, 100ms) ease;
+  }
+
+  .word-label[aria-expanded="true"] .menu-indicator {
+    transform: rotate(180deg);
   }
 
   .copied-message {
@@ -497,6 +831,18 @@
     flex-shrink: 0;
   }
 
+  /* Segment separator for compressed words (HΨ- · GΨ-). */
+  .group-dot {
+    display: inline-block;
+    width: 0.15em;
+    height: 0.15em;
+    margin: 0 0.1em;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.4;
+    flex-shrink: 0;
+  }
+
   .letter.original {
     opacity: 1;
   }
@@ -579,5 +925,6 @@
     .active-glow-only,
     .active-minimal,
     .active-wave { animation: none; }
+    .menu-indicator { transition: none; }
   }
 </style>

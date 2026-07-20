@@ -23,7 +23,9 @@ export interface SequenceCoreStateData {
   selectedSequenceId: string | null;
 }
 
-export function createSequenceCoreState() {
+export function createSequenceCoreState(
+  onCurrentSequenceChange?: (sequence: SequenceData | null) => void
+) {
   const state = $state<SequenceCoreStateData>({
     currentSequence: null,
     sequences: [],
@@ -94,6 +96,7 @@ export function createSequenceCoreState() {
       if (reconciled?.gridMode !== undefined) {
         state.gridMode = reconciled.gridMode;
       }
+      onCurrentSequenceChange?.(reconciled);
     },
 
     setSequences(sequences: SequenceData[]) {
@@ -113,6 +116,7 @@ export function createSequenceCoreState() {
       }
       if (state.currentSequence?.id === updatedSequence.id) {
         state.currentSequence = updatedSequence;
+        onCurrentSequenceChange?.(updatedSequence);
       }
     },
 
@@ -121,6 +125,7 @@ export function createSequenceCoreState() {
       if (state.currentSequence?.id === sequenceId) {
         state.currentSequence = null;
         state.selectedSequenceId = null;
+        onCurrentSequenceChange?.(null);
       }
     },
 
@@ -147,6 +152,7 @@ export function createSequenceCoreState() {
       state.error = null;
       state.gridMode = GridMode.DIAMOND;
       state.selectedSequenceId = null;
+      onCurrentSequenceChange?.(null);
     },
   };
 }
