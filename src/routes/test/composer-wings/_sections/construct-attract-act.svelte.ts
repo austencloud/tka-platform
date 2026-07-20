@@ -232,7 +232,10 @@ export function createConstructAttractAct(opts: {
   const glideTo = (tx: number, ty: number) => glide(tx, ty, halted);
 
   /** A point inside an element, deliberately off exact center — landing on
-   *  the mathematical centroid every time is another robot tell. */
+   *  the mathematical centroid every time is another robot tell. Returns null
+   *  if the point falls outside the band: embla keeps clipped slides in flow,
+   *  so a card scrolled out of the visible pane still has a rect — following
+   *  it would walk the ghost clean off the component. */
   function aimAt(el: HTMLElement): { x: number; y: number } | null {
     const root = opts.getRoot();
     if (!root) return null;
@@ -240,10 +243,24 @@ export function createConstructAttractAct(opts: {
     const rr = root.getBoundingClientRect();
     const ox = (Math.random() - 0.5) * Math.min(r.width * 0.35, 56);
     const oy = (Math.random() - 0.5) * Math.min(r.height * 0.35, 36);
-    return {
-      x: r.left + r.width / 2 - rr.left + ox,
-      y: r.top + r.height / 2 - rr.top + oy,
-    };
+    const x = r.left + r.width / 2 - rr.left + ox;
+    const y = r.top + r.height / 2 - rr.top + oy;
+    if (x < 0 || y < 0 || x > rr.width || y > rr.height) return null;
+    return { x, y };
+  }
+
+  /** True only if the ghost's fingertip is REALLY over `el` right now — the
+   *  press gate. elementFromPoint sees clipping, overlays and stacking the
+   *  way a mouse does; a bare rect check does not (the off-component-click
+   *  bug: a clipped embla card's rect said "on target" while the visible
+   *  pixel there belonged to something else entirely). The ghost dot itself
+   *  is pointer-events: none, so it never occludes the probe. */
+  function fingertipOn(el: HTMLElement): boolean {
+    const root = opts.getRoot();
+    if (!root) return false;
+    const rr = root.getBoundingClientRect();
+    const probe = document.elementFromPoint(ghost.x + rr.left, ghost.y + rr.top);
+    return !!probe && (probe === el || el.contains(probe));
   }
 
   /** Dwell with occasional micro-drift — a resting hand isn't frozen. Keeps
@@ -279,29 +296,24 @@ export function createConstructAttractAct(opts: {
   ): Promise<void> {
     await hoverOn(el, jitter(240, 420));
     if (halted()) return;
-    // Re-aim at press time: the glide takes up to ~1.3s and the target can
-    // move under it (embla settling, grid reflow after a turns change). The
-    // element reference would still click fine, but the ghost would visibly
-    // press empty air where the tile USED to be. If the hand isn't on the
-    // target anymore, correct like a person would — and if the target left
-    // the DOM entirely, abort the press instead of ghost-clicking nothing.
-    const root = opts.getRoot();
-    if (root) {
+    // Press gate: the glide takes up to ~1.3s and the target can move under
+    // it (embla settling, grid reflow after a turns change). Re-aim like a
+    // person would — but the click NEVER fires unless the fingertip actually
+    // hit-tests onto the target. A stale rect can say "on target" while the
+    // element sits in a clipped embla page; el.click() would still select an
+    // option while the ghost visibly pressed somewhere else. No hit, no click.
+    for (let attempt = 0; attempt < 2 && !fingertipOn(el); attempt++) {
       if (el.offsetParent === null) return;
-      const r = el.getBoundingClientRect();
-      const rr = root.getBoundingClientRect();
-      const gx = ghost.x + rr.left;
-      const gy = ghost.y + rr.top;
-      const onTarget =
-        gx >= r.left && gx <= r.right && gy >= r.top && gy <= r.bottom;
-      if (!onTarget) {
-        const p = aimAt(el);
-        if (!p || halted()) return;
-        await glideTo(p.x, p.y);
-        if (halted()) return;
-        setHover(el);
-      }
+      const p = aimAt(el);
+      if (!p || halted()) return;
+      await glideTo(p.x, p.y);
+      if (halted()) return;
+      setHover(el);
+      // Let a mid-settle target come to rest before the re-probe.
+      await sleep(120);
+      if (halted()) return;
     }
+    if (!fingertipOn(el)) return;
     ghost.pressed = true;
     await sleep(PRESS_MS);
     ghost.pressed = false;
