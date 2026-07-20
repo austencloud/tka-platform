@@ -53,6 +53,7 @@ Flow Arts MCP evidence was gathered in this session:
 
 - `get_sequence_data` returned a starting state plus ordered blue and red motions with start and end locations. This proves the typed sequence-to-trace input contract.
 - `get_domain_topic("motion-types-complete")` confirmed the geometry distinction between curved shifts, straight dashes or hashes, and held static motion.
+- `get_position_info("beta")` confirmed that both hands can occupy the same canonical grid point. This is the domain reason split grids are the reliable two-hand default.
 - `search_vtg("Zan's Diamond")`, `search_vtg("Zan diamond")`, and `get_term_definition("Zan's Diamond")` returned no named pattern record.
 - Repository grep found the phrase `Zan's Diamond variations` in `src/lib/features/learn/domain/concepts.ts`, but no ordered coordinates.
 
