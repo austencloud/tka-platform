@@ -17,7 +17,61 @@ export type GameId =
   | "speed-blitz"
   | "mandala-match"
   | "card-to-mandala"
-  | "motion-to-mandala";
+  | "motion-to-mandala"
+  | "trace-paths";
+
+/**
+ * What a game needs from the shell, declared up front so the shell never has
+ * to sniff a game id to decide how to host it.
+ *
+ * `scoring` is the load-bearing one: "quiz" games hand the engine a
+ * QuizAnswerEvent and let scoring.ts price it; "performance" games price their
+ * own round (they are the only ones that can — correctness there is a
+ * continuous trace quality, not a picked option) and hand over the points.
+ */
+export interface GameCapabilities {
+  /** Wants the full stage — the shell drops question chrome and gets out of the way. */
+  immersiveStage?: boolean;
+  /** Genuinely unplayable without a touch/pointer surface (mouse-only is fine when false). */
+  requiresTouch?: boolean;
+  /** Tracks two simultaneous pointers; the shell must not swallow the second one. */
+  supportsTwoPointers?: boolean;
+  /** Who computes the round's points. See the note above. */
+  scoring: "quiz" | "performance";
+}
+
+/**
+ * A performance round's own metrics, carried through the engine untouched.
+ *
+ * Deliberately a type parameter defaulting to `unknown` rather than an import
+ * of the trace game's `TraceMetrics`: the arcade is the host, the game is the
+ * guest, so the dependency arrow has to point game -> arcade. A game keeps its
+ * own strong metrics type at the call site (submitRound infers it); the engine
+ * only stores and forwards, so `unknown` is all the engine ever needs to know.
+ */
+export type ArcadeRoundEvent<TMetrics = unknown> =
+  | { kind: "choice"; answer: QuizAnswerEvent }
+  | {
+      kind: "performance";
+      isCorrect: boolean;
+      /** Already priced by the game (e.g. scoreTraceRound). The engine uses this verbatim. */
+      points: number;
+      /** Time the round actually took, measured by the game's own stage clock. */
+      elapsedMs: number;
+      metrics: TMetrics;
+      /** Whatever the game needs to reconstruct the round for review. Never raw pointer traces. */
+      questionData: Record<string, unknown>;
+    };
+
+/**
+ * Correctness without narrowing. Both branches carry it — the choice branch
+ * inside its QuizAnswerEvent, the performance branch at the top level — so
+ * every reader (accuracy, misses, grade) goes through here instead of
+ * duplicating the `kind` check.
+ */
+export function roundIsCorrect(round: ArcadeRoundEvent): boolean {
+  return round.kind === "choice" ? round.answer.isCorrect : round.isCorrect;
+}
 
 /** Win condition: answer N questions, or survive a countdown clock. */
 export type LevelMode =
@@ -37,6 +91,25 @@ export interface QuestionConstraints {
   paceEndSeconds?: number;
   /** Sequence length for the mandala game family (8-count to start; raise for harder tiers). */
   stepCount?: number;
+
+  // --- Performance (trace-paths) constraints ---------------------------
+  // All optional: quiz games never set them, and the trace game reads them
+  // with its own defaults so a half-specified level still plays.
+
+  /** How many hands the round arms. 1 = one hand at a time, 2 = both together. */
+  handCount?: 1 | 2;
+  /** Route drawn on the stage while tracing. False = the player has to remember it. */
+  showRoute?: boolean;
+  /** How many path steps chain together inside one round. 1 = a single hop. */
+  traceStepCount?: number;
+  /**
+   * Multiplier on the stage-relative tolerance corridor. 1 = the default
+   * corridor, >1 forgives more, <1 tightens it. Never a pixel value — the
+   * corridor is normalized to the stage so it survives any screen size.
+   */
+  toleranceScale?: number;
+  /** One hand holds its point while the other travels. */
+  requireHold?: boolean;
 }
 
 export interface StarThresholds {
@@ -60,16 +133,42 @@ export interface GameDefinition {
   tagline: string;
   /** Local accent, consumed as var(--game-accent). Hex string from the shared palette. */
   accentColor: string;
-  quizType: QuizType;
+  /**
+   * Optional because a performance game has no QuizType — there is no question
+   * pool and no option list to classify. Quiz games all set it; readers that
+   * persist a quiz attempt should skip games that don't.
+   */
+  quizType?: QuizType;
+  capabilities: GameCapabilities;
   levels: LevelDefinition[];
 }
 
-export interface AnswerRecord {
-  event: QuizAnswerEvent;
-  /** ms from question shown to answer. */
+/**
+ * One completed round of any kind. This is the engine's own log — score,
+ * streak, and completion all count these.
+ */
+export interface RoundRecord {
+  round: ArcadeRoundEvent;
+  /** Hoisted off `round` so readers never narrow just to count correct answers. */
+  isCorrect: boolean;
+  /** ms from question shown to answer (choice) or the game's own stage clock (performance). */
   answerTimeMs: number;
   pointsAwarded: number;
   streakAfter: number;
+}
+
+/**
+ * A round that WAS a quiz answer, with the quiz event hoisted.
+ *
+ * The quiz-shaped consumers downstream (gap analysis, quiz-history
+ * persistence) need a real QuizAnswerEvent per entry — a performance round has
+ * no selected option, no correct option, and no QuizType to record. So
+ * `session.records` stays this narrow quiz log and keeps its guarantee, while
+ * `session.rounds` is the complete log that scoring and completion read.
+ */
+export interface AnswerRecord extends RoundRecord {
+  round: { kind: "choice"; answer: QuizAnswerEvent };
+  event: QuizAnswerEvent;
 }
 
 export interface ArcadeSessionResult {

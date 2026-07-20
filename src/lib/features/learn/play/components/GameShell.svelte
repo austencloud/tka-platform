@@ -39,6 +39,7 @@ animations, exactly as the legacy quizzes did.
   import MandalaMatchGame from "../games/MandalaMatchGame.svelte";
   import CardToMandalaGame from "../games/CardToMandalaGame.svelte";
   import MotionToMandalaGame from "../games/MotionToMandalaGame.svelte";
+  import TracePathsGame from "../games/trace-paths/TracePathsGame.svelte";
 
   const session = getArcadeSession();
 
@@ -47,6 +48,19 @@ animations, exactly as the legacy quizzes did.
   const playing = $derived(
     session.phase.name === "playing" ? session.phase : null
   );
+
+  /**
+   * A game that asks for the full stage gets it: the shell keeps the bar's
+   * height and its exits, and drops the question-progress readout and the
+   * streak flourish that would otherwise compete with a surface the player is
+   * drawing on.
+   *
+   * Read from the registry's `capabilities`, never from a game id. The moment
+   * this becomes `id === "trace-paths"` it has to be repeated at every place
+   * chrome is decided, and the next immersive game silently gets the wrong
+   * shell.
+   */
+  const immersive = $derived(playing?.game.capabilities.immersiveStage === true);
 
   // Score display springs toward the engine's true score — the number the
   // player sees rolls up instead of snapping. "stiff" preset: fast, no
@@ -82,9 +96,13 @@ animations, exactly as the legacy quizzes did.
   let showQuitConfirm = $state(false);
 
   function handleBack() {
-    // Mid-level with answers on the board = confirm before throwing the run
+    // Mid-level with rounds on the board = confirm before throwing the run
     // away. An untouched level just goes back.
-    if (session.records.length > 0) {
+    //
+    // `rounds`, not `records`: a performance game's traced rounds never appear
+    // in the quiz-only `records` log, so reading that one would let a player
+    // six traces into a run walk out with no confirmation at all.
+    if (session.rounds.length > 0) {
       showQuitConfirm = true;
     } else {
       withViewTransition(() => session.backToLevels());
@@ -126,8 +144,14 @@ animations, exactly as the legacy quizzes did.
           <span class="level-title">{playing.level.title}</span>
         </div>
 
+        <!-- Immersive games keep the bar (and its exits) but drop the readouts
+             that would compete with the stage. The bar's height is unchanged,
+             so nothing below it moves. -->
         <div class="bar-status">
-          {#if playing.level.mode.kind === "fixed"}
+          {#if immersive}
+            <!-- Intentionally empty: an immersive stage narrates its own
+                 progress in its live region. -->
+          {:else if playing.level.mode.kind === "fixed"}
             <!-- Ghost-sizer reserves the widest readout so 9→10 never shifts -->
             <span class="q-progress" aria-label="Question {questionNumber} of {questionCount}">
               <span class="q-sizer" aria-hidden="true">{questionCount}/{questionCount}</span>
@@ -156,8 +180,14 @@ animations, exactly as the legacy quizzes did.
           {/if}
         </div>
 
-        <!-- Streak flame: slot is always reserved; visibility flips at 3+ -->
-        <div class="streak" class:lit={streakLit} aria-hidden={!streakLit}>
+        <!-- Streak flame: slot is always reserved; visibility flips at 3+.
+             Immersive stages drop it entirely — a flourish appearing beside a
+             surface someone is drawing on is a distraction, not a reward. -->
+        <div
+          class="streak"
+          class:lit={streakLit && !immersive}
+          aria-hidden={!streakLit || immersive}
+        >
           <span class="flame" aria-hidden="true">🔥</span>
           <span class="streak-count">{session.streak}</span>
         </div>
@@ -186,6 +216,8 @@ animations, exactly as the legacy quizzes did.
           <CardToMandalaGame constraints={playing.level.constraints} />
         {:else if playing.game.id === "motion-to-mandala"}
           <MotionToMandalaGame constraints={playing.level.constraints} />
+        {:else if playing.game.id === "trace-paths"}
+          <TracePathsGame constraints={playing.level.constraints} />
         {/if}
       </Crossfade>
     </div>

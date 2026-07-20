@@ -10,10 +10,13 @@ import { getContext, setContext } from "svelte";
 import type { QuizAnswerEvent } from "../../quiz/domain/models/quiz-models";
 import type {
   AnswerRecord,
+  ArcadeRoundEvent,
   ArcadeSessionResult,
   GameDefinition,
   LevelDefinition,
+  RoundRecord,
 } from "../domain/arcade-types";
+import { roundIsCorrect } from "../domain/arcade-types";
 import { computeGrade, scoreAnswer } from "../domain/scoring";
 import { computeStars } from "../domain/progression";
 
@@ -33,6 +36,12 @@ export function createArcadeSession() {
   let streak = $state(0);
   let longestStreak = $state(0);
   let misses = $state(0);
+  // Two views of the same session, never out of sync: `rounds` is every round
+  // of any kind (what scoring, accuracy and completion count), `records` is the
+  // subset that were quiz answers (what gap analysis and quiz-history
+  // persistence read, both of which need a real QuizAnswerEvent). In a
+  // quiz-only session the two are element-for-element the same length.
+  let rounds = $state<RoundRecord[]>([]);
   let records = $state<AnswerRecord[]>([]);
   let questionIndex = $state(0);
   let questionShownAt = 0; // ms epoch, not reactive
@@ -50,9 +59,9 @@ export function createArcadeSession() {
   // and stays correct in every caller context. Same pattern as
   // codex-explorer-state.svelte.ts's `gridModeEnum` getter.
   function computeAccuracy(): number {
-    return records.length === 0
+    return rounds.length === 0
       ? 0
-      : records.filter((r) => r.event.isCorrect).length / records.length;
+      : rounds.filter((r) => r.isCorrect).length / rounds.length;
   }
 
   function stopClock() {
@@ -83,6 +92,7 @@ export function createArcadeSession() {
     streak = 0;
     longestStreak = 0;
     misses = 0;
+    rounds = [];
     records = [];
     questionIndex = 0;
     questionShownAt = 0;
@@ -98,24 +108,63 @@ export function createArcadeSession() {
     questionShownAt = Date.now();
   }
 
+  /**
+   * The quiz games' entry point, unchanged in behaviour. It is now a thin
+   * adapter onto submitRound — every one of the eight quiz games keeps calling
+   * this and gets byte-identical scoring.
+   */
   function submitAnswer(event: QuizAnswerEvent) {
+    submitRound({ kind: "choice", answer: event });
+  }
+
+  /**
+   * The general round intake. Choice rounds are priced here by scoring.ts;
+   * performance rounds arrive already priced by the game.
+   *
+   * Two things deliberately do NOT apply to performance points:
+   *
+   * - No speed bonus. The game's own scorer already weighed how the round
+   *   went, and a trace is judged on where the hands went, not how fast.
+   * - No streak multiplier. This is the deliberate-practice call: multiplying
+   *   a traced round by a streak would make a late slip cost several times
+   *   what an early one costs, which is exactly the pressure to rush that
+   *   this game exists to remove. The streak still TRACKS (it drives the
+   *   longest-streak stat and the shell's streak flourish) — it just doesn't
+   *   scale the points.
+   */
+  function submitRound<TMetrics>(event: ArcadeRoundEvent<TMetrics>) {
     if (phase.name !== "playing") return;
     const { level } = phase;
 
-    const answerTimeMs = Date.now() - questionShownAt;
+    const isCorrect = roundIsCorrect(event);
+    const answerTimeMs =
+      event.kind === "performance" ? event.elapsedMs : Date.now() - questionShownAt;
     const streakBefore = streak;
-    const points = scoreAnswer({ isCorrect: event.isCorrect, answerTimeMs, streakBefore });
+    const points =
+      event.kind === "performance"
+        ? event.points
+        : scoreAnswer({ isCorrect, answerTimeMs, streakBefore });
 
-    streak = event.isCorrect ? streak + 1 : 0;
+    streak = isCorrect ? streak + 1 : 0;
     longestStreak = Math.max(longestStreak, streak);
-    if (!event.isCorrect) misses += 1;
+    if (!isCorrect) misses += 1;
 
-    records.push({ event, answerTimeMs, pointsAwarded: points, streakAfter: streak });
+    const record = {
+      round: event,
+      isCorrect,
+      answerTimeMs,
+      pointsAwarded: points,
+      streakAfter: streak,
+    };
+    rounds.push(record);
+    if (event.kind === "choice") {
+      records.push({ ...record, round: event, event: event.answer });
+    }
     score += points;
     questionIndex += 1;
 
     const mode = level.mode;
-    if (mode.kind === "fixed" && records.length >= mode.questionCount) {
+    if (mode.kind === "fixed" && rounds.length >= mode.questionCount) {
       complete();
     } else if (mode.kind === "survival" && misses >= mode.maxMisses) {
       complete();
@@ -128,8 +177,8 @@ export function createArcadeSession() {
     stopClock();
     const { game, level } = phase;
 
-    const correctCount = records.filter((r) => r.event.isCorrect).length;
-    const totalCount = records.length;
+    const correctCount = rounds.filter((r) => r.isCorrect).length;
+    const totalCount = rounds.length;
     const accuracyFraction = computeAccuracy();
     // Legacy quiz convention (quiz-session-manager.ts): percentage 0-100,
     // rounded to 2 decimals — not the 0-1 fraction computeGrade expects.
@@ -193,8 +242,13 @@ export function createArcadeSession() {
     get misses() {
       return misses;
     },
+    /** Quiz answers only. Read this when you need a QuizAnswerEvent per entry. */
     get records() {
       return records;
+    },
+    /** Every round, quiz or performance. Read this for "did they play anything". */
+    get rounds() {
+      return rounds;
     },
     get questionIndex() {
       return questionIndex;
@@ -209,6 +263,7 @@ export function createArcadeSession() {
     startLevel,
     markQuestionShown,
     submitAnswer,
+    submitRound,
     complete,
     quitToHub,
     backToLevels,

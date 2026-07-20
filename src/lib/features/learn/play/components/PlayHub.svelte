@@ -92,6 +92,18 @@
 
   onDestroy(() => engine.destroy());
 
+  /* The hero line used to read "Six games." while the registry already held
+     eight — copy that goes stale the moment anyone adds a game. Derived from
+     the registry instead, spelled as a word because that is how the sentence
+     reads out loud. Module-constant, so it is fixed at first paint and can't
+     shift the layout. */
+  const COUNT_WORDS = [
+    "Zero", "One", "Two", "Three", "Four", "Five", "Six",
+    "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
+  ];
+  const gameCountWord =
+    COUNT_WORDS[GAME_REGISTRY.length] ?? String(GAME_REGISTRY.length);
+
   // ==========================================================================
   // Progress reads (store is non-reactive; bump the version after writes)
   // ==========================================================================
@@ -228,7 +240,7 @@
     <div class="hub-content">
       <header class="hub-hero">
         <h2 class="hero-title">Play</h2>
-        <p class="hero-sub">Six games. Your best scores are waiting.</p>
+        <p class="hero-sub">{gameCountWord} games. Your best scores are waiting.</p>
       </header>
 
       <ul class="game-grid">
