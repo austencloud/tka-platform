@@ -422,81 +422,24 @@
     }
   }
 
-  /* One-page fit layouts only (mirrors FuseLayout's fr-row conditions).
-     min-height: 0 lets the stage shrink inside its fr row; anywhere else it
-     zeroes the stage's minimum contribution and collapses the auto grid rows.
-     The stage turns sideways: canvas frame left, control rail right, so the
-     rail absorbs the width a square canvas can't use. */
+  /* One-page fit layout (mirrors FuseLayout's fr-row condition). The base
+     stack is already canvas-on-top / control-bar-on-bottom: frame-wrap
+     flex:1 eats the free height and pushes the control row to the bottom,
+     the frame's grid background fills the full width (props center in it,
+     so it reads as a wide grid, not empty gutters), and the Fuse button
+     (fuse-slot flex:1) stretches across the bar. All this rule does is let
+     the stage shrink into its fr row — min-height:0, which must NOT leak to
+     the scroll layouts where a zero minimum collapses the grid row. */
   @container fuse (min-width: 600px) and (min-height: 600px) {
-    .preview-stage:not(.compact) {
-      flex-direction: row;
-      align-items: stretch;
-      justify-content: center;
-      min-height: 0;
-      padding: var(--settings-spacing-sm, 12px);
-    }
-
-    /* The canvas renders square, so the frame stays square (height-driven)
-       instead of stretching into letterboxed side space. */
+    .preview-stage:not(.compact),
     .preview-stage:not(.compact) .frame-wrap {
-      flex: 0 1 auto;
-      aspect-ratio: 1;
-      height: 100%;
       min-height: 0;
-    }
-
-    .preview-stage:not(.compact) .stage-controls {
-      flex: 1 1 200px;
-      flex-direction: column;
-      align-items: stretch;
-      min-width: 180px;
-      max-width: 340px;
-      min-height: 0;
-    }
-
-    .preview-stage:not(.compact) .playback-cluster {
-      justify-content: center;
-    }
-
-    .preview-stage:not(.compact) .fuse-slot {
-      margin-top: auto;
     }
   }
 
   @container fuse (min-width: 1100px) {
     .preview-stage {
       padding: clamp(16px, 1.4cqw, 24px);
-    }
-  }
-
-  /* Locked desktop columns: back to canvas-over-controls. */
-  @container fuse (min-width: 1100px) and (min-height: 780px) {
-    .preview-stage:not(.compact) {
-      flex-direction: column;
-      justify-content: flex-start;
-    }
-
-    .preview-stage:not(.compact) .frame-wrap {
-      flex: 1 1 300px;
-      aspect-ratio: auto;
-      height: auto;
-      min-height: 320px;
-    }
-
-    .preview-stage:not(.compact) .stage-controls {
-      flex: 0 0 auto;
-      flex-direction: row;
-      align-items: center;
-      max-width: none;
-      min-width: 0;
-    }
-
-    .preview-stage:not(.compact) .playback-cluster {
-      justify-content: flex-start;
-    }
-
-    .preview-stage:not(.compact) .fuse-slot {
-      margin-top: 0;
     }
   }
 
