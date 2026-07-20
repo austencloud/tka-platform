@@ -113,6 +113,8 @@
     backgroundAlpha = 1,
     hideTkaGlyph = false,
     hideStepNumbers = false,
+    gridVisible = true,
+    disableContextMenu = false,
   }: {
     sequence: SequenceData;
     autoPlay?: boolean;
@@ -214,6 +216,11 @@
      *  like the caps live hero — "a prop floating in space"). */
     hideTkaGlyph?: boolean;
     hideStepNumbers?: boolean;
+    /** Hide the diamond/box grid — pattern-trace embeds show only the prop. */
+    gridVisible?: boolean;
+    /** Suppress the canvas right-click / long-press settings menu so a locked
+     *  public embed can't have its prop/effort/BPM changed out from under it. */
+    disableContextMenu?: boolean;
   } = $props();
 
   const minimal = $derived(chrome === "minimal");
@@ -571,7 +578,8 @@
       <AnimatorCanvas
         blueProp={animationState.bluePropState}
         redProp={animationState.redPropState}
-        gridVisible={true}
+        {gridVisible}
+        {disableContextMenu}
         {gridMode}
         letter={currentLetter}
         stepData={currentStepData}
