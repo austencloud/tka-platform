@@ -3,6 +3,7 @@
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import OverflowMenu from "$lib/shared/ui/components/OverflowMenu.svelte";
   import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
+  import FuseVtgPathPicker from "./FuseVtgPathPicker.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
   import {
@@ -105,11 +106,33 @@
     });
   }
 
+  // VTG source pick: open the flower picker, then inject the chosen single-hand
+  // solo path. buildFlowerSequence already returns this side's solo, so
+  // setSource extracts it directly. Gated with {#if} so the shape-matrix load
+  // only fires on open.
+  let vtgOpen = $state(false);
+
+  function openVtgPicker(): void {
+    vtgOpen = true;
+  }
+
+  async function handleVtgSelect(
+    sequence: SequenceData,
+    label: string
+  ): Promise<void> {
+    await state.setSource(side, sequence, { kind: "vtg", label });
+  }
+
   const sourceMenuItems = $derived([
     {
       label: "Pick from library",
       icon: "fas fa-book",
       action: openLibraryPicker,
+    },
+    {
+      label: "Pick a VTG path",
+      icon: "fas fa-fan",
+      action: openVtgPicker,
     },
   ]);
 </script>
@@ -243,6 +266,14 @@
     requiredBeatCount={state.appliedLength}
     onSelect={handleLibrarySelect}
     onClose={() => (pickerOpen = false)}
+  />
+{/if}
+
+{#if vtgOpen}
+  <FuseVtgPathPicker
+    {side}
+    onSelect={handleVtgSelect}
+    onClose={() => (vtgOpen = false)}
   />
 {/if}
 

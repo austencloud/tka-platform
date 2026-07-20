@@ -5,6 +5,7 @@ import { resolveRotationStyleMatrices } from "$lib/features/lab/vtg-lab/services
 import { loadDiamondEdges } from "$lib/features/choreo-card/services/pictograph-letter-lookup";
 import { buildFlowerSequence } from "$lib/features/lab/vtg-lab/services/build-flower-sequence";
 import { buildFlowerAxis, flowerKey, type Flower } from "../domain/flower-signature";
+import { resolveFlowerArchetype } from "./flower-archetype";
 
 export interface ShapeMatrixData {
   axis: Flower[];
@@ -27,16 +28,8 @@ async function build(): Promise<ShapeMatrixData> {
     resolveRotationStyleMatrices("diamond"),
     loadDiamondEdges(),
   ]);
-  const archetypeFor = (style: "pro" | "anti") => {
-    const id = style === "pro" ? "iso" : "antispin";
-    const m = matrices.find((x) => x.style === id);
-    if (!m) throw new Error(`no ${id} archetype matrix`);
-    const base = m.byTurn.get("0|0");
-    if (!base) throw new Error(`no 0-turn rep for ${id}`);
-    return base;
-  };
-  const proArch = archetypeFor("pro");
-  const antiArch = archetypeFor("anti");
+  const proArch = resolveFlowerArchetype(matrices, "pro");
+  const antiArch = resolveFlowerArchetype(matrices, "anti");
   const clubTipDx = getTipPoints("club").points[0]?.dx ?? 130;
   const tip = { dx: clubTipDx, dy: 0 };
 
