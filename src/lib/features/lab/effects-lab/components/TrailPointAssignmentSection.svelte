@@ -10,8 +10,12 @@
 -->
 <script lang="ts">
   import type { EffectPointEditorState } from "../state/effect-point-editor-state.svelte";
-  import type { TrailPointConfig, TrailPointSource } from "$lib/shared/animation-engine/domain/types/trail-point-types";
-  import { isUnilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
+  import {
+    getDefaultTrailPointConfig,
+    type TrailPointConfig,
+    type TrailPointSource,
+  } from "$lib/shared/animation-engine/domain/types/trail-point-types";
+  import { propTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 
   interface Props {
     editorState: EffectPointEditorState;
@@ -19,7 +23,7 @@
 
   const { editorState }: Props = $props();
 
-  let isUnilateral = $derived(isUnilateralProp(editorState.selectedPropType));
+  let isSingleEnded = $derived(propTipEnds(editorState.selectedPropType) === 1);
   let leftSource = $derived(editorState.trailConfig?.left ?? null);
   let rightSource = $derived(editorState.trailConfig?.right ?? null);
 
@@ -57,13 +61,9 @@
     }
 
     if (newMode === "tip") {
-      // Unilateral props have one end - both trail endpoints share the same tip
-      const defaultRight = isUnilateral ? 0 : (editorState.points.length > 1 ? 1 : 0);
-      const config: TrailPointConfig = {
-        left: { type: "tip", index: 0 },
-        right: { type: "tip", index: defaultRight },
-      };
-      editorState.saveTrailConfig(config);
+      editorState.saveTrailConfig(
+        getDefaultTrailPointConfig(editorState.selectedPropType),
+      );
       return;
     }
 
@@ -77,8 +77,8 @@
   }
 
   function selectTip(side: "left" | "right", tipIndex: number) {
-    // Unilateral props: both ends use the same tip point
-    if (isUnilateral) {
+    // Single-ended props: both logical ends use the same physical tip point
+    if (isSingleEnded) {
       const source: TrailPointSource = { type: "tip", index: tipIndex };
       editorState.saveTrailConfig({ left: source, right: { ...source } });
       return;
@@ -113,8 +113,8 @@
       dy: field === "dy" ? rounded : currentSource.dy,
     };
 
-    // Unilateral props: both ends share the same custom offset
-    if (isUnilateral) {
+    // Single-ended props: both ends share the same custom offset
+    if (isSingleEnded) {
       editorState.saveTrailConfig({ left: updated, right: { ...updated } });
       return;
     }
@@ -136,7 +136,7 @@
     Trail Points
   </h3>
   <p class="section-desc">
-    {#if isUnilateral}
+    {#if isSingleEnded}
       Pick which tip point the trail emits from.
     {:else}
       Pick where trail lines emit from. Tip mode lets you assign each end separately.
@@ -191,8 +191,8 @@
   <!-- Tip assignment rows -->
   {#if mode === "tip"}
     <div class="endpoint-rows">
-      {#if isUnilateral}
-        <!-- Unilateral props have one end - single row -->
+      {#if isSingleEnded}
+        <!-- Single-ended props have one physical trail point -->
         <div class="endpoint-row">
           <span class="endpoint-label">Tip</span>
           <div class="chip-row" role="radiogroup" aria-label="Trail tip point">
@@ -248,7 +248,7 @@
   {#if mode === "custom"}
     <div class="custom-section">
       <div class="endpoint-row">
-        <span class="endpoint-label">{isUnilateral ? "Tip" : "End 1"}</span>
+        <span class="endpoint-label">{isSingleEnded ? "Tip" : "End 1"}</span>
         <div class="custom-coords">
           <label class="coord-field">
             <span class="coord-label">dx</span>
@@ -272,7 +272,7 @@
           </label>
         </div>
       </div>
-      {#if !isUnilateral}
+      {#if !isSingleEnded}
         <div class="endpoint-row">
           <span class="endpoint-label">End 2</span>
           <div class="custom-coords">

@@ -19,6 +19,12 @@ import {
 
 const VIEWBOX_SIZE = 950;
 
+export interface PropSpriteSnapshot {
+  image: HTMLImageElement;
+  dimensions: { width: number; height: number };
+  propType: string;
+}
+
 export class Canvas2DImageLoader {
   // Image cache
   private bluePropImage: HTMLImageElement | null = null;
@@ -26,13 +32,13 @@ export class Canvas2DImageLoader {
   private gridImage: HTMLImageElement | null = null;
   private glyphImage: HTMLImageElement | null = null;
   private previousGlyphImage: HTMLImageElement | null = null;
-  // Retained on every per-color prop load (mirrors previousGlyphImage), so the
-  // renderer always has the pre-swap sprite available for a morph crossfade.
-  // Stashing here does not itself start a fade — prop-type-manager decides
-  // that, at the hot-swap sites only, so a dark-mode-only reload or the
-  // initial load never trigger one even though a "previous" image exists.
-  private previousBluePropImage: HTMLImageElement | null = null;
-  private previousRedPropImage: HTMLImageElement | null = null;
+  // A crossfade needs the complete outgoing visual, not just its image. Keeping
+  // the old dimensions and type in the same snapshot prevents the outgoing prop
+  // from snapping into the incoming prop's bounds before its opacity reaches 0.
+  // Stashing a snapshot does not itself start a fade: PropTypeManager decides
+  // whether a load represents a genuine hot-swap.
+  private previousBlueProp: PropSpriteSnapshot | null = null;
+  private previousRedProp: PropSpriteSnapshot | null = null;
 
   // Additional tunnel layer prop images (lazily populated)
   private additionalLayerImages: Array<{
@@ -58,6 +64,8 @@ export class Canvas2DImageLoader {
     width: 0,
     height: 0,
   };
+  private bluePropType: string | null = null;
+  private redPropType: string | null = null;
 
   async loadPropImages(propType: string): Promise<{
     blue: HTMLImageElement;
@@ -93,6 +101,8 @@ export class Canvas2DImageLoader {
         width: redPropData.width,
         height: redPropData.height,
       };
+      this.bluePropType = propType;
+      this.redPropType = propType;
 
       // Swap references (old images will be garbage collected)
       this.bluePropImage = newBlueImage;
@@ -138,7 +148,27 @@ export class Canvas2DImageLoader {
         ),
       ]);
 
-      // Store dimensions
+      // Capture the outgoing sprites before replacing any of their geometry.
+      // The renderer draws these snapshots at their own intrinsic bounds while
+      // the incoming sprites draw at the new bounds below.
+      this.previousBlueProp =
+        this.bluePropImage && this.bluePropType
+          ? {
+              image: this.bluePropImage,
+              dimensions: { ...this.bluePropDimensions },
+              propType: this.bluePropType,
+            }
+          : null;
+      this.previousRedProp =
+        this.redPropImage && this.redPropType
+          ? {
+              image: this.redPropImage,
+              dimensions: { ...this.redPropDimensions },
+              propType: this.redPropType,
+            }
+          : null;
+
+      // Store incoming geometry and type.
       this.bluePropDimensions = {
         width: bluePropData.width,
         height: bluePropData.height,
@@ -147,10 +177,8 @@ export class Canvas2DImageLoader {
         width: redPropData.width,
         height: redPropData.height,
       };
-
-      // Save the pre-swap sprites for a morph crossfade (see field comment).
-      this.previousBluePropImage = this.bluePropImage;
-      this.previousRedPropImage = this.redPropImage;
+      this.bluePropType = bluePropType;
+      this.redPropType = redPropType;
 
       // Swap references
       this.bluePropImage = newBlueImage;
@@ -352,12 +380,20 @@ export class Canvas2DImageLoader {
     return this.redPropImage;
   }
 
-  getPreviousBluePropImage(): HTMLImageElement | null {
-    return this.previousBluePropImage;
+  getBluePropType(): string | null {
+    return this.bluePropType;
   }
 
-  getPreviousRedPropImage(): HTMLImageElement | null {
-    return this.previousRedPropImage;
+  getRedPropType(): string | null {
+    return this.redPropType;
+  }
+
+  getPreviousBlueProp(): PropSpriteSnapshot | null {
+    return this.previousBlueProp;
+  }
+
+  getPreviousRedProp(): PropSpriteSnapshot | null {
+    return this.previousRedProp;
   }
 
   getAdditionalLayerImages(layerIndex: number): {
@@ -403,20 +439,22 @@ export class Canvas2DImageLoader {
     this.previousGlyphImage = null;
   }
 
-  clearPreviousBluePropImage(): void {
-    this.previousBluePropImage = null;
+  clearPreviousBlueProp(): void {
+    this.previousBlueProp = null;
   }
 
-  clearPreviousRedPropImage(): void {
-    this.previousRedPropImage = null;
+  clearPreviousRedProp(): void {
+    this.previousRedProp = null;
   }
 
   destroy(): void {
     // Clear all image references (allows garbage collection)
     this.bluePropImage = null;
     this.redPropImage = null;
-    this.previousBluePropImage = null;
-    this.previousRedPropImage = null;
+    this.previousBlueProp = null;
+    this.previousRedProp = null;
+    this.bluePropType = null;
+    this.redPropType = null;
     this.additionalLayerImages.length = 0;
     this.additionalLayerDimensions.length = 0;
     this.gridImage = null;

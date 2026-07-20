@@ -13,6 +13,10 @@ import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { AnimationLoop } from "$lib/shared/animation-engine/services/animation-loop";
 import type { SequenceAnimationOrchestrator } from "$lib/shared/animation-engine/services/sequence-animation-orchestrator";
+import type {
+  PreparedSequenceHandoff,
+  SequenceBoundaryProvider,
+} from "$lib/shared/animation-engine/domain/chaining-types";
 import { isSeamlesslyLoopable } from "$lib/shared/foundation/services/sequence-loopability-checker";
 import { sharedAnimationState } from "$lib/shared/animation-engine/state/shared-animation-state.svelte";
 
@@ -48,6 +52,10 @@ export class AnimationPlaybackController {
   // Loop completion callback (used by tempo practice training)
   private loopCompleteCallback: (() => void) | null = null;
 
+  // Optional synchronous source of a prefetched, position-linked sequence.
+  // Consumed inside the same animation frame that crosses the loop boundary.
+  private sequenceBoundaryProvider: SequenceBoundaryProvider | null = null;
+
   constructor(
     private readonly animationEngine: SequenceAnimationOrchestrator,
     private readonly loopService: AnimationLoop
@@ -82,8 +90,7 @@ export class AnimationPlaybackController {
     this.sequenceData = sequenceData;
 
     // Check if sequence is seamlessly loopable
-    this._isSeamlesslyLoopable =
-      isSeamlesslyLoopable(sequenceData);
+    this._isSeamlesslyLoopable = isSeamlesslyLoopable(sequenceData);
 
     // Initialize animation engine with sequence data
     const success = this.animationEngine.initializeWithDomainData(sequenceData);
@@ -99,7 +106,9 @@ export class AnimationPlaybackController {
     // Store total duration for duration-aware playback (includes start position)
     // For freeform sequences, add 1-step end position hold so the user can see the final state
     this.endPositionHoldDuration = this._isSeamlesslyLoopable ? 0 : 1;
-    this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition() + this.endPositionHoldDuration;
+    this.totalDuration =
+      this.animationEngine.getTotalDurationWithStartPosition() +
+      this.endPositionHoldDuration;
     this.timePosition = 0;
     this.isFirstLoop = true;
 
@@ -127,13 +136,14 @@ export class AnimationPlaybackController {
     this.sequenceData = sequenceData;
 
     // Check if sequence is seamlessly loopable
-    this._isSeamlesslyLoopable =
-      isSeamlesslyLoopable(sequenceData);
+    this._isSeamlesslyLoopable = isSeamlesslyLoopable(sequenceData);
 
     // Re-initialize animation engine with updated data
     const success = this.animationEngine.initializeWithDomainData(sequenceData);
     if (!success) {
-      console.warn("AnimationPlaybackController: Failed to update sequence data");
+      console.warn(
+        "AnimationPlaybackController: Failed to update sequence data"
+      );
       return;
     }
 
@@ -144,7 +154,9 @@ export class AnimationPlaybackController {
 
     // Update total duration (includes start position + end hold for freeform sequences)
     this.endPositionHoldDuration = this._isSeamlesslyLoopable ? 0 : 1;
-    this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition() + this.endPositionHoldDuration;
+    this.totalDuration =
+      this.animationEngine.getTotalDurationWithStartPosition() +
+      this.endPositionHoldDuration;
 
     // Clamp time position to new duration range
     this.timePosition = Math.min(currentTimePos, this.totalDuration);
@@ -155,7 +167,8 @@ export class AnimationPlaybackController {
     // Restore playback state
     if (wasPlaying) {
       // Calculate current state at the clamped time position
-      const currentStepNumber = this.animationEngine.calculateStateDurationAware(this.timePosition);
+      const currentStepNumber =
+        this.animationEngine.calculateStateDurationAware(this.timePosition);
       this.syncCurrentStep(currentStepNumber);
       this.updatePropStatesFromEngine();
     } else {
@@ -204,7 +217,9 @@ export class AnimationPlaybackController {
     // Re-initialize engine if we have sequence data
     if (this.sequenceData) {
       this.animationEngine.initializeWithDomainData(this.sequenceData);
-      this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition() + this.endPositionHoldDuration;
+      this.totalDuration =
+        this.animationEngine.getTotalDurationWithStartPosition() +
+        this.endPositionHoldDuration;
     }
 
     // Update prop states
@@ -225,7 +240,8 @@ export class AnimationPlaybackController {
     this.syncCurrentStep(clampedStep);
 
     // Sync time position so continuous playback starts from here
-    this.timePosition = this.animationEngine.getTimePositionForBeat(clampedStep);
+    this.timePosition =
+      this.animationEngine.getTimePositionForBeat(clampedStep);
 
     // Calculate state for this beat
     this.animationEngine.calculateState(clampedStep);
@@ -260,7 +276,9 @@ export class AnimationPlaybackController {
     this.syncCurrentStep(targetStepWithFraction);
 
     // Sync time position to match the fractional beat position
-    this.timePosition = this.animationEngine.getTimePositionForBeat(targetStepWithFraction);
+    this.timePosition = this.animationEngine.getTimePositionForBeat(
+      targetStepWithFraction
+    );
 
     // Calculate state for this beat (with fraction)
     this.animationEngine.calculateState(targetStepWithFraction);
@@ -361,7 +379,8 @@ export class AnimationPlaybackController {
       this.updatePropStatesFromEngine();
 
       // Sync time position so continuous playback starts from the stepped position
-      this.timePosition = this.animationEngine.getTimePositionForBeat(finalStep);
+      this.timePosition =
+        this.animationEngine.getTimePositionForBeat(finalStep);
     }
   }
 
@@ -489,6 +508,14 @@ export class AnimationPlaybackController {
     this.loopCompleteCallback = null;
   }
 
+  onSequenceBoundary(provider: SequenceBoundaryProvider): void {
+    this.sequenceBoundaryProvider = provider;
+  }
+
+  offSequenceBoundary(): void {
+    this.sequenceBoundaryProvider = null;
+  }
+
   /**
    * Release this shared singleton. Pass the AnimationPanelState this host
    * claimed via initialize() so a STALE owner can't clobber a live claim.
@@ -509,6 +536,7 @@ export class AnimationPlaybackController {
     // Clear shared animation state so workspace highlighting stops
     this.syncIsPlaying(false);
     this.loopCompleteCallback = null;
+    this.sequenceBoundaryProvider = null;
     this.state = null;
     this.sequenceData = null;
     this.timePosition = 0;
@@ -609,7 +637,9 @@ export class AnimationPlaybackController {
       // - Freeform sequences: pause at end position so user can see the final state
       const isAtAnimationEnd = nextStep >= animationEndStep;
       const pauseMs = isAtAnimationEnd
-        ? (this._isSeamlesslyLoopable ? 0 : this.state.stepPlaybackPauseMs)
+        ? this._isSeamlesslyLoopable
+          ? 0
+          : this.state.stepPlaybackPauseMs
         : this.state.stepPlaybackPauseMs;
       const nextDelay = duration + pauseMs;
 
@@ -640,8 +670,12 @@ export class AnimationPlaybackController {
 
     if (newTimePosition > this.totalDuration) {
       if (this.state.shouldLoop) {
-        // Get start position duration to know where motion beats begin
-        const startPosDuration = this.animationEngine.getStartPositionDuration();
+        // Keep the portion of this frame that landed beyond the old sequence.
+        // Dropping it creates a tiny cadence hitch at every boundary even when
+        // the requestAnimationFrame clock itself never stops.
+        const boundaryOverrun = newTimePosition - this.totalDuration;
+        const fallbackStartPositionDuration =
+          this.animationEngine.getStartPositionDuration();
 
         // Mark that we've completed the first loop
         this.isFirstLoop = false;
@@ -649,14 +683,24 @@ export class AnimationPlaybackController {
         // Notify loop completion listener (used by tempo practice training)
         this.loopCompleteCallback?.();
 
-        // For seamlessly loopable sequences: skip start position on subsequent loops
-        // For freeform sequences: show start position every time
-        this.timePosition = this._isSeamlesslyLoopable ? startPosDuration : 0;
+        const handoff = this.sequenceBoundaryProvider?.() ?? null;
+        if (
+          !handoff ||
+          !this.acceptSequenceBoundary(handoff, boundaryOverrun)
+        ) {
+          // No prepared continuation: retain the established same-sequence
+          // looping behavior. Circular sequences skip the repeated start hold;
+          // freeform sequences show it again.
+          this.timePosition = this._isSeamlesslyLoopable
+            ? fallbackStartPositionDuration
+            : 0;
 
-        // Re-initialize engine if needed
-        if (this.sequenceData) {
-          this.animationEngine.initializeWithDomainData(this.sequenceData);
-          this.totalDuration = this.animationEngine.getTotalDurationWithStartPosition() + this.endPositionHoldDuration;
+          if (this.sequenceData) {
+            this.animationEngine.initializeWithDomainData(this.sequenceData);
+            this.totalDuration =
+              this.animationEngine.getTotalDurationWithStartPosition() +
+              this.endPositionHoldDuration;
+          }
         }
       } else {
         // Stop at end
@@ -670,7 +714,9 @@ export class AnimationPlaybackController {
 
     // Calculate state using duration-aware timing
     // Returns the beat number (0 for start pos, 1+ for motion beats) with fractional progress
-    const currentStepNumber = this.animationEngine.calculateStateDurationAware(this.timePosition);
+    const currentStepNumber = this.animationEngine.calculateStateDurationAware(
+      this.timePosition
+    );
 
     // Sync the beat number (not time position) for UI highlighting
     // The beat number is what the StepGrid needs for highlighting
@@ -678,6 +724,47 @@ export class AnimationPlaybackController {
 
     // Update prop states
     this.updatePropStatesFromEngine();
+  }
+
+  /**
+   * Hot-load a linked sequence without touching the running loop or the
+   * playing flag. Because this runs inside onAnimationUpdate, the outgoing
+   * final state and incoming first motion are sampled before the same paint.
+   */
+  private acceptSequenceBoundary(
+    handoff: PreparedSequenceHandoff,
+    boundaryOverrun: number
+  ): boolean {
+    if (!this.state) return false;
+
+    const success = this.animationEngine.initializeWithDomainData(
+      handoff.sequence
+    );
+    if (!success) return false;
+
+    this.sequenceData = handoff.sequence;
+    this._isSeamlesslyLoopable = isSeamlesslyLoopable(handoff.sequence);
+
+    const metadata = this.animationEngine.getMetadata();
+    this.state.setTotalSteps(metadata.totalSteps);
+    this.state.setSequenceMetadata(metadata.word, metadata.author);
+    this.state.setSequenceData(handoff.sequence);
+
+    this.endPositionHoldDuration = this._isSeamlesslyLoopable ? 0 : 1;
+    this.totalDuration =
+      this.animationEngine.getTotalDurationWithStartPosition() +
+      this.endPositionHoldDuration;
+
+    const firstMotionTime = this.animationEngine.getStartPositionDuration();
+    this.timePosition = Math.min(
+      firstMotionTime + Math.max(0, boundaryOverrun),
+      this.totalDuration
+    );
+
+    // Commit the host's sequence/prop state only after the engine has accepted
+    // the candidate. Svelte batches those host writes into this same frame.
+    handoff.accept();
+    return true;
   }
 
   private updatePropStatesFromEngine(): void {

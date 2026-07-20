@@ -158,9 +158,9 @@ export interface RenderFrameParams {
   /**
    * True while a prop-type hot-swap's texture reload is still in flight
    * (PropTypeManager.trailsSuppressedUntilTextureLoad). Combined with the
-   * renderer's per-color morph-fade-in-progress accessors in
+   * renderer's per-color crossfade-in-progress accessors in
    * AnimationRenderLoop to suppress the trail overlay's tip capture for the
-   * WHOLE mismatched-geometry window — async load AND the morph fade after
+   * WHOLE mismatched-geometry window — async load AND the crossfade after
    * it — not just the load half. Raw boolean (not baked into trailSettings.mode)
    * because trailSettings.mode is also user-selectable (Off), which is a
    * different, unrelated "no trails at all" state that must not be conflated

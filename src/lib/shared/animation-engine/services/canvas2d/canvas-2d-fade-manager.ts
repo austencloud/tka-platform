@@ -16,10 +16,8 @@ export interface FadeState {
 }
 
 export class Canvas2DFadeManager {
-  // Default (300ms) matches the original glyph-only behavior. Prop morph fades
-  // pass a longer duration (~400ms) so a whole-shape swap reads as a morph
-  // rather than a flash — see Canvas2DAnimationRenderer's
-  // blue/redPropMorphFadeManager.
+  // Default (300ms) preserves the original glyph behavior. Other dual-source
+  // fades may pass a project timing token when their visual weight differs.
   private readonly fadeDurationMs: number;
 
   private isFading: boolean = false;

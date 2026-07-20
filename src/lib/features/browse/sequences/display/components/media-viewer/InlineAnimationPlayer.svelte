@@ -7,14 +7,17 @@
   Uses the shared animation engine with BPM preset controls.
 -->
 <script lang="ts">
-
   import { onMount, onDestroy, untrack } from "svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
-  import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+  import type { PreparedSequenceHandoff } from "$lib/shared/animation-engine/domain/chaining-types";
+  import type {
+    TipEffectMap,
+    TipEffortMap,
+  } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { getSequenceRepository } from "$lib/shared/create/get-sequence-repository";
@@ -102,12 +105,14 @@
     externalBpm = null,
     chrome = "full",
     fill = false,
+    showWordHeader = false,
     showPositionGlyph = false,
     onStepChange = undefined,
     scrubbable = false,
     singlePlay = false,
     beatIndicators = true,
     onLoopComplete = undefined,
+    onSequenceBoundary = undefined,
     trailSettingsOverride = null,
     tipEffectMap = undefined,
     tipEffortMap = undefined,
@@ -128,12 +133,13 @@
     /** When provided, overrides internal BPM and controls playback speed externally */
     externalBpm?: number | null;
     /**
-     * Reports the live 1-based fractional playback step (`currentStep`) to an
-     * external consumer on every frame it changes. Used by the guide reader to
-     * ring the matching on-screen strip cell in time with the animation; other
-     * hosts (gallery, Arena) omit it and pay no per-frame cost.
+     * Reports the live 1-based fractional playback step (`currentStep`) and the
+     * sequence identity currently loaded in the engine. The identity lets a
+     * host ignore stale frames while this player is reloading in place. Used by
+     * notation strips to ring the matching cell in time with the animation;
+     * other hosts (gallery, Arena) omit it and pay no per-frame cost.
      */
-    onStepChange?: (currentStep: number) => void;
+    onStepChange?: (currentStep: number, sequenceId: string | null) => void;
     /**
      * "full" (default) = external play button + BpmChips grid + the in-canvas
      * UnifiedTimeline scrubber (gallery detail, Arena).
@@ -151,12 +157,14 @@
     /**
      * Maximize the canvas: fill the whole container instead of reserving
      * vertical overhead for a header + progress pill. Minimal chrome hides both
-     * (header off, thin progress LINE not the pill), so that reserved 8.5rem
-     * otherwise shrinks the square for nothing. Opt-in so other minimal hosts
-     * (gallery/showcase) keep their current sizing; the guide companion sets it
-     * to make the animation as large as possible in the panel.
+     * by default (thin progress LINE, not the pill), so that reserved 8.5rem
+     * otherwise shrinks the square for nothing. `showWordHeader` can opt the
+     * header back in; other minimal hosts keep their current sizing.
      */
     fill?: boolean;
+    /** Show the sequence word above the canvas and highlight its live step.
+     *  Explicit opt-in keeps existing fill-mode embeds canvas-only. */
+    showWordHeader?: boolean;
     /**
      * Upgrade the minimal-chrome progress LINE into a seekable scrubber (drag/
      * click/keyboard to seek). Scrubbing pauses playback; releasing resumes it
@@ -186,6 +194,12 @@
      * in the next sequence/prop; other hosts (gallery, Arena) omit it.
      */
     onLoopComplete?: () => void;
+    /**
+     * Supplies a fully loaded, position-linked sequence at a natural loop
+     * boundary. Unlike a reactive prop reload, this keeps the existing clock
+     * running and begins directly with the incoming sequence's first motion.
+     */
+    onSequenceBoundary?: () => PreparedSequenceHandoff | null;
     /**
      * Overrides the trail settings passed to the canvas. Null (default)
      * keeps today's behavior for every existing caller: the global
@@ -261,6 +275,10 @@
   // Also prevents remounts during prop type changes (hot-swap handles those)
   let lastLoadedSequenceId: string | null = null;
 
+  function getSequenceLoadId(seq: SequenceData): string | null {
+    return seq.id || seq.word || seq.name || null;
+  }
+
   // Local reactive state for UI
   let isPlaying = $state(false);
   let bpm = $state(DEFAULT_BPM); // 60 BPM = 1.0x speed
@@ -284,7 +302,8 @@
   // the letter overlay entirely (start-position Greek letter + per-step letter).
   // Prop/staff renders (gallery, Arena) pass a non-hand type → unchanged.
   const isHandRender = $derived(
-    (bluePropType ?? "").toLowerCase() === "hand" || (redPropType ?? "").toLowerCase() === "hand"
+    (bluePropType ?? "").toLowerCase() === "hand" ||
+      (redPropType ?? "").toLowerCase() === "hand"
   );
 
   let currentLetter = $derived.by(() => {
@@ -353,17 +372,27 @@
       // Stateful services - fresh instance per player
       const stateManager = new AnimationStateManager();
       const loop = new AnimationLoop();
-      const orchestrator = new SequenceAnimationOrchestrator(
-        stateManager
-      );
+      const orchestrator = new SequenceAnimationOrchestrator(stateManager);
       if (visibilityManagerOverride) {
         orchestrator.setVisibilityManager(visibilityManagerOverride);
       }
-      playbackController = new AnimationPlaybackController(
-        orchestrator,
-        loop
-      );
+      playbackController = new AnimationPlaybackController(orchestrator, loop);
       playbackController.onLoopComplete(() => onLoopComplete?.());
+      playbackController.onSequenceBoundary(() => {
+        const handoff = onSequenceBoundary?.() ?? null;
+        if (!handoff) return null;
+
+        return {
+          sequence: handoff.sequence,
+          accept: () => {
+            // The controller already loaded this sequence. Set the guard before
+            // the host publishes its matching prop so the reactive sequence
+            // effect cannot pause, reset, and load it a second time.
+            lastLoadedSequenceId = getSequenceLoadId(handoff.sequence);
+            handoff.accept();
+          },
+        };
+      });
 
       servicesReady = true;
     } catch (err) {
@@ -375,6 +404,7 @@
 
   onDestroy(() => {
     playbackController?.offLoopComplete();
+    playbackController?.offSequenceBoundary();
     playbackController?.dispose();
     animationState.dispose();
   });
@@ -408,7 +438,8 @@
     const cb = onStepChange;
     if (!cb) return;
     const step = animationState.currentStep;
-    untrack(() => cb(step));
+    const sequenceId = animationState.sequenceData?.id ?? null;
+    untrack(() => cb(step, sequenceId));
   });
 
   // Autoplay: fires at most once per successfully-loaded sequence, whenever
@@ -447,7 +478,7 @@
   // Watch for sequence changes and reload animation
   // Only triggers when sequence ID changes, not on every state update
   $effect(() => {
-    const sequenceId = sequence?.id || sequence?.word || sequence?.name;
+    const sequenceId = sequence ? getSequenceLoadId(sequence) : null;
 
     if (sequence && servicesReady && sequenceId !== lastLoadedSequenceId) {
       // Use untrack to avoid creating dependency on isPlaying
@@ -624,6 +655,7 @@
         letter={currentLetter}
         stepData={currentStepData}
         sequenceData={animationState.sequenceData}
+        word={animationState.sequenceData?.word ?? sequence.word}
         currentStep={animationState.currentStep}
         {isPlaying}
         onPlaybackToggle={togglePlayback}
@@ -640,7 +672,7 @@
         fillContainer={fill}
         {hideTkaGlyph}
         {hideStepNumbers}
-        hideHeader={fill}
+        hideHeader={fill && !showWordHeader}
         hideProgressBar={fill && !scrubbable}
         onProgressBarSeek={scrubbable ? handleSeek : null}
         onProgressBarScrubStart={scrubbable ? handleScrubStart : null}

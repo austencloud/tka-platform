@@ -71,11 +71,14 @@ const BIGCLUB_TIP_POINTS: PropTipConfig = {
 
 const FAN_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 67, dy: -80 },
-    { dx: 95, dy: -45 },
-    { dx: 105, dy: 0 },
-    { dx: 95, dy: 45 },
-    { dx: 67, dy: 80 },
+    // Measured from the 300 x 239.4 animated fan SVG's centered viewBox.
+    // These sit on the five visible outer-rim/rib intersections rather than
+    // the older inset mandala trace points.
+    { dx: 84, dy: -118 },
+    { dx: 115, dy: -67 },
+    { dx: 150, dy: 0 },
+    { dx: 115, dy: 67 },
+    { dx: 84, dy: 118 },
   ],
 };
 
@@ -133,15 +136,20 @@ const BIGHOOP_TIP_POINTS: PropTipConfig = {
 
 const BUUGENG_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 130, dy: -40 },
-    { dx: -130, dy: 40 },
+    // The animated SVG is 300 x 155.26. Its two narrow terminals reach the
+    // horizontal viewBox edges within four units of the centerline. Centered
+    // edge anchors stay on those terminals under either chirality flip; the
+    // old diagonal offsets landed on the inner curves instead.
+    { dx: 150, dy: 0 },
+    { dx: -150, dy: 0 },
   ],
 };
 
 const BIGBUUGENG_TIP_POINTS: PropTipConfig = {
   points: [
-    { dx: 260, dy: -80 },
-    { dx: -260, dy: 80 },
+    // Same centered terminal geometry at the 600 x 293.1 big-prop scale.
+    { dx: 300, dy: 0 },
+    { dx: -300, dy: 0 },
   ],
 };
 

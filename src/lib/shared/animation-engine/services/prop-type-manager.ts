@@ -12,7 +12,10 @@ import { animationSettings as animationSettingsState } from "../state/animation-
 import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
 import type { IPropTextureLoader } from "./IPropTextureLoader";
 import type { TrailCapturer } from "$lib/shared/animation-engine/services/trail-capturer";
-import type { IAnimationRenderLoop, RenderFrameParams } from "./IAnimationRenderLoop";
+import type {
+  IAnimationRenderLoop,
+  RenderFrameParams,
+} from "./IAnimationRenderLoop";
 import type { IAnimationPrecomputer } from "./IAnimationPrecomputer";
 import type { PropTypeChanger } from "./prop-type-changer.svelte";
 import type { FireTipTracker } from "./fire-tip-tracker";
@@ -53,6 +56,10 @@ export class PropTypeManager {
   private fireTipTracker: FireTipTracker | null = null;
   private animationRenderer: AnimationRenderer | null = null;
   private lastTextureReloadSignal: number = 0;
+  // Texture generation finishes on a later task. Keep the provider from the
+  // newest engine update so that completion cannot put the render loop back on
+  // the reset pose it happened to capture when the swap began.
+  private latestFrameParamsProvider: FrameParamsProvider | null = null;
 
   /**
    * Wire dependencies after construction. Called from AnimationEngine.
@@ -86,12 +93,18 @@ export class PropTypeManager {
     fireTipTracker?: FireTipTracker | null;
     animationRenderer?: AnimationRenderer | null;
   }): void {
-    if (refs.renderLoopService !== undefined) this.renderLoopService = refs.renderLoopService;
-    if (refs.precomputationService !== undefined) this.precomputationService = refs.precomputationService;
-    if (refs.propTextureService !== undefined) this.propTextureService = refs.propTextureService;
-    if (refs.trailCapturer !== undefined) this.trailCapturer = refs.trailCapturer;
-    if (refs.fireTipTracker !== undefined) this.fireTipTracker = refs.fireTipTracker;
-    if (refs.animationRenderer !== undefined) this.animationRenderer = refs.animationRenderer;
+    if (refs.renderLoopService !== undefined)
+      this.renderLoopService = refs.renderLoopService;
+    if (refs.precomputationService !== undefined)
+      this.precomputationService = refs.precomputationService;
+    if (refs.propTextureService !== undefined)
+      this.propTextureService = refs.propTextureService;
+    if (refs.trailCapturer !== undefined)
+      this.trailCapturer = refs.trailCapturer;
+    if (refs.fireTipTracker !== undefined)
+      this.fireTipTracker = refs.fireTipTracker;
+    if (refs.animationRenderer !== undefined)
+      this.animationRenderer = refs.animationRenderer;
   }
 
   /**
@@ -104,8 +117,8 @@ export class PropTypeManager {
     getFrameParams: FrameParamsProvider,
     prevDarkMode: boolean
   ): boolean {
-    const newBlue =
-      props.bluePropType ?? this.propTypeOverrideBlue ?? "staff";
+    this.latestFrameParamsProvider = getFrameParams;
+    const newBlue = props.bluePropType ?? this.propTypeOverrideBlue ?? "staff";
     const newRed = props.redPropType ?? this.propTypeOverrideRed ?? "staff";
 
     // Check if overrides changed
@@ -113,15 +126,24 @@ export class PropTypeManager {
       newBlue !== this.propTypeOverrideBlue ||
       newRed !== this.propTypeOverrideRed
     ) {
-      // Per-color hot-swap flags for the morph crossfade below. Gated on
+      // Per-color hot-swap flags for the crossfade below. Gated on
       // propTypeOverrideBlue/Red already being non-null: the FIRST time an
       // override is ever registered (mount, coming from null) is establishing
       // initial state, not swapping an already-displayed prop, so it must not
       // fade — only a genuine value-to-value change does.
       const blueChanged =
-        this.propTypeOverrideBlue !== null && newBlue !== this.propTypeOverrideBlue;
+        this.propTypeOverrideBlue !== null &&
+        newBlue !== this.propTypeOverrideBlue;
       const redChanged =
-        this.propTypeOverrideRed !== null && newRed !== this.propTypeOverrideRed;
+        this.propTypeOverrideRed !== null &&
+        newRed !== this.propTypeOverrideRed;
+
+      // Remember the last pose before the incoming sequence/prop state reaches
+      // the canvas. The texture load is asynchronous, so waiting until it
+      // finishes would capture the replacement pose and make the dissolve snap
+      // between two positions.
+      if (blueChanged) this.animationRenderer?.prepareBluePropCrossfade();
+      if (redChanged) this.animationRenderer?.prepareRedPropCrossfade();
 
       this.propTypeOverrideBlue = newBlue;
       this.propTypeOverrideRed = newRed;
@@ -158,15 +180,13 @@ export class PropTypeManager {
         // captured during the async gap with old prop dimensions
         this.trailCapturer?.clearTrails();
         this.trailsSuppressedUntilTextureLoad = false;
-        // Start the morph crossfade only for the color(s) whose type actually
+        // Start the crossfade only for the color(s) whose type actually
         // changed. loadPropTextures always reloads both colors together, but
         // an unchanged color reloads a visually identical sprite, so there is
         // nothing to fade there even though a "previous" image now exists.
-        if (blueChanged) this.animationRenderer?.startBluePropMorphFade();
-        if (redChanged) this.animationRenderer?.startRedPropMorphFade();
-        if (state.isInitialized) {
-          this.renderLoopService?.triggerRender(getFrameParams);
-        }
+        if (blueChanged) this.animationRenderer?.startBluePropCrossfade();
+        if (redChanged) this.animationRenderer?.startRedPropCrossfade();
+        this.triggerRenderWithLatestFrame(state);
       });
 
       return true;
@@ -183,6 +203,7 @@ export class PropTypeManager {
     getFrameParams: FrameParamsProvider,
     prevDarkMode: boolean
   ): boolean {
+    this.latestFrameParamsProvider = getFrameParams;
     // No overrides - use settings via propTypeChangeService
     this.propTypeChangeService?.checkForChanges(this.settingsService);
 
@@ -192,7 +213,7 @@ export class PropTypeManager {
     if (textureSignal > 0 && textureSignal !== this.lastTextureReloadSignal) {
       this.lastTextureReloadSignal = textureSignal;
 
-      // Per-color hot-swap flags for the morph crossfade below, captured
+      // Per-color hot-swap flags for the crossfade below, captured
       // against AnimatorState's currently-displayed type BEFORE it's
       // overwritten. This naturally excludes the mount-time sync (settings
       // already loaded the correct type during initial load, so the "old"
@@ -200,17 +221,24 @@ export class PropTypeManager {
       // later settings-driven change (old and new differ, so it fades).
       const blueChanged =
         this.propTypeChangeService != null &&
-        this.propTypeChangeService.state.bluePropType !== state.currentBluePropType;
+        this.propTypeChangeService.state.bluePropType !==
+          state.currentBluePropType;
       const redChanged =
         this.propTypeChangeService != null &&
-        this.propTypeChangeService.state.redPropType !== state.currentRedPropType;
+        this.propTypeChangeService.state.redPropType !==
+          state.currentRedPropType;
+
+      if (blueChanged) this.animationRenderer?.prepareBluePropCrossfade();
+      if (redChanged) this.animationRenderer?.prepareRedPropCrossfade();
 
       // CRITICAL: Sync prop type state AFTER checkForChanges() detected the new values
       // Otherwise loadPropTextures() would use stale values from the earlier syncServiceState() call
       if (this.propTypeChangeService) {
         state.setBluePropType(this.propTypeChangeService.state.bluePropType);
         state.setRedPropType(this.propTypeChangeService.state.redPropType);
-        state.setLegacyPropType(this.propTypeChangeService.state.legacyPropType);
+        state.setLegacyPropType(
+          this.propTypeChangeService.state.legacyPropType
+        );
         animationSettingsState.setCurrentPropType(
           this.propTypeChangeService.state.bluePropType
         );
@@ -240,13 +268,11 @@ export class PropTypeManager {
       this.loadPropTextures(state, prevDarkMode).then(() => {
         this.trailCapturer?.clearTrails();
         this.trailsSuppressedUntilTextureLoad = false;
-        // Same per-color morph start as handleOverrides — see its comment.
-        if (blueChanged) this.animationRenderer?.startBluePropMorphFade();
-        if (redChanged) this.animationRenderer?.startRedPropMorphFade();
+        // Same per-color crossfade start as handleOverrides — see its comment.
+        if (blueChanged) this.animationRenderer?.startBluePropCrossfade();
+        if (redChanged) this.animationRenderer?.startRedPropCrossfade();
         // Trigger immediate re-render once new textures are ready
-        if (state.isInitialized) {
-          this.renderLoopService?.triggerRender(getFrameParams);
-        }
+        this.triggerRenderWithLatestFrame(state);
       });
 
       return true;
@@ -263,6 +289,7 @@ export class PropTypeManager {
     state: AnimatorState,
     getFrameParams: FrameParamsProvider
   ): void {
+    this.latestFrameParamsProvider = getFrameParams;
     const additionalLayers = props.additionalLayers ?? [];
     const layerCount = additionalLayers.length;
     const spectrum = props.tunnelSpectrum ?? true;
@@ -300,8 +327,11 @@ export class PropTypeManager {
         ) {
           this.additionalLayerTexturesLoading[i] = true;
 
-          const { blue: blueColor, red: redColor } =
-            this.additionalLayerColors(i, layerCount, spectrum);
+          const { blue: blueColor, red: redColor } = this.additionalLayerColors(
+            i,
+            layerCount,
+            spectrum
+          );
           // Each performer's per-hand prop; falls back to the global prop when a
           // layer carries no explicit type (default 1-skin appearance = today).
           const bluePropType = layer.bluePropType ?? state.currentBluePropType;
@@ -320,9 +350,7 @@ export class PropTypeManager {
               this.additionalLayerTexturesLoading[i] = false;
 
               // Trigger re-render with new layer textures
-              if (state.isInitialized) {
-                this.renderLoopService?.triggerRender(getFrameParams);
-              }
+              this.triggerRenderWithLatestFrame(state);
             })
             .catch((err) => {
               console.error(`Failed to load layer ${i} prop textures:`, err);
@@ -349,13 +377,22 @@ export class PropTypeManager {
   private additionalLayerColors(
     layerIndex: number,
     layerCount: number,
-    spectrum: boolean,
+    spectrum: boolean
   ): { blue: string; red: string } {
     const baseColors = spectrum ? null : getBaseMotionColors();
     return {
-      blue: baseColors ? baseColors.blue : tunnelPropColor(2 + layerIndex * 2, layerCount).hex,
-      red: baseColors ? baseColors.red : tunnelPropColor(3 + layerIndex * 2, layerCount).hex,
+      blue: baseColors
+        ? baseColors.blue
+        : tunnelPropColor(2 + layerIndex * 2, layerCount).hex,
+      red: baseColors
+        ? baseColors.red
+        : tunnelPropColor(3 + layerIndex * 2, layerCount).hex,
     };
+  }
+
+  private triggerRenderWithLatestFrame(state: AnimatorState): void {
+    if (!state.isInitialized || !this.latestFrameParamsProvider) return;
+    this.renderLoopService?.triggerRender(this.latestFrameParamsProvider);
   }
 
   /**
@@ -370,7 +407,7 @@ export class PropTypeManager {
     layerCount: number,
     spectrum: boolean,
     propType: string,
-    perLayerTypes?: ReadonlyArray<{ blue: string; red: string }>,
+    perLayerTypes?: ReadonlyArray<{ blue: string; red: string }>
   ): Promise<void> {
     if (layerCount <= 0 || !this.animationRenderer) return;
     this.lastLayerCount = layerCount;
@@ -382,18 +419,26 @@ export class PropTypeManager {
     this.additionalLayerTexturesLoading = [];
     await Promise.all(
       Array.from({ length: layerCount }, (_, i) => {
-        const { blue, red } = this.additionalLayerColors(i, layerCount, spectrum);
+        const { blue, red } = this.additionalLayerColors(
+          i,
+          layerCount,
+          spectrum
+        );
         // Per-performer prop types when supplied (Performer Set export); else the
         // single global prop for both hands — today's export behavior, unchanged.
         const t = perLayerTypes?.[i];
         const blueType = t?.blue ?? propType;
         const redType = t?.red ?? propType;
-        return this.animationRenderer!
-          .loadAdditionalLayerPropTextures(i, blueType, redType, blue, red)
-          .then(() => {
-            this.additionalLayerTexturesLoaded[i] = true;
-          });
-      }),
+        return this.animationRenderer!.loadAdditionalLayerPropTextures(
+          i,
+          blueType,
+          redType,
+          blue,
+          red
+        ).then(() => {
+          this.additionalLayerTexturesLoaded[i] = true;
+        });
+      })
     );
   }
 

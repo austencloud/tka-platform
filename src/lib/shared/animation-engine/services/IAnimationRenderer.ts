@@ -62,28 +62,36 @@ export interface IAnimationRenderer {
   loadPropTextures(propType: string): Promise<void>;
 
   /**
-   * Start the blue-hand prop morph crossfade (previous sprite fades out, new
-   * sprite fades in, at the identical transform). Call only from a genuine
-   * prop-type hot-swap, after loadPerColorPropTextures has resolved — never
-   * on the initial load or a dark-mode-only reload. No-op if there is no
-   * previous sprite to fade from.
+   * Capture the blue prop's last painted transform before a hot-swap changes
+   * the sequence state. The later crossfade uses this as its visual origin.
    */
-  startBluePropMorphFade(): void;
+  prepareBluePropCrossfade(): void;
 
-  /** Red-hand counterpart of startBluePropMorphFade — independent so one hand
-   *  can morph while the other holds steady. */
-  startRedPropMorphFade(): void;
+  /** Red-hand counterpart of prepareBluePropCrossfade. */
+  prepareRedPropCrossfade(): void;
 
   /**
-   * True while the blue-hand morph crossfade is actively running. The render
+   * Start the blue-hand prop crossfade (previous sprite fades out, new sprite
+   * fades in, and both travel on one shared transform bridge). Call only from
+   * a genuine prop-type hot-swap, after loadPerColorPropTextures has resolved.
+   * No-op if there is no previous sprite to fade from.
+   */
+  startBluePropCrossfade(): void;
+
+  /** Red-hand counterpart of startBluePropCrossfade. Independent so one hand
+   *  can swap while the other holds steady. */
+  startRedPropCrossfade(): void;
+
+  /**
+   * True while the blue-hand prop crossfade is actively running. The render
    * loop reads this to suppress the trail overlay's tip capture for that
    * color through the whole fade — tip geometry differs between prop types,
    * so stamping through the swap draws a straight-line artifact.
    */
-  isBluePropMorphFadeInProgress(): boolean;
+  isBluePropCrossfadeInProgress(): boolean;
 
-  /** Red-hand counterpart of isBluePropMorphFadeInProgress. */
-  isRedPropMorphFadeInProgress(): boolean;
+  /** Red-hand counterpart of isBluePropCrossfadeInProgress. */
+  isRedPropCrossfadeInProgress(): boolean;
 
   /**
    * Load different prop types for blue and red props

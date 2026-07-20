@@ -3,7 +3,10 @@
  */
 
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
-import { getTrailPointConfig, type TrailPointSource } from "../domain/types/trail-point-types";
+import {
+  resolveTrailPointConfig,
+  type TrailPointSource,
+} from "../domain/types/trail-point-types";
 import { getTipPoints } from "../domain/types/prop-tip-points";
 
 /** Configuration for prop endpoint calculations */
@@ -24,6 +27,11 @@ export interface PropEndpointResult {
   y: number;
 }
 
+/** A trail endpoint plus the canonical tip it came from, when applicable. */
+export interface TrailSourceEndpointResult extends PropEndpointResult {
+  tipIndex: number | null;
+}
+
 /** Result of calculating both endpoints */
 export interface PropEndpointPair {
   /** Left end (tipIndex 0) */
@@ -39,7 +47,7 @@ const DEFAULT_INWARD_FACTOR = 1.0;
 function resolveTrailSource(
   source: TrailPointSource,
   propType: string | null | undefined,
-  config: PropEndpointConfig,
+  config: PropEndpointConfig
 ): { offsetX: number; offsetY: number } | null {
   if (source.type === "none") return null;
 
@@ -66,25 +74,34 @@ function resolveTrailSource(
 }
 
 function resolveTrailEndpoint(
+  prop: PropState,
   source: TrailPointSource,
   propType: string | null | undefined,
   config: PropEndpointConfig,
-  center: PropEndpointResult,
-): PropEndpointResult {
+  center: PropEndpointResult
+): TrailSourceEndpointResult | null {
   const resolved = resolveTrailSource(source, propType, config);
-  if (!resolved) return { ...center };
+  if (!resolved) return null;
+
+  // Trail sources live in the prop's local coordinate system, exactly like
+  // the sprite. Rotate both canonical tips and custom lab offsets before
+  // translating them to the prop center.
+  const cosA = Math.cos(prop.staffRotationAngle);
+  const sinA = Math.sin(prop.staffRotationAngle);
   return {
-    x: center.x + resolved.offsetX,
-    y: center.y + resolved.offsetY,
+    x: center.x + resolved.offsetX * cosA - resolved.offsetY * sinA,
+    y: center.y + resolved.offsetX * sinA + resolved.offsetY * cosA,
+    tipIndex: source.type === "tip" ? source.index : null,
   };
 }
 
 export function calculatePropCenter(
   prop: PropState,
-  config: PropEndpointConfig,
+  config: PropEndpointConfig
 ): PropEndpointResult {
   const { canvasSize } = config;
-  const gridHalfwayOffset = config.gridHalfwayOffset ?? DEFAULT_GRID_HALFWAY_OFFSET;
+  const gridHalfwayOffset =
+    config.gridHalfwayOffset ?? DEFAULT_GRID_HALFWAY_OFFSET;
   const inwardFactor = config.inwardFactor ?? DEFAULT_INWARD_FACTOR;
 
   const centerX = canvasSize / 2;
@@ -100,16 +117,34 @@ export function calculatePropCenter(
   }
 
   return {
-    x: centerX + Math.cos(prop.centerPathAngle) * scaledHalfwayRadius * inwardFactor,
-    y: centerY + Math.sin(prop.centerPathAngle) * scaledHalfwayRadius * inwardFactor,
+    x:
+      centerX +
+      Math.cos(prop.centerPathAngle) * scaledHalfwayRadius * inwardFactor,
+    y:
+      centerY +
+      Math.sin(prop.centerPathAngle) * scaledHalfwayRadius * inwardFactor,
   };
+}
+
+/**
+ * Convert one canonical/custom trail source from prop-local coordinates into
+ * canvas coordinates. `none` and invalid tip indices produce no endpoint.
+ */
+export function calculateTrailSourceEndpoint(
+  prop: PropState,
+  config: PropEndpointConfig,
+  source: TrailPointSource,
+  propType?: string | null
+): TrailSourceEndpointResult | null {
+  const center = calculatePropCenter(prop, config);
+  return resolveTrailEndpoint(prop, source, propType, config, center);
 }
 
 export function calculatePropEndpoint(
   prop: PropState,
   config: PropEndpointConfig,
   endType: 0 | 1,
-  propType?: string | null,
+  propType?: string | null
 ): PropEndpointResult {
   const center = calculatePropCenter(prop, config);
 
@@ -117,10 +152,12 @@ export function calculatePropEndpoint(
     return center;
   }
 
-  const trailConfig = getTrailPointConfig(propType);
-  if (trailConfig) {
+  if (propType) {
+    const trailConfig = resolveTrailPointConfig(propType);
     const source = endType === 0 ? trailConfig.left : trailConfig.right;
-    return resolveTrailEndpoint(source, propType, config, center);
+    return (
+      resolveTrailEndpoint(prop, source, propType, config, center) ?? center
+    );
   }
 
   const gridScaleFactor = config.canvasSize / VIEWBOX_SIZE;
@@ -136,7 +173,7 @@ export function calculatePropEndpoint(
 export function calculatePropEndpoints(
   prop: PropState,
   config: PropEndpointConfig,
-  propType?: string | null,
+  propType?: string | null
 ): PropEndpointPair {
   const center = calculatePropCenter(prop, config);
 
@@ -144,11 +181,25 @@ export function calculatePropEndpoints(
     return { left: { ...center }, right: { ...center } };
   }
 
-  const trailConfig = getTrailPointConfig(propType);
-  if (trailConfig) {
+  if (propType) {
+    const trailConfig = resolveTrailPointConfig(propType);
     return {
-      left: resolveTrailEndpoint(trailConfig.left, propType, config, center),
-      right: resolveTrailEndpoint(trailConfig.right, propType, config, center),
+      left:
+        resolveTrailEndpoint(
+          prop,
+          trailConfig.left,
+          propType,
+          config,
+          center
+        ) ?? center,
+      right:
+        resolveTrailEndpoint(
+          prop,
+          trailConfig.right,
+          propType,
+          config,
+          center
+        ) ?? center,
     };
   }
 

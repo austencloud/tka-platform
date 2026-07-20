@@ -1,17 +1,25 @@
+// @vitest-environment jsdom
+
 import { describe, it, expect } from "vitest";
 import { TrailOverlayWebGL2 } from "../trail-overlay-web-gl2";
 import type { TrailOverlayRenderParams } from "../ITrailOverlayCanvas";
-import { DEFAULT_TRAIL_SETTINGS, TrackingMode } from "../../domain/types/trail-types";
-import type { RenderBackend, BackendStats } from "$lib/shared/render-graph/domain/backend";
+import {
+  DEFAULT_TRAIL_SETTINGS,
+  TrackingMode,
+} from "../../domain/types/trail-types";
+import type {
+  RenderBackend,
+  BackendStats,
+} from "$lib/shared/render-graph/domain/backend";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 
 /**
- * Regression guard for the 2026-07-19 round-2 hero-act feedback: "as it
- * morphs the trail effect jumps over from one end to the other creating a
+ * Regression guard for the hero-act prop swap: without suppression, the trail
+ * effect jumps from one endpoint to another and creates a
  * straight line." Root cause: getTipPoints/getTrailPointConfig return
  * different tip geometry per prop type (e.g. staff has two tips at
  * dx=±135, club has one at dx=130), so a capture during the prop-type
- * hot-swap or its morph crossfade stamps a straight line connecting the
+ * hot-swap or its crossfade stamps a straight line connecting the
  * old prop's tip to the new prop's differently-located tip.
  *
  * TrailOverlayWebGL2.renderFrame is the ACTIVE trail path in normal
@@ -35,7 +43,11 @@ function makeStubBackend(): RenderBackend {
     resize: () => {},
     clearScreen: () => {},
     dispose: () => {},
-    getStats: (): BackendStats => ({ lastFrameMs: 0, longestPassMs: 0, fboCount: 0 }),
+    getStats: (): BackendStats => ({
+      lastFrameMs: 0,
+      longestPassMs: 0,
+      fboCount: 0,
+    }),
   };
 }
 
@@ -68,7 +80,10 @@ function baseParams(
   return {
     blueTrailPoints: [],
     redTrailPoints: [],
-    trailSettings: { ...DEFAULT_TRAIL_SETTINGS, trackingMode: TrackingMode.BOTH_ENDS },
+    trailSettings: {
+      ...DEFAULT_TRAIL_SETTINGS,
+      trackingMode: TrackingMode.BOTH_ENDS,
+    },
     deltaTime: 1 / 60,
     currentTime: 0,
     canvasSize: 500,
@@ -85,22 +100,95 @@ function baseParams(
 function blueLeftRingOf(overlay: TrailOverlayWebGL2): unknown[] {
   return (overlay as unknown as { blueLeftRing: unknown[] }).blueLeftRing;
 }
-function blueLeftTailOf(overlay: TrailOverlayWebGL2): { prog: number; visibleCount: number; speedPxPerMs: number } {
-  return (overlay as unknown as { blueLeftTail: { prog: number; visibleCount: number; speedPxPerMs: number } }).blueLeftTail;
+function blueRightRingOf(overlay: TrailOverlayWebGL2): Array<{
+  x: number;
+  y: number;
+  tipIndex: number;
+}> {
+  return (
+    overlay as unknown as {
+      blueRightRing: Array<{ x: number; y: number; tipIndex: number }>;
+    }
+  ).blueRightRing;
+}
+function blueLeftTailOf(overlay: TrailOverlayWebGL2): {
+  prog: number;
+  visibleCount: number;
+  speedPxPerMs: number;
+} {
+  return (
+    overlay as unknown as {
+      blueLeftTail: {
+        prog: number;
+        visibleCount: number;
+        speedPxPerMs: number;
+      };
+    }
+  ).blueLeftTail;
+}
+function blueRightTailOf(overlay: TrailOverlayWebGL2): {
+  prog: number;
+  visibleCount: number;
+  speedPxPerMs: number;
+} {
+  return (
+    overlay as unknown as {
+      blueRightTail: {
+        prog: number;
+        visibleCount: number;
+        speedPxPerMs: number;
+      };
+    }
+  ).blueRightTail;
 }
 
-describe("TrailOverlayWebGL2 prop-morph suppression", () => {
+describe("TrailOverlayWebGL2 prop-swap suppression", () => {
+  it("captures a fan from its canonical center rib", () => {
+    const overlay = makeOverlay();
+    overlay.renderFrame(
+      baseParams({
+        blueProp: propAt(0),
+        bluePropType: "fan",
+        currentTime: 0,
+      })
+    );
+
+    expect(blueLeftRingOf(overlay)).toHaveLength(0);
+    const [point] = blueRightRingOf(overlay);
+    expect(point?.tipIndex).toBe(2);
+    expect(point?.x).toBeCloseTo(250 + ((150 + 150) * 500) / 950, 8);
+    expect(point?.y).toBeCloseTo(250, 8);
+  });
+
+  it("resolves per-tip effect assignments against the fan's actual tip index", () => {
+    const overlay = makeOverlay();
+    overlay.renderFrame(
+      baseParams({
+        blueProp: propAt(0),
+        bluePropType: "fan",
+        currentTime: 0,
+        tipEffectMap: { "0-2": { effect: "trails" } },
+      })
+    );
+
+    expect(blueRightRingOf(overlay)).toHaveLength(1);
+  });
+
   it("captures normally when never suppressed (baseline, zero behavior change)", () => {
     const overlay = makeOverlay();
     overlay.renderFrame(baseParams({ blueProp: propAt(0), currentTime: 0 }));
-    overlay.renderFrame(baseParams({ blueProp: propAt(0.05), currentTime: 16 }));
+    overlay.renderFrame(
+      baseParams({ blueProp: propAt(0.05), currentTime: 16 })
+    );
     expect(blueLeftRingOf(overlay).length).toBe(2);
   });
 
-  it("freezes the ring (no new capture) while blueMorphSuppressed is true", () => {
+  it("freezes the ring while bluePropSwapSuppressed is true", () => {
     const overlay = makeOverlay();
     overlay.renderFrame(baseParams({ blueProp: propAt(0), currentTime: 0 }));
-    overlay.renderFrame(baseParams({ blueProp: propAt(0.05), currentTime: 16 }));
+    overlay.renderFrame(
+      baseParams({ blueProp: propAt(0.05), currentTime: 16 })
+    );
     const ringSizeBeforeSuppression = blueLeftRingOf(overlay).length;
     expect(ringSizeBeforeSuppression).toBe(2);
 
@@ -108,28 +196,46 @@ describe("TrailOverlayWebGL2 prop-morph suppression", () => {
     // ring must not grow while suppressed — a capture here would use the
     // swap target's tip geometry while the wrong sprite is still on screen.
     overlay.renderFrame(
-      baseParams({ blueProp: propAt(0.1), currentTime: 32, blueMorphSuppressed: true })
+      baseParams({
+        blueProp: propAt(0.1),
+        currentTime: 32,
+        bluePropSwapSuppressed: true,
+      })
     );
     overlay.renderFrame(
-      baseParams({ blueProp: propAt(0.3), currentTime: 48, blueMorphSuppressed: true })
+      baseParams({
+        blueProp: propAt(0.3),
+        currentTime: 48,
+        bluePropSwapSuppressed: true,
+      })
     );
     expect(blueLeftRingOf(overlay).length).toBe(ringSizeBeforeSuppression);
   });
 
-  it("resets the ring/tail exactly on the suppression-lift frame — no line connects pre- and post-morph points", () => {
+  it("resets the ring and tail when suppression lifts without connecting pre- and post-swap points", () => {
     const overlay = makeOverlay();
     overlay.renderFrame(baseParams({ blueProp: propAt(0), currentTime: 0 }));
-    overlay.renderFrame(baseParams({ blueProp: propAt(0.05), currentTime: 16 }));
+    overlay.renderFrame(
+      baseParams({ blueProp: propAt(0.05), currentTime: 16 })
+    );
     expect(blueLeftRingOf(overlay).length).toBe(2);
     // Movement gave the tail a nonzero speed memory — reset must clear it too,
-    // or the post-morph tail would recede at the pre-morph prop's speed.
+    // or the post-swap tail would recede at the pre-swap prop's speed.
     expect(blueLeftTailOf(overlay).speedPxPerMs).toBeGreaterThan(0);
 
     overlay.renderFrame(
-      baseParams({ blueProp: propAt(0.1), currentTime: 32, blueMorphSuppressed: true })
+      baseParams({
+        blueProp: propAt(0.1),
+        currentTime: 32,
+        bluePropSwapSuppressed: true,
+      })
     );
     overlay.renderFrame(
-      baseParams({ blueProp: propAt(0.3), currentTime: 900, blueMorphSuppressed: true })
+      baseParams({
+        blueProp: propAt(0.3),
+        currentTime: 900,
+        bluePropSwapSuppressed: true,
+      })
     );
 
     // Lift, now on the new prop type — this is the frame the old code would
@@ -139,32 +245,47 @@ describe("TrailOverlayWebGL2 prop-morph suppression", () => {
         blueProp: propAt(0.3),
         bluePropType: "club",
         currentTime: 916,
-        blueMorphSuppressed: false,
+        bluePropSwapSuppressed: false,
       })
     );
 
-    // Exactly one point: the ring was cleared before this frame's capture ran,
-    // so appendToRing saw an empty ring and pushed a single fresh point — not
-    // three (which would mean the pre-suppression points survived to connect).
-    expect(blueLeftRingOf(overlay).length).toBe(1);
-    expect(blueLeftTailOf(overlay).speedPxPerMs).toBe(0);
+    // Club is single-ended, so its fresh segment belongs to the right/source
+    // ring. The old staff left ring is gone and the new ring has one point,
+    // which proves no pre-swap point survived to connect across the boundary.
+    expect(blueLeftRingOf(overlay)).toHaveLength(0);
+    expect(blueRightRingOf(overlay)).toHaveLength(1);
+    expect(blueRightTailOf(overlay).speedPxPerMs).toBe(0);
   });
 
   it("keeps capturing normally once suppression stays lifted", () => {
     const overlay = makeOverlay();
-    overlay.renderFrame(baseParams({ blueProp: propAt(0), currentTime: 0, blueMorphSuppressed: true }));
     overlay.renderFrame(
-      baseParams({ blueProp: propAt(0.05), currentTime: 916, blueMorphSuppressed: false })
+      baseParams({
+        blueProp: propAt(0),
+        currentTime: 0,
+        bluePropSwapSuppressed: true,
+      })
     );
     overlay.renderFrame(
-      baseParams({ blueProp: propAt(0.1), currentTime: 932, blueMorphSuppressed: false })
+      baseParams({
+        blueProp: propAt(0.05),
+        currentTime: 916,
+        bluePropSwapSuppressed: false,
+      })
+    );
+    overlay.renderFrame(
+      baseParams({
+        blueProp: propAt(0.1),
+        currentTime: 932,
+        bluePropSwapSuppressed: false,
+      })
     );
     // Suppressed frame captured nothing; the two lifted frames captured
     // normally (first point on the reset ring, second point extends it).
     expect(blueLeftRingOf(overlay).length).toBe(2);
   });
 
-  it("red-hand suppression is independent of blue (per-color, matches the round-1 morph fade)", () => {
+  it("keeps red-hand suppression independent of blue", () => {
     const overlay = makeOverlay();
     const params = (overrides: Partial<TrailOverlayRenderParams>) =>
       baseParams({ hasRed: true, redPropType: "staff", ...overrides });
@@ -174,11 +295,11 @@ describe("TrailOverlayWebGL2 prop-morph suppression", () => {
     );
     overlay.renderFrame(
       params({
-        blueProp: propAt(0.05), // blue morphing
-        redProp: propAt(0.05), // red not morphing
+        blueProp: propAt(0.05), // blue is swapping
+        redProp: propAt(0.05), // red is not swapping
         currentTime: 16,
-        blueMorphSuppressed: true,
-        redMorphSuppressed: false,
+        bluePropSwapSuppressed: true,
+        redPropSwapSuppressed: false,
       })
     );
     overlay.renderFrame(
@@ -186,13 +307,14 @@ describe("TrailOverlayWebGL2 prop-morph suppression", () => {
         blueProp: propAt(0.1),
         redProp: propAt(0.1),
         currentTime: 32,
-        blueMorphSuppressed: true,
-        redMorphSuppressed: false,
+        bluePropSwapSuppressed: true,
+        redPropSwapSuppressed: false,
       })
     );
 
     const blueRing = blueLeftRingOf(overlay);
-    const redRing = (overlay as unknown as { redLeftRing: unknown[] }).redLeftRing;
+    const redRing = (overlay as unknown as { redLeftRing: unknown[] })
+      .redLeftRing;
     // Blue: 1 point from the unsuppressed first frame, frozen after that.
     expect(blueRing.length).toBe(1);
     // Red: never suppressed, captures every frame.

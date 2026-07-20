@@ -143,6 +143,11 @@ export class AnimationRenderLoop {
   // sentinel) so the export-duplicate guard works correctly even when the
   // virtualTime is exactly 0 (the first export frame: i/fps * 1000 = 0).
   private lastStampedTrailTime: number | null = null;
+  // The texture-load/crossfade signals can begin a render tick after the frame
+  // parameters switch to the new prop type. Remember the last geometry identity
+  // seen by the trail path so that exact boundary frame is always segmented.
+  private previousBlueTrailPropType: string | null | undefined = undefined;
+  private previousRedTrailPropType: string | null | undefined = undefined;
   private rafId: number | null = null;
   // When true, the free-running rAF loop is disabled (offscreen export). The
   // deterministic renderSync() path still renders; start()/triggerRender() and
@@ -233,6 +238,8 @@ export class AnimationRenderLoop {
     this.fireTipTracker = config.fireTipTracker ?? null;
     this.ledTipTracker = config.ledTipTracker ?? null;
     this.onEffectError = config.onEffectError ?? null;
+    this.previousBlueTrailPropType = undefined;
+    this.previousRedTrailPropType = undefined;
 
     // Merge the initial renderers record into the Map.
     if (config.renderers) {
@@ -394,6 +401,8 @@ export class AnimationRenderLoop {
     this.getFrameParamsCallback = null;
     this.fireTipTracker = null;
     this.ledTipTracker = null;
+    this.previousBlueTrailPropType = undefined;
+    this.previousRedTrailPropType = undefined;
     // Dispose all renderers in the registry map.
     // AnimationRenderLoop does not own the renderers' DOM canvas elements
     // (EffectRendererManager owns those); we only hold the reference.
@@ -1074,21 +1083,30 @@ export class AnimationRenderLoop {
       this.lastTrailFrameTime = currentTime;
       this.lastStampedTrailTime = currentTime;
 
-      // Suppress new tip captures for a color whose prop-type is mid hot-swap:
-      // either its texture is still loading (trailsSuppressedUntilTextureLoad,
-      // shared by both colors — they always reload together) or its morph
-      // crossfade is still running post-load (per-color — see
-      // isBluePropMorphFadeInProgress doc). Both windows have the SAME failure
-      // mode: the captured tip position uses the swap target's geometry while
-      // the on-screen sprite (old, fading-old, or fading-new) doesn't match it
-      // yet, which stamps a straight line across the mismatch. See
-      // ITrailOverlayCanvas.blueMorphSuppressed for what the overlay does with this.
-      const blueMorphSuppressed =
+      // A prop-type change is an explicit path discontinuity. Detect it from
+      // the geometry identity itself, not only from the async texture/crossfade
+      // signals: those signals can arrive one render tick later than the new
+      // frame parameters. The overlay keeps its painted accumulator, skips new
+      // captures throughout the swap, then starts a disconnected source ring.
+      const blueTrailPropType = params.bluePropType?.toLowerCase() ?? null;
+      const redTrailPropType = params.redPropType?.toLowerCase() ?? null;
+      const bluePropIdentityChanged =
+        this.previousBlueTrailPropType !== undefined &&
+        this.previousBlueTrailPropType !== blueTrailPropType;
+      const redPropIdentityChanged =
+        this.previousRedTrailPropType !== undefined &&
+        this.previousRedTrailPropType !== redTrailPropType;
+      this.previousBlueTrailPropType = blueTrailPropType;
+      this.previousRedTrailPropType = redTrailPropType;
+
+      const bluePropSwapSuppressed =
+        bluePropIdentityChanged ||
         !!params.trailsSuppressedUntilTextureLoad ||
-        (this.renderer?.isBluePropMorphFadeInProgress() ?? false);
-      const redMorphSuppressed =
+        (this.renderer?.isBluePropCrossfadeInProgress() ?? false);
+      const redPropSwapSuppressed =
+        redPropIdentityChanged ||
         !!params.trailsSuppressedUntilTextureLoad ||
-        (this.renderer?.isRedPropMorphFadeInProgress() ?? false);
+        (this.renderer?.isRedPropCrossfadeInProgress() ?? false);
 
       trailOverlay.renderFrame({
         blueTrailPoints: effectiveBlueMotionVisible ? trailPoints.blue : [],
@@ -1109,8 +1127,8 @@ export class AnimationRenderLoop {
         tipEffectMap: params.tipEffectMap,
         loopDetected: this.loopDetectedThisFrame,
         isSeamlesslyLoopable: params.isSeamlesslyLoopable ?? false,
-        blueMorphSuppressed,
-        redMorphSuppressed,
+        bluePropSwapSuppressed,
+        redPropSwapSuppressed,
       });
       }
     } else if (trailOverlay && !effectiveTrailsVisible && this.lastTrailFrameTime > 0) {

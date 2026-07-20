@@ -27,10 +27,12 @@ import { TrackingMode } from "../domain/types/trail-types";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import { Canvas2DTrailRenderer } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-trail-renderer";
 import { Canvas2DVisibilityFadeManager } from "$lib/shared/animation-engine/services/canvas2d/canvas-2d-visibility-fade-manager";
-import { calculatePropCenter } from "$lib/shared/animation-engine/services/prop-position-calculator";
-import { getTipPoints } from "../domain/types/prop-tip-points";
-import { getTrailPointConfig } from "../domain/types/trail-point-types";
-import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
+import { calculateTrailSourceEndpoint } from "$lib/shared/animation-engine/services/prop-position-calculator";
+import {
+  resolveTrailPointConfig,
+  type TrailPointSource,
+} from "../domain/types/trail-point-types";
+import { propTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 import { resolveEffect } from "../domain/types/tip-effect-types";
 
 /** Minimum ring capacity; actual capacity grows with `trailSettings.tailLength`. */
@@ -39,6 +41,11 @@ const RING_BUFFER_HEADROOM = 20;
 
 /** Default visible leading edge when no settings have been applied yet. */
 const DEFAULT_LEADING_EDGE = 20;
+const TRAIL_ENDPOINT_DIMENSIONS = { width: 252.8, height: 77.8 };
+
+function effectTipIndex(source: TrailPointSource, logicalEnd: 0 | 1): number {
+  return source.type === "tip" ? source.index : logicalEnd;
+}
 
 /**
  * Export-fidelity diagnostic. Counts how many times the trail accumulator is
@@ -143,13 +150,12 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
   private lastHasBlue = true;
   private lastHasRed = true;
 
-  // Track previous per-color morph-suppression (see blueMorphSuppressed doc
-  // on TrailOverlayRenderParams). Separate from lastHasBlue/Red — the prop
-  // stays visible throughout a morph — and unlike that reset, lifting this
-  // must NOT clear the accumulator, so the pre-morph trail keeps fading via
-  // its normal decay instead of being wiped. Mirrors TrailOverlayWebGL2.
-  private lastBlueMorphSuppressed = false;
-  private lastRedMorphSuppressed = false;
+  // Track previous per-color prop-swap suppression. Separate from
+  // lastHasBlue/Red because the prop stays visible throughout a crossfade.
+  // Lifting suppression must not clear the accumulator, so the old trail
+  // keeps fading naturally while the new source starts a disconnected path.
+  private lastBluePropSwapSuppressed = false;
+  private lastRedPropSwapSuppressed = false;
 
   // Tracks whether a previous center position exists for the center-point
   // smoothing path (used by clearBuffers to reset inter-sequence state).
@@ -282,8 +288,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
       redPropType,
       currentTime,
       additionalLayers,
-      blueMorphSuppressed = false,
-      redMorphSuppressed = false,
+      bluePropSwapSuppressed = false,
+      redPropSwapSuppressed = false,
     } = params;
 
     // Non-seamless loop wrap: the props teleport from the end position back to
@@ -370,44 +376,49 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     this.lastHasBlue = hasBlue;
     this.lastHasRed = hasRed;
 
-    // Morph-suppression LIFT: reset that color's ring so the next capture
+    // Prop-swap suppression lift: reset that color's ring so the next capture
     // starts a fresh, disconnected segment at the new prop's tip geometry.
     // Deliberately does NOT clear the accumulator (unlike blueBecameVisible
-    // above) — the point is letting the pre-morph trail keep fading via its
-    // normal destination-out decay, not wiping it. See blueMorphSuppressed
-    // doc on TrailOverlayRenderParams.
-    if (!blueMorphSuppressed && this.lastBlueMorphSuppressed) {
+    // above) — the point is letting the pre-swap trail keep fading via its
+    // normal destination-out decay, not wiping it.
+    if (!bluePropSwapSuppressed && this.lastBluePropSwapSuppressed) {
       this.blueLeftRing = [];
       this.blueRightRing = [];
     }
-    if (!redMorphSuppressed && this.lastRedMorphSuppressed) {
+    if (!redPropSwapSuppressed && this.lastRedPropSwapSuppressed) {
       this.redLeftRing = [];
       this.redRightRing = [];
     }
-    this.lastBlueMorphSuppressed = blueMorphSuppressed;
-    this.lastRedMorphSuppressed = redMorphSuppressed;
+    this.lastBluePropSwapSuppressed = bluePropSwapSuppressed;
+    this.lastRedPropSwapSuppressed = redPropSwapSuppressed;
 
-    // Unilateral props (club, fan, etc.) only have one tip - force single-end
-    const blueIsBilateral = bluePropType ? isBilateralProp(bluePropType) : true;
-    const redIsBilateral = redPropType ? isBilateralProp(redPropType) : true;
-    const anyBilateral = blueIsBilateral || redIsBilateral;
-
-    const trackLeft = anyBilateral &&
+    const blueHasTwoEnds = propTipEnds(bluePropType ?? undefined) === 2;
+    const redHasTwoEnds = propTipEnds(redPropType ?? undefined) === 2;
+    const modeTracksLeft =
       (trailSettings.trackingMode === TrackingMode.LEFT_END ||
        trailSettings.trackingMode === TrackingMode.BOTH_ENDS);
-    const trackRight =
+    const modeTracksRight =
       trailSettings.trackingMode === TrackingMode.RIGHT_END ||
-      trailSettings.trackingMode === TrackingMode.BOTH_ENDS ||
-      !anyBilateral; // unilateral always tracks the single tip
+      trailSettings.trackingMode === TrackingMode.BOTH_ENDS;
+    const blueTrackLeft = blueHasTwoEnds && modeTracksLeft;
+    const blueTrackRight = !blueHasTwoEnds || modeTracksRight;
+    const redTrackLeft = redHasTwoEnds && modeTracksLeft;
+    const redTrackRight = !redHasTwoEnds || modeTracksRight;
 
     // Per-tip effect gating: only capture tips assigned to "trails" in
     // the tip effect map. When no map is provided, all tips are eligible.
     const tipMap = params.tipEffectMap;
     const hasMap = tipMap && Object.keys(tipMap).length > 0;
-    const blueLeftTrails = !hasMap || resolveEffect(0, 0, tipMap!, {}) === "trails";
-    const blueRightTrails = !hasMap || resolveEffect(0, 1, tipMap!, {}) === "trails";
-    const redLeftTrails = !hasMap || resolveEffect(1, 0, tipMap!, {}) === "trails";
-    const redRightTrails = !hasMap || resolveEffect(1, 1, tipMap!, {}) === "trails";
+    const blueTrailConfig = resolveTrailPointConfig(bluePropType);
+    const redTrailConfig = resolveTrailPointConfig(redPropType);
+    const blueLeftTrails = blueTrailConfig.left.type !== "none" &&
+      (!hasMap || resolveEffect(0, effectTipIndex(blueTrailConfig.left, 0), tipMap!, {}) === "trails");
+    const blueRightTrails = blueTrailConfig.right.type !== "none" &&
+      (!hasMap || resolveEffect(0, effectTipIndex(blueTrailConfig.right, 1), tipMap!, {}) === "trails");
+    const redLeftTrails = redTrailConfig.left.type !== "none" &&
+      (!hasMap || resolveEffect(1, effectTipIndex(redTrailConfig.left, 0), tipMap!, {}) === "trails");
+    const redRightTrails = redTrailConfig.right.type !== "none" &&
+      (!hasMap || resolveEffect(1, effectTipIndex(redTrailConfig.right, 1), tipMap!, {}) === "trails");
 
     // Detect tip-set changes. When a tip transitions from trailing to
     // non-trailing, its already-painted pixels are baked into the
@@ -443,11 +454,11 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     // so the ring doesn't keep growing invisibly in the background.
     const blueCaptureLive = hasBlue || blueFade.alpha > 0;
     const redCaptureLive = hasRed || redFade.alpha > 0;
-    if (blueProp && blueCaptureLive && !blueMorphSuppressed) {
-      this.capturePropTips(blueProp, canvasSize, bluePropType, 0, trackLeft && blueLeftTrails, trackRight && blueRightTrails, currentTime);
+    if (blueProp && blueCaptureLive && !bluePropSwapSuppressed) {
+      this.capturePropTips(blueProp, canvasSize, bluePropType, 0, blueTrackLeft && blueLeftTrails, blueTrackRight && blueRightTrails, currentTime);
     }
-    if (redProp && redCaptureLive && !redMorphSuppressed) {
-      this.capturePropTips(redProp, canvasSize, redPropType, 1, trackLeft && redLeftTrails, trackRight && redRightTrails, currentTime);
+    if (redProp && redCaptureLive && !redPropSwapSuppressed) {
+      this.capturePropTips(redProp, canvasSize, redPropType, 1, redTrackLeft && redLeftTrails, redTrackRight && redRightTrails, currentTime);
     }
 
     // Capture overlaid tunnel-layer tips into per-layer rings (same color/tip
@@ -458,16 +469,16 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
         const layer = additionalLayers[i]!;
         const blueRings = this.blueLayerRings[i]!;
         const redRings = this.redLayerRings[i]!;
-        if (layer.blueProp && layer.hasBlue && blueCaptureLive) {
+        if (layer.blueProp && layer.hasBlue && blueCaptureLive && !bluePropSwapSuppressed) {
           this.capturePropTipsInto(
             layer.blueProp, canvasSize, bluePropType, 0, blueRings.left, blueRings.right,
-            trackLeft && blueLeftTrails, trackRight && blueRightTrails, currentTime,
+            blueTrackLeft && blueLeftTrails, blueTrackRight && blueRightTrails, currentTime,
           );
         }
-        if (layer.redProp && layer.hasRed && redCaptureLive) {
+        if (layer.redProp && layer.hasRed && redCaptureLive && !redPropSwapSuppressed) {
           this.capturePropTipsInto(
             layer.redProp, canvasSize, redPropType, 1, redRings.left, redRings.right,
-            trackLeft && redLeftTrails, trackRight && redRightTrails, currentTime,
+            redTrackLeft && redLeftTrails, redTrackRight && redRightTrails, currentTime,
           );
         }
       }
@@ -493,14 +504,14 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     // Advance each per-color accumulator: fade existing pixels, stamp
     // the current leading edge. Envelope doesn't touch the accumulator
     // contents - it only modulates the final composite alpha below.
-    // hasColor=false during morph suppression (not just blueCaptureLive) —
+    // hasColor=false during prop-swap suppression (not just blueCaptureLive) —
     // this is the SAME "frozen trail fades out via the steps above" path
     // advanceAccumulator already uses for a toggled-off prop, which is
-    // exactly what a suppressed morph needs: no new stamp, existing pixels
+    // exactly what a suppressed swap needs: no new stamp, existing pixels
     // keep decaying via the fade pass above it.
     this.advanceAccumulator(
       this.blueAccumCtx,
-      blueCaptureLive && !blueMorphSuppressed,
+      blueCaptureLive && !bluePropSwapSuppressed,
       blueFade.alpha > 0,
       this.blueLeftRing,
       this.blueRightRing,
@@ -513,7 +524,7 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     );
     this.advanceAccumulator(
       this.redAccumCtx,
-      redCaptureLive && !redMorphSuppressed,
+      redCaptureLive && !redPropSwapSuppressed,
       redFade.alpha > 0,
       this.redLeftRing,
       this.redRightRing,
@@ -722,9 +733,8 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
 
   /**
    * Capture tip positions for a single prop into the appropriate ring
-   * buffers. Uses tip points directly (like FireTipTracker) and consults
-   * the trail point config for which tip index to use (user's "Tip 3"
-   * selection is honored via getTrailPointConfig).
+   * buffers. The shared resolver supplies the same canonical endpoint used by
+   * the WebGL overlay and honors any explicit Effects Lab assignment.
    */
   private capturePropTips(
     prop: PropState,
@@ -755,38 +765,33 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     trackRight: boolean,
     currentTime: number
   ): void {
-    const tipConfig = getTipPoints(propType);
-    const pts = tipConfig.points;
-    if (pts.length === 0) return;
+    const endpointConfig = {
+      canvasSize,
+      propDimensions: TRAIL_ENDPOINT_DIMENSIONS,
+    };
+    const trailConfig = resolveTrailPointConfig(propType);
 
-    // Check if user has configured specific tip indices via trail point config
-    const trailConfig = getTrailPointConfig(propType);
-
-    // Resolve which tip point index to use for each end
-    const leftTipIndex = trailConfig?.left?.type === "tip" ? trailConfig.left.index : 0;
-    const rightTipIndex = trailConfig?.right?.type === "tip"
-      ? trailConfig.right.index
-      : (pts.length >= 2 ? 1 : 0);
-
-    const center = calculatePropCenter(
-      prop,
-      { canvasSize, propDimensions: { width: 252.8, height: 77.8 } }
-    );
-    const gridScaleFactor = canvasSize / 950;
-    const cosA = Math.cos(prop.staffRotationAngle);
-    const sinA = Math.sin(prop.staffRotationAngle);
-
-    if (trackLeft && leftTipIndex < pts.length) {
-      const tp = pts[leftTipIndex]!;
-      const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
-      const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
-      this.appendToRing(leftRing, worldX, worldY, canvasSize, propIndex, leftTipIndex, currentTime);
+    if (trackLeft) {
+      const endpoint = calculateTrailSourceEndpoint(
+        prop,
+        endpointConfig,
+        trailConfig.left,
+        propType,
+      );
+      if (endpoint) {
+        this.appendToRing(leftRing, endpoint.x, endpoint.y, canvasSize, propIndex, endpoint.tipIndex ?? 0, currentTime);
+      }
     }
-    if (trackRight && rightTipIndex < pts.length) {
-      const tp = pts[rightTipIndex]!;
-      const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
-      const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
-      this.appendToRing(rightRing, worldX, worldY, canvasSize, propIndex, rightTipIndex, currentTime);
+    if (trackRight) {
+      const endpoint = calculateTrailSourceEndpoint(
+        prop,
+        endpointConfig,
+        trailConfig.right,
+        propType,
+      );
+      if (endpoint) {
+        this.appendToRing(rightRing, endpoint.x, endpoint.y, canvasSize, propIndex, endpoint.tipIndex ?? 1, currentTime);
+      }
     }
   }
 

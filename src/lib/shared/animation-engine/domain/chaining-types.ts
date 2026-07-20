@@ -12,7 +12,9 @@ import type { BroadcastStateClient } from "$lib/shared/landing/domain/broadcast-
 export type SourceMode = "pick" | "library" | "infinite" | "live";
 
 export interface IBroadcastProvider {
-  subscribeToBroadcast(callback: (state: BroadcastStateClient | null) => void): () => void;
+  subscribeToBroadcast(
+    callback: (state: BroadcastStateClient | null) => void
+  ): () => void;
   calculateServerTimeOffset(): Promise<number>;
 }
 
@@ -22,6 +24,19 @@ export interface PlaybackHistoryEntry {
   sourceMode: SourceMode;
   word?: string;
 }
+
+/**
+ * A fully loaded sequence that can replace the current one at its natural
+ * playback boundary. The provider keeps ownership until the animation engine
+ * accepts the sequence; `accept` then commits the matching host state in the
+ * same frame.
+ */
+export interface PreparedSequenceHandoff {
+  sequence: SequenceData;
+  accept: () => void;
+}
+
+export type SequenceBoundaryProvider = () => PreparedSequenceHandoff | null;
 
 /**
  * Minimal result shape returned by the infinite generator.
@@ -36,7 +51,9 @@ export interface GeneratedSequenceResult {
  */
 export interface IInfiniteSequenceGenerator {
   generateInitial(): Promise<GeneratedSequenceResult | null>;
-  generateFromEndState(endState: EndState): Promise<GeneratedSequenceResult | null>;
+  generateFromEndState(
+    endState: EndState
+  ): Promise<GeneratedSequenceResult | null>;
   getSessionCount(): number;
 }
 

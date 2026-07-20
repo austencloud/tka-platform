@@ -43,17 +43,20 @@ export type {
   IPerformanceMonitorService,
 } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
 import {
-  calculatePropCenter,
+  calculateTrailSourceEndpoint,
   type PropEndpointConfig,
 } from "$lib/shared/animation-engine/services/prop-position-calculator";
-import { getTipPoints } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
 import {
-  getTrailPointConfig,
+  resolveTrailPointConfig,
   type TrailPointSource,
 } from "$lib/shared/animation-engine/domain/types/trail-point-types";
+import { propTipEnds } from "$lib/shared/pictograph/prop/domain/prop-tip-ends";
 
-/** Standard viewbox size used by the prop coordinate system */
-const VIEWBOX_SIZE = 950;
+interface TrackedTrailSource {
+  source: TrailPointSource;
+  sourceKey: string;
+  tipIndex: number;
+}
 
 // ============================================================================
 // CIRCULAR BUFFER (inlined for O(1) trail point management)
@@ -217,8 +220,8 @@ export class TrailCapturer {
     red: CircularBuffer<TrailPoint>;
   }> = [];
 
-  // Last captured points for distance-based sampling
-  // Key format: "propIndex-tipIndex" (e.g., "0-1" = blue prop, tip index 1)
+  // Last captured points for distance-based sampling. Keys include the resolved
+  // source identity so changing a tip/custom offset starts a new segment.
   private lastCapturedPoints = new Map<string, LastCapturedPoint>();
 
   // Animation timing
@@ -540,8 +543,7 @@ export class TrailCapturer {
 
   /**
    * Capture trail point for an additional tunnel layer.
-   * Uses tip-based tracking: enumerates tip points from PropTipPoints
-   * and filters based on legacy TrackingMode fallback.
+   * Uses the canonical prop-aware endpoint assignment shared by both overlays.
    */
   private captureTrailPointForLayer(
     prop: PropState,
@@ -552,34 +554,33 @@ export class TrailCapturer {
     additionalLayerIndex: number
   ): void {
     const propType = propIndex === 0 ? this.config.bluePropType : this.config.redPropType;
-    const tipIndicesToTrack = this.resolveTipIndices(propIndex, propType);
+    const trailSources = this.resolveTrailSources(propType);
 
     this.ensureAdditionalLayerBuffers(additionalLayerIndex + 1);
     const layerBuffers = this.additionalLayerBuffers[additionalLayerIndex]!;
     const buffer = propIndex === 0 ? layerBuffers.blue : layerBuffers.red;
 
-    const tipConfig = getTipPoints(propType);
-    const tipPoints = tipConfig.points;
-    const center = calculatePropCenter(prop, {
+    const endpointConfig: PropEndpointConfig = {
       canvasSize: this.config.canvasSize,
       propDimensions,
-    });
-    const gridScaleFactor = this.config.canvasSize / VIEWBOX_SIZE;
-    const cosA = Math.cos(prop.staffRotationAngle);
-    const sinA = Math.sin(prop.staffRotationAngle);
+    };
 
     const minSpacing = this.getAdaptivePointSpacing();
 
-    for (const tipIndex of tipIndicesToTrack) {
-      if (tipIndex >= tipPoints.length) continue;
-      const tp = tipPoints[tipIndex]!;
-
-      // Transform tip from prop-local to canvas space
-      const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
-      const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
+    for (const tracked of trailSources) {
+      const endpoint = calculateTrailSourceEndpoint(
+        prop,
+        endpointConfig,
+        tracked.source,
+        propType,
+      );
+      if (!endpoint) continue;
+      const worldX = endpoint.x;
+      const worldY = endpoint.y;
+      const tipIndex = endpoint.tipIndex ?? tracked.tipIndex;
 
       // Use layer-prefixed key to avoid collision with primary layer
-      const key = `L${additionalLayerIndex + 1}-${propIndex}-${tipIndex}`;
+      const key = `L${additionalLayerIndex + 1}-${propIndex}-${tracked.sourceKey}`;
       const lastPoint = this.lastCapturedPoints.get(key);
 
       if (lastPoint === undefined) {
@@ -655,70 +656,55 @@ export class TrailCapturer {
     return hasLooped;
   }
 
-  /**
-   * Resolve which tip indices to track. Honors the user's trail point
-   * assignment from the tip lab (via getTrailPointConfig) when one exists,
-   * otherwise falls back to legacy TrackingMode behavior.
-   */
-  private resolveTipIndices(
-    propIndex: 0 | 1,
+  /** Resolve the same canonical or user-assigned trail sources as the overlay
+   * renderers. Source-specific keys keep changed custom offsets disconnected
+   * from their previous path. */
+  private resolveTrailSources(
     propType: string | null | undefined
-  ): number[] {
+  ): TrackedTrailSource[] {
     const { trailSettings } = this.config;
-    const tipConfig = getTipPoints(propType);
-    const tipCount = tipConfig.points.length;
+    const trailConfig = resolveTrailPointConfig(propType);
+    const candidates: Array<{ source: TrailPointSource; logicalEnd: 0 | 1 }> = [];
 
-    if (tipCount === 0) return [];
-
-    // Tip-lab trail assignment takes precedence (e.g. fan trails from tip 3).
-    // "custom" sources can't be represented as a tip index here, so they fall
-    // back to the same geometric defaults the trail overlay uses (left=0,
-    // right=1); "none" disables that end.
-    const trailConfig = getTrailPointConfig(propType);
-    if (trailConfig) {
-      const resolveEnd = (
-        source: TrailPointSource,
-        fallback: number
-      ): number | null => {
-        if (source.type === "none") return null;
-        if (source.type === "tip") {
-          return source.index < tipCount ? source.index : null;
-        }
-        return fallback;
-      };
-
-      const leftIndex = resolveEnd(trailConfig.left, 0);
-      const rightIndex = resolveEnd(trailConfig.right, tipCount >= 2 ? 1 : 0);
-
-      const indices: number[] = [];
-      if (trailSettings.trackingMode === TrackingMode.BOTH_ENDS) {
-        if (leftIndex !== null) indices.push(leftIndex);
-        if (rightIndex !== null && rightIndex !== leftIndex) {
-          indices.push(rightIndex);
-        }
-      } else if (trailSettings.trackingMode === TrackingMode.LEFT_END) {
-        if (leftIndex !== null) indices.push(leftIndex);
-      } else {
-        if (rightIndex !== null) indices.push(rightIndex);
-      }
-      return indices;
-    }
-
-    if (trailSettings.trackingMode === TrackingMode.BOTH_ENDS) {
-      // Track all tips for the prop
-      return Array.from({ length: tipCount }, (_, i) => i);
-    } else if (trailSettings.trackingMode === TrackingMode.LEFT_END) {
-      return [0];
+    if (propTipEnds(propType ?? undefined) === 1) {
+      candidates.push({ source: trailConfig.right, logicalEnd: 1 });
     } else {
-      // RIGHT_END: last tip (for staff that's index 1, for club that's index 0)
-      return [tipCount - 1];
+      if (
+        trailSettings.trackingMode === TrackingMode.LEFT_END ||
+        trailSettings.trackingMode === TrackingMode.BOTH_ENDS
+      ) {
+        candidates.push({ source: trailConfig.left, logicalEnd: 0 });
+      }
+      if (
+        trailSettings.trackingMode === TrackingMode.RIGHT_END ||
+        trailSettings.trackingMode === TrackingMode.BOTH_ENDS
+      ) {
+        candidates.push({ source: trailConfig.right, logicalEnd: 1 });
+      }
     }
+
+    const uniqueSources = new Map<string, TrackedTrailSource>();
+    for (const { source, logicalEnd } of candidates) {
+      if (source.type === "none") continue;
+      const sourceKey = source.type === "tip"
+        ? `tip-${source.index}`
+        : `custom-${source.dx}-${source.dy}`;
+      if (!uniqueSources.has(sourceKey)) {
+        uniqueSources.set(sourceKey, {
+          source,
+          sourceKey,
+          tipIndex: source.type === "tip" ? source.index : logicalEnd,
+        });
+      }
+    }
+
+    return [...uniqueSources.values()];
   }
 
   /**
    * Capture trail points with distance-based sampling and intelligent cache backfill.
-   * Uses tip-based tracking: enumerates tip points from PropTipPoints registry
-   * and transforms each from prop-local to canvas space.
+   * Resolves canonical or user-assigned points in prop-local coordinates, then
+   * transforms them into canvas space through PropPositionCalculator.
    *
    * Strategy:
    * 1. Distance-based sampling: Only add points when prop moves >N pixels
@@ -735,22 +721,12 @@ export class TrailCapturer {
     const { trailSettings } = this.config;
     const propType = propIndex === 0 ? this.config.bluePropType : this.config.redPropType;
 
-    // Resolve which tips to track using legacy TrackingMode fallback
-    const tipIndicesToTrack = this.resolveTipIndices(propIndex, propType);
+    const trailSources = this.resolveTrailSources(propType);
 
-    // Get tip point definitions for coordinate transformation
-    const tipConfig = getTipPoints(propType);
-    const tipPoints = tipConfig.points;
-
-    // Compute prop center and transformation factors
     const endpointConfig: PropEndpointConfig = {
       canvasSize: this.config.canvasSize,
       propDimensions,
     };
-    const center = calculatePropCenter(prop, endpointConfig);
-    const gridScaleFactor = this.config.canvasSize / VIEWBOX_SIZE;
-    const cosA = Math.cos(prop.staffRotationAngle);
-    const sinA = Math.sin(prop.staffRotationAngle);
 
     // Select buffer based on prop index (primary layer)
     const buffer = this.getBufferForProp(propIndex, 0);
@@ -758,15 +734,19 @@ export class TrailCapturer {
     // Get adaptive point spacing
     const minSpacing = this.getAdaptivePointSpacing();
 
-    for (const tipIndex of tipIndicesToTrack) {
-      if (tipIndex >= tipPoints.length) continue;
-      const tp = tipPoints[tipIndex]!;
+    for (const tracked of trailSources) {
+      const endpoint = calculateTrailSourceEndpoint(
+        prop,
+        endpointConfig,
+        tracked.source,
+        propType,
+      );
+      if (!endpoint) continue;
+      const worldX = endpoint.x;
+      const worldY = endpoint.y;
+      const tipIndex = endpoint.tipIndex ?? tracked.tipIndex;
 
-      // Transform tip from prop-local to canvas space
-      const worldX = center.x + (tp.dx * cosA - tp.dy * sinA) * gridScaleFactor;
-      const worldY = center.y + (tp.dx * sinA + tp.dy * cosA) * gridScaleFactor;
-
-      const key = `${propIndex}-${tipIndex}`;
+      const key = `${propIndex}-${tracked.sourceKey}`;
       const lastPoint = this.lastCapturedPoints.get(key);
 
       // FIRST POINT: Wait for animation initialization
@@ -800,6 +780,7 @@ export class TrailCapturer {
 
         if (
           hasLargeBeatGap &&
+          tracked.source.type === "tip" &&
           trailSettings.usePathCache &&
           this.animationCacheService?.isValid()
         ) {

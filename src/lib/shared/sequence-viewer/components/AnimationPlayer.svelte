@@ -26,7 +26,11 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 	import { displayedBeatNumber } from "$lib/shared/animation-engine/services/step-calculator";
 	import { createAnimationPanelState, type AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 	import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
-	import { TrackingMode } from "$lib/shared/animation-engine/domain/types/trail-types";
+	import {
+		TrackingMode,
+		type TrailSettings,
+	} from "$lib/shared/animation-engine/domain/types/trail-types";
+	import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
 	import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
 	import { tryGetAnimationExportContext } from "$lib/shared/export-panel/context/animation-export-context.svelte";
 	import type { ControlsLevel } from "../domain/types";
@@ -65,6 +69,8 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 		progressLine = false,
 		progressLineSeekable = false,
 		hoverHint = "none" as "none" | "badge" | "pill" | "scrim",
+		trailSettingsOverride = null,
+		tipEffectMap = undefined,
 	}: {
 		sequence: SequenceData;
 		autoPlay?: boolean;
@@ -97,6 +103,10 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 		/** Mouse-only hover affordance teaching "click the canvas to play/pause".
 		 *  Forwarded to AnimatorCanvas. */
 		hoverHint?: "none" | "badge" | "pill" | "scrim";
+		/** Per-instance trail settings. Null keeps the shared animation settings. */
+		trailSettingsOverride?: TrailSettings | null;
+		/** Per-tip effect assignments forwarded to AnimatorCanvas. */
+		tipEffectMap?: TipEffectMap;
 	} = $props();
 
 	// Context for external control mode
@@ -171,7 +181,7 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 	// Unilateral props (fan, club, etc.) always use RIGHT_END - they only have
 	// one meaningful endpoint, so BOTH_ENDS would show an imaginary second trail.
 	const trailSettings = $derived.by(() => {
-		const t = animationSettings.trail;
+		const t = trailSettingsOverride ?? animationSettings.trail;
 		void t.mode;
 		void t.fadeDurationMs;
 		void t.lineWidth;
@@ -346,6 +356,7 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 						{previewDarkMode}
 						{bluePropType}
 						{redPropType}
+						{tipEffectMap}
 						progressBarVariant="minimal"
 						{hideProgressBar}
 						{tapToToggle}
@@ -415,6 +426,7 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 					{previewDarkMode}
 					{bluePropType}
 					{redPropType}
+					{tipEffectMap}
 					progressBarVariant="minimal"
 					{hideProgressBar}
 					{tapToToggle}
