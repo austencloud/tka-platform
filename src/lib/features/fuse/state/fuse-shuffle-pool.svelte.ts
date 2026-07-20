@@ -69,6 +69,14 @@ export function createFuseShufflePool({
   let historyIndex = $state(-1);
   let revision = $state(0);
 
+  // The candidate the next Shuffle will land on, staged ahead of the tap. The
+  // in-flight scan is cached so the tap consumes a warm result instead of
+  // hitting the network; the resolved sequence is exposed so the card can
+  // pre-render its pictographs. Both are invalidated on any cursor change.
+  let staged: Promise<StagedFuseCandidate | null> | null = null;
+  let stagedItem = $state<SequenceData | null>(null);
+  let stageGeneration = 0;
+
   function reset(sequences: readonly SequenceData[], length: number): void {
     requestedLength = length;
     pool = shuffledCopy(
@@ -80,6 +88,13 @@ export function createFuseShufflePool({
     currentPosition = 0;
     history = [];
     historyIndex = -1;
+    clearStaged();
+  }
+
+  function clearStaged(): void {
+    stageGeneration += 1;
+    staged = null;
+    stagedItem = null;
   }
 
   async function hydrateCandidate(
@@ -100,7 +115,7 @@ export function createFuseShufflePool({
    * Find the next usable entry without changing the visible source. The deck
    * cursor advances only when the parent commits the returned candidate.
    */
-  async function stageNext(): Promise<StagedFuseCandidate | null> {
+  async function findNext(): Promise<StagedFuseCandidate | null> {
     if (pool.length === 0) return null;
 
     const startCursor = nextCursor;
@@ -126,6 +141,39 @@ export function createFuseShufflePool({
     }
 
     return null;
+  }
+
+  /**
+   * Stage the next candidate, consuming the prefetched scan when one is warm.
+   * The staged promise was computed against the current cursor (prefetchNext is
+   * always called straight after a commit), so it is valid until the next
+   * commit consumes it.
+   */
+  function stageNext(): Promise<StagedFuseCandidate | null> {
+    const pending = staged ?? findNext();
+    clearStaged();
+    return pending;
+  }
+
+  /**
+   * Warm the next Shuffle: run the scan (hydrating its network data) now and
+   * cache both the promise and, once resolved, the sequence — so the tap is a
+   * cache hit and the card can pre-render the pictographs ahead of the swap.
+   */
+  function prefetchNext(): void {
+    if (pool.length === 0) return;
+    const generation = ++stageGeneration;
+    const pending = findNext();
+    staged = pending;
+    pending
+      .then((candidate) => {
+        if (generation === stageGeneration) {
+          stagedItem = candidate?.sequence ?? null;
+        }
+      })
+      .catch(() => {
+        if (generation === stageGeneration) stagedItem = null;
+      });
   }
 
   function commit(candidate: StagedFuseCandidate, resetHistory: boolean): void {
@@ -187,8 +235,12 @@ export function createFuseShufflePool({
     get revision() {
       return revision;
     },
+    get nextSequence() {
+      return stagedItem;
+    },
     reset,
     stageNext,
+    prefetchNext,
     commit,
     peekPrevious,
     commitPrevious,

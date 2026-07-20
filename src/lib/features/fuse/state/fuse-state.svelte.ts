@@ -391,6 +391,9 @@ export function createFuseState({
       previewSequence = preview;
       appliedLength = length;
       hasLoadedPair = true;
+      // Warm the next Shuffle for both sides so the first tap is instant.
+      bluePool.prefetchNext();
+      redPool.prefetchNext();
       if (resumeAfterLoad) startClock();
     } catch (loadError) {
       if (!isCurrentLengthGeneration(generation)) return;
@@ -443,6 +446,8 @@ export function createFuseState({
 
       pool.commit(candidate, false);
       previewSequence = preview;
+      // Warm the following candidate so the next Shuffle stays instant.
+      pool.prefetchNext();
       // Shuffling changes one path at the beat already on screen. Resetting the
       // shared beat here made both props jump back to the start of the loop.
       readyMessage = sourceReadyMessage(side, candidate.sequence, false);
@@ -621,6 +626,9 @@ export function createFuseState({
       },
       get revision() {
         return pool.revision;
+      },
+      get nextSequence() {
+        return pool.nextSequence;
       },
     };
   }

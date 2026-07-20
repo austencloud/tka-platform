@@ -162,8 +162,12 @@
 </section>
 
 <style>
+  /* bits-ui portals this content to the body end; without an explicit z-index
+     it renders under the app chrome and reads as "the popover won't open".
+     Matches PracticeBar's .pb-bpm-pop fix. */
   :global(.fuse-tempo-popover) {
     --min-touch-target: 48px;
+    z-index: var(--z-dropdown, 1000);
   }
 
   .preview-stage {
