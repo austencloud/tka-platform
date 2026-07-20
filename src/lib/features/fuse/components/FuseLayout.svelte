@@ -33,8 +33,10 @@
   const SPLIT_KEY = "tka-fuse-splits"; // JSON map: deviceBucket -> px
   const MIN_LEFT = 340; // path column never narrower than this
   const CANVAS_FLOOR = 560; // canvas never narrower than this
-  const STEP_COLS = 4; // fixed step columns on the desktop card (+1 start column)
+  const STEP_COL_CANDIDATES = [2, 4, 6, 8]; // step columns to weigh (+1 start col)
   const CARD_GAP = 14; // vertical gap between the stacked blue/red cards
+  const CARD_HPAD = 44; // card horizontal padding, both sides
+  const CARD_CHROME_V = 96; // card vertical chrome: padding + the Back/Shuffle row
 
   let containerWidth = $state(0);
   let contentH = $state(0); // measured content-row height (the left column fills it)
@@ -65,14 +67,38 @@
     }
   }
 
-  // The card grid — and thus its aspect — is step-count-driven: STEP_COLS step
-  // columns + 1 start column, ceil(steps/STEP_COLS) step rows but at least 2
-  // (the start column stacks the start position over the mandala). requested
-  // length shows before the load settles so the seam is right immediately.
+  // requested length shows before the load settles so the seam is right away.
   const stepCount = $derived(fuseState.appliedLength ?? fuseState.requestedLength);
-  const cardAspect = $derived(
-    (STEP_COLS + 1) / Math.max(Math.ceil(stepCount / STEP_COLS), 2)
+
+  // Pictograph cell size for one card at a given path-column width and step
+  // column count. Grid = sc step columns + 1 start column; rows = ceil(steps/sc)
+  // but at least 2 (the start column stacks the start position over the mandala).
+  // Each card owns half the content row minus the gap and its own chrome.
+  const cardBoxH = $derived(
+    Math.max(0, (contentH - CARD_GAP) / 2 - CARD_CHROME_V)
   );
+  function cellSizeFor(leftW: number, sc: number): number {
+    const gridCols = sc + 1;
+    const rows = Math.max(Math.ceil(stepCount / sc), 2);
+    const boxW = Math.max(0, leftW - CARD_HPAD);
+    return Math.min(boxW / gridCols, cardBoxH / rows);
+  }
+  function bestStepCols(leftW: number): number {
+    let best = STEP_COL_CANDIDATES[0];
+    let bestCell = -1;
+    for (const sc of STEP_COL_CANDIDATES) {
+      const cell = cellSizeFor(leftW, sc);
+      if (cell > bestCell) {
+        bestCell = cell;
+        best = sc;
+      }
+    }
+    return best;
+  }
+  // Step columns the visible cards render with: whichever maximizes cell size for
+  // the resolved seam. Recomputed live as the seam is dragged, so a wide box
+  // takes more columns and a narrow box fewer.
+  const stepCols = $derived(bestStepCols(splitPx ?? containerWidth * 0.4));
 
   // 160px granularity AND step count: a saved seam restores on the same screen,
   // but a different window OR a different length (differently shaped card) each
@@ -85,13 +111,26 @@
   const clampSplit = (px: number) =>
     Math.round(Math.min(maxLeft(), Math.max(MIN_LEFT, px)));
 
-  // Maximize pictograph size: match the path column width to the card's aspect
-  // so each stacked card fills its half of the content row with no empty bands.
-  // cardBoxH = half the content row minus the gap between the two cards.
+  // Default seam: jointly pick the step-column count and the width that MAXIMIZE
+  // pictograph size. Each candidate's ideal width is its aspect-matched fill
+  // (gridCols/rows * cardBoxH), clamped by the canvas floor; take the candidate
+  // whose clamped width yields the largest cell. A wide container thus lands on
+  // more columns, a tall one on fewer — the size the user reaches by dragging.
   function optimalSplit(): number {
-    if (contentH <= 0) return clampSplit(containerWidth * 0.42);
-    const cardBoxH = (contentH - CARD_GAP) / 2;
-    return clampSplit(cardAspect * cardBoxH);
+    if (contentH <= 0 || cardBoxH <= 0) return clampSplit(containerWidth * 0.42);
+    let bestSeam = clampSplit(containerWidth * 0.42);
+    let bestCell = -1;
+    for (const sc of STEP_COL_CANDIDATES) {
+      const gridCols = sc + 1;
+      const rows = Math.max(Math.ceil(stepCount / sc), 2);
+      const seam = clampSplit((gridCols / rows) * cardBoxH + CARD_HPAD);
+      const cell = cellSizeFor(seam, sc);
+      if (cell > bestCell) {
+        bestCell = cell;
+        bestSeam = seam;
+      }
+    }
+    return bestSeam;
   }
 
   // Resolve the seam whenever the layout changes and the user isn't dragging:
@@ -210,12 +249,14 @@
           side="blue"
           showInlineNotation={true}
           full={true}
+          {stepCols}
           onViewNotation={openNotation}
         />
         <FuseSourceCard
           side="red"
           showInlineNotation={true}
           full={true}
+          {stepCols}
           onViewNotation={openNotation}
         />
         <div

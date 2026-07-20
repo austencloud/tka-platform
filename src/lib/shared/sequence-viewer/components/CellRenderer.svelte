@@ -295,14 +295,17 @@
 
   /* Shared arrow sizing - both header rows use the exact dimensions of
      the PositionGlyph's rendered arrow so the two look like siblings. The
-     small lift optically centers the arrow against the lowercase letters,
-     whose visual mass sits below the line's geometric middle. */
+     letters are lowercase, so their visual mass (x-height) sits BELOW the
+     line's geometric middle; flex-centering leaves the arrow floating above
+     them. Drop the arrow onto the lowercase optical center so the tail-to-head
+     line reads as pointing from the middle of one letter to the middle of the
+     next. Tune the em value if it drifts high/low. */
   .solo-loc-arrow,
   .solo-ori-arrow {
     width: 7.02cqw;
     height: auto; /* aspect ratio preserved at 88.9:34.8 */
     flex-shrink: 0;
-    transform: translateY(-0.06em);
+    transform: translateY(0.1em);
   }
 
   :global(:root.dark) .solo-locations .solo-loc-arrow,

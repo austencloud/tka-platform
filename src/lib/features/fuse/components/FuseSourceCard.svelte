@@ -10,6 +10,7 @@
     side,
     showInlineNotation,
     full = false,
+    stepCols = 4,
     onViewNotation,
   }: {
     side: FuseSide;
@@ -18,6 +19,9 @@
     // the solo-colored mandala — instead of the lean steps-only view. Gated by
     // FuseLayout on cell size so the extra cells never shrink the pictographs.
     full?: boolean;
+    // Step column count FuseLayout picked to maximize pictograph size for the
+    // current seam width and length. Only used in full (desktop) mode.
+    stepCols?: number;
     onViewNotation: (side: FuseSide) => void;
   } = $props();
 
@@ -34,7 +38,7 @@
   // as "one long row" — 8 tiny cells with dead space below. Pin 4 step columns
   // with the start position as a left column instead: fewer, bigger pictographs
   // that fill the tall stage. Compact keeps auto (null).
-  const stepColumns = $derived<number | null>(full ? 4 : null);
+  const stepColumns = $derived<number | null>(full ? stepCols : null);
   const startLayout = $derived<"row" | "column" | null>(full ? "column" : null);
   const viewDisabled = $derived(source.isLoading || state.isFusing);
   const sourceControlsDisabled = $derived(

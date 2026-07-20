@@ -5,6 +5,7 @@
 <script lang="ts">
   import { onDestroy, onMount, untrack } from "svelte";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
+  import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { createPlaybackControllerFactory } from "$lib/shared/animation-engine/create-playback-controller-factory";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
@@ -22,6 +23,11 @@
     isPlaying?: boolean;
     onError?: (error: Error) => void;
   } = $props();
+
+  // The engine boots with a "staff" default and only consults settings after the
+  // first paint, crossfading staff->saved a beat in. Passing the saved prop types
+  // as explicit overrides makes the first frame render the correct prop, no fade.
+  const settings = getSettings();
 
   let controller = $state<AnimationPlaybackController | null>(null);
   const animState = createAnimationPanelState({ ephemeral: true });
@@ -171,6 +177,8 @@
       <AnimatorCanvas
         blueProp={bluePropState}
         redProp={redPropState}
+        bluePropType={settings.bluePropType}
+        redPropType={settings.redPropType}
         gridVisible={true}
         {gridMode}
         letter={null}
