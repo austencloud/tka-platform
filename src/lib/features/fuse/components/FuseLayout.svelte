@@ -33,8 +33,8 @@
   const SPLIT_KEY = "tka-fuse-splits"; // JSON map: deviceBucket -> px
   const MIN_LEFT = 340; // path column never narrower than this
   const CANVAS_FLOOR = 560; // canvas never narrower than this
-  const SEAM_GAP = 14; // column-gap between the two panes
-  const EDGE_PAD = 20; // workspace horizontal padding (max clamp)
+  const STEP_COLS = 4; // fixed step columns on the desktop card (+1 start column)
+  const CARD_GAP = 14; // vertical gap between the stacked blue/red cards
 
   let containerWidth = $state(0);
   let contentH = $state(0); // measured content-row height (the left column fills it)
@@ -65,19 +65,33 @@
     }
   }
 
-  // 160px granularity: a saved seam restores on the same screen, but a very
-  // different window gets its own default without fragmenting storage.
-  const bucketOf = (w: number, h: number) =>
-    `${Math.round(w / 160) * 160}x${Math.round(h / 160) * 160}`;
-  const deviceBucket = $derived(bucketOf(containerWidth, contentH));
+  // The card grid — and thus its aspect — is step-count-driven: STEP_COLS step
+  // columns + 1 start column, ceil(steps/STEP_COLS) step rows but at least 2
+  // (the start column stacks the start position over the mandala). requested
+  // length shows before the load settles so the seam is right immediately.
+  const stepCount = $derived(fuseState.appliedLength ?? fuseState.requestedLength);
+  const cardAspect = $derived(
+    (STEP_COLS + 1) / Math.max(Math.ceil(stepCount / STEP_COLS), 2)
+  );
+
+  // 160px granularity AND step count: a saved seam restores on the same screen,
+  // but a different window OR a different length (differently shaped card) each
+  // gets its own default and its own remembered override.
+  const bucketOf = (w: number, h: number, steps: number) =>
+    `${Math.round(w / 160) * 160}x${Math.round(h / 160) * 160}x${steps}`;
+  const deviceBucket = $derived(bucketOf(containerWidth, contentH, stepCount));
 
   const maxLeft = () => Math.max(MIN_LEFT, containerWidth - CANVAS_FLOOR);
   const clampSplit = (px: number) =>
     Math.round(Math.min(maxLeft(), Math.max(MIN_LEFT, px)));
 
+  // Maximize pictograph size: match the path column width to the card's aspect
+  // so each stacked card fills its half of the content row with no empty bands.
+  // cardBoxH = half the content row minus the gap between the two cards.
   function optimalSplit(): number {
     if (contentH <= 0) return clampSplit(containerWidth * 0.42);
-    return clampSplit(containerWidth - EDGE_PAD * 2 - SEAM_GAP - contentH);
+    const cardBoxH = (contentH - CARD_GAP) / 2;
+    return clampSplit(cardAspect * cardBoxH);
   }
 
   // Resolve the seam whenever the layout changes and the user isn't dragging:
