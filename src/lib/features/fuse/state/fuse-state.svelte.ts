@@ -11,9 +11,21 @@ import {
   PLAYBACK_MIN_BPM,
 } from "$lib/shared/animation-engine/domain/constants/timing";
 import type { ErrorHandler } from "$lib/shared/application/services/error-handler";
-import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import {
+  createSequenceData,
+  type SequenceData,
+} from "$lib/shared/foundation/domain/models/sequence-data";
+import type { SoloPropData } from "$lib/shared/foundation/domain/models/solo-prop-data";
+import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/solo-prop-step-data";
+import {
+  extractBlueSoloProp,
+  extractRedSoloProp,
+} from "$lib/shared/foundation/services/sequence-decomposer";
+import { createSoloProp } from "$lib/shared/foundation/services/solo-prop-factory";
 import { getSequenceDisplayName } from "$lib/shared/foundation/services/word-deriver";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
+import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import type { Orientation } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { fusedDisplayName, fuseSequences } from "../services/sequence-fuser";
 import {
   createFuseShufflePool,
@@ -54,12 +66,38 @@ export interface FuseStateDeps {
   prefersReducedMotion?: () => boolean;
 }
 
-/** Identity of one persisted source pick. All three fields are kept so restore
- * can hydrate by id (the disambiguating key) and fall back to word/name. */
+/** Kind of a non-shuffle source injected via {@link setSource}. */
+export type FuseSourceKind = "library" | "vtg" | "custom";
+
+/** Where an injected (non-shuffle) source came from. Persisted per-side so a
+ * restored injected source can be labeled and, for future producers, re-derived.
+ * `id`/`word`/`name` identify a library pick; `label` names a VTG/custom path. */
+export interface SourceOrigin {
+  kind: FuseSourceKind;
+  id?: string;
+  word?: string;
+  name?: string;
+  label?: string;
+}
+
+/** The injected side's solo path serialized for a self-contained restore — no
+ * library round-trip or producer dependency needed to rebuild it after HMR. */
+interface PersistedSolo {
+  steps: SoloPropStepData[];
+  startLocation: GridLocation;
+  startOrientation: Orientation;
+}
+
+/** Identity of one persisted source pick. The three identity fields are kept so
+ * restore can hydrate a shuffled pick by id (the disambiguating key) and fall
+ * back to word/name. An injected source additionally carries its `origin` and
+ * the serialized `solo`, which together restore it without the browse pool. */
 interface FusePersistedSelection {
   id: string;
   word: string;
   name: string;
+  origin?: SourceOrigin;
+  solo?: PersistedSolo;
 }
 
 interface PersistedFuseState {
@@ -79,6 +117,42 @@ interface FuseRestoreRequest {
   currentStep?: number;
 }
 
+function parseSourceOrigin(value: unknown): SourceOrigin | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  const kind = record.kind;
+  if (kind !== "library" && kind !== "vtg" && kind !== "custom") {
+    return undefined;
+  }
+  const origin: SourceOrigin = { kind };
+  if (typeof record.id === "string") origin.id = record.id;
+  if (typeof record.word === "string") origin.word = record.word;
+  if (typeof record.name === "string") origin.name = record.name;
+  if (typeof record.label === "string") origin.label = record.label;
+  return origin;
+}
+
+function parsePersistedSolo(value: unknown): PersistedSolo | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  const { steps, startLocation, startOrientation } = record;
+  // Enum values are strings; the steps array is stored verbatim (all its fields
+  // are enum/number/null, so the round-trip is lossless).
+  if (
+    !Array.isArray(steps) ||
+    steps.length === 0 ||
+    typeof startLocation !== "string" ||
+    typeof startOrientation !== "string"
+  ) {
+    return undefined;
+  }
+  return {
+    steps: steps as SoloPropStepData[],
+    startLocation: startLocation as GridLocation,
+    startOrientation: startOrientation as Orientation,
+  };
+}
+
 function parsePersistedSelection(
   value: unknown
 ): FusePersistedSelection | undefined {
@@ -87,9 +161,15 @@ function parsePersistedSelection(
   const id = typeof record.id === "string" ? record.id : "";
   const word = typeof record.word === "string" ? record.word : "";
   const name = typeof record.name === "string" ? record.name : "";
-  // Need at least one identifier to hydrate the sequence later.
-  if (!id && !word && !name) return undefined;
-  return { id, word, name };
+  const origin = parseSourceOrigin(record.origin);
+  const solo = parsePersistedSolo(record.solo);
+  // Need at least one identifier to hydrate the sequence later — unless an
+  // injected solo makes the selection self-contained.
+  if (!id && !word && !name && !solo) return undefined;
+  const selection: FusePersistedSelection = { id, word, name };
+  if (origin) selection.origin = origin;
+  if (solo) selection.solo = solo;
+  return selection;
 }
 
 function readPersistedState(): PersistedFuseState {
@@ -228,6 +308,31 @@ export function createFuseState({
   let disposed = false;
   let hasLoadedPair = false;
 
+  // A side that was fed a non-shuffle source (library / VTG / custom) holds its
+  // origin plus the live solo here, so persistSelection can write the source
+  // back and a following shuffle knows to drop it. Null = the side is on the
+  // random pool. Not reactive: only persistence and shuffle read it.
+  let blueOrigin: { origin: SourceOrigin; solo: SoloPropData } | null = null;
+  let redOrigin: { origin: SourceOrigin; solo: SoloPropData } | null = null;
+
+  function injectedOriginFor(side: FuseSide) {
+    return side === "blue" ? blueOrigin : redOrigin;
+  }
+
+  function setInjectedOrigin(
+    side: FuseSide,
+    origin: SourceOrigin,
+    solo: SoloPropData
+  ): void {
+    if (side === "blue") blueOrigin = { origin, solo };
+    else redOrigin = { origin, solo };
+  }
+
+  function clearInjectedOrigin(side: FuseSide): void {
+    if (side === "blue") blueOrigin = null;
+    else redOrigin = null;
+  }
+
   let currentStep = $state(0);
   let clockRunning = $state(false);
   let clockFrame: number | null = null;
@@ -284,6 +389,50 @@ export function createFuseState({
       );
     }
     return preview;
+  }
+
+  /**
+   * The pool sequence committed for an injected side must have exactly `length`
+   * steps (canFuseNow checks it) and carry the length-tiled solo (so a later
+   * counterpart shuffle re-derives from the full-length path, not the shorter
+   * source). Take both from the freshly-built preview, keeping the source's
+   * identity fields (id/word/name) for display and persistence.
+   */
+  function lengthMatchedInjectedSide(
+    side: FuseSide,
+    injected: SequenceData,
+    preview: SequenceData,
+    length: FuseLength
+  ): SequenceData {
+    return {
+      ...injected,
+      steps: preview.steps,
+      sequenceLength: length,
+      ...(side === "blue"
+        ? { blueSoloProp: preview.blueSoloProp }
+        : { redSoloProp: preview.redSoloProp }),
+    };
+  }
+
+  /** Prepare one side's restored pool sequence. An injected selection re-arms
+   * its origin (so persistence and a later shuffle behave) and commits the
+   * length-matched solo; a shuffled selection clears any origin and commits its
+   * hydrated library sequence unchanged. */
+  function commitRestoredSide(
+    side: FuseSide,
+    selection: FusePersistedSelection,
+    rebuilt: SequenceData,
+    preview: SequenceData,
+    length: FuseLength
+  ): SequenceData {
+    if (selection.origin && selection.solo) {
+      const solo =
+        side === "blue" ? rebuilt.blueSoloProp : rebuilt.redSoloProp;
+      if (solo) setInjectedOrigin(side, selection.origin, solo);
+      return lengthMatchedInjectedSide(side, rebuilt, preview, length);
+    }
+    clearInjectedOrigin(side);
+    return rebuilt;
   }
 
   function reportUnexpected(
@@ -344,26 +493,43 @@ export function createFuseState({
     return "Choose a length to load two paths.";
   }
 
+  function serializeSolo(solo: SoloPropData): PersistedSolo {
+    return {
+      steps: solo.steps.map((step) => ({ ...step })),
+      startLocation: solo.startLocation,
+      startOrientation: solo.startOrientation,
+    };
+  }
+
+  function persistedSelectionFor(
+    side: FuseSide,
+    sequence: SequenceData
+  ): FusePersistedSelection {
+    const selection: FusePersistedSelection = {
+      id: sequence.id,
+      word: sequence.word,
+      name: sequence.name,
+    };
+    const injected = injectedOriginFor(side);
+    if (injected) {
+      selection.origin = injected.origin;
+      selection.solo = serializeSolo(injected.solo);
+    }
+    return selection;
+  }
+
   function persistSelection(
     blueSequence: SequenceData,
     redSequence: SequenceData,
     length: FuseLength
   ): void {
     // Merge into the current store so writing the pair never drops bpm or the
-    // persisted step.
+    // persisted step. Each side carries its injected origin when it has one.
     persisted = {
       ...persisted,
       length,
-      blue: {
-        id: blueSequence.id,
-        word: blueSequence.word,
-        name: blueSequence.name,
-      },
-      red: {
-        id: redSequence.id,
-        word: redSequence.word,
-        name: redSequence.name,
-      },
+      blue: persistedSelectionFor("blue", blueSequence),
+      red: persistedSelectionFor("red", redSequence),
     };
     writePersistedState(persisted);
   }
@@ -374,11 +540,39 @@ export function createFuseState({
     writePersistedState(persisted);
   }
 
+  /** Rebuild an injected side from its persisted solo alone — self-contained,
+   * so a picked/built path survives HMR without the browse pool or a producer.
+   * The returned sequence carries only the side's soloProp; the restore path
+   * length-matches it against the freshly-built preview before committing. */
+  function rebuildInjectedSide(
+    side: FuseSide,
+    persistedSolo: PersistedSolo
+  ): SequenceData | null {
+    try {
+      const solo = createSoloProp(
+        persistedSolo.steps,
+        persistedSolo.startLocation,
+        persistedSolo.startOrientation
+      );
+      return createSequenceData(
+        side === "blue" ? { blueSoloProp: solo } : { redSoloProp: solo }
+      );
+    } catch {
+      return null;
+    }
+  }
+
   async function hydrateRestoredSide(
     side: FuseSide,
     selection: FusePersistedSelection,
     length: FuseLength
   ): Promise<SequenceData | null> {
+    // An injected source (library / VTG / custom) restores from its serialized
+    // solo, self-contained — no browse hydrate needed.
+    if (selection.origin && selection.solo) {
+      return rebuildInjectedSide(side, selection.solo);
+    }
+
     let hydrated: SequenceData | null;
     try {
       hydrated = await cachedBrowseLoader.loadFullSequenceData(
@@ -479,6 +673,10 @@ export function createFuseState({
     previewSequence = null;
     bluePool.reset([], length);
     redPool.reset([], length);
+    // A length change reloads from the random pool; drop any injected origins.
+    // The restore path below re-sets them for a side it rehydrates as injected.
+    blueOrigin = null;
+    redOrigin = null;
     currentStep = 0;
 
     const resumeAfterLoad =
@@ -522,12 +720,31 @@ export function createFuseState({
             );
             if (!isCurrentLengthGeneration(generation)) return;
 
-            bluePool.commitRestored(restoredPair.blue);
-            redPool.commitRestored(restoredPair.red);
+            // Re-establish per-side injected origins and length-match an
+            // injected side (its rebuilt sequence carries only the solo, so
+            // canFuseNow needs the tiled preview steps). A shuffled side commits
+            // its full library sequence unchanged.
+            const blueRestored = commitRestoredSide(
+              "blue",
+              restore.blue,
+              restoredPair.blue,
+              preview,
+              length
+            );
+            const redRestored = commitRestoredSide(
+              "red",
+              restore.red,
+              restoredPair.red,
+              preview,
+              length
+            );
+
+            bluePool.commitRestored(blueRestored);
+            redPool.commitRestored(redRestored);
             previewSequence = preview;
             appliedLength = length;
             hasLoadedPair = true;
-            persistSelection(restoredPair.blue, restoredPair.red, length);
+            persistSelection(blueRestored, redRestored, length);
             // The Fuse clock is a local rAF accumulator (see tickClock); its
             // step value is just this `currentStep` state, so assigning it here
             // IS the seek — FuseAnimationPreview's reactive effect re-derives the
@@ -640,6 +857,9 @@ export function createFuseState({
       if (!isCurrentSideGeneration(side, generation)) return;
 
       pool.commit(candidate, false);
+      // A shuffle replaces any injected source on this side; return it to the
+      // random pool before persisting so the injected origin isn't written back.
+      clearInjectedOrigin(side);
       previewSequence = preview;
       persistSelection(blue, red, appliedLength);
       // Warm the following candidate so the next Shuffle stays instant.
@@ -656,6 +876,88 @@ export function createFuseState({
         message: `Couldn't load another ${label} path. Try again.`,
       };
       reportUnexpected(error.message, shuffleError, `shuffle-${side}`);
+    } finally {
+      if (isCurrentSideGeneration(side, generation) && pendingSide === side) {
+        pendingSide = null;
+      }
+    }
+  }
+
+  /**
+   * Inject a non-shuffle source into one side: a library pick, a VTG path, or a
+   * custom-built solo. The side's solo is extracted (a two-hand source is
+   * decomposed; a single-hand source already carries the field), fused against
+   * the counterpart's current path via createPreview (which tiles to the applied
+   * length), committed through the pool's restore seam, and persisted with its
+   * origin so it survives an HMR restore. A later shuffle(side) drops it and
+   * returns the side to the random pool.
+   */
+  async function setSource(
+    side: FuseSide,
+    source: SequenceData,
+    origin: SourceOrigin
+  ): Promise<void> {
+    if (
+      disposed ||
+      isLoadingLength ||
+      pendingSide !== null ||
+      isFusing ||
+      appliedLength === null
+    ) {
+      return;
+    }
+
+    const length = appliedLength;
+    const counterpart = otherPool(side);
+    const counterpartSeq = counterpart.sequence;
+    if (!counterpartSeq) return;
+
+    const generation = incrementSideGeneration(side);
+    const pool = poolFor(side);
+    pendingSide = side;
+    error = null;
+
+    try {
+      // Extract this side's solo. A two-hand source is decomposed; a single-hand
+      // source already carries the field.
+      const solo =
+        side === "blue"
+          ? (source.blueSoloProp ?? extractBlueSoloProp(source))
+          : (source.redSoloProp ?? extractRedSoloProp(source));
+
+      const injected: SequenceData =
+        side === "blue"
+          ? { ...source, blueSoloProp: solo }
+          : { ...source, redSoloProp: solo };
+
+      const blueSeq = side === "blue" ? injected : counterpartSeq;
+      const redSeq = side === "red" ? injected : counterpartSeq;
+      const preview = createPreview(blueSeq, redSeq, length);
+      if (!isCurrentSideGeneration(side, generation)) return;
+
+      const committed = lengthMatchedInjectedSide(
+        side,
+        injected,
+        preview,
+        length
+      );
+      pool.commitRestored(committed);
+      // Record the origin before persisting so the injected solo is written.
+      setInjectedOrigin(side, origin, solo);
+      previewSequence = preview;
+      const blueForPersist = side === "blue" ? committed : counterpartSeq;
+      const redForPersist = side === "red" ? committed : counterpartSeq;
+      persistSelection(blueForPersist, redForPersist, length);
+      readyMessage = sourceReadyMessage(side, committed, false);
+    } catch (sourceError) {
+      if (!isCurrentSideGeneration(side, generation)) return;
+      const label = side === "blue" ? "Blue" : "Red";
+      error = {
+        kind: "candidate",
+        side,
+        message: `Couldn't use that ${label} path. Shuffle a path and try again.`,
+      };
+      reportUnexpected(error.message, sourceError, `set-source-${side}`);
     } finally {
       if (isCurrentSideGeneration(side, generation) && pendingSide === side) {
         pendingSide = null;
@@ -889,6 +1191,7 @@ export function createFuseState({
     initialize,
     setLength,
     shuffle,
+    setSource,
     previous,
     retry,
     buildFusedSequence,
