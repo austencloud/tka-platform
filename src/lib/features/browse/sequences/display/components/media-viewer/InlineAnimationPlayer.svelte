@@ -14,7 +14,7 @@
   import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
-  import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
+  import type { TipEffectMap, TipEffortMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { getSequenceRepository } from "$lib/shared/create/get-sequence-repository";
@@ -109,6 +109,7 @@
     onLoopComplete = undefined,
     trailSettingsOverride = null,
     tipEffectMap = undefined,
+    tipEffortMap = undefined,
     backgroundAlpha = 1,
     hideTkaGlyph = false,
     hideStepNumbers = false,
@@ -204,6 +205,11 @@
      * map; hosts that omit it keep today's trail-less behavior.
      */
     tipEffectMap?: TipEffectMap;
+    /** Per-instance effort (easing) overrides. Without this the canvas falls
+     *  back to the global visibility manager's persisted effortPreset, so a
+     *  visitor's (or Austen's) in-app easing choice leaks into public embeds.
+     *  Cell-wide linear: `{ "*": { effort: "linear" } }`. */
+    tipEffortMap?: TipEffortMap;
     /** Hide the in-canvas letter glyph / step counter (chrome-free embeds
      *  like the caps live hero — "a prop floating in space"). */
     hideTkaGlyph?: boolean;
@@ -576,6 +582,7 @@
         trailSettings={trailSettingsOverride ?? animationSettings.trail}
         {backgroundAlpha}
         {tipEffectMap}
+        {tipEffortMap}
         {bluePropType}
         {redPropType}
         positionGlyphVisible={showPositionGlyph}

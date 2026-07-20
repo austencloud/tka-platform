@@ -47,6 +47,8 @@
     props={{
       sequence,
       autoPlay: true,
+      externalBpm: 90,
+      tipEffortMap: { "*": { effort: "linear" } },
       chrome: "minimal",
       fill: true,
       beatIndicators: false,
