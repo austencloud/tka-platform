@@ -24,6 +24,7 @@
   import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
   import { getTipPoints } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
   import type { EffortId } from "$lib/shared/effort/domain/effort-types";
+  import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import {
     TrailMode,
     TrailEffect,
@@ -50,6 +51,13 @@
   // Trails on the red (solo) hand only — index 1 = red.
   const tipEffectMap = setPerHand({}, 1, "trails");
 
+  // Per-instance ephemeral visibility manager. Without it the player's
+  // orchestrator reads effort/path-shape from the GLOBAL singleton (a
+  // visitor's — or Austen's — in-app glide leaks into this embed) and
+  // setSpeed WRITES the embed's BPM back into that singleton. Ephemeral =
+  // defaults, no localStorage, no DOM sync; fully isolated both directions.
+  const visibilityManager = new AnimationVisibilityStateManager({ ephemeral: true });
+
   // The shipped look. The tuner edits live copies of these; once a set wins,
   // paste the copied JSON back over this object.
   // Tuned by Austen via the ?tune rig, 2026-07-19.
@@ -74,6 +82,12 @@
   let tailLength = $state(DEFAULTS.tailLength);
   let lineWidth = $state(DEFAULTS.lineWidth);
   let minOpacity = $state(DEFAULTS.minOpacity);
+
+  // Keep the scoped manager's effort in lockstep with the (tunable) knob —
+  // this is what the orchestrator actually eases motion with.
+  $effect(() => {
+    visibilityManager.setEffortPreset(effort);
+  });
 
   // Hero-visibility numbers from the landing hero preset, with LOOP_CLEAR so
   // the club redraws the full closed curve fresh on every cycle — the trace IS
@@ -104,6 +118,7 @@
     hideStepNumbers: true,
     gridVisible,
     disableContextMenu: true,
+    visibilityManagerOverride: visibilityManager,
     trailSettingsOverride: trailSettings,
     tipEffectMap,
     backgroundAlpha: 0,
