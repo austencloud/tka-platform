@@ -13,12 +13,16 @@
  * paths whose duration scales with distance, eased, landing off-center like a
  * real hand. It hovers before it clicks, browses alternatives before deciding,
  * glances at the workspace to watch the sequence grow, fiddles with the turn
- * pickers mid-build, and never leaves the screen — dwells are jittered and
- * carry micro-drift so it reads as a person pondering, not a metronome.
+ * pickers and the All/Continuous filter mid-build, pages through the letter-
+ * family slides, and never leaves the screen — dwells are jittered and carry
+ * micro-drift so it reads as a person pondering, not a metronome.
  *
- * Lifecycle: created once by the section (never under reduced motion),
- * started on first viewport intersection, paused while offscreen, and killed
- * permanently on takeover (first real pointerdown/focusin) or unmount.
+ * Lifecycle: created once by the section (never under reduced motion) and
+ * started on first viewport intersection; the loop idles while offscreen.
+ * The first real pointerdown/focusin PAUSES the act — the ghost glides to the
+ * pane's bottom-right corner and parks there as a small clickable play button
+ * (the ghost IS the "watch it again" affordance). Clicking it resumes the
+ * demonstration from a fresh cycle. kill() is unmount-only.
  */
 
 const START_SEL =
@@ -60,6 +64,8 @@ export interface GhostState {
   y: number;
   pressed: boolean;
   visible: boolean;
+  /** Takeover pose: parked bottom-right as the clickable "watch again" button. */
+  parked: boolean;
 }
 
 export interface ConstructAttractAct {
@@ -68,10 +74,16 @@ export interface ConstructAttractAct {
   start: () => void;
   /** Viewport gate — the loop idles between actions while not visible. */
   setVisible: (visible: boolean) => void;
-  /** Permanent stop: takeover or unmount. Ghost fades out via `visible`. */
+  /** Takeover: abort the current beat and park the ghost as a resume button. */
+  pause: () => void;
+  /** Un-park: the parked ghost was clicked — demonstrate again. */
+  resume: () => void;
+  /** Unmount-only stop. Ghost fades out via `visible`. */
   kill: () => void;
-  /** True once kill() has run — the section flips its live-region back on. */
+  /** True once kill() has run. */
   readonly dead: boolean;
+  /** True while paused/parked (visitor has the wheel). */
+  readonly paused: boolean;
 }
 
 export function createConstructAttractAct(opts: {
@@ -98,11 +110,21 @@ export function createConstructAttractAct(opts: {
   const DONE_MS = opts.doneMs ?? 2500;
   const PRESS_MS = 140;
 
-  const ghost = $state<GhostState>({ x: 0, y: 0, pressed: false, visible: false });
+  const ghost = $state<GhostState>({
+    x: 0,
+    y: 0,
+    pressed: false,
+    visible: false,
+    parked: false,
+  });
 
   let dead = false;
+  let stopped = false; // takeover: cycle unwinds, ghost parks until resume
   let running = false;
   let inViewport = false;
+
+  /** Abort predicate for everything inside a cycle. */
+  const halted = () => dead || stopped;
 
   const raw = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
   // rAF with a timeout fallback: in a hidden tab requestAnimationFrame never
@@ -122,13 +144,13 @@ export function createConstructAttractAct(opts: {
       }, 64);
     });
 
-  /** Sleep that dies fast on kill and idles (without advancing) offscreen. */
-  async function sleep(ms: number): Promise<void> {
+  /** Sleep that dies fast on abort and idles (without advancing) offscreen. */
+  async function sleep(ms: number, abort: () => boolean = halted): Promise<void> {
     const end = performance.now() + ms;
-    while (!dead && performance.now() < end) {
+    while (!abort() && performance.now() < end) {
       await raw(Math.min(120, Math.max(16, end - performance.now())));
     }
-    while (!dead && !inViewport) await raw(200);
+    while (!abort() && !inViewport) await raw(200);
   }
 
   const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]!;
@@ -155,18 +177,23 @@ export function createConstructAttractAct(opts: {
    * Glide the ghost to a point along a bowed quadratic-bezier path, rAF-driven,
    * with duration scaled to distance (short hops are quick, long hauls take
    * visibly longer — a straight fixed-speed tween is the #1 "that's a robot"
-   * tell). Does not touch hover; callers own that.
+   * tell). Does not touch hover; callers own that. The abort param lets the
+   * park glide run while `stopped` (everything else aborts on it).
    */
-  async function glideTo(tx: number, ty: number): Promise<void> {
-    if (dead) return;
+  async function glide(
+    tx: number,
+    ty: number,
+    abort: () => boolean,
+  ): Promise<void> {
+    if (abort()) return;
     if (!ghost.visible) {
       // First appearance: materialize a hand-width away from the target and
       // make a short approach, instead of sweeping in from the panel corner.
       ghost.x = tx + jitter(60, 60);
       ghost.y = ty + jitter(70, 50);
       ghost.visible = true;
-      await sleep(240);
-      if (dead) return;
+      await sleep(240, abort);
+      if (abort()) return;
     }
     const sx = ghost.x;
     const sy = ghost.y;
@@ -183,12 +210,11 @@ export function createConstructAttractAct(opts: {
       1300,
     );
     // Bow the path sideways — human reaches curve, they don't ride rails.
-    const bow =
-      dist * jitter(0.05, 0.15) * (Math.random() < 0.5 ? -1 : 1);
+    const bow = dist * jitter(0.05, 0.15) * (Math.random() < 0.5 ? -1 : 1);
     const cx = sx + dx / 2 + (-dy / dist) * bow;
     const cy = sy + dy / 2 + (dx / dist) * bow;
     const t0 = performance.now();
-    while (!dead) {
+    while (!abort()) {
       const t = (performance.now() - t0) / dur;
       if (t >= 1) break;
       const e = easeInOutCubic(t);
@@ -196,12 +222,14 @@ export function createConstructAttractAct(opts: {
       ghost.x = u * u * sx + 2 * u * e * cx + e * e * tx;
       ghost.y = u * u * sy + 2 * u * e * cy + e * e * ty;
       await frame();
-      while (!dead && !inViewport) await raw(200);
+      while (!abort() && !inViewport) await raw(200);
     }
-    if (dead) return;
+    if (abort()) return;
     ghost.x = tx;
     ghost.y = ty;
   }
+
+  const glideTo = (tx: number, ty: number) => glide(tx, ty, halted);
 
   /** A point inside an element, deliberately off exact center — landing on
    *  the mathematical centroid every time is another robot tell. */
@@ -223,7 +251,7 @@ export function createConstructAttractAct(opts: {
   async function dwell(ms: number): Promise<void> {
     if (ms < 700 || Math.random() < 0.3) return sleep(ms);
     await sleep(ms * 0.4);
-    if (dead) return;
+    if (halted()) return;
     const ang = Math.random() * Math.PI * 2;
     const r = jitter(3, 7);
     await glideTo(ghost.x + Math.cos(ang) * r, ghost.y + Math.sin(ang) * r);
@@ -233,9 +261,9 @@ export function createConstructAttractAct(opts: {
   /** Glide onto an element and hover it for a beat (no press). */
   async function hoverOn(el: HTMLElement, dwellMs: number): Promise<void> {
     const p = aimAt(el);
-    if (!p || dead) return;
+    if (!p || halted()) return;
     await glideTo(p.x, p.y);
-    if (dead) return;
+    if (halted()) return;
     setHover(el);
     await dwell(dwellMs);
   }
@@ -250,7 +278,7 @@ export function createConstructAttractAct(opts: {
     action?: () => void,
   ): Promise<void> {
     await hoverOn(el, jitter(240, 420));
-    if (dead) return;
+    if (halted()) return;
     // Re-aim at press time: the glide takes up to ~1.3s and the target can
     // move under it (embla settling, grid reflow after a turns change). The
     // element reference would still click fine, but the ghost would visibly
@@ -268,16 +296,16 @@ export function createConstructAttractAct(opts: {
         gx >= r.left && gx <= r.right && gy >= r.top && gy <= r.bottom;
       if (!onTarget) {
         const p = aimAt(el);
-        if (!p || dead) return;
+        if (!p || halted()) return;
         await glideTo(p.x, p.y);
-        if (dead) return;
+        if (halted()) return;
         setHover(el);
       }
     }
     ghost.pressed = true;
     await sleep(PRESS_MS);
     ghost.pressed = false;
-    if (dead) return;
+    if (halted()) return;
     if (action) action();
     else el.click();
   }
@@ -289,11 +317,11 @@ export function createConstructAttractAct(opts: {
     const chosen = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]!;
     const roll = Math.random();
     const looks = roll < 0.45 ? 0 : roll < 0.85 ? 1 : 2;
-    for (let i = 0; i < looks && pool.length && !dead; i++) {
+    for (let i = 0; i < looks && pool.length && !halted(); i++) {
       const alt = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]!;
       await hoverOn(alt, jitter(450, 550));
     }
-    if (dead) return;
+    if (halted()) return;
     await moveAndPress(chosen);
   }
 
@@ -301,7 +329,7 @@ export function createConstructAttractAct(opts: {
    *  the "hand at rest, watching" pose between actions. */
   async function restBeside(el: HTMLElement): Promise<void> {
     const root = opts.getRoot();
-    if (!root || dead) return;
+    if (!root || halted()) return;
     const r = el.getBoundingClientRect();
     const rr = root.getBoundingClientRect();
     setHover(null);
@@ -319,7 +347,7 @@ export function createConstructAttractAct(opts: {
    *  interactive in this demo). Looking, not pressing. */
   async function glanceAtWorkspace(): Promise<void> {
     const root = opts.getRoot();
-    if (!root || dead) return;
+    if (!root || halted()) return;
     const cells = [...root.querySelectorAll<HTMLElement>(CELL_SEL)].filter(
       (el) => el.offsetParent !== null,
     );
@@ -339,7 +367,7 @@ export function createConstructAttractAct(opts: {
    *  the "what else is over here" browse a person does with a pager. */
   async function pageSections(): Promise<void> {
     const next = await waitFor(NEXT_SEL, 800);
-    if (!next.length || dead) return;
+    if (!next.length || halted()) return;
     await moveAndPress(next[0]!);
     await sleep(jitter(500, 400));
   }
@@ -349,12 +377,12 @@ export function createConstructAttractAct(opts: {
    *  retreat a person makes from a filter that filtered everything out. */
   async function fiddleFilter(): Promise<void> {
     const pill = await waitFor(FILTER_SEL, 800);
-    if (!pill.length || dead) return;
+    if (!pill.length || halted()) return;
     await moveAndPress(pill[0]!);
     await sleep(jitter(600, 500));
-    if (dead) return;
+    if (halted()) return;
     const options = await waitFor(OPTION_SEL, 2500);
-    if (!options.length && !dead) {
+    if (!options.length && !halted()) {
       const back = await waitFor(FILTER_SEL, 800);
       if (back.length) {
         await moveAndPress(back[0]!);
@@ -370,13 +398,13 @@ export function createConstructAttractAct(opts: {
   async function fiddleTurns(): Promise<void> {
     const first = Math.random() < 0.5 ? TURN_BLUE_SEL : TURN_RED_SEL;
     const segs = await waitFor(first, 1500);
-    if (!segs.length || dead) return;
+    if (!segs.length || halted()) return;
     await moveAndPress(pick(segs));
     await sleep(jitter(500, 500));
-    if (Math.random() < 0.35 && !dead) {
+    if (Math.random() < 0.35 && !halted()) {
       const other = first === TURN_BLUE_SEL ? TURN_RED_SEL : TURN_BLUE_SEL;
       const segs2 = await waitFor(other, 1500);
-      if (segs2.length && !dead) {
+      if (segs2.length && !halted()) {
         await moveAndPress(pick(segs2));
         await sleep(jitter(400, 400));
       }
@@ -389,7 +417,7 @@ export function createConstructAttractAct(opts: {
    *  sitting in a clipped page and the click would land on empty air. */
   async function waitFor(selector: string, timeoutMs = 8000): Promise<HTMLElement[]> {
     const t0 = performance.now();
-    while (!dead) {
+    while (!halted()) {
       const root = opts.getRoot();
       if (root) {
         const els = [...root.querySelectorAll<HTMLElement>(selector)].filter(
@@ -408,7 +436,7 @@ export function createConstructAttractAct(opts: {
       }
       if (performance.now() - t0 > timeoutMs) return [];
       await raw(150);
-      while (!dead && !inViewport) await raw(200);
+      while (!halted() && !inViewport) await raw(200);
     }
     return [];
   }
@@ -418,7 +446,7 @@ export function createConstructAttractAct(opts: {
     await sleep(500);
 
     const starts = await waitFor(START_SEL);
-    if (!starts.length || dead) {
+    if (!starts.length || halted()) {
       await sleep(1500);
       return;
     }
@@ -432,7 +460,7 @@ export function createConstructAttractAct(opts: {
     const filterMoment =
       Math.random() < 0.35 ? Math.floor(Math.random() * opts.stepsPerCycle) : -1;
 
-    for (let i = 0; i < opts.stepsPerCycle && !dead; i++) {
+    for (let i = 0; i < opts.stepsPerCycle && !halted(); i++) {
       // Full step beat BEFORE querying: the option grid reloads after every
       // pick, and this gap guarantees we never press a stale card from the
       // previous sequence state.
@@ -442,7 +470,7 @@ export function createConstructAttractAct(opts: {
       // Sometimes flip to another letter-family page before choosing.
       if (Math.random() < 0.3) await pageSections();
       const options = await waitFor(OPTION_SEL);
-      if (!options.length || dead) return;
+      if (!options.length || halted()) return;
       await browseAndPick(options);
       // Sometimes turn and watch the new step land in the workspace.
       if (Math.random() < 0.35 && i < opts.stepsPerCycle - 1) {
@@ -459,39 +487,39 @@ export function createConstructAttractAct(opts: {
     // metronome.
     await sleep(DONE_MS / 2);
     const play = await waitFor(PLAY_SEL, 4000);
-    if (!play.length || dead) return;
+    if (!play.length || halted()) return;
     await moveAndPress(play[0]!);
 
     const stage = await waitFor(STAGE_SEL, 4000);
-    if (!stage.length || dead) return;
+    if (!stage.length || halted()) return;
     await restBeside(stage[0]!);
     await dwell(jitter(2000, 1500)); // settle in, watch
 
-    if (dead) return;
+    if (halted()) return;
     await moveAndPress(stage[0]!, opts.togglePlayback); // pause — look closer
     await dwell(jitter(1200, 800)); // hold the freeze
-    if (dead) return;
+    if (halted()) return;
     await moveAndPress(stage[0]!, opts.togglePlayback); // resume
     await restBeside(stage[0]!);
     await dwell(jitter(1400, 1000)); // watch a little more
 
     // Curiosity: browse the props, decide, try one (sometimes two).
     const props = await waitFor(PROP_SEL, 2000);
-    if (props.length && !dead) {
+    if (props.length && !halted()) {
       const tries = Math.random() < 0.5 ? 2 : 1;
-      for (let i = 0; i < tries && !dead; i++) {
+      for (let i = 0; i < tries && !halted(); i++) {
         const fresh = await waitFor(PROP_SEL, 2000);
         if (!fresh.length) break;
         await browseAndPick(fresh);
         await dwell(jitter(1400, 900)); // admire the new prop
       }
-      if (dead) return;
+      if (halted()) return;
       await restBeside(stage[0]!);
       await dwell(jitter(1000, 800));
     }
 
     // Bored now. Build another — pressed for real, like everything else.
-    if (dead) return;
+    if (halted()) return;
     const again = await waitFor(AGAIN_SEL, 2000);
     if (again.length) {
       await moveAndPress(again[0]!);
@@ -499,11 +527,40 @@ export function createConstructAttractAct(opts: {
     }
   }
 
+  /** Takeover pose: glide to the band's bottom-right corner and sit there as
+   *  the clickable "watch it again" button until resume() or kill(). The
+   *  glide ignores `stopped` (it IS the stopped pose) but respects kill. */
+  async function parkAndWait(): Promise<void> {
+    setHover(null);
+    ghost.pressed = false;
+    const root = opts.getRoot();
+    if (root) {
+      const rr = root.getBoundingClientRect();
+      await glide(rr.width - 32, rr.height - 32, () => dead);
+    }
+    ghost.visible = true;
+    ghost.parked = true;
+    while (!dead && stopped) await raw(150);
+    ghost.parked = false;
+  }
+
   function start(): void {
     if (running || dead) return;
     running = true;
     void (async () => {
-      while (!dead) await cycle();
+      while (!dead) {
+        if (stopped) {
+          await parkAndWait();
+          continue;
+        }
+        // A transient DOM race must never silently kill the loop — that is
+        // how a ghost "just disappears". Swallow, breathe, try again.
+        try {
+          await cycle();
+        } catch {
+          await raw(800);
+        }
+      }
     })();
   }
 
@@ -513,6 +570,12 @@ export function createConstructAttractAct(opts: {
     setVisible: (visible: boolean) => {
       inViewport = visible;
     },
+    pause: () => {
+      stopped = true;
+    },
+    resume: () => {
+      stopped = false;
+    },
     kill: () => {
       dead = true;
       setHover(null);
@@ -520,6 +583,9 @@ export function createConstructAttractAct(opts: {
     },
     get dead() {
       return dead;
+    },
+    get paused() {
+      return stopped;
     },
   };
 }

@@ -154,13 +154,24 @@
     io?.disconnect();
   });
 
-  // Grab the wheel: first REAL interaction kills the act permanently and the
-  // visitor continues from the current board state. The act's programmatic
-  // click() fires no pointerdown and never focuses, so it can't trip this.
-  function takeover() {
-    if (act && !act.dead) {
-      act.kill();
+  // Grab the wheel: first REAL interaction pauses the act — the ghost glides
+  // to the pane's corner and parks as a clickable "watch it again" button.
+  // The act's programmatic click() fires no pointerdown and never focuses, so
+  // it can't trip this. Events from the parked ghost itself are exempt (its
+  // resume button lives inside the section and would otherwise re-pause).
+  function takeover(e?: Event) {
+    if ((e?.target as HTMLElement | null)?.closest?.(".ghost")) return;
+    if (act && !act.dead && !act.paused) {
+      act.pause();
       tookOver = true;
+    }
+  }
+
+  // The parked ghost was clicked: demonstrate again from a fresh cycle.
+  function resumeDemo() {
+    if (act && !act.dead) {
+      act.resume();
+      tookOver = false;
     }
   }
 
@@ -476,6 +487,8 @@
       y={act.ghost.y}
       pressed={act.ghost.pressed}
       visible={act.ghost.visible}
+      parked={act.ghost.parked}
+      onResume={resumeDemo}
     />
   {/if}
 </section>
@@ -814,9 +827,19 @@
     width: min(100%, 42cqmin);
   }
 
-  /* The All/Continuous pill docks top-LEFT in this pane — centered, it reads
-     as a header for the whole picker instead of the small mode control it is. */
+  /* The All/Continuous pill FLOATS top-left over the pane (same move as the
+     picker's own corner mode) — in flow it pushed the whole grid down when it
+     appeared, and centered it read as a header instead of a mode control. */
+  .picker-pane {
+    position: relative;
+  }
+
   .picker-pane :global(.filter-header) {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: auto;
+    z-index: 6;
     align-items: flex-start;
   }
 
