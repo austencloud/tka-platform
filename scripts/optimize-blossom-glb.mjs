@@ -1,0 +1,210 @@
+#!/usr/bin/env node
+/**
+ * Optimize the authored Blossom garden for mobile WebGL delivery.
+ *
+ * The source uses shared Blender mesh data for repeated trees, pond stones,
+ * lanterns, and path stones. `instance` converts those repeated nodes to
+ * EXT_mesh_gpu_instancing while preserving named stage/prop nodes. The scene
+ * is texture-free, so the pipeline can stay focused on geometry deduplication,
+ * a conservative simplify pass, and meshopt compression.
+ *
+ * Input:  static/models/blossom/blossom_environment_raw.glb
+ * Output: static/models/blossom/blossom_environment.glb
+ */
+
+import { execSync } from "child_process";
+import { existsSync, readFileSync, rmSync, statSync } from "fs";
+import { resolve } from "path";
+
+const INPUT = resolve("static/models/blossom/blossom_environment_raw.glb");
+const OUTPUT = resolve("static/models/blossom/blossom_environment.glb");
+const TMP = resolve("static/models/blossom/_tmp_optimized.glb");
+const TMP_INSTANCED = resolve("static/models/blossom/_tmp_instanced.glb");
+const TMP_PRUNED = resolve("static/models/blossom/_tmp_pruned.glb");
+const TEMPORARIES = [TMP, TMP_INSTANCED, TMP_PRUNED];
+const STAGE_DECK_TOP = 0.35;
+const STAGE_HEIGHT_TOLERANCE = 0.001;
+
+function size(path) {
+  return `${(statSync(path).size / 1024).toFixed(1)} KB`;
+}
+
+function run(label, command) {
+  console.log(`\n── ${label} ──`);
+  console.log(`  $ ${command}`);
+  execSync(command, { stdio: "inherit" });
+}
+
+function cleanTemporaryFiles() {
+  for (const temporary of TEMPORARIES) {
+    if (existsSync(temporary)) rmSync(temporary);
+  }
+}
+
+function readGlbJson(path) {
+  const buffer = readFileSync(path);
+  if (buffer.readUInt32LE(0) !== 0x46546c67) {
+    throw new Error(`Not a binary glTF file: ${path}`);
+  }
+  const jsonLength = buffer.readUInt32LE(12);
+  const json = buffer
+    .subarray(20, 20 + jsonLength)
+    .toString("utf8")
+    .replace(/\u0000+$/, "")
+    .trimEnd();
+  return JSON.parse(json);
+}
+
+function worldY(node, point) {
+  if (node.matrix) {
+    return (
+      node.matrix[1] * point[0] +
+      node.matrix[5] * point[1] +
+      node.matrix[9] * point[2] +
+      node.matrix[13]
+    );
+  }
+
+  const [x, y, z, w] = node.rotation ?? [0, 0, 0, 1];
+  const [sx, sy, sz] = node.scale ?? [1, 1, 1];
+  const translationY = node.translation?.[1] ?? 0;
+  return (
+    2 * (x * y + z * w) * sx * point[0] +
+    (1 - 2 * (x * x + z * z)) * sy * point[1] +
+    2 * (y * z - x * w) * sz * point[2] +
+    translationY
+  );
+}
+
+function normalizedAccessorValue(accessor, value) {
+  if (!accessor.normalized) return value;
+  switch (accessor.componentType) {
+    case 5120:
+      return Math.max(value / 127, -1);
+    case 5121:
+      return value / 255;
+    case 5122:
+      return Math.max(value / 32767, -1);
+    case 5123:
+      return value / 65535;
+    default:
+      throw new Error(
+        `Unsupported normalized component type: ${accessor.componentType}`
+      );
+  }
+}
+
+function verifyStageBounds(path) {
+  const gltf = readGlbJson(path);
+  const childNodeIndices = new Set(
+    gltf.nodes.flatMap((node) => node.children ?? [])
+  );
+  const stageBounds = new Map();
+
+  gltf.nodes.forEach((node, nodeIndex) => {
+    if (!node.name?.startsWith("Stage_") || node.mesh === undefined) return;
+    if (childNodeIndices.has(nodeIndex)) {
+      throw new Error(
+        `Stage bound verification requires a root node: ${node.name}`
+      );
+    }
+
+    let maximumY = Number.NEGATIVE_INFINITY;
+    for (const primitive of gltf.meshes[node.mesh].primitives) {
+      const accessor = gltf.accessors[primitive.attributes.POSITION];
+      const minimum = accessor.min.map((value) =>
+        normalizedAccessorValue(accessor, value)
+      );
+      const maximum = accessor.max.map((value) =>
+        normalizedAccessorValue(accessor, value)
+      );
+      for (const localX of [minimum[0], maximum[0]]) {
+        for (const localY of [minimum[1], maximum[1]]) {
+          for (const localZ of [minimum[2], maximum[2]]) {
+            maximumY = Math.max(
+              maximumY,
+              worldY(node, [localX, localY, localZ])
+            );
+          }
+        }
+      }
+    }
+    stageBounds.set(node.name, maximumY);
+  });
+
+  const deckNode = gltf.nodes.find((node) => node.name === "Stage_Planks");
+  const deckMaximum = stageBounds.get("Stage_Planks");
+  if (deckNode?.extras?.tka_stage_deck_top !== STAGE_DECK_TOP) {
+    throw new Error("Stage_Planks is missing its 0.35 deck-height metadata");
+  }
+  if (Math.abs(deckMaximum - STAGE_DECK_TOP) > STAGE_HEIGHT_TOLERANCE) {
+    throw new Error(
+      `Stage_Planks max Y must be ${STAGE_DECK_TOP}; got ${deckMaximum}`
+    );
+  }
+
+  const tooHigh = [...stageBounds].filter(
+    ([, maximum]) => maximum > STAGE_DECK_TOP + STAGE_HEIGHT_TOLERANCE
+  );
+  if (tooHigh.length > 0) {
+    throw new Error(
+      `Stage geometry exceeds deck height: ${JSON.stringify(tooHigh)}`
+    );
+  }
+
+  console.log("\n── Verify exported stage bounds (Y-up) ──");
+  for (const [name, maximum] of [...stageBounds].sort()) {
+    console.log(`  ${name}: max Y=${maximum.toFixed(6)}`);
+  }
+}
+
+if (!existsSync(INPUT)) {
+  console.error(`Input not found: ${INPUT}`);
+  console.error(
+    "Run build-blossom-environment.py and blender-export-blossom-full.py first."
+  );
+  process.exit(1);
+}
+
+console.log(`Input: ${INPUT} (${size(INPUT)})`);
+
+cleanTemporaryFiles();
+try {
+  run(
+    "Deduplicate, instance, weld, and conservatively simplify",
+    [
+      "npx gltf-transform optimize",
+      `"${INPUT}" "${TMP}"`,
+      "--compress false",
+      "--texture-compress false",
+      "--simplify true",
+      "--simplify-ratio 0.82",
+      "--simplify-error 0.002",
+      "--instance true",
+      "--flatten false",
+      "--join false",
+    ].join(" ")
+  );
+
+  run(
+    "GPU-instance the three placements of each tree prototype",
+    `npx gltf-transform instance "${TMP}" "${TMP_INSTANCED}" --min 2`
+  );
+  run(
+    "Prune accessors orphaned by instancing",
+    `npx gltf-transform prune "${TMP_INSTANCED}" "${TMP_PRUNED}"`
+  );
+  run(
+    "Meshopt geometry compression",
+    `npx gltf-transform meshopt "${TMP_PRUNED}" "${OUTPUT}"`
+  );
+} finally {
+  cleanTemporaryFiles();
+}
+
+console.log(`\nOutput: ${OUTPUT} (${size(OUTPUT)})`);
+verifyStageBounds(OUTPUT);
+run(
+  "Inspect optimized Blossom asset",
+  `npx gltf-transform inspect "${OUTPUT}"`
+);

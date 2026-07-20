@@ -1,29 +1,23 @@
 <script lang="ts">
   import { T, useThrelte } from "@threlte/core";
-  import { untrack } from "svelte";
-  import {
-    FogExp2,
-    Color,
-    Shape,
-    ShapeGeometry,
-    type Material,
-  } from "three";
-  import { Reflector } from "three/examples/jsm/objects/Reflector.js";
-  import SkyGradient from "../primitives/SkyGradient.svelte";
+  import { useGltf } from "@threlte/extras";
+  import { tick } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
+  import { Color, FogExp2, type WebGLRenderer } from "three";
+  import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
+  import { userProportionsState } from "@austencloud/scene-3d";
   import FallingParticles from "../primitives/FallingParticles.svelte";
-  import ProceduralCherryTree from "./cherry-blossom/ProceduralCherryTree.svelte";
-  import ProceduralGround from "./cherry-blossom/ProceduralGround.svelte";
-  import StoneLantern from "./cherry-blossom/StoneLantern.svelte";
-  import WoodenBridge from "./cherry-blossom/WoodenBridge.svelte";
-  import GrassTufts from "./cherry-blossom/GrassTufts.svelte";
-  import LilyPads from "./cherry-blossom/LilyPads.svelte";
+  import SkyGradient from "../primitives/SkyGradient.svelte";
   import {
     type BlossomSceneConfig,
     createDefaultBlossomConfig,
   } from "../domain/models/scene-configs";
-  import { userProportionsState } from "@austencloud/scene-3d";
   import { getSceneFeatureContext } from "../../scene-features/context/scene-feature-context";
-  import EngawaPlatform from "./cherry-blossom/EngawaPlatform.svelte";
+  import {
+    createBlossomRuntimeConfig,
+    detectBlossomQuality,
+  } from "./cherry-blossom/blossom-runtime";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
 
   interface Props {
     config?: BlossomSceneConfig;
@@ -32,298 +26,299 @@
     stageZOffset?: number;
   }
 
-  let { config, stageWidth = 6, stageDepth = 6, stageZOffset = 0 }: Props = $props();
+  let {
+    config,
+    stageWidth = 6,
+    stageDepth = 6,
+    stageZOffset = 0,
+  }: Props = $props();
 
-  const baseConfig = $derived(config ?? createDefaultBlossomConfig());
+  const activeConfig = $derived(config ?? createDefaultBlossomConfig());
+  const distantPetals = $derived(activeConfig.distantPetals);
+  const fireflies = $derived(activeConfig.fireflies);
+  const moonLight = $derived(activeConfig.moonLight);
+  const groundY = $derived(userProportionsState.groundY);
+  const { scene, renderer, camera } = useThrelte();
+  const sceneFeatures = getSceneFeatureContext();
 
-  const activeConfig = $derived.by(() => {
-    const neededRadius = Math.max(stageWidth, stageDepth) / 2;
-    const r = Math.max(baseConfig.platform.radius, neededRadius);
-    if (r <= baseConfig.platform.radius) return baseConfig;
-    return {
-      ...baseConfig,
-      platform: { ...baseConfig.platform, radius: r },
+  const environmentGlb = useGltf("/models/blossom/blossom_environment.glb", {
+    meshoptDecoder: MeshoptDecoder,
+  });
+  const environmentError = environmentGlb.error;
+
+  let failed = $state(false);
+  let failureReported = false;
+
+  function reportEnvironmentFailure(
+    error: unknown,
+    technicalLabel: string
+  ): void {
+    if (failureReported) return;
+    failureReported = true;
+    failed = true;
+
+    const failure = error instanceof Error ? error : new Error(String(error));
+    sceneFeatures?.reportProgress("environment", 1);
+    sceneFeatures?.reportReady("environment");
+
+    if (typeof window === "undefined") return;
+    getErrorHandler().showUserError({
+      message: "Blossom couldn't load. Try again or choose another background.",
+      technicalDetails: `${technicalLabel}: ${failure.message}`,
+      error: failure,
+      severity: "error",
+      context: {
+        module: "3d",
+        tab: "blossom",
+        action: "loadEnvironment",
+      },
+    });
+  }
+
+  function getGpuRendererName(currentRenderer: WebGLRenderer | null): string {
+    if (!currentRenderer) return "";
+
+    const gl = currentRenderer.getContext();
+    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+    return debugInfo
+      ? String(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL))
+      : "";
+  }
+
+  // MediaQuery touches window in its constructor, so build it lazily on the
+  // client. Reading `.current` inside the derived keeps OS preference changes
+  // live without a manual event-listener lifecycle.
+  let reducedMotionQuery: MediaQuery | null = null;
+
+  function prefersReducedMotion(): boolean {
+    if (typeof window === "undefined") return false;
+    reducedMotionQuery ??= new MediaQuery("(prefers-reduced-motion: reduce)");
+    return reducedMotionQuery.current;
+  }
+
+  const reducedMotion = $derived(prefersReducedMotion());
+
+  const qualityTier = $derived.by(() =>
+    detectBlossomQuality({
+      userAgent: typeof navigator === "undefined" ? "" : navigator.userAgent,
+      hardwareConcurrency:
+        typeof navigator === "undefined"
+          ? 8
+          : (navigator.hardwareConcurrency ?? 4),
+      gpuRenderer: getGpuRendererName(renderer.current ?? null),
+    })
+  );
+
+  const runtime = $derived(
+    createBlossomRuntimeConfig({
+      tier: qualityTier,
+      prefersReducedMotion: reducedMotion,
+      stageWidth,
+      stageDepth,
+      stageZOffset,
+      groundY,
+      particleCounts: {
+        petals: activeConfig.petals.count,
+        distantPetals: distantPetals?.count ?? 0,
+        fireflies: fireflies?.count ?? 0,
+      },
+      lightIntensities: {
+        hemisphere: activeConfig.hemisphereLight.intensity,
+        key: moonLight?.enabled ? moonLight.intensity : 0,
+      },
+    })
+  );
+
+  const petalArea = $derived({
+    ...activeConfig.petals.area,
+    width: activeConfig.petals.area.width * runtime.stage.horizontalScale,
+    depth: activeConfig.petals.area.depth * runtime.stage.horizontalScale,
+  });
+
+  const distantPetalArea = $derived(
+    distantPetals
+      ? {
+          ...distantPetals.area,
+          width: distantPetals.area.width * runtime.stage.horizontalScale,
+          depth: distantPetals.area.depth * runtime.stage.horizontalScale,
+        }
+      : null
+  );
+
+  const fireflyArea = $derived(
+    fireflies
+      ? {
+          ...fireflies.area,
+          width: fireflies.area.width * runtime.stage.horizontalScale,
+          depth: fireflies.area.depth * runtime.stage.horizontalScale,
+        }
+      : null
+  );
+
+  $effect(() => {
+    const currentScene = scene.current;
+    if (!currentScene) return;
+
+    const ownedFog = new FogExp2(
+      new Color(activeConfig.fog.color),
+      activeConfig.fog.density
+    );
+    currentScene.fog = ownedFog;
+
+    return () => {
+      if (currentScene.fog === ownedFog) currentScene.fog = null;
     };
   });
 
-  const { scene, renderer, camera } = useThrelte();
+  // Match Ocean's mobile DPR cap. Blossom is now light on draw calls, but a
+  // retina phone can still spend most of its frame budget filling pixels.
+  $effect(() => {
+    const currentRenderer = renderer.current;
+    if (!currentRenderer || typeof window === "undefined") return;
 
-  const sceneFeatures = getSceneFeatureContext();
-
-  const treePlacements = $derived.by(() => {
-    return activeConfig.treeRings.flatMap((ring, ringIndex) =>
-      Array.from({ length: ring.count }, (_, i) => {
-        const angleOffset = ringIndex * 0.4;
-        const angle = (i / ring.count) * Math.PI * 2 + angleOffset;
-        const seed = ringIndex * 100 + i;
-        const radiusVariation =
-          ring.radius + Math.sin(seed * 3.7) * ring.radiusJitter;
-        const x = Math.cos(angle) * radiusVariation;
-        const z = Math.sin(angle) * radiusVariation;
-        const scale =
-          ring.scaleBase +
-          Math.abs(Math.sin(seed * 2.3) * ring.scaleVariation);
-        const rotation = angle + Math.PI + Math.sin(seed * 1.7) * 0.3;
-        return { x, z, scale, rotation, seed } as {
-          x: number;
-          z: number;
-          scale: number;
-          rotation: number;
-          seed: number;
-        };
-      })
+    const previousPixelRatio = currentRenderer.getPixelRatio();
+    const nextPixelRatio = Math.min(
+      window.devicePixelRatio,
+      runtime.maxPixelRatio
     );
+    currentRenderer.setPixelRatio(nextPixelRatio);
+
+    return () => {
+      currentRenderer.setPixelRatio(previousPixelRatio);
+    };
   });
 
-  const groundY = $derived(userProportionsState.groundY);
-
-  // Reflective pond — organic Catmull-Rom shape
-  function createOrganicPondShape(
-    radius: number,
-    irregularity: number,
-    seed: number
-  ): Shape {
-    const shape = new Shape();
-    const n = 14;
-    const pts: { x: number; y: number }[] = [];
-    for (let i = 0; i < n; i++) {
-      const angle = (i / n) * Math.PI * 2;
-      const noise =
-        Math.sin(i * 2.7 + seed) * irregularity +
-        Math.cos(i * 1.9 + seed * 1.3) * irregularity * 0.5;
-      const r = radius * (1 + noise);
-      pts.push({ x: Math.cos(angle) * r, y: Math.sin(angle) * r });
-    }
-    shape.moveTo(pts[0]!.x, pts[0]!.y);
-    for (let i = 0; i < n; i++) {
-      const p = pts[i]!;
-      const pNext = pts[(i + 1) % n]!;
-      const pPrev = pts[(i - 1 + n) % n]!;
-      const pPlus = pts[(i + 2) % n]!;
-      const c1 = {
-        x: p.x + (pNext.x - pPrev.x) / 6,
-        y: p.y + (pNext.y - pPrev.y) / 6,
-      };
-      const c2 = {
-        x: pNext.x - (pPlus.x - p.x) / 6,
-        y: pNext.y - (pPlus.y - p.y) / 6,
-      };
-      shape.bezierCurveTo(c1.x, c1.y, c2.x, c2.y, pNext.x, pNext.y);
-    }
-    return shape;
-  }
-
-  let pondReflector = $state<Reflector | null>(null);
-
+  // The loading curtain lifts only after the compressed GLB is mounted and its
+  // shaders have compiled. Cancellation prevents a departed scene from
+  // reporting a late ready signal into the next environment.
   $effect(() => {
-    const pond = activeConfig.pond;
-    if (!pond?.enabled) {
-      untrack(() => {
-        const old = pondReflector;
-        if (old) {
-          old.geometry.dispose();
-          (old.material as Material).dispose();
-        }
-        pondReflector = null;
-      });
+    const glb = $environmentGlb;
+    const loadError = $environmentError;
+    const currentRenderer = renderer.current;
+    const currentCamera = camera.current;
+    const currentScene = scene.current;
+
+    if (loadError) {
+      reportEnvironmentFailure(loadError, "GLB load failed");
       return;
     }
 
-    const shape = createOrganicPondShape(
-      pond.radius,
-      0.28,
-      pond.position.x * 0.7 + pond.position.z * 1.3
-    );
-    const geom = new ShapeGeometry(shape, 96);
-    const next = new Reflector(geom, {
-      clipBias: 0.003,
-      textureWidth: 1024,
-      textureHeight: 1024,
-      color: new Color(pond.color),
-    });
-    next.rotateX(-Math.PI / 2);
+    if (failureReported) return;
 
-    untrack(() => {
-      const old = pondReflector;
-      if (old) {
-        old.geometry.dispose();
-        (old.material as Material).dispose();
-      }
-      pondReflector = next;
-    });
-
-    return () => {
-      next.geometry.dispose();
-      (next.material as Material).dispose();
-    };
-  });
-
-  $effect(() => {
-    if (!scene.current) return;
-    const fog = activeConfig.fog;
-    scene.current.fog = new FogExp2(new Color(fog.color), fog.density);
-    return () => {
-      if (scene.current) scene.current.fog = null;
-    };
-  });
-
-  // Procedural scene — no GLBs to wait for
-  $effect(() => {
-    if (renderer.current && camera.current && scene.current) {
-      renderer.current.compile(scene.current, camera.current);
+    if (!glb) {
+      sceneFeatures?.reportProgress("environment", 0.05);
+      return;
     }
-    sceneFeatures?.reportReady("environment");
+
+    sceneFeatures?.reportProgress("environment", 0.9);
+    if (!currentRenderer || !currentCamera || !currentScene) return;
+
+    let cancelled = false;
+
+    async function compileEnvironment() {
+      await tick();
+      if (cancelled) return;
+
+      try {
+        if (typeof currentRenderer.compileAsync === "function") {
+          await currentRenderer.compileAsync(currentScene, currentCamera);
+        } else {
+          currentRenderer.compile(currentScene, currentCamera);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          reportEnvironmentFailure(error, "Shader compile failed");
+        }
+        return;
+      }
+
+      if (cancelled) return;
+      sceneFeatures?.reportProgress("environment", 1);
+      sceneFeatures?.reportReady("environment");
+    }
+
+    void compileEnvironment();
+
+    return () => {
+      cancelled = true;
+    };
   });
 </script>
 
-<SkyGradient
-  topColor={activeConfig.sky.topColor}
-  midColor={activeConfig.sky.midColor}
-  bottomColor={activeConfig.sky.bottomColor}
-/>
-
-<ProceduralGround
-  size={activeConfig.ground.size}
-  baseColor={activeConfig.ground.color}
-/>
-
-<!-- Fallen petal layer — subtle pink wash over the ground -->
-<T.Group position={[0, groundY + 0.005, 0]}>
-  <T.Mesh rotation.x={-Math.PI / 2}>
-    <T.CircleGeometry args={[20, 64]} />
-    <T.MeshStandardMaterial
-      color="#ffb7c5"
-      opacity={0.08}
-      transparent
-      roughness={1}
-      depthWrite={false}
-    />
-  </T.Mesh>
-</T.Group>
-
-<!-- Reflective pond — catches the pink light -->
-{#if activeConfig.pond?.enabled && pondReflector}
-  <T
-    is={pondReflector}
-    position.x={activeConfig.pond.position.x}
-    position.y={groundY + 0.01}
-    position.z={activeConfig.pond.position.z}
+{#if failed}
+  <SkyGradient
+    topColor={activeConfig.sky.topColor}
+    midColor={activeConfig.sky.midColor}
+    bottomColor={activeConfig.sky.bottomColor}
   />
-{/if}
-
-<!-- Procedural cherry trees — pink emissive canopies, dark trunks -->
-{#each treePlacements as tree}
+{:else if $environmentGlb}
   <T.Group
-    position.x={tree.x}
-    position.y={groundY}
-    position.z={tree.z}
-    scale={tree.scale}
-    rotation.y={tree.rotation}
+    position={runtime.stage.position}
+    scale={runtime.stage.scale}
+    name="BlossomEnvironment"
   >
-    <ProceduralCherryTree seed={tree.seed} />
+    <T is={$environmentGlb.scene} />
   </T.Group>
-{/each}
-
-<!-- Dense cherry blossom petals — close layer -->
-{#key activeConfig.petals.count}
-  <FallingParticles
-    type={activeConfig.petals.type}
-    count={activeConfig.petals.count}
-    area={activeConfig.petals.area}
-    speed={activeConfig.petals.speed}
-    colors={activeConfig.petals.colors}
-    sizeRange={activeConfig.petals.sizeRange}
-    spin={activeConfig.petals.spin}
-  />
-{/key}
-
-<!-- Distant petals — smaller, slower, wider for depth -->
-{#if activeConfig.distantPetals}
-  {#key activeConfig.distantPetals.count}
-    <FallingParticles
-      type={activeConfig.distantPetals.type}
-      count={activeConfig.distantPetals.count}
-      area={activeConfig.distantPetals.area}
-      speed={activeConfig.distantPetals.speed}
-      colors={activeConfig.distantPetals.colors}
-      sizeRange={activeConfig.distantPetals.sizeRange}
-      spin={activeConfig.distantPetals.spin}
-    />
-  {/key}
 {/if}
 
-<!-- Fireflies — twilight warmth -->
-{#if activeConfig.fireflies}
-  {#key activeConfig.fireflies.count}
-    <FallingParticles
-      type={activeConfig.fireflies.type}
-      count={activeConfig.fireflies.count}
-      area={activeConfig.fireflies.area}
-      speed={activeConfig.fireflies.speed}
-      colors={activeConfig.fireflies.colors}
-      sizeRange={activeConfig.fireflies.sizeRange}
-      spin={activeConfig.fireflies.spin}
-    />
-  {/key}
-{/if}
+{#if !failed}
+  <T.Group position.z={stageZOffset}>
+    {#if runtime.particles.petals > 0}
+      {#key runtime.particles.petals}
+        <FallingParticles
+          type={activeConfig.petals.type}
+          count={runtime.particles.petals}
+          area={petalArea}
+          speed={activeConfig.petals.speed}
+          colors={activeConfig.petals.colors}
+          sizeRange={activeConfig.petals.sizeRange}
+          spin={activeConfig.petals.spin}
+        />
+      {/key}
+    {/if}
 
-<!-- Two stone lanterns — intentionally placed for composition -->
-{#each activeConfig.lanterns as lantern}
-  <StoneLantern
-    position={lantern.position}
-    scale={lantern.scale}
-    lightColor={lantern.lightColor}
-    lightIntensity={lantern.lightIntensity}
-    lightDistance={lantern.lightDistance}
-  />
-{/each}
+    {#if distantPetals && distantPetalArea && runtime.particles.distantPetals > 0}
+      {#key runtime.particles.distantPetals}
+        <FallingParticles
+          type={distantPetals.type}
+          count={runtime.particles.distantPetals}
+          area={distantPetalArea}
+          speed={distantPetals.speed}
+          colors={distantPetals.colors}
+          sizeRange={distantPetals.sizeRange}
+          spin={distantPetals.spin}
+        />
+      {/key}
+    {/if}
 
-<!-- Stepping stones — flat discs along a path -->
-{#each activeConfig.steppingStones as stone}
-  <T.Group position.x={stone.x} position.y={groundY + 0.02} position.z={stone.z}>
-    <T.Mesh rotation.y={stone.rotationY}>
-      <T.CylinderGeometry args={[stone.radius, stone.radius, 0.03, 8]} />
-      <T.MeshStandardMaterial color="#3a3530" roughness={0.95} />
-    </T.Mesh>
+    {#if fireflies && fireflyArea && runtime.particles.fireflies > 0}
+      {#key runtime.particles.fireflies}
+        <FallingParticles
+          type={fireflies.type}
+          count={runtime.particles.fireflies}
+          area={fireflyArea}
+          speed={fireflies.speed}
+          colors={fireflies.colors}
+          sizeRange={fireflies.sizeRange}
+          spin={fireflies.spin}
+        />
+      {/key}
+    {/if}
   </T.Group>
-{/each}
-
-<!-- Arched wooden bridge spanning across the pond -->
-{#if activeConfig.pond?.enabled}
-  <WoodenBridge
-    position={activeConfig.pond.position}
-    rotationY={Math.PI * 0.3}
-    scale={0.9}
-    length={activeConfig.pond.radius * 1.8}
-  />
 {/if}
-
-<!-- Lily pads on the pond surface -->
-{#if activeConfig.pond?.enabled}
-  <LilyPads
-    pondPosition={activeConfig.pond.position}
-    pondRadius={activeConfig.pond.radius}
-  />
-{/if}
-
-<!-- Ground cover — scattered moss/grass tufts -->
-<GrassTufts />
 
 <T.HemisphereLight
   color={activeConfig.hemisphereLight.skyColor}
   groundColor={activeConfig.hemisphereLight.groundColor}
-  intensity={activeConfig.hemisphereLight.intensity}
+  intensity={runtime.lights.hemisphere}
 />
 
-{#if activeConfig.moonLight?.enabled}
-  {@const m = activeConfig.moonLight}
+{#if moonLight?.enabled}
   <T.DirectionalLight
-    color={m.color}
-    intensity={m.intensity}
-    position.x={m.position[0]}
-    position.y={m.position[1]}
-    position.z={m.position[2]}
+    color={moonLight.color}
+    intensity={runtime.lights.key}
+    position.x={moonLight.position[0]}
+    position.y={moonLight.position[1]}
+    position.z={moonLight.position[2] + stageZOffset}
   />
 {/if}
-
-<EngawaPlatform config={activeConfig.platform} />
