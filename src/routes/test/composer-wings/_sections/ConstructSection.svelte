@@ -484,9 +484,11 @@
     flex-direction: column;
     gap: 16px;
     /* Contained toy, not a full-bleed slab: on ultrawide viewports the panel
-       caps out and centers, so the controls never drift apart into voids. */
+       caps out and centers, so the controls never drift apart into voids.
+       4K-native cap per the shell standard (min(1720px, 92vw)) — 1360 left
+       the toy inset from its own heading at 2560 CSS. */
     width: 100%;
-    max-width: 1360px;
+    max-width: min(1720px, 92vw);
     margin-inline: auto;
     padding: clamp(16px, 2.2cqw, 28px);
     border-radius: 24px;
