@@ -19,6 +19,7 @@ import {
   lerp,
 } from "./angle-math-calculator";
 import { mapOrientationToAngle } from "./orientation-mapper";
+import { concaveRadiusProfile } from "./petal-path";
 import { calculateTargetStaffAngle } from "./motion-calculator";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 
@@ -82,22 +83,12 @@ function interpolateConcavePosition(
   endAngle: number,
   progress: number
 ): { worldPosition: Vector3; centerPathAngle: number } {
-  const arcAngle = lerpAngle(startAngle, endAngle, progress);
-  const circleX = Math.cos(arcAngle);
-  const circleY = Math.sin(arcAngle);
-
-  const startX = Math.cos(startAngle);
-  const startY = Math.sin(startAngle);
-  const endX = Math.cos(endAngle);
-  const endY = Math.sin(endAngle);
-  const straightX = lerp(startX, endX, progress);
-  const straightY = lerp(startY, endY, progress);
-
-  const concaveX = 2 * straightX - circleX;
-  const concaveY = 2 * straightY - circleY;
-
-  const radius = Math.sqrt(concaveX * concaveX + concaveY * concaveY);
-  const centerPathAngle = Math.atan2(concaveY, concaveX);
+  // Angle rides the arc; the petal model modulates radius only. The old
+  // chord-reflection produced one mid-step dip regardless of turns — the
+  // petal profile dips once per petal (petalsPerStep = 1 + turns).
+  const centerPathAngle = lerpAngle(startAngle, endAngle, progress);
+  const turns = typeof config.turns === "number" ? config.turns : 0;
+  const radius = concaveRadiusProfile(progress, turns, config.concaveDepth ?? 0);
 
   const worldPosition = planeAngleToWorldPosition(
     config.plane,

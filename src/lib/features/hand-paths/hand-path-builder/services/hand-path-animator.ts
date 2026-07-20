@@ -20,6 +20,7 @@ import {
 } from "$lib/shared/foundation/domain/math-constants";
 import { getAnimationVisibilityManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
 import { applyEffort } from "$lib/shared/effort/domain/effort-easing-unified";
+import { concaveRadiusProfile } from "$lib/shared/3d/services/petal-path";
 
 // 950x950 SVG coordinate space
 const CENTER = 475;
@@ -61,26 +62,22 @@ function resolveHandPathType(isDash: boolean): "arc" | "linear" | "concave" {
   return getAnimationVisibilityManager().getPathShape();
 }
 
+// Petal model (see $lib/shared/3d/services/petal-path). Angle rides the arc;
+// radius dips toward center once per petal (petalsPerStep = 1 + turns).
+// Hands have no per-step turns/concaveDepth data source today (GridLocation
+// in/out only) — both default to 0, reproducing the single mid-step dip.
 function interpolateConcavePoint(
   startAngle: number,
   endAngle: number,
   t: number,
+  turns = 0,
+  concaveDepth = 0,
 ): { x: number; y: number } {
-  // Circle point
   const arcAngle = lerpAngle(startAngle, endAngle, t);
-  const circleX = Math.cos(arcAngle);
-  const circleY = Math.sin(arcAngle);
-  // Straight line point
-  const sx = Math.cos(startAngle);
-  const sy = Math.sin(startAngle);
-  const ex = Math.cos(endAngle);
-  const ey = Math.sin(endAngle);
-  const straightX = sx + (ex - sx) * t;
-  const straightY = sy + (ey - sy) * t;
-  // Reflect
+  const radius = concaveRadiusProfile(t, turns, concaveDepth);
   return {
-    x: CENTER + (2 * straightX - circleX) * GRID_RADIUS,
-    y: CENTER + (2 * straightY - circleY) * GRID_RADIUS,
+    x: CENTER + Math.cos(arcAngle) * radius * GRID_RADIUS,
+    y: CENTER + Math.sin(arcAngle) * radius * GRID_RADIUS,
   };
 }
 
