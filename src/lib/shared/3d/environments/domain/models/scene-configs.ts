@@ -1319,7 +1319,7 @@ export function createDefaultCosmicNightConfig(): CosmicSceneConfig {
     },
     earth: {
       enabled: true,
-      position: [-40, 12, -60],
+      position: [-40, 2, -60],
       radius: 8,
       rimColor: "#6ab4ff",
       rimIntensity: 1.2,
@@ -1379,7 +1379,9 @@ export function createDefaultCosmicNightConfig(): CosmicSceneConfig {
         enabled: true,
         color: "#8899dd",
         intensity: 1.2,
-        position: [-30, 20, -40],
+        // Rakes across the observatory terrace relief from the orrery flank
+        // instead of backlighting from Earth's own direction.
+        position: [28, 12, -19],
       },
       warmStation: {
         enabled: true,
@@ -1574,7 +1576,7 @@ export function createDefaultCosmicAuroraConfig(): CosmicSceneConfig {
     },
     earth: {
       enabled: true,
-      position: [-40, 12, -60],
+      position: [-40, 2, -60],
       radius: 8,
       rimColor: "#44ddcc",
       rimIntensity: 1.4,
@@ -1634,7 +1636,7 @@ export function createDefaultCosmicAuroraConfig(): CosmicSceneConfig {
         enabled: true,
         color: "#66cccc",
         intensity: 1.1,
-        position: [-30, 20, -40],
+        position: [28, 12, -19],
       },
       warmStation: {
         enabled: true,

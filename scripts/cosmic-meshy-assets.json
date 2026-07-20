@@ -1,0 +1,47 @@
+{
+  "stylePrefix": "cinematic stylized realism, ancient lunar observatory, cohesive charcoal moonstone, oxidized bronze, pale ivory inlay, cyan and violet crystal light, physically based materials, isolated complete object, no characters, no text, no background,",
+  "estimatedCreditsPerAsset": 30,
+  "maxCredits": 150,
+  "assets": [
+    {
+      "id": "celestial-arch",
+      "prompt": "monumental broken celestial archway, tall asymmetrical crescent silhouette, open circular center, cracked carved moonstone ribs, partial bronze astrolabe rings, embedded crystal seams, stable rocky feet, designed to frame a distant planet",
+      "texturePrompt": "dark charcoal lunar stone with sharp pale edges, aged oxidized bronze mechanisms, sparse cyan and violet emissive crystal fissures, restrained weathering, no baked shadows",
+      "polycount": 45000,
+      "hdTexture": true,
+      "textureSize": 2048
+    },
+    {
+      "id": "reliquary-dais",
+      "prompt": "low circular performance dais from a ruined celestial observatory, wide flat unobstructed center, concentric astrolabe channels, broken outer rim, three shallow entry steps, lunar stone and bronze construction, elegant readable silhouette",
+      "texturePrompt": "charcoal moonstone floor, worn ivory celestial markings, oxidized bronze ring channels, narrow cyan emissive inlays, high roughness stone and brushed metal, no baked shadows",
+      "polycount": 45000,
+      "hdTexture": true,
+      "textureSize": 2048
+    },
+    {
+      "id": "ruined-orrery",
+      "prompt": "collapsed lunar observatory orrery monument, one tilted bronze orbital ring held by broken moonstone pylons, fractured stairs and rubble integrated into a single stable ruin, asymmetrical side-view composition",
+      "texturePrompt": "weathered charcoal moonstone, verdigris bronze, chipped ivory astronomical engravings, faint violet emissive crystal seams, no baked shadows",
+      "polycount": 35000,
+      "hdTexture": false,
+      "textureSize": 1024
+    },
+    {
+      "id": "shattered-pavilion",
+      "prompt": "ruined lunar observatory pavilion, two broken curved walls and partial colonnade, crescent stair terrace, collapsed carved lintel, open interior, asymmetrical silhouette, all pieces connected by a rocky base",
+      "texturePrompt": "dark lunar stone, pale cut edges, aged bronze brackets, sparse cyan crystal growth in cracks, dusty weathering, no baked shadows",
+      "polycount": 35000,
+      "hdTexture": false,
+      "textureSize": 1024
+    },
+    {
+      "id": "crystal-fault",
+      "prompt": "long fractured slab of lunar rock split by a branching crystal fault, clustered translucent crystal blades emerging from the crack, low wide silhouette, natural broken edges, single connected terrain prop",
+      "texturePrompt": "matte charcoal regolith, pale exposed stone, luminous cyan core fading to violet crystal tips, restrained emissive fissures, no baked shadows",
+      "polycount": 25000,
+      "hdTexture": false,
+      "textureSize": 1024
+    }
+  ]
+}

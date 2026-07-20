@@ -1,5 +1,6 @@
 <script lang="ts">
   import { T, useThrelte } from "@threlte/core";
+  import { useGltf, useKtx2, useMeshopt } from "@threlte/extras";
   import { onMount } from "svelte";
   import { FogExp2, Color } from "three";
   import SkyGradient from "../primitives/SkyGradient.svelte";
@@ -9,11 +10,7 @@
   import NebulaLayer from "./cosmic/NebulaLayer.svelte";
   import EnergyParticles from "./cosmic/EnergyParticles.svelte";
   import MeteorStreaks from "./cosmic/MeteorStreaks.svelte";
-  import LunarCrystals from "./cosmic/LunarCrystals.svelte";
-  import CrystalFormations from "./cosmic/CrystalFormations.svelte";
-  import PrismaticCaustics from "./cosmic/PrismaticCaustics.svelte";
   import EarthGodRays from "./cosmic/EarthGodRays.svelte";
-  import LunarGroundPlane from "./cosmic/LunarGroundPlane.svelte";
   import Starfield from "./cosmic/Starfield.svelte";
   import type { CosmicVariant } from "../domain/enums/environment-enums";
   import {
@@ -51,8 +48,22 @@
     };
   });
 
+  // The authored reliquary owns the physical platform mechanism. This live
+  // surface only expands when a multi-performer layout needs more floor area.
+  const performanceDeckConfig = $derived({
+    ...activeConfig.platform,
+    baseColor: "#070b12",
+    emissiveIntensity: 0.08,
+    gridIntensity: 0,
+    accentLightCount: 0,
+  });
+
   const { scene, renderer, camera } = useThrelte();
   const groundY = $derived(userProportionsState.groundY);
+  const environmentGlb = useGltf("/models/cosmic/cosmic-reliquary.glb", {
+    meshoptDecoder: useMeshopt(),
+    ktx2Loader: useKtx2("/basis/"),
+  });
 
   $effect(() => {
     if (!scene.current) return;
@@ -68,13 +79,17 @@
 
   $effect(() => {
     if (!sceneFeatures) return;
-    if (earthReady || !activeConfig.earth.enabled) {
+    const authoredReady = Boolean($environmentGlb);
+    const planetReady = earthReady || !activeConfig.earth.enabled;
+    sceneFeatures.reportProgress(
+      "environment",
+      (authoredReady ? 0.7 : 0) + (planetReady ? 0.3 : 0),
+    );
+    if (authoredReady && planetReady) {
       if (renderer.current && camera.current && scene.current) {
         renderer.current.compile(scene.current, camera.current);
       }
       sceneFeatures.reportReady("environment");
-    } else {
-      sceneFeatures.reportProgress("environment", 0.5);
     }
   });
 
@@ -98,19 +113,13 @@
 
 <NebulaLayer config={activeConfig.nebula} />
 
-<LunarGroundPlane veins={activeConfig.lunarGround} groundConfig={activeConfig.ground} />
-
-{#if activeConfig.crystalFormations.enabled}
-  <CrystalFormations config={activeConfig.crystalFormations} />
-{:else}
-  <LunarCrystals config={activeConfig.crystals} />
+{#if $environmentGlb}
+  <T.Group position.y={groundY}>
+    <T is={$environmentGlb.scene} />
+  </T.Group>
 {/if}
 
-{#if activeConfig.caustics.enabled}
-  <PrismaticCaustics config={activeConfig.caustics} groundSize={activeConfig.ground.size} />
-{/if}
-
-<StationPlatform config={activeConfig.platform} />
+<StationPlatform config={performanceDeckConfig} />
 
 <EarthSphere
   config={activeConfig.earth}
