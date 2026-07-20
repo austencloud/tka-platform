@@ -63,6 +63,7 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 		hideWordHeader = false,
 		tapToToggle = false,
 		progressLine = false,
+		progressLineSeekable = false,
 		hoverHint = "none" as "none" | "badge" | "pill" | "scrim",
 	}: {
 		sequence: SequenceData;
@@ -89,6 +90,10 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 		 *  progress LINE (SequenceProgressBar). For embedded/showcase players that
 		 *  pair it with tapToToggle. Forwarded to AnimatorCanvas. */
 		progressLine?: boolean;
+		/** Make the progress LINE a scrubber (click/drag/keyboard seek, with the
+		 *  viewer shell's pause-while-scrubbing bracket). Standalone mode only;
+		 *  off by default so existing progressLine consumers keep a passive line. */
+		progressLineSeekable?: boolean;
 		/** Mouse-only hover affordance teaching "click the canvas to play/pause".
 		 *  Forwarded to AnimatorCanvas. */
 		hoverHint?: "none" | "badge" | "pill" | "scrim";
@@ -293,6 +298,21 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 		}
 	};
 	const stepFullFwd = () => useContext ? ctx?.actions?.onStepFullBeatForward() : controller?.stepFullBeatForward();
+
+	// Seekable progress line (standalone mode): same gesture bracket as the
+	// viewer shell's playback-controller — pause while the finger is down,
+	// resume when it lifts, so scrubbing never fights the playback loop.
+	let wasPlayingBeforeScrub = false;
+	const lineSeek = (targetStep: number) => controller?.seekToStep(targetStep);
+	const lineScrubStart = () => {
+		wasPlayingBeforeScrub = isPlaying;
+		if (wasPlayingBeforeScrub) togglePlayback();
+	};
+	const lineScrubEnd = () => {
+		if (wasPlayingBeforeScrub) togglePlayback();
+		wasPlayingBeforeScrub = false;
+	};
+
 	const setPlaybackMode = (m: "continuous" | "step") => ctx?.actions.onPlaybackModeChange(m);
 	const setStepSize = (s: 0.5 | 1) => ctx?.actions.onStepPlaybackStepSizeChange(s);
 	const cancelExport = () => ctx?.actions.onCancelExport();
@@ -330,6 +350,9 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 						{hideProgressBar}
 						{tapToToggle}
 						{progressLine}
+						onProgressBarSeek={progressLineSeekable ? lineSeek : null}
+						onProgressBarScrubStart={progressLineSeekable ? lineScrubStart : null}
+						onProgressBarScrubEnd={progressLineSeekable ? lineScrubEnd : null}
 						{hoverHint}
 					/>
 
@@ -396,6 +419,9 @@ import { ensureMotionData } from "$lib/shared/sequence-viewer/services/sequence-
 					{hideProgressBar}
 					{tapToToggle}
 					{progressLine}
+					onProgressBarSeek={progressLineSeekable ? lineSeek : null}
+					onProgressBarScrubStart={progressLineSeekable ? lineScrubStart : null}
+					onProgressBarScrubEnd={progressLineSeekable ? lineScrubEnd : null}
 					{hoverHint}
 				/>
 

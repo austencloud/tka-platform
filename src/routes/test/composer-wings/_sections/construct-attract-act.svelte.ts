@@ -530,6 +530,20 @@ export function createConstructAttractAct(opts: {
       await dwell(jitter(1000, 800));
     }
 
+    // "Wait, do that bit again": click an earlier workspace cell — the player
+    // snaps to that step (the viewer-parity seek), demonstrating that the left
+    // rail is a scrubber, not just a readout.
+    if (Math.random() < 0.6 && !halted()) {
+      const cells = await waitFor(CELL_SEL, 1500);
+      if (cells.length >= 2 && !halted()) {
+        await moveAndPress(pick(cells.slice(0, -1)));
+        if (!halted()) {
+          await restBeside(stage[0]!);
+          await dwell(jitter(1400, 1000)); // watch the replay land
+        }
+      }
+    }
+
     // Bored now. Build another — pressed for real, like everything else.
     if (halted()) return;
     const again = await waitFor(AGAIN_SEL, 2000);

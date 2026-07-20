@@ -54,6 +54,7 @@
   } from "$lib/features/store/domain/shop-prop-options";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
   import GhostPointer from "./GhostPointer.svelte";
   import {
     createConstructAttractAct,
@@ -101,6 +102,13 @@
   // tap listener is pointer-based, and the act must never dispatch synthetic
   // pointer events (they'd trip the takeover listener).
   let playerToggle: (() => void) | null = null;
+
+  // The player's playback controller (via onControllerReady) — powers the
+  // viewer-parity seek affordances: click a workspace cell to snap the
+  // animation to that step, click the start cell to restart.
+  let playerController: AnimationPlaybackController | null = null;
+  let playerIsPlaying = false;
+  let startHoldTimer: ReturnType<typeof setTimeout> | null = null;
 
   // The real start-position picker drives its own state object; we subscribe to
   // the user's pick and lift it into our local demo state (source "sync" changes
@@ -153,6 +161,7 @@
     unsubscribe?.();
     act?.kill();
     io?.disconnect();
+    clearStartHold();
   });
 
   // Grab the wheel: first REAL interaction pauses the act — the ghost glides
@@ -254,8 +263,46 @@
 
   // The player reports the playing step (0-indexed; null = start position) and
   // the workspace highlights it via the canonical selection mechanism.
-  function handlePlayerStepChange(stepIndex: number | null) {
+  function handlePlayerStepChange(stepIndex: number | null, isPlaying: boolean) {
     playingStepNumber = stepIndex === null ? 0 : stepIndex + 1;
+    playerIsPlaying = isPlaying;
+  }
+
+  // Viewer-parity seek: clicking a workspace cell during play snaps the
+  // animation to that step, preserving play state — the same semantics as the
+  // sequence viewer's left rail (playback-controller.svelte.ts handleStepClick).
+  function handleWorkspaceStepClick(stepNumber: number) {
+    clearStartHold();
+    playerController?.seekToStep(stepNumber);
+  }
+
+  // Start cell: park at the start pose, hold a beat, then play — the viewer's
+  // hold-then-play restart, verbatim.
+  function handleWorkspaceStartClick() {
+    if (!playerController) return;
+    clearStartHold();
+    if (playerIsPlaying) playerController.togglePlayback();
+    playerController.seekToStep(0);
+    startHoldTimer = setTimeout(() => {
+      startHoldTimer = null;
+      if (playerController && !playerIsPlaying) playerController.togglePlayback();
+    }, 700);
+  }
+
+  function clearStartHold() {
+    if (startHoldTimer !== null) {
+      clearTimeout(startHoldTimer);
+      startHoldTimer = null;
+    }
+  }
+
+  // The player unmounts whenever the phase leaves "play" — drop the refs so a
+  // stale controller can never receive a seek meant for a dead instance.
+  function dropPlayerRefs() {
+    clearStartHold();
+    playerController = null;
+    playerToggle = null;
+    playerIsPlaying = false;
   }
 
   function reset() {
@@ -263,6 +310,7 @@
     startPosition = null;
     playing = false;
     playingStepNumber = null;
+    dropPlayerRefs();
     startPositionState.clearSelectedPosition();
   }
 </script>
@@ -329,6 +377,10 @@
             displayState={workspaceDisplayState}
             scrollState={workspaceScrollState}
             selectedStepNumber={phase === "play" ? playingStepNumber : null}
+            onStepClick={phase === "play"
+              ? (stepNumber) => handleWorkspaceStepClick(stepNumber)
+              : undefined}
+            onStartClick={phase === "play" ? handleWorkspaceStartClick : undefined}
             getStepKey={(beat, index) => beat.id ?? `demo-key-${index}`}
             getDurationDisplay={(stepIndex) => String(stepIndex + 1)}
             bluePropTypeOverride={demoProp}
@@ -374,6 +426,7 @@
                   onclick={() => {
                     playing = false;
                     playingStepNumber = null;
+                    dropPlayerRefs();
                   }}
                 >
                   <i class="fas fa-arrow-left" aria-hidden="true"></i>
@@ -464,8 +517,9 @@
         {#await import("$lib/shared/sequence-viewer/components/AnimationPlayer.svelte") then mod}
           <div class="play-pane">
             <!-- No transport chrome: tap the canvas to pause/play (hoverHint
-                 teaches it on mouse, the act demonstrates it live), with the
-                 thin progress line as the only readout. -->
+                 teaches it on mouse, the act demonstrates it live). The thin
+                 progress line doubles as a scrubber, and the workspace cells
+                 seek on click — the viewer's two scrub affordances, both here. -->
             <div class="player-frame" data-demo-stage>
               <mod.default
                 sequence={playSequence}
@@ -474,11 +528,14 @@
                 hideWordHeader
                 tapToToggle
                 progressLine
+                progressLineSeekable
                 hoverHint="badge"
                 bluePropType={demoProp}
                 redPropType={demoProp}
                 onStepChange={handlePlayerStepChange}
                 onTogglePlaybackRef={(fn: () => void) => (playerToggle = fn)}
+                onControllerReady={(ctrl: AnimationPlaybackController) =>
+                  (playerController = ctrl)}
               />
             </div>
           </div>
