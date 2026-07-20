@@ -178,12 +178,6 @@ Delegates all rendering to child components.
   function handleRedRotationChange(dir: RotationDirection) {
     redRotation = dir;
   }
-  function handleResetTurns() {
-    blueTurns = 0;
-    redTurns = 0;
-    blueRotation = RotationDirection.CLOCKWISE;
-    redRotation = RotationDirection.CLOCKWISE;
-  }
 
   // Apply sticky turns to each option, then prepare for rendering.
   function prepareWithTurns(
@@ -483,7 +477,6 @@ Delegates all rendering to child components.
     onRedTurnsChange={handleRedTurnsChange}
     onBlueRotationChange={handleBlueRotationChange}
     onRedRotationChange={handleRedRotationChange}
-    onResetTurns={handleResetTurns}
   />
 {/if}
 

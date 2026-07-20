@@ -1,26 +1,28 @@
 <!--
   OptionPickerHeader.svelte
 
-  Unified header for the construct option picker (desktop wide layout). Combines:
-    • the All / Continuous filter (a SegmentedControl),
-    • the working Level (a SegmentedControl — 1/2/3), and
-    • a collapsible Turns section (blue/red turn buttons + dash/static spin),
-  into one band that hugs the option grid. Turns is collapsed by default; when
-  turns are set the toggle shows a badge so active turns are never hidden.
+  Unified header for the construct option picker (desktop wide layout). Two
+  controls, nothing else:
+    • the All / Continuous filter (left),
+    • the working Level (centered, wearing the canonical level colours),
+  over a turns row that appears when the level HAS turns.
 
   Level gates the turn palette, per TKA canon (shared table in
   level-turn-values.ts): L1 base motions only, L2 whole turns, L3 half turns +
   floats. Every legal value is its own button — no stepper to click through, and
   the float that the stepper could never reach is now one tap.
+
+  No Turns disclosure toggle and no Reset: Level already decides whether turns
+  exist (L1 = none, so the row is simply absent), and resetting is two taps on
+  the 0 buttons. Both were chrome that restated a control already on screen.
 -->
 <script lang="ts">
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { slide, fade } from "svelte/transition";
   import { quintOut } from "svelte/easing";
-  import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
   import {
-    TURN_LEVELS,
     formatTurnValue,
     keyToTurnValue,
     turnValueToKey,
@@ -46,7 +48,6 @@
     onRedChange: (value: TurnValue) => void;
     onBlueRotationChange: (dir: RotationDirection) => void;
     onRedRotationChange: (dir: RotationDirection) => void;
-    onReset: () => void;
   }
 
   const {
@@ -63,39 +64,19 @@
     onRedChange,
     onBlueRotationChange,
     onRedRotationChange,
-    onReset,
   }: Props = $props();
-
-  // Persist the Turns drawer open/closed state across reloads.
-  const expandedPersistence = createPersistenceHelper<boolean>({
-    key: "tka-option-picker-turns-expanded",
-    defaultValue: false,
-  });
-  let expanded = $state(expandedPersistence.load());
-
-  $effect(() => {
-    void expanded;
-    expandedPersistence.setupAutoSave(expanded);
-  });
 
   const hasBlueTurns = $derived(blueTurns === "fl" || blueTurns > 0);
   const hasRedTurns = $derived(redTurns === "fl" || redTurns > 0);
-  const hasAnyTurns = $derived(hasBlueTurns || hasRedTurns);
 
-  // Level 1 is base motions — there is nothing to dial, so the drawer stays shut.
+  // Level 1 is base motions — there is nothing to dial, so the row isn't there.
   const turnsAvailable = $derived(level > 1);
-  const isOpen = $derived(expanded && turnsAvailable);
 
   const filterOptions = [
     { value: "all", label: "All" },
     { value: "continuous", label: "Continuous" },
   ];
   const filterValue = $derived(isContinuousOnly ? "continuous" : "all");
-
-  const levelOptions = TURN_LEVELS.map((n) => ({
-    value: String(n),
-    label: `L${n}`,
-  }));
 
   // One button per legal turn value at this level: L2 → 0 1 2 3,
   // L3 → 0 · 0.5 · 1 · 1.5 · 2 · 2.5 · 3 · fl.
@@ -120,9 +101,11 @@
 </script>
 
 <div class="oph">
+  <!-- Row 1: filter left, Level dead center. The right cell is an empty
+       counterweight — equal-fr sides are what keep Level centered on the band
+       rather than centered on "whatever is left over". -->
   <div class="oph-bar">
-    <!-- Row 1: filter (left), persistent controls (right). Never changes height. -->
-    <div class="oph-filter">
+    <div class="oph-side start">
       {#if showFilter}
         <div class="filter-seg">
           <SegmentedControl
@@ -134,61 +117,24 @@
           />
         </div>
       {/if}
-
-      <!-- Level decides which turn buttons exist below. Sits beside the filter
-           so both "what am I shown" controls read as one group. -->
-      <div class="level-seg" title="Level 1 base motions · Level 2 whole turns · Level 3 half turns and floats">
-        <span class="group-tag">Level</span>
-        <SegmentedControl
-          options={levelOptions}
-          value={String(level)}
-          size="sm"
-          color="accent"
-          onchange={(v) => onLevelChange(Number(v) as TurnLevel)}
-        />
-      </div>
     </div>
 
-    <!-- Persistent controls (pinned right, never reflow). Reset is always present
-         — disabled when there are no turns — so it never appears/disappears. -->
-    <div class="oph-controls">
-      <button
-        class="turns-toggle"
-        class:active={isOpen}
-        disabled={!turnsAvailable}
-        aria-expanded={isOpen}
-        aria-label={isOpen ? "Hide turns" : "Show turns"}
-        title={turnsAvailable ? undefined : "Level 1 is base motions — switch to Level 2 or 3 to add turns"}
-        onclick={() => (expanded = !expanded)}
-      >
-        <i class="fas fa-arrows-rotate" aria-hidden="true"></i>
-        <span>Turns</span>
-        {#if !isOpen && hasBlueTurns}
-          <span class="badge blue">{formatTurnValue(blueTurns)}</span>
-        {/if}
-        {#if !isOpen && hasRedTurns}
-          <span class="badge red">{formatTurnValue(redTurns)}</span>
-        {/if}
-        <i class="fas fa-chevron-down chevron" aria-hidden="true"></i>
-      </button>
+    <!-- Level decides which turn buttons exist below, so it gets the center and
+         the level colour system rather than neutral filter chrome. -->
+    <LevelSelector
+      value={level}
+      onchange={(n) => onLevelChange(n as TurnLevel)}
+      ariaLabel="Working difficulty level"
+    />
 
-      <button
-        class="reset-btn"
-        disabled={!hasAnyTurns}
-        aria-label="Reset turns to 0"
-        onclick={onReset}
-      >
-        <i class="fas fa-rotate-left" aria-hidden="true"></i>
-        <span>Reset</span>
-      </button>
-    </div>
+    <div class="oph-side end"></div>
   </div>
 
-  <!-- Row 2: blue (left half) / red (right half), slides down to appear. The
-       stepper sits centered in each half; the CW/CCW spin button is pinned to the
-       half's outer (colored) edge — absolutely positioned, so it has its own room
-       and its appearance never nudges the centered stepper. -->
-  {#if isOpen}
+  <!-- Row 2: blue (left half) / red (right half), present whenever the level has
+       turns. The buttons fill each half; the CW/CCW spin button is pinned to the
+       half's outer (colored) edge — absolutely positioned into a permanently
+       reserved gutter, so its appearance never resizes the button row. -->
+  {#if turnsAvailable}
     <div class="oph-turns-row" transition:slide={{ duration: 240, easing: quintOut }}>
       <div class="hand-half blue">
         <span class="hand-tag">Blue</span>
@@ -258,50 +204,30 @@
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
   }
 
-  /* Row 1: filter left, persistent controls right. The steppers are NOT here —
-     they live on row 2 — so this row's height and contents never change. */
+  /* Row 1: [filter | LEVEL | counterweight]. Equal-fr sides put Level on the
+     band's true center; the turn buttons are NOT here — they live on row 2 — so
+     this row's height never changes. */
   .oph-bar {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
     min-height: var(--min-touch-target, 44px);
   }
 
-  .oph-filter {
+  .oph-side {
     display: flex;
     align-items: center;
-    gap: 14px;
     min-width: 0;
+  }
+
+  .oph-side.end {
+    justify-content: flex-end;
   }
 
   .filter-seg {
     width: 240px;
     max-width: 50vw;
-  }
-
-  /* Level sits beside the filter. Fixed width so switching L1/L2/L3 — which
-     changes the turn row's button count — never resizes this row. */
-  .level-seg {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 190px;
-    flex: 0 0 auto;
-  }
-
-  .group-tag {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: rgba(255, 255, 255, 0.55);
-  }
-
-  .oph-controls {
-    display: flex;
-    align-items: center;
-    gap: 8px;
   }
 
   /* Row 2: two equal halves — blue (left), red (right) — revealed by sliding
@@ -378,74 +304,6 @@
     color: #ffaba6;
   }
 
-  .turns-toggle,
-  .reset-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    height: var(--min-touch-target, 44px);
-    padding: 0 14px;
-    border-radius: 8px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.78rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--duration-fast, 0.15s) ease;
-  }
-
-  .turns-toggle:hover,
-  .reset-btn:hover:not(:disabled) {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
-    color: white;
-  }
-
-  .reset-btn:disabled {
-    opacity: 0.35;
-    cursor: default;
-  }
-
-  .turns-toggle.active {
-    background: rgba(110, 168, 254, 0.16);
-    border-color: rgba(110, 168, 254, 0.45);
-    color: #cfe0ff;
-  }
-
-  .turns-toggle .chevron {
-    font-size: 0.6rem;
-    opacity: 0.7;
-    transition: transform var(--duration-fast, 0.15s) ease;
-  }
-
-  .turns-toggle.active .chevron {
-    transform: rotate(180deg);
-  }
-
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.2rem;
-    padding: 0.05rem 0.35rem;
-    border-radius: 9999px;
-    font-size: 0.7rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .badge.blue {
-    background: rgba(59, 130, 246, 0.25);
-    color: #bcd4ff;
-  }
-
-  .badge.red {
-    background: rgba(239, 68, 68, 0.25);
-    color: #ffc4bf;
-  }
-
-  .turns-toggle:focus-visible,
-  .reset-btn:focus-visible,
   .spin-inline:focus-visible {
     outline: 2px solid var(--theme-accent, #6ea8fe);
     outline-offset: 2px;
@@ -506,8 +364,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .turns-toggle,
-    .reset-btn,
     .spin-inline {
       transition: none;
     }

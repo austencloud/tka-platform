@@ -53,7 +53,6 @@ Uses organizer and sizer services for section grouping and sizing.
     onRedTurnsChange: (value: TurnValue) => void;
     onBlueRotationChange: (dir: RotationDirection) => void;
     onRedRotationChange: (dir: RotationDirection) => void;
-    onResetTurns: () => void;
   }
 
   const {
@@ -78,7 +77,6 @@ Uses organizer and sizer services for section grouping and sizing.
     onRedTurnsChange,
     onBlueRotationChange,
     onRedRotationChange,
-    onResetTurns,
   }: Props = $props();
 
   // Track container dimensions with simple resize observer
@@ -398,7 +396,6 @@ Uses organizer and sizer services for section grouping and sizing.
             onRedChange={onRedTurnsChange}
             onBlueRotationChange={onBlueRotationChange}
             onRedRotationChange={onRedRotationChange}
-            onReset={onResetTurns}
           />
         </div>
       {/if}
