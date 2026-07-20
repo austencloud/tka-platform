@@ -2,31 +2,48 @@
   OptionPickerHeader.svelte
 
   Unified header for the construct option picker (desktop wide layout). Combines:
-    • the All / Continuous filter (a SegmentedControl), and
-    • a collapsible Turns section (blue/red steppers + dash/static spin),
+    • the All / Continuous filter (a SegmentedControl),
+    • the working Level (a SegmentedControl — 1/2/3), and
+    • a collapsible Turns section (blue/red turn buttons + dash/static spin),
   into one band that hugs the option grid. Turns is collapsed by default; when
   turns are set the toggle shows a badge so active turns are never hidden.
+
+  Level gates the turn palette, per TKA canon (shared table in
+  level-turn-values.ts): L1 base motions only, L2 whole turns, L3 half turns +
+  floats. Every legal value is its own button — no stepper to click through, and
+  the float that the stepper could never reach is now one tap.
 -->
 <script lang="ts">
-  import PropTurnsControl from "$lib/features/create/shared/components/sequence-actions/PropTurnsControl.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { slide, fade } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
+  import {
+    TURN_LEVELS,
+    formatTurnValue,
+    keyToTurnValue,
+    turnValueToKey,
+    turnValuesForLevel,
+    type TurnLevel,
+    type TurnValue,
+  } from "$lib/shared/create/services/level-turn-values";
 
   interface Props {
     // Filter
     showFilter: boolean;
     isContinuousOnly: boolean;
     onToggleContinuous?: (value: boolean) => void;
+    // Level — gates which turn values the hands may take
+    level: TurnLevel;
+    onLevelChange: (level: TurnLevel) => void;
     // Turns
-    blueTurns: number | "fl";
-    redTurns: number | "fl";
+    blueTurns: TurnValue;
+    redTurns: TurnValue;
     blueRotation: RotationDirection;
     redRotation: RotationDirection;
-    onBlueChange: (delta: number) => void;
-    onRedChange: (delta: number) => void;
+    onBlueChange: (value: TurnValue) => void;
+    onRedChange: (value: TurnValue) => void;
     onBlueRotationChange: (dir: RotationDirection) => void;
     onRedRotationChange: (dir: RotationDirection) => void;
     onReset: () => void;
@@ -36,6 +53,8 @@
     showFilter,
     isContinuousOnly,
     onToggleContinuous,
+    level,
+    onLevelChange,
     blueTurns,
     redTurns,
     blueRotation,
@@ -59,15 +78,33 @@
     expandedPersistence.setupAutoSave(expanded);
   });
 
-  const hasBlueTurns = $derived(typeof blueTurns === "number" && blueTurns > 0);
-  const hasRedTurns = $derived(typeof redTurns === "number" && redTurns > 0);
+  const hasBlueTurns = $derived(blueTurns === "fl" || blueTurns > 0);
+  const hasRedTurns = $derived(redTurns === "fl" || redTurns > 0);
   const hasAnyTurns = $derived(hasBlueTurns || hasRedTurns);
+
+  // Level 1 is base motions — there is nothing to dial, so the drawer stays shut.
+  const turnsAvailable = $derived(level > 1);
+  const isOpen = $derived(expanded && turnsAvailable);
 
   const filterOptions = [
     { value: "all", label: "All" },
     { value: "continuous", label: "Continuous" },
   ];
   const filterValue = $derived(isContinuousOnly ? "continuous" : "all");
+
+  const levelOptions = TURN_LEVELS.map((n) => ({
+    value: String(n),
+    label: `L${n}`,
+  }));
+
+  // One button per legal turn value at this level: L2 → 0 1 2 3,
+  // L3 → 0 · 0.5 · 1 · 1.5 · 2 · 2.5 · 3 · fl.
+  const turnOptions = $derived(
+    turnValuesForLevel(level).map((v) => ({
+      value: turnValueToKey(v),
+      label: formatTurnValue(v),
+    }))
+  );
 
   function opposite(d: RotationDirection): RotationDirection {
     return d === RotationDirection.CLOCKWISE
@@ -97,6 +134,19 @@
           />
         </div>
       {/if}
+
+      <!-- Level decides which turn buttons exist below. Sits beside the filter
+           so both "what am I shown" controls read as one group. -->
+      <div class="level-seg" title="Level 1 base motions · Level 2 whole turns · Level 3 half turns and floats">
+        <span class="group-tag">Level</span>
+        <SegmentedControl
+          options={levelOptions}
+          value={String(level)}
+          size="sm"
+          color="accent"
+          onchange={(v) => onLevelChange(Number(v) as TurnLevel)}
+        />
+      </div>
     </div>
 
     <!-- Persistent controls (pinned right, never reflow). Reset is always present
@@ -104,18 +154,20 @@
     <div class="oph-controls">
       <button
         class="turns-toggle"
-        class:active={expanded}
-        aria-expanded={expanded}
-        aria-label={expanded ? "Hide turns" : "Show turns"}
+        class:active={isOpen}
+        disabled={!turnsAvailable}
+        aria-expanded={isOpen}
+        aria-label={isOpen ? "Hide turns" : "Show turns"}
+        title={turnsAvailable ? undefined : "Level 1 is base motions — switch to Level 2 or 3 to add turns"}
         onclick={() => (expanded = !expanded)}
       >
         <i class="fas fa-arrows-rotate" aria-hidden="true"></i>
         <span>Turns</span>
-        {#if !expanded && hasBlueTurns}
-          <span class="badge blue">{blueTurns}</span>
+        {#if !isOpen && hasBlueTurns}
+          <span class="badge blue">{formatTurnValue(blueTurns)}</span>
         {/if}
-        {#if !expanded && hasRedTurns}
-          <span class="badge red">{redTurns}</span>
+        {#if !isOpen && hasRedTurns}
+          <span class="badge red">{formatTurnValue(redTurns)}</span>
         {/if}
         <i class="fas fa-chevron-down chevron" aria-hidden="true"></i>
       </button>
@@ -136,19 +188,19 @@
        stepper sits centered in each half; the CW/CCW spin button is pinned to the
        half's outer (colored) edge — absolutely positioned, so it has its own room
        and its appearance never nudges the centered stepper. -->
-  {#if expanded}
+  {#if isOpen}
     <div class="oph-turns-row" transition:slide={{ duration: 240, easing: quintOut }}>
       <div class="hand-half blue">
         <span class="hand-tag">Blue</span>
-        <PropTurnsControl
-          color="blue"
-          turns={blueTurns}
-          rotationDirection={blueRotation}
-          showRotation={false}
-          compact
-          onTurnsChange={onBlueChange}
-          onRotationChange={() => {}}
-        />
+        <div class="turn-seg">
+          <SegmentedControl
+            options={turnOptions}
+            value={turnValueToKey(blueTurns)}
+            size="sm"
+            color="blue"
+            onchange={(v) => onBlueChange(keyToTurnValue(v))}
+          />
+        </div>
         {#if !isContinuousOnly && hasBlueTurns}
           <button
             class="spin-inline edge"
@@ -164,15 +216,15 @@
       </div>
       <div class="hand-half red">
         <span class="hand-tag">Red</span>
-        <PropTurnsControl
-          color="red"
-          turns={redTurns}
-          rotationDirection={redRotation}
-          showRotation={false}
-          compact
-          onTurnsChange={onRedChange}
-          onRotationChange={() => {}}
-        />
+        <div class="turn-seg">
+          <SegmentedControl
+            options={turnOptions}
+            value={turnValueToKey(redTurns)}
+            size="sm"
+            color="red"
+            onchange={(v) => onRedChange(keyToTurnValue(v))}
+          />
+        </div>
         {#if !isContinuousOnly && hasRedTurns}
           <button
             class="spin-inline edge"
@@ -219,12 +271,31 @@
   .oph-filter {
     display: flex;
     align-items: center;
+    gap: 14px;
     min-width: 0;
   }
 
   .filter-seg {
     width: 240px;
     max-width: 50vw;
+  }
+
+  /* Level sits beside the filter. Fixed width so switching L1/L2/L3 — which
+     changes the turn row's button count — never resizes this row. */
+  .level-seg {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 190px;
+    flex: 0 0 auto;
+  }
+
+  .group-tag {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255, 255, 255, 0.55);
   }
 
   .oph-controls {
@@ -246,16 +317,30 @@
     flex: 1 1 0;
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 10px;
-    /* Stepper centers in the FULL half (symmetric padding preserves the center).
-       The spin button is pinned out of flow on the colored edge — it costs no
-       layout width, so it can't pull the stepper off-center or shift it when it
-       appears. Min-width guards against overlap with the edge button. */
+    /* The turn buttons fill the half; the spin button is pinned out of flow on
+       the colored edge. Its gutter is reserved PERMANENTLY (not only while it
+       shows), so the buttons never resize when spin appears or disappears. */
+    --spin-gutter: 86px;
     padding: 6px 12px;
-    min-width: 240px;
+    min-width: 260px;
     border-radius: 10px;
     border: 1px solid;
+  }
+
+  .hand-half.blue {
+    padding-left: var(--spin-gutter);
+  }
+
+  .hand-half.red {
+    padding-right: var(--spin-gutter);
+  }
+
+  /* One button per legal turn value — grows to fill whatever the level's palette
+     needs (4 buttons at L2, 8 at L3) inside a fixed-height row. */
+  .turn-seg {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .hand-half.blue {

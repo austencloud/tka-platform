@@ -18,6 +18,12 @@ Delegates all rendering to child components.
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import { pictographPreparer } from "$lib/shared/pictograph/shared/services/pictograph-preparer";
   import { applyPendingTurnsToOption } from "$lib/shared/create/services/apply-turns-to-motion";
+  import {
+    clampTurnToLevel,
+    levelForTurns,
+    type TurnLevel,
+    type TurnValue,
+  } from "$lib/shared/create/services/level-turn-values";
   import { countDirectionReversals } from "$lib/features/create/construct/option-picker/services/reversal-checker";
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import { createPersistenceHelper } from "$lib/shared/state/utils/persistent-state";
@@ -98,10 +104,12 @@ Delegates all rendering to child components.
   // Sticky pending turns applied to every option (persist across selections AND
   // across reloads — survives HMR / full refresh via localStorage).
   interface PendingTurnsState {
-    blueTurns: number | "fl";
-    redTurns: number | "fl";
+    blueTurns: TurnValue;
+    redTurns: TurnValue;
     blueRotation: RotationDirection;
     redRotation: RotationDirection;
+    /** Working level — decides which turn buttons the header offers. */
+    level?: TurnLevel;
   }
   const pendingTurnsPersistence = createPersistenceHelper<PendingTurnsState>({
     key: "tka-option-picker-pending-turns",
@@ -110,12 +118,23 @@ Delegates all rendering to child components.
       redTurns: 0,
       blueRotation: RotationDirection.CLOCKWISE,
       redRotation: RotationDirection.CLOCKWISE,
+      level: 2,
     },
   });
   const loadedTurns = pendingTurnsPersistence.load();
 
-  let blueTurns = $state<number | "fl">(loadedTurns.blueTurns);
-  let redTurns = $state<number | "fl">(loadedTurns.redTurns);
+  let blueTurns = $state<TurnValue>(loadedTurns.blueTurns);
+  let redTurns = $state<TurnValue>(loadedTurns.redTurns);
+  // Turns persisted before the level selector existed carry no level — infer the
+  // lowest level that still permits them, so nobody's sticky turns get clamped
+  // away on first load. Floor at 2 so the turn buttons are reachable by default.
+  let level = $state<TurnLevel>(
+    loadedTurns.level ??
+      (Math.max(
+        2,
+        levelForTurns(loadedTurns.blueTurns, loadedTurns.redTurns)
+      ) as TurnLevel)
+  );
   // Chosen spin direction for dash/static hands with turns (one bit per hand,
   // set via the turns-bar toggle — no per-tile fan-out). Shifts ignore these.
   let blueRotation = $state<RotationDirection>(loadedTurns.blueRotation);
@@ -135,16 +154,23 @@ Delegates all rendering to child components.
       redTurns,
       blueRotation,
       redRotation,
+      level,
     });
   });
 
-  function handleBlueTurnsChange(delta: number) {
-    if (blueTurns === "fl") return;
-    blueTurns = Math.max(0, blueTurns + delta);
+  function handleBlueTurnsChange(value: TurnValue) {
+    blueTurns = value;
   }
-  function handleRedTurnsChange(delta: number) {
-    if (redTurns === "fl") return;
-    redTurns = Math.max(0, redTurns + delta);
+  function handleRedTurnsChange(value: TurnValue) {
+    redTurns = value;
+  }
+  // Dropping a level snaps both hands into that level's palette (a float or a
+  // half turn can't survive a move to Level 2) — the same clamp the Generate
+  // panel applies when a level change invalidates the current value.
+  function handleLevelChange(next: TurnLevel) {
+    level = next;
+    blueTurns = clampTurnToLevel(blueTurns, next);
+    redTurns = clampTurnToLevel(redTurns, next);
   }
   function handleBlueRotationChange(dir: RotationDirection) {
     blueRotation = dir;
@@ -449,6 +475,8 @@ Delegates all rendering to child components.
     lastClickedSlot={pickerState?.lastClickedSlot ?? null}
     blueTurns={effectiveBlueTurns}
     redTurns={effectiveRedTurns}
+    {level}
+    onLevelChange={handleLevelChange}
     {blueRotation}
     {redRotation}
     onBlueTurnsChange={handleBlueTurnsChange}

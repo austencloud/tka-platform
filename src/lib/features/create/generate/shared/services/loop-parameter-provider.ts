@@ -12,6 +12,7 @@
  */
 
 import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { turnValuesForLevel } from "$lib/shared/create/services/level-turn-values";
 import { getInvertedLetter } from "../../circular/domain/constants/strict-loop-position-maps";
 import type {
   RotationDirections,
@@ -147,16 +148,9 @@ export class LOOPParameterProvider {
     maxTurnIntensity: number,
     options?: { enforcePeriod4Parity?: boolean }
   ): TurnAllocation {
-    let possibleTurns: (number | "fl")[];
-
-    // Exact logic from legacy
-    if (level === 2) {
-      possibleTurns = [0, 1, 2, 3];
-    } else if (level === 3) {
-      possibleTurns = [0, 0.5, 1, 1.5, 2, 2.5, 3, "fl"];
-    } else {
-      possibleTurns = [0];
-    }
+    // The per-level palette is shared with the option picker's turn buttons —
+    // one table, in level-turn-values.ts, so the two surfaces can't drift.
+    const possibleTurns: (number | "fl")[] = [...turnValuesForLevel(level)];
 
     const validTurns = possibleTurns.filter((t) => {
       if (t === "fl") return true;

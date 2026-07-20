@@ -19,6 +19,10 @@ Uses organizer and sizer services for section grouping and sizing.
   import HorizontalSwipeContainer from "$lib/shared/foundation/ui/HorizontalSwipeContainer.svelte";
   import OptionPickerHeader from "./OptionPickerHeader.svelte";
   import type { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type {
+    TurnLevel,
+    TurnValue,
+  } from "$lib/shared/create/services/level-turn-values";
   import { identifyContinuation } from "../services/continuation-identifier";
 
   interface Props {
@@ -38,12 +42,15 @@ Uses organizer and sizer services for section grouping and sizing.
     onSlotClicked?: (typeSection: string, slotIndex: number) => void;
     lastClickedSlot?: { typeSection: string; slotIndex: number } | null;
     // Pending turns bar
-    blueTurns: number | "fl";
-    redTurns: number | "fl";
+    blueTurns: TurnValue;
+    redTurns: TurnValue;
+    /** Working level — gates the header's turn palette. */
+    level: TurnLevel;
+    onLevelChange: (level: TurnLevel) => void;
     blueRotation: RotationDirection;
     redRotation: RotationDirection;
-    onBlueTurnsChange: (delta: number) => void;
-    onRedTurnsChange: (delta: number) => void;
+    onBlueTurnsChange: (value: TurnValue) => void;
+    onRedTurnsChange: (value: TurnValue) => void;
     onBlueRotationChange: (dir: RotationDirection) => void;
     onRedRotationChange: (dir: RotationDirection) => void;
     onResetTurns: () => void;
@@ -63,6 +70,8 @@ Uses organizer and sizer services for section grouping and sizing.
     lastClickedSlot = null,
     blueTurns,
     redTurns,
+    level,
+    onLevelChange,
     blueRotation,
     redRotation,
     onBlueTurnsChange,
@@ -381,6 +390,8 @@ Uses organizer and sizer services for section grouping and sizing.
             {onToggleContinuous}
             {blueTurns}
             {redTurns}
+            {level}
+            {onLevelChange}
             {blueRotation}
             {redRotation}
             onBlueChange={onBlueTurnsChange}

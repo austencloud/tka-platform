@@ -1,0 +1,69 @@
+import { describe, expect, it } from "vitest";
+import {
+  clampTurnToLevel,
+  levelForTurnValue,
+  levelForTurns,
+  turnValuesForLevel,
+} from "./level-turn-values";
+
+describe("turnValuesForLevel", () => {
+  it("gives Level 1 base motions only", () => {
+    expect(turnValuesForLevel(1)).toEqual([0]);
+  });
+
+  it("gives Level 2 whole turns", () => {
+    expect(turnValuesForLevel(2)).toEqual([0, 1, 2, 3]);
+  });
+
+  it("gives Level 3 half turns and floats", () => {
+    expect(turnValuesForLevel(3)).toEqual([0, 0.5, 1, 1.5, 2, 2.5, 3, "fl"]);
+  });
+
+  it("clamps out-of-range levels into 1-3", () => {
+    expect(turnValuesForLevel(0)).toEqual(turnValuesForLevel(1));
+    expect(turnValuesForLevel(7)).toEqual(turnValuesForLevel(3));
+  });
+});
+
+describe("clampTurnToLevel", () => {
+  it("leaves a legal value alone", () => {
+    expect(clampTurnToLevel(2, 2)).toBe(2);
+    expect(clampTurnToLevel("fl", 3)).toBe("fl");
+    expect(clampTurnToLevel(1.5, 3)).toBe(1.5);
+  });
+
+  it("collapses a float to 0 when the level can't hold it", () => {
+    expect(clampTurnToLevel("fl", 2)).toBe(0);
+    expect(clampTurnToLevel("fl", 1)).toBe(0);
+  });
+
+  it("snaps half turns to the nearest whole turn at Level 2", () => {
+    expect(clampTurnToLevel(1.5, 2)).toBe(1);
+    expect(clampTurnToLevel(2.5, 2)).toBe(2);
+  });
+
+  it("rounds a tie down rather than inventing a bigger turn", () => {
+    expect(clampTurnToLevel(0.5, 2)).toBe(0);
+  });
+
+  it("flattens everything to 0 at Level 1", () => {
+    expect(clampTurnToLevel(3, 1)).toBe(0);
+    expect(clampTurnToLevel(0.5, 1)).toBe(0);
+    expect(clampTurnToLevel("fl", 1)).toBe(0);
+  });
+});
+
+describe("levelForTurnValue", () => {
+  it("maps a value to the lowest level that permits it", () => {
+    expect(levelForTurnValue(0)).toBe(1);
+    expect(levelForTurnValue(2)).toBe(2);
+    expect(levelForTurnValue(1.5)).toBe(3);
+    expect(levelForTurnValue("fl")).toBe(3);
+  });
+
+  it("takes the higher of the two hands", () => {
+    expect(levelForTurns(0, 0)).toBe(1);
+    expect(levelForTurns(2, 0)).toBe(2);
+    expect(levelForTurns(1, "fl")).toBe(3);
+  });
+});
