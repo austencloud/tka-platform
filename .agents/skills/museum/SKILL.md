@@ -3,7 +3,11 @@ name: museum
 description: Use when managing museum project items, running department briefings, or tracking creative decisions
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Museum Development Tracking System
+
+When explicitly invoked, treat the text after `$museum` as `<arguments>`. Expected shape: `[session|capture|create|link|search|<id>|list]`.
 
 Track creative worldbuilding decisions, brainstorming sessions, and design evolution with full traceability.
 
@@ -26,20 +30,20 @@ System: `meta` tag marks decisions about the tracking system itself.
 
 ## Usage
 
-- `/museum` - **Department briefing** (dispatches 7 agents, synthesizes status)
-- `/museum list` - Raw item list
-- `/museum list --tag <tag>` - Filter by tag
-- `/museum <dept>` - Focus on a specific department (e.g., `/museum lore`)
-- `/museum session "Title"` - Start a new brainstorming session
-- `/museum capture <sessionId> decision "Content"` - Capture a decision during session
-- `/museum <id>` - View item details
-- `/museum <id> verdict accepted "Rationale"` - Set verdict on a decision
-- `/museum link <from> <to> spawned "Note"` - Link two items
-- `/museum search "query"` - Search items
+- `$museum` - **Department briefing** (dispatches 7 agents, synthesizes status)
+- `$museum list` - Raw item list
+- `$museum list --tag <tag>` - Filter by tag
+- `$museum <dept>` - Focus on a specific department (e.g., `$museum lore`)
+- `$museum session "Title"` - Start a new brainstorming session
+- `$museum capture <sessionId> decision "Content"` - Capture a decision during session
+- `$museum <id>` - View item details
+- `$museum <id> verdict accepted "Rationale"` - Set verdict on a decision
+- `$museum link <from> <to> spawned "Note"` - Link two items
+- `$museum search "query"` - Search items
 
 ## Arguments
 
-$ARGUMENTS - Command and arguments (see help for full list)
+<arguments> - Command and arguments (see help for full list)
 
 ## Before Anything Else: Load Current State
 
@@ -58,4 +62,4 @@ $ARGUMENTS - Command and arguments (see help for full list)
 
 See `commands-reference.md` for per-command workflows, the proposal system, evaluation integrity rules, and workflow examples.
 
-Codex-generated ideas are always captured as `proposal`, not `decision`. Casual approval ("sure", "cool") does not promote a proposal. Only explicit user direction or `/museum promote <id>` does. Full rules in `commands-reference.md`.
+agent-generated ideas are always captured as `proposal`, not `decision`. Casual approval ("sure", "cool") does not promote a proposal. Only explicit user direction or `$museum promote <id>` does. Full rules in `commands-reference.md`.

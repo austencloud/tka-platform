@@ -1,0 +1,4 @@
+interface:
+  display_name: "Done"
+  short_description: "Completing a feedback item or logging a quick fix as done"
+  default_prompt: "Use $done to apply the Done workflow to this task."

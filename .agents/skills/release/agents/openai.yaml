@@ -1,0 +1,4 @@
+interface:
+  display_name: "Release"
+  short_description: "Run the Release workflow in this project"
+  default_prompt: "Use $release to apply the Release workflow to this task."

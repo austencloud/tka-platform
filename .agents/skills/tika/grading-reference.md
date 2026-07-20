@@ -55,7 +55,7 @@
 
 1. Verify with MCP:
    ```
-   mcp__tka-domain__get_letter_explanation({ letter: "A" })
+   get_letter_explanation({ letter: "A" })
    ```
 
 2. Check facts:
@@ -73,7 +73,7 @@
 4. Grade: **A** (confidence 95%)
 
 5. Action: Auto-approve
-   ```bash
+   ```powershell
    node scripts/fetch-tika-conversations.cjs abc123 approve "A (95%): Accurate, natural, good pedagogy"
    ```
 
@@ -137,7 +137,7 @@ pending -> claimed -> approved / in-review / needs-correction -> archived
 ```
 
 - **pending**: Flagged by user, waiting for review
-- **claimed**: Being reviewed by /tika command
+- **claimed**: Being reviewed by $tika command
 - **approved**: Passed review (auto or manual)
 - **in-review**: Needs human attention
 - **needs-correction**: AI identified issues, needs system fix
@@ -147,9 +147,9 @@ pending -> claimed -> approved / in-review / needs-correction -> archived
 
 ## MANDATORY: End With Multiple Choice
 
-**Every review MUST end with an AskUserQuestion call.**
+**Every review MUST end with one concise question and concrete choices.**
 
-After presenting your grade and analysis, always use AskUserQuestion to let the user respond with arrow keys instead of typing.
+After presenting the grade and analysis, ask the user to choose one of the options below.
 
 ### Question Format
 
@@ -170,4 +170,4 @@ Use options appropriate to the situation:
 - Log as feedback
 - Skip this review
 
-**Never end a review by just asking "Ready to proceed?" in text.** Always use the AskUserQuestion tool so the user can respond with two arrow key presses.
+**Never end a review with only "Ready to proceed?"** Offer the relevant concrete choices so the next action is unambiguous.

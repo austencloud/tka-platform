@@ -165,12 +165,13 @@ See the JDΘ-W import from 2026-05-04:
 
 ## Import Script Flags
 
-```bash
-node scripts/import-sequence.cjs <file.json> \
-  [--stdin]                        # Read JSON from stdin instead of file
-  [--circular]                     # Force isCircular=true
-  [--loop-type <type>]             # Force LOOP type
-  [--notes "tagline"]              # Attach notes/tagline
-  [--visibility private|public]    # Default: private
-  [--dry-run]                      # Preview without writing to Firestore
+```text
+node scripts/import-sequence.cjs <file.json> [--stdin] [--circular] [--loop-type <type>] [--notes "tagline"] [--visibility private|public] [--dry-run]
 ```
+
+- --stdin: read JSON from stdin instead of a file.
+- --circular: force isCircular=true.
+- --loop-type <type>: force the LOOP type.
+- --notes "tagline": attach notes or a tagline.
+- --visibility private|public: set visibility; defaults to private.
+- --dry-run: preview without writing to Firestore.

@@ -3,15 +3,17 @@ name: skel2tka
 description: Use when working on or checking status of the video-to-TKA notation pipeline
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Skel2TKA Pipeline
 
 Development tracking for the video-to-TKA notation pipeline.
 
 ## Usage
 
-- `/skel2tka` - Show phase status overview
-- `/skel2tka status` - Same as above
-- `/skel2tka phase <N>` - Show details for a specific phase
+- `$skel2tka` - Show phase status overview
+- `$skel2tka status` - Same as above
+- `$skel2tka phase <N>` - Show details for a specific phase
 
 ## Phase Definitions
 
@@ -54,4 +56,4 @@ Show detailed breakdown of that phase:
 
 - Config: `config/skel2tka-dev.config.js`
 - Feature root: `src/lib/features/skel2tka/`
-- Service getters: colocated `get*.ts` files exporting module-level singletons
+- Service getters: colocated `get*.ts` files in `src/lib/shared/` for skel2tka services

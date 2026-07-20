@@ -137,11 +137,13 @@ Verified 2026-07-17 end to end: Codex called `list_available_letters` (→ 47) a
 
 ## Codex operational notes
 
-- **The right-click menu and taskbar launcher start Codex with `--dangerously-bypass-approvals-and-sandbox`** (the analogue of Claude's `--dangerously-skip-permissions`): no approval prompts, no sandbox. That is deliberate for a trusted local dev box. Installer/launcher: `launchers/install-codex-context-menu.ps1`, `launchers/start-codex.bat`. Re-run the installer if an npm update relocates the `codex` shim.
+- **The right-click menu and taskbar launcher start Codex with `--dangerously-bypass-approvals-and-sandbox`** (the analogue of Claude's `--dangerously-skip-permissions`): no approval prompts, no sandbox. That is deliberate for a trusted local dev box. Installer/launcher: `launchers/install-codex-context-menu.ps1`, `launchers/start-codex.bat`. The launcher also installs the repo-owned Codex status line (model, context, 5-hour/weekly limits, branch) on each Windows machine. Re-run the installer if an npm update relocates the `codex` shim.
+- **The TKA launcher uses a side-by-side Codex build with colored usage meters.** `launchers/install-codex-tka.ps1` first installs the checksummed asset from the pinned `codex-tka-v*` GitHub release; if no asset exists, it applies `patches/codex-tka-status-bars.patch` to pinned upstream source, runs renderer tests, and builds locally. The result lives at `%LOCALAPPDATA%\TKA\codex-tka\bin\codex-tka.exe`; the official executable is never replaced. `.github/workflows/codex-tka-build.yml` creates the Windows artifact and can publish the release assets through manual dispatch. Updating Codex requires deliberately advancing the pinned version/commit/tag and rebasing the patch.
 - **Model:** to use the 5.6 model, run `/model` inside the TUI and pick it, or launch `codex -m <model-id>`. Codex remembers your last choice as the default in `~/.codex/config.toml`.
 - **First run needs auth:** `codex login` (ChatGPT sign-in) or `codex login --with-api-key`. Only Austen can complete this. Check state with `codex login status`.
 - **Config lives in `~/.codex/config.toml`.** `codex doctor` diagnoses install/auth/config health.
 - **Skills for Codex** already exist under `.agents/skills/` (the agent-agnostic mirror of `.claude/skills/`).
+- **Use the `orient` skill for unfamiliar areas and broad architecture questions.** It traces one real path and keeps an evidence ledger instead of bulk-reading arbitrary percentages of the repository.
 - **Restart Codex to pick up new MCP config or a moved binary.**
 
 ## Memory

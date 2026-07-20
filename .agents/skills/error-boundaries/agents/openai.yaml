@@ -1,0 +1,4 @@
+interface:
+  display_name: "Error-to-Feedback Boundaries"
+  short_description: "Adding error handling, try/catch blocks"
+  default_prompt: "Use $error-boundaries to apply the Error-to-Feedback Boundaries workflow to this task."

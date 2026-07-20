@@ -1,0 +1,4 @@
+interface:
+  display_name: "License Audit"
+  short_description: "Run the License Audit workflow"
+  default_prompt: "Use $license to apply the License Audit workflow to this task."

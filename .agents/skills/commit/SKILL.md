@@ -3,15 +3,17 @@ name: commit
 description: Use when committing changes that span multiple concerns or scopes
 ---
 
-<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # Smart Commit
 
 ## Step 1: Analyze All Changes
 
-!`git status`
-!`git diff`
-!`git diff --cached`
+```powershell
+git status --short
+git diff
+git diff --cached
+```
 
 ## Step 2: Plan Logical Commits
 
@@ -49,8 +51,8 @@ Just: commit message + file count. User can ask for details if needed.
 For each planned commit:
 1. Stage only the relevant files: `git add <files>`
 2. For mixed files, use patch staging: `git add -p <file>`
-3. Commit with the planned message
-4. Verify with `git status`
+3. Commit only those paths: `git commit -m "<message>" -- <explicit paths>`
+4. Verify with `git status --short` and inspect the scoped commit
 
 After all commits, show `git log --oneline -n <count>` to confirm.
 

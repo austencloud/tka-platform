@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skel2TKA Pipeline"
+  short_description: "Run the Skel2TKA Pipeline workflow"
+  default_prompt: "Use $skel2tka to apply the Skel2TKA Pipeline workflow to this task."

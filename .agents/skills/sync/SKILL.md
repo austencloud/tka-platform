@@ -1,11 +1,15 @@
 ---
+name: sync
 description: Use when the user wants other sessions' or machines' work pulled into this checkout — "pull my changes", "do a full pull", "check again, they pushed", "get the .vscode changes from main", "sync up", "merge to 5173". Fetches and integrates safely across parallel agent sessions without clobbering anyone's in-flight work.
-argument-hint: "[what to pull, e.g. 'main', '.vscode from main', or blank for full sync]"
 ---
+
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # Sync This Checkout
 
-**Args:** `$ARGUMENTS`
+When explicitly invoked, treat the text after `$sync` as `<arguments>`. Expected shape: `[what to pull, e.g. 'main', '.vscode from main', or blank for full sync]`.
+
+**Args:** `<arguments>`
 
 Austen runs many agents and machines against this repo at once. Syncing means
 bringing remote work in WITHOUT disturbing the uncommitted work other live
@@ -13,7 +17,7 @@ sessions have in this same tree.
 
 ## Always start with
 
-```bash
+```powershell
 git fetch origin
 git log HEAD..origin/<current-branch> --oneline   # what's incoming
 git status --short                                 # what's dirty locally
@@ -26,7 +30,7 @@ means exactly this: fetch + report — then integrate if clean.
 
 | Ask | Move |
 |---|---|
-| Specific paths ("my .vscode changes from main") | `git checkout origin/main -- <paths>` — surgical, nothing else moves |
+| Specific paths ("my .vscode changes from main") | `git restore --source origin/main -- <paths>` — surgical, nothing else moves |
 | Full pull, no incoming/dirty overlap | `git pull --ff-only` (merge commit only if genuinely diverged) |
 | Incoming files overlap uncommitted local changes | STOP. List the exact overlapping files and ask — those edits may belong to another live session |
 | "Merge to 5173" | Get the work onto the branch the primary dev server checkout is on (commit + merge/push there); HMR picks it up, no restart |

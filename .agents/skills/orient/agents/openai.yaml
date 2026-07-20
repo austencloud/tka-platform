@@ -1,0 +1,4 @@
+interface:
+  display_name: "Orient in TKA"
+  short_description: "Map unfamiliar TKA code without context flooding"
+  default_prompt: "Use $orient to map this area of TKA before changing it."

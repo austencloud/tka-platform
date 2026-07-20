@@ -1,0 +1,4 @@
+interface:
+  display_name: "2D Tile Layout Engineering"
+  short_description: "Building or modifying 2D tile-based room layouts"
+  default_prompt: "Use $tile-layout to apply the 2D Tile Layout Engineering workflow to this task."

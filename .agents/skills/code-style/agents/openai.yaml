@@ -1,0 +1,4 @@
+interface:
+  display_name: "TKA Code Style"
+  short_description: "Writing or editing TypeScript/Svelte code in this project"
+  default_prompt: "Use $code-style to apply the TKA Code Style workflow to this task."

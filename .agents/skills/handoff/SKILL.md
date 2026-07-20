@@ -1,11 +1,15 @@
 ---
+name: handoff
 description: Use when ending a session with unfinished multi-phase work — "write a handoff", "hand this off", "I'm going to sleep, document where we are", "wrap up for the next agent", or when context is nearly exhausted mid-project. Writes the standard handoff doc another session can pick up cold.
-argument-hint: "[optional slug for the handoff]"
 ---
+
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # Write a Handoff
 
-**Args:** `$ARGUMENTS`
+When explicitly invoked, treat the text after `$handoff` as `<arguments>`. Expected shape: `[optional slug for the handoff]`.
+
+**Args:** `<arguments>`
 
 The reader is a fresh agent with zero context. Everything it needs must be in
 the doc or reachable from it. The counterpart skill (`pickup`) will AUDIT
@@ -14,7 +18,7 @@ your claims — write so that audit passes.
 ## File
 
 `docs/superpowers/specs/YYYY-MM-DD-<slug>-handoff.md` (today's date; slug
-from the work, or `$ARGUMENTS`).
+from the work, or `<arguments>`).
 
 ## Required sections
 
@@ -52,8 +56,8 @@ tried, fragile spots, environment quirks.
   applies to handoffs doubly — a false "done" costs the next session hours.
 - Convert all relative dates to absolute.
 - If the work changed canon owned by an expert agent
-  (`.Codex/rules/expert-routing.md` table), update that agent's `.md` too —
+  (`.claude/rules/expert-routing.md` table), update that agent's `.md` too —
   a handoff is read once; the expert file is forever.
 - Commit the doc with explicit pathspec and push it where the next agent will
   look: main if the work is on main, the work branch otherwise — then tell
-  Austen exactly where it lives with a `file://` link.
+  Austen exactly where it lives with an absolute Markdown file link.

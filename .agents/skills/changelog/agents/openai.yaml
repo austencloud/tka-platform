@@ -1,0 +1,4 @@
+interface:
+  display_name: "Changelog Generation"
+  short_description: "Run the Changelog Generation workflow"
+  default_prompt: "Use $changelog to apply the Changelog Generation workflow to this task."

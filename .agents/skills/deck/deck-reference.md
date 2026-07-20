@@ -1,6 +1,6 @@
 # Deck Reference
 
-Supporting data for the `/deck` skill. Not loaded into every conversation.
+Supporting data for the `$deck` skill. Not loaded into every conversation.
 
 ## Enumerator Flags
 

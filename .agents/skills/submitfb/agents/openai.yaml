@@ -1,0 +1,4 @@
+interface:
+  display_name: "Submit Feedback"
+  short_description: "Submitting a bug report, feature request"
+  default_prompt: "Use $submitfb to apply the Submit Feedback workflow to this task."

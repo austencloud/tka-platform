@@ -3,6 +3,8 @@ name: kickstarter
 description: Use when working on the Choreo Cards Kickstarter campaign — updating copy, reward tiers, stretch goals, refining the mockup page, tracking content production, vendor decisions, or transitioning between Phase 1 (laminated proof run) and Phase 2 (Kickstarter launch)
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Choreo Cards Kickstarter Campaign
 
 Track and advance the Kickstarter campaign for physical TKA Choreo Card decks.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Service Naming"
+  short_description: "Creating or renaming service classes"
+  default_prompt: "Use $service-naming to apply the Service Naming workflow to this task."

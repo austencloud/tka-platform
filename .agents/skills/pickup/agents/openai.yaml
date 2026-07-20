@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pick Up a Handoff"
+  short_description: "Picking up another agent's handoff"
+  default_prompt: "Use $pickup to apply the Pick Up a Handoff workflow to this task."

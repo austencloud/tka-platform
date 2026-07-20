@@ -3,13 +3,15 @@ name: release
 description: Use when packaging and publishing a new version with changelog and GitHub release
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Release Command
 
 ## Step 1: Gather All Changes
 
 Always gather BOTH sources - not everything goes through feedback.
 
-```bash
+```powershell
 # Preview release (shows completed feedback)
 node scripts/release.js --dry-run
 
@@ -57,7 +59,7 @@ Present:
 
 ## Step 4: Get Confirmation
 
-Use AskUserQuestion with options:
+Ask the user to choose one of these options:
 1. "Yes, release now"
 2. "Change version number"
 3. "Edit changelog"
@@ -65,14 +67,18 @@ Use AskUserQuestion with options:
 
 ## Step 5: Execute Release
 
-```bash
-cat > .release-changelog.json << 'EOF'
+Create `.release-changelog.json` with `apply_patch` using this shape:
+
+```json
 [
   { "category": "fixed", "text": "Your polished fix description" },
   { "category": "added", "text": "Your polished feature description" }
 ]
-EOF
+```
 
+Then run:
+
+```powershell
 node scripts/release.js --confirm --changelog .release-changelog.json --highlights 1,3 --version X.Y.Z --from-main
 ```
 
@@ -83,27 +89,34 @@ node scripts/release.js --confirm --changelog .release-changelog.json --highligh
 
 ## Step 6: Push and Create GitHub Release
 
-```bash
-git push origin main && git push origin vX.Y.Z
+```powershell
+git push origin main
+git push origin vX.Y.Z
 ```
 
 **A release is NOT complete until the GitHub Release is created:**
 
-```bash
-gh release create vX.Y.Z --title "vX.Y.Z" -F - <<EOF
+Create `.release-notes.md` with `apply_patch`:
+
+```markdown
 ## What's New
 ### Fixed
 - [descriptions]
 ### Added
 - [descriptions]
-EOF
+```
+
+Then run:
+
+```powershell
+gh release create vX.Y.Z --title "vX.Y.Z" -F .release-notes.md
 ```
 
 ## Step 7: Archive and Sync
 
-```bash
+```powershell
 node scripts/archive-feedback.js X.Y.Z
-git checkout develop && git merge main && git push
+git push origin main
 ```
 
 ---

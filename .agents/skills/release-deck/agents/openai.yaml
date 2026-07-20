@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deck Release Pipeline"
+  short_description: "Wants to create a printable deck, release to Firestore"
+  default_prompt: "Use $release-deck to apply the Deck Release Pipeline workflow to this task."

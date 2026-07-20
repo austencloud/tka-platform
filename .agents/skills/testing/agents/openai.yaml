@@ -1,0 +1,4 @@
+interface:
+  display_name: "Testing Philosophy"
+  short_description: "Run the Testing Philosophy workflow"
+  default_prompt: "Use $testing to apply the Testing Philosophy workflow to this task."

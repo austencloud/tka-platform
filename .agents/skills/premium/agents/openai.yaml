@@ -1,0 +1,4 @@
+interface:
+  display_name: "Premium Gating"
+  short_description: "Checking premium gating status"
+  default_prompt: "Use $premium to apply the Premium Gating workflow to this task."

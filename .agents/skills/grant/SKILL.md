@@ -3,7 +3,11 @@ name: grant
 description: Use when working on grant applications, checking deadlines, or drafting proposal sections
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Grant Tracker & Drafting Assistant
+
+When explicitly invoked, treat the text after `$grant` as `<arguments>`. Expected shape: `[status|deadlines|<id>|<id> draft|<id> status <new-status>|add|research <query>]`.
 
 Manage grant applications from discovery through submission, with section-by-section drafting workshops.
 
@@ -17,17 +21,17 @@ Manage grant applications from discovery through submission, with section-by-sec
 
 | Command | What it does |
 |---------|-------------|
-| `/grant` or `/grant status` | Dashboard with all grants, deadlines, days remaining |
-| `/grant deadlines` | Upcoming deadlines sorted by urgency with alerts |
-| `/grant <id>` | Full details for a specific grant (e.g., `/grant CC`) |
-| `/grant <id> draft` | Start or continue section-by-section drafting workshop |
-| `/grant <id> status <status>` | Update status |
-| `/grant add` | Add a new grant opportunity interactively |
-| `/grant research <query>` | Web search for new opportunities matching Austen's profile |
+| `$grant` or `$grant status` | Dashboard with all grants, deadlines, days remaining |
+| `$grant deadlines` | Upcoming deadlines sorted by urgency with alerts |
+| `$grant <id>` | Full details for a specific grant (e.g., `$grant CC`) |
+| `$grant <id> draft` | Start or continue section-by-section drafting workshop |
+| `$grant <id> status <status>` | Update status |
+| `$grant add` | Add a new grant opportunity interactively |
+| `$grant research <query>` | Web search for new opportunities matching Austen's profile |
 
 ## Arguments
 
-$ARGUMENTS - Command and optional grant ID or query
+<arguments> - Command and optional grant ID or query
 
 ## Instructions
 
@@ -69,4 +73,4 @@ Web search for grants matching the query plus Austen's profile (individual artis
 
 ## Urgency Protocol
 
-When any grant is CRITICAL (under 7 days), display a prominent alert with grant name, days remaining, sections complete, and a pointer to `/grant <id> draft`.
+When any grant is CRITICAL (under 7 days), display a prominent alert with grant name, days remaining, sections complete, and a pointer to `$grant <id> draft`.

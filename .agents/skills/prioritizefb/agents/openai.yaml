@@ -1,0 +1,4 @@
+interface:
+  display_name: "Prioritize Feedback"
+  short_description: "Feedback items lack priority and need triage"
+  default_prompt: "Use $prioritizefb to apply the Prioritize Feedback workflow to this task."

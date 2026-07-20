@@ -1,0 +1,4 @@
+interface:
+  display_name: "Grant Tracker & Drafting Assistant"
+  short_description: "Working on grant applications, checking deadlines"
+  default_prompt: "Use $grant to apply the Grant Tracker & Drafting Assistant workflow to this task."

@@ -1,39 +1,58 @@
 ---
 name: code-style
-description: Use when writing or editing TypeScript/Svelte code in this project. Covers project-specific architectural decisions that differ from defaults — module singleton getters for service access, no utils/helpers directories, no barrel exports, and the conversational commenting style.
+description: Use when writing or editing TypeScript/Svelte code in this project. Covers project-specific architectural decisions — module-level singleton getters, pure-function modules vs stateful services, no barrel exports, and the conversational commenting style.
 ---
+
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # TKA Code Style
 
 Project-specific architectural decisions. Standard engineering wisdom (single responsibility, descriptive names, strict types) is assumed.
 
-## Service Access: Module Singleton Getters
+## Services: Module-Level Singleton Getters
 
-Services are accessed via colocated getter functions — no central container, no DI framework.
+Services are module-level singletons accessed via colocated getter functions. No DI containers, no `iti` package.
 
 ```typescript
-// Getter file — lives next to the implementation
-// src/lib/features/your-module/services/getYourService.ts
-import { browser } from '$app/environment';
-import { YourService } from './implementations/YourService';
+// src/lib/shared/<domain>/getYourService.ts
+import { YourService } from './services/implementations/YourService';
 
 let instance: YourService | null = null;
-
 export function getYourService(): YourService {
-  if (!browser) throw new Error('getYourService() is browser-only');
-  return instance ??= new YourService();
+  if (!instance) instance = new YourService();
+  return instance;
 }
 
-// Consumer
-import { getYourService } from '$lib/features/your-module/services/getYourService';
+// consumer
+import { getYourService } from '$lib/shared/<domain>/getYourService';
 const myService = getYourService();
 ```
 
-Every service: interface in `services/contracts/IName.ts`, implementation in `services/implementations/Name.ts`, getter colocated in the same services directory. Side-effect wiring (if any) lives in `src/lib/shared/bootstrap.ts`.
+Every service: interface in `services/contracts/IName.ts`, implementation in `services/implementations/Name.ts`, getter in a colocated `get*.ts` file.
 
-## Never Create Utility Files
+## Pure Functions vs Services
 
-No `utils/`, `helpers/`, or `hooks/` directories. No standalone pure functions in random files. If you think you need a utility, you need a service class with a module singleton getter.
+A stateless pure function belongs in a plain module named for what it holds —
+`seeded-rng.ts`, `canonical-json.ts`, `relative-time.ts`. Ship it as a
+tree-shakeable named export, colocated with the domain that owns it. Do **not**
+wrap a pure function in a singleton class: a function with no state, lifecycle,
+or dependencies gains nothing from `getThingService().doThing()` and loses
+tree-shaking. That ceremony is a Java-ism, not 2026 TS.
+
+A `utils/` folder is fine when its name is honest — pure, stateless helpers
+grouped by a real theme, each filename saying what's inside. Two things are
+banned, and they are what "no utils dump" actually means:
+
+1. **Junk-drawer naming.** A generic `utils.ts` / `helpers.ts` where unrelated
+   functions accumulate. Split by theme; name each file for its contents.
+2. **Stateful logic disguised as a utility.** Anything that holds a cache, owns
+   a lifecycle, carries dependencies, or coordinates other services is a
+   service, not a util — give it a verb-named class and a singleton getter (see
+   above). A "workflow", "manager", "loader", or "cache" living as loose
+   functions in `utils/` is the smell.
+
+Rule of thumb: stateless transform → plain function module; stateful concern →
+service.
 
 ## No Barrel Exports
 

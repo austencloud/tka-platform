@@ -1,12 +1,15 @@
 ---
-description: Use when starting a session and needing to pick work, when asking what to work on next, when triaging or re-scoring specs, or when user says /queue
+name: queue
+description: Use when starting a session and needing to pick work, when asking what to work on next, when triaging or re-scoring specs, or when user says $queue
 ---
+
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # Spec Queue
 
 ## Default Behavior: PICK AND GO
 
-When invoked without arguments (`/queue`):
+When invoked without arguments (`$queue`):
 
 1. Read frontmatter from every `.md` in `docs/superpowers/specs/backlog/` and `docs/superpowers/specs/active/` (typically ~57 files, ~3K tokens — not worth optimizing)
 2. Compute score for each: `value × effort_multiplier` (see Scoring table)
@@ -23,22 +26,22 @@ If the user wants to override: they'll say so.
 
 At >60% context usage, prefer XS/S specs over L/XL — an XS close-out is more valuable than starting an L that can't finish this session. Mention the constraint: "Context is at ~70%, picking XS/S items."
 
-## `/queue list` — Full Ranked View
+## `$queue list` — Full Ranked View
 
-Only when the user explicitly asks to see the queue (`/queue list`, "show me the queue", "what's in the backlog"):
+Only when the user explicitly asks to see the queue (`$queue list`, "show me the queue", "what's in the backlog"):
 
 1. Read frontmatter from all specs in `active/` and `backlog/`
 2. Compute scores at read time (no stored `score` field)
 3. Output the compact ranked table (see Output Format below)
 
-## `/queue triage [spec-name]` — Re-Score a Spec
+## `$queue triage [spec-name]` — Re-Score a Spec
 
 1. Read the full spec + grep git log for recent commits touching its deliverables
 2. Update frontmatter: value, effort, remaining, last_triaged (today's date)
 3. If all remaining work is done → `git mv` to `shipped/`, clear `remaining`
 4. If blocked → set `depends_on` to the blocking spec path or `external: <description>`
 
-## `/queue claim` — Parallel Agent Safety
+## `$queue claim` — Parallel Agent Safety
 
 When starting work on a spec, write a claim file:
 
@@ -99,7 +102,7 @@ Score = `value × effort_multiplier`. Higher = better ROI.
 
 Weights are intentionally steep: an XS task at value 3 (score 15) outranks an L task at value 4 (score 8). This matches the reality that small completable items deliver more value per session than ambitious starts.
 
-## Output Format (for `/queue list` only)
+## Output Format (for `$queue list` only)
 
 ```
 ## ACTIVE (N specs)
@@ -140,7 +143,7 @@ When writing a new spec via brainstorming:
 
 Update a spec's `remaining` field whenever:
 - A commit touches files that are deliverables of that spec
-- A `/queue triage` is run on the spec
+- A `$queue triage` is run on the spec
 - Work on the spec completes or pauses
 
 The `remaining` field is the resume point for the next agent. It must be specific enough that a cold-start agent can pick up without re-reading the full spec.

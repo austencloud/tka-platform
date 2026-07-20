@@ -1,0 +1,4 @@
+interface:
+  display_name: "Museum Writer"
+  short_description: "Writing museum exhibit text"
+  default_prompt: "Use $museum-writer to apply the Museum Writer workflow to this task."

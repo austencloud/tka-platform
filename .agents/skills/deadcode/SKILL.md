@@ -3,13 +3,13 @@ name: deadcode
 description: Use when cleaning up unused code, after major refactors, or during codebase hygiene passes
 ---
 
-<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # Dead Code Detection
 
 ## Run
 
-```bash
+```powershell
 npx -p @austencloud/code-quality ac-deadcode --auto-claim
 ```
 
@@ -35,7 +35,7 @@ Each scope can only be claimed by one agent at a time. Claims expire after 2 hou
 ### DELETE when:
 - File has no imports anywhere in codebase
 - Exports are not used by any other file
-- File is not an entry point (route, hook, singleton getter)
+- File is not an entry point (route, hook, service getter)
 - Not referenced in any config file
 
 ### DEFER when:
@@ -46,16 +46,16 @@ Each scope can only be claimed by one agent at a time. Claims expire after 2 hou
 
 ### FALSE POSITIVE when:
 - Dynamic imports (`await import(...)`)
-- Entry points (routes, hooks, singleton getters)
+- Entry points (routes, hooks, service getters)
 - Files referenced in configs (vite.config.ts, etc.)
 - Test utilities only used by test files
 - Type-only files used via `/// <reference types="..." />`
 
 ## Marking Decisions
 
-```bash
+```powershell
 # DELETE - remove the file
-rm "src/lib/path/to/file.ts"
+Remove-Item -LiteralPath "src/lib/path/to/file.ts"
 
 # FALSE POSITIVE - won't appear again
 npx -p @austencloud/code-quality ac-deadcode --false-positive "src/lib/path/to/file.ts"
@@ -65,7 +65,7 @@ npx -p @austencloud/code-quality ac-deadcode --false-positive "src/lib/path/to/f
 
 ## Completing a Scope
 
-```bash
+```powershell
 npx -p @austencloud/code-quality ac-deadcode --release <scope>
 ```
 
@@ -74,6 +74,7 @@ Report summary: how many reviewed, deleted, false positive, deferred.
 ## What NOT to Delete
 
 Even if flagged as dead, never delete without checking:
+- Service getter files (`get*.ts` in `src/lib/shared/`)
 - Files in `src/routes/` - SvelteKit routing
 - Files with `// @ts-nocheck` at top
 - Anything the user says "wait, we need that"
@@ -90,7 +91,7 @@ Always manually verify before deleting files with confidence < 80%.
 
 ## Commands Reference
 
-```bash
+```powershell
 # Start working
 npx -p @austencloud/code-quality ac-deadcode --auto-claim
 

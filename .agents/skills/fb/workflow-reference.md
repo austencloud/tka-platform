@@ -4,64 +4,20 @@ Detailed workflows, claim health, delegation, state machine, and commands.
 
 ---
 
-## Auto-Select Workflow (no argument)
+## Fetch and triage
 
-### Step 1: Check for in-progress items
+The top-level `$fb` workflow performs exactly one initial fetch command. Do
+not run `whoami`, `mine`, `list`, or per-item detail calls before it.
 
-```bash
-node scripts/fetch-feedback.js mine
-```
+| Input | Single initial command |
+|---|---|
+| No argument | `node scripts/fetch-feedback.js` |
+| Feedback ID | `node scripts/fetch-feedback.js claim <id>` |
+| `list` | `node scripts/fetch-feedback.js list` |
 
-**If items found:**
-
-1. Fetch full details for EACH in-progress item (the `mine` list is truncated):
-   ```bash
-   node scripts/fetch-feedback.js <id>
-   ```
-2. Display full details so the user understands each item.
-3. Ask: "This item is in-progress from another session (claim token `[xxxxxxxx]`). Want me to continue working on it, or skip to unclaimed items?"
-
-The claim token identifies which session owns the claim. If another agent is actively working on it in a different terminal, they should finish. But often in-progress items are from dead/disconnected sessions.
-
-**If user says continue:**
-1. Try: `node scripts/fetch-feedback.js claim <id>`
-2. If claim succeeds -> proceed with work
-3. If claim fails with "active work in progress" -> the claim is still fresh (<45 min activity)
-   - **DO NOT bypass the protection** - this would steal another agent's active work
-   - Tell the user the options:
-     a. "Wait for the claim to become stale (45 min inactivity)"
-     b. "Submit a claim request: `request-claim <id> 'reason'` (starts 15-min countdown)"
-     c. "Emergency takeover: `unclaim <id> --emergency 'reason'` (audited, requires justification)"
-   - **Only the USER can decide to force or use emergency** - never do it automatically
-
-**If user says skip:** Proceed to Step 2.
-
-**If no in-progress items found:** Proceed to Step 2.
-
-### Step 2: Auto-select a new item
-
-Run `node scripts/fetch-feedback.js list` to show the feedback queue.
-
-**Auto-delete obvious test submissions** before selecting (e.g., "This is a test", "asdfgh"). Only delete when 99%+ confident it's a test:
-```bash
-node scripts/fetch-feedback.js delete <id>
-```
-
-**Auto-select priority:**
-1. ONLY select from "new" (unclaimed) items
-2. Bugs first (affect current users)
-3. Higher priority (high > medium > low > unset)
-4. Skip incomplete metadata (`--title` or `--description` placeholders)
-
-**STOP OVERTHINKING. JUST PICK ONE.**
-- Look at the list ONCE, pick the FIRST viable item
-- "Too complex for one session" is NOT a reason to skip
-- Large features are fine - break into subtasks and make progress
-
-After selecting, announce with a 1-sentence rationale, then claim:
-```bash
-node scripts/fetch-feedback.js claim <id>
-```
+Use that command's complete output for the display and complexity triage. If it
+reports an active claim owned by another session, do not bypass the protection.
+Only the user can authorize a claim request or emergency takeover.
 
 ---
 
@@ -69,7 +25,7 @@ node scripts/fetch-feedback.js claim <id>
 
 Claims go stale after 45 minutes of inactivity. Keep yours active:
 
-```bash
+```powershell
 # Heartbeat every 30 min while working
 node scripts/fetch-feedback.js heartbeat <id> "Brief status message"
 
@@ -82,26 +38,20 @@ node scripts/fetch-feedback.js journal <id>
 
 ---
 
-## Delegating to Subagents
+## Delegating to subagents
 
-For TRIVIAL/MEDIUM items, delegate via Task:
+For an independent TRIVIAL or MEDIUM implementation, delegate to a Codex
+worker only when the user or applicable project instructions request subagent
+work. Give the worker:
 
-```typescript
-Task({
-  subagent_type: "general-purpose",
-  model: "haiku" or "sonnet",
-  description: "Fix/Implement [short description]",
-  prompt: `
-    Feedback ID: <id>
-    Task: [description]
-    File(s): [paths]
-    Expected behavior: [what should happen]
+- feedback ID;
+- task and expected behavior;
+- exact file scope;
+- required verification;
+- the command that moves the item to `in-review` after verified completion.
 
-    After completing:
-    node scripts/fetch-feedback.js <id> in-review "[admin notes]"
-  `
-})
-```
+Do not route by Anthropic model names. Let the selected Codex agent configuration
+or current session choose the model and reasoning effort.
 
 ---
 
@@ -123,14 +73,14 @@ Invalid transitions are blocked. You cannot skip steps (e.g., `new` -> `complete
 
 1. Move to review: `node scripts/fetch-feedback.js <id> in-review "Brief admin notes"`
 2. Summarize what changed
-3. Give clear testing steps
-4. Describe expected behavior
+3. Include the verification evidence you gathered
+4. Describe observed behavior; if visual verification still needs user action, name one specific check
 
 ---
 
 ## Commands Reference
 
-```bash
+```powershell
 # Queue
 node scripts/fetch-feedback.js              # Auto-claim next
 node scripts/fetch-feedback.js claim <id>   # Claim specific

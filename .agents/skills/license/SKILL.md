@@ -1,11 +1,15 @@
 ---
+name: license
 description: Use when auditing, reviewing, or fixing license compliance across the monorepo. Checks package.json fields, LICENSE files, root LICENSE references, dependency licenses, and npm publish readiness.
-argument-hint: "[audit|fix|deps|check <package>]"
 ---
+
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # License Audit
 
-**Args:** `$ARGUMENTS` — `audit` (default), `fix`, `deps`, or `check <package-path>`
+When explicitly invoked, treat the text after `$license` as `<arguments>`. Expected shape: `[audit|fix|deps|check <package>]`.
+
+**Args:** `<arguments>` — `audit` (default), `fix`, `deps`, or `check <package-path>`
 
 ## Source of Truth
 
@@ -32,7 +36,7 @@ Run all checks, report findings. No changes.
 For every `packages/*/package.json`, `mcp-server/package.json`, `mcp-server-pkg/package.json`, `deployment/functions/package.json`, `flowtrails/package.json`, and root `package.json`:
 
 ```
-Grep for "license" in all package.json files
+Search for "license" in all package.json files
 ```
 
 Compare each against the License Map. Flag mismatches.
@@ -80,8 +84,8 @@ Run `audit` first, then fix every finding:
 
 Check all production dependencies for license compatibility.
 
-```bash
-cd E:/tka-platform && npx license-checker --production --summary 2>/dev/null || echo "license-checker not installed"
+```powershell
+pnpm exec license-checker --production --summary
 ```
 
 If `license-checker` not available, manually scan `node_modules/*/package.json` license fields. Flag:

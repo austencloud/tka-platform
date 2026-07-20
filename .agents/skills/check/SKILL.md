@@ -3,13 +3,13 @@ name: check
 description: Use when TypeScript errors need analysis and fixing, or after large refactors
 ---
 
-<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # TypeScript Check
 
 ## Run
 
-```bash
+```powershell
 npx tsc --noEmit
 ```
 
@@ -19,8 +19,8 @@ npx tsc --noEmit
 |--------|----------|
 | <10 simple | Fix directly |
 | 10-30 independent | 2-4 parallel subagents |
-| 30-50 moderate | 4-8 parallel subagents |
-| >50 or complex | Multiple sessions |
+| 30-50 moderate | Parallel subagents up to the available concurrency limit |
+| >50 or complex | Root-cause batches with focused verification after each batch |
 
 ## Workflow
 

@@ -1,0 +1,123 @@
+diff --git a/codex-rs/tui/src/bottom_pane/status_line_style.rs b/codex-rs/tui/src/bottom_pane/status_line_style.rs
+index 4198943a4..725ff42c6 100644
+--- a/codex-rs/tui/src/bottom_pane/status_line_style.rs
++++ b/codex-rs/tui/src/bottom_pane/status_line_style.rs
+@@ -10,6 +10,9 @@ use super::status_line_setup::StatusLineItem;
+ use crate::render::highlight::foreground_style_for_scopes;
+ 
+ const STATUS_LINE_SEPARATOR: &str = " · ";
++const USAGE_METER_CELLS: usize = 10;
++const USAGE_WARNING_PERCENT: u8 = 60;
++const USAGE_DANGER_PERCENT: u8 = 85;
+ const STATUS_LINE_COLOR_SATURATION_PERCENT: u16 = 85;
+ const STATUS_LINE_COLOR_BRIGHTNESS_PERCENT: u16 = 100;
+ 
+@@ -104,6 +107,10 @@ where
+         if !spans.is_empty() {
+             spans.push(STATUS_LINE_SEPARATOR.dim());
+         }
++        if let Some((label, percent)) = usage_meter(item, &text) {
++            append_usage_meter(&mut spans, label, percent);
++            continue;
++        }
+         let style = if use_theme_colors {
+             let accent = StatusLineAccent::for_item(item);
+             soften_status_line_style(
+@@ -123,6 +130,51 @@ where
+     (!spans.is_empty()).then(|| Line::from(spans))
+ }
+ 
++fn usage_meter(item: StatusLineItem, text: &str) -> Option<(&'static str, u8)> {
++    let displayed_percent = percent_from_text(text)?;
++    let (label, used_percent) = match item {
++        StatusLineItem::ContextUsed => ("ctx", displayed_percent),
++        StatusLineItem::ContextRemaining => ("ctx", 100_u8.saturating_sub(displayed_percent)),
++        StatusLineItem::FiveHourLimit => ("5h", 100_u8.saturating_sub(displayed_percent)),
++        StatusLineItem::WeeklyLimit => ("7d", 100_u8.saturating_sub(displayed_percent)),
++        _ => return None,
++    };
++    Some((label, used_percent.min(100)))
++}
++
++fn percent_from_text(text: &str) -> Option<u8> {
++    let percent_sign = text.find('%')?;
++    let digits = text[..percent_sign]
++        .chars()
++        .rev()
++        .take_while(|character| character.is_ascii_digit())
++        .collect::<String>()
++        .chars()
++        .rev()
++        .collect::<String>();
++    digits.parse().ok()
++}
++
++fn append_usage_meter(spans: &mut Vec<Span<'static>>, label: &'static str, percent: u8) {
++    let filled = ((usize::from(percent) * USAGE_METER_CELLS + 50) / 100).min(USAGE_METER_CELLS);
++    let color = match percent {
++        USAGE_DANGER_PERCENT..=u8::MAX => Color::Red,
++        USAGE_WARNING_PERCENT..USAGE_DANGER_PERCENT => Color::Rgb(255, 165, 0),
++        _ => Color::Green,
++    };
++    let active = Style::default().fg(color);
++    let track = Style::default().fg(Color::DarkGray);
++
++    spans.push(Span::styled(format!("{label} ["), active));
++    if filled > 0 {
++        spans.push(Span::styled("█".repeat(filled), active));
++    }
++    if filled < USAGE_METER_CELLS {
++        spans.push(Span::styled("░".repeat(USAGE_METER_CELLS - filled), track));
++    }
++    spans.push(Span::styled(format!("] {percent}%"), active));
++}
++
+ fn soften_status_line_style(mut style: Style) -> Style {
+     if let Some(fg) = style.fg {
+         style.fg = Some(soften_status_line_color(fg));
+@@ -229,6 +281,7 @@ mod tests {
+         assert_eq!(line.spans[0].style.fg, Some(Color::Red));
+         assert!(!line.spans[0].style.add_modifier.contains(Modifier::DIM));
+         assert!(line.spans[1].style.add_modifier.contains(Modifier::DIM));
++        assert_eq!(line_text(&line), "gpt-5 · ctx [█░░░░░░░░░] 12%");
+         assert_eq!(line.spans[2].style.fg, Some(Color::Green));
+         assert!(!line.spans[2].style.add_modifier.contains(Modifier::DIM));
+     }
+@@ -259,12 +312,34 @@ mod tests {
+         )
+         .expect("status line");
+ 
+-        assert_eq!(line_text(&line), "gpt-5 · Context 12% used");
++        assert_eq!(line_text(&line), "gpt-5 · ctx [█░░░░░░░░░] 12%");
+         assert_eq!(line.spans[0].style.fg, None);
+         assert!(line.spans[0].style.add_modifier.contains(Modifier::DIM));
+         assert!(line.spans[1].style.add_modifier.contains(Modifier::DIM));
+-        assert_eq!(line.spans[2].style.fg, None);
+-        assert!(line.spans[2].style.add_modifier.contains(Modifier::DIM));
++        assert_eq!(line.spans[2].style.fg, Some(Color::Green));
++        assert!(!line.spans[2].style.add_modifier.contains(Modifier::DIM));
++    }
++
++    #[test]
++    fn usage_meters_fill_toward_danger_and_change_color_at_thresholds() {
++        let line = status_line_from_segments_with_resolver(
++            [
++                (StatusLineItem::ContextUsed, "Context 39% used".to_string()),
++                (StatusLineItem::FiveHourLimit, "5h 30% left".to_string()),
++                (StatusLineItem::WeeklyLimit, "weekly 14% left".to_string()),
++            ],
++            false,
++            |_| None,
++        )
++        .expect("status line");
++
++        assert_eq!(
++            line_text(&line),
++            "ctx [████░░░░░░] 39% · 5h [███████░░░] 70% · 7d [█████████░] 86%"
++        );
++        assert_eq!(line.spans[0].style.fg, Some(Color::Green));
++        assert_eq!(line.spans[5].style.fg, Some(Color::Rgb(255, 165, 0)));
++        assert_eq!(line.spans[10].style.fg, Some(Color::Red));
+     }
+ 
+     #[test]

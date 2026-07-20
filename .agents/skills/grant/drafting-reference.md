@@ -31,7 +31,7 @@
 
 ### Drafting Rules
 
-1. **Sound like Austen, not like a grant writer.** Direct, confident, no art-speak. Apply every rule from the AI-isms section of CLAUDE.md. If a sentence could appear in any grant application for any project, rewrite it until it couldn't.
+1. **Sound like Austen, not like a grant writer.** Direct, confident, no art-speak. Apply every rule from the AI-isms section of AGENTS.md. If a sentence could appear in any grant application for any project, rewrite it until it couldn't.
 
 2. **Be specific about what exists.** Flow Arts Composer is a working web application. The notation system has defined letter forms, position classifications, and rotation tracking. The museum game has a 350-line story bible. Say what's real.
 

@@ -3,87 +3,40 @@ name: screenshots
 description: Use when checking layout across devices, debugging responsive issues, or capturing pre-release screenshots
 ---
 
-# Multi-Device Screenshots
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
-See how any page looks across 9 devices at once. For layout debugging and regression testing.
+# Browser Screenshots
 
-## Usage
+Inspect responsive layouts with the repo-approved browser surface. Never run the
+standalone Playwright screenshot pipeline.
 
-- `/screenshots compose/arrange` - Capture the Arrange tab across all devices
-- `/screenshots browse` - All Browse module tabs
-- `/screenshots --public landing` - Just the landing page (no auth needed)
-- `/screenshots --compare` - Diff against baselines
+## Permission gate
 
-## How It Works
+- Treat an explicit request to capture or test a page as permission for the
+  read-only inspection needed by that request.
+- Before navigating, clicking, typing, or filling, confirm that the user gave
+  explicit permission in the current conversation. If they did not, ask once
+  and stop before the interactive action.
+- Never inspect cookies, local storage, passwords, or browser profiles.
 
-Run the Playwright pipeline and open the gallery:
+## Workflow
 
-```bash
-npx tsx scripts/take-screenshots.ts [args]
-```
+1. Load and follow the available browser-control skill before browser work.
+2. Reuse the user's server at `https://localhost:5173`; never start, stop, or
+   restart it.
+3. Read the selected browser's complete runtime documentation before invoking
+   its viewport, navigation, inspection, or screenshot APIs.
+4. Capture only the requested routes and viewport families. Prefer the smallest
+   useful set: one narrow phone, one wide phone, one tablet, and one desktop.
+5. Check visible layout, console errors, overflow, touch targets, and text size.
+6. Report the exact route and viewport for every finding. A screenshot proves
+   appearance only; use DOM or runtime evidence for behavior claims.
 
-The script handles auth, wizard dismissal, navigation, stabilization, capture, and gallery generation. Gallery auto-opens in the browser.
+## Invocation examples
 
-## Common Patterns
+- `$screenshots compose/arrange`: inspect Arrange at representative widths.
+- `$screenshots --public landing`: inspect the public landing route.
+- `$screenshots browse`: inspect the Browse module routes requested by the user.
 
-```bash
-# Layout debugging: one module across all devices
-npx tsx scripts/take-screenshots.ts compose--arrange
-
-# Quick check: one module, phones only
-npx tsx scripts/take-screenshots.ts --devices phone compose--arrange
-
-# Pre-release: everything
-npx tsx scripts/take-screenshots.ts
-
-# Regression: compare against baselines
-npx tsx scripts/take-screenshots.ts --compare
-
-# Save baselines after a release
-npx tsx scripts/take-screenshots.ts --update-baselines
-```
-
-## Flags
-
-| Flag | Effect |
-|------|--------|
-| `--devices phone` | Phone devices only (SE, 16 Pro, 16 Pro Max, S24, S24 Ultra) |
-| `--devices tablet` | Tablets only (iPad Mini, iPad Air) |
-| `--devices desktop` | Desktops only (HD 1366x768, FHD 1920x1080) |
-| `--devices ipad-air` | Single specific device |
-| `--public` | Public routes only, skip auth |
-| `--compare` | Pixel-diff against baselines |
-| `--update-baselines` | Save current as reference screenshots |
-| `--light` | Light mode (default: dark) |
-| `--landscape` | Include landscape captures |
-
-Route arguments match against module name, tab name, or label:
-`compose`, `arrange`, `compose--arrange`, `browse--gallery` all work.
-
-## Prerequisites
-
-1. Dev server on port 5173 (user's VS Code server — NEVER run `npm run dev`)
-2. Playwright: `npx playwright install chromium` (one-time)
-3. Auth credentials at `tests/screenshots/credentials.local.json`:
-   ```json
-   { "email": "tka-screenshot-bot@test.com", "password": "ScreenshotTest2026!" }
-   ```
-
-## Output
-
-- `tests/screenshots/captures/` — PNGs named `{route}--{device}.png`
-- `tests/screenshots/gallery.html` — Interactive gallery with filters
-
-## Adding Routes
-
-Edit `tests/screenshots/devices.ts`. The `waitSelector` is optional — if it doesn't match, the screenshot still captures (with a warning). Don't let selector maintenance block you from adding routes.
-
-## Key Files
-
-| File | Purpose |
-|------|---------|
-| `scripts/take-screenshots.ts` | CLI entry point, arg parsing |
-| `tests/screenshots/capture.spec.ts` | Playwright spec: auth, navigation, stabilization, capture |
-| `tests/screenshots/devices.ts` | Device presets, route definitions, storage key validation |
-| `tests/screenshots/generate-gallery.ts` | HTML gallery generator |
-| `tests/screenshots/credentials.local.json` | Auth credentials (gitignored) |
+If the required browser surface is unavailable, stop and report that blocker.
+Do not fall back to standalone Playwright or a shell-driven browser.

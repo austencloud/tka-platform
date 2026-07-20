@@ -1,0 +1,4 @@
+interface:
+  display_name: "Museum Lore Deep Dive"
+  short_description: "Discussing, analyzing, or brainstorming museum lore"
+  default_prompt: "Use $museum-lore to apply the Museum Lore Deep Dive workflow to this task."

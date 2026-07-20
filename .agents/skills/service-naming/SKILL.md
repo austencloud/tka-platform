@@ -1,7 +1,9 @@
 ---
 name: service-naming
-description: Use when creating or renaming service classes, interfaces, or container registrations. Enforces the "name by what it does" convention — never use "Service" suffix.
+description: Use when creating or renaming service classes, interfaces, or getter functions. Enforces the "name by what it does" convention — never use "Service" suffix.
 ---
+
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # Service Naming
 

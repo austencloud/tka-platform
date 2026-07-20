@@ -7,6 +7,8 @@
   "packageManager": "pnpm@10.28.0",
   "description": "Flow Arts Composer - Browser-based sequence editor for flow arts",
   "scripts": {
+    "skills:sync": "node scripts/sync-codex-skills.mjs",
+    "skills:check": "node scripts/sync-codex-skills.mjs --check",
     "pictograph": "tsx scripts/pictograph-cli.ts",
     "half:templates": "tsx scripts/build-half-arrow-templates.mjs",
     "half:ingest": "tsx scripts/ingest-half-arrows.mjs",

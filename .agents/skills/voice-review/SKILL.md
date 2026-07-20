@@ -3,9 +3,13 @@ name: voice-review
 description: Use when reviewing voice session data for recurring failures, patterns, or T2 promotion candidates
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Voice Session Review
 
-**Args:** `$ARGUMENTS`
+When explicitly invoked, treat the text after `$voice-review` as `<arguments>`. Expected shape: `[analyze|stats|<session-id>]`.
+
+**Args:** `<arguments>`
 
 Subcommands:
 - `analyze` - Cross-session pattern analysis (default)
@@ -31,7 +35,7 @@ Reviews voice command sessions recorded by the Voice Session Analysis System. Id
 ### For `analyze` (default, or no args):
 
 1. **Fetch sessions and run analysis:**
-   ```bash
+   ```powershell
    node scripts/fetch-voice-sessions.cjs analyze --limit 50
    ```
 
@@ -61,7 +65,7 @@ Reviews voice command sessions recorded by the Voice Session Analysis System. Id
 
 ### For `stats`:
 
-```bash
+```powershell
 node scripts/fetch-voice-sessions.cjs stats
 ```
 
@@ -69,7 +73,7 @@ Display the summary and note any concerns.
 
 ### For `<session-id>`:
 
-```bash
+```powershell
 node scripts/fetch-voice-sessions.cjs <session-id> --format md
 ```
 
@@ -96,7 +100,7 @@ Read the target sub-interpreter file first to match the existing pattern format 
 
 If analysis reveals issues that need dedicated work (new command categories, interpreter restructuring), create feedback items:
 
-```bash
+```powershell
 node scripts/fetch-feedback.js submit --type enhancement --module lab --tab voice --title "Add regex for [pattern]" --description "[details]" --priority medium --user austen
 ```
 

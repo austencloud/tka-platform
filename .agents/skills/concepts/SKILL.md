@@ -3,7 +3,11 @@ name: concepts
 description: Use when building, reviewing, or planning any Learn tab concept lesson, or when discussing curriculum design, lesson interactivity, or concept progression
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Concept Lesson Development
+
+When explicitly invoked, treat the text after `$concepts` as `<arguments>`. Expected shape: `[status|next|<concept-id>|philosophy|redesign]`.
 
 Build and track the 28 interactive concept lessons in the Learn tab.
 
@@ -23,16 +27,16 @@ See `interaction-reference.md` in this directory for:
 
 ## Usage
 
-- `/concepts` — Show status dashboard of all 28 concepts
-- `/concepts status` — Same as above
-- `/concepts next` — What concept to build next + design guidance
-- `/concepts <id>` — Deep dive on a specific concept (status, design notes, issues)
-- `/concepts philosophy` — Display the full interaction philosophy
-- `/concepts redesign <id>` — Plan a redesign for an existing concept
+- `$concepts` — Show status dashboard of all 28 concepts
+- `$concepts status` — Same as above
+- `$concepts next` — What concept to build next + design guidance
+- `$concepts <id>` — Deep dive on a specific concept (status, design notes, issues)
+- `$concepts philosophy` — Display the full interaction philosophy
+- `$concepts redesign <id>` — Plan a redesign for an existing concept
 
 ## Arguments
 
-$ARGUMENTS - Command and optional concept ID
+<arguments> - Command and optional concept ID
 
 ## Instructions
 

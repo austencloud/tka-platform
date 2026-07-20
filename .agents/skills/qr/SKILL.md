@@ -1,11 +1,15 @@
 ---
+name: qr
 description: Use when the user wants a QR code for a sequence — "give me a QR for X", "hand me the QR code", "QR I can scan", "make this scannable", a tka.run share link, or testing a card scan flow. Resolves a word/id/short code to a tka.run URL, renders the branded QR locally, and opens it on screen.
-argument-hint: "[word | sequenceId | shortCode | tka.run URL]"
 ---
+
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # QR Code for a Sequence
 
-**Args:** `$ARGUMENTS`
+When explicitly invoked, treat the text after `$qr` as `<arguments>`. Expected shape: `[word | sequenceId | shortCode | tka.run URL]`.
+
+**Args:** `<arguments>`
 
 One command turns "sequence X" into a scannable QR on screen. Everything is
 handled by `scripts/generate-qr.mjs` — do not hand-roll QR generation, short
@@ -13,7 +17,7 @@ code minting, or browser-based rendering.
 
 ## Run it
 
-```bash
+```powershell
 node scripts/generate-qr.mjs <input>
 ```
 

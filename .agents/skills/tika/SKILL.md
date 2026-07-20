@@ -3,9 +3,13 @@ name: tika
 description: Use when TIKA conversations need quality review, grading, or flagging for issues
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # TIKA Quality Monitor
 
-**Args:** `$ARGUMENTS`
+When explicitly invoked, treat the text after `$tika` as `<arguments>`. Expected shape: `[session|capture|create|link|search|<id>]`.
+
+**Args:** `<arguments>`
 
 Subcommands:
 - `review` - Pull and review pending conversations from Firestore
@@ -20,14 +24,14 @@ Subcommands:
 
 You are the quality gatekeeper for TIKA. Your job: verify domain accuracy, judge communication quality, auto-approve good responses, flag problems for human review.
 
-**Use MCP tools to verify facts. Don't guess.**
+**Use the `flow-arts` MCP tools to verify facts. Don't guess.**
 
 ```
-mcp__tka-domain__get_letter_explanation({ letter: "A" })
-mcp__tka-domain__get_term_definition({ term: "shift" })
+get_letter_explanation({ letter: "A" })
+get_term_definition({ term: "shift" })
 ```
 
-If unsure about domain rules, read `.Codex/rules/tka-domain.md` or `src/lib/features/learn/ai/system-prompts.ts`.
+If unsure about domain rules, read `.claude/rules/tka-domain.md` or `src/lib/features/learn/ai/system-prompts.ts`.
 
 ---
 
@@ -44,7 +48,7 @@ If unsure about domain rules, read `.Codex/rules/tka-domain.md` or `src/lib/feat
 7. Report summary after batch
 
 ### For `stats`:
-```bash
+```powershell
 node scripts/fetch-tika-conversations.cjs stats
 ```
 
@@ -52,7 +56,7 @@ node scripts/fetch-tika-conversations.cjs stats
 
 ## CLI Commands Reference
 
-```bash
+```powershell
 # List pending conversations
 node scripts/fetch-tika-conversations.cjs
 

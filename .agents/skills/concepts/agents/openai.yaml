@@ -1,0 +1,4 @@
+interface:
+  display_name: "Concept Lesson Development"
+  short_description: "Run the Concept Lesson Development workflow"
+  default_prompt: "Use $concepts to apply the Concept Lesson Development workflow to this task."

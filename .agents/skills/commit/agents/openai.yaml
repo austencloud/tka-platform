@@ -1,0 +1,4 @@
+interface:
+  display_name: "Smart Commit"
+  short_description: "Committing changes that span multiple concerns or scopes"
+  default_prompt: "Use $commit to apply the Smart Commit workflow to this task."

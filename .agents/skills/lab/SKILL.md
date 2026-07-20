@@ -3,6 +3,8 @@ name: lab
 description: Use when the lab module has accumulated too many tabs and needs cleanup, pruning, or reorganization
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Lab Triage
 
 Systematic triage of the Lab module's experiment tabs. Assess each tab's health, present recommendations, get user approval, then execute.
@@ -83,7 +85,7 @@ Follow the New Module Checklist in `project-patterns.md`. Remove from lab's `tab
 ## Step 6: Verify
 
 After all changes:
-```bash
+```powershell
 npm run check
 npm run build
 ```
@@ -94,5 +96,5 @@ Report final tab count vs. starting count.
 
 - **Never delete without asking.** The user's half-baked ideas are still their ideas.
 - **Batch deletions.** Don't make 34 individual commits. Group by disposition.
-- **Check for orphaned services.** When deleting a feature directory, check for orphaned singleton getter files that are no longer imported.
+- **Check for orphaned services.** When deleting a feature directory, check if its service getters (`get*.ts` files) need cleanup too.
 - **Preserve git history.** Use `git rm` not `rm` so history is preserved.

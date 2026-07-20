@@ -1,0 +1,4 @@
+interface:
+  display_name: "AI Writing Buster"
+  short_description: "Writing or reviewing ANY user-facing text"
+  default_prompt: "Use $ai-bust to apply the AI Writing Buster workflow to this task."

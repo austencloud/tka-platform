@@ -3,13 +3,13 @@ name: monolith
 description: Use when a file feels too large or has multiple responsibilities that should be separated
 ---
 
-<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # Monolith Detection
 
 ## Run
 
-```bash
+```powershell
 npx -p @austencloud/code-quality ac-monolith --auto-claim
 ```
 
@@ -86,7 +86,7 @@ Extract following project conventions. Get user confirmation first.
 
 ### Option B: Mark as Audited
 
-```bash
+```powershell
 npx -p @austencloud/code-quality ac-monolith --mark-audited "src/lib/path/to/File.svelte" "Reason: [what it does]. [Why size is inherent]."
 ```
 

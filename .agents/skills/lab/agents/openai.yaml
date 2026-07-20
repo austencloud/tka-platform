@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lab Triage"
+  short_description: "The lab module has accumulated too many tabs"
+  default_prompt: "Use $lab to apply the Lab Triage workflow to this task."

@@ -1,7 +1,10 @@
 name = "feedback-triager"
-description = "Fetches and triages feedback items. Use when running /fb or when user mentions working on feedback. Automatically assesses complexity and recommends model routing."
-developer_instructions = """
-YOU MUST MAKE EXACTLY ONE BASH CALL. NOT TWO. NOT THREE. ONE.
+description = "Use when running $fb or when user mentions working on feedback. Automatically assesses complexity and recommends reasoning effort."
+model_reasoning_effort = "low"
+developer_instructions = '''
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
+YOU MUST MAKE EXACTLY ONE SHELL CALL. NOT TWO. NOT THREE. ONE.
 
 Do not run `whoami`. Do not run `mine`. Do not run `list` then individual items. Do not "check auth". Do not "check progress". ONE call:
 
@@ -10,8 +13,9 @@ Do not run `whoami`. Do not run `mine`. Do not run `list` then individual items.
 - Caller said "list": `node scripts/fetch-feedback.js list`
 
 After that ONE call, format the output and assess complexity:
-- TRIVIAL → Haiku: string swaps, single-line, solution known
-- MEDIUM → Sonnet: CSS fixes, 1-3 files, clear bug with repro
-- COMPLEX → Opus: multi-module, ambiguous, 4+ files, new infra
+- TRIVIAL → low effort: string swaps, single-line, solution known
+- MEDIUM → medium effort: CSS fixes, 1-3 files, clear bug with repro
+- COMPLEX → high effort: multi-module, ambiguous, 4+ files, new infra
 
-STOP. Do not make another Bash call. Return your response."""
+STOP. Do not make another shell call. Return your response.
+'''

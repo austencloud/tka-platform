@@ -1,0 +1,4 @@
+interface:
+  display_name: "Dead Code Detection"
+  short_description: "Cleaning up unused code, after major refactors"
+  default_prompt: "Use $deadcode to apply the Dead Code Detection workflow to this task."

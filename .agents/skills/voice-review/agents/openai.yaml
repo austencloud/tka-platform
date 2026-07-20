@@ -1,0 +1,4 @@
+interface:
+  display_name: "Voice Session Review"
+  short_description: "Reviewing voice session data for recurring failures, patterns"
+  default_prompt: "Use $voice-review to apply the Voice Session Review workflow to this task."

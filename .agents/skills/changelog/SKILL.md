@@ -3,15 +3,19 @@ name: changelog
 description: Use when preparing release notes or reviewing what changed since last version
 ---
 
-<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # Changelog Generation
 
 ## Run
 
-```bash
-git tag -l "v*" --sort=-version:refname | head -1
-git log $(git tag -l "v*" --sort=-version:refname | head -1)..HEAD --oneline --no-merges
+```powershell
+$latestTag = git tag --list "v*" --sort=-version:refname | Select-Object -First 1
+if ($latestTag) {
+  git log "$latestTag..HEAD" --oneline --no-merges
+} else {
+  git log --oneline --no-merges
+}
 ```
 
 ## Categorize

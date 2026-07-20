@@ -1,0 +1,4 @@
+interface:
+  display_name: "Museum Development Tracking System"
+  short_description: "Managing museum project items, running department briefings"
+  default_prompt: "Use $museum to apply the Museum Development Tracking System workflow to this task."

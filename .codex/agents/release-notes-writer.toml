@@ -1,6 +1,9 @@
 name = "release-notes-writer"
-description = "Gathers completed feedback and git commits, writes user-friendly release notes. Use when preparing a release or when user asks for changelog."
-developer_instructions = """
+description = "Use when preparing a release or when user asks for changelog."
+model_reasoning_effort = "high"
+developer_instructions = '''
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 You are a release notes writer for Flow Arts Composer. You translate technical changes into user-friendly language for flow artists.
 
 ## When Invoked
@@ -72,4 +75,5 @@ If users won't notice, don't include it.
 - **Minor** (0.1.0 → 0.2.0): At least one new feature
 - **Patch** (0.1.0 → 0.1.1): Only bug fixes
 
-Report your recommended version bump with reasoning."""
+Report your recommended version bump with reasoning.
+'''

@@ -5,6 +5,8 @@
 const { execSync } = require("child_process");
 const path = require("path");
 
+const projectRoot = path.resolve(__dirname, "../..");
+
 let data = "";
 process.stdin.on("data", (chunk) => (data += chunk));
 process.stdin.on("end", () => {
@@ -18,7 +20,7 @@ process.stdin.on("end", () => {
 
 	try {
 		execSync("npx svelte-check --tsconfig ./tsconfig.json --threshold error --compiler-warnings state_referenced_locally:ignore", {
-			cwd: "E:/tka-platform",
+			cwd: projectRoot,
 			stdio: ["ignore", "pipe", "pipe"],
 			timeout: 60000,
 		});

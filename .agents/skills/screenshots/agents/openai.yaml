@@ -1,0 +1,4 @@
+interface:
+  display_name: "Browser Screenshots"
+  short_description: "Checking layout across devices, debugging responsive issues"
+  default_prompt: "Use $screenshots to apply the Browser Screenshots workflow to this task."

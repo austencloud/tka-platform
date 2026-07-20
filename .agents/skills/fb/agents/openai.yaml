@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feedback Workflow"
+  short_description: "Starting work from the feedback queue"
+  default_prompt: "Use $fb to apply the Feedback workflow to this task."

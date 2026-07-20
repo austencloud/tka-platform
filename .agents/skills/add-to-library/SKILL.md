@@ -1,17 +1,21 @@
 ---
-description: Use when user pastes sequence data (beat notation, JSON, natural language) and wants it added to their Firestore library
-argument-hint: "[paste sequence data or say 'add to library']"
+name: add-to-library
+description: Use when the user pastes sequence data (beat notation, JSON, natural language) and wants it added to their Firestore library
 ---
+
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # Add to Library
 
-**Args:** `$ARGUMENTS`
+When explicitly invoked, treat the text after `$add-to-library` as `<arguments>`. Expected shape: `[paste sequence data or say 'add to library']`.
+
+**Args:** `<arguments>`
 
 Import a sequence into the user's Firestore library from any input format.
 
 ## Trigger
 
-- `/add-to-library` with sequence data pasted
+- `$add-to-library` with sequence data pasted
 - User says "add this to my library" alongside sequence data
 - User pastes sequence beat notation and asks to save/import it
 
@@ -55,14 +59,14 @@ Construct the JSON object matching the schema in `format-reference.md`. Key rule
 
 ### 5. Write temp file and import
 
-```bash
+```powershell
 # Write JSON to temp file
-# (use Write tool to create tmp-import-<word>.json)
+# (use `apply_patch` to create tmp-import-<word>.json)
 
 # Run import with appropriate flags
 node scripts/import-sequence.cjs tmp-import-<word>.json [--circular] [--loop-type <type>] [--notes "<tagline>"] [--visibility private]
 
-# Clean up temp file (PowerShell: Remove-Item, Bash: rm)
+# Clean up temp file (use PowerShell `Remove-Item` with the exact temporary path)
 ```
 
 Flag rules:

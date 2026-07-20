@@ -3,18 +3,20 @@ name: audit
 description: Use when assessing code quality of a feature or component across 8 dimensions
 ---
 
-<!-- managed by @austencloud/Codex-skills — do not edit manually, run: npx @austencloud/Codex-skills sync -->
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # Audit Command
 
-**Args:** `$ARGUMENTS` (optional: target path, or "list", "targets", "stats", "--auto-claim")
+When explicitly invoked, treat the text after `$audit` as `<arguments>`.
+
+**Args:** `<arguments>` (optional: target path, or "list", "targets", "stats", "--auto-claim")
 
 ## Quick Commands (pass-through)
 
 If the user passes a tracker command directly, just run it:
 
-```bash
-npx -p @austencloud/code-quality ac-audit $ARGUMENTS
+```powershell
+npx -p @austencloud/code-quality ac-audit <arguments>
 ```
 
 This handles: `list`, `targets`, `stats`, `status <target>`, `resolve-issue <target> <index>`
@@ -44,16 +46,16 @@ ac-audit --auto-claim → ac-evidence → audit-evaluator agent → record → p
 
 **No args (auto-select):**
 
-```bash
+```powershell
 npx -p @austencloud/code-quality ac-audit --auto-claim
 ```
 
 Parse `CLAIMED_TARGET:` from output. If `AUTO_CLAIM_TARGET:` appears, the claim succeeded.
 
-**With target specified** (e.g., `/audit src/lib/features/shop`):
+**With target specified** (e.g., `$audit src/lib/features/shop`):
 
-```bash
-npx -p @austencloud/code-quality ac-audit claim "$ARGUMENTS"
+```powershell
+npx -p @austencloud/code-quality ac-audit claim "<arguments>"
 ```
 
 **Large module protection:** If the claim command shows "MODULE TOO LARGE", pick a sub-feature from the list and claim that instead.
@@ -64,7 +66,7 @@ npx -p @austencloud/code-quality ac-audit claim "$ARGUMENTS"
 
 Run the deterministic evidence collector:
 
-```bash
+```powershell
 npx -p @austencloud/code-quality ac-evidence "<target>" --out .audit-evidence.json
 ```
 
@@ -74,7 +76,7 @@ This produces structured JSON with per-dimension findings. No LLM involved. Take
 
 ### Phase 3: Evaluate
 
-Spawn the **audit-evaluator** agent (`subagent_type: "audit-evaluator"`) with the evidence file path and target scope. It returns a scorecard, `GRADES_JSON`, and `ISSUES_JSON` blocks.
+Spawn the **audit-evaluator** agent (the project custom agent) with the evidence file path and target scope. It returns a scorecard, `GRADES_JSON`, and `ISSUES_JSON` blocks.
 
 ---
 
@@ -82,7 +84,7 @@ Spawn the **audit-evaluator** agent (`subagent_type: "audit-evaluator"`) with th
 
 Parse the evaluator's `GRADES_JSON` and `ISSUES_JSON` from its response. Record to tracker:
 
-```bash
+```powershell
 npx -p @austencloud/code-quality ac-audit record "<target>" --grades "<A+,A,A,B,A,A,A+,A>" --issues-json '<json>'
 ```
 
@@ -102,7 +104,7 @@ Show the evaluator's scorecard and issues to the user. Then ask:
 
 ### Phase 6 (Optional): Fix
 
-Spawn the **audit-fixer** agent (`subagent_type: "audit-fixer"`) with the `ISSUES_JSON`. After fixes, re-collect evidence, re-evaluate, re-record, and present before/after.
+Spawn the **audit-fixer** agent (the project custom agent) with the `ISSUES_JSON`. After fixes, re-collect evidence, re-evaluate, re-record, and present before/after.
 
 ## Post-Audit
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Deck Management"
+  short_description: "Enumerating new LOOP decks"
+  default_prompt: "Use $deck to apply the Deck Management workflow to this task."

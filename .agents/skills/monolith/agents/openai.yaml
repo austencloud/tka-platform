@@ -1,0 +1,4 @@
+interface:
+  display_name: "Monolith Detection"
+  short_description: "Run the Monolith Detection workflow"
+  default_prompt: "Use $monolith to apply the Monolith Detection workflow to this task."

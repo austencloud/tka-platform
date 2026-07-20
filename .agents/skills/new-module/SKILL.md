@@ -3,6 +3,8 @@ name: new-module
 description: Use when creating a new feature module in src/lib/features/. Walks through module registration, module-definitions wiring, and service getter setup.
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # New Module Checklist
 
 ## Step 1: Register in `ModuleRenderer.svelte`
@@ -29,22 +31,20 @@ const moduleLoaders = {
 }
 ```
 
-## Step 3: Create service getters (if module has services)
+## Step 3: Add service getters (if module has services)
 
 ```typescript
-// src/lib/features/your-module/services/getYourService.ts
-import { browser } from '$app/environment';
-import { YourService } from './implementations/YourService';
+// src/lib/shared/<domain>/getYourService.ts
+import { YourService } from '$lib/features/your-module/services/implementations/YourService';
 
 let instance: YourService | null = null;
-
 export function getYourService(): YourService {
-  if (!browser) throw new Error('getYourService() is browser-only');
-  return instance ??= new YourService();
+  if (!instance) instance = new YourService();
+  return instance;
 }
 ```
 
-Getter files live next to the implementation they wrap. No central container or container-types file.
+Consumers import the getter directly: `import { getYourService } from '$lib/shared/<domain>/getYourService'`.
 
 ## Navigation is Automatic
 

@@ -3,6 +3,8 @@ name: premium
 description: Use when checking premium gating status, deciding if a feature should be free or premium, or auditing capability flags
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Premium Gating
 
 Philosophy: "Play with everything, pay to take it home."
@@ -21,11 +23,11 @@ Read `src/lib/shared/subscription/domain/capability-nudges.ts` and list all regi
 
 2. **Scan usage**
 
-Grep for `premiumGateChecker.check(` and `premiumGateChecker.isAllowed(` across the codebase. Report each callsite with file and line number.
+Search for `premiumGateChecker.check(` and `premiumGateChecker.isAllowed(` across the codebase. Report each callsite with file and line number.
 
 3. **Scan ungated exports**
 
-Grep for export-related functions (look in `src/lib/shared/sequence-viewer/` and any export/download code paths). Flag any export action that doesn't call the gate checker.
+Search for export-related functions (look in `src/lib/shared/sequence-viewer/` and any export/download code paths). Flag any export action that doesn't call the gate checker.
 
 4. **Check flag registration**
 

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ship Readiness Check"
+  short_description: "A feature needs readiness assessment before shipping to users"
+  default_prompt: "Use $ship to apply the Ship Readiness Check workflow to this task."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "State Management: Factory + Context"
+  short_description: "Run the State Management: Factory + Context workflow"
+  default_prompt: "Use $state-management to apply the State Management: Factory + Context workflow to this task."

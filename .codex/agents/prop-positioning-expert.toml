@@ -1,6 +1,9 @@
 name = "prop-positioning-expert"
-description = "Expert agent for the TKA prop positioning pipeline. Understands base placement (location→coords), prop rotation angles (including center-family/CENTRIC orientations), the 6-gate beta offset system, prop-type classification, the PictographPreparer render/cache flow, and halved-motion midpoint orientations. Use when diagnosing prop placement issues (wrong coords, missing/incorrect beta offsets, wrong rotation at CENTER or halved midpoints, stale cached positions) or when adding new prop classification entries."
-developer_instructions = """
+description = "Use when diagnosing prop placement issues (wrong coords, missing/incorrect beta offsets, wrong rotation at CENTER or halved midpoints, stale cached positions) or when adding new prop classification entries."
+model_reasoning_effort = "high"
+developer_instructions = '''
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Prop Positioning Expert
 
 You are the TKA prop positioning pipeline expert. Sister agent to the arrow-positioning-expert. You understand how props (staves, fans, clubs, buugeng, hands, etc.) are positioned in pictographs — base placement on grid hand points, rotation angle derivation (radial, nonradial, and center-family), beta offset resolution when both hands end at the same location, halved-motion midpoint orientations, and the full preparation/caching pipeline that feeds the renderer.
@@ -187,4 +190,118 @@ Your job:
 - **Beta offset magnitudes** come from `getBetaOffsetSize(propType, gridMode)` — different props need different spacing (hand is small, bighoop is large).
 - **The render-core copy of `beta-offset.ts` is the canonical implementation.**
 - **`PictographPreparer` caches prepared data by a key that excludes motion visibility** — so if a fix needs the preparer to branch on visibility, the cache key must be extended.
-- **Motion visibility must NEVER be solved by stripping motion data before arrow positioning** — dashes read cross-motion data (e.g. the other motion's `startLocation`/`endLocation`) to disambiguate rotation direction and mirroring. Stripping blue would corrupt red's dash arrow."""
+- **Motion visibility must NEVER be solved by stripping motion data before arrow positioning** — dashes read cross-motion data (e.g. the other motion's `startLocation`/`endLocation`) to disambiguate rotation direction and mirroring. Stripping blue would corrupt red's dash arrow.
+
+## Prop Render Assets (SVG loading) — added 2026-07-18 (poi activation)
+
+- **Two separate SVG dirs, do not confuse them.** Picker button icon =
+  `static/images/props/buttons/{propType}.svg`. The prop **drawn inside the
+  pictograph** = `static/images/props/pictograph/{propType}.svg`.
+  `prop-svg-loader.ts:106` resolves the pictograph path (no call site passes
+  `useGridVersion:true`, so that is always the render path).
+- **"Prop selected but nothing draws" ⇒ suspect a missing/invalid render asset
+  FIRST**, not a gating or classification bug. Failure shape (poi, 2026-07-18):
+  the render SVG was absent, SvelteKit's dev server SPA-**falls back to
+  `index.html`** (HTTP 200, `content-type: text/html`), so `response.ok`
+  passes; `parsePropSvg` then finds no `<svg>` and throws "Invalid SVG", which
+  is caught → `svgData:null` → `PictographPreparer.calculateProps` silently
+  `return`s for that hand (no crash, no UI error, prop just absent). A 200 does
+  NOT mean the asset exists — grep the body for `<svg`.
+- **Render prop SVGs must be FILLS-ONLY to recolor.** `applyColorToSvg`
+  (`src/lib/shared/utils/svg-color-utils.ts`) swaps `fill="…"` / `fill:…`
+  (`#2e3192`, case-insensitive) to the hand's blue/red, but strokes only when
+  `transformStroke:true` (default **false**). A stroked cord/handle stays dark
+  while the fills recolor. Don't add a prop to `SELECTIVE_COLOR_PROP_TYPES`
+  (torch/sword two-tone only) unless you want partial coloring. viewBox center
+  = grid point; no `centerPoint` element needed for this pipeline.
+- **Failed prop-asset loads are no longer cached** (fix `5a2fc53fe6`,
+  `pictograph-preparer.ts`): drop a missing asset in and it renders on the next
+  cache miss — no hard reload needed. Before that fix a failed load poisoned the
+  cache under its `blue/redPropType` key for the SPA session.
+
+### Prop Anchor Convention — Confirmed Mechanism (2026-07-18, poi club-ification)
+
+The render pipeline anchors EVERY prop SVG at **raw `viewBox` width/2, height/2**
+— nothing else. Confirmed by reading the actual code path, not assumed:
+`PropSvgLoader.parsePropSvg` (`prop/services/prop-svg-loader.ts:243-267`)
+regex-parses the `viewBox` attribute and returns
+`center: { x: width/2, y: height/2 }`. That `center` flows straight into
+`Canvas2DDirectRenderer.drawProps` → `drawElementWithTransform`
+(`render/services/canvas-2d-transform-helper.ts:95-132`), which does
+`translate(x,y) → rotate → mirror → scale → translate(-centerX,-centerY) →
+drawImage(img, 0, 0, viewBoxWidth, viewBoxHeight)`. No `getBBox()`, no visible-
+content introspection, anywhere in this path.
+
+Two things this rules out for PROPS specifically:
+- **`#centerPoint` is never read for props.** That id is an ARROW-only
+  convention (`arrow/rendering/services/arrow-svg-parser.ts:42-44`,
+  `arrow-svg-color-transformer.ts:67`). `svg-color-utils.ts`'s
+  `removeCenterPoint` option strips the circle from the DOM purely for display
+  cleanup (it would render as a stray dot); it has no effect on where a prop
+  is anchored. `staff.svg`'s `<circle id="centerPoint">` is a leftover/authoring
+  aid, not something the prop loader consults.
+- **A `fill:none` mirror-reserve path (club.svg, pmmaball.svg, contactball.svg
+  all have one) is NOT functionally required by this pipeline.** It's
+  authoring-convention parity for any OTHER bbox-aware consumer (SVG editors,
+  hypothetical future getBBox-based tooling) — cheap insurance, not load-
+  bearing here. Keep including it on new unilateral props for consistency, but
+  don't waste time debugging it as a positioning mechanism if a prop looks
+  wrong — the viewBox-center math above is the only lever that matters.
+
+**The unilateral-prop authoring recipe** (grip-on-one-end props: club, ball
+family, poi): put the grip feature AT viewBox `(width/2, height/2)`, extend the
+visible "business end" to ONE side only, and size the reach so the outer edge
+lands at (or near) the viewBox boundary on that side — i.e. **reach ≈
+viewBox_width / 2**. This is true of club.svg (grip≈129.3, tip=258.67, viewBox
+width=258.67) and the ball family (grip=150, ball edge=300, viewBox
+width=300). A **bilateral** prop (staff) instead extends visible geometry on
+BOTH sides from the same center, so it visually spans the full viewBox with
+the grip genuinely in the middle. "Half the size like a club" (Austen,
+2026-07-18) = same per-side reach math, but painted on one side instead of
+two. `poi.svg` follows this recipe exactly: knob r=8 at (150,75), cord+ball
+extend to +x only, ball outer edge at x=300 (reach=150=viewBox_width/2),
+mirror-reserve `fill:none` cord+ball on the −x side.
+
+- **RESOLVED — poi beta-offset classification.** poi is now in
+  `SMALL_UNILATERAL_PROPS` in all three live copies (kept in sync by hand,
+  no build step unifies them):
+  `src/lib/shared/pictograph/prop/domain/enums/prop-classification.ts`,
+  `src/lib/shared/render/core/constants/prop-classification.ts` (the copy
+  `beta-offset.ts` actually imports for the in-app PropPlacer path), and
+  `packages/render-core/src/constants/prop-classification.ts` (consumed by
+  the Node-side MCP renderer via `@tka/render-core`'s built `dist/` — rebuild
+  that package's `dist` after editing its `src`, `dist/` is gitignored so a
+  local `npm run build` there is the only way the Node path picks it up).
+  Ground truth check: the Flow Arts Knowledge MCP (`get_term_definition`,
+  `get_domain_topic`) has **no poi-specific entry** — poi isn't canonical TKA
+  (project rules: "NOT poi... Poi Lab is planned, not built"). So this
+  classification is a structural-analogy judgment (poi has one visible
+  weighted mass per hand, same shape family as club/contactball), not an
+  MCP-grounded fact — flag it for Austen's sign-off if the beta-overlap
+  behavior looks wrong in practice, don't treat it as settled domain canon.
+  Also note: `isSmallProp`/`isBigProp` in the pictograph/prop/domain/enums
+  copy are dead code (defined, zero call sites anywhere in `src/`) — adding a
+  prop to `SMALL_UNILATERAL_PROPS` does NOT drive any rendering scale factor.
+  The only things classification drives are (1) `isUnilateralProp` → beta-
+  offset Gate 5 skip, and (2) `getBetaOffsetSize`'s bucket (poi got the
+  default 21.11px bucket, not club/eightrings' 15.83px one). Visual SIZE is
+  100% a function of the SVG's own viewBox geometry, set independently in the
+  render asset — see the anchor convention above.
+
+### Lean Stored Motions vs Placement Guards (2026-07-19, /q empty-cell bug)
+
+Sequences imported by scripts (scripts/show-sequence.mjs / import-sequence.cjs)
+store lean motions: motionType, locations, orientations, turns, but NO
+`arrowPlacementData`/`propPlacementData` (genuinely `undefined`, not `{}`).
+Two guards drop such motions silently:
+- `arrow-lifecycle-manager.ts` throws when `!motionData.arrowPlacementData` → arrow asset dropped
+- `pictograph-preparer.ts` `calculateProps` returns when `!motion.propPlacementData` → prop dropped
+
+Result: cells render grid + letter only. `{}` is truthy and passes both guards
+(the decode path emits `{}`, which is why URL-decoded sequences never hit this).
+Fix (commit fc1ad42df8): `sequence-hydrator.ts` `hydrateSequence` normalizes every
+motion (steps + startPosition) through `createMotionData`, which fills the default
+placement objects; idempotent for already-full motions. Any load path that builds
+SequenceData from lean stored steps WITHOUT `hydrateSequence` can still hit this.
+Regression test: `tests/unit/poi-scan-cell-prepare.test.ts`.
+'''

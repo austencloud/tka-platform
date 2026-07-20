@@ -3,17 +3,19 @@ name: prioritizefb
 description: Use when feedback items lack priority and need triage
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Prioritize Feedback
 
 ## Run
 
-```bash
+```powershell
 node scripts/fetch-feedback.js prioritize --json
 ```
 
 ## Scope
 
-Only sets priority on items that lack one. For claiming and working on feedback, use `/fb`.
+Only sets priority on items that lack one. For claiming and working on feedback, use `$fb`.
 
 ## Priority Criteria
 

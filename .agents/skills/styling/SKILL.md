@@ -3,6 +3,8 @@ name: styling
 description: Use when writing or modifying CSS, design tokens, or component styles. Enforces the 3-layer variable hierarchy, container-query sizing, and typography minimums specific to this project.
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Styling
 
 - **Component-scoped `<style>` blocks.** Never create global CSS utility classes.

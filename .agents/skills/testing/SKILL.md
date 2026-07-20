@@ -3,6 +3,8 @@ name: testing
 description: Use when writing, reviewing, or deciding whether to write tests in this project. Enforces the "silent bug" philosophy — test what eyes can't catch, skip what's obvious when broken.
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Testing Philosophy
 
 **Core principle:** Tests exist to catch silent bugs — things that would produce wrong output without anyone noticing.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Audit"
+  short_description: "Assessing code quality of a feature"
+  default_prompt: "Use $audit to apply the Audit workflow to this task."

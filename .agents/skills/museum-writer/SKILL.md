@@ -3,11 +3,13 @@ name: museum-writer
 description: Use when writing museum exhibit text, K's narration scripts, Order documents, annotations, plaques, or any in-fiction prose for The Kinetic Archive. Also use when workshopping character voice, joke density, or tone calibration for museum content.
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Museum Writer
 
 ## Overview
 
-Writing craft skill for The Kinetic Archive. Covers character voices, document types, tone calibration, joke discipline, and the verbal tic system. This is the writers' room — not lore decisions (use `/museum-lore`) or project tracking (use `/museum`).
+Writing craft skill for The Kinetic Archive. Covers character voices, document types, tone calibration, joke discipline, and the verbal tic system. This is the writers' room — not lore decisions (use `$museum-lore`) or project tracking (use `$museum`).
 
 **Read before writing any museum prose.** Load voice-guide.md for detailed character sheets.
 
@@ -161,17 +163,17 @@ These documents represent the quality bar. New writing gets measured against the
 ## Quick Reference
 
 ```
-/museum-writer              → Load this skill, start writing session
-/museum-writer voice         → Focus on voice guide (loads voice-guide.md)
-/museum-writer plaque        → Write a wall plaque
-/museum-writer annotation    → Write a K annotation
-/museum-writer narration     → Write a narrator script
-/museum-writer memo          → Write an Order internal document
-/museum-writer review <text> → Review existing museum prose against these rules
+$museum-writer              → Load this skill, start writing session
+$museum-writer voice         → Focus on voice guide (loads voice-guide.md)
+$museum-writer plaque        → Write a wall plaque
+$museum-writer annotation    → Write a K annotation
+$museum-writer narration     → Write a narrator script
+$museum-writer memo          → Write an Order internal document
+$museum-writer review <text> → Review existing museum prose against these rules
 ```
 
 ## Integration with Other Skills
 
-- **`/museum-lore`** — Lore decisions and story bible sync. Use BEFORE writing to confirm canon.
-- **`/museum`** — Project tracking. Log writing tasks with `writing` tag.
-- **`/ai-bust`** — Run on museum prose to catch AI-isms. Museum text must pass the fire jam test.
+- **`$museum-lore`** — Lore decisions and story bible sync. Use BEFORE writing to confirm canon.
+- **`$museum`** — Project tracking. Log writing tasks with `writing` tag.
+- **`$ai-bust`** — Run on museum prose to catch AI-isms. Museum text must pass the fire jam test.

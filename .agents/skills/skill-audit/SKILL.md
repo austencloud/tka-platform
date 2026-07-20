@@ -3,15 +3,17 @@ name: skill-audit
 description: Use when reviewing a skill for quality, completeness, and compliance with writing-skills standards before deployment
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Skill Audit
 
-Audit a skill against `superpowers:writing-skills` standards. Produces a scorecard with PASS/WARN/FAIL per dimension and specific fixes.
+Audit a skill against `$skill-creator` standards. Produces a scorecard with PASS/WARN/FAIL per dimension and specific fixes.
 
 **Don't use this** for proofreading skill prose or reviewing skill ideas. This is a mechanical quality gate.
 
 ## Step 1: Identify Target
 
-If argument provided, audit that skill. Otherwise, ask. Read the skill's `SKILL.md` and any supporting files. Run `wc -w` on it.
+If argument provided, audit that skill. Otherwise, ask. Read the skill's `SKILL.md` and any supporting files. Count its words before grading token efficiency.
 
 ## Step 2: Run Audit Dimensions
 
@@ -35,6 +37,6 @@ Only fix FAIL and WARN items. Don't refactor what's passing.
 
 ## Rules
 
-- `superpowers:writing-skills` is authoritative when you need to verify a criterion.
+- `$skill-creator` is authoritative when you need to verify a criterion.
 - Don't audit testing unless asked. Flag as "NOT AUDITED - requires subagent testing".
 - 0 FAILs + 0 WARNs = ready for deployment. Any FAILs = not deployable.

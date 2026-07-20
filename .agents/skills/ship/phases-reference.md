@@ -1,5 +1,7 @@
 # Ship Readiness: Phases 5-8 Reference
 
+When explicitly invoked, treat the text after `$ship` as `<arguments>`. Expected shape: `<feature-name>`.
+
 ## Phase 5: Code-Level Gap Analysis
 
 For each confirmed flow, check these 6 dimensions:
@@ -26,8 +28,8 @@ For each confirmed flow, check these 6 dimensions:
 ### 4. Integration Wiring
 - Is the module in `moduleLoaders` in ModuleRenderer.svelte?
 - Is it in `MODULE_DEFINITIONS` in module-definitions.ts?
-- Do its services have singleton getters (`get*.ts` files)?
-- Are getters returning real instances (not stubs)?
+- Do its services have singleton getters (`get*.ts` files in `src/lib/shared/`)?
+- Are those getters importable and returning real instances?
 - Can the feature actually be reached from the running app?
 
 ### 5. Data Pipeline
@@ -72,7 +74,7 @@ After the code scan, walk the user through a visual inspection of each flow.
 Consolidate all findings (code scan + visual inspection) into a single prioritized report:
 
 ```
-## /ship $ARGUMENTS -- Gap Report
+## $ship <arguments> -- Gap Report
 
 ### Blockers (N)
 1. [Description]
@@ -109,4 +111,4 @@ The plan should reference specific gaps by number so progress can be tracked.
 - **Think like a user.** Not "does this compile?" but "does this DO anything?"
 - **The visual walkthrough is not optional.** Code analysis misses runtime issues, CSS problems, and data-dependent bugs.
 - **Be specific in the gap report.** "Button doesn't work" is useless. "ExhibitCard onclick handler at line 42 calls showDetail() which is defined but has an empty body" is useful.
-- **Don't grade code quality.** That's `/audit`. If the code is ugly but works, it ships. If it's beautiful but the button does nothing, it doesn't.
+- **Don't grade code quality.** That's `$audit`. If the code is ugly but works, it ships. If it's beautiful but the button does nothing, it doesn't.

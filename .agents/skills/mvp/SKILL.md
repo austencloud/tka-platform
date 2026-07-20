@@ -3,6 +3,8 @@ name: mvp
 description: Use when checking MVP progress, adding scope, or deciding what to work on next toward launch
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # MVP Tracker
 
 **Target:** March 17, 2026 (TKA 4th Birthday)
@@ -17,11 +19,11 @@ Keep development focused on shipping. This skill is the single source of truth f
 
 | Command | What it does |
 |---------|-------------|
-| `/mvp` or `/mvp status` | Show current progress across all areas |
-| `/mvp scope` | Show full scope definition with acceptance criteria |
-| `/mvp next` | Show the single highest-priority unfinished item |
-| `/mvp add <area> <item>` | Propose adding something (requires justification) |
-| `/mvp complete <id>` | Mark an item done with verification proof |
+| `$mvp` or `$mvp status` | Show current progress across all areas |
+| `$mvp scope` | Show full scope definition with acceptance criteria |
+| `$mvp next` | Show the single highest-priority unfinished item |
+| `$mvp add <area> <item>` | Propose adding something (requires justification) |
+| `$mvp complete <id>` | Mark an item done with verification proof |
 
 ## How It Works
 
@@ -79,5 +81,5 @@ Show progress as bar chart per area with overall percentage and days remaining.
 - **P0s first.** Don't touch P1s while P0s remain.
 - **Never add without user approval.** Push back on scope creep.
 - **Verification required for completion.** Evidence, not claims.
-- **`/mvp next` returns ONE item**, not a list.
+- **`$mvp next` returns ONE item**, not a list.
 - **"While I'm in here..."** — scope creep in disguise. File it, move on.

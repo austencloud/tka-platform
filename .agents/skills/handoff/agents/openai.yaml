@@ -1,0 +1,4 @@
+interface:
+  display_name: "Write a Handoff"
+  short_description: "Ending a session with unfinished multi-phase work"
+  default_prompt: "Use $handoff to apply the Write a Handoff workflow to this task."

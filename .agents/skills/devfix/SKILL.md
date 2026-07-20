@@ -1,11 +1,15 @@
 ---
+name: devfix
 description: Use when local dev infrastructure is broken — dev.tkaflowarts.com shows 502/503, the dev server won't serve, https/certificate errors, the Cloudflare tunnel is down, the Codex launcher or right-click context menu broke, or "fix my dev environment". Encodes the known failure modes so they're diagnosed in minutes, not rediscovered.
-argument-hint: "[symptom, e.g. 'dev.tkaflowarts.com 502']"
 ---
+
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # Fix Dev Infrastructure
 
-**Args:** `$ARGUMENTS`
+When explicitly invoked, treat the text after `$devfix` as `<arguments>`. Expected shape: `[symptom, e.g. 'dev.tkaflowarts.com 502']`.
+
+**Args:** `<arguments>`
 
 The stack: Vite serves **HTTPS/2** on `:5173` (mkcert certs in `.cert/`),
 cloudflared runs the locally-managed `tka-dev` tunnel exposing it as
@@ -13,14 +17,14 @@ cloudflared runs the locally-managed `tka-dev` tunnel exposing it as
 its header comments are the canonical doc — read it before theorizing.
 
 **`:5173` is Austen's server.** Never start/kill/restart it yourself (hooks
-block it). Diagnose with `curl -k`; if his server needs a restart, ask him to
-run it, e.g. `! powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-dev.ps1`.
+block it). Diagnose with `curl.exe -k`; if his server needs a restart, ask him to
+run it, e.g. `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-dev.ps1`.
 
 ## First: split the fault domain
 
-```bash
-curl -k -s -o /dev/null -w "%{http_code}" --max-time 5 https://localhost:5173/
-curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://dev.tkaflowarts.com/
+```powershell
+curl.exe -k -s -o NUL -w "%{http_code}" --max-time 5 https://localhost:5173/
+curl.exe -s -o NUL -w "%{http_code}" --max-time 10 https://dev.tkaflowarts.com/
 ```
 
 | local | tunnel | Meaning |
@@ -43,9 +47,14 @@ curl -s -o /dev/null -w "%{http_code}" --max-time 10 https://dev.tkaflowarts.com
 - **allowedHosts:** Vite only answers for hosts in `vite.config.ts`
   `server.allowedHosts` (includes `dev.tkaflowarts.com`). A new hostname needs
   adding there.
-- **Launcher / context menu:** `launchers/start-Codex.bat` and
-  `launchers/install-Codex-context-menu.ps1` (registry `HKCU` key pointing at
+- **Launcher / context menu:** `launchers/start-codex.bat` and
+  `launchers/install-codex-context-menu.ps1` (registry `HKCU` key pointing at
   the Codex install — reinstalls move the path; rerun the installer script).
+- **Whole-machine setup:** `launchers/bootstrap-machine.ps1` replicates the
+  full agent scaffolding on a fresh machine (CLIs, context menus, launcher
+  shortcuts, global Claude/Codex config, pm2 stack, PrtSc→F13 remap). It is
+  idempotent, so it also works as a repair-everything pass here; assets live
+  in `launchers/bootstrap-assets/`.
 
 ## After any fix
 

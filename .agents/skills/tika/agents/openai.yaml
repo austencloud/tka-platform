@@ -1,0 +1,4 @@
+interface:
+  display_name: "TIKA Quality Monitor"
+  short_description: "TIKA conversations need quality review, grading"
+  default_prompt: "Use $tika to apply the TIKA Quality Monitor workflow to this task."

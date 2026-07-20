@@ -1,0 +1,4 @@
+interface:
+  display_name: "Add to Library"
+  short_description: "Pastes sequence data (beat notation, JSON, natural language)"
+  default_prompt: "Use $add-to-library to apply the Add to Library workflow to this task."

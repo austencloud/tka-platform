@@ -1,0 +1,4 @@
+interface:
+  display_name: "Skill Audit"
+  short_description: "Reviewing a skill for quality, completeness"
+  default_prompt: "Use $skill-audit to apply the Skill Audit workflow to this task."

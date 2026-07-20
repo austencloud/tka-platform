@@ -3,6 +3,8 @@ name: deck
 description: Use when enumerating new LOOP decks, seeding decks to Firestore, expanding VTG turn variants, or troubleshooting deck orientation/count issues
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Deck Management
 
 Enumerate, seed, and manage algorithmic LOOP decks. Reference data (flags, Firestore schema, VTG table, scaling) is in `deck-reference.md`.
@@ -15,7 +17,7 @@ Enumerate, seed, and manage algorithmic LOOP decks. Reference data (flags, Fires
 
 ## Enumeration Pipeline
 
-```bash
+```powershell
 # Always dry-run first
 node scripts/enumerate-deck.cjs --loopType rotated --slice quartered --seedLength 4 --level 1 --dry-run
 

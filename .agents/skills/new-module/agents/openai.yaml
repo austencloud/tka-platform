@@ -1,0 +1,4 @@
+interface:
+  display_name: "New Module Checklist"
+  short_description: "Creating a new feature module in src/lib/features/"
+  default_prompt: "Use $new-module to apply the New Module Checklist workflow to this task."

@@ -1,16 +1,19 @@
 ---
 name: release-deck
-description: Compose, release, render, and export physical choreo card decks. Use when user wants to create a printable deck, release to Firestore, or order prints.
-argument-hint: "[vtg|loop] [pattern-filter] [--notes \"Edition Name\"]"
+description: Use when the user wants to create a printable deck, release to Firestore, or order prints.
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # Deck Release Pipeline
+
+When explicitly invoked, treat the text after `$release-deck` as `<arguments>`. Expected shape: `[vtg|loop] [pattern-filter] [--notes \"Edition Name\"]`.
 
 Compose a deck from the catalog, release it to Firestore, render print-ready cards, and export for printing or ordering.
 
 ## Arguments
 
-`$ARGUMENTS` — parsed as: `[collection] [filter] [--notes "..."]`
+`<arguments>` — parsed as: `[collection] [filter] [--notes "..."]`
 
 | Arg | Default | Examples |
 |-----|---------|---------|
@@ -34,11 +37,11 @@ Compose a deck from the catalog, release it to Firestore, render print-ready car
 
 ### Step 1: Parse & Compose
 
-Parse `$ARGUMENTS` to determine collection and turn pattern filter.
+Parse `<arguments>` to determine collection and turn pattern filter.
 
 Run the release script in dry-run mode first:
 
-```bash
+```powershell
 node scripts/release-tnd-deck.cjs --dry-run --patterns "uniform-0t,uniform-1t,uniform-2t,uniform-3t" --notes "Whole Turn TnD"
 ```
 
@@ -52,7 +55,7 @@ Show the user:
 
 After user confirms (or if they said "just do it" in their original message), run without `--dry-run`:
 
-```bash
+```powershell
 node scripts/release-tnd-deck.cjs --patterns "uniform-0t,uniform-1t,uniform-2t,uniform-3t" --notes "Whole Turn TnD"
 ```
 
@@ -108,7 +111,7 @@ If user asks for a LOOP deck via this skill, tell them:
 | PDF exporter | `src/lib/features/choreo-card/services/print-pdf-exporter.ts` |
 | ZIP exporter | `src/lib/features/choreo-card/services/print-zip-exporter.ts` |
 | Card back renderer | `src/lib/features/choreo-card/services/card-back-dom-renderer.ts` |
-| Deck reference | `.Codex/skills/deck/deck-reference.md` |
+| Deck reference | `.agents/skills/deck/deck-reference.md` |
 
 ## Exit Criteria
 

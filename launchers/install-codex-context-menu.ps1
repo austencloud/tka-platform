@@ -2,7 +2,8 @@
     install-codex-context-menu.ps1
 
     Registers (or repairs) the "Open with Codex" right-click menu entry for
-    folders and folder backgrounds in Windows Explorer. This is the Codex twin
+    folders and folder backgrounds in Windows Explorer. It also installs the
+    TKA Codex status line in the user's config.toml. This is the Codex twin
     of install-claude-context-menu.ps1 — same HKCU Classes hive, same
     wt.exe + cmd /k pattern, so opening Codex on a folder is as convenient as
     opening Claude Code.
@@ -21,12 +22,14 @@
     entry stops working.
 
     Usage:  powershell -ExecutionPolicy Bypass -File launchers\install-codex-context-menu.ps1
+    Footer: add -StatusLineOnly to configure only the Codex footer.
     Remove: add  -Uninstall  to delete the menu entries.
 #>
 
 [CmdletBinding()]
 param(
-    [switch]$Uninstall
+    [switch]$Uninstall,
+    [switch]$StatusLineOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -35,6 +38,86 @@ $MenuLabel   = 'Open with Codex'
 $KeyName     = 'OpenAICodex'
 $DirKey      = "HKCU:\Software\Classes\Directory\shell\$KeyName"
 $BgKey       = "HKCU:\Software\Classes\Directory\Background\shell\$KeyName"
+
+# Keep the active model visible, then show the two limits Austen actually plans
+# sessions around. Token count and branch are useful diagnostics without taking
+# the width that current-dir would consume in the dedicated TKA launcher.
+$StatusLineItems = @(
+    'model-with-reasoning',
+    'context-used',
+    'five-hour-limit',
+    'weekly-limit',
+    'git-branch'
+)
+
+function Set-CodexStatusLine {
+    $codexHome = if ($env:CODEX_HOME) {
+        $env:CODEX_HOME
+    } else {
+        Join-Path $env:USERPROFILE '.codex'
+    }
+    $configPath = Join-Path $codexHome 'config.toml'
+    $statusLineToml = 'status_line = [' + (($StatusLineItems | ForEach-Object { '"' + $_ + '"' }) -join ', ') + ']'
+
+    New-Item -ItemType Directory -Path $codexHome -Force | Out-Null
+    $content = if (Test-Path -LiteralPath $configPath) {
+        [IO.File]::ReadAllText($configPath)
+    } else {
+        ''
+    }
+
+    $newline = if ($content.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $lines = [regex]::Split($content, '\r?\n')
+    $statusLineIndexes = @(
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match '^[ \t]*(?:tui\.)?status_line[ \t]*=') { $i }
+        }
+    )
+
+    if ($statusLineIndexes.Count -gt 0) {
+        $firstIndex = $statusLineIndexes[0]
+        $prefix = if ($lines[$firstIndex] -match '^[ \t]*tui\.') { 'tui.' } else { '' }
+        $lines[$firstIndex] = $prefix + $statusLineToml
+
+        # Collapse duplicates left by older installers or manual edits.
+        $duplicateIndexes = @($statusLineIndexes | Select-Object -Skip 1)
+        $content = @(
+            for ($i = 0; $i -lt $lines.Count; $i++) {
+                if ($i -notin $duplicateIndexes) { $lines[$i] }
+            }
+        ) -join $newline
+    } elseif ($content -match '(?m)^\s*\[tui\]\s*$') {
+        $content = [regex]::Replace(
+            $content,
+            '(?m)^(\s*\[tui\]\s*)$',
+            '$1' + [Environment]::NewLine + $statusLineToml,
+            1
+        )
+    } else {
+        # A dotted root key is valid TOML and avoids reopening an implicitly
+        # created [tui] table when configs already contain [tui.*] subtables.
+        $dottedLine = 'tui.' + $statusLineToml
+        $firstTable = [regex]::Match($content, '(?m)^\s*\[')
+        if ($firstTable.Success) {
+            $content = $content.Insert(
+                $firstTable.Index,
+                $dottedLine + [Environment]::NewLine + [Environment]::NewLine
+            )
+        } else {
+            if ($content.Length -gt 0 -and -not $content.EndsWith([Environment]::NewLine)) {
+                $content += [Environment]::NewLine
+            }
+            $content += $dottedLine + [Environment]::NewLine
+        }
+    }
+
+    $tempPath = "$configPath.tmp"
+    [IO.File]::WriteAllText($tempPath, $content, [Text.UTF8Encoding]::new($false))
+    Move-Item -LiteralPath $tempPath -Destination $configPath -Force
+
+    Write-Host "Configured Codex status line in $configPath"
+    Write-Host "  $($StatusLineItems -join ' | ')"
+}
 
 function Remove-MenuKeys {
     foreach ($k in @($DirKey, $BgKey)) {
@@ -51,13 +134,24 @@ if ($Uninstall) {
     return
 }
 
+Set-CodexStatusLine
+
+if ($StatusLineOnly) {
+    Write-Host "`nRestart Codex to show the new footer."
+    return
+}
+
 # --- Resolve the real codex launcher ----------------------------------------
 function Resolve-CodexCmd {
-    # 1) codex.cmd on PATH (npm global shim)?
+    # 1) TKA's side-by-side build, when installed.
+    $tkaCodex = Join-Path $env:LOCALAPPDATA 'TKA\codex-tka\bin\codex-tka.exe'
+    if (Test-Path $tkaCodex) { return (Resolve-Path $tkaCodex).Path }
+
+    # 2) codex.cmd on PATH (npm global shim)?
     $onPath = (Get-Command codex.cmd -ErrorAction SilentlyContinue).Source
     if ($onPath -and (Test-Path $onPath)) { return (Resolve-Path $onPath).Path }
 
-    # 2) npm global bin default location.
+    # 3) npm global bin default location.
     $npmShim = Join-Path $env:APPDATA 'npm\codex.cmd'
     if (Test-Path $npmShim) { return (Resolve-Path $npmShim).Path }
 

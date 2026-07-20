@@ -1,18 +1,22 @@
 ---
+name: pickup
 description: Use when picking up another agent's handoff — "pull the X handoff", "pick up where they left off", "continue the Y work", "read the handoff and take over", or any session that starts from a handoff doc or handoff/* branch. Fetches it, audits the claimed work with real evidence, then continues the work.
-argument-hint: "[handoff name, spec file, or branch]"
 ---
+
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
 
 # Pick Up a Handoff
 
-**Args:** `$ARGUMENTS`
+When explicitly invoked, treat the text after `$pickup` as `<arguments>`. Expected shape: `[handoff name, spec file, or branch]`.
+
+**Args:** `<arguments>`
 
 Take over another agent's in-flight work without trusting its claims blindly.
 Austen asks for the audit step explicitly and repeatedly — it is not optional.
 
 ## 1. Locate
 
-```bash
+```powershell
 git fetch origin
 ```
 
@@ -21,7 +25,7 @@ git fetch origin
   working tree and `git show origin/main:<path>` — it may have landed on main
   after this checkout last pulled.
 - Branch handoff → `handoff/<name>` branches (e.g. `handoff/hero-split-4k`).
-  Work in a worktree per `worktree-workflow.md`; never switch this checkout.
+  Follow the current `worktree-workflow.md`: work on main by default and use an isolated worktree only when the task genuinely needs it.
 - No match → list the candidates you did find and ask which one. Don't guess
   between two plausible handoffs.
 
@@ -47,6 +51,6 @@ footnote.
 
 Start at the first loose end or next step, honoring the handoff's recorded
 decisions (they were Austen's). Route domain work per
-`.Codex/rules/expert-routing.md`, commit with explicit pathspec per
+`.claude/rules/expert-routing.md`, commit with explicit pathspec per
 `commit-only-your-own-changes.md`, and when the session winds down with work
 still open, write the counterpart doc via the `handoff` skill.

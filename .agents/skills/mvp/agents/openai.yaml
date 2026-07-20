@@ -1,0 +1,4 @@
+interface:
+  display_name: "MVP Tracker"
+  short_description: "Checking MVP progress, adding scope"
+  default_prompt: "Use $mvp to apply the MVP Tracker workflow to this task."

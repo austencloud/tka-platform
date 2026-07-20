@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sync This Checkout"
+  short_description: "Run the Sync This Checkout workflow"
+  default_prompt: "Use $sync to apply the Sync This Checkout workflow to this task."

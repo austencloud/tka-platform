@@ -3,6 +3,8 @@ name: tile-layout
 description: Use when building or modifying 2D tile-based room layouts. Guarantees room connectivity, prevents overlaps, validates walkability. REQUIRED before writing any tile placement code.
 ---
 
+<!-- generated from .claude by scripts/sync-codex-skills.mjs; do not edit directly -->
+
 # 2D Tile Layout Engineering
 
 Rules and algorithms for building correct 2D tile-based room layouts. Loaded on-demand when creating or debugging tile grids.

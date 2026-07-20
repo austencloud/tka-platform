@@ -1,0 +1,4 @@
+interface:
+  display_name: "Choreo Cards Kickstarter Campaign"
+  short_description: "Working on the Choreo Cards Kickstarter campaign"
+  default_prompt: "Use $kickstarter to apply the Choreo Cards Kickstarter Campaign workflow to this task."

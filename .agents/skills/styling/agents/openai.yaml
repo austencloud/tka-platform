@@ -1,0 +1,4 @@
+interface:
+  display_name: "Styling"
+  short_description: "Writing or modifying CSS, design tokens, or component styles"
+  default_prompt: "Use $styling to apply the Styling workflow to this task."

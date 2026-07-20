@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fix Dev Infrastructure"
+  short_description: "Local dev infrastructure is broken"
+  default_prompt: "Use $devfix to apply the Fix Dev Infrastructure workflow to this task."

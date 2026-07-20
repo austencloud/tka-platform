@@ -1,0 +1,4 @@
+interface:
+  display_name: "QR Code for a Sequence"
+  short_description: "Wants a QR code for a sequence"
+  default_prompt: "Use $qr to apply the QR Code for a Sequence workflow to this task."

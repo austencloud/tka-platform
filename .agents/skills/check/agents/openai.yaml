@@ -1,0 +1,4 @@
+interface:
+  display_name: "TypeScript Check"
+  short_description: "TypeScript errors need analysis and fixing"
+  default_prompt: "Use $check to apply the TypeScript Check workflow to this task."
