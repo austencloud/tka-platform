@@ -48,13 +48,15 @@
   aria-busy={source.isLoading}
 >
   <div class="source-heading-row">
-    <div class="source-heading">
-      <span class="source-dot" aria-hidden="true"></span>
-      <div>
-        <p class="source-kicker">{label} input</p>
-        <h3 id={headingId}>{label} path</h3>
-      </div>
-    </div>
+    <span class="source-dot" aria-hidden="true"></span>
+    <h3 id={headingId}>{label}<span class="sr-only"> path</span></h3>
+    {#if source.sequence}
+      <p class="source-name" title={displayName}>{displayName}</p>
+    {:else if source.isLoading}
+      <span class="name-skeleton" aria-hidden="true"></span>
+    {:else}
+      <p class="source-unavailable">No path available</p>
+    {/if}
     <span class="pool-count">
       {#if source.sequence && source.poolSize > 0}
         {source.poolPosition} of {source.poolSize}
@@ -62,20 +64,6 @@
         &nbsp;
       {/if}
     </span>
-  </div>
-
-  <div class="source-identity">
-    {#if source.sequence}
-      <p class="source-name" title={displayName}>{displayName}</p>
-      <p class="source-meta">{source.sequence.steps.length} steps</p>
-    {:else if source.isLoading}
-      <div class="identity-skeleton" aria-hidden="true">
-        <span></span>
-        <span></span>
-      </div>
-    {:else}
-      <p class="source-unavailable">No path available</p>
-    {/if}
   </div>
 
   {#if showInlineNotation}
@@ -187,21 +175,11 @@
     border-style: dashed;
   }
 
-  .source-heading-row,
-  .source-heading {
+  .source-heading-row {
     display: flex;
     align-items: center;
-  }
-
-  .source-heading-row {
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 42px;
-  }
-
-  .source-heading {
     gap: 10px;
-    min-width: 0;
+    min-height: 36px;
   }
 
   .source-dot {
@@ -214,25 +192,31 @@
       color-mix(in srgb, var(--source-color) 13%, transparent);
   }
 
-  .source-kicker,
   .source-name,
-  .source-meta,
   h3 {
     margin: 0;
   }
 
-  .source-kicker {
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  h3 {
+    flex: 0 0 auto;
     color: color-mix(in srgb, var(--source-color) 72%, var(--theme-text));
     font-size: var(--font-size-compact, 12px);
     font-weight: 750;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-  }
-
-  h3 {
-    color: var(--theme-text, #fff);
-    font-size: clamp(1rem, 2.2cqw, 1.2rem);
-    font-weight: 700;
   }
 
   .pool-count {
@@ -244,15 +228,8 @@
     text-align: right;
   }
 
-  .source-identity {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 10px;
-    min-height: 28px;
-  }
-
   .source-name {
+    flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
     color: var(--theme-text, #fff);
@@ -270,6 +247,14 @@
     font-size: var(--font-size-min, 14px);
   }
 
+  .source-unavailable {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .notation-empty {
     display: grid;
     place-items: center;
@@ -280,36 +265,17 @@
     text-align: center;
   }
 
-  .source-meta {
-    flex: 0 0 auto;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.56));
-    font-size: var(--font-size-compact, 12px);
-    font-variant-numeric: tabular-nums;
-  }
-
-  .identity-skeleton {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-  }
-
-  .identity-skeleton span,
+  .name-skeleton,
   .notation-skeleton {
     background: color-mix(in srgb, var(--theme-text, white) 8%, transparent);
     animation: loading-pulse 1.4s ease-in-out infinite;
   }
 
-  .identity-skeleton span:first-child {
-    width: 55%;
+  .name-skeleton {
+    flex: 1 1 auto;
+    max-width: 55%;
     height: 20px;
     border-radius: 7px;
-  }
-
-  .identity-skeleton span:last-child {
-    width: 54px;
-    height: 14px;
-    border-radius: 5px;
   }
 
   .notation-stage {
@@ -392,25 +358,6 @@
     }
   }
 
-  @container fuse (min-width: 1100px) {
-    .source-card {
-      padding: clamp(14px, 1.4cqw, 22px);
-    }
-
-    .notation-stage {
-      min-height: 120px;
-    }
-  }
-
-  /* Locked desktop layout only (mirrors FuseLayout's fr-row condition).
-     min-height: 0 lets the card shrink inside its fr row; anywhere else it
-     zeroes the card's minimum contribution and collapses the auto grid rows. */
-  @container fuse (min-width: 1100px) and (min-height: 861px) {
-    .source-card {
-      min-height: 0;
-    }
-  }
-
   @container fuse (min-width: 600px) {
     .notation-button {
       display: none;
@@ -426,8 +373,38 @@
     }
   }
 
+  /* One-page fit layouts only (mirrors FuseLayout's fr-row conditions).
+     min-height: 0 lets the card shrink inside its fr row; anywhere else it
+     zeroes the card's minimum contribution and collapses the auto grid rows.
+     The notation stage gives up its tall floor and scrolls internally. */
+  @container fuse (min-width: 600px) and (min-height: 600px) {
+    .source-card {
+      min-height: 0;
+      gap: var(--settings-spacing-sm, 10px);
+    }
+
+    .notation-stage,
+    .notation-reserve {
+      min-height: 64px;
+    }
+  }
+
+  @container fuse (min-width: 1100px) {
+    .source-card {
+      padding: clamp(14px, 1.4cqw, 22px);
+    }
+  }
+
+  /* Locked desktop columns get their taller notation floor back. */
+  @container fuse (min-width: 1100px) and (min-height: 780px) {
+    .notation-stage,
+    .notation-reserve {
+      min-height: 120px;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .identity-skeleton span,
+    .name-skeleton,
     .notation-skeleton,
     .change-flash {
       animation: none;

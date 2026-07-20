@@ -25,29 +25,17 @@
 
 <header class="fuse-header" class:compact>
   {#if compact}
-    <div class="compact-intro">
+    <div class="sr-only">
       <h2>Fuse two paths</h2>
       <p>Shuffle Blue or Red, then Fuse.</p>
     </div>
   {:else}
-    <div class="title-group">
-      <p class="eyebrow">
-        <span class="path-token blue-token">Blue</span>
-        <i class="fas fa-plus" aria-hidden="true"></i>
-        <span class="path-token red-token">Red</span>
-        <i class="fas fa-arrow-right" aria-hidden="true"></i>
-        <span class="path-token output-token">Combined</span>
-      </p>
-      <h2>Fuse two paths</h2>
-      <p class="instruction">
-        Set the length. Shuffle either path. The preview shows them together.
-      </p>
-    </div>
+    <h2>Fuse two paths</h2>
   {/if}
 
   <div class="header-controls">
     <label class="length-field">
-      <span class:sr-only={compact}>Length</span>
+      <span class="sr-only">Length</span>
       <span class="select-wrap">
         <select
           value={state.requestedLength}
@@ -82,20 +70,16 @@
   .fuse-header {
     grid-area: header;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    gap: var(--settings-spacing-lg, 20px);
-    padding: var(--settings-spacing-md, 16px);
+    gap: var(--settings-spacing-md, 14px);
+    min-height: var(--min-touch-target, 48px);
+    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 14px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: var(--settings-radius-lg, 20px);
     background: var(--theme-panel-bg, rgba(12, 14, 22, 0.94));
   }
 
-  .title-group {
-    min-width: 0;
-  }
-
-  .compact-intro,
   .sr-only {
     position: absolute;
     width: 1px;
@@ -109,76 +93,28 @@
     border: 0;
   }
 
-  .eyebrow {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    margin: 0 0 8px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.58));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-  }
-
-  .eyebrow i {
-    font-size: var(--font-size-compact, 12px);
-    opacity: 0.72;
-  }
-
-  .path-token {
-    display: inline-flex;
-    align-items: center;
-    min-height: 24px;
-    padding: 3px 8px;
-    border: 1px solid color-mix(in srgb, var(--token-color) 42%, transparent);
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--token-color) 12%, transparent);
-    color: color-mix(in srgb, var(--token-color) 78%, var(--theme-text, white));
-  }
-
-  .blue-token {
-    --token-color: var(--prop-blue, #2196f3);
-  }
-
-  .red-token {
-    --token-color: var(--prop-red, #f44336);
-  }
-
-  .output-token {
-    --token-color: var(--semantic-warning, #f97316);
-  }
-
   h2 {
+    min-width: 0;
     margin: 0;
+    overflow: hidden;
     color: var(--theme-text, #fff);
-    font-size: clamp(1.35rem, 3cqw, 1.9rem);
+    font-size: clamp(1.05rem, 2.2cqw, 1.35rem);
     font-weight: 750;
-    letter-spacing: -0.025em;
-  }
-
-  .instruction {
-    max-width: 660px;
-    margin: 7px 0 0;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
-    font-size: var(--font-size-min, 14px);
-    line-height: 1.45;
+    letter-spacing: -0.02em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .header-controls {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     gap: var(--settings-spacing-sm, 10px);
     flex-shrink: 0;
   }
 
   .length-field {
     display: flex;
-    flex-direction: column;
-    gap: 5px;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.66));
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
+    min-width: 0;
   }
 
   .select-wrap {
@@ -188,9 +124,9 @@
   }
 
   select {
-    width: 132px;
+    width: 122px;
     min-height: var(--min-touch-target, 44px);
-    padding: 0 36px 0 13px;
+    padding: 0 34px 0 13px;
     appearance: none;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
     border-radius: var(--settings-radius-md, 12px);
@@ -221,39 +157,8 @@
   }
 
   @container fuse (max-width: 599px) {
-    .fuse-header:not(.compact) {
-      flex-direction: column;
-      align-items: stretch;
-      gap: var(--settings-spacing-md, 14px);
-      padding: 14px;
-    }
-
-    .eyebrow {
-      flex-wrap: wrap;
-    }
-
-    .instruction {
-      max-width: none;
-    }
-
-    .fuse-header:not(.compact) .header-controls {
-      align-items: flex-end;
-    }
-
-    .fuse-header:not(.compact) .length-field,
-    .fuse-header:not(.compact) .select-wrap,
-    .fuse-header:not(.compact) select {
-      width: 100%;
-    }
-
-    .fuse-header:not(.compact) .length-field {
-      flex: 1;
-    }
-
     .fuse-header.compact {
       min-height: var(--min-touch-target, 48px);
-      align-items: center;
-      gap: var(--settings-spacing-sm, 8px);
       padding: 0;
       border: 0;
       border-radius: 0;
@@ -262,7 +167,6 @@
 
     .compact .header-controls {
       width: 100%;
-      align-items: center;
       justify-content: flex-end;
       gap: var(--settings-spacing-sm, 8px);
     }
@@ -294,17 +198,6 @@
       border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.24));
       background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.09));
       color: var(--theme-text, #fff);
-    }
-  }
-
-  @container fuse (max-width: 380px) {
-    .path-token {
-      padding-inline: 6px;
-    }
-
-    .eyebrow {
-      gap: 5px;
-      letter-spacing: 0.035em;
     }
   }
 

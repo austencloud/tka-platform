@@ -154,16 +154,26 @@
         "header header"
         "blue red"
         "preview preview";
-      gap: clamp(12px, 1.6cqw, 18px);
+      gap: clamp(10px, 1.4cqw, 14px);
     }
   }
 
-  /* Locked desktop layout: fixed viewport, fr rows, cards shrink internally.
-     Requires real height — shorter windows keep the scrolling two-column
-     layout, where rows must stay content-sized. FuseSourceCard and
-     FusePreviewStage mirror this exact condition to apply min-height: 0
-     (a zero minimum contribution collapses auto rows in the scroll layouts). */
-  @container fuse (min-width: 1100px) and (min-height: 861px) {
+  /* One-page fit layout: any container with real height locks to the viewport
+     — no scrolling. Header stays content-sized; the card row and preview row
+     split the rest (fr rows). FuseSourceCard and FusePreviewStage mirror this
+     exact condition to apply min-height: 0 (a zero minimum contribution
+     collapses auto rows in the scroll layouts, so it must not leak there). */
+  @container fuse (min-width: 600px) and (min-height: 600px) {
+    .fuse-workspace {
+      grid-template-rows: max-content minmax(0, 1fr) minmax(0, 1.35fr);
+      align-content: stretch;
+      overflow: hidden;
+    }
+  }
+
+  /* Locked desktop layout: cards stack in a left column beside a tall preview.
+     Requires real height on top of the fit layout's floor. */
+  @container fuse (min-width: 1100px) and (min-height: 780px) {
     .fuse-workspace {
       grid-template-columns: minmax(330px, 2fr) minmax(0, 3fr);
       grid-template-rows: auto minmax(0, 1fr) minmax(0, 1fr);

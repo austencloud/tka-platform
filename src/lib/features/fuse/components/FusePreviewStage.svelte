@@ -45,107 +45,35 @@
   class:compact
   aria-labelledby="fuse-preview-heading"
 >
-  {#if compact}
-    <h3 id="fuse-preview-heading" class="sr-only">Combined preview</h3>
-  {:else}
-    <div class="preview-heading-row">
-      <div>
-        <p class="preview-kicker">Output</p>
-        <h3 id="fuse-preview-heading">Combined preview</h3>
-      </div>
-      <span class="preview-length">
-        {fuseState.appliedLength
-          ? `${fuseState.appliedLength} steps`
-          : "\u00A0"}
-      </span>
-    </div>
-  {/if}
+  <h3 id="fuse-preview-heading" class="sr-only">Combined preview</h3>
 
-  <div class="preview-frame" role="img" aria-label={previewDescription}>
-    {#if fuseState.previewSequence}
-      <FuseAnimationPreview
-        sequence={fuseState.previewSequence}
-        currentStep={fuseState.currentStep}
-        isPlaying={fuseState.clockRunning}
-        onError={(failure) => fuseState.reportPreviewFailure(failure)}
-      />
-    {:else}
-      <div class="preview-placeholder" aria-hidden="true">
-        <span class="orbit orbit-blue"></span>
-        <span class="orbit orbit-red"></span>
-        <i class="fas fa-fire-flame-curved"></i>
-      </div>
-    {/if}
-
-    {#if previewRevision > 2}
-      {#key previewRevision}
-        <span class="preview-flash" aria-hidden="true"></span>
-      {/key}
-    {/if}
-  </div>
-
-  {#if compact}
-    <FuseMobileControls {onFuse} />
-  {:else}
-    <div class="playback-row">
-      <TransportControls
-        isPlaying={fuseState.clockRunning}
-        disabled={!fuseState.previewSequence || fuseState.isFusing}
-        onPlaybackToggle={() => fuseState.toggleClock()}
-      />
-
-      <Popover.Root bind:open={tempoOpen}>
-        <Popover.Trigger>
-          {#snippet child({ props })}
-            <button
-              {...props}
-              class="tempo-trigger"
-              type="button"
-              disabled={!fuseState.previewSequence || fuseState.isFusing}
-              aria-label={`Set tempo, currently ${fuseState.bpm} BPM`}
-            >
-              <span class="tempo-value">{fuseState.bpm}</span>
-              <span class="tempo-unit">BPM</span>
-              <i class="fas fa-chevron-up" aria-hidden="true"></i>
-            </button>
-          {/snippet}
-        </Popover.Trigger>
-        <Popover.Portal>
-          <Popover.Content
-            side="top"
-            align="center"
-            sideOffset={10}
-            collisionPadding={12}
-            class="fuse-tempo-popover"
-          >
-            <BpmQuickPopover
-              bpm={fuseState.bpm}
-              onBpmChange={(value) => fuseState.setBpm(value)}
-              onClose={() => (tempoOpen = false)}
-            />
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover.Root>
-    </div>
-
-    <div class="status-row">
-      {#if fuseState.error}
-        <p id="fuse-action-status" class="status error-status" role="alert">
-          {fuseState.statusMessage}
-        </p>
+  <div class="frame-wrap">
+    <div class="preview-frame" role="img" aria-label={previewDescription}>
+      {#if fuseState.previewSequence}
+        <FuseAnimationPreview
+          sequence={fuseState.previewSequence}
+          currentStep={fuseState.currentStep}
+          isPlaying={fuseState.clockRunning}
+          onError={(failure) => fuseState.reportPreviewFailure(failure)}
+        />
       {:else}
-        <p
-          id="fuse-action-status"
-          class="status"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {fuseState.statusMessage}
-        </p>
+        <div class="preview-placeholder" aria-hidden="true">
+          <span class="orbit orbit-blue"></span>
+          <span class="orbit orbit-red"></span>
+          <i class="fas fa-fire-flame-curved"></i>
+        </div>
       {/if}
 
-      <div class="retry-slot" class:visible={fuseState.canRetry}>
+      {#if previewRevision > 2}
+        {#key previewRevision}
+          <span class="preview-flash" aria-hidden="true"></span>
+        {/key}
+      {/if}
+    </div>
+
+    {#if !compact && fuseState.error}
+      <div class="error-strip" role="alert">
+        <p>{fuseState.statusMessage}</p>
         {#if fuseState.canRetry}
           <PanelButton
             variant="secondary"
@@ -158,19 +86,78 @@
           </PanelButton>
         {/if}
       </div>
-    </div>
+    {/if}
+  </div>
 
-    <ActionButton
-      label="Fuse and open"
-      busyLabel="Building fused sequence..."
-      icon="fa-fire-flame-curved"
-      color="fuse"
-      fullWidth={true}
-      ariaDisabled={!fuseState.canFuse}
-      ariaDescribedBy="fuse-action-status"
-      busy={fuseState.isFusing}
-      onclick={() => void onFuse()}
-    />
+  {#if compact}
+    <FuseMobileControls {onFuse} />
+  {:else}
+    <p
+      id="fuse-action-status"
+      class="sr-only"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {fuseState.statusMessage}
+    </p>
+
+    <div class="stage-controls">
+      <div class="playback-cluster">
+        <TransportControls
+          isPlaying={fuseState.clockRunning}
+          disabled={!fuseState.previewSequence || fuseState.isFusing}
+          onPlaybackToggle={() => fuseState.toggleClock()}
+        />
+
+        <Popover.Root bind:open={tempoOpen}>
+          <Popover.Trigger>
+            {#snippet child({ props })}
+              <button
+                {...props}
+                class="tempo-trigger"
+                type="button"
+                disabled={!fuseState.previewSequence || fuseState.isFusing}
+                aria-label={`Set tempo, currently ${fuseState.bpm} BPM`}
+              >
+                <span class="tempo-value">{fuseState.bpm}</span>
+                <span class="tempo-unit">BPM</span>
+                <i class="fas fa-chevron-up" aria-hidden="true"></i>
+              </button>
+            {/snippet}
+          </Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Content
+              side="top"
+              align="center"
+              sideOffset={10}
+              collisionPadding={12}
+              class="fuse-tempo-popover"
+            >
+              <BpmQuickPopover
+                bpm={fuseState.bpm}
+                onBpmChange={(value) => fuseState.setBpm(value)}
+                onClose={() => (tempoOpen = false)}
+              />
+            </Popover.Content>
+          </Popover.Portal>
+        </Popover.Root>
+      </div>
+
+      <div class="fuse-slot">
+        <ActionButton
+          label="Fuse and open"
+          busyLabel="Building fused sequence..."
+          icon="fa-fire-flame-curved"
+          color="fuse"
+          fullWidth={true}
+          ariaDisabled={!fuseState.canFuse}
+          ariaDescribedBy="fuse-action-status"
+          busy={fuseState.isFusing}
+          onclick={() => void onFuse()}
+        />
+      </div>
+    </div>
   {/if}
 </section>
 
@@ -227,50 +214,21 @@
     background: transparent;
   }
 
-  .compact .preview-frame {
+  .compact .frame-wrap {
     flex: 1 1 0;
     min-height: 0;
-    border-radius: var(--settings-radius-lg, 18px);
-  }
-
-  .preview-heading-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 42px;
-  }
-
-  .preview-kicker,
-  h3,
-  .status {
-    margin: 0;
-  }
-
-  .preview-kicker {
-    color: color-mix(
-      in srgb,
-      var(--semantic-warning, #f97316) 78%,
-      var(--theme-text)
-    );
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 750;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
   }
 
   h3 {
-    color: var(--theme-text, #fff);
-    font-size: clamp(1.05rem, 2.4cqw, 1.35rem);
-    font-weight: 720;
+    margin: 0;
   }
 
-  .preview-length {
-    min-width: 7ch;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.58));
-    font-size: var(--font-size-compact, 12px);
-    font-variant-numeric: tabular-nums;
-    text-align: right;
+  .frame-wrap {
+    position: relative;
+    display: flex;
+    flex: 1 1 300px;
+    min-width: 0;
+    min-height: 260px;
   }
 
   .preview-frame {
@@ -278,9 +236,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    flex: 1 1 300px;
+    flex: 1 1 auto;
     min-width: 0;
-    min-height: 260px;
+    min-height: 0;
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
     border-radius: var(--settings-radius-lg, 18px);
@@ -296,6 +254,33 @@
       ),
       color-mix(in srgb, var(--theme-card-bg, #161821) 76%, black);
     background-size: 28px 28px;
+  }
+
+  .error-strip {
+    position: absolute;
+    inset-inline: 10px;
+    bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--settings-spacing-sm, 8px);
+    min-height: var(--min-touch-target, 48px);
+    padding: 6px 6px 6px 12px;
+    border: 1px solid
+      color-mix(in srgb, var(--semantic-error, #fca5a5) 42%, transparent);
+    border-radius: var(--settings-radius-md, 12px);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #fca5a5) 12%,
+      var(--theme-panel-bg, #161821)
+    );
+  }
+
+  .error-strip p {
+    margin: 0;
+    color: var(--semantic-error, #fca5a5);
+    font-size: var(--font-size-min, 14px);
+    line-height: 1.3;
   }
 
   .preview-placeholder {
@@ -340,12 +325,23 @@
     animation: preview-change 240ms ease-out both;
   }
 
-  .playback-row {
+  .stage-controls {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: var(--settings-spacing-sm, 10px);
     min-height: var(--min-touch-target, 44px);
+  }
+
+  .playback-cluster {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+    gap: var(--settings-spacing-sm, 10px);
+  }
+
+  .fuse-slot {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .tempo-trigger {
@@ -394,36 +390,6 @@
     font-size: var(--font-size-compact, 12px);
   }
 
-  .status-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 10px;
-    min-height: var(--min-touch-target, 44px);
-  }
-
-  .status {
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
-    font-size: var(--font-size-min, 14px);
-    line-height: 1.35;
-  }
-
-  .error-status {
-    color: var(--semantic-error, #fca5a5);
-  }
-
-  .retry-slot {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    min-width: 88px;
-    visibility: hidden;
-  }
-
-  .retry-slot.visible {
-    visibility: visible;
-  }
-
   @keyframes preview-change {
     0% {
       opacity: 0;
@@ -450,13 +416,50 @@
       padding: 14px;
     }
 
-    .preview-frame {
+    .frame-wrap {
       flex-basis: 260px;
       min-height: 240px;
     }
+  }
 
-    .status-row {
-      align-items: start;
+  /* One-page fit layouts only (mirrors FuseLayout's fr-row conditions).
+     min-height: 0 lets the stage shrink inside its fr row; anywhere else it
+     zeroes the stage's minimum contribution and collapses the auto grid rows.
+     The stage turns sideways: canvas frame left, control rail right, so the
+     rail absorbs the width a square canvas can't use. */
+  @container fuse (min-width: 600px) and (min-height: 600px) {
+    .preview-stage:not(.compact) {
+      flex-direction: row;
+      align-items: stretch;
+      justify-content: center;
+      min-height: 0;
+      padding: var(--settings-spacing-sm, 12px);
+    }
+
+    /* The canvas renders square, so the frame stays square (height-driven)
+       instead of stretching into letterboxed side space. */
+    .preview-stage:not(.compact) .frame-wrap {
+      flex: 0 1 auto;
+      aspect-ratio: 1;
+      height: 100%;
+      min-height: 0;
+    }
+
+    .preview-stage:not(.compact) .stage-controls {
+      flex: 1 1 200px;
+      flex-direction: column;
+      align-items: stretch;
+      min-width: 180px;
+      max-width: 340px;
+      min-height: 0;
+    }
+
+    .preview-stage:not(.compact) .playback-cluster {
+      justify-content: center;
+    }
+
+    .preview-stage:not(.compact) .fuse-slot {
+      margin-top: auto;
     }
   }
 
@@ -464,18 +467,36 @@
     .preview-stage {
       padding: clamp(16px, 1.4cqw, 24px);
     }
-
-    .preview-frame {
-      min-height: 320px;
-    }
   }
 
-  /* Locked desktop layout only (mirrors FuseLayout's fr-row condition).
-     min-height: 0 lets the stage shrink inside its fr rows; anywhere else it
-     zeroes the stage's minimum contribution and collapses the auto grid rows. */
-  @container fuse (min-width: 1100px) and (min-height: 861px) {
-    .preview-stage {
-      min-height: 0;
+  /* Locked desktop columns: back to canvas-over-controls. */
+  @container fuse (min-width: 1100px) and (min-height: 780px) {
+    .preview-stage:not(.compact) {
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    .preview-stage:not(.compact) .frame-wrap {
+      flex: 1 1 300px;
+      aspect-ratio: auto;
+      height: auto;
+      min-height: 320px;
+    }
+
+    .preview-stage:not(.compact) .stage-controls {
+      flex: 0 0 auto;
+      flex-direction: row;
+      align-items: center;
+      max-width: none;
+      min-width: 0;
+    }
+
+    .preview-stage:not(.compact) .playback-cluster {
+      justify-content: flex-start;
+    }
+
+    .preview-stage:not(.compact) .fuse-slot {
+      margin-top: 0;
     }
   }
 
