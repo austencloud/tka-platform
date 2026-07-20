@@ -79,13 +79,13 @@
   <!-- Normal-mode step numbers are baked into the cell image (see
        step-number-compositor) so they dissolve in lockstep with the pictograph
        during crossfades. The HTML overlay remains only for cases the compositor
-       skips: solo / motion-solo location labels and the start cell. -->
-  {#if showStepNumbers && (isBrowseSoloMode || isMotionSoloMode || cell.index === -1)}<span class="step-number-overlay" class:dark-mode={activeDarkMode} class:solo-location={isBrowseSoloMode} style="font-size: {isBrowseSoloMode ? Math.round(stepNumFontSize * 0.75) : stepNumFontSize}px;" transition:fade|local={{ duration: 150 }}>{cell.label}</span>{/if}
+       skips: the motion-solo step number and the start cell. -->
+  {#if showStepNumbers && (isMotionSoloMode || cell.index === -1)}<span class="step-number-overlay" class:dark-mode={activeDarkMode} style="font-size: {stepNumFontSize}px;" transition:fade|local={{ duration: 150 }}>{cell.label}</span>{/if}
   {#if showDurBadge && hasMixedDurations && cell.duration !== 1}<span class="duration-badge" class:dark-mode={activeDarkMode}>{formatDuration(cell.duration)}</span>{/if}
-  {#if isMotionSoloMode}
+  {#if isMotionSoloMode || (isBrowseSoloMode && showStepNumbers)}
     {@const soloMotion = getMotionSoloMotion(cell.index)}
     {#if soloMotion}
-      <span class="solo-locations" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 150 }}>
+      <span class="solo-locations" class:browse={isBrowseSoloMode} class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 150 }}>
         <span class="solo-loc-letter">{(soloMotion.startLocation ?? "").toLowerCase()}</span>
         <img class="solo-loc-arrow" src="/images/arrow.svg" alt="to" aria-hidden="true" draggable="false" />
         <span class="solo-loc-letter">{(soloMotion.endLocation ?? "").toLowerCase()}</span>
@@ -94,19 +94,22 @@
       {#if turnsLabel}
         <span
           class="solo-turn-number"
+          class:browse={isBrowseSoloMode}
           class:dark-mode={activeDarkMode}
           style="color: {soloColor === 'blue' ? 'var(--prop-blue, #2196f3)' : 'var(--prop-red, #f44336)'};"
           transition:fade|local={{ duration: 150 }}
         >{turnsLabel}</span>
       {/if}
-      {@const startOri = shortOrientation(soloMotion.startOrientation)}
-      {@const endOri = shortOrientation(soloMotion.endOrientation)}
-      {#if startOri && endOri}
-        <span class="solo-orientation" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 150 }}>
-          <span class="solo-ori-letter">{startOri}</span>
-          <img class="solo-ori-arrow" src="/images/arrow.svg" alt="to" aria-hidden="true" draggable="false" />
-          <span class="solo-ori-letter">{endOri}</span>
-        </span>
+      {#if isMotionSoloMode}
+        {@const startOri = shortOrientation(soloMotion.startOrientation)}
+        {@const endOri = shortOrientation(soloMotion.endOrientation)}
+        {#if startOri && endOri}
+          <span class="solo-orientation" class:dark-mode={activeDarkMode} transition:fade|local={{ duration: 150 }}>
+            <span class="solo-ori-letter">{startOri}</span>
+            <img class="solo-ori-arrow" src="/images/arrow.svg" alt="to" aria-hidden="true" draggable="false" />
+            <span class="solo-ori-letter">{endOri}</span>
+          </span>
+        {/if}
       {/if}
     {/if}
   {/if}
@@ -224,16 +227,6 @@
     color: #ffffff;
   }
 
-  /* Solo mode location labels - subtle, bottom-center instead of top-left */
-  .step-number-overlay.solo-location {
-    top: auto;
-    left: 50%;
-    bottom: 3%;
-    transform: translateX(-50%);
-    opacity: 0.5;
-    font-weight: 500;
-  }
-
   /* Duration badge - bottom-center, matches DurationGlyph.svelte positioning
      (y=890 in 950-unit viewBox = ~93.7% from top, centered horizontally) */
   .duration-badge {
@@ -266,7 +259,9 @@
     transform: translateX(-50%);
     display: inline-flex;
     align-items: center;
-    gap: 0.7cqw;
+    /* Wider breathing room around the arrow — round letters like "s" read as
+       cramped against it at the tighter spacing. */
+    gap: 1.15cqw;
     font-family: Cambria, "Hoefler Text", Georgia, serif;
     font-weight: 700;
     font-size: 7.9cqw; /* matches scaled letter height in PositionGlyph */
@@ -280,19 +275,33 @@
     color: #ffffff;
   }
 
+  /* Browse-solo (single prop path preview): the start→end pair sits low and a
+     touch smaller so it reads as an annotation, not a header. The turn number
+     moves to a top corner so the two never collide. */
+  .solo-locations.browse {
+    top: auto;
+    bottom: 4%;
+    font-size: 6.8cqw;
+    font-weight: 600;
+    opacity: 0.85;
+  }
+
   .solo-loc-letter {
     /* true lowercase, no small-caps */
     text-transform: lowercase;
-    letter-spacing: 0;
+    letter-spacing: 0.015em;
   }
 
   /* Shared arrow sizing - both header rows use the exact dimensions of
-     the PositionGlyph's rendered arrow so the two look like siblings. */
+     the PositionGlyph's rendered arrow so the two look like siblings. The
+     small lift optically centers the arrow against the lowercase letters,
+     whose visual mass sits below the line's geometric middle. */
   .solo-loc-arrow,
   .solo-ori-arrow {
     width: 7.02cqw;
     height: auto; /* aspect ratio preserved at 88.9:34.8 */
     flex-shrink: 0;
+    transform: translateY(-0.06em);
   }
 
   :global(:root.dark) .solo-locations .solo-loc-arrow,
@@ -314,6 +323,14 @@
     line-height: 1;
     pointer-events: none;
     user-select: none;
+  }
+
+  /* Browse-solo turns badge — top-left corner, clear of the bottom locations. */
+  .solo-turn-number.browse {
+    top: 5%;
+    bottom: auto;
+    left: 6%;
+    font-size: min(8.5cqw, 22px);
   }
 
   /* Motion-solo orientation annotation - bottom-center, below the

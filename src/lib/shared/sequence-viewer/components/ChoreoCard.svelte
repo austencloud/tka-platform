@@ -614,7 +614,9 @@
 
   /**
    * For solo mode, extract the end location of the kept color's motion
-   * for a given step. Falls back to step number if no motion data.
+   * for a given step, used as the cell's alt/aria label. The visible start→end
+   * annotation is composed from getMotionSoloMotion in CellRenderer.
+   * Falls back to step number if no motion data.
    */
   function getSoloLocationLabel(stepIndex: number): string {
     if (!isSoloMode || !sequence.steps) return String(stepIndex + 1);
@@ -627,15 +629,22 @@
   }
 
   /**
-   * Look up the visible motion for a given cell in motion-solo mode.
-   * cellIndex === -1 means start position, otherwise a step index.
-   * Returns undefined when not in motion-solo or data is missing.
+   * Look up the visible motion for a given cell in either solo mode. Motion-solo
+   * keeps the toggled-on color; browse-solo keeps browseViewMode's color. Both
+   * render the same start→end + turns annotation. cellIndex === -1 is the start
+   * position. Returns undefined when not solo or data is missing.
    */
   function getMotionSoloMotion(cellIndex: number):
     | import("$lib/shared/pictograph/shared/domain/models/motion-data").MotionData
     | undefined {
-    if (!isMotionSoloMode) return undefined;
-    const color = showBlueMotion ? "blue" : "red";
+    const color = isMotionSoloMode
+      ? showBlueMotion
+        ? "blue"
+        : "red"
+      : isBrowseSoloMode
+        ? soloColor
+        : undefined;
+    if (!color) return undefined;
     if (cellIndex === -1) {
       const startData = sequence.startPosition ??
         (sequence.steps?.[0] ? createStartPositionFromBeatStart(sequence.steps[0]) : undefined);
