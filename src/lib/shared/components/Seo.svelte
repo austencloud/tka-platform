@@ -63,6 +63,7 @@
   <meta name="twitter:title" content={title} />
   <meta name="twitter:description" content={description} />
   <meta name="twitter:image" content={ogImage} />
+  <meta name="twitter:image:alt" content={ogImageAlt} />
 
   {@render children?.()}
 </svelte:head>

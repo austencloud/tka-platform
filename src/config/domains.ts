@@ -116,9 +116,9 @@ export function getAppCanonicalURL(path: string = ""): string {
  * Landing page SEO config
  */
 export const LANDING_SEO_CONFIG = {
-  siteName: "TKA - The Kinetic Alphabet",
+  siteName: "The Kinetic Alphabet",
   description:
-    "TKA is a flow arts notation system for documenting and sharing choreography with dual wielded props - staff, fans, clubs, hoops, buugeng.",
+    "The Kinetic Alphabet is a flow arts notation system for writing, animating, saving, and sharing choreography.",
   keywords:
     "flow arts notation, flow arts notation system, dual wielded props, staff notation, fan notation, club notation, TKA, The Kinetic Alphabet, TKA notation, TKA flow arts, prop notation, movement notation, flow arts software, flow arts choreography software",
   author: "Austen Cloud",
@@ -137,7 +137,7 @@ export const LANDING_SEO_CONFIG = {
 export const APP_SEO_CONFIG = {
   siteName: "Flow Arts Composer",
   description:
-    "Create, animate, and share flow arts sequences with Flow Arts Composer - the free choreography app for staff, clubs, fans, hoops, buugeng, and swords.",
+    "Build, animate, save, and share choreography with Flow Arts Composer, free flow arts software powered by The Kinetic Alphabet.",
   keywords:
     "Flow Arts Composer, TKA app, TKA flow arts, flow arts app, sequence creator, staff choreography, club manipulation, fan spinning, buugeng patterns, flow arts software, flow arts choreography software",
   author: "Austen Cloud",

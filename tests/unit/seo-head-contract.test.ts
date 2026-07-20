@@ -5,6 +5,12 @@ import { resolve } from "node:path";
 const read = (p: string) => readFileSync(resolve(process.cwd(), p), "utf-8");
 
 describe("SEO head contract", () => {
+  it("gives every page using the shared primitive an accessible social image", () => {
+    expect(read("src/lib/shared/components/Seo.svelte")).toContain(
+      '<meta name="twitter:image:alt" content={ogImageAlt} />'
+    );
+  });
+
   const routes = [
     "src/routes/sequence/[id]/+page.svelte",
     "src/routes/q/[code]/+page.svelte",
@@ -14,7 +20,15 @@ describe("SEO head contract", () => {
   for (const route of routes) {
     describe(route, () => {
       const src = read(route);
-      it("has svelte:head with og:title and canonical", () => {
+      it("uses either the complete shared SEO primitive or a complete direct head", () => {
+        if (src.includes("<Seo")) {
+          expect(src).toContain(
+            'import Seo from "$lib/shared/components/Seo.svelte"'
+          );
+          expect(src).toContain("canonical=");
+          return;
+        }
+
         expect(src).toContain("<svelte:head>");
         expect(src).toContain("og:title");
         expect(src).toContain('rel="canonical"');
@@ -32,5 +46,100 @@ describe("SEO head contract", () => {
     expect(read("src/routes/(public)/shop/[productId]/+page.svelte")).toContain(
       "application/ld+json"
     );
+  });
+
+  it("emits CreativeWork JSON-LD only for verified, indexable sequences", () => {
+    const route = read("src/routes/sequence/[id]/+page.svelte");
+    const builder = read("src/routes/sequence/[id]/sequence-seo.ts");
+
+    expect(route).toContain('type="application/ld+json"');
+    expect(route).toContain('replace(/</g, "\\\\u003c")');
+    expect(builder).toContain('"@type": "CreativeWork"');
+    expect(builder).toContain("jsonLd: indexable");
+    expect(builder).not.toContain('"@type": "HowTo"');
+  });
+
+  it("gives Flow Arts Composer one canonical product identity", () => {
+    const composer = read("src/routes/(public)/composer/+page.svelte");
+
+    expect(composer).toContain(
+      'import Seo from "$lib/shared/components/Seo.svelte"'
+    );
+    expect(composer).toContain(
+      "Flow Arts Composer | Free Flow Arts Software for Choreography"
+    );
+    expect(composer).toContain("const SOFTWARE_ID = `${URL}#software`");
+    expect(composer).toContain('"@type": "SoftwareApplication"');
+    expect(composer).toContain('isPartOf: { "@id": WEBSITE_ID }');
+    expect(composer).toContain('creator: { "@id": CREATOR_ID }');
+    expect(composer).toContain(
+      '"https://tkaflowarts.com/branding/composer-og-image.png"'
+    );
+    expect(composer).toContain("What is flow arts software?");
+    expect(composer).not.toContain('"@type": "HowTo"');
+    expect(composer).not.toContain(
+      'alternateName: "The Kinetic Alphabet Composer"'
+    );
+  });
+
+  it("keeps the Composer and sitewide social images separate at 1200 by 630", () => {
+    const composerBuilder = read("scripts/build-og-image.mjs");
+    const notationBuilder = read("scripts/bake-notation-images.ts");
+    const image = readFileSync(
+      resolve(process.cwd(), "static/branding/composer-og-image.png")
+    );
+
+    expect(composerBuilder).toContain("composer-og-image.html");
+    expect(composerBuilder).toContain("composer-og-image.png");
+    expect(notationBuilder).toContain('"branding", "og-image.png"');
+    expect(image.subarray(1, 4).toString("ascii")).toBe("PNG");
+    expect(image.readUInt32BE(16)).toBe(1200);
+    expect(image.readUInt32BE(20)).toBe(630);
+  });
+
+  it("connects the product, creator, article, organization, and website IDs", () => {
+    const composer = read("src/routes/(public)/composer/+page.svelte");
+    const about = read("src/routes/(public)/about/+page.svelte");
+    const history = read("src/routes/(public)/roots/software/+page.svelte");
+
+    expect(composer).toContain(
+      'const CREATOR_ID = "https://tkaflowarts.com/about#austen-cloud"'
+    );
+    expect(about).toContain('"@type": "Person"');
+    expect(about).toContain("const PERSON_ID = `${URL}#austen-cloud`");
+    expect(history).toContain(
+      'const PERSON_ID = "https://tkaflowarts.com/about#austen-cloud"'
+    );
+    expect(history).toContain('publisher: { "@id": ORGANIZATION_ID }');
+    expect(history).toContain('isPartOf: { "@id": WEBSITE_ID }');
+  });
+
+  it("keeps the site and organization entities linked and removes fake site search", () => {
+    const home = read("src/routes/+page.svelte");
+
+    expect(home).toContain('"@id": "https://tkaflowarts.com/#website"');
+    expect(home).toContain('"@id": "https://tkaflowarts.com/#organization"');
+    expect(home).toContain(
+      '"publisher": { "@id": "https://tkaflowarts.com/#organization" }'
+    );
+    expect(home).toContain(
+      '"founder": { "@id": "https://tkaflowarts.com/about#austen-cloud" }'
+    );
+    expect(home).not.toContain('"@type": "SearchAction"');
+    expect(home).not.toContain("search_term_string");
+  });
+
+  it("records product CTA and field performance events for the organic funnel", () => {
+    const composer = read("src/routes/(public)/composer/+page.svelte");
+    const posthog = read("src/lib/shared/analytics/services/posthog.ts");
+    const layout = read("src/routes/+layout.svelte");
+
+    expect(composer).toContain('page: "composer"');
+    expect(composer).toContain('cta_type: "open_composer"');
+    expect(posthog).toContain("posthog.init");
+    expect(posthog).toContain("capture_performance:");
+    expect(posthog).toContain("web_vitals: captureEnabled");
+    expect(posthog).toContain('["LCP", "INP", "CLS"]');
+    expect(layout).toContain('import("$lib/shared/analytics/web-vitals")');
   });
 });

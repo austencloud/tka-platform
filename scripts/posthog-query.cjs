@@ -13,13 +13,8 @@
  */
 const https = require("https");
 
-const apiKey = process.env.POSTHOG_PERSONAL_API_KEY;
-const projectId = process.env.POSTHOG_PROJECT_ID || "299320";
-
-if (!apiKey) {
-  console.error("POSTHOG_PERSONAL_API_KEY not set in environment");
-  process.exit(1);
-}
+const DEFAULT_API_HOST = "us.posthog.com";
+const DEFAULT_PROJECT_ID = "299320";
 
 // --- CLI Arg Parsing ---
 
@@ -169,24 +164,18 @@ const templates = {
     LIMIT 30
   `,
 
-  funnel: (dateExpr, hf) => `
+  funnel: (dateExpr, _hf, host) => `
+    WITH organic_sessions AS (
+      SELECT session_id AS sid
+      FROM sessions
+      WHERE "$start_timestamp" >= ${dateExpr}
+        AND "$entry_hostname" = '${host || "tkaflowarts.com"}'
+        AND "$entry_pathname" = '/composer'
+        AND "$channel_type" = 'Organic Search'
+    )
     SELECT
-      'Landing pageview' AS step,
-      count(DISTINCT person_id) AS users
-    FROM events
-    WHERE event = '$pageview'
-      AND properties.$host = 'tkaflowarts.com'
-      AND timestamp >= ${dateExpr}
-
-    UNION ALL
-
-    SELECT
-      'App pageview' AS step,
-      count(DISTINCT person_id) AS users
-    FROM events
-    WHERE event = '$pageview'
-      AND properties.$host = 'tkaflowarts.com'
-      AND timestamp >= ${dateExpr}
+      count() AS organic_composer_sessions
+    FROM organic_sessions
   `,
 
   events: (dateExpr, hf) => `
@@ -225,14 +214,26 @@ const templates = {
 
 // --- HTTP Request ---
 
-function runQuery(hogql) {
+function runQuery(hogql, options = {}) {
+  const apiKey = options.apiKey || process.env.POSTHOG_PERSONAL_API_KEY;
+  const projectId =
+    options.projectId || process.env.POSTHOG_PROJECT_ID || DEFAULT_PROJECT_ID;
+  const apiHost =
+    options.apiHost || process.env.POSTHOG_API_HOST || DEFAULT_API_HOST;
+
+  if (!apiKey) {
+    return Promise.reject(
+      new Error("POSTHOG_PERSONAL_API_KEY not set in environment")
+    );
+  }
+
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       query: { kind: "HogQLQuery", query: hogql },
     });
 
     const options = {
-      hostname: "us.i.posthog.com",
+      hostname: apiHost,
       path: `/api/projects/${projectId}/query/`,
       method: "POST",
       headers: {
@@ -327,13 +328,17 @@ async function main() {
   let hogql;
 
   if (templates[command]) {
-    hogql = templates[command](dateExpr, hf);
-    console.log(`--- ${command} (period: ${period}${host ? `, host: ${host}` : ""}) ---\n`);
+    hogql = templates[command](dateExpr, hf, host);
+    console.log(
+      `--- ${command} (period: ${period}${host ? `, host: ${host}` : ""}) ---\n`
+    );
   } else if (command.toUpperCase().startsWith("SELECT")) {
     // Raw HogQL query
     hogql = command;
   } else {
-    console.error(`Unknown template: "${command}". Run with "help" for available templates.`);
+    console.error(
+      `Unknown template: "${command}". Run with "help" for available templates.`
+    );
     process.exit(1);
   }
 
@@ -346,4 +351,15 @@ async function main() {
   }
 }
 
-main();
+module.exports = {
+  hostFilter,
+  parseArgs,
+  periodToDateExpr,
+  printResults,
+  runQuery,
+  templates,
+};
+
+if (require.main === module) {
+  main();
+}

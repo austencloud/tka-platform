@@ -1,6 +1,5 @@
 import { LANDING_DOMAIN } from "../../config/domains";
 import { GUIDE_BODY_PAGES } from "../(public)/guide/level-1/_data/guide-manifest";
-import { hasReflowContent } from "../(public)/guide/level-1/_data/guide-content";
 import { allLetterSeo } from "$lib/shared/seo/notation-letters";
 import type { RequestHandler } from "./$types";
 
@@ -12,8 +11,6 @@ interface SitemapImage {
 
 interface SitemapEntry {
   url: string;
-  priority: string;
-  changefreq: string;
   images?: SitemapImage[];
 }
 
@@ -32,8 +29,6 @@ function xmlEscape(s: string): string {
 function getLetterImageEntries(): SitemapEntry[] {
   return allLetterSeo().map((l) => ({
     url: l.href.replace(/^\//, ""),
-    priority: "0.6",
-    changefreq: "monthly",
     images: [
       {
         loc: `${LANDING_DOMAIN}${l.images.webp}`,
@@ -44,70 +39,64 @@ function getLetterImageEntries(): SitemapEntry[] {
   }));
 }
 
-const pages = [
+const pages: SitemapEntry[] = [
   // Landing page (canonical — /landing duplicates this and is dropped)
-  { url: "", priority: "1.0", changefreq: "weekly" },
+  { url: "" },
   // Shop
-  { url: "shop", priority: "0.9", changefreq: "weekly" },
-  { url: "shop/loop-deck", priority: "0.8", changefreq: "monthly" },
-  { url: "shop/tnd-trilogy", priority: "0.8", changefreq: "monthly" },
-  { url: "shop/choreography-cards", priority: "0.8", changefreq: "monthly" },
+  { url: "shop" },
+  { url: "shop/loop-deck" },
+  { url: "shop/tnd-trilogy" },
+  { url: "shop/choreography-cards" },
   // Pillar pages (SEO content roadmap)
-  { url: "composer", priority: "0.9", changefreq: "monthly" },
-  { url: "notation", priority: "0.9", changefreq: "monthly" },
+  { url: "composer" },
+  { url: "notation" },
   // Per-prop notation pages (2026-07-16-per-prop-notation-pages-design.md)
-  { url: "notation/staves", priority: "0.7", changefreq: "monthly" },
-  { url: "notation/fans", priority: "0.7", changefreq: "monthly" },
-  { url: "notation/clubs", priority: "0.7", changefreq: "monthly" },
-  { url: "notation/buugeng", priority: "0.7", changefreq: "monthly" },
-  { url: "notation/poi", priority: "0.7", changefreq: "monthly" },
-  { url: "notation/shape-matrix", priority: "0.7", changefreq: "monthly" },
-  { url: "notation/loops", priority: "0.7", changefreq: "monthly" },
-  { url: "notation/caps", priority: "0.6", changefreq: "monthly" },
+  { url: "notation/staves" },
+  { url: "notation/fans" },
+  { url: "notation/clubs" },
+  { url: "notation/buugeng" },
+  { url: "notation/poi" },
+  { url: "notation/shape-matrix" },
+  { url: "notation/loops" },
+  { url: "notation/caps" },
   // Per-letter notation pages with baked pictographs (2026-07-14-image-seo-google-images-design.md)
-  { url: "notation/letters", priority: "0.7", changefreq: "monthly" },
-  { url: "glossary", priority: "0.8", changefreq: "monthly" },
-  {
-    url: "learn/staff-spinning-choreography",
-    priority: "0.8",
-    changefreq: "monthly",
-  },
+  { url: "notation/letters" },
+  { url: "glossary" },
+  { url: "learn/staff-spinning-choreography" },
   // /roots redirects (301) to /notation and is intentionally omitted here, same
   // convention as /landing above — a redirected URL doesn't self-list.
-  { url: "roots/software", priority: "0.7", changefreq: "monthly" },
+  { url: "roots/software" },
   // Marketing
-  { url: "about", priority: "0.6", changefreq: "monthly" },
+  { url: "about" },
+  { url: "faq" },
   // /support is noindex (see support/+page.svelte) — omitted to avoid a
   // sitemap↔robots "index this / don't index this" conflict.
   // Guide — the indexable, reflowable article routes (the /print + /book
   // replicas are noindex; the canonical is the article, so only these are listed)
-  { url: "guide", priority: "0.7", changefreq: "monthly" },
+  { url: "guide" },
   // Level-1 topic routes are enumerated dynamically from the manifest below
   // (guideLevel1Entries) — each is a prerendered /guide/level-1/<slug> page that
   // is BOTH the crawlable SEO surface and the interactive reader (prerender +
-  // hydrate). Flow-ready (mobile-first) pages rank higher than sheet-fallback
-  // ones; see 2026-07-14-guide-crawlable-paginated-reader-design.md.
+  // hydrate). Both the mobile-first and sheet-fallback variants are included;
+  // see 2026-07-14-guide-crawlable-paginated-reader-design.md.
   // The downloadable guide PDFs — indexed directly so "what we have" is
   // discoverable, and so a doorway page + its PDF can both surface in search.
-  { url: "guides/level-1.pdf", priority: "0.6", changefreq: "yearly" },
-  { url: "guides/level-2.pdf", priority: "0.6", changefreq: "yearly" },
-  { url: "guides/level-3.pdf", priority: "0.6", changefreq: "yearly" },
-  { url: "guide/level-2", priority: "0.8", changefreq: "monthly" },
-  { url: "guide/level-2/turns", priority: "0.7", changefreq: "monthly" },
-  { url: "guide/level-2/double-turns", priority: "0.7", changefreq: "monthly" },
-  { url: "guide/codex", priority: "0.7", changefreq: "monthly" },
+  { url: "guides/level-1.pdf" },
+  { url: "guides/level-2.pdf" },
+  { url: "guides/level-3.pdf" },
+  { url: "guide/level-2" },
+  { url: "guide/level-2/turns" },
+  { url: "guide/level-2/double-turns" },
+  { url: "guide/codex" },
 ];
 
 /**
  * Every Level-1 topic route (/guide/level-1/<slug>), enumerated from the manifest
- * so a new body page is listed automatically. Flow-ready pages (mobile-first
- * reflow content registered in GUIDE_CONTENT) rank higher than sheet-fallback
- * pages, which still crawl but render the desktop print sheet.
+ * so a new body page is listed automatically. This covers both the mobile-first
+ * reflow pages and the sheet-fallback pages.
  */
 const guideLevel1Entries = GUIDE_BODY_PAGES.map((p) => ({
   url: `guide/level-1/${p.id}`,
-  priority: hasReflowContent(p.id) ? "0.7" : "0.6",
-  changefreq: "monthly",
 }));
 
 /**
@@ -141,7 +130,7 @@ async function getCuratedSequenceUrls(): Promise<string[]> {
       if (ids.size >= 200) break;
     }
 
-    return [...ids].map((id) => `sequence/${id}`);
+    return [...ids].map((id) => `sequence/${encodeURIComponent(id)}`);
   } catch {
     // Non-fatal: admin creds may be absent in preview/dev environments.
     return [];
@@ -149,22 +138,13 @@ async function getCuratedSequenceUrls(): Promise<string[]> {
 }
 
 export const GET: RequestHandler = async () => {
-  const now = new Date().toISOString().split("T")[0];
   const curatedUrls = await getCuratedSequenceUrls();
 
   const allEntries: SitemapEntry[] = [
-    ...pages.map((page) => ({
-      url: page.url,
-      priority: page.priority,
-      changefreq: page.changefreq,
-    })),
+    ...pages,
     ...guideLevel1Entries,
     ...getLetterImageEntries(),
-    ...curatedUrls.map((url) => ({
-      url,
-      priority: "0.6",
-      changefreq: "monthly",
-    })),
+    ...curatedUrls.map((url) => ({ url })),
   ];
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -174,10 +154,9 @@ export const GET: RequestHandler = async () => {
     .map(
       (page) => `
   <url>
-    <loc>${LANDING_DOMAIN}/${page.url}</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>${page.changefreq}</changefreq>
-    <priority>${page.priority}</priority>${(page.images ?? [])
+    <loc>${xmlEscape(`${LANDING_DOMAIN}/${page.url}`)}</loc>${(
+      page.images ?? []
+    )
       .map(
         (img) => `
     <image:image>

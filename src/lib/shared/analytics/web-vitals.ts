@@ -27,6 +27,7 @@ const THRESHOLDS = {
 } as const;
 
 type MetricName = keyof typeof THRESHOLDS;
+let initialized = false;
 
 function getRating(
   name: string,
@@ -41,14 +42,17 @@ function getRating(
 }
 
 /**
- * Handler for web vitals metrics - feeds into bootProfiler so metrics appear
- * alongside init phases in one consolidated view.
+ * Feed field metrics into the development profiler. PostHog captures its native
+ * `$web_vitals` event separately, so duplicating the metrics here would inflate
+ * event volume and produce two competing field datasets.
  */
 function handleMetric(metric: Metric): void {
+  const rating = getRating(metric.name, metric.value);
+
   bootProfiler.recordVital({
     name: metric.name,
     value: metric.value,
-    rating: getRating(metric.name, metric.value),
+    rating,
     delta: metric.delta,
   });
 }
@@ -59,10 +63,12 @@ function handleMetric(metric: Metric): void {
  */
 export async function initWebVitals(): Promise<void> {
   // Only run in browser
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || initialized) return;
 
   // Dynamic import to ensure tree-shaking in SSR
   const { onCLS, onFCP, onINP, onLCP, onTTFB } = await import("web-vitals");
+  if (initialized) return;
+  initialized = true;
 
   // Track all Core Web Vitals
   onCLS(handleMetric);

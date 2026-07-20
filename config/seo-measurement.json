@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "experimentId": "flow-arts-software-2026",
+  "site": {
+    "origin": "https://tkaflowarts.com",
+    "host": "tkaflowarts.com",
+    "searchConsoleProperty": "sc-domain:tkaflowarts.com",
+    "reportingTimeZone": "America/Los_Angeles"
+  },
+  "warehouse": {
+    "projectId": "the-kinetic-alphabet",
+    "location": "US",
+    "searchConsoleDataset": "searchconsole_tkaflowarts",
+    "measurementDataset": "seo_measurement",
+    "performanceSource": "api"
+  },
+  "experiment": {
+    "deploymentDate": null,
+    "indexedDate": null,
+    "instrumentationStartDate": null,
+    "baselineDays": 28,
+    "primaryDays": 28,
+    "confirmationDays": 28,
+    "finalDataLagDays": 3
+  },
+  "treatment": {
+    "inspectionSampleLimit": 20,
+    "exactPaths": ["/composer", "/roots/software"],
+    "sitemapPathPrefixes": ["/sequence/"]
+  },
+  "controls": {
+    "candidatePathPrefixes": ["/guide/level-1/"],
+    "minimumBaselineImpressions": 5,
+    "maximumControls": 5,
+    "minimumPretrendCorrelation": 0.1
+  },
+  "successCriteria": {
+    "minimumTreatmentImpressionsForDecision": 100,
+    "minimumControlAdjustedImpressionLift": 0.25,
+    "minimumControlAdjustedClickLift": 0.25,
+    "maximumHeadTermPosition": 3,
+    "maximumHeadTermAiCitationRank": 1,
+    "minimumIndexedSampleRate": 0.9,
+    "minimumOrganicActivationRate": 0.15,
+    "minimumAiCitationRate": 0.5
+  },
+  "aiOverviewAudit": {
+    "locale": "en-US",
+    "device": "desktop",
+    "market": "United States"
+  },
+  "queryGroups": [
+    {
+      "id": "head_term",
+      "label": "Exact head term",
+      "match": "exact",
+      "terms": ["flow arts software"]
+    },
+    {
+      "id": "software_category",
+      "label": "Flow arts software category",
+      "match": "exact",
+      "terms": [
+        "flow arts software",
+        "flow arts choreography software",
+        "flow arts app",
+        "flow arts choreography app",
+        "flow arts sequence builder"
+      ]
+    },
+    {
+      "id": "notation_category",
+      "label": "Notation category",
+      "match": "exact",
+      "terms": ["flow arts notation", "prop manipulation notation"]
+    },
+    {
+      "id": "brand",
+      "label": "Brand",
+      "match": "exact",
+      "terms": [
+        "flow arts composer",
+        "kinetic alphabet composer",
+        "the kinetic alphabet",
+        "tka flow arts"
+      ]
+    }
+  ],
+  "aiOverviewQueries": [
+    "flow arts software",
+    "what is flow arts software",
+    "flow arts choreography software",
+    "software for flow arts choreography",
+    "flow arts app",
+    "flow arts choreography app",
+    "how to write flow arts choreography",
+    "flow arts notation",
+    "prop manipulation notation",
+    "staff spinning choreography software",
+    "poi choreography software",
+    "fan spinning choreography software",
+    "buugeng choreography software",
+    "flow arts sequence builder",
+    "kinetic alphabet composer",
+    "flow arts composer",
+    "the kinetic alphabet",
+    "tka flow arts",
+    "how to animate flow arts choreography",
+    "how to share flow arts sequences"
+  ]
+}

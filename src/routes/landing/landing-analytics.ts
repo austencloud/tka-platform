@@ -20,8 +20,13 @@ export function trackSectionView(section: string): void {
 // --- CTA clicks ---
 
 export function trackCtaClick(
-  location: "hero" | "footer",
-  props?: { platform?: string; cta_type?: string }
+  location: "hero" | "viewer_3d" | "footer",
+  props?: {
+    platform?: string;
+    cta_type?: string;
+    page?: "home" | "composer";
+    destination?: string;
+  }
 ): void {
   captureEvent("landing_cta_click", { location, ...props });
 }
@@ -48,11 +53,16 @@ export function trackVideoPlay(videoIndex: number): void {
 // --- Background picker ---
 
 export function trackBackgroundChange(backgroundType: string): void {
-  captureEvent("landing_background_change", { background_type: backgroundType });
+  captureEvent("landing_background_change", {
+    background_type: backgroundType,
+  });
 }
 
 // --- Outbound links ---
 
-export function trackOutboundClick(destination: string, location: string): void {
+export function trackOutboundClick(
+  destination: string,
+  location: string
+): void {
   captureEvent("landing_outbound_click", { destination, location });
 }

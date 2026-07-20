@@ -1,0 +1,70 @@
+name: SEO Measurement
+
+on:
+  schedule:
+    - cron: "37 12 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: seo-measurement
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  collect:
+    name: Collect private SEO evidence
+    if: github.event_name == 'workflow_dispatch' || vars.SEO_MEASUREMENT_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GSC_PROPERTY: ${{ vars.GSC_PROPERTY }}
+      GSC_EXPORT_DATASET: ${{ vars.GSC_EXPORT_DATASET }}
+      SEO_MEASUREMENT_DATASET: ${{ vars.SEO_MEASUREMENT_DATASET }}
+      SEO_PERFORMANCE_SOURCE: ${{ vars.SEO_PERFORMANCE_SOURCE }}
+      SEO_DEPLOYMENT_DATE: ${{ vars.SEO_DEPLOYMENT_DATE }}
+      SEO_INDEXED_DATE: ${{ vars.SEO_INDEXED_DATE }}
+      SEO_INSTRUMENTATION_START_DATE: ${{ vars.SEO_INSTRUMENTATION_START_DATE }}
+      POSTHOG_PROJECT_ID: ${{ vars.POSTHOG_PROJECT_ID }}
+      POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}
+      POSTHOG_API_HOST: us.posthog.com
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SEO_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate measurement contracts
+        run: pnpm run seo:check && pnpm run validate:seo
+
+      - name: Verify provider access
+        run: pnpm run seo:verify-access
+
+      - name: Collect and store SEO evidence
+        run: pnpm run seo:daily
+
+      - name: Record collector status
+        if: success()
+        run: echo "Private SEO collection and scorecard storage completed." >> "$GITHUB_STEP_SUMMARY"

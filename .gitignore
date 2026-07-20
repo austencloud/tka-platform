@@ -76,6 +76,10 @@ test-output.txt
 firestore-debug.log
 *-debug.log
 
+# Private SEO measurement outputs and temporary GitHub OIDC credentials
+/seo-reports/
+gha-creds-*.json
+
 # Dependencies
 node_modules/
 .pnpm-debug.log*

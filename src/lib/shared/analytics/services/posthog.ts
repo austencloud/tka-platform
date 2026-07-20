@@ -14,6 +14,7 @@
 
 import posthog from "posthog-js";
 import { browser } from "$app/environment";
+import { getDeviceId } from "$lib/shared/foundation/services/device-id";
 
 // `$env/dynamic/public` throws on module-eval in a worker (no globalThis
 // sveltekit env object), which crashes the composition worker the moment it
@@ -24,11 +25,73 @@ type PublicEnv = Record<string, string | undefined>;
 let _publicEnv: PublicEnv | null = null;
 async function loadPublicEnv(): Promise<PublicEnv> {
   if (_publicEnv) return _publicEnv;
-  ({ env: _publicEnv } = (await import("$env/dynamic/public")) as { env: PublicEnv });
+  ({ env: _publicEnv } = (await import("$env/dynamic/public")) as {
+    env: PublicEnv;
+  });
   return _publicEnv;
 }
 
+// Start that fetch the moment this module evaluates instead of at the top of
+// initPostHog(). Awaiting it there put a second serial round trip in front of
+// posthog.init() — the scan page paid it after the posthog chunk had already
+// landed, delaying replay start by exactly that hop. Prefetching overlaps it
+// with posthog-js's own evaluation; initPostHog() then resolves from _publicEnv.
+//
+// `document` is the worker guard: a web worker has no document, so the
+// composition worker never fetches (and never crashes on) the env module. A
+// rejection is swallowed here and simply retried by the await in initPostHog().
+if (typeof document !== "undefined") {
+  void loadPublicEnv().catch(() => {});
+}
+
 let initialized = false;
+
+// Whether this page load ever identified a real user to PostHog. resetUser()
+// reads it so an ungated call can't churn the identity of a visitor who was
+// never identified in the first place.
+let identified = false;
+
+/**
+ * Has PostHog already restored an identified person from its own storage?
+ *
+ * Bootstrapping a distinct_id overwrites whatever PostHog had persisted, so for
+ * a signed-in user it would knock them back to anonymous and re-fire $identify
+ * on every page load. Anonymous visitors have nothing worth preserving — their
+ * stored id is a random uuid — so those we happily overwrite with the stable
+ * device id.
+ *
+ * Reads PostHog's own persistence key (`ph_<token>_posthog`, the default when
+ * `persistence_name` is unset) and its `$user_state` property. Both verified
+ * against posthog-js 1.341.0; if either ever changes shape this returns false
+ * and we simply bootstrap, which is the safe direction.
+ */
+function hasIdentifiedPostHogPerson(token: string): boolean {
+  const raw = localStorage.getItem(`ph_${token}_posthog`);
+  if (!raw) return false;
+  const stored = JSON.parse(raw) as { $user_state?: string };
+  return stored.$user_state === "identified";
+}
+
+/**
+ * The distinct_id to pin an anonymous visitor to, or undefined to let PostHog
+ * use what it already has.
+ *
+ * Why: PostHog's own anonymous id is random and disposable — a reset() or a
+ * cleared localStorage mints a brand-new one, and the same human comes back as
+ * a second "user". Seeding it from our persistent device UUID makes one browser
+ * one identity, so a stray reset heals on the next page load instead of
+ * permanently forking the person.
+ */
+function resolveBootstrapDistinctId(token: string): string | undefined {
+  try {
+    if (hasIdentifiedPostHogPerson(token)) return undefined;
+    return getDeviceId();
+  } catch {
+    // Storage blocked (private browsing, hardened settings) or unparseable —
+    // fall back to PostHog's own id rather than failing init over analytics.
+    return undefined;
+  }
+}
 
 /**
  * Initialize PostHog analytics.
@@ -52,9 +115,17 @@ export async function initPostHog(): Promise<void> {
   posthog.init(env.PUBLIC_POSTHOG_KEY, {
     api_host: env.PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
 
-    // Capture pageviews automatically (prod only)
-    capture_pageview: captureEnabled,
+    // Capture the initial load and SvelteKit history navigation (prod only).
+    capture_pageview: captureEnabled ? "history_change" : false,
     capture_pageleave: captureEnabled,
+
+    // Keep the field-performance evidence owned by PostHog's native event.
+    // Setting this in the client prevents a project toggle from silently
+    // removing LCP, INP, or CLS from the SEO scorecard.
+    capture_performance: {
+      web_vitals: captureEnabled,
+      web_vitals_allowed_metrics: ["LCP", "INP", "CLS"],
+    },
 
     // Session recording sends large payloads that trigger 413 errors on
     // localhost (CORS + Content Too Large). Only record in production.
@@ -72,9 +143,14 @@ export async function initPostHog(): Promise<void> {
       capture_console_errors: true,
     },
 
-    // Feature flags - load on init for immediate availability
+    // Feature flags - load on init for immediate availability.
+    // distinctID pins an anonymous visitor to this browser's device UUID so a
+    // reset or a storage wipe still lands on the same person. Left undefined
+    // for an already-identified user (see resolveBootstrapDistinctId), and
+    // posthog-js skips the whole bootstrap-identity path when it is undefined.
     bootstrap: {
       featureFlags: {},
+      distinctID: resolveBootstrapDistinctId(env.PUBLIC_POSTHOG_KEY),
     },
 
     // Persist user identity across sessions
@@ -99,7 +175,6 @@ export async function initPostHog(): Promise<void> {
     loaded: (posthog) => {
       // Reload feature flags to ensure fresh state
       posthog.reloadFeatureFlags();
-
     },
   });
 
@@ -135,13 +210,26 @@ export function identifyUser(
     is_tester: properties?.isTester,
     is_admin: properties?.isAdmin,
   });
+
+  identified = true;
 }
 
 /**
  * Reset user identity on logout.
+ *
+ * Only ever valid after a real sign-in. reset() mints a fresh distinct_id AND a
+ * fresh session_id, so calling it for a visitor who was never identified splits
+ * one anonymous person — and one session recording — in two for no gain. That
+ * is exactly what broke card-scan attribution: the auth listener's "no user"
+ * branch fired on every page load for every logged-out visitor. Callers gate on
+ * a genuine signed-in → signed-out transition; this guard makes an ungated call
+ * a no-op instead of a regression.
  */
 export function resetUser(): void {
   if (!browser || !initialized) return;
+  if (!identified) return;
+
+  identified = false;
   posthog.reset();
 }
 
@@ -209,9 +297,7 @@ export function reloadFeatureFlags(): void {
  * Set user properties without identifying.
  * Use for updating properties on an already-identified user.
  */
-export function setUserProperties(
-  properties: Record<string, unknown>
-): void {
+export function setUserProperties(properties: Record<string, unknown>): void {
   if (!browser || !initialized) return;
   posthog.people.set(properties);
 }

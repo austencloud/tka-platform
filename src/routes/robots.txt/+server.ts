@@ -13,7 +13,6 @@ Disallow: /api/
 Disallow: /admin/
 Disallow: /test/
 Disallow: /demo/
-Disallow: /_app/
 Disallow: /.svelte-kit/
 Disallow: /embed/
 Disallow: /render-pictographs

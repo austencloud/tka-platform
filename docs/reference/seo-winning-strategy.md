@@ -1,230 +1,270 @@
-# SEO Winning Strategy — Adversarially Tested (2026-07-14)
+# SEO strategy: make Flow Arts Composer the category reference
 
-Product of a 5-front adversarial sweep: analog competitor teardown, durable/
-algorithm-proof SEO, AI-search (AEO), a hostile red-team of our own roadmap, and
-a keyword-demand reality check. Sources live in the subagent reports; this is the
-synthesis. Supersedes the optimistic framing in `seo-content-roadmap.md` where
-they conflict.
+Updated 2026-07-20. This replaces the AI-search assumptions in the 2026-07-14
+version while preserving the research decisions that still hold.
 
----
+## The decision
 
-## The one reframe (read this first)
+`/composer` is the sole commercial owner of **flow arts software** on
+tkaflowarts.com. `/roots/software` serves a different job: the sourced history
+and current taxonomy of software used in flow arts.
 
-**"Flow arts notation" is not a traffic term. It never was. Stop treating it as
-the SEO prize.**
+Do not publish a second `/flow-arts-software` sales page. A duplicate would split
+internal links, external links, and query signals. Reconsider the canonical URL
+only if Search Console shows that `/composer` has no meaningful history and a
+planned migration has a clear benefit.
 
-Three independent researchers, searching separately, reached the same verdict:
-the phrase has near-zero search demand. Google has no concept of it — it returns
-flowchart symbols, sheet-music clip art, GIS "points of interest," quantum field
-theory, and Vinyasa yoga. "Zero competition" is true, but it's zero competition
-because it's **zero demand**, not an untapped lane. Even Labanotation — a
-funded, institutional, decades-old dance notation — is documented as unpopular
-with actual practitioners. A brand-new notation term inherits no organic pull.
+The category statement should remain consistent anywhere the product is
+described:
 
-So split the goal into two funnels that were being fused into one:
+> Flow Arts Composer is flow arts software for composing, animating, and sharing
+> choreography written with The Kinetic Alphabet.
 
-| Funnel | Job | Metric | Term examples |
-|---|---|---|---|
-| **ENTITY play** | Own the *concept* in the knowledge graph + get cited by AI. Durability, not clicks. | AI citations, KG presence, brand recognition | "The Kinetic Alphabet", "flow arts notation" |
-| **TRAFFIC play** | Rank where the audience actually searches. Attention + funnel into the app. | Organic clicks, app signups | "staff spinning tutorial", "staff spinning practice tool", "choreography card deck", "which prop to start with" |
+Every claim in that sentence must stay true in the shipped product. Update the
+statement everywhere if the product changes.
 
-The roadmap collapsed these — it chased *traffic* on an *entity-only* term. Keep
-notation as the entity/AI-search bet (it's genuinely valuable there, see below),
-but win traffic on demand that exists.
+Google decides which page ranks first and whether an AI Overview appears. A bare
+commercial query may never trigger an AI Overview. The practical target is a
+strong classic result for the head term and citation eligibility for the useful
+questions around it.
 
----
+## What the earlier research established
 
-## What the sweep killed (false assumptions, ranked)
+The July 14 search sample found little demonstrated demand for the exact phrase
+"flow arts notation." It also found more visible demand around tutorials,
+practice tools, props, and choreography products. That supports two separate
+jobs:
 
-1. **"Own the unclaimed term = win."** Unclaimed = unsearched. Fatal if used as
-   the traffic thesis. (Salvageable as an *entity* thesis — see strategy.)
-2. **"Poi notation is open."** Already claimed — DrexFactor's QFT notation (2011).
-   And DrexFactor is a Tier-1 *backlink* target in our own kit. We can't out-rank
-   his term and ask him for a link at the same time.
-3. **"The backlink kit builds authority."** Most of it is **nofollow** self-promo
-   (Reddit/Discord/FB) with real removal/shadowban risk. Passes little PageRank.
-   The two followable, high-value targets (Flow Arts Institute listing, DrexFactor
-   collab) need cold outreach with no relationship.
-4. **"The 12-week content calendar is a plan."** Content AND links both draw on
-   one scarce resource — the founder's writing hours — with no ghostwriter by
-   design. One busy week freezes the entire funnel. Single point of failure.
-5. **"Text pages win this niche."** The staff/poi SERPs are **video-dominated**
-   (YouTube, Playpoi's 12M+ views). We lead with editorial text into a
-   video-first vertical.
-6. **Keyword cannibalization + brand=category conflation.** 4–5 of our pages fight
-   for the same micro-query, and "Flow Arts Notation" is declared a brand
-   `alternateName` in five schema blocks. Google ignores self-declared
-   category-as-brand and it dilutes the entity.
+- **Category and entity:** Make The Kinetic Alphabet and Flow Arts Composer
+  unambiguous through consistent naming, independent coverage, and accurate
+  source pages.
+- **Product discovery:** Reach people looking for software and practical help.
+  Measure search impressions, qualified visits, and product activation.
 
----
+The same research recorded several constraints that remain useful:
 
-## Entity bugs found (concrete, fixable, urgent — do FIRST)
+- Original product behavior and first-hand teaching material are harder to copy
+  than rewritten definitions.
+- Tutorial searches often favor video, so text alone is a weak format for those
+  queries.
+- A founder-led publishing plan needs a pace that can survive busy weeks.
+- Links earned through real relationships and original data carry more meaning
+  than bulk directory placement.
 
-The AEO/entity research is unanimous: **fragmented naming is the #1 self-inflicted
-failure**, and we have it badly. Fix these before writing one word of content —
-they poison every entity/AI-citation signal underneath.
+The July 16 software-cluster research found mixed results for "flow arts
+software" and no clear choreography-software category owner in that sample. It
+assigned the commercial phrase to `/composer` and the historical intent to
+`/roots/software`. Treat that result as a dated baseline. Search results must be
+sampled again before a major positioning or URL decision.
 
-- **Split domain.** `thekineticalphabet.com` is still indexed by Google (Facebook
-  post, Squarespace slug) but failed DNS on fetch. If Austen controls it →
-  **301 → tkaflowarts.com** to consolidate a decade of scattered signal. If not,
-  it's a competing brand surface. NEEDS ANSWER — can't verify ownership from code.
-- **Handle mismatch.** Schema's `sameAs` points to `instagram.com/tkaflowarts`,
-  but the IG Google surfaces for the brand is `@thekineticalphabet`, and the real
-  YouTube is `@TheKineticAlphabet`. The brand string is drifting to "The Kinetic
-  Alphabet" while schema anchors "tkaflowarts". Pick ONE canonical handle, make
-  schema and reality agree everywhere.
-- **Founding-date contradiction.** Schema `foundingDate: 2024`; `/about` says
-  "2022–present". The entity contradicts its own birthday. (Austen's fact — I
-  won't guess it.)
-- **Brand-name collisions.** "Kinetic Alphabet" also returns a kottke.org
-  kinetic-typography piece and "Kinetic Letters" (handwriting program). The name
-  is contested → entity disambiguation needs the sameAs/Wikidata scaffolding
-  below to win.
+## The July 2026 generative-search correction
 
----
+Google's current guidance says AI Overviews and AI Mode use the same indexing,
+ranking, and quality systems that support Search. There is no separate AI SEO
+layer to game.
 
-## The durable truths (what lasts — the "millennia" part)
+The operating rules are:
 
-From the durability + AEO research. Durability comes from signals that **cannot
-be faked at scale**, not from ranking any single term:
+- Write original material for people. First-hand expertise, evidence, and clear
+  sourcing matter more than a passage-length formula.
+- Use headings and concise answers when they help the reader. Google does not
+  require 40-to-60-word chunks or any other AI-specific content shape.
+- Keep important pages indexable, snippet-eligible, fast enough to use, and easy
+  to understand without blocked assets.
+- Use structured data only when it accurately describes visible page content or
+  qualifies the page for a documented search feature. Schema is not an AI
+  ranking boost.
+- Skip `llms.txt`. Google does not require it for AI features.
+- Avoid query-fanout page factories, mass doorway pages, AI-only rewrites, fake
+  reviews, and planted third-party mentions.
 
-1. **Be the original first-hand source, not an aggregator.** The March 2026 core
-   update explicitly demoted aggregators (Reddit, TripAdvisor, even Wikipedia
-   took losses) and boosted first-party originators. TKA *is* an original system
-   with a working tool — this is our strongest durable alignment. Lean into it.
-2. **The interactive tool is the moat.** Every notation system that won (Siteswap,
-   Labanotation) did so partly because you can input a pattern and *see it render*
-   (Juggling Lab's `jugglinglab.org/anim?<pattern>` shareable URLs; LabanWriter).
-   **None** of the flow-arts education incumbents (Home of Poi, Playpoi,
-   DrexFactor, Flow Arts Institute) has an interactive notation tool. TKA does.
-   That is the single asset no competitor can quickly copy.
-3. **Topical authority in a narrow lane** (pillar + 15–20 tightly-linked pages,
-   zero topic drift) ≈ 3× traffic/page and is the only shape a solo founder can
-   execute to depth. Depth is what the algorithm now rewards over breadth.
-4. **A named human author (Austen), consistent across the web** = E-E-A-T that
-   compounds over years and can't be reset.
-5. **Backlinks via relationships + original data**, never schemes. One trade-press
-   link (Dance Teacher magazine did a card-deck roundup) > 100 directory links.
-6. **A direct audience** (newsletter / community) = branded search (feeds NavBoost)
-   + survival of a bad SERP month + the only channel AI Overviews can't intercept.
+Sources:
 
-Fads to avoid (all confirmed dying): keyword stuffing, exact-match-domain tricks,
-PBNs, thin/AI mass content, and the next one — **schema/GEO-as-stuffing** (quotable
-stats + FAQ schema as a *substitute* for originality). We already ship one legacy
-tell: a `<meta name="keywords">` on `/roots` (ignored since ~2009). Remove it.
+- [Succeeding in AI search](https://developers.google.com/search/docs/fundamentals/ai-optimization-guide)
+- [AI features and the website](https://developers.google.com/search/docs/appearance/ai-features)
+- [Search generative AI controls](https://support.google.com/webmasters/answer/16908024?hl=en)
+- [Generative AI performance report](https://support.google.com/webmasters/answer/16984139?hl=en)
 
----
+## Page ownership
 
-## AI-search / AEO — the forward durability bet
+- **`/composer`:** Commercial category page with the product definition, real
+  workflows, pricing, platform, limitations, release evidence, screenshots,
+  video, and support.
+- **`/roots/software`:** Informational reference with sourced history, a fair
+  tool taxonomy, dated updates, author details, and corrections.
+- **Homepage and About:** Entity support with consistent names, accurate creator
+  information, and direct links to both owner pages.
+- **Notation, guide, and glossary pages:** Authored explanations and examples
+  that link to the relevant owner page.
+- **Curated public sequence pages:** Product evidence and narrow discovery with
+  server-rendered unique text, stable media, provenance, and useful next steps.
 
-Where a small, sole-authority niche site has a *structural edge* (the citation
-step, once you're in the candidate pool). Concrete, evidenced levers:
+Private, temporary, and thin sequence pages should not enter the index. Public
+sequence pages earn indexation only when they provide something a search visitor
+can understand without opening the editor.
 
-- **Wikidata item first.** Lowest bar (not Wikipedia's), feeds Google's Knowledge
-  Graph + LLM training/RAG. There IS a notability bar (the kit was wrong that
-  there's "none") — clear it with 3+ independent sources (Midwest Flow Fest
-  teaching it, the sourcetype.com editorial are a start). This is the highest-
-  leverage entity action.
-- **`DefinedTerm` / `DefinedTermSet` schema** — purpose-built for *coined
-  terminology*. Mark up "The Kinetic Alphabet", "flow arts notation", and the
-  glossary terms as formal defined terms with TKA as the canonical source. This
-  is how a made-up term becomes a citable entity.
-- **Quotes + statistics in definitional content** — the one controlled study
-  (Princeton GEO paper) found this the biggest citation lift, and it helps
-  low-authority sites *disproportionately*.
-- **Self-contained answer chunks** — engines retrieve passages, not pages. First
-  40–60 words of each section must fully answer one question.
-- **Server-render the definitional/glossary pages** — PerplexityBot doesn't
-  reliably run JS; client-only pages look empty to a major citation surface.
-- **Reddit as accurate answers, not link drops** — LLMs cite Reddit heavily
-  (24–46% of Perplexity citations). Being the correct answer *in* an r/flowarts
-  thread is an AI-citation signal; the backlink itself is nofollow and worthless.
+## Implementation order
 
----
+### 1. Establish indexing truth
 
-## The winning strategy — three layers
+1. Keep `robots.txt` open to the CSS and JavaScript needed to understand public
+   pages. Continue blocking private and utility routes.
+2. Emit sitemap dates only when a source provides a real significant-update
+   date. Omit unknown dates. Google ignores sitemap `priority` and `changefreq`.
+3. Inspect `/composer` and `/roots/software` in Search Console after deployment.
+   Record the selected canonical, crawl result, rendered resources, and indexing
+   state.
+4. Submit the current sitemap and request recrawling after meaningful changes.
+5. In Search Console settings, keep generative AI inclusion enabled when the
+   control is available. The rollout is gradual.
+6. Treat `Google-Extended` as a separate control. It does not replace the Search
+   Console setting for AI Overviews, AI Mode, and generative Discover.
 
-### Layer 1 — Fix the entity (foundation, do before content)
-Consolidate domain (pending ownership answer), unify handles + sameAs, resolve the
-founding date, create the Wikidata item, add DefinedTerm schema, drop the
-brand=category `alternateName` conflation and the `/roots` keywords meta. Mostly
-code + a few account actions. This is what makes every later signal count.
+This work is a recurring release check. No document should claim that technical
+SEO is permanently finished.
 
-### Layer 2 — Win traffic where it lives (staff-first, honest)
-Reprioritize the roadmap by *demonstrated demand*:
-- **Practice-tool positioning** — rank for "staff spinning practice tool",
-  "flow arts practice app". This is TKA's real comparable set (Double Staff LAB)
-  and it's product-true, not a stretch. **Highest honesty-to-demand ratio.**
-- **Staff trick / tutorial long-tail** — "figure 8 staff", "how to spin a staff",
-  per-trick pages. Big long-tail, but **needs video** (the SERP is video). This is
-  the layer that depends on Austen producing clips.
-- **"Which prop to start with"** comparison content — staff-forward per TKA canon
-  (double staves, not poi/fans as equals). Real recurring beginner query.
-- **Choreography card deck cluster** — the *one* validated commercial lane with
-  real buyers (Moody Street Circus, Dance Ed Tips, Etsy pole cards, Dance Teacher
-  press) and zero staff/poi entrant. Currently ranked #2 behind the no-demand
-  notation page — **it should lead.**
-- Poi content stays honestly scoped and minimal until Poi Lab ships (else bounce/
-  overclaim erodes E-E-A-T).
+### 2. Consolidate the product identity
 
-### Layer 3 — The moat + citation engine (the durable core)
-- **Ship shareable per-sequence pages** (each a linkable/embeddable URL, à la
-  `jugglinglab.org/anim?`). TKA already has short codes (tka.run) — turn every
-  sequence into an indexable page. This is the link magnet and the UGC-scale
-  content engine simultaneously.
-- **A community-submitted sequence gallery** — each entry an indexable page.
-  Solves the single-founder content-velocity problem (users generate pages) AND
-  builds a Home-of-Poi-style UGC moat at a fraction of the cost.
-- **Two pieces of citation bait nobody else has:** (1) "TKA vs Siteswap vs
-  Labanotation vs Benesh" comparison (the only existing comparison is a paywalled
-  1989 book), (2) a rigorous glossary grounded in MCP ground-truth (beats Flow
-  Arts Institute's 11 terms and Bonobo's 80). Both are exactly what Wikipedia
-  editors, dance-notation researchers, and jugglers cite and cross-post.
-- **Outreach to jugglers**, not just flow artists — the siteswap crowd is
-  notation-literate, appreciates the rigor, and is an untapped followable-link
-  source. Lead with the interactive tool.
+1. Keep one canonical product name, one canonical URL, and the category statement
+   above across visible copy, metadata, social profiles, and press material.
+2. Make the page heading identify both the product and the category without
+   repeating the phrase throughout the page.
+3. Give Composer a dedicated product image and social card.
+4. Connect `Organization`, `WebSite`, and `SoftwareApplication` data with stable
+   identifiers. Include only verified properties.
+5. Remove structured data that has no matching visible content or documented
+   search use.
 
----
+Wikidata is optional. Create an item only when independent reliable sources and
+Wikidata policy support it. Every statement needs a source. An item does not
+guarantee a Knowledge Panel, ranking gain, or AI citation.
 
-## The genuine decisions (Austen's to make — they change the plan)
+### 3. Publish product proof
 
-1. **Do you own/control `thekineticalphabet.com`?** Determines the biggest single
-   entity win (301 consolidation) vs a competing-surface problem.
-2. **Canonical brand handle: "The Kinetic Alphabet" / `@thekineticalphabet`, or
-   "TKA" / `@tkaflowarts`?** Every sameAs + entity fix keys off this.
-3. **Will you produce video?** The largest real-demand layer (staff/poi tutorials)
-   is video-first. If no, we route the traffic strategy around it (practice-tool +
-   card-deck + tool-embed + written comparison), which is viable but narrower.
+The product page should answer the questions a careful buyer asks before opening
+the app:
 
----
+- What does the software do?
+- Who is it built for, and what knowledge does it assume?
+- Which browsers or devices are supported?
+- What costs money?
+- What cannot it do yet?
+- Where can a user find release notes, support, privacy details, and corrections?
 
-## Bottom line
+Pair those answers with current screenshots and a short workflow video. Host a
+stable watch page with a transcript. Add `VideoObject` data only when the visible
+video, thumbnail, dates, and description match it.
 
-The durable, adversary-tested win is: **be the original source and the only
-interactive tool for a system you own the entity for — while earning traffic on
-staff/practice/gear/cards where people actually search, and getting cited by AI
-via Wikidata + DefinedTerm + first-hand rigor.** Not: ranking a keyword nobody
-types. First-mover on a zero-demand term is a placeholder; first-mover as the
-*canonical interactive source of a real system* is a moat.
+### 4. Produce evidence other sites can cite
 
-## Addendum (2026-07-16): the software cluster
+Three programs supply different kinds of proof:
 
-The sweep above never examined "flow arts software", and the term turned out to
-be an unowned commercial-intent SERP: page one is a video-effects app (AR Flow
-Arts), a hoop tutorial platform (Taylor Flows), and flowchart-software noise.
-No choreography tool targets it. Shipped response (branch
-feat/flow-arts-software-seo, spec 2026-07-16-flow-arts-software-seo-design.md):
+**Case studies.** Document how named practitioners or teachers used Composer,
+with permission. Include the starting problem, the workflow, an observable
+result, and anything that did not work. Quotes remain exact and attributed.
 
-- /composer owns the bare phrase: title "Flow Arts Composer | Free Flow Arts
-  Software for Choreography"; description, lede, and subtitle lead with it;
-  the SoftwareApplication JSON-LD gains a keywords property.
-- Internal link web: varied anchors pointing at /composer (new FAQ entry "Is
-  there software for flow arts choreography?" on / and /about, wording touches
-  on /notation and the per-prop pages). Exactly one exact-match anchor
-  site-wide, on /roots/software.
-- /roots/software takes the informational intent ("history of flow arts
-  software"): a fact-checked lineage page covering the VTG app, the LAB
-  simulators, VisualSpinner3D, and today's tools, with every living project
-  linked out. Competitor brand names never appear in our title/meta. This is
-  also the site's most link-worthy page for community backlinks (Layer 3
-  adjacent).
+**Original research.** Publish a recurring State of Flow Arts Software report.
+Show the survey instrument, recruitment method, response count, analysis rules,
+limitations, and anonymized data where consent allows. Correct errors publicly.
+
+**Workflow video.** Record the product performing real tasks. Each major video
+gets a stable page, transcript, useful stills, and links to the exact product
+surface shown.
+
+There is no content quota. One referenced report or case study is worth more than
+twenty interchangeable keyword pages.
+
+### 5. Earn independent reputation
+
+Use the [off-page action kit](./seo-offpage-action-kit.md) to pursue:
+
+- Direct source links from organizations and events that already mention TKA.
+- Independent tutorials and reviews from people who used the product.
+- Workshop pages, instructor resources, and partner references where Composer is
+  genuinely part of the material.
+- Editorial coverage of the research report, public case studies, or a notable
+  release.
+
+Community participation can create discovery and trust even when a platform adds
+`nofollow` or `ugc` attributes. The attribute alone does not make a mention
+valuable or worthless. Track relevance, referral visits, product activation, and
+whether the reference helps a reader.
+
+Never buy undisclosed links, demand exact-match anchor text, trade positive
+reviews for access, seed fake discussions, or manufacture citations.
+
+### 6. Build the public-artifact program carefully
+
+Curated sequence pages can become durable product evidence when each page has:
+
+- A stable canonical URL and server-rendered explanation.
+- A useful image or preview with accurate alternative text.
+- Authorship or source information where appropriate.
+- Related educational links and a clear path into Composer.
+- An explicit index decision.
+
+Do not index private saves, duplicate variants, empty shells, or programmatic
+pages created only to catch a query.
+
+## Measurement
+
+Capture a baseline before changing copy again.
+
+### Search Console
+
+Track the exact phrase and a defined query group:
+
+- `flow arts software`
+- `flow arts choreography software`
+- `flow arts app`
+- `flow arts notation`
+- branded Composer and TKA queries
+
+Review impressions, clicks, CTR, average position, selected canonical, and
+country/device splits. Use the Generative AI performance report when it appears
+in the property. Treat AI citations observed by hand as samples, not a stable
+ranking report.
+
+### Product analytics
+
+Measure the organic path from product-page visit to an event that represents
+real use. The event design should distinguish:
+
+1. `/composer` viewed from organic search.
+2. Composer opened.
+3. A meaningful creation action completed.
+4. Save or share completed.
+5. Return use after the first session.
+
+Choose the exact event definitions from shipped product behavior, then document
+them beside the analytics implementation. Autocaptured clicks are not a
+substitute for named activation events.
+
+### Reputation ledger
+
+Record the source page, target URL, editorial context, contact date, publication
+date, referral visits, and downstream activation. Count independent reviews and
+relevant referring domains, but keep the source quality visible. A raw link count
+can hide a weak campaign.
+
+## Review cadence
+
+Run a monthly review while the campaign is active:
+
+1. Check indexing and canonical selection.
+2. Compare query-group movement against the baseline.
+3. Review organic activation and return use.
+4. Record newly earned coverage, corrections, and lost links.
+5. Choose the next piece of evidence based on user questions and search data.
+
+The campaign succeeds when the web has independent reasons to describe Flow Arts
+Composer as flow arts software, and search visitors who find it become real
+users. Repetition of the phrase is not the outcome.
+
+## Project record
+
+These files preserve the implementation history behind this strategy:
+
+- [`2026-07-16-flow-arts-software-seo-design.md`](../superpowers/specs/2026-07-16-flow-arts-software-seo-design.md)
+- [`2026-07-16-seo-a-plus-plan.md`](../superpowers/specs/2026-07-16-seo-a-plus-plan.md)
+- 2026-07-17 external search research backlog
