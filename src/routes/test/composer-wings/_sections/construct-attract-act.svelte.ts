@@ -251,6 +251,29 @@ export function createConstructAttractAct(opts: {
   ): Promise<void> {
     await hoverOn(el, jitter(240, 420));
     if (dead) return;
+    // Re-aim at press time: the glide takes up to ~1.3s and the target can
+    // move under it (embla settling, grid reflow after a turns change). The
+    // element reference would still click fine, but the ghost would visibly
+    // press empty air where the tile USED to be. If the hand isn't on the
+    // target anymore, correct like a person would — and if the target left
+    // the DOM entirely, abort the press instead of ghost-clicking nothing.
+    const root = opts.getRoot();
+    if (root) {
+      if (el.offsetParent === null) return;
+      const r = el.getBoundingClientRect();
+      const rr = root.getBoundingClientRect();
+      const gx = ghost.x + rr.left;
+      const gy = ghost.y + rr.top;
+      const onTarget =
+        gx >= r.left && gx <= r.right && gy >= r.top && gy <= r.bottom;
+      if (!onTarget) {
+        const p = aimAt(el);
+        if (!p || dead) return;
+        await glideTo(p.x, p.y);
+        if (dead) return;
+        setHover(el);
+      }
+    }
     ghost.pressed = true;
     await sleep(PRESS_MS);
     ghost.pressed = false;

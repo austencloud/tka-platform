@@ -741,8 +741,12 @@
     filter: brightness(1.2);
   }
 
+  /* The independent `scale` property, NOT transform: the embla pager arrows
+     center themselves with transform: translateY(-50%), and a transform
+     override here replaced that — the arrow slid down its half-height over
+     the hover transition. `scale` composes with any transform. */
   .construct-demo :global(button.ghost-hover) {
-    transform: scale(1.06);
+    scale: 1.06;
   }
 
   /* Fully :global — the ghost-hover class is added at runtime by the act, so
@@ -808,6 +812,12 @@
      695×476 box). Three across at ~42% of the short side fills the stage. */
   .picker-pane :global(.pictograph-row .pictograph-wrapper) {
     width: min(100%, 42cqmin);
+  }
+
+  /* The All/Continuous pill docks top-LEFT in this pane — centered, it reads
+     as a header for the whole picker instead of the small mode control it is. */
+  .picker-pane :global(.filter-header) {
+    align-items: flex-start;
   }
 
   /* ===== Play phase ===== */
