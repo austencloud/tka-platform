@@ -1,7 +1,12 @@
 <script lang="ts">
   import { Popover } from "bits-ui";
+  import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
   import BpmQuickPopover from "$lib/shared/animation-engine/components/controls/BpmQuickPopover.svelte";
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
+  import {
+    PLAYBACK_MAX_BPM,
+    PLAYBACK_MIN_BPM,
+  } from "$lib/shared/animation-engine/domain/constants/timing";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import { getSequenceDisplayName } from "$lib/shared/foundation/services/word-deriver";
@@ -103,13 +108,26 @@
     </p>
 
     <div class="stage-controls">
-      <div class="playback-cluster">
-        <TransportControls
-          isPlaying={fuseState.clockRunning}
-          disabled={!fuseState.previewSequence || fuseState.isFusing}
-          onPlaybackToggle={() => fuseState.toggleClock()}
-        />
+      <TransportControls
+        isPlaying={fuseState.clockRunning}
+        disabled={!fuseState.previewSequence || fuseState.isFusing}
+        onPlaybackToggle={() => fuseState.toggleClock()}
+      />
 
+      <!-- Wide desktop: the tempo controls live in the open, spending the
+           Fuse button's spare width. Narrower layouts fall back to the
+           popover so the row still fits. -->
+      <div class="bpm-inline">
+        <BpmChips
+          bpm={fuseState.bpm}
+          min={PLAYBACK_MIN_BPM}
+          max={PLAYBACK_MAX_BPM}
+          variant="full"
+          onBpmChange={(value) => fuseState.setBpm(value)}
+        />
+      </div>
+
+      <div class="bpm-compact">
         <Popover.Root bind:open={tempoOpen}>
           <Popover.Trigger>
             {#snippet child({ props })}
@@ -336,16 +354,38 @@
     min-height: var(--min-touch-target, 44px);
   }
 
-  .playback-cluster {
+  /* Inline tempo chips are for wide desktop only; every other width uses the
+     compact popover trigger. Only one is ever in flow. */
+  .bpm-inline {
+    display: none;
+    min-width: 0;
+  }
+
+  .bpm-compact {
     display: flex;
-    align-items: center;
     flex: 0 0 auto;
-    gap: var(--settings-spacing-sm, 10px);
   }
 
   .fuse-slot {
     flex: 1 1 auto;
     min-width: 0;
+  }
+
+  /* Really-big desktop: the tempo controls come out into the open, and the
+     Fuse button gives up the excess width it was hogging. */
+  @container fuse (min-width: 1500px) {
+    .bpm-inline {
+      display: block;
+      flex: 1 1 auto;
+    }
+
+    .bpm-compact {
+      display: none;
+    }
+
+    .fuse-slot {
+      flex: 0 0 clamp(300px, 24cqw, 460px);
+    }
   }
 
   .tempo-trigger {

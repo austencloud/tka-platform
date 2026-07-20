@@ -13,6 +13,11 @@
   let detailSide = $state<FuseSide>("blue");
   let containerElement = $state<HTMLDivElement | null>(null);
   let compact = $state(true);
+  // On the locked desktop layout the source cards sit in a tall column with
+  // room to spare, so each pictograph stays large even with a start position
+  // and a mandala added. Gate the full choreo card on that size (matching the
+  // 1100/780 layout breakpoint) so smaller screens keep the lean, big-cell view.
+  let fullCard = $state(false);
 
   // The phone layout is a different interaction, not a squeezed desktop grid.
   // Measuring the tab's actual slot also handles split-screen and foldable
@@ -21,16 +26,19 @@
     const element = containerElement;
     if (!element || typeof ResizeObserver === "undefined") return;
 
-    const updateLayoutMode = (width: number) => {
+    const updateLayoutMode = (width: number, height: number) => {
       compact = width < 600;
+      fullCard = width >= 1100 && height >= 780;
     };
-    updateLayoutMode(element.clientWidth);
+    updateLayoutMode(element.clientWidth, element.clientHeight);
 
     const observer = new ResizeObserver(([entry]) => {
       if (!entry) return;
       const width =
         entry.contentBoxSize[0]?.inlineSize ?? entry.contentRect.width;
-      updateLayoutMode(width);
+      const height =
+        entry.contentBoxSize[0]?.blockSize ?? entry.contentRect.height;
+      updateLayoutMode(width, height);
     });
     observer.observe(element);
     return () => observer.disconnect();
@@ -76,11 +84,13 @@
       <FuseSourceCard
         side="blue"
         showInlineNotation={true}
+        full={fullCard}
         onViewNotation={openNotation}
       />
       <FuseSourceCard
         side="red"
         showInlineNotation={true}
+        full={fullCard}
         onViewNotation={openNotation}
       />
     {/if}

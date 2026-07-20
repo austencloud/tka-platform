@@ -9,10 +9,15 @@
   let {
     side,
     showInlineNotation,
+    full = false,
     onViewNotation,
   }: {
     side: FuseSide;
     showInlineNotation: boolean;
+    // Big desktop only: render the complete choreo card — start position plus
+    // the solo-colored mandala — instead of the lean steps-only view. Gated by
+    // FuseLayout on cell size so the extra cells never shrink the pictographs.
+    full?: boolean;
     onViewNotation: (side: FuseSide) => void;
   } = $props();
 
@@ -65,7 +70,8 @@
             sequence={source.sequence}
             browseViewMode={viewMode}
             columnCount={cardColumns}
-            includeStartPosition={false}
+            includeStartPosition={full}
+            showMandala={full}
             showWord={false}
             showStepNumbers={true}
             showDifficultyLevel={false}
@@ -148,7 +154,8 @@
         sequence={nextSequence}
         browseViewMode={viewMode}
         columnCount={cardColumns}
-        includeStartPosition={false}
+        includeStartPosition={full}
+        showMandala={full}
         showWord={false}
         showStepNumbers={true}
         showDifficultyLevel={false}
