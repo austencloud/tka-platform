@@ -43,6 +43,11 @@ const PROP_SEL = ".prop-option:not(.active)";
 // count, so every press visibly moves the glass indicator.
 const TURN_BLUE_SEL = ".turns-group.blue .segment:not(.selected)";
 const TURN_RED_SEL = ".turns-group.red .segment:not(.selected)";
+// The option picker's section pager (embla arrows) and its All/Continuous
+// filter pill — with the full letter set the picker sections into swipe
+// pages, and the ghost browses across them like a person flipping cards.
+const NEXT_SEL = ".picker-pane .embla__button--next";
+const FILTER_SEL = ".picker-pane .filter-toggle";
 // The newest workspace cell — where a just-picked step lands. The act glances
 // here after some picks, watching its sequence grow.
 const CELL_SEL = ".step-cell";
@@ -100,7 +105,22 @@ export function createConstructAttractAct(opts: {
   let inViewport = false;
 
   const raw = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-  const frame = () => new Promise<number>((r) => requestAnimationFrame(r));
+  // rAF with a timeout fallback: in a hidden tab requestAnimationFrame never
+  // fires, which would freeze a glide mid-flight FOREVER (the visitor tabs
+  // away, comes back to a dead ghost). The timeout keeps time advancing —
+  // hidden-tab timers are throttled to ~1s, so a glide just completes
+  // coarsely while nobody is looking.
+  const frame = () =>
+    new Promise<void>((r) => {
+      const id = requestAnimationFrame(() => {
+        clearTimeout(t);
+        r();
+      });
+      const t = setTimeout(() => {
+        cancelAnimationFrame(id);
+        r();
+      }, 64);
+    });
 
   /** Sleep that dies fast on kill and idles (without advancing) offscreen. */
   async function sleep(ms: number): Promise<void> {
@@ -292,6 +312,34 @@ export function createConstructAttractAct(opts: {
     await dwell(jitter(650, 650));
   }
 
+  /** Flip to another letter-family page (the sections swipe like cards) —
+   *  the "what else is over here" browse a person does with a pager. */
+  async function pageSections(): Promise<void> {
+    const next = await waitFor(NEXT_SEL, 800);
+    if (!next.length || dead) return;
+    await moveAndPress(next[0]!);
+    await sleep(jitter(500, 400));
+  }
+
+  /** Toggle the picker's All/Continuous pill — and toggle it back if the
+   *  continuous subset comes up empty for the current position, the same
+   *  retreat a person makes from a filter that filtered everything out. */
+  async function fiddleFilter(): Promise<void> {
+    const pill = await waitFor(FILTER_SEL, 800);
+    if (!pill.length || dead) return;
+    await moveAndPress(pill[0]!);
+    await sleep(jitter(600, 500));
+    if (dead) return;
+    const options = await waitFor(OPTION_SEL, 2500);
+    if (!options.length && !dead) {
+      const back = await waitFor(FILTER_SEL, 800);
+      if (back.length) {
+        await moveAndPress(back[0]!);
+        await sleep(jitter(400, 300));
+      }
+    }
+  }
+
   /** Mid-build curiosity: change a hand's turns (sometimes both). Every press
    *  lands on a not-selected count, so the glass indicator visibly moves —
    *  and the option grid re-derives with the new turns, a real decision with
@@ -312,14 +360,26 @@ export function createConstructAttractAct(opts: {
     }
   }
 
-  /** Poll the live picker DOM for visible targets (pickers load async). */
+  /** Poll the live picker DOM for visible targets (pickers load async).
+   *  Candidates are hit-tested at their center — embla keeps offscreen slides
+   *  in flow, so offsetParent alone would let the ghost "press" an option
+   *  sitting in a clipped page and the click would land on empty air. */
   async function waitFor(selector: string, timeoutMs = 8000): Promise<HTMLElement[]> {
     const t0 = performance.now();
     while (!dead) {
       const root = opts.getRoot();
       if (root) {
         const els = [...root.querySelectorAll<HTMLElement>(selector)].filter(
-          (el) => el.offsetParent !== null
+          (el) => {
+            if (el.offsetParent === null) return false;
+            const r = el.getBoundingClientRect();
+            if (r.width < 4 || r.height < 4) return false;
+            const probe = document.elementFromPoint(
+              r.left + r.width / 2,
+              r.top + r.height / 2,
+            );
+            return !!probe && (el.contains(probe) || probe.contains(el));
+          },
         );
         if (els.length) return els;
       }
@@ -342,9 +402,12 @@ export function createConstructAttractAct(opts: {
     // Even the start position gets a moment of choice.
     await browseAndPick(starts);
 
-    // One mid-build moment (most cycles) where it reconsiders the turns.
+    // One mid-build moment (most cycles) where it reconsiders the turns, and
+    // sometimes one where it plays with the All/Continuous filter.
     const turnMoment =
       Math.random() < 0.7 ? 1 + Math.floor(Math.random() * 2) : -1;
+    const filterMoment =
+      Math.random() < 0.35 ? Math.floor(Math.random() * opts.stepsPerCycle) : -1;
 
     for (let i = 0; i < opts.stepsPerCycle && !dead; i++) {
       // Full step beat BEFORE querying: the option grid reloads after every
@@ -352,6 +415,9 @@ export function createConstructAttractAct(opts: {
       // previous sequence state.
       await sleep(STEP_MS);
       if (i === turnMoment) await fiddleTurns();
+      if (i === filterMoment) await fiddleFilter();
+      // Sometimes flip to another letter-family page before choosing.
+      if (Math.random() < 0.3) await pageSections();
       const options = await waitFor(OPTION_SEL);
       if (!options.length || dead) return;
       await browseAndPick(options);

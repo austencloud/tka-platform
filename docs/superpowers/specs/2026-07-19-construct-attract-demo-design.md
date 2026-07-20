@@ -379,3 +379,41 @@ Layout note from the same round: demo-body/demo-toolbar columns flipped from
 Step editor in the toy: considered, rejected — the toy teaches pick → tap →
 play; per-step editing is the real Create tab's job. "Fully functional
 construct tab renderable anywhere" parked as separate scope.
+
+## Full construct surface (seventh pass, 2026-07-19)
+
+Round-7/8 feedback: back button from play ("one more step"), player expands
+when the turns leave, all letter types + the continuous filter, bigger start
+tiles, ghost uses the section pager.
+
+- **Keep building**: play-phase action slot now holds [← Keep building]
+  [↺ Build another]. Back returns to the option picker with the build intact
+  (`playing = false`); hidden at the 8-step cap. Verified live: play → build,
+  16 options restored, turns strip back, all cells kept.
+- **Player expands upward**: the mirrored toolbar/body grids were restructured
+  into two column stacks (prop + workspace | turns + picker). The turns strip
+  lives INSIDE the right column, so its slide-away lets the player pane
+  (flex: 1) grow into the freed strip: pane 503 → 583px measured, canvas 499px
+  tall. Total row height is constant (`min-height: calc(clamp + 108px)` — the
+  strip's space is always reserved) so the page never shifts across phases.
+  A residual 21px pick-start shift (start picker's intrinsic height driving
+  the row) was killed with `flex-basis: 0` + `overflow: hidden` on the pane.
+- **All types + filter**: `filterPredicate={isType1}` and `hideFilters`
+  removed — the demo now runs the real sectioned swipe layout (verified: 4
+  embla slides — Type 1 Dual-Shift / 2 Shift / 3 Cross / 4 Dash, 36 options,
+  prev/next arrows) with the picker's own All/Continuous pill (verified: All
+  → Continuous cut 36 → 16 options; the built word "JDΩ-W-Ω-" carries dash
+  letters). The Type-1 training wheels are gone.
+- **Ghost beats**: `pageSections` (30% of picks flip a family page first via
+  the real embla arrow), `fiddleFilter` (~35% of cycles toggle the pill, and
+  toggle back if the continuous subset is empty). `waitFor` now hit-tests
+  candidates at their center — embla keeps offscreen slides in flow, so
+  offsetParent alone would let the ghost press an option in a clipped page.
+- **Start tiles**: the shared PictographGrid sizes tiles at 28cqmin (Create-
+  tab tuning) — 124px in this pane's 695×476 box. Scoped demo override to
+  42cqmin → 183px measured.
+- **Hidden-tab freeze (production bug, fixed)**: the motor model awaited
+  `requestAnimationFrame`, which never fires in a hidden tab — tab away
+  mid-glide and the act froze forever (this, not HMR, explains the session's
+  "dead ghost" incidents). `frame()` now races rAF against a 64ms timeout, so
+  time advances coarsely while hidden and the loop survives tab switches.

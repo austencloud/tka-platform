@@ -34,11 +34,6 @@
   import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
   import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import {
-    getLetterType,
-    type Letter,
-  } from "$lib/shared/foundation/domain/models/letter";
-  import { LetterType } from "$lib/shared/foundation/domain/models/letter-type";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { pictographDataToStepData } from "$lib/shared/pictograph/shared/domain/utils/step-pictograph-conversion";
   import { calculateGridLayout } from "$lib/shared/create/utils/grid-calculations";
@@ -223,15 +218,6 @@
     return { ...raw, cellSize: Math.min(raw.cellSize, maxCell) };
   });
 
-  // Only Type 1 (dual-shift) options, presented as the whole set — mirrors the
-  // create tutorial so first-time builders see one clean, valid family.
-  function isType1(option: PictographData): boolean {
-    return (
-      !!option.letter &&
-      getLetterType(option.letter as Letter) === LetterType.TYPE1
-    );
-  }
-
   function handleOptionSelected(option: PictographData) {
     if (steps.length >= MAX_STEPS) return;
     steps = [...steps, option];
@@ -276,9 +262,14 @@
   onfocusincapture={takeover}
 >
   <div class="demo-shell">
-  <!-- Toolbar strip above the side-by-side view: prop over the workspace half,
-       per-hand turns over the picker half. -->
-  <div class="demo-toolbar">
+  <!-- Two column stacks: prop + workspace left, turns + picker right. Each
+       control sits directly above the panel it affects, and the turns strip
+       lives INSIDE the right column — when it slides away for the play phase
+       the player pane (flex: 1) expands upward into the freed strip and the
+       canvas gets bigger. The columns' total height stays constant across
+       phases (the strip's space is reserved), so the page never shifts. -->
+  <div class="demo-columns">
+    <div class="demo-col">
     <div class="tool-group">
       <span class="tool-label">Prop</span>
       <PropPicker
@@ -287,42 +278,7 @@
         options={SHOP_PROP_OPTIONS}
       />
     </div>
-    <!-- Turns imply "you can change the playing sequence's turns" — not true
-         during playback, so they slide away for the play phase and return on
-         Build another. -->
-    {#if phase !== "play"}
-    <div
-      class="turns-pair"
-      transition:slide={{ duration: motionDuration(DURATION.normal) }}
-    >
-      <div class="tool-group turns-group blue">
-        <span class="tool-label"
-          ><span class="hand-dot blue" aria-hidden="true"></span>Blue
-          turns</span
-        >
-        <SegmentedControl
-          options={TURN_OPTIONS}
-          value={blueTurnsValue}
-          onchange={(v) => (blueTurnsValue = v)}
-          color="blue"
-        />
-      </div>
-      <div class="tool-group turns-group red">
-        <span class="tool-label"
-          ><span class="hand-dot red" aria-hidden="true"></span>Red turns</span
-        >
-        <SegmentedControl
-          options={TURN_OPTIONS}
-          value={redTurnsValue}
-          onchange={(v) => (redTurnsValue = v)}
-          color="red"
-        />
-      </div>
-    </div>
-    {/if}
-  </div>
 
-  <div class="demo-body">
     <!-- WORKSPACE: the real WorkspaceGrid — start column + step columns. -->
     <div class="workspace">
       <!-- Canonical word display: the same WordLabel the real workspace shows
@@ -389,19 +345,73 @@
               <ViewSequenceButton onclick={() => (playing = true)} />
             </span>
           {:else if phase === "play"}
-            <button
-              type="button"
-              class="cta-btn"
-              data-demo-again
-              onclick={reset}
-            >
-              <i class="fas fa-rotate-left" aria-hidden="true"></i>
-              Build another
-            </button>
+            <div class="play-actions">
+              <!-- Back to the option picker with the build intact — "one more
+                   step". Hidden at the 8-step cap (nothing to go back to). -->
+              {#if steps.length < MAX_STEPS}
+                <button
+                  type="button"
+                  class="cta-btn quiet"
+                  onclick={() => {
+                    playing = false;
+                    playingStepNumber = null;
+                  }}
+                >
+                  <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                  Keep building
+                </button>
+              {/if}
+              <button
+                type="button"
+                class="cta-btn"
+                data-demo-again
+                onclick={reset}
+              >
+                <i class="fas fa-rotate-left" aria-hidden="true"></i>
+                Build another
+              </button>
+            </div>
           {/if}
         </Crossfade>
       </div>
     </div>
+    </div>
+
+    <div class="demo-col">
+    <!-- Turns imply "you can change the playing sequence's turns" — not true
+         during playback, so they slide away for the play phase (freeing their
+         strip for the player) and return on Keep building / Build another. -->
+    {#if phase !== "play"}
+      <div
+        class="turns-pair"
+        transition:slide={{ duration: motionDuration(DURATION.normal) }}
+      >
+        <div class="tool-group turns-group blue">
+          <span class="tool-label"
+            ><span class="hand-dot blue" aria-hidden="true"></span>Blue
+            turns</span
+          >
+          <SegmentedControl
+            options={TURN_OPTIONS}
+            value={blueTurnsValue}
+            onchange={(v) => (blueTurnsValue = v)}
+            color="blue"
+          />
+        </div>
+        <div class="tool-group turns-group red">
+          <span class="tool-label"
+            ><span class="hand-dot red" aria-hidden="true"></span>Red
+            turns</span
+          >
+          <SegmentedControl
+            options={TURN_OPTIONS}
+            value={redTurnsValue}
+            onchange={(v) => (redTurnsValue = v)}
+            color="red"
+          />
+        </div>
+      </div>
+    {/if}
 
     <!-- PICKER / PLAYER: the real primitives; phase swap lives HERE only. -->
     <div class="picker-pane">
@@ -416,12 +426,14 @@
         {/await}
       {:else if phase === "add-step"}
         {#await import("$lib/features/create/construct/option-picker/components/OptionPicker.svelte") then mod}
+          <!-- The FULL option set: every letter family, sectioned into the
+               real swipe layout (embla pages + arrows), with the picker's own
+               All/Continuous filter pill. The old Type-1-only training wheels
+               are off — this is the real construct experience in miniature. -->
           <mod.default
             {currentSequence}
             currentGridMode={gridMode}
             onOptionSelected={handleOptionSelected}
-            filterPredicate={isType1}
-            hideFilters
             bluePropTypeOverride={demoProp}
             redPropTypeOverride={demoProp}
             blueTurnsOverride={blueTurns}
@@ -452,6 +464,7 @@
           </div>
         {/await}
       {/if}
+    </div>
     </div>
   </div>
 
@@ -501,15 +514,21 @@
     box-sizing: border-box;
   }
 
-  /* ===== Toolbar strip ===== */
-  .demo-toolbar {
+  /* ===== Column stacks =====
+     Narrow: one vertical flow (prop, workspace, turns, picker). Wide: two
+     stacks side by side — each control directly above the panel it drives. */
+  .demo-columns {
     display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: 14px 28px;
+    flex-direction: column;
+    gap: 16px;
     width: 100%;
-    padding-bottom: 14px;
-    border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+  }
+
+  .demo-col {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-width: 0;
   }
 
   .tool-group {
@@ -635,34 +654,35 @@
     font-weight: 650;
   }
 
-  .demo-body {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    width: 100%;
-  }
+  /* Side-by-side once the band is wide enough: workspace stack left (result
+     reads first), picker stack right (the side the ghost taps). Workspace ≥
+     picker: the built sequence is the star, the picker is the menu.
 
-  /* Side-by-side once the band is wide enough: workspace left (result reads
-     first), picker right (the side the ghost taps). Both grow with the band —
-     this is what fills the 1680+ tier instead of the old 54vh void. The
-     toolbar mirrors the same columns so Prop sits over the workspace half and
-     the per-hand turns sit over the picker half. Columns STRETCH so the
-     workspace frame matches the picker's height — no dead band under the
-     sequence. */
+     The min-height reserve is the trick that lets the player GROW without
+     shifting the page: the row's height always includes the turns strip
+     (~85px + 16px stack gap), so during the build the strip fills it and
+     during play the picker (flex: 1) expands upward into it — same total,
+     bigger canvas. */
   @container (min-width: 1100px) {
-    .demo-body,
-    .demo-toolbar {
+    .demo-columns {
       display: grid;
-      /* Workspace ≥ picker: the built sequence is the star, the picker is the
-         menu — the wider left half gives the result room to read. */
       grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
       gap: 0 clamp(24px, 3cqw, 48px);
-    }
-    .demo-body {
       align-items: stretch;
+      min-height: calc(clamp(300px, 38vh, 540px) + 108px);
     }
-    .demo-toolbar {
-      align-items: end;
+    .workspace {
+      flex: 1;
+    }
+    .picker-pane {
+      /* flex-basis 0: the pane fills whatever the row gives it but its
+         CONTENT never drives the row height — the start picker's intrinsic
+         size was pushing the row 21px taller than the other phases, shifting
+         the page on every first pick. */
+      flex: 1 1 0;
+      height: auto;
+      min-height: clamp(300px, 38vh, 540px);
+      overflow: hidden;
     }
   }
 
@@ -783,6 +803,13 @@
     justify-content: center;
   }
 
+  /* Start tiles: the shared grid sizes tiles at 28% of the container's short
+     side — tuned for the full Create tab, undersized in this pane (124px in a
+     695×476 box). Three across at ~42% of the short side fills the stage. */
+  .picker-pane :global(.pictograph-row .pictograph-wrapper) {
+    width: min(100%, 42cqmin);
+  }
+
   /* ===== Play phase ===== */
   .play-pane {
     height: 100%;
@@ -838,6 +865,23 @@
 
   .cta-btn i {
     font-size: 0.8em;
+  }
+
+  /* Play-phase pair: quiet "Keep building" beside the primary Build another. */
+  .play-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .cta-btn.quiet {
+    background: transparent;
+    border-color: var(--theme-stroke, rgba(255, 255, 255, 0.16));
+  }
+
+  .cta-btn.quiet:hover {
+    background: rgba(255, 255, 255, 0.07);
   }
 
   @media (max-width: 480px) {
