@@ -16,7 +16,7 @@
     FOUNDING_SMART_COLLECTIONS,
     toSyntheticCollection,
   } from "$lib/features/browse/collections/config/founding-collections";
-  import GuidePictograph from "../../../(public)/guide/level-1/_components/GuidePictograph.svelte";
+  import GuidePictograph from "../../guide/level-1/_components/GuidePictograph.svelte";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import { CHOSEN_MANDALAS } from "./chosen-mandalas";
 

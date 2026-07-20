@@ -33,13 +33,21 @@
   import { generatePerVisitDemo } from "$lib/shared/landing/data/per-visit-demo";
 
   // The five-wing section components, loaded once each slot scrolls near.
+  // Sections graduated into the live composer route (2026-07-20); the harness
+  // now consumes them from there so both surfaces render the same components.
   const loaders: Record<string, () => Promise<{ default: Component }>> = {
-    construct: () => import("./_sections/ConstructSection.svelte"),
-    generate: () => import("./_sections/GenerateSection.svelte"),
-    mandala: () => import("./_sections/MandalaSection.svelte"),
-    games: () => import("./_sections/GamesStripSection.svelte"),
-    connect: () => import("./_sections/ConnectSection.svelte"),
-    library: () => import("./_sections/LibrarySection.svelte"),
+    construct: () =>
+      import("../../(public)/composer/_sections/ConstructSection.svelte"),
+    generate: () =>
+      import("../../(public)/composer/_sections/GenerateSection.svelte"),
+    mandala: () =>
+      import("../../(public)/composer/_sections/MandalaSection.svelte"),
+    games: () =>
+      import("../../(public)/composer/_sections/GamesStripSection.svelte"),
+    connect: () =>
+      import("../../(public)/composer/_sections/ConnectSection.svelte"),
+    library: () =>
+      import("../../(public)/composer/_sections/LibrarySection.svelte"),
   };
 
   const comp = $state<Record<string, Component | null>>({

@@ -55,11 +55,18 @@ const AGAIN_SEL = "[data-demo-again]";
 export type ConstructAttractAct = AttractActHandle;
 export type { GhostState } from "./attract-ghost.svelte";
 
+export interface ConstructBoardProgress {
+  phase: "pick-start" | "add-step" | "play";
+  stepCount: number;
+}
+
 export function createConstructAttractAct(opts: {
   /** The demo band — coordinate space for the ghost AND the query root. */
   getRoot: () => HTMLElement | null;
   /** Clears the section's board state (steps + start position). */
   resetBoard: () => void;
+  /** Reads the visitor's live build so a resumed ghost can carry it forward. */
+  getBoardProgress: () => ConstructBoardProgress;
   /**
    * Toggles the player's playback (AnimationPlayer's onTogglePlaybackRef fn).
    * The real tap-to-toggle listens for POINTER events, and the act must never
@@ -79,6 +86,11 @@ export function createConstructAttractAct(opts: {
   const DONE_MS = opts.doneMs ?? 2500;
 
   const { core: g, run } = createAttractGhost({ getRoot: opts.getRoot });
+
+  // A takeover aborts the current script, so resume enters through cycle()
+  // again. Remember that specific exit and keep the visitor's live board;
+  // ordinary automatic cycles still begin from a clean slate.
+  let continueCurrentBoard = false;
 
   // ---- Personality beats --------------------------------------------------
 
@@ -152,17 +164,22 @@ export function createConstructAttractAct(opts: {
     }
   }
 
-  async function cycle(): Promise<void> {
-    opts.resetBoard();
+  async function performCycle(): Promise<void> {
     await g.sleep(500);
+    if (g.halted()) return;
 
-    const starts = await g.waitFor(START_SEL);
-    if (!starts.length || g.halted()) {
-      await g.sleep(1500);
-      return;
+    let progress = opts.getBoardProgress();
+    if (progress.phase === "pick-start") {
+      const starts = await g.waitFor(START_SEL);
+      if (!starts.length || g.halted()) {
+        await g.sleep(1500);
+        return;
+      }
+      // Even the start position gets a moment of choice.
+      await g.browseAndPick(starts);
+      if (g.halted()) return;
+      progress = opts.getBoardProgress();
     }
-    // Even the start position gets a moment of choice.
-    await g.browseAndPick(starts);
 
     // One mid-build moment (most cycles) where it reconsiders the turns, and
     // sometimes one where it plays with the All/Continuous filter.
@@ -171,7 +188,10 @@ export function createConstructAttractAct(opts: {
     const filterMoment =
       Math.random() < 0.35 ? Math.floor(Math.random() * opts.stepsPerCycle) : -1;
 
-    for (let i = 0; i < opts.stepsPerCycle && !g.halted(); i++) {
+    // Resume at the next unbuilt step. If the visitor already built past the
+    // attract act's usual four-count, keep every step and head straight to Play.
+    const nextStepIndex = Math.min(progress.stepCount, opts.stepsPerCycle);
+    for (let i = nextStepIndex; i < opts.stepsPerCycle && !g.halted(); i++) {
       // Full step beat BEFORE querying: the option grid reloads after every
       // pick, and this gap guarantees we never press a stale card from the
       // previous sequence state.
@@ -196,10 +216,13 @@ export function createConstructAttractAct(opts: {
     // presses Build another itself. Every beat is a visible decision; the
     // ghost never leaves the screen, and dwell times are jittered so it reads
     // as a person, not a metronome.
-    await g.sleep(DONE_MS / 2);
-    const play = await g.waitFor(PLAY_SEL, 4000);
-    if (!play.length || g.halted()) return;
-    await g.moveAndPress(play[0]!);
+    progress = opts.getBoardProgress();
+    if (progress.phase !== "play") {
+      await g.sleep(DONE_MS / 2);
+      const play = await g.waitFor(PLAY_SEL, 4000);
+      if (!play.length || g.halted()) return;
+      await g.moveAndPress(play[0]!);
+    }
 
     const stage = await g.waitFor(STAGE_SEL, 4000);
     if (!stage.length || g.halted()) return;
@@ -249,6 +272,20 @@ export function createConstructAttractAct(opts: {
     if (again.length) {
       await g.moveAndPress(again[0]!);
       await g.sleep(300);
+    }
+  }
+
+  async function cycle(): Promise<void> {
+    const resumingVisitorBuild = continueCurrentBoard;
+    continueCurrentBoard = false;
+    if (!resumingVisitorBuild) opts.resetBoard();
+
+    try {
+      await performCycle();
+    } finally {
+      // pause() is the only exit that should preserve the board. Timeouts and
+      // transient DOM misses still get the established fresh-cycle recovery.
+      if (g.paused) continueCurrentBoard = true;
     }
   }
 

@@ -1,17 +1,60 @@
 <script lang="ts">
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
-  import ComposerGenerateDemo from "./_components/ComposerGenerateDemo.svelte";
   import FanSkeleton from "./_components/FanSkeleton.svelte";
   import PlayWithItSkeleton from "../../landing/components/PlayWithItSkeleton.svelte";
   import { onMount } from "svelte";
+  import type { Component } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import { generatePerVisitDemo } from "$lib/shared/landing/data/per-visit-demo";
   import "$lib/shared/landing/styles/public-editorial.css";
 
+  // The five-wing section components live in ./_sections (graduated out of the
+  // /test/composer-wings harness on 2026-07-20). They pull the heavy pictograph
+  // graph (incl. special-arrow-placement -> zod), so they load via CLIENT-ONLY
+  // dynamic import inside an IntersectionObserver — never a static top-level
+  // import, which would drag zod through the SSR module runner.
+  const loaders: Record<string, () => Promise<{ default: Component }>> = {
+    construct: () => import("./_sections/ConstructSection.svelte"),
+    generate: () => import("./_sections/GenerateSection.svelte"),
+    mandala: () => import("./_sections/MandalaSection.svelte"),
+    games: () => import("./_sections/GamesStripSection.svelte"),
+    connect: () => import("./_sections/ConnectSection.svelte"),
+    library: () => import("./_sections/LibrarySection.svelte"),
+  };
+  const comp = $state<Record<string, Component | null>>({
+    construct: null,
+    generate: null,
+    mandala: null,
+    games: null,
+    connect: null,
+    library: null,
+  });
+  function loadSection(key: string) {
+    const loader = loaders[key];
+    if (loader) void loader().then((m) => (comp[key] = m.default));
+  }
+  function whenNear(node: HTMLElement, key: string) {
+    if (typeof IntersectionObserver === "undefined") {
+      loadSection(key);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          io.disconnect();
+          loadSection(key);
+        }
+      },
+      { rootMargin: "300px" }
+    );
+    io.observe(node);
+    return { destroy: () => io.disconnect() };
+  }
+
   // Per-visit demo: freshly generated for every visitor (no canonical
-  // example). All sequence demos wait on this — their skeletons hold the
-  // footprint, so the late arrival never shifts the page.
+  // example). The hero player is keyed on sequence id, so its dice button
+  // reloads onto a fresh draw without a page refresh.
   let demoSeq = $state<SequenceData | null>(null);
   let rerollingDemo = $state(false);
   onMount(() => {
@@ -19,10 +62,6 @@
       demoSeq = seq;
     });
   });
-
-  // The hero's dice button: generate a fresh sequence and swap it in place.
-  // The hero player is keyed on sequence id, so it reloads onto the new draw
-  // without a page refresh.
   async function rerollDemo() {
     if (rerollingDemo) return;
     rerollingDemo = true;
@@ -36,9 +75,11 @@
   const DESCRIPTION =
     "Flow Arts Composer is free flow arts software for building choreography in your browser. Construct sequences step by step, generate them from parameters, animate them, and share them. Supports staff, fans, clubs, hoops, buugeng, and more.";
 
-  // The tunnel and play-with-it stacks are heavy canvas machinery — mount
-  // each only when its section approaches the viewport.
+  // The heavy canvas demos in the Outputs wing + the Try-it tail mount only when
+  // their section approaches the viewport.
   let tunnelActive = $state(false);
+  let choreoCardsActive = $state(false);
+  let viewer3DActive = $state(false);
   let playWithItActive = $state(false);
   function activateWhenNear(activate: () => void) {
     return (node: HTMLElement) => {
@@ -59,18 +100,14 @@
       return { destroy: () => io.disconnect() };
     };
   }
-  let choreoCardsActive = $state(false);
-  let viewer3DActive = $state(false);
-  let arcadeActive = $state(false);
   const activateTunnelWhenNear = activateWhenNear(() => (tunnelActive = true));
-  const activatePlayWithItWhenNear = activateWhenNear(
-    () => (playWithItActive = true)
-  );
   const activateChoreoCardsWhenNear = activateWhenNear(
     () => (choreoCardsActive = true)
   );
   const activate3DWhenNear = activateWhenNear(() => (viewer3DActive = true));
-  const activateArcadeWhenNear = activateWhenNear(() => (arcadeActive = true));
+  const activatePlayWithItWhenNear = activateWhenNear(
+    () => (playWithItActive = true)
+  );
 
   const ROADMAP = [
     {
@@ -226,9 +263,7 @@
 
 <div class="editorial">
   <!-- Hero: stacked and centered by default; from 1680px up it splits into a
-       duo — copy left, the live notation player right — matching the duo
-       grammar of the sections below. Source order is unchanged, so nothing
-       below the breakpoint moves. -->
+       duo — copy left, the live notation player right. -->
   <div class="hero-duo">
     <header class="editorial-header">
       <h1 class="page-title">Flow Arts Composer</h1>
@@ -269,7 +304,14 @@
     </div>
   </div>
 
-  <section class="editorial-section" style="--accent: #6366f1">
+  <!-- WING 1: CREATE -->
+  <div class="wing-band" style="--wc:#8b8cff">
+    <span class="wn">①</span><span class="wname">Create</span>
+    <span class="wtag">make it</span>
+  </div>
+
+  <!-- Construct: prose in the column, the live picker as a wide centered stage. -->
+  <section class="editorial-section" style="--accent:#8b8cff">
     <span class="section-kicker">Construct</span>
     <h2 class="section-title">Build it step by step</h2>
     <div class="prose">
@@ -280,19 +322,21 @@
         possible so you don't have to. You create, then approve or reject what
         you made.
       </p>
-      <p>
-        Before this existed, notating a sequence meant writing it out with red
-        and blue pens and checking every transition by hand. Composer does the
-        bookkeeping. You do the creating.
-      </p>
+    </div>
+    <div class="breakout wide slot" use:whenNear={"construct"}>
+      {#if comp.construct}
+        {@const Section = comp.construct}
+        <Section />
+      {:else}
+        <div class="ph" aria-hidden="true"></div>
+      {/if}
     </div>
   </section>
 
-  <!-- duo-uw: stacked (same as always) below 2200px; on ultrawide the copy
-       sits beside the player+mandala pair instead of above it. -->
+  <!-- Generate: stacked below 1680, prose|demo split on 4K (duo-uw + duo-max). -->
   <section
     class="editorial-section has-duo duo-uw duo-max"
-    style="--accent: #ec4899"
+    style="--accent:#ec4899"
   >
     <div class="section-duo">
       <div class="duo-copy">
@@ -302,17 +346,50 @@
           <p>
             Set your parameters, hit generate, and a valid sequence lands in
             front of you. Watch it animate, keep it if you like it, run it again
-            if you don't. Every sequence draws its own mandala. Try it:
+            if you don't.
           </p>
         </div>
       </div>
-      <div class="duo-demo">
-        <ComposerGenerateDemo sequence={demoSeq} />
+      <div class="duo-demo slot" use:whenNear={"generate"}>
+        {#if comp.generate}
+          {@const Section = comp.generate}
+          <Section />
+        {:else}
+          <div class="ph" aria-hidden="true"></div>
+        {/if}
       </div>
     </div>
   </section>
 
-  <section class="editorial-section has-duo duo-max" style="--accent: #14b8a6">
+  <!-- WING 2: OUTPUTS -->
+  <div class="wing-band" style="--wc:#ec6ba8">
+    <span class="wn">②</span><span class="wname">Outputs</span>
+    <span class="wtag">what it becomes</span>
+  </div>
+
+  <!-- Mandala: the star. Prose in the column, the chosen wall breaks out. -->
+  <section class="editorial-section" style="--accent:#ec6ba8">
+    <span class="section-kicker">Mandala</span>
+    <h2 class="section-title">The shape decides the mandala</h2>
+    <div class="prose">
+      <p>
+        A mandala is the path a sequence traces. Change the movement and the
+        shape changes with it, and the Kinetic Alphabet reaches shapes older
+        systems couldn't hold.
+      </p>
+    </div>
+    <div class="breakout cinema slot" use:whenNear={"mandala"}>
+      {#if comp.mandala}
+        {@const Section = comp.mandala}
+        <Section />
+      {:else}
+        <div class="ph" aria-hidden="true"></div>
+      {/if}
+    </div>
+  </section>
+
+  <!-- Multiply / Tunnel -->
+  <section class="editorial-section has-duo duo-max" style="--accent:#14b8a6">
     <div class="section-duo flip">
       <div class="duo-copy">
         <span class="section-kicker">Multiply</span>
@@ -333,8 +410,6 @@
           props={{ sequence: demoSeq }}
         >
           {#snippet placeholder()}
-            <!-- Same footprint as ComposerTunnelDemo: square stage capped at
-                 30rem (40rem on ultrawide), then the 52px performer row. -->
             <div class="sk-demo" aria-hidden="true">
               <div class="sk-stage sk-stage-square"></div>
               <div class="sk-pill sk-pill-tunnel"></div>
@@ -345,35 +420,11 @@
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #f59e0b">
-    <span class="section-kicker">Learn</span>
-    <h2 class="section-title">Learn the language by playing it</h2>
-    <div class="prose">
-      <p>
-        The app ships with an arcade of games built from the alphabet: read
-        pictographs, name words performed in front of you, match sequences to
-        the mandalas they draw. Every level awards stars and keeps your best
-        score. Here's a round, live:
-      </p>
-    </div>
-    <div class="arcade-slot" use:activateArcadeWhenNear>
-      <LazyMount
-        loader={() => import("./_components/ComposerArcadeDemo.svelte")}
-        active={arcadeActive}
-      >
-        {#snippet placeholder()}
-          <!-- Same footprint as ComposerArcadeDemo: one HUD line (real text
-               metrics, hidden) plus the fixed-height quiz stage. -->
-          <div class="sk-demo sk-arcade" aria-hidden="true">
-            <div class="sk-arcade-hud">Score 0</div>
-            <div class="sk-stage sk-stage-arcade"></div>
-          </div>
-        {/snippet}
-      </LazyMount>
-    </div>
-
+  <!-- Choreo Cards -->
+  <section class="editorial-section" style="--accent:#8b5cf6">
+    <span class="section-kicker">Card</span>
+    <h2 class="section-title">The alphabet leaves the screen</h2>
     <div class="cards-block has-duo duo-max">
-      <h3 class="cards-heading">The alphabet leaves the screen</h3>
       <!-- demo-star: fan first in source (phones keep fan-above-copy), copy
            takes the narrower left column from 1100px up. -->
       <div class="section-duo demo-star">
@@ -385,8 +436,6 @@
               active={choreoCardsActive}
             >
               {#snippet placeholder()}
-                <!-- Same skeleton the demo shows while its catalog loads — the
-                     chunk swap is pixel-identical. -->
                 <FanSkeleton />
               {/snippet}
             </LazyMount>
@@ -417,7 +466,8 @@
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #06b6d4">
+  <!-- 3D viewer -->
+  <section class="editorial-section" style="--accent:#06b6d4">
     <span class="section-kicker">3D</span>
     <h2 class="section-title">Watch it performed in 3D</h2>
     <div class="prose">
@@ -436,9 +486,6 @@
         props={{ sequence: demoSeq }}
       >
         {#snippet placeholder()}
-          <!-- Same footprint as Composer3DViewerDemo: 16:9 stage plus two
-               stacked 52px control rows. The curtain gradient matches the
-               demo's own boot state so the swap reads as one load. -->
           <div class="sk-demo" aria-hidden="true">
             <div class="sk-stage sk-stage-wide"></div>
             <div class="sk-pill sk-pill-viewer"></div>
@@ -458,7 +505,87 @@
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #22c55e">
+  <!-- WING 3: LEARN -->
+  <div class="wing-band" style="--wc:#f0a83c">
+    <span class="wn">③</span><span class="wname">Learn</span>
+    <span class="wtag">learn it &amp; get better</span>
+  </div>
+
+  <!-- Games: the arcade strip as a wide grid band. -->
+  <section class="editorial-section" style="--accent:#f0a83c">
+    <span class="section-kicker">Play</span>
+    <h2 class="section-title">Learn the language by playing it</h2>
+    <div class="prose">
+      <p>
+        The app ships with an arcade of games built from the alphabet: read
+        pictographs, name words performed in front of you, match sequences to
+        the mandalas they draw. The four that need no alphabet knowledge lead.
+      </p>
+    </div>
+    <div class="breakout wide slot" use:whenNear={"games"}>
+      {#if comp.games}
+        {@const Section = comp.games}
+        <Section />
+      {:else}
+        <div class="ph" aria-hidden="true"></div>
+      {/if}
+    </div>
+  </section>
+
+  <!-- WING 4: CONNECT -->
+  <div class="wing-band" style="--wc:#35c7d6">
+    <span class="wn">④</span><span class="wname">Connect</span>
+    <span class="wtag">share it</span>
+  </div>
+
+  <section class="editorial-section" style="--accent:#35c7d6">
+    <span class="section-kicker">Follow</span>
+    <h2 class="section-title">Follow the flow you like</h2>
+    <div class="prose">
+      <p>
+        Follow the people whose flow you like. Their new sequences surface when
+        you come back — a set of creators worth watching, not a feed to scroll.
+      </p>
+    </div>
+    <div class="breakout wide slot" use:whenNear={"connect"}>
+      {#if comp.connect}
+        {@const Section = comp.connect}
+        <Section />
+      {:else}
+        <div class="ph" aria-hidden="true"></div>
+      {/if}
+    </div>
+  </section>
+
+  <!-- WING 5: LIBRARY & BROWSE -->
+  <div class="wing-band" style="--wc:#5bd6a8">
+    <span class="wn">⑤</span><span class="wname">Library &amp; Browse</span>
+    <span class="wtag">find it</span>
+  </div>
+
+  <section class="editorial-section" style="--accent:#5bd6a8">
+    <span class="section-kicker">Browse</span>
+    <h2 class="section-title">Everyone's sequences, yours to collect</h2>
+    <div class="prose">
+      <p>
+        Browse everything the community has shared, filter it down, and drop what
+        you like into a collection. Smart Collections fill themselves from a rule
+        you set once.
+      </p>
+    </div>
+    <div class="breakout wide slot" use:whenNear={"library"}>
+      {#if comp.library}
+        {@const Section = comp.library}
+        <Section />
+      {:else}
+        <div class="ph" aria-hidden="true"></div>
+      {/if}
+    </div>
+  </section>
+
+  <!-- ── TAIL (page-level, below the five wings) ── -->
+
+  <section class="editorial-section" style="--accent:#22c55e">
     <span class="section-kicker">Features</span>
     <h2 class="section-title">Also in the app today</h2>
     <div class="prose">
@@ -499,8 +626,7 @@
         <div class="bento-cell text-only">
           <div class="bento-text">
             <strong>Library</strong>
-            <span
-              >collections and smart collections for everything you save</span
+            <span>collections and smart collections for everything you save</span
             >
           </div>
         </div>
@@ -541,7 +667,7 @@
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #a3e635">
+  <section class="editorial-section" style="--accent:#a3e635">
     <span class="section-kicker">Roadmap</span>
     <h2 class="section-title">Where it's headed</h2>
     <ul class="bullet-list">
@@ -551,16 +677,16 @@
     </ul>
   </section>
 
-  <section class="editorial-section" style="--accent: #8b5cf6">
+  <section class="editorial-section" style="--accent:#8b5cf6">
     <span class="section-kicker">Foundation</span>
     <h2 class="section-title">Built on The Kinetic Alphabet</h2>
     <div class="prose">
       <p>
         The Kinetic Alphabet exists on paper. It existed before this app, and it
         works without it: two pens and a notebook are enough to record
-        choreography. Composer is an instrument built for that language. And
-        like any instrument, you don't have to read the music to play it. The
-        app handles the letters. You handle the movement.
+        choreography. Composer is an instrument built for that language. And like
+        any instrument, you don't have to read the music to play it. The app
+        handles the letters. You handle the movement.
       </p>
     </div>
     <div class="resource-row">
@@ -569,7 +695,7 @@
     </div>
   </section>
 
-  <section class="editorial-section" style="--accent: #38bdf8">
+  <section class="editorial-section" style="--accent:#38bdf8">
     <span class="section-kicker">Try it</span>
     <h2 class="section-title">Play with it right here</h2>
     <div class="prose">
@@ -585,8 +711,6 @@
         active={playWithItActive}
       >
         {#snippet placeholder()}
-          <!-- Shared structural skeleton — same footprint as PlayWithItInner's
-               showcase at every breakpoint (also used by the landing host). -->
           <PlayWithItSkeleton />
         {/snippet}
       </LazyMount>
@@ -639,16 +763,43 @@
     border-color: oklch(0.6 0.08 270 / 0.5);
   }
 
-  /* .breakout (+ .wide / .cinema band steps) now lives in public-editorial.css
-     as a shared primitive — this page was its first consumer. */
-
-  /* Duo helpers: below the duo breakpoints the copy block centers in the
-     stacked section, matching the page's centered essay column. */
-  @media (max-width: 1099.98px) {
-    .section-duo > .duo-copy {
-      margin-inline: auto;
-    }
+  /* ── five-wing bands ── */
+  .wing-band {
+    display: flex;
+    align-items: baseline;
+    gap: 0.7rem;
+    border-top: 2px solid var(--wc);
+    padding-top: 0.6rem;
+    margin: 2.8rem 0 0.4rem;
   }
+  .wn {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--wc);
+  }
+  .wname {
+    font-size: 1.1rem;
+    font-weight: 720;
+  }
+  .wtag {
+    color: oklch(0.68 0.02 270);
+    font-style: italic;
+    font-size: 0.9rem;
+  }
+
+  /* Demo cell inside a duo centers its content vertically. */
+  .duo-demo.slot {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  /* Reserve scroll height on the PLACEHOLDER only, so the section observers
+     don't all fire at once before load — once a section mounts, the slot sizes
+     to its content and leaves no dead gap. */
+  .ph {
+    min-height: 42vh;
+  }
+
   /* CTAs inside a duo copy cell: the .hero-ctas defaults carry hero-scale
      margins (2.2rem/3.6rem) that would pad the whole section. */
   .cards-ctas {
@@ -656,9 +807,8 @@
   }
 
   /* The showcase's footprint is reserved by PlayWithItSkeleton (same geometry
-     as the loaded component). The slot is a flex column so that on phones —
-     where PlayWithItInner fills the height it's given — the definite height
-     below actually reaches it (no-layout-shift). */
+     as the loaded component). Flex column so that on phones the definite height
+     below reaches PlayWithItInner (no-layout-shift). */
   .playwithit-slot {
     display: flex;
     flex-direction: column;
@@ -670,10 +820,8 @@
   }
 
   /* ── lazy-demo skeletons ──
-     Each mirrors its loaded component's geometry exactly (stage box + control
-     rows), so the chunk mount paints INTO already-reserved space instead of
-     pushing the page down. Control pills are 52px = SegmentedControl's 44px
-     touch-target segments + 3px padding + 1px border, top and bottom. */
+     Each mirrors its loaded component's geometry exactly so the chunk mount
+     paints INTO already-reserved space instead of pushing the page down. */
   .sk-demo {
     display: flex;
     flex-direction: column;
@@ -690,8 +838,6 @@
       oklch(0.11 0.02 270) 70%
     );
   }
-  /* = ComposerTunnelDemo .stage (30rem cap, 40rem on ultrawide — keep in
-     sync with the component) */
   .sk-stage-square {
     aspect-ratio: 1;
     max-width: min(30rem, 100%);
@@ -699,17 +845,13 @@
   }
   @media (min-width: 1680px) {
     .sk-stage-square {
-      /* Height-keyed: the kaleidoscope is a near-viewport moment on 4K. */
       max-width: min(72vh, 100%);
     }
-    /* 16:9 stage capped by height so the band never outgrows the screen;
-       centered in the cinema band. Mirrors Composer3DViewerDemo .stage. */
     .sk-stage-wide {
       max-width: min(100%, calc(78vh * 16 / 9));
       margin-inline: auto;
     }
   }
-  /* = Composer3DViewerDemo .stage */
   .sk-stage-wide {
     aspect-ratio: 16 / 9;
   }
@@ -719,33 +861,10 @@
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
   }
-  /* = ComposerTunnelDemo .fold-row */
   .sk-pill-tunnel {
     margin-top: 1rem;
     width: min(100%, 22rem);
   }
-  /* = ComposerArcadeDemo: 36rem column, one HUD text line (hidden, real
-     metrics), then the fixed-height quiz stage. */
-  .sk-arcade {
-    display: block;
-    max-width: 36rem;
-    margin: 1.6rem auto 0;
-  }
-  .sk-arcade-hud {
-    text-align: center;
-    font-size: 0.82rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    margin-bottom: 0.7rem;
-    visibility: hidden;
-  }
-  .sk-stage-arcade {
-    height: min(680px, 82vh);
-    border-radius: 18px;
-  }
-
-  /* = Composer3DViewerDemo .control-row (two stacked, 0.8rem gap → the second
-     row carries the gap as margin) */
   .sk-pill-viewer {
     margin-top: 1rem;
     width: min(100%, 30rem);
@@ -770,11 +889,7 @@
     }
   }
 
-  /* Static caption under the 3D viewer slot — lives in the page (not the lazy
-     chunk) so it's part of first paint and never pops in. Margins tuned so the
-     rhythm matches the hint's old in-component position: 0.7rem below the
-     controls (1.4rem breakout bottom margin − 0.7rem), 1.4rem above the next
-     row. */
+  /* Static caption under the 3D viewer slot — part of first paint, never pops. */
   .demo-hint {
     margin: -0.7rem 0 1.4rem;
     font-size: clamp(0.8rem, 0.76rem + 0.12vw, 0.95rem);
@@ -782,9 +897,7 @@
     text-align: center;
   }
 
-  /* ── feature bento ──
-     Uniform text cards, one per feature. The 3D section carries the visuals;
-     these stay lean so nothing depends on a screenshot going stale. */
+  /* ── feature bento ── */
   .bento {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(17rem, 100%), 1fr));
@@ -824,27 +937,24 @@
   .cards-block {
     margin-top: 2rem;
   }
-  .cards-heading {
-    margin: 0 0 clamp(0.4rem, 0.1rem + 0.4vw, 1.2rem);
-    text-align: center;
-    font-size: clamp(1.15rem, 1rem + 0.45vw, 1.6rem);
-    font-weight: 650;
-    color: oklch(0.92 0.02 270);
-  }
   .cards-fan {
     margin: 0.4rem auto 1.4rem;
     max-width: 40rem;
-    /* Size container so FanSkeleton's cqw-based card widths (which mirror
-       DeckFanCover's fit math) resolve against the fan's actual box. */
+    /* Size container so FanSkeleton's cqw-based card widths resolve against the
+       fan's actual box. */
     container-type: inline-size;
   }
-  /* Inside the duo (≥1100px) the fan fills its grid column — 6/11 of the
-     duo width, which lands near today's 40rem at ordinary desktops and
-     reaches ~900px (a six-card fan) on ultrawide. */
   @media (min-width: 1100px) {
     .cards-fan {
       max-width: none;
       margin: 0;
+    }
+  }
+
+  /* Duo helpers: below the duo breakpoints the copy block centers. */
+  @media (max-width: 1099.98px) {
+    .section-duo > .duo-copy {
+      margin-inline: auto;
     }
   }
 
@@ -857,16 +967,7 @@
     }
   }
 
-  /* ── split hero (big tier) ──
-     A centered title band spans the top; below it the description and CTAs sit
-     beside the live notation player. Giving the stage a header directly above
-     it — instead of the title floating off in a side column — is what stops the
-     player from reading as "out of the blue" against the nav. Base (below
-     1680px) has NO .hero-duo styles, so the stacked centered hero is untouched.
-     The header spans both columns and centers; spacer rows (1fr) center the
-     copy block vertically against the taller player; copy and stage each hug
-     the center gutter (justify-self end/start) so the pair stays one
-     conversation, not two islands, at any width up to the 130rem cap. */
+  /* ── split hero (big tier ≥1680px) ── */
   @media (min-width: 1680px) {
     .hero-duo {
       position: relative;
@@ -874,12 +975,6 @@
       translate: -50% 0;
       width: min(90vw, 130rem);
       display: grid;
-      /* Content-sized columns centered as a unit. A 1fr/1fr split gave each
-         column half the width and anchored the copy right / player left, so the
-         narrower player left MORE void on its outer (right) side than the 40rem
-         text block did on its outer (left) side. Sizing columns to their content
-         and centering the pair (justify-content) makes the two outer voids equal
-         by construction, whatever the copy/player width difference is. */
       grid-template-columns: auto auto;
       grid-template-rows: auto 1fr auto auto 1fr;
       grid-template-areas:
@@ -890,14 +985,9 @@
         ".      stage";
       justify-content: center;
       column-gap: clamp(3rem, 4vw, 6rem);
-      /* Breathing room above the title so it clears the nav, and the stage no
-         longer hugs the top of the page. */
       padding-top: clamp(1.5rem, 2.5vw, 3.5rem);
       margin-bottom: 3.6rem;
     }
-    /* Centered identity band above BOTH columns. Base .editorial-header is
-       already centered and the base 1680 .page-title ramp (4.2→5rem) is the
-       centered-marketing-header ramp, so the title needs no local size rule. */
     .hero-duo > .editorial-header {
       grid-area: header;
       text-align: center;
@@ -907,7 +997,6 @@
       grid-area: lede;
       text-align: left;
       margin: 0;
-      /* Definite width so the auto column resolves to it cleanly. */
       width: 40rem;
       max-width: 100%;
     }
@@ -922,9 +1011,6 @@
       grid-area: stage;
       align-self: center;
     }
-    /* Definite player width (so the auto column resolves) — height-keyed at
-       60vh, capped near the copy width so the two read as peers, and its own top
-       margin (for the stacked layout) is zeroed in the centered cell. */
     .hero-duo > .hero-stage :global(.hero-demo) {
       width: min(60vh, 44rem);
       margin-top: 0;

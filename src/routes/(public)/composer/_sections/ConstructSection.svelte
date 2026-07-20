@@ -142,6 +142,7 @@
       act = createConstructAttractAct({
         getRoot: () => bandEl,
         resetBoard: reset,
+        getBoardProgress: () => ({ phase, stepCount: steps.length }),
         togglePlayback: () => playerToggle?.(),
         stepsPerCycle: ATTRACT_STEPS,
       });

@@ -7,7 +7,7 @@ import { join } from "node:path";
 // auth. The dev server runs from the project root, so resolve from cwd.
 const OUT = join(
   process.cwd(),
-  "src/routes/test/composer-wings/_sections/chosen-mandalas.ts",
+  "src/routes/(public)/composer/_sections/chosen-mandalas.ts",
 );
 
 export const POST: RequestHandler = async ({ request }) => {
