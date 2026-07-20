@@ -130,4 +130,31 @@ export const CAP_CONTRIBUTORS: Contributor[] = [
 			"Co-created Transition Theory, the mechanism connecting pattern fragments (per project scaffold notes)",
 		],
 	},
+	{
+		name: "Yuta",
+		role: "Namesake of the canonical Yuta CAP",
+		contributions: [
+			"The spinning that prompted the Home of Poi analysis thread where Damien coined 'Continuous Assembly Patterns' (in-thread the pattern is referred to as 'the Yuta move')",
+			"The famous Yuta CAP (1 0 ; 1 3/4 ; 1/2 assembled with -1 4 ; 1 3/4 ; 1/2) is named for this pattern",
+			"Japanese poi artist, founder of Poi Lab; an early LED and visual-poi figure spinning since 2003",
+		],
+		activeYears: "2003-present",
+		links: [
+			{
+				url: "https://www.youtube.com/watch?v=ihw6kAnUFUY",
+				title: "Endangered Species (2005)",
+				type: "video",
+				author: "Yuta",
+				year: 2005,
+				accessDate: "2026-07-20",
+			},
+			{
+				url: "https://poi-lab.com/",
+				title: "Poi Lab",
+				type: "website",
+				author: "Yuta",
+				accessDate: "2026-07-20",
+			},
+		],
+	},
 ];
