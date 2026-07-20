@@ -1,23 +1,19 @@
 """Compose the Astral Reliquary in Blender from Meshy-authored prototypes.
 
-Second pass (2026-07-19). The first pass placed five assets in four quadrants
-around the stage; this pass builds one lunar observatory complex:
+Third pass (2026-07-19). The second pass arranged five Meshy assets plus
+procedural connector geometry into an observatory complex; at runtime the
+connectors and asset clusters read as clutter. Austen's direction: restraint.
 
-- Three elevation zones: flat performance socket, a raised fractured terrace
-  around the lens (on the Earth sight line), and a crater basin opposite.
-- A crescent of connected ruins across ~120 degrees (arch -> pavilion ->
-  orrery) tied together with broken retaining walls and fallen columns.
-- One readable route from the performance deck up broken stairs to the lens.
-- The arch sunk and tilted into the terrace so it reads as excavated
-  machinery, with a broken metal ring rib reaching toward the stage.
-- Meshy materials graded toward one palette: near-black basalt, tarnished
-  pale metal, sparse moon ice, and very limited amber calibration marks.
+This pass keeps exactly one authored silhouette — the celestial arch, upright
+and distant on the Earth sight line so it frames Earth from the stage — over a
+quiet lunar plain with gentle craters. The performance deck and its flush
+amber calibration channels are the only other built elements. Composition is
+one axis and negative space, nothing else.
 """
 
 from __future__ import annotations
 
 import math
-import random
 from pathlib import Path
 
 import bpy
@@ -31,12 +27,10 @@ BLEND_PATH = ROOT / "blender" / "cosmic-reliquary.blend"
 PREVIEW_DIR = ROOT / "blender" / "previews"
 EXPORT_COLLECTION = "EXPORT_cosmic_reliquary"
 
-# Runtime Earth sits at Three (-40, 2, -60) => Blender (-40, 60). Everything on
-# this sight line frames Earth through the lens from the stage.
+# Runtime Earth sits at Three (-40, 2, -60) => Blender (-40, 60). The arch is
+# placed on this sight line so Earth reads through its ring from the stage.
 EARTH_BLENDER = Vector((-40.0, 60.0))
 SIGHT_ANGLE = math.atan2(EARTH_BLENDER.y, EARTH_BLENDER.x)  # ~123.7 degrees
-
-RNG = random.Random(20260719)
 
 
 def clear_scene() -> None:
@@ -119,43 +113,28 @@ def smoothstep(edge0: float, edge1: float, value: float) -> float:
     return amount * amount * (3.0 - 2.0 * amount)
 
 
-def angular_distance(a: float, b: float) -> float:
-    difference = (a - b + math.pi) % math.tau - math.pi
-    return abs(difference)
-
-
 def terrain_height(x: float, y: float) -> float:
-    """Three zones: flat socket, raised lens terrace, crater basin opposite."""
+    """Quiet lunar plain: flat socket, gentle swells, a few soft craters."""
     radius = math.hypot(x, y)
     if radius <= 5.25:
         return 0.0
 
-    broad = noise.fractal(Vector((x * 0.055, y * 0.055, 0.7)), 1.0, 2.0, 4)
+    broad = noise.fractal(Vector((x * 0.045, y * 0.045, 0.7)), 1.0, 2.0, 4)
     detail = noise.fractal(Vector((x * 0.16, y * 0.16, 3.1)), 0.8, 2.2, 3)
-    height = broad * 0.58 + detail * 0.18
+    height = broad * 0.5 + detail * 0.12
 
-    # Raised observatory terrace around the Earth sight line. Full strength
-    # inside +-45 degrees of the line, gone by +-85, rising radially from the
-    # socket apron and relaxing again toward the horizon.
-    span = angular_distance(math.atan2(y, x), SIGHT_ANGLE)
-    sector = smoothstep(math.radians(85.0), math.radians(45.0), span)
-    radial = smoothstep(7.2, 10.6, radius) * (1.0 - smoothstep(19.0, 25.0, radius))
-    fracture = noise.fractal(Vector((x * 0.34, y * 0.34, 7.7)), 0.9, 2.1, 2)
-    height += sector * radial * (1.85 + fracture * 0.38)
-
-    # Crater basin on the opposite side so the stage sits between machinery
-    # above and a dead excavation below.
-    basin_distance = math.hypot(x - 9.5, y + 12.5)
-    bowl = math.exp(-((basin_distance / 7.0) ** 2))
-    basin_rim = math.exp(-(((basin_distance - 7.0) / 1.7) ** 2))
-    height += -1.75 * bowl + 0.42 * basin_rim
-
-    # Two distant impact craters keep the far field from reading flat.
-    for cx, cy, crater_radius, depth in ((-17.0, -14.0, 5.4, 0.9), (21.0, 3.0, 4.6, 0.75)):
+    craters = (
+        (13.0, 11.0, 4.8, 1.0),
+        (-17.0, 9.0, 6.2, 0.85),
+        (11.0, -17.0, 5.1, 0.75),
+        (-10.0, -21.0, 3.8, 0.55),
+        (21.0, 3.0, 4.6, 0.6),
+    )
+    for cx, cy, crater_radius, depth in craters:
         distance = math.hypot(x - cx, y - cy)
-        crater_bowl = math.exp(-((distance / (crater_radius * 0.72)) ** 2))
+        bowl = math.exp(-((distance / (crater_radius * 0.72)) ** 2))
         rim = math.exp(-(((distance - crater_radius) / 0.75) ** 2))
-        height += -depth * crater_bowl + depth * 0.28 * rim
+        height += -depth * bowl + depth * 0.28 * rim
 
     horizon = smoothstep(24.0, 33.0, radius)
     height += horizon * (0.45 + 0.7 * math.sin(math.atan2(y, x) * 5.0 + 0.4))
@@ -215,7 +194,7 @@ def polar(radius: float, angle_degrees: float) -> tuple[float, float]:
 
 
 def grade_asset(obj: bpy.types.Object, saturation: float, value: float, emission_cap: float) -> None:
-    """Pull a Meshy asset's baked palette toward basalt/pale-metal/ice."""
+    """Pull a Meshy asset's baked palette toward the cold basalt scheme."""
     for slot in obj.material_slots:
         material = slot.material
         if material is None or not material.use_nodes or material.get("AR_graded"):
@@ -260,7 +239,6 @@ def import_asset(
     height: float,
     location: tuple[float, float, float],
     rotation_degrees: float,
-    tilt_degrees: float = 0.0,
     saturation: float = 0.45,
     value: float = 0.62,
     emission_cap: float = 0.7,
@@ -294,11 +272,7 @@ def import_asset(
     horizontal_scale = width / max(size.x, size.y)
     vertical_scale = height / max(size.z, 0.001)
     result.scale = (horizontal_scale, horizontal_scale, vertical_scale)
-    result.rotation_euler = (
-        math.radians(tilt_degrees),
-        0.0,
-        math.radians(rotation_degrees),
-    )
+    result.rotation_euler = (0.0, 0.0, math.radians(rotation_degrees))
     result.location = location
     grade_asset(result, saturation, value, emission_cap)
     move_to_collection(result, target)
@@ -320,24 +294,6 @@ def add_block(
     block.data.materials.append(material)
     move_to_collection(block, target)
     return block
-
-
-def add_tube(
-    target: bpy.types.Collection,
-    name: str,
-    material: bpy.types.Material,
-    location: tuple[float, float, float],
-    radius: float,
-    length: float,
-    rotation_degrees: tuple[float, float, float],
-) -> bpy.types.Object:
-    bpy.ops.mesh.primitive_cylinder_add(vertices=20, radius=radius, depth=length, location=location)
-    tube = bpy.context.object
-    tube.name = name
-    tube.rotation_euler = tuple(math.radians(v) for v in rotation_degrees)
-    tube.data.materials.append(material)
-    move_to_collection(tube, target)
-    return tube
 
 
 def create_precision_dais(
@@ -385,26 +341,8 @@ def create_precision_dais(
         move_to_collection(inlay, target)
 
 
-def create_deck_anchors(
-    target: bpy.types.Collection,
-    basalt: bpy.types.Material,
-    metal: bpy.types.Material,
-    amber: bpy.types.Material,
-) -> None:
-    """Two asymmetrical actuator housings + channel cuts tie the deck to the site."""
-    # Housing A: rectangular actuator at the route mouth, slightly off-axis.
-    ax, ay = polar(4.95, 102.0)
-    ground_a = terrain_height(ax, ay)
-    add_block(target, "AR_ActuatorHousing_A", basalt, (ax, ay, ground_a + 0.26), (0.62, 0.46, 0.34), (0, 0, 102 + 90))
-    add_block(target, "AR_ActuatorSlit_A", amber, (ax, ay, ground_a + 0.56), (0.4, 0.05, 0.03), (0, 0, 102 + 90))
-
-    # Housing B: low cylindrical winch drum on the far side.
-    bx, by = polar(4.8, 262.0)
-    ground_b = terrain_height(bx, by)
-    add_tube(target, "AR_ActuatorHousing_B", metal, (bx, by, ground_b + 0.28), 0.5, 0.62, (0, 0, 0))
-    add_block(target, "AR_ActuatorSlit_B", amber, (bx, by, ground_b + 0.62), (0.3, 0.045, 0.025), (0, 0, 262))
-
-    # Shallow calibration channels running out from under the deck rim.
+def create_deck_channels(target: bpy.types.Collection, amber: bpy.types.Material) -> None:
+    """Three flush calibration channels running out from under the deck rim."""
     for label, angle_degrees, inner, outer in (
         ("route", math.degrees(SIGHT_ANGLE), 4.15, 5.9),
         ("east", 20.0, 4.15, 6.2),
@@ -425,172 +363,6 @@ def create_deck_anchors(
             ((outer - inner) / 2, 0.07, 0.026),
             (0, pitch, angle_degrees),
         )
-
-
-def create_route(target: bpy.types.Collection, basalt: bpy.types.Material) -> None:
-    """One readable path: pads across the apron, broken stairs up the terrace."""
-    axis_degrees = math.degrees(SIGHT_ANGLE)
-    for index, pad_radius in enumerate((5.15, 6.35, 7.5)):
-        px, py = polar(pad_radius, axis_degrees + RNG.uniform(-2.5, 2.5))
-        add_block(
-            target,
-            f"AR_RoutePad_{index}",
-            basalt,
-            (px, py, terrain_height(px, py) + 0.05),
-            (0.82, 0.6, 0.1),
-            (0, 0, axis_degrees + RNG.uniform(-14, 14)),
-        )
-
-    for index in range(7):
-        step_radius = 8.3 + index * 0.42
-        lateral = RNG.uniform(-0.14, 0.14)
-        angle = axis_degrees + math.degrees(lateral / step_radius)
-        sx, sy = polar(step_radius, angle)
-        add_block(
-            target,
-            f"AR_Stair_{index}",
-            basalt,
-            (sx, sy, terrain_height(sx, sy) + 0.03),
-            (0.86, 0.34, 0.26),
-            (0, 0, axis_degrees + 90 + RNG.uniform(-6, 6)),
-        )
-
-
-def create_walls(target: bpy.types.Collection, basalt: bpy.types.Material) -> None:
-    """Broken revetments that bind the crescent into one structure."""
-    # Terrace lip revetment below the arch. The three segments nearest the
-    # sight line are omitted: the stair route climbs through that breach.
-    for index, angle_degrees in enumerate(range(96, 167, 7)):
-        if angle_degrees in (117, 124, 131):
-            continue
-        wx, wy = polar(10.15, angle_degrees + RNG.uniform(-1.5, 1.5))
-        wall_height = RNG.uniform(0.5, 1.05)
-        add_block(
-            target,
-            f"AR_Revetment_{index}",
-            basalt,
-            (wx, wy, terrain_height(wx, wy) - 0.2),
-            (1.05, 0.28, wall_height),
-            (RNG.uniform(-4, 4), RNG.uniform(-3, 3), angle_degrees + 90),
-        )
-    # Two toppled revetment slabs at the terrace foot.
-    for index, angle_degrees in enumerate((104.0, 138.0)):
-        fx, fy = polar(9.05, angle_degrees)
-        add_block(
-            target,
-            f"AR_RevetmentFallen_{index}",
-            basalt,
-            (fx, fy, terrain_height(fx, fy) + 0.16),
-            (1.0, 0.26, 0.62),
-            (78, 0, angle_degrees + 90 + RNG.uniform(-10, 10)),
-        )
-
-    # Ruined wall run linking the pavilion mass to the orrery and carrying
-    # the crescent on toward its southeast tail.
-    for index, angle_degrees in enumerate((50.0, 55.5, 61.0, 66.5, 72.0, 77.5, 83.0)):
-        wx, wy = polar(13.7, angle_degrees + RNG.uniform(-1.0, 1.0))
-        wall_height = RNG.uniform(0.4, 0.85)
-        add_block(
-            target,
-            f"AR_LinkWall_{index}",
-            basalt,
-            (wx, wy, terrain_height(wx, wy) - 0.15),
-            (1.15, 0.3, wall_height),
-            (RNG.uniform(-4, 4), 0, angle_degrees + 90),
-        )
-    # Fallen columns between the masses.
-    add_tube(target, "AR_FallenColumn_A", basalt, (5.2, 12.6, terrain_height(5.2, 12.6) + 0.24), 0.27, 3.1, (90, 0, 158))
-    add_tube(target, "AR_FallenColumn_B", basalt, (12.4, 6.2, terrain_height(12.4, 6.2) + 0.22), 0.24, 2.6, (90, 0, 30))
-
-
-def create_ring_rib(target: bpy.types.Collection, metal: bpy.types.Material) -> None:
-    """A broken metal ring half-buried between the lens and the stage."""
-    center = Vector((-2.9, 13.6))
-    rib_radius = 3.6
-    for index, angle_degrees in enumerate(range(196, 317, 24)):
-        if index == 2:
-            continue  # the break in the ring
-        angle = math.radians(angle_degrees)
-        px = center.x + math.cos(angle) * rib_radius
-        py = center.y + math.sin(angle) * rib_radius
-        add_tube(
-            target,
-            f"AR_RingRib_{index}",
-            metal,
-            (px, py, terrain_height(px, py) + 0.16),
-            0.14,
-            1.55,
-            (90, 0, angle_degrees + 90),
-        )
-    # One snapped rib standing near the arch footing, leaning stageward.
-    add_block(
-        target,
-        "AR_RingRib_Upright",
-        metal,
-        (-6.7, 10.4, terrain_height(-6.7, 10.4) + 0.9),
-        (0.14, 0.14, 1.05),
-        (-16, 0, math.degrees(SIGHT_ANGLE)),
-    )
-
-
-def make_rock_prototypes(basalt: bpy.types.Material) -> list[bpy.types.Object]:
-    prototypes = []
-    for index in range(3):
-        bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=2, radius=1.0, location=(0, 0, -60 - index * 5))
-        rock = bpy.context.object
-        rock.name = f"AR_RockProto_{index}"
-        seed_offset = Vector((index * 11.3, index * 7.9, index * 3.1))
-        for vertex in rock.data.vertices:
-            sample = noise.noise(vertex.co * 1.7 + seed_offset)
-            vertex.co += vertex.co.normalized() * sample * 0.38
-        squash = 0.62 + index * 0.12
-        rock.data.transform(Matrix.Diagonal(Vector((1.0, 0.9 + index * 0.08, squash, 1.0))))
-        rock.data.materials.append(basalt)
-        prototypes.append(rock)
-    return prototypes
-
-
-def scatter_rubble(
-    prototypes: list[bpy.types.Object],
-    target: bpy.types.Collection,
-    clusters: list[tuple[float, float, float, int, float, float]],
-) -> None:
-    """clusters: (x, y, ring_radius, count, min_scale, max_scale)."""
-    instance_index = 0
-    for cx, cy, ring_radius, count, min_scale, max_scale in clusters:
-        for _ in range(count):
-            angle = RNG.uniform(0, math.tau)
-            distance = ring_radius * math.sqrt(RNG.uniform(0.35, 1.0))
-            x = cx + math.cos(angle) * distance
-            y = cy + math.sin(angle) * distance
-            scale = RNG.uniform(min_scale, max_scale)
-            prototype = prototypes[instance_index % len(prototypes)]
-            rock = prototype.copy()
-            rock.data = prototype.data
-            rock.name = f"AR_Rubble_{instance_index:03d}"
-            rock.location = (x, y, terrain_height(x, y) + scale * 0.22)
-            rock.rotation_euler = (RNG.uniform(0, 0.5), RNG.uniform(0, 0.5), RNG.uniform(0, math.tau))
-            rock.scale = (scale, scale, scale)
-            target.objects.link(rock)
-            instance_index += 1
-
-
-def duplicate_linked(
-    source: bpy.types.Object,
-    target: bpy.types.Collection,
-    name: str,
-    location: tuple[float, float, float],
-    rotation_degrees: float,
-    scale: float,
-) -> bpy.types.Object:
-    duplicate = source.copy()
-    duplicate.data = source.data
-    duplicate.name = name
-    duplicate.location = location
-    duplicate.rotation_euler = (0.0, 0.0, math.radians(rotation_degrees))
-    duplicate.scale = tuple(component * scale for component in source.scale)
-    target.objects.link(duplicate)
-    return duplicate
 
 
 def look_at(obj: bpy.types.Object, point: tuple[float, float, float]) -> None:
@@ -657,7 +429,7 @@ def render_previews(camera: bpy.types.Object) -> None:
         "quarter": ((29, -9, 18), (0, 4, 3.0), 38),
         "side": ((-29, -4, 14), (0, 4, 2.8), 38),
         "top": ((0, -0.01, 54), (0, 0, 0), 44),
-        "route": ((7.5, -10.5, 4.2), (-8.3, 12.5, 4.0), 30),
+        "route": ((7.5, -10.5, 4.2), (-10.5, 15.8, 5.0), 30),
     }
     for name, (location, target, lens) in views.items():
         camera.location = location
@@ -685,108 +457,21 @@ def main() -> None:
 
     create_terrain(export, regolith)
     create_precision_dais(export, basalt, metal, amber)
-    create_deck_anchors(export, basalt, metal, amber)
-    create_route(export, basalt)
-    create_walls(export, basalt)
-    create_ring_rib(export, metal)
+    create_deck_channels(export, amber)
 
-    sight_degrees = math.degrees(SIGHT_ANGLE)
-
-    # The lens: sunk into the terrace on the Earth sight line, tilted back so
-    # the housing reads as excavated machinery rather than a standing portal.
-    arch_x, arch_y = polar(15.0, sight_degrees)
+    # The single authored silhouette: the ring gate, upright and distant on
+    # the Earth sight line, grounded lightly in the plain.
+    arch_x, arch_y = polar(19.0, math.degrees(SIGHT_ANGLE))
     import_asset(
         "celestial-arch",
         export,
         width=13.0,
         height=13.2,
-        location=(arch_x, arch_y, terrain_height(arch_x, arch_y) - 1.35),
+        location=(arch_x, arch_y, terrain_height(arch_x, arch_y) - 1.05),
         rotation_degrees=-18,
-        tilt_degrees=-6,
         saturation=0.45,
-        value=0.6,
+        value=0.52,
         emission_cap=1.2,
-    )
-
-    # Foundation ring buried under the deck.
-    import_asset(
-        "reliquary-dais",
-        export,
-        width=9.8,
-        height=0.6,
-        location=(0, 0, -0.25),
-        rotation_degrees=0,
-        saturation=0.4,
-        value=0.55,
-        emission_cap=0.8,
-    )
-
-    # Secondary mass: pavilion and orrery clustered on the terrace flank,
-    # linked to the arch and each other by the revetment walls.
-    pavilion_x, pavilion_y = polar(14.0, 88.0)
-    import_asset(
-        "shattered-pavilion",
-        export,
-        width=9.0,
-        height=5.0,
-        location=(pavilion_x, pavilion_y, terrain_height(pavilion_x, pavilion_y) - 0.6),
-        rotation_degrees=145,
-        saturation=0.26,
-        value=0.48,
-        emission_cap=0.5,
-    )
-    orrery_x, orrery_y = polar(13.8, 45.0)
-    import_asset(
-        "ruined-orrery",
-        export,
-        width=7.5,
-        height=6.2,
-        location=(orrery_x, orrery_y, terrain_height(orrery_x, orrery_y) - 0.5),
-        rotation_degrees=-35,
-        saturation=0.2,
-        value=0.68,
-        emission_cap=0.5,
-    )
-
-    # Moon ice: one seam in the crater basin, one small outcrop on the
-    # terrace, one shard at the basin rim. Sparse by design.
-    fault = import_asset(
-        "crystal-fault",
-        export,
-        width=6.0,
-        height=2.7,
-        location=(8.8, -11.2, terrain_height(8.8, -11.2) - 0.35),
-        rotation_degrees=18,
-        saturation=0.7,
-        value=0.75,
-        emission_cap=0.9,
-    )
-    duplicate_linked(
-        fault, export, "AR_crystal_fault_B",
-        (-12.8, 8.2, terrain_height(-12.8, 8.2) - 0.4), 118, 0.7,
-    )
-    duplicate_linked(
-        fault, export, "AR_crystal_fault_C",
-        (13.0, -7.6, terrain_height(13.0, -7.6) - 0.25), -68, 0.55,
-    )
-
-    # Rubble collars sink every mass into the terrain.
-    prototypes = make_rock_prototypes(basalt)
-    for prototype in prototypes:
-        move_to_collection(prototype, preview)  # prototypes stay out of export
-    scatter_rubble(
-        prototypes,
-        export,
-        [
-            (arch_x, arch_y, 5.6, 9, 0.4, 1.0),
-            (pavilion_x, pavilion_y, 4.6, 6, 0.35, 0.8),
-            (orrery_x, orrery_y, 4.0, 6, 0.3, 0.75),
-            (8.8, -11.2, 3.6, 4, 0.3, 0.7),
-            (polar(9.6, sight_degrees)[0], polar(9.6, sight_degrees)[1], 2.6, 6, 0.22, 0.5),
-            (polar(10.2, 124)[0], polar(10.2, 124)[1], 5.0, 6, 0.3, 0.7),
-            (13.0, -7.6, 2.4, 4, 0.25, 0.55),
-            (-16.0, -2.0, 3.4, 4, 0.3, 0.8),
-        ],
     )
 
     camera = create_preview_world(preview)

@@ -1,16 +1,18 @@
 # Cosmic Astral Reliquary Second Pass: Handoff (2026-07-19)
 
-> **Second pass landed 2026-07-19 (Fable).** Loose ends 1–7 are implemented:
-> terrace/basin elevation zones, ~120° crescent (arch @124° → pavilion @88° →
-> orrery @45° → SE tail), broken-stair route deck→lens through a revetment
-> breach, arch sunk 1.35 m + tilted −6° with a broken metal ring rib, HSV
-> palette grading + emission caps on all Meshy materials, deck actuator
-> housings/channels/amber marks, cold directional re-aimed to rake the terrace
-> (`[28, 12, -19]`). Shipping GLB rebuilt (15,491,064 bytes, validator clean,
-> meshopt+KTX2+instancing). Still open: loose end 8 (runtime screenshot needs
-> browser permission), perf profiling, loose end 10 (legacy retirement gated on
-> Austen's approval). Loose end 9 resolved: no further Meshy credits needed —
-> procedural connectors sufficed.
+> **Second pass landed 2026-07-19 (Fable), then superseded same day.** The
+> observatory-complex arrangement (terrace, crescent, stairs, walls, rubble)
+> read as clutter at runtime; Austen rejected it: procedural connector blocks
+> and multi-asset arrangement are outside current AI aesthetic ability. Third
+> pass is the keeper: **restraint** — quiet lunar plain with soft craters, the
+> celestial arch alone, upright at r19 on the Earth sight line, base slab
+> buried; deck + rings + amber marks + three flush channels; nothing else.
+> Pavilion/orrery/dais/fault assets stay on disk unused (raw GLBs remain for a
+> future human-directed pass). Shipping GLB 5,691,088 bytes, validator clean.
+> Cold directional stays `[28, 12, -19]`. Still open: perf numbers in-app,
+> loose end 10 (legacy retirement gated on approval). Lesson for the next
+> agent: do not attempt multi-asset ruin composition again — single silhouette
+> + negative space is the ceiling of what reads well from this pipeline.
 
 ## Mission
 
