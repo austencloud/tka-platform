@@ -37,14 +37,37 @@ const aiModel = opt("ai-model", "meshy-6");
 const artStyle = opt("art-style", "realistic");
 const polycount = Number(opt("polycount", "30000"));
 const out = resolve(opt("out", "static/models/ocean/stage_meshy_raw.glb"));
+const resumeRefineId = opt("resume-refine");
 
-if (!prompt) {
-  console.error("Need --prompt.");
+if (!prompt && !resumeRefineId) {
+  console.error("Need --prompt or --resume-refine <task-id>.");
   process.exit(1);
 }
 
+async function fetchWithRetry(url, options, attempts = 6) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok || (response.status < 500 && response.status !== 429)) {
+        return response;
+      }
+      lastError = new Error(`HTTP ${response.status} from ${url}`);
+    } catch (error) {
+      lastError = error;
+    }
+
+    if (attempt < attempts) {
+      const delay = Math.min(10000, 1000 * 2 ** (attempt - 1));
+      console.warn(`\n  Meshy connection retry ${attempt}/${attempts - 1} in ${delay / 1000}s`);
+      await new Promise((resolveDelay) => setTimeout(resolveDelay, delay));
+    }
+  }
+  throw lastError;
+}
+
 async function post(body) {
-  const res = await fetch(BASE, { method: "POST", headers: JSON_HDR, body: JSON.stringify(body) });
+  const res = await fetchWithRetry(BASE, { method: "POST", headers: JSON_HDR, body: JSON.stringify(body) });
   const json = await res.json();
   if (!res.ok) throw new Error(`POST failed ${res.status}: ${JSON.stringify(json)}`);
   return json.result;
@@ -53,7 +76,7 @@ async function post(body) {
 async function waitTask(id, label, { interval = 5000, timeout = 900000 } = {}) {
   const start = Date.now();
   for (;;) {
-    const res = await fetch(`${BASE}/${id}`, { headers: AUTH });
+    const res = await fetchWithRetry(`${BASE}/${id}`, { headers: AUTH });
     const json = await res.json();
     process.stdout.write(`  ${label}: ${json.status} ${json.progress ?? 0}%\r`);
     if (json.status === "SUCCEEDED") {
@@ -68,34 +91,39 @@ async function waitTask(id, label, { interval = 5000, timeout = 900000 } = {}) {
   }
 }
 
-// 1. preview (geometry)
-const previewId = await post({
-  mode: "preview",
-  prompt,
-  ai_model: aiModel,
-  art_style: artStyle,
-  topology: "triangle",
-  target_polycount: polycount,
-  should_remesh: true,
-});
-console.log(`Preview submitted: ${previewId}`);
-await waitTask(previewId, "preview");
+let refineId = resumeRefineId;
+if (refineId) {
+  console.log(`Resuming refine task: ${refineId}`);
+} else {
+  // 1. preview (geometry)
+  const previewId = await post({
+    mode: "preview",
+    prompt,
+    ai_model: aiModel,
+    art_style: artStyle,
+    topology: "triangle",
+    target_polycount: polycount,
+    should_remesh: true,
+  });
+  console.log(`Preview submitted: ${previewId}`);
+  await waitTask(previewId, "preview");
 
-// 2. refine (PBR textures)
-const refineId = await post({
-  mode: "refine",
-  preview_task_id: previewId,
-  enable_pbr: true,
-  texture_prompt: texturePrompt,
-});
-console.log(`Refine submitted: ${refineId}`);
+  // 2. refine (PBR textures)
+  refineId = await post({
+    mode: "refine",
+    preview_task_id: previewId,
+    enable_pbr: true,
+    texture_prompt: texturePrompt,
+  });
+  console.log(`Refine submitted: ${refineId}`);
+}
 const done = await waitTask(refineId, "refine");
 
 // 3. download GLB
 const glbUrl = done.model_urls?.glb;
 if (!glbUrl) throw new Error(`No GLB in result: ${JSON.stringify(done.model_urls)}`);
 await mkdir(dirname(out), { recursive: true });
-const bin = Buffer.from(await (await fetch(glbUrl)).arrayBuffer());
+const bin = Buffer.from(await (await fetchWithRetry(glbUrl)).arrayBuffer());
 await writeFile(out, bin);
 console.log(`\nDownloaded GLB -> ${out} (${(bin.length / 1024).toFixed(1)} KB)`);
 console.log("Next: node scripts/optimize-stage-meshy.mjs");
