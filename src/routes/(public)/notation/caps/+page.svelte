@@ -128,7 +128,7 @@
         <p>
           This is a CAP: a closed pattern assembled from fragments of simpler
           ones. The club here is drawing the one the whole idea grew around.
-          Half a cycle of isolation, half a cycle of antispin, joined into a
+          Half a cycle of extension, half a cycle of antispin, joined into a
           single curve that repeats forever.
         </p>
         <p class="cap-credit">
@@ -149,9 +149,10 @@
     </div>
     <ul class="bullet-list">
       <li>
-        <strong>The isolation half.</strong> The hand carries the club from
-        east to south, then south to west. Zero turns: the club keeps pointing
-        away from center the whole way, so the tip sweeps a wide, even arc.
+        <strong>The extension half.</strong> The hand carries the club from
+        east to south, then south to west. Zero turns, orientation out: the
+        club keeps pointing away from center the whole way, like a spoke of a
+        wheel, so the tip sweeps a wide, even arc.
       </li>
       <li>
         <strong>The antispin half.</strong> The hand retraces from west to
@@ -170,7 +171,7 @@
       <figure class="cap-lens">
         <img
           src="/caps/yuta-cap.svg"
-          alt="The Yuta CAP drawn as a continuous curve: an isolation arc joined to antispin petals"
+          alt="The Yuta CAP drawn as a continuous curve: an extension arc joined to antispin petals"
           width="360"
           height="360"
           loading="lazy"

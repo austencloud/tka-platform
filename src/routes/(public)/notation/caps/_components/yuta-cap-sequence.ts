@@ -5,8 +5,9 @@
  * server's orientation algebra (pro + even turns preserves orientation; anti +
  * odd turns preserves orientation), so every step is out → out:
  *
- *   1. pro  E → S, 0 turns, cw   (isolation — pro at 0 turns)
- *   2. pro  S → W, 0 turns, cw   (isolation)
+ *   1. pro  E → S, 0 turns, cw   (extension — pro at 0 turns, ori out: the
+ *                                 club points away from center the whole way)
+ *   2. pro  S → W, 0 turns, cw   (extension)
  *   3. anti W → S, 1 turn,  ccw  (antispin petal)
  *   4. anti S → E, 1 turn,  ccw  (antispin petal — closes the loop at east)
  *

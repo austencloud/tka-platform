@@ -6,16 +6,24 @@
   so it reads as "a prop doing the pattern" with no letter/step chrome and no
   background box.
 
-  This surface is LOCKED: effort linear, 90 BPM, clubs, grid hidden, context
-  menu suppressed — a public exhibit, not an editable canvas.
+  This surface is LOCKED for visitors: effort/BPM/prop hardcoded, grid hidden,
+  context menu suppressed — a public exhibit, not an editable canvas.
+
+  Tuning rig: append ?tune to the URL and a knob panel appears under the stage
+  (BPM, effort, trail shape, ghost opacity, grid). Values feed the player live;
+  "Copy values" puts the current JSON on the clipboard so the winning numbers
+  can be hardcoded back into DEFAULTS below.
 -->
 <script lang="ts">
+  import { page } from "$app/state";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import MandalaHeroLayer from "$lib/shared/shape-matrix/components/MandalaHeroLayer.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { buildYutaCapSequence } from "./yuta-cap-sequence";
   import { setPerHand } from "$lib/shared/animation-engine/services/tip-effect-resolver";
   import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
   import { getTipPoints } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
+  import type { EffortId } from "$lib/shared/effort/domain/effort-types";
   import {
     TrailMode,
     TrailEffect,
@@ -42,50 +50,174 @@
   // Trails on the red (solo) hand only — index 1 = red.
   const tipEffectMap = setPerHand({}, 1, "trails");
 
-  // Hero-visibility numbers from the landing hero preset, with LOOP_CLEAR so
-  // the club redraws the full closed curve fresh on every cycle — the trace IS
-  // the mandala, drawn live over its ghost.
-  const trailSettings: TrailSettings = {
-    ...DEFAULT_TRAIL_SETTINGS,
-    mode: TrailMode.LOOP_CLEAR,
-    effect: TrailEffect.GLOW,
+  // The shipped look. The tuner edits live copies of these; once a set wins,
+  // paste the copied JSON back over this object.
+  const DEFAULTS = {
+    bpm: 90,
+    effort: "linear" as EffortId,
+    ghostOpacity: 0.55,
+    gridVisible: false,
     fadeDurationMs: 3200,
     glowBlur: 9,
     tailLength: 36,
     lineWidth: 6,
     minOpacity: 0.35,
   };
+
+  let bpm = $state(DEFAULTS.bpm);
+  let effort = $state<EffortId>(DEFAULTS.effort);
+  let ghostOpacity = $state(DEFAULTS.ghostOpacity);
+  let gridVisible = $state(DEFAULTS.gridVisible);
+  let fadeDurationMs = $state(DEFAULTS.fadeDurationMs);
+  let glowBlur = $state(DEFAULTS.glowBlur);
+  let tailLength = $state(DEFAULTS.tailLength);
+  let lineWidth = $state(DEFAULTS.lineWidth);
+  let minOpacity = $state(DEFAULTS.minOpacity);
+
+  // Hero-visibility numbers from the landing hero preset, with LOOP_CLEAR so
+  // the club redraws the full closed curve fresh on every cycle — the trace IS
+  // the mandala, drawn live over its ghost.
+  const trailSettings = $derived<TrailSettings>({
+    ...DEFAULT_TRAIL_SETTINGS,
+    mode: TrailMode.LOOP_CLEAR,
+    effect: TrailEffect.GLOW,
+    fadeDurationMs,
+    glowBlur,
+    tailLength,
+    lineWidth,
+    minOpacity,
+  });
+
+  // LazyMount spreads this reactively, so knob changes hit the player live.
+  const playerProps = $derived({
+    sequence,
+    autoPlay: true,
+    externalBpm: bpm,
+    tipEffortMap: { "*": { effort } },
+    chrome: "minimal" as const,
+    fill: true,
+    beatIndicators: false,
+    bluePropType: "club",
+    redPropType: "club",
+    hideTkaGlyph: true,
+    hideStepNumbers: true,
+    gridVisible,
+    disableContextMenu: true,
+    trailSettingsOverride: trailSettings,
+    tipEffectMap,
+    backgroundAlpha: 0,
+  });
+
+  // ?tune reveals the rig. Prerendered HTML has no params, so visitors (and
+  // the SSR pass) never see the panel; it appears after hydration for the URL
+  // that asks for it.
+  const tunable = $derived(page.url.searchParams.has("tune"));
+
+  const EFFORT_OPTIONS = (
+    ["linear", "glide", "dab", "press", "punch", "elastic", "bounce", "anticipation"] as EffortId[]
+  ).map((value) => ({ value, label: value }));
+
+  interface Knob {
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+    get: () => number;
+    set: (v: number) => void;
+    fmt?: (v: number) => string;
+  }
+  const pct = (v: number) => `${Math.round(v * 100)}%`;
+  const KNOBS: Knob[] = [
+    { label: "BPM", min: 30, max: 180, step: 5, get: () => bpm, set: (v) => (bpm = v) },
+    { label: "Ghost opacity", min: 0, max: 1, step: 0.05, get: () => ghostOpacity, set: (v) => (ghostOpacity = v), fmt: pct },
+    { label: "Trail fade (ms)", min: 400, max: 8000, step: 100, get: () => fadeDurationMs, set: (v) => (fadeDurationMs = v) },
+    { label: "Glow blur", min: 0, max: 24, step: 1, get: () => glowBlur, set: (v) => (glowBlur = v) },
+    { label: "Tail length", min: 4, max: 120, step: 2, get: () => tailLength, set: (v) => (tailLength = v) },
+    { label: "Line width", min: 1, max: 16, step: 0.5, get: () => lineWidth, set: (v) => (lineWidth = v) },
+    { label: "Min opacity", min: 0, max: 1, step: 0.05, get: () => minOpacity, set: (v) => (minOpacity = v), fmt: pct },
+  ];
+
+  let copied = $state(false);
+  async function copyValues() {
+    const values = {
+      bpm,
+      effort,
+      ghostOpacity,
+      gridVisible,
+      fadeDurationMs,
+      glowBlur,
+      tailLength,
+      lineWidth,
+      minOpacity,
+    };
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(values, null, 2));
+      copied = true;
+      setTimeout(() => (copied = false), 1500);
+    } catch (err) {
+      console.error("copy failed", err);
+    }
+  }
 </script>
 
-<div class="yuta-stage">
-  <MandalaHeroLayer paths={mandalaPaths} {clubTipDx} opacity={0.55} />
-  <div class="player-layer">
-    <LazyMount
-      loader={() =>
-        import(
-          "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
-        )}
-      active={true}
-      props={{
-        sequence,
-        autoPlay: true,
-        externalBpm: 90,
-        tipEffortMap: { "*": { effort: "linear" } },
-        chrome: "minimal",
-        fill: true,
-        beatIndicators: false,
-        bluePropType: "club",
-        redPropType: "club",
-        hideTkaGlyph: true,
-        hideStepNumbers: true,
-        gridVisible: false,
-        disableContextMenu: true,
-        trailSettingsOverride: trailSettings,
-        tipEffectMap,
-        backgroundAlpha: 0,
-      }}
-    />
+<div class="yuta-demo">
+  <div class="yuta-stage">
+    <MandalaHeroLayer paths={mandalaPaths} {clubTipDx} opacity={ghostOpacity} />
+    <div class="player-layer">
+      <LazyMount
+        loader={() =>
+          import(
+            "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
+          )}
+        active={true}
+        props={playerProps}
+      />
+    </div>
   </div>
+
+  {#if tunable}
+    <div class="tuner" aria-label="CAP hero tuning rig">
+      <div class="tuner-row effort-row">
+        <span class="knob-label">Effort</span>
+        <SegmentedControl
+          options={EFFORT_OPTIONS}
+          value={effort}
+          onchange={(v) => (effort = v)}
+          size="sm"
+          color="accent"
+        />
+      </div>
+      {#each KNOBS as k (k.label)}
+        <div class="tuner-row">
+          <span class="knob-label">{k.label}</span>
+          <input
+            type="range"
+            min={k.min}
+            max={k.max}
+            step={k.step}
+            value={k.get()}
+            oninput={(e) => k.set(Number(e.currentTarget.value))}
+          />
+          <span class="knob-value">{k.fmt ? k.fmt(k.get()) : k.get()}</span>
+        </div>
+      {/each}
+      <div class="tuner-actions">
+        <button
+          type="button"
+          class="tuner-btn"
+          aria-pressed={gridVisible}
+          onclick={() => (gridVisible = !gridVisible)}
+        >
+          <span class="toggle-dot" data-on={gridVisible || undefined}></span>
+          Grid
+        </button>
+        <button type="button" class="tuner-btn" onclick={copyValues}>
+          <i class="fas {copied ? 'fa-check' : 'fa-copy'}" aria-hidden="true"></i>
+          Copy values
+        </button>
+      </div>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -102,5 +234,82 @@
   .player-layer {
     position: absolute;
     inset: 0;
+  }
+
+  .tuner {
+    margin-top: 0.9rem;
+    padding: 0.85rem 1rem;
+    display: grid;
+    gap: 0.55rem;
+    border-radius: 12px;
+    border: 1px solid oklch(0.4 0.04 270 / 0.25);
+    background: oklch(0.17 0.02 270 / 0.85);
+  }
+
+  .tuner-row {
+    display: grid;
+    grid-template-columns: 8.5rem 1fr 3.5rem;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .effort-row {
+    grid-template-columns: 8.5rem 1fr;
+  }
+
+  .knob-label {
+    font-size: 0.82rem;
+    color: oklch(0.78 0.02 270);
+  }
+
+  /* Fixed-width, tabular readout so slider drags shift nothing. */
+  .knob-value {
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: oklch(0.9 0.02 270);
+  }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: #38bdf8;
+  }
+
+  .tuner-actions {
+    display: flex;
+    gap: 0.6rem;
+    padding-top: 0.2rem;
+  }
+
+  .tuner-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 44px;
+    padding: 0 1rem;
+    border-radius: 10px;
+    border: 1px solid oklch(0.45 0.04 270 / 0.35);
+    background: oklch(0.24 0.02 270);
+    color: oklch(0.9 0.02 270);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 150ms ease;
+  }
+  .tuner-btn:hover {
+    background: oklch(0.3 0.03 270);
+  }
+
+  /* Button + indicator toggle (no checkboxes). */
+  .toggle-dot {
+    width: 0.7rem;
+    height: 0.7rem;
+    border-radius: 50%;
+    border: 1px solid oklch(0.6 0.03 270);
+    background: transparent;
+    transition: background 150ms ease;
+  }
+  .toggle-dot[data-on] {
+    background: #38bdf8;
+    border-color: #38bdf8;
   }
 </style>
