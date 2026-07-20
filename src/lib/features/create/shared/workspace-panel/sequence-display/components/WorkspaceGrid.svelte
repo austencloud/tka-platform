@@ -13,6 +13,7 @@
     calculateStepPosition,
     getTimelineWidthMultiplier,
   } from "$lib/shared/create/utils/grid-calculations";
+  import { getMandalaPlacements } from "$lib/shared/sequence-viewer/services/get-mandala-placements";
   import {
     MIN_DURATION,
     MAX_DURATION,
@@ -185,19 +186,28 @@
     }
   }
 
-  const standardEmptyCells = $derived.by(() => {
+  const standardMandalaCells = $derived.by(() => {
     if (isTimelineMode || steps.length === 0) return [];
-    const cells: Array<{ row: number; column: number; show: MandalaShow }> = [];
-    // Only fill trailing empty cells in the last row — column 1 rows 2+
-    // stay empty to avoid duplicate mandalas stacking vertically.
-    const stepsInLastRow = steps.length % gridLayout.columns;
-    if (stepsInLastRow > 0) {
-      for (let c = stepsInLastRow + 2; c <= gridLayout.totalColumns; c++) {
-        cells.push({ row: gridLayout.rows, column: c, show: "both" });
-      }
-    }
-    applyVariantCycling(cells);
-    return cells;
+    const hasStartPosition =
+      startPosition !== null &&
+      !("isBlank" in startPosition && startPosition.isBlank);
+    const { placements } = getMandalaPlacements({
+      stepCount: steps.length,
+      cols: gridLayout.totalColumns,
+      rows: gridLayout.rows,
+      includeStartPosition: hasStartPosition,
+      showQRCode: false,
+      blueVisible: true,
+      redVisible: true,
+      mandalaEnabled: true,
+      startPositionLayout: "column",
+    });
+
+    return placements.map(({ row, col, variant }) => ({
+      row,
+      column: col,
+      show: variant === "full" ? ("both" as const) : variant,
+    }));
   });
 
   const timelineStartMandalas = $derived.by(() => {
@@ -504,7 +514,7 @@
         </div>
       {/each}
 
-      {#each standardEmptyCells as cell (cell.row + "-" + cell.column)}
+      {#each standardMandalaCells as cell (cell.row + "-" + cell.column)}
         <!-- svelte-ignore a11y_no_static_element_interactions -->
         <div
           class="mandala-cell"

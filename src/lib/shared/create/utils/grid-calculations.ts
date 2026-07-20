@@ -6,8 +6,11 @@
  * The component's $derived will call these with reactive values.
  */
 
-import type { DeviceDetector } from '$lib/shared/device/services/device-detector'
-import { getMaxColumnsForBeatCount } from "$lib/shared/create/domain/step-frame-layouts";
+import type { DeviceDetector } from "$lib/shared/device/services/device-detector";
+import {
+  getMaxColumnsForBeatCount,
+  getStepFrameLayout,
+} from "$lib/shared/create/domain/step-frame-layouts";
 
 export interface GridLayout {
   rows: number;
@@ -87,7 +90,10 @@ export function calculateGridLayout(
       } else {
         cellSize = Math.max(
           sizing.minCellSize,
-          Math.min(sizing.maxCellSize, Math.floor(Math.min(availableWidth, availableHeight)))
+          Math.min(
+            sizing.maxCellSize,
+            Math.floor(Math.min(availableWidth, availableHeight))
+          )
         );
       }
     }
@@ -101,96 +107,88 @@ export function calculateGridLayout(
     };
   }
 
-  // Determine columns: use manual override if provided, otherwise calculate automatically
-  let maxColumns: number;
-  let columns: number;
+  function calculateCandidate(maxColumns: number): GridLayout {
+    const columns = Math.min(stepCount, maxColumns);
+    const rows = Math.ceil(stepCount / columns);
+    const totalColumns = columns + 1; // +1 for start position
+    let cellSize = 160;
+
+    if (containerWidth > 0 && containerHeight > 0) {
+      // These values mirror WorkspaceGrid's gap and scroll-wrapper padding.
+      const gridGap = 1;
+      const scrollContainerPadding = 8;
+      const totalWidthGaps = (totalColumns - 1) * gridGap;
+      const totalHeightGaps = (rows - 1) * gridGap;
+      const availableWidth =
+        containerWidth * sizing.widthPaddingRatio -
+        totalWidthGaps -
+        scrollContainerPadding;
+      const availableHeight =
+        containerHeight * sizing.heightPaddingRatio -
+        totalHeightGaps -
+        scrollContainerPadding;
+      const maxCellWidth = availableWidth / totalColumns;
+
+      if (isMobileFewSteps) {
+        // A short mobile workspace may scroll, but its one or two pictographs
+        // should still use the available width instead of shrinking to its height.
+        cellSize = Math.max(
+          sizing.minCellSize,
+          Math.min(sizing.maxCellSize, Math.floor(maxCellWidth))
+        );
+      } else if (rows <= sizing.heightSizingRowThreshold) {
+        const maxCellHeight = availableHeight / rows;
+        cellSize = Math.max(
+          sizing.minCellSize,
+          Math.min(
+            sizing.maxCellSize,
+            Math.floor(Math.min(maxCellWidth, maxCellHeight))
+          )
+        );
+      } else {
+        // Long sequences already need vertical scrolling, so width determines
+        // their readable cell size.
+        cellSize = Math.max(
+          sizing.minCellSize,
+          Math.min(sizing.maxCellSize, Math.floor(maxCellWidth))
+        );
+      }
+    }
+
+    return { rows, columns, totalColumns, cellSize, maxColumns };
+  }
 
   if (sizing.manualColumnCount !== null && sizing.manualColumnCount > 0) {
-    // Manual override: manualColumnCount is the number of *step* columns,
-    // not including the start position column (added separately as totalColumns).
-    // Cap to the mobile column limit (4) on narrow screens so LOOP-aligned
-    // column counts don't spill off the edge of small devices.
+    // Explicit LOOP alignment stays authoritative. Narrow containers cap it at
+    // four step columns so the grid cannot spill past the workspace edge.
     const mobileCap = isNarrowContainer ? 4 : 8;
-    const cappedManual = Math.min(sizing.manualColumnCount, mobileCap);
-    maxColumns = cappedManual;
-    columns = Math.min(stepCount, cappedManual);
-  } else {
-    // Automatic: determine max columns based on container width
-    maxColumns = getMaxColumnsForBeatCount(
-      stepCount,
-      sizing.isSideBySideLayout,
-      containerWidth
-    );
-
-    // Calculate actual columns based on step count and max columns
-    // For small step counts, use the optimal count; for larger counts, respect max columns
-    columns = Math.min(stepCount, maxColumns);
+    return calculateCandidate(Math.min(sizing.manualColumnCount, mobileCap));
   }
 
-  const rows = Math.ceil(stepCount / columns);
-  const totalColumns = columns + 1; // +1 for start position
+  const wideMaxColumns = getMaxColumnsForBeatCount(
+    stepCount,
+    sizing.isSideBySideLayout,
+    containerWidth
+  );
+  const standardMaxColumns = Math.min(
+    getStepFrameLayout(stepCount, false).columns,
+    4
+  );
+  const standardLayout = calculateCandidate(standardMaxColumns);
 
-  // Calculate responsive cell size considering both width and height
-  let cellSize = 160; // Default
+  if (wideMaxColumns === standardMaxColumns) return standardLayout;
 
-  if (containerWidth > 0 && containerHeight > 0) {
-    // Grid gap between cells (must match CSS gap value in StepGrid.svelte)
-    const gridGap = 1;
+  const wideLayout = calculateCandidate(wideMaxColumns);
 
-    // Scroll container padding (horizontal padding from beat-grid-scroll in StepGrid.svelte)
-    const scrollContainerPadding = 8; // 4px on each side
-
-    // Account for ALL spacing when calculating available space
-    const totalWidthGaps = (totalColumns - 1) * gridGap;
-    const totalHeightGaps = (rows - 1) * gridGap;
-
-    // Calculate max cell size after subtracting gap space AND container padding
-    const availableWidth =
-      containerWidth * sizing.widthPaddingRatio -
-      totalWidthGaps -
-      scrollContainerPadding;
-    const availableHeight =
-      containerHeight * sizing.heightPaddingRatio -
-      totalHeightGaps -
-      scrollContainerPadding;
-
-    const maxCellWidth = availableWidth / totalColumns;
-
-    // For grids with threshold rows or fewer, consider height to prevent clipping
-    // For larger grids, prioritize width since scrolling is inevitable
-    if (isMobileFewSteps) {
-      // Mobile with few steps: size by width only, ignore height constraint.
-      // This makes 1-2 step cells much larger than the height would allow.
-      cellSize = Math.max(
-        sizing.minCellSize,
-        Math.min(sizing.maxCellSize, Math.floor(maxCellWidth))
-      );
-    } else if (rows <= sizing.heightSizingRowThreshold) {
-      const maxCellHeight = availableHeight / rows;
-      // Use the smaller dimension to ensure the entire grid fits
-      cellSize = Math.max(
-        sizing.minCellSize,
-        Math.min(
-          sizing.maxCellSize,
-          Math.floor(Math.min(maxCellWidth, maxCellHeight))
-        )
-      );
-    } else {
-      // For larger grids, prioritize width-based sizing
-      cellSize = Math.max(
-        sizing.minCellSize,
-        Math.min(sizing.maxCellSize, Math.floor(maxCellWidth))
-      );
-    }
-  }
-
-  return {
-    rows,
-    columns,
-    totalColumns,
-    cellSize,
-    maxColumns,
-  };
+  // A wide portrait screen is not automatically a short workspace. Compare
+  // the square size that each layout can actually fit so a tall 751x1203
+  // viewport gets four large step columns instead of eight small ones.
+  // Once the standard layout exceeds the fit-all row budget, keep the wide
+  // table so long sequences do not gain avoidable scrolling.
+  if (standardLayout.rows > sizing.heightSizingRowThreshold) return wideLayout;
+  return wideLayout.cellSize >= standardLayout.cellSize
+    ? wideLayout
+    : standardLayout;
 }
 
 /**

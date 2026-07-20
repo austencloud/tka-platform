@@ -85,6 +85,13 @@ describe("getMandalaPlacements — 4-count", () => {
 });
 
 describe("getMandalaPlacements — col-0 empties (both hands visible)", () => {
+	it("puts the workspace mandala below the start tile instead of in a trailing step cell", () => {
+		const res = getMandalaPlacements(
+			args({ stepCount: 7, cols: 5, rows: 2, showQRCode: false }),
+		);
+		expect(res.placements).toEqual([{ row: 2, col: 1, variant: "full" }]);
+	});
+
 	it("1 empty → full mandala centered", () => {
 		const res = getMandalaPlacements(args({ stepCount: 9, cols: 4, rows: 3 }));
 		expect(res.layoutOverride).toBeNull();
