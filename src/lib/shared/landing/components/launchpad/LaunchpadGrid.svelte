@@ -90,15 +90,18 @@
 	}
 
 	/* Split tier (one-viewport composition, see +page.svelte): the right pane
-	   owns width and spacing, and rows become height-keyed so three rows plus
-	   the strip always fit the viewport beside the hero. */
+	   owns width and spacing, and rows become height-keyed so four rows plus
+	   the strip always fit the viewport beside the hero. Budget at the 19vh
+	   term: 76px header pad + 4 rows + 3 gaps + bento margin + 44px strip
+	   lands inside 100svh down to ~800px-tall windows (min-height on the
+	   composition lets anything shorter scroll instead of clip). */
 	@media (min-width: 1680px) {
 		.launchpad {
 			max-width: none;
 			padding: 0;
 		}
 		.bento {
-			grid-auto-rows: clamp(170px, 21.5vh, 340px);
+			grid-auto-rows: clamp(150px, 19vh, 300px);
 		}
 	}
 

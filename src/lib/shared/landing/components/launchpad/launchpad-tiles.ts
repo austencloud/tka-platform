@@ -74,12 +74,16 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 			{ label: "Poi", href: "/notation/poi" },
 		],
 	},
+	// Shape Matrix + LOOP Algebra are 2x1 on purpose: with the composer 2x2 and
+	// two 2x1s above, the grid's cell count must stay a multiple of 4 or the
+	// last row ships holes. Two wides = 16 cells = four clean rows, and the
+	// pair reads as a "notation deep dives" band directly under The Notation.
 	{
 		id: "shape-matrix",
 		href: "/notation/shape-matrix",
 		heading: "Shape Matrix",
 		descriptor: "144 even-petaled flowers, decoded as TKA notation.",
-		span: "1x1",
+		span: "2x1",
 		color: "#f97316",
 		icon: "fa-diagram-project",
 		media: "pictograph",
@@ -89,7 +93,7 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		href: "/notation/loops",
 		heading: "The LOOP Algebra",
 		descriptor: "Six ways for a sequence to return to where it started.",
-		span: "1x1",
+		span: "2x1",
 		color: "#36c3ff",
 		icon: "fa-rotate",
 		media: "loop-mandala",
