@@ -19,6 +19,7 @@
   import { createAnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
   import { getSequenceRepository } from "$lib/shared/create/get-sequence-repository";
   import { animationSettings } from "$lib/shared/animation-engine/state/animation-settings-state.svelte";
+  import type { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import { Letter } from "$lib/shared/foundation/domain/models/letter";
 
   // Per-instance playback stack imports (avoid shared singleton)
@@ -116,6 +117,7 @@
     gridVisible = true,
     disableContextMenu = false,
     onTogglePlaybackRef = undefined,
+    visibilityManagerOverride = undefined,
   }: {
     sequence: SequenceData;
     autoPlay?: boolean;
@@ -226,6 +228,12 @@
      *  control, demo acts). Same contract as AnimationPlayer's prop of the
      *  same name. */
     onTogglePlaybackRef?: (toggleFn: () => void) => void;
+    /** Per-instance visibility manager (ephemeral scope). Routes the
+     *  orchestrator's effort/path-shape reads AND setSpeed's write-back away
+     *  from the global singleton, so a public embed neither inherits the
+     *  visitor's in-app settings nor mutates them. Forwarded to AnimatorCanvas
+     *  so the engine-side reads scope the same way. */
+    visibilityManagerOverride?: AnimationVisibilityStateManager;
   } = $props();
 
   const minimal = $derived(chrome === "minimal");
@@ -342,6 +350,9 @@
       const orchestrator = new SequenceAnimationOrchestrator(
         stateManager
       );
+      if (visibilityManagerOverride) {
+        orchestrator.setVisibilityManager(visibilityManagerOverride);
+      }
       playbackController = new AnimationPlaybackController(
         orchestrator,
         loop
@@ -589,6 +600,7 @@
         redProp={animationState.redPropState}
         {gridVisible}
         {disableContextMenu}
+        {visibilityManagerOverride}
         {gridMode}
         letter={currentLetter}
         stepData={currentStepData}
