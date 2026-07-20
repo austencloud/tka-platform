@@ -4,29 +4,29 @@
   import { getFuseContext } from "../context/fuse-context";
 
   let { onFuse }: { onFuse: () => Promise<void> } = $props();
-  const { state } = getFuseContext();
+  const { state: fuseState } = getFuseContext();
 
   const sourceControlsDisabled = $derived(
-    state.isLoadingLength || state.pendingSide !== null || state.isFusing
+    fuseState.isLoadingLength || fuseState.pendingSide !== null || fuseState.isFusing
   );
 </script>
 
 <div
   class="mobile-controls"
-  aria-busy={state.isLoadingLength ||
-    state.pendingSide !== null ||
-    state.isFusing}
+  aria-busy={fuseState.isLoadingLength ||
+    fuseState.pendingSide !== null ||
+    fuseState.isFusing}
 >
   <div class="shuffle-controls" role="group" aria-label="Choose another path">
     <div class="shuffle-control blue-shuffle">
       <PanelButton
         variant="secondary"
         fullWidth={true}
-        disabled={sourceControlsDisabled || !state.blue.sequence}
-        onclick={() => void state.shuffle("blue")}
+        disabled={sourceControlsDisabled || !fuseState.blue.sequence}
+        onclick={() => void fuseState.shuffle("blue")}
       >
         <i
-          class="fas {state.pendingSide === 'blue'
+          class="fas {fuseState.pendingSide === 'blue'
             ? 'fa-spinner fa-spin'
             : 'fa-shuffle'}"
           aria-hidden="true"
@@ -38,11 +38,11 @@
       <PanelButton
         variant="secondary"
         fullWidth={true}
-        disabled={sourceControlsDisabled || !state.red.sequence}
-        onclick={() => void state.shuffle("red")}
+        disabled={sourceControlsDisabled || !fuseState.red.sequence}
+        onclick={() => void fuseState.shuffle("red")}
       >
         <i
-          class="fas {state.pendingSide === 'red'
+          class="fas {fuseState.pendingSide === 'red'
             ? 'fa-spinner fa-spin'
             : 'fa-shuffle'}"
           aria-hidden="true"
@@ -52,14 +52,14 @@
     </div>
   </div>
 
-  {#if state.error}
+  {#if fuseState.error}
     <div class="compact-error" role="alert">
-      <p id="fuse-action-status">{state.statusMessage}</p>
-      {#if state.canRetry}
+      <p id="fuse-action-status">{fuseState.statusMessage}</p>
+      {#if fuseState.canRetry}
         <PanelButton
           variant="secondary"
-          disabled={state.isLoadingLength || state.pendingSide !== null}
-          onclick={() => void state.retry()}
+          disabled={fuseState.isLoadingLength || fuseState.pendingSide !== null}
+          onclick={() => void fuseState.retry()}
         >
           <i class="fas fa-arrow-rotate-right" aria-hidden="true"></i>
           Retry
@@ -74,7 +74,7 @@
       aria-live="polite"
       aria-atomic="true"
     >
-      {state.statusMessage}
+      {fuseState.statusMessage}
     </p>
   {/if}
 
@@ -84,9 +84,9 @@
     icon="fa-fire-flame-curved"
     color="fuse"
     fullWidth={true}
-    ariaDisabled={!state.canFuse}
+    ariaDisabled={!fuseState.canFuse}
     ariaDescribedBy="fuse-action-status"
-    busy={state.isFusing}
+    busy={fuseState.isFusing}
     onclick={() => void onFuse()}
   />
 </div>

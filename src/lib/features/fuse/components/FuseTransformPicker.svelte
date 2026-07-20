@@ -16,12 +16,12 @@
   } from "../state/fuse-state.svelte";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
 
-  const { state } = getFuseContext();
+  const { state: fuseState } = getFuseContext();
 
   // Inert while a length load or a fuse is in flight, so a change can't race the
   // derive it would trigger.
   const disabled = $derived(
-    state.isLoadingLength || state.pendingSide !== null || state.isFusing,
+    fuseState.isLoadingLength || fuseState.pendingSide !== null || fuseState.isFusing,
   );
 
   const driverOptions = $derived(
@@ -41,15 +41,15 @@
     })),
   );
 
-  const followerLabel = $derived(state.driverSide === "blue" ? "Red" : "Blue");
-  const driverLabel = $derived(state.driverSide === "blue" ? "Blue" : "Red");
+  const followerLabel = $derived(fuseState.driverSide === "blue" ? "Red" : "Blue");
+  const driverLabel = $derived(fuseState.driverSide === "blue" ? "Blue" : "Red");
 
   function handleDriver(value: FuseSide): void {
-    state.setDriver(value);
+    fuseState.setDriver(value);
   }
 
   function handleTransform(value: FuseTransformId): void {
-    state.setTransform(value);
+    fuseState.setTransform(value);
   }
 </script>
 
@@ -59,7 +59,7 @@
     <div class="field-control driver-control">
       <SegmentedControl
         options={driverOptions}
-        value={state.driverSide}
+        value={fuseState.driverSide}
         onchange={handleDriver}
         color="accent"
         size="sm"
@@ -72,7 +72,7 @@
     <div class="field-control">
       <SegmentedControl
         options={transformOptions}
-        value={state.transformId}
+        value={fuseState.transformId}
         onchange={handleTransform}
         color="accent"
         size="sm"

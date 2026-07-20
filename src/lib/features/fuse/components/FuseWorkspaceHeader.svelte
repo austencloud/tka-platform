@@ -8,7 +8,7 @@
   }: {
     compact?: boolean;
   } = $props();
-  const { state } = getFuseContext();
+  const { state: fuseState } = getFuseContext();
 
   function isFuseLength(value: number): value is FuseLength {
     return (FUSE_LENGTHS as readonly number[]).includes(value);
@@ -22,13 +22,13 @@
     FUSE_LENGTHS.map((length) => ({
       value: String(length),
       label: String(length),
-      disabled: state.isLoadingLength || state.isFusing,
+      disabled: fuseState.isLoadingLength || fuseState.isFusing,
     })),
   );
 
   function handleLengthSelect(value: string): void {
     const num = Number(value);
-    if (isFuseLength(num)) void state.setLength(num);
+    if (isFuseLength(num)) void fuseState.setLength(num);
   }
 </script>
 
@@ -46,7 +46,7 @@
     <div class="length-field" role="group" aria-label="Length in steps">
       <SegmentedControl
         options={lengthOptions}
-        value={String(state.requestedLength)}
+        value={String(fuseState.requestedLength)}
         onchange={handleLengthSelect}
         color="accent"
         size="sm"

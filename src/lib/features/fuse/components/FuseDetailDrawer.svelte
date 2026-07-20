@@ -17,9 +17,9 @@
     side?: FuseSide;
   } = $props();
 
-  const { state } = getFuseContext();
+  const { state: fuseState } = getFuseContext();
   const settings = getSettings();
-  const source = $derived(side === "blue" ? state.blue : state.red);
+  const source = $derived(side === "blue" ? fuseState.blue : fuseState.red);
   const label = $derived(side === "blue" ? "Blue" : "Red");
   const title = $derived(
     kind === "help" ? "How Fuse works" : `${label} notation`

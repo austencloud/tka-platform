@@ -10,7 +10,7 @@
   import { getFuseContext } from "../context/fuse-context";
   import type { FuseMode } from "../state/fuse-state.svelte";
 
-  const { state } = getFuseContext();
+  const { state: fuseState } = getFuseContext();
 
   // No icons: SegmentedControl renders the icon in place of the label, and the
   // two mode words carry the meaning here.
@@ -21,21 +21,21 @@
 
   // Mode swaps rebuild the preview; keep it inert mid-load so a switch can't race
   // an in-flight length load or fuse.
-  const disabled = $derived(state.isLoadingLength || state.isFusing);
+  const disabled = $derived(fuseState.isLoadingLength || fuseState.isFusing);
 
   const options = $derived(
     modeOptions.map((option) => ({ ...option, disabled })),
   );
 
   function handleSelect(value: FuseMode): void {
-    state.setMode(value);
+    fuseState.setMode(value);
   }
 </script>
 
 <div class="fuse-mode-bar" role="group" aria-label="Fuse mode">
   <SegmentedControl
     {options}
-    value={state.mode}
+    value={fuseState.mode}
     onchange={handleSelect}
     color="accent"
     size="sm"
