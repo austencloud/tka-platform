@@ -488,6 +488,19 @@
 
       // Note: playbackController.initialize() already sets normalized sequence data on the state
       // Autoplay is handled by the reactive $effect above (fires once per load).
+
+      // Apply the initial external BPM AFTER initialize(). initialize() resets
+      // playback speed to the 1.0x default, so the reactive externalBpm $effect
+      // (which runs at most once, before the async load completes, and never
+      // again for a static prop since `playbackController` isn't $state) can't
+      // land the hardcoded tempo — a locked embed stays stuck at DEFAULT_BPM
+      // (60). Re-apply here so the shipped BPM takes on first play; the $effect
+      // still handles later runtime changes.
+      if (externalBpm !== null) {
+        playbackController.setSpeed(externalBpm / DEFAULT_BPM);
+        bpm = externalBpm;
+      }
+
       hasLoadedOnce = true;
     } catch (err) {
       console.error("Failed to load animation:", err);
