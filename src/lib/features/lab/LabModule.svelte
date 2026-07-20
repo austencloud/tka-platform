@@ -23,6 +23,8 @@
     // multi-grid graduated to Levels module as conjoined-grid (Mar 2026)
     // community, connect graduated to Social module (Mar 2026)
     voice: () => import("./tabs/VoiceControlLab.svelte"),
+    "pronunciation-recorder": () =>
+      import("./pronunciation-recorder/PronunciationRecorderLab.svelte"),
     vtg: () => import("$lib/features/lab/vtg-lab/VtgLabModule.svelte"),
     // skel2tka graduated to Video module (Mar 2026)
     trigrid: () => import("$lib/features/lab/trigrid-lab/TriGridLabModule.svelte"),

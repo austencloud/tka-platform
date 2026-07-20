@@ -1148,6 +1148,17 @@ export const LAB_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #fb7185 0%, #f43f5e 100%)",
   },
   {
+    id: "pronunciation-recorder",
+    groupId: "presentation",
+    labelKey: "tab_lab_pronunciation_recorder",
+    descKey: "tab_desc_lab_pronunciation_recorder",
+    label: "Pronunciation",
+    icon: '<i class="fas fa-waveform-lines" aria-hidden="true"></i>',
+    description: "Record contextual TKA letter pronunciations",
+    color: "#22d3ee",
+    gradient: "linear-gradient(135deg, #67e8f9 0%, #22d3ee 100%)",
+  },
+  {
     id: "vtg",
     groupId: "notation",
     labelKey: "tab_lab_vtg",
@@ -1253,4 +1264,3 @@ export const STAGE_TABS: Section[] = [
     color: "#06b6d4",
   },
 ];
-
