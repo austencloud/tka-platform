@@ -14,7 +14,27 @@
 	 */
 	import { onMount } from "svelte";
 	import LaunchpadTile from "./LaunchpadTile.svelte";
-	import { LAUNCHPAD_TILES, STRIP_LINKS } from "./launchpad-tiles";
+	import { LAUNCHPAD_TILES, STRIP_LINKS, type LaunchpadTileDef } from "./launchpad-tiles";
+
+	// Every prop defaults to the homepage's current behavior, so `<LaunchpadGrid />`
+	// (the +page.svelte call site) renders byte-identically to before this became
+	// reusable. Consumers like the composer bento override tiles/strip/label/
+	// variant and supply an `onActivate` to drive action-mode tiles.
+	let {
+		tiles = LAUNCHPAD_TILES,
+		stripLinks = STRIP_LINKS,
+		ariaLabel = "TKA destinations",
+		showStrip = true,
+		variant = "home",
+		onActivate,
+	}: {
+		tiles?: LaunchpadTileDef[];
+		stripLinks?: { label: string; href: string }[];
+		ariaLabel?: string;
+		showStrip?: boolean;
+		variant?: "home" | "composer";
+		onActivate?: (tile: LaunchpadTileDef) => void;
+	} = $props();
 
 	let bentoEl: HTMLUListElement | undefined = $state();
 	let visible = $state<Set<string>>(new Set());
@@ -46,22 +66,24 @@
 	});
 </script>
 
-<nav class="launchpad" aria-label="TKA destinations">
+<nav class="launchpad variant-{variant}" aria-label={ariaLabel}>
 	<ul class="bento" class:js-ready={jsReady} bind:this={bentoEl}>
-		{#each LAUNCHPAD_TILES as tile, i (tile.id)}
-			<LaunchpadTile {tile} active={visible.has(tile.id)} index={i} />
+		{#each tiles as tile, i (tile.id)}
+			<LaunchpadTile {tile} active={visible.has(tile.id)} index={i} {onActivate} />
 		{/each}
 	</ul>
 
-	<ul class="strip">
-		{#each STRIP_LINKS as link (link.href)}
-			<li>
-				<a href={link.href}>
-					<h3>{link.label}</h3>
-				</a>
-			</li>
-		{/each}
-	</ul>
+	{#if showStrip}
+		<ul class="strip">
+			{#each stripLinks as link (link.href)}
+				<li>
+					<a href={link.href}>
+						<h3>{link.label}</h3>
+					</a>
+				</li>
+			{/each}
+		</ul>
+	{/if}
 </nav>
 
 <style>
@@ -89,6 +111,34 @@
 		}
 	}
 
+	/* Tablet destination rail: six known destinations divide the available
+	   height evenly. A fixed count prevents an orphan and keeps every primary
+	   route visible without scrolling in either iPad orientation. */
+	@media (min-width: 760px) and (max-width: 1679px) and (min-height: 650px) {
+		.launchpad {
+			display: grid;
+			grid-template-rows: minmax(0, 1fr) auto;
+			height: 100%;
+			min-height: 0;
+			max-width: none;
+			padding: 0;
+		}
+		.bento {
+			grid-template-columns: 1fr;
+			grid-template-rows: repeat(6, minmax(0, 1fr));
+			grid-auto-rows: minmax(0, 1fr);
+			grid-auto-flow: row;
+			gap: clamp(0.45rem, 1svh, 0.85rem);
+			min-height: 0;
+			margin-bottom: clamp(0.5rem, 1.2svh, 0.85rem);
+		}
+		.bento :global(.tile) {
+			grid-column: 1;
+			grid-row: span 1;
+			min-height: 0;
+		}
+	}
+
 	/* Split tier (one-viewport composition, see +page.svelte): the right pane
 	   owns width and spacing, and rows become height-keyed so three rows plus
 	   the strip always fit the viewport beside the hero. */
@@ -98,22 +148,7 @@
 			padding: 0;
 		}
 		.bento {
-			grid-auto-rows: clamp(170px, 21.5vh, 340px);
-		}
-	}
-
-	/* 4K tier: scale the furniture one step (type ramps live in LaunchpadTile). */
-	@media (min-width: 2200px) {
-		.bento {
-			gap: 1.25rem;
-			margin-bottom: 1.6rem;
-		}
-		.strip a {
-			min-height: 52px;
-			padding: 0 1.3rem;
-		}
-		.strip h3 {
-			font-size: 1.1rem;
+			grid-auto-rows: clamp(10.625rem, 21.5svh, 21.25rem);
 		}
 	}
 
@@ -174,16 +209,16 @@
 		margin: 0;
 		padding: 0;
 		display: grid;
-		grid-template-columns: repeat(6, 1fr);
+		grid-template-columns: repeat(4, 1fr);
 		gap: 0.6rem;
 	}
-	/* Six segments get cramped on narrow grids: two rows of three, then a
-	   two-column stack on phones. These sit AFTER the base .strip rule on
+	/* Four segments become two rows of two on narrower grids. These sit AFTER
+	   the base .strip rule on
 	   purpose — an earlier under-640 override lost the same-specificity
 	   cascade to the base block and was silently dead. */
 	@media (min-width: 641px) and (max-width: 1020px) {
 		.strip {
-			grid-template-columns: repeat(3, 1fr);
+			grid-template-columns: repeat(2, 1fr);
 		}
 	}
 	@media (max-width: 640px) {
@@ -199,7 +234,7 @@
 		align-items: center;
 		justify-content: center;
 		width: 100%;
-		min-height: 44px;
+		min-height: 2.75rem;
 		padding: 0 1rem;
 		border-radius: 12px;
 		border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.09));

@@ -19,16 +19,30 @@ export interface LaunchpadTileDef {
 	/** Which live media embed (if any) fills the tile's decorative layer. */
 	media?:
 		| "mandala"
-		| "loop-mandala"
 		| "choreo-card"
 		| "pictograph"
 		| "pictograph-fade"
 		| "dictionary"
 		| "guide-cover"
 		| "alphabet-strip";
+	/**
+	 * Generic decorative-media path for consumers outside the homepage (e.g. the
+	 * composer bento): a dynamic import of any Svelte component, mounted through
+	 * LazyMount alongside the closed `media` union. Only used when `media` is
+	 * unset — homepage tiles keep the union branches untouched.
+	 */
+	mediaLoader?: () => Promise<{ default: import("svelte").Component }>;
+	/** Props forwarded to the `mediaLoader` component. */
+	mediaProps?: Record<string, unknown>;
 	chips?: { label: string; href: string }[];
 	/** Opt this tile into the pointer-follow magnetic pull (composer only). */
 	magnetic?: boolean;
+	/**
+	 * Opt this tile into action/button mode: its primary control renders as a
+	 * <button> firing the grid's `onActivate(tile)` instead of an <a href>.
+	 * Homepage tiles leave this unset and stay anchors.
+	 */
+	activate?: boolean;
 }
 
 export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
@@ -76,34 +90,28 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 	},
 	// The grid's cell count must stay a multiple of 4 or the last row ships
 	// holes. 12 cells = three clean rows: composer 2x2, three 2x1s, two 1x1s.
-	// One tile per visitor question — do (Composer), hold (Choreo Cards),
-	// understand (Notation), go deeper (LOOPs + sibling chips), learn (Guide),
-	// look up (Glossary). Deep-cut notation destinations (Shape Matrix, CAPs)
-	// ride as chips here instead of holding their own tiles; secondary
-	// destinations (Alphabet listing, Staff Choreography) live in the strip.
-	{
-		id: "loops",
-		href: "/notation/loops",
-		heading: "The LOOP Algebra",
-		descriptor: "Six ways for a sequence to return to where it started.",
-		span: "2x1",
-		color: "#36c3ff",
-		icon: "fa-rotate",
-		media: "loop-mandala",
-		chips: [
-			{ label: "Shape Matrix", href: "/notation/shape-matrix" },
-			{ label: "CAPs", href: "/notation/caps" },
-		],
-	},
+	// One tile per visitor question: do (Composer), hold (Choreo Cards),
+	// understand (Notation), learn (Guide), ask (FAQ), and look up (Glossary).
+	// Deeper theory stays in the Notation dropdown instead of competing with
+	// the front doors. Secondary destinations live in the strip.
 	{
 		id: "guide",
 		href: "/guide",
 		heading: "The Guide",
 		descriptor: "Read and write TKA, level by level.",
-		span: "1x1",
+		span: "2x1",
 		color: "#60a5fa",
 		icon: "fa-map-signs",
 		media: "guide-cover",
+	},
+	{
+		id: "faq",
+		href: "/faq",
+		heading: "FAQ",
+		descriptor: "Questions spinners actually ask.",
+		span: "1x1",
+		color: "#f59e0b",
+		icon: "fa-circle-question",
 	},
 	{
 		id: "glossary",
@@ -118,9 +126,7 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 ];
 
 export const STRIP_LINKS: { label: string; href: string }[] = [
-	{ label: "The Alphabet", href: "/notation/letters" },
 	{ label: "Staff Choreography", href: "/learn/staff-spinning-choreography" },
-	{ label: "FAQ", href: "/faq" },
 	{ label: "Software Roots", href: "/roots/software" },
 	{ label: "Support", href: "/support" },
 	{ label: "About", href: "/about" },

@@ -19,10 +19,25 @@
 	import type { LaunchpadTileDef } from "./launchpad-tiles";
 	import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 	import demoJson from "$lib/shared/landing/data/demo-sequence.json";
-	import loopSeedsJson from "$lib/shared/loop-explorer/domain/curated-seeds.json";
 
-	let { tile, active, index }: { tile: LaunchpadTileDef; active: boolean; index: number } =
-		$props();
+	let {
+		tile,
+		active,
+		index,
+		onActivate,
+	}: {
+		tile: LaunchpadTileDef;
+		active: boolean;
+		index: number;
+		/** Supplied by action-mode consumers; combined with `tile.activate` it swaps the anchor for a button. */
+		onActivate?: (tile: LaunchpadTileDef) => void;
+	} = $props();
+
+	// Action mode: an opted-in tile with a handler renders its primary control as
+	// a <button> that fires onActivate (opening a takeover) instead of navigating.
+	// Homepage tiles never set `activate`, so they stay anchors — no behavior
+	// change on the front page.
+	const isAction = $derived(tile.activate === true && typeof onActivate === "function");
 
 	// Shared demo fixture backing every live media embed on the grid — the same
 	// composer/mandala/pictograph preview data used elsewhere on marketing
@@ -30,13 +45,6 @@
 	// authored directly against the SequenceData/StepData shape.
 	const demoSequence = demoJson as unknown as SequenceData;
 	const demoStep = demoSequence.steps[0];
-
-	// LOOPs tile only: a real, detector-verified Rotated/quartered example
-	// (A3's harness output) rather than the generic demo fixture — the tile's
-	// job is to prove it's live, so it draws an actual LOOP.
-	const loopDemoSequence = (
-		loopSeedsJson as unknown as Record<string, Record<string, SequenceData[]>>
-	).rotated?.quartered?.[0] as SequenceData | undefined;
 </script>
 
 <li
@@ -46,31 +54,17 @@
 	data-tile-id={tile.id}
 >
 	<div class="card" use:tilt use:cursorGlow use:pressSpring use:magnetic={tile.magnetic ?? false}>
-		<a class="tile-link" href={tile.href}>
+		{#snippet primary()}
 			<i class="mark fas {tile.icon}" aria-hidden="true"></i>
 
-			{#if tile.media}
-				<span class="media media-{tile.media}" aria-hidden="true">
+			{#if tile.media || tile.mediaLoader}
+				<span class="media media-{tile.media ?? 'custom'}" aria-hidden="true">
 					{#if tile.media === "mandala"}
 						<span class="mandala-box">
 							<LazyMount
 								loader={() => import("$lib/shared/mandala/components/SequenceMandala.svelte")}
 								{active}
-								props={{ sequence: demoSequence, style: "stroke", animate: false, show: "both", size: 340 }}
-							/>
-						</span>
-					{:else if tile.media === "loop-mandala" && loopDemoSequence}
-						<span class="mandala-box">
-							<LazyMount
-								loader={() => import("$lib/shared/mandala/components/SequenceMandala.svelte")}
-								{active}
-								props={{
-									sequence: loopDemoSequence,
-									style: "stroke",
-									animate: true,
-									show: "both",
-									size: 340,
-								}}
+								props={{ sequence: demoSequence, style: "stroke", animate: false, show: "both", size: 510 }}
 							/>
 						</span>
 					{:else if tile.media === "choreo-card"}
@@ -129,6 +123,8 @@
 						<span class="alphabet-box">
 							<LazyMount loader={() => import("./AlphabetMarquee.svelte")} {active} />
 						</span>
+					{:else if tile.mediaLoader}
+						<LazyMount loader={tile.mediaLoader} {active} props={tile.mediaProps} />
 					{/if}
 				</span>
 			{/if}
@@ -137,7 +133,17 @@
 				<h2>{tile.heading}</h2>
 				<p>{tile.descriptor}</p>
 			</span>
-		</a>
+		{/snippet}
+
+		{#if isAction}
+			<button type="button" class="tile-link" onclick={() => onActivate?.(tile)}>
+				{@render primary()}
+			</button>
+		{:else}
+			<a class="tile-link" href={tile.href}>
+				{@render primary()}
+			</a>
+		{/if}
 
 		<div class="glow" aria-hidden="true"></div>
 
@@ -259,6 +265,17 @@
 		display: block;
 		color: inherit;
 		text-decoration: none;
+		/* Button-reset so action-mode tiles (rendered as a <button> instead of an
+		   <a>) are pixel-identical to the anchor. Every value here is the anchor's
+		   own default, so the homepage anchor path is unchanged. */
+		appearance: none;
+		margin: 0;
+		padding: 0;
+		border: 0;
+		background: none;
+		font: inherit;
+		text-align: inherit;
+		cursor: pointer;
 	}
 	/* Keyboard focus: the tile is the interactive unit, so the ring hugs the
 	   card's rounded box (inside it — the card clips overflow). */
@@ -297,12 +314,16 @@
 		justify-content: center;
 		opacity: 0.92;
 	}
+	.mandala-box :global(.mandala-container) {
+		max-width: min(21.25rem, 100%);
+		max-height: min(21.25rem, 100%);
+	}
 
 	.choreo-card-box {
 		position: absolute;
 		right: -6%;
 		top: 50%;
-		width: 170px;
+		width: 10.625rem;
 		aspect-ratio: 5 / 7;
 		transform: translateY(-50%) rotate(-6deg);
 		box-shadow: 0 16px 32px -18px rgba(0, 0, 0, 0.6);
@@ -343,7 +364,7 @@
 		right: 8%;
 		top: 50%;
 		translate: 0 -50%;
-		width: 118px;
+		width: 8.75rem;
 	}
 
 	.alphabet-box {
@@ -465,65 +486,123 @@
 		}
 	}
 
-	/* ---- 4K tier: recompose the tile interior one step up so the grid reads
-	   as designed-for-4K rather than stretched (type, marks, chips, media). ---- */
-	@media (min-width: 2200px) {
+	/* Tablet rail: the same destination cards become horizontal buttons. The
+	   text owns the left side while each tile keeps a cropped piece of its
+	   living media on the right, so the rail stays recognizable without asking
+	   a tablet user to scroll past the hero. */
+	@media (min-width: 760px) and (max-width: 1679px) and (min-height: 650px) {
+		.tile,
+		.card {
+			border-radius: 1rem;
+		}
+		.tile-link:focus-visible {
+			border-radius: 1rem;
+		}
 		.mark {
-			font-size: 1.5rem;
-			top: 1.2rem;
-			left: 1.3rem;
+			top: 50%;
+			left: 0.9rem;
+			font-size: 1rem;
+			transform: translateY(-50%);
 		}
 		.body {
-			padding: 1.3rem 1.5rem;
+			top: 0;
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			padding: 0.8rem 0.9rem 0.8rem 3rem;
+			background: linear-gradient(
+				to right,
+				oklch(0.13 0.02 270 / 0.96) 0%,
+				oklch(0.13 0.02 270 / 0.82) 52%,
+				transparent 100%
+			);
 		}
 		.card:has(.chips) .body {
-			padding-bottom: 3.6rem;
+			padding-bottom: 2.85rem;
 		}
-		.body h2 {
-			font-size: 1.3rem;
-		}
+		.body h2,
 		.s-2x2 .body h2,
 		.s-2x1 .body h2 {
-			font-size: 1.75rem;
-		}
-		.body p {
+			max-width: 65%;
 			font-size: 1.05rem;
-			max-width: 40ch;
 		}
+		.body p,
 		.s-2x2 .body p,
 		.s-2x1 .body p {
-			font-size: 1.15rem;
+			max-width: 65%;
+			margin-top: 0.2rem;
+			font-size: var(--font-size-min, 0.875rem);
+			line-height: 1.3;
+		}
+		.t-faq .body h2,
+		.t-faq .body p {
+			max-width: 100%;
 		}
 		.chips {
-			left: 1.5rem;
-			right: 1.5rem;
-			bottom: 1.25rem;
+			left: 3rem;
+			right: 0.75rem;
+			bottom: 0.6rem;
+			flex-wrap: nowrap;
+			gap: 0.3rem;
 		}
 		.chip {
-			min-height: 38px;
-			padding: 0.35rem 0.9rem;
-			font-size: 0.9rem;
+			padding: 0.25rem 0.55rem;
+			font-size: var(--font-size-compact, 0.75rem);
 		}
-		/* SequenceMandala sizes itself from its `size` prop (inline px), so the
-		   4K bump overrides the container box; the inner SVG is 100%/100% and
-		   stays vector-crisp. */
+		.mandala-box {
+			inset: 0 0 0 auto;
+			width: auto;
+			height: 100%;
+			aspect-ratio: 1;
+			opacity: 0.78;
+		}
 		.mandala-box :global(.mandala-container) {
-			width: 520px !important;
-			height: 520px !important;
+			max-width: 100%;
+			max-height: 100%;
 		}
 		.choreo-card-box {
-			width: 230px;
-			right: -4%;
+			right: 2%;
+			width: 5.25rem;
+		}
+		.pictograph-box {
+			opacity: 0.72;
 		}
 		.dictionary-box {
-			inset: 3.2rem 1.4rem 4rem;
+			inset: 0.75rem 0.75rem 0.75rem 52%;
 		}
 		.guide-cover-box {
-			width: 168px;
+			right: 5%;
+			width: 5rem;
 		}
-		.pictograph-fade-box {
-			inset: 8% 10%;
-			border-radius: 14px;
+	}
+
+	/* Short tablet landscape still keeps all six primary destinations. The
+	   rows become icon + title buttons; descriptors and deep-link chips remain
+	   available on taller tablets and on each destination page. */
+	@media (min-width: 760px) and (max-width: 1679px) and (min-height: 650px) and (max-height: 850px) {
+		.mark {
+			left: 0.8rem;
+		}
+		.body,
+		.card:has(.chips) .body {
+			padding: 0.5rem 0.75rem 0.5rem 2.7rem;
+		}
+		.body h2,
+		.s-2x2 .body h2,
+		.s-2x1 .body h2 {
+			max-width: 68%;
+			font-size: 1rem;
+		}
+		.body p,
+		.chips,
+		.dictionary-box {
+			display: none;
+		}
+		.choreo-card-box {
+			width: 4.25rem;
+		}
+		.guide-cover-box {
+			width: 4rem;
 		}
 	}
 
