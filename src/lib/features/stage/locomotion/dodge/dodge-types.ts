@@ -1,17 +1,12 @@
 // src/lib/features/stage/locomotion/dodge/dodge-types.ts
 
-import type { SimPropTarget } from "$lib/features/lab/tabs/collision-lab/services/types";
-
 /**
- * One sampled instant of a staff along its motion: the same SimPropTarget the
- * StanceSimulator already understands (grip + shaft segment + radius).
+ * SweepSample/SweptVolume now live in shared 3D services (see
+ * src/lib/shared/3d/services/swept-volume/types.ts) so a feasibility scanner
+ * outside the dodge lab can consume them without depending on dodge internals.
+ * Re-exported here so existing dodge-lab importers keep resolving unchanged.
  */
-export type SweepSample = SimPropTarget;
-
-/** A hand's whole motion sampled into N staff instants. */
-export interface SweptVolume {
-  samples: SweepSample[];
-}
+export type { SweepSample, SweptVolume } from "$lib/shared/3d/services/swept-volume/types";
 
 /** Which way the body bails. `auto` derives the side from the sweep direction. */
 export type DodgeSide = "auto" | "left" | "right";

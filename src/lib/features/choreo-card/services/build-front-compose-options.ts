@@ -104,6 +104,8 @@ export function buildFrontComposeOptions(
       ...canonical.visibilityOverrides,
       // showMandala stays deck-config (mandala fills in empty cells).
       showMandala: options.showMandala ?? false,
+      // Explicit QR override (shop preview fan drops it); unset = canonical.
+      ...(options.showQRCode !== undefined && { showQRCode: options.showQRCode }),
     },
   };
 
