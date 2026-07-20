@@ -47,3 +47,11 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 echo "✅ Unit tests passed"
+
+# Local opt-in: keep Android device builds off contributor machines that do not
+# have the SDK. This also works when Husky is the active hooks path.
+if [ "$(git config --bool --get tka.pushDeployAndroid 2>/dev/null)" = "true" ]; then
+  if ! node scripts/native-push-deploy.mjs "$@"; then
+    echo "[native] Android build or install failed. Git push will continue."
+  fi
+fi
