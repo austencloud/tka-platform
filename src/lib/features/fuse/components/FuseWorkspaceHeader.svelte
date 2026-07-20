@@ -1,15 +1,11 @@
 <script lang="ts">
-  import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
-  import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { getFuseContext } from "../context/fuse-context";
   import { FUSE_LENGTHS, type FuseLength } from "../state/fuse-state.svelte";
 
   let {
-    onHelp,
     compact = false,
   }: {
-    onHelp: () => void;
     compact?: boolean;
   } = $props();
   const { state } = getFuseContext();
@@ -56,20 +52,6 @@
         size="sm"
       />
     </div>
-
-    {#if compact}
-      <TransportControls
-        isPlaying={state.clockRunning}
-        disabled={!state.previewSequence || state.isFusing}
-        onPlaybackToggle={() => state.toggleClock()}
-      />
-    {/if}
-
-    <HelpButton
-      onclick={onHelp}
-      ariaLabel="How Fuse works"
-      title="How Fuse works"
-    />
   </div>
 </header>
 
@@ -148,31 +130,11 @@
       gap: var(--settings-spacing-sm, 8px);
     }
 
-    /* 7 segments don't fit a 152px slot beside transport + help, so the
-       length row takes a full-width line and the transport/help cluster
-       drops beneath it — no cramped mid-word wrapping of the digits. */
+    /* Only the length segments remain in the compact header (playback is a
+       canvas tap now; no transport or help button), so give them the full row. */
     .compact .length-field {
       width: 100%;
       flex-basis: 100%;
-    }
-
-    .compact .header-controls :global(.help-button:focus-visible) {
-      outline: 2px solid var(--theme-text, #fff);
-      outline-offset: 2px;
-    }
-
-    .compact .header-controls :global(.help-button) {
-      border-color: var(--theme-stroke, rgba(255, 255, 255, 0.14));
-      background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-      color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
-    }
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .compact .header-controls :global(.help-button:hover) {
-      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.24));
-      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.09));
-      color: var(--theme-text, #fff);
     }
   }
 </style>

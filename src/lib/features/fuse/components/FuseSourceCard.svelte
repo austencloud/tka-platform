@@ -46,11 +46,14 @@
     granularity: "solo",
     color: side,
   });
-  // Full desktop card: the notation stage is landscape, and autoFit reads that
-  // as "one long row" — 8 tiny cells with dead space below. Pin 4 step columns
-  // with the start position as a left column instead: fewer, bigger pictographs
-  // that fill the tall stage. Compact keeps auto (null).
-  const stepColumns = $derived<number | null>(full ? stepCols : null);
+  // The notation stage's live size. ChoreoCard's autoFit reads a landscape
+  // stage as "one long row" — 8 tiny cells with dead space above and below.
+  // Instead we measure the real stage and pick the column count that maximizes
+  // pictograph size, the same optimization the desktop seam runs. (Full/desktop
+  // keeps FuseLayout's seam-aware count and a start-position left column.)
+  let stageEl = $state<HTMLDivElement | null>(null);
+  let stageW = $state(0);
+  let stageH = $state(0);
   const startLayout = $derived<"row" | "column" | null>(full ? "column" : null);
   const viewDisabled = $derived(source.isLoading || state.isFusing);
   const sourceControlsDisabled = $derived(
@@ -82,6 +85,49 @@
       ? Math.floor(((state.currentStep % stepCount) + stepCount) % stepCount)
       : null
   );
+
+  // Full mode: FuseLayout hands down a seam-aware column count. Non-full: pick
+  // the count that maximizes cell size for the measured stage — fewer columns
+  // (more rows) when the stage is tall, more when it's wide — so the pictographs
+  // fill the card instead of shrinking into one thin autoFit row.
+  const STAGE_COL_CANDIDATES = [2, 4, 6, 8];
+  function bestStageCols(w: number, h: number, steps: number): number {
+    if (w <= 0 || h <= 0 || steps <= 0) return Math.min(4, Math.max(1, steps));
+    let best = Math.min(STAGE_COL_CANDIDATES[0], steps);
+    let bestCell = -1;
+    for (const cols of STAGE_COL_CANDIDATES) {
+      if (cols > steps) continue;
+      const rows = Math.ceil(steps / cols);
+      const cell = Math.min(w / cols, h / rows);
+      if (cell > bestCell) {
+        bestCell = cell;
+        best = cols;
+      }
+    }
+    return best;
+  }
+  const stepColumns = $derived<number | null>(
+    full ? stepCols : bestStageCols(stageW, stageH, stepCount),
+  );
+
+  // Measure the notation stage so the non-full column choice tracks the real
+  // card size (tablet side-by-side, portrait, etc.) rather than ChoreoCard's
+  // aspect-only autoFit.
+  $effect(() => {
+    const el = stageEl;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([entry]) => {
+      const box = entry?.contentRect;
+      if (box) {
+        stageW = Math.round(box.width);
+        stageH = Math.round(box.height);
+      }
+    });
+    ro.observe(el);
+    stageW = Math.round(el.clientWidth);
+    stageH = Math.round(el.clientHeight);
+    return () => ro.disconnect();
+  });
 
   // The next candidate this side's Shuffle will land on, hydrated ahead of time
   // by the pool. Rendering it in a hidden card now bakes its pictographs into
@@ -160,7 +206,7 @@
   aria-busy={source.isLoading}
 >
   {#if showInlineNotation}
-    <div class="notation-stage">
+    <div class="notation-stage" bind:this={stageEl}>
       {#if displaySequence}
         <div class="notation-scroll themed-scrollbar">
           <ChoreoCard

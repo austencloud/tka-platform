@@ -207,11 +207,6 @@
     return () => observer.disconnect();
   });
 
-  function openHelp(): void {
-    detailKind = "help";
-    detailOpen = true;
-  }
-
   function openNotation(side: FuseSide): void {
     detailKind = "notation";
     detailSide = side;
@@ -244,7 +239,7 @@
       fuseState.pendingSide !== null ||
       fuseState.isFusing}
   >
-    <FuseWorkspaceHeader onHelp={openHelp} {compact} />
+    <FuseWorkspaceHeader {compact} />
     <div class="fuse-mode-row">
       <FuseModeBar />
       {#if fuseState.mode === "symmetry"}
