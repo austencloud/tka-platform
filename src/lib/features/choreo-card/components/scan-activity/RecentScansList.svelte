@@ -1,50 +1,235 @@
-<!-- Compact list of most recent scan events rendered under the minimap globe. -->
 <script lang="ts">
+  import { formatTimeAgo } from "$lib/shared/i18n/i18n-formatters";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import type { ScanEventRow } from "$lib/features/choreo-card/state/scan-activity-state.svelte";
+
+  interface Props {
+    events: ScanEventRow[];
+    selectedEventId: string | null;
+    onEventClick: (eventId: string) => void;
+    onCityClick: (city: string, eventId: string) => void;
+    wordFor?: (code: string) => string | undefined;
+    loading?: boolean;
+    limit?: number;
+  }
 
   let {
     events,
-    onRowClick,
-    limit = 4,
-  }: { events: ScanEventRow[]; onRowClick: (code: string) => void; limit?: number } = $props();
+    selectedEventId,
+    onEventClick,
+    onCityClick,
+    wordFor = () => undefined,
+    loading = false,
+    limit = 12,
+  }: Props = $props();
 
   const rows = $derived(events.slice(0, limit));
 
-  function ago(ts: string): string {
-    const ms = Date.now() - new Date(ts).getTime();
-    const m = Math.floor(ms / 60000);
-    if (m < 1) return "now";
-    if (m < 60) return `${m}m`;
-    return `${Math.floor(m / 60)}h`;
+  function relativeTime(timestamp: string): string {
+    const milliseconds = Date.parse(timestamp);
+    return Number.isFinite(milliseconds)
+      ? formatTimeAgo(milliseconds)
+      : "Time unavailable";
   }
 </script>
 
-<div class="list">
-  {#each rows as r (r.code + r.timestamp)}
-    <button class="row" aria-label="View scan {r.code}" onclick={() => onRowClick(r.code)}>
-      <span class="city">{r.city ?? "-"}</span>
-      <span class="code">{r.code}</span>
-      <span class="when">{ago(r.timestamp)}</span>
-    </button>
-  {/each}
-  {#if rows.length === 0}
-    <p class="empty">No recent scans.</p>
+<div class="list" aria-busy={loading}>
+  {#if loading}
+    {#each Array(6) as _, index (index)}
+      <div class="skeleton-row" aria-hidden="true">
+        <span class="skeleton-main"></span>
+        <span class="skeleton-city"></span>
+      </div>
+    {/each}
+    <span class="sr-status" role="status">Connecting to scan activity.</span>
+  {:else}
+    {#each rows as event (event.id)}
+      <div class="row" class:selected={selectedEventId === event.id}>
+        <button
+          class="event-action"
+          type="button"
+          aria-label="Inspect {wordFor(event.code) || event.code} scan"
+          aria-pressed={selectedEventId === event.id}
+          onclick={() => onEventClick(event.id)}
+        >
+          <span class="identity">
+            <strong>{wordFor(event.code) || event.code}</strong>
+            <span>{event.code}</span>
+          </span>
+          <span class="when">{relativeTime(event.timestamp)}</span>
+        </button>
+
+        {#if event.city}
+          <FilterChipBase
+            label={event.city}
+            icon="fas fa-location-dot"
+            mode="action"
+            size="sm"
+            onclick={() => onCityClick(event.city!, event.id)}
+          />
+        {:else}
+          <span class="no-location">Location unavailable</span>
+        {/if}
+      </div>
+    {/each}
+
+    {#if rows.length === 0}
+      <p class="empty">No scans match this view.</p>
+    {/if}
   {/if}
 </div>
 
 <style>
-  .list { display: flex; flex-direction: column; gap: 6px; }
-  .row {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 0 10px;
-    background: var(--theme-panel-bg, #0b0d17); border: 1px solid var(--theme-stroke, #1a1f2e); border-radius: 6px;
-    font-size: var(--font-size-sm, 14px); color: inherit; font: inherit;
-    min-height: 44px; cursor: pointer; gap: 8px; text-align: left;
+  .list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm, 8px);
   }
-  .row:hover { border-color: var(--theme-accent, rgba(16, 185, 129, 0.4)); }
-  .row:focus-visible { outline: 2px solid var(--theme-accent, #34d399); outline-offset: 2px; }
-  .city { color: var(--theme-text-muted, #d0d5e0); flex: 1; min-width: 0; text-overflow: ellipsis; overflow: hidden; white-space: nowrap; }
-  .code { font-family: monospace; color: var(--theme-accent, #34d399); }
-  .when { color: var(--theme-text-dim, #6b7491); }
-  .empty { color: var(--theme-text-dim, #6b7491); font-size: var(--font-size-sm, 14px); }
+
+  .row,
+  .skeleton-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
+    min-height: 64px;
+    padding: 8px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: var(--border-radius-md, 8px);
+  }
+
+  .row.selected {
+    border-color: color-mix(in srgb, var(--theme-accent) 65%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent) 10%,
+      var(--theme-card-bg)
+    );
+  }
+
+  .event-action {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--spacing-sm, 8px);
+    min-width: 0;
+    min-height: var(--min-touch-target, 44px);
+    padding: 4px 8px;
+    border: 0;
+    border-radius: var(--border-radius-sm, 6px);
+    background: transparent;
+    color: var(--theme-text, #fff);
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .event-action:hover {
+    background: color-mix(in srgb, var(--theme-accent) 8%, transparent);
+  }
+
+  .event-action:focus-visible {
+    outline: 2px solid var(--theme-accent, #34d399);
+    outline-offset: 2px;
+  }
+
+  .identity {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .identity strong {
+    overflow: hidden;
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-sm, 14px);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .identity span,
+  .when,
+  .no-location {
+    color: var(--theme-text-dim, #8b93a7);
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .identity span {
+    font-family: monospace;
+  }
+
+  .when {
+    white-space: nowrap;
+  }
+
+  .no-location {
+    max-width: 9rem;
+    line-height: 1.25;
+    text-align: right;
+  }
+
+  .empty {
+    margin: 0;
+    padding: 24px 12px;
+    color: var(--theme-text-dim, #8b93a7);
+    font-size: var(--font-size-sm, 14px);
+    text-align: center;
+  }
+
+  .skeleton-main,
+  .skeleton-city {
+    display: block;
+    height: 38px;
+    border-radius: var(--border-radius-sm, 6px);
+    background: linear-gradient(
+      90deg,
+      var(--theme-card-bg) 0%,
+      var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08)) 50%,
+      var(--theme-card-bg) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+  }
+
+  .skeleton-city {
+    width: 88px;
+  }
+
+  .sr-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .skeleton-main,
+    .skeleton-city {
+      animation: none;
+    }
+  }
+
+  @container (max-width: 420px) {
+    .row {
+      grid-template-columns: 1fr;
+    }
+
+    .no-location {
+      max-width: none;
+      padding: 0 8px 6px;
+      text-align: left;
+    }
+  }
 </style>

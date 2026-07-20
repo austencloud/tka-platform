@@ -32,7 +32,12 @@
   import { registerLoopDetector } from "$lib/shared/create/get-loop-detector";
   import { registerLoopDisplayResolver } from "$lib/shared/loop-labeler/get-loop-display-resolver";
   import { resolveLoopDisplay } from "$lib/features/loop-labeler/services/loop-display-resolver";
-  import { captureEvent } from "$lib/shared/analytics/services/posthog";
+  import { initPostHog } from "$lib/shared/analytics/services/posthog";
+  import {
+    beginScanVisit,
+    updateScanAttribution,
+    captureScanEvent,
+  } from "$lib/shared/analytics/scan-analytics";
   import { markScan } from "$lib/shared/analytics/scan-perf";
   import { isGenuineScan } from "$lib/shared/qr/utils/scan-detection";
   import { getDeviceId } from "$lib/shared/auth/services/device-id-service";
@@ -147,7 +152,12 @@
   onDestroy(stopTrickle);
 
   let resolvedSeq: SequenceData | null = $state(null);
+  // Raw word — DATA. Feeds analytics payloads and the OG/title derivations
+  // below, which simplify on their own. Never render it directly.
   let seqWord = $state("");
+  // Anything a human reads or saves. A LOOP repeats its word by construction,
+  // so "FΨFΨFΨFΨ.mp4" is the common case, not the edge case.
+  const exportWord = $derived(seqWord ? simplifyRepeatedWord(seqWord) : seqWord);
   let scanInitialBpm = $state(SCAN_PLAYBACK_MAX_BPM);
 
   function handleScanBpmChange(bpm: number): void {
@@ -296,7 +306,7 @@
       // Mobile: open the native share sheet so the user picks where the MP4 goes
       // (Files, Photos, a message…) instead of a blind background download.
       // Desktop: straight to disk.
-      await shareOrDownloadBlob(blob, `${seqWord}.mp4`, { title: seqWord });
+      await shareOrDownloadBlob(blob, `${exportWord}.mp4`, { title: exportWord });
     } catch (err) {
       console.error("[QR] Download failed:", err);
     } finally {
@@ -318,7 +328,6 @@
         darkMode: ic.darkMode,
         userName: ic.userName,
         isHandPath: ic.handPathMode ?? false,
-        columnCount: ic.columnCount,
       });
       await sequenceModalExporter.exportImage(
         renderOptions,
@@ -347,11 +356,9 @@
   function requestGatedExport(ctx: OrchestratorContext, kind: "video" | "card") {
     pendingExportKind = kind;
     if (!authState.isFullAccount) {
-      captureEvent("qr_download_gated", {
-        short_code: shortCode,
-        sequence_word: seqWord,
-        export_kind: kind,
-      });
+      // Base props (short code, word, deck, device, scan_session_id) come from
+      // the scan visit — only the event-specific delta is spelled out here.
+      captureScanEvent("qr_download_gated", { export_kind: kind });
     }
     ctx.invokeGatedAction("download", () =>
       kind === "card" ? handleCardExport(ctx) : handleExport(ctx)
@@ -375,10 +382,7 @@
       // Storage unavailable (private mode) — still navigate; the composer
       // just starts empty.
     }
-    captureEvent("qr_open_composer", {
-      short_code: shortCode,
-      sequence_word: seqWord,
-    });
+    captureScanEvent("qr_open_composer");
     void goto("/create/construct?sheet=auth");
   }
 
@@ -431,6 +435,24 @@
   onMount(async () => {
     markScan("start");
     if (browser) {
+      // Analytics before anything else on this route. The root layout starts
+      // PostHog too, but it does so from its own onMount — which on a scan is
+      // racing the settings/theme/auth work below. initPostHog is idempotent,
+      // so calling it here just means whichever bootstrap wins arms session
+      // replay at the earliest possible moment instead of the latest.
+      void initPostHog().catch(() => {});
+
+      // Open the scan visit immediately: the short code is the only thing we
+      // need, and opening it now means a resolve failure, an $exception, or an
+      // autocapture click during load already carries scan_session_id. It also
+      // survives the failed-resolve auto-reload (sessionStorage), so both loads
+      // of a retried scan report as one visit.
+      if (shortCode) {
+        beginScanVisit(shortCode, {
+          isAuthenticated: () => authState.isAuthenticated,
+        });
+      }
+
       const checkViewport = () => {
         viewportWidth = window.innerWidth;
       };
@@ -528,14 +550,19 @@
       // init stays awaited — a cold-scan local cell render (cloud miss) needs
       // the cache populated before the card paints — but it no longer serializes
       // in front of the chunk import, trimming the critical path by the import time.
-      const [seq_, OrchestratorModule, ShellModule] = await Promise.all([
-        shortCodeManager.resolveShortCode(shortCode),
+      //
+      // resolveShortCodeWithRecord, not resolveShortCode: the record is the only
+      // client-side source of deck attribution, and it costs nothing extra —
+      // the resolver already fetched it and used to throw it away.
+      const [resolution, OrchestratorModule, ShellModule] = await Promise.all([
+        shortCodeManager.resolveShortCodeWithRecord(shortCode),
         import("$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte"),
         import("$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte"),
         getGlyphCache().initialize(),
       ]);
 
-      let seq = seq_;
+      const record = resolution.record;
+      let seq = resolution.sequence;
       markScan("shortcode-resolved");
       if (!seq) {
         stopTrickle();
@@ -556,6 +583,10 @@
       markScan("hydrated");
       const word = seq.word || seq.name || "Sequence";
       seqWord = word;
+      // Raw word, not simplified: analytics is DATA, and the expanded form is
+      // what joins against sequence records. Display surfaces simplify on their
+      // own. Every scan event from here on carries it.
+      updateScanAttribution({ sequenceWord: word });
 
       // Printed cards encode their prop in the QR URL (?bp=<type>), and the
       // sequence itself carries intendedProp. Seed the app settings so the
@@ -581,14 +612,25 @@
       OrchestratorComponent = OrchestratorModule.default;
       ShellComponent = ShellModule.default;
 
+      // Deck attribution, record first. SSR meta was the SOLE source until
+      // 2026-07-20 and it was null on every scan ever recorded (the
+      // firebase-admin lookup never ran on workerd), so deck_id was
+      // structurally always null. The resolved record is the authoritative
+      // copy — it is the same doc SSR was trying to read — and SSR meta is
+      // now only the backstop for records that predate the stamped fields or
+      // resolved from the skinny R2 snapshot.
+      //
+      // Resolved OUTSIDE the `genuine` gate: a reload (the failed-resolve
+      // retry) is not a genuine scan, but every remix/download/control event on
+      // that load still needs the deck it came from.
+      const deckId = record?.deckId ?? data?.meta?.deckId ?? null;
+      const deckName = record?.deckName ?? data?.meta?.deckName ?? null;
+      updateScanAttribution({ deckId, deckName });
+
       if (genuine) {
         const geo = data?.geo;
 
-        captureEvent("card_scanned", {
-          short_code: shortCode,
-          sequence_word: word,
-          deck_id: data?.meta?.deckId || null,
-          deck_name: data?.meta?.deckName || null,
+        captureScanEvent("card_scanned", {
           country: geo?.country || null,
           city: geo?.city || null,
         });
@@ -628,6 +670,11 @@
             deviceId: getDeviceId(),
             lat: geo?.lat ?? null,
             lng: geo?.lng ?? null,
+            // Durable copy of the attribution the PostHog event carries.
+            // PostHog history can never be rewritten; these Firestore docs can
+            // be enriched later, so the deck belongs on them too.
+            deckId,
+            deckName,
           })
           .catch(() => {});
         void shortCodeManager
@@ -783,7 +830,9 @@
             onRetry={() => handleExport(ctx)}
           >
             {#snippet title()}
-              <TKAWordGlyph word={rawWord} height={28} darkMode />
+              <!-- displayWord, not rawWord: the glyph row is read by a human,
+                   and a repeated word always renders in its smallest form. -->
+              <TKAWordGlyph word={displayWord} height={28} darkMode />
             {/snippet}
           </ExportTakeover>
         </div>

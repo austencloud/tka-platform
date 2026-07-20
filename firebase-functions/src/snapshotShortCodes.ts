@@ -18,7 +18,11 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import { defineSecret } from "firebase-functions/params";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { gzip } from "zlib";
+import { promisify } from "util";
 import { getR2Client } from "./r2/r2-client";
+
+const gzipAsync = promisify(gzip);
 
 const r2AccountId = defineSecret("R2_ACCOUNT_ID");
 const r2AccessKeyId = defineSecret("R2_ACCESS_KEY_ID");
@@ -86,8 +90,21 @@ export const snapshotShortCodes = functions
     };
 
     const body = JSON.stringify(envelope);
-    const sizeMb = (body.length / 1024 / 1024).toFixed(2);
-    console.log(`[snapshot] Built ${records.length} records (${sizeMb} MB)`);
+    const rawMb = (Buffer.byteLength(body) / 1024 / 1024).toFixed(2);
+
+    // Every phone that hits the fallback path pays for this transfer on cell
+    // data, and R2 was serving it raw — no Content-Encoding, even when the
+    // client advertised gzip. Measured on the live 2.35 MB snapshot: gzip -9
+    // lands at 1.00 MB (2.4x). Not more, because the `encoded` blobs are
+    // high-entropy base64. R2 returns the stored Content-Encoding header and
+    // the browser inflates transparently, so `fetch(...).json()` in
+    // short-code-manager needs no change.
+    const gzipped = await gzipAsync(body, { level: 9 });
+    const gzipMb = (gzipped.byteLength / 1024 / 1024).toFixed(2);
+    const ratio = (Buffer.byteLength(body) / gzipped.byteLength).toFixed(1);
+    console.log(
+      `[snapshot] Built ${records.length} records (${rawMb} MB raw -> ${gzipMb} MB gzip, ${ratio}x)`
+    );
 
     const client = getR2Client(
       r2AccountId.value(),
@@ -100,8 +117,9 @@ export const snapshotShortCodes = functions
       new PutObjectCommand({
         Bucket: bucket,
         Key: SNAPSHOT_KEY,
-        Body: body,
+        Body: gzipped,
         ContentType: "application/json",
+        ContentEncoding: "gzip",
         CacheControl: "public, max-age=3600",
       })
     );

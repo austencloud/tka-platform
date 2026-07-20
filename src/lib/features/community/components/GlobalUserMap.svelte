@@ -9,11 +9,7 @@
   import type { UserLocationWithProfile } from "../domain/models/user-location";
   import UserProfileMarker from "./UserProfileMarker.svelte";
   import { goto } from "$app/navigation";
-
-  // Google Maps loads via a JSONP-style callback whose name is generated at
-  // runtime. Type the dynamic window properties instead of casting to `any`.
-  type MapsCallbackWindow = Window &
-    Record<`__googleMapsCallback_${number}`, (() => void) | undefined>;
+  import { getGoogleMapsLibraryLoader } from "$lib/shared/maps/getGoogleMapsLibraryLoader";
 
   let {
     locations = [],
@@ -22,6 +18,7 @@
     onMapReady = () => {},
     scanMarkers = [],
     onScanMarkerClick,
+    showEmptyState = true,
     size = "full",
   }: {
     locations: UserLocationWithProfile[];
@@ -38,6 +35,8 @@
     }>;
     /** Fired when a scan-origin pin is clicked (Scan Activity view). */
     onScanMarkerClick?: (id: string) => void;
+    /** Lets feature views provide their own domain-specific empty state. */
+    showEmptyState?: boolean;
     /** Layout variant. "embedded" gives a compact rounded 260px container. */
     size?: "full" | "embedded";
   } = $props();
@@ -47,44 +46,45 @@
   let markers: google.maps.marker.AdvancedMarkerElement[] = [];
   let injectedScanMarkers: google.maps.marker.AdvancedMarkerElement[] = [];
   let selectedUser: UserLocationWithProfile | null = $state(null);
+  let mapReady = $state(false);
+  let mapError = $state<string | null>(null);
+  const mapsLoader = getGoogleMapsLibraryLoader();
 
-  onMount(async () => {
-    await loadGoogleMapsScript();
-    await initializeMap();
-  });
+  onMount(() => {
+    let mounted = true;
 
-  async function loadGoogleMapsScript() {
-    // Check if already loaded and ready
-    if (typeof google !== "undefined" && google.maps?.Map) {
-      return;
+    async function loadMap(): Promise<void> {
+      try {
+        await mapsLoader.load(apiKey);
+        if (!mounted) return;
+        initializeMap();
+      } catch (caught) {
+        if (mounted) showMapFailure(caught);
+      }
     }
 
-    return new Promise<void>((resolve, reject) => {
-      // Use the callback approach so we know the API is fully initialized
-      const callbackName = `__googleMapsCallback_${Date.now()}` as const;
-      const win = window as unknown as MapsCallbackWindow;
-      win[callbackName] = () => {
-        delete win[callbackName];
-        resolve();
-      };
+    void loadMap();
 
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&v=weekly&libraries=marker&callback=${callbackName}`;
-      script.async = true;
-      script.defer = true;
-      script.onerror = () => {
-        delete win[callbackName];
-        reject(new Error("Failed to load Google Maps"));
-      };
-      document.head.appendChild(script);
-    });
+    return () => {
+      mounted = false;
+      for (const marker of markers) marker.map = null;
+      for (const marker of injectedScanMarkers) marker.map = null;
+      markers = [];
+      injectedScanMarkers = [];
+      map = null;
+      mapReady = false;
+    };
+  });
+
+  function showMapFailure(caught: unknown): void {
+    mapError =
+      caught instanceof Error && caught.message
+        ? caught.message
+        : "Google Maps could not load.";
+    mapReady = false;
   }
 
-  async function initializeMap() {
-    // Wait for the Maps library to be fully available
-    await google.maps.importLibrary("maps");
-    await google.maps.importLibrary("marker");
-
+  function initializeMap(): void {
     // Default center (world view)
     const center = userLocation || { lat: 20, lng: 0 };
     const zoom = userLocation ? 4 : 2;
@@ -100,15 +100,11 @@
       fullscreenControl: true,
     });
 
+    mapReady = true;
     onMapReady();
-
-    // Wait a bit for locations to load, then create markers
-    setTimeout(() => {
-      createMarkers();
-    }, 100);
   }
 
-  async function createMarkers() {
+  function createMarkers(): void {
     if (!map) return;
 
     // Always clear existing markers first
@@ -142,7 +138,7 @@
         title: `${location.displayName} - ${location.city}, ${location.country}`,
       });
 
-      marker.addEventListener("gmp-click", () => {
+      marker.addListener("click", () => {
         selectedUser = location;
 
         // Pan map to marker
@@ -161,7 +157,7 @@
   }
 
   function handleViewProfile(userId: string) {
-    goto(`/browse/creators/${userId}`);
+    void goto(`/browse/creators/${userId}`);
   }
 
   function closePopup() {
@@ -173,16 +169,17 @@
   // current value via closure.
   $effect(() => {
     locations.length;
-    if (map) {
-      createMarkers();
+    if (mapReady) {
+      try {
+        createMarkers();
+      } catch (caught) {
+        showMapFailure(caught);
+      }
     }
   });
 
-  // Sync injected scan-origin markers (Scan Activity view).
-  $effect(() => {
-    const incoming = scanMarkers;
+  function createScanMarkers(incoming: typeof scanMarkers): void {
     if (!map) return;
-
     for (const m of injectedScanMarkers) m.map = null;
     injectedScanMarkers = [];
 
@@ -199,15 +196,27 @@
         title: m.label ?? "",
       });
       if (onScanMarkerClick) {
-        marker.addEventListener("gmp-click", () => onScanMarkerClick(m.id));
+        marker.addListener("click", () => onScanMarkerClick(m.id));
       }
       injectedScanMarkers.push(marker);
+    }
+  }
+
+  // `mapReady` is reactive so markers that arrived while the map script was
+  // loading are created as soon as initialization finishes.
+  $effect(() => {
+    const incoming = scanMarkers;
+    if (!mapReady) return;
+    try {
+      createScanMarkers(incoming);
+    } catch (caught) {
+      showMapFailure(caught);
     }
   });
 
   // Center map on user location when it changes
   $effect(() => {
-    if (map && userLocation) {
+    if (mapReady && map && userLocation) {
       map.panTo(userLocation);
       map.setZoom(10); // City-level zoom
     }
@@ -217,11 +226,19 @@
 <div class="map-wrapper" class:embedded={size === "embedded"}>
   <div bind:this={mapContainer} class="map-container"></div>
 
+  {#if mapError}
+    <div class="map-error" role="alert">
+      <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+      <p>Map failed to load</p>
+      <p class="subtext">{mapError}</p>
+    </div>
+  {/if}
+
   {#if selectedUser}
     <button
       class="popup-overlay"
       onclick={closePopup}
-      aria-label={t('community_close_popup')}
+      aria-label={t("community_close_popup")}
       type="button"
     ></button>
     <div class="popup-wrapper">
@@ -233,11 +250,11 @@
     </div>
   {/if}
 
-  {#if locations.length === 0}
+  {#if showEmptyState && !mapError && locations.length === 0 && scanMarkers.length === 0}
     <div class="empty-state">
       <i class="fas fa-map-marked-alt" aria-hidden="true"></i>
-      <p>{t('community_no_users_shared')}</p>
-      <p class="subtext">{t('community_be_first')}</p>
+      <p>{t("community_no_users_shared")}</p>
+      <p class="subtext">{t("community_be_first")}</p>
     </div>
   {/if}
 </div>
@@ -273,12 +290,20 @@
   }
 
   @keyframes scanPinPulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.5); box-shadow: 0 0 16px var(--semantic-success, #10b981); }
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.5);
+      box-shadow: 0 0 16px var(--semantic-success, #10b981);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    :global(.scan-pin--new) { animation: none; }
+    :global(.scan-pin--new) {
+      animation: none;
+    }
   }
 
   .popup-overlay {
@@ -341,6 +366,36 @@
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
     pointer-events: none;
     z-index: 5;
+  }
+
+  .map-error {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 24px;
+    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
+    color: var(--semantic-error, #ef4444);
+    text-align: center;
+  }
+
+  .map-error i {
+    font-size: 32px;
+  }
+
+  .map-error p {
+    margin: 0;
+    font-size: var(--font-size-sm, 14px);
+  }
+
+  .map-error .subtext {
+    max-width: 32rem;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.65));
+    font-size: var(--font-size-compact, 12px);
   }
 
   .empty-state i {

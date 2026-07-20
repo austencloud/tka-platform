@@ -247,6 +247,18 @@ function isFirestoreCorruptionError(error: unknown): boolean {
 }
 
 /**
+ * Firestore throws `failed-precondition` when initializeFirestore runs after
+ * the instance has already been started (a second module evaluation, or a
+ * getFirestore call that beat us). That is a "reuse what exists" signal, not a
+ * cache failure — it must not trigger the corruption/clear path.
+ */
+function isAlreadyStartedError(error: unknown): boolean {
+  const code = (error as { code?: string } | null)?.code;
+  const message = error instanceof Error ? error.message : "";
+  return code === "failed-precondition" || message.includes("already been started");
+}
+
+/**
  * Clear corrupted Firestore IndexedDB databases
  */
 async function clearFirestoreIndexedDB(): Promise<void> {
@@ -338,14 +350,28 @@ async function initializeFirestore(): Promise<Firestore> {
     return firestoreInstance;
   }
 
-  // PRODUCTION: Use persistent cache with timeout fallback
-  try {
+  // PRODUCTION: persistent local cache (offline support), with fallbacks.
+  //
+  // ORDERING IS LOAD-BEARING. This block used to open with `getFirestore(app)`
+  // inside a try/catch, intending "reuse an already-started instance, otherwise
+  // fall through to initFs". But getFirestore NEVER throws for a live app — it
+  // just creates a default, memory-only instance — so the early return ALWAYS
+  // fired and every persistent-cache line below it was unreachable. Production
+  // ran with zero offline persistence, which is what turned a flaky scan into a
+  // hard failure instead of a cache hit.
+  //
+  // initFs must therefore come FIRST: it is the only call that can attach a
+  // cache, and it is the one that throws (failed-precondition) when Firestore
+  // has already been started — the real "reuse it" signal.
+
+  // SSR / workerd has no IndexedDB. persistentLocalCache would construct fine
+  // there and then fail on the first read, so take the memory path knowingly.
+  if (typeof window === "undefined" || typeof indexedDB === "undefined") {
     firestoreInstance = getFirestore(app);
-    debug.success("Firestore instance retrieved");
+    usingMemoryCache = true;
+    debug.info("Firestore memory-only (no IndexedDB in this runtime)");
     hmrManager.setFirestore(firestoreInstance);
     return firestoreInstance;
-  } catch {
-    // Not yet initialized - proceed to initFs
   }
 
   // persistentMultipleTabManager can hang if BroadcastChannel/IndexedDB is stuck.
@@ -371,6 +397,16 @@ async function initializeFirestore(): Promise<Firestore> {
       ),
     ]);
   } catch (error) {
+    // Already started elsewhere: adopt that instance rather than clobbering it.
+    // Its cache was chosen by whoever started it, so don't claim persistence.
+    if (isAlreadyStartedError(error)) {
+      firestoreInstance = getFirestore(app);
+      usingMemoryCache = true;
+      debug.info("Firestore already started — reusing existing instance");
+      hmrManager.setFirestore(firestoreInstance);
+      return firestoreInstance;
+    }
+
     debug.warn("Persistent cache failed, falling back to memory cache:", error);
     if (isFirestoreCorruptionError(error)) {
       await clearFirestoreIndexedDB();
@@ -382,6 +418,7 @@ async function initializeFirestore(): Promise<Firestore> {
       debug.success("Firestore initialized with memory cache (fallback)");
     } catch {
       firestoreInstance = getFirestore(app);
+      usingMemoryCache = true;
       debug.error("Memory cache failed, using bare Firestore");
     }
   }

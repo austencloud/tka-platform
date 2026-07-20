@@ -11,6 +11,8 @@
   import { getFestivalContext } from "../../context/festival-context";
   import FestivalMapPopup from "./FestivalMapPopup.svelte";
   import type { Festival } from "../../domain/models/festival";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
+  import { getGoogleMapsLibraryLoader } from "$lib/shared/maps/getGoogleMapsLibraryLoader";
 
   const { state: festivalState } = getFestivalContext();
 
@@ -23,32 +25,56 @@
   let markers: google.maps.marker.AdvancedMarkerElement[] = [];
   let clusterer: MarkerClusterer | null = null;
   let selectedFestival: Festival | null = $state(null);
+  let markerTimer: ReturnType<typeof setTimeout> | null = null;
+  let failureReported = false;
+  const mapsLoader = getGoogleMapsLibraryLoader();
 
-  onMount(async () => {
-    await loadGoogleMapsScript();
-    initializeMap();
-  });
+  onMount(() => {
+    let mounted = true;
 
-  async function loadGoogleMapsScript() {
-    if (typeof google !== "undefined" && google.maps) {
-      return;
+    async function loadMap(): Promise<void> {
+      try {
+        await mapsLoader.load(env.PUBLIC_GOOGLE_MAPS_API_KEY ?? "");
+        if (!mounted) return;
+        initializeMap();
+      } catch (caught) {
+        if (mounted) showMapFailure(caught);
+      }
     }
 
-    return new Promise<void>((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${env.PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=marker&loading=async`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error("Failed to load Google Maps"));
-      document.head.appendChild(script);
+    void loadMap();
+
+    return () => {
+      mounted = false;
+      if (markerTimer) clearTimeout(markerTimer);
+      for (const marker of markers) marker.map = null;
+      clusterer?.clearMarkers();
+      markers = [];
+      clusterer = null;
+      map = null;
+    };
+  });
+
+  function showMapFailure(caught: unknown): void {
+    if (failureReported) return;
+    failureReported = true;
+    const failure =
+      caught instanceof Error ? caught : new Error(String(caught));
+    getErrorHandler().showUserError({
+      message: "Festival map could not load.",
+      technicalDetails: failure.message,
+      error: failure,
+      severity: "error",
+      context: {
+        module: "festivals",
+        tab: "map",
+        action: "loadGoogleMap",
+      },
     });
   }
 
-  async function initializeMap() {
-    const { Map } = (await google.maps.importLibrary(
-      "maps"
-    )) as google.maps.MapsLibrary;
+  function initializeMap(): void {
+    const { Map } = google.maps;
 
     map = new Map(mapContainer, {
       center: { lat: 20, lng: 0 },
@@ -63,12 +89,12 @@
     });
 
     // Give festivals a moment to load, then pin them
-    setTimeout(() => {
-      createMarkers();
+    markerTimer = setTimeout(() => {
+      refreshMarkers();
     }, 100);
   }
 
-  async function createMarkers() {
+  function createMarkers(): void {
     if (!map) return;
 
     // Clear existing markers and clusterer
@@ -83,10 +109,7 @@
 
     if (festivalState.festivals.length === 0) return;
 
-    const { AdvancedMarkerElement, PinElement } =
-      (await google.maps.importLibrary(
-        "marker"
-      )) as google.maps.MarkerLibrary;
+    const { AdvancedMarkerElement, PinElement } = google.maps.marker;
 
     for (const festival of festivalState.festivals) {
       const { lat, lng } = festival.location.coordinates;
@@ -104,7 +127,7 @@
         title: `${festival.name} - ${festival.location.city}, ${festival.location.country}`,
       });
 
-      marker.addEventListener("gmp-click", () => {
+      marker.addListener("click", () => {
         selectedFestival = festival;
         map?.panTo({ lat, lng });
       });
@@ -117,6 +140,14 @@
       clusterer.clearMarkers();
     }
     clusterer = new MarkerClusterer({ map, markers });
+  }
+
+  function refreshMarkers(): void {
+    try {
+      createMarkers();
+    } catch (caught) {
+      showMapFailure(caught);
+    }
   }
 
   function handleViewDetails() {
@@ -135,7 +166,7 @@
     // Explicitly reference festivals so Svelte tracks this dependency
     const _festivals = festivalState.festivals;
     if (map) {
-      createMarkers();
+      refreshMarkers();
     }
   });
 </script>

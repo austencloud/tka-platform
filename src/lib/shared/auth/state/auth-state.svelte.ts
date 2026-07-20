@@ -76,6 +76,7 @@ const hmrAuthData = import.meta.hot?.data as
       cleanupAuthListener?: (() => void) | null;
       cleanupSubscriptionListener?: (() => void) | null;
       childServicesInitialized?: boolean;
+      hasIdentifiedToPostHog?: boolean;
     }
   | undefined;
 
@@ -100,6 +101,19 @@ let cleanupSubscriptionListener: (() => void) | null = hmrAuthData?.cleanupSubsc
 // Without this guard, every file save in dev triggers ~12 Firestore reads.
 let childServicesInitialized = hmrAuthData?.childServicesInitialized ?? false;
 
+// Whether this browser has ever identified a real user to PostHog. The
+// onAuthStateChanged 'else' branch below reads "user logged out" but its actual
+// condition is "no user" — it cannot tell "never signed in" from "just signed
+// out", so it fires for every anonymous visitor on every single page load. It
+// used to call resetUser() there, which mints a fresh distinct_id AND a fresh
+// session_id. A real card scan on 2026-07-20 came back as two PostHog users
+// with an identical $device_id and two $last_posthog_reset timestamps 11s
+// apart: one human, one scan, two identities, two session recordings. Gate the
+// reset on a genuine signed-in → signed-out TRANSITION, which is what this
+// flag makes observable. Preserved across HMR (below) so dev reloads, which
+// re-fire the listener, don't reintroduce the same churn locally.
+let hasIdentifiedToPostHog = hmrAuthData?.hasIdentifiedToPostHog ?? false;
+
 // Shared in-flight init promise — declared before the HMR re-wire block below,
 // which calls initializeAuthListener() during module evaluation.
 let authInitPromise: Promise<void> | null = null;
@@ -110,6 +124,7 @@ if (import.meta.hot) {
     data.cleanupAuthListener = cleanupAuthListener;
     data.cleanupSubscriptionListener = cleanupSubscriptionListener;
     data.childServicesInitialized = childServicesInitialized;
+    data.hasIdentifiedToPostHog = hasIdentifiedToPostHog;
   });
 }
 
@@ -509,6 +524,7 @@ async function doInitializeAuthListener(): Promise<void> {
           isTester: role === "tester" || role === "admin",
           isAdmin,
         });
+        hasIdentifiedToPostHog = true;
 
         const creationTime = user.metadata.creationTime
           ? new Date(user.metadata.creationTime).getTime()
@@ -525,8 +541,13 @@ async function doInitializeAuthListener(): Promise<void> {
             scan_source_code: getScanSourceCode() ?? null,
           });
         }
-      } else {
-        // User logged out - reset PostHog identity
+      } else if (hasIdentifiedToPostHog) {
+        // Genuine signed-in → signed-out transition: drop the previous user's
+        // identity so their events don't bleed into whoever uses this browser
+        // next. A visitor who was never identified takes no branch at all —
+        // resetting them would only fork the anonymous identity PostHog
+        // already has (see the hasIdentifiedToPostHog note above).
+        hasIdentifiedToPostHog = false;
         resetUser();
       }
 

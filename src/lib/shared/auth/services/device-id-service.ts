@@ -1,15 +1,12 @@
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { getFirestoreInstance } from "../firebase";
+import { getDeviceId } from "$lib/shared/foundation/services/device-id";
 
-const STORAGE_KEY = "tka:deviceId";
-
-export function getDeviceId(): string {
-  const existing = localStorage.getItem(STORAGE_KEY);
-  if (existing) return existing;
-  const fresh = crypto.randomUUID();
-  localStorage.setItem(STORAGE_KEY, fresh);
-  return fresh;
-}
+// The device id itself now lives in foundation/services/device-id.ts, which has
+// no Firebase imports — analytics reads it at PostHog init, and pulling
+// firebase/firestore into that graph is not an option. Re-exported here so the
+// existing call sites keep importing it from where they always have.
+export { getDeviceId };
 
 export async function linkDeviceToUser(userId: string): Promise<void> {
   const deviceId = getDeviceId();

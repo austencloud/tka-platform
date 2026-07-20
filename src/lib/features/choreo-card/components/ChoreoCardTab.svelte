@@ -14,13 +14,36 @@
   import CodexPrintPage from "./CodexPrintPage.svelte";
   import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
   import ContextMenu from "$lib/shared/components/context-menu/ContextMenu.svelte";
-  import type { ContextMenuState, ContextMenuEntry } from "$lib/shared/components/context-menu/context-menu-types";
+  import type {
+    ContextMenuState,
+    ContextMenuEntry,
+  } from "$lib/shared/components/context-menu/context-menu-types";
   import { buildCardMenuSection } from "$lib/shared/choreo-card/services/card-menu-section";
   import {
     openSendSequenceSheet,
     buildSequenceSharePayload,
   } from "$lib/shared/inbox/state/send-sequence-state.svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { authState } from "$lib/shared/auth/state/auth-state.svelte";
+  import { createScanActivityState } from "../state/scan-activity-state.svelte";
+  import { watchScanActivityConnection } from "../state/scan-activity-connection.svelte";
+  import { getScanActivityWatcher } from "../services/getScanActivityWatcher";
+  import { setScanActivityContext } from "../context/scan-activity-context";
+  import { decodeSequenceFromQR } from "$lib/shared/navigation/services/sequence-encoder";
+
+  const scanActivity = createScanActivityState({
+    data: getScanActivityWatcher(),
+    decodeSequence: decodeSequenceFromQR,
+  });
+  setScanActivityContext({ state: scanActivity });
+
+  // Scan activity stays live while this module is open. Switching to another
+  // Choreo Card tab keeps the latest event window and card cache intact.
+  watchScanActivityConnection(scanActivity, () => ({
+    loading: authState.loading,
+    userId: authState.user?.uid ?? null,
+    isAdmin: authState.isAdmin === true,
+  }));
 
   // Context menu for right-click on any choreo card thumbnail.
   // Stores the rerender callback + sequence from the specific card clicked.
@@ -32,7 +55,12 @@
   let activeCardSequence: SequenceData | undefined = $state(undefined);
   let menuVersion = $state(0);
 
-  function openCardContextMenu(x: number, y: number, rerender: () => void, sequence?: SequenceData) {
+  function openCardContextMenu(
+    x: number,
+    y: number,
+    rerender: () => void,
+    sequence?: SequenceData
+  ) {
     activeCardRerender = rerender;
     activeCardSequence = sequence;
     menuVersion++;
@@ -49,7 +77,9 @@
     return buildCardMenuSection({
       onRerender: activeCardRerender,
       stepCount: seq?.steps?.length ?? 0,
-      onColumnCountChange: () => { menuVersion++; },
+      onColumnCountChange: () => {
+        menuVersion++;
+      },
       onSendTo: seq
         ? () => {
             closeCardContextMenu();
@@ -75,7 +105,9 @@
   });
 
   onDestroy(() => {
-    (getThumbnailRenderOrchestrator() as ThumbnailRenderOrchestrator)?.cancelAll();
+    (
+      getThumbnailRenderOrchestrator() as ThumbnailRenderOrchestrator
+    )?.cancelAll();
   });
 </script>
 
@@ -96,7 +128,11 @@
 </div>
 
 <!-- Context menu for right-click on any choreo card thumbnail -->
-<ContextMenu menuState={contextMenuState} items={contextMenuItems} onClose={closeCardContextMenu} />
+<ContextMenu
+  menuState={contextMenuState}
+  items={contextMenuItems}
+  onClose={closeCardContextMenu}
+/>
 
 <style>
   .choreo-card-tab {
