@@ -52,16 +52,17 @@
 
   // The shipped look. The tuner edits live copies of these; once a set wins,
   // paste the copied JSON back over this object.
+  // Tuned by Austen via the ?tune rig, 2026-07-19.
   const DEFAULTS = {
-    bpm: 90,
+    bpm: 80,
     effort: "linear" as EffortId,
-    ghostOpacity: 0.55,
+    ghostOpacity: 1,
     gridVisible: false,
-    fadeDurationMs: 3200,
-    glowBlur: 9,
+    fadeDurationMs: 400,
+    glowBlur: 6,
     tailLength: 36,
-    lineWidth: 6,
-    minOpacity: 0.35,
+    lineWidth: 2,
+    minOpacity: 0.55,
   };
 
   let bpm = $state(DEFAULTS.bpm);
