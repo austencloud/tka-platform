@@ -11,22 +11,53 @@
    * page used to mount for itself.
    */
   import type { Snippet } from "svelte";
+  import type { BackgroundType } from "@austencloud/backgrounds";
   import { onMount } from "svelte";
   import { page } from "$app/state";
   import { fade } from "svelte/transition";
-  import BackgroundHost from "$lib/shared/background/shared/components/BackgroundHost.svelte";
   import ShopMorphLayer from "$lib/features/store/transitions/ShopMorphLayer.svelte";
-  import { BackgroundType } from "@austencloud/backgrounds";
-  import { applyThemeForBackground } from "$lib/shared/settings/utils/background-theme-calculator";
   import SiteHeader from "./SiteHeader.svelte";
   import SiteFooter from "./SiteFooter.svelte";
 
+  type BackgroundHostComponent =
+    (typeof import("$lib/shared/background/shared/components/BackgroundHost.svelte"))["default"];
+
   let { children }: { children: Snippet } = $props();
 
-  const BG = BackgroundType.COSMIC;
+  // A type-only import keeps the backgrounds package out of the first-paint
+  // module graph. Its public index re-exports every renderer, even though this
+  // shell only needs the string value until the live host is loaded.
+  const BG = "cosmic" as BackgroundType;
+  let LiveBackground = $state<BackgroundHostComponent | null>(null);
 
   onMount(() => {
-    applyThemeForBackground(BG);
+    let mounted = true;
+    let secondFrame = 0;
+
+    // Let the browser present the complete CSS cosmos first. The animated
+    // canvas is an enhancement, so its large renderer graph begins loading
+    // after that first useful frame instead of blocking it.
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => {
+        void import("$lib/shared/background/shared/components/BackgroundHost.svelte").then(
+          ({ default: BackgroundHost }) => {
+            if (mounted) LiveBackground = BackgroundHost;
+          }
+        );
+
+        void import("$lib/shared/settings/utils/background-theme-calculator").then(
+          ({ applyThemeForBackground }) => {
+            if (mounted) applyThemeForBackground(BG);
+          }
+        );
+      });
+    });
+
+    return () => {
+      mounted = false;
+      cancelAnimationFrame(firstFrame);
+      cancelAnimationFrame(secondFrame);
+    };
   });
 
   const path = $derived(page.url.pathname);
@@ -49,7 +80,11 @@
        it). Loaded here so every page wrapped in this chrome gets the same
        typography by construction. -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin="anonymous"
+  />
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..800&display=swap"
     rel="stylesheet"
@@ -59,7 +94,9 @@
 <div class="mkt-shell">
   <div class="mkt-fallback" aria-hidden="true"></div>
   <div class="mkt-bg">
-    <BackgroundHost backgroundType={BG} />
+    {#if LiveBackground}
+      <LiveBackground backgroundType={BG} />
+    {/if}
   </div>
 
   {#if ownsViewTransition}
@@ -117,21 +154,97 @@
   .mkt-bg {
     position: fixed;
     inset: 0;
-    z-index: 0;
+    z-index: 1;
   }
 
   .mkt-fallback {
     position: fixed;
     inset: 0;
-    z-index: -2;
+    z-index: 0;
+    overflow: hidden;
     background:
-      radial-gradient(120% 80% at 78% 12%, rgba(70, 60, 140, 0.35) 0%, transparent 55%),
-      radial-gradient(130% 100% at 50% -10%, #181b3d 0%, #0c0e20 48%, #06070f 100%);
+      radial-gradient(
+        ellipse at 72% 24%,
+        rgba(92, 72, 170, 0.3),
+        transparent 36%
+      ),
+      radial-gradient(
+        ellipse at 20% 78%,
+        rgba(32, 85, 144, 0.18),
+        transparent 42%
+      ),
+      radial-gradient(
+        130% 100% at 50% -10%,
+        #181b3d 0%,
+        #0c0e20 48%,
+        #06070f 100%
+      );
+  }
+
+  /* The first response already contains a real star field. Unequal tile sizes
+     keep the repeated radial gradients from resolving into a visible grid,
+     while remaining cheaper than an image request or a canvas startup. */
+  .mkt-fallback::before,
+  .mkt-fallback::after {
+    content: "";
+    position: absolute;
+    inset: -15%;
+    pointer-events: none;
+  }
+
+  .mkt-fallback::before {
+    opacity: 0.72;
+    background-image:
+      radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.82) 0 0.7px,
+        transparent 1px
+      ),
+      radial-gradient(
+        circle,
+        rgba(185, 205, 255, 0.7) 0 0.8px,
+        transparent 1.15px
+      ),
+      radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.5) 0 0.55px,
+        transparent 0.9px
+      );
+    background-position:
+      7px 13px,
+      43px 71px,
+      103px 29px;
+    background-size:
+      83px 89px,
+      137px 149px,
+      211px 197px;
+  }
+
+  .mkt-fallback::after {
+    opacity: 0.48;
+    background-image:
+      radial-gradient(
+        circle,
+        #ffffff 0 1px,
+        rgba(180, 200, 255, 0.45) 1.4px,
+        transparent 2px
+      ),
+      radial-gradient(
+        circle,
+        rgba(220, 210, 255, 0.9) 0 0.9px,
+        transparent 1.5px
+      );
+    background-position:
+      31px 47px,
+      149px 91px;
+    background-size:
+      263px 241px,
+      347px 311px;
   }
 
   .mkt-layer {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     display: flex;
     flex-direction: column;
     min-height: 100vh;

@@ -246,6 +246,10 @@ downloads/
 # generated assets that the guide page ships (see guide-motion-configs.ts).
 !static/guide/level-1/motions/*.mp4
 
+# Exception: the landing hero ships one audio-free, fast-start clip locally so
+# its first playback does not wait on a second origin.
+!static/assets/landing/hero-video-DAME3bEvN3N.mp4
+
 # Temporary output files
 stdout.txt
 stderr.txt

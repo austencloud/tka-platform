@@ -1,0 +1,7 @@
+# These filenames include the source post ID. Changing the media means changing
+# the URL, so browsers can keep the old bytes without revalidating every visit.
+/assets/landing/hero-video-DAME3bEvN3N.mp4
+  Cache-Control: public, max-age=31536000, immutable
+
+/images/landing/hero-poster-DAME3bEvN3N.webp
+  Cache-Control: public, max-age=31536000, immutable

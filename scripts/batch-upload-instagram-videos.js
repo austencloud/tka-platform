@@ -122,6 +122,10 @@ async function uploadVideo(filename, index, total) {
   await file.save(videoBuffer, {
     metadata: {
       contentType: "video/mp4",
+      // Instagram shortcodes are content-addressed in practice: a new post gets
+      // a new path. Let browsers and the CDN keep these immutable showcase
+      // clips instead of revalidating the same bytes every hour.
+      cacheControl: "public, max-age=31536000, immutable",
       metadata: {
         shortcode,
         source: "instagram",

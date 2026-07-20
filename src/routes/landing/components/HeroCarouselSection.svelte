@@ -3,15 +3,13 @@
    * HeroCarouselSection
    *
    * The landing page hero: title and subtitle above a 4:5 portrait video carousel.
-   * Videos are loaded from Firestore's showcaseVideos collection (featured + approved),
-   * with a crossfade every 5 seconds. Manual nav resets the timer.
+   * The featured list ships with the page so the first video and its poster are
+   * discoverable in the initial HTML. Videos crossfade every 5 seconds; manual
+   * navigation resets the timer.
    *
    * Performer credit + prop type are shown below the carousel frame.
    */
   import { onMount, onDestroy } from "svelte";
-  import { getFirestoreInstance } from "$lib/shared/auth/firebase";
-  import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
-  import type { ShowcaseVideo } from "$lib/features/landing-preview/types";
   import { LANDING_VIDEOS } from "../landing-videos";
 
   // ─── Internal video shape used by this component ─────────────────────────────
@@ -19,14 +17,12 @@
   interface CarouselEntry {
     src: string;
     performer: string;
-    prop: string;
+    label: string;
   }
 
   // ─── State ───────────────────────────────────────────────────────────────────
 
-  let entries = $state<CarouselEntry[]>([]);
-  let loading = $state(true);
-  let loadError = $state(false);
+  const entries: CarouselEntry[] = LANDING_VIDEOS;
 
   // Which entry is currently "front" (fully visible)
   let currentIndex = $state(0);
@@ -39,8 +35,6 @@
   let opacityB = $state(0);
   // true means A is the visible layer
   let isAFront = $state(true);
-  // Track whether the first video frame is actually ready to display
-  let firstVideoReady = $state(false);
 
   const CROSSFADE_DURATION = 800; // ms
   const AUTO_ADVANCE_INTERVAL = 5000; // ms
@@ -51,69 +45,6 @@
   // ─── Derived ─────────────────────────────────────────────────────────────────
 
   const currentEntry = $derived(entries[currentIndex] ?? null);
-
-  // ─── Firestore loading ────────────────────────────────────────────────────────
-
-  function shuffleArray<T>(arr: T[]): T[] {
-    const out = [...arr];
-    for (let i = out.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      const tmp = out[i] as T;
-      out[i] = out[j] as T;
-      out[j] = tmp;
-    }
-    return out;
-  }
-
-  async function loadFromFirestore(): Promise<CarouselEntry[]> {
-    const { collection, getDocs, query, where, orderBy, limit } = await import(
-      "firebase/firestore"
-    );
-    const db = await getFirestoreInstance();
-
-    const q = query(
-      collection(db, "showcaseVideos"),
-      where("featured", "==", true),
-      where("approved", "==", true),
-      orderBy("instagramDate", "desc"),
-      limit(20)
-    );
-
-    const snapshot = await getDocs(q);
-    const docs = snapshot.docs
-      .map((doc) => {
-        const d = doc.data() as Partial<ShowcaseVideo & Record<string, unknown>>;
-        return {
-          shortcode: doc.id,
-          videoUrl: d.videoUrl as string | undefined,
-          performers: (d.performers ?? []) as ShowcaseVideo["performers"],
-          excluded: (d.excluded ?? false) as boolean,
-          // tags may encode the prop type - fall back to "staves" if absent
-          tags: (d.tags ?? []) as string[],
-        };
-      })
-      .filter((v) => !v.excluded && v.videoUrl);
-
-    return shuffleArray(
-      docs.map((v) => ({
-        src: v.videoUrl!,
-        performer: v.performers[0]?.displayName ?? "TKA Performer",
-        // Use the first tag that looks like a prop name, otherwise "staves"
-        prop: deriveProFromTags(v.tags),
-      }))
-    );
-  }
-
-  function deriveProFromTags(tags: string[]): string {
-    const propKeywords = ["staff", "stave", "fan", "club", "hoop", "poi", "buugeng"];
-    for (const tag of tags) {
-      const lower = tag.toLowerCase();
-      for (const kw of propKeywords) {
-        if (lower.includes(kw)) return tag;
-      }
-    }
-    return "staves";
-  }
 
   // ─── Crossfade engine ─────────────────────────────────────────────────────────
 
@@ -135,16 +66,25 @@
   /**
    * Load a URL into the inactive player and resolve when data is ready.
    */
-  async function loadIntoInactive(url: string): Promise<void> {
+  async function loadIntoInactive(url: string): Promise<boolean> {
     const inactive = isAFront ? videoB : videoA;
-    if (!inactive) return;
-    inactive.src = url;
-    return new Promise<void>((resolve) => {
-      const onReady = () => {
+    if (!inactive) return false;
+
+    return new Promise<boolean>((resolve) => {
+      const finish = (loaded: boolean) => {
         inactive.removeEventListener("loadeddata", onReady);
-        resolve();
+        inactive.removeEventListener("error", onError);
+        resolve(loaded);
       };
-      inactive.addEventListener("loadeddata", onReady);
+      const onReady = () => {
+        finish(true);
+      };
+      const onError = () => {
+        finish(false);
+      };
+      inactive.addEventListener("loadeddata", onReady, { once: true });
+      inactive.addEventListener("error", onError, { once: true });
+      inactive.src = url;
       inactive.load();
     });
   }
@@ -162,7 +102,11 @@
       return;
     }
 
-    await loadIntoInactive(target.src);
+    const loaded = await loadIntoInactive(target.src);
+    if (!loaded) {
+      isTransitioning = false;
+      return;
+    }
 
     const inactive = isAFront ? videoB : videoA;
     if (inactive) {
@@ -248,49 +192,7 @@
 
   // ─── Lifecycle ────────────────────────────────────────────────────────────────
 
-  // Watch for videoA becoming available and seed the first video into it.
-  // This handles the race condition where entries are ready before the
-  // video element renders (loading state gates the template).
-  $effect(() => {
-    if (videoA && entries.length > 0 && !firstVideoReady) {
-      const first = entries[0]!;
-      // Only seed if not already loaded
-      if (!videoA.src || videoA.src === "") {
-        videoA.src = first.src;
-        videoA.load();
-        videoA.play().catch(() => {});
-      }
-
-      // Dismiss buffering overlay once video is actually rendering frames.
-      const dismiss = () => { firstVideoReady = true; };
-      videoA.addEventListener("playing", dismiss, { once: true });
-      videoA.addEventListener("timeupdate", dismiss, { once: true });
-
-      // Failsafe: if events somehow don't fire, check readyState after 3s
-      setTimeout(() => {
-        if (!firstVideoReady && videoA && !videoA.paused) {
-          firstVideoReady = true;
-        }
-      }, 3000);
-    }
-  });
-
-  onMount(async () => {
-    try {
-      const firestoreEntries = await loadFromFirestore();
-      entries = firestoreEntries.length > 0 ? firestoreEntries : LANDING_VIDEOS;
-    } catch (e) {
-      console.error("[HeroCarouselSection] Failed to load videos:", e);
-      entries = LANDING_VIDEOS;
-      if (entries.length === 0) {
-        loadError = true;
-      }
-    } finally {
-      loading = false;
-    }
-
-    if (entries.length === 0) return;
-
+  onMount(() => {
     if (entries.length > 1) {
       startAutoTimer();
     }
@@ -312,6 +214,13 @@
 </script>
 
 <svelte:head>
+  <link
+    rel="preload"
+    as="image"
+    href="/images/landing/hero-poster-DAME3bEvN3N.webp"
+    type="image/webp"
+    fetchpriority="high"
+  />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link
     href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400..900&display=swap"
@@ -350,7 +259,9 @@
       <!-- /composer is the Composer's front page (what it is), distinct from the
            primary CTA above which opens the app itself at /create. -->
       <a class="hero-link hero-chip" href="/composer">
-        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i><span>Composer</span>
+        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i><span
+          >Composer</span
+        >
       </a>
       <a class="hero-link hero-chip" href="/guide">
         <i class="fas fa-book-open" aria-hidden="true"></i><span>Guide</span>
@@ -366,111 +277,101 @@
 
   <!-- Video column -->
   <div class="hero-body">
-
-  <!-- Video + dots/credit column -->
-  <div class="carousel-column">
-
-  <!-- Video frame -->
-  <div class="carousel-stage">
-    {#if loading}
-      <div class="placeholder" aria-label="Loading videos">
-        <ProgressRing percent={-1} size={32} strokeWidth={3} />
-        <span>Loading videos...</span>
-      </div>
-    {:else if loadError || entries.length === 0}
-      <div class="placeholder error">
-        <i class="fas fa-film" aria-hidden="true"></i>
-        <span>No videos available</span>
-      </div>
-    {:else}
-      <!-- Crossfade layers -->
-      <div class="video-layers">
-        <video
-          bind:this={videoA}
-          class="video-layer"
-          style="opacity: {opacityA};"
-          muted
-          autoplay
-          loop
-          playsinline
-          aria-hidden="true"
-        >
-          <track kind="captions" />
-        </video>
-        <video
-          bind:this={videoB}
-          class="video-layer"
-          style="opacity: {opacityB};"
-          muted
-          autoplay
-          loop
-          playsinline
-          aria-hidden="true"
-        >
-          <track kind="captions" />
-        </video>
-
-        <!-- Shimmer overlay while first video buffers -->
-        {#if !firstVideoReady}
-          <div class="video-buffering" aria-label="Video loading">
-            <div class="buffering-shimmer"></div>
-            <div class="buffering-content">
-              <i class="fas fa-play-circle" aria-hidden="true"></i>
-            </div>
+    <!-- Video + dots/credit column -->
+    <div class="carousel-column">
+      <!-- Video frame -->
+      <div class="carousel-stage">
+        {#if entries.length === 0}
+          <div class="placeholder error">
+            <i class="fas fa-film" aria-hidden="true"></i>
+            <span>No videos available</span>
           </div>
+        {:else}
+          <!-- Crossfade layers -->
+          <div class="video-layers">
+            <video
+              bind:this={videoA}
+              class="video-layer"
+              style="opacity: {opacityA};"
+              src={entries[0]?.src}
+              poster={LANDING_VIDEOS[0]?.poster}
+              width="368"
+              height="640"
+              preload="auto"
+              muted
+              autoplay
+              loop
+              playsinline
+              aria-hidden="true"
+            >
+              <track kind="captions" />
+            </video>
+            <video
+              bind:this={videoB}
+              class="video-layer"
+              style="opacity: {opacityB};"
+              preload="none"
+              muted
+              autoplay
+              loop
+              playsinline
+              aria-hidden="true"
+            >
+              <track kind="captions" />
+            </video>
+          </div>
+
+          <!-- Prev / Next -->
+          <button
+            class="nav-btn prev"
+            onclick={goPrev}
+            disabled={isTransitioning || entries.length <= 1}
+            aria-label="Previous video"
+          >
+            <i class="fas fa-chevron-left" aria-hidden="true"></i>
+          </button>
+          <button
+            class="nav-btn next"
+            onclick={goNext}
+            disabled={isTransitioning || entries.length <= 1}
+            aria-label="Next video"
+          >
+            <i class="fas fa-chevron-right" aria-hidden="true"></i>
+          </button>
         {/if}
       </div>
 
-      <!-- Prev / Next -->
-      <button
-        class="nav-btn prev"
-        onclick={goPrev}
-        disabled={isTransitioning || entries.length <= 1}
-        aria-label="Previous video"
-      >
-        <i class="fas fa-chevron-left" aria-hidden="true"></i>
-      </button>
-      <button
-        class="nav-btn next"
-        onclick={goNext}
-        disabled={isTransitioning || entries.length <= 1}
-        aria-label="Next video"
-      >
-        <i class="fas fa-chevron-right" aria-hidden="true"></i>
-      </button>
-    {/if}
-  </div>
+      <!-- Dots + credit - directly under the video -->
+      {#if entries.length > 0}
+        <div class="carousel-footer">
+          {#if entries.length > 1}
+            <div class="dots" role="tablist" aria-label="Video indicators">
+              {#each entries as _, i}
+                <button
+                  class="dot"
+                  class:active={i === currentIndex}
+                  onclick={() => jumpTo(i)}
+                  role="tab"
+                  aria-selected={i === currentIndex}
+                  aria-label="Video {i + 1} of {entries.length}"
+                ></button>
+              {/each}
+            </div>
+          {/if}
 
-  <!-- Dots + credit - directly under the video -->
-  {#if !loading && entries.length > 0}
-    <div class="carousel-footer">
-      {#if entries.length > 1}
-        <div class="dots" role="tablist" aria-label="Video indicators">
-          {#each entries as _, i}
-            <button
-              class="dot"
-              class:active={i === currentIndex}
-              onclick={() => jumpTo(i)}
-              role="tab"
-              aria-selected={i === currentIndex}
-              aria-label="Video {i + 1} of {entries.length}"
-            ></button>
-          {/each}
+          {#if currentEntry}
+            <p class="credit" aria-live="polite">
+              <span class="performer">{currentEntry.performer}</span>
+              <span class="separator" aria-hidden="true">·</span>
+              <span class="prop">{currentEntry.label}</span>
+            </p>
+          {/if}
         </div>
       {/if}
-
-      {#if currentEntry}
-        <p class="credit" aria-live="polite">
-          <span class="performer">{currentEntry.performer}</span>
-          <span class="separator" aria-hidden="true">·</span>
-          <span class="prop">{currentEntry.prop}</span>
-        </p>
-      {/if}
     </div>
-  {/if}
-
-  </div><!-- /.carousel-column -->
-  </div><!-- /.hero-body -->
+    <!-- /.carousel-column -->
+  </div>
+  <!-- /.hero-body -->
 </section>
 
 <style>
@@ -496,7 +397,11 @@
     font-family: "Fraunces", Georgia, serif;
     font-style: italic;
     font-weight: 640;
-    font-variation-settings: "opsz" 144, "wght" 640, "SOFT" 0, "WONK" 1;
+    font-variation-settings:
+      "opsz" 144,
+      "wght" 640,
+      "SOFT" 0,
+      "WONK" 1;
     font-size: clamp(2.4rem, 5.5vw, 4rem);
     line-height: 1.02;
     letter-spacing: -0.015em;
@@ -513,10 +418,18 @@
     display: contents;
   }
 
-  .title-block { order: 1; }
-  .hero-body { order: 2; }
-  .hero-links { order: 3; }
-  .hero-quicklinks { order: 4; }
+  .title-block {
+    order: 1;
+  }
+  .hero-body {
+    order: 2;
+  }
+  .hero-links {
+    order: 3;
+  }
+  .hero-quicklinks {
+    order: 4;
+  }
 
   /* ── Title block ────────────────────────────────────────────────────────────── */
 
@@ -582,7 +495,13 @@
     aspect-ratio: 4 / 5;
     border-radius: 16px;
     overflow: hidden;
-    background: #0a0a0f;
+    background:
+      radial-gradient(
+        circle at 50% 42%,
+        rgba(114, 94, 226, 0.2),
+        transparent 58%
+      ),
+      var(--theme-card-bg, #0a0a0f);
     box-shadow:
       0 24px 80px rgba(0, 0, 0, 0.6),
       0 0 0 1px rgba(255, 255, 255, 0.05);
@@ -605,56 +524,6 @@
     object-fit: contain;
     /* Sub-frame opacity handled by JS rAF; transition here smooths any micro-gaps */
     transition: opacity 0.05s linear;
-  }
-
-  /* ── Video buffering overlay ─────────────────────────────────────────────── */
-
-  .video-buffering {
-    position: absolute;
-    inset: 0;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(
-      135deg,
-      rgba(15, 15, 25, 0.95) 0%,
-      rgba(25, 20, 40, 0.95) 50%,
-      rgba(15, 15, 25, 0.95) 100%
-    );
-    transition: opacity 0.5s ease;
-  }
-
-  .buffering-shimmer {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.03) 40%,
-      rgba(255, 255, 255, 0.06) 50%,
-      rgba(255, 255, 255, 0.03) 60%,
-      transparent 100%
-    );
-    animation: shimmer-slide 2s ease-in-out infinite;
-  }
-
-  .buffering-content {
-    position: relative;
-    z-index: 1;
-    color: rgba(255, 255, 255, 0.25);
-    font-size: 48px;
-    animation: pulse-icon 2s ease-in-out infinite;
-  }
-
-  @keyframes shimmer-slide {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
-
-  @keyframes pulse-icon {
-    0%, 100% { opacity: 0.3; transform: scale(1); }
-    50% { opacity: 0.6; transform: scale(1.05); }
   }
 
   /* ── Placeholder / error ────────────────────────────────────────────────────── */
