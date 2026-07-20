@@ -5,6 +5,7 @@
   Building: panel disappears, grid recenters via flex layout.
 -->
 <script lang="ts">
+  import { untrack } from "svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import type { AssembleTabState } from "../../shared/state/assemble-tab-state.svelte";
   import BuilderInstructionHeader from "$lib/features/assemble-lab/components/BuilderInstructionHeader.svelte";
@@ -90,21 +91,27 @@
 
   // Load last-used grid preferences from settings.
   // Wrapped in $effect.pre so tabState is read reactively (avoids state_referenced_locally).
+  //
+  // The setGridMode/setShowCenter calls MUST be untracked. They read builder state
+  // (steps, currentPosition, showCenter) and end in notifyDocumentChange(), which
+  // reads AND writes sequenceState.currentSequence with a fresh object every call.
+  // Left tracked, this effect invalidates itself the moment a start position exists,
+  // which is exactly what the first grid click creates -> effect_update_depth_exceeded.
   let settingsState: SettingsState | null = null;
   $effect.pre(() => {
     try {
       settingsState = settingsService as SettingsState;
       const saved = settingsState.currentSettings;
-      if (saved.preferredGridMode) {
-        props.tabState.assembleBuilderState.setGridMode(
-          saved.preferredGridMode
-        );
-      }
-      if (saved.preferredShowCenter) {
-        props.tabState.assembleBuilderState.setShowCenter(
-          saved.preferredShowCenter
-        );
-      }
+      const preferredGridMode = saved.preferredGridMode;
+      const preferredShowCenter = saved.preferredShowCenter;
+      untrack(() => {
+        if (preferredGridMode) {
+          props.tabState.assembleBuilderState.setGridMode(preferredGridMode);
+        }
+        if (preferredShowCenter) {
+          props.tabState.assembleBuilderState.setShowCenter(preferredShowCenter);
+        }
+      });
     } catch {
       // Settings unavailable - use defaults
     }

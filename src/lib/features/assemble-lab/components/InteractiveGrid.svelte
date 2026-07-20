@@ -372,8 +372,11 @@
     );
   });
 
-  // Detect when a first-click placement happens (for scale-in animation)
-  let previousPhase = $state("idle");
+  // Detect when a first-click placement happens (for scale-in animation).
+  // Plain let, NOT $state: the effect below reads and writes it, so making it
+  // reactive re-runs the effect immediately, whose cleanup clears the 300ms
+  // timer and latches justPlaced permanently true.
+  let previousPhase = "idle";
 
   // After SvgPropAnimator finishes, suppress CSS transitions for two frames
   // so Svelte can settle the reactive transform without triggering a visible

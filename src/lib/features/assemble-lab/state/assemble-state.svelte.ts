@@ -460,6 +460,7 @@ export function createAssembleState(
   }
 
   function setGridMode(mode: GridMode): void {
+    if (mode === gridMode) return;
     if (blueSteps.length > 0 || redSteps.length > 0) return;
     if (
       currentPosition !== null &&
@@ -473,6 +474,7 @@ export function createAssembleState(
   }
 
   function setShowCenter(show: boolean): void {
+    if (show === showCenter) return;
     if (blueSteps.length > 0 || redSteps.length > 0) return;
     if (!show && currentPosition === GridLocation.CENTER) {
       currentPosition = null;
