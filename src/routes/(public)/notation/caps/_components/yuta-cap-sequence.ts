@@ -42,9 +42,10 @@ interface Leg {
   turns: number;
   rotation: RotationDirection;
   /* Per-motion pathShape WINS over the engine's motion-aware default
-     (resolvePathType returns it first), so it must match the motion type:
-     pro = arc, anti = concave. Forcing "arc" on the anti steps made them
-     render as pro-shaped sweeps (the 2026-07-19 bug). */
+     (resolvePathType returns it first). Arc is canonical for CAP work —
+     the hand rides the circle the whole way (Austen 2026-07-19). The
+     antispin character comes from prop rotation vs hand travel, not from
+     the hand path shape. */
   pathShape: PathShape;
 }
 
@@ -76,7 +77,7 @@ const RED_LEGS: Leg[] = [
     type: MotionType.ANTI,
     turns: 1,
     rotation: RotationDirection.CLOCKWISE,
-    pathShape: "concave",
+    pathShape: "arc",
   },
   {
     start: GridLocation.SOUTH,
@@ -84,7 +85,7 @@ const RED_LEGS: Leg[] = [
     type: MotionType.ANTI,
     turns: 1,
     rotation: RotationDirection.CLOCKWISE,
-    pathShape: "concave",
+    pathShape: "arc",
   },
 ];
 
