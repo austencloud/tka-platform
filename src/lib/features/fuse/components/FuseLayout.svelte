@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { untrack } from "svelte";
   import { openSequenceViewer } from "$lib/shared/sequence-viewer/services/sequence-viewer-navigator";
   import { getFuseContext } from "../context/fuse-context";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
@@ -22,31 +21,86 @@
 
   // Desktop-only draggable seam between the path column and the animation
   // canvas — same pattern as the sequence viewer's sidebar resize
-  // (ViewerContentRail): pointer-capture drag, col-resize handle, persisted
-  // width, double-click to reset. Drives the grid's left track via --fuse-left.
-  const SPLIT_KEY = "tka-fuse-split-px";
+  // (ViewerContentRail): pointer-capture drag, col-resize handle, double-click
+  // reset. Drives the grid's left track via --fuse-left.
+  //
+  // Default is COMPUTED, not a fixed fraction: the canvas is square, so its
+  // column reaches minimal empty space exactly when its width equals the
+  // content-row height. The remaining width goes to the path column — and at
+  // ~16:9 that same point fits the stacked cards to width too, so both panes
+  // fill at once. A user drag is saved per approximate device size and wins over
+  // the computed default on the next visit at that size.
+  const SPLIT_KEY = "tka-fuse-splits"; // JSON map: deviceBucket -> px
   const MIN_LEFT = 340; // path column never narrower than this
   const CANVAS_FLOOR = 560; // canvas never narrower than this
+  const SEAM_GAP = 14; // column-gap between the two panes
+  const EDGE_PAD = 20; // workspace horizontal padding (max clamp)
+
   let containerWidth = $state(0);
-  let splitPx = $state<number | null>(loadSplit());
+  let contentH = $state(0); // measured content-row height (the left column fills it)
+  let overrides = $state<Record<string, number>>(loadOverrides());
+  let splitPx = $state<number | null>(null);
   let dragging = $state(false);
   let leftColEl = $state<HTMLDivElement | null>(null);
 
-  function loadSplit(): number | null {
+  function loadOverrides(): Record<string, number> {
     try {
       const raw = localStorage.getItem(SPLIT_KEY);
       if (raw) {
-        const n = parseInt(raw, 10);
-        if (Number.isFinite(n)) return n;
+        const parsed: unknown = JSON.parse(raw);
+        if (parsed && typeof parsed === "object") {
+          return parsed as Record<string, number>;
+        }
       }
     } catch {
       /* ignore */
     }
-    return null;
+    return {};
   }
+  function persistOverrides(): void {
+    try {
+      localStorage.setItem(SPLIT_KEY, JSON.stringify(overrides));
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // 160px granularity: a saved seam restores on the same screen, but a very
+  // different window gets its own default without fragmenting storage.
+  const bucketOf = (w: number, h: number) =>
+    `${Math.round(w / 160) * 160}x${Math.round(h / 160) * 160}`;
+  const deviceBucket = $derived(bucketOf(containerWidth, contentH));
+
   const maxLeft = () => Math.max(MIN_LEFT, containerWidth - CANVAS_FLOOR);
   const clampSplit = (px: number) =>
     Math.round(Math.min(maxLeft(), Math.max(MIN_LEFT, px)));
+
+  function optimalSplit(): number {
+    if (contentH <= 0) return clampSplit(containerWidth * 0.42);
+    return clampSplit(containerWidth - EDGE_PAD * 2 - SEAM_GAP - contentH);
+  }
+
+  // Resolve the seam whenever the layout changes and the user isn't dragging:
+  // a saved per-device override wins, otherwise the computed optimum. Writing
+  // splitPx here never re-triggers this effect (splitPx isn't read in it).
+  $effect(() => {
+    if (!fullCard || dragging) return;
+    const saved = overrides[deviceBucket];
+    splitPx = saved != null ? clampSplit(saved) : optimalSplit();
+  });
+
+  // Measure the content-row height so optimalSplit targets a square canvas
+  // exactly, independent of header/padding guesses.
+  $effect(() => {
+    const el = leftColEl;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(([entry]) => {
+      contentH = Math.round(entry?.contentRect.height ?? el.clientHeight);
+    });
+    ro.observe(el);
+    contentH = Math.round(el.clientHeight);
+    return () => ro.disconnect();
+  });
 
   function onSplitDown(e: PointerEvent): void {
     e.preventDefault();
@@ -61,20 +115,15 @@
     if (!dragging) return;
     dragging = false;
     if (splitPx !== null) {
-      try {
-        localStorage.setItem(SPLIT_KEY, String(splitPx));
-      } catch {
-        /* ignore */
-      }
+      overrides = { ...overrides, [deviceBucket]: splitPx };
+      persistOverrides();
     }
   }
   function onSplitReset(): void {
-    splitPx = clampSplit(containerWidth * 0.36);
-    try {
-      localStorage.removeItem(SPLIT_KEY);
-    } catch {
-      /* ignore */
-    }
+    const { [deviceBucket]: _cleared, ...rest } = overrides;
+    overrides = rest;
+    persistOverrides();
+    splitPx = optimalSplit();
   }
 
   // The phone layout is a different interaction, not a squeezed desktop grid.
@@ -88,15 +137,6 @@
       compact = width < 600;
       fullCard = width >= 1100 && height >= 780;
       containerWidth = width;
-      // Keep the seam valid: seed a default on first desktop entry, re-clamp
-      // to new bounds on resize so the canvas floor is always respected.
-      // untrack so reading splitPx here doesn't re-subscribe the effect and
-      // rebuild the ResizeObserver on every drag frame.
-      if (fullCard) {
-        untrack(() => {
-          splitPx = splitPx === null ? clampSplit(width * 0.36) : clampSplit(splitPx);
-        });
-      }
     };
     updateLayoutMode(element.clientWidth, element.clientHeight);
 
