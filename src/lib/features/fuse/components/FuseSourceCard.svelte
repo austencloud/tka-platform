@@ -1,8 +1,18 @@
 <script lang="ts">
   import type { BrowseViewMode } from "$lib/shared/browse/domain/browse-view-mode";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import OverflowMenu from "$lib/shared/ui/components/OverflowMenu.svelte";
+  import SequencePickerModal from "$lib/shared/components/sequence-picker/SequencePickerModal.svelte";
   import { getSettings } from "$lib/shared/application/state/app-state.svelte";
   import ChoreoCard from "$lib/shared/sequence-viewer/components/ChoreoCard.svelte";
+  import {
+    createSequenceData,
+    type SequenceData,
+  } from "$lib/shared/foundation/domain/models/sequence-data";
+  import {
+    extractBlueSoloProp,
+    extractRedSoloProp,
+  } from "$lib/shared/foundation/services/sequence-decomposer";
   import { getFuseContext } from "../context/fuse-context";
   import type { FuseSide } from "../state/fuse-shuffle-pool.svelte";
 
@@ -61,6 +71,47 @@
   // the shared cell cache, so the visible swap on Shuffle is a cache hit instead
   // of a cold render. Same props as the live card => identical cache keys.
   const nextSequence = $derived(source.nextSequence);
+
+  // Library source pick: open a sequence picker filtered to the current fused
+  // length, then inject the chosen sequence's hand for this side. Gated with
+  // {#if} so the browse engine only instantiates on open (two source cards).
+  let pickerOpen = $state(false);
+
+  function openLibraryPicker(): void {
+    pickerOpen = true;
+  }
+
+  async function handleLibrarySelect(sequence: SequenceData): Promise<void> {
+    // Extract just this side's hand from the picked two-hand sequence and wrap
+    // it as a single-hand source carrying the side's soloProp; setSource fuses
+    // it against the counterpart's current path and tiles it to the length.
+    const solo =
+      side === "blue"
+        ? extractBlueSoloProp(sequence)
+        : extractRedSoloProp(sequence);
+    const wrapped = createSequenceData({
+      id: sequence.id,
+      word: sequence.word,
+      name: sequence.name,
+      ...(side === "blue"
+        ? { blueSoloProp: solo }
+        : { redSoloProp: solo }),
+    });
+    await state.setSource(side, wrapped, {
+      kind: "library",
+      id: sequence.id,
+      word: sequence.word,
+      name: sequence.name,
+    });
+  }
+
+  const sourceMenuItems = $derived([
+    {
+      label: "Pick from library",
+      icon: "fas fa-book",
+      action: openLibraryPicker,
+    },
+  ]);
 </script>
 
 <section
@@ -146,6 +197,9 @@
         Shuffle
       </PanelButton>
     </div>
+    <div class="source-menu">
+      <OverflowMenu items={sourceMenuItems} />
+    </div>
   </div>
 
   {#if source.revision > 1}
@@ -180,6 +234,16 @@
       />
     </div>
   {/key}
+{/if}
+
+{#if pickerOpen}
+  <SequencePickerModal
+    open
+    title="Pick a {label} path"
+    requiredBeatCount={state.appliedLength}
+    onSelect={handleLibrarySelect}
+    onClose={() => (pickerOpen = false)}
+  />
 {/if}
 
 <style>
@@ -283,9 +347,16 @@
 
   .source-actions {
     display: grid;
-    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr) auto;
     gap: var(--settings-spacing-sm, 8px);
     margin-top: auto;
+  }
+
+  /* The overflow menu anchors its dropdown to itself and opens upward, so it
+     stays inside the card even though the card clips overflow. */
+  .source-menu {
+    display: flex;
+    align-items: stretch;
   }
 
   /* Shuffle is the primary action, tinted in the path's color; the word "Blue"
