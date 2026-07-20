@@ -165,7 +165,7 @@
      collapses auto rows in the scroll layouts, so it must not leak there). */
   @container fuse (min-width: 600px) and (min-height: 600px) {
     .fuse-workspace {
-      grid-template-rows: max-content minmax(0, 1fr) minmax(0, 1.35fr);
+      grid-template-rows: max-content minmax(0, 0.9fr) minmax(0, 1.7fr);
       align-content: stretch;
       overflow: hidden;
     }

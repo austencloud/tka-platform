@@ -435,6 +435,23 @@
     .preview-stage:not(.compact) .frame-wrap {
       min-height: 0;
     }
+
+    /* The animation renders square. Rather than fill the wide frame and
+       letterbox onto black canvas bars, hold the frame square and center it
+       in the track — the leftover becomes the stage's tinted background as
+       symmetric breathing room, with the full-width control bar anchoring
+       the bottom. */
+    .preview-stage:not(.compact) .frame-wrap {
+      justify-content: center;
+    }
+
+    .preview-stage:not(.compact) .preview-frame {
+      flex: 0 1 auto;
+      aspect-ratio: 1;
+      height: 100%;
+      width: auto;
+      max-width: 100%;
+    }
   }
 
   @container fuse (min-width: 1100px) {
