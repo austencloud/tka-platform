@@ -42,6 +42,7 @@
   import { createScrollState } from "$lib/features/create/shared/workspace-panel/sequence-display/state/scroll-state.svelte";
   import WordLabel from "$lib/features/create/shared/workspace-panel/sequence-display/components/WordLabel.svelte";
   import ViewSequenceButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/ViewSequenceButton.svelte";
+  import ClearSequenceButton from "$lib/features/create/shared/workspace-panel/shared/components/buttons/ClearSequenceButton.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
   import { DURATION } from "$lib/shared/transitions/transitions";
   import { motionDuration } from "$lib/shared/transitions/motion";
@@ -347,6 +348,13 @@
            another go on wide screens" — the canonical action slot, not under
            the canvas). -->
       <div class="action-slot">
+        <!-- Left zone: the real app's clear button — back out of a build to
+             pick a different start position. Play phase has Build another. -->
+        <div class="slot-side">
+          {#if phase === "add-step"}
+            <ClearSequenceButton onclick={reset} />
+          {/if}
+        </div>
         <Crossfade key={phase} duration={DURATION.normal}>
           {#if phase === "add-step"}
             <span
@@ -384,6 +392,7 @@
             </div>
           {/if}
         </Crossfade>
+        <div class="slot-side" aria-hidden="true"></div>
       </div>
     </div>
     </div>
@@ -735,14 +744,21 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
   }
 
-  /* The ButtonPanel-center-zone slot: green play during building, Build
-     another during play. Height reserved — the crossfade never shifts the
-     grid above it. */
+  /* The ButtonPanel slot, three zones like the real app: clear bottom-left,
+     green play / Build another dead center (equal side columns keep it truly
+     centered whether or not clear is showing). Height reserved — phase swaps
+     never shift the grid above it. */
   .action-slot {
     min-height: 52px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+  }
+
+  .slot-side {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   /* ===== Ghost hover mirror =====
