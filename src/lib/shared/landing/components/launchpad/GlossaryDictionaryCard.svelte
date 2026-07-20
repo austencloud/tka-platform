@@ -151,17 +151,4 @@
 		-webkit-box-orient: vertical;
 		overflow: hidden;
 	}
-
-	@media (min-width: 2200px) {
-		.headword {
-			font-size: 1.4rem;
-		}
-		.cat {
-			font-size: 0.82rem;
-		}
-		.def {
-			font-size: 0.95rem;
-			-webkit-line-clamp: 4;
-		}
-	}
 </style>

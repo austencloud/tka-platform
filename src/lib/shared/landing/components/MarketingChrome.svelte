@@ -18,6 +18,7 @@
   import ShopMorphLayer from "$lib/features/store/transitions/ShopMorphLayer.svelte";
   import SiteHeader from "./SiteHeader.svelte";
   import SiteFooter from "./SiteFooter.svelte";
+  import { LAUNCHPAD_TILES } from "./launchpad/launchpad-tiles";
 
   type BackgroundHostComponent =
     (typeof import("$lib/shared/background/shared/components/BackgroundHost.svelte"))["default"];
@@ -68,7 +69,21 @@
   // ghosting mid-morph. So shop renders straight (no {#key}/fade) and lets the VT
   // be the sole authority; the marketing pages (no morph participant) keep the
   // crossfade between them.
-  const ownsViewTransition = $derived(path.startsWith("/shop"));
+  // /shop owns its Motion-FLIP morph. '/' and every launchpad morph destination
+  // own the native VT route morph (landing tile <-> destination masthead).
+  // Owning BOTH endpoints of each pair — not just the destination — means it
+  // morphs with a single animator in EITHER direction: on the way back the
+  // landing ('/') is also owned, so it never re-enters the keyed {#key path}
+  // fade and double-animates. Ownership is stable per page, so there is no
+  // mid-flight branch flip (which would remount .mkt-content and flash an
+  // in:fade). MORPH_PATHS is derived from the tile list — new tiles auto-covered.
+  const MORPH_PATHS = new Set([
+    "/",
+    ...LAUNCHPAD_TILES.filter((t) => t.morphName).map((t) => t.href),
+  ]);
+  const ownsViewTransition = $derived(
+    path.startsWith("/shop") || MORPH_PATHS.has(path)
+  );
 
   // /shop keeps the live cosmos (Austen wants the space background there). The
   // view-transition cover morph may hitch ~1 frame on open from the cosmos canvas

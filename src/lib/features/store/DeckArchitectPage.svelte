@@ -760,7 +760,7 @@
      lives in the shared src/lib/features/store/styles/config-page.css, scoped
      under the .store-config-page marker class added to this root div above. */
   .architect-content {
-    max-width: min(1720px, 92vw);
+    max-width: var(--shell-w, min(1720px, 92vw));
     margin: 0 auto;
     padding: 12px 24px 32px;
     display: flex;

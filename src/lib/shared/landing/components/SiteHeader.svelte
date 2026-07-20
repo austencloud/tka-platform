@@ -12,6 +12,7 @@
    */
   import { page } from "$app/state";
   import { afterNavigate, preloadData } from "$app/navigation";
+  import { LAUNCHPAD_TILES } from "./launchpad/launchpad-tiles";
   import { onMount, type Component } from "svelte";
   import RobustAvatar from "../../components/avatar/RobustAvatar.svelte";
   import NavDropdown, { type NavDropdownItem } from "./NavDropdown.svelte";
@@ -47,6 +48,16 @@
   const displayName = $derived(user?.displayName || user?.email || "You");
   const email = $derived(user?.email ?? null);
   const photoURL = $derived(user?.photoURL ?? null);
+
+  // Back-to-launchpad affordance: shown only on pages you "dove into" from the
+  // landing launchpad (a tile carrying a morphName). Clicking it navigates to
+  // "/", which fires the reverse shared-element route morph — the page contracts
+  // back into its tile, so the dive reads as reversible. GuideShell mounts this
+  // same SiteHeader, so /guide gets the control too. Derived from the tile list.
+  const MORPH_DEST_PATHS = new Set(
+    LAUNCHPAD_TILES.filter((t) => t.morphName).map((t) => t.href)
+  );
+  const showBack = $derived(MORPH_DEST_PATHS.has(page.url?.pathname ?? ""));
 
   // Cheap, SDK-free check: does Firebase's auth-persistence IndexedDB exist?
   // Its presence means this browser has signed in at least once.
@@ -239,8 +250,37 @@
     return path === href || path.startsWith(href + "/");
   }
 
+  // Some dropdown destinations live under another destination. On /notation/caps,
+  // both /notation and /notation/caps match the current path, but the visitor is
+  // only on the latter. Choosing the longest match keeps one clear location.
+  function getActiveItemHref(items: readonly { href: string }[]): string | null {
+    let activeHref: string | null = null;
+    for (const item of items) {
+      if (
+        isActive(item.href) &&
+        (activeHref === null || item.href.length > activeHref.length)
+      ) {
+        activeHref = item.href;
+      }
+    }
+    return activeHref;
+  }
+
   function groupActive(group: NavGroup): boolean {
-    return group.items.some((i) => isActive(i.href));
+    return getActiveItemHref(group.items) !== null;
+  }
+
+  // Desktop disclosures share one owner so opening Learn closes Notation (and
+  // vice versa) in the same state change. A late close from the previous group
+  // cannot accidentally close the group the user just opened.
+  let desktopOpenGroup = $state<string | null>(null);
+
+  function setDesktopGroup(label: string, shouldOpen: boolean) {
+    if (shouldOpen) {
+      desktopOpenGroup = label;
+    } else if (desktopOpenGroup === label) {
+      desktopOpenGroup = null;
+    }
   }
 
   // Mobile accordion: one group expanded at a time. Opening the overlay
@@ -270,6 +310,7 @@
   afterNavigate(() => {
     mobileOpen = false;
     accountOpen = false;
+    desktopOpenGroup = null;
   });
 
   // The moment the menu opens, warm every destination (code + data) so the tap
@@ -314,9 +355,17 @@
 
 <header class:scrolled>
   <div class="inner">
-    <a href="/" class="logo" aria-label="The Kinetic Alphabet, Home">
-      <span class="logo-text">TKA</span>
-    </a>
+    <div class="left-group">
+      {#if showBack}
+        <a href="/" class="surface-back" aria-label="Back to the launchpad">
+          <i class="fas fa-chevron-left" aria-hidden="true"></i>
+          <span>Back</span>
+        </a>
+      {/if}
+      <a href="/" class="logo" aria-label="The Kinetic Alphabet, Home">
+        <span class="logo-text">TKA</span>
+      </a>
+    </div>
 
     <nav class="desktop-nav" aria-label="Main navigation">
       {#each NAV as entry}
@@ -325,6 +374,9 @@
             label={entry.label}
             items={entry.items}
             active={groupActive(entry)}
+            activeHref={getActiveItemHref(entry.items)}
+            open={desktopOpenGroup === entry.label}
+            onOpenChange={(open) => setDesktopGroup(entry.label, open)}
           />
         {:else}
           <a href={entry.href} class:active={isActive(entry.href)}>
@@ -403,6 +455,7 @@
       <li style="--i:{i}">
         {#if isGroup(entry)}
           {@const expanded = expandedGroup === entry.label}
+          {@const activeItemHref = getActiveItemHref(entry.items)}
           <button
             class="m-group-btn"
             class:active={groupActive(entry)}
@@ -421,7 +474,7 @@
             <ul class="m-sub-inner">
               {#each entry.items as item}
                 <li>
-                  <a href={item.href} class:active={isActive(item.href)}>
+                  <a href={item.href} class:active={item.href === activeItemHref}>
                     <i
                       class="fas {item.icon} m-icon m-sub-icon"
                       aria-hidden="true"
@@ -503,9 +556,10 @@
 
   .inner {
     /* One width treatment across the site: the header band matches the widest
-       content band (the shop configurator's fluid 4K band), so the logo lines
-       up with page content instead of floating in from a narrower column. */
-    max-width: min(1720px, 92vw);
+       content band, so the logo lines up with page content instead of floating
+       in from a narrower column. Fluid above 1720 on big screens — see
+       --shell-w in src/app.css and .claude/rules/4k-native-layout.md. */
+    max-width: var(--shell-w, min(1720px, 92vw));
     margin: 0 auto;
     padding: 0 1.4rem;
     height: 64px;
@@ -533,6 +587,58 @@
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+  }
+
+  .left-group {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    min-width: 0;
+  }
+
+  /* Back-to-launchpad affordance — the visible "way out" of a dive. A real pill
+     (not a bare text link, per clickables-look-like-buttons), it navigates to
+     "/" which fires the reverse shared-element morph. The -2px hover nudge reads
+     as backing out of the space. */
+  .surface-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
+    min-height: 44px;
+    box-sizing: border-box;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #c4c1d8;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease,
+      transform 0.2s ease;
+  }
+  .surface-back:hover,
+  .surface-back:focus-visible {
+    background: rgba(139, 108, 255, 0.16);
+    border-color: rgba(139, 108, 255, 0.4);
+    color: #fff;
+    outline: none;
+    transform: translateX(-2px);
+  }
+  .surface-back i {
+    font-size: 0.8rem;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .surface-back {
+      transition: none;
+    }
+    .surface-back:hover,
+    .surface-back:focus-visible {
+      transform: none;
+    }
   }
 
   .desktop-nav {

@@ -10,8 +10,10 @@
   position: relative;
   /* Full-measure shell matching SiteHeader/SiteFooter. Narrow essay ribbons
      are banned (Austen 2026-07-19): text spans the same width as the content
-     and chrome around it, and pages use the whole canvas on 4K. */
-  max-width: min(1720px, 92vw);
+     and chrome around it, and pages use the whole canvas on 4K. The band is
+     fluid above 1720 so a big screen is FILLED, not framed in dead rail
+     (--shell-w, src/app.css; .claude/rules/4k-native-layout.md). */
+  max-width: var(--shell-w, min(1720px, 92vw));
   margin: 0 auto;
   padding: 88px 1.5rem 5rem; /* top clears the fixed SiteHeader */
   font-family: "Inter", system-ui, sans-serif;

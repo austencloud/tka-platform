@@ -210,3 +210,15 @@ Accuracy caveat: exact minor-version cut-ins (Safari 18.0 vs 18.2, Firefox 143-f
 6. Swap the scrollable `/composer` for the launchpad — **retaining the SSR hero + capability copy**.
 
 Implementation runs under ultra (multi-agent) once this design and the derived plan are approved. Browser choreography is validated in the visual harness, not asserted from the spec.
+
+---
+
+## 13. Rev 3 pivot (2026-07-20) — the morph lives on the landing bento
+
+Austen's refinement after eyeballing the `/test/composer-launchpad` bento: **KEEP the current landing (`/`) layout** (hero animation left, bento boxes right) **AND the `/composer` wings layout** — replace neither. The "launchpad morph" lives on the EXISTING landing bento tiles: clicking a tile **dives** (expands to fill under the header) into its destination PAGE via the shared-element route morph.
+
+Net effect on this spec:
+- **§3a (route morph) is now the CORE**, generalized from the Composer tile to all landing launchpad tiles (Composer→`/composer` first, then Notation / Guide / Choreo-Cards / Glossary / FAQ). Each destination gets a matching named element at its top so the tile morphs into it; the other tiles recede as VT exits (automatic "neighbors recede").
+- **DESCOPED: §3b (in-page tile→section dive) and §4/§6 (making `/composer` itself a bento).** `/composer` stays the wings layout. The `/test/composer-launchpad` harness + `composer-launchpad-tiles.ts` stay PARKED as a decoupling proof, not shipped.
+- The "expand to fill under the header / dive" feel is delivered BY the route morph. Since this is now a cross-route morph, it uses **native VT via `onNavigate`** (not Motion `animateView`, which was for the descoped in-page dive). `animateView` / the `shop-morph.ts` FLIP-overlay remain fallbacks if VT interruptibility bites.
+- Workflow-1 decoupling (LaunchpadGrid props, action mode, generic mediaLoader) is committed + additive; the **action/button mode is now unused by the shipped path** (it was for the in-page dive) but harmless — landing tiles stay anchors (real nav), which is exactly what the route morph needs.

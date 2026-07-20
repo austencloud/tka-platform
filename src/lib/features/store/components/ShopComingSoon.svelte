@@ -41,7 +41,10 @@
 
   .inner {
     width: 100%;
-    max-width: 560px;
+    /* rem, not px, so the card rides the lockstep root ramp (src/app.css)
+       instead of staying a 560px postage stamp on a 4K screen: 35rem is 560px
+       at the 16px root and 840px at the 24px root (3840px viewport). */
+    max-width: 35rem;
     text-align: center;
   }
 
@@ -104,23 +107,9 @@
      per-product "not on sale yet" state). */
 
   /* 4K / ultrawide: one scale step so the gate doesn't read miniature. */
-  @media (min-width: 2200px) {
-    .inner {
-      max-width: 720px;
-    }
-    .eyebrow {
-      font-size: 1.05rem;
-    }
-    h1 {
-      font-size: 3.8rem;
-    }
-    .lede {
-      font-size: 1.4rem;
-      margin-bottom: 36px;
-    }
-    .whats-coming li {
-      font-size: 1.05rem;
-      padding: 12px 20px;
-    }
-  }
+  /* The 4K step tier that used to sit here is gone: the lockstep root ramp
+     (src/app.css) scales this whole card continuously from 1680→3840, and the
+     old 2200px seam never fired on the most common 4K setup (200% scaling,
+     ~1920 CSS px) — so every stranger landing on /shop from a 4K machine got
+     the 1080p layout. */
 </style>

@@ -98,7 +98,7 @@
 </svelte:head>
 
 <div class="editorial wide">
-  <header class="editorial-header">
+  <header class="editorial-header" style:view-transition-name="launchpad-choreo-cards">
     <h1 class="page-title">Choreo Cards</h1>
     <p class="page-subtitle">The newest technology in flow arts notation</p>
   </header>

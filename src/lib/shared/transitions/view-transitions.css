@@ -311,6 +311,47 @@
  */
 
 /* ============================================================================
+   LAUNCHPAD ROUTE MORPHS
+   Each landing launchpad tile (view-transition-name: launchpad-<id>) morphs
+   into its destination page's masthead/hero (same name) across the client
+   navigation, in BOTH directions. Root is disabled above, so only the named
+   group animates; everything else cuts. Names must stay 1:1 with the tile
+   defs' `morphName` in launchpad-tiles.ts.
+   ============================================================================ */
+::view-transition-group(launchpad-composer),
+::view-transition-group(launchpad-choreo-cards),
+::view-transition-group(launchpad-guide),
+::view-transition-group(launchpad-notation),
+::view-transition-group(launchpad-faq),
+::view-transition-group(launchpad-glossary) {
+  animation-duration: 380ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(launchpad-composer),
+  ::view-transition-old(launchpad-composer),
+  ::view-transition-new(launchpad-composer),
+  ::view-transition-group(launchpad-choreo-cards),
+  ::view-transition-old(launchpad-choreo-cards),
+  ::view-transition-new(launchpad-choreo-cards),
+  ::view-transition-group(launchpad-guide),
+  ::view-transition-old(launchpad-guide),
+  ::view-transition-new(launchpad-guide),
+  ::view-transition-group(launchpad-notation),
+  ::view-transition-old(launchpad-notation),
+  ::view-transition-new(launchpad-notation),
+  ::view-transition-group(launchpad-faq),
+  ::view-transition-old(launchpad-faq),
+  ::view-transition-new(launchpad-faq),
+  ::view-transition-group(launchpad-glossary),
+  ::view-transition-old(launchpad-glossary),
+  ::view-transition-new(launchpad-glossary) {
+    animation: none !important;
+  }
+}
+
+/* ============================================================================
    FALLBACK FOR BROWSERS WITHOUT VIEW TRANSITIONS API
    Manual CSS transition classes
    ============================================================================ */

@@ -144,7 +144,7 @@
 
   .inner {
     /* Same band as SiteHeader's .inner so the chrome edges align. */
-    max-width: min(1720px, 92vw);
+    max-width: var(--shell-w, min(1720px, 92vw));
     margin: 0 auto;
     padding: 48px 1.4rem 28px;
   }
@@ -312,8 +312,10 @@
     }
   }
 
-  /* 4K / ultrawide: one type step up so the footer doesn't read miniature. */
-  @media (min-width: 2200px) {
+  /* Big-screen tier: one type step up so the footer doesn't read miniature.
+     1680, not 2200 — a 4K monitor at 200% OS scaling reports ~1920 CSS px, so
+     the old 2200 query never fired on the primary target display. */
+  @media (min-width: 1680px) {
     .col a,
     .tagline {
       font-size: 1.05rem;

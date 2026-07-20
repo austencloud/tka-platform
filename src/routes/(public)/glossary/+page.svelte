@@ -402,7 +402,7 @@
 
     <a class="back-link" href="/notation">← Flow Arts Notation</a>
 
-    <header class="editorial-header">
+    <header class="editorial-header" style:view-transition-name="launchpad-glossary">
       <h1 class="page-title">Flow Arts Glossary</h1>
       <p class="page-subtitle">The Kinetic Alphabet Lexicon</p>
     </header>
@@ -475,9 +475,15 @@
               <span class="cc-label">{g.label}</span>
               <span class="cc-count">{g.terms.length}</span>
             </span>
+            <!-- Sample terms, clamped by CSS — one line on mobile, two on
+                 desktop. Fed generously (14) rather than trimmed to a count:
+                 the desktop card reserves two lines, and a 6-term sample
+                 measured 393px inside a 411px box at 4K, i.e. it never wrapped
+                 and left the reserved second line empty in every card. Let the
+                 clamp do the trimming so the space carries terms instead. -->
             <span class="cc-sample">
               {g.terms
-                .slice(0, 3)
+                .slice(0, 14)
                 .map((t) => t.term)
                 .join(" · ")}
             </span>
@@ -657,7 +663,13 @@
       display: grid;
       grid-template-columns: 18rem minmax(0, 1fr);
       column-gap: 2rem;
-      padding: 0 2rem;
+      /* Same band as SiteHeader/SiteFooter (--shell-w + a 1.4rem gutter): the
+         rail, the cards, and the logo line up on one edge. The old full-bleed
+         shell ran ~500px wider than the header on 4K, which read as the page
+         ignoring its own chrome. */
+      max-width: var(--shell-w, min(1720px, 92vw));
+      margin-inline: auto;
+      padding: 0 1.4rem;
     }
     .glossary-shell .editorial {
       max-width: none;
@@ -676,10 +688,10 @@
       height: 100vh;
       padding: 88px 0 1.25rem;
     }
+    /* The CTA fills the shell like everything else — a third, narrower
+       measure under a full-width card grid is the mismatch Austen banned. */
     .cta-card {
-      max-width: 46rem;
-      margin-left: auto;
-      margin-right: auto;
+      max-width: none;
     }
     /* Landing hub: no drill-down destination chosen yet, so the category rail
        is gone. The shell collapses to one column and the hub centers at a
@@ -697,15 +709,35 @@
       margin-right: auto;
     }
   }
-  /* 4K / ultrawide: wider rail and list, larger type, same fluid layout. */
-  @media (min-width: 2200px) {
+  /* ── big-screen tier ──
+     1680, not 2200: a 4K monitor at Windows' 200% scaling reports a ~1920px
+     CSS viewport, so a 2200 query never fires there. 1680 is the site-wide
+     big-screen seam (public-editorial.css) — this page now shares it. */
+  @media (min-width: 1680px) {
     .glossary-shell {
-      grid-template-columns: 24rem minmax(0, 1fr);
-      column-gap: 3rem;
-      padding: 0 3rem;
+      grid-template-columns: 22rem minmax(0, 1fr);
+      column-gap: 2.75rem;
     }
+    /* CTA becomes a horizontal band: copy left, button right. Centered stacked
+       copy inside a 1720px card leaves a lake of empty space on either side. */
     .cta-card {
-      max-width: 60rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      column-gap: 3rem;
+      text-align: left;
+      padding: 2.4rem 2.8rem;
+    }
+    .cta-card h3 {
+      grid-column: 1;
+    }
+    .cta-card p {
+      grid-column: 1;
+      margin-bottom: 0;
+    }
+    .cta-card .cta-button {
+      grid-column: 2;
+      grid-row: 1 / span 2;
     }
   }
 
@@ -880,19 +912,57 @@
       outline-offset: -4px;
     }
   }
-  @media (min-width: 2200px) {
+  @media (min-width: 1680px) {
+    .hub-search {
+      max-width: 38rem;
+    }
     .hub-search input {
       min-height: 54px;
       font-size: 1.1rem;
     }
   }
 
-  /* ── landing: category cards ── */
+  /* ── landing: category cards ──
+     Column COUNT is the whole design here. auto-fill against a 260px floor
+     put 8 thin cards on one line and orphaned the 9th on a row of its own —
+     the wider the screen, the worse it got. Wide screens get FEWER, BIGGER
+     cards instead: 3 columns × 3 rows for the 9 categories, a square block
+     that reads as one object and uses the vertical canvas 4K actually has. */
   .cat-cards {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 0.9rem;
     margin: 0 0 1.5rem;
+  }
+  @media (min-width: 1024px) {
+    .cat-cards {
+      grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+      gap: 1rem;
+      /* Every row the height of the tallest. The reserved 2-line sample keeps
+         cards even until the lockstep ramp grows the label enough to wrap
+         ("Words & Sequences", "Execution & Technique" at the 24px root) — then
+         that row alone got taller and the grid read ragged. 1fr rows re-lock
+         them. */
+      grid-auto-rows: 1fr;
+    }
+  }
+  @media (min-width: 1680px) {
+    .cat-cards {
+      /* Explicit 3, not an auto-fill floor: the floor that yields 3 at 1720px
+         is a 26–35rem window, and any drift in the shell width silently flips
+         it to 4 (→ 4+4+1, the orphan again). Pin it. */
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+  }
+  @media (min-width: 2600px) {
+    .cat-cards {
+      /* The band tops out at 2600 here, so 3 columns would mean ~850px cards.
+         5, not 4: 9 categories over 4 columns is 4+4+1 — the orphan row again.
+         5 gives 5+4. */
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
   }
   .cat-card {
     all: unset;
@@ -957,6 +1027,19 @@
     line-height: 1.5;
     color: oklch(0.65 0.015 270);
   }
+  @media (min-width: 1024px) {
+    /* Two lines on desktop cards, with both lines RESERVED (min-height: 3em
+       at line-height 1.5) — a category whose sample runs short can't shrink
+       its card and stagger the row. */
+    .cc-sample {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      white-space: normal;
+      min-height: 3em;
+    }
+  }
   .cc-arrow {
     position: absolute;
     right: 1.1rem;
@@ -971,6 +1054,29 @@
   .cat-card:hover .cc-arrow {
     color: oklch(0.8 0.12 275);
     transform: translateY(-50%) translateX(3px);
+  }
+  /* Big screens: three wide cards per row can carry more presence — deeper
+     padding, a display-scale label, a bigger tap surface. */
+  @media (min-width: 1680px) {
+    .cat-card {
+      gap: 0.6rem;
+      padding: 1.5rem 3.6rem 1.5rem 1.6rem;
+      border-radius: 20px;
+    }
+    .cc-label {
+      font-size: 1.25rem;
+    }
+    .cc-count {
+      font-size: 0.85rem;
+      padding: 0.15rem 0.7rem;
+    }
+    .cc-sample {
+      font-size: 0.95rem;
+    }
+    .cc-arrow {
+      right: 1.5rem;
+      font-size: 1rem;
+    }
   }
   .landing-all {
     text-align: center;
@@ -1070,9 +1176,9 @@
       align-items: start;
     }
   }
-  @media (min-width: 2200px) {
+  @media (min-width: 1680px) {
     .split {
-      grid-template-columns: minmax(24rem, 36rem) minmax(0, 1fr);
+      grid-template-columns: minmax(22rem, 30rem) minmax(0, 1fr);
       column-gap: 2.5rem;
     }
   }
@@ -1194,9 +1300,6 @@
       display: block;
       position: sticky;
       top: 84px;
-      /* Hug a readable measure instead of stretching across an ultrawide
-         viewport; the text inside caps at ~64ch anyway. */
-      max-width: 62rem;
       max-height: calc(100vh - 100px);
       overflow-y: auto;
       overscroll-behavior: contain;

@@ -149,7 +149,12 @@ import { getProductLoader } from "$lib/features/store/get-product-loader";
   }
 
   .detail-content {
-    max-width: 1000px;
+    /* rem so the product page rides the lockstep root ramp (src/app.css) —
+       /shop/* is a marketing route, so it ramps 1680→3840. Was a hard 1000px
+       with no big-screen tier of any kind: a 1000px column stranded in a
+       2350px window, on the page people actually buy from. 62.5rem is that
+       same 1000px at a 16px root, 1500px at the 24px root. */
+    max-width: 62.5rem;
     margin: 0 auto;
     padding: 40px 24px;
   }

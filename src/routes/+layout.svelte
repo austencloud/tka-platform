@@ -6,6 +6,8 @@
   import MarketingChrome from "$lib/shared/landing/components/MarketingChrome.svelte";
   import { detectSiteMode, type SiteMode } from "../config/domains";
   import { consumeSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
+  import { reducedMotion } from "$lib/shared/transitions/motion";
+  import { LAUNCHPAD_TILES } from "$lib/shared/landing/components/launchpad/launchpad-tiles";
   import { getPresenceTracker } from "$lib/shared/presence/get-presence-tracker";
   import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
   import type { LayoutData } from "./$types";
@@ -18,13 +20,21 @@
   // View Transitions driver (2026 canonical SvelteKit pattern). The root transition
   // is disabled in view-transitions.css, so only elements carrying a
   // view-transition-name morph. SCOPED to the navigations that actually have a
-  // morph pair (shop grid <-> product, browse <-> sequence). Every other route
+  // morph pair (shop grid <-> product, browse <-> sequence, landing "Composer"
+  // tile <-> /composer hero). Every other route
   // change instant-cuts: unscoped, the API still snapshots the full viewport —
   // including the fixed cosmic WebGL background (~99ms readback) — on EVERY app
   // navigation, for no visible benefit (root is disabled). Guards: feature-detect
   // for graceful fallback, the swipe-dismiss coordination flag, same-pathname (the
   // viewer mutates bpm/t/view params constantly), and the morph-pair allowlist.
   // onNavigate never fires on a full-page F5.
+  // Landing launchpad tiles that carry a shared-element route morph. Derived
+  // from the tile list so a new tile with a `morphName` auto-wires its dive —
+  // no per-destination edit here. Each href is the exact destination path.
+  const MORPH_DEST_PATHS = new Set(
+    LAUNCHPAD_TILES.filter((t) => t.morphName).map((t) => t.href)
+  );
+
   function navigationMorphs(
     from: URL | null | undefined,
     to: URL | null | undefined
@@ -32,26 +42,86 @@
     if (!from || !to) return false;
     const a = from.pathname;
     const b = to.pathname;
-    // Shop uses a Motion spring-FLIP morph (ShopMorphLayer), NOT the View
-    // Transitions API — interruptible, velocity-aware, and works on Safari/Firefox
-    // where VT does not. So shop navigations are deliberately excluded here.
-    // Browse gallery <-> sequence viewer still uses the VT thumbnail morph.
+    // Browse gallery <-> sequence viewer VT thumbnail morph. (Shop uses a Motion
+    // spring-FLIP morph, ShopMorphLayer — interruptible, cross-browser — so
+    // shop-INTERNAL grid<->detail navs stay off the VT path. The launchpad
+    // "/ <-> /shop/choreography-cards" dive below is landing->shop, a different
+    // pair, so it is intentionally included.)
     const seqPair = (x: string, y: string) =>
       x.startsWith("/browse") && y.startsWith("/sequence");
     if (seqPair(a, b) || seqPair(b, a)) return true;
+    // Landing launchpad tile <-> destination masthead shared-element route morph
+    // (rev-3 generalization). The landing is always the "/" endpoint; the other
+    // endpoint is any tile destination carrying a morphName. Tile <li> and the
+    // destination hero share view-transition-name "launchpad-<id>", so only that
+    // element morphs; every other route cuts.
+    const launchpadPair = (x: string, y: string) =>
+      x === "/" && MORPH_DEST_PATHS.has(y);
+    if (launchpadPair(a, b) || launchpadPair(b, a)) return true;
     return false;
+  }
+
+  /**
+   * Morph instrumentation (DEV only). Times the root-snapshot capture and flags
+   * long tasks during the animation window, printed under the `[morph]` prefix.
+   * `vt.ready` resolves once BOTH snapshots are captured and the pseudo-tree is
+   * built, so a large ready-delta points at snapshot-readback cost — the
+   * persistent cosmic WebGL canvas readback is ~99ms — while long tasks during
+   * the run point at the incoming page mounting on the main thread. This is the
+   * probe for the "brief stutter" on the launchpad dive; zero prod cost.
+   */
+  function startMorphProbe(route: string) {
+    const t0 = performance.now();
+    const longTasks: number[] = [];
+    let po: PerformanceObserver | undefined;
+    try {
+      po = new PerformanceObserver((list) => {
+        for (const e of list.getEntries())
+          longTasks.push(Math.round(e.duration));
+      });
+      po.observe({ entryTypes: ["longtask"] });
+    } catch {
+      po = undefined;
+    }
+    const since = () => Math.round(performance.now() - t0);
+    return (vt: { ready: Promise<void>; finished: Promise<void> }) => {
+      vt.ready.then(
+        () => console.log(`[morph] ${route} snapshot→ready ${since()}ms`),
+        () => {}
+      );
+      vt.finished.then(
+        () => {
+          console.log(`[morph] ${route} finished ${since()}ms`);
+          console[longTasks.length ? "warn" : "log"](
+            `[morph] ${route} long tasks (ms):`,
+            longTasks.length ? longTasks : "none"
+          );
+          po?.disconnect();
+        },
+        () => po?.disconnect()
+      );
+    };
   }
 
   onNavigate((navigation) => {
     if (!document.startViewTransition) return;
+    if (reducedMotion()) return;
     if (consumeSkipNextViewTransition()) return;
     if (navigation.from?.url.pathname === navigation.to?.url.pathname) return;
     if (!navigationMorphs(navigation.from?.url, navigation.to?.url)) return;
+
+    const attachProbe = import.meta.env.DEV
+      ? startMorphProbe(
+          `${navigation.from?.url.pathname}→${navigation.to?.url.pathname}`
+        )
+      : null;
+
     return new Promise((resolve) => {
-      document.startViewTransition(async () => {
+      const vt = document.startViewTransition(async () => {
         resolve();
         await navigation.complete;
       });
+      attachProbe?.(vt);
     });
   });
 
@@ -240,14 +310,33 @@
     }
     window.addEventListener("resize", updateViewportHeight);
 
+    // Analytics: PostHog (same instance as app mode - lightweight, no DI needed).
+    // FIRST, and off the critical path. This used to sit behind `await
+    // import(i18n)` + initI18n(), so on a QR scan PostHog only came up after the
+    // i18n chunk had been fetched AND evaluated. Session replay arms at init, so
+    // that delay is dead air at the front of every scan recording — and when an
+    // identity reset landed inside the window, the whole session was orphaned.
+    // Nothing here needs i18n, so the two now race instead of chaining.
+    void import("$lib/shared/analytics/services/posthog")
+      .then(({ initPostHog }) => initPostHog())
+      .then(() => {
+        const startWebVitals = () => {
+          void import("$lib/shared/analytics/web-vitals")
+            .then(({ initWebVitals }) => initWebVitals())
+            .catch((error) => console.warn("Web Vitals failed:", error));
+        };
+
+        if (typeof requestIdleCallback !== "undefined") {
+          requestIdleCallback(startWebVitals, { timeout: 2000 });
+        } else {
+          setTimeout(startWebVitals, 0);
+        }
+      })
+      .catch((error) => console.warn("PostHog failed:", error));
+
     // i18n is lightweight - safe for landing
     const { initI18n } = await import("$lib/shared/i18n/i18n.svelte.js");
     initI18n();
-
-    // Analytics: PostHog (same instance as app mode - lightweight, no DI needed)
-    const { initPostHog } =
-      await import("$lib/shared/analytics/services/posthog");
-    void initPostHog();
 
     // Landing doesn't need DI container or auth - mark ready immediately
     containerReady = true;
@@ -397,7 +486,7 @@
     // Analytics: PostHog
     bootProfiler.mark("posthog");
     const { initPostHog } = await imports.posthog;
-    void initPostHog();
+    await initPostHog();
     bootProfiler.end("posthog");
 
     // i18n

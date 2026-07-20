@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Seo from "$lib/shared/components/Seo.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
   import SoftwareSubmitForm from "$lib/shared/landing/components/SoftwareSubmitForm.svelte";
 
@@ -32,65 +33,80 @@
   const TITLE = "The History of Flow Arts Software | The Kinetic Alphabet";
   const DESCRIPTION =
     "Flow artists have been building software for over a decade: reference apps, spinning simulators, AR effects, and community platforms. Who built the tools, what they do, and where they are now.";
+  const URL = "https://tkaflowarts.com/roots/software";
+  const ARTICLE_ID = `${URL}#article`;
+  const PERSON_ID = "https://tkaflowarts.com/about#austen-cloud";
+  const ORGANIZATION_ID = "https://tkaflowarts.com/#organization";
+  const WEBSITE_ID = "https://tkaflowarts.com/#website";
+
+  const pageJsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Article",
+        "@id": ARTICLE_ID,
+        headline: "The History of Flow Arts Software",
+        url: URL,
+        mainEntityOfPage: URL,
+        description: DESCRIPTION,
+        inLanguage: "en-US",
+        datePublished: "2026-07-16",
+        dateModified: "2026-07-20",
+        image: "https://tkaflowarts.com/branding/og-image.png",
+        author: { "@id": PERSON_ID },
+        publisher: { "@id": ORGANIZATION_ID },
+        isPartOf: { "@id": WEBSITE_ID },
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${URL}#breadcrumb`,
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://tkaflowarts.com/",
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "Notation",
+            item: "https://tkaflowarts.com/notation",
+          },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: "Software History",
+            item: URL,
+          },
+        ],
+      },
+    ],
+  }).replace(/</g, "\\u003c");
 </script>
 
-<svelte:head>
-  <title>{TITLE}</title>
-  <meta name="description" content={DESCRIPTION} />
-  <link rel="canonical" href="https://tkaflowarts.com/roots/software" />
-
-  <meta property="og:type" content="article" />
-  <meta property="og:url" content="https://tkaflowarts.com/roots/software" />
-  <meta property="og:title" content={TITLE} />
-  <meta property="og:description" content={DESCRIPTION} />
-  <meta
-    property="og:image"
-    content="https://tkaflowarts.com/branding/og-image.png"
-  />
-
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content={TITLE} />
-  <meta name="twitter:description" content={DESCRIPTION} />
-  <meta
-    name="twitter:image"
-    content="https://tkaflowarts.com/branding/og-image.png"
-  />
-
-  {@html `<script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    "headline": "The History of Flow Arts Software",
-    "url": "https://tkaflowarts.com/roots/software",
-    "description": "${DESCRIPTION}",
-    "inLanguage": "en-US",
-    "author": { "@type": "Person", "name": "Austen Cloud", "url": "https://tkaflowarts.com/about" },
-    "publisher": {
-      "@type": "Organization",
-      "name": "The Kinetic Alphabet",
-      "url": "https://tkaflowarts.com/"
-    }
-  }
-  </script>`}
-
-  {@html `<script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://tkaflowarts.com/" },
-      { "@type": "ListItem", "position": 2, "name": "Notation", "item": "https://tkaflowarts.com/notation" },
-      { "@type": "ListItem", "position": 3, "name": "Software History", "item": "https://tkaflowarts.com/roots/software" }
-    ]
-  }
-  </script>`}
-</svelte:head>
+<Seo
+  title={TITLE}
+  description={DESCRIPTION}
+  canonical={URL}
+  ogType="article"
+  ogImageAlt="The Kinetic Alphabet pictographs"
+>
+  {@html `<script type="application/ld+json">${pageJsonLd}</script>`}
+</Seo>
 
 <div class="editorial">
   <header class="editorial-header">
     <h1 class="page-title">The History of Flow Arts Software</h1>
     <p class="page-subtitle">
       The tools that came before, and the people who built them
+    </p>
+    <p class="page-subtitle article-meta">
+      By <a href="/about#austen-cloud">Austen Cloud</a>
+      <span aria-hidden="true">·</span>
+      Published July 16, 2026
+      <span aria-hidden="true">·</span>
+      Updated July 20, 2026
     </p>
   </header>
 
@@ -175,8 +191,7 @@
         324 Patterns, the 144 Atomic Hybrids, the 9 Flower Families, and the Book
         of P.H.A.T., built with contributions from Brian Thompson, David "Tankboy"
         Cantor, and Noel Yee. Charts and posters rather than apps, but they do the
-        same job a simulator does: show you the pattern space so you can navigate
-        it.
+        same job a simulator does: show you the pattern space so you can map it.
       </p>
       <div class="shot-strip web">
         <figure class="shot">
@@ -472,6 +487,14 @@
 </div>
 
 <style>
+  .article-meta {
+    margin-top: 0.65rem;
+    font-size: 0.875rem;
+  }
+  .article-meta span {
+    margin-inline: 0.35rem;
+  }
+
   /* Screenshot galleries. Fixed aspect boxes (no layout shift on load), fluid
      from iPhone SE (375px: phones 2-up) to 4K (the editorial column caps at
      46rem; 800px-wide sources keep phone shots crisp at 2x). */

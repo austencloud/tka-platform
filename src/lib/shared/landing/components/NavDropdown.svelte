@@ -14,65 +14,47 @@
    * a plain list of links — NOT role="menu", which is action-menu semantics
    * and wrong for navigation).
    *
-   * Desktop interactions: hover-intent open (mouse only, 120ms in / 240ms
-   * grace out), click toggle, ArrowDown opens and focuses the first link,
-   * Arrow/Home/End roving inside the panel, Escape closes and returns focus
-   * to the trigger, outside pointer or focus leaving the group closes.
+   * Desktop interactions: click/tap or Enter/Space toggles the disclosure.
+   * Hover only highlights the trigger, so it can never open a panel that the
+   * user's next click immediately closes. ArrowDown opens and focuses the first
+   * link, Arrow/Home/End move inside the panel, and Escape closes and returns
+   * focus to the trigger. An outside pointer or focus leaving the group closes.
    * The header's account popover stays separate — it IS an action menu.
    */
-  import { page } from "$app/state";
-  import { afterNavigate } from "$app/navigation";
-
   interface Props {
     label: string;
     items: NavDropdownItem[];
     /** Trigger shows the active underline (a child route is current). */
     active?: boolean;
+    activeHref: string | null;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
   }
 
-  const { label, items, active = false }: Props = $props();
+  const {
+    label,
+    items,
+    active = false,
+    activeHref,
+    open,
+    onOpenChange,
+  }: Props = $props();
 
   const uid = $props.id();
-  let open = $state(false);
   let rootEl: HTMLDivElement | undefined = $state();
   let triggerEl: HTMLButtonElement | undefined = $state();
   let panelEl: HTMLDivElement | undefined = $state();
 
-  let openTimer: ReturnType<typeof setTimeout> | undefined;
-  let closeTimer: ReturnType<typeof setTimeout> | undefined;
-
   function isItemActive(href: string): boolean {
-    const path = page.url?.pathname ?? "";
-    return path === href || path.startsWith(href + "/");
-  }
-
-  function clearTimers() {
-    clearTimeout(openTimer);
-    clearTimeout(closeTimer);
-  }
-
-  // Hover-intent is mouse-only: on touch, pointerenter fires right before the
-  // tap's click — letting it open the panel would make the first tap feel like
-  // it needed two. The click handler alone owns touch.
-  function onPointerEnter(e: PointerEvent) {
-    if (e.pointerType !== "mouse") return;
-    clearTimers();
-    openTimer = setTimeout(() => (open = true), 120);
-  }
-
-  function onPointerLeave(e: PointerEvent) {
-    if (e.pointerType !== "mouse") return;
-    clearTimers();
-    closeTimer = setTimeout(() => (open = false), 240);
+    return href === activeHref;
   }
 
   function toggle() {
-    clearTimers();
-    open = !open;
+    onOpenChange(!open);
   }
 
   function closeAndRefocus() {
-    open = false;
+    onOpenChange(false);
     triggerEl?.focus();
   }
 
@@ -90,7 +72,7 @@
   function onTriggerKeydown(e: KeyboardEvent) {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      open = true;
+      onOpenChange(true);
       // Panel mounts on the next tick; focus after the DOM settles.
       requestAnimationFrame(() => focusLink(0));
     }
@@ -126,40 +108,34 @@
     }
   }
 
-  // Tabbing or clicking out of the group closes it (no lingering panels).
+  // Once focus leaves the trigger and its links, the disclosure has finished
+  // serving the keyboard user and should not linger over the page.
   function onFocusOut(e: FocusEvent) {
-    if (rootEl && e.relatedTarget && !rootEl.contains(e.relatedTarget as Node)) {
-      open = false;
+    if (rootEl && !rootEl.contains(e.relatedTarget as Node | null)) {
+      onOpenChange(false);
     }
   }
 
   $effect(() => {
     if (!open) return;
     function onPointer(e: PointerEvent) {
-      if (rootEl && !rootEl.contains(e.target as Node)) open = false;
+      if (rootEl && !rootEl.contains(e.target as Node)) onOpenChange(false);
     }
     document.addEventListener("pointerdown", onPointer);
     return () => document.removeEventListener("pointerdown", onPointer);
   });
-
-  afterNavigate(() => {
-    open = false;
-  });
-
-  $effect(() => () => clearTimers());
 </script>
 
 <div
   class="nav-group"
   bind:this={rootEl}
-  onpointerenter={onPointerEnter}
-  onpointerleave={onPointerLeave}
   onfocusout={onFocusOut}
   onkeydown={onRootKeydown}
   role="none"
 >
   <button
     bind:this={triggerEl}
+    type="button"
     class="trigger"
     class:active
     class:open

@@ -55,6 +55,10 @@
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
+  import {
+    HERO_TIP_EFFECT_MAP,
+    HERO_TRAIL_PRESET,
+  } from "$lib/shared/landing/data/hero-trail-preset";
   import GhostPointer from "./GhostPointer.svelte";
   import {
     createConstructAttractAct,
@@ -178,7 +182,7 @@
     }
   }
 
-  // The parked ghost was clicked: demonstrate again from a fresh cycle.
+  // The parked ghost was clicked: hand the live build back so it can continue.
   function resumeDemo() {
     if (act && !act.dead) {
       act.resume();
@@ -533,6 +537,8 @@
                 hoverHint="badge"
                 bluePropType={demoProp}
                 redPropType={demoProp}
+                trailSettingsOverride={HERO_TRAIL_PRESET}
+                tipEffectMap={HERO_TIP_EFFECT_MAP}
                 onStepChange={handlePlayerStepChange}
                 onTogglePlaybackRef={(fn: () => void) => (playerToggle = fn)}
                 onControllerReady={(ctrl: AnimationPlaybackController) =>
@@ -581,7 +587,7 @@
        4K-native cap per the shell standard (min(1720px, 92vw)) — 1360 left
        the toy inset from its own heading at 2560 CSS. */
     width: 100%;
-    max-width: min(1720px, 92vw);
+    max-width: var(--shell-w, min(1720px, 92vw));
     margin-inline: auto;
     padding: clamp(16px, 2.2cqw, 28px);
     border-radius: 24px;

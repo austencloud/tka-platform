@@ -43,6 +43,13 @@ export interface LaunchpadTileDef {
 	 * Homepage tiles leave this unset and stay anchors.
 	 */
 	activate?: boolean;
+	/**
+	 * Static view-transition-name for the cross-route shared-element morph
+	 * (landing tile -> destination page hero). Present on both endpoints;
+	 * inert unless a morph navigation runs. Only the composer tile carries one
+	 * for now (rev-3); other tiles are a fast-follow.
+	 */
+	morphName?: string;
 }
 
 export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
@@ -56,6 +63,7 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		icon: "fa-pen-nib",
 		media: "mandala",
 		magnetic: true,
+		morphName: "launchpad-composer",
 	},
 	{
 		id: "choreo-cards",
@@ -66,34 +74,12 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		color: "#34d399",
 		icon: "fa-layer-group",
 		media: "choreo-card",
+		morphName: "launchpad-choreo-cards",
 		chips: [
 			{ label: "LOOP Deck", href: "/shop/loop-deck" },
 			{ label: "Shop", href: "/shop" },
 		],
 	},
-	{
-		id: "notation",
-		href: "/notation",
-		heading: "The Notation",
-		descriptor: "The positions and motions behind every letter.",
-		span: "2x1",
-		color: "#22d3ee",
-		icon: "fa-bezier-curve",
-		media: "pictograph",
-		chips: [
-			{ label: "Staves", href: "/notation/staves" },
-			{ label: "Fans", href: "/notation/fans" },
-			{ label: "Clubs", href: "/notation/clubs" },
-			{ label: "Buugeng", href: "/notation/buugeng" },
-			{ label: "Poi", href: "/notation/poi" },
-		],
-	},
-	// The grid's cell count must stay a multiple of 4 or the last row ships
-	// holes. 12 cells = three clean rows: composer 2x2, three 2x1s, two 1x1s.
-	// One tile per visitor question: do (Composer), hold (Choreo Cards),
-	// understand (Notation), learn (Guide), ask (FAQ), and look up (Glossary).
-	// Deeper theory stays in the Notation dropdown instead of competing with
-	// the front doors. Secondary destinations live in the strip.
 	{
 		id: "guide",
 		href: "/guide",
@@ -103,6 +89,32 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		color: "#60a5fa",
 		icon: "fa-map-signs",
 		media: "guide-cover",
+		morphName: "launchpad-guide",
+	},
+	// The grid's cell count must stay a multiple of 4 or the last row ships
+	// holes. 12 cells = three clean rows: composer 2x2, three 2x1s, two 1x1s.
+	// Source order follows the tablet bento's visual reading order: do
+	// (Composer), hold (Choreo Cards), learn (Guide), understand (Notation),
+	// ask (FAQ), and look up (Glossary).
+	// Deeper theory stays in the Notation dropdown instead of competing with
+	// the front doors. Secondary destinations live in the strip.
+	{
+		id: "notation",
+		href: "/notation",
+		heading: "The Notation",
+		descriptor: "The positions and motions behind every letter.",
+		span: "2x1",
+		color: "#22d3ee",
+		icon: "fa-bezier-curve",
+		media: "pictograph",
+		morphName: "launchpad-notation",
+		chips: [
+			{ label: "Staves", href: "/notation/staves" },
+			{ label: "Fans", href: "/notation/fans" },
+			{ label: "Clubs", href: "/notation/clubs" },
+			{ label: "Buugeng", href: "/notation/buugeng" },
+			{ label: "Poi", href: "/notation/poi" },
+		],
 	},
 	{
 		id: "faq",
@@ -112,6 +124,7 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		span: "1x1",
 		color: "#f59e0b",
 		icon: "fa-circle-question",
+		morphName: "launchpad-faq",
 	},
 	{
 		id: "glossary",
@@ -122,6 +135,7 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		color: "#94a3b8",
 		icon: "fa-book-open",
 		media: "dictionary",
+		morphName: "launchpad-glossary",
 	},
 ];
 

@@ -5,20 +5,25 @@
   gold focus frame; the whole track slides one cell-stride left per step. Neighbors
   dim + shrink with distance (spotlight). Virtualized window keeps the DOM lean.
 
-  Pure view: it reads cells + a float currentStep + bpm and renders. No engine, no
-  playback ownership. Extracted from the landing Infinite Spinner so the landing and
-  practice surfaces share one carousel. cellSize drives read-ahead depth (zoom).
+  Pure view: it reads notation cells (or derives them from a sequence) plus a float
+  currentStep + bpm and renders. No engine, no playback ownership. Extracted from
+  the landing Infinite Spinner so landing and practice surfaces share one carousel.
+  cellSize drives read-ahead depth (zoom); compact density fits the same behavior
+  into smaller editorial surfaces without changing the established default.
 -->
 <script lang="ts">
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
+  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
-  import type { NotationCell } from "./notation-cell";
+  import { buildNotationCells, type NotationCell } from "./notation-cell";
 
   let {
-    cells,
+    cells = null,
+    sequence = null,
     currentStep,
     bpm,
     cellSize = 72,
+    density = "standard",
     anchor = "center",
     fillHeight = false,
     loop = false,
@@ -27,17 +32,26 @@
     stepPulse = false,
     onCellClick = null,
   }: {
-    cells: NotationCell[];
+    /** Prebuilt cells for callers that already own the notation mapping. */
+    cells?: NotationCell[] | null;
+    /** Convenience input for lazy surfaces that should keep notation-cell
+     *  derivation inside this component's deferred chunk. Ignored when cells
+     *  are supplied. */
+    sequence?: SequenceData | null;
     /** Float: integer = step number, fraction = progress within step. */
     currentStep: number;
     bpm: number;
     /** Cell width/height in px. Smaller = more read-ahead visible (zoom out). */
     cellSize?: number;
+    /** Standard preserves the original Play with It geometry. Compact keeps
+     *  the focus treatment while fitting an editorial/card-sized rail. */
+    density?: "standard" | "compact";
     /** "start" pins the focus toward the left so upcoming cells fill the space
      *  to the right and finished moves fall off-screen; "center" keeps it mid. */
     anchor?: "center" | "start";
-    /** Size cells to fill the container HEIGHT instead of using cellSize — for
-     *  the tall side-by-side practice column where a fixed px reads tiny. */
+    /** Size cells from the container height instead of using cellSize. Standard
+     *  density leaves room around the focus in a tall practice column; compact
+     *  density uses nearly all of a short rail's height. */
     fillHeight?: boolean;
     /** Seamless wrap: when the track reaches the end the first cell follows (the
      *  sequence repeats) instead of snapping back to the start. */
@@ -52,16 +66,22 @@
 
   const GAP = 6;
   const BUFFER = 3;
-  const HERO_SCALE = 1.32;
+  const resolvedCells = $derived(cells ?? buildNotationCells(sequence));
+  const heroScale = $derived(density === "compact" ? 1.15 : 1.32);
 
   let currentStepNumber = $derived(Math.floor(currentStep ?? 0));
   let activeIndex = $derived(
-    Math.min(Math.max(currentStepNumber, 0), Math.max(0, cells.length - 1))
+    Math.min(
+      Math.max(currentStepNumber, 0),
+      Math.max(0, resolvedCells.length - 1)
+    )
   );
 
   // Smooth progress within the current step (0→1) from the float step — drives
   // the calm per-step countdown cue under the focus frame.
-  let stepPhase = $derived(Math.min(1, Math.max(0, (currentStep ?? 0) - currentStepNumber)));
+  let stepPhase = $derived(
+    Math.min(1, Math.max(0, (currentStep ?? 0) - currentStepNumber))
+  );
 
   // Monotonic virtual index for seamless looping: the raw step wraps (…N→0…), so
   // on each wrap we add cells.length — the track keeps sliding forward into a
@@ -71,21 +91,23 @@
   let prevSeqKey: string | undefined = undefined;
   $effect(() => {
     const raw = currentStepNumber;
-    const seqKey = cells[0]?.key;
+    const seqKey = resolvedCells[0]?.key;
     if (seqKey !== prevSeqKey) {
       loopOffset = 0;
       prevRawStep = raw;
       prevSeqKey = seqKey;
       return;
     }
-    if (loop && prevRawStep !== -1 && raw < prevRawStep) loopOffset += cells.length;
+    if (loop && prevRawStep !== -1 && raw < prevRawStep) {
+      loopOffset += resolvedCells.length;
+    }
     prevRawStep = raw;
   });
   let virtualActive = $derived(loop ? activeIndex + loopOffset : activeIndex);
 
   let stepStripEl = $state<HTMLDivElement | null>(null);
   let stripContainerWidth = $state(375);
-  let stripContainerHeight = $state(160);
+  let stripContainerHeight = $state(70);
 
   // Focus position. "start" pins it a touch in from the left so upcoming cells
   // fill the space to the right; "center" keeps it mid. The frame is centred on
@@ -98,15 +120,36 @@
   // wins. Otherwise the fixed cellSize prop (portrait foot).
   const HEIGHT_FILL = 0.5; // focus pictograph ≈ half the column height
   const WIDTH_CELLS = 2.4; // ≈ how many cell-widths share the row
+  const COMPACT_RAIL_INSET = 4;
+  const COMPACT_VISIBLE_CELLS = 5.25;
+  const compactCell = $derived.by(() => {
+    if (stripContainerWidth <= 375) return 44;
+    if (stripContainerWidth <= 440) return 48;
+    if (stripContainerWidth <= 600) return 56;
+    return 64;
+  });
   const effCell = $derived.by(() => {
-    if (!fillHeight) return cellSize;
-    const byHeight = (stripContainerHeight * HEIGHT_FILL) / HERO_SCALE;
+    if (!fillHeight) return density === "compact" ? compactCell : cellSize;
+
+    // The homepage rail is intentionally short. Its compact cells should use
+    // that height instead of inheriting the practice pane's half-height rule;
+    // otherwise a 79px rail displays the same tiny 48px cells as a 70px rail.
+    if (density === "compact") {
+      const byHeight = (stripContainerHeight - COMPACT_RAIL_INSET) / heroScale;
+      const byWidth = stripContainerWidth / COMPACT_VISIBLE_CELLS;
+      return Math.max(44, Math.floor(Math.min(byHeight, byWidth)));
+    }
+
+    const byHeight = (stripContainerHeight * HEIGHT_FILL) / heroScale;
     const byWidth = (stripContainerWidth - FOCUS_MARGIN) / WIDTH_CELLS;
     return Math.max(64, Math.floor(Math.min(byHeight, byWidth)));
   });
   const STRIDE = $derived(effCell + GAP);
-  const FRAME = $derived(Math.round(effCell * HERO_SCALE) + 3); // gold frame hugs the scaled hero
-  const viewportHeight = $derived(FRAME + 26); // headroom above/below the hero (fixed-size mode)
+  const FRAME = $derived(Math.round(effCell * heroScale) + 3); // gold frame hugs the scaled hero
+  const verticalHeadroom = $derived(
+    density === "compact" ? (effCell >= 64 ? 14 : 12) : 26
+  );
+  const viewportHeight = $derived(FRAME + verticalHeadroom);
 
   let focusLeft = $derived(
     anchor === "start" ? FOCUS_MARGIN : stripContainerWidth / 2 - effCell / 2
@@ -117,15 +160,17 @@
   // run past the ends and map to cells circularly (seamless wrap); otherwise they
   // clamp to the real range. Cells are absolutely placed at vi * STRIDE.
   let renderCells = $derived.by(() => {
-    const len = cells.length;
-    if (len === 0) return [] as { vi: number; cell: NotationCell; dist: number }[];
+    const len = resolvedCells.length;
+    if (len === 0)
+      return [] as { vi: number; cell: NotationCell; dist: number }[];
     const a = virtualActive;
     let start: number;
     let end: number;
     if (anchor === "start") {
       // Forward-biased: one finished cell (graceful exit) + as many upcoming as
       // the width holds. No deep past — practice only needs what's next.
-      const ahead = Math.ceil((stripContainerWidth - focusLeft) / STRIDE) + BUFFER;
+      const ahead =
+        Math.ceil((stripContainerWidth - focusLeft) / STRIDE) + BUFFER;
       start = a - 1;
       end = a + ahead + 1;
     } else {
@@ -140,7 +185,7 @@
     const out: { vi: number; cell: NotationCell; dist: number }[] = [];
     for (let vi = start; vi < end; vi++) {
       const ci = loop ? ((vi % len) + len) % len : vi;
-      const cell = cells[ci];
+      const cell = resolvedCells[ci];
       if (cell) out.push({ vi, cell, dist: Math.abs(vi - a) });
     }
     return out;
@@ -163,7 +208,9 @@
   // Slide duration tracks the step interval (half a step, clamped) — fast tempos
   // get a shorter, less-visible travel.
   let slideDurMs = $derived(
-    Math.round(Math.min(0.42, Math.max(0.12, (60 / Math.max(1, bpm)) * 0.5)) * 1000)
+    Math.round(
+      Math.min(0.42, Math.max(0.12, (60 / Math.max(1, bpm)) * 0.5)) * 1000
+    )
   );
 
   function cellOpacity(dist: number) {
@@ -171,7 +218,7 @@
     return Math.max(0.14, 0.66 - (dist - 1) * 0.18);
   }
   function cellScale(dist: number) {
-    if (dist === 0) return HERO_SCALE;
+    if (dist === 0) return heroScale;
     return Math.max(0.62, 0.84 - (dist - 1) * 0.09);
   }
 
@@ -192,20 +239,26 @@
   });
 </script>
 
-{#if cells.length > 0}
+{#if resolvedCells.length > 0}
   <div
     class="step-viewport"
     class:anchor-start={anchor === "start"}
     class:fill-height={fillHeight}
     bind:this={stepStripEl}
-    style="--slide-dur: {slideDurMs}ms; --cell: {effCell}px; --frame: {FRAME}px; {fillHeight ? 'height: 100%' : `height: ${viewportHeight}px`}"
+    style="--slide-dur: {slideDurMs}ms; --cell: {effCell}px; --frame: {FRAME}px; {fillHeight
+      ? 'height: 100%'
+      : `height: ${viewportHeight}px`}"
   >
     <div class="step-focus" style="left: {frameLeft}px">
       {#if stepPulse}
         <div class="step-progress" style="transform: scaleX({stepPhase})"></div>
       {/if}
     </div>
-    <div class="step-track" class:no-anim={!animateTrack} style="transform: translateX({trackX}px)">
+    <div
+      class="step-track"
+      class:no-anim={!animateTrack}
+      style="transform: translateX({trackX}px)"
+    >
       {#each renderCells as item (item.vi)}
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <div
@@ -216,12 +269,22 @@
           style="left: {item.vi * STRIDE}px; opacity: {cellOpacity(item.dist)}"
           role={onCellClick ? "button" : undefined}
           tabindex={onCellClick ? 0 : undefined}
-          onclick={onCellClick ? () => onCellClick?.(item.cell.stepNumber) : undefined}
+          onclick={onCellClick
+            ? () => onCellClick?.(item.cell.stepNumber)
+            : undefined}
           onkeydown={onCellClick
-            ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onCellClick?.(item.cell.stepNumber); } }
+            ? (e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onCellClick?.(item.cell.stepNumber);
+                }
+              }
             : undefined}
         >
-          <div class="step-pictograph" style="transform: scale({cellScale(item.dist)})">
+          <div
+            class="step-pictograph"
+            style="transform: scale({cellScale(item.dist)})"
+          >
             <PictographContainer
               pictographData={item.cell.data}
               darkMode={true}
@@ -244,14 +307,33 @@
     overflow: hidden;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     background: rgba(0, 0, 0, 0.2);
-    -webkit-mask-image: linear-gradient(to right, transparent 0, black 10%, black 90%, transparent 100%);
-    mask-image: linear-gradient(to right, transparent 0, black 10%, black 90%, transparent 100%);
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      black 10%,
+      black 90%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0,
+      black 10%,
+      black 90%,
+      transparent 100%
+    );
   }
-  .step-viewport.fill-height { height: 100%; }
+  .step-viewport.fill-height {
+    height: 100%;
+  }
   /* Start-anchored: focus sits left, so fade only the upcoming (right) edge —
      the left stays solid so the big focus pictograph is never dimmed. */
   .step-viewport.anchor-start {
-    -webkit-mask-image: linear-gradient(to right, black 0, black 86%, transparent 100%);
+    -webkit-mask-image: linear-gradient(
+      to right,
+      black 0,
+      black 86%,
+      transparent 100%
+    );
     mask-image: linear-gradient(to right, black 0, black 86%, transparent 100%);
   }
   /* Cells are absolutely placed at vi * STRIDE inside the track; the track
@@ -265,7 +347,9 @@
     will-change: transform;
     transition: transform var(--slide-dur, 420ms) cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .step-track.no-anim { transition: none; }
+  .step-track.no-anim {
+    transition: none;
+  }
   .step-focus {
     position: absolute;
     top: 50%;
@@ -304,9 +388,17 @@
     overflow: hidden;
     transition: opacity var(--slide-dur, 420ms) ease;
   }
-  .step-cell.clickable { cursor: pointer; }
-  .step-cell.start-cell { border-color: rgba(255, 255, 255, 0.15); }
-  .step-cell.is-focus { overflow: visible; border-color: transparent; z-index: 3; }
+  .step-cell.clickable {
+    cursor: pointer;
+  }
+  .step-cell.start-cell {
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+  .step-cell.is-focus {
+    overflow: visible;
+    border-color: transparent;
+    z-index: 3;
+  }
   .step-pictograph {
     width: 100%;
     height: 100%;
@@ -317,6 +409,8 @@
   @media (prefers-reduced-motion: reduce) {
     .step-track,
     .step-cell,
-    .step-pictograph { transition: none; }
+    .step-pictograph {
+      transition: none;
+    }
   }
 </style>

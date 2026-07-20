@@ -215,7 +215,7 @@
   .config-content {
     /* Lean vertical padding so the page fits a 4K viewport unscrolled
        (matches the other configurators). */
-    max-width: min(1720px, 92vw);
+    max-width: var(--shell-w, min(1720px, 92vw));
     margin: 0 auto;
     padding: 28px 24px 44px;
   }

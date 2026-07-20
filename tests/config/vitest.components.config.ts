@@ -24,6 +24,7 @@ export default defineConfig({
       "$test-helpers": path.resolve(projectRoot, "tests/helpers"),
       "$app/environment": path.resolve(projectRoot, "tests/setup/stubs/app-environment.ts"),
       "$app/navigation": path.resolve(projectRoot, "tests/setup/stubs/app-navigation.ts"),
+      "$app/state": path.resolve(projectRoot, "tests/setup/stubs/app-state.ts"),
       "$app/stores": path.resolve(projectRoot, "tests/setup/stubs/app-stores.ts"),
     },
   },

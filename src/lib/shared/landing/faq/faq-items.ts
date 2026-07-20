@@ -58,24 +58,24 @@ export const FAQ_ITEMS: FaqItem[] = [
   {
     question: "Does it work with my prop?",
     answer:
-      "If you dual-wield it and grip it directly, yes. TKA is built for double staff and also supports clubs, fans, hoops, mini hoops, and buugeng, each rendered with proper rotations and hand positions. The Endless LOOPs spinner lets you switch between them live.",
+      "Double staves are the canonical prop. TKA also applies to dual-wielded static props such as fans, clubs, and buugeng. Momentum-based props, tosses, contact rolling, and grip changes are not covered as equals. Composer includes additional prop visuals, but a visual option does not mean every movement applies to that prop.",
     cta: { label: "Try props in the spinner", href: "/endless-spinner" },
   },
   {
     question: "Is there software for flow arts choreography?",
     answer:
-      "Yes. Flow Arts Composer is free flow arts software that runs in your browser. Build sequences step by step, generate them from parameters, animate them with any supported prop, and share the results. Everything you make is written in The Kinetic Alphabet, so it stays readable and editable instead of trapped in a video.",
+      "Yes. Flow Arts Composer is free flow arts software that runs in your browser. Build sequences step by step, generate them from parameters, animate the result, save it, and share it. Each sequence keeps its Kinetic Alphabet notation, so the structure remains visible beside the animation.",
     cta: { label: "Open Flow Arts Composer", href: "/composer" },
   },
   {
     question: "Is Flow Arts Composer free?",
     answer:
-      "Yes. Building sequences, animating them, and browsing the community library are free, and the core stays free. A premium tier is planned down the line to help sustain the project, but it isn't live yet.",
+      "Yes. Flow Arts Composer is currently free to use. Premium is not live. You can build sequences, animate them, save your work, and browse the community library without paying.",
   },
   {
     question: "Can I share what I make?",
     answer:
-      "Yes. Export sequences as images, PDFs, animated GIFs, or videos, share a link straight to Instagram, or publish to the community gallery for other artists to find and remix.",
+      "Yes. Export a sequence as a PNG, GIF, or video. On supported phones, the system share sheet can send the file to another app. You can also share a sequence link, and eligible saved sequences can be published to the community gallery.",
   },
 ];
 

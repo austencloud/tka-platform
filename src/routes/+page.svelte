@@ -6,7 +6,11 @@
 <svelte:head>
   <!-- Playfair Display for landing page headings -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin="anonymous"
+  />
   <link
     href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&display=swap"
     rel="stylesheet"
@@ -15,7 +19,7 @@
   <title>Flow Arts Notation | The Kinetic Alphabet</title>
   <meta
     name="description"
-    content="TKA is a notation system for flow arts. Document and share staff, fans, hoop, club, fan, and buugeng choreography. Create sequences, animate them, share with other flow artists."
+    content="The Kinetic Alphabet is a notation system for flow arts. Use Flow Arts Composer to write, animate, save, and share choreography."
   />
 
   <!-- Additional SEO meta tags -->
@@ -33,12 +37,15 @@
 
   <!-- Open Graph (Facebook, LinkedIn, Pinterest) -->
   <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="TKA - The Kinetic Alphabet" />
+  <meta property="og:site_name" content="The Kinetic Alphabet" />
   <meta property="og:url" content="https://tkaflowarts.com/" />
-  <meta property="og:title" content="Flow Arts Notation | The Kinetic Alphabet" />
+  <meta
+    property="og:title"
+    content="Flow Arts Notation | The Kinetic Alphabet"
+  />
   <meta
     property="og:description"
-    content="A notation system for flow arts. Document, animate, and share staff, fans, hoop, club, and fan choreography."
+    content="A notation system for flow arts, with free software for writing, animating, saving, and sharing choreography."
   />
   <meta
     property="og:image"
@@ -56,10 +63,13 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:site" content="@tkaflowarts" />
   <meta name="twitter:creator" content="@tkaflowarts" />
-  <meta name="twitter:title" content="Flow Arts Notation | The Kinetic Alphabet" />
+  <meta
+    name="twitter:title"
+    content="Flow Arts Notation | The Kinetic Alphabet"
+  />
   <meta
     name="twitter:description"
-    content="A notation system for flow arts. Document, animate, and share staff, fans, hoop, club, and fan choreography."
+    content="A notation system for flow arts, with free software for writing, animating, saving, and sharing choreography."
   />
   <meta
     name="twitter:image"
@@ -73,24 +83,18 @@
   <!-- Canonical URL -->
   <link rel="canonical" href="https://tkaflowarts.com/" />
 
-  <!-- JSON-LD Structured Data: WebSite with SearchAction -->
+  <!-- JSON-LD Structured Data: WebSite -->
   {@html `<script type="application/ld+json">
 	{
 		"@context": "https://schema.org",
 		"@type": "WebSite",
-		"name": "TKA - The Kinetic Alphabet",
-		"alternateName": ["The Kinetic Alphabet", "Kinetic Alphabet", "TKA"],
+		"@id": "https://tkaflowarts.com/#website",
+		"name": "The Kinetic Alphabet",
+		"alternateName": "TKA",
 		"url": "https://tkaflowarts.com/",
-		"description": "TKA is a notation system for flow arts. Document and share staff, fans, hoop, club, fan, and buugeng choreography.",
+		"description": "The Kinetic Alphabet is a notation system for flow arts. Use Flow Arts Composer to write, animate, save, and share choreography.",
 		"inLanguage": "en-US",
-		"potentialAction": {
-			"@type": "SearchAction",
-			"target": {
-				"@type": "EntryPoint",
-				"urlTemplate": "https://tkaflowarts.com/create?search={search_term_string}"
-			},
-			"query-input": "required name=search_term_string"
-		}
+		"publisher": { "@id": "https://tkaflowarts.com/#organization" }
 	}
 	</script>`}
 
@@ -99,12 +103,14 @@
 	{
 		"@context": "https://schema.org",
 		"@type": "Organization",
-		"name": "TKA - The Kinetic Alphabet",
-		"alternateName": ["The Kinetic Alphabet", "TKA"],
+		"@id": "https://tkaflowarts.com/#organization",
+		"name": "The Kinetic Alphabet",
+		"alternateName": "TKA",
 		"url": "https://tkaflowarts.com/",
 		"logo": "https://tkaflowarts.com/pwa/icons/icon-512x512.png",
-		"description": "TKA is a notation system for flow arts. Document and share staff, fans, hoop, club, fan, and buugeng choreography.",
+		"description": "The Kinetic Alphabet is a notation system for flow arts and the organization behind Flow Arts Composer.",
 		"disambiguatingDescription": "The Kinetic Alphabet is a movement notation system for flow arts and prop spinning. It is not related to the NATO phonetic alphabet or any spelling alphabet.",
+		"founder": { "@id": "https://tkaflowarts.com/about#austen-cloud" },
 		"knowsAbout": [
 			"flow arts",
 			"staff spinning",
@@ -127,12 +133,11 @@
 	}
 	</script>`}
 
-  <!-- SoftwareApplication + HowTo JSON-LD moved to /composer — Flow Arts
-       Composer is its own entity with its own page; this page is TKA's. -->
+  <!-- SoftwareApplication JSON-LD lives on /composer. The homepage owns the
+       WebSite and Organization entities. -->
 
   <!-- The FAQ lives on its own page (/faq, in the header's Learn menu); its
        FAQPage JSON-LD is emitted there, matching that page's visible content. -->
-
 </svelte:head>
 
 <div class="landing-page">
@@ -146,7 +151,6 @@
     </main>
   </div>
 </div>
-
 
 <style>
   /* Skip link - visible only on focus for keyboard users */
@@ -174,7 +178,10 @@
   .landing-page {
     position: relative;
     min-height: 100vh;
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family:
+      system-ui,
+      -apple-system,
+      sans-serif;
     --landing-heading-font: "Playfair Display", Georgia, serif;
     color: var(--theme-text, #ffffff);
     line-height: 1.6;
@@ -192,25 +199,64 @@
     padding: 0 1.25rem;
   }
 
+  /* Landscape tablets and foldables have enough width for the complete front
+     door, but not enough room for the four-column desktop bento. Width plus a
+     modest height floor identifies that geometry without relying on a device
+     model or fold posture. Short phone-landscape viewports stay stacked. */
+  @media (min-width: 760px) and (max-width: 1679px) and (min-height: 500px) {
+    .content-layer {
+      display: grid;
+      grid-template-columns: minmax(16rem, 5fr) minmax(0, 7fr);
+      column-gap: clamp(1rem, 2.5vw, 2rem);
+      align-items: stretch;
+      width: 100%;
+      max-width: var(--shell-w, min(1720px, 92vw));
+      height: 100svh;
+      min-height: 500px;
+      margin-inline: auto;
+      padding: 4.75rem clamp(1rem, 2vw, 1.5rem) 1.25rem;
+    }
+
+    .launchpad-main {
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      max-width: none;
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  /* Foldable landscape: reclaim the narrow vertical bands around the fixed
+     header while preserving the same two-pane hierarchy and touch targets. */
+  @media (min-width: 760px) and (max-width: 1180px) and (min-height: 500px) and (max-height: 649px) {
+    .content-layer {
+      column-gap: 0.75rem;
+      padding: 4.25rem 0.75rem 0.5rem;
+    }
+  }
+
   /* Split tier: hero (left pane) + launchpad grid (right pane) compose into
      ONE viewport on wide screens — a practitioner on a 1080p/1440p/4K display
      sees the whole front door without scrolling. Recomposition, not scaling
      (per the 4K landing spec's wave-3 rule). Below 1680px the stacked layout
-     above is untouched. The bound stays fluid (62vw beyond ~2840px wide) so
-     the composition keeps growing at 4K/5K instead of re-freezing. */
+     above is untouched. The shared shell band keeps this composition aligned
+     with the header while growing continuously on 4K/5K screens. */
   @media (min-width: 1680px) {
     .content-layer {
       display: grid;
-      grid-template-columns: minmax(520px, 5fr) 7fr;
+      grid-template-columns: minmax(32.5rem, 5fr) minmax(0, 7fr);
       column-gap: clamp(2.5rem, 4vw, 5.5rem);
       align-items: center;
-      max-width: max(1760px, 62vw);
+      width: 100%;
+      max-width: var(--shell-w, min(1720px, 92vw));
       margin-inline: auto;
       padding-inline: clamp(1.5rem, 2.5vw, 4rem);
       /* The fixed MarketingChrome header overlays the top ~64px, so the
          composition budgets for it: top padding pushes both panes clear, and
          min-height (not height) lets a short window scroll instead of clip. */
-      padding-top: 76px;
+      padding-top: 4.75rem;
       min-height: 100svh;
     }
 

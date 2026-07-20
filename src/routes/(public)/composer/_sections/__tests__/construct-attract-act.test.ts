@@ -1,0 +1,187 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { TrailMode } from "$lib/shared/animation-engine/domain/types/trail-types";
+import {
+  HERO_TIP_EFFECT_MAP,
+  HERO_TRAIL_PRESET,
+} from "$lib/shared/landing/data/hero-trail-preset";
+
+const ghostHarness = vi.hoisted(() => ({
+  paused: false,
+  cycle: null as (() => Promise<void>) | null,
+  events: [] as string[],
+  sleep: vi.fn<() => Promise<void>>(),
+  waitFor: vi.fn<(selector: string) => Promise<HTMLElement[]>>(),
+  browseAndPick: vi.fn<(elements: HTMLElement[]) => Promise<void>>(),
+  moveAndPress: vi.fn<() => Promise<void>>(),
+  restBeside: vi.fn<() => Promise<void>>(),
+  dwell: vi.fn<() => Promise<void>>(),
+}));
+
+vi.mock("../attract-ghost.svelte", () => ({
+  createAttractGhost: () => {
+    const core = {
+      ghost: { x: 0, y: 0, pressed: false, visible: false, parked: false },
+      start: vi.fn(),
+      setVisible: vi.fn(),
+      pause: () => {
+        ghostHarness.paused = true;
+      },
+      resume: () => {
+        ghostHarness.paused = false;
+      },
+      kill: vi.fn(),
+      get dead() {
+        return false;
+      },
+      get paused() {
+        return ghostHarness.paused;
+      },
+      halted: () => ghostHarness.paused,
+      sleep: ghostHarness.sleep,
+      dwell: ghostHarness.dwell,
+      glideTo: vi.fn(),
+      hoverOn: vi.fn(),
+      moveAndPress: ghostHarness.moveAndPress,
+      browseAndPick: ghostHarness.browseAndPick,
+      restBeside: ghostHarness.restBeside,
+      setHover: vi.fn(),
+      waitFor: ghostHarness.waitFor,
+      pick: <T>(items: T[]) => items[0],
+      jitter: (base: number) => base,
+    };
+
+    return {
+      core,
+      run: (cycle: () => Promise<void>) => {
+        ghostHarness.cycle = cycle;
+        return core;
+      },
+    };
+  },
+}));
+
+import {
+  createConstructAttractAct,
+  type ConstructBoardProgress,
+} from "../construct-attract-act.svelte";
+import type { createAttractGhost as createActualAttractGhost } from "../attract-ghost.svelte";
+
+describe("createConstructAttractAct", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    ghostHarness.paused = false;
+    ghostHarness.cycle = null;
+    ghostHarness.events.length = 0;
+    ghostHarness.sleep.mockImplementation(async () => {
+      ghostHarness.events.push("sleep");
+    });
+    ghostHarness.waitFor.mockResolvedValue([]);
+    ghostHarness.browseAndPick.mockResolvedValue(undefined);
+    ghostHarness.moveAndPress.mockResolvedValue(undefined);
+    ghostHarness.restBeside.mockResolvedValue(undefined);
+    ghostHarness.dwell.mockResolvedValue(undefined);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("resumes the visitor's build immediately without resetting and adds only the missing steps", async () => {
+    let progress: ConstructBoardProgress = {
+      phase: "pick-start",
+      stepCount: 0,
+    };
+    const resetBoard = vi.fn();
+    const act = createConstructAttractAct({
+      getRoot: () => document.body,
+      resetBoard,
+      getBoardProgress: () => progress,
+      togglePlayback: vi.fn(),
+      stepsPerCycle: 3,
+    });
+
+    // The visitor interrupts the first cycle while its opening pause is active.
+    ghostHarness.sleep.mockImplementationOnce(async () => {
+      ghostHarness.paused = true;
+    });
+    await ghostHarness.cycle!();
+    expect(resetBoard).toHaveBeenCalledTimes(1);
+
+    // They build two steps, then hand control back to the parked ghost.
+    ghostHarness.events.length = 0;
+    progress = { phase: "add-step", stepCount: 2 };
+    act.resume();
+    ghostHarness.waitFor.mockImplementation(async (selector: string) => {
+      ghostHarness.events.push(`wait:${selector}`);
+      return selector.includes("option-card")
+        ? [document.createElement("button")]
+        : [];
+    });
+    ghostHarness.browseAndPick.mockImplementationOnce(async () => {
+      progress = { phase: "add-step", stepCount: 3 };
+    });
+    vi.spyOn(Math, "random").mockReturnValue(0.99);
+
+    await ghostHarness.cycle!();
+
+    expect(resetBoard).toHaveBeenCalledTimes(1);
+    expect(ghostHarness.browseAndPick).toHaveBeenCalledTimes(1);
+    expect(ghostHarness.events[0]).toContain("option-card");
+    expect(
+      ghostHarness.waitFor.mock.calls.some(([selector]) =>
+        selector.includes("start-position-picker")
+      )
+    ).toBe(false);
+  });
+
+  it("settles the resume activation before accepting a later takeover", async () => {
+    const { createAttractGhost } = await vi.importActual<{
+      createAttractGhost: typeof createActualAttractGhost;
+    }>("../attract-ghost.svelte");
+    const { core } = createAttractGhost({ getRoot: () => null });
+
+    core.pause();
+    core.resume();
+    core.pause();
+
+    expect(core.paused).toBe(true);
+    await Promise.resolve();
+    expect(core.paused).toBe(false);
+
+    core.pause();
+    expect(core.paused).toBe(true);
+    core.kill();
+  });
+});
+
+describe("Construct animation rendering", () => {
+  it("pins the shared vivid trail preset and assigns trails to the prop tips", () => {
+    const constructSource = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/routes/(public)/composer/_sections/ConstructSection.svelte"
+      ),
+      "utf8"
+    );
+    const playerSource = readFileSync(
+      resolve(
+        process.cwd(),
+        "src/lib/shared/sequence-viewer/components/AnimationPlayer.svelte"
+      ),
+      "utf8"
+    );
+
+    expect(HERO_TRAIL_PRESET.mode).toBe(TrailMode.FADE);
+    expect(HERO_TIP_EFFECT_MAP["*"]?.effect).toBe("trails");
+    expect(constructSource).toContain(
+      "trailSettingsOverride={HERO_TRAIL_PRESET}"
+    );
+    expect(constructSource).toContain("tipEffectMap={HERO_TIP_EFFECT_MAP}");
+    expect(playerSource).toContain(
+      "const t = trailSettingsOverride ?? animationSettings.trail"
+    );
+    expect(playerSource.match(/\{tipEffectMap\}/g)).toHaveLength(2);
+  });
+});

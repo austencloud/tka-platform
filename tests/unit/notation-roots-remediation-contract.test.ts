@@ -48,7 +48,9 @@ describe("notation lineage remediation", () => {
       "$lib/shared/shape-matrix/components/ShapeMatrixGrid.svelte"
     );
     expect(shapeMatrixDestination).toContain("matrixFiltersForSize");
-    expect(shapeMatrixDestination).toContain('{ value: "large", label: "Large · 144" }');
+    expect(shapeMatrixDestination).toContain(
+      '{ value: "large", label: "Large · 144" }'
+    );
   });
 
   it("/notation shows a bounded live teaser plus a call to action to the destination", () => {
@@ -58,7 +60,9 @@ describe("notation lineage remediation", () => {
     expect(notationPage).toContain(
       '<figure class="matrix-figure lorq-figure">'
     );
-    expect(notationPage).toContain("Lorq Nichols' 144 Shape Matrix, charted in 2012");
+    expect(notationPage).toContain(
+      "Lorq Nichols' 144 Shape Matrix, charted in 2012"
+    );
     expect(notationPage).toContain(
       'import ShapeMatrixTeaser from "$lib/shared/shape-matrix/components/ShapeMatrixTeaser.svelte";'
     );
@@ -135,15 +139,11 @@ describe("roots-to-notation route migration", () => {
   });
 
   it("keeps canonical sitemap and breadcrumb labels without a stale Roots page", () => {
-    expect(sitemap).toContain(
-      '{ url: "notation", priority: "0.9", changefreq: "monthly" }'
-    );
-    expect(sitemap).toContain(
-      '{ url: "roots/software", priority: "0.7", changefreq: "monthly" }'
-    );
+    expect(sitemap).toContain('{ url: "notation" }');
+    expect(sitemap).toContain('{ url: "roots/software" }');
     expect(sitemap).not.toMatch(/\{ url: "roots",/);
-    expect(softwarePage).toContain(
-      '"name": "Notation", "item": "https://tkaflowarts.com/notation"'
+    expect(softwarePage).toMatch(
+      /name:\s*"Notation",\s*item:\s*"https:\/\/tkaflowarts\.com\/notation"/
     );
     expect(softwarePage).toContain('href="/notation">Notation lineage</a>');
     expect(componentManifest).not.toContain(

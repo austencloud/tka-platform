@@ -771,7 +771,7 @@
     /* Wide fluid band: the preview fan auto-scales into the extra room on 4K
        instead of the page pinning to a narrow column. Vertical padding stays
        lean so the whole configurator fits a 4K viewport without scrolling. */
-    max-width: min(1720px, 92vw);
+    max-width: var(--shell-w, min(1720px, 92vw));
     margin: 0 auto;
     padding: 12px 24px 20px;
   }

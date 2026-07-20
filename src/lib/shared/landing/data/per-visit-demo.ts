@@ -38,6 +38,8 @@ const FAMILIAR_GLYPH = /^[A-Z]-?$/;
 export async function generatePerVisitDemo(options?: {
   /** Prop to generate for. Defaults to staff (the original per-visit draw). */
   propType?: PropType;
+  /** Injectable random source for deterministic level-selection tests. */
+  random?: () => number;
   /**
    * Constrains the roll to start at this exact grid position. The hero
    * attract act (hero-act.svelte.ts) uses this to chain sequences: a
@@ -50,48 +52,67 @@ export async function generatePerVisitDemo(options?: {
   startPosition?: PictographData | null;
 }): Promise<SequenceData> {
   try {
-    const [{ generationOrchestrator }, models, circular, grid, prop] = await Promise.all([
-      import("$lib/shared/create/services/generation-orchestrator"),
-      import("$lib/shared/foundation/domain/models/generation/generate-models"),
-      import("$lib/shared/foundation/domain/models/generation/circular-models"),
-      import("$lib/shared/pictograph/grid/domain/enums/grid-enums"),
-      import("$lib/shared/pictograph/prop/domain/enums/prop-type"),
-    ]);
+    const [{ generationOrchestrator }, models, circular, grid, prop] =
+      await Promise.all([
+        import("$lib/shared/create/services/generation-orchestrator"),
+        import("$lib/shared/foundation/domain/models/generation/generate-models"),
+        import("$lib/shared/foundation/domain/models/generation/circular-models"),
+        import("$lib/shared/pictograph/grid/domain/enums/grid-enums"),
+        import("$lib/shared/pictograph/prop/domain/enums/prop-type"),
+      ]);
+
+    // Each sequence gets one level draw, with equal space devoted to levels
+    // one, two, and three. Keep that choice through the quality-filter retries
+    // so rejecting one word cannot quietly turn the replacement into a
+    // different difficulty.
+    const difficultyPool = [
+      models.DifficultyLevel.BEGINNER,
+      models.DifficultyLevel.INTERMEDIATE,
+      models.DifficultyLevel.ADVANCED,
+    ] as const;
+    const random = options?.random ?? Math.random;
+    const difficulty =
+      difficultyPool[Math.floor(random() * difficultyPool.length)] ??
+      models.DifficultyLevel.INTERMEDIATE;
 
     let best: SequenceData | null = null;
     let bestScore = -1;
     for (let roll = 0; roll < MAX_ROLLS; roll++) {
-      // Austen's favorite showcase preset: 16-count, level two (intermediate),
-      // max turn intensity, rotated, QUARTERED loop. Quartered on a 16-count is
-      // a 4-step seed repeated four times, so simplifyRepeatedWord renders a
-      // tidy 4-glyph title instead of an overwhelming one — the whole reason
-      // this preset drives the public demo canvases. Only the letters vary from
-      // one roll to the next; the shape is fixed.
+      // The showcase shape stays 16-count, rotated, and QUARTERED while the
+      // difficulty and letters vary from one sequence to the next. Quartered
+      // on a 16-count is a 4-step seed repeated four times, so
+      // simplifyRepeatedWord renders a tidy 4-glyph title instead of an
+      // overwhelming one.
       const seq = await generationOrchestrator.generateSequence({
         mode: models.GenerationMode.CIRCULAR,
         loopType: circular.LOOPType.ROTATED,
         period: circular.Period.QUARTERED,
         length: 16,
-        // Turns capped at 1.5 with level 3 (advanced) allowed — Austen's
-        // 2026-07-19 tuning: max intensity 3 produced wild triple spins on
-        // the homepage act; advanced difficulty opens the half-turn pool
-        // (0/0.5/1/1.5/fl via TurnAllocator's cap filter), so the motion
-        // reads varied but composed.
+        // Keep the homepage's turn ceiling even when the level draw permits a
+        // wider palette. This prevents the public demo from drifting back into
+        // the triple-spin intensity that prompted the 2026-07-19 tuning.
         turnIntensity: 1.5,
         gridMode: grid.GridMode.DIAMOND,
         propType: options?.propType ?? prop.PropType.STAFF,
-        difficulty: models.DifficultyLevel.ADVANCED,
+        difficulty,
         constraintPreset: "smooth",
-        ...(options?.startPosition ? { startPosition: options.startPosition } : {}),
+        ...(options?.startPosition
+          ? { startPosition: options.startPosition }
+          : {}),
       });
       // Plain-ify reactive proxies before handing to players/canvases.
       const plain = JSON.parse(JSON.stringify(seq)) as SequenceData;
-      const letters = plain.steps.map((s) => String(s.letter ?? "")).filter(Boolean);
+      const letters = plain.steps
+        .map((s) => String(s.letter ?? ""))
+        .filter(Boolean);
       if (letters.length === 0) continue;
       const familiarFraction =
         letters.filter((l) => FAMILIAR_GLYPH.test(l)).length / letters.length;
       const uniqueCount = new Set(letters).size;
-      if (familiarFraction >= MIN_FAMILIAR_FRACTION && uniqueCount >= MIN_UNIQUE_LETTERS) {
+      if (
+        familiarFraction >= MIN_FAMILIAR_FRACTION &&
+        uniqueCount >= MIN_UNIQUE_LETTERS
+      ) {
         return plain;
       }
       // Familiarity dominates; variety breaks ties among comparable rolls.
@@ -103,7 +124,10 @@ export async function generatePerVisitDemo(options?: {
     }
     if (best) return best;
   } catch (e) {
-    console.error("[per-visit-demo] generation failed, using baked fallback:", e);
+    console.error(
+      "[per-visit-demo] generation failed, using baked fallback:",
+      e
+    );
   }
   return FALLBACK_DEMO;
 }

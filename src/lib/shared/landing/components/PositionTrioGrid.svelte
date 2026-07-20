@@ -94,7 +94,12 @@
      the reading column into a wide media band (classic editorial breakout:
      the negative margins centre a viewport-scaled band on the column).
      Source PNGs are 400×400, so the 360px cap stays under native. */
-  @media (min-width: 2200px) {
+  /* 1680, not 2200: the old seam never fired on a 4K monitor at 200% OS
+     scaling (~1920 CSS px). Type steps have been dropped — the lockstep root
+     ramp (src/app.css) handles those — but the band recomposition stays,
+     because it is vw-driven and the image cap is a source-resolution limit
+     that must NOT ride the ramp. */
+  @media (min-width: 1680px) {
     .position-grid {
       /* 35.4vw == 1360px at 3840; the band scales fluidly, but the 1800px cap
          (and the 360px image cap below) respect the 400×400 source PNGs. */
@@ -107,13 +112,6 @@
     .position-image-container {
       max-width: 360px;
       border-radius: 18px;
-    }
-    .position-name {
-      font-size: 1.4rem;
-      margin-top: 0.4rem;
-    }
-    .position-desc {
-      font-size: 1.1rem;
     }
   }
 

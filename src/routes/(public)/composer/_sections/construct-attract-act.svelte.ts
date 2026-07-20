@@ -164,9 +164,15 @@ export function createConstructAttractAct(opts: {
     }
   }
 
-  async function performCycle(): Promise<void> {
-    await g.sleep(500);
-    if (g.halted()) return;
+  async function performCycle(resumingVisitorBuild: boolean): Promise<void> {
+    // A fresh loop takes a breath before appearing. Clicking the parked ghost
+    // is different: it should leave the corner immediately, with no dead beat.
+    if (!resumingVisitorBuild) {
+      await g.sleep(500);
+      if (g.halted()) return;
+    }
+
+    let firstActionAfterResume = resumingVisitorBuild;
 
     let progress = opts.getBoardProgress();
     if (progress.phase === "pick-start") {
@@ -176,6 +182,7 @@ export function createConstructAttractAct(opts: {
         return;
       }
       // Even the start position gets a moment of choice.
+      firstActionAfterResume = false;
       await g.browseAndPick(starts);
       if (g.halted()) return;
       progress = opts.getBoardProgress();
@@ -193,9 +200,10 @@ export function createConstructAttractAct(opts: {
     const nextStepIndex = Math.min(progress.stepCount, opts.stepsPerCycle);
     for (let i = nextStepIndex; i < opts.stepsPerCycle && !g.halted(); i++) {
       // Full step beat BEFORE querying: the option grid reloads after every
-      // pick, and this gap guarantees we never press a stale card from the
-      // previous sequence state.
-      await g.sleep(STEP_MS);
+      // pick. The first resumed action skips it so the parked ghost moves as
+      // soon as it is clicked; later picks keep the stale-card safety gap.
+      if (firstActionAfterResume) firstActionAfterResume = false;
+      else await g.sleep(STEP_MS);
       if (i === turnMoment) await fiddleTurns();
       if (i === filterMoment) await fiddleFilter();
       // Sometimes flip to another letter-family page before choosing.
@@ -218,7 +226,8 @@ export function createConstructAttractAct(opts: {
     // as a person, not a metronome.
     progress = opts.getBoardProgress();
     if (progress.phase !== "play") {
-      await g.sleep(DONE_MS / 2);
+      if (firstActionAfterResume) firstActionAfterResume = false;
+      else await g.sleep(DONE_MS / 2);
       const play = await g.waitFor(PLAY_SEL, 4000);
       if (!play.length || g.halted()) return;
       await g.moveAndPress(play[0]!);
@@ -281,7 +290,7 @@ export function createConstructAttractAct(opts: {
     if (!resumingVisitorBuild) opts.resetBoard();
 
     try {
-      await performCycle();
+      await performCycle(resumingVisitorBuild);
     } finally {
       // pause() is the only exit that should preserve the board. Timeouts and
       // transient DOM misses still get the established fresh-cycle recovery.

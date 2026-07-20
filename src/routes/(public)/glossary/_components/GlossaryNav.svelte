@@ -261,8 +261,9 @@
     color: oklch(0.62 0.02 270);
   }
 
-  /* 4K / ultrawide: match public-editorial's 2200px type scale. */
-  @media (min-width: 2200px) {
+  /* Big-screen tier: 1680, the site-wide seam (public-editorial.css). The old
+     2200 query never fired on a 4K monitor at 200% scaling (~1920px CSS). */
+  @media (min-width: 1680px) {
     .gnav-search input {
       font-size: 1.1rem;
     }

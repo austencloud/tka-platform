@@ -9,17 +9,19 @@
  * while the current sequence plays, the next one generates in the
  * background, constrained to start where the current sequence's CIRCULAR
  * loop ends (which is also where it started — see
- * sequence-loopability-checker.ts). InlineAnimationPlayer reloads onto a new
- * `sequence` prop in place (no remount), so the swap is just a prop update.
+ * sequence-loopability-checker.ts). InlineAnimationPlayer accepts the
+ * prefetched sequence inside that exact playback frame, so its clock never
+ * pauses or revisits the incoming sequence's stationary start hold.
  *
- * SSR-safe by construction: state starts at FALLBACK_DEMO + staff (no
- * generation happens during factory construction), and `start()` — which
- * kicks off the first background generation — is only ever called from a
- * host's `onMount`, i.e. after hydration.
+ * SSR-safe by construction: state starts without a sequence, leaving the
+ * host's fixed stage in its pending state. `start()` chooses the opening prop
+ * and generates its first sequence after hydration, then pre-fetches the rest
+ * of the act.
  */
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { FALLBACK_DEMO, generatePerVisitDemo } from "$lib/shared/landing/data/per-visit-demo";
+import type { PreparedSequenceHandoff } from "$lib/shared/animation-engine/domain/chaining-types";
+import { generatePerVisitDemo } from "$lib/shared/landing/data/per-visit-demo";
 
 /**
  * Poi is deliberately excluded from the cycle. Austen's 2026-07-18 poi
@@ -57,24 +59,16 @@ function nextPropInCycle(current: PropType): PropType {
 }
 
 export function createHeroAct(options?: {
-  /**
-   * How long after a sequence swap the prop override flips. Zero would flip
-   * the prop inside the player's post-swap start hold, where the engine's
-   * crossfade runs against a frozen pose and reads as a pop (2026-07-19
-   * feedback). Delaying it lands the morph in visible MOTION: the new word
-   * starts on the old prop, then the prop transforms mid-spin. Rendering a
-   * fan-generated sequence with staves for this window is safe — all static
-   * props share motion legality; the prop type is a rendering override.
-   * Tests pass 0 to keep the swap synchronous.
-   */
-  propMorphDelayMs?: number;
+  /** Injectable so the opening prop stays deterministic in tests. The real
+   *  homepage uses Math.random, sampled once inside the client-only start(). */
+  random?: () => number;
 }) {
-  const propMorphDelayMs = options?.propMorphDelayMs ?? 700;
-  let current = $state<SequenceData>(FALLBACK_DEMO);
+  const random = options?.random ?? Math.random;
+  let current = $state<SequenceData | null>(null);
   let currentProp = $state<PropType>(PropType.STAFF);
-  // True while a swap is in flight — drives the dice button's "Rolling..."
-  // state AND guards against a natural (loop-boundary) advance racing a
-  // manual dice press.
+  // True while the first sequence is generating or a later swap is in flight.
+  // This drives the dice button's "Rolling..." state and guards against a
+  // natural loop-boundary advance racing a manual dice press.
   let busy = $state(false);
 
   // The sequence generating in the background to follow `current`, and the
@@ -86,12 +80,16 @@ export function createHeroAct(options?: {
   let passesSinceAdvance = 0;
   let started = false;
 
+  function pickInitialProp(): PropType {
+    const index = Math.floor(random() * PROP_CYCLE.length);
+    return PROP_CYCLE[index] ?? PropType.STAFF;
+  }
+
   /** Kicks off generation of the sequence that will follow `current`,
    *  chained to start where `current`'s CIRCULAR loop ends. `fromProp` is the
-   *  prop the act is advancing INTO (during an advance the reactive
-   *  `currentProp` intentionally lags behind by the morph delay, so the next
-   *  target can't be derived from it there). */
+   *  prop the act has just advanced into. */
   function prepareNext(fromProp: PropType = currentProp): void {
+    if (!current) return;
     const targetProp = nextPropInCycle(fromProp);
     preparedNextProp = targetProp;
     preparedNext = null;
@@ -111,11 +109,10 @@ export function createHeroAct(options?: {
     // separate failure branch to handle here.
   }
 
-  /** Swaps to the next sequence: the pre-generated one if it's ready,
-   *  otherwise generates on the spot. Shared by the natural loop-boundary
-   *  handoff and the dice button. */
+  /** Swaps to the next sequence for a manual dice press: the pre-generated
+   *  one if it's ready, otherwise generates on the spot. */
   async function advance(): Promise<void> {
-    if (busy) return;
+    if (busy || !current) return;
     busy = true;
     try {
       let seq = preparedNext;
@@ -123,38 +120,52 @@ export function createHeroAct(options?: {
       if (!seq) {
         prop = nextPropInCycle(currentProp);
         const chainedStartPosition = current.startPosition ?? null;
-        seq = await generatePerVisitDemo({ propType: prop, startPosition: chainedStartPosition });
+        seq = await generatePerVisitDemo({
+          propType: prop,
+          startPosition: chainedStartPosition,
+        });
       }
+      // A manual roll is one state transaction: the incoming word must never
+      // render for even one frame with the outgoing prop. The renderer begins
+      // its sprite crossfade from this prop-type change.
       current = seq;
+      currentProp = prop;
       passesSinceAdvance = 0;
       prepareNext(prop);
-      // Sequence first, prop second: the player swaps onto the new sequence
-      // immediately (start hold, chained pose), then — once motion is under
-      // way — the prop override flips and the engine's 900ms crossfade
-      // morphs it mid-spin, where it actually reads. `busy` stays true for
-      // the whole window so a dice press can't interleave a second advance.
-      if (propMorphDelayMs > 0) {
-        await new Promise<void>((resolve) => setTimeout(resolve, propMorphDelayMs));
-      }
-      currentProp = prop;
     } finally {
       busy = false;
     }
   }
 
   /**
-   * Wired to InlineAnimationPlayer's `onLoopComplete` — fires at every loop
-   * wraparound of whatever is currently playing (a seamlessly-loopable
-   * sequence never "ends" on its own). Once the pass quota is met, advance
-   * only if the next sequence has actually finished generating; otherwise
-   * keep looping the current one and re-check at the next boundary rather
-   * than stall on a gap or teleport onto a half-built sequence.
+   * Offers the prefetched continuation at a natural playback boundary. The
+   * controller initializes it first, then calls `accept` within the same frame
+   * to publish the matching sequence and prop together. If generation has not
+   * landed, returning null leaves the current LOOP running until the next pass.
    */
-  function handleLoopComplete(): void {
+  function offerSequenceBoundary(): PreparedSequenceHandoff | null {
     passesSinceAdvance += 1;
-    if (passesSinceAdvance < PASSES_PER_SEQUENCE) return;
-    if (!preparedNext) return;
-    void advance();
+    if (passesSinceAdvance < PASSES_PER_SEQUENCE) return null;
+    if (busy || !preparedNext) return null;
+
+    const sequence = preparedNext;
+    const prop = preparedNextProp;
+    return {
+      sequence,
+      accept() {
+        // The offer and acceptance happen synchronously in one rAF callback.
+        // The identity guard keeps this transaction safe if that contract is
+        // ever widened to permit an asynchronous controller.
+        if (busy || preparedNext !== sequence || preparedNextProp !== prop) {
+          return;
+        }
+        current = sequence;
+        currentProp = prop;
+        preparedNext = null;
+        passesSinceAdvance = 0;
+        prepareNext(prop);
+      },
+    };
   }
 
   /** Dice button: advance right now, regardless of pass count. Returns the
@@ -164,12 +175,27 @@ export function createHeroAct(options?: {
     return advance();
   }
 
-  /** Starts the background pre-generation. Call once, from a host's
-   *  onMount — never during SSR/initial render. */
+  /** Generates the first playable sequence, then starts background
+   *  pre-generation for the next prop. Call once from the host's onMount. */
   function start(): void {
     if (started) return;
     started = true;
-    prepareNext();
+
+    // Choose only after hydration. Running this during factory construction
+    // would let SSR and the browser pick different props for the same page.
+    const initialProp = pickInitialProp();
+    currentProp = initialProp;
+    preparedNextProp = nextPropInCycle(initialProp);
+    busy = true;
+    void generatePerVisitDemo({ propType: initialProp })
+      .then((seq) => {
+        current = seq;
+        passesSinceAdvance = 0;
+        prepareNext(initialProp);
+      })
+      .finally(() => {
+        busy = false;
+      });
   }
 
   return {
@@ -183,7 +209,7 @@ export function createHeroAct(options?: {
       return busy;
     },
     start,
-    handleLoopComplete,
+    offerSequenceBoundary,
     advanceNow,
   };
 }

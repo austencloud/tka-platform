@@ -1,6 +1,62 @@
 <script lang="ts">
+  import Seo from "$lib/shared/components/Seo.svelte";
   import PositionTrioGrid from "$lib/shared/landing/components/PositionTrioGrid.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
+
+  const TITLE = "About The Kinetic Alphabet";
+  const DESCRIPTION =
+    "The Kinetic Alphabet (TKA) is a notation system for flow arts. Learn what TKA is, how it works, and why it exists.";
+  const URL = "https://tkaflowarts.com/about";
+  const PERSON_ID = `${URL}#austen-cloud`;
+
+  const pageJsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "AboutPage",
+        "@id": `${URL}#about-page`,
+        name: TITLE,
+        url: URL,
+        description: DESCRIPTION,
+        inLanguage: "en-US",
+        mainEntity: { "@id": "https://tkaflowarts.com/#tka" },
+        isPartOf: { "@id": "https://tkaflowarts.com/#website" },
+      },
+      {
+        "@type": "Thing",
+        "@id": "https://tkaflowarts.com/#tka",
+        name: "The Kinetic Alphabet",
+        alternateName: "TKA",
+        description:
+          "A pictographic notation system for flow arts choreography.",
+      },
+      {
+        "@type": "Person",
+        "@id": PERSON_ID,
+        name: "Austen Cloud",
+        url: `${URL}#austen-cloud`,
+        award: "2024–25 Seed Fund grant recipient for The Kinetic Alphabet",
+      },
+      {
+        "@type": "BreadcrumbList",
+        "@id": `${URL}#breadcrumb`,
+        itemListElement: [
+          {
+            "@type": "ListItem",
+            position: 1,
+            name: "Home",
+            item: "https://tkaflowarts.com/",
+          },
+          {
+            "@type": "ListItem",
+            position: 2,
+            name: "About",
+            item: URL,
+          },
+        ],
+      },
+    ],
+  }).replace(/</g, "\\u003c");
 
   const sections = [
     {
@@ -54,117 +110,87 @@
   ];
 </script>
 
-<svelte:head>
-  <title>About The Kinetic Alphabet</title>
-  <meta
-    name="description"
-    content="The Kinetic Alphabet (TKA) is a notation system for flow arts. Learn what TKA is, how it works, and why it exists."
-  />
-  <link rel="canonical" href="https://tkaflowarts.com/about" />
-
-  <meta property="og:type" content="article" />
-  <meta property="og:url" content="https://tkaflowarts.com/about" />
-  <meta property="og:title" content="About The Kinetic Alphabet" />
-  <meta
-    property="og:description"
-    content="The Kinetic Alphabet (TKA) is a notation system for flow arts. Learn what TKA is, how it works, and why it exists."
-  />
-  <meta property="og:image" content="https://tkaflowarts.com/branding/og-image.png" />
-
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="About The Kinetic Alphabet" />
-  <meta
-    name="twitter:description"
-    content="The Kinetic Alphabet (TKA) is a notation system for flow arts. Learn what TKA is, how it works, and why it exists."
-  />
-  <meta name="twitter:image" content="https://tkaflowarts.com/branding/og-image.png" />
-
-  <!-- JSON-LD: AboutPage identifies this page and its subject (the TKA system) -->
-  {@html `<script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "AboutPage",
-    "name": "About The Kinetic Alphabet",
-    "url": "https://tkaflowarts.com/about",
-    "description": "The Kinetic Alphabet (TKA) is a notation system for flow arts. Learn what TKA is, how it works, and why it exists.",
-    "inLanguage": "en-US",
-    "mainEntity": {
-      "@type": "Thing",
-      "name": "The Kinetic Alphabet",
-      "alternateName": ["TKA", "Kinetic Alphabet", "Flow Arts Notation"],
-      "description": "A notation system for flow arts that uses pictographs to document staff, club, fan, hoop, and buugeng choreography."
-    },
-    "isPartOf": {
-      "@type": "WebSite",
-      "name": "TKA - The Kinetic Alphabet",
-      "url": "https://tkaflowarts.com/"
-    }
-  }
-  </script>`}
-
-  <!-- JSON-LD: BreadcrumbList for search result hierarchy -->
-  {@html `<script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      {
-        "@type": "ListItem",
-        "position": 1,
-        "name": "Home",
-        "item": "https://tkaflowarts.com/"
-      },
-      {
-        "@type": "ListItem",
-        "position": 2,
-        "name": "About",
-        "item": "https://tkaflowarts.com/about"
-      }
-    ]
-  }
-  </script>`}
-</svelte:head>
+<Seo
+  title={TITLE}
+  description={DESCRIPTION}
+  canonical={URL}
+  ogType="article"
+  ogImageAlt="The Kinetic Alphabet pictographs"
+>
+  {@html `<script type="application/ld+json">${pageJsonLd}</script>`}
+</Seo>
 
 <div class="editorial">
-    <header class="editorial-header">
-      <h1 class="page-title">The Kinetic Alphabet</h1>
-      <p class="page-subtitle">A notation system for flow arts</p>
-    </header>
+  <header class="editorial-header">
+    <h1 class="page-title">The Kinetic Alphabet</h1>
+    <p class="page-subtitle">A notation system for flow arts</p>
+  </header>
 
-    {#each sections as section}
-      <section class="editorial-section" style="--accent: {section.color}">
-        <h2 class="section-title">{section.title}</h2>
+  {#each sections as section}
+    <section class="editorial-section" style="--accent: {section.color}">
+      <h2 class="section-title">{section.title}</h2>
 
-        <div class="prose">
-          {#each section.content as paragraph}
-            <p>{paragraph}</p>
-          {/each}
-          {#if section.id === "notation"}
-            <PositionTrioGrid />
-            <p>
-              Want the full breakdown, with the positions rendered live? Read the
-              <a href="/notation">notation page</a>.
-            </p>
-          {/if}
-        </div>
-      </section>
-    {/each}
+      <div class="prose">
+        {#each section.content as paragraph}
+          <p>{paragraph}</p>
+        {/each}
+        {#if section.id === "notation"}
+          <PositionTrioGrid />
+          <p>
+            Want the full breakdown, with the positions rendered live? Read the
+            <a href="/notation">notation page</a>.
+          </p>
+        {/if}
+      </div>
+    </section>
+  {/each}
 
-    <!-- CTA. The FAQ moved to its own page (/faq, in the header's Learn menu);
-         the pointer below keeps the path discoverable from here. -->
-    <div class="cta-card">
-      <h3>Ready to create?</h3>
+  <section
+    id="austen-cloud"
+    class="editorial-section"
+    style="--accent: #8b5cf6"
+  >
+    <span class="section-kicker">Creator</span>
+    <h2 class="section-title">Built by Austen Cloud</h2>
+    <div class="prose">
       <p>
-        Flow Arts Composer is free to use. No download required. Still have
-        questions? The <a href="/faq" class="faq-link">FAQ</a> covers the common ones.
+        The Kinetic Alphabet and
+        <a href="/composer">Flow Arts Composer</a> are the work of Austen Cloud. Austen
+        Cloud received a 2024–25 Seed Fund grant for The Kinetic Alphabet.
       </p>
-      <a href="/create" class="cta-button" data-sveltekit-reload>
-        <span>Open Flow Arts Composer</span>
-        <i class="fas fa-arrow-right" aria-hidden="true"></i>
-      </a>
+      <p>
+        The history behind the notation and its software is documented on this
+        site. Corrections can be sent to
+        <a href="mailto:support@tkaflowarts.com">support@tkaflowarts.com</a>.
+      </p>
     </div>
-    <p class="creator-credit">Created by Austen Cloud • 2022–present</p>
+    <div class="resource-row">
+      <a
+        href="https://fundtheflowarts.org/announcing-2024-25-seed-fund-grant-recipients/"
+        class="resource-chip"
+        rel="noopener noreferrer">See the Seed Fund announcement</a
+      >
+      <a href="/roots/software" class="resource-chip"
+        >Read the software history</a
+      >
+    </div>
+  </section>
+
+  <!-- CTA. The FAQ moved to its own page (/faq, in the header's Learn menu);
+         the pointer below keeps the path discoverable from here. -->
+  <div class="cta-card">
+    <h3>Ready to create?</h3>
+    <p>
+      Flow Arts Composer is free to use. No download required. Still have
+      questions? The <a href="/faq" class="faq-link">FAQ</a> covers the common ones.
+    </p>
+    <a href="/create" class="cta-button" data-sveltekit-reload>
+      <span>Open Flow Arts Composer</span>
+      <i class="fas fa-arrow-right" aria-hidden="true"></i>
+    </a>
   </div>
+  <p class="creator-credit">Created by Austen Cloud • 2022–present</p>
+</div>
 
 <style>
   /* In-sentence FAQ pointer inside the CTA card: same treatment as .prose

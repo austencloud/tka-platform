@@ -182,37 +182,13 @@
     }
   }
 
-  /* ── 4K tier (≥2200): same spread, scaled with intent — larger serif,
-     wider gutters, bigger targets. */
-  @media (min-width: 2200px) {
-    .qa-list {
-      column-gap: 7rem;
-    }
-    .qa {
-      padding-block: 2.9rem;
-    }
-    .qa:first-of-type {
-      padding-top: 2.9rem;
-    }
-    .qa:last-of-type {
-      padding-bottom: 2.9rem;
-    }
-    h2 {
-      font-size: 2.9rem;
-    }
-    .question {
-      font-size: 2.05rem;
-    }
-    .answer {
-      font-size: 1.28rem;
-    }
-    .faq-cta {
-      min-height: 52px;
-      padding: 0 26px;
-      font-size: 1.05rem;
-      border-radius: 12px;
-    }
-  }
+  /* 4K scaling is handled by the site-wide lockstep root ramp (src/app.css):
+     every rem here — gutters, serif sizes, padding — grows by one multiplier
+     from 1680→3840. The old @media (min-width: 2200px) step tier that used to
+     live here was doing this job in one jolt, at a width that never fires on a
+     4K monitor at 200% OS scaling (~1920 CSS px). The CTA's px min-height/
+     padding are the only things that don't ride the ramp; they're touch-target
+     floors, correct as-is. */
 
   @media (prefers-reduced-motion: reduce) {
     .faq-cta {

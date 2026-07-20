@@ -94,6 +94,8 @@ export function createAttractGhost(opts: {
   let stopped = false; // takeover: cycle unwinds, ghost parks until resume
   let running = false;
   let inViewport = false;
+  let parkedWake: (() => void) | null = null;
+  let resumeInFlight = false;
 
   const halted = () => dead || stopped;
 
@@ -364,8 +366,28 @@ export function createAttractGhost(opts: {
     }
     ghost.visible = true;
     ghost.parked = true;
-    while (!dead && stopped) await raw(150);
+    if (!dead && stopped) {
+      await new Promise<void>((resolve) => {
+        parkedWake = resolve;
+        if (!stopped || dead) {
+          parkedWake = null;
+          resolve();
+        }
+      });
+    }
     ghost.parked = false;
+    if (resumeInFlight) {
+      // Let Svelte remove the focused resume button before takeover is armed
+      // again. Its focus handoff belongs to the resume gesture, not the user.
+      await Promise.resolve();
+      resumeInFlight = false;
+    }
+  }
+
+  function wakeParkedLoop(): void {
+    const wake = parkedWake;
+    parkedWake = null;
+    wake?.();
   }
 
   const handle: AttractActHandle = {
@@ -375,13 +397,29 @@ export function createAttractGhost(opts: {
       inViewport = visible;
     },
     pause: () => {
+      if (resumeInFlight) return;
       stopped = true;
     },
     resume: () => {
-      stopped = false;
+      if (dead || !stopped || resumeInFlight) return;
+      resumeInFlight = true;
+      // Finish the button's pointer/click/focus activation while the act is
+      // still paused. A trailing focusin can then never re-park the ghost.
+      queueMicrotask(() => {
+        if (dead) {
+          resumeInFlight = false;
+          return;
+        }
+        const unparkWillSettle = ghost.parked;
+        stopped = false;
+        wakeParkedLoop();
+        if (!unparkWillSettle) resumeInFlight = false;
+      });
     },
     kill: () => {
       dead = true;
+      resumeInFlight = false;
+      wakeParkedLoop();
       setHover(null);
       ghost.visible = false;
     },

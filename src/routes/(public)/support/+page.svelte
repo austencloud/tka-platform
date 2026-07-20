@@ -94,10 +94,9 @@
      SupportContent is shared with the in-app modal, so scale it here at the
      route level (zoom is standardized and participates in layout, unlike
      transform) instead of forking the shared card's internals. */
-  @media (min-width: 2200px) {
-    .support > :global(.jar-card) {
-      zoom: 1.3;
-    }
-  }
+  /* The `zoom: 1.3` 4K hack is gone. It fired at 2200px (never on a 4K
+     monitor at 200% scaling, ~1920 CSS px) and zoom scales a subtree bluntly,
+     including things that shouldn't grow. The lockstep root ramp (src/app.css)
+     now scales the card's rem measures continuously from 1680→3840. */
 
 </style>

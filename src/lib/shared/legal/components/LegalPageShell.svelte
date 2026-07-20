@@ -50,14 +50,21 @@
   .legal-container {
     position: relative;
     z-index: 1;
-    max-width: 800px;
+    /* rem, not px: this element opts the page into the lockstep root ramp
+       (src/app.css keys on .legal-container), so the document and its measure
+       grow together from 1680→3840 instead of the text staying 16px inside a
+       fixed 800px column on a 4K panel. 50rem == the old 800px at a 16px root,
+       and 1200px at the 24px root. A legal document is the one place a
+       reading measure is the right call — it just has to scale with the type
+       rather than pin it. */
+    max-width: 50rem;
     width: 100%;
     margin: 0 auto;
     padding: 2rem 1.5rem 4rem;
   }
 
   .legal-page.compact .legal-container {
-    max-width: 1000px;
+    max-width: 62.5rem; /* was 1000px — same value at a 16px root, now ramps */
     padding: 0;
   }
 

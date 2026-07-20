@@ -5,18 +5,20 @@
   sequence demo (promoted from the composer page so any host can use it),
   and a pointer link to the What is TKA first-read (/about) for strangers.
 
-  The fixture (FALLBACK_DEMO, a real sequence) is the initial content and is
-  present at SSR — the caption word renders before JS runs, unlike the
-  composer host which starts null and generates on mount. Once hydrated, the
-  hero attract act (hero-act.svelte.ts) takes over: it walks through a small
-  cycle of props, one freshly generated LOOP at a time, handing off at each
-  loop boundary. The dice button still works as an immediate "advance now."
+  The fixed stage is present at SSR, but the player stays unmounted until the
+  first per-visit sequence finishes generating after hydration. The hero
+  attract act (hero-act.svelte.ts) then walks through a small cycle of props,
+  one freshly generated LOOP at a time, handing off at each loop boundary.
+  The baked fixture is visible only if the generator itself falls back to it.
 -->
 <script lang="ts">
   import { onMount } from "svelte";
   import SequenceHeroDemo from "./SequenceHeroDemo.svelte";
   import { createHeroAct } from "$lib/shared/landing/data/hero-act.svelte";
-  import { HERO_TRAIL_PRESET, HERO_TIP_EFFECT_MAP } from "$lib/shared/landing/data/hero-trail-preset";
+  import {
+    HERO_TRAIL_PRESET,
+    HERO_TIP_EFFECT_MAP,
+  } from "$lib/shared/landing/data/hero-trail-preset";
 
   const heroAct = createHeroAct();
 
@@ -44,10 +46,12 @@
     rerolling={heroAct.rerolling}
     bluePropType={heroAct.propType}
     redPropType={heroAct.propType}
-    onLoopComplete={heroAct.handleLoopComplete}
+    onSequenceBoundary={heroAct.offerSequenceBoundary}
     trailSettingsOverride={HERO_TRAIL_PRESET}
     tipEffectMap={HERO_TIP_EFFECT_MAP}
     externalBpm={HERO_BPM}
+    showNotationStrip={true}
+    showWordHeader={true}
   />
 
   <p class="hero-pointer">
@@ -59,6 +63,7 @@
   .home-hero {
     display: flex;
     flex-direction: column;
+    container: home-hero / inline-size;
     /* stretch, NOT center: centered flex items shrink to fit-content, and the
        demo stage's only in-flow content is its caption line, so centering
        collapsed the whole player to ~285px. Children center themselves
@@ -73,7 +78,12 @@
     min-height: calc(100svh - clamp(220px, 26vh, 320px));
     /* Top padding clears the fixed MarketingChrome header (~64px) so the
        title never slides under it when the content centers. */
-    padding: calc(64px + clamp(1.5rem, 3.5vh, 2.5rem)) 1.25rem clamp(1.5rem, 4vh, 2.5rem);
+    padding: calc(64px + clamp(1.5rem, 3.5vh, 2.5rem)) 1.25rem
+      clamp(1.5rem, 4vh, 2.5rem);
+    /* The compact notation rail replaces the old visible caption. At stacked
+       widths, a slightly tighter square keeps the combined media card at the
+       same visual weight as the former stage + caption. */
+    --hero-demo-max-width: min(24rem, 100%);
   }
 
   .home-hero-title {
@@ -83,7 +93,12 @@
     display: block;
     max-width: 14ch;
     margin-inline: auto;
-    font-family: var(--landing-heading-font, "Playfair Display", Georgia, serif);
+    font-family: var(
+      --landing-heading-font,
+      "Playfair Display",
+      Georgia,
+      serif
+    );
     font-weight: 500;
     /* Fluid to 4K/5K: ~2.4rem on phones, ~4.5rem at 1920, capped 6rem. */
     font-size: clamp(2.4rem, 3.4vw + 0.5rem, 6rem);
@@ -154,6 +169,74 @@
     }
   }
 
+  /* Tablet composition: the page owns the two panes, so this side only has
+     to balance its title, player, and two actions inside the available height. */
+  @media (min-width: 760px) and (max-width: 1679px) and (min-height: 500px) {
+    .home-hero {
+      min-height: 0;
+      height: 100%;
+      padding: clamp(0.75rem, 2svh, 1.5rem) 0;
+      --hero-demo-max-width: min(100%, clamp(15rem, 36svh, 24rem));
+    }
+    .home-hero :global(.hero-demo.with-notation-strip) {
+      margin-top: clamp(1rem, 2.4svh, 1.8rem);
+    }
+    .title-main {
+      font-size: clamp(2.5rem, 11cqi, 3.5rem);
+    }
+    .title-sub {
+      font-size: clamp(0.9rem, 3.5cqi, 1.15rem);
+    }
+    .hero-pointer {
+      margin-top: clamp(0.75rem, 2svh, 1.25rem);
+      font-size: 0.9rem;
+    }
+  }
+
+  @media (min-width: 760px) and (max-width: 1679px) and (min-height: 500px) and (max-height: 850px) {
+    .home-hero {
+      padding: 0.5rem 0;
+      --hero-demo-max-width: min(100%, 30svh);
+    }
+    .home-hero :global(.hero-demo.with-notation-strip) {
+      margin-top: 0.75rem;
+    }
+    .title-main {
+      font-size: clamp(2.15rem, 10cqi, 2.75rem);
+    }
+    .title-sub {
+      margin-top: 0.35em;
+      font-size: 0.9rem;
+    }
+    .hero-pointer {
+      margin-top: 0.5rem;
+    }
+  }
+
+  /* A Fold in landscape has tablet width but substantially less height. The
+     thumbnail rail disappears at this size, so the animation can spend that
+     recovered height on a much wider square without pushing out either CTA. */
+  @media (min-width: 760px) and (max-width: 1180px) and (min-height: 500px) and (max-height: 649px) {
+    .home-hero {
+      padding: 0.25rem 0;
+      --hero-demo-max-width: min(100%, 40svh);
+    }
+    .home-hero :global(.hero-demo.with-notation-strip) {
+      margin-top: 0.35rem;
+    }
+    .title-main {
+      font-size: clamp(1.75rem, 9cqi, 2.1rem);
+    }
+    .title-sub {
+      margin-top: 0.2em;
+      font-size: 0.8rem;
+    }
+    .hero-pointer {
+      margin-top: 0.25rem;
+      font-size: 0.875rem;
+    }
+  }
+
   /* Split tier: the page composes hero (left pane) + launchpad (right pane)
      into one viewport (see +page.svelte). The pane owns the height, so the
      stacked-mode viewport sizing comes off. */
@@ -162,20 +245,18 @@
       min-height: 0;
       height: 100%;
       padding: 1.5rem 0;
+      /* 48px comes back out of the square because the compact rail adds 79px
+         where the visible caption previously occupied roughly 30px. */
+      --hero-demo-wide-max-width: min(calc(48svh - 3rem), 31rem);
     }
-    /* One-viewport budget: title (~200px) + caption/dice/pointer (~290px)
-       leave ~500px for the stage at 1080p. SequenceHeroDemo's own ultrawide
-       60vh cap is tuned for stacked pages and overflows the split pane. */
-    .home-hero :global(.hero-demo) {
-      max-width: min(48vh, 34rem);
+    .title-main {
+      font-size: clamp(3.8rem, 11.3cqi, 4.4rem);
     }
-  }
-
-  /* 4K tier: the taller viewport affords a larger stage so the hero keeps
-     its weight against the scaled-up grid. */
-  @media (min-width: 2200px) {
-    .home-hero :global(.hero-demo) {
-      max-width: min(44vh, 46rem);
+    .title-sub {
+      font-size: 1.3rem;
+    }
+    .hero-pointer {
+      font-size: 0.95rem;
     }
   }
 </style>

@@ -1,6 +1,8 @@
 <script lang="ts">
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
+  import Seo from "$lib/shared/components/Seo.svelte";
   import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
+  import { trackCtaClick } from "../../landing/landing-analytics";
   import FanSkeleton from "./_components/FanSkeleton.svelte";
   import PlayWithItSkeleton from "../../landing/components/PlayWithItSkeleton.svelte";
   import { onMount } from "svelte";
@@ -72,8 +74,83 @@
     }
   }
 
+  const TITLE = "Flow Arts Composer | Free Flow Arts Software for Choreography";
   const DESCRIPTION =
-    "Flow Arts Composer is free flow arts software for building choreography in your browser. Construct sequences step by step, generate them from parameters, animate them, and share them. Supports staff, fans, clubs, hoops, buugeng, and more.";
+    "Flow Arts Composer is free flow arts software for building, animating, saving, and sharing choreography in your browser with The Kinetic Alphabet.";
+  const URL = "https://tkaflowarts.com/composer";
+  const ORGANIZATION_ID = "https://tkaflowarts.com/#organization";
+  const WEBSITE_ID = "https://tkaflowarts.com/#website";
+  const CREATOR_ID = "https://tkaflowarts.com/about#austen-cloud";
+  const SOFTWARE_ID = `${URL}#software`;
+  const COMPOSER_IMAGE =
+    "https://tkaflowarts.com/branding/composer-og-image.png";
+
+  const softwareJsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "@id": SOFTWARE_ID,
+    name: "Flow Arts Composer",
+    description: DESCRIPTION,
+    url: URL,
+    mainEntityOfPage: URL,
+    applicationCategory: "EducationalApplication",
+    keywords:
+      "flow arts software, flow arts choreography software, flow arts app",
+    operatingSystem: "Web browser",
+    image: COMPOSER_IMAGE,
+    inLanguage: "en-US",
+    isAccessibleForFree: true,
+    featureList: [
+      "Construct sequences step by step with only valid options presented",
+      "Generate sequences from parameters",
+      "Animate sequences in 2D with trails and effects",
+      "Watch sequences in a 3D viewer with full scenes",
+      "Organize saved sequences into collections",
+      "Browse and share community sequences",
+      "Multiply sequences into tunnels for 2, 4, or 8 performers",
+      "Export images and video",
+      "Practice modes and an interactive guide",
+      "Switch animations between active prop visuals",
+    ],
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
+      availability: "https://schema.org/InStock",
+      url: "https://tkaflowarts.com/create",
+    },
+    author: { "@id": ORGANIZATION_ID },
+    creator: { "@id": CREATOR_ID },
+    publisher: { "@id": ORGANIZATION_ID },
+    isPartOf: { "@id": WEBSITE_ID },
+  }).replace(/</g, "\\u003c");
+
+  const breadcrumbJsonLd = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://tkaflowarts.com/",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Composer",
+        item: URL,
+      },
+    ],
+  }).replace(/</g, "\\u003c");
+
+  function trackOpenComposer(location: "hero" | "viewer_3d" | "footer"): void {
+    trackCtaClick(location, {
+      page: "composer",
+      cta_type: "open_composer",
+      destination: "/create",
+    });
+  }
 
   // The heavy canvas demos in the Outputs wing + the Try-it tail mount only when
   // their section approaches the viewport.
@@ -129,142 +206,23 @@
   ];
 </script>
 
-<svelte:head>
-  <title>Flow Arts Composer | Free Flow Arts Software for Choreography</title>
-  <meta name="description" content={DESCRIPTION} />
-  <link rel="canonical" href="https://tkaflowarts.com/composer" />
-
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="The Kinetic Alphabet" />
-  <meta property="og:url" content="https://tkaflowarts.com/composer" />
-  <meta
-    property="og:title"
-    content="Flow Arts Composer | Free Flow Arts Software for Choreography"
-  />
-  <meta property="og:description" content={DESCRIPTION} />
-  <meta
-    property="og:image"
-    content="https://tkaflowarts.com/branding/og-image.png"
-  />
-
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta
-    name="twitter:title"
-    content="Flow Arts Composer | Free Flow Arts Software for Choreography"
-  />
-  <meta name="twitter:description" content={DESCRIPTION} />
-  <meta
-    name="twitter:image"
-    content="https://tkaflowarts.com/branding/og-image.png"
-  />
-
-  {@html `<script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "Flow Arts Composer",
-    "alternateName": "The Kinetic Alphabet Composer",
-    "description": "${DESCRIPTION}",
-    "url": "https://tkaflowarts.com/composer",
-    "applicationCategory": "EducationalApplication",
-    "keywords": "flow arts software, flow arts choreography software, flow arts app",
-    "operatingSystem": "Any (Web Browser)",
-    "browserRequirements": "Requires JavaScript. Works on Chrome, Firefox, Safari, Edge.",
-    "image": "https://tkaflowarts.com/branding/og-image.png",
-    "screenshot": "https://tkaflowarts.com/branding/og-image.png",
-    "inLanguage": "en-US",
-    "featureList": [
-      "Construct sequences step by step with only valid options presented",
-      "Generate sequences from parameters",
-      "Animate sequences in 2D with trails and effects",
-      "Watch sequences in a 3D viewer with full scenes",
-      "Organize saved sequences into collections",
-      "Browse and share community sequences",
-      "Multiply sequences into tunnels for 2, 4, or 8 performers",
-      "Export images and video",
-      "Practice modes and an interactive guide",
-      "Supports staff, fan, hoop, buugeng, triad, club, sword, and more"
-    ],
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD",
-      "availability": "https://schema.org/InStock"
-    },
-    "author": {
-      "@type": "Organization",
-      "name": "The Kinetic Alphabet",
-      "url": "https://tkaflowarts.com/"
-    }
-  }
-  </script>`}
-
-  {@html `<script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "HowTo",
-    "name": "How to Create Flow Arts Choreography with Flow Arts Composer",
-    "description": "Learn to create, animate, and share staff, clubs, fans, and hoop sequences using TKA notation.",
-    "image": "https://tkaflowarts.com/branding/og-image.png",
-    "totalTime": "PT10M",
-    "tool": [
-      {
-        "@type": "HowToTool",
-        "name": "Web browser (Chrome, Firefox, Safari, or Edge)"
-      }
-    ],
-    "step": [
-      {
-        "@type": "HowToStep",
-        "position": 1,
-        "name": "Open Flow Arts Composer",
-        "text": "Visit tkaflowarts.com/create to launch the free web application.",
-        "url": "https://tkaflowarts.com/create"
-      },
-      {
-        "@type": "HowToStep",
-        "position": 2,
-        "name": "Choose a creation mode",
-        "text": "Choose how to build: by hand step-by-step, or let the app generate patterns for you."
-      },
-      {
-        "@type": "HowToStep",
-        "position": 3,
-        "name": "Build your sequence",
-        "text": "Add movements by selecting start positions, hand motions, and transitions. Each step is represented as a pictograph."
-      },
-      {
-        "@type": "HowToStep",
-        "position": 4,
-        "name": "Animate and preview",
-        "text": "Switch to the Animate module to watch your sequence come alive with 2D visualization and motion trails."
-      },
-      {
-        "@type": "HowToStep",
-        "position": 5,
-        "name": "Export and share",
-        "text": "Export your choreography as PNG, PDF, GIF, or video. Share links directly to Instagram."
-      }
-    ]
-  }
-  </script>`}
-
-  {@html `<script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://tkaflowarts.com/" },
-      { "@type": "ListItem", "position": 2, "name": "Composer", "item": "https://tkaflowarts.com/composer" }
-    ]
-  }
-  </script>`}
-</svelte:head>
+<Seo
+  title={TITLE}
+  description={DESCRIPTION}
+  canonical={URL}
+  ogImage={COMPOSER_IMAGE}
+  ogImageAlt="Flow Arts Composer, flow arts software for choreography"
+>
+  {@html `<script type="application/ld+json">${softwareJsonLd}</script>`}
+  {@html `<script type="application/ld+json">${breadcrumbJsonLd}</script>`}
+</Seo>
 
 <div class="editorial">
   <!-- Hero: stacked and centered by default; from 1680px up it splits into a
-       duo — copy left, the live notation player right. -->
-  <div class="hero-duo">
+       duo — copy left, the live notation player right. The shared
+       view-transition-name links this hero to the landing "Composer" launchpad
+       tile, so navigating between the two morphs one into the other (rev-3). -->
+  <div class="hero-duo" style:view-transition-name="launchpad-composer">
     <header class="editorial-header">
       <h1 class="page-title">Flow Arts Composer</h1>
       <p class="page-subtitle">
@@ -277,10 +235,9 @@
     <div class="lede">
       <p>
         Flow Arts Composer is free flow arts software for building choreography
-        in your browser. Construct sequences step by step, generate them from
-        parameters, watch them animate, and share them with other flow artists.
-        It supports staff, fans, clubs, hoops, buugeng, and more, all built on
-        The Kinetic Alphabet notation system.
+        in your browser. Construct a sequence step by step or generate one from
+        parameters, then watch, save, export, and share the result. The Kinetic
+        Alphabet keeps the notation attached to the movement.
       </p>
     </div>
 
@@ -294,7 +251,12 @@
     </div>
 
     <div class="hero-ctas">
-      <a href="/create" class="cta-button" data-sveltekit-reload>
+      <a
+        href="/create"
+        class="cta-button"
+        data-sveltekit-reload
+        onclick={() => trackOpenComposer("hero")}
+      >
         <span>Open Composer</span>
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </a>
@@ -303,6 +265,36 @@
       </a>
     </div>
   </div>
+
+  <section
+    id="what-is-flow-arts-software"
+    class="editorial-section"
+    style="--accent:#38bdf8"
+  >
+    <span class="section-kicker">Flow arts software</span>
+    <h2 class="section-title">What is flow arts software?</h2>
+    <div class="prose">
+      <p>
+        Flow arts software is a digital tool made for planning, learning,
+        recording, practicing, or presenting prop-based movement. The category
+        includes lesson libraries, practice planners, video-effects apps,
+        simulators, and composition tools.
+      </p>
+      <p>
+        Flow Arts Composer handles composition. Build a sequence, see its
+        notation alongside the animation, keep it in a library, export it, or
+        send someone a link they can open. The working demos throughout this
+        page run the product itself. Features still in development stay in the
+        roadmap below.
+      </p>
+    </div>
+    <div class="resource-row">
+      <a href="/roots/software" class="resource-chip"
+        >Read the history of flow arts software</a
+      >
+      <a href="/faq" class="resource-chip">Read the common questions</a>
+    </div>
+  </section>
 
   <!-- WING 1: CREATE -->
   <div class="wing-band" style="--wc:#8b8cff">
@@ -499,8 +491,11 @@
       viewer, running live.
     </p>
     <div class="resource-row">
-      <a href="/create" class="resource-chip" data-sveltekit-reload
-        >Open a sequence in 3D</a
+      <a
+        href="/create"
+        class="resource-chip"
+        data-sveltekit-reload
+        onclick={() => trackOpenComposer("viewer_3d")}>Open a sequence in 3D</a
       >
     </div>
   </section>
@@ -544,7 +539,7 @@
     <div class="prose">
       <p>
         Follow the people whose flow you like. Their new sequences surface when
-        you come back — a set of creators worth watching, not a feed to scroll.
+        you come back. The list ends. There is no infinite feed to scroll.
       </p>
     </div>
     <div class="breakout wide slot" use:whenNear={"connect"}>
@@ -568,9 +563,9 @@
     <h2 class="section-title">Everyone's sequences, yours to collect</h2>
     <div class="prose">
       <p>
-        Browse everything the community has shared, filter it down, and drop what
-        you like into a collection. Smart Collections fill themselves from a rule
-        you set once.
+        Browse everything the community has shared, filter it down, and drop
+        what you like into a collection. Smart Collections fill themselves from
+        a rule you set once.
       </p>
     </div>
     <div class="breakout wide slot" use:whenNear={"library"}>
@@ -626,17 +621,18 @@
         <div class="bento-cell text-only">
           <div class="bento-text">
             <strong>Library</strong>
-            <span>collections and smart collections for everything you save</span
+            <span
+              >collections and smart collections for everything you save</span
             >
           </div>
         </div>
 
         <div class="bento-cell text-only">
           <div class="bento-text">
-            <strong>Props</strong>
+            <strong>Prop visuals</strong>
             <span
-              >eleven supported: staff, fan, hoop, buugeng, triad, club, sword,
-              double star, eight rings, guitar, quiad</span
+              >switch the animation between active visuals including staff,
+              clubs, fans, hoops, buugeng, and triads</span
             >
           </div>
         </div>
@@ -684,14 +680,25 @@
       <p>
         The Kinetic Alphabet exists on paper. It existed before this app, and it
         works without it: two pens and a notebook are enough to record
-        choreography. Composer is an instrument built for that language. And like
-        any instrument, you don't have to read the music to play it. The app
-        handles the letters. You handle the movement.
+        choreography. Composer is an instrument built for that language. And
+        like any instrument, you don't have to read the music to play it. The
+        app handles the letters. You handle the movement.
+      </p>
+      <p>
+        The current notation model starts with double staves. Directly gripped
+        static props such as fans, clubs, and buugeng can use the same
+        structure. Momentum-based props, tosses, contact rolling, and grip
+        changes are not covered as equivalent movements. A prop visual in
+        Composer does not imply that the full movement model applies to that
+        prop.
       </p>
     </div>
     <div class="resource-row">
       <a href="/notation" class="resource-chip">Read about the notation</a>
       <a href="/about" class="resource-chip">About the project</a>
+      <a href="/faq" class="resource-chip">Product FAQ</a>
+      <a href="/support" class="resource-chip">Support</a>
+      <a href="/privacy" class="resource-chip">Privacy</a>
     </div>
   </section>
 
@@ -720,7 +727,12 @@
   <div class="cta-card">
     <h3>Ready to compose?</h3>
     <p>Flow Arts Composer is free to use. No download required.</p>
-    <a href="/create" class="cta-button" data-sveltekit-reload>
+    <a
+      href="/create"
+      class="cta-button"
+      data-sveltekit-reload
+      onclick={() => trackOpenComposer("footer")}
+    >
       <span>Open Flow Arts Composer</span>
       <i class="fas fa-arrow-right" aria-hidden="true"></i>
     </a>

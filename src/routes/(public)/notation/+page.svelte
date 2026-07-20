@@ -100,7 +100,7 @@
 </svelte:head>
 
 <div class="editorial">
-  <header class="editorial-header">
+  <header class="editorial-header" style:view-transition-name="launchpad-notation">
     <h1 class="page-title">Flow Arts Notation</h1>
     <p class="page-subtitle">The family of systems for writing movement down</p>
   </header>

@@ -96,7 +96,7 @@
      guide.css's `.guide-content > .guide-page-route` rule) - needed so the
      2200px recomposition below actually gets the width to recompose into. -->
 <main class="guide guide-page-route">
-    <section class="hero">
+    <section class="hero" style:view-transition-name="launchpad-guide">
       <h1>The Kinetic Alphabet Guide</h1>
       <p class="lede">
         Written notation for flow arts. Level 1 covers the grid, hand
@@ -482,7 +482,12 @@
      sidebar - the two share one glance instead of a long scroll. Pure grid
      placement on existing DOM; below 2200px the original stacked flow is
      untouched. */
-  @media (min-width: 2200px) {
+  /* 1680 — the same seam guide.css starts its root ramp at, so the hub
+     recomposes into two columns exactly when the shell around it starts
+     scaling. At 2200 this never fired on a 4K monitor at 200% OS scaling
+     (~1920 CSS px), so the hub stayed single-column on the most common 4K
+     setup while the rest of the guide had already scaled up. */
+  @media (min-width: 1680px) {
     .guide {
       display: grid;
       grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);

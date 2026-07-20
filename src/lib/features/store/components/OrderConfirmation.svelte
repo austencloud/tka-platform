@@ -24,7 +24,11 @@
   }
 
   .confirmation-content {
-    max-width: 600px;
+    /* rem so the receipt rides the lockstep root ramp (src/app.css); 37.5rem
+       is the old 600px at a 16px root and 900px at the 24px root. A receipt
+       stays a centred card — it just shouldn't be a 600px card viewed from
+       across a room. */
+    max-width: 37.5rem;
     margin: 0 auto;
     padding: 80px 24px;
     text-align: center;

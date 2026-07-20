@@ -54,7 +54,7 @@
 </svelte:head>
 
 <div class="editorial faq-editorial">
-  <header class="editorial-header">
+  <header class="editorial-header" style:view-transition-name="launchpad-faq">
     <h1 class="page-title">FAQ</h1>
     <p class="page-subtitle">Questions spinners actually ask</p>
   </header>

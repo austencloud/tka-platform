@@ -13,6 +13,7 @@ const readSource = (path: string): string =>
 const domains = readSource("src/config/domains.ts");
 const rootLayout = readSource("src/routes/+layout.svelte");
 const homePage = readSource("src/routes/+page.svelte");
+const siteHeader = readSource("src/lib/shared/landing/components/SiteHeader.svelte");
 
 // --- Collect every href the homepage manifest links to ---------------------
 
@@ -158,6 +159,43 @@ describe("homepage public-links contract", () => {
 			expect(tile.heading.trim().length).toBeGreaterThan(0);
 			expect(tile.descriptor.trim().length).toBeGreaterThan(0);
 		}
+	});
+
+	it("keeps front doors in the grid and LOOP theory in the Notation menu", () => {
+		expect(LAUNCHPAD_TILES.map((tile) => tile.id)).toEqual([
+			"composer",
+			"choreo-cards",
+			"guide",
+			"notation",
+			"faq",
+			"glossary",
+		]);
+		expect(LAUNCHPAD_TILES.find((tile) => tile.id === "guide")?.span).toBe(
+			"2x1",
+		);
+		expect(LAUNCHPAD_TILES.find((tile) => tile.id === "faq")).toMatchObject({
+			href: "/faq",
+			span: "1x1",
+		});
+
+		const occupiedCells = LAUNCHPAD_TILES.reduce(
+			(total, tile) =>
+				total + ({ "2x2": 4, "2x1": 2, "1x1": 1 } as const)[tile.span],
+			0,
+		);
+		expect(occupiedCells).toBe(12);
+		expect(STRIP_LINKS).toEqual([
+			{ label: "Staff Choreography", href: "/learn/staff-spinning-choreography" },
+			{ label: "Software Roots", href: "/roots/software" },
+			{ label: "Support", href: "/support" },
+			{ label: "About", href: "/about" },
+		]);
+		expect(hrefEntries.some(({ href }) => href === "/notation/letters")).toBe(
+			false,
+		);
+		expect(siteHeader).toMatch(
+			/label:\s*"The LOOP Algebra",[\s\S]{0,120}href:\s*"\/notation\/loops"/,
+		);
 	});
 
 	it("no manifest string contains an em dash", () => {

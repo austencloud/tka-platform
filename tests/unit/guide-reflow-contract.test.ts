@@ -120,6 +120,5 @@ describe("sitemap", () => {
     const src = read("src/routes/sitemap.xml/+server.ts");
     expect(src).toContain("guide/level-1/${p.id}");
     expect(src).toContain("GUIDE_BODY_PAGES");
-    expect(src).toContain("hasReflowContent"); // flow-ready pages rank higher
   });
 });

@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { FAQ_ITEMS, faqPageJsonLd } from "../../src/lib/shared/landing/faq/faq-items";
+import {
+  FAQ_ITEMS,
+  faqPageJsonLd,
+} from "../../src/lib/shared/landing/faq/faq-items";
 
 // Content contract for the public-site FAQ (/faq). Guards the answer → door
 // structure and the schema-matches-visible-text invariant (Google policy:
@@ -37,7 +40,10 @@ describe("landing FAQ content contract", () => {
   it("every door points at a known route or anchor and has a label", () => {
     for (const item of FAQ_ITEMS) {
       if (!item.cta) continue;
-      expect(KNOWN_DOORS.has(item.cta.href), `unknown FAQ door: ${item.cta.href}`).toBe(true);
+      expect(
+        KNOWN_DOORS.has(item.cta.href),
+        `unknown FAQ door: ${item.cta.href}`
+      ).toBe(true);
       expect(item.cta.label.trim().length).toBeGreaterThan(0);
     }
   });
@@ -49,8 +55,26 @@ describe("landing FAQ content contract", () => {
 
   it('copy uses the canonical term "step", never "beat"', () => {
     for (const item of FAQ_ITEMS) {
-      expect(`${item.question} ${item.answer}`.toLowerCase()).not.toMatch(/\bbeats?\b/);
+      expect(`${item.question} ${item.answer}`.toLowerCase()).not.toMatch(
+        /\bbeats?\b/
+      );
     }
+  });
+
+  it("does not promise unsupported export formats or direct social destinations", () => {
+    const sharing = FAQ_ITEMS.find(
+      (item) => item.question === "Can I share what I make?"
+    );
+
+    expect(sharing).toBeDefined();
+    expect(sharing!.answer).not.toMatch(/\bPDFs?\b/i);
+    expect(sharing!.answer).not.toMatch(
+      /straight to Instagram|directly to Instagram/i
+    );
+    expect(sharing!.answer).toMatch(/PNG/);
+    expect(sharing!.answer).toMatch(/GIF/);
+    expect(sharing!.answer).toMatch(/video/);
+    expect(sharing!.answer).toMatch(/share sheet/);
   });
 
   it("JSON-LD mirrors the visible items exactly (question + answer prose only)", () => {
