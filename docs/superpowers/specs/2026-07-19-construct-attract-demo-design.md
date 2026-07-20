@@ -341,3 +341,41 @@ checks it once at start.
 - Reduced-motion test: emulate `prefers-reduced-motion` → no ghost, hint line
   shows, interaction works.
 - Console clean during three full attract cycles.
+
+## Human motor model (sixth pass, 2026-07-19)
+
+Round-6 feedback: "they don't have to instantly click on stuff... they can
+watch the sequence unfold... take a moment to decide which prop they want...
+move their mouse more naturally... select different turn values."
+
+The ghost's movement moved off CSS tweens onto a rAF-driven motor model in the
+act (GhostPointer lost its 450ms transform transition — it would fight the
+per-frame updates):
+
+- **Curved, distance-scaled glides.** Quadratic bezier with a random
+  perpendicular bow (5–20% of distance), easeInOutCubic, duration
+  `240 + dist*0.9` ms jittered ±15% and clamped 300–1300. Verified via a live
+  transform sampler: 490px glide took ~600ms with slow-in/fast-mid/settle and
+  a ~20px bow off the chord; a 307px glide took proportionally less.
+- **Off-center landings** — `aimAt()` targets up to ±35% off element center
+  (capped 56×36px). Centroid-perfect clicks are a robot tell.
+- **Hover-then-commit.** Every press hovers its target 240–660ms first.
+- **Browse-then-pick** (`browseAndPick`): 0–2 alternative tiles hovered
+  450–1000ms each before the chosen one is pressed — used for start positions,
+  options, AND the play-phase prop curiosity.
+- **Turn fiddling** (`fiddleTurns`): ~70% of cycles pick a mid-build moment,
+  press a not-selected segment on one hand's turn picker (35% chance the other
+  hand too). Verified live: blue → 3 mid-build, next step rendered with the
+  3-turn glyph; a later cycle set both hands.
+- **Workspace glances**: after ~35% of picks the ghost drifts over and rests
+  BESIDE the newest `.step-cell` (no ghost-hover mark — brightening the cell
+  read as trying to click a non-interactive pictograph; looking, not
+  pressing).
+- **Micro-drift dwells** (`dwell`): rests >700ms drift a few px mid-dwell.
+
+Layout note from the same round: demo-body/demo-toolbar columns flipped from
+`2fr/3fr` to `1.15fr/1fr` — workspace (the result) now ≥ picker width.
+
+Step editor in the toy: considered, rejected — the toy teaches pick → tap →
+play; per-step editing is the real Create tab's job. "Fully functional
+construct tab renderable anywhere" parked as separate scope.

@@ -1,8 +1,10 @@
 <!--
   GhostPointer — the attract act's visible "finger". A soft accent-colored dot
-  that eases between targets and dips on press. Pure decoration: aria-hidden,
-  pointer-events none, rendered only while the act is alive (never under
-  reduced motion — the section simply doesn't mount it).
+  that dips on press. Pure decoration: aria-hidden, pointer-events none,
+  rendered only while the act is alive (never under reduced motion — the
+  section simply doesn't mount it). Position is rAF-driven by the act's human
+  motor model (curved, distance-scaled paths) — no CSS transform transition
+  here, it would fight the per-frame updates.
 
   Grep evidence (never-hand-roll, 2026-07-19): no ghost-cursor/attract-pointer
   primitive exists in src/lib; the landing hero act swaps sequences and has no
@@ -34,9 +36,7 @@
     z-index: 6;
     pointer-events: none;
     opacity: 0;
-    transition:
-      transform 450ms cubic-bezier(0.22, 0.9, 0.3, 1),
-      opacity 200ms ease;
+    transition: opacity 200ms ease;
     will-change: transform;
   }
 

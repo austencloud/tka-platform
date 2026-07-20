@@ -9,6 +9,13 @@
  * clicks — so the demo can only ever tap what a human could tap, and the
  * validity engine stays the single source of truth.
  *
+ * The pointer runs on a human motor model, not a CSS tween: rAF-driven curved
+ * paths whose duration scales with distance, eased, landing off-center like a
+ * real hand. It hovers before it clicks, browses alternatives before deciding,
+ * glances at the workspace to watch the sequence grow, fiddles with the turn
+ * pickers mid-build, and never leaves the screen — dwells are jittered and
+ * carry micro-drift so it reads as a person pondering, not a metronome.
+ *
  * Lifecycle: created once by the section (never under reduced motion),
  * started on first viewport intersection, paused while offscreen, and killed
  * permanently on takeover (first real pointerdown/focusin) or unmount.
@@ -32,6 +39,13 @@ const STAGE_SEL = "[data-demo-stage]";
 // Prop tiles it can get curious about mid-play (never the already-active one —
 // pressing the same prop reads as a misclick, not a decision).
 const PROP_SEL = ".prop-option:not(.active)";
+// Turn-picker segments it can fiddle with mid-build — always a NOT-selected
+// count, so every press visibly moves the glass indicator.
+const TURN_BLUE_SEL = ".turns-group.blue .segment:not(.selected)";
+const TURN_RED_SEL = ".turns-group.red .segment:not(.selected)";
+// The newest workspace cell — where a just-picked step lands. The act glances
+// here after some picks, watching its sequence grow.
+const CELL_SEL = ".step-cell";
 // The Build another button — the act presses the REAL button when it's done
 // watching, so even the cycle reset is a visible decision, not a silent jump.
 const AGAIN_SEL = "[data-demo-again]";
@@ -72,13 +86,11 @@ export function createConstructAttractAct(opts: {
   stepsPerCycle: number;
   stepMs?: number;
   doneMs?: number;
-  travelMs?: number;
 }): ConstructAttractAct {
-  // Tune-by-eye pacing, one place (spec §Attract loop). Play-phase dwells are
-  // jittered inline in cycle() — a fixed watch length reads as a metronome.
-  const STEP_MS = opts.stepMs ?? 1600;
+  // Tune-by-eye pacing, one place (spec §Attract loop). Most dwells are
+  // jittered inline — fixed intervals read as a metronome, not a person.
+  const STEP_MS = opts.stepMs ?? 1200;
   const DONE_MS = opts.doneMs ?? 2500;
-  const TRAVEL_MS = opts.travelMs ?? 450;
   const PRESS_MS = 140;
 
   const ghost = $state<GhostState>({ x: 0, y: 0, pressed: false, visible: false });
@@ -88,6 +100,7 @@ export function createConstructAttractAct(opts: {
   let inViewport = false;
 
   const raw = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+  const frame = () => new Promise<number>((r) => requestAnimationFrame(r));
 
   /** Sleep that dies fast on kill and idles (without advancing) offscreen. */
   async function sleep(ms: number): Promise<void> {
@@ -99,6 +112,7 @@ export function createConstructAttractAct(opts: {
   }
 
   const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]!;
+  const jitter = (base: number, spread: number) => base + Math.random() * spread;
 
   // The element the ghost is currently "hovering". Since a fake pointer can't
   // trigger CSS :hover, the act marks its target with a .ghost-hover class and
@@ -112,23 +126,190 @@ export function createConstructAttractAct(opts: {
     hovered?.classList.add("ghost-hover");
   }
 
-  /** Glide the ghost to a resting point (no press, no hover target). */
-  async function moveTo(x: number, y: number): Promise<void> {
-    setHover(null);
-    ghost.x = x;
-    ghost.y = y;
-    ghost.visible = true;
-    await sleep(TRAVEL_MS + 60);
+  // ---- Human motor model ------------------------------------------------
+
+  const easeInOutCubic = (t: number) =>
+    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+  /**
+   * Glide the ghost to a point along a bowed quadratic-bezier path, rAF-driven,
+   * with duration scaled to distance (short hops are quick, long hauls take
+   * visibly longer — a straight fixed-speed tween is the #1 "that's a robot"
+   * tell). Does not touch hover; callers own that.
+   */
+  async function glideTo(tx: number, ty: number): Promise<void> {
+    if (dead) return;
+    if (!ghost.visible) {
+      // First appearance: materialize a hand-width away from the target and
+      // make a short approach, instead of sweeping in from the panel corner.
+      ghost.x = tx + jitter(60, 60);
+      ghost.y = ty + jitter(70, 50);
+      ghost.visible = true;
+      await sleep(240);
+      if (dead) return;
+    }
+    const sx = ghost.x;
+    const sy = ghost.y;
+    const dx = tx - sx;
+    const dy = ty - sy;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 2) {
+      ghost.x = tx;
+      ghost.y = ty;
+      return;
+    }
+    const dur = Math.min(
+      Math.max((240 + dist * 0.9) * jitter(0.85, 0.3), 300),
+      1300,
+    );
+    // Bow the path sideways — human reaches curve, they don't ride rails.
+    const bow =
+      dist * jitter(0.05, 0.15) * (Math.random() < 0.5 ? -1 : 1);
+    const cx = sx + dx / 2 + (-dy / dist) * bow;
+    const cy = sy + dy / 2 + (dx / dist) * bow;
+    const t0 = performance.now();
+    while (!dead) {
+      const t = (performance.now() - t0) / dur;
+      if (t >= 1) break;
+      const e = easeInOutCubic(t);
+      const u = 1 - e;
+      ghost.x = u * u * sx + 2 * u * e * cx + e * e * tx;
+      ghost.y = u * u * sy + 2 * u * e * cy + e * e * ty;
+      await frame();
+      while (!dead && !inViewport) await raw(200);
+    }
+    if (dead) return;
+    ghost.x = tx;
+    ghost.y = ty;
   }
 
-  /** Park the ghost just inside an element's bottom-right corner — the "hand
-   *  at rest, watching" pose between actions. */
+  /** A point inside an element, deliberately off exact center — landing on
+   *  the mathematical centroid every time is another robot tell. */
+  function aimAt(el: HTMLElement): { x: number; y: number } | null {
+    const root = opts.getRoot();
+    if (!root) return null;
+    const r = el.getBoundingClientRect();
+    const rr = root.getBoundingClientRect();
+    const ox = (Math.random() - 0.5) * Math.min(r.width * 0.35, 56);
+    const oy = (Math.random() - 0.5) * Math.min(r.height * 0.35, 36);
+    return {
+      x: r.left + r.width / 2 - rr.left + ox,
+      y: r.top + r.height / 2 - rr.top + oy,
+    };
+  }
+
+  /** Dwell with occasional micro-drift — a resting hand isn't frozen. Keeps
+   *  whatever hover is active (the drift stays within a few px). */
+  async function dwell(ms: number): Promise<void> {
+    if (ms < 700 || Math.random() < 0.3) return sleep(ms);
+    await sleep(ms * 0.4);
+    if (dead) return;
+    const ang = Math.random() * Math.PI * 2;
+    const r = jitter(3, 7);
+    await glideTo(ghost.x + Math.cos(ang) * r, ghost.y + Math.sin(ang) * r);
+    await sleep(ms * 0.6);
+  }
+
+  /** Glide onto an element and hover it for a beat (no press). */
+  async function hoverOn(el: HTMLElement, dwellMs: number): Promise<void> {
+    const p = aimAt(el);
+    if (!p || dead) return;
+    await glideTo(p.x, p.y);
+    if (dead) return;
+    setHover(el);
+    await dwell(dwellMs);
+  }
+
+  /** Hover, pause to commit, then press. Default: real click on a real
+   *  target — programmatic click() fires no pointerdown, so the act can never
+   *  trigger the section's own takeover listener. Callers pass `action` when
+   *  the target's real interaction is pointer-based (the tap-to-toggle
+   *  canvas) and click() wouldn't land. */
+  async function moveAndPress(
+    el: HTMLElement,
+    action?: () => void,
+  ): Promise<void> {
+    await hoverOn(el, jitter(240, 420));
+    if (dead) return;
+    ghost.pressed = true;
+    await sleep(PRESS_MS);
+    ghost.pressed = false;
+    if (dead) return;
+    if (action) action();
+    else el.click();
+  }
+
+  /** Browse before deciding: hover 0–2 alternatives, then press the chosen
+   *  one — the "which one do I want" moment a straight pick never has. */
+  async function browseAndPick(cands: HTMLElement[]): Promise<void> {
+    const pool = [...cands];
+    const chosen = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]!;
+    const roll = Math.random();
+    const looks = roll < 0.45 ? 0 : roll < 0.85 ? 1 : 2;
+    for (let i = 0; i < looks && pool.length && !dead; i++) {
+      const alt = pool.splice(Math.floor(Math.random() * pool.length), 1)[0]!;
+      await hoverOn(alt, jitter(450, 550));
+    }
+    if (dead) return;
+    await moveAndPress(chosen);
+  }
+
+  /** Park the ghost just inside an element's bottom-right corner (jittered) —
+   *  the "hand at rest, watching" pose between actions. */
   async function restBeside(el: HTMLElement): Promise<void> {
     const root = opts.getRoot();
     if (!root || dead) return;
     const r = el.getBoundingClientRect();
     const rr = root.getBoundingClientRect();
-    await moveTo(r.right - rr.left - 30, r.bottom - rr.top - 30);
+    setHover(null);
+    await glideTo(
+      r.right - rr.left - jitter(22, 20),
+      r.bottom - rr.top - jitter(22, 20),
+    );
+  }
+
+  // ---- Personality beats --------------------------------------------------
+
+  /** Watch the just-picked step land: drift over and rest BESIDE the newest
+   *  workspace cell — deliberately no hover mark, because brightening the
+   *  pictograph reads as trying to click it (workspace cells aren't
+   *  interactive in this demo). Looking, not pressing. */
+  async function glanceAtWorkspace(): Promise<void> {
+    const root = opts.getRoot();
+    if (!root || dead) return;
+    const cells = [...root.querySelectorAll<HTMLElement>(CELL_SEL)].filter(
+      (el) => el.offsetParent !== null,
+    );
+    const last = cells[cells.length - 1];
+    if (!last) return;
+    setHover(null);
+    const r = last.getBoundingClientRect();
+    const rr = root.getBoundingClientRect();
+    await glideTo(
+      r.right - rr.left + jitter(10, 12),
+      r.bottom - rr.top + jitter(6, 10),
+    );
+    await dwell(jitter(650, 650));
+  }
+
+  /** Mid-build curiosity: change a hand's turns (sometimes both). Every press
+   *  lands on a not-selected count, so the glass indicator visibly moves —
+   *  and the option grid re-derives with the new turns, a real decision with
+   *  real consequences. */
+  async function fiddleTurns(): Promise<void> {
+    const first = Math.random() < 0.5 ? TURN_BLUE_SEL : TURN_RED_SEL;
+    const segs = await waitFor(first, 1500);
+    if (!segs.length || dead) return;
+    await moveAndPress(pick(segs));
+    await sleep(jitter(500, 500));
+    if (Math.random() < 0.35 && !dead) {
+      const other = first === TURN_BLUE_SEL ? TURN_RED_SEL : TURN_BLUE_SEL;
+      const segs2 = await waitFor(other, 1500);
+      if (segs2.length && !dead) {
+        await moveAndPress(pick(segs2));
+        await sleep(jitter(400, 400));
+      }
+    }
   }
 
   /** Poll the live picker DOM for visible targets (pickers load async). */
@@ -149,32 +330,6 @@ export function createConstructAttractAct(opts: {
     return [];
   }
 
-  async function moveAndPress(
-    el: HTMLElement,
-    action?: () => void,
-  ): Promise<void> {
-    const root = opts.getRoot();
-    if (!root || dead) return;
-    const r = el.getBoundingClientRect();
-    const rr = root.getBoundingClientRect();
-    ghost.x = r.left + r.width / 2 - rr.left;
-    ghost.y = r.top + r.height / 2 - rr.top;
-    ghost.visible = true;
-    await sleep(TRAVEL_MS + 60);
-    if (dead) return;
-    setHover(el);
-    ghost.pressed = true;
-    await sleep(PRESS_MS);
-    ghost.pressed = false;
-    if (dead) return;
-    // Default: real click on a real target — programmatic click() fires no
-    // pointerdown, so the act can never trigger the section's own takeover
-    // listener. Callers pass `action` when the target's real interaction is
-    // pointer-based (the tap-to-toggle canvas) and click() wouldn't land.
-    if (action) action();
-    else el.click();
-  }
-
   async function cycle(): Promise<void> {
     opts.resetBoard();
     await sleep(500);
@@ -184,16 +339,26 @@ export function createConstructAttractAct(opts: {
       await sleep(1500);
       return;
     }
-    await moveAndPress(pick(starts));
+    // Even the start position gets a moment of choice.
+    await browseAndPick(starts);
+
+    // One mid-build moment (most cycles) where it reconsiders the turns.
+    const turnMoment =
+      Math.random() < 0.7 ? 1 + Math.floor(Math.random() * 2) : -1;
 
     for (let i = 0; i < opts.stepsPerCycle && !dead; i++) {
       // Full step beat BEFORE querying: the option grid reloads after every
       // pick, and this gap guarantees we never press a stale card from the
       // previous sequence state.
       await sleep(STEP_MS);
+      if (i === turnMoment) await fiddleTurns();
       const options = await waitFor(OPTION_SEL);
       if (!options.length || dead) return;
-      await moveAndPress(pick(options));
+      await browseAndPick(options);
+      // Sometimes turn and watch the new step land in the workspace.
+      if (Math.random() < 0.35 && i < opts.stepsPerCycle - 1) {
+        await glanceAtWorkspace();
+      }
     }
 
     // The payoff, played with a personality: the ghost presses Play, settles
@@ -211,29 +376,29 @@ export function createConstructAttractAct(opts: {
     const stage = await waitFor(STAGE_SEL, 4000);
     if (!stage.length || dead) return;
     await restBeside(stage[0]!);
-    await sleep(2000 + Math.random() * 1500); // settle in, watch
+    await dwell(jitter(2000, 1500)); // settle in, watch
 
     if (dead) return;
     await moveAndPress(stage[0]!, opts.togglePlayback); // pause — look closer
-    await sleep(1200 + Math.random() * 800); // hold the freeze
+    await dwell(jitter(1200, 800)); // hold the freeze
     if (dead) return;
     await moveAndPress(stage[0]!, opts.togglePlayback); // resume
     await restBeside(stage[0]!);
-    await sleep(1400 + Math.random() * 1000); // watch a little more
+    await dwell(jitter(1400, 1000)); // watch a little more
 
-    // Curiosity: try a different prop (sometimes two) while it plays.
+    // Curiosity: browse the props, decide, try one (sometimes two).
     const props = await waitFor(PROP_SEL, 2000);
     if (props.length && !dead) {
       const tries = Math.random() < 0.5 ? 2 : 1;
       for (let i = 0; i < tries && !dead; i++) {
         const fresh = await waitFor(PROP_SEL, 2000);
         if (!fresh.length) break;
-        await moveAndPress(pick(fresh));
-        await sleep(1400 + Math.random() * 900); // admire the new prop
+        await browseAndPick(fresh);
+        await dwell(jitter(1400, 900)); // admire the new prop
       }
       if (dead) return;
       await restBeside(stage[0]!);
-      await sleep(1000 + Math.random() * 800);
+      await dwell(jitter(1000, 800));
     }
 
     // Bored now. Build another — pressed for real, like everything else.

@@ -651,7 +651,9 @@
     .demo-body,
     .demo-toolbar {
       display: grid;
-      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+      /* Workspace ≥ picker: the built sequence is the star, the picker is the
+         menu — the wider left half gives the result room to read. */
+      grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
       gap: 0 clamp(24px, 3cqw, 48px);
     }
     .demo-body {
