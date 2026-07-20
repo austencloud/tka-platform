@@ -197,6 +197,101 @@ The desktop node key currently expires at `2027-01-16T00:11:17Z`. In the Tailsca
 
 For reliable unattended use, add a UPS and set the motherboard's **Restore on AC Power Loss** behavior to power on. BIOS behavior was not inspected or changed. Wake-on-LAN alone does not solve a complete power loss, and this T-Mobile connection has no proven external wake relay.
 
+## Laptop completion session — 2026-07-19 evening (HP OmniBook 7 Flip)
+
+The laptop side was executed the same evening from the laptop itself (Windows
+hostname `DESKTOP-RD3FE2K`, renamed to `HP-OMNIBOOK7` effective next reboot;
+tailnet name already `hp-omnibook7`). Evidence for every claim was tool output
+or an on-screen capture in the session transcript.
+
+### Done — verified from the laptop
+
+- **Rank 1 complete.** Tailscale `1.98.9` and Moonlight `6.1.0` installed via
+  winget official packages (hash-verified, exit 0 both). VS Code `1.113.0` was
+  already present with `ms-vscode.remote-server` installed. Laptop joined the
+  tailnet as `hp-omnibook7` (`100.92.211.107`); `tailscale set
+  --hostname=hp-omnibook7` pins the name independent of the pending Windows
+  rename.
+- **Rank 2, on-LAN half.** `tailscale ping desktop-tjllgpg` → direct path pong
+  in 2–14 ms via `192.168.12.121:41641` (LAN endpoint — the laptop was on the
+  same home network, so this does NOT satisfy the external-network gate).
+  `tailscale netcheck` from this T-Mobile connection: UDP true, IPv4+IPv6 both
+  reachable, `MappingVariesByDestIP: false`, nearest DERP Toronto ~85 ms. Those
+  are favorable preconditions for a direct path from outside. The external test
+  remains open and takes two commands from any non-home network.
+- **Rank 3 complete.** Moonlight paired with Sunshine (client name `Austen
+  Laptop`, PIN flow). Pairing state verified in the laptop registry
+  (`HKCU\Software\Moonlight Game Streaming Project\Moonlight\hosts\1` with
+  `srvcert`; apps synced: `Desktop`, `Steam Big Picture`).
+- **Rank 4 complete (on-LAN baseline).** First real stream ran with the
+  conservative profile via CLI flags (`stream 100.75.226.74 Desktop
+  --resolution 1920x1080 --fps 60 --bitrate 5000 --video-codec HEVC
+  --frame-pacing --performance-overlay`). Overlay readings: host processing
+  2.1 ms avg, network latency 3 ms, decode 0.76 ms (hardware HEVC), render
+  0.59 ms, 0.00% dropped frames. Numbers are the on-LAN baseline; re-measure
+  from the external network.
+- **Rank 5 complete.** VS Code on the laptop connected to tunnel
+  `austen-4090-desktop` with the desktop's `E:\tka-platform` open; `code
+  --status` reports `Remote: austen-4090-desktop`, remote OS `10.0.26100`
+  (desktop build; laptop is 26200), >22k files served from the desktop.
+- **Rank 6 pre-staged.** `C:\Users\Austen\Desktop\Desktop-4090.rdp` on the
+  laptop targets `100.75.226.74` as `DESKTOP-TJLLGPG\Austen`, prompts for
+  credentials. End-to-end login test still requires Austen's password entry.
+
+### Divergences found while auditing the desktop claims
+
+- **Sunshine admin TCP `47990` IS reachable over the tailnet** from the laptop
+  (TcpTestSucceeded true), contradicting "intentionally not exposed through the
+  custom tailnet firewall rules." The custom rules indeed omit it; reachability
+  is most likely Tailscale's own inbound allowance on the tailnet interface
+  preempting the scoped Windows Firewall rules — which would also mean the
+  four custom "(Tailscale only)" rules are not what is actually admitting
+  tailnet traffic. Auth still gates the dashboard, and only tailnet devices can
+  reach it. Decision recorded: accepted for now (it is what made remote pairing
+  possible); revisit only if the tailnet ever grows beyond Austen's own devices.
+- All other audited claims held: node online at `100.75.226.74`, RDP `3389` and
+  Sunshine `47984/47989/48010` reachable from a tailnet peer, Sunshine
+  `serverinfo` answers with `hostname DESKTOP-TJLLGPG`, `state
+  SUNSHINE_SERVER_FREE`.
+
+### Gotchas discovered (laptop side)
+
+- **Sunshine CSRF blocks PIN submission from a non-localhost origin.** Browsing
+  the dashboard at `https://100.75.226.74:47990` and submitting the PIN fails
+  with a CSRF Protection Error. Fix in place: a persistent netsh portproxy on
+  the laptop (`127.0.0.1:47990 → 100.75.226.74:47990`), so the dashboard is
+  always `https://localhost:47990` on the laptop — default origin, no CSRF,
+  works from any network over the tailnet. Alternative (not applied): add the
+  tailnet origin to `csrf_allowed_origins` in the desktop's sunshine.conf.
+- **Moonlight stores everything in the registry, not an INI**
+  (`HKCU\Software\Moonlight Game Streaming Project\Moonlight` — QSettings
+  native format). Automation watching for pairing/settings must poll the
+  registry.
+- **`Moonlight.exe pair` requests expire and the process exits** after several
+  minutes unpaired. Arm the pairing immediately before entering the PIN, not
+  minutes ahead.
+- The laptop's VS Code also registered its own tunnel host (name
+  `DESKTOP-RD3FE2K`, stale after rename). Harmless; rename or remove it if the
+  list gets confusing.
+
+### Still open (all need Austen's hands or an external network)
+
+1. **Rank 2 external gate:** from the girlfriend's network or a hotspot, run
+   `tailscale ping desktop-tjllgpg` and `tailscale netcheck`; require a direct
+   (non-DERP) final path, then re-run the Moonlight stream and re-read the
+   overlay.
+2. **Rank 6:** double-click `Desktop-4090.rdp`, enter the Windows password,
+   confirm NLA login reaches the desktop session.
+3. **Rank 7 reboot drill:** deferred deliberately — the desktop had multiple
+   active agent sessions on screen during this window; rebooting it kills
+   in-flight work. Run the drill from the checklist in rank 7 when the desktop
+   is quiet and someone can physically recover it.
+4. **Rank 8:** NOT yet done as of 21:20 CDT — `tailscale status --json` still
+   shows KeyExpiry `2027-01-16` for both machines. Machines page → row `⋯` →
+   Disable key expiry, for `desktop-tjllgpg` and `hp-omnibook7`.
+5. **Rank 9:** unchanged recommendation — UPS plus BIOS "Restore on AC Power
+   Loss = Power On" for unattended resilience; both are physical/BIOS actions.
+
 ## Decisions already made
 
 - On 2026-07-19, Austen asked for the most reliable use of the desktop's hardware from his laptop while away. Reliability matters more than forcing one product to cover every failure mode.
