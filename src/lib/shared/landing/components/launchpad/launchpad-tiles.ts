@@ -74,20 +74,13 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 			{ label: "Poi", href: "/notation/poi" },
 		],
 	},
-	// Shape Matrix + LOOP Algebra are 2x1 on purpose: with the composer 2x2 and
-	// two 2x1s above, the grid's cell count must stay a multiple of 4 or the
-	// last row ships holes. Two wides = 16 cells = four clean rows, and the
-	// pair reads as a "notation deep dives" band directly under The Notation.
-	{
-		id: "shape-matrix",
-		href: "/notation/shape-matrix",
-		heading: "Shape Matrix",
-		descriptor: "144 even-petaled flowers, decoded as TKA notation.",
-		span: "2x1",
-		color: "#f97316",
-		icon: "fa-diagram-project",
-		media: "pictograph",
-	},
+	// The grid's cell count must stay a multiple of 4 or the last row ships
+	// holes. 12 cells = three clean rows: composer 2x2, three 2x1s, two 1x1s.
+	// One tile per visitor question — do (Composer), hold (Choreo Cards),
+	// understand (Notation), go deeper (LOOPs + sibling chips), learn (Guide,
+	// Alphabet). Deep-cut notation destinations (Shape Matrix, CAPs) ride as
+	// chips here instead of holding their own tiles; reference material
+	// (Glossary, Staff Choreography) lives in the strip.
 	{
 		id: "loops",
 		href: "/notation/loops",
@@ -97,6 +90,10 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		color: "#36c3ff",
 		icon: "fa-rotate",
 		media: "loop-mandala",
+		chips: [
+			{ label: "Shape Matrix", href: "/notation/shape-matrix" },
+			{ label: "CAPs", href: "/notation/caps" },
+		],
 	},
 	{
 		id: "guide",
@@ -109,16 +106,6 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		media: "guide-cover",
 	},
 	{
-		id: "glossary",
-		href: "/glossary",
-		heading: "Glossary",
-		descriptor: "TKA terms, defined.",
-		span: "1x1",
-		color: "#94a3b8",
-		icon: "fa-book-open",
-		media: "dictionary",
-	},
-	{
 		id: "alphabet",
 		href: "/notation/letters",
 		heading: "The Alphabet",
@@ -128,19 +115,11 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 		icon: "fa-font",
 		media: "alphabet-strip",
 	},
-	{
-		id: "staff-choreo",
-		href: "/learn/staff-spinning-choreography",
-		heading: "Staff Choreography",
-		descriptor: "Learn to write staff sequences in TKA.",
-		span: "1x1",
-		color: "#fbbf24",
-		icon: "fa-graduation-cap",
-		media: "pictograph-fade",
-	},
 ];
 
 export const STRIP_LINKS: { label: string; href: string }[] = [
+	{ label: "Glossary", href: "/glossary" },
+	{ label: "Staff Choreography", href: "/learn/staff-spinning-choreography" },
 	{ label: "FAQ", href: "/faq" },
 	{ label: "Software Roots", href: "/roots/software" },
 	{ label: "Support", href: "/support" },

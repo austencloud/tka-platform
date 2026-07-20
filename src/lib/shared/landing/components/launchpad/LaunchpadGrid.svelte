@@ -90,18 +90,15 @@
 	}
 
 	/* Split tier (one-viewport composition, see +page.svelte): the right pane
-	   owns width and spacing, and rows become height-keyed so four rows plus
-	   the strip always fit the viewport beside the hero. Budget at the 19vh
-	   term: 76px header pad + 4 rows + 3 gaps + bento margin + 44px strip
-	   lands inside 100svh down to ~800px-tall windows (min-height on the
-	   composition lets anything shorter scroll instead of clip). */
+	   owns width and spacing, and rows become height-keyed so three rows plus
+	   the strip always fit the viewport beside the hero. */
 	@media (min-width: 1680px) {
 		.launchpad {
 			max-width: none;
 			padding: 0;
 		}
 		.bento {
-			grid-auto-rows: clamp(150px, 19vh, 300px);
+			grid-auto-rows: clamp(170px, 21.5vh, 340px);
 		}
 	}
 
@@ -123,9 +120,6 @@
 	@media (max-width: 640px) {
 		.bento {
 			grid-template-columns: 1fr;
-		}
-		.strip {
-			grid-template-columns: repeat(2, 1fr);
 		}
 		/* Full-width single column: every span still reads as one row-wide
 		   card; the 2x2 tile keeps its extra height (two rows tall) rather
@@ -180,8 +174,22 @@
 		margin: 0;
 		padding: 0;
 		display: grid;
-		grid-template-columns: repeat(4, 1fr);
+		grid-template-columns: repeat(6, 1fr);
 		gap: 0.6rem;
+	}
+	/* Six segments get cramped on narrow grids: two rows of three, then a
+	   two-column stack on phones. These sit AFTER the base .strip rule on
+	   purpose — an earlier under-640 override lost the same-specificity
+	   cascade to the base block and was silently dead. */
+	@media (min-width: 641px) and (max-width: 1020px) {
+		.strip {
+			grid-template-columns: repeat(3, 1fr);
+		}
+	}
+	@media (max-width: 640px) {
+		.strip {
+			grid-template-columns: repeat(2, 1fr);
+		}
 	}
 	.strip li {
 		margin: 0;
