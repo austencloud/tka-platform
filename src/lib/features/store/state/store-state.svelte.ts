@@ -99,6 +99,7 @@ export function createStoreState(
     isCheckingOut = true;
     checkoutError = null;
     try {
+      // Single-buy rides the same spine as the cart: a one-item draft order.
       const url = await checkoutCreator.createCheckoutSession(productId, propType, loopConfig);
       window.location.href = url;
     } catch (e) {

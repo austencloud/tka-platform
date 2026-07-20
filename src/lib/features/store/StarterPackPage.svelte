@@ -8,7 +8,7 @@
 -->
 <script lang="ts">
   import "./styles/config-page.css";
-  import { getMerchCheckoutCreator } from "$lib/features/store/get-merch-checkout-creator";
+  import * as singleBuyCheckoutCreator from "$lib/features/store/services/single-buy-checkout-creator";
   import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
@@ -26,7 +26,7 @@
 
   // Named `store`, not `state`: a local binding called `state` collides with the
   // $state rune (svelte store_rune_conflict).
-  const store = createStoreState(getProductLoader(), getMerchCheckoutCreator());
+  const store = createStoreState(getProductLoader(), singleBuyCheckoutCreator);
   setStoreContext({ state: store });
   store.loadProducts(false);
 

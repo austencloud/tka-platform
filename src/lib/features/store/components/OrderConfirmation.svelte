@@ -8,7 +8,7 @@
       <i class="fas fa-check-circle" aria-hidden="true"></i>
     </div>
     <h1>Order Confirmed</h1>
-    <p>Your deck is on its way. You'll get a receipt from Stripe at the email you provided.</p>
+    <p>Your order is on its way. You'll get a receipt from Stripe at the email you provided.</p>
     <p class="note">Orders are packed and shipped within a few business days.</p>
     <a href="/shop" class="back-link">Back to Shop</a>
   </main>

@@ -33,44 +33,59 @@ export const handleMerchWebhook = functions.https.onRequest(
 
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
+      const shippingDetails = session.collected_information?.shipping_details;
+      const shippingAddress = shippingDetails?.address
+        ? {
+            name: shippingDetails.name || "",
+            line1: shippingDetails.address.line1 || "",
+            line2: shippingDetails.address.line2 || "",
+            city: shippingDetails.address.city || "",
+            state: shippingDetails.address.state || "",
+            postalCode: shippingDetails.address.postal_code || "",
+            country: shippingDetails.address.country || "",
+          }
+        : null;
 
+      // NEW spine: the order doc already exists (pending), created by
+      // createCartCheckout. Flip it to paid and attach Stripe fields. Clear
+      // expiresAt so the Firestore TTL policy never reaps a paid order.
+      if (session.metadata?.orderRef) {
+        const orderRef = admin.firestore().collection("orders").doc(session.metadata.orderRef);
+        await orderRef.set(
+          {
+            status: "paid",
+            stripePaymentIntentId: session.payment_intent as string,
+            customerEmail: session.customer_details?.email || "",
+            shippingAddress,
+            totalAmount: session.amount_total || 0,
+            paidAt: admin.firestore.FieldValue.serverTimestamp(),
+            expiresAt: admin.firestore.FieldValue.delete(),
+          },
+          { merge: true }
+        );
+        console.log(`Order ${session.metadata.orderRef} marked paid`);
+        res.status(200).send("OK");
+        return;
+      }
+
+      // LEGACY path: single-product orders whose config rode in metadata.
+      // Kept for in-flight sessions created before the cart cutover; remove
+      // once no legacy sessions remain (see plan Task 12).
       if (!session.metadata?.productId) {
         res.status(200).send("Not a merch checkout, skipping");
         return;
       }
-
-      // In Stripe SDK v21, shipping details are under collected_information
-      const shippingDetails = session.collected_information?.shipping_details;
-
       const order = {
         stripeSessionId: session.id,
         stripePaymentIntentId: session.payment_intent as string,
         customerEmail: session.customer_details?.email || "",
-        shippingAddress: shippingDetails?.address
-          ? {
-              name: shippingDetails.name || "",
-              line1: shippingDetails.address.line1 || "",
-              line2: shippingDetails.address.line2 || "",
-              city: shippingDetails.address.city || "",
-              state: shippingDetails.address.state || "",
-              postalCode: shippingDetails.address.postal_code || "",
-              country: shippingDetails.address.country || "",
-            }
-          : null,
+        shippingAddress,
         items: [{
           productId: session.metadata.productId,
           productName: session.metadata.productName || "",
-          // Buyer's print prop for physical decks; absent = staff (also absent
-          // on pre-prop-picker orders and non-deck items).
           ...(session.metadata.propType && { propType: session.metadata.propType }),
-          // Curated LOOP pack — the recipe id fulfillment resolves against
-          // LOOP_PACKS (client loop-config.ts). Pack XOR dials XOR recipe.
           ...(session.metadata.loopPack && { loopPack: session.metadata.loopPack }),
-          // Deck Architect recipe (compact string; parseRecipe in the client's
-          // loop-config.ts decodes it for fulfillment).
           ...(session.metadata.loopRecipe && { loopRecipe: session.metadata.loopRecipe }),
-          // LOOP configurator dials (flat strings; loopCustom = JSON of the
-          // advanced-panel choices). Absent on non-LOOP items.
           ...(session.metadata.loopLevel && {
             loopLevel: session.metadata.loopLevel,
             loopLength: session.metadata.loopLength || "",
@@ -78,17 +93,12 @@ export const handleMerchWebhook = functions.https.onRequest(
             ...(session.metadata.loopCustom && { loopCustom: session.metadata.loopCustom }),
           }),
           quantity: 1,
-          // Per-unit product price = the line-item subtotal (single quantity),
-          // BEFORE shipping + tax. amount_total includes the flat shipping rate
-          // and automatic_tax, so using it here inflated every order's recorded
-          // unitPrice. totalAmount below is correctly the grand total.
           unitPrice: session.amount_subtotal || 0,
         }],
         totalAmount: session.amount_total || 0,
         status: "paid",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       };
-
       await admin.firestore().collection("orders").add(order);
       console.log(`Order created for product ${session.metadata.productId}`);
     }

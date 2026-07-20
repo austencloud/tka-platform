@@ -18,7 +18,7 @@
 -->
 <script lang="ts">
   import "./styles/config-page.css";
-  import { getMerchCheckoutCreator } from "$lib/features/store/get-merch-checkout-creator";
+  import * as singleBuyCheckoutCreator from "$lib/features/store/services/single-buy-checkout-creator";
   import { getProductLoader } from "$lib/features/store/get-product-loader";
   import { createStoreState } from "./state/store-state.svelte";
   import { setStoreContext } from "./context/store-context";
@@ -77,7 +77,7 @@
 
   // Named `store`, not `state`: a local binding called `state` collides with the
   // $state rune (svelte store_rune_conflict).
-  const store = createStoreState(getProductLoader(), getMerchCheckoutCreator());
+  const store = createStoreState(getProductLoader(), singleBuyCheckoutCreator);
   setStoreContext({ state: store });
   store.loadProducts(false);
 
@@ -698,6 +698,15 @@
               label="Preorder now"
               waitlistText="Preorders open soon. Leave an email and you'll hear the moment they do."
             />
+            {#if customSku.stripePriceId}
+              <BuyButton
+                product={customSku}
+                {propType}
+                {loopConfig}
+                mode="add"
+                label="Add to cart"
+              />
+            {/if}
           {:else if flavorSkus[0]}
             <!-- Custom SKU not seeded/active yet: honest gate via the first
                  flavor SKU's waitlist (it has no Stripe price either). -->
@@ -708,6 +717,15 @@
               label="Preorder now"
               waitlistText="Preorders open soon. Leave an email and you'll hear the moment they do."
             />
+            {#if flavorSkus[0].stripePriceId}
+              <BuyButton
+                product={flavorSkus[0]}
+                {propType}
+                {loopConfig}
+                mode="add"
+                label="Add to cart"
+              />
+            {/if}
           {/if}
           {#if store.checkoutError}
             <p class="checkout-error" role="alert">{store.checkoutError}</p>

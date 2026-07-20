@@ -9,6 +9,7 @@
   import type { Product } from "../domain/models/product";
   import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import type { LoopConfig } from "../domain/loop-config";
+  import { getShopCart } from "../state/shop-cart.svelte";
   import WaitlistForm from "./WaitlistForm.svelte";
 
   interface Props {
@@ -21,6 +22,8 @@
     label?: string;
     /** Waitlist framing while the product has no Stripe price yet. */
     waitlistText?: string;
+    /** "buy" = direct checkout (conversion primary). "add" = push to cart. */
+    mode?: "buy" | "add";
   }
 
   let {
@@ -29,19 +32,48 @@
     loopConfig,
     label = "Buy Now",
     waitlistText = "Not on sale yet. Leave an email and you'll hear the moment it is.",
+    mode = "buy",
   }: Props = $props();
   const { state } = getStoreContext();
 
   const available = $derived(Boolean(product.stripePriceId));
+
+  function addToCart() {
+    const cart = getShopCart();
+    if (loopConfig) {
+      cart.add({
+        kind: "loopDeck",
+        productId: product.id,
+        name: product.name,
+        unitPrice: product.price,
+        stripePriceId: product.stripePriceId,
+        qty: 1,
+        ...(propType && { propType }),
+        loopConfig,
+        // Distinct configs must not collapse; JSON of the config is a stable key.
+        configKey: JSON.stringify(loopConfig) + (propType ?? ""),
+      });
+    } else {
+      cart.add({
+        kind: "sku",
+        productId: product.id,
+        name: product.name,
+        unitPrice: product.price,
+        stripePriceId: product.stripePriceId,
+        qty: 1,
+        ...(propType && { propType }),
+      });
+    }
+  }
 </script>
 
 {#if available}
   <button
     class="buy-button"
-    onclick={() => state.startCheckout(product.id, propType, loopConfig)}
-    disabled={state.isCheckingOut}
+    onclick={() => (mode === "add" ? addToCart() : state.startCheckout(product.id, propType, loopConfig))}
+    disabled={mode === "buy" && state.isCheckingOut}
   >
-    {#if state.isCheckingOut}
+    {#if mode === "buy" && state.isCheckingOut}
       <span class="spinner" aria-hidden="true"></span>
       Opening checkout...
     {:else}
