@@ -1,14 +1,14 @@
-"""Compose the Astral Reliquary in Blender from Meshy-authored prototypes.
+"""Compose the Astral Reliquary stage in Blender.
 
-Third pass (2026-07-19). The second pass arranged five Meshy assets plus
-procedural connector geometry into an observatory complex; at runtime the
-connectors and asset clusters read as clutter. Austen's direction: restraint.
+Fourth pass (2026-07-19). Every Meshy-asset arrangement (five-asset complex,
+then a lone arch) failed Austen's runtime review — sculpted organic assets do
+not hold up under the orbiting camera, and the bright tiled regolith read as
+concrete. Final direction: a dark minimal moonscape.
 
-This pass keeps exactly one authored silhouette — the celestial arch, upright
-and distant on the Earth sight line so it frames Earth from the stage — over a
-quiet lunar plain with gentle craters. The performance deck and its flush
-amber calibration channels are the only other built elements. Composition is
-one axis and negative space, nothing else.
+Near-black lunar plain with soft craters, the performance deck with amber
+calibration marks and flush channels, and nothing else authored. Earth, the
+nebula, starfield, god rays, and meteors carry the scene at runtime. No Meshy
+assets ship; the raw GLBs stay on disk for a future human-directed pass.
 """
 
 from __future__ import annotations
@@ -17,18 +17,17 @@ import math
 from pathlib import Path
 
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Vector
 from mathutils import noise
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ASSET_DIR = ROOT / "static" / "models" / "cosmic" / "reliquary"
 BLEND_PATH = ROOT / "blender" / "cosmic-reliquary.blend"
 PREVIEW_DIR = ROOT / "blender" / "previews"
 EXPORT_COLLECTION = "EXPORT_cosmic_reliquary"
 
-# Runtime Earth sits at Three (-40, 2, -60) => Blender (-40, 60). The arch is
-# placed on this sight line so Earth reads through its ring from the stage.
+# Runtime Earth sits at Three (-40, 2, -60) => Blender (-40, 60). The deck's
+# main calibration channel points along this sight line.
 EARTH_BLENDER = Vector((-40.0, 60.0))
 SIGHT_ANGLE = math.atan2(EARTH_BLENDER.y, EARTH_BLENDER.x)  # ~123.7 degrees
 
@@ -73,26 +72,39 @@ def principled_material(
 
 
 def terrain_material() -> bpy.types.Material:
+    """Near-black regolith. The diffuse map is crushed almost to black so the
+    runtime lights (hemisphere + directional + god rays) cannot wash it back
+    to grey, and only subtle variation survives — no visible tiling."""
     material = bpy.data.materials.new("AR_LunarRegolith")
     material.use_nodes = True
     nodes = material.node_tree.nodes
     links = material.node_tree.links
     bsdf = nodes.get("Principled BSDF")
-    bsdf.inputs["Base Color"].default_value = (0.025, 0.035, 0.06, 1.0)
-    bsdf.inputs["Roughness"].default_value = 0.88
+    bsdf.inputs["Base Color"].default_value = (0.012, 0.016, 0.03, 1.0)
+    bsdf.inputs["Roughness"].default_value = 0.92
 
-    texture_specs = (
-        ("diffuse.jpg", "Base Color", "sRGB"),
-        ("roughness.jpg", "Roughness", "Non-Color"),
-    )
     texture_root = ROOT / "static" / "textures" / "terrain" / "rock"
-    for filename, socket, color_space in texture_specs:
-        image = bpy.data.images.load(str(texture_root / filename), check_existing=True)
-        image.colorspace_settings.name = color_space
-        texture = nodes.new("ShaderNodeTexImage")
-        texture.image = image
-        texture.extension = "REPEAT"
-        links.new(texture.outputs["Color"], bsdf.inputs[socket])
+    diffuse_image = bpy.data.images.load(
+        str(texture_root / "diffuse.jpg"), check_existing=True
+    )
+    diffuse_image.colorspace_settings.name = "sRGB"
+    diffuse_texture = nodes.new("ShaderNodeTexImage")
+    diffuse_texture.image = diffuse_image
+    diffuse_texture.extension = "REPEAT"
+    crush = nodes.new("ShaderNodeHueSaturation")
+    crush.inputs["Saturation"].default_value = 0.45
+    crush.inputs["Value"].default_value = 0.14
+    links.new(diffuse_texture.outputs["Color"], crush.inputs["Color"])
+    links.new(crush.outputs["Color"], bsdf.inputs["Base Color"])
+
+    roughness_image = bpy.data.images.load(
+        str(texture_root / "roughness.jpg"), check_existing=True
+    )
+    roughness_image.colorspace_settings.name = "Non-Color"
+    roughness_texture = nodes.new("ShaderNodeTexImage")
+    roughness_texture.image = roughness_image
+    roughness_texture.extension = "REPEAT"
+    links.new(roughness_texture.outputs["Color"], bsdf.inputs["Roughness"])
 
     normal_image = bpy.data.images.load(
         str(texture_root / "normal.jpg"), check_existing=True
@@ -102,7 +114,7 @@ def terrain_material() -> bpy.types.Material:
     normal_texture.image = normal_image
     normal_texture.extension = "REPEAT"
     normal_map = nodes.new("ShaderNodeNormalMap")
-    normal_map.inputs["Strength"].default_value = 1.15
+    normal_map.inputs["Strength"].default_value = 1.3
     links.new(normal_texture.outputs["Color"], normal_map.inputs["Color"])
     links.new(normal_map.outputs["Normal"], bsdf.inputs["Normal"])
     return material
@@ -184,99 +196,13 @@ def create_terrain(target: bpy.types.Collection, material: bpy.types.Material) -
     for polygon in mesh.polygons:
         for loop_index in polygon.loop_indices:
             coordinate = mesh.vertices[mesh.loops[loop_index].vertex_index].co
-            uv_layer.data[loop_index].uv = (coordinate.x / 4.0, coordinate.y / 4.0)
+            uv_layer.data[loop_index].uv = (coordinate.x / 9.0, coordinate.y / 9.0)
     return terrain
 
 
 def polar(radius: float, angle_degrees: float) -> tuple[float, float]:
     angle = math.radians(angle_degrees)
     return (math.cos(angle) * radius, math.sin(angle) * radius)
-
-
-def grade_asset(obj: bpy.types.Object, saturation: float, value: float, emission_cap: float) -> None:
-    """Pull a Meshy asset's baked palette toward the cold basalt scheme."""
-    for slot in obj.material_slots:
-        material = slot.material
-        if material is None or not material.use_nodes or material.get("AR_graded"):
-            continue
-        material["AR_graded"] = True
-        nodes = material.node_tree.nodes
-        links = material.node_tree.links
-        bsdf = nodes.get("Principled BSDF")
-        if bsdf is None:
-            bsdf = next((n for n in nodes if n.type == "BSDF_PRINCIPLED"), None)
-        if bsdf is None:
-            continue
-
-        base_input = bsdf.inputs["Base Color"]
-        if base_input.links:
-            source = base_input.links[0].from_socket
-            hsv = nodes.new("ShaderNodeHueSaturation")
-            hsv.inputs["Saturation"].default_value = saturation
-            hsv.inputs["Value"].default_value = value
-            links.new(source, hsv.inputs["Color"])
-            links.new(hsv.outputs["Color"], base_input)
-        else:
-            color = list(base_input.default_value)
-            grey = (color[0] + color[1] + color[2]) / 3.0
-            base_input.default_value = (
-                (grey + (color[0] - grey) * saturation) * value,
-                (grey + (color[1] - grey) * saturation) * value,
-                (grey + (color[2] - grey) * saturation) * value,
-                color[3],
-            )
-
-        strength = bsdf.inputs["Emission Strength"]
-        if not strength.links:
-            strength.default_value = min(strength.default_value, emission_cap)
-
-
-def import_asset(
-    asset_id: str,
-    target: bpy.types.Collection,
-    *,
-    width: float,
-    height: float,
-    location: tuple[float, float, float],
-    rotation_degrees: float,
-    saturation: float = 0.45,
-    value: float = 0.62,
-    emission_cap: float = 0.7,
-) -> bpy.types.Object:
-    path = ASSET_DIR / f"{asset_id}_raw.glb"
-    if not path.exists():
-        raise FileNotFoundError(f"Missing Meshy source asset: {path}")
-
-    before = set(bpy.data.objects)
-    bpy.ops.import_scene.gltf(filepath=str(path))
-    imported = [obj for obj in bpy.data.objects if obj not in before and obj.type == "MESH"]
-    if not imported:
-        raise RuntimeError(f"No mesh objects imported from {path}")
-
-    bpy.ops.object.select_all(action="DESELECT")
-    for obj in imported:
-        obj.select_set(True)
-    bpy.context.view_layer.objects.active = imported[0]
-    bpy.ops.object.join()
-    result = bpy.context.object
-    result.name = f"AR_{asset_id.replace('-', '_')}"
-    bpy.ops.object.transform_apply(location=False, rotation=True, scale=True)
-
-    bounds = [Vector(corner) for corner in result.bound_box]
-    minimum = Vector((min(p.x for p in bounds), min(p.y for p in bounds), min(p.z for p in bounds)))
-    maximum = Vector((max(p.x for p in bounds), max(p.y for p in bounds), max(p.z for p in bounds)))
-    center = Vector(((minimum.x + maximum.x) / 2, (minimum.y + maximum.y) / 2, minimum.z))
-    result.data.transform(Matrix.Translation(-center))
-
-    size = maximum - minimum
-    horizontal_scale = width / max(size.x, size.y)
-    vertical_scale = height / max(size.z, 0.001)
-    result.scale = (horizontal_scale, horizontal_scale, vertical_scale)
-    result.rotation_euler = (0.0, 0.0, math.radians(rotation_degrees))
-    result.location = location
-    grade_asset(result, saturation, value, emission_cap)
-    move_to_collection(result, target)
-    return result
 
 
 def add_block(
@@ -429,7 +355,7 @@ def render_previews(camera: bpy.types.Object) -> None:
         "quarter": ((29, -9, 18), (0, 4, 3.0), 38),
         "side": ((-29, -4, 14), (0, 4, 2.8), 38),
         "top": ((0, -0.01, 54), (0, 0, 0), 44),
-        "route": ((7.5, -10.5, 4.2), (-10.5, 15.8, 5.0), 30),
+        "route": ((7.5, -10.5, 4.2), (-12.0, 18.0, 2.5), 30),
     }
     for name, (location, target, lens) in views.items():
         camera.location = location
@@ -458,21 +384,6 @@ def main() -> None:
     create_terrain(export, regolith)
     create_precision_dais(export, basalt, metal, amber)
     create_deck_channels(export, amber)
-
-    # The single authored silhouette: the ring gate, upright and distant on
-    # the Earth sight line, grounded lightly in the plain.
-    arch_x, arch_y = polar(19.0, math.degrees(SIGHT_ANGLE))
-    import_asset(
-        "celestial-arch",
-        export,
-        width=13.0,
-        height=13.2,
-        location=(arch_x, arch_y, terrain_height(arch_x, arch_y) - 1.05),
-        rotation_degrees=-18,
-        saturation=0.45,
-        value=0.52,
-        emission_cap=1.2,
-    )
 
     camera = create_preview_world(preview)
     BLEND_PATH.parent.mkdir(parents=True, exist_ok=True)

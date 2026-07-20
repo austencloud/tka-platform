@@ -1,18 +1,21 @@
 # Cosmic Astral Reliquary Second Pass: Handoff (2026-07-19)
 
-> **Second pass landed 2026-07-19 (Fable), then superseded same day.** The
-> observatory-complex arrangement (terrace, crescent, stairs, walls, rubble)
-> read as clutter at runtime; Austen rejected it: procedural connector blocks
-> and multi-asset arrangement are outside current AI aesthetic ability. Third
-> pass is the keeper: **restraint** — quiet lunar plain with soft craters, the
-> celestial arch alone, upright at r19 on the Earth sight line, base slab
-> buried; deck + rings + amber marks + three flush channels; nothing else.
-> Pavilion/orrery/dais/fault assets stay on disk unused (raw GLBs remain for a
-> future human-directed pass). Shipping GLB 5,691,088 bytes, validator clean.
-> Cold directional stays `[28, 12, -19]`. Still open: perf numbers in-app,
-> loose end 10 (legacy retirement gated on approval). Lesson for the next
-> agent: do not attempt multi-asset ruin composition again — single silhouette
-> + negative space is the ceiling of what reads well from this pipeline.
+> **Second pass landed 2026-07-19 (Fable), then superseded twice same day.**
+> The observatory-complex arrangement (terrace, crescent, stairs, walls,
+> rubble) read as clutter at runtime; Austen rejected it. The third pass (lone
+> arch on the Earth sight line) also failed runtime review — the sculpt only
+> reads from one viewing cone and the orbit camera breaks it, and the bright
+> tiled regolith read as concrete. Fourth pass is the keeper: **dark minimal
+> moonscape** — near-black regolith (diffuse crushed to value 0.14 so runtime
+> lights cannot wash it grey, UV tiling at 1/9), soft craters, deck + rings +
+> amber marks + three flush channels, zero Meshy assets in the shipping GLB.
+> Earth, nebula, starfield, god rays, and meteors carry the scene. All five
+> raw Meshy GLBs stay on disk for a future human-directed pass. Shipping GLB
+> 3,370,400 bytes, validator clean. Cold directional stays `[28, 12, -19]`.
+> Still open: perf numbers in-app, loose end 10 (legacy retirement gated on
+> approval). Lesson for the next agent: no AI-arranged sculpted assets in
+> orbit-camera scenes — clean parametric geometry, dark ground, and
+> atmosphere are what this pipeline does well.
 
 ## Mission
 
