@@ -511,8 +511,11 @@
     showQRCode: effShowQRCode,
     showMandala: effShowMandala,
     forceContain,
-    showBlueMotion,
-    showRedMotion,
+    // These feed ONLY the mandala placement (which color fills the info cell).
+    // In browse-solo the card shows a single prop, so the mandala must match
+    // that color — otherwise it fills with both. Motion-solo/normal unchanged.
+    showBlueMotion: isBrowseSoloMode ? soloColor === "blue" : showBlueMotion,
+    showRedMotion: isBrowseSoloMode ? soloColor === "red" : showRedMotion,
     startPositionLayoutOverride,
     compositionVersion,
     cellWidth,

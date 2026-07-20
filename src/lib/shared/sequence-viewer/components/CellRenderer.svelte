@@ -94,7 +94,6 @@
       {#if turnsLabel}
         <span
           class="solo-turn-number"
-          class:browse={isBrowseSoloMode}
           class:dark-mode={activeDarkMode}
           style="color: {soloColor === 'blue' ? 'var(--prop-blue, #2196f3)' : 'var(--prop-red, #f44336)'};"
           transition:fade|local={{ duration: 150 }}
@@ -275,15 +274,17 @@
     color: #ffffff;
   }
 
-  /* Browse-solo (single prop path preview): the start→end pair sits low and a
-     touch smaller so it reads as an annotation, not a header. The turn number
-     moves to a top corner so the two never collide. */
+  /* Browse-solo (single prop path preview): a single prop path is all about
+     where it travels, so the start→end pair is the headline — bigger than the
+     motion-solo header, and kept at the bottom where it started. The turn count
+     keeps its conventional bottom-left corner; the pair is centered, so the two
+     sit side by side without colliding. */
   .solo-locations.browse {
     top: auto;
     bottom: 4%;
-    font-size: 6.8cqw;
-    font-weight: 600;
-    opacity: 0.85;
+    font-size: 9.2cqw;
+    font-weight: 700;
+    opacity: 0.92;
   }
 
   .solo-loc-letter {
@@ -325,13 +326,6 @@
     user-select: none;
   }
 
-  /* Browse-solo turns badge — top-left corner, clear of the bottom locations. */
-  .solo-turn-number.browse {
-    top: 5%;
-    bottom: auto;
-    left: 6%;
-    font-size: min(8.5cqw, 22px);
-  }
 
   /* Motion-solo orientation annotation - bottom-center, below the
      southernmost outer grid dot. Not bold; shares the arrow size with
