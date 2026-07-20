@@ -1,6 +1,7 @@
 <script lang="ts">
   import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
+  import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { getFuseContext } from "../context/fuse-context";
   import { FUSE_LENGTHS, type FuseLength } from "../state/fuse-state.svelte";
 
@@ -17,9 +18,21 @@
     return (FUSE_LENGTHS as readonly number[]).includes(value);
   }
 
-  function handleLengthChange(event: Event): void {
-    const value = Number((event.currentTarget as HTMLSelectElement).value);
-    if (isFuseLength(value)) void state.setLength(value);
+  // SegmentedControl works over string values, so stringify the numeric
+  // FUSE_LENGTHS and parse back on select. Every option carries the same
+  // disabled flag while a length is loading or a fuse is in flight —
+  // SegmentedControl has no whole-control disabled, so it's per-option.
+  const lengthOptions = $derived(
+    FUSE_LENGTHS.map((length) => ({
+      value: String(length),
+      label: String(length),
+      disabled: state.isLoadingLength || state.isFusing,
+    })),
+  );
+
+  function handleLengthSelect(value: string): void {
+    const num = Number(value);
+    if (isFuseLength(num)) void state.setLength(num);
   }
 </script>
 
@@ -34,21 +47,15 @@
   {/if}
 
   <div class="header-controls">
-    <label class="length-field">
-      <span class="sr-only">Length</span>
-      <span class="select-wrap">
-        <select
-          value={state.requestedLength}
-          onchange={handleLengthChange}
-          disabled={state.isLoadingLength || state.isFusing}
-        >
-          {#each FUSE_LENGTHS as length}
-            <option value={length}>{length} steps</option>
-          {/each}
-        </select>
-        <i class="fas fa-chevron-down" aria-hidden="true"></i>
-      </span>
-    </label>
+    <div class="length-field" role="group" aria-label="Length in steps">
+      <SegmentedControl
+        options={lengthOptions}
+        value={String(state.requestedLength)}
+        onchange={handleLengthSelect}
+        color="accent"
+        size="sm"
+      />
+    </div>
 
     {#if compact}
       <TransportControls
@@ -114,46 +121,15 @@
 
   .length-field {
     display: flex;
+    /* Enough room for all 7 segments inline on desktop; min-width:0 lets it
+       shrink before overflowing. Segment digits (2, 4, … 32) stay tabular. */
+    width: 24rem;
     min-width: 0;
-  }
-
-  .select-wrap {
-    position: relative;
-    display: flex;
-    align-items: center;
-  }
-
-  select {
-    width: 122px;
-    min-height: var(--min-touch-target, 44px);
-    padding: 0 34px 0 13px;
-    appearance: none;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    border-radius: var(--settings-radius-md, 12px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    color: var(--theme-text, #fff);
-    font: inherit;
-    font-size: var(--font-size-min, 14px);
     font-variant-numeric: tabular-nums;
-    cursor: pointer;
   }
 
-  select:disabled {
-    opacity: 0.55;
-    cursor: wait;
-  }
-
-  select:focus-visible {
-    outline: 2px solid var(--theme-accent, currentColor);
-    outline-offset: 2px;
-  }
-
-  .select-wrap i {
-    position: absolute;
-    right: 13px;
-    pointer-events: none;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.62));
-    font-size: var(--font-size-compact, 12px);
+  .length-field :global(.segmented-control) {
+    width: 100%;
   }
 
   @container fuse (max-width: 599px) {
@@ -167,18 +143,17 @@
 
     .compact .header-controls {
       width: 100%;
+      flex-wrap: wrap;
       justify-content: flex-end;
       gap: var(--settings-spacing-sm, 8px);
     }
 
+    /* 7 segments don't fit a 152px slot beside transport + help, so the
+       length row takes a full-width line and the transport/help cluster
+       drops beneath it — no cramped mid-word wrapping of the digits. */
     .compact .length-field {
-      width: min(38cqw, 152px);
-      margin-right: auto;
-    }
-
-    .compact .select-wrap,
-    .compact select {
       width: 100%;
+      flex-basis: 100%;
     }
 
     .compact .header-controls :global(.help-button:focus-visible) {
@@ -198,16 +173,6 @@
       border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.24));
       background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.09));
       color: var(--theme-text, #fff);
-    }
-  }
-
-  @media (forced-colors: active) {
-    select {
-      appearance: auto;
-    }
-
-    .select-wrap i {
-      display: none;
     }
   }
 </style>
