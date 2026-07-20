@@ -8,6 +8,7 @@
 <script lang="ts">
   import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import type { AssembleState } from "../state/assemble-state.svelte";
 
   let { builderState }: { builderState: AssembleState } = $props();
@@ -61,29 +62,28 @@
         <span class="mode-desc">{activeModeDesc}</span>
       </div>
 
-      <button
-        class="center-chip"
-        class:active={builderState.showCenter}
-        role="switch"
-        aria-checked={builderState.showCenter}
-        aria-label="Include center point"
-        onclick={() => builderState.setShowCenter(!builderState.showCenter)}
-      >
-        <span class="chip-label">+ Center</span>
-        <span class="chip-desc">Adds a 9th point</span>
-      </button>
+      <div class="toggle-row">
+        <FilterChipBase
+          label="Center"
+          mode="toggle"
+          emphasis="solid"
+          active={builderState.showCenter}
+          onclick={() => builderState.setShowCenter(!builderState.showCenter)}
+        />
+        <span class="toggle-description">Adds a ninth point</span>
+      </div>
 
-      <button
-        class="center-chip"
-        class:active={builderState.keyboardMode}
-        role="switch"
-        aria-checked={builderState.keyboardMode}
-        aria-label="Keyboard mode (use numpad)"
-        onclick={() => builderState.toggleKeyboardMode()}
-      >
-        <span class="chip-label"><i class="fas fa-keyboard" aria-hidden="true"></i> Keyboard</span>
-        <span class="chip-desc">Build with numpad</span>
-      </button>
+      <div class="toggle-row keyboard-option">
+        <FilterChipBase
+          label="Keyboard"
+          icon="fas fa-keyboard"
+          mode="toggle"
+          emphasis="solid"
+          active={builderState.keyboardMode}
+          onclick={() => builderState.toggleKeyboardMode()}
+        />
+        <span class="toggle-description">Build with the numpad</span>
+      </div>
     </div>
   </div>
 </aside>
@@ -94,13 +94,13 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 32px 24px;
+    padding: var(--settings-spacing-xl, 32px) var(--settings-spacing-lg, 24px);
   }
 
   .panel-content {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: var(--settings-spacing-lg, 20px);
     width: 100%;
     max-width: 320px;
   }
@@ -117,8 +117,13 @@
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, transparent);
-    border: 1.5px solid color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 15%,
+      transparent
+    );
+    border: 1.5px solid
+      color-mix(in srgb, var(--theme-accent, #6366f1) 25%, transparent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -195,48 +200,22 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .center-chip {
+  .toggle-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 14px 18px;
-    border-radius: 12px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    color: var(--theme-text, #fff);
-    cursor: pointer;
-    min-height: 52px;
-    text-align: left;
-    transition: border-color 0.15s ease, background 0.15s ease;
+    gap: var(--settings-spacing-sm, 8px);
+    min-height: var(--min-touch-target, 44px);
   }
 
-  .center-chip:hover {
-    background: var(--theme-card-bg-hover, rgba(255, 255, 255, 0.08));
-    border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-  }
-
-  .center-chip.active {
-    border-color: var(--theme-accent, #6366f1);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 10%, transparent);
-  }
-
-  .center-chip:focus-visible {
-    outline: 2px solid var(--theme-accent, #6366f1);
-    outline-offset: 2px;
-  }
-
-  .chip-label {
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-  }
-
-  .chip-desc {
+  .toggle-description {
     font-size: var(--font-size-compact, 12px);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.45));
+    text-align: right;
   }
 
   /* ── Mobile ── */
-  @media (max-width: 768px) {
+  @container tool-panel (max-width: 768px) {
     .idle-panel {
       padding: 16px;
       flex: 0 0 auto;
@@ -265,16 +244,11 @@
     .step-text {
       font-size: var(--font-size-compact, 12px);
     }
-
-    .center-chip {
-      padding: 10px 14px;
-      min-height: 44px;
-    }
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .center-chip {
-      transition: none;
+  @media (hover: none), (pointer: coarse) {
+    .keyboard-option {
+      display: none;
     }
   }
 </style>

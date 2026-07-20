@@ -10,16 +10,16 @@
 <script lang="ts">
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import type { AssembleState } from "../state/assemble-state.svelte";
+  import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import GridModePicker from "./GridModePicker.svelte";
+  import { getBuilderPhaseInstruction } from "../services/builder-phase-presentation";
 
   let { builderState }: { builderState: AssembleState } = $props();
 
   const isBlueHand = $derived(builderState.activeHand === MotionColor.BLUE);
 
   const handColor = $derived(
-    isBlueHand
-      ? "var(--prop-blue, #2e8bf0)"
-      : "var(--prop-red, #ed1c24)"
+    isBlueHand ? "var(--prop-blue, #2e8bf0)" : "var(--prop-red, #ed1c24)"
   );
 
   const otherHandLabel = $derived(isBlueHand ? "Red" : "Blue");
@@ -30,20 +30,12 @@
     isBlueHand ? builderState.blueSteps.length : builderState.redSteps.length
   );
 
-  const phaseMessage = $derived.by(() => {
-    switch (builderState.phase) {
-      case "idle": return "Tap a starting point";
-      case "placing": return "Tap destination";
-      case "building":
-      case "animating": return "Tap next point";
-      case "complete": return "Sequence complete";
-      default: return "";
-    }
-  });
+  const phaseMessage = $derived(getBuilderPhaseInstruction(builderState.phase));
 
   // Contextual hint about the other hand - shown below the main instruction
   const otherHandHint = $derived.by(() => {
-    if (builderState.phase === "complete" || builderState.phase === "idle") return "";
+    if (builderState.phase === "complete" || builderState.phase === "idle")
+      return "";
     if (otherHandSteps === 0 && activeStepCount > 0) {
       return `Switch to ${otherHandLabel} when ready`;
     }
@@ -60,12 +52,17 @@
   // Hidden on complete or when both hands are empty.
   const switcherHidden = $derived(
     builderState.phase === "complete" ||
-    (builderState.blueSteps.length === 0 && builderState.redSteps.length === 0)
+      (builderState.blueSteps.length === 0 &&
+        builderState.redSteps.length === 0)
   );
 
   // Pulse the inactive hand's button when it has no steps yet
-  const blueNeedsAttention = $derived(!isBlueHand && builderState.blueSteps.length === 0);
-  const redNeedsAttention = $derived(isBlueHand && builderState.redSteps.length === 0);
+  const blueNeedsAttention = $derived(
+    !isBlueHand && builderState.blueSteps.length === 0
+  );
+  const redNeedsAttention = $derived(
+    isBlueHand && builderState.redSteps.length === 0
+  );
 
   function switchToBlue(): void {
     builderState.switchToHand(MotionColor.BLUE);
@@ -139,16 +136,16 @@
     </button>
   </div>
 
-  <button
-    class="keyboard-toggle"
-    class:active={builderState.keyboardMode}
-    role="switch"
-    aria-checked={builderState.keyboardMode}
-    aria-label="Toggle keyboard mode"
-    onclick={() => builderState.toggleKeyboardMode()}
-  >
-    <i class="fas fa-keyboard" aria-hidden="true"></i>
-  </button>
+  <div class="keyboard-toggle">
+    <FilterChipBase
+      label="Keyboard"
+      icon="fas fa-keyboard"
+      mode="toggle"
+      size="sm"
+      active={builderState.keyboardMode}
+      onclick={() => builderState.toggleKeyboardMode()}
+    />
+  </div>
 </div>
 
 <style>
@@ -224,7 +221,10 @@
     font-size: var(--font-size-compact, 12px);
     font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease,
+      border-color 0.15s ease;
   }
 
   .hand-switch-btn:hover {
@@ -282,13 +282,15 @@
   }
 
   @keyframes hand-nudge {
-    0%, 100% {
+    0%,
+    100% {
       border-color: color-mix(in srgb, var(--btn-color) 30%, transparent);
       box-shadow: 0 0 0 0 color-mix(in srgb, var(--btn-color) 0%, transparent);
     }
     50% {
       border-color: var(--btn-color);
-      box-shadow: 0 0 8px 0 color-mix(in srgb, var(--btn-color) 30%, transparent);
+      box-shadow: 0 0 8px 0
+        color-mix(in srgb, var(--btn-color) 30%, transparent);
     }
   }
 
@@ -301,39 +303,17 @@
     position: absolute;
     right: 16px;
     top: 12px;
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: transparent;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.4));
-    font-size: var(--font-size-min, 14px);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-  }
-
-  .keyboard-toggle:hover {
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
-    color: var(--theme-text, #fff);
-  }
-
-  .keyboard-toggle.active {
-    background: var(--theme-accent-bg, rgba(99, 102, 241, 0.12));
-    border-color: var(--theme-accent-border, rgba(99, 102, 241, 0.3));
-    color: var(--theme-accent, #6366f1);
-  }
-
-  .keyboard-toggle:focus-visible {
-    outline: 2px solid var(--theme-text, #fff);
-    outline-offset: 2px;
   }
 
   /* ── Mobile: hide entirely - BuilderControls handles instruction + hand switching ── */
-  @media (max-width: 768px) {
+  @container tool-panel (max-width: 768px) {
     .instruction-header {
+      display: none;
+    }
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    .keyboard-toggle {
       display: none;
     }
   }

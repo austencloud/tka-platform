@@ -9,7 +9,9 @@
   let { builderState }: { builderState: AssembleState } = $props();
 
   const rotLabel = $derived(
-    builderState.rotationDirection === RotationDirection.CLOCKWISE ? "CW" : "CCW"
+    builderState.rotationDirection === RotationDirection.CLOCKWISE
+      ? "CW"
+      : "CCW"
   );
 
   const turnLabel = $derived(
@@ -93,7 +95,7 @@
     margin-right: 2px;
   }
 
-  @media (max-width: 768px) {
+  @container tool-panel (max-width: 768px) {
     .hint-strip {
       display: none;
     }

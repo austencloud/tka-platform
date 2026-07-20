@@ -7,8 +7,8 @@
  * Undo is handled by builderState.undoStep() directly (per-step granularity),
  * wired through CreateModuleState.undo() when activeTab === "assemble".
  *
- * The reactive bridge converts BuilderStep[] (visual builder's per-hand model)
- * into StepData[] (what SequenceState/StepGrid needs), keeping both in sync.
+ * Builder mutations update the editable sequence document directly. Sequence
+ * editor mutations hydrate the builder through the same state boundary.
  */
 
 import type { SequenceRepository } from "$lib/shared/create/services/sequence-repository";
@@ -16,51 +16,70 @@ import type { SequencePersister } from "$lib/features/create/shared/services/seq
 import type { SequenceStatsCalculator } from "$lib/features/create/shared/services/sequence-stats-calculator";
 import type { SequenceTransformer } from "$lib/features/create/shared/services/sequence-transforms/sequence-transformer";
 import type { SequenceValidator } from "$lib/features/create/shared/services/sequence-validator";
-import { reversalDetector, type ReversalDetector } from "$lib/shared/create/services/reversal-detector";
+import {
+  reversalDetector,
+  type ReversalDetector,
+} from "$lib/shared/create/services/reversal-detector";
 import { createSequenceState } from "./sequence-state-orchestrator.svelte";
 import type { SequenceState } from "./sequence-state-orchestrator.svelte";
 import { createAssembleState } from "$lib/features/assemble-lab/state/assemble-state.svelte";
-import type { AssembleState, BuilderPhase } from "$lib/features/assemble-lab/state/assemble-state.svelte";
+import type {
+  AssembleState,
+  BuilderPhase,
+} from "$lib/features/assemble-lab/state/assemble-state.svelte";
 import {
   stepToMotion,
   convertToStartPosition,
   convertToPictographs,
   lookupLetter,
+  sequenceToBuilderHydration,
 } from "$lib/features/assemble-lab/services/builder-step-converter";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
 import { createStartPositionData } from "$lib/shared/create/factories/create-start-position-data";
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
+import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
+import { generateSequenceWord } from "$lib/features/create/shared/services/sequence-stats-calculator";
 
 export function createAssembleTabState(
   sequenceService?: SequenceRepository,
   sequencePersister?: SequencePersister,
   sequenceStatisticsService?: SequenceStatsCalculator,
   sequenceTransformer?: SequenceTransformer,
-  sequenceValidationService?: SequenceValidator,
+  sequenceValidationService?: SequenceValidator
 ) {
   // Tab-specific state
   let isInitialized = $state(false);
   let error = $state<string | null>(null);
 
-  // Builder state (per-hand click model from assemble-lab)
-  const builderState: AssembleState = createAssembleState();
+  let sequenceState: SequenceState | null = null;
+  let isApplyingBuilderChange = false;
+  let isDestroyed = false;
+  const letterCache = new Map<string, Letter | null>();
 
-  // Letter cache: step index -> resolved letter
-  let letterCache = $state<Map<number, Letter | null>>(new Map());
+  // The builder reports document changes at the mutation boundary. This keeps
+  // sequence edits and builder edits out of competing reactive effects.
+  const builderState: AssembleState = createAssembleState({
+    onDocumentChange: syncBuilderToSequence,
+  });
 
-  // Isolated sequence state for this tab
+  // Isolated editable sequence document for this tab.
   const ReversalDetector: ReversalDetector | undefined = reversalDetector;
-  const sequenceState: SequenceState | null = sequenceService
+  sequenceState = sequenceService
     ? createSequenceState({
         sequenceService,
         ...(sequencePersister && { SequencePersister: sequencePersister }),
         ...(sequenceStatisticsService && { sequenceStatisticsService }),
-        ...(sequenceTransformer && { SequenceTransformer: sequenceTransformer }),
+        ...(sequenceTransformer && {
+          SequenceTransformer: sequenceTransformer,
+        }),
         ...(sequenceValidationService && { sequenceValidationService }),
         ...(ReversalDetector && { ReversalDetector }),
         tabId: "assemble",
+        onCurrentSequenceChange: syncSequenceToBuilder,
       })
     : null;
 
@@ -68,143 +87,212 @@ export function createAssembleTabState(
   // (wired through CreateModuleState.undo() which delegates to builderState
   // when activeTab === "assemble"). No snapshot-based undo controller needed.
 
-  // ============================================================================
-  // REACTIVE BRIDGE: BuilderStep[] -> SequenceState
-  //
-  // Uses $effect.root() because this factory runs outside component context
-  // (called from CreateModuleInitializer.initialize() after an await).
-  // $effect.root() creates a standalone reactive scope with manual cleanup.
-  // ============================================================================
+  function sameMotionCore(left: MotionData, right: MotionData): boolean {
+    return (
+      left.isVisible === right.isVisible &&
+      left.startLocation === right.startLocation &&
+      left.endLocation === right.endLocation &&
+      left.rotationDirection === right.rotationDirection &&
+      left.turns === right.turns &&
+      left.startOrientation === right.startOrientation &&
+      left.endOrientation === right.endOrientation &&
+      left.gridMode === right.gridMode
+    );
+  }
 
-  let cleanupEffects: (() => void) | null = null;
+  function mergeBuilderStep(
+    generated: StepData,
+    existing: StepData | undefined,
+    index: number
+  ): StepData {
+    if (!existing) return generated;
 
-  // Tracks the previous builder phase so the construct-completion counter fires
-  // exactly once on the transition INTO "complete" (edge-triggered), not on
-  // every reactive tick while the sequence sits in the complete phase.
-  let prevAssemblePhase: BuilderPhase | null = null;
+    const blue = sameMotionCore(existing.motions.blue, generated.motions.blue)
+      ? existing.motions.blue
+      : generated.motions.blue;
+    const red = sameMotionCore(existing.motions.red, generated.motions.red)
+      ? existing.motions.red
+      : generated.motions.red;
 
-  function startReactiveBridge(): void {
-    // Prevent double-init
-    if (cleanupEffects) return;
+    return {
+      ...generated,
+      ...existing,
+      stepNumber: index + 1,
+      gridMode: builderState.gridMode,
+      motions: { blue, red },
+    };
+  }
 
-    cleanupEffects = $effect.root(() => {
-      // Reset or trim letter cache when steps change
-      $effect(() => {
-        const blueLen = builderState.blueSteps.length;
-        const redLen = builderState.redSteps.length;
-        if (blueLen === 0 && redLen === 0) {
-          letterCache = new Map();
-        } else {
-          // Trim cache entries that no longer have corresponding steps
-          // (e.g., after truncation via delete)
-          const paired = Math.min(blueLen, redLen);
-          let trimmed = false;
-          const newCache = new Map(letterCache);
-          for (const key of newCache.keys()) {
-            if (key >= paired) {
-              newCache.delete(key);
-              trimmed = true;
-            }
-          }
-          if (trimmed) {
-            letterCache = newCache;
-          }
+  function syncBuilderToSequence(): void {
+    if (!sequenceState || isApplyingBuilderChange || isDestroyed) return;
+
+    const blueSteps = builderState.blueSteps;
+    const redSteps = builderState.redSteps;
+    const gridMode = builderState.gridMode;
+    const startPicto = convertToStartPosition(
+      blueSteps,
+      redSteps,
+      builderState.currentPosition,
+      builderState.currentOrientation,
+      builderState.activeHand,
+      gridMode
+    );
+    const current = sequenceState.currentSequence;
+    const generatedSteps = convertToPictographs(
+      blueSteps,
+      redSteps,
+      gridMode
+    ).map((pictograph, index) =>
+      createStepData({
+        ...pictograph,
+        stepNumber: index + 1,
+        duration: current?.steps[index]?.duration ?? 1,
+        letter: current?.steps[index]?.letter ?? null,
+      })
+    );
+    const steps = generatedSteps.map((step, index) =>
+      mergeBuilderStep(step, current?.steps[index], index)
+    );
+    const startPosition = startPicto
+      ? createStartPositionData({ ...startPicto })
+      : undefined;
+
+    isApplyingBuilderChange = true;
+    try {
+      if (!startPosition && steps.length === 0) {
+        if (current) sequenceState.setCurrentSequence(null);
+        return;
+      }
+
+      const currentDocument: SequenceData = current ?? {
+        id: crypto.randomUUID(),
+        name: "Assemble Sequence",
+        word: "",
+        steps: [],
+        thumbnails: [],
+        isFavorite: false,
+        isCircular: false,
+        metadata: {},
+        tags: [],
+      };
+      const {
+        startPosition: _oldStartPosition,
+        startingPosition: _oldStartingPosition,
+        ...currentWithoutStart
+      } = currentDocument;
+      let next: SequenceData = {
+        ...currentWithoutStart,
+        steps,
+        word: "",
+        sequenceLength: steps.length,
+        gridMode,
+        ...(startPosition && {
+          startPosition,
+          startingPosition: startPosition,
+        }),
+      };
+      next = { ...next, word: generateSequenceWord(next) };
+      sequenceState.setCurrentSequence(next);
+    } finally {
+      isApplyingBuilderChange = false;
+    }
+
+    scheduleLetterLookups();
+  }
+
+  function builderPairKey(index: number): string | null {
+    const blue = builderState.blueSteps[index];
+    const red = builderState.redSteps[index];
+    if (!blue || !red) return null;
+    return JSON.stringify([builderState.gridMode, blue, red]);
+  }
+
+  function scheduleLetterLookups(): void {
+    if (!sequenceState || isDestroyed) return;
+    const paired = Math.min(
+      builderState.blueSteps.length,
+      builderState.redSteps.length
+    );
+
+    for (let index = 0; index < paired; index += 1) {
+      const key = builderPairKey(index);
+      if (!key || letterCache.has(key)) continue;
+      const existingLetter =
+        sequenceState.currentSequence?.steps[index]?.letter ?? null;
+      if (existingLetter) {
+        letterCache.set(key, existingLetter);
+        continue;
+      }
+
+      const blueMotion = stepToMotion(
+        builderState.blueSteps[index]!,
+        MotionColor.BLUE,
+        builderState.gridMode
+      );
+      const redMotion = stepToMotion(
+        builderState.redSteps[index]!,
+        MotionColor.RED,
+        builderState.gridMode
+      );
+      letterCache.set(key, null);
+      void lookupLetter(blueMotion, redMotion, builderState.gridMode).then(
+        (letter) => {
+          letterCache.set(key, letter);
+          applyResolvedLetter(index, key, letter);
         }
-      });
+      );
+    }
+  }
 
-      // Async letter lookup for paired steps
-      $effect(() => {
-        const blueSteps = builderState.blueSteps;
-        const redSteps = builderState.redSteps;
-        const paired = Math.min(blueSteps.length, redSteps.length);
-        const gm = builderState.gridMode;
+  function applyResolvedLetter(
+    index: number,
+    key: string,
+    letter: Letter | null
+  ): void {
+    if (!sequenceState || isDestroyed || builderPairKey(index) !== key) return;
+    const current = sequenceState.currentSequence;
+    const step = current?.steps[index];
+    if (!current || !step || step.letter === letter) return;
 
-        for (let i = 0; i < paired; i++) {
-          if (letterCache.has(i)) continue;
-          const blueMotion = stepToMotion(blueSteps[i]!, MotionColor.BLUE, gm);
-          const redMotion = stepToMotion(redSteps[i]!, MotionColor.RED, gm);
-          // Mark as pending
-          letterCache = new Map(letterCache).set(i, null);
-          lookupLetter(blueMotion, redMotion, gm).then((letter) => {
-            letterCache = new Map(letterCache).set(i, letter);
-          });
-        }
-      });
+    const steps = current.steps.map((candidate, candidateIndex) =>
+      candidateIndex === index ? { ...candidate, letter } : candidate
+    );
+    let next: SequenceData = { ...current, steps, word: "" };
+    next = { ...next, word: generateSequenceWord(next) };
+    isApplyingBuilderChange = true;
+    try {
+      sequenceState.setCurrentSequence(next);
+    } finally {
+      isApplyingBuilderChange = false;
+    }
+  }
 
-      // Sync builder state -> sequence state
-      $effect(() => {
-        if (!sequenceState) return;
+  function syncSequenceToBuilder(sequence: SequenceData | null): void {
+    if (isApplyingBuilderChange || isDestroyed) return;
+    if (sequence) {
+      builderState.hydrateFromSequence(sequenceToBuilderHydration(sequence));
+      scheduleLetterLookups();
+      return;
+    }
 
-        const blueSteps = builderState.blueSteps;
-        const redSteps = builderState.redSteps;
-        const currentPos = builderState.currentPosition;
-        const currentOri = builderState.currentOrientation;
-        const activeHand = builderState.activeHand;
-        const gm = builderState.gridMode;
-
-        // Build start position
-        const startPicto = convertToStartPosition(
-          blueSteps, redSteps, currentPos, currentOri, activeHand, gm,
-        );
-
-        // Build step pictographs
-        const stepPictos = convertToPictographs(blueSteps, redSteps, gm);
-
-        // Apply cached letters
-        const stepsWithLetters = stepPictos.map((p, i) => {
-          const letter = letterCache.get(i) ?? undefined;
-          return createStepData({
-            ...p,
-            letter,
-            stepNumber: i + 1,
-            duration: 1,
-          });
-        });
-
-        // Update sequence state
-        const currentSeq = sequenceState.currentSequence;
-        const startPositionData = startPicto
-          ? createStartPositionData({ ...startPicto })
-          : undefined;
-
-        if (!startPositionData && stepsWithLetters.length === 0) {
-          if (currentSeq) {
-            sequenceState.setCurrentSequence(null);
-          }
-          return;
-        }
-
-        sequenceState.setCurrentSequence({
-          id: currentSeq?.id ?? crypto.randomUUID(),
-          name: currentSeq?.name ?? "Assemble Sequence",
-          word: "",
-          steps: stepsWithLetters,
-          gridMode: gm,
-          thumbnails: [],
-          isFavorite: false,
-          isCircular: false,
-          metadata: {},
-          tags: [],
-          ...(startPositionData && { startingPosition: startPositionData }),
-        });
-      });
-
-      // Count one "construct" creation on each transition into the terminal
-      // "complete" phase (when the user finishes assembling both hands). The
-      // prevAssemblePhase guard makes this edge-triggered: it fires once per
-      // completion, not on every reactive tick while phase stays "complete".
-      $effect(() => {
-        const phase = builderState.phase;
-        if (phase === "complete" && prevAssemblePhase !== "complete") {
-          void getPropUnlockManager().recordCreation("construct");
-        }
-        prevAssemblePhase = phase;
-      });
+    builderState.hydrateFromSequence({
+      blueSteps: [],
+      redSteps: [],
+      gridMode: builderState.gridMode,
+      startPoses: {},
     });
   }
 
-  // Start the bridge immediately - $effect.root() doesn't need component context
-  startReactiveBridge();
+  let prevAssemblePhase: BuilderPhase | null = null;
+  const cleanupEffects = $effect.root(() => {
+    $effect(() => {
+      const phase = builderState.phase;
+      if (phase === "complete" && prevAssemblePhase !== "complete") {
+        void getPropUnlockManager().recordCreation("construct");
+      }
+      prevAssemblePhase = phase;
+    });
+  });
 
   // ============================================================================
   // INITIALIZATION
@@ -233,19 +321,33 @@ export function createAssembleTabState(
 
   return {
     // State access
-    get isInitialized() { return isInitialized; },
-    get isPersistenceInitialized() { return isInitialized; },
-    get error() { return error; },
-    get hasError() { return error !== null; },
+    get isInitialized() {
+      return isInitialized;
+    },
+    get isPersistenceInitialized() {
+      return isInitialized;
+    },
+    get error() {
+      return error;
+    },
+    get hasError() {
+      return error !== null;
+    },
 
     // Builder state (consumed by InteractiveGrid & BuilderControls)
-    get assembleBuilderState() { return builderState; },
+    get assembleBuilderState() {
+      return builderState;
+    },
 
     // Sequence state (consumed by StepGrid via SequenceState)
-    get sequenceState() { return sequenceState; },
+    get sequenceState() {
+      return sequenceState;
+    },
 
     // Undo is handled by builderState.undoStep() via CreateModuleState.undo()
-    get canUndo() { return builderState.canUndo; },
+    get canUndo() {
+      return builderState.canUndo;
+    },
     undo: () => {
       if (!builderState.canUndo) return false;
       void builderState.undoStep();
@@ -257,10 +359,8 @@ export function createAssembleTabState(
 
     // Cleanup - call when Create module unmounts
     destroy: () => {
-      if (cleanupEffects) {
-        cleanupEffects();
-        cleanupEffects = null;
-      }
+      isDestroyed = true;
+      cleanupEffects();
     },
   };
 }

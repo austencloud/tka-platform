@@ -71,7 +71,7 @@ export interface AssembleKeyboardHooks {
 export function dispatchAssembleKeyboardAction(
   builderState: AssembleState,
   action: KeyboardAction,
-  hooks?: AssembleKeyboardHooks,
+  hooks?: AssembleKeyboardHooks
 ): void {
   switch (action.type) {
     case "position": {
@@ -80,7 +80,8 @@ export function dispatchAssembleKeyboardAction(
       // is already down and we're adding a motion (not the first placement).
       if (
         hooks?.onStepCapExceeded &&
-        (builderState.phase === "placing" || builderState.phase === "building") &&
+        (builderState.phase === "placing" ||
+          builderState.phase === "building") &&
         builderState.currentPosition !== null
       ) {
         if (hooks.onStepCapExceeded()) break;
@@ -107,26 +108,30 @@ export function dispatchAssembleKeyboardAction(
       builderState.setRotationDirection(
         builderState.rotationDirection === RotationDirection.CLOCKWISE
           ? RotationDirection.COUNTER_CLOCKWISE
-          : RotationDirection.CLOCKWISE,
+          : RotationDirection.CLOCKWISE
       );
       break;
     case "cycleOrientation": {
       const ori = builderState.currentOrientation;
-      const oriIdx = isOrientationValue(ori) ? ORIENTATION_SEQUENCE.indexOf(ori) : -1;
+      const oriIdx = isOrientationValue(ori)
+        ? ORIENTATION_SEQUENCE.indexOf(ori)
+        : -1;
       const nextOri = (oriIdx + 1) % ORIENTATION_SEQUENCE.length;
       builderState.setOrientation(ORIENTATION_SEQUENCE[nextOri]!);
       break;
     }
     case "switchHand":
       builderState.switchToHand(
-        builderState.activeHand === MotionColor.BLUE ? MotionColor.RED : MotionColor.BLUE,
+        builderState.activeHand === MotionColor.BLUE
+          ? MotionColor.RED
+          : MotionColor.BLUE
       );
       break;
     case "undo":
       void builderState.undoStep();
       break;
     case "finish":
-      builderState.finishHand();
+      if (builderState.canFinishHand) builderState.finishHand();
       break;
   }
 }
@@ -139,7 +144,7 @@ export function dispatchAssembleKeyboardAction(
  */
 export function attachAssembleKeyboard(
   builderState: AssembleState,
-  hooks?: AssembleKeyboardHooks,
+  hooks?: AssembleKeyboardHooks
 ): () => void {
   function onKeyDown(e: KeyboardEvent): void {
     const target = e.target as HTMLElement | null;
@@ -171,7 +176,9 @@ export function attachAssembleKeyboard(
   // create-module shortcuts — most dangerously NumpadDecimal -> Delete ->
   // "delete selected beat". Suppress by event.code, which is NumLock-independent.
   const releaseSuppressor = browser
-    ? getKeyboardShortcutManager().addInputSuppressor((ev) => ev.code.startsWith("Numpad"))
+    ? getKeyboardShortcutManager().addInputSuppressor((ev) =>
+        ev.code.startsWith("Numpad")
+      )
     : undefined;
 
   window.addEventListener("keydown", onKeyDown);

@@ -15,12 +15,21 @@
 <script lang="ts">
   import { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
-    MotionColor, Orientation, RotationDirection, } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+    MotionColor,
+    Orientation,
+    RotationDirection,
+  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import type { GridHitTarget } from "$lib/shared/assemble-lab/domain/types";
-  import { getHitTargets, getHitTargetRadius } from "$lib/shared/assemble-lab/services/grid-hit-target-calculator";
+  import {
+    getHitTargets,
+    getHitTargetRadius,
+  } from "$lib/shared/assemble-lab/services/grid-hit-target-calculator";
   import { SvgPropAnimator } from "../services/svg-prop-animator";
-  import type { AssembleState, BuilderStep } from "../state/assemble-state.svelte";
+  import type {
+    AssembleState,
+    BuilderStep,
+  } from "../state/assemble-state.svelte";
 
   // Prop SVG rendering.
   // Trust boundary: svgData.svgContent below is injected via {@html}. The source
@@ -48,7 +57,9 @@
   const ghostAnimator = new SvgPropAnimator();
 
   // Grid hit targets derived from current grid mode
-  const hitTargets = $derived(getHitTargets(builderState.gridMode, builderState.showCenter));
+  const hitTargets = $derived(
+    getHitTargets(builderState.gridMode, builderState.showCenter)
+  );
   const hitRadius = getHitTargetRadius();
 
   const LOCATION_TO_KEY_LABEL: Record<string, string> = {
@@ -82,8 +93,12 @@
   let redPropData = $state<PropRenderData | null>(null);
 
   // Reactive prop types for rotation checks
-  const currentBluePropType = $derived(getSettings().bluePropType ?? PropType.STAFF);
-  const currentRedPropType = $derived(getSettings().redPropType ?? PropType.STAFF);
+  const currentBluePropType = $derived(
+    getSettings().bluePropType ?? PropType.STAFF
+  );
+  const currentRedPropType = $derived(
+    getSettings().redPropType ?? PropType.STAFF
+  );
 
   // Load prop SVGs reactively when prop type changes in settings
   $effect(() => {
@@ -96,22 +111,36 @@
       propType: bluePropType,
       color: MotionColor.BLUE,
     });
-    propSvgLoader.loadPropSvg(
-      { positionX: 0, positionY: 0, rotationAngle: 0 },
-      blueMotion,
-      false,
-    ).then(data => { bluePropData = data; }).catch(() => { /* SVG unavailable; fallback circle renders */ });
+    propSvgLoader
+      .loadPropSvg(
+        { positionX: 0, positionY: 0, rotationAngle: 0 },
+        blueMotion,
+        false
+      )
+      .then((data) => {
+        bluePropData = data;
+      })
+      .catch(() => {
+        /* SVG unavailable; fallback circle renders */
+      });
 
     // Load red prop SVG
     const redMotion = createMotionData({
       propType: redPropType,
       color: MotionColor.RED,
     });
-    propSvgLoader.loadPropSvg(
-      { positionX: 0, positionY: 0, rotationAngle: 0 },
-      redMotion,
-      false,
-    ).then(data => { redPropData = data; }).catch(() => { /* SVG unavailable; fallback circle renders */ });
+    propSvgLoader
+      .loadPropSvg(
+        { positionX: 0, positionY: 0, rotationAngle: 0 },
+        redMotion,
+        false
+      )
+      .then((data) => {
+        redPropData = data;
+      })
+      .catch(() => {
+        /* SVG unavailable; fallback circle renders */
+      });
   });
 
   // Active hand's prop render data
@@ -129,20 +158,21 @@
   const activeRotation = $derived.by(() => {
     if (builderState.currentPosition === null) return 0;
     const settings = getSettings();
-    const activePropType = builderState.activeHand === MotionColor.BLUE
-      ? (settings.bluePropType ?? PropType.STAFF)
-      : (settings.redPropType ?? PropType.STAFF);
+    const activePropType =
+      builderState.activeHand === MotionColor.BLUE
+        ? (settings.bluePropType ?? PropType.STAFF)
+        : (settings.redPropType ?? PropType.STAFF);
     if (activePropType === PropType.HAND) return 0;
     return PropRotAngleManager.calculateRotation(
       builderState.currentPosition,
       builderState.currentOrientation,
-      builderState.gridMode,
+      builderState.gridMode
     );
   });
 
   // Helper: find the hit target matching a grid location
   function findTarget(location: GridLocation): GridHitTarget | undefined {
-    return hitTargets.find(t => t.location === location);
+    return hitTargets.find((t) => t.location === location);
   }
 
   // Resolve the final position of a completed hand path
@@ -159,12 +189,16 @@
 
   // Compute rotation for a prop at a specific location/orientation
   // Hands don't rotate - always return 0 for hand props
-  function getRotation(location: GridLocation, orientation: Orientation, propType?: PropType): number {
+  function getRotation(
+    location: GridLocation,
+    orientation: Orientation,
+    propType?: PropType
+  ): number {
     if (propType === PropType.HAND) return 0;
     return PropRotAngleManager.calculateRotation(
       location,
       orientation,
-      builderState.gridMode,
+      builderState.gridMode
     );
   }
 
@@ -173,138 +207,169 @@
     x: number,
     y: number,
     rotation: number,
-    center: { x: number; y: number },
+    center: { x: number; y: number }
   ): string {
     return `translate(${x}px, ${y}px) rotate(${rotation}deg) translate(${-center.x}px, ${-center.y}px)`;
   }
 
   // Fade out an SVG element over a duration, synchronized with the active prop animation
-  function fadeOutElement(element: SVGGElement, durationMs: number): Promise<void> {
+  function fadeOutElement(
+    element: SVGGElement,
+    durationMs: number
+  ): Promise<void> {
     return new Promise((resolve) => {
-      const anim = element.animate(
-        [{ opacity: 0.35 }, { opacity: 0 }],
-        { duration: durationMs, easing: "ease-out", fill: "forwards" },
-      );
+      const anim = element.animate([{ opacity: 0.35 }, { opacity: 0 }], {
+        duration: durationMs,
+        easing: "ease-out",
+        fill: "forwards",
+      });
       anim.onfinish = () => resolve();
     });
   }
 
   // Register animation callback on state so addMotion() can trigger animation
   $effect(() => {
-    builderState.setAnimationCallback(async (step: BuilderStep, durationMs?: number) => {
-      if (!activePropGroupRef) return;
-      const animations: Promise<void>[] = [];
+    builderState.setAnimationCallback(
+      async (step: BuilderStep, durationMs?: number) => {
+        if (!activePropGroupRef) return;
+        const animations: Promise<void>[] = [];
 
-      // Animate active hand's prop
-      animations.push(
-        animator.animate({
-          element: activePropGroupRef,
-          startPosition: step.startPosition,
-          endPosition: step.endPosition,
-          rotationDirection: step.rotationDirection,
-          turnCount: step.turnCount,
-          startOrientation: step.startOrientation,
-          durationMs: durationMs ?? ANIMATION_DURATION_MS,
-          propCenter: activePropCenter,
-        })
-      );
+        // Animate active hand's prop
+        animations.push(
+          animator.animate({
+            element: activePropGroupRef,
+            startPosition: step.startPosition,
+            endPosition: step.endPosition,
+            rotationDirection: step.rotationDirection,
+            turnCount: step.turnCount,
+            startOrientation: step.startOrientation,
+            durationMs: durationMs ?? ANIMATION_DURATION_MS,
+            propCenter: activePropCenter,
+          })
+        );
 
-      // During red building, animate ghost blue through its corresponding step,
-      // or fade it out if blue has no step at this beat
-      if (
-        builderState.activeHand === MotionColor.RED &&
-        ghostBluePropGroupRef &&
-        bluePropData?.svgData
-      ) {
-        const blueIndex = builderState.redSteps.length;
-        const blueStep = builderState.blueSteps[blueIndex];
-        if (blueStep) {
-          animations.push(
-            ghostAnimator.animate({
-              element: ghostBluePropGroupRef,
-              startPosition: blueStep.startPosition,
-              endPosition: blueStep.endPosition,
-              rotationDirection: blueStep.rotationDirection,
-              turnCount: blueStep.turnCount,
-              startOrientation: blueStep.startOrientation,
-              durationMs: durationMs ?? ANIMATION_DURATION_MS,
-              propCenter: bluePropData.svgData.center,
-            })
-          );
-        } else {
-          // Blue has no step here - fade out in sync with the active prop's animation
-          animations.push(fadeOutElement(ghostBluePropGroupRef, durationMs ?? ANIMATION_DURATION_MS));
+        // During red building, animate ghost blue through its corresponding step,
+        // or fade it out if blue has no step at this beat
+        if (
+          builderState.activeHand === MotionColor.RED &&
+          ghostBluePropGroupRef &&
+          bluePropData?.svgData
+        ) {
+          const blueIndex = builderState.redSteps.length;
+          const blueStep = builderState.blueSteps[blueIndex];
+          if (blueStep) {
+            animations.push(
+              ghostAnimator.animate({
+                element: ghostBluePropGroupRef,
+                startPosition: blueStep.startPosition,
+                endPosition: blueStep.endPosition,
+                rotationDirection: blueStep.rotationDirection,
+                turnCount: blueStep.turnCount,
+                startOrientation: blueStep.startOrientation,
+                durationMs: durationMs ?? ANIMATION_DURATION_MS,
+                propCenter: bluePropData.svgData.center,
+              })
+            );
+          } else {
+            // Blue has no step here - fade out in sync with the active prop's animation
+            animations.push(
+              fadeOutElement(
+                ghostBluePropGroupRef,
+                durationMs ?? ANIMATION_DURATION_MS
+              )
+            );
+          }
         }
-      }
 
-      // During blue building (after going back), animate ghost red through its corresponding step,
-      // or fade it out if red has no step at this beat
-      if (
-        builderState.activeHand === MotionColor.BLUE &&
-        ghostRedPropGroupRef &&
-        redPropData?.svgData
-      ) {
-        const redIndex = builderState.blueSteps.length;
-        const redStep = builderState.redSteps[redIndex];
-        if (redStep) {
-          animations.push(
-            ghostAnimator.animate({
-              element: ghostRedPropGroupRef,
-              startPosition: redStep.startPosition,
-              endPosition: redStep.endPosition,
-              rotationDirection: redStep.rotationDirection,
-              turnCount: redStep.turnCount,
-              startOrientation: redStep.startOrientation,
-              durationMs: durationMs ?? ANIMATION_DURATION_MS,
-              propCenter: redPropData.svgData.center,
-            })
-          );
-        } else {
-          // Red has no step here - fade out in sync with the active prop's animation
-          animations.push(fadeOutElement(ghostRedPropGroupRef, durationMs ?? ANIMATION_DURATION_MS));
+        // During blue building (after going back), animate ghost red through its corresponding step,
+        // or fade it out if red has no step at this beat
+        if (
+          builderState.activeHand === MotionColor.BLUE &&
+          ghostRedPropGroupRef &&
+          redPropData?.svgData
+        ) {
+          const redIndex = builderState.blueSteps.length;
+          const redStep = builderState.redSteps[redIndex];
+          if (redStep) {
+            animations.push(
+              ghostAnimator.animate({
+                element: ghostRedPropGroupRef,
+                startPosition: redStep.startPosition,
+                endPosition: redStep.endPosition,
+                rotationDirection: redStep.rotationDirection,
+                turnCount: redStep.turnCount,
+                startOrientation: redStep.startOrientation,
+                durationMs: durationMs ?? ANIMATION_DURATION_MS,
+                propCenter: redPropData.svgData.center,
+              })
+            );
+          } else {
+            // Red has no step here - fade out in sync with the active prop's animation
+            animations.push(
+              fadeOutElement(
+                ghostRedPropGroupRef,
+                durationMs ?? ANIMATION_DURATION_MS
+              )
+            );
+          }
         }
-      }
 
-      await Promise.all(animations);
-    });
+        await Promise.all(animations);
+      }
+    );
   });
 
   // Register undo animation callback - plays reverse animation before state changes
   $effect(() => {
-    builderState.setUndoAnimationCallback(async (step: BuilderStep, wasPlacement: boolean) => {
-      if (!activePropGroupRef) return;
+    builderState.setUndoAnimationCallback(
+      async (step: BuilderStep, wasPlacement: boolean) => {
+        if (!activePropGroupRef) return;
 
-      if (wasPlacement) {
-        // Scale-out: reverse of the scale-in animation
-        const anim = activePropGroupRef.animate(
-          [
-            { transform: activePropGroupRef.style.transform, opacity: 1 },
-            { transform: activePropGroupRef.style.transform.replace(/scale\([^)]*\)/, '') + ' scale(0)', opacity: 0 },
-          ],
-          { duration: 200, easing: "cubic-bezier(0.4, 0, 1, 1)", fill: "forwards" },
-        );
-        await new Promise<void>((resolve) => { anim.onfinish = () => resolve(); });
-        return;
+        if (wasPlacement) {
+          // Scale-out: reverse of the scale-in animation
+          const anim = activePropGroupRef.animate(
+            [
+              { transform: activePropGroupRef.style.transform, opacity: 1 },
+              {
+                transform:
+                  activePropGroupRef.style.transform.replace(
+                    /scale\([^)]*\)/,
+                    ""
+                  ) + " scale(0)",
+                opacity: 0,
+              },
+            ],
+            {
+              duration: 200,
+              easing: "cubic-bezier(0.4, 0, 1, 1)",
+              fill: "forwards",
+            }
+          );
+          await new Promise<void>((resolve) => {
+            anim.onfinish = () => resolve();
+          });
+          return;
+        }
+
+        // Reverse animation: animate prop from end back to start
+        // Flip the rotation direction so the prop rewinds along the same arc
+        const reverseDirection =
+          step.rotationDirection === RotationDirection.CLOCKWISE
+            ? RotationDirection.COUNTER_CLOCKWISE
+            : RotationDirection.CLOCKWISE;
+
+        await animator.animate({
+          element: activePropGroupRef,
+          startPosition: step.endPosition,
+          endPosition: step.startPosition,
+          rotationDirection: reverseDirection,
+          turnCount: step.turnCount,
+          startOrientation: step.endOrientation,
+          durationMs: ANIMATION_DURATION_MS,
+          propCenter: activePropCenter,
+        });
       }
-
-      // Reverse animation: animate prop from end back to start
-      // Flip the rotation direction so the prop rewinds along the same arc
-      const reverseDirection =
-        step.rotationDirection === RotationDirection.CLOCKWISE
-          ? RotationDirection.COUNTER_CLOCKWISE
-          : RotationDirection.CLOCKWISE;
-
-      await animator.animate({
-        element: activePropGroupRef,
-        startPosition: step.endPosition,
-        endPosition: step.startPosition,
-        rotationDirection: reverseDirection,
-        turnCount: step.turnCount,
-        startOrientation: step.endOrientation,
-        durationMs: ANIMATION_DURATION_MS,
-        propCenter: activePropCenter,
-      });
-    });
+    );
   });
 
   // Detect when a first-click placement happens (for scale-in animation)
@@ -324,7 +389,9 @@
 
     if (previousPhase === "idle" && currentPhase === "placing") {
       justPlaced = true;
-      timeout = setTimeout(() => { justPlaced = false; }, 300);
+      timeout = setTimeout(() => {
+        justPlaced = false;
+      }, 300);
     }
 
     // When leaving animating phase, suppress transitions briefly
@@ -364,13 +431,15 @@
   // Determine if a target is clickable in the current phase
   function isActiveTarget(_target: GridHitTarget): boolean {
     if (builderState.phase === "idle") return true;
-    if (builderState.phase === "placing" || builderState.phase === "building") return true;
+    if (builderState.phase === "placing" || builderState.phase === "building")
+      return true;
     return false;
   }
 
   // Accessible label for each hit target
   function getTargetLabel(target: GridHitTarget): string {
-    const handLabel = builderState.activeHand === MotionColor.BLUE ? "Blue" : "Red";
+    const handLabel =
+      builderState.activeHand === MotionColor.BLUE ? "Blue" : "Red";
     if (builderState.phase === "idle") {
       return `Place ${handLabel} prop at ${target.label}`;
     }
@@ -456,17 +525,30 @@
     const theta = LOCATION_ANGLES[builderState.currentPosition];
     const thetaDeg = theta * (180 / Math.PI);
     switch (builderState.arrowOrientation) {
-      case Orientation.IN: return thetaDeg + 180; // toward center
-      case Orientation.OUT: return thetaDeg;       // away from center
-      case Orientation.CLOCK: return thetaDeg + 90;  // CW tangent
-      case Orientation.COUNTER: return thetaDeg - 90; // CCW tangent
-      default: return thetaDeg;
+      case Orientation.IN:
+        return thetaDeg + 180; // toward center
+      case Orientation.OUT:
+        return thetaDeg; // away from center
+      case Orientation.CLOCK:
+        return thetaDeg + 90; // CW tangent
+      case Orientation.COUNTER:
+        return thetaDeg - 90; // CCW tangent
+      default:
+        return thetaDeg;
     }
   });
 </script>
 
-<div class="interactive-grid" role="application" aria-label="Visual sequence builder grid">
-  <svg viewBox="0 0 950 950" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+<div
+  class="interactive-grid"
+  role="application"
+  aria-label="Visual sequence builder grid"
+>
+  <svg
+    viewBox="0 0 950 950"
+    xmlns="http://www.w3.org/2000/svg"
+    preserveAspectRatio="xMidYMid meet"
+  >
     <!-- Layer 0: Gradient background (semi-transparent on mobile via CSS) -->
     <defs>
       <linearGradient id="grid-bg-gradient" x1="0" y1="0" x2="1" y2="1">
@@ -474,7 +556,14 @@
         <stop offset="100%" stop-color="rgb(10, 12, 22)" />
       </linearGradient>
     </defs>
-    <rect class="grid-bg" x="0" y="0" width="950" height="950" fill="url(#grid-bg-gradient)" />
+    <rect
+      class="grid-bg"
+      x="0"
+      y="0"
+      width="950"
+      height="950"
+      fill="url(#grid-bg-gradient)"
+    />
 
     <!-- Layer 1: Grid lines and points -->
     <GridSvg gridMode={builderState.gridMode} />
@@ -493,8 +582,12 @@
             style="transform: {propTransform(
               ghostTarget.x,
               ghostTarget.y,
-              getRotation(ghostBlueState.position, ghostBlueState.orientation, currentBluePropType),
-              bluePropData.svgData.center,
+              getRotation(
+                ghostBlueState.position,
+                ghostBlueState.orientation,
+                currentBluePropType
+              ),
+              bluePropData.svgData.center
             )}"
           >
             {@html bluePropData.svgData.svgContent}
@@ -520,8 +613,12 @@
             style="transform: {propTransform(
               ghostRedTarget.x,
               ghostRedTarget.y,
-              getRotation(ghostRedState.position, ghostRedState.orientation, currentRedPropType),
-              redPropData.svgData.center,
+              getRotation(
+                ghostRedState.position,
+                ghostRedState.orientation,
+                currentRedPropType
+              ),
+              redPropData.svgData.center
             )}"
           >
             {@html redPropData.svgData.svgContent}
@@ -542,12 +639,13 @@
       <g
         bind:this={activePropGroupRef}
         class="active-prop-group"
-        class:no-transition={builderState.phase === 'animating' || suppressTransition}
+        class:no-transition={builderState.phase === "animating" ||
+          suppressTransition}
         style="transform: {propTransform(
           activeTarget.x,
           activeTarget.y,
           activeRotation,
-          activePropCenter,
+          activePropCenter
         )}"
       >
         {#if activePropData?.svgData}
@@ -570,7 +668,6 @@
             class:scale-in={justPlaced}
           />
         {/if}
-
       </g>
     {/if}
 
@@ -599,7 +696,15 @@
         <!-- Arrowhead at the tip -->
         <polygon points="55,-8 72,0 55,8" fill="var(--color-gold, #FFD700)" />
         <!-- Outer glow ring -->
-        <circle cx="0" cy="0" r="80" fill="none" stroke="var(--color-gold, #FFD700)" stroke-width="2" opacity="0.2" />
+        <circle
+          cx="0"
+          cy="0"
+          r="80"
+          fill="none"
+          stroke="var(--color-gold, #FFD700)"
+          stroke-width="2"
+          opacity="0.2"
+        />
       </g>
     {/if}
 
@@ -616,8 +721,12 @@
               style="transform: {propTransform(
                 blueFinalT.x,
                 blueFinalT.y,
-                getRotation(blueFinalLoc, blueFinalOrientation, currentBluePropType),
-                bluePropData.svgData.center,
+                getRotation(
+                  blueFinalLoc,
+                  blueFinalOrientation,
+                  currentBluePropType
+                ),
+                bluePropData.svgData.center
               )}"
             >
               {@html bluePropData.svgData.svgContent}
@@ -636,9 +745,11 @@
       {@const redFinal = getFinalPosition(builderState.redSteps)}
       {#if redFinal}
         {@const redFinalT = findTarget(redFinal)}
-        {@const redFinalOri = builderState.redSteps.length > 0
-          ? builderState.redSteps[builderState.redSteps.length - 1]!.endOrientation
-          : Orientation.IN}
+        {@const redFinalOri =
+          builderState.redSteps.length > 0
+            ? builderState.redSteps[builderState.redSteps.length - 1]!
+                .endOrientation
+            : Orientation.IN}
         {#if redFinalT}
           {#if redPropData?.svgData}
             <g
@@ -647,7 +758,7 @@
                 redFinalT.x,
                 redFinalT.y,
                 getRotation(redFinal, redFinalOri, currentRedPropType),
-                redPropData.svgData.center,
+                redPropData.svgData.center
               )}"
             >
               {@html redPropData.svgData.svgContent}
@@ -675,7 +786,8 @@
           text-anchor="middle"
           dominant-baseline="middle"
           aria-hidden="true"
-        >{LOCATION_TO_KEY_LABEL[target.location] ?? ""}</text>
+          >{LOCATION_TO_KEY_LABEL[target.location] ?? ""}</text
+        >
       {/if}
       <circle
         cx={target.x}
@@ -684,7 +796,8 @@
         class="hit-target"
         class:active-hand-blue={builderState.activeHand === MotionColor.BLUE}
         class:active-hand-red={builderState.activeHand === MotionColor.RED}
-        class:current-position={builderState.currentPosition === target.location && builderState.phase !== "idle"}
+        class:current-position={builderState.currentPosition ===
+          target.location && builderState.phase !== "idle"}
         class:disabled={!isActiveTarget(target)}
         role="button"
         tabindex="0"
@@ -703,14 +816,18 @@
 
 <style>
   .interactive-grid {
-    width: 100%;
-    max-width: min(100%, 65vh);
+    width: auto;
+    max-width: 100%;
+    height: 100%;
     max-height: 100%;
     aspect-ratio: 1;
-    border-radius: 20px;
+    justify-self: center;
+    border-radius: var(--settings-radius-lg, 20px);
     overflow: hidden;
     border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    box-shadow: 0 8px 32px var(--theme-shadow, rgba(0, 0, 0, 0.3)), inset 0 1px 0 var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    box-shadow:
+      0 8px 32px var(--theme-shadow, rgba(0, 0, 0, 0.3)),
+      inset 0 1px 0 var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
   /* Semi-transparent background - lets the app background bleed through */
@@ -720,9 +837,11 @@
   }
 
   /* Slightly more transparent on mobile */
-  @media (max-width: 768px) {
+  @container tool-panel (max-width: 768px) {
     .interactive-grid {
-      border-radius: 16px;
+      width: 100%;
+      height: auto;
+      border-radius: var(--settings-radius-lg, 16px);
       border-color: var(--theme-stroke, rgba(255, 255, 255, 0.06));
       box-shadow: 0 4px 20px var(--theme-shadow, rgba(0, 0, 0, 0.3));
     }
@@ -809,7 +928,10 @@
     stroke: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
     stroke-width: 2.5;
     cursor: pointer;
-    transition: fill 0.15s ease, stroke 0.15s ease, stroke-width 0.15s ease;
+    transition:
+      fill 0.15s ease,
+      stroke 0.15s ease,
+      stroke-width 0.15s ease;
   }
 
   /* Available targets pulse in the active hand's color */
@@ -927,16 +1049,25 @@
   .ori-indicator {
     pointer-events: none;
     animation: ori-fade 1.2s ease forwards;
-    filter:
-      drop-shadow(0 0 8px var(--color-gold, #FFD700))
-      drop-shadow(0 0 18px color-mix(in srgb, var(--color-gold, #FFD700) 50%, transparent));
+    filter: drop-shadow(0 0 8px var(--color-gold, #ffd700))
+      drop-shadow(
+        0 0 18px color-mix(in srgb, var(--color-gold, #ffd700) 50%, transparent)
+      );
   }
 
   @keyframes ori-fade {
-    0% { opacity: 0; }
-    8% { opacity: 1; }
-    65% { opacity: 1; }
-    100% { opacity: 0; }
+    0% {
+      opacity: 0;
+    }
+    8% {
+      opacity: 1;
+    }
+    65% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
   }
 
   /* Reduced motion */

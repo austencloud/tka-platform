@@ -7,11 +7,16 @@
 -->
 <script lang="ts">
   import Drawer from "$lib/shared/foundation/ui/Drawer.svelte";
+  import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
+  import BuilderOrientationPicker from "./BuilderOrientationPicker.svelte";
   import GridModePicker from "./GridModePicker.svelte";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
   import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-  import { GridMode, GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import {
+    GridMode,
+    GridLocation,
+  } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import {
     Orientation,
     MotionColor,
@@ -33,22 +38,19 @@
   let selectedLocation = $state<GridLocation>(GridLocation.SOUTH);
   let selectedOrientation = $state<Orientation>(Orientation.IN);
 
-  // ─── Orientation pills ──────────────────────────────────────────────────────
-
-  const ORIENTATIONS = [
-    { value: Orientation.IN, label: "in" },
-    { value: Orientation.OUT, label: "out" },
-    { value: Orientation.CLOCK, label: "clock" },
-    { value: Orientation.COUNTER, label: "counter" },
-  ] as const;
-
   // ─── Hand point data for tappable overlay ───────────────────────────────────
 
   type HandPoint = { key: GridLocation; x: number; y: number; label: string };
 
   const LABELS: Record<string, string> = {
-    n: "N", e: "E", s: "S", w: "W",
-    ne: "NE", se: "SE", sw: "SW", nw: "NW",
+    n: "N",
+    e: "E",
+    s: "S",
+    w: "W",
+    ne: "NE",
+    se: "SE",
+    sw: "SW",
+    nw: "NW",
   };
 
   const availablePoints = $derived.by<HandPoint[]>(() => {
@@ -56,13 +58,23 @@
     if (gridMode === GridMode.DIAMOND || gridMode === GridMode.SKEWED) {
       for (const [key, coord] of Object.entries(DIAMOND_HAND_POINTS)) {
         if (key === "c" || coord === null) continue;
-        pts.push({ key: key as GridLocation, x: coord.x, y: coord.y, label: LABELS[key] ?? key.toUpperCase() });
+        pts.push({
+          key: key as GridLocation,
+          x: coord.x,
+          y: coord.y,
+          label: LABELS[key] ?? key.toUpperCase(),
+        });
       }
     }
     if (gridMode === GridMode.BOX || gridMode === GridMode.SKEWED) {
       for (const [key, coord] of Object.entries(BOX_HAND_POINTS)) {
         if (key === "c" || coord === null) continue;
-        pts.push({ key: key as GridLocation, x: coord.x, y: coord.y, label: LABELS[key] ?? key.toUpperCase() });
+        pts.push({
+          key: key as GridLocation,
+          x: coord.x,
+          y: coord.y,
+          label: LABELS[key] ?? key.toUpperCase(),
+        });
       }
     }
     return pts;
@@ -70,7 +82,7 @@
 
   // Reset selected location when grid mode changes and current selection is invalid.
   $effect(() => {
-    const keys = availablePoints.map(p => p.key);
+    const keys = availablePoints.map((p) => p.key);
     const first = keys[0];
     if (!keys.includes(selectedLocation) && first !== undefined) {
       selectedLocation = first;
@@ -142,9 +154,9 @@
   <div class="explainer">
     <h3 class="explainer-title">Orientation</h3>
     <p class="explainer-desc">
-      Orientation is which direction the prop faces.
-      At perimeter points, it's relative to center: in, out, clock, or counter.
-      Tap a point, then pick an orientation to see it change.
+      Orientation is which direction the prop faces. At perimeter points, it's
+      relative to center: in, out, clock, or counter. Tap a point, then pick an
+      orientation to see it change.
     </p>
 
     <GridModePicker
@@ -159,7 +171,7 @@
       <div class="pictograph-wrapper">
         <PictographContainer
           pictographData={demoPictograph}
-          gridMode={gridMode}
+          {gridMode}
           showTKA={false}
           showReversals={false}
           disableTransitions={true}
@@ -181,7 +193,10 @@
             aria-label="Center point"
             tabindex="0"
             onclick={() => selectPoint(GridLocation.CENTER)}
-            onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") selectPoint(GridLocation.CENTER); }}
+            onkeydown={(e) => {
+              if (e.key === "Enter" || e.key === " ")
+                selectPoint(GridLocation.CENTER);
+            }}
           />
         {/if}
 
@@ -197,7 +212,9 @@
             aria-label="{pt.label} hand point"
             tabindex="0"
             onclick={() => selectPoint(pt.key)}
-            onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") selectPoint(pt.key); }}
+            onkeydown={(e) => {
+              if (e.key === "Enter" || e.key === " ") selectPoint(pt.key);
+            }}
           />
         {/each}
       </svg>
@@ -205,28 +222,22 @@
 
     <!-- Orientation pills - hidden when center is selected -->
     {#if !isCenter}
-      <div class="orientation-pills" role="radiogroup" aria-label="Prop orientation">
-        {#each ORIENTATIONS as ori}
-          <button
-            class="ori-pill"
-            class:active={selectedOrientation === ori.value}
-            role="radio"
-            aria-checked={selectedOrientation === ori.value}
-            onclick={() => { selectedOrientation = ori.value; }}
-          >
-            {ori.label}
-          </button>
-        {/each}
+      <div class="orientation-control">
+        <BuilderOrientationPicker
+          value={selectedOrientation}
+          onchange={(orientation) => {
+            selectedOrientation = orientation;
+          }}
+        />
       </div>
     {:else}
       <p class="center-note">
-        <em>Center orientation uses a different system (centric directions).</em>
+        <em>Center orientation uses a different system (centric directions).</em
+        >
       </p>
     {/if}
 
-    <button class="got-it-btn" onclick={handleClose} aria-label="Close orientation explainer">
-      Got it
-    </button>
+    <PanelButton variant="primary" onclick={handleClose}>Got it</PanelButton>
   </div>
 </Drawer>
 
@@ -299,38 +310,8 @@
     outline-offset: 2px;
   }
 
-  /* ─── Orientation pills ────────────────────────────────────────────────── */
-
-  .orientation-pills {
-    display: flex;
-    gap: 4px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border-radius: 12px;
-    padding: 4px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-  }
-
-  .ori-pill {
-    padding: 10px 16px;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    min-height: var(--min-touch-target, 44px);
-    transition: background 0.15s ease, color 0.15s ease;
-  }
-
-  .ori-pill.active {
-    background: var(--theme-accent-subtle, rgba(99, 102, 241, 0.12));
-    color: var(--theme-accent, #6366f1);
-  }
-
-  .ori-pill:focus-visible {
-    outline: 2px solid var(--theme-text, #fff);
-    outline-offset: 2px;
+  .orientation-control {
+    width: min(100%, 420px);
   }
 
   .center-note {
@@ -339,40 +320,5 @@
     text-align: center;
     margin: 0;
     max-width: 280px;
-  }
-
-  /* ─── Got it button ────────────────────────────────────────────────────── */
-
-  .got-it-btn {
-    padding: 12px 32px;
-    border: 1.5px solid var(--theme-accent, #6366f1);
-    border-radius: 12px;
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 15%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
-    color: var(--theme-text, #fff);
-    font-size: var(--font-size-min, 14px);
-    font-weight: 600;
-    cursor: pointer;
-    min-height: var(--min-touch-target, 44px);
-    width: 100%;
-    max-width: 300px;
-    transition: background 0.15s ease;
-  }
-
-  .got-it-btn:hover {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 30%, var(--theme-card-bg, rgba(0, 0, 0, 0.6)));
-  }
-
-  .got-it-btn:focus-visible {
-    outline: 2px solid var(--theme-text, #fff);
-    outline-offset: 2px;
-  }
-
-  /* ─── Reduced motion ───────────────────────────────────────────────────── */
-
-  @media (prefers-reduced-motion: reduce) {
-    .ori-pill,
-    .got-it-btn {
-      transition: none;
-    }
   }
 </style>

@@ -17,74 +17,41 @@
   import { flip } from "svelte/animate";
   import {
     MotionColor,
-    MotionType,
     Orientation,
-    RotationDirection,
-    HandMotionType,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { GridMode, type GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-  import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+  import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
   import type { Letter } from "$lib/shared/foundation/domain/models/letter";
   import PictographContainer from "$lib/shared/pictograph/shared/components/PictographContainer.svelte";
-  import { calculateMotionType, calculateRotationDirection } from "$lib/features/create/assemble/services/hand-path-motion-calculator";
-  import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
-  import type { AssembleState, BuilderStep } from "../state/assemble-state.svelte";
+  import type { AssembleState } from "../state/assemble-state.svelte";
+  import {
+    createStaticMotion,
+    lookupLetter,
+    stepToMotion,
+  } from "../services/builder-step-converter";
 
   let { builderState }: { builderState: AssembleState } = $props();
 
-  /** Derive MotionType (PRO/ANTI/DASH/STATIC) from step data */
-  function resolveMotionType(step: BuilderStep): MotionType {
-    const handMotionType = calculateMotionType(
-      step.startPosition, step.endPosition, builderState.gridMode,
-    );
-    switch (handMotionType) {
-      case HandMotionType.STATIC:
-        return MotionType.STATIC;
-      case HandMotionType.DASH:
-        return MotionType.DASH;
-      case HandMotionType.SHIFT: {
-        const handPathDir = calculateRotationDirection(
-          step.startPosition, step.endPosition, builderState.gridMode,
-        );
-        return handPathDir === step.rotationDirection ? MotionType.PRO : MotionType.ANTI;
-      }
-      default:
-        return MotionType.STATIC;
-    }
-  }
-
-  /** Convert a BuilderStep into a MotionData for the pictograph pipeline */
-  function stepToMotion(step: BuilderStep, color: MotionColor) {
-    const motionType = resolveMotionType(step);
-    const resolvedRotation = (step.startPosition === step.endPosition)
-      ? RotationDirection.NO_ROTATION
-      : step.rotationDirection;
-
-    return createMotionData({
-      color,
-      startLocation: step.startPosition,
-      endLocation: step.endPosition,
-      motionType,
-      rotationDirection: resolvedRotation,
-      turns: step.turnCount,
-      startOrientation: step.startOrientation,
-      endOrientation: step.endOrientation,
-      gridMode: builderState.gridMode,
-      arrowLocation: step.startPosition,
-      isVisible: true,
-    });
-  }
-
   // --- Letter lookup cache ---
-  // Maps step index -> resolved letter (null = looked up but no match)
-  let letterCache = $state<Map<number, Letter | null>>(new Map());
-  // Indices whose async letter lookup is in flight (drives the loading skeleton).
-  let pendingLetters = $state<Set<number>>(new Set());
+  // Key by the full motion pair so edits at an existing index invalidate the
+  // previous glyph instead of leaving a stale letter in the strip.
+  let letterCache = $state<Map<string, Letter | null>>(new Map());
+  let pendingLetters = $state<Set<string>>(new Set());
+
+  function pairKey(index: number): string | null {
+    const blue = builderState.blueSteps[index];
+    const red = builderState.redSteps[index];
+    return blue && red
+      ? JSON.stringify([builderState.gridMode, blue, red])
+      : null;
+  }
 
   // Reset cache when steps are cleared
   $effect(() => {
-    if (builderState.blueSteps.length === 0 && builderState.redSteps.length === 0) {
+    if (
+      builderState.blueSteps.length === 0 &&
+      builderState.redSteps.length === 0
+    ) {
       letterCache = new Map();
       pendingLetters = new Set();
     }
@@ -98,19 +65,23 @@
     const gm = builderState.gridMode;
 
     for (let i = 0; i < paired; i++) {
-      if (letterCache.has(i)) continue;
-      const blueMotion = stepToMotion(blueSteps[i]!, MotionColor.BLUE);
-      const redMotion = stepToMotion(redSteps[i]!, MotionColor.RED);
+      const key = pairKey(i);
+      if (!key || letterCache.has(key)) continue;
+      const blueMotion = stepToMotion(blueSteps[i]!, MotionColor.BLUE, gm);
+      const redMotion = stepToMotion(redSteps[i]!, MotionColor.RED, gm);
       // Mark as pending so we don't re-trigger and so the cell shows a skeleton.
-      letterCache = new Map(letterCache).set(i, null);
-      pendingLetters = new Set(pendingLetters).add(i);
-      motionQueryHandler.findLetterByMotionConfiguration(blueMotion, redMotion, gm)
-        .then(letter => {
-          letterCache = new Map(letterCache).set(i, (letter as Letter) ?? null);
+      letterCache = new Map(letterCache).set(key, null);
+      pendingLetters = new Set(pendingLetters).add(key);
+      lookupLetter(blueMotion, redMotion, gm)
+        .then((letter) => {
+          letterCache = new Map(letterCache).set(
+            key,
+            (letter as Letter) ?? null
+          );
         })
         .finally(() => {
           const next = new Set(pendingLetters);
-          next.delete(i);
+          next.delete(key);
           pendingLetters = next;
         });
     }
@@ -121,95 +92,111 @@
     Math.max(builderState.blueSteps.length, builderState.redSteps.length)
   );
 
-  /** Create a static MotionData for start position display */
-  function createStaticMotion(position: GridLocation, orientation: Orientation, color: MotionColor) {
-    return createMotionData({
-      color,
-      startLocation: position,
-      endLocation: position,
-      motionType: MotionType.STATIC,
-      rotationDirection: RotationDirection.NO_ROTATION,
-      turns: 0,
-      startOrientation: orientation,
-      endOrientation: orientation,
-      gridMode: builderState.gridMode,
-      arrowLocation: position,
-      isVisible: true,
-    });
-  }
-
   // Start position pictograph (stepNumber 0 -> renders "Start" text)
   // Shows immediately on first click (placing phase) before any steps exist.
-  const startPictograph = $derived.by((): (PictographData & { stepNumber: number }) | null => {
-    const firstBlue = builderState.blueSteps[0];
-    const firstRed = builderState.redSteps[0];
-    const isPlacing = builderState.currentPosition !== null;
-    const activeHand = builderState.activeHand;
+  const startPictograph = $derived.by(
+    (): (PictographData & { stepNumber: number }) | null => {
+      const firstBlue = builderState.blueSteps[0];
+      const firstRed = builderState.redSteps[0];
+      const isPlacing = builderState.currentPosition !== null;
+      const activeHand = builderState.activeHand;
 
-    // Determine blue start: from first step, or from current position if blue is placing
-    let bluePos: GridLocation | null = null;
-    let blueOri: Orientation = Orientation.IN;
-    if (firstBlue) {
-      bluePos = firstBlue.startPosition;
-      blueOri = firstBlue.startOrientation;
-    } else if (isPlacing && activeHand === MotionColor.BLUE) {
-      bluePos = builderState.currentPosition;
-      blueOri = builderState.currentOrientation;
-    }
+      // Determine blue start: from first step, or from current position if blue is placing
+      let bluePos: GridLocation | null = null;
+      let blueOri: Orientation = Orientation.IN;
+      if (firstBlue) {
+        bluePos = firstBlue.startPosition;
+        blueOri = firstBlue.startOrientation;
+      } else if (isPlacing && activeHand === MotionColor.BLUE) {
+        bluePos = builderState.currentPosition;
+        blueOri = builderState.currentOrientation;
+      }
 
-    // Determine red start: from first step, or from current position if red is placing
-    let redPos: GridLocation | null = null;
-    let redOri: Orientation = Orientation.IN;
-    if (firstRed) {
-      redPos = firstRed.startPosition;
-      redOri = firstRed.startOrientation;
-    } else if (isPlacing && activeHand === MotionColor.RED) {
-      redPos = builderState.currentPosition;
-      redOri = builderState.currentOrientation;
-    }
+      // Determine red start: from first step, or from current position if red is placing
+      let redPos: GridLocation | null = null;
+      let redOri: Orientation = Orientation.IN;
+      if (firstRed) {
+        redPos = firstRed.startPosition;
+        redOri = firstRed.startOrientation;
+      } else if (isPlacing && activeHand === MotionColor.RED) {
+        redPos = builderState.currentPosition;
+        redOri = builderState.currentOrientation;
+      }
 
-    if (!bluePos && !redPos) return null;
-
-    const motions: PictographData["motions"] = {};
-    if (bluePos) motions[MotionColor.BLUE] = createStaticMotion(bluePos, blueOri, MotionColor.BLUE);
-    if (redPos) motions[MotionColor.RED] = createStaticMotion(redPos, redOri, MotionColor.RED);
-
-    return {
-      id: "builder-start",
-      motions,
-      gridMode: builderState.gridMode,
-      stepNumber: 0,
-    };
-  });
-
-  // Build PictographData for each step index (with stepNumber and letter)
-  const stepPictographs = $derived.by((): (PictographData & { stepNumber: number })[] => {
-    const result: (PictographData & { stepNumber: number })[] = [];
-    for (let i = 0; i < totalSteps; i++) {
-      const blueStep = builderState.blueSteps[i];
-      const redStep = builderState.redSteps[i];
+      if (!bluePos && !redPos) return null;
 
       const motions: PictographData["motions"] = {};
-      if (blueStep) motions[MotionColor.BLUE] = stepToMotion(blueStep, MotionColor.BLUE);
-      if (redStep) motions[MotionColor.RED] = stepToMotion(redStep, MotionColor.RED);
+      if (bluePos)
+        motions[MotionColor.BLUE] = createStaticMotion(
+          bluePos,
+          blueOri,
+          MotionColor.BLUE,
+          builderState.gridMode
+        );
+      if (redPos)
+        motions[MotionColor.RED] = createStaticMotion(
+          redPos,
+          redOri,
+          MotionColor.RED,
+          builderState.gridMode
+        );
 
-      const resolvedLetter = letterCache.get(i) ?? undefined;
-
-      result.push({
-        id: `builder-step-${i}`,
+      return {
+        id: "builder-start",
         motions,
         gridMode: builderState.gridMode,
-        letter: resolvedLetter,
-        stepNumber: i + 1,
-      });
+        stepNumber: 0,
+      };
     }
-    return result;
-  });
+  );
+
+  // Build PictographData for each step index (with stepNumber and letter)
+  const stepPictographs = $derived.by(
+    (): (PictographData & { stepNumber: number })[] => {
+      const result: (PictographData & { stepNumber: number })[] = [];
+      for (let i = 0; i < totalSteps; i++) {
+        const blueStep = builderState.blueSteps[i];
+        const redStep = builderState.redSteps[i];
+
+        const motions: PictographData["motions"] = {};
+        if (blueStep)
+          motions[MotionColor.BLUE] = stepToMotion(
+            blueStep,
+            MotionColor.BLUE,
+            builderState.gridMode
+          );
+        if (redStep)
+          motions[MotionColor.RED] = stepToMotion(
+            redStep,
+            MotionColor.RED,
+            builderState.gridMode
+          );
+
+        const key = pairKey(i);
+        const resolvedLetter = key
+          ? (letterCache.get(key) ?? undefined)
+          : undefined;
+
+        result.push({
+          id: `builder-step-${i}`,
+          motions,
+          gridMode: builderState.gridMode,
+          letter: resolvedLetter,
+          stepNumber: i + 1,
+        });
+      }
+      return result;
+    }
+  );
 
   const hasContent = $derived(totalSteps > 0 || startPictograph !== null);
 </script>
 
-<div class="step-strip-container" class:has-steps={hasContent}>
+<div
+  class="step-strip-container"
+  class:has-steps={hasContent}
+  aria-label="Sequence history"
+>
   {#if hasContent}
     <div class="step-strip-scroll">
       <div class="step-strip-row">
@@ -246,8 +233,12 @@
               showTnD={false}
               showElemental={false}
             />
-            {#if pendingLetters.has(idx)}
-              <span class="letter-skeleton" aria-hidden="true" title="Resolving letter"></span>
+            {#if pairKey(idx) && pendingLetters.has(pairKey(idx)!)}
+              <span
+                class="letter-skeleton"
+                aria-hidden="true"
+                title="Resolving letter"
+              ></span>
             {/if}
           </div>
         {/each}
@@ -260,35 +251,32 @@
   .step-strip-container {
     flex-shrink: 0;
     width: 100%;
-    min-height: 50px;
+    min-height: 78px;
+    height: 78px;
     display: flex;
     justify-content: center;
-    transition: min-height 0.25s ease;
-  }
-
-  .step-strip-container.has-steps {
-    min-height: 100px;
   }
 
   .step-strip-scroll {
     overflow-x: auto;
     max-width: 100%;
-    padding: 4px 8px;
+    padding: 4px var(--settings-spacing-sm, 8px);
     scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2))
+      transparent;
   }
 
   .step-strip-row {
     display: flex;
     gap: 6px;
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .step-cell {
     position: relative;
     flex-shrink: 0;
-    width: 90px;
-    height: 90px;
+    width: 68px;
+    height: 68px;
   }
 
   .step-cell :global(svg) {
@@ -323,15 +311,27 @@
   }
 
   @keyframes letter-shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  @container tool-panel (max-width: 768px) {
+    .step-strip-container {
+      height: 66px;
+      min-height: 66px;
+    }
+
+    .step-cell {
+      width: 56px;
+      height: 56px;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .step-strip-container {
-      transition: none;
-    }
-
     .letter-skeleton {
       animation: none;
       opacity: 0.6;

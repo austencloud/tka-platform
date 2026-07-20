@@ -12,16 +12,21 @@
   import InteractiveGrid from "$lib/features/assemble-lab/components/InteractiveGrid.svelte";
   import BuilderTurnBar from "$lib/features/assemble-lab/components/BuilderTurnBar.svelte";
   import AssembleIdlePanel from "$lib/features/assemble-lab/components/AssembleIdlePanel.svelte";
+  import StepStrip from "$lib/features/assemble-lab/components/StepStrip.svelte";
   import KeyboardHintStrip from "$lib/features/assemble-lab/components/KeyboardHintStrip.svelte";
   import { attachAssembleKeyboard } from "$lib/features/assemble-lab/services/assemble-keyboard-dispatcher";
   import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
-  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
+  import {
+    resolveAccessTier,
+    getMaxBeats,
+  } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
   import AuthNudge from "$lib/shared/auth/components/AuthNudge.svelte";
   import BaseModal from "$lib/shared/foundation/ui/modal/BaseModal.svelte";
   import type { AuthNudgeTrigger } from "$lib/shared/auth/domain/auth-nudge-trigger";
+  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
 
   const props: { tabState: AssembleTabState } = $props();
 
@@ -29,13 +34,16 @@
 
   // Auth/tier state for beat cap enforcement
   const accessTier = $derived(
-    resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
+    resolveAccessTier(
+      authState.isAuthenticated,
+      authState.isAnonymous,
+      isPremiumOrAbove(authState.role)
+    )
   );
   let showBeatCapNudge = $state(false);
   const beatCapNudgeTrigger: AuthNudgeTrigger = "beat-cap-guest";
-  // Only guests get a beat-cap nudge now — a free-account pitch for the full
-  // 64-beat cap. Logged-in users are hard-capped at 64 with no upsell, so the
-  // cap applies silently. (The paid Scribe tier is shelved until there's a plan.)
+  // Guests get the account nudge. Signed-in users get direct feedback instead
+  // of a modal that advertises an unavailable upgrade.
   const beatCapNudgeAllowed = $derived(accessTier === "guest");
 
   /**
@@ -53,7 +61,11 @@
       builderState.redSteps.length
     );
     if (pairedBeats >= maxSteps) {
-      showBeatCapNudge = true;
+      if (beatCapNudgeAllowed) {
+        showBeatCapNudge = true;
+      } else {
+        toast.info(`Assemble supports up to ${maxSteps} beats.`, 4000);
+      }
       return true;
     }
     return false;
@@ -72,21 +84,9 @@
     });
   });
 
-  let isIdle = $state(true);
-  let prevPhaseIdle = true;
-
-  // Track idle→building transitions.
-  $effect.pre(() => {
-    const currentlyIdle = builderState.phase === "idle" && builderState.stepCount === 0;
-
-    if (prevPhaseIdle && !currentlyIdle) {
-      isIdle = false;
-    } else if (!prevPhaseIdle && currentlyIdle) {
-      isIdle = true;
-    }
-
-    prevPhaseIdle = currentlyIdle;
-  });
+  const isIdle = $derived(
+    builderState.phase === "idle" && builderState.stepCount === 0
+  );
 
   // Load last-used grid preferences from settings.
   // Wrapped in $effect.pre so tabState is read reactively (avoids state_referenced_locally).
@@ -96,10 +96,14 @@
       settingsState = settingsService as SettingsState;
       const saved = settingsState.currentSettings;
       if (saved.preferredGridMode) {
-        props.tabState.assembleBuilderState.setGridMode(saved.preferredGridMode);
+        props.tabState.assembleBuilderState.setGridMode(
+          saved.preferredGridMode
+        );
       }
       if (saved.preferredShowCenter) {
-        props.tabState.assembleBuilderState.setShowCenter(saved.preferredShowCenter);
+        props.tabState.assembleBuilderState.setShowCenter(
+          saved.preferredShowCenter
+        );
       }
     } catch {
       // Settings unavailable - use defaults
@@ -118,22 +122,34 @@
 </script>
 
 <div class="assemble-tool-panel">
+  {#if props.tabState.hasError}
+    <div class="restore-error" role="alert">
+      Couldn't restore your saved Assemble work. You can keep building, but this
+      session may not save.
+    </div>
+  {/if}
+
   <div class="header-section" class:hidden={isIdle}>
     <BuilderInstructionHeader {builderState} />
   </div>
 
-  <div class="main-area">
-    {#if isIdle}
-      <div class="panel-slot">
-        <AssembleIdlePanel {builderState} />
-      </div>
-    {/if}
+  <div class="main-area" class:idle-layout={isIdle}>
+    <div
+      class="panel-slot"
+      class:collapsed={!isIdle}
+      aria-hidden={!isIdle}
+      inert={!isIdle}
+    >
+      <AssembleIdlePanel {builderState} />
+    </div>
 
     <div class="grid-slot">
       <InteractiveGrid {builderState} onStepCapExceeded={checkBeatCap} />
       <BuilderControls {builderState} />
     </div>
   </div>
+
+  <StepStrip {builderState} />
 
   <div class="turn-bar-section" class:hidden={isIdle}>
     {#if builderState.keyboardMode}
@@ -148,13 +164,23 @@
     open={showBeatCapNudge && beatCapNudgeAllowed}
     size="fit"
     class="chromeless"
-    onclose={() => { showBeatCapNudge = false; }}
+    onclose={() => {
+      showBeatCapNudge = false;
+    }}
   >
     <AuthNudge
       trigger={beatCapNudgeTrigger}
-      onCreateAccount={() => { showBeatCapNudge = false; authDrawerState.show("signup"); }}
-      onLogin={() => { showBeatCapNudge = false; authDrawerState.show("signin"); }}
-      onDismiss={() => { showBeatCapNudge = false; }}
+      onCreateAccount={() => {
+        showBeatCapNudge = false;
+        authDrawerState.show("signup");
+      }}
+      onLogin={() => {
+        showBeatCapNudge = false;
+        authDrawerState.show("signin");
+      }}
+      onDismiss={() => {
+        showBeatCapNudge = false;
+      }}
     />
   </BaseModal>
 </div>
@@ -167,8 +193,8 @@
     width: 100%;
     overflow: hidden;
     position: relative;
-    padding: 0 12px 12px;
-    gap: 8px;
+    padding: 0 var(--settings-spacing-md, 12px) var(--settings-spacing-md, 12px);
+    gap: var(--settings-spacing-sm, 8px);
   }
 
   .header-section,
@@ -187,26 +213,99 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 32px;
+    gap: 0;
+    min-width: 0;
+    transition: gap var(--duration-normal, 200ms) ease;
+  }
+
+  .main-area.idle-layout {
+    gap: var(--settings-spacing-xl, 32px);
   }
 
   .panel-slot {
-    flex: 0 0 auto;
+    flex: 0 1 320px;
+    min-width: 260px;
+    max-width: 340px;
+    opacity: 1;
+    overflow: hidden;
+    transition:
+      flex-basis var(--duration-normal, 200ms) ease,
+      min-width var(--duration-normal, 200ms) ease,
+      max-width var(--duration-normal, 200ms) ease,
+      opacity var(--duration-fast, 150ms) ease;
+  }
+
+  .panel-slot.collapsed {
+    flex-basis: 0;
+    min-width: 0;
+    max-width: 0;
+    opacity: 0;
+    pointer-events: none;
   }
 
   .grid-slot {
-    flex: 0 0 auto;
-    width: 65vh;
+    position: relative;
+    flex: 1 1 640px;
+    min-width: 0;
+    width: 100%;
+    max-width: 760px;
     height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    view-transition-name: assemble-grid;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    justify-items: center;
+  }
+
+  .restore-error {
+    flex: 0 0 auto;
+    margin: 0 auto;
+    width: min(100%, 720px);
+    padding: var(--settings-spacing-sm, 8px) var(--settings-spacing-md, 12px);
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--semantic-error, var(--prop-red)) 45%,
+        transparent
+      );
+    border-radius: var(--settings-radius-md, 12px);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, var(--prop-red)) 10%,
+      transparent
+    );
+    color: var(--theme-text);
+    font-size: var(--font-size-min, 14px);
+    text-align: center;
+  }
+
+  /* A portrait desktop has enough height for the full builder, but not enough
+     width for the setup card and square grid side by side. Stack and scroll the
+     idle composition inside the tool panel instead of clipping it. */
+  @container tool-panel (max-width: 950px) {
+    .main-area.idle-layout {
+      flex-direction: column;
+      justify-content: flex-start;
+      overflow-y: auto;
+      overflow-x: hidden;
+      gap: var(--settings-spacing-md, 12px);
+    }
+
+    .panel-slot:not(.collapsed) {
+      flex: 0 0 auto;
+      min-width: 0;
+      max-width: 100%;
+      width: 100%;
+    }
+
+    .main-area.idle-layout .grid-slot {
+      flex: 0 0 min(620px, calc(100cqw - 24px));
+      width: min(100%, 620px);
+      height: auto;
+      aspect-ratio: 1;
+    }
   }
 
   /* ── Mobile ── */
-  @media (max-width: 768px) {
+  @container tool-panel (max-width: 768px) {
     .assemble-tool-panel {
       padding: 0;
       gap: 0;
@@ -222,12 +321,7 @@
     }
 
     .header-section:not(.hidden) {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 5;
-      pointer-events: none;
+      display: none;
     }
 
     .turn-bar-section {
@@ -235,16 +329,10 @@
     }
   }
 
-  /* View transition timing (used by tab-switching view transitions) */
-  :global(::view-transition-old(assemble-grid)),
-  :global(::view-transition-new(assemble-grid)) {
-    animation-duration: 0.4s;
-    animation-timing-function: ease;
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    .grid-slot {
-      view-transition-name: none;
+    .main-area,
+    .panel-slot {
+      transition: none;
     }
   }
 </style>

@@ -31,6 +31,19 @@ const boxClockwise = [
   GridLocation.NORTHWEST,
 ];
 
+// The skewed grid is one eight-point ring, so cardinal and intercardinal
+// locations must stay interleaved for adjacency and direction calculations.
+const skewedClockwise = [
+  GridLocation.NORTH,
+  GridLocation.NORTHEAST,
+  GridLocation.EAST,
+  GridLocation.SOUTHEAST,
+  GridLocation.SOUTH,
+  GridLocation.SOUTHWEST,
+  GridLocation.WEST,
+  GridLocation.NORTHWEST,
+];
+
 /**
  * Get all valid positions for a grid mode
  */
@@ -40,7 +53,7 @@ export function getActivePositions(gridMode: GridMode): GridLocation[] {
   } else if (gridMode === GridMode.BOX) {
     return [...boxClockwise];
   } else if (gridMode === GridMode.SKEWED) {
-    return [...diamondClockwise, ...boxClockwise];
+    return [...skewedClockwise];
   }
 
   throw new Error(`Unsupported grid mode: ${gridMode}`);
@@ -123,8 +136,8 @@ export function calculateRotationDirection(
   const toIndex = positions.indexOf(to);
   const count = positions.length;
 
-  // Clockwise if moving forward in the array
-  const isClockwise = (fromIndex + 1) % count === toIndex;
+  const clockwiseDistance = (toIndex - fromIndex + count) % count;
+  const isClockwise = clockwiseDistance < count / 2;
 
   return isClockwise
     ? RotationDirection.CLOCKWISE
@@ -134,44 +147,10 @@ export function calculateRotationDirection(
 /**
  * Check if a position is valid for the given grid mode
  */
-export function isPositionEnabled(position: GridLocation, gridMode: GridMode): boolean {
+export function isPositionEnabled(
+  position: GridLocation,
+  gridMode: GridMode
+): boolean {
   const activePositions = getActivePositions(gridMode);
   return activePositions.includes(position);
-}
-
-/**
- * Get the opposite position on the grid
- */
-export function getOppositePosition(
-  position: GridLocation,
-  gridMode: GridMode
-): GridLocation {
-  const positions = getActivePositions(gridMode);
-  const index = positions.indexOf(position);
-
-  if (index === -1) {
-    throw new Error(`Invalid position ${position} for grid mode ${gridMode}`);
-  }
-
-  return positions[(index + 2) % 4]!;
-}
-
-/**
- * Get adjacent positions (clockwise and counter-clockwise)
- */
-export function getAdjacentPositions(
-  position: GridLocation,
-  gridMode: GridMode
-): { clockwise: GridLocation; counterClockwise: GridLocation } {
-  const positions = getActivePositions(gridMode);
-  const index = positions.indexOf(position);
-
-  if (index === -1) {
-    throw new Error(`Invalid position ${position} for grid mode ${gridMode}`);
-  }
-
-  return {
-    clockwise: positions[(index + 1) % 4]!,
-    counterClockwise: positions[(index - 1 + 4) % 4]!,
-  };
 }
