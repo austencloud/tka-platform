@@ -445,3 +445,50 @@ tiles, ghost uses the section pager.
 Sign-off pending Austen's eyeball; next wing: Generate, same attract-act
 model (the act module is section-agnostic in its motor layer — a
 generate-section act reuses glide/hover/press wholesale).
+
+## Seek affordances + mandala budget (ninth pass, 2026-07-19)
+
+Three asks landed together:
+
+1. **Viewer-parity seeking in the play phase.** The thin progress line is now a
+   real scrubber (`progressLineSeekable` — a new opt-in prop on
+   `AnimationPlayer` that forwards the seek/scrub-bracket callbacks
+   `AnimatorCanvas` already supported; handlers replicate the viewer shell's
+   pause-while-scrubbing gesture from `playback-controller.svelte.ts`). And the
+   workspace cells seek on click, exactly like the viewer's left rail:
+   step cell → `seekToStep(stepNumber)` preserving play state; start cell →
+   park at the start pose, hold 700ms, then play. Both wired through
+   `onControllerReady`; refs dropped (`dropPlayerRefs`) whenever the phase
+   leaves play so a stale controller can never receive a seek. The ghost
+   demonstrates the new affordance: most play arcs it clicks an earlier
+   workspace cell ("wait, do that bit again") and watches the replay.
+
+2. **Off-component ghost clicks, killed for real.** Root cause: embla keeps
+   clipped pages in flow, so a card scrolled out of the visible pane still has
+   a rect — `aimAt` followed it off the panel and the rect-based press check
+   agreed, then `el.click()` selected an option while the ghost visibly
+   pressed empty air. Two-part fix in the act: `aimAt` returns null when the
+   aim point falls outside the band, and `moveAndPress` gates every press on
+   `fingertipOn(el)` — `document.elementFromPoint` at the ghost's fingertip
+   must resolve into the target (with up to two re-aim attempts). No hit, no
+   click, ever.
+
+3. **Mandala section resource budget.** Sixteen simultaneously-breathing
+   mandalas were a standing rAF tax on the whole page. Tiles are now real
+   buttons rendering STATIC by default with a corner play/pause affordance
+   (44px, clickables-look-like-buttons); clicking a tile animates THAT one
+   (single live slot — clicking another moves it, clicking again freezes).
+   At most one mandala animates at a time.
+
+Harness note: `?eager` on the test page URL now loads every section
+immediately — IntersectionObserver never fires in a hidden tab, which made
+automated verification impossible without focusing the tab. Lazy stays the
+default path.
+
+Verified (hidden-tab probes, real DOM): scrub to 90% → aria-valuenow 93 and
+highlight snapped to the last step; cell clicks moved the highlight
+(start→hold, step→snap); 16 mandala tiles, 0 live initially, single live slot
+moves and toggles off. Ghost motion fixes need Austen's visible-tab eyeball.
+
+Next wing: Generate — same attract-act model (motor layer already
+section-agnostic).

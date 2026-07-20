@@ -37,13 +37,29 @@
     library: null,
   });
 
+  // Verification escape hatch: IntersectionObserver never fires in a hidden
+  // tab (Chrome pauses rendering steps), which makes automated checks of this
+  // page impossible without focusing it. `?eager` loads every section
+  // immediately — harness-only affordance, the lazy path stays the default.
+  const eager =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).has("eager");
+
+  function load(key: string) {
+    const loader = loaders[key];
+    if (loader) void loader().then((m) => (comp[key] = m.default));
+  }
+
   function whenNear(node: HTMLElement, key: string) {
+    if (eager) {
+      load(key);
+      return {};
+    }
     const io = new IntersectionObserver(
       (entries) => {
         if (entries.some((e) => e.isIntersecting)) {
           io.disconnect();
-          const loader = loaders[key];
-          if (loader) void loader().then((m) => (comp[key] = m.default));
+          load(key);
         }
       },
       { rootMargin: "300px" }
