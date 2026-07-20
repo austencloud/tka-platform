@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { isAbsolute, join, resolve } from "node:path";
 
 import {
   buildWindowsCommandLine,
   choosePushedCommit,
+  createTarExtractionPlan,
   createNativeBuildEnv,
   parseAdbDevices,
   parseJavaMajor,
@@ -10,6 +12,35 @@ import {
   readJavaProperty,
   selectAndroidDevice,
 } from "../../../scripts/lib/native-push-deploy-core.mjs";
+
+describe("native snapshot extraction", () => {
+  it("passes tar paths relative to the build directory", () => {
+    const buildRoot = resolve("test-results", "native-push");
+    const plan = createTarExtractionPlan(
+      buildRoot,
+      join(buildRoot, "source.tar"),
+      join(buildRoot, "source")
+    );
+
+    expect(plan).toEqual({
+      cwd: buildRoot,
+      args: ["-xf", "source.tar", "-C", "source"],
+    });
+    expect(plan.args.every((token) => !isAbsolute(token))).toBe(true);
+  });
+
+  it("rejects extraction targets outside the build directory", () => {
+    const buildRoot = resolve("test-results", "native-push");
+
+    expect(() =>
+      createTarExtractionPlan(
+        buildRoot,
+        join(buildRoot, "source.tar"),
+        resolve(buildRoot, "..", "outside")
+      )
+    ).toThrow("must stay inside");
+  });
+});
 
 describe("native push commit selection", () => {
   const head = "1".repeat(40);

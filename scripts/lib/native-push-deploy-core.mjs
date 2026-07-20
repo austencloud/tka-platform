@@ -1,4 +1,27 @@
+import { isAbsolute, relative, sep } from "node:path";
+
 const ZERO_OID = /^0+$/;
+
+export function createTarExtractionPlan(
+  buildRoot,
+  archivePath,
+  snapshotRoot
+) {
+  const archive = relative(buildRoot, archivePath);
+  const destination = relative(buildRoot, snapshotRoot);
+  const paths = [archive, destination];
+  const escapesBuildRoot = (path) =>
+    !path || path === ".." || path.startsWith(`..${sep}`) || isAbsolute(path);
+
+  if (paths.some(escapesBuildRoot)) {
+    throw new Error("Tar extraction paths must stay inside the native build root.");
+  }
+
+  return {
+    cwd: buildRoot,
+    args: ["-xf", archive, "-C", destination],
+  };
+}
 
 export function parsePushUpdates(input) {
   return input

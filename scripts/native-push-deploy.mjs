@@ -20,6 +20,7 @@ import { fileURLToPath } from "node:url";
 import {
   buildWindowsCommandLine,
   choosePushedCommit,
+  createTarExtractionPlan,
   createNativeBuildEnv,
   parseAdbDevices,
   parseJavaMajor,
@@ -238,12 +239,16 @@ function createSnapshot(repoRoot, snapshotRoot, archivePath, commit) {
   run("git", ["archive", "--format=tar", `--output=${archivePath}`, commit], {
     cwd: repoRoot,
   });
-  run(process.platform === "win32" ? "tar.exe" : "tar", [
-    "-xf",
+  const extraction = createTarExtractionPlan(
+    dirname(archivePath),
     archivePath,
-    "-C",
-    snapshotRoot,
-  ]);
+    snapshotRoot
+  );
+  run(
+    process.platform === "win32" ? "tar.exe" : "tar",
+    extraction.args,
+    { cwd: extraction.cwd }
+  );
   rmSync(archivePath, { force: true });
 
   copyLocalBuildInputs(repoRoot, snapshotRoot);
