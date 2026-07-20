@@ -16,8 +16,10 @@ const bases = [
   seq("BBBB", "anti", "anti"), // SS anti/anti
   seq("JDJD", "pro", "pro"), // SO pro/pro
   seq("DJDJ", "pro", "pro"), // TO pro/pro
+  seq("FLFL", "anti", "pro"), // TO anti/pro — the ONLY mixed TO order seeded
   seq("MPMP", "pro", "pro"), // QO pro/pro
   seq("UUUU", "pro", "anti"), // QS pro/anti
+  seq("VVVV", "anti", "pro"), // QS anti/pro — QS seeds BOTH mixed orders
 ];
 
 describe("buildBaseIndex / resolveBase", () => {
@@ -37,13 +39,39 @@ describe("buildBaseIndex / resolveBase", () => {
     expect(resolveBase(idx, "QS", "pro", "anti")?.word).toBe("UUUU");
   });
 
-  it("falls back to the hands-swapped mirror for anti×pro cells", () => {
+  it("fills a missing mixed order with the seeded twin COLOR-SWAPPED, keeping each hand's own style", () => {
     const idx = buildBaseIndex(bases);
-    // No anti/pro SS word seeded → mirror of pro/anti (CCCC) realizes the same overlay.
-    expect(resolveBase(idx, "SS", "anti", "pro")?.word).toBe("CCCC");
+    // No blue=pro/red=anti TO word is seeded (FLFL is blue=anti/red=pro). The old
+    // raw-mirror fallback returned FLFL as-is, so the blue prop performed ANTI —
+    // an isolation cell visibly played an antispin path (the 2026-07-19 bug).
+    // The color-swapped twin keeps blue on blue's style.
+    const r = resolveBase(idx, "TO", "pro", "anti");
+    expect(r?.word).toBe("FLFL");
+    expect(r?.steps?.[0]?.motions?.blue?.motionType).toBe("pro");
+    expect(r?.steps?.[0]?.motions?.red?.motionType).toBe("anti");
   });
 
-  it("returns null when neither the pair nor its mirror has a base word", () => {
+  it("resolves an anti×pro cell whose mode seeds only the pro×anti order", () => {
+    const idx = buildBaseIndex(bases);
+    const r = resolveBase(idx, "SS", "anti", "pro");
+    expect(r?.word).toBe("CCCC");
+    expect(r?.steps?.[0]?.motions?.blue?.motionType).toBe("anti");
+    expect(r?.steps?.[0]?.motions?.red?.motionType).toBe("pro");
+  });
+
+  it("prefers a seeded word over a synthesized swap when both orders exist", () => {
+    const idx = buildBaseIndex(bases);
+    // QS seeds UUUU (pro/anti) AND VVVV (anti/pro) — each order must resolve to
+    // its own real word, never to the other one color-swapped.
+    const proAnti = resolveBase(idx, "QS", "pro", "anti");
+    const antiPro = resolveBase(idx, "QS", "anti", "pro");
+    expect(proAnti?.word).toBe("UUUU");
+    expect(proAnti?.steps?.[0]?.motions?.blue?.motionType).toBe("pro");
+    expect(antiPro?.word).toBe("VVVV");
+    expect(antiPro?.steps?.[0]?.motions?.blue?.motionType).toBe("anti");
+  });
+
+  it("returns null when a mode has no base word at all", () => {
     const idx = buildBaseIndex(bases);
     expect(resolveBase(idx, "TS", "anti", "anti")).toBeNull(); // no TS word in this slice
   });
