@@ -17,12 +17,17 @@
   a same-geometry skeleton reserving its footprint during SSR.
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
 
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import GhostPointer from "./GhostPointer.svelte";
+  import {
+    createGenerateAttractAct,
+    type GenerateAttractAct,
+  } from "./generate-attract-act.svelte";
 
   // Enums are lightweight and already in the eager graph via the cards below —
   // only the engine (generationOrchestrator) is deferred to the first tap.
@@ -129,6 +134,34 @@
     }
   }
 
+  // ── Attract act (same model as the Construct wing) ────────────────────────
+  // The ghost fiddles the real cards, presses the real Generate button, and
+  // watches the result — until the first real pointerdown/focusin parks it as
+  // the clickable "watch it again" button. The result player's tap-to-toggle
+  // is pointer-based, so the act performs the press visually and this ref
+  // performs the toggle (never synthetic pointer events — they'd trip the
+  // takeover listener).
+  let playerToggle: (() => void) | null = null;
+  let bandEl = $state<HTMLElement | null>(null);
+  let act: GenerateAttractAct | null = $state(null);
+  let tookOver = $state(false);
+  let io: IntersectionObserver | null = null;
+
+  function takeover(e?: Event) {
+    if ((e?.target as HTMLElement | null)?.closest?.(".ghost")) return;
+    if (act && !act.dead && !act.paused) {
+      act.pause();
+      tookOver = true;
+    }
+  }
+
+  function resumeDemo() {
+    if (act && !act.dead) {
+      act.resume();
+      tookOver = false;
+    }
+  }
+
   onMount(() => {
     // Activate the player and seed a starter sequence on idle so the stage is
     // never empty, without blocking first paint.
@@ -141,10 +174,40 @@
     } else {
       setTimeout(go, 400);
     }
+
+    // Reduced motion → never create the act; section is plainly interactive.
+    const reduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (!reduced && bandEl) {
+      act = createGenerateAttractAct({
+        getRoot: () => bandEl,
+        togglePlayback: () => playerToggle?.(),
+      });
+      io = new IntersectionObserver(
+        (entries) => {
+          const visible = entries.some((e) => e.isIntersecting);
+          act?.setVisible(visible);
+          if (visible) act?.start();
+        },
+        { threshold: 0.25 },
+      );
+      io.observe(bandEl);
+    }
+  });
+
+  onDestroy(() => {
+    act?.kill();
+    io?.disconnect();
   });
 </script>
 
-<section class="generate-section">
+<section
+  class="generate-section"
+  bind:this={bandEl}
+  onpointerdowncapture={takeover}
+  onfocusincapture={takeover}
+>
   {#if browser}
     <div class="demo-grid">
       <div class="controls">
@@ -191,7 +254,7 @@
       </div>
 
       <div class="player-col">
-        <div class="stage">
+        <div class="stage" data-demo-stage>
           {#key current?.id}
             <LazyMount
               loader={() =>
@@ -199,7 +262,14 @@
                   "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
                 )}
               active={active && !!current}
-              props={{ sequence: current, autoPlay: true, chrome: "minimal", fill: true }}
+              props={{
+                sequence: current,
+                autoPlay: true,
+                chrome: "minimal",
+                fill: true,
+                scrubbable: true,
+                onTogglePlaybackRef: (fn: () => void) => (playerToggle = fn),
+              }}
             />
           {/key}
         </div>
@@ -232,6 +302,17 @@
       </div>
     </div>
   {/if}
+
+  {#if act}
+    <GhostPointer
+      x={act.ghost.x}
+      y={act.ghost.y}
+      pressed={act.ghost.pressed}
+      visible={act.ghost.visible}
+      parked={act.ghost.parked}
+      onResume={resumeDemo}
+    />
+  {/if}
 </section>
 
 <style>
@@ -245,6 +326,21 @@
     max-width: min(100%, 1280px);
     margin-inline: auto;
     color: oklch(0.9 0.02 270);
+    /* Ghost coordinate space — the act's positions are band-relative. */
+    position: relative;
+  }
+
+  /* ===== Ghost hover mirror =====
+     The fake pointer can't trip CSS :hover, so the act tags its target with
+     .ghost-hover and we mirror the real affordances. The independent `scale`
+     property (NOT transform) composes with any transform the control already
+     carries. */
+  .generate-section :global(.ghost-hover) {
+    filter: brightness(1.2);
+  }
+
+  .generate-section :global(button.ghost-hover) {
+    scale: 1.04;
   }
 
   .demo-grid {

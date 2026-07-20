@@ -115,6 +115,7 @@
     hideStepNumbers = false,
     gridVisible = true,
     disableContextMenu = false,
+    onTogglePlaybackRef = undefined,
   }: {
     sequence: SequenceData;
     autoPlay?: boolean;
@@ -221,6 +222,10 @@
     /** Suppress the canvas right-click / long-press settings menu so a locked
      *  public embed can't have its prop/effort/BPM changed out from under it. */
     disableContextMenu?: boolean;
+    /** Hands the internal play/pause toggle to the host (external keyboard
+     *  control, demo acts). Same contract as AnimationPlayer's prop of the
+     *  same name. */
+    onTogglePlaybackRef?: (toggleFn: () => void) => void;
   } = $props();
 
   const minimal = $derived(chrome === "minimal");
@@ -513,6 +518,10 @@
     const stepCount = animationState.sequenceData?.steps?.length ?? 0;
     return stepCount > 0 && animationState.currentStep >= stepCount + 0.99;
   }
+
+  $effect(() => {
+    onTogglePlaybackRef?.(togglePlayback);
+  });
 
   function togglePlayback() {
     if (!playbackController) return;
