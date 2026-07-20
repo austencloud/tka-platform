@@ -1,6 +1,7 @@
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
-  import YutaCapLiveDemo from "./_components/YutaCapLiveDemo.svelte";
+  import CapsHub from "./_components/CapsHub.svelte";
+  import CapsVideoCard from "./_components/CapsVideoCard.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   const TITLE = "CAPs: Continuous Assembly Patterns | The Kinetic Alphabet";
@@ -105,45 +106,32 @@
   </script>`}
 </Seo>
 
+<CapsHub />
+
 <div class="editorial">
-  <a class="back-link" href="/notation">← Flow Arts Notation</a>
-
-  <header class="editorial-header">
-    <h1 class="page-title">CAPs: Continuous Assembly Patterns</h1>
-    <p class="page-subtitle">
-      Before this site formalized LOOPs, poi spinners were already composing
-      cyclic patterns. They named the idea first. This is their story, told the
-      way it deserves: with the pattern spinning.
-    </p>
-  </header>
-
-  <!-- HERO: the Yuta CAP, drawn live by a club -->
-  <section class="editorial-section" style="--accent: #38bdf8">
-    <div class="cap-hero">
-      <div class="cap-hero-stage">
-        <YutaCapLiveDemo />
-      </div>
-      <div class="cap-hero-copy prose">
-        <span class="section-kicker">One pattern, two fragments</span>
-        <p>
-          This is a CAP: a closed pattern assembled from fragments of simpler
-          ones. The club here is drawing the one the whole idea grew around.
-          Half a cycle of extension, half a cycle of antispin, joined into a
-          single curve that repeats forever.
-        </p>
-        <p class="cap-credit">
-          Spinners saw this pattern in Yuta's spinning and took it apart on a
-          forum. Notation and construction: Damien (posting as Zaltymbunk),
-          <a href={THREAD_URL}>Home of Poi, 2009</a>.
-        </p>
-      </div>
+  <!-- WHAT IS A CAP -->
+  <section id="what-is" class="editorial-section" style="--accent: #38bdf8">
+    <span class="section-kicker">Start here</span>
+    <h2 class="section-title">What is a CAP?</h2>
+    <div class="prose">
+      <p>
+        A CAP is a closed pattern assembled from fragments of simpler ones. The
+        demo above draws the one the whole idea grew around: half a cycle of
+        extension, half a cycle of antispin, joined into a single curve that
+        repeats forever. One prop traces the entire path.
+      </p>
+      <p class="cap-credit">
+        Spinners saw this pattern in Yuta's spinning and took it apart on a
+        forum. Notation and construction: Damien (posting as Zaltymbunk),
+        <a href={THREAD_URL}>Home of Poi, 2009</a>.
+      </p>
     </div>
   </section>
 
   <!-- BREAK IT DOWN -->
-  <section class="editorial-section" style="--accent: #a78bfa">
+  <section id="breakdown" class="editorial-section" style="--accent: #a78bfa">
     <span class="section-kicker">Break it down</span>
-    <h2 class="section-title">Four steps, two fragments</h2>
+    <h2 class="section-title">Four steps, two halves</h2>
     <div class="prose">
       <p>Slow the animation down and the curve splits cleanly in half.</p>
     </div>
@@ -224,7 +212,7 @@
   </section>
 
   <!-- THE STORY -->
-  <section class="editorial-section" style="--accent: #f472b6">
+  <section id="origin" class="editorial-section" style="--accent: #f472b6">
     <span class="section-kicker">The story</span>
     <h2 class="section-title">Named on a forum, built at a burn</h2>
     <div class="prose">
@@ -263,7 +251,7 @@
   </section>
 
   <!-- THE ORIGINAL MATH, KEPT LIGHT -->
-  <section class="editorial-section" style="--accent: #34d399">
+  <section id="math" class="editorial-section" style="--accent: #34d399">
     <span class="section-kicker">The original math</span>
     <h2 class="section-title">Damien's model, kept light</h2>
     <div class="section-duo">
@@ -394,25 +382,12 @@
 
   <!-- MODERN MEDIA -->
   {#if MODERN_MEDIA.length > 0}
-    <section class="editorial-section" style="--accent: #a78bfa">
+    <section id="watch" class="editorial-section" style="--accent: #a78bfa">
       <span class="section-kicker">Since then</span>
       <h2 class="section-title">CAPs on video, 2009 to now</h2>
       <div class="cap-media-grid">
         {#each MODERN_MEDIA as m (m.id)}
-          <figure class="cap-media">
-            <iframe
-              src="https://www.youtube-nocookie.com/embed/{m.id}"
-              title="{m.title} — {m.creator}"
-              loading="lazy"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowfullscreen
-            ></iframe>
-            <figcaption>
-              <strong>{m.title}</strong>
-              <span>{m.creator} · {m.year}</span>
-              <span class="cap-media-note">{m.note}</span>
-            </figcaption>
-          </figure>
+          <CapsVideoCard id={m.id} title={m.title} creator={m.creator} year={m.year} note={m.note} />
         {/each}
       </div>
       <p class="prose cap-media-footnote">
@@ -430,28 +405,28 @@
     <h2 class="section-title">Read the originals</h2>
     <ul class="bullet-list">
       <li>
-        <a href={THREAD_URL}>"What are CAP's?"</a> — Home of Poi forums, ca.
+        <a href={THREAD_URL}>"What are CAP's?"</a>, Home of Poi forums, ca.
         2009. The origin discussion: the coinage attribution, Damien's full
         framework posts, and the community debate.
       </li>
       <li>
-        <a href="https://drexfactor.com/reference/math_caps">The Math of CAPs</a>
-        — Damien's framework, preserved as a DrexFactor reference.
+        <a href="https://drexfactor.com/reference/math_caps">The Math of CAPs</a>,
+        Damien's framework, preserved as a DrexFactor reference.
       </li>
       <li>
-        <a href="https://drexfactor.com/index.php?q=weirdscience%2F2012%2F08%2F21%2Fbasic_poi_dancing_tutorial_c_caps">Basic Poi Dancing Tutorial: C-CAPs</a>
-        — DrexFactor, 2012. The narrowed usage, documented.
+        <a href="https://drexfactor.com/index.php?q=weirdscience%2F2012%2F08%2F21%2Fbasic_poi_dancing_tutorial_c_caps">Basic Poi Dancing Tutorial: C-CAPs</a>,
+        DrexFactor, 2012. The narrowed usage, documented.
       </li>
       <li>
-        <a href="https://playpoi.com/learn/learning-caps-capped-antispin-patterns/">Learning CAPs (Capped Antispin Patterns)</a>
-        — Nick Woolsey, PlayPoi, 2016.
+        <a href="https://playpoi.com/learn/learning-caps-capped-antispin-patterns/">Learning CAPs (Capped Antispin Patterns)</a>,
+        Nick Woolsey, PlayPoi, 2016.
       </li>
       <li>
-        <a href="https://www.drexfactor.com/weirdscience/2016/09/27/tutorial_double_staff_8_step_cap_recipe">Double Staff 8-Step CAP Recipe</a>
-        — DrexFactor, 2016, crediting Charlie's 9-Square Theory.
+        <a href="https://www.drexfactor.com/weirdscience/2016/09/27/tutorial_double_staff_8_step_cap_recipe">Double Staff 8-Step CAP Recipe</a>,
+        DrexFactor, 2016, crediting Charlie's 9-Square Theory.
       </li>
       <li>
-        Encyclo-poi-dia Vol. 2 — Alien Jon and Zan Moore. Print-era CAP
+        Encyclo-poi-dia Vol. 2, by Alien Jon and Zan Moore. Print-era CAP
         chapter, referenced in the origin thread.
       </li>
     </ul>
@@ -480,16 +455,6 @@
     white-space: nowrap;
   }
 
-  /* Hero: the live stage takes the larger column; copy sits beside it. */
-  .cap-hero {
-    display: grid;
-    grid-template-columns: minmax(320px, 640px) 1fr;
-    gap: clamp(1.5rem, 4vw, 3.5rem);
-    align-items: center;
-  }
-  .cap-hero-stage {
-    width: 100%;
-  }
   .cap-credit {
     font-size: 0.85rem;
     opacity: 0.75;
@@ -585,30 +550,5 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 1.5rem;
-  }
-  .cap-media {
-    margin: 0;
-  }
-  .cap-media iframe {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    border: 0;
-    border-radius: 8px;
-  }
-  .cap-media figcaption {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    margin-top: 0.5rem;
-    font-size: 0.85rem;
-  }
-  .cap-media-note {
-    opacity: 0.7;
-  }
-
-  @media (max-width: 767px) {
-    .cap-hero {
-      grid-template-columns: 1fr;
-    }
   }
 </style>

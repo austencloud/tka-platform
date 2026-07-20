@@ -16,13 +16,13 @@
 -->
 <script lang="ts">
   import { page } from "$app/state";
+  import { MediaQuery } from "svelte/reactivity";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import MandalaHeroLayer from "$lib/shared/shape-matrix/components/MandalaHeroLayer.svelte";
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { buildYutaCapSequence } from "./yuta-cap-sequence";
   import { setPerHand } from "$lib/shared/animation-engine/services/tip-effect-resolver";
   import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
-  import { getTipPoints } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
   import type { EffortId } from "$lib/shared/effort/domain/effort-types";
   import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
   import {
@@ -34,12 +34,35 @@
 
   const sequence = buildYutaCapSequence();
 
+  // Austen's directive is no play/pause control on this exhibit, so the
+  // accessibility accommodation is a static poster, not a pause button: under
+  // reduced motion the live player is not mounted and the static ghost mandala
+  // (which draws client-side either way) stands in as the still.
+  const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
+
+  // Poster = SSR / no-JS / pre-hydration first paint only. $effect runs client
+  // side after mount, so on the server the poster renders (no blank square for
+  // SEO / no-JS); once hydrated the client-drawn ghost and player own the frame
+  // and the poster is removed so it never doubles the ghost curve.
+  let mounted = $state(false);
+  $effect(() => {
+    mounted = true;
+  });
+
   // The static mandala under the live trail — same alignment contract as the
   // shape-matrix drill: both layers fill the SAME square, and the geometry is
-  // computed with the club's single outer tip so the ghost sits exactly under
-  // the path the prop traces. (Blue is invisible in this sequence, so only the
-  // red hand's locus comes back.)
-  const clubTipDx = getTipPoints("club").points[0]?.dx ?? 130;
+  // computed with the club's outer tip so the ghost sits exactly under the path
+  // the prop traces. (Blue is invisible in this sequence, so only the red hand's
+  // locus comes back.)
+  //
+  // Tip reach = the VISIBLE club tip, not the trail EMITTER. The emitter point
+  // in prop-tip-points is dx=130, but the club's weighted bulb reaches farther
+  // (measured ~150, i.e. one grid radius), and the eye follows that bulb tip.
+  // Feeding the emitter's 130 drew the ghost ring ~7% inset — sitting inside the
+  // very path the prop visibly traces (Austen, 2026-07-20: "make the mandala
+  // match what the prop is currently doing"). 150 lands the ghost on the club
+  // tip. Verified by pixel-measuring club reach vs ghost radius at 0.316·size.
+  const clubTipDx = 150;
   const mandalaPaths = calculateMandalaGeometry(
     sequence.steps,
     undefined,
@@ -179,17 +202,28 @@
 
 <div class="yuta-demo">
   <div class="yuta-stage">
-    <MandalaHeroLayer paths={mandalaPaths} {clubTipDx} opacity={ghostOpacity} />
-    <div class="player-layer">
-      <LazyMount
-        loader={() =>
-          import(
-            "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
-          )}
-        active={true}
-        props={playerProps}
+    {#if !mounted}
+      <img
+        class="yuta-poster"
+        src="/caps/yuta-cap.svg"
+        alt="The Yuta CAP: an extension arc joined to antispin petals, traced by one prop"
+        width="500"
+        height="500"
       />
-    </div>
+    {/if}
+    <MandalaHeroLayer paths={mandalaPaths} {clubTipDx} opacity={ghostOpacity} />
+    {#if !reduceMotion.current}
+      <div class="player-layer">
+        <LazyMount
+          loader={() =>
+            import(
+              "$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte"
+            )}
+          active={true}
+          props={playerProps}
+        />
+      </div>
+    {/if}
   </div>
 
   {#if tunable}
@@ -251,6 +285,18 @@
   .player-layer {
     position: absolute;
     inset: 0;
+  }
+
+  /* SSR / pre-hydration / no-JS floor. Removed once the client draws the ghost
+     and player (see the mounted gate), so it never doubles the ghost curve. */
+  .yuta-poster {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    z-index: 0;
+    pointer-events: none;
   }
 
   .tuner {
