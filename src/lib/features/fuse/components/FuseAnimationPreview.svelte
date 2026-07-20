@@ -17,11 +17,13 @@
     currentStep = 0,
     isPlaying = false,
     onError,
+    onToggle,
   }: {
     sequence: SequenceData;
     currentStep?: number;
     isPlaying?: boolean;
     onError?: (error: Error) => void;
+    onToggle?: () => void;
   } = $props();
 
   // The engine boots with a "staff" default and only consults settings after the
@@ -192,6 +194,9 @@
         hideStepNumbers={true}
         progressBarVariant="minimal"
         fillContainer={true}
+        tapToToggle={true}
+        onPlaybackToggle={() => onToggle?.()}
+        hoverHint="badge"
       />
     </div>
   {/if}

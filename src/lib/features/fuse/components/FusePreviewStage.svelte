@@ -2,7 +2,6 @@
   import { Popover } from "bits-ui";
   import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
   import BpmQuickPopover from "$lib/shared/animation-engine/components/controls/BpmQuickPopover.svelte";
-  import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import {
     PLAYBACK_MAX_BPM,
     PLAYBACK_MIN_BPM,
@@ -59,6 +58,7 @@
           sequence={fuseState.previewSequence}
           currentStep={fuseState.currentStep}
           isPlaying={fuseState.clockRunning}
+          onToggle={() => fuseState.toggleClock()}
           onError={(failure) => fuseState.reportPreviewFailure(failure)}
         />
       {:else}
@@ -107,13 +107,10 @@
       {fuseState.statusMessage}
     </p>
 
+    <!-- Playback pauses/resumes by tapping the canvas (tapToToggle + hover
+         badge on FuseAnimationPreview). No standalone transport button — the
+         app-wide direction is canvas-tap for play/pause. -->
     <div class="stage-controls">
-      <TransportControls
-        isPlaying={fuseState.clockRunning}
-        disabled={!fuseState.previewSequence || fuseState.isFusing}
-        onPlaybackToggle={() => fuseState.toggleClock()}
-      />
-
       <!-- Wide desktop: the tempo controls live in the open, spending the
            Fuse button's spare width. Narrower layouts fall back to the
            popover so the row still fits. -->
@@ -361,13 +358,19 @@
     min-width: 0;
   }
 
+  /* With the standalone play/pause button gone (canvas-tap owns playback), the
+     tempo control claims the freed width: it grows to a sane cap so BPM reads
+     as a real control, while the Fuse button keeps the larger share and
+     absorbs any remainder — prominent BPM, no leftover gap. */
   .bpm-compact {
     display: flex;
-    flex: 0 0 auto;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 340px;
   }
 
   .fuse-slot {
-    flex: 1 1 auto;
+    flex: 2.4 1 0;
     min-width: 0;
   }
 
@@ -389,14 +392,15 @@
   }
 
   .tempo-trigger {
-    display: inline-grid;
+    display: grid;
     grid-template-columns: auto auto auto;
     align-items: baseline;
     justify-content: center;
-    gap: 5px;
-    min-width: 112px;
+    gap: 6px;
+    width: 100%;
+    min-width: 128px;
     min-height: var(--min-touch-target, 44px);
-    padding: 8px 12px;
+    padding: 10px 16px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
     border-radius: var(--settings-radius-md, 12px);
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.055));
@@ -418,7 +422,7 @@
   }
 
   .tempo-value {
-    font-size: var(--font-size-min, 14px);
+    font-size: 1.15rem;
     font-variant-numeric: tabular-nums;
     font-weight: 800;
   }
