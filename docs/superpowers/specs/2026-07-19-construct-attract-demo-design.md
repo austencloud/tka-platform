@@ -417,3 +417,31 @@ tiles, ghost uses the section pager.
   mid-glide and the act froze forever (this, not HMR, explains the session's
   "dead ghost" incidents). `frame()` now races rAF against a 64ms timeout, so
   time advances coarsely while hidden and the loop survives tab switches.
+
+## Park-and-resume + floating pill + clear (eighth pass, 2026-07-19)
+
+- **Pill floats**: the All/Continuous filter-header is absolutely positioned
+  top-left over the pane (same move as the picker's own corner mode) — in
+  flow it pushed the option grid down when it appeared. Verified: grid top
+  426px before and after the pill appears.
+- **Ghost never disappears — takeover PARKS it**: kill() is unmount-only now.
+  The first real pointerdown/focusin calls act.pause(): the current beat
+  unwinds (halted = dead || stopped everywhere), the ghost glides to the
+  band's bottom-right corner and parks as a small breathing play-dot that IS
+  a real 44px button ("Watch the demo again"). Clicking it resumes a fresh
+  demonstration. The section's takeover listener exempts events originating
+  inside .ghost, so pressing the parked ghost can't re-pause it. Verified
+  live: pointerdown → parked at (1640,608) in a 1672×640 root; click →
+  unparked, board reset, new cycle.
+- **Loop armor**: cycle() runs inside try/catch — a transient DOM race can
+  no longer silently kill the run loop (the other way a ghost "just
+  disappears").
+- **Clear button**: the real app's ClearSequenceButton (red circle, canonical
+  component) sits in the action row's LEFT zone during add-step — back out of
+  a build to pick a different start position. The row is a 1fr/auto/1fr grid
+  so the green play button stays dead-center regardless. Verified: appears in
+  build, click → start picker returns, hidden elsewhere.
+
+Sign-off pending Austen's eyeball; next wing: Generate, same attract-act
+model (the act module is section-agnostic in its motor layer — a
+generate-section act reuses glide/hover/press wholesale).
