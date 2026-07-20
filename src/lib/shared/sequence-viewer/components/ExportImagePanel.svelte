@@ -185,12 +185,10 @@
     return imageComposition.getColumnCountForStepCount(stepCount);
   });
 
-  // Write both stores: composition drives the live preview and persists the
-  // per-length choice; export-options feeds the PNG export pipeline. Syncing
-  // them keeps the preview and the downloaded card from disagreeing.
+  // The composition manager is the one owner for columns. It persists a choice
+  // per sequence length; a missing choice remains Auto.
   function setColumns(value: number | null): void {
     imageComposition.setColumnCountForStepCount(stepCount, value);
-    exportOptions.setImageColumnCount(value);
   }
 
   // If the current selection exceeds the step count (e.g. user switched
@@ -562,6 +560,7 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
+    container-type: inline-size;
     /* One accent for the whole tray: retint the Info SegmentedControl's
        indicator (it reads var(--theme-accent), the dynamic cyan) to the same
        fixed blue the rt-chips use for their active state (--rail-accent in
@@ -616,32 +615,48 @@
     display: flex;
     align-items: center;
     min-height: 44px;
-    font-size: 10px;
+    font-size: var(--font-size-compact, 12px);
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
   }
-  .dock-dense :global(.rt-chip-row) { gap: 6px; flex-wrap: wrap; }
-  /* Size chips to their label (override rail-tile's flex:1 + min-width:44 that
-     squeezed long labels like "Non-radial" until they clipped) and let the row
-     wrap. Each chip stays one unbroken line at >=44px tap height. */
+  .dock-dense :global(.rt-chip-row) {
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
+    container-type: inline-size;
+  }
+  /* Rows hold anywhere from one to eight choices. Crowded rows grow to use the
+     tray; sparse rows stop at a readable width and stay centered instead of
+     turning into full-width slabs. Whole controls wrap when labels need room. */
   /* Compact-pill: the <button> keeps a full 44px tap box (the mandatory touch
      floor), but its visible pill is a ::before inset 5px top/bottom — 34px tall.
      So the chips READ smaller without shrinking the tap target or the row
      height. The base rt-chip's own bg/border is moved off the button onto the
-     pseudo pill; hover/active/focus are re-mapped to it. `flex: 0 0 auto` hugs
-     the label so short words aren't stretched into slabs. */
+     pseudo pill; hover/active/focus are re-mapped to it. */
   .dock-dense :global(.rt-chip) {
     position: relative;
-    flex: 0 0 auto;
-    min-width: 0;
+    flex: 1 1 clamp(80px, 16cqw, 104px);
+    min-width: max-content;
+    max-width: clamp(112px, 24cqw, 168px);
     min-height: 44px;
     padding: 0 12px;
     background: transparent;
     border-color: transparent;
     white-space: nowrap;
     z-index: 0;
+  }
+  /* On the narrowest drawers, reclaim the label column. This keeps the
+     three-choice rows on one line and limits five-choice rows to two lines. */
+  @container (max-width: 340px) {
+    .dock-dense .field {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+    .dock-dense .field-label {
+      min-height: 24px;
+    }
   }
   .dock-dense :global(.rt-chip:hover) {
     background: transparent;

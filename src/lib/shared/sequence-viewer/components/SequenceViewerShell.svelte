@@ -120,6 +120,13 @@
   // Seeded from the window so the first paint doesn't flash the wrong layout.
   let bodyWidth = $state(typeof window !== "undefined" ? window.innerWidth : 0);
 
+  // The full action row needs more room than the viewer's 768px phone/desktop
+  // breakpoint. In this middle range the centered title used to sit on top of
+  // Practice and the Left/Right controls. Keep the desktop rail, but move those
+  // actions into the title menu and collapse the rail to its icon presentation.
+  const FULL_CHROME_MIN_WIDTH = 1080;
+  const compactChrome = $derived(isMobile || bodyWidth < FULL_CHROME_MIN_WIDTH);
+
   // Every desktop export (card AND the 2D/3D animation download) puts its settings in
   // a fixed-width sidebar column beside the content rail and the preview. The preview
   // is the hero, so it must NEVER be narrower than the settings sidebar — otherwise
@@ -384,9 +391,9 @@
           </div>
 
           <div class="left-actions-layer normal" class:active={!ctx.practiceActive} inert={ctx.practiceActive}>
-            {#if isMobile}
-              <!-- Icon-only on mobile: a labeled pill hugs the centered
-                   title trigger. Desktop keeps the label (room to spare). -->
+            {#if compactChrome}
+              <!-- Icon-only when the centered title and the full action row no
+                   longer have separate lanes. The title menu keeps every action. -->
               <button
                 type="button"
                 class="header-action-btn practice icon-only"
@@ -463,7 +470,7 @@
           {:else}
             <!-- The centered title IS the overflow-menu trigger: title +
                  chevron opens the actions menu below the header. -->
-            {@render overflowMenu(isMobile)}
+            {@render overflowMenu(compactChrome)}
           {/if}
         </div>
 
@@ -512,6 +519,7 @@
               <ViewerContentRail
                 activeMode={ctx.viewerState.viewerMode}
                 webgl2Available={ctx.viewer3DState.webgl2Available}
+                compact={compactChrome && !isMobile}
                 onSelectSplit={() => selectSplitMode(ctx)}
                 onSelectMode={(mode) => selectViewerMode(ctx, mode)}
               />
@@ -537,7 +545,6 @@
                 ? {
                     ...ctx.splitPaneImageComposition,
                     darkMode: ctx.exportOptions.imageDarkMode,
-                    columnCount: ctx.exportOptions.imageColumnCount,
                     forceContain: true,
                   }
                 : ctx.splitPaneImageComposition}

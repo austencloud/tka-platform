@@ -20,6 +20,8 @@ export interface BatchDownloadOptions extends DownloadOptions {
 export interface DownloadResult {
   success: boolean;
   filename: string;
+  method: "share" | "download";
+  canceled?: boolean;
   error?: Error;
 }
 
@@ -76,4 +78,3 @@ export interface ViewerPreferences {
   readonly redPropType: PropType;
   readonly catDogMode: boolean;
 }
-

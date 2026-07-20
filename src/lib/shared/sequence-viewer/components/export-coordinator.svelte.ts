@@ -25,6 +25,7 @@ import { buildCardRenderOptions } from "$lib/shared/share/services/card-render-o
 import { sanitizeFilename, shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
+import { logShareAction } from "$lib/shared/analytics/services/posthog-activity-logger";
 import type { createViewer3DState } from "$lib/shared/3d/state/viewer-3d-state.svelte";
 import type { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/modal-accessibility-helper.svelte";
 type ExportType = "animation" | "image" | "both";
@@ -39,6 +40,7 @@ export interface ExportCoordinatorDeps {
 
 export function createExportCoordinator(deps: ExportCoordinatorDeps) {
   const { viewer3DState, accessibilityHelper } = deps;
+  const measuredVideoUrls = new Set<string>();
 
   // ── Export options ──
   const exportOptions = getExportOptionsState();
@@ -87,7 +89,27 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       "sequence";
     const safeName = sanitizeFilename(simplifyRepeatedWord(rawName)) || "sequence";
     const blob = await (await fetch(url)).blob();
-    await shareOrDownloadBlob(blob, `${safeName}.mp4`, { title: "TKA Sequence" });
+    const result = await shareOrDownloadBlob(blob, `${safeName}.mp4`, {
+      title: "TKA Sequence",
+    });
+
+    if (result.success && !result.canceled && !measuredVideoUrls.has(url)) {
+      measuredVideoUrls.add(url);
+      void logShareAction(
+        result.method === "share" ? "sequence_share" : "sequence_export",
+        {
+          sequenceId: effectiveSequence?.id,
+          sequenceWord:
+            effectiveSequence?.word ||
+            effectiveSequence?.intendedWord ||
+            effectiveSequence?.displayName,
+          sequenceLength: effectiveSequence?.steps.length,
+          shareMethod:
+            result.method === "share" ? "native_file_share" : "download",
+          exportFormat: "mp4",
+        }
+      );
+    }
   }
 
   /**
@@ -452,13 +474,11 @@ export function createExportCoordinator(deps: ExportCoordinatorDeps) {
       }
       // All card toggles (word/difficulty/LOOP/mandala/QR/grid/footer/columns/
       // start-layout) + hand-path suppression come from the one canonical builder,
-      // so the downloaded PNG matches the live ChoreoCard preview. columnCount
-      // uses the export-panel value so it tracks the preview exactly.
+      // so the downloaded PNG matches the live ChoreoCard preview.
       const renderOptions = buildCardRenderOptions(effectiveSequence, {
         darkMode: exportOptions.imageDarkMode,
         userName: authState.user?.displayName ?? "",
         isHandPath,
-        columnCount: exportOptions.imageColumnCount,
       });
       await sequenceModalExporter.exportImage(
         renderOptions,

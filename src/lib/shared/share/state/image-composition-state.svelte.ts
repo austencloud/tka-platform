@@ -45,7 +45,7 @@ export interface ImageCompositionSettings {
   startPositionLayoutOverrides: Record<string, "row" | "column">;
 
   // Per-step-count column count overrides.
-  // Keys are step counts as strings. Values are beat column counts (null = auto).
+  // Keys are step counts as strings. Missing keys mean Auto.
   // Controls how many beat columns ChoreoCards use for that sequence length.
   columnCountOverrides: Record<string, number>;
 

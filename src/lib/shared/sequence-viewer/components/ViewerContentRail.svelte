@@ -13,6 +13,8 @@
 	interface Props {
 		activeMode: RailMode;
 		webgl2Available?: boolean;
+		/** Use the icon rail without overwriting the user's preferred wide width. */
+		compact?: boolean;
 		practiceActive?: boolean;
 		onSelectMode: (mode: ContentType) => void;
 		onSelectSplit: () => void;
@@ -22,7 +24,7 @@
 		footerAction?: { label: string; icon: string; href: string };
 	}
 
-	let { activeMode, webgl2Available = true, practiceActive = false, onSelectMode, onSelectSplit, onPracticeToggle, footerAction }: Props = $props();
+	let { activeMode, webgl2Available = true, compact = false, practiceActive = false, onSelectMode, onSelectSplit, onPracticeToggle, footerAction }: Props = $props();
 
 	const railItems = $derived([
 		...viewerModeOptions(webgl2Available, viewportFits3D()).map((m) => ({ id: m.id, icon: m.icon, label: m.label })),
@@ -44,7 +46,8 @@
 	}
 
 	let railWidth = $state(loadWidth());
-	let collapsed = $derived(railWidth < 100);
+	let displayWidth = $derived(compact ? MIN_WIDTH : railWidth);
+	let collapsed = $derived(compact || railWidth < 100);
 	let dragging = $state(false);
 
 	function persistWidth(w: number) {
@@ -110,7 +113,7 @@
 	role="group"
 	aria-label="Content switcher"
 	bind:this={navEl}
-	style:width="{railWidth}px"
+	style:width="{displayWidth}px"
 >
 	<div class="rail-modes">
 		{#each railItems as mode, i (mode.id)}
@@ -144,21 +147,23 @@
 		</a>
 	{/if}
 
-	<div
-		class="resize-handle"
-		onpointerdown={onPointerDown}
-		onpointermove={onPointerMove}
-		onpointerup={onPointerUp}
-		onpointercancel={onPointerUp}
-		ondblclick={onHandleDoubleClick}
-		role="slider"
-		aria-orientation="vertical"
-		aria-valuenow={railWidth}
-		aria-valuemin={MIN_WIDTH}
-		aria-valuemax={MAX_WIDTH}
-		aria-label="Resize sidebar"
-		tabindex="0"
-	></div>
+	{#if !compact}
+		<div
+			class="resize-handle"
+			onpointerdown={onPointerDown}
+			onpointermove={onPointerMove}
+			onpointerup={onPointerUp}
+			onpointercancel={onPointerUp}
+			ondblclick={onHandleDoubleClick}
+			role="slider"
+			aria-orientation="vertical"
+			aria-valuenow={railWidth}
+			aria-valuemin={MIN_WIDTH}
+			aria-valuemax={MAX_WIDTH}
+			aria-label="Resize sidebar"
+			tabindex="0"
+		></div>
+	{/if}
 </nav>
 
 <style>

@@ -201,6 +201,22 @@
   }: Props = $props();
 
 
+  // Two square-first previews fit the available area best when their split
+  // follows the stage's shape. The viewport breakpoint alone misses embedded
+  // viewers and portrait desktop windows, where a horizontal split creates two
+  // tall slivers. Element-size bindings track the real stage after the rail and
+  // export panels have claimed their space.
+  let splitWidth = $state(typeof window !== "undefined" ? window.innerWidth : 0);
+  let splitHeight = $state(typeof window !== "undefined" ? window.innerHeight : 0);
+  const adaptiveVerticalSplit = $derived(
+    !practiceActive &&
+      layout.focusedPane === null &&
+      !layout.isMobile &&
+      !layout.isFullscreen &&
+      splitHeight > splitWidth,
+  );
+
+
   // The canvas glide on practice enter/exit is owned by CSS, not JS: the drawer
   // host animates the content rail's `max-width` collapse over --ws-dur, so the
   // split-view (and the canvas column inside it) grows smoothly into the freed
@@ -366,9 +382,12 @@
 <div
   class="split-view view-container"
   class:practice={practiceActive}
+  bind:clientWidth={splitWidth}
+  bind:clientHeight={splitHeight}
   style="--canvas-frac: {practiceCanvasFraction};"
   data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "vertical" : "horizontal") : undefined}
   data-landscape={layout.isLandscapeMobile || undefined}
+  data-adaptive-stack={adaptiveVerticalSplit || undefined}
   data-focused={layout.focusedPane}
 >
   <!-- Animation pane -->
@@ -1254,6 +1273,32 @@
       grid-template-columns: calc(var(--canvas-frac) * 100%) 1fr;
       grid-template-rows: 1fr;
     }
+  }
+
+  /* A desktop-width stage can still be portrait after the content rail claims
+     its column. Follow the component's measured shape so both previews receive
+     the larger square instead of inheriting the viewport's orientation. */
+  @media (min-width: 768px) {
+    .split-view[data-adaptive-stack="true"] {
+      grid-template-columns: 1fr;
+      grid-template-rows: 50% 50%;
+    }
+
+    .split-view[data-adaptive-stack="true"] .preview-column {
+      border-left: none;
+      border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    }
+
+    .split-view[data-adaptive-stack="true"][data-focused="animation"] {
+      grid-template-columns: 1fr;
+      grid-template-rows: 100% 0%;
+    }
+
+    .split-view[data-adaptive-stack="true"][data-focused="image"] {
+      grid-template-columns: 1fr;
+      grid-template-rows: 0% 100%;
+    }
+
   }
 
   .split-view.practice[data-landscape="true"] {

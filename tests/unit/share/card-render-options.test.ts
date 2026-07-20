@@ -70,15 +70,6 @@ describe("buildCardRenderOptions", () => {
     expect(buildCardRenderOptions(seq, { darkMode: false, userName: "" }).columnCount).toBeUndefined();
   });
 
-  it("honors an explicit columnCount override (still +1 for the start column)", () => {
-    expect(
-      buildCardRenderOptions(seq, { darkMode: false, userName: "", columnCount: 6 }).columnCount
-    ).toBe(7);
-    expect(
-      buildCardRenderOptions(seq, { darkMode: false, userName: "", columnCount: null }).columnCount
-    ).toBeUndefined();
-  });
-
   it("forces QR off for a one-count card even when the global QR toggle is on", () => {
     // showQRCode is on globally, but a single beat + start has no spare cell —
     // a QR would land on the start position. One-count cards never carry a QR.

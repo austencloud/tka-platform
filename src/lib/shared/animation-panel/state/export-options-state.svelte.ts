@@ -59,7 +59,6 @@ export interface ImageExportOptions {
   showNotes: boolean;
   showQRCode: boolean;
   darkMode: boolean;
-  columnCount: number | null;  // null = auto
 }
 
 interface ExportOptionsState {
@@ -103,7 +102,6 @@ const DEFAULT_IMAGE_OPTIONS: ImageExportOptions = {
   showNotes: true,
   showQRCode: true,
   darkMode: true,
-  columnCount: null,
 };
 
 /**
@@ -197,7 +195,6 @@ export interface ExportOptionsStateManager {
   readonly imageShowNotes: boolean;
   readonly imageShowQRCode: boolean;
   readonly imageDarkMode: boolean;
-  readonly imageColumnCount: number | null;
 
   // Video setters
   setVideoFps(fps: VideoFps): void;
@@ -225,7 +222,6 @@ export interface ExportOptionsStateManager {
   setImageShowNotes(show: boolean): void;
   setImageShowQRCode(show: boolean): void;
   setImageDarkMode(dark: boolean): void;
-  setImageColumnCount(count: number | null): void;
 
   // Bulk getters for export functions
   getVideoOptions(): VideoExportOptions;
@@ -271,7 +267,6 @@ export function createExportOptionsState(): ExportOptionsStateManager {
   let imageShowNotes = $state(stored.image.showNotes);
   let imageShowQRCode = $state(stored.image.showQRCode ?? true);
   let imageDarkMode = $state(stored.image.darkMode);
-  let imageColumnCount = $state<number | null>(stored.image.columnCount ?? null);
 
   // Persist changes on any update
   function persist() {
@@ -306,7 +301,6 @@ export function createExportOptionsState(): ExportOptionsStateManager {
         showNotes: imageShowNotes,
         showQRCode: imageShowQRCode,
         darkMode: imageDarkMode,
-        columnCount: imageColumnCount,
       },
     });
   }
@@ -338,7 +332,6 @@ export function createExportOptionsState(): ExportOptionsStateManager {
     get imageShowNotes() { return imageShowNotes; },
     get imageShowQRCode() { return imageShowQRCode; },
     get imageDarkMode() { return imageDarkMode; },
-    get imageColumnCount() { return imageColumnCount; },
 
     // Video setters
     setVideoFps(fps: VideoFps) {
@@ -429,10 +422,6 @@ export function createExportOptionsState(): ExportOptionsStateManager {
       imageDarkMode = dark;
       persist();
     },
-    setImageColumnCount(count: number | null) {
-      imageColumnCount = count;
-      persist();
-    },
 
     // Bulk getters for export functions
     getVideoOptions(): VideoExportOptions {
@@ -472,7 +461,6 @@ export function createExportOptionsState(): ExportOptionsStateManager {
         showNotes: imageShowNotes,
         showQRCode: imageShowQRCode,
         darkMode: imageDarkMode,
-        columnCount: imageColumnCount,
       };
     },
 
@@ -502,7 +490,6 @@ export function createExportOptionsState(): ExportOptionsStateManager {
       imageShowNotes = DEFAULT_IMAGE_OPTIONS.showNotes;
       imageShowQRCode = DEFAULT_IMAGE_OPTIONS.showQRCode;
       imageDarkMode = DEFAULT_IMAGE_OPTIONS.darkMode;
-      imageColumnCount = DEFAULT_IMAGE_OPTIONS.columnCount;
       persist();
     },
   };

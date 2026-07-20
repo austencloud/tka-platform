@@ -5,6 +5,7 @@ import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
 import { sanitizeFilename } from "$lib/shared/foundation/services/file-downloader";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
 import { recordExportThroughput } from "$lib/shared/animation-panel/state/export-timing-tracker";
+import { logShareAction } from "$lib/shared/analytics/services/posthog-activity-logger";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
 import type { AnimationPlaybackController } from '$lib/shared/animation-engine/services/animation-playback-controller';
@@ -363,6 +364,7 @@ export class SequenceModalExporter {
         window.matchMedia("(pointer: coarse)").matches;
 
       let shared = false;
+      let shareCanceled = false;
       if (
         coarsePointer &&
         typeof navigator.share === "function" &&
@@ -377,7 +379,10 @@ export class SequenceModalExporter {
         } catch (err) {
           // Dismissing the share sheet is not a failure; anything else falls
           // through to a regular download.
-          if (err instanceof DOMException && err.name === "AbortError") shared = true;
+          if (err instanceof DOMException && err.name === "AbortError") {
+            shared = true;
+            shareCanceled = true;
+          }
         }
       }
 
@@ -390,6 +395,16 @@ export class SequenceModalExporter {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+      }
+
+      if (!shareCanceled) {
+        void logShareAction(shared ? "sequence_share" : "sequence_export", {
+          sequenceId: seq.id,
+          sequenceWord: seq.word || seq.intendedWord || seq.displayName,
+          sequenceLength: seq.steps.length,
+          shareMethod: shared ? "native_file_share" : "download",
+          exportFormat: "png",
+        });
       }
 
       callbacks.onHaptic("success");

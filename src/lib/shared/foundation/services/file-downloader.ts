@@ -1,4 +1,8 @@
-import type { DownloadOptions, BatchDownloadOptions, DownloadResult } from "./types";
+import type {
+  DownloadOptions,
+  BatchDownloadOptions,
+  DownloadResult,
+} from "./types";
 import { detectPlatform } from "$lib/shared/mobile/services/platform-detector";
 
 /** Anchor (<a download>) to disk. The terminal fallback for every path here. */
@@ -14,9 +18,14 @@ function anchorDownload(blob: Blob, filename: string): Promise<DownloadResult> {
       anchor.click();
       document.body.removeChild(anchor);
       URL.revokeObjectURL(url);
-      resolve({ success: true, filename });
+      resolve({ success: true, filename, method: "download" });
     } catch (error) {
-      resolve({ success: false, filename, error: error as Error });
+      resolve({
+        success: false,
+        filename,
+        method: "download",
+        error: error as Error,
+      });
     }
   });
 }
@@ -64,12 +73,16 @@ export async function shareOrDownloadBlob(
     try {
       const file = new File([blob], filename, { type: blob.type });
       if (navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: options.title, text: options.text });
-        return { success: true, filename };
+        await navigator.share({
+          files: [file],
+          title: options.title,
+          text: options.text,
+        });
+        return { success: true, filename, method: "share" };
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") {
-        return { success: true, filename };
+        return { success: true, filename, method: "share", canceled: true };
       }
       // fall through to anchor download
     }
@@ -108,12 +121,14 @@ export async function downloadBlobBatch(
  * Preserves Unicode, strips < > : " / \ | ? * and C0 control chars.
  */
 export function sanitizeFilename(filename: string): string {
-  return filename
-    // eslint-disable-next-line no-control-regex
-    .replace(/[<>:"/\\|?*\x00-\x1f]/g, "_")
-    .replace(/\s+/g, " ")
-    .replace(/^[.\s]+|[.\s]+$/g, "")
-    .substring(0, 200);
+  return (
+    filename
+      // eslint-disable-next-line no-control-regex
+      .replace(/[<>:"/\\|?*\x00-\x1f]/g, "_")
+      .replace(/\s+/g, " ")
+      .replace(/^[.\s]+|[.\s]+$/g, "")
+      .substring(0, 200)
+  );
 }
 
 export function generateTimestampedFilename(

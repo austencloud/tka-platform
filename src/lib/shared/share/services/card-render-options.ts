@@ -36,12 +36,6 @@ export interface CardRenderOptionsInput {
    * single-hand path view.
    */
   isHandPath?: boolean;
-  /**
-   * Step-column override (pre start-column adjustment). The viewer passes
-   * exportOptions.imageColumnCount so the download matches its live preview; the
-   * share/download paths omit it and the per-step-count manager value is used.
-   */
-  columnCount?: number | null;
 }
 
 /**
@@ -64,10 +58,7 @@ export function buildCardRenderOptions(
 
   // The panel's column chip stores STEP columns; the assembler wants the total
   // including the start-position column, so add +1 when start is shown.
-  const stepColumns =
-    input.columnCount !== undefined
-      ? input.columnCount
-      : ic.getColumnCountForStepCount(stepCount);
+  const stepColumns = ic.getColumnCountForStepCount(stepCount);
   const columnCount =
     stepColumns != null
       ? stepColumns + (ic.includeStartPosition ? 1 : 0)

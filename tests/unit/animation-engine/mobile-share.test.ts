@@ -50,6 +50,8 @@ describe("downloadBlob device-gated share/download", () => {
     expect(canShareFn).toHaveBeenCalled();
     expect(shareFn).toHaveBeenCalled();
     expect(result.success).toBe(true);
+    expect(result.method).toBe("share");
+    expect(result.canceled).toBeUndefined();
   });
 
   it("desktop: downloads to disk even when navigator.share exists (no share sheet)", async () => {
@@ -70,6 +72,7 @@ describe("downloadBlob device-gated share/download", () => {
     expect(shareFn).not.toHaveBeenCalled();
     expect(clickFn).toHaveBeenCalled();
     expect(result.success).toBe(true);
+    expect(result.method).toBe("download");
   });
 
   it("mobile: falls back to anchor download when navigator.share is absent", async () => {
@@ -86,6 +89,7 @@ describe("downloadBlob device-gated share/download", () => {
 
     expect(clickFn).toHaveBeenCalled();
     expect(result.success).toBe(true);
+    expect(result.method).toBe("download");
   });
 
   it("mobile: catches AbortError from dismissed share sheet", async () => {
@@ -103,5 +107,7 @@ describe("downloadBlob device-gated share/download", () => {
     const result = await downloadBlob(blob, "test.mp4");
 
     expect(result.success).toBe(true);
+    expect(result.method).toBe("share");
+    expect(result.canceled).toBe(true);
   });
 });

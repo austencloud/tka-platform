@@ -36,13 +36,23 @@ function isTimeout(err: unknown): boolean {
 /**
  * Fetch a static asset with a timeout + single network-error retry. Drop-in for
  * the loaders that use `response.ok` / `.text()` / `.json()`.
+ *
+ * `timeoutMs` overrides the default budget. Background asset loads want the
+ * generous default; a caller on a user-blocking critical path (resolving a
+ * scanned card while someone holds a phone over it) needs a tighter one.
  */
-export async function assetFetch(url: string, init?: RequestInit): Promise<Response> {
+export async function assetFetch(
+  url: string,
+  init?: RequestInit,
+  timeoutMs: number = TIMEOUT_MS
+): Promise<Response> {
   for (let attempt = 0; ; attempt++) {
     try {
-      // AbortSignal.timeout aborts with a clean TimeoutError after TIMEOUT_MS,
-      // freeing the socket (the load-bearing freeze fix).
-      return await fetch(url, { ...init, signal: AbortSignal.timeout(TIMEOUT_MS) });
+      // AbortSignal.timeout aborts with a clean TimeoutError after the budget,
+      // freeing the socket (the load-bearing freeze fix). The signal covers the
+      // whole exchange including the body stream, so a download that stalls
+      // mid-body aborts too rather than hanging forever.
+      return await fetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
     } catch (err) {
       // Don't retry timeouts (amplifies load on a saturated server) or after the
       // first retry. Only a transient network error gets one more shot.

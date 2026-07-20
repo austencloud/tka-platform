@@ -81,7 +81,6 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     imgShowNotes: boolean;
     imgShowBirthday: boolean;
     imgDarkMode: boolean;
-    imgColumnCount: number | null;
 
     isSyncToggling: boolean;
     isSyncActive: boolean;
@@ -204,6 +203,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { showToast } from "$lib/shared/toast/state/toast-state.svelte";
+  import { logShareAction } from "$lib/shared/analytics/services/posthog-activity-logger";
   import { getSettings, updateSettings } from "$lib/shared/application/state/app-state.svelte";
   import { handleModuleChange } from "$lib/shared/navigation-coordinator/navigation-coordinator.svelte";
   import { calculateThumbnailAspectRatio } from "$lib/shared/render/services/layout-calculator";
@@ -903,15 +903,33 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       }
     }
 
+    const activityMetadata = {
+      sequenceId: sequence?.id,
+      sequenceWord: sequence?.word,
+      sequenceLength: sequence?.steps.length,
+    };
+
     if (typeof navigator !== "undefined" && navigator.share) {
-      navigator.share({
-        title: sequence?.word || "Sequence",
-        text: `Check out this TKA sequence: ${sequence?.word || ""}`,
-        url: shareUrl,
-      }).catch(() => {});
+      navigator
+        .share({
+          title: sequence?.word || "Sequence",
+          text: `Check out this TKA sequence: ${sequence?.word || ""}`,
+          url: shareUrl,
+        })
+        .then(() => {
+          void logShareAction("sequence_share", {
+            ...activityMetadata,
+            shareMethod: "native_link_share",
+          });
+        })
+        .catch(() => {});
     } else if (typeof navigator !== "undefined") {
       navigator.clipboard.writeText(shareUrl).then(() => {
         showToast("Link copied to clipboard", "success");
+        void logShareAction("link_copy", {
+          ...activityMetadata,
+          shareMethod: "clipboard",
+        });
       }).catch(() => {
         showToast("Could not copy link", "error");
       });
@@ -1077,7 +1095,6 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     imgShowNotes: imgComp.imgShowNotes,
     imgShowBirthday: imgComp.imgShowBirthday,
     imgDarkMode: imgComp.imgDarkMode,
-    imgColumnCount: exportCoord.exportOptions.imageColumnCount,
 
     isSyncToggling,
     isSyncActive: lanSyncState.isActive,
@@ -1200,7 +1217,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       showLoopGlyph: !isHandPath && imgComp.imgShowLoopGlyph,
       handPathMode: isHandPath,
       darkMode: imgComp.imgDarkMode,
-      columnCount: exportCoord.exportOptions.imageColumnCount,
+      // Null delegates to ChoreoCard's per-length composition preference.
+      columnCount: null,
       forceContain: false,
       userName: authState.user?.displayName || "",
     },
