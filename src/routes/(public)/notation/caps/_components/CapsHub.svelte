@@ -7,9 +7,14 @@
   No em dashes. No background fill: the cosmic BackgroundHost shows through.
 -->
 <script lang="ts">
+  import { tick } from "svelte";
+  import { fade } from "svelte/transition";
+  import { MediaQuery } from "svelte/reactivity";
+  import { animate } from "motion";
   import LaunchpadTile from "$lib/shared/landing/components/launchpad/LaunchpadTile.svelte";
   import type { LaunchpadTileDef } from "$lib/shared/landing/components/launchpad/launchpad-tiles";
   import YutaCapLiveDemo from "./YutaCapLiveDemo.svelte";
+  import CapsCard from "./CapsCard.svelte";
 
   // DOM order == reading order (row by row across the demo). Left column = odd
   // entries, right column = even entries (placed in CSS).
@@ -22,6 +27,9 @@
       span: "1x1",
       color: "#38bdf8",
       icon: "fa-infinity",
+      // Opt into action/button mode: clicking morphs the tile open into a
+      // focused card (JS on); the href stays the no-JS / SEO fallback.
+      activate: true,
     },
     {
       id: "breakdown",
@@ -69,9 +77,71 @@
       icon: "fa-clock-rotate-left",
     },
   ];
+
+  // ---- click-to-expand morph ----------------------------------------------
+  // A tile springs open into a focused CapsCard (FLIP + Motion, the shop's
+  // morph recipe), the rest of the hub dims behind. Reduced motion skips the
+  // spring and just shows the card.
+  const reduceMotion = new MediaQuery("(prefers-reduced-motion: reduce)");
+  let activeId = $state<string | null>(null);
+  let cardPanelEl = $state<HTMLElement | null>(null);
+  let sourceRect: DOMRect | null = null;
+  let morphControls: { stop: () => void } | null = null;
+
+  const activeTile = $derived(activeId ? (TILES.find((t) => t.id === activeId) ?? null) : null);
+
+  function flip(el: HTMLElement, from: DOMRect) {
+    const to = el.getBoundingClientRect();
+    return {
+      dx: from.left - to.left,
+      dy: from.top - to.top,
+      sx: from.width / to.width,
+      sy: from.height / to.height,
+    };
+  }
+
+  async function openCard(tile: LaunchpadTileDef) {
+    const el = document.querySelector<HTMLElement>(`.frame-grid .tile.t-${tile.id}`);
+    sourceRect = el?.getBoundingClientRect() ?? null;
+    activeId = tile.id;
+    await tick();
+    if (!cardPanelEl || !sourceRect || reduceMotion.current) return;
+    const { dx, dy, sx, sy } = flip(cardPanelEl, sourceRect);
+    cardPanelEl.style.transformOrigin = "top left";
+    morphControls?.stop();
+    morphControls = animate(
+      cardPanelEl,
+      { x: [dx, 0], y: [dy, 0], scaleX: [sx, 1], scaleY: [sy, 1] },
+      { type: "spring", duration: 0.55, bounce: 0.16 },
+    );
+  }
+
+  function closeCard() {
+    if (cardPanelEl && sourceRect && !reduceMotion.current) {
+      const { dx, dy, sx, sy } = flip(cardPanelEl, sourceRect);
+      cardPanelEl.style.transformOrigin = "top left";
+      morphControls?.stop();
+      morphControls = animate(
+        cardPanelEl,
+        { x: [0, dx], y: [0, dy], scaleX: [1, sx], scaleY: [1, sy] },
+        {
+          type: "spring",
+          duration: 0.4,
+          bounce: 0.1,
+          onComplete: () => {
+            activeId = null;
+            sourceRect = null;
+          },
+        },
+      );
+    } else {
+      activeId = null;
+      sourceRect = null;
+    }
+  }
 </script>
 
-<section class="caps-hub" aria-label="What are CAPs">
+<section class="caps-hub" class:hub-dimmed={!!activeTile} aria-label="What are CAPs">
   <a class="hub-back" href="/notation">← Flow Arts Notation</a>
 
   <header class="hub-head">
@@ -88,12 +158,31 @@
       </figure>
       <ul class="tiles" role="list">
         {#each TILES as tile, i (tile.id)}
-          <LaunchpadTile {tile} active={true} index={i} />
+          <LaunchpadTile {tile} active={true} index={i} onActivate={openCard} />
         {/each}
       </ul>
     </div>
   </div>
 </section>
+
+{#if activeTile}
+  <button
+    class="card-backdrop"
+    transition:fade={{ duration: 200 }}
+    onclick={closeCard}
+    aria-label="Close"
+  ></button>
+  <div class="card-morph">
+    <div class="card-panel" bind:this={cardPanelEl}>
+      <CapsCard
+        id={activeTile.id}
+        title={activeTile.heading}
+        color={activeTile.color}
+        onClose={closeCard}
+      />
+    </div>
+  </div>
+{/if}
 
 <style>
   /* Height-lock to one viewport, minus the production SiteHeader (64px), so the
@@ -126,6 +215,55 @@
   }
   .hub-back:hover {
     color: #fff;
+  }
+
+  /* ---- click-to-expand: dim the hub, morph the focused card in over it ---- */
+  .hub-head,
+  .hub-stage {
+    transition:
+      opacity 0.4s ease,
+      filter 0.4s ease;
+  }
+  .caps-hub.hub-dimmed .hub-head,
+  .caps-hub.hub-dimmed .hub-stage {
+    opacity: 0.16;
+    filter: blur(3px);
+    pointer-events: none;
+  }
+
+  .card-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    background: rgba(6, 8, 18, 0.55);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+  }
+  .card-morph {
+    position: fixed;
+    inset: 0;
+    z-index: 1001;
+    display: grid;
+    place-items: center;
+    padding: clamp(1rem, 4vh, 3rem) clamp(1rem, 4vw, 3rem);
+    /* Only the panel is interactive; clicks in the surrounding area fall through
+       to the backdrop and close. */
+    pointer-events: none;
+  }
+  .card-panel {
+    pointer-events: auto;
+    width: min(880px, 92vw);
+    height: min(70vh, 640px);
+    will-change: transform;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hub-head,
+    .hub-stage {
+      transition: none;
+    }
   }
 
   .hub-head {
