@@ -8,8 +8,15 @@
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { getFuseContext } from "../context/fuse-context";
   import FuseAnimationPreview from "./FuseAnimationPreview.svelte";
+  import FuseMobileControls from "./FuseMobileControls.svelte";
 
-  let { onFuse }: { onFuse: () => Promise<void> } = $props();
+  let {
+    onFuse,
+    compact = false,
+  }: {
+    onFuse: () => Promise<void>;
+    compact?: boolean;
+  } = $props();
   const { state: fuseState } = getFuseContext();
   let tempoOpen = $state(false);
 
@@ -33,16 +40,26 @@
   );
 </script>
 
-<section class="preview-stage" aria-labelledby="fuse-preview-heading">
-  <div class="preview-heading-row">
-    <div>
-      <p class="preview-kicker">Output</p>
-      <h3 id="fuse-preview-heading">Combined preview</h3>
+<section
+  class="preview-stage"
+  class:compact
+  aria-labelledby="fuse-preview-heading"
+>
+  {#if compact}
+    <h3 id="fuse-preview-heading" class="sr-only">Combined preview</h3>
+  {:else}
+    <div class="preview-heading-row">
+      <div>
+        <p class="preview-kicker">Output</p>
+        <h3 id="fuse-preview-heading">Combined preview</h3>
+      </div>
+      <span class="preview-length">
+        {fuseState.appliedLength
+          ? `${fuseState.appliedLength} steps`
+          : "\u00A0"}
+      </span>
     </div>
-    <span class="preview-length">
-      {fuseState.appliedLength ? `${fuseState.appliedLength} steps` : "\u00A0"}
-    </span>
-  </div>
+  {/if}
 
   <div class="preview-frame" role="img" aria-label={previewDescription}>
     {#if fuseState.previewSequence}
@@ -67,89 +84,94 @@
     {/if}
   </div>
 
-  <div class="playback-row">
-    <TransportControls
-      isPlaying={fuseState.clockRunning}
-      disabled={!fuseState.previewSequence || fuseState.isFusing}
-      onPlaybackToggle={() => fuseState.toggleClock()}
-    />
+  {#if compact}
+    <FuseMobileControls {onFuse} />
+  {:else}
+    <div class="playback-row">
+      <TransportControls
+        isPlaying={fuseState.clockRunning}
+        disabled={!fuseState.previewSequence || fuseState.isFusing}
+        onPlaybackToggle={() => fuseState.toggleClock()}
+      />
 
-    <Popover.Root bind:open={tempoOpen}>
-      <Popover.Trigger>
-        {#snippet child({ props })}
-          <button
-            {...props}
-            class="tempo-trigger"
-            type="button"
-            disabled={!fuseState.previewSequence || fuseState.isFusing}
-            aria-label={`Set tempo, currently ${fuseState.bpm} BPM`}
+      <Popover.Root bind:open={tempoOpen}>
+        <Popover.Trigger>
+          {#snippet child({ props })}
+            <button
+              {...props}
+              class="tempo-trigger"
+              type="button"
+              disabled={!fuseState.previewSequence || fuseState.isFusing}
+              aria-label={`Set tempo, currently ${fuseState.bpm} BPM`}
+            >
+              <span class="tempo-value">{fuseState.bpm}</span>
+              <span class="tempo-unit">BPM</span>
+              <i class="fas fa-chevron-up" aria-hidden="true"></i>
+            </button>
+          {/snippet}
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Content
+            side="top"
+            align="center"
+            sideOffset={10}
+            collisionPadding={12}
+            class="fuse-tempo-popover"
           >
-            <span class="tempo-value">{fuseState.bpm}</span>
-            <span class="tempo-unit">BPM</span>
-            <i class="fas fa-chevron-up" aria-hidden="true"></i>
-          </button>
-        {/snippet}
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content
-          side="top"
-          align="center"
-          sideOffset={10}
-          collisionPadding={12}
-          class="fuse-tempo-popover"
-        >
-          <BpmQuickPopover
-            bpm={fuseState.bpm}
-            onBpmChange={(value) => fuseState.setBpm(value)}
-            onClose={() => (tempoOpen = false)}
-          />
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
-  </div>
-
-  <div class="status-row">
-    {#if fuseState.error}
-      <p id="fuse-action-status" class="status error-status" role="alert">
-        {fuseState.statusMessage}
-      </p>
-    {:else}
-      <p
-        id="fuse-action-status"
-        class="status"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        {fuseState.statusMessage}
-      </p>
-    {/if}
-
-    <div class="retry-slot" class:visible={fuseState.canRetry}>
-      {#if fuseState.canRetry}
-        <PanelButton
-          variant="secondary"
-          disabled={fuseState.isLoadingLength || fuseState.pendingSide !== null}
-          onclick={() => void fuseState.retry()}
-        >
-          <i class="fas fa-arrow-rotate-right" aria-hidden="true"></i>
-          Retry
-        </PanelButton>
-      {/if}
+            <BpmQuickPopover
+              bpm={fuseState.bpm}
+              onBpmChange={(value) => fuseState.setBpm(value)}
+              onClose={() => (tempoOpen = false)}
+            />
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
     </div>
-  </div>
 
-  <ActionButton
-    label="Fuse and open"
-    busyLabel="Building fused sequence..."
-    icon="fa-fire-flame-curved"
-    color="fuse"
-    fullWidth={true}
-    ariaDisabled={!fuseState.canFuse}
-    ariaDescribedBy="fuse-action-status"
-    busy={fuseState.isFusing}
-    onclick={() => void onFuse()}
-  />
+    <div class="status-row">
+      {#if fuseState.error}
+        <p id="fuse-action-status" class="status error-status" role="alert">
+          {fuseState.statusMessage}
+        </p>
+      {:else}
+        <p
+          id="fuse-action-status"
+          class="status"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          {fuseState.statusMessage}
+        </p>
+      {/if}
+
+      <div class="retry-slot" class:visible={fuseState.canRetry}>
+        {#if fuseState.canRetry}
+          <PanelButton
+            variant="secondary"
+            disabled={fuseState.isLoadingLength ||
+              fuseState.pendingSide !== null}
+            onclick={() => void fuseState.retry()}
+          >
+            <i class="fas fa-arrow-rotate-right" aria-hidden="true"></i>
+            Retry
+          </PanelButton>
+        {/if}
+      </div>
+    </div>
+
+    <ActionButton
+      label="Fuse and open"
+      busyLabel="Building fused sequence..."
+      icon="fa-fire-flame-curved"
+      color="fuse"
+      fullWidth={true}
+      ariaDisabled={!fuseState.canFuse}
+      ariaDescribedBy="fuse-action-status"
+      busy={fuseState.isFusing}
+      onclick={() => void onFuse()}
+    />
+  {/if}
 </section>
 
 <style>
@@ -180,6 +202,35 @@
         transparent 58%
       ),
       var(--theme-panel-bg, rgba(12, 14, 22, 0.96));
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .preview-stage.compact {
+    height: 100%;
+    min-height: 0;
+    gap: var(--settings-spacing-sm, 8px);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .compact .preview-frame {
+    flex: 1 1 0;
+    min-height: 0;
+    border-radius: var(--settings-radius-lg, 18px);
   }
 
   .preview-heading-row {

@@ -1,9 +1,16 @@
 <script lang="ts">
+  import TransportControls from "$lib/shared/animation-engine/components/controls/TransportControls.svelte";
   import HelpButton from "$lib/shared/components/help/HelpButton.svelte";
   import { getFuseContext } from "../context/fuse-context";
   import { FUSE_LENGTHS, type FuseLength } from "../state/fuse-state.svelte";
 
-  let { onHelp }: { onHelp: () => void } = $props();
+  let {
+    onHelp,
+    compact = false,
+  }: {
+    onHelp: () => void;
+    compact?: boolean;
+  } = $props();
   const { state } = getFuseContext();
 
   function isFuseLength(value: number): value is FuseLength {
@@ -16,24 +23,31 @@
   }
 </script>
 
-<header class="fuse-header">
-  <div class="title-group">
-    <p class="eyebrow">
-      <span class="path-token blue-token">Blue</span>
-      <i class="fas fa-plus" aria-hidden="true"></i>
-      <span class="path-token red-token">Red</span>
-      <i class="fas fa-arrow-right" aria-hidden="true"></i>
-      <span class="path-token output-token">Combined</span>
-    </p>
-    <h2>Fuse two paths</h2>
-    <p class="instruction">
-      Set the length. Shuffle either path. The preview shows them together.
-    </p>
-  </div>
+<header class="fuse-header" class:compact>
+  {#if compact}
+    <div class="compact-intro">
+      <h2>Fuse two paths</h2>
+      <p>Shuffle Blue or Red, then Fuse.</p>
+    </div>
+  {:else}
+    <div class="title-group">
+      <p class="eyebrow">
+        <span class="path-token blue-token">Blue</span>
+        <i class="fas fa-plus" aria-hidden="true"></i>
+        <span class="path-token red-token">Red</span>
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+        <span class="path-token output-token">Combined</span>
+      </p>
+      <h2>Fuse two paths</h2>
+      <p class="instruction">
+        Set the length. Shuffle either path. The preview shows them together.
+      </p>
+    </div>
+  {/if}
 
   <div class="header-controls">
     <label class="length-field">
-      <span>Length</span>
+      <span class:sr-only={compact}>Length</span>
       <span class="select-wrap">
         <select
           value={state.requestedLength}
@@ -47,6 +61,14 @@
         <i class="fas fa-chevron-down" aria-hidden="true"></i>
       </span>
     </label>
+
+    {#if compact}
+      <TransportControls
+        isPlaying={state.clockRunning}
+        disabled={!state.previewSequence || state.isFusing}
+        onPlaybackToggle={() => state.toggleClock()}
+      />
+    {/if}
 
     <HelpButton
       onclick={onHelp}
@@ -71,6 +93,20 @@
 
   .title-group {
     min-width: 0;
+  }
+
+  .compact-intro,
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
   }
 
   .eyebrow {
@@ -171,6 +207,11 @@
     cursor: wait;
   }
 
+  select:focus-visible {
+    outline: 2px solid var(--theme-accent, currentColor);
+    outline-offset: 2px;
+  }
+
   .select-wrap i {
     position: absolute;
     right: 13px;
@@ -180,7 +221,7 @@
   }
 
   @container fuse (max-width: 599px) {
-    .fuse-header {
+    .fuse-header:not(.compact) {
       flex-direction: column;
       align-items: stretch;
       gap: var(--settings-spacing-md, 14px);
@@ -195,18 +236,64 @@
       max-width: none;
     }
 
-    .header-controls {
+    .fuse-header:not(.compact) .header-controls {
       align-items: flex-end;
     }
 
-    .length-field,
-    .select-wrap,
-    select {
+    .fuse-header:not(.compact) .length-field,
+    .fuse-header:not(.compact) .select-wrap,
+    .fuse-header:not(.compact) select {
       width: 100%;
     }
 
-    .length-field {
+    .fuse-header:not(.compact) .length-field {
       flex: 1;
+    }
+
+    .fuse-header.compact {
+      min-height: var(--min-touch-target, 48px);
+      align-items: center;
+      gap: var(--settings-spacing-sm, 8px);
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+    }
+
+    .compact .header-controls {
+      width: 100%;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--settings-spacing-sm, 8px);
+    }
+
+    .compact .length-field {
+      width: min(38cqw, 152px);
+      margin-right: auto;
+    }
+
+    .compact .select-wrap,
+    .compact select {
+      width: 100%;
+    }
+
+    .compact .header-controls :global(.help-button:focus-visible) {
+      outline: 2px solid var(--theme-text, #fff);
+      outline-offset: 2px;
+    }
+
+    .compact .header-controls :global(.help-button) {
+      border-color: var(--theme-stroke, rgba(255, 255, 255, 0.14));
+      background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+      color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .compact .header-controls :global(.help-button:hover) {
+      border-color: var(--theme-stroke-strong, rgba(255, 255, 255, 0.24));
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.09));
+      color: var(--theme-text, #fff);
     }
   }
 

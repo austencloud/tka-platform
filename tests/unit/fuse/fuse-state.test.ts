@@ -340,6 +340,69 @@ describe("Fuse state", () => {
     expect(loader.loadFullSequenceData).not.toHaveBeenCalled();
   });
 
+  it("keeps the shared playback phase through Shuffle and Back", async () => {
+    let scheduledFrame: FrameRequestCallback | null = null;
+    let frameId = 0;
+    vi.stubGlobal(
+      "requestAnimationFrame",
+      vi.fn((callback: FrameRequestCallback) => {
+        scheduledFrame = callback;
+        frameId += 1;
+        return frameId;
+      })
+    );
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
+
+    const first = makeSequence("first", 8);
+    const second = makeSequence("second", 8);
+    const replacement = deferred<SequenceData | null>();
+    const loader = createLoader(
+      [first, metadataOnly(second)],
+      async (_name, id) => (id === second.id ? replacement.promise : first)
+    );
+    const state = createState(loader);
+
+    try {
+      await state.initialize();
+      state.startClock();
+
+      const firstTick = scheduledFrame;
+      expect(firstTick).not.toBeNull();
+      firstTick!(1_000);
+
+      const secondTick = scheduledFrame;
+      expect(secondTick).not.toBeNull();
+      secondTick!(2_500);
+      const phaseBeforeShuffle = state.currentStep;
+      expect(phaseBeforeShuffle).toBeCloseTo(1.5);
+
+      const shuffle = state.shuffle("blue");
+      await vi.waitFor(() => {
+        expect(loader.loadFullSequenceData).toHaveBeenCalledWith(
+          second.word,
+          second.id
+        );
+      });
+
+      const pendingTick = scheduledFrame;
+      expect(pendingTick).not.toBeNull();
+      pendingTick!(3_500);
+      expect(state.currentStep).toBeGreaterThan(phaseBeforeShuffle);
+
+      replacement.resolve(second);
+      await shuffle;
+      const phaseAfterShuffle = state.currentStep;
+      expect(phaseAfterShuffle).toBeCloseTo(2.5);
+
+      state.previous("blue");
+      expect(state.currentStep).toBeCloseTo(phaseAfterShuffle);
+      expect(state.clockRunning).toBe(true);
+    } finally {
+      state.dispose();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("keeps the primary action unavailable during a source replacement", async () => {
     const first = makeSequence("first", 8);
     const second = metadataOnly(makeSequence("second", 8));

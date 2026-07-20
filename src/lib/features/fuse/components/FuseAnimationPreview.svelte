@@ -1,6 +1,6 @@
 <!--
   The one live canvas in Fuse. The shared Fuse clock supplies a continuous
-  step, while this component owns only animation-engine initialization.
+  step, while this component owns the animation engine and in-place path swaps.
 -->
 <script lang="ts">
   import { onDestroy, onMount, untrack } from "svelte";
@@ -31,6 +31,7 @@
   let error = $state<string | null>(null);
   let initializationGeneration = 0;
   let destroyed = false;
+  let hasLoadedSequence = false;
 
   const animCurrentStep = $derived(animState.currentStep);
   const bluePropState = $derived(animState.bluePropState);
@@ -80,16 +81,18 @@
 
     const generation = ++initializationGeneration;
     let cancelled = false;
-    loading = true;
     error = null;
-    initialized = false;
-    totalSteps = 0;
+
+    // Only the first sequence owns a loading screen. Later Shuffle and Back
+    // requests leave the live canvas mounted while the replacement is prepared.
+    if (!hasLoadedSequence) {
+      loading = true;
+      initialized = false;
+      totalSteps = 0;
+    }
 
     void (async () => {
       try {
-        if (animState.isPlaying) activeController.togglePlayback();
-        animState.reset();
-
         const fullSequence = await ensureMotionData(inputSequence);
         if (cancelled || destroyed || generation !== initializationGeneration) {
           return;
@@ -102,23 +105,31 @@
           return;
         }
 
-        animState.setShouldLoop(true);
-        if (!activeController.initialize(fullSequence, animState)) {
-          failInitialization(
-            "Preview unavailable",
-            new Error("The animation controller rejected the fused sequence")
-          );
-          return;
+        if (hasLoadedSequence) {
+          // The controller's update path keeps its owner and canvas alive. The
+          // shared Fuse clock is applied immediately below, so only the newly
+          // shuffled prop changes position and the other prop stays on beat.
+          activeController.updateSequenceData(fullSequence);
+        } else {
+          animState.reset();
+          animState.setShouldLoop(true);
+          if (!activeController.initialize(fullSequence, animState)) {
+            failInitialization(
+              "Preview unavailable",
+              new Error("The animation controller rejected the fused sequence")
+            );
+            return;
+          }
+          hasLoadedSequence = true;
         }
 
         totalSteps = fullSequence.steps.length || 1;
+        const beat = untrack(() => currentStep);
+        const syncedBeat = (beat % totalSteps) + 1;
+        activeController.calculateStateForStep(syncedBeat);
+        animState.setCurrentStep(syncedBeat);
         initialized = true;
         loading = false;
-
-        const beat = untrack(() => currentStep);
-        const initialBeat = beat > 0 ? (beat % totalSteps) + 1 : 0;
-        activeController.calculateStateForStep(initialBeat);
-        animState.setCurrentStep(initialBeat);
       } catch (cause) {
         if (cancelled || destroyed || generation !== initializationGeneration) {
           return;

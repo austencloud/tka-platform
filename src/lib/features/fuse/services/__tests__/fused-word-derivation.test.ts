@@ -139,7 +139,7 @@ describe("fused sequence word derivation", () => {
     // word must be exactly the per-step letters joined — same length, same order.
     const letters = derived.steps.map((s) => s.letter);
     expect(letters.every((l) => !!l)).toBe(true);
-    expect(derived.word).toBe(letters.join("").toUpperCase());
+    expect(derived.word).toBe(letters.join(""));
     expect(derived.word.length).toBe(derived.steps.length);
     expect(derived.word).toBe("IIECCKIIECCK");
   });

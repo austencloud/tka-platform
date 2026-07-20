@@ -443,7 +443,8 @@ export function createFuseState({
 
       pool.commit(candidate, false);
       previewSequence = preview;
-      currentStep = 0;
+      // Shuffling changes one path at the beat already on screen. Resetting the
+      // shared beat here made both props jump back to the start of the loop.
       readyMessage = sourceReadyMessage(side, candidate.sequence, false);
     } catch (shuffleError) {
       if (!isCurrentSideGeneration(side, generation)) return;
@@ -485,7 +486,7 @@ export function createFuseState({
       const preview = createPreview(blue, red, appliedLength);
       pool.commitPrevious();
       previewSequence = preview;
-      currentStep = 0;
+      // Back uses the same in-place swap as Shuffle, so playback stays on beat.
       error = null;
       readyMessage = sourceReadyMessage(side, previousEntry.sequence, true);
     } catch (previewError) {

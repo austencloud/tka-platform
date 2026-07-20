@@ -12,21 +12,25 @@
   let detailKind = $state<"help" | "notation">("help");
   let detailSide = $state<FuseSide>("blue");
   let containerElement = $state<HTMLDivElement | null>(null);
-  let showInlineNotation = $state(false);
+  let compact = $state(true);
 
-  // CSS owns every layout change. This observer only keeps the expensive
-  // notation renderer out of the narrow layout where it lives in the drawer.
+  // The phone layout is a different interaction, not a squeezed desktop grid.
+  // Measuring the tab's actual slot also handles split-screen and foldable
+  // layouts where the viewport width says little about the room Fuse receives.
   $effect(() => {
     const element = containerElement;
     if (!element || typeof ResizeObserver === "undefined") return;
 
-    const updateResourceMode = (width: number) => {
-      showInlineNotation = width >= 600;
+    const updateLayoutMode = (width: number) => {
+      compact = width < 600;
     };
-    updateResourceMode(element.clientWidth);
+    updateLayoutMode(element.clientWidth);
 
     const observer = new ResizeObserver(([entry]) => {
-      if (entry) updateResourceMode(entry.contentRect.width);
+      if (!entry) return;
+      const width =
+        entry.contentBoxSize[0]?.inlineSize ?? entry.contentRect.width;
+      updateLayoutMode(width);
     });
     observer.observe(element);
     return () => observer.disconnect();
@@ -62,22 +66,25 @@
 <div class="fuse-container" bind:this={containerElement}>
   <div
     class="fuse-workspace themed-scrollbar"
+    class:compact-workspace={compact}
     aria-busy={fuseState.isLoadingLength ||
       fuseState.pendingSide !== null ||
       fuseState.isFusing}
   >
-    <FuseWorkspaceHeader onHelp={openHelp} />
-    <FuseSourceCard
-      side="blue"
-      {showInlineNotation}
-      onViewNotation={openNotation}
-    />
-    <FuseSourceCard
-      side="red"
-      {showInlineNotation}
-      onViewNotation={openNotation}
-    />
-    <FusePreviewStage onFuse={handleFuse} />
+    <FuseWorkspaceHeader onHelp={openHelp} {compact} />
+    {#if !compact}
+      <FuseSourceCard
+        side="blue"
+        showInlineNotation={true}
+        onViewNotation={openNotation}
+      />
+      <FuseSourceCard
+        side="red"
+        showInlineNotation={true}
+        onViewNotation={openNotation}
+      />
+    {/if}
+    <FusePreviewStage onFuse={handleFuse} {compact} />
   </div>
 
   <FuseDetailDrawer
@@ -127,6 +134,16 @@
     padding: clamp(10px, 2.5cqw, 20px);
     overflow-x: hidden;
     overflow-y: auto;
+  }
+
+  .fuse-workspace.compact-workspace {
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+      "header"
+      "preview";
+    gap: var(--settings-spacing-sm, 8px);
+    padding: var(--settings-spacing-sm, 8px);
+    overflow: hidden;
   }
 
   @container fuse (min-width: 600px) {
