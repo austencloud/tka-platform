@@ -1,4 +1,22 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+
+// buildBaseIndex color-swaps via the shared create transforms, whose import
+// chain reaches firebase/firestore. Node has no Firebase app — stub it out the
+// same way tests/unit/guide/guide-transform-round-trip.test.ts does.
+vi.mock("firebase/firestore", () => ({
+  collection: vi.fn(),
+  query: vi.fn(),
+  orderBy: vi.fn(),
+  getDocs: vi.fn(),
+  doc: vi.fn(),
+  deleteDoc: vi.fn(),
+  addDoc: vi.fn(),
+  serverTimestamp: vi.fn(),
+}));
+vi.mock("$lib/shared/auth/firebase", () => ({
+  getFirestoreInstance: vi.fn().mockResolvedValue({}),
+}));
+
 import { buildBaseIndex, resolveBase } from "../build-realization-sequence";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
