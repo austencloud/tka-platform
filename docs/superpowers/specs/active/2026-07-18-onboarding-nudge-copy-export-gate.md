@@ -51,8 +51,8 @@ is the exact AuthNudge fragmentation flagged 2026-06-18, still unfixed.
 - [x] The save-cap toast draws from the centralized copy, not a local duplicate. — `library-save-service.ts:142` now calls `toast.info(AUTH_NUDGE_TEXTS.save, 6000)`; the `save` entry interpolates `GUEST_SAVE_CAP` rather than a hardcoded number.
 - [x] Loop-locked nudge either glosses the jargon or is gated behind a LOOP explanation. — Glossed inline: `"Rotated LOOPs, sequences that return to their starting position with each repeat rotated 180°, are free."` Grounded via MCP `get_term_definition("loop")` + `get_domain_topic("caps vs loops")` and the guide's existing framing (`Type2LoopsPage.svelte`: "each repetition is rotated by 180°"). `loop-guest-gate.ts`'s category-lock reason now reads this same centralized string instead of a local duplicate.
 - [x] All new/changed strings pass a writing-guide check (no em dashes/superlatives/AI-isms). — No em dashes (asserted in the test), no "unlock" (blacklisted verb), no "Whether you're", no hedging. Manually checked against `docs/reference/ai-writing-guide.md`.
-- [ ] Final copy confirmed by Austen before ship.
-- [ ] `npm run check` clean.
+- [x] Final copy confirmed by Austen before ship. — Approved 2026-07-19 ("the copy above is fantastic"), reviewing the full 8-string table + button label + the degree-free loop gloss revision (`5dc002d28c`).
+- [x] `npm run check` clean. — Full check 2026-07-19: only 16 errors, all in fuse/landing/shape-matrix files carrying OTHER sessions' uncommitted work; zero in remediation-touched files.
 
 ## Verification
 

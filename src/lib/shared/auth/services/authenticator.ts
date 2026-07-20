@@ -15,6 +15,7 @@ import {
   indexedDBLocalPersistence,
   linkWithCredential,
   linkWithPopup,
+  reauthenticateWithCredential,
   reauthenticateWithPopup,
   sendEmailVerification,
   setPersistence,
@@ -77,13 +78,8 @@ export async function signInWithGoogle(): Promise<void> {
   // SDK authoritative, matching every other auth path in the app.
   const { isNative } = await import("$lib/shared/platform/services/platform-detector");
   if (isNative()) {
-    const { FirebaseAuthentication } = await import("@capacitor-firebase/authentication");
-    const result = await FirebaseAuthentication.signInWithGoogle();
-    const idToken = result.credential?.idToken;
-    if (!idToken) {
-      throw new Error("Native Google sign-in did not return an ID token");
-    }
-    await signInWithGoogleCredential(idToken);
+    const { nativeGoogleCredential } = await import("./native-google-auth");
+    await signInWithCredential(auth, await nativeGoogleCredential());
     return;
   }
 
@@ -177,6 +173,14 @@ export async function linkGoogleAccount(): Promise<void> {
   const isAlreadyLinked = currentUser.providerData.some((p) => p.providerId === "google.com");
   if (isAlreadyLinked) throw new Error("Google account is already linked");
 
+  // Native: popups dead-end in the WebView — link with a native-SDK credential.
+  const { isNative } = await import("$lib/shared/platform/services/platform-detector");
+  if (isNative()) {
+    const { nativeGoogleCredential } = await import("./native-google-auth");
+    await linkWithCredential(currentUser, await nativeGoogleCredential());
+    return;
+  }
+
   const provider = new GoogleAuthProvider();
   provider.addScope("email");
   provider.addScope("profile");
@@ -209,6 +213,14 @@ export async function reauthenticateWithGoogle(): Promise<void> {
   const authInstance = await getAuthInstance();
   const currentUser = authInstance.currentUser;
   if (!currentUser) throw new Error("No user is currently signed in");
+
+  // Native: popups dead-end in the WebView — reauth with a native-SDK credential.
+  const { isNative } = await import("$lib/shared/platform/services/platform-detector");
+  if (isNative()) {
+    const { nativeGoogleCredential } = await import("./native-google-auth");
+    await reauthenticateWithCredential(currentUser, await nativeGoogleCredential());
+    return;
+  }
 
   const provider = new GoogleAuthProvider();
   provider.addScope("email");

@@ -5,6 +5,8 @@
  * Common culprits: Messenger, Instagram, Facebook, Twitter, TikTok, Line, etc.
  */
 
+import { Capacitor } from "@capacitor/core";
+
 interface BrowserPattern {
   pattern: RegExp;
   name: string;
@@ -71,6 +73,15 @@ export class InAppBrowserDetector {
     }
 
     if (typeof navigator === "undefined") {
+      this.cachedResult = { isInApp: false, name: null };
+      return this.cachedResult;
+    }
+
+    // The Capacitor native shell IS a WebView (its UA contains "; wv)"), but
+    // it's our own app, not a hostile in-app browser: sign-in runs through the
+    // native Firebase plugin there, so the "open in Chrome" prompt must never
+    // fire.
+    if (Capacitor.isNativePlatform()) {
       this.cachedResult = { isInApp: false, name: null };
       return this.cachedResult;
     }

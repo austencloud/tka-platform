@@ -184,6 +184,12 @@
   }
 
   onMount(async () => {
+    // Native shell: One Tap/FedCM don't exist in the Android WebView and the
+    // gsi script misbehaves there. Native sign-in goes through the Capacitor
+    // Firebase plugin instead (see authenticator.signInWithGoogle).
+    const { isNative } = await import("$lib/shared/platform/services/platform-detector");
+    if (isNative()) return;
+
     try {
       await loadGoogleScript();
       scriptLoaded = true;

@@ -13,13 +13,14 @@
   import GoogleIcon from "./icons/GoogleIcon.svelte";
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import {
-    GoogleAuthProvider,
     browserLocalPersistence,
     indexedDBLocalPersistence,
     setPersistence,
-    signInWithPopup,
   } from "firebase/auth";
+  import { browser } from "$app/environment";
   import { getAuthInstance } from "../firebase";
+  import { signInWithGoogle } from "$lib/shared/auth/services/authenticator";
+  import { isNative } from "$lib/shared/platform/services/platform-detector";
   import { upgradeAnonymousWithGoogle } from "$lib/shared/auth/services/anonymous-upgrade";
   import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
   import { FACEBOOK_LOGIN_ENABLED } from "$lib/shared/auth/services/auth-providers.config";
@@ -32,6 +33,11 @@
 
   let googleError = $state<string | null>(null);
   let isLoading = $state(false);
+
+  // Facebook still runs signInWithPopup, which dead-ends in the native
+  // WebView (Google/Meta block WebView sign-in). Hide it there until it's
+  // wired through the native plugin. browser-guard: Capacitor is client-only.
+  const showFacebook = FACEBOOK_LOGIN_ENABLED && !(browser && isNative());
 
   async function handleGoogleClick() {
     if (isLoading) return;
@@ -57,22 +63,19 @@
         await setPersistence(auth, browserLocalPersistence);
       }
 
-      const provider = new GoogleAuthProvider();
-      provider.addScope("email");
-      provider.addScope("profile");
-
-      // Use popup for all devices - redirect flow has never worked.
       // Don't navigate on success: the AuthDrawer/AuthSheet that wraps this
       // button unmounts via `{#if !isAuthenticated}` in MainApplication, so
       // the user stays on whatever app page they opened the sheet from.
       // Navigating to "/" used to send them back to the marketing landing.
+      // signInWithGoogle() routes per platform (native SDK / desktop OAuth /
+      // web popup) — never call signInWithPopup directly here.
       if (auth.currentUser?.isAnonymous) {
         const result = await upgradeAnonymousWithGoogle();
         if (result.status === "collision-signed-in") {
           promptAnonymousImport(result.importable ?? []);
         }
       } else {
-        await signInWithPopup(auth, provider);
+        await signInWithGoogle();
       }
     } catch (error: unknown) {
       const errorCode = getAuthErrorCode(error);
@@ -119,7 +122,7 @@
         Google
       {/if}
     </button>
-    {#if FACEBOOK_LOGIN_ENABLED}
+    {#if showFacebook}
       <button
         class="social-compact-button social-compact-button--facebook"
         onclick={handleFacebookClick}

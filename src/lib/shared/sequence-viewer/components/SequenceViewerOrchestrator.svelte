@@ -244,6 +244,9 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     initialViewMode?: ViewMode;
     onClose: () => void;
     onUrlParamChange?: (key: string, value: string) => void;
+    /** Reports tempo changes made through viewer controls. Internal practice
+     *  ramp changes stay private so hosts can persist deliberate choices. */
+    onBpmChange?: (bpm: number) => void;
     blockClicks?: boolean;
     handPathMode?: boolean;
     forceGuest?: boolean;
@@ -268,6 +271,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     initialViewMode,
     onClose,
     onUrlParamChange,
+    onBpmChange,
     blockClicks = false,
     handPathMode = false,
     forceGuest = false,
@@ -1108,7 +1112,10 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
     handleProgressBarSeek: playback.handleProgressBarSeek,
     handleProgressBarScrubStart: playback.handleProgressBarScrubStart,
     handleProgressBarScrubEnd: playback.handleProgressBarScrubEnd,
-    handleBpmChange: playback.handleBpmChange,
+    handleBpmChange: (bpm: number) => {
+      playback.handleBpmChange(bpm);
+      onBpmChange?.(bpm);
+    },
     handleStepClick: (stepIndex: number) => playback.handleStepClick(stepIndex, blockClicks, editingPane),
     enterEditMode,
     exitEditMode,

@@ -54,6 +54,11 @@
   import { getGlyphCache } from "$lib/shared/render/get-glyph-cache";
   import { shareOrDownloadBlob } from "$lib/shared/foundation/services/file-downloader";
   import { sequenceModalExporter } from "$lib/shared/sequence-viewer/services/sequence-modal-exporter.svelte";
+  import {
+    SCAN_PLAYBACK_MAX_BPM,
+    initialScanPlaybackBpm,
+    saveScanPlaybackBpm,
+  } from "$lib/shared/sequence-viewer/services/scan-playback-tempo";
   import TKAWordGlyph from "$lib/shared/choreo-card/components/TKAWordGlyph.svelte";
   import ProgressBar from "$lib/shared/components/loading/ProgressBar.svelte";
   import ToastContainer from "$lib/shared/toast/components/ToastContainer.svelte";
@@ -66,8 +71,6 @@
   // descendant ChoreoCard cell render. Must be set during component init (not in
   // onMount) so the Svelte context resolves for the descendant viewer tree.
   setScanCardCloudProbe(true);
-
-  const BASE_BPM = 60;
 
   interface Props {
     data: {
@@ -145,6 +148,11 @@
 
   let resolvedSeq: SequenceData | null = $state(null);
   let seqWord = $state("");
+  let scanInitialBpm = $state(SCAN_PLAYBACK_MAX_BPM);
+
+  function handleScanBpmChange(bpm: number): void {
+    if (shortCode) saveScanPlaybackBpm(shortCode, bpm);
+  }
 
   // ── Viewer ──
   // The orchestrator is the full viewer brain; lazy-loaded so the scan page's
@@ -543,6 +551,7 @@
         loopDetector,
       });
 
+      scanInitialBpm = initialScanPlaybackBpm(shortCode, seq);
       resolvedSeq = seq;
       markScan("hydrated");
       const word = seq.word || seq.name || "Sequence";
@@ -733,8 +742,9 @@
       sequence={resolvedSeq}
       isMobile={isViewerMobile}
       initialRenderMode="2d"
-      initialBpm={BASE_BPM}
+      initialBpm={scanInitialBpm}
       initialActiveEffect="trails"
+      onBpmChange={handleScanBpmChange}
       onClose={() => goto(`/browse/gallery?from=scan&code=${shortCode}`)}
       onGatedDownload={(ctx) =>
         pendingExportKind === "card" ? void handleCardExport(ctx) : void handleExport(ctx)}

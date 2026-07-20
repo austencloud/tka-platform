@@ -15,6 +15,8 @@
   import EmailLinkingDrawer from "../../../auth/components/EmailLinkingDrawer.svelte";
   import { PROVIDERS, type ProviderId } from "./connected-accounts.providers";
   import { FACEBOOK_LOGIN_ENABLED } from "$lib/shared/auth/services/auth-providers.config";
+  import { browser } from "$app/environment";
+  import { isNative } from "$lib/shared/platform/services/platform-detector";
   import ConfirmDialog from "../../../foundation/ui/ConfirmDialog.svelte";
 
   // Services
@@ -45,8 +47,10 @@
     (Object.keys(PROVIDERS) as ProviderId[]).filter(
       (id) =>
         !linkedProviders.includes(id) &&
-        // Facebook linking is hidden until the login flow is verified end to end.
-        (id !== "facebook.com" || FACEBOOK_LOGIN_ENABLED)
+        // Facebook linking is hidden until the login flow is verified end to
+        // end — and always in the native shell, where linkWithPopup dead-ends
+        // in the WebView (not yet wired through the native plugin).
+        (id !== "facebook.com" || (FACEBOOK_LOGIN_ENABLED && !(browser && isNative())))
     )
   );
 
