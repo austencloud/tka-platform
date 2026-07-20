@@ -24,6 +24,9 @@ import {
 
 const STORAGE_KEY = "fuse-tab-state";
 const DEFAULT_BPM = 60;
+// Persist the live playback step at most this often while the clock runs, so a
+// remount can resume near where playback was without writing on every frame.
+const STEP_PERSIST_INTERVAL_MS = 1000;
 
 export const FUSE_LENGTHS = [2, 4, 8, 12, 16, 24, 32] as const;
 export type FuseLength = (typeof FUSE_LENGTHS)[number];
@@ -51,8 +54,42 @@ export interface FuseStateDeps {
   prefersReducedMotion?: () => boolean;
 }
 
+/** Identity of one persisted source pick. All three fields are kept so restore
+ * can hydrate by id (the disambiguating key) and fall back to word/name. */
+interface FusePersistedSelection {
+  id: string;
+  word: string;
+  name: string;
+}
+
 interface PersistedFuseState {
   bpm?: number;
+  length?: number;
+  blue?: FusePersistedSelection;
+  red?: FusePersistedSelection;
+  currentStep?: number;
+}
+
+/** What initialize() hands setLength so a persisted pair is restored only on the
+ * mount-time load, never on a deliberate length change. */
+interface FuseRestoreRequest {
+  blue?: FusePersistedSelection;
+  red?: FusePersistedSelection;
+  length?: number;
+  currentStep?: number;
+}
+
+function parsePersistedSelection(
+  value: unknown
+): FusePersistedSelection | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  const id = typeof record.id === "string" ? record.id : "";
+  const word = typeof record.word === "string" ? record.word : "";
+  const name = typeof record.name === "string" ? record.name : "";
+  // Need at least one identifier to hydrate the sequence later.
+  if (!id && !word && !name) return undefined;
+  return { id, word, name };
 }
 
 function readPersistedState(): PersistedFuseState {
@@ -63,8 +100,21 @@ function readPersistedState(): PersistedFuseState {
 
     const parsed: unknown = JSON.parse(raw);
     if (!parsed || typeof parsed !== "object") return {};
-    const bpm = (parsed as { bpm?: unknown }).bpm;
-    return typeof bpm === "number" ? { bpm } : {};
+    const record = parsed as Record<string, unknown>;
+
+    // Every field is optional, so an older store holding only { bpm } still
+    // parses cleanly into this widened shape.
+    const result: PersistedFuseState = {};
+    if (typeof record.bpm === "number") result.bpm = record.bpm;
+    if (typeof record.length === "number") result.length = record.length;
+    if (typeof record.currentStep === "number") {
+      result.currentStep = record.currentStep;
+    }
+    const blue = parsePersistedSelection(record.blue);
+    if (blue) result.blue = blue;
+    const red = parsePersistedSelection(record.red);
+    if (red) result.red = red;
+    return result;
   } catch {
     return {};
   }
@@ -145,7 +195,7 @@ export function createFuseState({
     typeof window !== "undefined" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches,
 }: FuseStateDeps) {
-  const persisted = readPersistedState();
+  let persisted = readPersistedState();
   const cachedBrowseLoader = createHydrationCache(browseLoader);
   const bluePool = createFuseShufflePool({
     browseLoader: cachedBrowseLoader,
@@ -182,6 +232,7 @@ export function createFuseState({
   let clockRunning = $state(false);
   let clockFrame: number | null = null;
   let lastClockTimestamp: number | null = null;
+  let lastStepPersistAt: number | null = null;
 
   function poolFor(side: FuseSide): FuseShufflePool {
     return side === "blue" ? bluePool : redPool;
@@ -293,6 +344,72 @@ export function createFuseState({
     return "Choose a length to load two paths.";
   }
 
+  function persistSelection(
+    blueSequence: SequenceData,
+    redSequence: SequenceData,
+    length: FuseLength
+  ): void {
+    // Merge into the current store so writing the pair never drops bpm or the
+    // persisted step.
+    persisted = {
+      ...persisted,
+      length,
+      blue: {
+        id: blueSequence.id,
+        word: blueSequence.word,
+        name: blueSequence.name,
+      },
+      red: {
+        id: redSequence.id,
+        word: redSequence.word,
+        name: redSequence.name,
+      },
+    };
+    writePersistedState(persisted);
+  }
+
+  function persistStep(): void {
+    // Merge so the step write never drops the persisted pair, length, or bpm.
+    persisted = { ...persisted, currentStep };
+    writePersistedState(persisted);
+  }
+
+  async function hydrateRestoredSide(
+    side: FuseSide,
+    selection: FusePersistedSelection,
+    length: FuseLength
+  ): Promise<SequenceData | null> {
+    let hydrated: SequenceData | null;
+    try {
+      hydrated = await cachedBrowseLoader.loadFullSequenceData(
+        selection.word || selection.name,
+        selection.id || undefined
+      );
+    } catch {
+      // Restore is best-effort; a failed hydrate falls back to a random pick.
+      return null;
+    }
+    if (!hydrated) return null;
+
+    const matchesLength =
+      hydrated.steps.length === length || hydrated.sequenceLength === length;
+    const hasSideData =
+      side === "blue" ? !!hydrated.blueSoloProp : !!hydrated.redSoloProp;
+    return matchesLength && hasSideData ? hydrated : null;
+  }
+
+  async function hydrateRestoredPair(
+    blueSelection: FusePersistedSelection,
+    redSelection: FusePersistedSelection,
+    length: FuseLength
+  ): Promise<{ blue: SequenceData; red: SequenceData } | null> {
+    const [blue, red] = await Promise.all([
+      hydrateRestoredSide("blue", blueSelection, length),
+      hydrateRestoredSide("red", redSelection, length),
+    ]);
+    return blue && red ? { blue, red } : null;
+  }
+
   function tickClock(now: number): void {
     if (!clockRunning) return;
     if (lastClockTimestamp !== null) {
@@ -300,6 +417,13 @@ export function createFuseState({
       currentStep += elapsed * (bpm / 60_000);
     }
     lastClockTimestamp = now;
+    if (
+      lastStepPersistAt === null ||
+      now - lastStepPersistAt >= STEP_PERSIST_INTERVAL_MS
+    ) {
+      lastStepPersistAt = now;
+      persistStep();
+    }
     clockFrame = requestAnimationFrame(tickClock);
   }
 
@@ -323,14 +447,24 @@ export function createFuseState({
     }
     clockFrame = null;
     lastClockTimestamp = null;
+    // Don't persist here: setLength resets currentStep to 0 and then calls
+    // stopClock, so persisting in this path would clobber the stored step
+    // before restore can read it. Callers that mean "pause" persist explicitly.
+    lastStepPersistAt = null;
   }
 
   function toggleClock(): void {
-    if (clockRunning) stopClock();
-    else startClock();
+    if (clockRunning) {
+      stopClock();
+      // Capture where playback paused so a remount resumes near it.
+      persistStep();
+    } else startClock();
   }
 
-  async function setLength(length: FuseLength): Promise<void> {
+  async function setLength(
+    length: FuseLength,
+    restore?: FuseRestoreRequest
+  ): Promise<void> {
     const generation = ++lengthGeneration;
     blueGeneration += 1;
     redGeneration += 1;
@@ -365,6 +499,58 @@ export function createFuseState({
         return;
       }
 
+      // Mount-time restore: when the requested length matches the persisted one
+      // and a persisted pair exists, hydrate those exact two sources instead of
+      // landing on a fresh random pick. A deliberate length change passes no
+      // restore request and always loads fresh. Any miss (hydrate returns null,
+      // wrong length, missing side data, or the preview can't be built) falls
+      // through to the random path below.
+      if (restore && restore.length === length && restore.blue && restore.red) {
+        const restoredPair = await hydrateRestoredPair(
+          restore.blue,
+          restore.red,
+          length
+        );
+        if (!isCurrentLengthGeneration(generation)) return;
+
+        if (restoredPair) {
+          try {
+            const preview = createPreview(
+              restoredPair.blue,
+              restoredPair.red,
+              length
+            );
+            if (!isCurrentLengthGeneration(generation)) return;
+
+            bluePool.commitRestored(restoredPair.blue);
+            redPool.commitRestored(restoredPair.red);
+            previewSequence = preview;
+            appliedLength = length;
+            hasLoadedPair = true;
+            persistSelection(restoredPair.blue, restoredPair.red, length);
+            // The Fuse clock is a local rAF accumulator (see tickClock); its
+            // step value is just this `currentStep` state, so assigning it here
+            // IS the seek — FuseAnimationPreview's reactive effect re-derives the
+            // visible beat from currentStep. No separate clock/seek API exists.
+            if (
+              typeof restore.currentStep === "number" &&
+              Number.isFinite(restore.currentStep)
+            ) {
+              currentStep = restore.currentStep;
+            }
+            // Warm the next Shuffle for both sides so the first tap is instant.
+            bluePool.prefetchNext();
+            redPool.prefetchNext();
+            if (resumeAfterLoad) startClock();
+            return;
+          } catch {
+            if (!isCurrentLengthGeneration(generation)) return;
+            // Restore is best-effort: if the persisted sources can no longer
+            // form a valid preview, fall through to a fresh random pair.
+          }
+        }
+      }
+
       const [blueCandidate, redCandidate] = await Promise.all([
         bluePool.stageNext(),
         redPool.stageNext(),
@@ -391,6 +577,7 @@ export function createFuseState({
       previewSequence = preview;
       appliedLength = length;
       hasLoadedPair = true;
+      persistSelection(blueCandidate.sequence, redCandidate.sequence, length);
       // Warm the next Shuffle for both sides so the first tap is instant.
       bluePool.prefetchNext();
       redPool.prefetchNext();
@@ -405,7 +592,15 @@ export function createFuseState({
   }
 
   function initialize(): Promise<void> {
-    return (initialLoadPromise ??= setLength(requestedLength));
+    // Only the mount-time load restores a persisted pair. Snapshot the persisted
+    // fields by value now (setLength resets currentStep before it reads them, so
+    // passing them as an argument protects them from that reset).
+    return (initialLoadPromise ??= setLength(requestedLength, {
+      blue: persisted.blue,
+      red: persisted.red,
+      length: persisted.length,
+      currentStep: persisted.currentStep,
+    }));
   }
 
   async function shuffle(side: FuseSide): Promise<void> {
@@ -446,6 +641,7 @@ export function createFuseState({
 
       pool.commit(candidate, false);
       previewSequence = preview;
+      persistSelection(blue, red, appliedLength);
       // Warm the following candidate so the next Shuffle stays instant.
       pool.prefetchNext();
       // Shuffling changes one path at the beat already on screen. Resetting the
@@ -491,6 +687,7 @@ export function createFuseState({
       const preview = createPreview(blue, red, appliedLength);
       pool.commitPrevious();
       previewSequence = preview;
+      persistSelection(blue, red, appliedLength);
       // Back uses the same in-place swap as Shuffle, so playback stays on beat.
       error = null;
       readyMessage = sourceReadyMessage(side, previousEntry.sequence, true);
@@ -591,11 +788,17 @@ export function createFuseState({
   function setBpm(value: number): void {
     if (!Number.isFinite(value)) return;
     bpm = Math.max(PLAYBACK_MIN_BPM, Math.min(PLAYBACK_MAX_BPM, value));
-    writePersistedState({ bpm });
+    // Merge so the bpm write never drops the persisted pair, length, or step.
+    persisted = { ...persisted, bpm };
+    writePersistedState(persisted);
   }
 
   function handleDocumentVisibility(hidden: boolean): void {
-    if (hidden) stopClock();
+    if (hidden) {
+      stopClock();
+      // Tab hidden is an implicit pause; capture the step before we lose frames.
+      persistStep();
+    }
   }
 
   function dispose(): void {

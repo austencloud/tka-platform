@@ -219,6 +219,32 @@ export function createFuseShufflePool({
     return previous.sequence;
   }
 
+  /**
+   * Place an already-hydrated sequence as the visible source, used when the
+   * parent restores a persisted selection on mount. The sequence may or may not
+   * be present in the freshly shuffled pool; when it is, the deck cursor is
+   * aligned to it so a following Shuffle continues from the right spot,
+   * otherwise the next Shuffle simply scans from the top of the pool. History is
+   * reset to just this entry, matching a fresh initial commit.
+   */
+  function commitRestored(sequence: SequenceData): void {
+    const poolIndex = pool.findIndex((candidate) =>
+      sequence.id
+        ? candidate.id === sequence.id
+        : !!sequence.word && candidate.word === sequence.word
+    );
+    const poolPosition = poolIndex >= 0 ? poolIndex + 1 : 0;
+
+    currentItem = sequence;
+    currentPosition = poolPosition;
+    nextCursor =
+      poolIndex >= 0 && pool.length > 0 ? (poolIndex + 1) % pool.length : 0;
+    history = [{ sequence, poolPosition }];
+    historyIndex = 0;
+    clearStaged();
+    revision += 1;
+  }
+
   return {
     get sequence() {
       return currentItem;
@@ -244,6 +270,7 @@ export function createFuseShufflePool({
     commit,
     peekPrevious,
     commitPrevious,
+    commitRestored,
   };
 }
 
