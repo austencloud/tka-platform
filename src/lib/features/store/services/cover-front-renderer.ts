@@ -179,13 +179,52 @@ function frameElement(card: CoverCard): TnDElement | undefined {
  * Render one cover card front and return an object URL for an <img>.
  * Deck id/name feed QR attribution, same as the print path.
  */
+// MPC poker print target — the resolution a baked/print cover renders at.
+const PRINT_W = 822;
+const PRINT_H = 1122;
+const PRINT_BLEED = 36;
+
+/**
+ * Scale the print canvas down to a display target. The whole card-front layout
+ * derives linearly from canvasWidth (card-front-assembler: stepSize + every
+ * offset), so a smaller canvas is the SAME card at fewer pixels — no layout
+ * drift. Returns undefined (full print res) when the target is >= print width
+ * or unset. Widths are quantized to 128px buckets so a resize within a band
+ * reuses the cached render instead of re-rasterizing.
+ */
+function previewSizeOpts(
+  maxWidthPx: number | undefined
+): Pick<PrintRenderOptions, "canvasWidth" | "canvasHeight" | "bleedPx" | "showQRCode"> | undefined {
+  if (!maxWidthPx || maxWidthPx >= PRINT_W) return undefined;
+  const w = Math.min(PRINT_W, Math.max(256, Math.ceil(maxWidthPx / 128) * 128));
+  if (w >= PRINT_W) return undefined;
+  return {
+    canvasWidth: w,
+    canvasHeight: Math.round((w * PRINT_H) / PRINT_W),
+    bleedPx: Math.round((w * PRINT_BLEED) / PRINT_W),
+    // A preview card is never scanned — skip the per-card QR pre-render entirely.
+    showQRCode: false,
+  };
+}
+
 export function renderCoverFront(
   card: CoverCard,
-  deck: { deckId?: string; deckName?: string; propType?: PropType } = {}
+  deck: {
+    deckId?: string;
+    deckName?: string;
+    propType?: PropType;
+    /** Display target width in px (DPR-scaled). Set by the live preview fan to
+     *  render at screen resolution instead of 822×1122 print res. Omit to bake
+     *  full print res. */
+    maxWidthPx?: number;
+  } = {}
 ): Promise<string> {
   const seq = card.sequence;
   const propType = deck.propType ?? DEFAULT_COVER_PROP;
-  const key = `${seq.id ?? seq.word ?? "?"}|${card.accentColor ?? "-"}|${card.footerCenter ?? "-"}|${propType}`;
+  const sizeOpts = previewSizeOpts(deck.maxWidthPx);
+  // Size + QR ride the cache key so preview and full-res renders never collide.
+  const sizeTag = sizeOpts ? `p${sizeOpts.canvasWidth}` : "full";
+  const key = `${seq.id ?? seq.word ?? "?"}|${card.accentColor ?? "-"}|${card.footerCenter ?? "-"}|${propType}|${sizeTag}`;
   const cached = urlCache.get(key);
   if (cached) return cached;
 
@@ -211,6 +250,7 @@ export function renderCoverFront(
         iconPath: card.iconPath,
         ...(deck.deckId && { deckId: deck.deckId }),
         ...(deck.deckName && { deckName: deck.deckName }),
+        ...sizeOpts,
       };
       const canvas = await getPrintCardRenderer().renderFront(hydrated, options);
       const blob = await new Promise<Blob | null>((resolve) =>

@@ -43,10 +43,11 @@
   import { getCardColors } from "$lib/shared/create/domain/card-colors";
   import { BackgroundType } from "@austencloud/backgrounds";
   import { DIFFICULTY_LEVELS } from "$lib/shared/config/difficulty-styles";
+  import { untrack } from "svelte";
   import { scale, slide, fly } from "svelte/transition";
   import { quintOut } from "svelte/easing";
-  import { prewarmCovers } from "./services/cover-front-renderer";
-  import { DEFAULT_SHOP_PROP } from "./domain/shop-prop-options";
+  import { prewarmCovers, renderCoverFront } from "./services/cover-front-renderer";
+  import { DEFAULT_SHOP_PROP, bakedCoverUrl } from "./domain/shop-prop-options";
   import ShopPropPicker from "./components/ShopPropPicker.svelte";
   import { loopPreviewCards } from "./services/loop-preview-cards";
   import type { CoverCard } from "./domain/models/product";
@@ -164,6 +165,7 @@
   // rendered thumbnail-size cards in a mostly-empty box.
   let previewW = $state(0);
   let previewH = $state(0);
+  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
   const narrowPreview = $derived(previewW > 0 && previewW < 640);
   // Card height ceiling from the fixed stage: card (5:7) + description + gaps
   // must fit inside the box, so cards grow into tall stages without clipping.
@@ -375,8 +377,27 @@
     };
     const token = ++previewToken;
     lastDialTouch = Date.now();
-    loopPreviewCards(dials).then((cards) => {
+    // Match the fan's own render width (DeckFanCover uses maxCardWidth × DPR),
+    // so the covers we pre-warm here land in the same cache bucket the fan asks
+    // for — otherwise the fan would re-render and flash shimmer anyway. Read
+    // untracked: this effect must fire on DIAL changes, not on every resize
+    // (previewMaxCardW is layout-reactive).
+    const renderW = Math.ceil(untrack(() => previewMaxCardW) * dpr);
+    loopPreviewCards(dials).then(async (cards) => {
       if (token !== previewToken) return; // superseded by a newer touch
+      // Pre-render the live covers BEFORE revealing them: the current (baked
+      // fallback) hand stays on screen through generation, then we swap to a
+      // fully-rendered hand in one clean deal — no 5s of shimmer mid-swap.
+      if (cards?.length) {
+        await Promise.all(
+          cards.map((c) =>
+            c.sequence && !bakedCoverUrl(c, propType)
+              ? renderCoverFront(c, { propType, maxWidthPx: renderW }).catch(() => {})
+              : Promise.resolve()
+          )
+        );
+      }
+      if (token !== previewToken) return; // a newer touch won while we rendered
       const wait = Math.max(0, SETTLE_MS - (Date.now() - lastDialTouch));
       setTimeout(() => {
         if (token !== previewToken) return;
@@ -411,6 +432,46 @@
   $effect(() => {
     const all = flavorSkus.flatMap((p) => p.coverCards ?? []);
     if (all.length) prewarmCovers(all, propType);
+  });
+
+  // Warm the OTHER packs' fans on idle so switching difficulty is instant.
+  // Only the active pack renders on mount; without this, the first click on
+  // each difficulty paid a cold 6-card render through the 3-lane throttle.
+  // The rendered URLs land in the service + DeckFanCover module caches, so the
+  // switch then re-deals over already-resolved covers (no shimmer). Idle-
+  // scheduled so it never fights the active fan's first paint; re-runs per prop
+  // (a prop switch invalidates every render). Bounded: 3 packs × 6 slots.
+  const warmedProps = new Set<PropType>();
+  $effect(() => {
+    const prop = propType;
+    if (flavorSkus.length === 0 || warmedProps.has(prop)) return;
+    warmedProps.add(prop);
+    // Same render width the fan will request, so warmed covers hit the cache.
+    const renderW = Math.ceil(untrack(() => previewMaxCardW) * dpr);
+    const kick = () => {
+      for (const p of LOOP_PACKS) {
+        loopPreviewCards({
+          pack: p.id,
+          level,
+          length,
+          flavor,
+          maxTurns: turnIntensity,
+          propType: prop,
+          excluded: new Set<LoopFlavor>(),
+          skuByFlavor,
+        })
+          .then((cards) => {
+            cards?.forEach((c) => {
+              if (!bakedCoverUrl(c, prop))
+                void renderCoverFront(c, { propType: prop, maxWidthPx: renderW });
+            });
+          })
+          .catch(() => {});
+      }
+    };
+    if (typeof requestIdleCallback !== "undefined")
+      requestIdleCallback(kick, { timeout: 2500 });
+    else setTimeout(kick, 500);
   });
 
   // ── mobile checkout dock (same pattern as the Deck Architect): while the
