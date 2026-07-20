@@ -267,7 +267,7 @@
     "@austencloud/media-tagging-types": "^0.1.0",
     "@austencloud/media-tagging-ui": "^0.1.0",
     "@austencloud/scene-3d": "^0.1.4",
-    "@austencloud/sidebar": "^1.0.0",
+    "@austencloud/sidebar": "^1.0.1",
     "@austencloud/theme": "^0.1.0",
     "@capacitor-firebase/authentication": "8.3.0",
     "@capacitor/android": "^8.4.2",
