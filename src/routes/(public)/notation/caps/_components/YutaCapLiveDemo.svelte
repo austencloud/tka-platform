@@ -22,6 +22,7 @@
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import { buildYutaCapSequence } from "./yuta-cap-sequence";
   import { setPerHand } from "$lib/shared/animation-engine/services/tip-effect-resolver";
+  import { setTipPointOverrideProvider } from "$lib/shared/animation-engine/domain/types/prop-tip-points";
   import { calculate as calculateMandalaGeometry } from "$lib/shared/mandala/services/mandala-geometry-calculator";
   import type { EffortId } from "$lib/shared/effort/domain/effort-types";
   import { AnimationVisibilityStateManager } from "$lib/shared/animation-engine/state/animation-visibility-state.svelte";
@@ -73,6 +74,20 @@
 
   // Trails on the red (solo) hand only — index 1 = red.
   const tipEffectMap = setPerHand({}, 1, "trails");
+
+  // Emit the trail from the club's VISIBLE tip (dx 150), matching the ghost and
+  // the club-graphic end. The default trail emitter is dx 130, which sits inside
+  // the bulb, so the trace rendered ~inset from the club end (Austen, 2026-07-20:
+  // "the trail is rendering inset from the tip of the club end"). The player
+  // reads the club tip from the global tip-point override provider; scope the
+  // override to this exhibit's lifetime (the caps page mounts no other club
+  // render / effects-lab, so there is nothing else to clobber).
+  $effect(() => {
+    setTipPointOverrideProvider((propType) =>
+      propType === "club" ? { points: [{ dx: 150, dy: 0 }] } : null,
+    );
+    return () => setTipPointOverrideProvider(null);
+  });
 
   // Per-instance ephemeral visibility manager. Without it the player's
   // orchestrator reads effort/path-shape from the GLOBAL singleton (a

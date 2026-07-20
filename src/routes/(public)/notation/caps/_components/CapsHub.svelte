@@ -151,8 +151,8 @@
   }
   .hub-head p {
     margin: 0 auto;
-    max-width: 60ch;
-    font-size: clamp(0.95rem, 1.15vw, 1.5rem);
+    max-width: 56ch;
+    font-size: clamp(0.9rem, 0.95vw, 1.15rem);
     color: rgba(255, 255, 255, 0.74);
   }
 
@@ -211,11 +211,12 @@
     pointer-events: none;
   }
 
-  /* Compact side tiles, vertically centered so the bottom-anchored heading sits
-     by its icon instead of under dead headroom. */
+  /* Side tiles nearly fill their rows so the gaps between the three stacked
+     tiles stay tight (not big even bands), while still leaving a little breathing
+     room top and bottom. */
   .frame-grid :global(.tile) {
     align-self: center;
-    block-size: clamp(140px, 22cqh, 260px);
+    block-size: clamp(170px, 30cqh, 320px);
   }
   .frame-grid.sides :global(.tile.t-what-is) {
     grid-column: 1;
