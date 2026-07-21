@@ -88,8 +88,9 @@
     display: flex;
     gap: 4px;
     /* Extra top padding reserves the space the "Last used" badge straddles
-       into. Unconditional, so the bar's height never depends on the badge. */
-    padding: 0.5rem 4px 4px;
+       into, keeping it inside the bar's own border rather than poking over
+       it. Unconditional, so the bar's height never depends on the badge. */
+    padding: 0.75rem 4px 4px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-radius: clamp(8px, 1.2vh, 12px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));

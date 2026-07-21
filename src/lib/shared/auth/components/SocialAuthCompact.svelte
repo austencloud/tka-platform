@@ -174,10 +174,11 @@
     gap: clamp(6px, 1vw, 10px);
     width: 100%;
     max-width: 400px;
-    /* Room for the "Last used" badge, which straddles a button's top edge.
-       Reserved unconditionally so the row's geometry is identical whether or
-       not a badge renders — the badge can never move these buttons. */
-    padding-top: 0.5rem;
+    /* Room for the "Last used" badge, which straddles a button's top edge by
+       half its height. Reserved unconditionally so the row's geometry is
+       identical whether or not a badge renders — the badge can never move
+       these buttons. Sized to clear the badge at the 12px type floor. */
+    padding-top: 0.75rem;
   }
 
   .social-compact-button {
