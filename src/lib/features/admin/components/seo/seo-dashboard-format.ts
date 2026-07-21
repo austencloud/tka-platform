@@ -15,9 +15,10 @@ export function formatInteger(value: number | null | undefined): string {
 }
 
 export function formatPercent(value: number | null | undefined): string {
-  return value === null || value === undefined
-    ? "Not measured"
-    : `${(value * 100).toFixed(1)}%`;
+  if (value === null || value === undefined) return "Not measured";
+  const percentage = value * 100;
+  const digits = Number.isInteger(percentage) ? 0 : 1;
+  return `${percentage.toFixed(digits)}%`;
 }
 
 export function formatPosition(value: number | null | undefined): string {
@@ -61,24 +62,25 @@ export function getSeoGrowthStory(
 ): SeoGrowthStory {
   if (snapshot.phase === "baseline") {
     return {
-      value: "Not measured yet",
-      headline: "This is the before picture.",
+      value: "Too early to tell",
+      headline: "The SEO changes are not marked live yet.",
       explanation:
-        "Growth can be calculated after the SEO changes go live and Google confirms the pages are indexed.",
+        "Today's numbers are the starting point. Growth begins after the launch date is recorded and Google finds the updated pages.",
       nextStep: snapshot.experimentDates.deploymentDate
-        ? "Next: a measurement run needs to confirm Google indexing."
-        : "Next: register the date when the SEO changes go live.",
+        ? "Let a measurement run confirm that Google found the pages."
+        : "Record the SEO launch date.",
       tone: "waiting",
     };
   }
 
   if (snapshot.phase === "awaiting_indexing") {
     return {
-      value: "Waiting on Google",
-      headline: "The SEO changes are live.",
+      value: "Too early to tell",
+      headline:
+        "The changes are live. Google has not found all the sample pages yet.",
       explanation:
-        "Each measurement run checks the sample pages. The first growth check starts when indexing is confirmed.",
-      nextStep: "Next: confirm that Google has indexed the sample pages.",
+        "The next measurement run checks the sample pages. The before-and-after comparison starts when they can appear in Google search.",
+      nextStep: "Let a measurement run check the updated pages.",
       tone: "waiting",
     };
   }
@@ -86,11 +88,11 @@ export function getSeoGrowthStory(
   const impressionLift = snapshot.search.controlAdjusted?.impressionLift;
   if (impressionLift === null || impressionLift === undefined) {
     return {
-      value: "Collecting",
-      headline: "The first growth check is running.",
+      value: "Measuring now",
+      headline: "The before-and-after check is running.",
       explanation:
-        "Google appearances are being compared with similar pages that did not receive the SEO update.",
-      nextStep: "Next: let the full measurement window finish.",
+        "The updated pages are being compared with the starting point and with similar pages left unchanged.",
+      nextStep: "Let the measurement window finish.",
       tone: "waiting",
     };
   }
@@ -104,26 +106,114 @@ export function getSeoGrowthStory(
   const headline =
     snapshot.phase === "confirmed"
       ? tone === "positive"
-        ? "Growth passed both checks."
-        : "The proof check is complete."
+        ? "The increase held up twice."
+        : "The second check is complete."
       : tone === "positive"
-        ? "Google visibility is growing."
+        ? "The first comparison points upward."
         : tone === "negative"
-          ? "Google visibility is down."
-          : "Google visibility is holding steady.";
+          ? "The first comparison points downward."
+          : "The first comparison shows no clear movement.";
 
   return {
     value: formatGrowth(impressionLift),
     headline,
     explanation:
-      "This is the change in Google appearances after removing the movement seen on similar comparison pages.",
+      "This percentage removes movement also seen on similar pages that were left unchanged.",
     nextStep:
       snapshot.phase === "confirmed"
-        ? "Result: the full measurement cycle is complete."
+        ? "The full before-and-after test is complete."
         : snapshot.phase === "primary_complete"
-          ? "Next: repeat the check with a fresh window before calling the result proven."
-          : "Next: let the full measurement window finish.",
+          ? "Repeat the check with fresh dates before trusting the result."
+          : "Let the measurement window finish.",
     tone,
+  };
+}
+
+export interface SeoHistoryStory {
+  headline: string;
+  explanation: string;
+  tone: SeoGrowthTone;
+}
+
+export type SeoOutcomeStatus = "pass" | "fail" | "waiting";
+
+export function getSeoOutcomeStatus(
+  criteria: readonly SeoDashboardSnapshot["decision"]["criteria"][number][],
+  criterionIds: readonly string[]
+): SeoOutcomeStatus {
+  const checks = criteria.filter((criterion) =>
+    criterionIds.includes(criterion.id)
+  );
+  if (checks.some((criterion) => criterion.status === "fail")) return "fail";
+  if (
+    checks.length === criterionIds.length &&
+    checks.every((criterion) => criterion.status === "pass")
+  ) {
+    return "pass";
+  }
+  return "waiting";
+}
+
+export function getSeoHistoryStory(
+  history: readonly {
+    phase: SeoDashboardSnapshot["phase"];
+    treatmentImpressions: number;
+  }[]
+): SeoHistoryStory {
+  if (history.length === 0) {
+    return {
+      headline: "No readings yet",
+      explanation: "The first measurement run will save a starting number.",
+      tone: "waiting",
+    };
+  }
+
+  const first = history[0];
+  const latest = history[history.length - 1];
+  if (!first || !latest) {
+    return {
+      headline: "No readings yet",
+      explanation: "The first measurement run will save a starting number.",
+      tone: "waiting",
+    };
+  }
+
+  if (latest.phase === "baseline") {
+    return {
+      headline: "Still setting the starting point",
+      explanation:
+        history.length === 1
+          ? `${formatInteger(latest.treatmentImpressions)} Google appearances recorded. This is not a growth result yet.`
+          : `${history.length} starting-point readings are saved. They do not measure growth yet.`,
+      tone: "waiting",
+    };
+  }
+
+  if (history.length === 1) {
+    return {
+      headline: "One reading saved",
+      explanation: `${formatInteger(latest.treatmentImpressions)} Google appearances. Another reading is needed to show movement.`,
+      tone: "waiting",
+    };
+  }
+
+  const difference = latest.treatmentImpressions - first.treatmentImpressions;
+  if (difference === 0) {
+    return {
+      headline: "No movement yet",
+      explanation: `Google appearances stayed at ${formatInteger(latest.treatmentImpressions)} from the first reading to the latest.`,
+      tone: "neutral",
+    };
+  }
+
+  const direction = difference > 0 ? "more" : "fewer";
+  return {
+    headline:
+      difference > 0
+        ? "Google appearances increased"
+        : "Google appearances decreased",
+    explanation: `${formatInteger(Math.abs(difference))} ${direction} appearances than the first reading.`,
+    tone: difference > 0 ? "positive" : "negative",
   };
 }
 

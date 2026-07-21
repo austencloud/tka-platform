@@ -19,10 +19,10 @@
 
   const POSTHOG_URL = "https://us.posthog.com/project/299320/dashboard";
   const PHASE_LABELS: Record<SeoDashboardSnapshot["phase"], string> = {
-    baseline: "Recording the before picture",
-    awaiting_indexing: "Waiting for Google",
-    primary_collecting: "Measuring growth",
-    primary_complete: "Running the proof check",
+    baseline: "Setting the starting point",
+    awaiting_indexing: "Waiting for Google to find the pages",
+    primary_collecting: "Comparing before and after",
+    primary_complete: "Checking the result again",
     confirmed: "Measurement complete",
   };
 
@@ -130,9 +130,9 @@
     <div class="dashboard-layout">
       <header class="command-header">
         <div class="title-block">
-          <div class="eyebrow">SEO command center</div>
-          <h2>Flow Arts Software SEO</h2>
-          <p>One answer first: is Google visibility growing?</p>
+          <div class="eyebrow">Flow arts software SEO</div>
+          <h2>Is Flow Arts Composer getting easier to find?</h2>
+          <p>The answer first. Technical details stay tucked away.</p>
         </div>
         <div class="header-status">
           <span class="phase-badge">
@@ -140,7 +140,7 @@
             {PHASE_LABELS[snapshot.phase]}
           </span>
           <span class="data-date">
-            Data through {formatDate(snapshot.dataThrough)}
+            Numbers through {formatDate(snapshot.dataThrough)}
           </span>
         </div>
       </header>
@@ -153,8 +153,8 @@
         <div class="clock-slot">
           <SeoExperimentClock {snapshot} />
         </div>
-        <SeoEvidenceGates {snapshot} />
         <SeoHistoryChart {history} />
+        <SeoEvidenceGates {snapshot} />
       </div>
 
       <details class="measurement-details">
@@ -163,21 +163,23 @@
             <i class="fas fa-sliders"></i>
           </span>
           <span class="summary-copy">
-            <strong>Numbers and data sources</strong>
+            <strong>Show the technical details</strong>
             <small>
-              Search topics, collection health, source links, and refresh
-              controls
+              Exact search terms, pass or fail rules, and source links
             </small>
           </span>
           <i class="fas fa-chevron-down summary-chevron" aria-hidden="true"></i>
         </summary>
         <div class="details-content">
-          <SeoQueryGroups {snapshot} />
+          <div class="details-main">
+            <SeoQueryGroups {snapshot} />
+            <SeoEvidenceGates {snapshot} view="exact" />
+          </div>
           <div class="details-side">
             <section class="data-health" aria-labelledby="data-health-title">
               <div class="detail-heading">
-                <span>Data plumbing</span>
-                <h3 id="data-health-title">Are the data feeds ready?</h3>
+                <span>Data check</span>
+                <h3 id="data-health-title">Did every source report?</h3>
               </div>
               <p>
                 Green means that source supplied everything expected for this
@@ -206,10 +208,10 @@
     --semantic-seo-accent: #2dd4bf;
     --semantic-seo-accent-deep: #0f766e;
     --semantic-seo-violet: #a78bfa;
-    --settings-seo-signals-min-height: 180px;
-    --settings-seo-overview-min-height: 260px;
+    --settings-seo-summary-height: clamp(230px, 27cqh, 280px);
+    --settings-seo-overview-min-height: 390px;
     container-name: seo-center;
-    container-type: inline-size;
+    container-type: size;
     display: flex;
     height: 100%;
     flex-direction: column;
@@ -232,11 +234,11 @@
   .dashboard-layout {
     display: grid;
     height: 100%;
-    min-height: 620px;
+    min-height: 760px;
     grid-template-rows:
       auto
-      minmax(var(--settings-seo-signals-min-height), 0.75fr)
-      minmax(var(--settings-seo-overview-min-height), 1.25fr)
+      var(--settings-seo-summary-height)
+      minmax(var(--settings-seo-overview-min-height), 1fr)
       auto;
     gap: clamp(10px, 0.8vw, 14px);
   }
@@ -312,6 +314,7 @@
 
   .phase-badge {
     display: inline-flex;
+    min-width: 18rem;
     min-height: 30px;
     align-items: center;
     gap: 8px;
@@ -347,9 +350,9 @@
     display: grid;
     min-height: 0;
     grid-template-columns:
-      minmax(520px, 1.35fr)
-      minmax(300px, 0.82fr)
-      minmax(300px, 0.82fr);
+      minmax(540px, 1.2fr)
+      minmax(340px, 0.9fr)
+      minmax(340px, 0.9fr);
     align-items: stretch;
     gap: 10px;
   }
@@ -450,6 +453,13 @@
     gap: 10px;
   }
 
+  .details-main {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 10px;
+  }
+
   .data-health {
     padding: clamp(14px, 1.2vw, 20px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
@@ -499,7 +509,7 @@
     font-size: var(--font-size-min, 0.875rem);
   }
 
-  @container seo-center (max-width: 1240px) {
+  @container seo-center (max-width: 1500px) {
     .dashboard-layout {
       height: auto;
       min-height: 100%;
@@ -523,6 +533,10 @@
 
     .header-status {
       align-items: flex-start;
+    }
+
+    .phase-badge {
+      min-width: 0;
     }
 
     .overview-grid,
