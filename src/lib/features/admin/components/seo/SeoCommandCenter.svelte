@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { auth } from "$lib/shared/auth/firebase";
+  import { getErrorHandler } from "$lib/shared/application/get-error-handler";
   import {
     parseSeoHistoryRows,
     seoDashboardSnapshotSchema,
@@ -44,15 +45,17 @@
       },
       body: JSON.stringify({ type }),
     });
-    if (!response.ok) {
-      throw new Error(`SEO evidence request failed (${response.status}).`);
-    }
-    const body = (await response.json()) as {
+    const body = (await response.json().catch(() => null)) as {
       success?: boolean;
       results?: unknown[][];
       message?: string;
-    };
-    if (!body.success) throw new Error(body.message ?? "SEO query failed.");
+    } | null;
+    if (!response.ok) {
+      throw new Error(
+        body?.message ?? `SEO evidence request failed (${response.status}).`
+      );
+    }
+    if (!body?.success) throw new Error(body?.message ?? "SEO query failed.");
     return body.results ?? [];
   }
 
@@ -73,12 +76,18 @@
       snapshot = seoDashboardSnapshotSchema.parse(JSON.parse(encodedSnapshot));
       history = parseSeoHistoryRows(historyRows);
       refreshedAt = new Date();
-    } catch (error) {
-      console.error("Failed to load SEO evidence:", error);
-      loadError =
-        error instanceof Error
-          ? error.message
-          : "SEO evidence could not be read.";
+    } catch (caught) {
+      const failure =
+        caught instanceof Error ? caught : new Error(String(caught));
+      console.error("Failed to load SEO evidence:", failure);
+      getErrorHandler().showUserError({
+        message: "SEO evidence could not load.",
+        technicalDetails: failure.message,
+        error: failure,
+        severity: "error",
+        context: { module: "admin", tab: "seo", action: "loadEvidence" },
+      });
+      loadError = failure.message;
     } finally {
       loading = false;
       refreshing = false;
