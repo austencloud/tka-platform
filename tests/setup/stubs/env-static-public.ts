@@ -6,6 +6,4 @@
  * disabled path. Named exports are added here only when a component under test
  * actually needs one.
  */
-export const PUBLIC_POSTHOG_HOST = "";
-export const PUBLIC_POSTHOG_KEY = "";
-export const PUBLIC_POSTHOG_PROJECT_ID = "";
+export {};

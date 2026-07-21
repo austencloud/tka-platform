@@ -15,21 +15,15 @@
 import posthog from "posthog-js";
 import type { CaptureOptions, PostHogInterface } from "posthog-js";
 import { browser } from "$app/environment";
-import {
-  PUBLIC_POSTHOG_HOST,
-  PUBLIC_POSTHOG_KEY,
-  PUBLIC_POSTHOG_PROJECT_ID,
-} from "$env/static/public";
+import * as staticPublicEnv from "$env/static/public";
 import { getDeviceId } from "$lib/shared/foundation/services/device-id";
 
 // Capacitor serves a static bundle and has no server route for SvelteKit's
 // /_app/env.js. Build-time public constants work in the WebView and remain safe
-// when this module appears in a worker import graph.
-const publicEnv = {
-  PUBLIC_POSTHOG_HOST,
-  PUBLIC_POSTHOG_KEY,
-  PUBLIC_POSTHOG_PROJECT_ID,
-};
+// when this module appears in a worker import graph. Reading through the module
+// namespace also lets hosts omit optional PostHog values without failing the
+// build on a missing named export.
+const publicEnv = staticPublicEnv as Record<string, string | undefined>;
 
 let initialized = false;
 let initializationPromise: Promise<void> | null = null;
