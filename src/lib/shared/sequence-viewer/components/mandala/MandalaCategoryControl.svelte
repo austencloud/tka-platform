@@ -14,7 +14,10 @@
   import { slide } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
   import type { MandalaViewerController } from "../../state/mandala-viewer-controller.svelte";
-  import type { MandalaPathShape, MandalaPresetId } from "$lib/shared/mandala/domain/mandala-types";
+  import type {
+    MandalaPathShape,
+    MandalaPresetId,
+  } from "$lib/shared/mandala/domain/mandala-types";
   import { PRESET_COLORS } from "$lib/shared/mandala/domain/mandala-palette";
 
   /** "download" holds the export config (loops / fidelity / fps + estimate). */
@@ -39,8 +42,44 @@
     /** Hide the inline "Export MP4" button (the stacked sidebar pins its own
      *  footer export, so the download section shows config only). Default true. */
     showExportButton?: boolean;
+    /** Optional semantic sink used by scan analytics. */
+    onSettingChange?: (
+      group: string,
+      setting: string,
+      previousValue: string | number | boolean | null,
+      value: string | number | boolean | null,
+      coalesce?: boolean
+    ) => void;
   }
-  let { ctrl, category, onExport, showExportButton = true }: Props = $props();
+  let {
+    ctrl,
+    category,
+    onExport,
+    showExportButton = true,
+    onSettingChange,
+  }: Props = $props();
+
+  type AnalyticsValue = string | number | boolean | null;
+  function reportSetting(
+    setting: string,
+    previousValue: AnalyticsValue,
+    value: AnalyticsValue,
+    coalesce = false
+  ): void {
+    if (previousValue === value) return;
+    onSettingChange?.("art_mandala", setting, previousValue, value, coalesce);
+  }
+
+  function changeSetting(
+    setting: string,
+    previousValue: AnalyticsValue,
+    value: AnalyticsValue,
+    mutate: () => void,
+    coalesce = false
+  ): void {
+    mutate();
+    reportSetting(setting, previousValue, value, coalesce);
+  }
 
   // Reduced-motion gate for the JS (Svelte) transitions reused from the dock.
   let reduceMotion = $state(false);
@@ -70,7 +109,9 @@
   const PRESETS: { id: MandalaPresetId; label: string }[] = (
     Object.keys(PRESET_COLORS) as Exclude<MandalaPresetId, "custom">[]
   ).map((id) => ({ id, label: id.charAt(0).toUpperCase() + id.slice(1) }));
-  const presetLabel = $derived(PRESETS.find((p) => p.id === ctrl.preset)?.label ?? "Custom");
+  const presetLabel = $derived(
+    PRESETS.find((p) => p.id === ctrl.preset)?.label ?? "Custom"
+  );
 
   const FIDELITIES: { value: 720 | 1080 | 2160; label: string }[] = [
     { value: 720, label: "HD" },
@@ -84,7 +125,9 @@
     if (s < 60) return `${s}s`;
     return `${Math.floor(s / 60)}m ${s % 60}s`;
   }
-  const estimateLabel = $derived(`${ctrl.hasMetrics ? "~" : "≈"}${formatEstimate(ctrl.estimateSeconds)}`);
+  const estimateLabel = $derived(
+    `${ctrl.hasMetrics ? "~" : "≈"}${formatEstimate(ctrl.estimateSeconds)}`
+  );
 
   // Hidden native color inputs (styled chips trigger the OS picker).
   let blueInputEl: HTMLInputElement | undefined = $state();
@@ -98,44 +141,173 @@
 </script>
 
 {#if category === "speed"}
-  <div class="tray-slider" transition:slide|local={{ duration: dur(220), easing: cubicOut }}>
-    <input type="range" min="0.25" max="3" step="0.05" value={ctrl.speed} oninput={(e) => (ctrl.speed = Number((e.target as HTMLInputElement).value))} class="slider" aria-label="Undulation speed" />
+  <div
+    class="tray-slider"
+    transition:slide|local={{ duration: dur(220), easing: cubicOut }}
+  >
+    <input
+      type="range"
+      min="0.25"
+      max="3"
+      step="0.05"
+      value={ctrl.speed}
+      oninput={(e) => {
+        const value = Number((e.target as HTMLInputElement).value);
+        changeSetting(
+          "speed",
+          ctrl.speed,
+          value,
+          () => (ctrl.speed = value),
+          true
+        );
+      }}
+      class="slider"
+      aria-label="Undulation speed"
+    />
     <span class="slider-value">{ctrl.speed.toFixed(2)}x</span>
   </div>
 {:else if category === "shape"}
-  <div class="tray-chips" transition:slide|local={{ duration: dur(220), easing: cubicOut }}>
+  <div
+    class="tray-chips"
+    transition:slide|local={{ duration: dur(220), easing: cubicOut }}
+  >
     {#each PATH_SHAPES as sh}
-      <button class="chip" class:active={ctrl.pathShape === sh.id} onclick={() => (ctrl.pathShape = sh.id)} aria-pressed={ctrl.pathShape === sh.id}>{sh.label}</button>
+      <button
+        class="chip"
+        class:active={ctrl.pathShape === sh.id}
+        onclick={() =>
+          changeSetting(
+            "path_shape",
+            ctrl.pathShape,
+            sh.id,
+            () => (ctrl.pathShape = sh.id)
+          )}
+        aria-pressed={ctrl.pathShape === sh.id}>{sh.label}</button
+      >
     {/each}
   </div>
 {:else if category === "spin"}
-  <div class="tray-slider" transition:slide|local={{ duration: dur(220), easing: cubicOut }}>
-    <input type="range" min="0" max="360" step="15" value={ctrl.rotation} oninput={(e) => (ctrl.rotation = Number((e.target as HTMLInputElement).value))} class="slider" aria-label="Spin" />
+  <div
+    class="tray-slider"
+    transition:slide|local={{ duration: dur(220), easing: cubicOut }}
+  >
+    <input
+      type="range"
+      min="0"
+      max="360"
+      step="15"
+      value={ctrl.rotation}
+      oninput={(e) => {
+        const value = Number((e.target as HTMLInputElement).value);
+        changeSetting(
+          "rotation",
+          ctrl.rotation,
+          value,
+          () => (ctrl.rotation = value),
+          true
+        );
+      }}
+      class="slider"
+      aria-label="Spin"
+    />
     <span class="slider-value">{ctrl.rotation}°</span>
   </div>
 {:else if category === "colors"}
-  <div class="tray-colors" transition:slide|local={{ duration: dur(220), easing: cubicOut }}>
+  <div
+    class="tray-colors"
+    transition:slide|local={{ duration: dur(220), easing: cubicOut }}
+  >
     <div class="colors-head">
       <div class="mode-toggle">
-        <button class="chip mini" class:active={ctrl.colorMode === "solid"} onclick={() => (ctrl.colorMode = "solid")} aria-pressed={ctrl.colorMode === "solid"}>Solid</button>
-        <button class="chip mini" class:active={ctrl.colorMode === "flow"} onclick={() => (ctrl.colorMode = "flow")} aria-pressed={ctrl.colorMode === "flow"}>Flow</button>
+        <button
+          class="chip mini"
+          class:active={ctrl.colorMode === "solid"}
+          onclick={() =>
+            changeSetting(
+              "color_mode",
+              ctrl.colorMode,
+              "solid",
+              () => (ctrl.colorMode = "solid")
+            )}
+          aria-pressed={ctrl.colorMode === "solid"}>Solid</button
+        >
+        <button
+          class="chip mini"
+          class:active={ctrl.colorMode === "flow"}
+          onclick={() =>
+            changeSetting(
+              "color_mode",
+              ctrl.colorMode,
+              "flow",
+              () => (ctrl.colorMode = "flow")
+            )}
+          aria-pressed={ctrl.colorMode === "flow"}>Flow</button
+        >
       </div>
-      <button class="palette-toggle" onclick={() => (presetsOpen = !presetsOpen)} aria-expanded={presetsOpen} aria-label="Choose palette">
-        <span class="palette-chip" style:background={ctrl.previewGradient(ctrl.preset)}></span>
+      <button
+        class="palette-toggle"
+        onclick={() => (presetsOpen = !presetsOpen)}
+        aria-expanded={presetsOpen}
+        aria-label="Choose palette"
+      >
+        <span
+          class="palette-chip"
+          style:background={ctrl.previewGradient(ctrl.preset)}
+        ></span>
         <span class="palette-name">{presetLabel}</span>
-        <i class="fas fa-chevron-{presetsOpen ? 'up' : 'down'}" aria-hidden="true"></i>
+        <i
+          class="fas fa-chevron-{presetsOpen ? 'up' : 'down'}"
+          aria-hidden="true"
+        ></i>
       </button>
     </div>
     {#if presetsOpen}
-      <div class="preset-row" transition:slide|local={{ duration: dur(240), easing: cubicOut }}>
+      <div
+        class="preset-row"
+        transition:slide|local={{ duration: dur(240), easing: cubicOut }}
+      >
         {#each PRESETS as p}
-          <button class="swatch" class:active={ctrl.preset === p.id} onclick={() => { ctrl.preset = p.id; presetsOpen = false; }} aria-label={p.label} aria-pressed={ctrl.preset === p.id}>
-            <span class="swatch-fill" style:background={ctrl.previewGradient(p.id)}></span>
+          <button
+            class="swatch"
+            class:active={ctrl.preset === p.id}
+            onclick={() => {
+              changeSetting(
+                "palette",
+                ctrl.preset,
+                p.id,
+                () => (ctrl.preset = p.id)
+              );
+              presetsOpen = false;
+            }}
+            aria-label={p.label}
+            aria-pressed={ctrl.preset === p.id}
+          >
+            <span
+              class="swatch-fill"
+              style:background={ctrl.previewGradient(p.id)}
+            ></span>
             <span class="swatch-label">{p.label}</span>
           </button>
         {/each}
-        <button class="swatch custom" class:active={ctrl.preset === "custom"} onclick={() => { ctrl.preset = "custom"; presetsOpen = false; }} aria-label="Custom colors" aria-pressed={ctrl.preset === "custom"}>
-          <span class="swatch-fill" style:background={ctrl.previewGradient("custom")}>
+        <button
+          class="swatch custom"
+          class:active={ctrl.preset === "custom"}
+          onclick={() => {
+            changeSetting(
+              "palette",
+              ctrl.preset,
+              "custom",
+              () => (ctrl.preset = "custom")
+            );
+            presetsOpen = false;
+          }}
+          aria-label="Custom colors"
+          aria-pressed={ctrl.preset === "custom"}
+        >
+          <span
+            class="swatch-fill"
+            style:background={ctrl.previewGradient("custom")}
+          >
             <i class="fas fa-eye-dropper" aria-hidden="true"></i>
           </span>
           <span class="swatch-label">Custom</span>
@@ -143,52 +315,159 @@
       </div>
     {/if}
     {#if ctrl.preset === "custom"}
-      <div class="custom-flow" transition:slide|local={{ duration: dur(240), easing: cubicOut }}>
-        <span class="flow-preview" style:background={ctrl.previewGradient("custom")} aria-hidden="true"></span>
+      <div
+        class="custom-flow"
+        transition:slide|local={{ duration: dur(240), easing: cubicOut }}
+      >
+        <span
+          class="flow-preview"
+          style:background={ctrl.previewGradient("custom")}
+          aria-hidden="true"
+        ></span>
         <div class="flow-stops">
-          <button class="color-chip" style:--c={ctrl.customBlue} onclick={() => blueInputEl?.click()} aria-label="Edit first color {ctrl.customBlue}">
-            <span class="chip-swatch"><i class="fas fa-eye-dropper" aria-hidden="true"></i></span>
+          <button
+            class="color-chip"
+            style:--c={ctrl.customBlue}
+            onclick={() => blueInputEl?.click()}
+            aria-label="Edit first color {ctrl.customBlue}"
+          >
+            <span class="chip-swatch"
+              ><i class="fas fa-eye-dropper" aria-hidden="true"></i></span
+            >
             <span class="chip-meta">
               <span class="chip-name">Color A</span>
               <span class="chip-hex">{ctrl.customBlue.toUpperCase()}</span>
             </span>
-            <input bind:this={blueInputEl} type="color" value={ctrl.customBlue} oninput={(e) => (ctrl.customBlue = (e.target as HTMLInputElement).value)} class="native-color" tabindex="-1" aria-hidden="true" />
+            <input
+              bind:this={blueInputEl}
+              type="color"
+              value={ctrl.customBlue}
+              oninput={(e) => {
+                ctrl.customBlue = (e.target as HTMLInputElement).value;
+                reportSetting("custom_color_a", "custom", "changed", true);
+              }}
+              class="native-color"
+              tabindex="-1"
+              aria-hidden="true"
+            />
           </button>
-          <button class="color-chip" style:--c={ctrl.customRed} onclick={() => redInputEl?.click()} aria-label="Edit second color {ctrl.customRed}">
-            <span class="chip-swatch"><i class="fas fa-eye-dropper" aria-hidden="true"></i></span>
+          <button
+            class="color-chip"
+            style:--c={ctrl.customRed}
+            onclick={() => redInputEl?.click()}
+            aria-label="Edit second color {ctrl.customRed}"
+          >
+            <span class="chip-swatch"
+              ><i class="fas fa-eye-dropper" aria-hidden="true"></i></span
+            >
             <span class="chip-meta">
               <span class="chip-name">Color B</span>
               <span class="chip-hex">{ctrl.customRed.toUpperCase()}</span>
             </span>
-            <input bind:this={redInputEl} type="color" value={ctrl.customRed} oninput={(e) => (ctrl.customRed = (e.target as HTMLInputElement).value)} class="native-color" tabindex="-1" aria-hidden="true" />
+            <input
+              bind:this={redInputEl}
+              type="color"
+              value={ctrl.customRed}
+              oninput={(e) => {
+                ctrl.customRed = (e.target as HTMLInputElement).value;
+                reportSetting("custom_color_b", "custom", "changed", true);
+              }}
+              class="native-color"
+              tabindex="-1"
+              aria-hidden="true"
+            />
           </button>
         </div>
       </div>
     {/if}
   </div>
 {:else if category === "weight"}
-  <div class="tray-chips" transition:slide|local={{ duration: dur(220), easing: cubicOut }}>
+  <div
+    class="tray-chips"
+    transition:slide|local={{ duration: dur(220), easing: cubicOut }}
+  >
     {#each STROKE_WIDTHS as sw}
-      <button class="chip" class:active={ctrl.lineWeight === sw.value} onclick={() => (ctrl.lineWeight = sw.value)} aria-pressed={ctrl.lineWeight === sw.value}>{sw.label}</button>
+      <button
+        class="chip"
+        class:active={ctrl.lineWeight === sw.value}
+        onclick={() =>
+          changeSetting(
+            "line_weight",
+            ctrl.lineWeight,
+            sw.value,
+            () => (ctrl.lineWeight = sw.value)
+          )}
+        aria-pressed={ctrl.lineWeight === sw.value}>{sw.label}</button
+      >
     {/each}
   </div>
 {:else if category === "depth"}
-  <div class="tray-slider" transition:slide|local={{ duration: dur(220), easing: cubicOut }}>
-    <input type="range" min="0" max="100" step="1" value={ctrl.depth} oninput={(e) => (ctrl.depth = Number((e.target as HTMLInputElement).value))} class="slider" aria-label="Depth" />
+  <div
+    class="tray-slider"
+    transition:slide|local={{ duration: dur(220), easing: cubicOut }}
+  >
+    <input
+      type="range"
+      min="0"
+      max="100"
+      step="1"
+      value={ctrl.depth}
+      oninput={(e) => {
+        const value = Number((e.target as HTMLInputElement).value);
+        changeSetting(
+          "depth",
+          ctrl.depth,
+          value,
+          () => (ctrl.depth = value),
+          true
+        );
+      }}
+      class="slider"
+      aria-label="Depth"
+    />
     <span class="slider-value">{ctrl.depth}%</span>
   </div>
 {:else if category === "download"}
   <div class="download-tray">
     <div class="dl-row">
       <span class="dl-label">Loops</span>
-      <input type="range" min="1" max="10" step="1" value={ctrl.exportReps} oninput={(e) => (ctrl.exportReps = Number((e.target as HTMLInputElement).value))} class="slider" aria-label="Repetitions" />
+      <input
+        type="range"
+        min="1"
+        max="10"
+        step="1"
+        value={ctrl.exportReps}
+        oninput={(e) => {
+          const value = Number((e.target as HTMLInputElement).value);
+          changeSetting(
+            "export_loops",
+            ctrl.exportReps,
+            value,
+            () => (ctrl.exportReps = value),
+            true
+          );
+        }}
+        class="slider"
+        aria-label="Repetitions"
+      />
       <span class="slider-value">{ctrl.exportReps}×</span>
     </div>
     <div class="dl-row">
       <span class="dl-label">Fidelity</span>
       <div class="tray-chips">
         {#each FIDELITIES as f}
-          <button class="chip" class:active={ctrl.exportResolution === f.value} onclick={() => (ctrl.exportResolution = f.value)} aria-pressed={ctrl.exportResolution === f.value}>{f.label}</button>
+          <button
+            class="chip"
+            class:active={ctrl.exportResolution === f.value}
+            onclick={() =>
+              changeSetting(
+                "export_resolution",
+                ctrl.exportResolution,
+                f.value,
+                () => (ctrl.exportResolution = f.value)
+              )}
+            aria-pressed={ctrl.exportResolution === f.value}>{f.label}</button
+          >
         {/each}
       </div>
     </div>
@@ -196,12 +475,26 @@
       <span class="dl-label">FPS</span>
       <div class="tray-chips">
         {#each EXPORT_FPS as f}
-          <button class="chip" class:active={ctrl.exportFps === f} onclick={() => (ctrl.exportFps = f)} aria-pressed={ctrl.exportFps === f}>{f}</button>
+          <button
+            class="chip"
+            class:active={ctrl.exportFps === f}
+            onclick={() =>
+              changeSetting(
+                "export_fps",
+                ctrl.exportFps,
+                f,
+                () => (ctrl.exportFps = f)
+              )}
+            aria-pressed={ctrl.exportFps === f}>{f}</button
+          >
         {/each}
       </div>
     </div>
     <div class="dl-foot">
-      <span class="dl-estimate"><i class="fas fa-clock" aria-hidden="true"></i> {estimateLabel} · {ctrl.exportFrameCount} frames</span>
+      <span class="dl-estimate"
+        ><i class="fas fa-clock" aria-hidden="true"></i>
+        {estimateLabel} · {ctrl.exportFrameCount} frames</span
+      >
       {#if showExportButton}
         <button class="dl-export" onclick={handleExport}>
           <i class="fas fa-film" aria-hidden="true"></i> Export MP4
@@ -214,11 +507,30 @@
 <style>
   /* These styles are copied verbatim from MandalaControlDock so both consumers
      render the controls identically. */
-  .tray-chips { display: flex; gap: 6px; }
-  .tray-slider { display: flex; align-items: center; gap: 12px; }
-  .tray-colors { display: flex; flex-direction: column; gap: 10px; }
-  .colors-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-  .mode-toggle { display: flex; gap: 6px; }
+  .tray-chips {
+    display: flex;
+    gap: 6px;
+  }
+  .tray-slider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .tray-colors {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .colors-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .mode-toggle {
+    display: flex;
+    gap: 6px;
+  }
   .palette-toggle {
     display: flex;
     align-items: center;
@@ -227,28 +539,61 @@
     min-height: 36px;
     border-radius: 10px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    background: color-mix(in srgb, var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 70%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 70%,
+      transparent
+    );
     color: var(--theme-text, #fff);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: border-color 180ms ease, background 180ms ease, transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition:
+      border-color 180ms ease,
+      background 180ms ease,
+      transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  .palette-toggle:active { transform: scale(0.95); }
-  .palette-chip { width: 28px; height: 18px; border-radius: 6px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25); }
-  .palette-name { font-size: 12px; font-weight: 600; }
-  .palette-toggle i { font-size: 10px; opacity: 0.55; }
+  .palette-toggle:active {
+    transform: scale(0.95);
+  }
+  .palette-chip {
+    width: 28px;
+    height: 18px;
+    border-radius: 6px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+  }
+  .palette-name {
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .palette-toggle i {
+    font-size: 10px;
+    opacity: 0.55;
+  }
   /* 10 swatches (9 presets + custom) no longer fit one row at tray widths —
      wrap instead of shrinking below the 44px touch-target floor. */
-  .preset-row { display: flex; flex-wrap: wrap; gap: 8px; }
-  .custom-flow { display: flex; flex-direction: column; gap: 10px; }
+  .preset-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .custom-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
   .flow-preview {
     display: block;
     width: 100%;
     height: 14px;
     border-radius: 999px;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 2px 8px rgba(0, 0, 0, 0.35);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+      0 2px 8px rgba(0, 0, 0, 0.35);
   }
-  .flow-stops { display: flex; gap: 10px; }
+  .flow-stops {
+    display: flex;
+    gap: 10px;
+  }
   .color-chip {
     position: relative;
     flex: 1;
@@ -260,17 +605,30 @@
     padding: 8px 10px;
     border-radius: 12px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    background: color-mix(in srgb, var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 70%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 70%,
+      transparent
+    );
     cursor: pointer;
     overflow: hidden;
     -webkit-tap-highlight-color: transparent;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
   }
   .color-chip:hover {
-    border-color: color-mix(in srgb, var(--c) 50%, var(--theme-stroke, rgba(255, 255, 255, 0.2)));
+    border-color: color-mix(
+      in srgb,
+      var(--c) 50%,
+      var(--theme-stroke, rgba(255, 255, 255, 0.2))
+    );
     box-shadow: 0 0 0 1px color-mix(in srgb, var(--c) 40%, transparent);
   }
-  .color-chip:focus-visible { outline: 2px solid color-mix(in srgb, var(--c) 70%, white); outline-offset: 2px; }
+  .color-chip:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--c) 70%, white);
+    outline-offset: 2px;
+  }
   .chip-swatch {
     flex: 0 0 auto;
     width: 34px;
@@ -280,13 +638,27 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25), 0 2px 6px color-mix(in srgb, var(--c) 45%, transparent);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.25),
+      0 2px 6px color-mix(in srgb, var(--c) 45%, transparent);
     color: rgba(255, 255, 255, 0.95);
     font-size: 12px;
   }
-  .chip-swatch i { filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6)); }
-  .chip-meta { display: flex; flex-direction: column; gap: 1px; min-width: 0; text-align: left; }
-  .chip-name { font-size: 11px; font-weight: 600; color: var(--theme-text-dim, rgba(255, 255, 255, 0.6)); }
+  .chip-swatch i {
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+  }
+  .chip-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+    text-align: left;
+  }
+  .chip-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
   .chip-hex {
     font-size: 12px;
     font-weight: 600;
@@ -313,19 +685,42 @@
     padding: 8px 6px;
     border-radius: 10px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: color-mix(in srgb, var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 70%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 70%,
+      transparent
+    );
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: background 200ms ease, border-color 200ms ease, color 200ms ease, transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition:
+      background 200ms ease,
+      border-color 200ms ease,
+      color 200ms ease,
+      transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  .chip:active { transform: scale(0.94); }
-  .chip.mini { flex: 0 0 auto; min-height: 36px; padding: 6px 14px; font-size: 12px; }
+  .chip:active {
+    transform: scale(0.94);
+  }
+  .chip.mini {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 6px 14px;
+    font-size: 12px;
+  }
   .chip.active {
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 35%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
-    border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 60%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 35%,
+      var(--theme-card-bg, rgba(0, 0, 0, 0.4))
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 60%,
+      transparent
+    );
     color: white;
   }
 
@@ -352,16 +747,30 @@
     border: 2px solid transparent;
     color: rgba(255, 255, 255, 0.85);
     font-size: 14px;
-    transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition:
+      border-color 200ms ease,
+      box-shadow 200ms ease,
+      transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  .swatch:active .swatch-fill { transform: scale(0.93); }
+  .swatch:active .swatch-fill {
+    transform: scale(0.93);
+  }
   .swatch.active .swatch-fill {
     border-color: white;
     transform: translateY(-2px);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--theme-accent, #6366f1) 60%, transparent), 0 6px 16px rgba(0, 0, 0, 0.4);
+    box-shadow:
+      0 0 0 2px
+        color-mix(in srgb, var(--theme-accent, #6366f1) 60%, transparent),
+      0 6px 16px rgba(0, 0, 0, 0.4);
   }
-  .swatch-label { font-size: 10px; font-weight: 600; color: var(--theme-text-dim, rgba(255, 255, 255, 0.55)); }
-  .swatch.active .swatch-label { color: var(--theme-text, white); }
+  .swatch-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.55));
+  }
+  .swatch.active .swatch-label {
+    color: var(--theme-text, white);
+  }
 
   .slider {
     flex: 1;
@@ -389,11 +798,32 @@
   }
 
   /* Download config tray */
-  .download-tray { display: flex; flex-direction: column; gap: 10px; }
-  .dl-row { display: flex; align-items: center; gap: 12px; }
-  .dl-label { flex: 0 0 64px; font-size: 12px; font-weight: 600; color: var(--theme-text-dim, rgba(255, 255, 255, 0.6)); }
-  .dl-row .tray-chips { flex: 1; }
-  .dl-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 2px; }
+  .download-tray {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .dl-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .dl-label {
+    flex: 0 0 64px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
+  }
+  .dl-row .tray-chips {
+    flex: 1;
+  }
+  .dl-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 2px;
+  }
   .dl-estimate {
     display: flex;
     align-items: center;
@@ -402,7 +832,10 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-variant-numeric: tabular-nums;
   }
-  .dl-estimate i { font-size: 11px; opacity: 0.7; }
+  .dl-estimate i {
+    font-size: 11px;
+    opacity: 0.7;
+  }
   .dl-export {
     display: flex;
     align-items: center;
@@ -410,16 +843,26 @@
     min-height: 44px;
     padding: 8px 18px;
     border-radius: 12px;
-    border: 1px solid color-mix(in srgb, var(--theme-accent, #6366f1) 70%, transparent);
-    background: color-mix(in srgb, var(--theme-accent, #6366f1) 35%, var(--theme-card-bg, rgba(0, 0, 0, 0.4)));
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #6366f1) 70%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #6366f1) 35%,
+      var(--theme-card-bg, rgba(0, 0, 0, 0.4))
+    );
     color: white;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
-    transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 200ms ease, background 200ms ease;
+    transition:
+      transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
+      box-shadow 200ms ease,
+      background 200ms ease;
   }
-  .dl-export:active { transform: scale(0.95); }
+  .dl-export:active {
+    transform: scale(0.95);
+  }
 
   /* Staggered entrance for tray controls. */
   .tray-chips > *,
@@ -429,43 +872,98 @@
     animation: popIn 340ms cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
   }
   .tray-chips > *:nth-child(2),
-  .preset-row > *:nth-child(2) { animation-delay: 45ms; }
+  .preset-row > *:nth-child(2) {
+    animation-delay: 45ms;
+  }
   .tray-chips > *:nth-child(3),
-  .preset-row > *:nth-child(3) { animation-delay: 90ms; }
+  .preset-row > *:nth-child(3) {
+    animation-delay: 90ms;
+  }
   .tray-chips > *:nth-child(4),
-  .preset-row > *:nth-child(4) { animation-delay: 135ms; }
-  .preset-row > *:nth-child(5) { animation-delay: 180ms; }
-  .preset-row > *:nth-child(6) { animation-delay: 225ms; }
-  .preset-row > *:nth-child(7) { animation-delay: 270ms; }
-  .preset-row > *:nth-child(8) { animation-delay: 315ms; }
-  .preset-row > *:nth-child(9) { animation-delay: 360ms; }
-  .preset-row > *:nth-child(10) { animation-delay: 405ms; }
-  .custom-flow > *:nth-child(2) { animation-delay: 60ms; }
+  .preset-row > *:nth-child(4) {
+    animation-delay: 135ms;
+  }
+  .preset-row > *:nth-child(5) {
+    animation-delay: 180ms;
+  }
+  .preset-row > *:nth-child(6) {
+    animation-delay: 225ms;
+  }
+  .preset-row > *:nth-child(7) {
+    animation-delay: 270ms;
+  }
+  .preset-row > *:nth-child(8) {
+    animation-delay: 315ms;
+  }
+  .preset-row > *:nth-child(9) {
+    animation-delay: 360ms;
+  }
+  .preset-row > *:nth-child(10) {
+    animation-delay: 405ms;
+  }
+  .custom-flow > *:nth-child(2) {
+    animation-delay: 60ms;
+  }
   @keyframes popIn {
-    from { opacity: 0; transform: translateY(10px) scale(0.96); }
-    to { opacity: 1; transform: none; }
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
   }
 
   @media (hover: hover) {
     .chip:hover:not(.active) {
-      background: color-mix(in srgb, var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 88%, white 8%);
-      border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 35%, var(--theme-stroke, rgba(255, 255, 255, 0.12)));
+      background: color-mix(
+        in srgb,
+        var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 88%,
+        white 8%
+      );
+      border-color: color-mix(
+        in srgb,
+        var(--theme-accent, #6366f1) 35%,
+        var(--theme-stroke, rgba(255, 255, 255, 0.12))
+      );
       color: var(--theme-text, #fff);
     }
-    .swatch:hover .swatch-fill { transform: translateY(-2px); }
-    .palette-toggle:hover {
-      border-color: color-mix(in srgb, var(--theme-accent, #6366f1) 45%, var(--theme-stroke, rgba(255, 255, 255, 0.12)));
-      background: color-mix(in srgb, var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 85%, white 6%);
+    .swatch:hover .swatch-fill {
+      transform: translateY(-2px);
     }
-    .dl-export:hover { transform: translateY(-2px); box-shadow: 0 6px 18px color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent); }
+    .palette-toggle:hover {
+      border-color: color-mix(
+        in srgb,
+        var(--theme-accent, #6366f1) 45%,
+        var(--theme-stroke, rgba(255, 255, 255, 0.12))
+      );
+      background: color-mix(
+        in srgb,
+        var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 85%,
+        white 6%
+      );
+    }
+    .dl-export:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px
+        color-mix(in srgb, var(--theme-accent, #6366f1) 35%, transparent);
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .tray-chips > *,
     .preset-row > *,
     .mode-toggle > *,
-    .custom-flow > * { animation: none !important; }
-    .chip:active, .swatch:active .swatch-fill { transform: none; }
-    .dl-export:active { transform: none; }
+    .custom-flow > * {
+      animation: none !important;
+    }
+    .chip:active,
+    .swatch:active .swatch-fill {
+      transform: none;
+    }
+    .dl-export:active {
+      transform: none;
+    }
   }
 </style>

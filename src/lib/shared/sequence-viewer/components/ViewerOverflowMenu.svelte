@@ -8,8 +8,13 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
   import { goto } from "$app/navigation";
-  import { shareTarget, saveActionLabel } from "$lib/shared/mobile/share-action.svelte";
+  import {
+    shareTarget,
+    saveActionLabel,
+  } from "$lib/shared/mobile/share-action.svelte";
   import MotionColorChips from "$lib/shared/components/MotionColorChips.svelte";
+
+  type OverflowOpenReason = "trigger" | "item" | "backdrop" | "escape" | "tab";
 
   interface Props {
     isPublished?: boolean;
@@ -22,14 +27,14 @@
     practiceActive?: boolean;
     onPracticeToggle?: () => void;
     onVideoUpload?: () => void;
-    variant?: 'header' | 'footer';
+    variant?: "header" | "footer";
     dropDown?: boolean;
     /**
      * Horizontal edge the popover aligns to. 'left' when the trigger sits at the
      * screen's left edge; 'center' drops the popover centred under the trigger
      * (used when the header title itself is the trigger).
      */
-    align?: 'left' | 'right' | 'center';
+    align?: "left" | "right" | "center";
     /**
      * Custom trigger content. When provided, the trigger button renders this
      * snippet (a transparent title-style row) instead of the three-dot glyph, so
@@ -70,6 +75,7 @@
       onToggleBlue: () => void;
       onToggleRed: () => void;
     };
+    onOpenChange?: (open: boolean, reason: OverflowOpenReason) => void;
   }
 
   let {
@@ -83,9 +89,9 @@
     practiceActive = false,
     onPracticeToggle,
     onVideoUpload,
-    variant = 'header',
+    variant = "header",
     dropDown = false,
-    align = 'right',
+    align = "right",
     trigger,
     isFavorite = false,
     onFavoriteToggle,
@@ -103,6 +109,7 @@
     guideActionLabel = "See it in the Guide",
     sequenceId,
     motionVisibility,
+    onOpenChange,
   }: Props = $props();
 
   let isOpen = $state(false);
@@ -112,28 +119,36 @@
   function toggle() {
     if (!hasMenu) return;
     isOpen = !isOpen;
+    onOpenChange?.(isOpen, "trigger");
     if (isOpen) {
       requestAnimationFrame(() => {
-        const firstItem = menuEl?.querySelector<HTMLButtonElement>('[role="menuitem"]');
+        const firstItem =
+          menuEl?.querySelector<HTMLButtonElement>('[role="menuitem"]');
         firstItem?.focus();
       });
     }
   }
 
-  function close() {
+  function close(reason: Exclude<OverflowOpenReason, "trigger">) {
+    if (!isOpen) return;
     isOpen = false;
+    onOpenChange?.(false, reason);
     triggerEl?.focus();
   }
 
   function handleKeydown(e: KeyboardEvent) {
     if (!isOpen || !menuEl) return;
 
-    const items = Array.from(menuEl.querySelectorAll<HTMLButtonElement>('[role="menuitem"]'));
-    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
+    const items = Array.from(
+      menuEl.querySelectorAll<HTMLButtonElement>('[role="menuitem"]')
+    );
+    const currentIndex = items.indexOf(
+      document.activeElement as HTMLButtonElement
+    );
 
     if (e.key === "Escape") {
       e.preventDefault();
-      close();
+      close("escape");
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
       const next = currentIndex < items.length - 1 ? currentIndex + 1 : 0;
@@ -144,17 +159,23 @@
       items[prev]?.focus();
     } else if (e.key === "Tab") {
       e.preventDefault();
-      close();
+      close("tab");
     }
   }
 
   function handleItemClick(action: (() => void) | undefined) {
     action?.();
-    close();
+    close("item");
   }
 
   let menuItems = $derived.by(() => {
-    const items: Array<{ label: string; icon: string; action: () => void; className?: string; dividerBefore?: boolean }> = [];
+    const items: Array<{
+      label: string;
+      icon: string;
+      action: () => void;
+      className?: string;
+      dividerBefore?: boolean;
+    }> = [];
 
     if (onFavoriteToggle) {
       items.push({
@@ -165,10 +186,20 @@
       });
     }
     if (onSave && !isSaved) {
-      items.push({ label: "Save", icon: "fa-floppy-disk", action: onSave, className: "save" });
+      items.push({
+        label: "Save",
+        icon: "fa-floppy-disk",
+        action: onSave,
+        className: "save",
+      });
     }
     if (onRemix) {
-      items.push({ label: remixLabel, icon: "fa-pen-to-square", action: onRemix, className: "remix" });
+      items.push({
+        label: remixLabel,
+        icon: "fa-pen-to-square",
+        action: onRemix,
+        className: "remix",
+      });
     }
     if (onDownload) {
       // Mobile opens the native share sheet, so the item reads "Share" there and
@@ -217,10 +248,19 @@
       });
     }
     if (onVideoUpload) {
-      items.push({ label: "Upload Video", icon: "fa-video", action: onVideoUpload });
+      items.push({
+        label: "Upload Video",
+        icon: "fa-video",
+        action: onVideoUpload,
+      });
     }
     if (onPropsOpen) {
-      items.push({ label: "Props", icon: "fa-wand-magic-sparkles", action: onPropsOpen, dividerBefore: items.length > 0 });
+      items.push({
+        label: "Props",
+        icon: "fa-wand-magic-sparkles",
+        action: onPropsOpen,
+        dividerBefore: items.length > 0,
+      });
     }
     if (onCopyLink) {
       items.push({
@@ -272,8 +312,8 @@
   <div
     class="overflow-wrapper"
     class:drop-down={dropDown}
-    class:align-left={align === 'left'}
-    class:align-center={align === 'center'}
+    class:align-left={align === "left"}
+    class:align-center={align === "center"}
     class:title-trigger={!!trigger}
     onkeydown={handleKeydown}
   >
@@ -281,7 +321,7 @@
       bind:this={triggerEl}
       type="button"
       class="overflow-trigger"
-      class:header-variant={variant === 'header' && !trigger}
+      class:header-variant={variant === "header" && !trigger}
       class:title-variant={!!trigger}
       class:static={!!trigger && !hasMenu}
       onclick={toggle}
@@ -298,9 +338,18 @@
 
     {#if isOpen && hasMenu}
       <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <div class="overflow-backdrop" onclick={close} onkeydown={() => {}}></div>
+      <div
+        class="overflow-backdrop"
+        onclick={() => close("backdrop")}
+        onkeydown={() => {}}
+      ></div>
 
-      <div bind:this={menuEl} class="overflow-popover" role="menu" aria-label="More actions">
+      <div
+        bind:this={menuEl}
+        class="overflow-popover"
+        role="menu"
+        aria-label="More actions"
+      >
         {#if motionVisibility}
           <div class="motion-vis-section">
             <span class="motion-vis-label">Motion</span>
@@ -504,7 +553,11 @@
 
   .overflow-item.practice-active:hover,
   .overflow-item.practice-active:focus {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 10%,
+      transparent
+    );
     color: var(--semantic-error, #f87171);
   }
 

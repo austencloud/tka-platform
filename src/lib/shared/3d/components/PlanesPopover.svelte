@@ -2,6 +2,15 @@
   import { Plane, PLANE_COLORS } from "@austencloud/scene-3d";
   import { getViewer3DContext } from "../context/viewer-3d-context";
   import CascadeBadge from "./controls/CascadeBadge.svelte";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+
+  interface Props {
+    onSettingChange?: ViewerControlSink;
+  }
+  let { onSettingChange }: Props = $props();
 
   const viewer = getViewer3DContext();
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
@@ -30,8 +39,12 @@
       : (selected?.effectiveRedPlane ?? Plane.WALL)
   );
 
-  const isOverridden = $derived(!isAllMode && (selected?.hasOverride.planes ?? false));
-  const overrideCount = $derived(isAllMode ? viewer.overrideCountForCategory("planes") : 0);
+  const isOverridden = $derived(
+    !isAllMode && (selected?.hasOverride.planes ?? false)
+  );
+  const overrideCount = $derived(
+    isAllMode ? viewer.overrideCountForCategory("planes") : 0
+  );
 
   function hasHandOnPlane(plane: Plane): boolean {
     return bluePlane === plane || redPlane === plane;
@@ -45,17 +58,29 @@
 
   const isPlaneStateNonDefault = $derived(
     bluePlane !== Plane.WALL ||
-    redPlane !== Plane.WALL ||
-    hasStepOverrides ||
-    viewer.visiblePlanes.size > 0
+      redPlane !== Plane.WALL ||
+      hasStepOverrides ||
+      viewer.visiblePlanes.size > 0
   );
 
   function handlePlaneToggleClick(e: MouseEvent, plane: Plane) {
     e.stopPropagation();
+    const previous = isVisible(plane);
     viewer.togglePlane(plane);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_planes",
+      `${String(plane).toLowerCase()}_visible`,
+      previous,
+      !previous
+    );
   }
 
-  function handleHandSlotClick(e: MouseEvent, hand: "blue" | "red", plane: Plane) {
+  function handleHandSlotClick(
+    e: MouseEvent,
+    hand: "blue" | "red",
+    plane: Plane
+  ) {
     e.stopPropagation();
     const currentPlane = hand === "blue" ? bluePlane : redPlane;
     if (currentPlane === plane) return;
@@ -65,6 +90,13 @@
     } else {
       viewer.setHandPlaneScoped(hand, plane);
     }
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_planes",
+      `${hand}_plane`,
+      currentPlane,
+      plane
+    );
   }
 
   function handleResetPlanesClick(e: MouseEvent) {
@@ -79,13 +111,60 @@
         p.clearBeatPlaneOverrides();
       }
     }
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_planes",
+      isAllMode ? "reset_all" : "reset_performer",
+      false,
+      true
+    );
+  }
+
+  function resetAllOverrides(): void {
+    viewer.resetAllPerformersPlanes();
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_planes",
+      "reset_all_overrides",
+      false,
+      true
+    );
+  }
+
+  function resetSelectedPlanes(): void {
+    selected?.resetPlanes();
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_planes",
+      "reset_performer_override",
+      false,
+      true
+    );
+  }
+
+  function toggleGridLabels(e: MouseEvent): void {
+    e.stopPropagation();
+    const previous = viewer.showGridLabels;
+    viewer.toggleGridLabels();
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_planes",
+      "location_labels",
+      previous,
+      !previous
+    );
   }
 </script>
 
 {#if isAllMode && overrideCount > 0}
-  <CascadeBadge mode="overrides" {overrideCount} categoryLabel="planes" onReset={() => viewer.resetAllPerformersPlanes()} />
+  <CascadeBadge
+    mode="overrides"
+    {overrideCount}
+    categoryLabel="planes"
+    onReset={resetAllOverrides}
+  />
 {:else if !isAllMode && isOverridden}
-  <CascadeBadge mode="custom" onReset={() => selected?.resetPlanes()} />
+  <CascadeBadge mode="custom" onReset={resetSelectedPlanes} />
 {:else if !isAllMode}
   <CascadeBadge mode="default" />
 {/if}
@@ -108,7 +187,7 @@
           style="--dot-color: {color};"
           onclick={(e) => handlePlaneToggleClick(e, plane)}
           aria-pressed={visible}
-          aria-label={`${label} plane - ${visible ? 'visible, click to hide' : 'hidden, click to show'}`}
+          aria-label={`${label} plane - ${visible ? "visible, click to hide" : "hidden, click to show"}`}
         >
           <i
             class="plane-eye {visible ? 'fas fa-eye' : 'fas fa-eye-slash'}"
@@ -142,7 +221,7 @@
   <button
     class="label-toggle"
     class:active={viewer.showGridLabels}
-    onclick={(e) => { e.stopPropagation(); viewer.toggleGridLabels(); }}
+    onclick={toggleGridLabels}
     aria-pressed={viewer.showGridLabels}
     aria-label="Toggle grid location labels"
   >
@@ -158,12 +237,25 @@
       class="reset-btn"
       class:with-overrides={hasStepOverrides}
       onclick={handleResetPlanesClick}
-      aria-label={hasStepOverrides ? 'Reset all planes and clear step overrides' : 'Reset all planes'}
-      title={hasStepOverrides ? 'Reset all planes and clear step overrides' : 'Reset all planes'}
+      aria-label={hasStepOverrides
+        ? "Reset all planes and clear step overrides"
+        : "Reset all planes"}
+      title={hasStepOverrides
+        ? "Reset all planes and clear step overrides"
+        : "Reset all planes"}
     >
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M3 7v6h6"/>
-        <path d="M21 17a9 9 0 0 0-15-6.7L3 13"/>
+      <svg
+        width="12"
+        height="12"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M3 7v6h6" />
+        <path d="M21 17a9 9 0 0 0-15-6.7L3 13" />
       </svg>
       Reset
       {#if hasStepOverrides}
@@ -282,8 +374,12 @@
     padding: 0;
   }
 
-  .hand-slot.blue { border-color: rgba(74, 144, 217, 0.4); }
-  .hand-slot.red { border-color: rgba(217, 74, 74, 0.4); }
+  .hand-slot.blue {
+    border-color: rgba(74, 144, 217, 0.4);
+  }
+  .hand-slot.red {
+    border-color: rgba(217, 74, 74, 0.4);
+  }
 
   .hand-slot:hover:not(.filled).blue {
     border-color: rgba(74, 144, 217, 0.7);

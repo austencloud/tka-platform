@@ -14,7 +14,10 @@
   import { fade, fly } from "svelte/transition";
   import type { ExportOptionsStateManager } from "../state/export-options-state.svelte";
   import type { VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
-  import { estimateExportTime, hasDeviceMetrics } from "../state/export-timing-tracker";
+  import {
+    estimateExportTime,
+    hasDeviceMetrics,
+  } from "../state/export-timing-tracker";
   import EffectsPanel from "$lib/shared/animation-engine/components/effects-panel/EffectsPanel.svelte";
   import PlaybackModeToggle from "$lib/shared/animation-engine/components/controls/PlaybackModeToggle.svelte";
   import type { PlaybackMode } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
@@ -39,7 +42,10 @@
     type ControlDockLink,
   } from "$lib/shared/sequence-viewer/components/ControlDock.svelte";
   import { buildPillSpecs, type PillId } from "../pill-nav/pill-types";
-  import { loadActivePill, saveActivePill } from "../state/active-pill-persistence";
+  import {
+    loadActivePill,
+    saveActivePill,
+  } from "../state/active-pill-persistence";
   import {
     computeDisplaySummary,
     computeEffectsSummary,
@@ -48,6 +54,11 @@
     computePropsSummary,
   } from "../pill-nav/pill-summaries";
   import { onDestroy } from "svelte";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+    type ViewerControlValue,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   type PanelLayout = "sidebar" | "bottom";
 
@@ -62,7 +73,7 @@
     singlePlayDuration?: number;
     isPlaying?: boolean;
     bpm?: number;
-    renderMode?: '2d' | '3d';
+    renderMode?: "2d" | "3d";
     playbackMode?: PlaybackMode;
     onPlaybackToggle?: () => void;
     onPlaybackModeChange?: (mode: PlaybackMode) => void;
@@ -82,6 +93,8 @@
      *  (the landing spinner). Viewer/export already own Left/Right in their
      *  header, so they leave it false to avoid a duplicate. */
     showMotionVisibility?: boolean;
+    /** Optional semantic sink. Existing hosts keep the same behavior when absent. */
+    onSettingChange?: ViewerControlSink;
   }
 
   let {
@@ -93,7 +106,7 @@
     singlePlayDuration = 0,
     isPlaying = false,
     bpm = 60,
-    renderMode = '2d',
+    renderMode = "2d",
     playbackMode = "continuous",
     onPlaybackToggle,
     onPlaybackModeChange,
@@ -105,9 +118,12 @@
     secondaryActions = [],
     showInlineExportProgress = true,
     showMotionVisibility = false,
+    onSettingChange,
   }: Props = $props();
 
-  const exportButtonLabel = $derived(renderMode === '3d' ? 'Record Scene' : 'Download Animation');
+  const exportButtonLabel = $derived(
+    renderMode === "3d" ? "Record Scene" : "Download Animation"
+  );
 
   // Export is host-optional: both the state manager and the handler must be
   // wired for the Export pill, footer button, and dock trailing icon to render.
@@ -117,11 +133,12 @@
   // Desktop sidebar reopens to the last section (default Effects) for proper
   // persistence; mobile bottom sheet stays closed on mount.
   let activePill = $state<PillId | null>(
-    layout === "sidebar" ? loadActivePill() : null,
+    layout === "sidebar" ? loadActivePill() : null
   );
   let panelDirection = $state(1);
 
   function handlePillSelect(id: PillId): void {
+    const previous = activePill;
     if (layout === "bottom") {
       activePill = activePill === id ? null : id;
     } else {
@@ -132,6 +149,72 @@
       }
       activePill = id;
     }
+    reportViewerControlChange(
+      onSettingChange,
+      "animation_panel",
+      "section",
+      previous,
+      activePill
+    );
+  }
+
+  function reportSetting(
+    group: string,
+    setting: string,
+    previousValue: ViewerControlValue,
+    value: ViewerControlValue,
+    coalesce = false
+  ): void {
+    reportViewerControlChange(
+      onSettingChange,
+      group,
+      setting,
+      previousValue,
+      value,
+      { coalesce }
+    );
+  }
+
+  function setExportFps(value: 30 | 60 | 120): void {
+    if (!exportOptions) return;
+    const previous = exportOptions.videoFps;
+    exportOptions.setVideoFps(value);
+    reportSetting("video_export", "fps", previous, value);
+  }
+
+  function setExportResolution(value: 720 | 1080 | 2160 | 4320): void {
+    if (!exportOptions) return;
+    const previous = exportOptions.videoResolution;
+    exportOptions.setVideoResolution(value);
+    reportSetting("video_export", "resolution", previous, value);
+  }
+
+  function setExportQuality(value: "standard" | "cinema"): void {
+    if (!exportOptions) return;
+    const previous = exportOptions.videoQuality;
+    exportOptions.setVideoQuality(value);
+    reportSetting("video_export", "quality", previous, value);
+  }
+
+  function setStartHold(value: boolean): void {
+    if (!exportOptions) return;
+    const previous = exportOptions.videoIncludeStartPosition;
+    exportOptions.setVideoIncludeStartPosition(value);
+    reportSetting("video_export", "include_start_position", previous, value);
+  }
+
+  function setEndHold(value: boolean): void {
+    if (!exportOptions) return;
+    const previous = exportOptions.videoIncludeEndHold;
+    exportOptions.setVideoIncludeEndHold(value);
+    reportSetting("video_export", "include_end_hold", previous, value);
+  }
+
+  function setLoopCount(value: number): void {
+    if (!exportOptions) return;
+    const previous = exportOptions.videoLoopCount;
+    exportOptions.setVideoLoopCount(value);
+    reportSetting("video_export", "loop_count", previous, value);
   }
 
   let pillNavEl = $state<HTMLElement | null>(null);
@@ -141,12 +224,18 @@
   let reduceMotion = $state(
     typeof window !== "undefined" &&
       typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
   $effect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    )
+      return;
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const handler = (e: MediaQueryListEvent) => { reduceMotion = e.matches; };
+    const handler = (e: MediaQueryListEvent) => {
+      reduceMotion = e.matches;
+    };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   });
@@ -163,7 +252,13 @@
     const target = event.target as HTMLElement | null;
     if (!target) return;
     const tag = target.tagName;
-    if (tag === "BUTTON" || tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    if (
+      tag === "BUTTON" ||
+      tag === "INPUT" ||
+      tag === "TEXTAREA" ||
+      tag === "SELECT"
+    )
+      return;
     if (target.isContentEditable) return;
     event.preventDefault();
   }
@@ -172,14 +267,17 @@
   // Context-first so hosts with an ephemeral per-canvas manager (landing demo)
   // drive THAT instance; everywhere else falls through to the global singleton.
   const vm = getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
-  let effectsConfigState: ReturnType<typeof getEffectsConfigContext> | null = null;
+  let effectsConfigState: ReturnType<typeof getEffectsConfigContext> | null =
+    null;
   try {
     effectsConfigState = getEffectsConfigContext();
   } catch {
     // Context may not be available in all host environments
   }
   let vmVersion = $state(0);
-  function onVmChanged(): void { vmVersion++; }
+  function onVmChanged(): void {
+    vmVersion++;
+  }
   vm.registerObserver(onVmChanged);
   onDestroy(() => vm.unregisterObserver(onVmChanged));
 
@@ -187,7 +285,16 @@
     void vmVersion;
     const id = vm.getEffortPreset();
     const match = EFFORTS.find((e) => e.id === id);
-    return match ?? EFFORTS[0] ?? { id: "linear", label: "Linear", subtitle: "", color: "#94a3b8", params: [] };
+    return (
+      match ??
+      EFFORTS[0] ?? {
+        id: "linear",
+        label: "Linear",
+        subtitle: "",
+        color: "#94a3b8",
+        params: [],
+      }
+    );
   });
 
   // ── Section summaries ──
@@ -217,14 +324,14 @@
         progressBar: s.progressBar,
         grid: vm.isGridVisible(),
       },
-      vm.getPathShape(),
+      vm.getPathShape()
     );
   });
 
   const propsSummary = $derived(
     computePropsSummary(
-      selectedPropType ? getPropTypeDisplayInfo(selectedPropType).label : "",
-    ),
+      selectedPropType ? getPropTypeDisplayInfo(selectedPropType).label : ""
+    )
   );
 
   const exportSummary = $derived(
@@ -235,7 +342,7 @@
           loopCount: exportOptions.videoLoopCount,
           renderMode: renderMode === "3d" ? "3d" : "2d",
         })
-      : "",
+      : ""
   );
 
   const exportDisabled = $derived(isExporting || !canvasReady);
@@ -271,25 +378,62 @@
     const unitSeconds = bpm > 0 ? 60 / bpm : 0;
     const startHold = exportOptions.videoIncludeStartPosition ? unitSeconds : 0;
     const endHold = exportOptions.videoIncludeEndHold ? unitSeconds : 0;
-    const total = startHold + singlePlayDuration * exportOptions.videoLoopCount + endHold;
+    const total =
+      startHold + singlePlayDuration * exportOptions.videoLoopCount + endHold;
     return formatDuration(total);
   });
 
   // ── Pill specs ──
   // Effects leads the rail — it's the section users reach for most.
   const ANIMATION_PILL_ORDER = [
-    "effects", "props", "effort", "playback", "display", "export",
+    "effects",
+    "props",
+    "effort",
+    "playback",
+    "display",
+    "export",
   ] as const satisfies readonly PillId[];
 
   const pillSpecs = $derived(
-    buildPillSpecs({
-      ...(onPropChange ? { props: { icon: "fa-paintbrush", label: "Props", summary: propsSummary } } : {}),
-      effects:  { icon: "fa-wand-magic-sparkles",  label: "Effects",  summary: effectsSummary },
-      effort:   { label: "Effort",   summary: effortSummary, accentColor: effortAccent },
-      playback: { icon: "fa-play",      label: "Playback", summary: playbackSummary },
-      display:  { icon: "fa-eye",       label: "Display",  summary: displaySummary },
-      ...(exportEnabled ? { export: { icon: "fa-sliders", label: "Export", summary: exportSummary } } : {}),
-    }, ANIMATION_PILL_ORDER),
+    buildPillSpecs(
+      {
+        ...(onPropChange
+          ? {
+              props: {
+                icon: "fa-paintbrush",
+                label: "Props",
+                summary: propsSummary,
+              },
+            }
+          : {}),
+        effects: {
+          icon: "fa-wand-magic-sparkles",
+          label: "Effects",
+          summary: effectsSummary,
+        },
+        effort: {
+          label: "Effort",
+          summary: effortSummary,
+          accentColor: effortAccent,
+        },
+        playback: {
+          icon: "fa-play",
+          label: "Playback",
+          summary: playbackSummary,
+        },
+        display: { icon: "fa-eye", label: "Display", summary: displaySummary },
+        ...(exportEnabled
+          ? {
+              export: {
+                icon: "fa-sliders",
+                label: "Export",
+                summary: exportSummary,
+              },
+            }
+          : {}),
+      },
+      ANIMATION_PILL_ORDER
+    )
   );
 
   // Persist the active section and keep it pointed at a section this host
@@ -306,14 +450,19 @@
   });
 
   const activePillLabel = $derived(
-    pillSpecs.find((p) => p.id === activePill)?.label ?? "",
+    pillSpecs.find((p) => p.id === activePill)?.label ?? ""
   );
 
   // ── Mobile ControlDock wiring ──
   // The pill specs become dock tabs; Export's trigger is the compact trailing
   // download icon, mirroring the mandala dock.
   const dockTabs = $derived<ControlDockTab[]>(
-    pillSpecs.map((p) => ({ id: p.id, label: p.label, icon: p.icon, accentColor: p.accentColor })),
+    pillSpecs.map((p) => ({
+      id: p.id,
+      label: p.label,
+      icon: p.icon,
+      accentColor: p.accentColor,
+    }))
   );
   const dockTrailing = $derived<ControlDockAction | undefined>(
     exportEnabled && onExport
@@ -324,7 +473,7 @@
           disabled: exportDisabled,
           busy: !canvasReady,
         }
-      : undefined,
+      : undefined
   );
 
   // ── SR announcer ──
@@ -346,7 +495,7 @@
       </div>
     {:then mod}
       <mod.default
-        selectedPropType={selectedPropType}
+        {selectedPropType}
         onSelect={onPropChange}
         variant="inline"
         flat={layout === "bottom"}
@@ -360,13 +509,20 @@
       {isPlaying}
       onPlaybackToggle={onPlaybackToggle ?? (() => {})}
       showPlayback={!!(onPlaybackToggle && onBpmChange)}
+      onSettingChange={(setting, previous, value, coalesce) =>
+        reportSetting("effects", setting, previous, value, coalesce)}
     />
   {:else if activePill === "effort"}
     <div class="section-pad">
       {#if layout === "sidebar"}
         <p class="section-hint">How each beat speeds up and slows down.</p>
       {/if}
-      <EffortPanel columns={layout === "sidebar" ? 2 : 4} showSubtitles={layout === "sidebar"} />
+      <EffortPanel
+        columns={layout === "sidebar" ? 2 : 4}
+        showSubtitles={layout === "sidebar"}
+        onSettingChange={(previous, value) =>
+          reportSetting("effort", "preset", previous, value)}
+      />
     </div>
   {:else if activePill === "playback"}
     <div class="section-pad playback-rows">
@@ -397,13 +553,22 @@
            the props TRAVEL (prop-interpolator physics), a playback behavior —
            only the "Paths" chip in Display is visibility. PathShapePanel brings
            its own header row (label + live caption). -->
-      <PathShapePanel />
+      <PathShapePanel
+        onSettingChange={(previous, value) =>
+          reportSetting("playback", "path_shape", previous, value)}
+      />
     </div>
   {:else if activePill === "display"}
     <div class="section-pad display-rows">
-      <div class="rt-section" role="region" aria-labelledby="display-visibility-label">
-        <span class="rt-section-label" id="display-visibility-label">Visibility</span>
-        <DisplayPanel {showMotionVisibility} />
+      <div
+        class="rt-section"
+        role="region"
+        aria-labelledby="display-visibility-label"
+      >
+        <span class="rt-section-label" id="display-visibility-label"
+          >Visibility</span
+        >
+        <DisplayPanel {showMotionVisibility} {onSettingChange} />
       </div>
     </div>
   {:else if activePill === "export" && exportOptions}
@@ -411,55 +576,78 @@
       <div class="field">
         <span class="field-label">FPS</span>
         <div class="rt-chip-row">
-          <button type="button" class="rt-chip"
+          <button
+            type="button"
+            class="rt-chip"
             aria-pressed={exportOptions.videoFps === 30}
-            onclick={() => exportOptions.setVideoFps(30)}
-          >30 fps</button>
-          <button type="button" class="rt-chip"
+            onclick={() => setExportFps(30)}>30 fps</button
+          >
+          <button
+            type="button"
+            class="rt-chip"
             aria-pressed={exportOptions.videoFps === 60}
-            onclick={() => exportOptions.setVideoFps(60)}
-          >60 fps</button>
-          <button type="button" class="rt-chip"
+            onclick={() => setExportFps(60)}>60 fps</button
+          >
+          <button
+            type="button"
+            class="rt-chip"
             aria-pressed={exportOptions.videoFps === 120}
-            onclick={() => exportOptions.setVideoFps(120)}
-          >120 fps</button>
+            onclick={() => setExportFps(120)}>120 fps</button
+          >
         </div>
       </div>
 
       <div class="field">
         <span class="field-label">Res</span>
         <div class="rt-chip-row res-row">
-          <button type="button" class="rt-chip"
+          <button
+            type="button"
+            class="rt-chip"
             aria-pressed={exportOptions.videoResolution === 720}
-            onclick={() => exportOptions.setVideoResolution(720)}
-          >{renderMode === '3d' ? '720×720' : '720p'}</button>
-          <button type="button" class="rt-chip"
+            onclick={() => setExportResolution(720)}
+            >{renderMode === "3d" ? "720×720" : "720p"}</button
+          >
+          <button
+            type="button"
+            class="rt-chip"
             aria-pressed={exportOptions.videoResolution === 1080}
-            onclick={() => exportOptions.setVideoResolution(1080)}
-          >{renderMode === '3d' ? '1080×1080' : '1080p'}</button>
-          <button type="button" class="rt-chip"
+            onclick={() => setExportResolution(1080)}
+            >{renderMode === "3d" ? "1080×1080" : "1080p"}</button
+          >
+          <button
+            type="button"
+            class="rt-chip"
             aria-pressed={exportOptions.videoResolution === 2160}
-            onclick={() => exportOptions.setVideoResolution(2160)}
-          >{renderMode === '3d' ? '2160×2160' : '4K'}</button>
-          <button type="button" class="rt-chip"
+            onclick={() => setExportResolution(2160)}
+            >{renderMode === "3d" ? "2160×2160" : "4K"}</button
+          >
+          <button
+            type="button"
+            class="rt-chip"
             aria-pressed={exportOptions.videoResolution === 4320}
-            onclick={() => exportOptions.setVideoResolution(4320)}
-          >{renderMode === '3d' ? '4320×4320' : '8K'}</button>
+            onclick={() => setExportResolution(4320)}
+            >{renderMode === "3d" ? "4320×4320" : "8K"}</button
+          >
         </div>
       </div>
 
-      {#if renderMode === '3d'}
+      {#if renderMode === "3d"}
         <div class="field">
           <span class="field-label">Quality</span>
           <div class="rt-chip-row">
-            <button type="button" class="rt-chip"
-              aria-pressed={exportOptions.videoQuality === 'standard'}
-              onclick={() => exportOptions.setVideoQuality('standard')}
-            >Standard</button>
-            <button type="button" class="rt-chip"
-              aria-pressed={exportOptions.videoQuality === 'cinema'}
-              onclick={() => exportOptions.setVideoQuality('cinema')}
-            ><i class="fas fa-film" aria-hidden="true"></i> Cinema</button>
+            <button
+              type="button"
+              class="rt-chip"
+              aria-pressed={exportOptions.videoQuality === "standard"}
+              onclick={() => setExportQuality("standard")}>Standard</button
+            >
+            <button
+              type="button"
+              class="rt-chip"
+              aria-pressed={exportOptions.videoQuality === "cinema"}
+              onclick={() => setExportQuality("cinema")}
+              ><i class="fas fa-film" aria-hidden="true"></i> Cinema</button
+            >
           </div>
         </div>
       {/if}
@@ -467,15 +655,20 @@
       <div class="field">
         <span class="field-label">Timing</span>
         <div class="rt-chip-row">
-          <button type="button" class="rt-chip"
+          <button
+            type="button"
+            class="rt-chip"
             aria-pressed={exportOptions.videoIncludeStartPosition}
-            onclick={() => exportOptions.setVideoIncludeStartPosition(!exportOptions.videoIncludeStartPosition)}
+            onclick={() =>
+              setStartHold(!exportOptions.videoIncludeStartPosition)}
           >
             <i class="fas fa-step-backward" aria-hidden="true"></i> Start Hold
           </button>
-          <button type="button" class="rt-chip"
+          <button
+            type="button"
+            class="rt-chip"
             aria-pressed={exportOptions.videoIncludeEndHold}
-            onclick={() => exportOptions.setVideoIncludeEndHold(!exportOptions.videoIncludeEndHold)}
+            onclick={() => setEndHold(!exportOptions.videoIncludeEndHold)}
           >
             <i class="fas fa-step-forward" aria-hidden="true"></i> End Hold
           </button>
@@ -485,24 +678,36 @@
       <div class="field">
         <span class="field-label">Loops</span>
         <div class="rt-stepper">
-          <button type="button" class="rt-step-btn"
-            onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount - 1)}
+          <button
+            type="button"
+            class="rt-step-btn"
+            onclick={() => setLoopCount(exportOptions.videoLoopCount - 1)}
             disabled={exportOptions.videoLoopCount <= 1}
             aria-label="Decrease loop count"
-          ><i class="fas fa-minus" aria-hidden="true"></i></button>
+            ><i class="fas fa-minus" aria-hidden="true"></i></button
+          >
           <span class="rt-val">{exportOptions.videoLoopCount}×</span>
-          <button type="button" class="rt-step-btn"
-            onclick={() => exportOptions.setVideoLoopCount(exportOptions.videoLoopCount + 1)}
+          <button
+            type="button"
+            class="rt-step-btn"
+            onclick={() => setLoopCount(exportOptions.videoLoopCount + 1)}
             disabled={exportOptions.videoLoopCount >= 10}
             aria-label="Increase loop count"
-          ><i class="fas fa-plus" aria-hidden="true"></i></button>
+            ><i class="fas fa-plus" aria-hidden="true"></i></button
+          >
         </div>
       </div>
 
       {#if timeEstimateLabel || totalVideoDuration}
         <div class="export-meta">
-          {#if totalVideoDuration}<span><i class="fas fa-film" aria-hidden="true"></i> {totalVideoDuration}</span>{/if}
-          {#if timeEstimateLabel}<span><i class="fas fa-clock" aria-hidden="true"></i> {timeEstimateLabel}</span>{/if}
+          {#if totalVideoDuration}<span
+              ><i class="fas fa-film" aria-hidden="true"></i>
+              {totalVideoDuration}</span
+            >{/if}
+          {#if timeEstimateLabel}<span
+              ><i class="fas fa-clock" aria-hidden="true"></i>
+              {timeEstimateLabel}</span
+            >{/if}
         </div>
       {/if}
     </div>
@@ -531,20 +736,34 @@
           <span class="progress-stage">
             {#if !exportProgress}Starting...{:else}Exporting{/if}
           </span>
-          <span class="progress-pct">{exportProgress ? Math.round(exportProgress.progress * 100) : 0}%</span>
+          <span class="progress-pct"
+            >{exportProgress
+              ? Math.round(exportProgress.progress * 100)
+              : 0}%</span
+          >
         </div>
         <div
           class="progress-bar"
           role="progressbar"
-          aria-valuenow={exportProgress ? Math.round(exportProgress.progress * 100) : 0}
+          aria-valuenow={exportProgress
+            ? Math.round(exportProgress.progress * 100)
+            : 0}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label="Export progress"
         >
-          <div class="progress-fill" style="width: {exportProgress ? exportProgress.progress * 100 : 0}%"></div>
+          <div
+            class="progress-fill"
+            style="width: {exportProgress ? exportProgress.progress * 100 : 0}%"
+          ></div>
         </div>
         {#if onCancel}
-          <button type="button" class="cancel-btn" onclick={onCancel} aria-label="Cancel export">
+          <button
+            type="button"
+            class="cancel-btn"
+            onclick={onCancel}
+            aria-label="Cancel export"
+          >
             <i class="fas fa-times" aria-hidden="true"></i>
             Cancel
           </button>
@@ -557,7 +776,9 @@
         onTabSelect={(id) => handlePillSelect(id as PillId)}
         trailingAction={dockTrailing}
         {secondaryActions}
-        trayMaxHeight={activePill === "effects" ? "min(54vh, 360px)" : "min(35vh, 250px)"}
+        trayMaxHeight={activePill === "effects"
+          ? "min(54vh, 360px)"
+          : "min(35vh, 250px)"}
       >
         {#snippet tray()}
           <div class="dock-dense">
@@ -583,21 +804,27 @@
         pills={pillSpecs}
         activeId={activePill}
         onSelect={handlePillSelect}
-        onNavMount={(el) => { pillNavEl = el; }}
+        onNavMount={(el) => {
+          pillNavEl = el;
+        }}
       />
 
       <div class="sidebar-main">
-        <div
-          class="panel-scroll"
-          bind:this={panelScrollEl}
-        >
+        <div class="panel-scroll" bind:this={panelScrollEl}>
           <div class="panel-content-center">
             {#if activePill}
               {#key activePill}
                 <div
                   class="panel-transition"
-                  in:fly={{ y: reduceMotion ? 0 : panelDirection * 24, duration: reduceMotion ? 0 : 200, delay: 60 }}
-                  out:fly={{ y: reduceMotion ? 0 : panelDirection * -12, duration: reduceMotion ? 0 : 120 }}
+                  in:fly={{
+                    y: reduceMotion ? 0 : panelDirection * 24,
+                    duration: reduceMotion ? 0 : 200,
+                    delay: 60,
+                  }}
+                  out:fly={{
+                    y: reduceMotion ? 0 : panelDirection * -12,
+                    duration: reduceMotion ? 0 : 120,
+                  }}
                 >
                   <div class="panel-center-inner">
                     <h2 class="panel-title">{activePillLabel}</h2>
@@ -610,55 +837,76 @@
         </div>
 
         {#if exportEnabled}
-        <div class="panel-footer">
-          {#if isExporting && showInlineExportProgress}
-            <div class="export-progress-row" role="status" aria-live="polite">
-              <div class="progress-info">
-                <span class="progress-stage">
-                  {#if !exportProgress}Starting...{:else}Exporting{/if}
-                </span>
-                <span class="progress-pct">{exportProgress ? Math.round(exportProgress.progress * 100) : 0}%</span>
-              </div>
-              <div
-                class="progress-bar"
-                role="progressbar"
-                aria-valuenow={exportProgress ? Math.round(exportProgress.progress * 100) : 0}
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-label="Export progress"
-              >
-                <div class="progress-fill" style="width: {exportProgress ? exportProgress.progress * 100 : 0}%"></div>
-              </div>
-              {#if onCancel}
-                <button type="button" class="cancel-btn" onclick={onCancel} aria-label="Cancel export">
-                  <i class="fas fa-times" aria-hidden="true"></i>
-                  Cancel
-                </button>
-              {/if}
-            </div>
-          {:else}
-            <div class="export-row">
-              <button
-                type="button"
-                class="export-btn"
-                onclick={onExport}
-                disabled={exportDisabled}
-                aria-label={exportButtonLabel}
-              >
-                {#if !canvasReady}
-                  <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
-                  Preparing export...
-                {:else}
-                  <i class="fas {renderMode === '3d' ? 'fa-circle' : 'fa-download'}" aria-hidden="true"></i>
-                  {exportButtonLabel}
+          <div class="panel-footer">
+            {#if isExporting && showInlineExportProgress}
+              <div class="export-progress-row" role="status" aria-live="polite">
+                <div class="progress-info">
+                  <span class="progress-stage">
+                    {#if !exportProgress}Starting...{:else}Exporting{/if}
+                  </span>
+                  <span class="progress-pct"
+                    >{exportProgress
+                      ? Math.round(exportProgress.progress * 100)
+                      : 0}%</span
+                  >
+                </div>
+                <div
+                  class="progress-bar"
+                  role="progressbar"
+                  aria-valuenow={exportProgress
+                    ? Math.round(exportProgress.progress * 100)
+                    : 0}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label="Export progress"
+                >
+                  <div
+                    class="progress-fill"
+                    style="width: {exportProgress
+                      ? exportProgress.progress * 100
+                      : 0}%"
+                  ></div>
+                </div>
+                {#if onCancel}
+                  <button
+                    type="button"
+                    class="cancel-btn"
+                    onclick={onCancel}
+                    aria-label="Cancel export"
+                  >
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                    Cancel
+                  </button>
                 {/if}
-              </button>
-              {#if timeEstimateLabel && !exportDisabled}
-                <span class="time-estimate">{timeEstimateLabel}</span>
-              {/if}
-            </div>
-          {/if}
-        </div>
+              </div>
+            {:else}
+              <div class="export-row">
+                <button
+                  type="button"
+                  class="export-btn"
+                  onclick={onExport}
+                  disabled={exportDisabled}
+                  aria-label={exportButtonLabel}
+                >
+                  {#if !canvasReady}
+                    <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                    Preparing export...
+                  {:else}
+                    <i
+                      class="fas {renderMode === '3d'
+                        ? 'fa-circle'
+                        : 'fa-download'}"
+                      aria-hidden="true"
+                    ></i>
+                    {exportButtonLabel}
+                  {/if}
+                </button>
+                {#if timeEstimateLabel && !exportDisabled}
+                  <span class="time-estimate">{timeEstimateLabel}</span>
+                {/if}
+              </div>
+            {/if}
+          </div>
         {/if}
       </div>
     </div>
@@ -727,7 +975,9 @@
     flex: 1;
     gap: 6px;
   }
-  .export-fields .rt-chip-row.res-row { flex-wrap: wrap; }
+  .export-fields .rt-chip-row.res-row {
+    flex-wrap: wrap;
+  }
   .export-fields .export-meta {
     display: flex;
     gap: 16px;
@@ -738,34 +988,69 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     font-variant-numeric: tabular-nums;
   }
-  .export-fields .export-meta i { opacity: 0.6; margin-right: 2px; }
+  .export-fields .export-meta i {
+    opacity: 0.6;
+    margin-right: 2px;
+  }
 
   /* ============================================================
    * Dock-tray densification (mobile). Scoped to .dock-dense so these
    * shared panels stay full-size in their other usages. Touch targets
    * stay >=44px — we only collapse gaps, paddings, and >44px tiles.
    * ============================================================ */
-  .dock-dense :global(.section-pad) { gap: 8px; padding: 4px 12px 10px; }
+  .dock-dense :global(.section-pad) {
+    gap: 8px;
+    padding: 4px 12px 10px;
+  }
   /* EffectsPanel drill-down: recolumn the picker 4 -> 6 so 16 tiles land in 3
      rows at the 44px touch floor — the whole palette (plus Off) fits inside the
      capped tray with NO scrolling, per "show all the options in one screen". */
-  .dock-dense :global(.mep) { gap: 6px; }
-  .dock-dense :global(.drill-view) { gap: 6px; }
-  .dock-dense :global(.fx-picker) { grid-template-columns: repeat(6, 1fr); gap: 4px; }
-  .dock-dense :global(.fx-tile) { height: 44px; }
-  .dock-dense :global(.fx-picker .fx-tile) { gap: 1px; padding: 0 2px; }
-  .dock-dense :global(.fx-picker .fx-tile i) { font-size: 12px; }
-  .dock-dense :global(.fx-picker .fx-tile > span) { font-size: 9px; letter-spacing: 0.01em; }
+  .dock-dense :global(.mep) {
+    gap: 6px;
+  }
+  .dock-dense :global(.drill-view) {
+    gap: 6px;
+  }
+  .dock-dense :global(.fx-picker) {
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+  }
+  .dock-dense :global(.fx-tile) {
+    height: 44px;
+  }
+  .dock-dense :global(.fx-picker .fx-tile) {
+    gap: 1px;
+    padding: 0 2px;
+  }
+  .dock-dense :global(.fx-picker .fx-tile i) {
+    font-size: 12px;
+  }
+  .dock-dense :global(.fx-picker .fx-tile > span) {
+    font-size: 9px;
+    letter-spacing: 0.01em;
+  }
   /* Visibility: icons add no meaning at chip size and force 96px columns
      (3 ragged rows). Label-only chips pack the 8 toggles into a clean 4×2.
      Dock only — the sidebar keeps the roomier iconed grid. */
-  .dock-dense :global(.vis-grid) { grid-template-columns: repeat(4, 1fr); gap: 4px; }
-  .dock-dense :global(.vis-grid .rt-chip i) { display: none; }
-  .dock-dense :global(.vis-grid .rt-chip) { padding: 0 4px; }
+  .dock-dense :global(.vis-grid) {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+  }
+  .dock-dense :global(.vis-grid .rt-chip i) {
+    display: none;
+  }
+  .dock-dense :global(.vis-grid .rt-chip) {
+    padding: 0 4px;
+  }
   /* Squeeze the last ~15px so Visibility + Motion paths land inside the capped
      tray with NO scroll (the whole tab on one screen). */
-  .dock-dense .display-rows { gap: 5px; padding: 2px 12px 4px; }
-  .dock-dense .display-rows .rt-section { gap: 4px; }
+  .dock-dense .display-rows {
+    gap: 5px;
+    padding: 2px 12px 4px;
+  }
+  .dock-dense .display-rows .rt-section {
+    gap: 4px;
+  }
   /* Playback: 5 controls don't need four stacked bands. Label-left rows, and
      the two mode buttons sit side-by-side. Dock only — the sidebar keeps the
      descriptive vertical stack. */
@@ -793,33 +1078,71 @@
     flex: 1;
     min-width: 0;
   }
-  .dock-dense :global(.slider-row) { padding: 6px 10px; gap: 8px; }
+  .dock-dense :global(.slider-row) {
+    padding: 6px 10px;
+    gap: 8px;
+  }
   /* BentoPropGrid */
-  .dock-dense :global(.grid-scroll) { padding: 6px 12px; }
-  .dock-dense :global(.section-label) { padding: 4px 4px 2px; }
-  .dock-dense :global(.section-buttons) { gap: 4px; }
-  .dock-dense :global(.grid-content) { gap: 2px; }
+  .dock-dense :global(.grid-scroll) {
+    padding: 6px 12px;
+  }
+  .dock-dense :global(.section-label) {
+    padding: 4px 4px 2px;
+  }
+  .dock-dense :global(.section-buttons) {
+    gap: 4px;
+  }
+  .dock-dense :global(.grid-content) {
+    gap: 2px;
+  }
   /* Shrink prop tiles ~79->60px (square) so more fit per row + shorter rows.
      Higher specificity than BentoPropGrid's own width + container-query rules. */
   .dock-dense :global(.section-buttons .prop-button),
   .dock-dense :global(.popover-trigger-wrap .prop-button),
-  .dock-dense :global(.popover-trigger-wrap) { width: 60px; }
-  .dock-dense :global(.prop-button) { aspect-ratio: 1 / 1; padding: 5px 3px 4px; gap: 2px; }
+  .dock-dense :global(.popover-trigger-wrap) {
+    width: 60px;
+  }
+  .dock-dense :global(.prop-button) {
+    aspect-ratio: 1 / 1;
+    padding: 5px 3px 4px;
+    gap: 2px;
+  }
   /* .prop-label keeps its base var(--font-size-compact, 12px); it ellipsizes
      (nowrap + hidden overflow) inside the 60px tile, so no sub-floor override. */
   /* EffortPanel (56px tile -> 48, still >=44) */
-  .dock-dense :global(.effort-btn) { min-height: 48px; padding: 10px 6px; }
-  .dock-dense :global(.effort-grid) { gap: 4px; }
+  .dock-dense :global(.effort-btn) {
+    min-height: 48px;
+    padding: 10px 6px;
+  }
+  .dock-dense :global(.effort-grid) {
+    gap: 4px;
+  }
   /* PathShapePanel */
-  .dock-dense :global(.path-shape-grid) { gap: 4px; }
-  .dock-dense :global(.path-btn) { padding: 6px; }
-  .dock-dense :global(.hybrid-btn) { padding: 6px 10px; margin-top: 4px; }
-  .dock-dense :global(.motion-hint) { margin-top: 2px; }
+  .dock-dense :global(.path-shape-grid) {
+    gap: 4px;
+  }
+  .dock-dense :global(.path-btn) {
+    padding: 6px;
+  }
+  .dock-dense :global(.hybrid-btn) {
+    padding: 6px 10px;
+    margin-top: 4px;
+  }
+  .dock-dense :global(.motion-hint) {
+    margin-top: 2px;
+  }
   /* DisplayPanel */
-  .dock-dense :global(.display-chips) { gap: 4px; }
+  .dock-dense :global(.display-chips) {
+    gap: 4px;
+  }
   /* TempoControl popover */
-  .dock-dense :global(.bpm-popover) { padding: 10px; gap: 8px; }
-  .dock-dense :global(.bpm-popover-presets) { gap: 6px; }
+  .dock-dense :global(.bpm-popover) {
+    padding: 10px;
+    gap: 8px;
+  }
+  .dock-dense :global(.bpm-popover-presets) {
+    gap: 6px;
+  }
 
   /* ============================================================
    * MOBILE BOTTOM CONTAINER
@@ -919,8 +1242,12 @@
     padding: 12px 16px 4px;
   }
 
-  .panel-scroll::-webkit-scrollbar { width: 5px; }
-  .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+  .panel-scroll::-webkit-scrollbar {
+    width: 5px;
+  }
+  .panel-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
   .panel-scroll::-webkit-scrollbar-thumb {
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.12));
     border-radius: 3px;
@@ -969,7 +1296,8 @@
 
   .export-btn:hover:not(:disabled) {
     filter: brightness(1.1);
-    box-shadow: 0 4px 12px color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
+    box-shadow: 0 4px 12px
+      color-mix(in srgb, var(--theme-accent, #6366f1) 40%, transparent);
   }
 
   .export-btn:active:not(:disabled) {
@@ -1041,7 +1369,11 @@
   }
 
   .cancel-btn:hover {
-    background: color-mix(in srgb, var(--semantic-error, #f87171) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #f87171) 15%,
+      transparent
+    );
     border-color: var(--semantic-error, #f87171);
     color: var(--semantic-error, #f87171);
   }

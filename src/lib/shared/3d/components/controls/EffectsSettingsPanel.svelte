@@ -32,17 +32,28 @@
   import type { EffectId } from "$lib/shared/effects/state/effects-config-state.svelte";
   import type { AvatarInstanceState } from "$lib/shared/3d/state/avatar-instance-state.svelte";
   import type { EffectType } from "$lib/shared/effects/domain/effects-config";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   interface Props {
     performer?: AvatarInstanceState | null;
     /** All-Performers mode: apply every change to this whole group. */
     performers?: AvatarInstanceState[] | null;
+    onSettingChange?: ViewerControlSink;
   }
-  let { performer = null, performers = null }: Props = $props();
+  let {
+    performer = null,
+    performers = null,
+    onSettingChange,
+  }: Props = $props();
 
   // Non-empty group => broadcast scope (All-Performers). Takes precedence over
   // the single-performer path.
-  const multi = $derived(performers && performers.length > 0 ? performers : null);
+  const multi = $derived(
+    performers && performers.length > 0 ? performers : null
+  );
 
   const config = getEffectsConfigContext() ?? createEffectsConfigState();
   const scene3DRender = getScene3DRenderContext() ?? createScene3DRenderState();
@@ -53,8 +64,15 @@
   // Only effects with a live 3D renderer are listed in the 3D viewer — the
   // renderer-less effects (zap/echo/water/…) are no-ops here. Motion stays as a
   // scene-level modifier.
-  const effectChips: ReadonlyArray<{ key: EffectKey; label: string; icon: string; color: string }> = [
-    ...EFFECTS.filter((e) => EFFECTS_WITH_3D_RENDERER.has(e.id as EffectId)).map((e) => ({
+  const effectChips: ReadonlyArray<{
+    key: EffectKey;
+    label: string;
+    icon: string;
+    color: string;
+  }> = [
+    ...EFFECTS.filter((e) =>
+      EFFECTS_WITH_3D_RENDERER.has(e.id as EffectId)
+    ).map((e) => ({
       key: e.id as EffectType,
       label: e.label,
       icon: e.icon.replace(/^fa-/, ""),
@@ -68,13 +86,17 @@
   // per performer. Motion stays a scene-level modifier in both modes.
   // The global default a performer inherits when it has no override is the
   // effects-config wildcard.
-  const inheritedEffect = $derived(config.config.tipEffectMap["*"]?.effect ?? "none");
+  const inheritedEffect = $derived(
+    config.config.tipEffectMap["*"]?.effect ?? "none"
+  );
   const performerEffect = $derived.by<EffectKey | null>(() => {
     if (multi) {
       // The group shares an effect only when every performer resolves to the
       // same one; a mixed group reads as "none" (nothing highlighted).
       const first = multi[0]!.rawEffect ?? inheritedEffect;
-      const allSame = multi.every((p) => (p.rawEffect ?? inheritedEffect) === first);
+      const allSame = multi.every(
+        (p) => (p.rawEffect ?? inheritedEffect) === first
+      );
       return allSame ? first : "none";
     }
     return performer ? (performer.rawEffect ?? inheritedEffect) : null;
@@ -92,18 +114,36 @@
 
   function toggle(key: EffectKey) {
     if (key === "motion") {
-      const motionEnabled = scene3DRender.motion.blur || scene3DRender.motion.speedLines;
+      const motionEnabled =
+        scene3DRender.motion.blur || scene3DRender.motion.speedLines;
       scene3DRender.updateMotion({
         blur: !motionEnabled,
         speedLines: !motionEnabled,
       });
+      reportViewerControlChange(
+        onSettingChange,
+        "viewer_3d_effects",
+        "motion",
+        motionEnabled,
+        !motionEnabled
+      );
       return;
     }
     if (multi) {
       // Group radio: if every performer already has this effect, clicking it
       // turns it off for all; otherwise set every performer to it.
-      const allActive = multi.every((p) => (p.rawEffect ?? inheritedEffect) === key);
-      for (const p of multi) p.setEffect(allActive ? "none" : (key as EffectType));
+      const allActive = multi.every(
+        (p) => (p.rawEffect ?? inheritedEffect) === key
+      );
+      for (const p of multi)
+        p.setEffect(allActive ? "none" : (key as EffectType));
+      reportViewerControlChange(
+        onSettingChange,
+        "viewer_3d_effects",
+        "effect",
+        performerEffect,
+        allActive ? "none" : key
+      );
       return;
     }
     if (performer) {
@@ -111,17 +151,35 @@
       // another replaces it. Reset-to-inherit is the CascadeBadge's job.
       const active = performerEffect === key;
       performer.setEffect(active ? "none" : (key as EffectType));
+      reportViewerControlChange(
+        onSettingChange,
+        "viewer_3d_effects",
+        "effect",
+        performerEffect,
+        active ? "none" : key
+      );
       return;
     }
     // Global mode - wildcard tip map. Toggling the active effect off returns
     // to "none" so the grid has a consistent off-state semantic.
-    const currentlyActive = config.config.tipEffectMap["*"]?.effect === key;
+    const previous = config.config.tipEffectMap["*"]?.effect ?? "none";
+    const currentlyActive = previous === key;
     config.setTipEffectMap({ "*": { effect: currentlyActive ? "none" : key } });
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_effects",
+      "effect",
+      previous,
+      currentlyActive ? "none" : key
+    );
   }
 
   const globalEnabledCount = $derived(
-    (config.config.tipEffectMap["*"]?.effect && config.config.tipEffectMap["*"].effect !== "none" ? 1 : 0) +
-    (scene3DRender.motion.blur || scene3DRender.motion.speedLines ? 1 : 0),
+    (config.config.tipEffectMap["*"]?.effect &&
+    config.config.tipEffectMap["*"].effect !== "none"
+      ? 1
+      : 0) +
+      (scene3DRender.motion.blur || scene3DRender.motion.speedLines ? 1 : 0)
   );
 
   // --- Curated per-effect tuning ---
@@ -138,10 +196,14 @@
   // The active effect's id (if it's a real effect, not motion) — drives the
   // shared control stack rendered above the chip grid.
   const activeEffectId = $derived(
-    activeEffectKey && isEffectId(activeEffectKey) ? (activeEffectKey as EffectId) : null,
+    activeEffectKey && isEffectId(activeEffectKey)
+      ? (activeEffectKey as EffectId)
+      : null
   );
   let showAdvanced = $state(false);
-  const hasAdvanced = $derived(activeEffectId ? advancedControls(activeEffectId).length > 0 : false);
+  const hasAdvanced = $derived(
+    activeEffectId ? advancedControls(activeEffectId).length > 0 : false
+  );
 
   // --- Footer: Copy Diagnostic / Save Defaults / Reset ---
   let copyStatus = $state<"idle" | "copied" | "failed">("idle");
@@ -157,13 +219,86 @@
       console.log("[3d-effect-tuning]", json);
       copyStatus = "failed";
     }
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_effects",
+      "diagnostic_copy",
+      "requested",
+      copyStatus,
+      { count: false }
+    );
     if (copyTimer) clearTimeout(copyTimer);
     copyTimer = setTimeout(() => (copyStatus = "idle"), 2500);
   }
 
   const copyLabel = $derived(
-    copyStatus === "copied" ? "Copied" : copyStatus === "failed" ? "Copy failed" : "Copy Diagnostic",
+    copyStatus === "copied"
+      ? "Copied"
+      : copyStatus === "failed"
+        ? "Copy failed"
+        : "Copy Diagnostic"
   );
+
+  function startCopyDiagnostic(): void {
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_effects",
+      "diagnostic_copy",
+      null,
+      "requested"
+    );
+    void copyDiagnostic();
+  }
+
+  function toggleAdvanced(): void {
+    const previous = showAdvanced;
+    showAdvanced = !showAdvanced;
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_effects",
+      "advanced_open",
+      previous,
+      showAdvanced
+    );
+  }
+
+  function saveDefaults(): void {
+    config.saveAsBaseline();
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_effects",
+      "defaults_action",
+      null,
+      "save"
+    );
+  }
+
+  function resetDefaults(): void {
+    config.resetToBaseline();
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_effects",
+      "defaults_action",
+      null,
+      "reset"
+    );
+  }
+
+  function handleEffectSettingChange(
+    setting: string,
+    previousValue: string | number | boolean | null,
+    value: string | number | boolean | null,
+    coalesce = false
+  ): void {
+    reportViewerControlChange(
+      onSettingChange,
+      `viewer_3d_effect_${activeEffectId ?? "none"}`,
+      setting,
+      previousValue,
+      value,
+      { coalesce }
+    );
+  }
 </script>
 
 <section class="effects-settings">
@@ -192,19 +327,31 @@
        renders). Shown automatically while that effect is on — no double-click. -->
   {#if activeEffectId}
     <div class="effect-controls">
-      <EffectControlStack effect={activeEffectId} {config} />
+      <EffectControlStack
+        effect={activeEffectId}
+        {config}
+        onSettingChange={handleEffectSettingChange}
+      />
       {#if hasAdvanced}
         <button
           type="button"
           class="advanced-toggle"
           aria-expanded={showAdvanced}
-          onclick={() => (showAdvanced = !showAdvanced)}
+          onclick={toggleAdvanced}
         >
-          <i class="fas fa-{showAdvanced ? 'chevron-up' : 'chevron-down'}" aria-hidden="true"></i>
+          <i
+            class="fas fa-{showAdvanced ? 'chevron-up' : 'chevron-down'}"
+            aria-hidden="true"
+          ></i>
           Advanced
         </button>
         {#if showAdvanced}
-          <EffectControlStack effect={activeEffectId} {config} tiers={["advanced"]} />
+          <EffectControlStack
+            effect={activeEffectId}
+            {config}
+            tiers={["advanced"]}
+            onSettingChange={handleEffectSettingChange}
+          />
         {/if}
       {/if}
     </div>
@@ -228,15 +375,23 @@
       class="footer-btn copy-btn"
       class:copied={copyStatus === "copied"}
       class:failed={copyStatus === "failed"}
-      onclick={copyDiagnostic}
+      onclick={startCopyDiagnostic}
       title="Copy current effect tuning as JSON (paste to bake into defaults)"
     >
       {copyLabel}
     </button>
-    <button class="footer-btn" onclick={() => config.saveAsBaseline()} title="Save current tuning as the default Reset returns to">
+    <button
+      class="footer-btn"
+      onclick={saveDefaults}
+      title="Save current tuning as the default Reset returns to"
+    >
       Save Defaults
     </button>
-    <button class="footer-btn" onclick={() => config.resetToBaseline()} title="Reset tuning to the saved default">
+    <button
+      class="footer-btn"
+      onclick={resetDefaults}
+      title="Reset tuning to the saved default"
+    >
       Reset
     </button>
   </div>

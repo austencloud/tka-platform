@@ -1,9 +1,16 @@
 <script lang="ts">
   import { Popover } from "bits-ui";
-  import { getViewer3DContext, type PopoverId } from "../../context/viewer-3d-context";
+  import {
+    getViewer3DContext,
+    type PopoverId,
+  } from "../../context/viewer-3d-context";
   import { scale, fly, fade } from "svelte/transition";
   import { backOut, cubicOut } from "svelte/easing";
   import type { Snippet } from "svelte";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   interface Props {
     id: PopoverId;
@@ -16,6 +23,7 @@
     hasOverride?: boolean;
     children: Snippet;
     footer?: Snippet;
+    onSettingChange?: ViewerControlSink;
   }
 
   let {
@@ -29,6 +37,7 @@
     hasOverride = false,
     children,
     footer,
+    onSettingChange,
   }: Props = $props();
 
   const viewer = getViewer3DContext();
@@ -40,11 +49,20 @@
   });
 
   function handleOpenChange(next: boolean) {
+    const previous = viewer.activePopover === id;
     if (next) {
       viewer.openPopover(id);
     } else {
       viewer.closePopover();
     }
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_rail",
+      `${id}_open`,
+      previous,
+      next,
+      { count: next }
+    );
   }
 </script>
 
@@ -81,8 +99,18 @@
             {...props}
             class="viewer-popover-panel"
             style:--popover-width="{width}px"
-            in:scale={{ duration: 220, start: 0.92, opacity: 0, easing: backOut }}
-            out:scale={{ duration: 160, start: 0.95, opacity: 0, easing: cubicOut }}
+            in:scale={{
+              duration: 220,
+              start: 0.92,
+              opacity: 0,
+              easing: backOut,
+            }}
+            out:scale={{
+              duration: 160,
+              start: 0.95,
+              opacity: 0,
+              easing: cubicOut,
+            }}
           >
             <header
               class="pop-header"
@@ -200,15 +228,31 @@
     }
   }
   .rail-chip[aria-pressed="true"] {
-    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 18%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 18%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 50%,
+      transparent
+    );
     color: color-mix(in srgb, var(--theme-accent, #4a9eff) 60%, #ffffff);
-    box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-accent, #4a9eff) 25%, transparent);
+    box-shadow: 0 4px 20px
+      color-mix(in srgb, var(--theme-accent, #4a9eff) 25%, transparent);
     animation: chip-glow 2.4s ease-in-out infinite;
   }
   @keyframes chip-glow {
-    0%, 100% { box-shadow: 0 4px 20px color-mix(in srgb, var(--theme-accent, #4a9eff) 25%, transparent); }
-    50% { box-shadow: 0 4px 28px color-mix(in srgb, var(--theme-accent, #4a9eff) 40%, transparent); }
+    0%,
+    100% {
+      box-shadow: 0 4px 20px
+        color-mix(in srgb, var(--theme-accent, #4a9eff) 25%, transparent);
+    }
+    50% {
+      box-shadow: 0 4px 28px
+        color-mix(in srgb, var(--theme-accent, #4a9eff) 40%, transparent);
+    }
   }
   .rail-chip.performer-scoped i {
     color: var(--chip-tint, rgba(255, 255, 255, 0.62));
@@ -220,8 +264,15 @@
     animation: chip-glow-accent 2.4s ease-in-out infinite;
   }
   @keyframes chip-glow-accent {
-    0%, 100% { box-shadow: 0 4px 20px color-mix(in srgb, var(--chip-tint) 25%, transparent); }
-    50% { box-shadow: 0 4px 28px color-mix(in srgb, var(--chip-tint) 40%, transparent); }
+    0%,
+    100% {
+      box-shadow: 0 4px 20px
+        color-mix(in srgb, var(--chip-tint) 25%, transparent);
+    }
+    50% {
+      box-shadow: 0 4px 28px
+        color-mix(in srgb, var(--chip-tint) 40%, transparent);
+    }
   }
   .rail-chip i {
     font-size: 22px;

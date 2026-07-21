@@ -1,4 +1,7 @@
-import type { IVideoExportOrchestrator, VideoExportProgress } from "$lib/shared/compose/domain/video-export-types";
+import type {
+  IVideoExportOrchestrator,
+  VideoExportProgress,
+} from "$lib/shared/compose/domain/video-export-types";
 import type { Offline3DExporter } from "$lib/shared/3d/services/offline-3d-exporter";
 import type { SequenceRenderer } from "$lib/shared/render/services/sequence-renderer";
 import { getSequenceRenderer } from "$lib/shared/render/get-sequence-renderer";
@@ -8,7 +11,7 @@ import { recordExportThroughput } from "$lib/shared/animation-panel/state/export
 import { logShareAction } from "$lib/shared/analytics/services/posthog-activity-logger";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceExportOptions } from "$lib/shared/render/domain/models/sequence-export-options";
-import type { AnimationPlaybackController } from '$lib/shared/animation-engine/services/animation-playback-controller';
+import type { AnimationPlaybackController } from "$lib/shared/animation-engine/services/animation-playback-controller";
 import type { AnimationPanelState } from "$lib/shared/animation-engine/state/animation-panel-state.svelte";
 import type { VideoExportOrchestratorOptions } from "$lib/shared/compose/domain/video-export-types";
 import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/types/trail-capture-types";
@@ -16,7 +19,8 @@ import type { AdditionalLayerProps } from "$lib/shared/animation-engine/domain/t
 import { tryGetVideoExportOrchestrator } from "$lib/shared/animation-engine/get-video-export-orchestrator";
 import { getOffline3DExporter } from "$lib/shared/3d/get-offline-3d-exporter";
 import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
-import type { CameraKeyframeBuffer } from '$lib/shared/video-export/domain/camera-keyframe';
+import type { CameraKeyframeBuffer } from "$lib/shared/video-export/domain/camera-keyframe";
+import { reportImageExportDelivery } from "./image-export-delivery";
 
 export interface VideoExportEffectOverrides {
   fire?: boolean;
@@ -81,6 +85,8 @@ export interface ExportCallbacks {
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
   onHaptic: (type: "success" | "error" | "selection") => void;
+  /** Native share sheet was dismissed. Optional for existing callers. */
+  onCanceled?: () => void;
 }
 
 /**
@@ -109,8 +115,19 @@ export interface Video3DExportDependencies {
   webglCanvas: HTMLCanvasElement;
   /** Three.js PerspectiveCamera (from useThrelte().camera) */
   camera: {
-    position: { x: number; y: number; z: number; set(x: number, y: number, z: number): void };
-    quaternion: { x: number; y: number; z: number; w: number; set(x: number, y: number, z: number, w: number): void };
+    position: {
+      x: number;
+      y: number;
+      z: number;
+      set(x: number, y: number, z: number): void;
+    };
+    quaternion: {
+      x: number;
+      y: number;
+      z: number;
+      w: number;
+      set(x: number, y: number, z: number, w: number): void;
+    };
     fov: number;
     updateProjectionMatrix(): void;
   };
@@ -122,7 +139,11 @@ export interface Video3DExportDependencies {
   cameraKeyframes: CameraKeyframeBuffer;
   /** Three.js WebGLRenderer - needed for cinema-mode supersampling resize */
   renderer: {
-    getSize(target: { x: number; y: number; set(w: number, h: number): unknown }): unknown;
+    getSize(target: {
+      x: number;
+      y: number;
+      set(w: number, h: number): unknown;
+    }): unknown;
     setSize(w: number, h: number, updateStyle?: boolean): void;
     getPixelRatio(): number;
     setPixelRatio(ratio: number): void;
@@ -227,8 +248,14 @@ export class SequenceModalExporter {
           // App mode: the offscreen export engine has no settings wiring, so pass
           // the user's chosen prop explicitly. Without it the export renders the
           // default "staff" instead of the live prop.
-          bluePropType: settingsService.settings.bluePropType ?? settingsService.settings.propType ?? "staff",
-          redPropType: settingsService.settings.redPropType ?? settingsService.settings.propType ?? "staff",
+          bluePropType:
+            settingsService.settings.bluePropType ??
+            settingsService.settings.propType ??
+            "staff",
+          redPropType:
+            settingsService.settings.redPropType ??
+            settingsService.settings.propType ??
+            "staff",
           // Tunnel/art export pass-throughs (absent for normal sequence export).
           sourceSizeOverride: options.sourceSizeOverride,
           additionalLayersForBeat: options.additionalLayersForBeat,
@@ -239,13 +266,20 @@ export class SequenceModalExporter {
 
       const exportDurationMs = performance.now() - exportStartTime;
       if (capturedFrameCount > 0 && exportDurationMs > 0) {
-        recordExportThroughput(options.resolution, capturedFrameCount, exportDurationMs);
+        recordExportThroughput(
+          options.resolution,
+          capturedFrameCount,
+          exportDurationMs
+        );
       }
 
       this._previewBlobUrl = URL.createObjectURL(blob);
     } catch (error) {
       if ((error as Error).message !== "Export cancelled") {
-        console.error("[SequenceModalExporter] Animation export failed:", error);
+        console.error(
+          "[SequenceModalExporter] Animation export failed:",
+          error
+        );
         this._error = "Export failed. Please try again.";
         callbacks.onError(this._error);
       }
@@ -338,12 +372,15 @@ export class SequenceModalExporter {
     this._error = null;
 
     try {
-      const blob = await this.sequenceRenderer.renderSequenceToBlob(deps.sequence, {
-        stepSize: 240,
-        format: "PNG",
-        quality: 1.0,
-        ...renderOptions,
-      });
+      const blob = await this.sequenceRenderer.renderSequenceToBlob(
+        deps.sequence,
+        {
+          stepSize: 240,
+          format: "PNG",
+          quality: 1.0,
+          ...renderOptions,
+        }
+      );
 
       const seq = deps.sequence;
       const rawName =
@@ -371,9 +408,15 @@ export class SequenceModalExporter {
         typeof navigator.canShare === "function"
       ) {
         try {
-          const file = new File([blob], filename, { type: blob.type || "image/png" });
+          const file = new File([blob], filename, {
+            type: blob.type || "image/png",
+          });
           if (navigator.canShare({ files: [file] })) {
-            await navigator.share({ files: [file], title: "TKA Sequence", text: rawName });
+            await navigator.share({
+              files: [file],
+              title: "TKA Sequence",
+              text: rawName,
+            });
             shared = true;
           }
         } catch (err) {
@@ -407,8 +450,7 @@ export class SequenceModalExporter {
         });
       }
 
-      callbacks.onHaptic("success");
-      callbacks.onSuccess(shared ? "Card shared!" : "Image exported!");
+      reportImageExportDelivery(callbacks, shared, shareCanceled);
     } catch (error) {
       console.error("[SequenceModalExporter] Image export failed:", error);
       callbacks.onHaptic("error");

@@ -13,38 +13,49 @@
  */
 
 import posthog from "posthog-js";
+import type { CaptureOptions, PostHogInterface } from "posthog-js";
 import { browser } from "$app/environment";
+import {
+  PUBLIC_POSTHOG_HOST,
+  PUBLIC_POSTHOG_KEY,
+  PUBLIC_POSTHOG_PROJECT_ID,
+} from "$env/static/public";
 import { getDeviceId } from "$lib/shared/foundation/services/device-id";
 
-// `$env/dynamic/public` throws on module-eval in a worker (no globalThis
-// sveltekit env object), which crashes the composition worker the moment it
-// imports anything in this module's graph (authState -> posthog). Load it
-// lazily so importing this module is worker-safe; the loader is only ever
-// awaited from browser-guarded code paths, so the worker never fetches it.
-type PublicEnv = Record<string, string | undefined>;
-let _publicEnv: PublicEnv | null = null;
-async function loadPublicEnv(): Promise<PublicEnv> {
-  if (_publicEnv) return _publicEnv;
-  ({ env: _publicEnv } = (await import("$env/dynamic/public")) as {
-    env: PublicEnv;
-  });
-  return _publicEnv;
-}
-
-// Start that fetch the moment this module evaluates instead of at the top of
-// initPostHog(). Awaiting it there put a second serial round trip in front of
-// posthog.init() — the scan page paid it after the posthog chunk had already
-// landed, delaying replay start by exactly that hop. Prefetching overlaps it
-// with posthog-js's own evaluation; initPostHog() then resolves from _publicEnv.
-//
-// `document` is the worker guard: a web worker has no document, so the
-// composition worker never fetches (and never crashes on) the env module. A
-// rejection is swallowed here and simply retried by the await in initPostHog().
-if (typeof document !== "undefined") {
-  void loadPublicEnv().catch(() => {});
-}
+// Capacitor serves a static bundle and has no server route for SvelteKit's
+// /_app/env.js. Build-time public constants work in the WebView and remain safe
+// when this module appears in a worker import graph.
+const publicEnv = {
+  PUBLIC_POSTHOG_HOST,
+  PUBLIC_POSTHOG_KEY,
+  PUBLIC_POSTHOG_PROJECT_ID,
+};
 
 let initialized = false;
+let initializationPromise: Promise<void> | null = null;
+export type PostHogReadyClient = PostHogInterface;
+type PostHogReadyListener = (instance: PostHogReadyClient) => void;
+const postHogReadyListeners = new Set<PostHogReadyListener>();
+
+/**
+ * Run setup that must land inside PostHog's `loaded` callback, before its
+ * initial pageview is captured. Already-ready callers run synchronously.
+ */
+export function onPostHogReady(listener: PostHogReadyListener): () => void {
+  if (!browser) return () => {};
+  if (initialized) {
+    listener(posthog);
+    return () => {};
+  }
+  postHogReadyListeners.add(listener);
+  return () => postHogReadyListeners.delete(listener);
+}
+
+function notifyPostHogReady(instance: PostHogReadyClient): void {
+  const listeners = [...postHogReadyListeners];
+  postHogReadyListeners.clear();
+  for (const listener of listeners) listener(instance);
+}
 
 // Whether this page load ever identified a real user to PostHog. resetUser()
 // reads it so an ungated call can't churn the identity of a visitor who was
@@ -97,11 +108,19 @@ function resolveBootstrapDistinctId(token: string): string | undefined {
  * Initialize PostHog analytics.
  * Call once on app startup in +layout.svelte.
  */
-export async function initPostHog(): Promise<void> {
-  if (!browser) return;
-  if (initialized) return;
+export function initPostHog(): Promise<void> {
+  if (!browser) return Promise.resolve();
+  if (initializationPromise) return initializationPromise;
+  if (initialized) return Promise.resolve();
 
-  const env = await loadPublicEnv();
+  initializationPromise = initializePostHog().finally(() => {
+    initializationPromise = null;
+  });
+  return initializationPromise;
+}
+
+async function initializePostHog(): Promise<void> {
+  const env = publicEnv;
   if (!env.PUBLIC_POSTHOG_KEY) {
     console.warn("[PostHog] No API key found. Analytics disabled.");
     return;
@@ -173,6 +192,9 @@ export async function initPostHog(): Promise<void> {
 
     // Load feature flags immediately
     loaded: (posthog) => {
+      // Scan attribution must be registered here, before posthog-js schedules
+      // the initial $pageview immediately after this callback returns.
+      notifyPostHogReady(posthog);
       // Reload feature flags to ensure fresh state
       posthog.reloadFeatureFlags();
     },
@@ -252,10 +274,22 @@ export function captureException(
  */
 export function captureEvent(
   eventName: string,
-  properties?: Record<string, unknown>
+  properties?: Record<string, unknown>,
+  options?: CaptureOptions
 ): void {
   if (!browser || !initialized || import.meta.env.DEV) return;
-  posthog.capture(eventName, properties);
+  captureEventWithPostHog(posthog, eventName, properties, options);
+}
+
+/** Deliver events queued before `initialized` flips inside the loaded hook. */
+export function captureEventWithPostHog(
+  instance: PostHogReadyClient,
+  eventName: string,
+  properties?: Record<string, unknown>,
+  options?: CaptureOptions
+): void {
+  if (!browser || import.meta.env.DEV) return;
+  instance.capture(eventName, properties, options);
 }
 
 /**
@@ -329,7 +363,7 @@ export async function getSessionReplayUrl(): Promise<string | null> {
   const sessionId = posthog.get_session_id();
   if (!sessionId) return null;
 
-  const env = await loadPublicEnv();
+  const env = publicEnv;
   if (!env.PUBLIC_POSTHOG_PROJECT_ID) return null;
 
   return `https://us.posthog.com/project/${env.PUBLIC_POSTHOG_PROJECT_ID}/replay/${sessionId}`;

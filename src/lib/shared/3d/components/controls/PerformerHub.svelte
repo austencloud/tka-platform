@@ -5,31 +5,61 @@
   import PerformerHubDetail from "./PerformerHubDetail.svelte";
   import { slide } from "svelte/transition";
   import { cubicOut } from "svelte/easing";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+
+  interface Props {
+    onSettingChange?: ViewerControlSink;
+  }
+  let { onSettingChange }: Props = $props();
 
   const viewer = getViewer3DContext();
   const selectedIndex = $derived(viewer.selectedPerformerIndex);
   const performers = $derived(viewer.performerManager.performers);
   const performerColor = $derived(
-    selectedIndex !== null ? getPerformerColor(selectedIndex) : "#4a9eff",
+    selectedIndex !== null ? getPerformerColor(selectedIndex) : "#4a9eff"
   );
 
   let detailCollapsed = $state(true);
   let hasInteracted = $state(false);
 
   function handleSpineInteract() {
+    const previous = !detailCollapsed;
     hasInteracted = true;
     detailCollapsed = false;
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "detail_open",
+      previous,
+      true,
+      { count: false }
+    );
   }
 
   function collapseDetail() {
+    const previous = !detailCollapsed;
     detailCollapsed = true;
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_performer",
+      "detail_open",
+      previous,
+      false
+    );
   }
 </script>
 
 {#if performers.length >= 1}
   <div class="hub-anchor" style:--panel-color={performerColor}>
     <div class="spine-panel" class:has-detail={!detailCollapsed}>
-      <PerformerSpine onInteract={handleSpineInteract} {hasInteracted} />
+      <PerformerSpine
+        onInteract={handleSpineInteract}
+        {hasInteracted}
+        {onSettingChange}
+      />
     </div>
 
     {#if !detailCollapsed}
@@ -44,7 +74,7 @@
         >
           <i class="fas fa-times"></i>
         </button>
-        <PerformerHubDetail />
+        <PerformerHubDetail {onSettingChange} />
       </div>
     {/if}
   </div>

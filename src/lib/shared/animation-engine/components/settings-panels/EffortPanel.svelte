@@ -2,14 +2,19 @@
   import { onDestroy } from "svelte";
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
   import { getAnimationVisibilityContext } from "../../state/animation-visibility-context";
-  import { EFFORTS } from "$lib/shared/effort/domain/effort-types";
+  import {
+    EFFORTS,
+    type EffortId,
+  } from "$lib/shared/effort/domain/effort-types";
 
   let {
     columns = 4,
     showSubtitles = false,
+    onSettingChange,
   }: {
     columns?: 2 | 4;
     showSubtitles?: boolean;
+    onSettingChange?: (previousValue: string, value: string) => void;
   } = $props();
 
   const vm = getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
@@ -18,6 +23,12 @@
 
   function handleVisibilityChange(): void {
     effortPreset = vm.getEffortPreset();
+  }
+
+  function selectEffort(id: EffortId): void {
+    const previous = effortPreset;
+    vm.setEffortPreset(id);
+    onSettingChange?.(previous, id);
   }
 
   vm.registerObserver(handleVisibilityChange);
@@ -32,7 +43,7 @@
       class:with-sub={showSubtitles}
       type="button"
       aria-pressed={effortPreset === effort.id}
-      onclick={() => vm.setEffortPreset(effort.id)}
+      onclick={() => selectEffort(effort.id)}
       style:--effort-color={effort.color}
     >
       <span class="effort-label">{effort.label}</span>

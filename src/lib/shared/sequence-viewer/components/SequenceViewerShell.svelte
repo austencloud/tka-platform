@@ -63,6 +63,27 @@
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { sendToStickerLab } from "$lib/shared/sequence-viewer/services/send-to-sticker-lab";
+  import {
+    captureScanAction,
+    captureScanExport,
+    captureScanPlaybackChanged,
+    captureScanPracticeChanged,
+    captureScanSettingChanged,
+    captureScanViewerOpened,
+    captureScanViewChanged,
+    endScanViewerSession,
+    isScanVisit,
+    registerScanSessionCleanup,
+    type ScanAnalyticsValue,
+    type ScanExportStage,
+  } from "$lib/shared/analytics/scan-analytics";
+  import type { TempoPracticeConfig } from "../services/tempo-practice-orchestrator";
+  import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import type {
+    ViewerControlEventOptions,
+    ViewerControlValue,
+  } from "../domain/viewer-control-analytics";
+  import { scanPropProperties } from "$lib/shared/analytics/scan-prop-attribution";
 
   /** Host-owned export pipeline (the scan page's gated share-sheet flow).
       Absent → the orchestrator's own ctx.handleExport pipeline (the app). */
@@ -105,6 +126,25 @@
     guideAction = null,
   }: Props = $props();
 
+  const scanInstrumentationEnabled = isScanVisit();
+  const activeArtExports = new Map<
+    "mandala" | "tunnel",
+    Record<string, ScanAnalyticsValue>
+  >();
+
+  onMount(() =>
+    registerScanSessionCleanup((reason) => {
+      for (const [artType, properties] of activeArtExports) {
+        captureScanExport(artType, "canceled", {
+          ...properties,
+          reason,
+          user_initiated: false,
+        });
+      }
+      activeArtExports.clear();
+    })
+  );
+
   // Reduced-motion gate for the practice/scene transitions below.
   let prefersReducedMotion = $state(false);
   onMount(() => {
@@ -134,7 +174,7 @@
   // at least sidebar-wide + the sidebar all fit, the export falls back to the compact
   // bottom dock with the preview as the hero (same layout phones get).
   const EXPORT_SIDEBAR_WIDTH = 560; // keep in sync with --export-sidebar-width in CSS
-  const HERO_MIN_WIDTH = 600;       // sidebar 560 + 40px so the preview is clearly larger
+  const HERO_MIN_WIDTH = 600; // sidebar 560 + 40px so the preview is clearly larger
 
   // Rail width is user-persisted (ViewerContentRail's RAIL_WIDTH_KEY), so a dragged-
   // wider rail raises the bar correctly instead of silently re-crushing the preview.
@@ -142,8 +182,13 @@
     let rail = 180; // ViewerContentRail DEFAULT_WIDTH
     try {
       const raw = localStorage.getItem("tka-viewer-rail-width");
-      if (raw) { const n = parseInt(raw, 10); if (n >= 72 && n <= 300) rail = n; }
-    } catch { /* ignore */ }
+      if (raw) {
+        const n = parseInt(raw, 10);
+        if (n >= 72 && n <= 300) rail = n;
+      }
+    } catch {
+      /* ignore */
+    }
     return rail + EXPORT_SIDEBAR_WIDTH + HERO_MIN_WIDTH;
   }
 
@@ -160,7 +205,10 @@
         responsiveSettings = deviceDetector.getResponsiveSettings();
       });
     } catch (error) {
-      console.warn("SequenceViewerShell: Failed to resolve DeviceDetector", error);
+      console.warn(
+        "SequenceViewerShell: Failed to resolve DeviceDetector",
+        error
+      );
     }
     return () => deviceCleanup?.();
   });
@@ -168,7 +216,15 @@
   let exportSidebarCollapsed = $state(false);
 
   function toggleExportSidebar() {
+    const previous = !exportSidebarCollapsed;
     exportSidebarCollapsed = !exportSidebarCollapsed;
+    captureScanSettingChanged({
+      group: "export",
+      setting: "settings_visible",
+      previous_value: previous,
+      value: !exportSidebarCollapsed,
+      source: "header",
+    });
   }
 
   // Fresh sequence → expanded settings (mirrors the drawer's reset-on-open).
@@ -183,34 +239,55 @@
     if (!sequence) return;
     try {
       const copier = getClaudeCodeCopier();
-      await copier.copyForClaude(sequence);
+      const result = await copier.copyForClaude(sequence);
+      if (!result.success) {
+        captureScanAction("copy_for_claude", { outcome: "failed" });
+        return;
+      }
+      captureScanAction("copy_for_claude", { outcome: "completed" });
       copyClaudeFeedback = true;
-      setTimeout(() => { copyClaudeFeedback = false; }, 1500);
+      setTimeout(() => {
+        copyClaudeFeedback = false;
+      }, 1500);
     } catch (error) {
+      captureScanAction("copy_for_claude", { outcome: "failed" });
       console.error("[SequenceViewerShell] Copy for Claude failed:", error);
     }
   }
 
   function handleSendTo() {
     if (!sequence) return;
-    const propType = sequence.intendedProp?.bluePropType ?? settingsService.settings.bluePropType ?? "staff";
-    const thumbnailUrl = buildThumbnailUrl(sequence.word || sequence.name, String(propType), false);
-    openSendSequenceSheet(buildSequenceSharePayload({ ...sequence, thumbnailUrl }));
+    captureScanAction("send");
+    const propType =
+      sequence.intendedProp?.bluePropType ??
+      settingsService.settings.bluePropType ??
+      "staff";
+    const thumbnailUrl = buildThumbnailUrl(
+      sequence.word || sequence.name,
+      String(propType),
+      false
+    );
+    openSendSequenceSheet(
+      buildSequenceSharePayload({ ...sequence, thumbnailUrl })
+    );
   }
 
   function handleSendToStickerLab() {
     if (!sequence) return;
+    captureScanAction("send_to_sticker_lab");
     sendToStickerLab(sequence);
   }
 
   // Named rail/select handlers shared by the rail and the mobile bottom bar.
-  function selectSplitMode(c: OrchestratorContext) {
+  function selectSplitMode(c: OrchestratorContext, track = true) {
+    const previousMode = c.viewerState.viewerMode;
     c.viewerState.exitExport();
     // Side-by-side is hard-coded to 2D + Card on every width — the comparison
     // pairing bar was retired, so force the pairing here in case a different
     // one (e.g. 2D + 3D) was persisted before the bar went away.
-    c.viewerState.setSplitConfig({ leftPane: 'animation', rightPane: 'card' });
-    c.viewerState.setViewerMode('split');
+    c.viewerState.setSplitConfig({ leftPane: "animation", rightPane: "card" });
+    c.viewerState.setViewerMode("split");
+    if (track) captureScanViewChanged(previousMode, "split", "mode_switcher");
     // NOTE: do NOT force a rerenderTrigger++ here. The ChoreoCard's render
     // $effect already reacts to the pane's prop changes via the cache-aware
     // renderAllCells (in-place swap on a cache hit). rerenderTrigger++ routes to
@@ -218,20 +295,28 @@
     // spinner — that was the whole-grid "flash" seen when switching views.
   }
 
-  function selectViewerMode(c: OrchestratorContext, mode: ContentType) {
-    if (mode === 'animation') {
-      c.viewerState.enterExport('animation-export', 'animation');
-    } else if (mode === 'animation-3d') {
-      c.viewerState.enterExport('animation-export', 'animation-3d');
-    } else if (mode === 'card') {
-      c.viewerState.enterExport('image-export');
-    } else if (mode === 'mandala') {
+  function selectViewerMode(
+    c: OrchestratorContext,
+    mode: ContentType,
+    countIntent = true
+  ) {
+    const previousMode = c.viewerState.viewerMode;
+    if (mode === "animation") {
+      c.viewerState.enterExport("animation-export", "animation");
+    } else if (mode === "animation-3d") {
+      c.viewerState.enterExport("animation-export", "animation-3d");
+    } else if (mode === "card") {
+      c.viewerState.enterExport("image-export");
+    } else if (mode === "mandala") {
       c.viewerState.exitExport();
-      c.viewerState.setViewerMode('mandala');
-    } else if (mode === 'tunnel') {
+      c.viewerState.setViewerMode("mandala");
+    } else if (mode === "tunnel") {
       c.viewerState.exitExport();
-      c.viewerState.setViewerMode('tunnel');
+      c.viewerState.setViewerMode("tunnel");
     }
+    captureScanViewChanged(previousMode, mode, "mode_switcher", {
+      count: countIntent,
+    });
   }
 
   // QR play badge (Card mode): switch to the 2D animation view and start
@@ -239,8 +324,15 @@
   // time and only start when paused — never pauses an already-running anim.
   function playFromQr(c: OrchestratorContext) {
     const wasPlaying = c.isPlayingLocal;
-    selectViewerMode(c, 'animation');
+    selectViewerMode(c, "animation", false);
     if (!wasPlaying) c.handlePlaybackToggle();
+    captureScanPlaybackChanged({
+      action: "qr_play",
+      previous_value: wasPlaying,
+      value: true,
+      source: "card_qr_badge",
+      bpm: c.bpmLocal,
+    });
   }
 
   // viewerState persists across the whole origin (tka-viewer-mode /
@@ -248,7 +340,14 @@
   // export context would land mid-export instead of on the split first
   // impression. One-shot reset when the scan host mounts.
   onMount(() => {
-    if (startInSplit) queueMicrotask(() => selectSplitMode(ctx));
+    if (startInSplit) {
+      queueMicrotask(() => {
+        selectSplitMode(ctx, false);
+        captureScanViewerOpened("split");
+      });
+    } else {
+      captureScanViewerOpened(ctx.viewerState.viewerMode);
+    }
   });
 
   let deleteConfirmOpen = $state(false);
@@ -267,17 +366,30 @@
   const isImageExportActive = $derived(ctx.editingPane === "image");
   const isVideoUploadActive = $derived(ctx.editingPane === "video-upload");
   const isAnyExportActive = $derived(ctx.editingPane !== null);
-  const isRecordSceneActive = $derived(isVideoExportActive && ctx.renderMode === '3d' && !ctx.previewBlobUrl);
-  const isSidebarExportActive = $derived(isAnyExportActive && !isRecordSceneActive);
+  const isRecordSceneActive = $derived(
+    isVideoExportActive && ctx.renderMode === "3d" && !ctx.previewBlobUrl
+  );
+  const isSidebarExportActive = $derived(
+    isAnyExportActive && !isRecordSceneActive
+  );
   // Every sidebar export (card + the 2D/3D animation download) needs enough
   // width for the 560px settings sidebar to sit beside a usable preview + rail.
   // When the viewer is narrower than that (embedded, split, small window), drive
   // the whole export view into the mobile layout: preview hero on top, settings
   // in the bottom dock, modes in the bottom bar. RecordSceneChrome (3D record)
   // is its own full-bleed UI and is excluded via isRecordSceneActive.
-  const cardExportNarrow = $derived(isImageExportActive && !isMobile && bodyWidth < exportSidebarMinWidth());
-  const videoExportNarrow = $derived(isVideoExportActive && !isRecordSceneActive && !isMobile && bodyWidth < exportSidebarMinWidth());
-  const effectiveMobile = $derived(isMobile || cardExportNarrow || videoExportNarrow);
+  const cardExportNarrow = $derived(
+    isImageExportActive && !isMobile && bodyWidth < exportSidebarMinWidth()
+  );
+  const videoExportNarrow = $derived(
+    isVideoExportActive &&
+      !isRecordSceneActive &&
+      !isMobile &&
+      bodyWidth < exportSidebarMinWidth()
+  );
+  const effectiveMobile = $derived(
+    isMobile || cardExportNarrow || videoExportNarrow
+  );
   // The rail is the desktop mode switcher — it stays at every desktop width,
   // including the narrow-export fallback, so Card / 2D Animation don't swap to
   // phone chrome while Split / Mandala / Tunnel keep the rail (inconsistent).
@@ -285,42 +397,538 @@
   const showRail = $derived(!isMobile);
   // Narrow-desktop export: settings stack under the hero (mobile presentation)
   // but the rail column persists beside them.
-  const stackedExportWithRail = $derived(isSidebarExportActive && effectiveMobile && !isMobile);
-  const headerActions = $derived(buildHeaderActions(ctx, "full", { onDeleteRequest: () => (deleteConfirmOpen = true) }));
+  const stackedExportWithRail = $derived(
+    isSidebarExportActive && effectiveMobile && !isMobile
+  );
+  const headerActions = $derived(
+    buildHeaderActions(ctx, "full", {
+      onDeleteRequest: () => (deleteConfirmOpen = true),
+    })
+  );
 
   // ── Export routing: host override (scan gated pipeline) or the orchestrator ──
   const videoBusy = $derived(exportOverrides?.videoBusy ?? ctx.isExporting);
-  const videoProgress = $derived(exportOverrides?.videoProgress ?? ctx.exportProgress);
+  const videoProgress = $derived(
+    exportOverrides?.videoProgress ?? ctx.exportProgress
+  );
   const cardBusy = $derived(exportOverrides?.cardBusy ?? ctx.isExporting);
-  const showInlineProgress = $derived(exportOverrides?.showInlineProgress ?? true);
+  const showInlineProgress = $derived(
+    exportOverrides?.showInlineProgress ?? true
+  );
   // The premium export ring over the whole viewer body — the "lovely export
   // screen" for the standard Download Animation. A host that suppresses the
   // inline bar (showInlineProgress=false) does so because it renders its OWN
   // takeover (the scan page), so the shell renders one only when it hasn't.
   // 2D only — 3D export progress lives in Recording3DOverlay.
   const shellRendersTakeover = $derived(showInlineProgress);
-  const animTakeover = $derived(toExportTakeoverPhase(videoProgress, videoBusy));
-  const takeoverWord = $derived(
-    simplifyRepeatedWord(ctx.effectiveSequence?.word ?? ctx.effectiveSequence?.displayName ?? ""),
+  const animTakeover = $derived(
+    toExportTakeoverPhase(videoProgress, videoBusy)
   );
-  function handleVideoExport() {
+  const takeoverWord = $derived(
+    simplifyRepeatedWord(
+      ctx.effectiveSequence?.word ?? ctx.effectiveSequence?.displayName ?? ""
+    )
+  );
+  function videoExportAnalyticsConfig(): Record<string, ScanAnalyticsValue> {
+    const options = ctx.exportOptions.getVideoOptions();
+    return {
+      fps: options.fps,
+      loop_count: options.loopCount,
+      resolution: String(options.resolution),
+      include_start_position: options.includeStartPosition,
+      include_end_hold: options.includeEndHold,
+      render_mode: ctx.renderMode,
+      playback_mode: ctx.playbackMode,
+      ...scanPropProperties(ctx.bluePropType, ctx.redPropType),
+    };
+  }
+
+  function cardExportAnalyticsConfig(): Record<string, ScanAnalyticsValue> {
+    return {
+      step_count: ctx.effectiveSequence?.steps?.length ?? 0,
+      dark_mode: ctx.exportOptions.imageDarkMode,
+      include_start_position: ctx.splitPaneImageComposition.showStartPos,
+      hand_path: ctx.splitPaneImageComposition.handPathMode ?? false,
+      ...scanPropProperties(ctx.bluePropType, ctx.redPropType),
+    };
+  }
+
+  function handleVideoExport(stage: "requested" | "retry" = "requested") {
+    captureScanExport("video", stage, videoExportAnalyticsConfig());
     if (exportOverrides) exportOverrides.onVideoExport();
     else ctx.handleExport();
   }
   function handleCardExport() {
+    captureScanExport("card", "requested", cardExportAnalyticsConfig());
     if (exportOverrides) exportOverrides.onCardExport();
     else ctx.handleExport();
   }
   function handleRemix() {
+    captureScanAction("remix");
+    endScanViewerSession("remix");
     if (onRemix) onRemix();
     else ctx.invokeGatedAction("remix", ctx.handleEdit);
   }
   function handleOpenApp() {
-    if (openAppHref) void goto(openAppHref);
+    if (!openAppHref) return;
+    captureScanAction("open_app");
+    endScanViewerSession("open_app");
+    void goto(openAppHref);
+  }
+
+  function handleGuideAction(): void {
+    if (!guideAction) return;
+    captureScanAction("guide");
+    endScanViewerSession("guide");
+    guideAction.onSelect();
+  }
+
+  function handleClose(): void {
+    endScanViewerSession("close_button");
+    onClose();
+  }
+
+  function handleFavoriteToggle(): void {
+    captureScanAction("favorite", {
+      value: !ctx.isFavorite,
+      gated: !ctx.isLoggedIn,
+    });
+    ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle);
+  }
+
+  function handleSave(): void {
+    captureScanAction("save", { gated: !ctx.isLoggedIn });
+    ctx.invokeGatedAction("save", ctx.handleSave);
+  }
+
+  function handleHeaderVideoUpload(): void {
+    captureScanAction("video_upload");
+    void headerActions.onVideoUpload?.();
+  }
+
+  function handleGalleryVideoUpload(): void {
+    captureScanAction("video_upload");
+    void ctx.handleVideoUpload();
+  }
+
+  function handlePublish(): void {
+    captureScanAction("publish");
+    void headerActions.onPublish?.();
+  }
+
+  function handleUnpublish(): void {
+    captureScanAction("unpublish");
+    void headerActions.onUnpublish?.();
+  }
+
+  function handleDeleteRequest(): void {
+    captureScanAction("delete_requested");
+    headerActions.onDeleteRequest?.();
+  }
+
+  function handleEnterPractice(): void {
+    const previousMode = ctx.viewerState.viewerMode;
+    ctx.enterPracticeMode();
+    captureScanViewChanged(
+      previousMode,
+      ctx.viewerState.viewerMode,
+      "practice_enter",
+      { count: false }
+    );
+    captureScanPracticeChanged("entered");
+  }
+
+  function handleExitPractice(): void {
+    captureScanPracticeChanged("exited", {
+      was_running: ctx.practiceRunning,
+      bpm: ctx.bpmLocal,
+    });
+    ctx.exitPracticeMode();
+  }
+
+  function handlePlaybackToggle(source: string): void {
+    const wasPlaying = ctx.isPlayingLocal;
+    ctx.handlePlaybackToggle();
+    captureScanPlaybackChanged({
+      action: wasPlaying ? "pause" : "play",
+      previous_value: wasPlaying,
+      value: !wasPlaying,
+      source,
+      bpm: ctx.bpmLocal,
+      step: ctx.currentStepLocal,
+    });
+  }
+
+  function handleSystemPlaybackChange(
+    playing: boolean,
+    source: "system_3d_loading"
+  ): void {
+    const previous = ctx.isPlayingLocal;
+    if (previous === playing) return;
+    ctx.handlePlaybackToggle();
+    captureScanPlaybackChanged({
+      action: playing ? "play" : "pause",
+      previous_value: previous,
+      value: playing,
+      source,
+      bpm: ctx.bpmLocal,
+      step: ctx.currentStepLocal,
+      count: false,
+    });
+  }
+
+  function handleBpmChange(bpm: number, source: string): void {
+    const previous = ctx.bpmLocal;
+    ctx.handleBpmChange(bpm);
+    captureScanSettingChanged({
+      group: "playback",
+      setting: "bpm",
+      previous_value: previous,
+      value: bpm,
+      source,
+      coalesce: true,
+    });
+  }
+
+  function handlePropChange(propType: PropType, source: string): void {
+    const previousBlue = ctx.bluePropType ? String(ctx.bluePropType) : null;
+    const previousRed = ctx.redPropType ? String(ctx.redPropType) : null;
+    ctx.handlePropTypeChange(propType);
+    const blue = ctx.bluePropType ? String(ctx.bluePropType) : null;
+    const red = ctx.redPropType ? String(ctx.redPropType) : null;
+    captureScanSettingChanged({
+      group: "props",
+      setting: "prop_type",
+      previous_value: `blue:${previousBlue ?? "none"}|red:${previousRed ?? "none"}`,
+      value: `blue:${blue ?? "none"}|red:${red ?? "none"}`,
+      previous_blue_prop: previousBlue,
+      previous_red_prop: previousRed,
+      blue_prop: blue,
+      red_prop: red,
+      source,
+    });
+  }
+
+  function handlePlaybackModeChange(
+    mode: "continuous" | "step",
+    source: string
+  ): void {
+    const previous = ctx.playbackMode;
+    ctx.handlePlaybackModeChange(mode);
+    captureScanPlaybackChanged({
+      action: "mode",
+      previous_value: previous,
+      value: mode,
+      source,
+    });
+  }
+
+  function handleViewerControlSetting(
+    group: string,
+    setting: string,
+    previousValue: ViewerControlValue,
+    value: ViewerControlValue,
+    options: ViewerControlEventOptions = {}
+  ): void {
+    captureScanSettingChanged({
+      group,
+      setting,
+      previous_value: previousValue,
+      value,
+      source: group === "record_scene" ? "record_scene" : "video_export",
+      coalesce: options.coalesce,
+      count: options.count,
+    });
+  }
+
+  function handleViewer3DSetting(
+    group: string,
+    setting: string,
+    previousValue: ViewerControlValue,
+    value: ViewerControlValue,
+    options: ViewerControlEventOptions = {}
+  ): void {
+    captureScanSettingChanged({
+      group,
+      setting,
+      previous_value: previousValue,
+      value,
+      source: "viewer_3d",
+      coalesce: options.coalesce,
+      count: options.count,
+    });
+  }
+
+  function handleViewer3DAction(
+    action: string,
+    properties: Record<string, ViewerControlValue> = {},
+    options: ViewerControlEventOptions = {}
+  ): void {
+    captureScanAction(
+      action,
+      { source: "viewer_3d", ...properties },
+      { count: options.count }
+    );
+  }
+
+  function handleStepClick(stepIndex: number): void {
+    const previous = ctx.currentStepLocal;
+    ctx.handleStepClick(stepIndex);
+    captureScanPlaybackChanged({
+      action: "step_select",
+      previous_value: previous,
+      value: stepIndex,
+      source: "card_step",
+      step: stepIndex,
+    });
+  }
+
+  function handleProgressBarSeek(targetStep: number): void {
+    const previous = ctx.currentStepLocal;
+    ctx.handleProgressBarSeek(targetStep);
+    captureScanPlaybackChanged({
+      action: "seek",
+      previous_value: previous,
+      value: targetStep,
+      source: "progress_bar",
+      step: targetStep,
+      coalesce: true,
+    });
+  }
+
+  function handleFocusPane(pane: "animation" | "image"): void {
+    captureScanAction("focus_pane", { pane });
+    ctx.enterEditMode(pane);
+  }
+
+  function handleUnfocusPane(): void {
+    captureScanAction("unfocus_pane");
+    ctx.exitEditMode();
+  }
+
+  function handleMotionToggle(hand: "blue" | "red"): void {
+    const previous =
+      hand === "blue"
+        ? ctx.viewerVisibility.blueMotion
+        : ctx.viewerVisibility.redMotion;
+    if (hand === "blue") ctx.viewerVisibility.toggleBlue();
+    else ctx.viewerVisibility.toggleRed();
+    captureScanSettingChanged({
+      group: "motion",
+      setting: `${hand}_visible`,
+      previous_value: previous,
+      value: !previous,
+      source: "header",
+    });
+  }
+
+  function practiceConfigProperties(
+    config: Partial<TempoPracticeConfig>
+  ): Record<string, ScanAnalyticsValue> {
+    return {
+      start_bpm: config.startBpm ?? null,
+      max_bpm: config.maxBpm ?? null,
+      increment: config.increment ?? null,
+      rounds_per_level: config.roundsPerLevel ?? null,
+      target_enabled: config.targetEnabled ?? null,
+      target_bpm: config.targetBpm ?? null,
+    };
+  }
+
+  function handlePracticeSetConfig(patch: Partial<TempoPracticeConfig>): void {
+    ctx.handlePracticeSetConfig(patch);
+    captureScanPracticeChanged(
+      "config_changed",
+      {
+        changed_fields: Object.keys(patch).sort().join(","),
+        ...practiceConfigProperties({
+          ...ctx.practiceState.userConfig,
+          ...patch,
+        }),
+      },
+      true
+    );
+  }
+
+  function handlePracticeStart(): void {
+    captureScanPracticeChanged(
+      "started",
+      practiceConfigProperties(ctx.practiceState.userConfig)
+    );
+    ctx.handlePracticeStart();
+  }
+
+  function handlePracticeStepLevel(direction: 1 | -1): void {
+    captureScanPracticeChanged("tempo_step", {
+      direction,
+      bpm: ctx.bpmLocal,
+      increment: ctx.practiceState.progress.increment,
+    });
+    ctx.handlePracticeStepLevel(direction);
+  }
+
+  function handlePracticeToggleHold(): void {
+    const previous = ctx.practiceState.progress.held;
+    captureScanPracticeChanged("hold_changed", {
+      previous_value: previous,
+      value: !previous,
+      bpm: ctx.bpmLocal,
+    });
+    ctx.handlePracticeToggleHold();
+  }
+
+  function handlePracticeStop(): void {
+    captureScanPracticeChanged("stopped", { bpm: ctx.bpmLocal });
+    ctx.handlePracticeStop();
+  }
+
+  function handleToggleMetronome(): void {
+    captureScanPracticeChanged("metronome_changed", {
+      previous_value: ctx.metronomeEnabled,
+      value: !ctx.metronomeEnabled,
+    });
+    ctx.handleToggleMetronome();
+  }
+
+  function handleToggleMirror(): void {
+    captureScanPracticeChanged("mirror_changed", {
+      previous_value: ctx.mirrorEnabled,
+      value: !ctx.mirrorEnabled,
+    });
+    ctx.handleToggleMirror();
+  }
+
+  function handleArtSettingChange(
+    group: string,
+    setting: string,
+    previousValue: ScanAnalyticsValue,
+    value: ScanAnalyticsValue,
+    coalesce = false,
+    source = "art_panel"
+  ): void {
+    captureScanSettingChanged({
+      group,
+      setting,
+      previous_value: previousValue,
+      value,
+      source,
+      coalesce,
+    });
+  }
+
+  function handleArtAction(
+    action: string,
+    properties: Record<string, ScanAnalyticsValue> = {},
+    options: ViewerControlEventOptions = {}
+  ): void {
+    captureScanAction(action, properties, { count: options.count });
+  }
+
+  function handleCardSettingChange(
+    group: string,
+    setting: string,
+    previousValue: ScanAnalyticsValue,
+    value: ScanAnalyticsValue,
+    coalesce = false
+  ): void {
+    captureScanSettingChanged({
+      group,
+      setting,
+      previous_value: previousValue,
+      value,
+      source: "card_export",
+      coalesce,
+    });
+  }
+
+  function handleCardContextAction(
+    control: string,
+    properties: Record<string, ScanAnalyticsValue> = {},
+    options: ViewerControlEventOptions = {}
+  ): void {
+    captureScanAction(
+      "card_context_action",
+      { control, ...properties },
+      { count: options.count }
+    );
+  }
+
+  function handleDeleteConfirm(): void {
+    captureScanAction("delete_confirmed");
+  }
+
+  function handleDeleteCancel(): void {
+    captureScanAction("delete_canceled");
+    deleteConfirmOpen = false;
+  }
+
+  function handleArtExport(
+    args: Parameters<typeof ctx.handleArtExport>[0]
+  ): void {
+    ctx.handleArtExport(args);
+  }
+
+  function handleArtExportEvent(
+    artType: "mandala" | "tunnel",
+    stage: ScanExportStage,
+    properties: Record<string, ScanAnalyticsValue> = {}
+  ): void {
+    if (stage === "requested" || stage === "retry") {
+      activeArtExports.set(artType, properties);
+    } else if (
+      stage === "completed" ||
+      stage === "failed" ||
+      stage === "canceled"
+    ) {
+      activeArtExports.delete(artType);
+    }
+    captureScanExport(artType, stage, properties);
+  }
+
+  function handleCancelVideoExport(): void {
+    captureScanExport("video", "canceled", {
+      ...videoExportAnalyticsConfig(),
+      user_initiated: true,
+    });
+    ctx.handleCancelExport();
+  }
+
+  function handleStopRecording(): void {
+    captureScanAction("recording_stop", {
+      elapsed_seconds: Math.round(ctx.recordingElapsed),
+      render_mode: "3d",
+    });
+    ctx.handleStopRecording();
+  }
+
+  function handleDismissExportedVideo(): void {
+    captureScanAction("exported_video_dismiss");
+    ctx.dismissPreview();
+  }
+
+  async function handleRedownloadExportedVideo(): Promise<void> {
+    captureScanAction("exported_video_redownload");
+    await ctx.saveExportedVideo();
+  }
+
+  async function handleVideoUploadSaveFirst(): Promise<void> {
+    captureScanAction("video_upload_save_first");
+    await ctx.handleSave();
+  }
+
+  function handleVideoUploadClose(): void {
+    captureScanAction("video_upload_close");
+    ctx.exitEditMode();
   }
 </script>
 
-{#snippet titleTrigger({ isOpen, hasMenu }: { isOpen: boolean; hasMenu: boolean })}
+{#snippet titleTrigger({
+  isOpen,
+  hasMenu,
+}: {
+  isOpen: boolean;
+  hasMenu: boolean;
+})}
   <span class="drawer-header-title">
     {#key `${isAnyExportActive}|${isVideoExportActive}|${isImageExportActive}|${ctx.renderMode}`}
       <span
@@ -328,7 +936,13 @@
         in:fade|local={{ duration: prefersReducedMotion ? 0 : 150 }}
       >
         {#if isAnyExportActive}
-          {isVideoExportActive ? (ctx.renderMode === '3d' ? "Record Scene" : `${saveActionVerb()} Animation`) : isImageExportActive ? `${saveActionVerb()} Card` : "Upload Video"}
+          {isVideoExportActive
+            ? ctx.renderMode === "3d"
+              ? "Record Scene"
+              : `${saveActionVerb()} Animation`
+            : isImageExportActive
+              ? `${saveActionVerb()} Card`
+              : "Upload Video"}
         {:else}
           Sequence Viewer
         {/if}
@@ -336,7 +950,11 @@
     {/key}
   </span>
   {#if hasMenu}
-    <i class="fas fa-chevron-down drawer-title-caret" class:open={isOpen} aria-hidden="true"></i>
+    <i
+      class="fas fa-chevron-down drawer-title-caret"
+      class:open={isOpen}
+      aria-hidden="true"
+    ></i>
   {/if}
 {/snippet}
 
@@ -347,160 +965,196 @@
     align="center"
     trigger={titleTrigger}
     isFavorite={headerActions.isFavorite}
-    onFavoriteToggle={headerActions.onFavoriteToggle}
+    onFavoriteToggle={headerActions.onFavoriteToggle
+      ? handleFavoriteToggle
+      : undefined}
     isSaved={headerActions.isSaved}
-    onSave={headerActions.onSave}
-    onRemix={onRemix ?? headerActions.onRemix}
+    onSave={headerActions.onSave ? handleSave : undefined}
+    onRemix={(onRemix ?? headerActions.onRemix) ? handleRemix : undefined}
     onCopyData={authState.isAdmin ? handleCopyForClaude : undefined}
     copyDataFeedback={copyClaudeFeedback}
-    onVideoUpload={headerActions.onVideoUpload}
+    onVideoUpload={headerActions.onVideoUpload
+      ? handleHeaderVideoUpload
+      : undefined}
     isPublished={headerActions.isPublished}
-    onPublish={headerActions.onPublish}
-    onUnpublish={headerActions.onUnpublish}
-    onDeleteRequest={headerActions.onDeleteRequest}
+    onPublish={headerActions.onPublish ? handlePublish : undefined}
+    onUnpublish={headerActions.onUnpublish ? handleUnpublish : undefined}
+    onDeleteRequest={headerActions.onDeleteRequest
+      ? handleDeleteRequest
+      : undefined}
     onOpenApp={openAppHref ? handleOpenApp : undefined}
-    onGuideAction={guideAction?.onSelect}
+    onGuideAction={guideAction ? handleGuideAction : undefined}
     guideActionLabel={guideAction?.label}
     motionVisibility={includeMotion
       ? {
           showBlue: ctx.viewerVisibility.blueMotion,
           showRed: ctx.viewerVisibility.redMotion,
-          onToggleBlue: () => ctx.viewerVisibility.toggleBlue(),
-          onToggleRed: () => ctx.viewerVisibility.toggleRed(),
+          onToggleBlue: () => handleMotionToggle("blue"),
+          onToggleRed: () => handleMotionToggle("red"),
         }
       : undefined}
+    onOpenChange={(open, reason) =>
+      captureScanAction(
+        open ? "overflow_open" : "overflow_close",
+        {},
+        {
+          count: reason !== "item",
+        }
+      )}
   />
 {/snippet}
 
-<div class="drawer-viewer-container" class:landscape={isLandscape} class:practice-mobile={isMobile && ctx.practiceActive}>
+<div
+  class="drawer-viewer-container"
+  class:landscape={isLandscape}
+  class:practice-mobile={isMobile && ctx.practiceActive}
+>
   <header class="drawer-header">
-        <div class="drawer-header-left-actions">
-          <!-- Both action sets stay mounted and crossfade so entering
+    <div class="drawer-header-left-actions">
+      <!-- Both action sets stay mounted and crossfade so entering
                practice doesn't flash buttons in/out. inert removes the
                hidden layer from focus + pointer + a11y. -->
-          <div class="left-actions-layer practice" class:active={ctx.practiceActive} inert={!ctx.practiceActive}>
-            <button
-              type="button"
-              class="header-action-btn practice-exit"
-              onclick={ctx.exitPracticeMode}
-              aria-label="Exit practice mode"
-            >
-              <i class="fas fa-arrow-left" aria-hidden="true"></i>
-              <span>Exit Practice</span>
-            </button>
-          </div>
+      <div
+        class="left-actions-layer practice"
+        class:active={ctx.practiceActive}
+        inert={!ctx.practiceActive}
+      >
+        <button
+          type="button"
+          class="header-action-btn practice-exit"
+          onclick={handleExitPractice}
+          aria-label="Exit practice mode"
+        >
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>
+          <span>Exit Practice</span>
+        </button>
+      </div>
 
-          <div class="left-actions-layer normal" class:active={!ctx.practiceActive} inert={ctx.practiceActive}>
-            {#if compactChrome}
-              <!-- Icon-only when the centered title and the full action row no
+      <div
+        class="left-actions-layer normal"
+        class:active={!ctx.practiceActive}
+        inert={ctx.practiceActive}
+      >
+        {#if compactChrome}
+          <!-- Icon-only when the centered title and the full action row no
                    longer have separate lanes. The title menu keeps every action. -->
-              <button
-                type="button"
-                class="header-action-btn practice icon-only"
-                onclick={() => ctx.enterPracticeMode()}
-                aria-label="Practice"
-              >
-                <i class="fas fa-dumbbell" aria-hidden="true"></i>
-              </button>
-            {:else}
-              <button
-                type="button"
-                class="header-action-btn"
-                class:favorited={ctx.isFavorite}
-                onclick={() => ctx.invokeGatedAction("favorite", ctx.handleFavoriteToggle)}
-                aria-label={ctx.isFavorite ? "Remove from favorites" : "Add to favorites"}
-              >
-                <i class="fas fa-heart" aria-hidden="true"></i>
-              </button>
+          <button
+            type="button"
+            class="header-action-btn practice icon-only"
+            onclick={handleEnterPractice}
+            aria-label="Practice"
+          >
+            <i class="fas fa-dumbbell" aria-hidden="true"></i>
+          </button>
+        {:else}
+          <button
+            type="button"
+            class="header-action-btn"
+            class:favorited={ctx.isFavorite}
+            onclick={handleFavoriteToggle}
+            aria-label={ctx.isFavorite
+              ? "Remove from favorites"
+              : "Add to favorites"}
+          >
+            <i class="fas fa-heart" aria-hidden="true"></i>
+          </button>
 
-              {#if !ctx.isSaved}
-                <button
-                  type="button"
-                  class="header-action-btn save"
-                  onclick={() => ctx.invokeGatedAction("save", ctx.handleSave)}
-                  aria-label="Save sequence"
-                >
-                  <i class="fas fa-floppy-disk" aria-hidden="true"></i>
-                </button>
-              {/if}
-
-              <button
-                type="button"
-                class="header-action-btn remix"
-                onclick={handleRemix}
-                aria-label="Remix"
-              >
-                <i class="fas fa-pen-to-square" aria-hidden="true"></i>
-              </button>
-
-              <button
-                type="button"
-                class="header-action-btn practice"
-                onclick={() => ctx.enterPracticeMode()}
-                aria-label="Practice"
-              >
-                <i class="fas fa-dumbbell" aria-hidden="true"></i>
-                <span>Practice</span>
-              </button>
-
-              <span class="header-action-divider"></span>
-
-              <MotionVisibilityToggle />
-
-              {#if authState.isAdmin}
-                <button
-                  type="button"
-                  class="header-action-btn"
-                  onclick={handleCopyForClaude}
-                  aria-label="Copy sequence data for Claude"
-                  title="Copy for Claude"
-                >
-                  <i class="fas {copyClaudeFeedback ? 'fa-check' : 'fa-terminal'}" aria-hidden="true"></i>
-                </button>
-              {/if}
-            {/if}
-          </div>
-        </div>
-
-        <div class="drawer-header-title-group">
-          {#if ctx.practiceActive}
-            <div class="drawer-header-title">
-              <span class="drawer-header-title-text">Practice Mode</span>
-            </div>
-          {:else}
-            <!-- The centered title IS the overflow-menu trigger: title +
-                 chevron opens the actions menu below the header. -->
-            {@render overflowMenu(compactChrome)}
-          {/if}
-        </div>
-
-        <div class="drawer-header-right-actions">
-          <!-- Card export settings can't be collapsed on desktop — they're
-               required to configure the download. Only Download Animation
-               keeps the hide/show toggle. -->
-          {#if isAnyExportActive && !effectiveMobile && !isRecordSceneActive && !isImageExportActive}
+          {#if !ctx.isSaved}
             <button
               type="button"
-              class="header-action-btn"
-              class:active={!exportSidebarCollapsed}
-              onclick={toggleExportSidebar}
-              aria-label={exportSidebarCollapsed ? "Show export settings" : "Hide export settings"}
-              title={exportSidebarCollapsed ? "Show settings" : "Hide settings"}
+              class="header-action-btn save"
+              onclick={handleSave}
+              aria-label="Save sequence"
             >
-              <i class="fas fa-sliders" aria-hidden="true"></i>
+              <i class="fas fa-floppy-disk" aria-hidden="true"></i>
             </button>
           {/if}
 
           <button
             type="button"
-            class="drawer-close-button"
-            onclick={onClose}
-            aria-label="Close viewer"
+            class="header-action-btn remix"
+            onclick={handleRemix}
+            aria-label="Remix"
           >
-            <i class="fas fa-times" aria-hidden="true"></i>
+            <i class="fas fa-pen-to-square" aria-hidden="true"></i>
           </button>
+
+          <button
+            type="button"
+            class="header-action-btn practice"
+            onclick={handleEnterPractice}
+            aria-label="Practice"
+          >
+            <i class="fas fa-dumbbell" aria-hidden="true"></i>
+            <span>Practice</span>
+          </button>
+
+          <span class="header-action-divider"></span>
+
+          <MotionVisibilityToggle
+            onToggleBlue={() => handleMotionToggle("blue")}
+            onToggleRed={() => handleMotionToggle("red")}
+          />
+
+          {#if authState.isAdmin}
+            <button
+              type="button"
+              class="header-action-btn"
+              onclick={handleCopyForClaude}
+              aria-label="Copy sequence data for Claude"
+              title="Copy for Claude"
+            >
+              <i
+                class="fas {copyClaudeFeedback ? 'fa-check' : 'fa-terminal'}"
+                aria-hidden="true"
+              ></i>
+            </button>
+          {/if}
+        {/if}
+      </div>
+    </div>
+
+    <div class="drawer-header-title-group">
+      {#if ctx.practiceActive}
+        <div class="drawer-header-title">
+          <span class="drawer-header-title-text">Practice Mode</span>
         </div>
-    </header>
+      {:else}
+        <!-- The centered title IS the overflow-menu trigger: title +
+                 chevron opens the actions menu below the header. -->
+        {@render overflowMenu(compactChrome)}
+      {/if}
+    </div>
+
+    <div class="drawer-header-right-actions">
+      <!-- Card export settings can't be collapsed on desktop — they're
+               required to configure the download. Only Download Animation
+               keeps the hide/show toggle. -->
+      {#if isAnyExportActive && !effectiveMobile && !isRecordSceneActive && !isImageExportActive}
+        <button
+          type="button"
+          class="header-action-btn"
+          class:active={!exportSidebarCollapsed}
+          onclick={toggleExportSidebar}
+          aria-label={exportSidebarCollapsed
+            ? "Show export settings"
+            : "Hide export settings"}
+          title={exportSidebarCollapsed ? "Show settings" : "Hide settings"}
+        >
+          <i class="fas fa-sliders" aria-hidden="true"></i>
+        </button>
+      {/if}
+
+      <button
+        type="button"
+        class="drawer-close-button"
+        onclick={handleClose}
+        aria-label="Close viewer"
+      >
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
+  </header>
 
   <div class="drawer-main">
     <div class="drawer-body-content" bind:clientWidth={bodyWidth}>
@@ -511,7 +1165,8 @@
           class:record-scene-active={isRecordSceneActive}
           class:desktop={!effectiveMobile}
           class:stacked-rail={stackedExportWithRail}
-          class:sidebar-collapsed={exportSidebarCollapsed && !isImageExportActive}
+          class:sidebar-collapsed={exportSidebarCollapsed &&
+            !isImageExportActive}
           class:has-rail={showRail}
         >
           {#if showRail}
@@ -525,12 +1180,14 @@
               />
             </div>
           {/if}
-          {#if ctx.viewerState.viewerMode === 'videos' && !isSidebarExportActive}
+          {#if ctx.viewerState.viewerMode === "videos" && !isSidebarExportActive}
             <VideoGallery
               {sequence}
               isOwned={ctx.isOwned}
               isLoggedIn={ctx.isLoggedIn}
-              onUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED ? () => ctx.handleVideoUpload() : undefined}
+              onUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED
+                ? handleGalleryVideoUpload
+                : undefined}
             />
           {:else}
             <ViewerSplitPane
@@ -538,8 +1195,8 @@
               renderMode={ctx.renderMode}
               isExporting={videoBusy}
               bpm={ctx.bpmLocal}
-              onBpmChange={ctx.handleBpmChange}
-              onPropChange={ctx.handlePropTypeChange}
+              onBpmChange={(bpm) => handleBpmChange(bpm, "viewer")}
+              onPropChange={(prop) => handlePropChange(prop, "viewer")}
               playback={ctx.splitPanePlayback}
               imageComposition={isImageExportActive
                 ? {
@@ -554,34 +1211,61 @@
                 fullscreenStackVertical: ctx.fullscreenStackVertical,
                 isMobile: effectiveMobile,
                 isLandscapeMobile: isLandscape,
-                focusedPane: ctx.viewerState.viewerMode !== 'split' ? (ctx.viewerState.viewerMode === 'card' ? 'image' : 'animation') : ctx.editingPane,
-                suppressCloseButton: ctx.viewerState.viewerMode !== 'split',
+                focusedPane:
+                  ctx.viewerState.viewerMode !== "split"
+                    ? ctx.viewerState.viewerMode === "card"
+                      ? "image"
+                      : "animation"
+                    : ctx.editingPane,
+                suppressCloseButton: ctx.viewerState.viewerMode !== "split",
               }}
               onRenderProgress={ctx.onRenderProgress}
-              onFocusPane={ctx.enterEditMode}
-              onUnfocusPane={ctx.exitEditMode}
-              onStepClick={ctx.handleStepClick}
-              onQrPlayClick={ctx.practiceActive ? undefined : () => playFromQr(ctx)}
+              onFocusPane={handleFocusPane}
+              onUnfocusPane={handleUnfocusPane}
+              onStepClick={handleStepClick}
+              onQrPlayClick={ctx.practiceActive
+                ? undefined
+                : () => playFromQr(ctx)}
               onCanvasReady={ctx.handleCanvasReady}
               {rerenderTrigger}
-              onChoreoCardContextMenu={(x, y) => choreoCardMenuHost?.openContextMenu(x, y)}
-              onPlaybackToggle={ctx.handlePlaybackToggle}
-              onProgressBarSeek={ctx.handleProgressBarSeek}
+              onChoreoCardContextMenu={(x, y) =>
+                choreoCardMenuHost?.openContextMenu(x, y)}
+              onPlaybackToggle={() => handlePlaybackToggle("viewer_transport")}
+              onSystemPlaybackChange={handleSystemPlaybackChange}
+              onProgressBarSeek={handleProgressBarSeek}
               onProgressBarScrubStart={ctx.handleProgressBarScrubStart}
               onProgressBarScrubEnd={ctx.handleProgressBarScrubEnd}
               playbackMode={ctx.playbackMode}
-              onPlaybackModeChange={ctx.handlePlaybackModeChange}
+              onPlaybackModeChange={(mode) =>
+                handlePlaybackModeChange(mode, "viewer")}
               onSceneReadyChange={(ready) => (sceneReady3d = ready)}
-              splitConfig={ctx.viewerState.viewerMode === 'split'
-                ? { leftPane: 'animation', rightPane: 'card' }
-                : (ctx.viewerState.viewerMode === 'card'
-                ? { ...ctx.viewerState.splitConfig, rightPane: 'card' }
-                : (ctx.viewerState.viewerMode === 'animation' || ctx.viewerState.viewerMode === 'animation-3d' || ctx.viewerState.viewerMode === 'mandala' || ctx.viewerState.viewerMode === 'tunnel'
-                  ? { ...ctx.viewerState.splitConfig, leftPane: ctx.viewerState.viewerMode }
-                  : ctx.viewerState.splitConfig))}
+              splitConfig={ctx.viewerState.viewerMode === "split"
+                ? { leftPane: "animation", rightPane: "card" }
+                : ctx.viewerState.viewerMode === "card"
+                  ? { ...ctx.viewerState.splitConfig, rightPane: "card" }
+                  : ctx.viewerState.viewerMode === "animation" ||
+                      ctx.viewerState.viewerMode === "animation-3d" ||
+                      ctx.viewerState.viewerMode === "mandala" ||
+                      ctx.viewerState.viewerMode === "tunnel"
+                    ? {
+                        ...ctx.viewerState.splitConfig,
+                        leftPane: ctx.viewerState.viewerMode,
+                      }
+                    : ctx.viewerState.splitConfig}
               isLoggedIn={ctx.isLoggedIn}
-              onVideoUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED ? () => ctx.handleVideoUpload() : undefined}
-              onArtExport={ctx.handleArtExport}
+              onVideoUpload={ctx.isLoggedIn && VIDEO_UPLOAD_ENABLED
+                ? handleGalleryVideoUpload
+                : undefined}
+              onArtExport={handleArtExport}
+              onArtExportEvent={handleArtExportEvent}
+              onArtSettingChange={handleArtSettingChange}
+              onArtAction={handleArtAction}
+              onViewer3DSettingChange={scanInstrumentationEnabled
+                ? handleViewer3DSetting
+                : undefined}
+              onViewer3DAction={scanInstrumentationEnabled
+                ? handleViewer3DAction
+                : undefined}
               practiceActive={ctx.practiceActive}
               practiceRunning={ctx.practiceRunning}
               practiceCountdown={ctx.practiceCountdown}
@@ -590,25 +1274,25 @@
               practiceMirrorEnabled={ctx.mirrorEnabled}
             />
           {/if}
-          {#if ctx.renderMode === '3d' && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
+          {#if ctx.renderMode === "3d" && (ctx.countdownValue > 0 || ctx.isRecording3D || ctx.isExporting)}
             <Recording3DOverlay
               countdownValue={ctx.countdownValue}
               isRecording={ctx.isRecording3D}
               elapsed={ctx.recordingElapsed}
-              onStop={ctx.handleStopRecording}
+              onStop={handleStopRecording}
               exportProgress={ctx.exportProgress}
               isExporting={ctx.isExporting}
-              onCancelExport={ctx.handleCancelExport}
+              onCancelExport={handleCancelVideoExport}
             />
           {/if}
-          {#if ctx.renderMode !== '3d' && shellRendersTakeover && animTakeover.phase !== 'idle'}
+          {#if ctx.renderMode !== "3d" && shellRendersTakeover && animTakeover.phase !== "idle"}
             <ExportTakeover
               phase={animTakeover.phase}
               progress={videoProgress?.progress ?? 0}
-              phaseLabel={animTakeover.labelKey ? t(animTakeover.labelKey) : ''}
+              phaseLabel={animTakeover.labelKey ? t(animTakeover.labelKey) : ""}
               error={videoProgress?.error ?? null}
-              onCancel={ctx.handleCancelExport}
-              onRetry={handleVideoExport}
+              onCancel={handleCancelVideoExport}
+              onRetry={() => handleVideoExport("retry")}
             >
               {#snippet title()}
                 <TKAWordGlyph word={takeoverWord} height={28} darkMode />
@@ -617,30 +1301,40 @@
           {/if}
           <ChoreoCardContextMenuHost
             bind:this={choreoCardMenuHost}
-            onRerender={() => { rerenderTrigger++; }}
+            onRerender={() => {
+              rerenderTrigger++;
+            }}
             isExportMode={isImageExportActive}
             exportOptions={ctx.exportOptions}
             onSendTo={handleSendTo}
             onSendToStickerLab={handleSendToStickerLab}
             stepCount={sequence?.steps?.length ?? 0}
+            onAction={handleCardContextAction}
           />
           {#if isRecordSceneActive && ctx.effectiveSequence && sceneReady3d}
             <RecordSceneChrome
               isExporting={ctx.isExporting}
               canvasReady={ctx.canvasReady}
-              onExport={ctx.handleExport}
+              onExport={() => handleVideoExport()}
               choreography={ctx.viewer3DState.cameraChoreography}
+              onSettingChange={scanInstrumentationEnabled
+                ? handleViewerControlSetting
+                : undefined}
             />
           {/if}
           {#if isSidebarExportActive}
-            <div class="export-panel-container" class:sidebar={!effectiveMobile && (isVideoExportActive || isVideoUploadActive)}>
+            <div
+              class="export-panel-container"
+              class:sidebar={!effectiveMobile &&
+                (isVideoExportActive || isVideoUploadActive)}
+            >
               {#if isVideoExportActive}
                 {#if ctx.previewBlobUrl}
                   <VideoPreviewPanel
                     blobUrl={ctx.previewBlobUrl}
                     saveLabel="Save"
-                    onDismiss={ctx.dismissPreview}
-                    onRedownload={() => void ctx.saveExportedVideo()}
+                    onDismiss={handleDismissExportedVideo}
+                    onRedownload={() => void handleRedownloadExportedVideo()}
                   />
                 {:else}
                   <ExportVideoDrawer
@@ -656,12 +1350,18 @@
                     playbackMode={ctx.playbackMode}
                     selectedPropType={ctx.bluePropType}
                     showInlineExportProgress={false}
-                    onPropChange={ctx.handlePropTypeChange}
-                    onPlaybackToggle={ctx.handlePlaybackToggle}
-                    onPlaybackModeChange={ctx.handlePlaybackModeChange}
-                    onBpmChange={ctx.handleBpmChange}
-                    onExport={handleVideoExport}
-                    onCancel={ctx.handleCancelExport}
+                    onPropChange={(prop) =>
+                      handlePropChange(prop, "video_export")}
+                    onPlaybackToggle={() =>
+                      handlePlaybackToggle("video_export")}
+                    onPlaybackModeChange={(mode) =>
+                      handlePlaybackModeChange(mode, "video_export")}
+                    onBpmChange={(bpm) => handleBpmChange(bpm, "video_export")}
+                    onExport={() => handleVideoExport()}
+                    onCancel={handleCancelVideoExport}
+                    onSettingChange={scanInstrumentationEnabled
+                      ? handleViewerControlSetting
+                      : undefined}
                   />
                 {/if}
               {:else if isImageExportActive && !isMobile}
@@ -676,14 +1376,15 @@
                   stepCount={ctx.effectiveSequence?.steps?.length ?? 0}
                   layout={effectiveMobile ? "bottom" : "sidebar"}
                   onExport={handleCardExport}
+                  onSettingChange={handleCardSettingChange}
                 />
               {:else if isVideoUploadActive}
                 <VideoPanel
                   {sequence}
                   isOwned={ctx.isOwned}
                   bpm={ctx.bpmLocal}
-                  onSaveFirst={async () => { await ctx.handleSave(); }}
-                  onClose={ctx.exitEditMode}
+                  onSaveFirst={handleVideoUploadSaveFirst}
+                  onClose={handleVideoUploadClose}
                 />
               {/if}
             </div>
@@ -699,7 +1400,8 @@
               stepCount={ctx.effectiveSequence.steps?.length ?? 0}
               layout="bottom"
               onExport={handleCardExport}
-              onClose={ctx.exitEditMode}
+              onClose={handleUnfocusPane}
+              onSettingChange={handleCardSettingChange}
             />
           </div>
         {/if}
@@ -712,8 +1414,19 @@
            the bar itself glides down (inner fly), on the SAME 260ms
            cubicOut curve as the tray — reads as the tray displacing the
            bar, not a pop. -->
-      <div transition:slide={{ duration: prefersReducedMotion ? 0 : 260, easing: cubicOut }}>
-        <div transition:fly={{ y: 72, duration: prefersReducedMotion ? 0 : 260, easing: cubicOut }}>
+      <div
+        transition:slide={{
+          duration: prefersReducedMotion ? 0 : 260,
+          easing: cubicOut,
+        }}
+      >
+        <div
+          transition:fly={{
+            y: 72,
+            duration: prefersReducedMotion ? 0 : 260,
+            easing: cubicOut,
+          }}
+        >
           <ViewerModeBottomBar
             activeMode={ctx.viewerState.viewerMode}
             webgl2Available={ctx.viewer3DState.webgl2Available}
@@ -740,27 +1453,35 @@
            (running phase). Config slides out left as the cockpit slides in
            from the right on Start. Cockpit is the flow child so it defines
            the bar's height; config overlays it. -->
-      <div class="bar-pane config" class:active={!ctx.practiceRunning} inert={ctx.practiceRunning}>
+      <div
+        class="bar-pane config"
+        class:active={!ctx.practiceRunning}
+        inert={ctx.practiceRunning}
+      >
         <PracticeSetupBar
           config={ctx.practiceState.userConfig}
-          onSetConfig={ctx.handlePracticeSetConfig}
-          onStart={ctx.handlePracticeStart}
+          onSetConfig={handlePracticeSetConfig}
+          onStart={handlePracticeStart}
         />
       </div>
-      <div class="bar-pane cockpit" class:active={ctx.practiceRunning} inert={!ctx.practiceRunning}>
+      <div
+        class="bar-pane cockpit"
+        class:active={ctx.practiceRunning}
+        inert={!ctx.practiceRunning}
+      >
         <PracticeBar
           progress={ctx.practiceState.progress}
           bpm={ctx.bpmLocal}
           isPlaying={ctx.isPlayingLocal}
-          onBpmChange={ctx.handleBpmChange}
-          onPlayPause={ctx.handlePlaybackToggle}
-          onStepLevel={ctx.handlePracticeStepLevel}
-          onToggleHold={ctx.handlePracticeToggleHold}
-          onStop={ctx.handlePracticeStop}
+          onBpmChange={(bpm) => handleBpmChange(bpm, "practice")}
+          onPlayPause={() => handlePlaybackToggle("practice")}
+          onStepLevel={handlePracticeStepLevel}
+          onToggleHold={handlePracticeToggleHold}
+          onStop={handlePracticeStop}
           metronomeOn={ctx.metronomeEnabled}
-          onToggleMetronome={ctx.handleToggleMetronome}
+          onToggleMetronome={handleToggleMetronome}
           mirrorOn={ctx.mirrorEnabled}
-          onToggleMirror={ctx.handleToggleMirror}
+          onToggleMirror={handleToggleMirror}
         />
       </div>
     </div>
@@ -772,6 +1493,7 @@
       {isDeleting}
       positioning="absolute"
       onConfirm={async () => {
+        handleDeleteConfirm();
         isDeleting = true;
         try {
           await ctx.handleDelete();
@@ -780,10 +1502,9 @@
           isDeleting = false;
         }
       }}
-      onCancel={() => (deleteConfirmOpen = false)}
+      onCancel={handleDeleteCancel}
     />
   {/if}
-
 </div>
 
 <style>
@@ -812,7 +1533,6 @@
     /* Lift the header so the title-trigger dropdown lands above the viewer body. */
     z-index: 20;
   }
-
 
   .drawer-header-title-group {
     position: absolute;
@@ -863,7 +1583,9 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     border-radius: 8px;
-    transition: background 150ms ease, color 150ms ease;
+    transition:
+      background 150ms ease,
+      color 150ms ease;
     font-size: 16px;
   }
 
@@ -902,7 +1624,9 @@
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.6));
     cursor: pointer;
     border-radius: 8px;
-    transition: background 150ms ease, color 150ms ease;
+    transition:
+      background 150ms ease,
+      color 150ms ease;
   }
 
   .header-action-btn:hover {
@@ -934,10 +1658,18 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
     color: var(--theme-accent, #a78bfa);
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 18%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 18%,
+      transparent
+    );
   }
   .header-action-btn.practice:hover {
-    background: color-mix(in srgb, var(--theme-accent, #8b5cf6) 30%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b5cf6) 30%,
+      transparent
+    );
     color: #fff;
   }
   /* Icon-only variant (mobile): square accent button, no label padding. */
@@ -982,7 +1714,6 @@
     position: relative;
   }
 
-
   .drawer-body-content {
     flex: 1;
     min-height: 0;
@@ -1009,7 +1740,6 @@
   .practice-mobile .drawer-header-title-group {
     display: none;
   }
-
 
   .landscape .header-action-btn {
     min-width: 32px;
@@ -1102,7 +1832,9 @@
     transform: translateX(0);
   }
   @media (prefers-reduced-motion: reduce) {
-    .bar-pane { transition: none; }
+    .bar-pane {
+      transition: none;
+    }
   }
 
   /* Header action layers crossfade on practice toggle — both stay mounted so
@@ -1125,10 +1857,14 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .drawer-viewer-container { --ws-dur: 0ms; }
+    .drawer-viewer-container {
+      --ws-dur: 0ms;
+    }
     .viewer-rail-wrap,
     .left-actions-layer,
-    .practice-bar-rise { transition: none; }
+    .practice-bar-rise {
+      transition: none;
+    }
   }
 
   .viewer-and-export {
@@ -1180,7 +1916,6 @@
   .viewer-and-export.desktop.has-rail:not(.export-active) {
     grid-template-columns: auto 1fr;
   }
-
 
   .export-panel-container {
     overflow: hidden;
@@ -1252,7 +1987,6 @@
     flex-shrink: 0;
     z-index: 3;
   }
-
 
   @media (prefers-reduced-motion: reduce) {
     .viewer-and-export {

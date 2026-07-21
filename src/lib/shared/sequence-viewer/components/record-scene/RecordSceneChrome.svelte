@@ -1,17 +1,30 @@
 <script lang="ts">
   import type { CameraChoreographyState } from "$lib/shared/sequence-viewer/camera-choreography/state.svelte";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "../../domain/viewer-control-analytics";
 
   interface Props {
     isExporting: boolean;
     canvasReady: boolean;
     onExport: () => void;
     choreography: CameraChoreographyState;
+    onSettingChange?: ViewerControlSink;
   }
 
-  let { isExporting, canvasReady, onExport, choreography }: Props = $props();
+  let {
+    isExporting,
+    canvasReady,
+    onExport,
+    choreography,
+    onSettingChange,
+  }: Props = $props();
 
   const currentMode = $derived(
-    choreography?.activePresetId === "auto-orbit" ? "auto-orbit" as const : "free" as const
+    choreography?.activePresetId === "auto-orbit"
+      ? ("auto-orbit" as const)
+      : ("free" as const)
   );
 
   const disabled = $derived(isExporting || !canvasReady);
@@ -21,20 +34,57 @@
   let gearBtnEl: HTMLButtonElement | null = $state(null);
 
   function handleModeSelect(mode: "free" | "auto-orbit") {
+    const previous = currentMode;
     choreography?.setPresetId(mode);
+    reportViewerControlChange(
+      onSettingChange,
+      "record_scene",
+      "camera_mode",
+      previous,
+      mode
+    );
+    reportViewerControlChange(
+      onSettingChange,
+      "record_scene",
+      "camera_settings_open",
+      true,
+      false,
+      { count: false }
+    );
     showSettings = false;
   }
 
   function toggleSettings(e: MouseEvent) {
     e.stopPropagation();
+    const previous = showSettings;
     showSettings = !showSettings;
+    reportViewerControlChange(
+      onSettingChange,
+      "record_scene",
+      "camera_settings_open",
+      previous,
+      showSettings
+    );
   }
 
   function handleOutsideClick(event: MouseEvent) {
     if (!showSettings) return;
     const target = event.target as HTMLElement;
-    if (settingsEl && gearBtnEl && !settingsEl.contains(target) && !gearBtnEl.contains(target)) {
+    if (
+      settingsEl &&
+      gearBtnEl &&
+      !settingsEl.contains(target) &&
+      !gearBtnEl.contains(target)
+    ) {
       showSettings = false;
+      reportViewerControlChange(
+        onSettingChange,
+        "record_scene",
+        "camera_settings_open",
+        true,
+        false,
+        { count: false }
+      );
     }
   }
 
@@ -61,7 +111,11 @@
         class:disabled
         {disabled}
         onclick={onExport}
-        aria-label={isExporting ? "Recording in progress" : !canvasReady ? "Preparing" : "Record scene"}
+        aria-label={isExporting
+          ? "Recording in progress"
+          : !canvasReady
+            ? "Preparing"
+            : "Record scene"}
       >
         {#if !canvasReady}
           <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
@@ -84,13 +138,20 @@
         onclick={toggleSettings}
         aria-haspopup="true"
         aria-expanded={showSettings}
-        aria-label="Recording camera mode: {currentMode === 'free' ? 'Free' : 'Orbit'}"
+        aria-label="Recording camera mode: {currentMode === 'free'
+          ? 'Free'
+          : 'Orbit'}"
       >
         <i class="fas fa-gear" aria-hidden="true"></i>
       </button>
 
       {#if showSettings}
-        <div bind:this={settingsEl} class="settings-popover" role="menu" aria-label="Camera mode">
+        <div
+          bind:this={settingsEl}
+          class="settings-popover"
+          role="menu"
+          aria-label="Camera mode"
+        >
           <button
             type="button"
             role="menuitem"
@@ -145,7 +206,9 @@
       rgba(220, 38, 38, 0.95) 100%
     );
     border: 1px solid rgba(239, 68, 68, 0.55);
-    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.4);
+    box-shadow:
+      0 6px 20px rgba(239, 68, 68, 0.35),
+      0 0 0 1px rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(8px);
     overflow: visible;
   }
@@ -163,7 +226,9 @@
     font-size: 14px;
     padding: 0;
     border-radius: 0 999px 999px 0;
-    transition: color 150ms ease, background 150ms ease;
+    transition:
+      color 150ms ease,
+      background 150ms ease;
   }
 
   .pill-settings:hover {
@@ -217,8 +282,13 @@
   }
 
   @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
   }
 
   .settings-popover {
@@ -237,8 +307,14 @@
   }
 
   @keyframes popoverUp {
-    from { opacity: 0; transform: translateY(4px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .settings-item {

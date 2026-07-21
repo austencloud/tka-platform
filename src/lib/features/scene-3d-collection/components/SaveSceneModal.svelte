@@ -16,14 +16,26 @@
   import { scene3dCollectionState } from "../state/scene-3d-collection-state.svelte";
   import { SCENE_3D_GROUPS } from "../domain/scene-3d-collection-types";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-  import type { Scene3DGroupId, StepData } from "../domain/scene-3d-collection-types";
+  import type {
+    Scene3DGroupId,
+    StepData,
+  } from "../domain/scene-3d-collection-types";
+  import {
+    reportViewerControlChange,
+    type ViewerActionSink,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
   let {
     open = $bindable(false),
     bpm,
+    onSettingChange,
+    onAction,
   }: {
     open?: boolean;
     bpm?: number;
+    onSettingChange?: ViewerControlSink;
+    onAction?: ViewerActionSink;
   } = $props();
 
   const viewer3DState = tryGetViewer3DContext();
@@ -59,7 +71,9 @@
     try {
       const raw = localStorage.getItem("tka-scene-features");
       if (!raw) return 0;
-      return Object.values(JSON.parse(raw) as Record<string, boolean>).filter(Boolean).length;
+      return Object.values(JSON.parse(raw) as Record<string, boolean>).filter(
+        Boolean
+      ).length;
     } catch {
       return 0;
     }
@@ -115,7 +129,9 @@
         title: "Props & sizes",
         summary:
           `${settings.bluePropType ?? d.prop} / ${settings.redPropType ?? d.prop}` +
-          (overrideCounts.prop > 0 ? ` · ${overrideCounts.prop} performer override${overrideCounts.prop > 1 ? "s" : ""}` : "") +
+          (overrideCounts.prop > 0
+            ? ` · ${overrideCounts.prop} performer override${overrideCounts.prop > 1 ? "s" : ""}`
+            : "") +
           ` · sizes ${viewer3DState.propSizeLinked ? "linked" : "per-performer"}`,
       },
       {
@@ -135,7 +151,9 @@
         summary:
           activeEffects.length > 0
             ? activeEffects.join(", ") +
-              (overrideCounts.effect > 0 ? ` · ${overrideCounts.effect} performer override${overrideCounts.effect > 1 ? "s" : ""}` : "")
+              (overrideCounts.effect > 0
+                ? ` · ${overrideCounts.effect} performer override${overrideCounts.effect > 1 ? "s" : ""}`
+                : "")
             : overrideCounts.effect > 0
               ? `${overrideCounts.effect} performer override${overrideCounts.effect > 1 ? "s" : ""}`
               : "none active",
@@ -146,8 +164,12 @@
         title: "Scene",
         summary:
           `${settings.backgroundType}` +
-          (String(settings.backgroundType) === "ocean" ? ` · ${viewer3DState.oceanVariant}` : "") +
-          (featureCount > 0 ? ` · ${featureCount} feature${featureCount > 1 ? "s" : ""} on` : ""),
+          (String(settings.backgroundType) === "ocean"
+            ? ` · ${viewer3DState.oceanVariant}`
+            : "") +
+          (featureCount > 0
+            ? ` · ${featureCount} feature${featureCount > 1 ? "s" : ""} on`
+            : ""),
       },
       {
         id: "camera",
@@ -162,28 +184,43 @@
     ];
   });
 
-  const enabledCount = $derived(SCENE_3D_GROUPS.filter((g) => enabled[g]).length);
-  const selectableCount = $derived(hasSteps ? SCENE_3D_GROUPS.length : SCENE_3D_GROUPS.length - 1);
+  const enabledCount = $derived(
+    SCENE_3D_GROUPS.filter((g) => enabled[g]).length
+  );
+  const selectableCount = $derived(
+    hasSteps ? SCENE_3D_GROUPS.length : SCENE_3D_GROUPS.length - 1
+  );
   const statusText = $derived(
     enabledCount >= selectableCount
       ? "Everything selected"
-      : `${enabledCount} of ${selectableCount} groups selected`,
+      : `${enabledCount} of ${selectableCount} groups selected`
   );
 
   function toggle(id: Scene3DGroupId) {
-    enabled[id] = !enabled[id];
+    const previous = enabled[id];
+    enabled[id] = !previous;
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_save_scene",
+      `include_${id}`,
+      previous,
+      !previous
+    );
   }
 
   async function handleSave() {
     if (saving || !viewer3DState) return;
     saving = true;
+    onAction?.("save_scene", { stage: "requested" });
     try {
       const snapshot = captureScene3DSnapshot(viewer3DState, {
         ...(bpm !== undefined && enabled.performance ? { bpm } : {}),
         groups: { ...enabled },
       });
       const steps =
-        enabled.performance && hasSteps ? (seq?.steps as StepData[] | undefined) : undefined;
+        enabled.performance && hasSteps
+          ? (seq?.steps as StepData[] | undefined)
+          : undefined;
 
       // Lineage stamp: link back to the raw source sequence (spec:
       // 2026-07-12-art-in-library-design.md Unit 3). Recomputed from the live
@@ -196,12 +233,16 @@
         poster,
         snapshot,
         ...(steps && steps.length > 0 ? { steps } : {}),
-        ...(sourceWord ? { sourceWord, ...(seq?.id ? { sourceSequenceId: seq.id } : {}) } : {}),
+        ...(sourceWord
+          ? { sourceWord, ...(seq?.id ? { sourceSequenceId: seq.id } : {}) }
+          : {}),
       });
+      onAction?.("save_scene", { stage: "completed" }, { count: false });
       toast.success("Scene saved to your collection");
       open = false;
     } catch (error) {
       console.warn("[Scene3DCollection] Save failed:", error);
+      onAction?.("save_scene", { stage: "failed" }, { count: false });
       toast.error("Couldn't save the scene — try again");
     } finally {
       saving = false;
@@ -215,7 +256,9 @@
       {#if poster}
         <img class="thumb" src={poster} alt="" aria-hidden="true" />
       {:else}
-        <div class="thumb thumb-empty" aria-hidden="true"><i class="fas fa-cube"></i></div>
+        <div class="thumb thumb-empty" aria-hidden="true">
+          <i class="fas fa-cube"></i>
+        </div>
       {/if}
       <div class="head-text">
         <h2 id="save-scene-title">Save 3D scene</h2>
@@ -260,7 +303,10 @@
         onclick={handleSave}
         disabled={saving || enabledCount === 0}
       >
-        <i class="fas {saving ? 'fa-spinner fa-spin' : 'fa-bookmark'}" aria-hidden="true"></i>
+        <i
+          class="fas {saving ? 'fa-spinner fa-spin' : 'fa-bookmark'}"
+          aria-hidden="true"
+        ></i>
         {saving ? "Saving…" : "Save scene"}
       </button>
     </footer>
@@ -350,7 +396,10 @@
     color: var(--theme-text, rgba(255, 255, 255, 0.9));
     cursor: pointer;
     text-align: left;
-    transition: border-color 150ms ease, background 150ms ease, opacity 150ms ease;
+    transition:
+      border-color 150ms ease,
+      background 150ms ease,
+      opacity 150ms ease;
   }
 
   .group-row:hover:not(:disabled) {
@@ -445,18 +494,22 @@
     padding: 0 20px;
     border-radius: 12px;
     background: var(--theme-accent, #4a9eff);
-    border: 1px solid color-mix(in srgb, var(--theme-accent, #4a9eff) 70%, white);
+    border: 1px solid
+      color-mix(in srgb, var(--theme-accent, #4a9eff) 70%, white);
     color: white;
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
-    transition: transform 150ms ease, box-shadow 150ms ease;
+    transition:
+      transform 150ms ease,
+      box-shadow 150ms ease;
   }
 
   @media (hover: hover) {
     .save-btn:hover:not(:disabled) {
       transform: translateY(-1px);
-      box-shadow: 0 4px 14px color-mix(in srgb, var(--theme-accent, #4a9eff) 35%, transparent);
+      box-shadow: 0 4px 14px
+        color-mix(in srgb, var(--theme-accent, #4a9eff) 35%, transparent);
     }
   }
 

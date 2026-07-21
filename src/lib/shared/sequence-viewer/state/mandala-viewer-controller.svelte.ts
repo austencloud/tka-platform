@@ -24,8 +24,17 @@ import {
   mandalaBitrateFor,
   type MandalaVideoExportHandle,
 } from "$lib/shared/mandala/services/mandala-video-exporter";
+import {
+  resolveMandalaExportDelivery,
+  type MandalaExportDelivery,
+} from "../services/mandala-export-delivery";
 
-export type MandalaExportPhase = "idle" | "capturing" | "encoding" | "complete" | "error";
+export type MandalaExportPhase =
+  | "idle"
+  | "capturing"
+  | "encoding"
+  | "complete"
+  | "error";
 export type MandalaExportResolution = 720 | 1080 | 2160;
 export type MandalaExportFps = 30 | 60;
 
@@ -65,7 +74,11 @@ function loadExportConfig(): {
   resolution: MandalaExportResolution;
   fps: MandalaExportFps;
 } {
-  const def = { reps: 3, resolution: 1080 as MandalaExportResolution, fps: 60 as MandalaExportFps };
+  const def = {
+    reps: 3,
+    resolution: 1080 as MandalaExportResolution,
+    fps: 60 as MandalaExportFps,
+  };
   if (typeof localStorage === "undefined") return def;
   try {
     const raw = localStorage.getItem(EXPORT_STORAGE_KEY);
@@ -123,12 +136,14 @@ export class MandalaViewerController {
   exportPhase = $state<MandalaExportPhase>("idle");
   exportProgress = $state(0);
   exportError = $state<string | null>(null);
+  /** Result of the file handoff, not merely the worker encode. */
+  exportDelivery = $state<MandalaExportDelivery | null>(null);
   /** Last export diagnostic (render/encode/mux split, HW status) — logged live. */
   lastExportDiag = $state<MandalaExportDiag | null>(null);
 
   /** The active preset's stage background (custom preset falls back to black). */
   bgColor = $derived(
-    this.preset === "custom" ? DEFAULT_BG_COLOR : PRESET_COLORS[this.preset].bg,
+    this.preset === "custom" ? DEFAULT_BG_COLOR : PRESET_COLORS[this.preset].bg
   );
 
   #sources: MandalaControllerSources;
@@ -141,13 +156,18 @@ export class MandalaViewerController {
 
   // Device-calibrated estimate (seconds) for the current config + cycle length.
   estimateSeconds = $derived(
-    estimateExportTime(this.exportResolution, this.exportFps, this.period, this.exportReps) ?? 0,
+    estimateExportTime(
+      this.exportResolution,
+      this.exportFps,
+      this.period,
+      this.exportReps
+    ) ?? 0
   );
   // True once we have real throughput samples for this resolution (vs fallback).
   hasMetrics = $derived(hasDeviceMetrics(this.exportResolution));
   // Total frames that will be encoded for the current config.
   exportFrameCount = $derived(
-    Math.max(1, Math.ceil(this.period * this.exportFps)) * this.exportReps,
+    Math.max(1, Math.ceil(this.period * this.exportFps)) * this.exportReps
   );
 
   constructor(sources: MandalaControllerSources) {
@@ -259,9 +279,12 @@ export class MandalaViewerController {
       const [c1, c2] = this.#getPresetPair();
       const mix = mixColors(c1, c2);
       return {
-        blueStroke: c1, blueFill: withAlpha(c1, fillAlpha),
-        redStroke: c2, redFill: withAlpha(c2, fillAlpha),
-        purpleStroke: mix, purpleFill: withAlpha(mix, fillAlpha + 0.05),
+        blueStroke: c1,
+        blueFill: withAlpha(c1, fillAlpha),
+        redStroke: c2,
+        redFill: withAlpha(c2, fillAlpha),
+        purpleStroke: mix,
+        purpleFill: withAlpha(mix, fillAlpha + 0.05),
       };
     }
     const morphColors = this.#getPresetMorph();
@@ -269,9 +292,12 @@ export class MandalaViewerController {
     const c2 = sampleGradient(morphColors, (this.#colorPhase + 0.4) % 1);
     const mix = mixColors(c1, c2);
     return {
-      blueStroke: c1, blueFill: withAlpha(c1, fillAlpha),
-      redStroke: c2, redFill: withAlpha(c2, fillAlpha),
-      purpleStroke: mix, purpleFill: withAlpha(mix, fillAlpha + 0.05),
+      blueStroke: c1,
+      blueFill: withAlpha(c1, fillAlpha),
+      redStroke: c2,
+      redFill: withAlpha(c2, fillAlpha),
+      purpleStroke: mix,
+      purpleFill: withAlpha(mix, fillAlpha + 0.05),
     };
   });
 
@@ -320,12 +346,15 @@ export class MandalaViewerController {
     const sequence = this.#sources.getSequence();
     if (
       this.exporting ||
-      (this.exportPhase !== "idle" && this.exportPhase !== "complete" && this.exportPhase !== "error")
+      (this.exportPhase !== "idle" &&
+        this.exportPhase !== "complete" &&
+        this.exportPhase !== "error")
     )
       return;
     if (!sequence?.steps) return;
 
     this.exportError = null;
+    this.exportDelivery = null;
     this.exportProgress = 0;
     this.exportPhase = "capturing";
     this.exporting = true;
@@ -373,14 +402,16 @@ export class MandalaViewerController {
         // live (render vs encode-wait vs mux, and whether HW encode engaged).
         const tag = `[mandala-export ${d.phase}]`;
         if (d.phase === "config") {
-          console.log(`${tag} codec=${d.codec} hwSupported=${d.hwSupported} encoder=${d.encoder} res=${d.resolution} fps=${d.fps} frames=${d.totalFrames}`);
+          console.log(
+            `${tag} codec=${d.codec} hwSupported=${d.hwSupported} encoder=${d.encoder} res=${d.resolution} fps=${d.fps} frames=${d.totalFrames}`
+          );
         } else {
           const mp = +((d.resolution * d.resolution) / 1_000_000).toFixed(1);
           console.log(
             `${tag} ${d.encodedFrames}/${d.totalFrames} · encode=${d.encodeFps}fps · render=${d.renderMs}ms wait=${d.encodeWaitMs}ms vframe=${d.vfMs}ms mux=${d.muxMs}ms · ${mp}MP/frame codec=${d.codec}` +
-            (d.phase === "done" && d.encodeFps > 0 && d.encodeFps < 24
-              ? `  ⚠ encode-bound — H.264 can't keep up at ${d.resolution}² (${mp}MP). Lower resolution encodes ~(px ratio)× faster.`
-              : ""),
+              (d.phase === "done" && d.encodeFps > 0 && d.encodeFps < 24
+                ? `  ⚠ encode-bound — H.264 can't keep up at ${d.resolution}² (${mp}MP). Lower resolution encodes ~(px ratio)× faster.`
+                : "")
           );
         }
         this.lastExportDiag = d;
@@ -389,18 +420,51 @@ export class MandalaViewerController {
     this.#exportHandle = handle;
 
     handle.done
-      .then((blob) => {
+      .then(async (blob) => {
         if (this.#exportHandle !== handle) return; // superseded/cancelled
-        recordExportThroughput(resolution, totalFrames, performance.now() - startMs);
+        recordExportThroughput(
+          resolution,
+          totalFrames,
+          performance.now() - startMs
+        );
         const filename = `mandala-${this.pathShape}-${this.preset}-${reps}x.mp4`;
         // Mobile: native share sheet (canShare files). Desktop: anchor download.
         // shareOrDownloadBlob gates on the DEVICE (detectPlatform), not on
         // navigator.share existence — desktop Chrome/Edge implement the Web
         // Share API, so feature detection alone pops the Windows share sheet.
-        void shareOrDownloadBlob(blob, filename, { title: "TKA Mandala" });
-        this.exportPhase = "complete";
+        let result;
+        try {
+          result = await shareOrDownloadBlob(blob, filename, {
+            title: "TKA Mandala",
+          });
+        } catch {
+          if (this.#exportHandle !== handle) return;
+          this.exportDelivery = { outcome: "failed", method: null };
+          this.exportError = "Couldn't save the mandala video.";
+          this.exportPhase = "error";
+          this.exporting = false;
+          this.#exportHandle = null;
+          return;
+        }
+        if (this.#exportHandle !== handle) return;
+
+        const delivery = resolveMandalaExportDelivery(result);
+        this.exportDelivery = delivery;
         this.exporting = false;
         this.#exportHandle = null;
+
+        if (delivery.outcome === "canceled") {
+          this.exportProgress = 0;
+          this.exportPhase = "idle";
+          return;
+        }
+        if (delivery.outcome === "failed") {
+          this.exportError = "Couldn't save the mandala video.";
+          this.exportPhase = "error";
+          return;
+        }
+
+        this.exportPhase = "complete";
         window.setTimeout(() => {
           if (this.exportPhase === "complete") this.exportPhase = "idle";
         }, 1400);
@@ -428,5 +492,6 @@ export class MandalaViewerController {
     this.exportProgress = 0;
     this.exportPhase = "idle";
     this.exportError = null;
+    this.exportDelivery = null;
   }
 }

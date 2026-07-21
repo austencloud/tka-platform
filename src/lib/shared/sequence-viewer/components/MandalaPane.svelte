@@ -23,6 +23,8 @@
      * fills its stage either way.
      */
     controlsPlacement?: "dock" | "external";
+    onExportCancel?: () => void;
+    onExportRetry?: () => void;
   }
 
   let {
@@ -31,23 +33,29 @@
     redPropType,
     ctrl: providedCtrl,
     controlsPlacement = "dock",
+    onExportCancel,
+    onExportRetry,
   }: Props = $props();
 
   let stageEl: HTMLDivElement | undefined = $state();
   let containerSize: number = $state(400);
   let dockHeight = $state(76);
 
-  const ctrl = providedCtrl ?? new MandalaViewerController({
-    getSequence: () => sequence,
-    getBluePropType: () => bluePropType,
-    getRedPropType: () => redPropType,
-  });
+  const ctrl =
+    providedCtrl ??
+    new MandalaViewerController({
+      getSequence: () => sequence,
+      getBluePropType: () => bluePropType,
+      getRedPropType: () => redPropType,
+    });
 
   const takeoverSize = $derived(Math.max(160, containerSize - 32));
 
   // With the dock suppressed (controls in the sidebar) the stage reclaims the
   // bottom padding the dock would otherwise reserve.
-  const stagePadBottom = $derived(controlsPlacement === "external" ? 0 : dockHeight + 14);
+  const stagePadBottom = $derived(
+    controlsPlacement === "external" ? 0 : dockHeight + 14
+  );
 
   $effect(() => {
     if (!stageEl) return;
@@ -63,7 +71,11 @@
 </script>
 
 <div class="mandala-pane" style:background={ctrl.bgColor}>
-  <div class="mandala-stage" bind:this={stageEl} style:padding-bottom="{stagePadBottom}px">
+  <div
+    class="mandala-stage"
+    bind:this={stageEl}
+    style:padding-bottom="{stagePadBottom}px"
+  >
     <SequenceMandala
       {sequence}
       animate={!ctrl.paused}
@@ -88,7 +100,15 @@
   {#if controlsPlacement === "dock"}
     <MandalaControlDock {ctrl} onHeightChange={(px) => (dockHeight = px)} />
   {/if}
-  <MandalaExportTakeover {ctrl} {sequence} {bluePropType} {redPropType} size={takeoverSize} />
+  <MandalaExportTakeover
+    {ctrl}
+    {sequence}
+    {bluePropType}
+    {redPropType}
+    size={takeoverSize}
+    onCancel={onExportCancel}
+    onRetry={onExportRetry}
+  />
 </div>
 
 <style>
@@ -114,6 +134,8 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .mandala-stage { transition: none; }
+    .mandala-stage {
+      transition: none;
+    }
   }
 </style>

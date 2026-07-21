@@ -12,11 +12,7 @@
     ContextMenuItem,
     ContextMenuState,
   } from "./context-menu-types";
-  import {
-    isMenuItem,
-    isSeparator,
-    isHeader,
-  } from "./context-menu-types";
+  import { isMenuItem, isSeparator, isHeader } from "./context-menu-types";
   import { getHapticFeedback } from "$lib/shared/application/get-haptic-feedback";
 
   let {
@@ -26,10 +22,11 @@
   }: {
     menuState: ContextMenuState;
     items: ContextMenuEntry[];
-    onClose: () => void;
+    onClose: (reason?: "item" | "outside" | "dismiss") => void;
   } = $props();
 
   let loadingItemId: string | null = $state(null);
+  let pendingCloseReason: "item" | "outside" | "dismiss" = "dismiss";
 
   // Virtual anchor for floating-ui; Measurable = { getBoundingClientRect }
   const anchor = $derived(
@@ -40,14 +37,18 @@
               (menuState as { open: true; x: number; y: number }).x,
               (menuState as { open: true; x: number; y: number }).y,
               0,
-              0,
+              0
             ),
         }
-      : null,
+      : null
   );
 
   function handleOpenChange(open: boolean) {
-    if (!open && menuState.open) onClose();
+    if (!open && menuState.open) {
+      const reason = pendingCloseReason;
+      pendingCloseReason = "dismiss";
+      onClose(reason);
+    }
   }
 
   // Dismiss on outside pointerdown (capture phase). onClose() triggers
@@ -84,15 +85,22 @@
       }, 800);
 
       getHapticFeedback().impact("light");
-      onClose();
+      pendingCloseReason = "outside";
+      onClose("outside");
     };
 
-    document.addEventListener("pointerdown", dismissOnPointerDown, { capture: true });
+    document.addEventListener("pointerdown", dismissOnPointerDown, {
+      capture: true,
+    });
     document.addEventListener("click", blockOutsideClick, { capture: true });
 
     return () => {
-      document.removeEventListener("pointerdown", dismissOnPointerDown, { capture: true });
-      document.removeEventListener("click", blockOutsideClick, { capture: true });
+      document.removeEventListener("pointerdown", dismissOnPointerDown, {
+        capture: true,
+      });
+      document.removeEventListener("click", blockOutsideClick, {
+        capture: true,
+      });
     };
   });
 
@@ -104,6 +112,7 @@
     if (!item.action) return;
     // keepOpen means don't auto-close on select
     if (item.keepOpen) event.preventDefault();
+    else pendingCloseReason = "item";
 
     getHapticFeedback().impact("medium");
     loadingItemId = item.id;
@@ -190,13 +199,18 @@
                 {#if entry.rawIcon}
                   <span
                     class="ctx-menu-raw-icon"
-                    style={entry.rawIconColor ? `color: ${entry.rawIconColor}` : ""}
+                    style={entry.rawIconColor
+                      ? `color: ${entry.rawIconColor}`
+                      : ""}
                   >
                     {@html entry.rawIcon}
                   </span>
                 {/if}
                 <span class="ctx-menu-label">{entry.label}</span>
-                <i class="fas fa-chevron-right ctx-menu-chevron" aria-hidden="true"></i>
+                <i
+                  class="fas fa-chevron-right ctx-menu-chevron"
+                  aria-hidden="true"
+                ></i>
               </DropdownMenu.SubTrigger>
               <DropdownMenu.Portal>
                 <DropdownMenu.SubContent
@@ -232,7 +246,9 @@
               {#if entry.rawIcon}
                 <span
                   class="ctx-menu-raw-icon"
-                  style={entry.rawIconColor ? `color: ${entry.rawIconColor}` : ""}
+                  style={entry.rawIconColor
+                    ? `color: ${entry.rawIconColor}`
+                    : ""}
                 >
                   {@html entry.rawIcon}
                 </span>
@@ -266,7 +282,8 @@
     overflow-y: auto;
     max-height: calc(100vh - 16px);
     scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2)) transparent;
+    scrollbar-color: var(--scrollbar-thumb, rgba(255, 255, 255, 0.2))
+      transparent;
     transform-origin: top left;
     outline: none;
   }
@@ -379,7 +396,11 @@
   }
 
   :global(.ctx-menu-item.danger[data-highlighted]) {
-    background: color-mix(in srgb, var(--semantic-error, #ef4444) 10%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 10%,
+      transparent
+    );
   }
 
   :global(.ctx-menu-item:focus-visible) {

@@ -3,6 +3,12 @@
   import { getAnimationVisibilityManager } from "../../state/animation-visibility-state.svelte";
   import { getAnimationVisibilityContext } from "../../state/animation-visibility-context";
 
+  let {
+    onSettingChange,
+  }: {
+    onSettingChange?: (previousValue: string, value: string) => void;
+  } = $props();
+
   const vm = getAnimationVisibilityContext() ?? getAnimationVisibilityManager();
 
   let pathShape = $state(vm.getPathShape());
@@ -43,28 +49,48 @@
 
   const options: PathOption[] = [
     {
-      id: "arc", label: "Arc", color: "#60a5fa",
+      id: "arc",
+      label: "Arc",
+      color: "#60a5fa",
       caption: "Hands swing along the circle",
       glyph: ["M3 9.5 Q12 0.5 21 9.5"],
-      dots: [[3, 9.5], [21, 9.5]],
+      dots: [
+        [3, 9.5],
+        [21, 9.5],
+      ],
     },
     {
-      id: "linear", label: "Linear", color: "#f97316",
+      id: "linear",
+      label: "Linear",
+      color: "#f97316",
       caption: "Hands cut straight across",
       glyph: ["M3 6 L21 6"],
-      dots: [[3, 6], [21, 6]],
+      dots: [
+        [3, 6],
+        [21, 6],
+      ],
     },
     {
-      id: "concave", label: "Concave", color: "#a78bfa",
+      id: "concave",
+      label: "Concave",
+      color: "#a78bfa",
       caption: "Hands curve in toward center",
       glyph: ["M3 2.5 Q12 11.5 21 2.5"],
-      dots: [[3, 2.5], [21, 2.5]],
+      dots: [
+        [3, 2.5],
+        [21, 2.5],
+      ],
     },
     {
-      id: "byMotion", label: "By Motion", color: "#2dd4bf",
+      id: "byMotion",
+      label: "By Motion",
+      color: "#2dd4bf",
       caption: "Pro → Arc · Anti → Concave",
       glyph: ["M3 6 Q12 -1 21 6", "M3 6 Q12 13 21 6"],
-      dots: [[3, 6], [21, 6]],
+      dots: [
+        [3, 6],
+        [21, 6],
+      ],
     },
   ];
 
@@ -73,12 +99,14 @@
   const selected = $derived(options.find(isActive) ?? options[0]!);
 
   function select(o: PathOption): void {
+    const previous = motionAware ? "byMotion" : pathShape;
     if (o.id === "byMotion") {
       vm.setMotionAwarePaths(true);
     } else {
       vm.setMotionAwarePaths(false);
       vm.setPathShape(o.id);
     }
+    onSettingChange?.(previous, o.id);
   }
 </script>
 
@@ -87,7 +115,9 @@
      layout shift. -->
 <div class="path-header">
   <span class="rt-section-label">Motion paths</span>
-  <span class="path-caption" style:color={selected.color}>{selected.caption}</span>
+  <span class="path-caption" style:color={selected.color}
+    >{selected.caption}</span
+  >
 </div>
 
 <div class="path-shape-grid">

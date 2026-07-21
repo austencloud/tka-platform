@@ -14,11 +14,28 @@
   import { PlaneMode } from "@austencloud/scene-3d";
   import { GRID_OFFSETS } from "@austencloud/scene-3d";
   import { userProportionsState } from "@austencloud/scene-3d";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
 
-  const { compact = false, flat = false, grid = false }: { compact?: boolean; flat?: boolean; grid?: boolean } = $props();
+  interface Props {
+    compact?: boolean;
+    flat?: boolean;
+    grid?: boolean;
+    onSettingChange?: ViewerControlSink;
+  }
+  const {
+    compact = false,
+    flat = false,
+    grid = false,
+    onSettingChange,
+  }: Props = $props();
 
   const viewer3DState = getViewer3DContext();
-  const avatarState = $derived(viewer3DState.performerManager.performers[0] ?? null);
+  const avatarState = $derived(
+    viewer3DState.performerManager.performers[0] ?? null
+  );
   const isDualWheel = $derived(avatarState?.planeMode === PlaneMode.DUAL_WHEEL);
 
   const gridCenter = $derived({
@@ -29,7 +46,7 @@
 
   const FOV_DEG = 50;
   const GRID_RADIUS = 0.52;
-  const GRID_FILL_FRACTION = 0.20;
+  const GRID_FILL_FRACTION = 0.2;
   const dualWheelOffset = $derived(userProportionsState.staffLength / 2);
 
   function computeDistanceForWidth(sceneWidth: number): number {
@@ -39,7 +56,7 @@
     const rect = pane.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return 3.0;
     const aspect = rect.width / rect.height;
-    const vFovRad = (FOV_DEG / 2) * Math.PI / 180;
+    const vFovRad = ((FOV_DEG / 2) * Math.PI) / 180;
     const hFovHalf = Math.atan(Math.tan(vFovRad) * aspect);
     const visibleWidthPerMeter = 2 * Math.tan(hFovHalf);
     return sceneWidth / (GRID_FILL_FRACTION * visibleWidthPerMeter);
@@ -58,36 +75,47 @@
     return computeDistanceForWidth((singleWidth + dualWidth) / 2);
   }
 
-  function getPresetPositions(): Record<string, { x: number; y: number; z: number }> {
+  function getPresetPositions(): Record<
+    string,
+    { x: number; y: number; z: number }
+  > {
     const D = computeDistance();
     const S = computeSideDistance();
     const gz = gridCenter.z;
     const gy = gridCenter.y;
     const positions: Record<string, { x: number; y: number; z: number }> = {
-      main:         { x: 0,          y: gy,           z: gz + D },
-      back:         { x: 0,          y: gy,           z: gz - D * 1.3 },
-      left:         { x: S,          y: gy,           z: gz },
-      right:        { x: -S,         y: gy,           z: gz },
-      top:          { x: 0,          y: gy + D,       z: gz },
-      threequarter: { x: D * 0.55,   y: gy + D * 0.4, z: gz - D * 0.75 },
+      main: { x: 0, y: gy, z: gz + D },
+      back: { x: 0, y: gy, z: gz - D * 1.3 },
+      left: { x: S, y: gy, z: gz },
+      right: { x: -S, y: gy, z: gz },
+      top: { x: 0, y: gy + D, z: gz },
+      threequarter: { x: D * 0.55, y: gy + D * 0.4, z: gz - D * 0.75 },
     };
     return positions;
   }
 
-  interface ViewPreset { id: string; label: string; icon: string; }
+  interface ViewPreset {
+    id: string;
+    label: string;
+    icon: string;
+  }
 
   const activePresets: ViewPreset[] = [
-    { id: "main",         label: "Front", icon: "fa-street-view" },
-    { id: "back",         label: "Back",  icon: "fa-eye" },
-    { id: "top",          label: "Top",   icon: "fa-angles-down" },
-    { id: "left",         label: "Left",  icon: "fa-arrow-left" },
-    { id: "right",        label: "Right", icon: "fa-arrow-right" },
-    { id: "threequarter", label: "3/4",   icon: "fa-cube" },
+    { id: "main", label: "Front", icon: "fa-street-view" },
+    { id: "back", label: "Back", icon: "fa-eye" },
+    { id: "top", label: "Top", icon: "fa-angles-down" },
+    { id: "left", label: "Left", icon: "fa-arrow-left" },
+    { id: "right", label: "Right", icon: "fa-arrow-right" },
+    { id: "threequarter", label: "3/4", icon: "fa-cube" },
   ];
 
   const activeCameraPreset = $derived(viewer3DState.activeCameraPreset);
 
-  function getLookTarget(_presetId: string): { x: number; y: number; z: number } {
+  function getLookTarget(_presetId: string): {
+    x: number;
+    y: number;
+    z: number;
+  } {
     return gridCenter;
   }
 
@@ -96,12 +124,19 @@
     const pos = positions[presetId];
     if (!pos) return;
 
-    const spherical = presetId === "top"
-      ? { azimuth: Math.PI, polar: 0 }
-      : undefined;
+    const spherical =
+      presetId === "top" ? { azimuth: Math.PI, polar: 0 } : undefined;
 
+    const previous = viewer3DState.activeCameraPreset;
     viewer3DState.setActiveCameraPreset(presetId);
     viewer3DState.snapCameraTo(pos, getLookTarget(presetId), spherical);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_camera",
+      "preset",
+      previous,
+      presetId
+    );
   }
 </script>
 
@@ -185,9 +220,18 @@
 
   .preset-button.active {
     color: color-mix(in srgb, var(--theme-accent, #4a9eff) 40%, #ffffff);
-    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 18%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 40%, transparent);
-    box-shadow: 0 2px 12px color-mix(in srgb, var(--theme-accent, #4a9eff) 20%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 18%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 40%,
+      transparent
+    );
+    box-shadow: 0 2px 12px
+      color-mix(in srgb, var(--theme-accent, #4a9eff) 20%, transparent);
   }
 
   .preset-button.active i {
@@ -228,8 +272,17 @@
   }
 
   .grid .preset-button.active {
-    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 22%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 55%, transparent);
-    box-shadow: 0 4px 16px color-mix(in srgb, var(--theme-accent, #4a9eff) 25%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 22%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 55%,
+      transparent
+    );
+    box-shadow: 0 4px 16px
+      color-mix(in srgb, var(--theme-accent, #4a9eff) 25%, transparent);
   }
 </style>

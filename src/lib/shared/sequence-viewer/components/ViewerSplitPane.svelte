@@ -13,12 +13,12 @@
     PropRenderingProps,
     ViewerLayoutState,
   } from "../domain/viewer-prop-groups";
-  import type { SplitConfig } from '../services/viewer-state-persistence';
+  import type { SplitConfig } from "../services/viewer-state-persistence";
   import AnimatorCanvas from "$lib/shared/animation-engine/components/AnimatorCanvas.svelte";
   import ChoreoCard from "./ChoreoCard.svelte";
   import RightRail from "./RightRail.svelte";
-  import VideoGallery from './VideoGallery.svelte';
-  import ArtPane from './ArtPane.svelte';
+  import VideoGallery from "./VideoGallery.svelte";
+  import ArtPane from "./ArtPane.svelte";
   import PracticeLanePane from "./PracticeLanePane.svelte";
   import PracticeCountInOverlay from "./PracticeCountInOverlay.svelte";
   import CameraPreview from "$lib/shared/train/components/CameraPreview.svelte";
@@ -28,11 +28,22 @@
   import { isBilateralProp } from "$lib/shared/pictograph/prop/domain/enums/prop-classification";
   import { createEffectsConfigState } from "$lib/shared/effects/state/effects-config-state.svelte";
   import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
-  import { setEffectsConfigContext, getEffectsConfigContext } from "$lib/shared/effects/state/effects-config-context";
+  import {
+    setEffectsConfigContext,
+    getEffectsConfigContext,
+  } from "$lib/shared/effects/state/effects-config-context";
   import { createScene3DRenderState } from "$lib/shared/3d/scene-features/state/scene-3d-render-state.svelte";
-  import { setScene3DRenderContext, getScene3DRenderContext } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
+  import {
+    setScene3DRenderContext,
+    getScene3DRenderContext,
+  } from "$lib/shared/3d/scene-features/state/scene-3d-render-context";
   import { startSceneAssetPreload } from "$lib/shared/3d/services/scene-asset-preloader.svelte";
   import { createPaneKeepAlive } from "./pane-keep-alive.svelte";
+  import type { ArtExportEventSink } from "../domain/art-export-analytics";
+  import type {
+    ViewerActionSink,
+    ViewerControlSink,
+  } from "../domain/viewer-control-analytics";
 
   // Derive trail settings from the global singleton so canvas settings changes
   // (e.g. switching from "one end" to "both ends") propagate to this canvas.
@@ -77,7 +88,8 @@
   // (SequenceViewerOrchestrator owns this so ExportVideoDrawer's EffectsPanel
   // can read the same state). Fall back to creating our own when standalone.
   const inheritedEffectsConfig = getEffectsConfigContext();
-  const effectsConfigState = inheritedEffectsConfig ?? createEffectsConfigState();
+  const effectsConfigState =
+    inheritedEffectsConfig ?? createEffectsConfigState();
   if (!inheritedEffectsConfig) {
     setEffectsConfigContext(effectsConfigState);
   }
@@ -95,12 +107,14 @@
     imageComposition: ImageCompositionProps;
     propRendering: PropRenderingProps;
     layout: ViewerLayoutState;
-    renderMode?: '2d' | '3d';
+    renderMode?: "2d" | "3d";
     bpm?: number;
     onBpmChange?: (bpm: number) => void;
     /** Change the prop type from the tunnel/mandala Props rail. Threaded down to
      *  ArtPane → ArtSettingsPanel. */
-    onPropChange?: (propType: import("$lib/shared/pictograph/prop/domain/enums/prop-type").PropType) => void;
+    onPropChange?: (
+      propType: import("$lib/shared/pictograph/prop/domain/enums/prop-type").PropType
+    ) => void;
     onRenderProgress?: (loaded: number, total: number) => void;
     onFocusPane: (pane: "animation" | "image") => void;
     onUnfocusPane: () => void;
@@ -111,6 +125,10 @@
     onCanvasReady: (canvas: HTMLCanvasElement | null) => void;
     onChoreoCardContextMenu?: (x: number, y: number) => void;
     onPlaybackToggle?: () => void;
+    onSystemPlaybackChange?: (
+      playing: boolean,
+      source: "system_3d_loading"
+    ) => void;
     onProgressBarSeek?: (targetStep: number) => void;
     onProgressBarScrubStart?: () => void;
     onProgressBarScrubEnd?: () => void;
@@ -142,6 +160,20 @@
       controller: import("../tunnel/tunnel-view-controller.svelte").TunnelViewController;
       mandalaController: import("../state/mandala-viewer-controller.svelte").MandalaViewerController;
     }) => void;
+    onArtExportEvent?: ArtExportEventSink;
+    /** Semantic settings sink supplied by the scan host through the shared shell. */
+    onArtSettingChange?: (
+      group: string,
+      setting: string,
+      previousValue: string | number | boolean | null,
+      value: string | number | boolean | null,
+      coalesce?: boolean,
+      source?: string
+    ) => void;
+    onArtAction?: ViewerActionSink;
+    /** Optional QR-only semantic sink for shared 3D rail controls. */
+    onViewer3DSettingChange?: ViewerControlSink;
+    onViewer3DAction?: ViewerActionSink;
     /**
      * Hide ALL playback transport (the canvas scrubber AND the portrait mobile
      * transport bar). For surfaces where another pane already indicates progress
@@ -179,6 +211,7 @@
     onCanvasReady,
     onChoreoCardContextMenu,
     onPlaybackToggle,
+    onSystemPlaybackChange,
     onProgressBarSeek,
     onProgressBarScrubStart,
     onProgressBarScrubEnd,
@@ -187,10 +220,15 @@
     onSceneReadyChange,
     rerenderTrigger = 0,
     isExporting = false,
-    splitConfig = { leftPane: 'animation', rightPane: 'card' },
+    splitConfig = { leftPane: "animation", rightPane: "card" },
     isLoggedIn = false,
     onVideoUpload,
     onArtExport,
+    onArtExportEvent,
+    onArtSettingChange,
+    onArtAction,
+    onViewer3DSettingChange,
+    onViewer3DAction,
     suppressProgress = false,
     practiceActive = false,
     practiceCellSize = 72,
@@ -200,22 +238,24 @@
     practiceMirrorEnabled = false,
   }: Props = $props();
 
-
   // Two square-first previews fit the available area best when their split
   // follows the stage's shape. The viewport breakpoint alone misses embedded
   // viewers and portrait desktop windows, where a horizontal split creates two
   // tall slivers. Element-size bindings track the real stage after the rail and
   // export panels have claimed their space.
-  let splitWidth = $state(typeof window !== "undefined" ? window.innerWidth : 0);
-  let splitHeight = $state(typeof window !== "undefined" ? window.innerHeight : 0);
+  let splitWidth = $state(
+    typeof window !== "undefined" ? window.innerWidth : 0
+  );
+  let splitHeight = $state(
+    typeof window !== "undefined" ? window.innerHeight : 0
+  );
   const adaptiveVerticalSplit = $derived(
     !practiceActive &&
       layout.focusedPane === null &&
       !layout.isMobile &&
       !layout.isFullscreen &&
-      splitHeight > splitWidth,
+      splitHeight > splitWidth
   );
-
 
   // The canvas glide on practice enter/exit is owned by CSS, not JS: the drawer
   // host animates the content rail's `max-width` collapse over --ws-dur, so the
@@ -239,7 +279,8 @@
     if (active === _prevPracticeActive) return; // skip initial mount; only react to toggles
     _prevPracticeActive = active;
     const reduce =
-      typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      typeof matchMedia !== "undefined" &&
+      matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) return; // reduced motion snaps instantly → single resize, nothing to pause
     _practiceResizePaused = true;
     clearTimeout(_resizeResumeTimer);
@@ -270,14 +311,16 @@
   // ViewerSplitPane (e.g. the lightweight QR landing page, which never sets a
   // 3D pane) stays Three-free until/unless the user opens a 3D view.
   let Viewer3DCanvas = $state<
-    typeof import("$lib/shared/3d/components/Viewer3DCanvas.svelte").default | null
+    | typeof import("$lib/shared/3d/components/Viewer3DCanvas.svelte").default
+    | null
   >(null);
   let PerformerHub = $state<
-    typeof import("$lib/shared/3d/components/controls/PerformerHub.svelte").default | null
+    | typeof import("$lib/shared/3d/components/controls/PerformerHub.svelte").default
+    | null
   >(null);
   const needs3D = $derived(
     splitConfig.leftPane === "animation-3d" ||
-      splitConfig.rightPane === "animation-3d",
+      splitConfig.rightPane === "animation-3d"
   );
   $effect(() => {
     if (needs3D && !Viewer3DCanvas) {
@@ -311,13 +354,13 @@
 
   // Persist canvases once activated — avoids full teardown+rebuild on pane switch.
   let _3dLeftMounted = $state(false);
-  const _3dLeftActive = $derived(splitConfig.leftPane === 'animation-3d');
+  const _3dLeftActive = $derived(splitConfig.leftPane === "animation-3d");
   $effect(() => {
     if (_3dLeftActive) _3dLeftMounted = true;
   });
 
   let _2dLeftMounted = $state(false);
-  const _2dLeftActive = $derived(splitConfig.leftPane === 'animation');
+  const _2dLeftActive = $derived(splitConfig.leftPane === "animation");
   $effect(() => {
     if (_2dLeftActive) _2dLeftMounted = true;
   });
@@ -333,7 +376,7 @@
   );
 
   let _2dRightMounted = $state(false);
-  const _2dRightActive = $derived(splitConfig.rightPane === 'animation');
+  const _2dRightActive = $derived(splitConfig.rightPane === "animation");
   $effect(() => {
     if (_2dRightActive) _2dRightMounted = true;
   });
@@ -342,14 +385,28 @@
   // activation and toggle via a hidden class — see createPaneKeepAlive for the
   // reveal timing (and the stale-frame guard that keeps a pane deselected
   // during boot from painting over the split view).
-  const _cardLeft = createPaneKeepAlive(() => splitConfig.leftPane === 'card');
-  const _videosLeft = createPaneKeepAlive(() => splitConfig.leftPane === 'videos');
-  const _mandalaLeft = createPaneKeepAlive(() => splitConfig.leftPane === 'mandala');
-  const _tunnelLeft = createPaneKeepAlive(() => splitConfig.leftPane === 'tunnel');
-  const _cardRight = createPaneKeepAlive(() => splitConfig.rightPane === 'card');
-  const _videosRight = createPaneKeepAlive(() => splitConfig.rightPane === 'videos');
-  const _mandalaRight = createPaneKeepAlive(() => splitConfig.rightPane === 'mandala');
-  const _tunnelRight = createPaneKeepAlive(() => splitConfig.rightPane === 'tunnel');
+  const _cardLeft = createPaneKeepAlive(() => splitConfig.leftPane === "card");
+  const _videosLeft = createPaneKeepAlive(
+    () => splitConfig.leftPane === "videos"
+  );
+  const _mandalaLeft = createPaneKeepAlive(
+    () => splitConfig.leftPane === "mandala"
+  );
+  const _tunnelLeft = createPaneKeepAlive(
+    () => splitConfig.leftPane === "tunnel"
+  );
+  const _cardRight = createPaneKeepAlive(
+    () => splitConfig.rightPane === "card"
+  );
+  const _videosRight = createPaneKeepAlive(
+    () => splitConfig.rightPane === "videos"
+  );
+  const _mandalaRight = createPaneKeepAlive(
+    () => splitConfig.rightPane === "mandala"
+  );
+  const _tunnelRight = createPaneKeepAlive(
+    () => splitConfig.rightPane === "tunnel"
+  );
 
   let _pane2d: HTMLDivElement | undefined = $state();
   let _pane3d: HTMLDivElement | undefined = $state();
@@ -363,20 +420,21 @@
     const from = _prevLeftPane;
     _prevLeftPane = cur;
 
-    const outPane = from === 'animation' ? _pane2d : from === 'animation-3d' ? _pane3d : null;
-    const outRail = from === 'animation' ? _rail2d : from === 'animation-3d' ? _rail3d : null;
+    const outPane =
+      from === "animation" ? _pane2d : from === "animation-3d" ? _pane3d : null;
+    const outRail =
+      from === "animation" ? _rail2d : from === "animation-3d" ? _rail3d : null;
     if (!outPane) return;
 
-    const w = outPane.getBoundingClientRect().width + 'px';
+    const w = outPane.getBoundingClientRect().width + "px";
     outPane.style.width = w;
     if (outRail) outRail.style.width = w;
 
     setTimeout(() => {
-      if (outPane.isConnected) outPane.style.width = '';
-      if (outRail?.isConnected) outRail.style.width = '';
+      if (outPane.isConnected) outPane.style.width = "";
+      if (outRail?.isConnected) outRail.style.width = "";
     }, 250);
   });
-
 </script>
 
 <div
@@ -385,7 +443,11 @@
   bind:clientWidth={splitWidth}
   bind:clientHeight={splitHeight}
   style="--canvas-frac: {practiceCanvasFraction};"
-  data-fullscreen-stack={layout.isFullscreen ? (layout.fullscreenStackVertical ? "vertical" : "horizontal") : undefined}
+  data-fullscreen-stack={layout.isFullscreen
+    ? layout.fullscreenStackVertical
+      ? "vertical"
+      : "horizontal"
+    : undefined}
   data-landscape={layout.isLandscapeMobile || undefined}
   data-adaptive-stack={adaptiveVerticalSplit || undefined}
   data-focused={layout.focusedPane}
@@ -396,7 +458,6 @@
     class:focused={layout.focusedPane === "animation"}
     data-hidden={layout.focusedPane === "image"}
   >
-
     <!-- Persistent 3D canvas — stays mounted after first activation to preserve
          WebGL context, loaded GLBs, and generated SDF textures across pane switches. -->
     {#if _3dLeftMounted}
@@ -411,7 +472,9 @@
             role="button"
             tabindex="0"
             onclick={handleCloseClick}
-            onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") handleCloseClick(e); }}
+            onkeydown={(e) => {
+              if (e.key === "Enter" || e.key === " ") handleCloseClick(e);
+            }}
             aria-label="Exit focus mode"
           >
             <i class="fas fa-times" aria-hidden="true"></i>
@@ -429,15 +492,21 @@
               isPlaying={playback.isPlaying}
               {bpm}
               {onBpmChange}
-              bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
-              redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
+              bluePropType={propRendering.bluePropType != null
+                ? String(propRendering.bluePropType)
+                : null}
+              redPropType={propRendering.redPropType != null
+                ? String(propRendering.redPropType)
+                : null}
               hideOverlays={false}
               fullScreen={layout.focusedPane === "animation"}
               onExitFullScreen={onUnfocusPane}
               {onPlaybackToggle}
+              {onSystemPlaybackChange}
               {onProgressBarSeek}
               {playbackMode}
               {onPlaybackModeChange}
+              onSettingChange={onViewer3DSettingChange}
               onSceneReadyChange={(ready) => {
                 _scene3dReady = ready;
                 onSceneReadyChange?.(ready);
@@ -460,7 +529,9 @@
             role="button"
             tabindex="0"
             onclick={handleCloseClick}
-            onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") handleCloseClick(e); }}
+            onkeydown={(e) => {
+              if (e.key === "Enter" || e.key === " ") handleCloseClick(e);
+            }}
             aria-label="Exit focus mode"
           >
             <i class="fas fa-times" aria-hidden="true"></i>
@@ -516,32 +587,48 @@
             />
           </div>
         {/if}
-
       </div>
     {/if}
 
     {#if _2dLeftMounted}
-      <div bind:this={_rail2d} class="persistent-rail" class:persistent-rail-hidden={!_2dLeftActive}>
+      <div
+        bind:this={_rail2d}
+        class="persistent-rail"
+        class:persistent-rail-hidden={!_2dLeftActive}
+      >
         <RightRail renderMode="2d" />
       </div>
     {/if}
     {#if _3dLeftMounted}
       <!-- Rail withheld until the scene load gate opens, so it fades in with the
            curtain lift instead of showing over a black "Setting the stage" pane. -->
-      <div bind:this={_rail3d} class="persistent-rail" class:persistent-rail-hidden={!_3dLeftActive || !_scene3dReady}>
-        <RightRail renderMode="3d" {bpm} />
+      <div
+        bind:this={_rail3d}
+        class="persistent-rail"
+        class:persistent-rail-hidden={!_3dLeftActive || !_scene3dReady}
+      >
+        <RightRail
+          renderMode="3d"
+          {bpm}
+          onSettingChange={onViewer3DSettingChange}
+          onAction={onViewer3DAction}
+        />
         {#if PerformerHub}
-          <PerformerHub />
+          <PerformerHub onSettingChange={onViewer3DSettingChange} />
         {/if}
       </div>
     {/if}
 
     {#if _cardLeft.mounted}
-      <div class="media-pane preview-pane content-overlay" class:content-overlay-hidden={!_cardLeft.shown}>
+      <div
+        class="media-pane preview-pane content-overlay"
+        class:content-overlay-hidden={!_cardLeft.shown}
+      >
         <ChoreoCard
           {sequence}
           highlightedStepIndex={playback.highlightedStepIndex}
-          showHighlight={playback.isPlaying || playback.highlightedStepIndex !== null}
+          showHighlight={playback.isPlaying ||
+            playback.highlightedStepIndex !== null}
           {onStepClick}
           {onQrPlayClick}
           clickableStart
@@ -571,18 +658,33 @@
       </div>
     {/if}
     {#if _videosLeft.mounted}
-      <div class="media-pane content-overlay" class:content-overlay-hidden={!_videosLeft.shown}>
-        <VideoGallery {sequence} isOwned={false} {isLoggedIn} onUpload={onVideoUpload} />
+      <div
+        class="media-pane content-overlay"
+        class:content-overlay-hidden={!_videosLeft.shown}
+      >
+        <VideoGallery
+          {sequence}
+          isOwned={false}
+          {isLoggedIn}
+          onUpload={onVideoUpload}
+        />
       </div>
     {/if}
     {#if _mandalaLeft.mounted}
-      <div class="media-pane content-overlay" class:content-overlay-hidden={!_mandalaLeft.shown}>
+      <div
+        class="media-pane content-overlay"
+        class:content-overlay-hidden={!_mandalaLeft.shown}
+      >
         <ArtPane
           artType="mandala"
           {sequence}
           {playback}
-          bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}
-          redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : undefined}
+          bluePropType={propRendering.bluePropType != null
+            ? String(propRendering.bluePropType)
+            : undefined}
+          redPropType={propRendering.redPropType != null
+            ? String(propRendering.redPropType)
+            : undefined}
           {bpm}
           {onBpmChange}
           {playbackMode}
@@ -591,17 +693,27 @@
           layout={layout.isMobile ? "bottom" : "sidebar"}
           {onPropChange}
           {onArtExport}
+          {onArtExportEvent}
+          {onArtSettingChange}
+          {onArtAction}
         />
       </div>
     {/if}
     {#if _tunnelLeft.mounted}
-      <div class="media-pane content-overlay" class:content-overlay-hidden={!_tunnelLeft.shown}>
+      <div
+        class="media-pane content-overlay"
+        class:content-overlay-hidden={!_tunnelLeft.shown}
+      >
         <ArtPane
           artType="tunnel"
           {sequence}
           {playback}
-          bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}
-          redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : undefined}
+          bluePropType={propRendering.bluePropType != null
+            ? String(propRendering.bluePropType)
+            : undefined}
+          redPropType={propRendering.redPropType != null
+            ? String(propRendering.redPropType)
+            : undefined}
           {bpm}
           {onBpmChange}
           {playbackMode}
@@ -610,6 +722,9 @@
           layout={layout.isMobile ? "bottom" : "sidebar"}
           {onPropChange}
           {onArtExport}
+          {onArtExportEvent}
+          {onArtSettingChange}
+          {onArtAction}
         />
       </div>
     {/if}
@@ -623,14 +738,19 @@
     class:focused={layout.focusedPane === "image"}
     data-hidden={layout.focusedPane === "animation"}
   >
-
-    <div class="preview-column-inner" class:focused={layout.focusedPane === "image"}>
+    <div
+      class="preview-column-inner"
+      class:focused={layout.focusedPane === "image"}
+    >
       {#if _2dRightMounted}
         <div
           class="media-pane animation-pane persistent-2d"
           class:persistent-2d-hidden={!_2dRightActive}
         >
-          <div class="canvas-layer canvas-2d-layer" style="opacity:1;pointer-events:auto;">
+          <div
+            class="canvas-layer canvas-2d-layer"
+            style="opacity:1;pointer-events:auto;"
+          >
             <AnimatorCanvas
               sequenceData={playback.animationState.sequenceData}
               currentStep={playback.currentStep}
@@ -644,9 +764,9 @@
               word={sequence?.word}
               bluePropType={propRendering.bluePropType}
               redPropType={propRendering.redPropType}
-              trailSettings={trailSettings}
+              {trailSettings}
               onCanvasReady={() => {}}
-              onPlaybackToggle={onPlaybackToggle}
+              {onPlaybackToggle}
               onProgressBarSeek={onProgressBarSeek ?? null}
               onProgressBarScrubStart={onProgressBarScrubStart ?? null}
               onProgressBarScrubEnd={onProgressBarScrubEnd ?? null}
@@ -660,14 +780,19 @@
       {/if}
 
       {#if _cardRight.mounted}
-        <div class="media-pane preview-pane content-overlay" class:content-overlay-hidden={!_cardRight.shown}>
+        <div
+          class="media-pane preview-pane content-overlay"
+          class:content-overlay-hidden={!_cardRight.shown}
+        >
           {#if _cardRight.active && layout.focusedPane === "image" && !layout.isMobile && !layout.suppressCloseButton}
             <div
               class="pane-close-btn"
               role="button"
               tabindex="0"
               onclick={handleCloseClick}
-              onkeydown={(e) => { if (e.key === "Enter" || e.key === " ") handleCloseClick(e); }}
+              onkeydown={(e) => {
+                if (e.key === "Enter" || e.key === " ") handleCloseClick(e);
+              }}
               aria-label="Exit focus mode"
             >
               <i class="fas fa-times" aria-hidden="true"></i>
@@ -676,8 +801,12 @@
 
           <ChoreoCard
             {sequence}
-            highlightedStepIndex={layout.focusedPane === "image" ? null : playback.highlightedStepIndex}
-            showHighlight={layout.focusedPane === "image" ? false : (playback.isPlaying || playback.highlightedStepIndex !== null)}
+            highlightedStepIndex={layout.focusedPane === "image"
+              ? null
+              : playback.highlightedStepIndex}
+            showHighlight={layout.focusedPane === "image"
+              ? false
+              : playback.isPlaying || playback.highlightedStepIndex !== null}
             {onStepClick}
             {onQrPlayClick}
             clickableStart
@@ -706,7 +835,7 @@
           />
         </div>
       {/if}
-      {#if splitConfig.rightPane === 'animation-3d'}
+      {#if splitConfig.rightPane === "animation-3d"}
         <div class="media-pane animation-pane content-overlay">
           <div
             class="canvas-layer canvas-3d-layer"
@@ -719,33 +848,55 @@
                 isPlaying={playback.isPlaying}
                 {bpm}
                 {onBpmChange}
-                bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : null}
-                redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : null}
+                bluePropType={propRendering.bluePropType != null
+                  ? String(propRendering.bluePropType)
+                  : null}
+                redPropType={propRendering.redPropType != null
+                  ? String(propRendering.redPropType)
+                  : null}
                 hideOverlays={false}
                 fullScreen={false}
                 onExitFullScreen={onUnfocusPane}
                 {onPlaybackToggle}
+                {onSystemPlaybackChange}
                 {onProgressBarSeek}
                 {playbackMode}
                 {onPlaybackModeChange}
+                onSettingChange={onViewer3DSettingChange}
               />
             {/if}
           </div>
         </div>
       {/if}
       {#if _videosRight.mounted}
-        <div class="media-pane content-overlay" class:content-overlay-hidden={!_videosRight.shown}>
-          <VideoGallery {sequence} isOwned={false} {isLoggedIn} onUpload={onVideoUpload} />
+        <div
+          class="media-pane content-overlay"
+          class:content-overlay-hidden={!_videosRight.shown}
+        >
+          <VideoGallery
+            {sequence}
+            isOwned={false}
+            {isLoggedIn}
+            onUpload={onVideoUpload}
+          />
         </div>
       {/if}
       {#if _mandalaRight.mounted}
-        <div class="media-pane content-overlay" class:content-overlay-hidden={!_mandalaRight.shown}>
+        <div
+          class="media-pane content-overlay"
+          class:content-overlay-hidden={!_mandalaRight.shown}
+        >
           <ArtPane
             artType="mandala"
+            active={_mandalaRight.shown}
             {sequence}
             {playback}
-            bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}
-            redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : undefined}
+            bluePropType={propRendering.bluePropType != null
+              ? String(propRendering.bluePropType)
+              : undefined}
+            redPropType={propRendering.redPropType != null
+              ? String(propRendering.redPropType)
+              : undefined}
             {bpm}
             {onBpmChange}
             {playbackMode}
@@ -754,17 +905,28 @@
             layout={layout.isMobile ? "bottom" : "sidebar"}
             {onPropChange}
             {onArtExport}
+            {onArtExportEvent}
+            {onArtSettingChange}
+            {onArtAction}
           />
         </div>
       {/if}
       {#if _tunnelRight.mounted}
-        <div class="media-pane content-overlay" class:content-overlay-hidden={!_tunnelRight.shown}>
+        <div
+          class="media-pane content-overlay"
+          class:content-overlay-hidden={!_tunnelRight.shown}
+        >
           <ArtPane
             artType="tunnel"
+            active={_tunnelRight.shown}
             {sequence}
             {playback}
-            bluePropType={propRendering.bluePropType != null ? String(propRendering.bluePropType) : undefined}
-            redPropType={propRendering.redPropType != null ? String(propRendering.redPropType) : undefined}
+            bluePropType={propRendering.bluePropType != null
+              ? String(propRendering.bluePropType)
+              : undefined}
+            redPropType={propRendering.redPropType != null
+              ? String(propRendering.redPropType)
+              : undefined}
             {bpm}
             {onBpmChange}
             {playbackMode}
@@ -773,6 +935,9 @@
             layout={layout.isMobile ? "bottom" : "sidebar"}
             {onPropChange}
             {onArtExport}
+            {onArtExportEvent}
+            {onArtSettingChange}
+            {onArtAction}
           />
         </div>
       {/if}
@@ -805,7 +970,6 @@
       {/if}
     </div>
   </div>
-
 </div>
 
 <style>
@@ -836,14 +1000,14 @@
        ResizeObserver to fire on every frame, producing a tiny→expand resize cascade. */
   }
 
-
   .media-pane.persistent-3d,
   .media-pane.persistent-2d {
     position: absolute;
     inset: 0;
     opacity: 1;
-    transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-                visibility 0s linear 0s;
+    transition:
+      opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+      visibility 0s linear 0s;
   }
 
   /* Qualified with `.media-pane` so `position:absolute` beats the later
@@ -856,16 +1020,18 @@
     inset: 0;
     z-index: 3;
     opacity: 1;
-    transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-                visibility 0s linear 0s;
+    transition:
+      opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+      visibility 0s linear 0s;
   }
 
   .media-pane.content-overlay-hidden {
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
-    transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-                visibility 0s linear 200ms;
+    transition:
+      opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+      visibility 0s linear 200ms;
   }
 
   .media-pane.persistent-3d-hidden,
@@ -875,8 +1041,9 @@
     visibility: hidden;
     pointer-events: none;
     opacity: 0;
-    transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-                visibility 0s linear 200ms;
+    transition:
+      opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+      visibility 0s linear 200ms;
   }
 
   .persistent-rail {
@@ -885,8 +1052,9 @@
     pointer-events: none;
     z-index: 9;
     opacity: 1;
-    transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-                visibility 0s linear 0s;
+    transition:
+      opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+      visibility 0s linear 0s;
   }
 
   .persistent-rail > :global(*) {
@@ -896,8 +1064,9 @@
   .persistent-rail-hidden {
     opacity: 0;
     visibility: hidden;
-    transition: opacity 200ms cubic-bezier(0.2, 0, 0, 1),
-                visibility 0s linear 200ms;
+    transition:
+      opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+      visibility 0s linear 200ms;
   }
 
   .persistent-rail-hidden > :global(*) {
@@ -963,14 +1132,17 @@
     );
     /* Parked off-screen right during setup (card shows through); slides in on Start. */
     transform: translateX(100%);
-    transition: transform var(--ws-dur, 300ms) var(--ws-ease, cubic-bezier(0.2, 0, 0, 1));
+    transition: transform var(--ws-dur, 300ms)
+      var(--ws-ease, cubic-bezier(0.2, 0, 0, 1));
     will-change: transform;
   }
   .practice-deck.lane-in {
     transform: translateX(0);
   }
   @media (prefers-reduced-motion: reduce) {
-    .practice-deck { transition: none; }
+    .practice-deck {
+      transition: none;
+    }
   }
   .media-pane {
     flex: 1;
@@ -1011,7 +1183,6 @@
     border-radius: var(--border-radius-lg, 12px);
     overflow: hidden;
   }
-
 
   .preview-pane {
     background: transparent;
@@ -1056,7 +1227,8 @@
     justify-content: center;
     z-index: 10;
     -webkit-tap-highlight-color: transparent;
-    animation: closeButtonPopIn 200ms cubic-bezier(0.34, 1.56, 0.64, 1) 100ms both;
+    animation: closeButtonPopIn 200ms cubic-bezier(0.34, 1.56, 0.64, 1) 100ms
+      both;
   }
 
   @keyframes closeButtonPopIn {
@@ -1298,7 +1470,6 @@
       grid-template-columns: 1fr;
       grid-template-rows: 0% 100%;
     }
-
   }
 
   .split-view.practice[data-landscape="true"] {

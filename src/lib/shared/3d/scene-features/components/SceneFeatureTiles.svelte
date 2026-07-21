@@ -8,6 +8,15 @@
    */
 
   import { getSceneFeatureContext } from "../context/scene-feature-context";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+
+  interface Props {
+    onSettingChange?: ViewerControlSink;
+  }
+  let { onSettingChange }: Props = $props();
 
   const sceneFeatures = getSceneFeatureContext();
 
@@ -27,6 +36,17 @@
     if (!sceneFeatures.isEnabled(key)) return false;
     return !sceneFeatures.isReady(key);
   }
+
+  function toggleFeature(key: string, enabled: boolean): void {
+    sceneFeatures.toggle(key);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_scene",
+      `feature_${key}`,
+      enabled,
+      !enabled
+    );
+  }
 </script>
 
 <div class="tiles">
@@ -40,7 +60,7 @@
       style:--tile-color={ACCENTS[feature.key] ?? "#888"}
       aria-pressed={enabled}
       aria-label={feature.label + " scene feature"}
-      onclick={() => sceneFeatures.toggle(feature.key)}
+      onclick={() => toggleFeature(feature.key, enabled)}
     >
       <div
         class="thumb"
@@ -72,8 +92,10 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    transition: transform 160ms cubic-bezier(0.2, 0, 0.13, 1.5),
-      border-color 160ms, box-shadow 160ms;
+    transition:
+      transform 160ms cubic-bezier(0.2, 0, 0.13, 1.5),
+      border-color 160ms,
+      box-shadow 160ms;
   }
 
   .tile:hover {
@@ -119,13 +141,15 @@
     height: 8px;
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.12);
-    transition: background 160ms, box-shadow 160ms;
+    transition:
+      background 160ms,
+      box-shadow 160ms;
   }
 
   .tile[aria-pressed="true"] {
     border-color: var(--tile-color);
-    box-shadow: 0 6px 22px
-        color-mix(in srgb, var(--tile-color) 30%, transparent),
+    box-shadow:
+      0 6px 22px color-mix(in srgb, var(--tile-color) 30%, transparent),
       inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 

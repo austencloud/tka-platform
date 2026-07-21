@@ -4,13 +4,30 @@
   import { ANIMATED_BACKGROUNDS } from "$lib/shared/settings/utils/public-page-backgrounds";
   import SceneFeatureTiles from "../scene-features/components/SceneFeatureTiles.svelte";
   import { tryGetSceneFeatureContext } from "../scene-features/context/scene-feature-context";
+  import {
+    reportViewerControlChange,
+    type ViewerControlSink,
+  } from "$lib/shared/sequence-viewer/domain/viewer-control-analytics";
+
+  interface Props {
+    onSettingChange?: ViewerControlSink;
+  }
+  let { onSettingChange }: Props = $props();
 
   const currentBg = $derived(settingsService.settings.backgroundType);
   const hasSceneFeatures = tryGetSceneFeatureContext() !== undefined;
 
   function selectScene(e: MouseEvent, type: BackgroundType) {
     e.stopPropagation();
+    const previous = currentBg;
     settingsService.updateSetting("backgroundType", type);
+    reportViewerControlChange(
+      onSettingChange,
+      "viewer_3d_scene",
+      "background",
+      previous ?? null,
+      type
+    );
   }
 </script>
 
@@ -32,7 +49,7 @@
 
 {#if hasSceneFeatures}
   <div class="section-divider"></div>
-  <SceneFeatureTiles />
+  <SceneFeatureTiles {onSettingChange} />
 {/if}
 
 <style>
@@ -66,10 +83,19 @@
   }
 
   .scene-tile.active {
-    background: color-mix(in srgb, var(--theme-accent, #4a9eff) 18%, transparent);
-    border-color: color-mix(in srgb, var(--theme-accent, #4a9eff) 50%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 18%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--theme-accent, #4a9eff) 50%,
+      transparent
+    );
     color: color-mix(in srgb, var(--theme-accent, #4a9eff) 40%, #ffffff);
-    box-shadow: 0 2px 12px color-mix(in srgb, var(--theme-accent, #4a9eff) 20%, transparent);
+    box-shadow: 0 2px 12px
+      color-mix(in srgb, var(--theme-accent, #4a9eff) 20%, transparent);
   }
 
   .scene-tile i {
