@@ -23,6 +23,7 @@ export class FrameBuilder {
   ): string {
     if (
       !stepData ||
+      typeof stepData !== "object" ||
       !("motions" in stepData) ||
       !isVisibleMotion(stepData.motions?.blue) ||
       !isVisibleMotion(stepData.motions?.red)
