@@ -7,7 +7,8 @@
   import { detectSiteMode, type SiteMode } from "../config/domains";
   import { consumeSkipNextViewTransition } from "$lib/shared/transitions/sequence-drawer-state.svelte";
   import { reducedMotion } from "$lib/shared/transitions/motion";
-  import { LAUNCHPAD_TILES } from "$lib/shared/landing/components/launchpad/launchpad-tiles";
+  import { navigationMorphs } from "$lib/shared/transitions/navigation-morphs";
+  import { runNamedRouteMorph } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import { getPresenceTracker } from "$lib/shared/presence/get-presence-tracker";
   import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
   import type { LayoutData } from "./$types";
@@ -17,58 +18,21 @@
   // Import modern view transitions CSS
   import "$lib/shared/transitions/view-transitions.css";
 
-  // View Transitions driver (2026 canonical SvelteKit pattern). The root transition
-  // is disabled in view-transitions.css, so only elements carrying a
-  // view-transition-name morph. SCOPED to the navigations that actually have a
-  // morph pair (shop grid <-> product, browse <-> sequence, landing "Composer"
-  // tile <-> /composer hero). Every other route
-  // change instant-cuts: unscoped, the API still snapshots the full viewport —
-  // including the fixed cosmic WebGL background (~99ms readback) — on EVERY app
-  // navigation, for no visible benefit (root is disabled). Guards: feature-detect
-  // for graceful fallback, the swipe-dismiss coordination flag, same-pathname (the
-  // viewer mutates bpm/t/view params constantly), and the morph-pair allowlist.
-  // onNavigate never fires on a full-page F5.
-  // Landing launchpad tiles that carry a shared-element route morph. Derived
-  // from the tile list so a new tile with a `morphName` auto-wires its dive —
-  // no per-destination edit here. Each href is the exact destination path.
-  const MORPH_DEST_PATHS = new Set(
-    LAUNCHPAD_TILES.filter((t) => t.morphName).map((t) => t.href)
-  );
-
-  function navigationMorphs(
-    from: URL | null | undefined,
-    to: URL | null | undefined
-  ): boolean {
-    if (!from || !to) return false;
-    const a = from.pathname;
-    const b = to.pathname;
-    // Browse gallery <-> sequence viewer VT thumbnail morph. (Shop uses a Motion
-    // spring-FLIP morph, ShopMorphLayer — interruptible, cross-browser — so
-    // shop-INTERNAL grid<->detail navs stay off the VT path. The launchpad
-    // "/ <-> /shop/choreography-cards" dive below is landing->shop, a different
-    // pair, so it is intentionally included.)
-    const seqPair = (x: string, y: string) =>
-      x.startsWith("/browse") && y.startsWith("/sequence");
-    if (seqPair(a, b) || seqPair(b, a)) return true;
-    // Landing launchpad tile <-> destination masthead shared-element route morph
-    // (rev-3 generalization). The landing is always the "/" endpoint; the other
-    // endpoint is any tile destination carrying a morphName. Tile <li> and the
-    // destination hero share view-transition-name "launchpad-<id>", so only that
-    // element morphs; every other route cuts.
-    const launchpadPair = (x: string, y: string) =>
-      x === "/" && MORPH_DEST_PATHS.has(y);
-    if (launchpadPair(a, b) || launchpadPair(b, a)) return true;
-    return false;
-  }
-
+  // View Transitions driver (2026 canonical SvelteKit pattern), scoped to route
+  // pairs that provide matching named participants: browse <-> sequence and the
+  // landing launchpad <-> its destinations. runNamedRouteMorph temporarily opts
+  // the document root out of capture, so persistent chrome and the cosmic WebGL
+  // canvas stay live while only the shared element is snapshotted. Every other
+  // route uses the regular Svelte content fade. Guards cover feature support,
+  // reduced motion, swipe-dismiss coordination, same-path query mutations, and
+  // the morph-pair allowlist. onNavigate never fires on a full-page F5.
   /**
-   * Morph instrumentation (DEV only). Times the root-snapshot capture and flags
+   * Morph instrumentation (DEV only). Times named-snapshot preparation and flags
    * long tasks during the animation window, printed under the `[morph]` prefix.
-   * `vt.ready` resolves once BOTH snapshots are captured and the pseudo-tree is
-   * built, so a large ready-delta points at snapshot-readback cost — the
-   * persistent cosmic WebGL canvas readback is ~99ms — while long tasks during
-   * the run point at the incoming page mounting on the main thread. This is the
-   * probe for the "brief stutter" on the launchpad dive; zero prod cost.
+   * `vt.ready` resolves once both named snapshots and the pseudo-tree are ready;
+   * the document root and persistent cosmic canvas are deliberately excluded.
+   * A large ready delta now points at incoming-page mount or shared-element
+   * rasterization cost. This is the launchpad-dive stutter probe; zero prod cost.
    */
   function startMorphProbe(route: string) {
     const t0 = performance.now();
@@ -84,22 +48,46 @@
       po = undefined;
     }
     const since = () => Math.round(performance.now() - t0);
-    return (vt: { ready: Promise<void>; finished: Promise<void> }) => {
-      vt.ready.then(
-        () => console.log(`[morph] ${route} snapshot→ready ${since()}ms`),
-        () => {}
-      );
-      vt.finished.then(
-        () => {
-          console.log(`[morph] ${route} finished ${since()}ms`);
-          console[longTasks.length ? "warn" : "log"](
-            `[morph] ${route} long tasks (ms):`,
-            longTasks.length ? longTasks : "none"
-          );
-          po?.disconnect();
-        },
-        () => po?.disconnect()
-      );
+    const drainLongTasks = () => {
+      for (const entry of po?.takeRecords() ?? []) {
+        longTasks.push(Math.round(entry.duration));
+      }
+    };
+    const stop = () => {
+      drainLongTasks();
+      po?.disconnect();
+    };
+    return {
+      attach(vt: { ready: Promise<void>; finished: Promise<void> }) {
+        vt.ready.then(
+          () => console.debug(`[morph] ${route} snapshot→ready ${since()}ms`),
+          (error) =>
+            console.debug(`[morph] ${route} snapshot rejected`, error)
+        );
+        vt.finished.then(
+          () => {
+            stop();
+            // console.debug is deliberately not wrapped by the development
+            // console bridge, so profiling cannot POST inside its own window.
+            console.debug(`[morph] ${route} finished ${since()}ms`);
+            console.debug(
+              `[morph] ${route} long tasks (ms):`,
+              longTasks.length ? longTasks : "none"
+            );
+          },
+          (error) => {
+            stop();
+            console.debug(`[morph] ${route} transition rejected`, error);
+            console.debug(
+              `[morph] ${route} long tasks before rejection (ms):`,
+              longTasks.length ? longTasks : "none"
+            );
+          }
+        );
+      },
+      cancel() {
+        stop();
+      },
     };
   }
 
@@ -110,18 +98,27 @@
     if (navigation.from?.url.pathname === navigation.to?.url.pathname) return;
     if (!navigationMorphs(navigation.from?.url, navigation.to?.url)) return;
 
-    const attachProbe = import.meta.env.DEV
+    const probe = import.meta.env.DEV
       ? startMorphProbe(
           `${navigation.from?.url.pathname}→${navigation.to?.url.pathname}`
         )
       : null;
 
     return new Promise((resolve) => {
-      const vt = document.startViewTransition(async () => {
+      try {
+        const vt = runNamedRouteMorph(() =>
+          document.startViewTransition(async () => {
+            resolve();
+            await navigation.complete;
+          })
+        );
+        probe?.attach(vt);
+      } catch {
+        // A startup failure must not strand SvelteKit's navigation. The helper
+        // has already released the transient root class and chrome ownership.
+        probe?.cancel();
         resolve();
-        await navigation.complete;
-      });
-      attachProbe?.(vt);
+      }
     });
   });
 
@@ -175,6 +172,10 @@
     "/roots/software",
     "/support",
     "/composer",
+    // The Guide hub participates in the homepage shared-element morph, so it
+    // uses the persistent root chrome. Deeper /guide pages keep GuideShell's
+    // standalone header/footer and book canvas.
+    "/guide",
     "/glossary",
     "/faq",
     "/learn/staff-spinning-choreography",

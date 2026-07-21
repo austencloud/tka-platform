@@ -1,6 +1,6 @@
 /**
  * CSS View Transitions API Styles
- * Modern 2025/2026 approach for smooth cross-document transitions
+ * Modern 2025/2026 approach for smooth same-document transitions
  *
  * These styles are applied when the browser supports View Transitions API
  * Provides smooth, native-feeling transitions between module views
@@ -26,6 +26,18 @@
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
+}
+
+/* Named route morphs do not need a root snapshot at all. Scoping this to the
+   class held by runNamedRouteMorph preserves the root-based module and drawer
+   transitions below. The transparent overlay leaves persistent chrome and the
+   incoming page visible beneath the named shared-element snapshots. */
+html.named-route-morph {
+  view-transition-name: none;
+}
+
+html.named-route-morph::view-transition {
+  background: transparent;
 }
 
 /* ============================================================================
@@ -314,9 +326,9 @@
    LAUNCHPAD ROUTE MORPHS
    Each landing launchpad tile (view-transition-name: launchpad-<id>) morphs
    into its destination page's masthead/hero (same name) across the client
-   navigation, in BOTH directions. Root is disabled above, so only the named
-   group animates; everything else cuts. Names must stay 1:1 with the tile
-   defs' `morphName` in launchpad-tiles.ts.
+   navigation, in BOTH directions. The route driver suppresses root capture, so
+   only the named group animates; everything else cuts. Names stay 1:1 with the
+   tile defs' `morphName` in launchpad-tiles.ts.
    ============================================================================ */
 ::view-transition-group(launchpad-composer),
 ::view-transition-group(launchpad-choreo-cards),

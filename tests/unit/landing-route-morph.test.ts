@@ -1,0 +1,454 @@
+import { readFileSync, statSync } from "node:fs";
+import { resolve } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { LAUNCHPAD_TILES } from "../../src/lib/shared/landing/components/launchpad/launchpad-tiles";
+import {
+  LAUNCHPAD_MORPH_PATHS,
+  navigationMorphs,
+} from "../../src/lib/shared/transitions/navigation-morphs";
+import {
+  isNamedRouteMorphActive,
+  NAMED_ROUTE_MORPH_CLASS,
+  runAfterNamedRouteMorph,
+  runAfterNamedRouteMorphIdle,
+  runNamedRouteMorph,
+} from "../../src/lib/shared/transitions/named-route-morph-state.svelte";
+
+const readSource = (path: string): string =>
+  readFileSync(resolve(process.cwd(), path), "utf-8");
+
+const routeSourceByPath: Record<string, string> = {
+  "/composer": "src/routes/(public)/composer/+page.svelte",
+  "/shop/choreography-cards":
+    "src/routes/(public)/shop/choreography-cards/+page.svelte",
+  "/guide": "src/routes/(public)/guide/+page.svelte",
+  "/notation": "src/routes/(public)/notation/+page.svelte",
+  "/faq": "src/routes/(public)/faq/+page.svelte",
+  "/glossary": "src/routes/(public)/glossary/+page.svelte",
+};
+
+const location = (pathname: string): Pick<URL, "pathname"> => ({ pathname });
+
+function deferred(): {
+  promise: Promise<void>;
+  resolve: () => void;
+  reject: () => void;
+} {
+  let resolvePromise!: () => void;
+  let rejectPromise!: () => void;
+  const promise = new Promise<void>((resolve, reject) => {
+    resolvePromise = resolve;
+    rejectPromise = () => reject(new Error("transition failed"));
+  });
+  return { promise, resolve: resolvePromise, reject: rejectPromise };
+}
+
+afterEach(() => {
+  document.documentElement.classList.remove(NAMED_ROUTE_MORPH_CLASS);
+  vi.unstubAllGlobals();
+});
+
+describe("landing route morph allowlist", () => {
+  it("allows every launchpad morph in both directions", () => {
+    expect(LAUNCHPAD_MORPH_PATHS).toEqual(
+      LAUNCHPAD_TILES.filter((tile) => tile.morphName).map((tile) => tile.href)
+    );
+
+    for (const pathname of LAUNCHPAD_MORPH_PATHS) {
+      expect(navigationMorphs(location("/"), location(pathname))).toBe(true);
+      expect(navigationMorphs(location(pathname), location("/"))).toBe(true);
+    }
+  });
+
+  it("preserves the browse and sequence shared-thumbnail pair", () => {
+    expect(
+      navigationMorphs(location("/browse/community"), location("/sequence/abc"))
+    ).toBe(true);
+    expect(
+      navigationMorphs(location("/sequence/abc"), location("/browse"))
+    ).toBe(true);
+  });
+
+  it("rejects same-page, unrelated, and destination-to-destination navigation", () => {
+    expect(navigationMorphs(null, location("/composer"))).toBe(false);
+    expect(navigationMorphs(location("/"), undefined)).toBe(false);
+    expect(navigationMorphs(location("/"), location("/"))).toBe(false);
+    expect(navigationMorphs(location("/about"), location("/composer"))).toBe(
+      false
+    );
+    expect(navigationMorphs(location("/composer"), location("/faq"))).toBe(
+      false
+    );
+    expect(navigationMorphs(location("/browse"), location("/notation"))).toBe(
+      false
+    );
+    expect(
+      navigationMorphs(location("/browse-old"), location("/sequence/abc"))
+    ).toBe(false);
+  });
+});
+
+describe("landing shared-element contract", () => {
+  it("gives every tile one unique name and a matching destination participant", () => {
+    const morphNames = LAUNCHPAD_TILES.map((tile) => tile.morphName);
+    expect(morphNames.every(Boolean)).toBe(true);
+    expect(new Set(morphNames).size).toBe(morphNames.length);
+    expect(Object.keys(routeSourceByPath).sort()).toEqual(
+      [...LAUNCHPAD_MORPH_PATHS].sort()
+    );
+
+    const tileSource = readSource(
+      "src/lib/shared/landing/components/launchpad/LaunchpadTile.svelte"
+    );
+    expect(tileSource).toContain("style:view-transition-name={tile.morphName}");
+
+    for (const tile of LAUNCHPAD_TILES) {
+      const morphName = tile.morphName;
+      expect(morphName).toBeTruthy();
+      if (!morphName) continue;
+
+      const routePath = routeSourceByPath[tile.href];
+      expect(routePath).toBeTruthy();
+      if (!routePath) continue;
+      const routeSource = readSource(routePath);
+      expect(routeSource).toContain(
+        `style:view-transition-name="${morphName}"`
+      );
+    }
+  });
+
+  it("styles every named group and suppresses only the scoped root capture", () => {
+    const css = readSource("src/lib/shared/transitions/view-transitions.css");
+    for (const morphName of LAUNCHPAD_TILES.map((tile) => tile.morphName)) {
+      expect(css).toContain(`::view-transition-group(${morphName})`);
+    }
+
+    expect(css).toMatch(
+      /html\.named-route-morph\s*\{\s*view-transition-name:\s*none;/
+    );
+    expect(css).toMatch(
+      /html\.named-route-morph::view-transition\s*\{\s*background:\s*transparent;/
+    );
+  });
+
+  it("feature-detects View Transitions and bypasses motion-sensitive navigation", () => {
+    const layout = readSource("src/routes/+layout.svelte");
+    const runIndex = layout.indexOf("runNamedRouteMorph(() =>");
+    const guards = [
+      "if (!document.startViewTransition) return;",
+      "if (reducedMotion()) return;",
+      "if (!navigationMorphs(navigation.from?.url, navigation.to?.url)) return;",
+    ];
+
+    expect(runIndex).toBeGreaterThan(-1);
+    for (const guard of guards) {
+      const guardIndex = layout.indexOf(guard);
+      expect(guardIndex, `missing route-morph guard: ${guard}`).toBeGreaterThan(
+        -1
+      );
+      expect(
+        guardIndex,
+        `route-morph guard runs too late: ${guard}`
+      ).toBeLessThan(runIndex);
+    }
+  });
+
+  it("suppresses the marketing fade only during an active named morph", () => {
+    const chrome = readSource(
+      "src/lib/shared/landing/components/MarketingChrome.svelte"
+    );
+    expect(chrome).toContain("isNamedRouteMorphActive()");
+    expect(chrome).toMatch(
+      /duration:\s*suppressContentFade\s*\?\s*0\s*:\s*motionDuration\(200\)/
+    );
+    expect(chrome).toContain(
+      'import { motionDuration } from "$lib/shared/transitions/motion";'
+    );
+    expect(chrome).not.toContain("MORPH_PATHS.has(path)");
+  });
+
+  it("keeps the Guide hub inside persistent root chrome", () => {
+    const layout = readSource("src/routes/+layout.svelte");
+    const guideShell = readSource(
+      "src/routes/(public)/guide/_components/GuideShell.svelte"
+    );
+
+    expect(layout).toMatch(/MARKETING_EXACT[\s\S]*"\/guide"/);
+    expect(guideShell).toContain(
+      'const ownsStandaloneChrome = $derived(page.url.pathname !== "/guide")'
+    );
+    expect(guideShell).toContain("{#if ownsStandaloneChrome}");
+  });
+
+  it("keeps development morph probes out of the console POST bridge", () => {
+    const layout = readSource("src/routes/+layout.svelte");
+    expect(layout).toContain("console.debug(`[morph]");
+    expect(layout).not.toContain("console.log(`[morph]");
+    expect(layout).toContain("po?.takeRecords()");
+  });
+
+  it("keeps heavy landing and destination media out of the morph window", () => {
+    const homeHero = readSource(
+      "src/lib/shared/landing/components/HomeHero.svelte"
+    );
+    const sequenceHero = readSource(
+      "src/lib/shared/landing/components/SequenceHeroDemo.svelte"
+    );
+    const launchpad = readSource(
+      "src/lib/shared/landing/components/launchpad/LaunchpadGrid.svelte"
+    );
+    const composer = readSource("src/routes/(public)/composer/+page.svelte");
+    const notation = readSource("src/routes/(public)/notation/+page.svelte");
+
+    expect(homeHero).toContain("runAfterNamedRouteMorphIdle(heroAct.start)");
+    expect(sequenceHero).toContain("use:activatePlayerWhenNear");
+    expect(sequenceHero).toContain("!isNamedRouteMorphActive()");
+    expect(launchpad).toContain("runAfterNamedRouteMorph(() =>");
+    expect(launchpad).toContain("new Set(tiles.map((tile) => tile.id))");
+    expect(launchpad).toContain("runAfterNamedRouteMorphIdle(mountNext");
+    expect(launchpad).toContain("mediaLoadingId");
+    expect(launchpad).toContain("typeof IntersectionObserver === \"undefined\"");
+    expect(launchpad).toContain("active={mediaActive.has(tile.id)}");
+    expect(launchpad).toContain("visible={visible.has(tile.id)}");
+    expect(composer).toContain("runAfterNamedRouteMorphIdle(() =>");
+    expect(composer).toContain(
+      'await import("$lib/shared/landing/data/per-visit-demo")'
+    );
+    expect(notation).toContain(
+      'import("$lib/shared/shape-matrix/components/ShapeMatrixTeaser.svelte")'
+    );
+  });
+
+  it("keeps the verification corpus out of public notation route chunks", () => {
+    const notation = readSource("src/routes/(public)/notation/+page.svelte");
+    const loops = readSource("src/routes/(public)/notation/loops/+page.svelte");
+
+    for (const source of [notation, loops]) {
+      expect(source).toContain("notation-loop-teaser");
+      expect(source).not.toContain(
+        'from "$lib/shared/loop-explorer/domain/curated-seeds"'
+      );
+    }
+    expect(loops).toContain(
+      'import("$lib/shared/loop-explorer/components/LoopExplorer.svelte")'
+    );
+    expect(loops).not.toContain(
+      'import LoopExplorer from "$lib/shared/loop-explorer/components/LoopExplorer.svelte"'
+    );
+
+    const corpusBytes = statSync(
+      resolve(
+        process.cwd(),
+        "src/lib/shared/loop-explorer/domain/curated-seeds.json"
+      )
+    ).size;
+    const teaserBytes = statSync(
+      resolve(
+        process.cwd(),
+        "src/lib/shared/loop-explorer/domain/notation-loop-teaser-seed.json"
+      )
+    ).size;
+
+    expect(corpusBytes).toBeGreaterThan(1_000_000);
+    expect(teaserBytes).toBeLessThan(12_000);
+  });
+});
+
+describe("named route morph lifecycle", () => {
+  it("queues nonessential work until the final active morph finishes", async () => {
+    const first = deferred();
+    const second = deferred();
+    const work = vi.fn();
+
+    runNamedRouteMorph(() => ({ finished: first.promise }));
+    runNamedRouteMorph(() => ({ finished: second.promise }));
+    runAfterNamedRouteMorph(work);
+
+    first.resolve();
+    await first.promise;
+    await Promise.resolve();
+    expect(work).not.toHaveBeenCalled();
+
+    second.resolve();
+    await second.promise;
+    await Promise.resolve();
+    expect(work).toHaveBeenCalledOnce();
+  });
+
+  it("runs immediately without a morph and honors cancellation while queued", async () => {
+    const immediate = vi.fn();
+    runAfterNamedRouteMorph(immediate);
+    expect(immediate).toHaveBeenCalledOnce();
+
+    const finish = deferred();
+    const cancelled = vi.fn();
+    runNamedRouteMorph(() => ({ finished: finish.promise }));
+    const cancel = runAfterNamedRouteMorph(cancelled);
+    cancel();
+
+    finish.resolve();
+    await finish.promise;
+    await Promise.resolve();
+    expect(cancelled).not.toHaveBeenCalled();
+  });
+
+  it("keeps expensive work behind both the morph and an idle turn", async () => {
+    const finish = deferred();
+    const work = vi.fn();
+    let idleCallback: (() => void) | undefined;
+    vi.stubGlobal(
+      "requestIdleCallback",
+      vi.fn((callback: () => void) => {
+        idleCallback = callback;
+        return 1;
+      })
+    );
+    vi.stubGlobal("cancelIdleCallback", vi.fn());
+
+    runNamedRouteMorph(() => ({ finished: finish.promise }));
+    runAfterNamedRouteMorphIdle(work);
+    expect(work).not.toHaveBeenCalled();
+
+    finish.resolve();
+    await finish.promise;
+    await Promise.resolve();
+    expect(work).not.toHaveBeenCalled();
+
+    idleCallback?.();
+    expect(work).toHaveBeenCalledOnce();
+
+  });
+
+  it("re-arms queued idle work behind a newer morph", async () => {
+    const idleCallbacks: Array<() => void> = [];
+    vi.stubGlobal(
+      "requestIdleCallback",
+      vi.fn((callback: () => void) => {
+        idleCallbacks.push(callback);
+        return idleCallbacks.length;
+      })
+    );
+    vi.stubGlobal("cancelIdleCallback", vi.fn());
+    const work = vi.fn();
+
+    runAfterNamedRouteMorphIdle(work);
+    expect(idleCallbacks).toHaveLength(1);
+
+    const newerMorph = deferred();
+    runNamedRouteMorph(() => ({ finished: newerMorph.promise }));
+    idleCallbacks.shift()?.();
+    expect(work).not.toHaveBeenCalled();
+    expect(idleCallbacks).toHaveLength(0);
+
+    newerMorph.resolve();
+    await newerMorph.promise;
+    await Promise.resolve();
+    expect(idleCallbacks).toHaveLength(1);
+    expect(work).not.toHaveBeenCalled();
+
+    idleCallbacks.shift()?.();
+    expect(work).toHaveBeenCalledOnce();
+  });
+
+  it("isolates deferred subscribers so one failure does not block the rest", async () => {
+    const finish = deferred();
+    const first = vi.fn(() => {
+      throw new Error("deferred enhancement failed");
+    });
+    const second = vi.fn();
+    const queuedErrors: Array<() => void> = [];
+    vi.stubGlobal(
+      "queueMicrotask",
+      vi.fn((callback: () => void) => queuedErrors.push(callback))
+    );
+
+    runNamedRouteMorph(() => ({ finished: finish.promise }));
+    runAfterNamedRouteMorph(first);
+    runAfterNamedRouteMorph(second);
+    finish.resolve();
+    await finish.promise;
+    await Promise.resolve();
+
+    expect(first).toHaveBeenCalledOnce();
+    expect(second).toHaveBeenCalledOnce();
+    expect(queuedErrors).toHaveLength(1);
+  });
+
+  it("holds the root guard and chrome ownership until the transition finishes", async () => {
+    const finish = deferred();
+    runNamedRouteMorph(() => ({ finished: finish.promise }));
+
+    expect(isNamedRouteMorphActive()).toBe(true);
+    expect(
+      document.documentElement.classList.contains(NAMED_ROUTE_MORPH_CLASS)
+    ).toBe(true);
+
+    finish.resolve();
+    await finish.promise;
+    await Promise.resolve();
+
+    expect(isNamedRouteMorphActive()).toBe(false);
+    expect(
+      document.documentElement.classList.contains(NAMED_ROUTE_MORPH_CLASS)
+    ).toBe(false);
+  });
+
+  it("releases ownership after asynchronous rejection or synchronous startup failure", async () => {
+    const finish = deferred();
+    runNamedRouteMorph(() => ({ finished: finish.promise }));
+    finish.reject();
+    await finish.promise.catch(() => undefined);
+    await Promise.resolve();
+    expect(isNamedRouteMorphActive()).toBe(false);
+
+    expect(() =>
+      runNamedRouteMorph(() => {
+        throw new Error("startViewTransition failed");
+      })
+    ).toThrow("startViewTransition failed");
+    expect(isNamedRouteMorphActive()).toBe(false);
+    expect(
+      document.documentElement.classList.contains(NAMED_ROUTE_MORPH_CLASS)
+    ).toBe(false);
+  });
+
+  it("does not let a superseded transition release a newer morph", async () => {
+    const first = deferred();
+    const second = deferred();
+    runNamedRouteMorph(() => ({ finished: first.promise }));
+    runNamedRouteMorph(() => ({ finished: second.promise }));
+
+    first.resolve();
+    await first.promise;
+    await Promise.resolve();
+    expect(isNamedRouteMorphActive()).toBe(true);
+    expect(
+      document.documentElement.classList.contains(NAMED_ROUTE_MORPH_CLASS)
+    ).toBe(true);
+
+    second.resolve();
+    await second.promise;
+    await Promise.resolve();
+    expect(isNamedRouteMorphActive()).toBe(false);
+  });
+
+  it("keeps an older morph guarded when a newer start fails synchronously", async () => {
+    const first = deferred();
+    runNamedRouteMorph(() => ({ finished: first.promise }));
+
+    expect(() =>
+      runNamedRouteMorph(() => {
+        throw new Error("second transition failed");
+      })
+    ).toThrow("second transition failed");
+    expect(isNamedRouteMorphActive()).toBe(true);
+    expect(
+      document.documentElement.classList.contains(NAMED_ROUTE_MORPH_CLASS)
+    ).toBe(true);
+
+    first.resolve();
+    await first.promise;
+    await Promise.resolve();
+    expect(isNamedRouteMorphActive()).toBe(false);
+  });
+});

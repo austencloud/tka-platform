@@ -16,9 +16,10 @@
   import { page } from "$app/state";
   import { fade } from "svelte/transition";
   import ShopMorphLayer from "$lib/features/store/transitions/ShopMorphLayer.svelte";
+  import { isNamedRouteMorphActive } from "$lib/shared/transitions/named-route-morph-state.svelte";
+  import { motionDuration } from "$lib/shared/transitions/motion";
   import SiteHeader from "./SiteHeader.svelte";
   import SiteFooter from "./SiteFooter.svelte";
-  import { LAUNCHPAD_TILES } from "./launchpad/launchpad-tiles";
 
   type BackgroundHostComponent =
     (typeof import("$lib/shared/background/shared/components/BackgroundHost.svelte"))["default"];
@@ -63,26 +64,13 @@
 
   const path = $derived(page.url.pathname);
 
-  // /shop owns its own transition via the View Transitions API (the product cover
-  // morph). Running the keyed Svelte fade there too means two animation engines
-  // animate the same DOM in the same window — flicker, double-fade, the cover
-  // ghosting mid-morph. So shop renders straight (no {#key}/fade) and lets the VT
-  // be the sole authority; the marketing pages (no morph participant) keep the
-  // crossfade between them.
-  // /shop owns its Motion-FLIP morph. '/' and every launchpad morph destination
-  // own the native VT route morph (landing tile <-> destination masthead).
-  // Owning BOTH endpoints of each pair — not just the destination — means it
-  // morphs with a single animator in EITHER direction: on the way back the
-  // landing ('/') is also owned, so it never re-enters the keyed {#key path}
-  // fade and double-animates. Ownership is stable per page, so there is no
-  // mid-flight branch flip (which would remount .mkt-content and flash an
-  // in:fade). MORPH_PATHS is derived from the tile list — new tiles auto-covered.
-  const MORPH_PATHS = new Set([
-    "/",
-    ...LAUNCHPAD_TILES.filter((t) => t.morphName).map((t) => t.href),
-  ]);
-  const ownsViewTransition = $derived(
-    path.startsWith("/shop") || MORPH_PATHS.has(path)
+  // Shop keeps sole ownership of its persistent Motion-FLIP layer. Native
+  // launchpad/sequence morphs suppress the keyed content fade only while that
+  // exact allowlisted navigation is active; ordinary navigation between those
+  // same pages still gets the 200ms marketing fade.
+  const shopOwnsTransition = $derived(path.startsWith("/shop"));
+  const suppressContentFade = $derived(
+    shopOwnsTransition || isNamedRouteMorphActive()
   );
 
   // /shop keeps the live cosmos (Austen wants the space background there). The
@@ -114,7 +102,7 @@
     {/if}
   </div>
 
-  {#if ownsViewTransition}
+  {#if shopOwnsTransition}
     <!-- Shared-element morph overlay (Motion spring-FLIP). Persists across the
          grid<->detail route swap so the ghost can bridge it. -->
     <ShopMorphLayer />
@@ -124,17 +112,16 @@
     <SiteHeader />
 
     <div class="mkt-stage">
-      {#if ownsViewTransition}
-        <div class="mkt-content">
+      {#key path}
+        <div
+          class="mkt-content"
+          in:fade|global={{
+            duration: suppressContentFade ? 0 : motionDuration(200),
+          }}
+        >
           {@render children()}
         </div>
-      {:else}
-        {#key path}
-          <div class="mkt-content" in:fade|global={{ duration: 200 }}>
-            {@render children()}
-          </div>
-        {/key}
-      {/if}
+      {/key}
     </div>
 
     <!-- Persistent chrome like the header: outside the keyed crossfade, so it
