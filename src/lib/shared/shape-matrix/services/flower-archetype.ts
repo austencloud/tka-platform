@@ -1,6 +1,22 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { RotationStyleMatrix } from "$lib/features/lab/vtg-lab/services/resolve-rotation-style-matrices";
 import type { FlowerStyle } from "../domain/flower-signature";
+
+/**
+ * The structural minimum this resolver reads off a rotation-style matrix: the
+ * style tag it selects on, and the per-turn-pattern representatives it pulls
+ * the 0-turn seed from.
+ *
+ * Declared here rather than importing lab's `RotationStyleMatrix` so this
+ * module keeps the boundary documented in `../README.md` ("Known lab-side
+ * dependencies" allowlists two value imports and nothing else). TypeScript is
+ * structural, so lab's richer type satisfies this at every call site — and
+ * this module states what it actually consumes instead of borrowing a type it
+ * does not own.
+ */
+export interface FlowerArchetypeMatrix {
+  style: string;
+  byTurn: Map<string, SequenceData>;
+}
 
 /**
  * The zero-turn two-hand archetype seed a flower is built from: pro spin →
@@ -10,7 +26,7 @@ import type { FlowerStyle } from "../domain/flower-signature";
  * resolve archetypes the same way.
  */
 export function resolveFlowerArchetype(
-  matrices: RotationStyleMatrix[],
+  matrices: FlowerArchetypeMatrix[],
   style: FlowerStyle,
 ): SequenceData {
   const id = style === "pro" ? "iso" : "antispin";

@@ -332,8 +332,11 @@ describe("ensureMotionData — motion absence triggers the gallery fetch", () =>
   it("thin sequence (raw record, no step has both motions) fetches from the gallery", async () => {
     const hydrated = seq([bothHandStep()]);
     loadFullSequenceData.mockResolvedValue(hydrated);
-    const out = await ensureMotionData(seq([rawThinStep()]));
-    expect(loadFullSequenceData).toHaveBeenCalledWith("GUARD");
+    const thin = seq([rawThinStep()]);
+    const out = await ensureMotionData(thin);
+    // The id is threaded alongside the word so same-word variations resolve to
+    // the right sequence (loadFullSequenceData(name, id?)).
+    expect(loadFullSequenceData).toHaveBeenCalledWith("GUARD", thin.id);
     expect(out).toBe(hydrated);
   });
 

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createFuseState,
   type FuseStateDeps,
@@ -117,6 +117,15 @@ function createState(
 }
 
 describe("Fuse state", () => {
+  // createFuseState persists the selected pair to localStorage ("fuse-tab-state",
+  // fuse-state.svelte.ts:50) and initialize() restores it on mount, re-hydrating
+  // those exact ids through browseLoader. Without this reset each test inherits
+  // the previous test's pair and its state's first act is an unexpected
+  // loadFullSequenceData for a foreign sequence.
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it("distinguishes a catalog failure from an exact-length empty pool", async () => {
     const showUserError = vi.fn(() => "catalog-error");
     const loader = createLoader([]);

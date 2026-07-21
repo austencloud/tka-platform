@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { beforeEach, describe, it, expect } from "vitest";
 import { createPoiLegalVerdicts, pairKey } from "../poi-legal-verdicts.svelte";
 import { flowerKey, type Flower } from "$lib/shared/shape-matrix/domain/flower-signature";
 
@@ -14,6 +14,14 @@ describe("pairKey", () => {
 });
 
 describe("poi legal verdict store", () => {
+	// cycle() writes an unsaved-edit backup to localStorage, and the constructor
+	// restores it and marks every restored key dirty. That is correct product
+	// behavior (a lost tab must not lose edits), so each test starts from a clean
+	// slate rather than inheriting the previous test's backup.
+	beforeEach(() => {
+		localStorage.clear();
+	});
+
 	it("cycles unjudged → legal → illegal → unsure → unjudged", () => {
 		const store = createPoiLegalVerdicts();
 		expect(store.verdictFor(blue, red)).toBeNull();

@@ -24,7 +24,11 @@ describe("BackgroundVideoEncoder.initialize timeout", () => {
     const enc = new BackgroundVideoEncoder();
     const p = enc.initialize({ width: 1080, height: 1080, fps: 60, bitrate: 1_000_000, totalFrames: 60 });
     const assertion = expect(p).rejects.toThrow(/timed out|ready/i);
-    await vi.advanceTimersByTimeAsync(20_000);
+    // Must clear BackgroundVideoEncoder.READY_TIMEOUT_MS (30s since the
+    // "pause render loop before encoder init" fix raised it from 15s — a cold
+    // mediabunny load can legitimately take >15s). Advancing less than the
+    // ceiling never fires the timer, so the rejection never arrives.
+    await vi.advanceTimersByTimeAsync(35_000);
     await assertion;
   });
 });

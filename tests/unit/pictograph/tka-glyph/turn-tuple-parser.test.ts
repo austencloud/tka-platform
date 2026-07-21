@@ -20,6 +20,8 @@ describe("parseTurnsTuple — direct forms", () => {
       bottom: 0,
       topOpenClose: null,
       bottomOpenClose: null,
+      topHalved: false,
+      bottomHalved: false,
     });
   });
 
@@ -30,6 +32,8 @@ describe("parseTurnsTuple — direct forms", () => {
       bottom: 2,
       topOpenClose: null,
       bottomOpenClose: null,
+      topHalved: false,
+      bottomHalved: false,
     });
   });
 
@@ -40,6 +44,8 @@ describe("parseTurnsTuple — direct forms", () => {
       bottom: "fl",
       topOpenClose: null,
       bottomOpenClose: null,
+      topHalved: false,
+      bottomHalved: false,
     });
   });
 
@@ -50,6 +56,8 @@ describe("parseTurnsTuple — direct forms", () => {
       bottom: 2,
       topOpenClose: null,
       bottomOpenClose: null,
+      topHalved: false,
+      bottomHalved: false,
     });
   });
 
@@ -60,6 +68,8 @@ describe("parseTurnsTuple — direct forms", () => {
       bottom: 1,
       topOpenClose: null,
       bottomOpenClose: null,
+      topHalved: false,
+      bottomHalved: false,
     });
   });
 
@@ -70,6 +80,8 @@ describe("parseTurnsTuple — direct forms", () => {
       bottom: 1,
       topOpenClose: null,
       bottomOpenClose: "op",
+      topHalved: false,
+      bottomHalved: false,
     });
   });
 
@@ -80,6 +92,8 @@ describe("parseTurnsTuple — direct forms", () => {
       bottom: 0,
       topOpenClose: "cl",
       bottomOpenClose: null,
+      topHalved: false,
+      bottomHalved: false,
     });
   });
 
@@ -90,6 +104,8 @@ describe("parseTurnsTuple — direct forms", () => {
       bottom: 1,
       topOpenClose: "op",
       bottomOpenClose: "cl",
+      topHalved: false,
+      bottomHalved: false,
     });
   });
 
@@ -100,6 +116,8 @@ describe("parseTurnsTuple — direct forms", () => {
       bottom: 1,
       topOpenClose: "cl",
       bottomOpenClose: "op",
+      topHalved: false,
+      bottomHalved: false,
     });
   });
 

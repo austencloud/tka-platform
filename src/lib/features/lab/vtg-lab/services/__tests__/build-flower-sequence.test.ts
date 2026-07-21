@@ -44,11 +44,15 @@ function proArchetype(): SequenceData {
 }
 
 describe("buildFlowerSequence", () => {
+  // Absence is encoded as an invisible placeholder, not a missing key: every
+  // Step carries BOTH hands, and isVisibleMotion() is the presence predicate
+  // (the StepData/Step unification — "absence = invisible placeholder"). The
+  // stripped hand therefore stays on the step with isVisible: false.
   it("strips to the requested hand only", () => {
     const seq = buildFlowerSequence(proArchetype(), { style: "pro", turns: 1, ori: "in", grid: "diamond", petals: 2 }, "blue", []);
     const m = seq.steps[0]!.motions;
-    expect(m.blue).toBeTruthy();
-    expect(m.red).toBeUndefined();
+    expect(m.blue?.isVisible).toBe(true);
+    expect(m.red?.isVisible).toBe(false);
   });
 
   it("tags the shown hand's prop as a club", () => {

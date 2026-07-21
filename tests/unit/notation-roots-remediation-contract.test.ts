@@ -63,10 +63,19 @@ describe("notation lineage remediation", () => {
     expect(notationPage).toContain(
       "Lorq Nichols' 144 Shape Matrix, charted in 2012"
     );
+    // The teaser is still on the page, but lazily (bbe2c89c6b): a static import
+    // pulled the 1.37MB seed corpus into the public bundle to show one grid, so
+    // it now loads through LazyMount when the slot nears the viewport. Assert
+    // the deferred wiring — the teaser must stay present AND stay off the
+    // critical path.
     expect(notationPage).toContain(
+      'import("$lib/shared/shape-matrix/components/ShapeMatrixTeaser.svelte")'
+    );
+    expect(notationPage).toContain("use:activateShapeMatrixWhenNear");
+    expect(notationPage).toContain("active={shapeMatrixActive}");
+    expect(notationPage).not.toContain(
       'import ShapeMatrixTeaser from "$lib/shared/shape-matrix/components/ShapeMatrixTeaser.svelte";'
     );
-    expect(notationPage).toContain("<ShapeMatrixTeaser />");
     expect(notationPage).toContain(
       '<a href="/notation/shape-matrix" class="cta-button matrix-teaser-cta">'
     );

@@ -161,6 +161,9 @@ vi.mock("$env/static/public", () => ({
   PUBLIC_FIREBASE_STORAGE_BUCKET: "test.appspot.com",
   PUBLIC_FIREBASE_MESSAGING_SENDER_ID: "123456789",
   PUBLIC_FIREBASE_APP_ID: "1:123456789:web:abcdef",
+  PUBLIC_POSTHOG_HOST: "https://test.posthog.com",
+  PUBLIC_POSTHOG_KEY: "test-posthog-key",
+  PUBLIC_POSTHOG_PROJECT_ID: "test-posthog-project",
 }));
 
 // Mock Firebase to prevent actual initialization
@@ -188,6 +191,21 @@ vi.mock("firebase/auth", () => ({
   signInWithPopup: vi.fn(() => Promise.resolve()),
 }));
 
+// FieldValue is a real exported class in firebase/firestore (see
+// @firebase/firestore dist: `class FieldValue { ... }`, with
+// DeleteFieldValueImpl/ServerTimestampFieldValueImpl/ArrayUnionFieldValueImpl/
+// ArrayRemoveFieldValueImpl/NumericIncrementFieldValueImpl all extending it).
+// firestore-helpers.ts's stripUndefined() does `value instanceof FieldValue`
+// to pass sentinels through untouched — the mock MUST be a real class, and
+// every sentinel factory below MUST return an instance of it, or that branch
+// silently stops being exercised.
+class MockFieldValue {
+  readonly _methodName: string;
+  constructor(methodName: string) {
+    this._methodName = methodName;
+  }
+}
+
 vi.mock("firebase/firestore", () => ({
   initializeFirestore: vi.fn(() => ({
     type: "firestore",
@@ -211,7 +229,12 @@ vi.mock("firebase/firestore", () => ({
   persistentLocalCache: vi.fn(() => ({})),
   persistentMultipleTabManager: vi.fn(() => ({})),
   memoryLocalCache: vi.fn(() => ({})),
-  serverTimestamp: vi.fn(() => ({ _methodName: "serverTimestamp" })),
+  FieldValue: MockFieldValue,
+  serverTimestamp: vi.fn(() => new MockFieldValue("serverTimestamp")),
+  increment: vi.fn(() => new MockFieldValue("increment")),
+  arrayUnion: vi.fn(() => new MockFieldValue("arrayUnion")),
+  arrayRemove: vi.fn(() => new MockFieldValue("arrayRemove")),
+  deleteField: vi.fn(() => new MockFieldValue("deleteField")),
 }));
 
 vi.mock("firebase/database", () => ({

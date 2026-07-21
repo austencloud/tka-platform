@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { buildHeaderActions } from "$lib/shared/sequence-viewer/services/viewer-actions";
+import { VIDEO_UPLOAD_ENABLED } from "$lib/shared/sequence-viewer/config/viewer-feature-flags";
 
 function makeCtx(over: Partial<Record<string, unknown>> = {}) {
   return {
@@ -49,7 +50,15 @@ describe("buildHeaderActions", () => {
     expect(a.onPublish).toBeTypeOf("function");
     expect(a.onUnpublish).toBeTypeOf("function");
     expect(a.onDeleteRequest).toBeTypeOf("function");
-    expect(a.onVideoUpload).toBeTypeOf("function");
+    // Video upload is additionally behind a local kill-switch (5d6236df53 turned
+    // it off pending the CSP media-src + canvas-swap bugs). Assert the flag's
+    // contract either way so flipping it back on re-arms this guard rather than
+    // silently leaving the action untested.
+    if (VIDEO_UPLOAD_ENABLED) {
+      expect(a.onVideoUpload).toBeTypeOf("function");
+    } else {
+      expect(a.onVideoUpload).toBeUndefined();
+    }
   });
 
   it("owner not yet saved: no publish/delete (gate is isOwned && isSaved)", () => {

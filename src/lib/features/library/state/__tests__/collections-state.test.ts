@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
 	updateCollection: vi.fn(),
 	deleteCollection: vi.fn(),
 	toastError: vi.fn(),
+	toastInfo: vi.fn(),
+	authDrawerShow: vi.fn(),
 }));
 
 vi.mock("$lib/shared/library/services/collection-manager", () => ({
@@ -22,11 +24,21 @@ vi.mock("$lib/shared/library/services/collection-manager", () => ({
 	deleteCollection: mocks.deleteCollection,
 }));
 vi.mock("$lib/shared/toast/state/toast-state.svelte", () => ({
-	toast: { error: mocks.toastError, success: vi.fn() },
+	toast: { error: mocks.toastError, success: vi.fn(), info: mocks.toastInfo },
 }));
-vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({ authState: { user: null } }));
+// Publishing requires a full account (setPublic routes guests to the signup
+// drawer instead of firing a write firestore.rules would deny). Default this
+// mock to a signed-in full user so the delegate path is what gets exercised;
+// the guest branch overrides these per-test.
+vi.mock("$lib/shared/auth/state/auth-state.svelte", () => ({
+	authState: { user: null, isAuthenticated: true, isAnonymous: false },
+}));
+vi.mock("$lib/shared/auth/state/auth-drawer-state.svelte", () => ({
+	authDrawerState: { show: mocks.authDrawerShow },
+}));
 
 import { collectionsState } from "../collections-state.svelte";
+import { authState } from "$lib/shared/auth/state/auth-state.svelte";
 
 function col(id: string, name: string, opts: Partial<LibraryCollection> = {}): LibraryCollection {
 	return {
@@ -51,6 +63,9 @@ beforeEach(() => {
 	mocks.createUserCollection.mockImplementation(async (name: string) => col("new", name));
 	mocks.updateCollection.mockResolvedValue(undefined);
 	mocks.deleteCollection.mockResolvedValue(undefined);
+	// Reset the auth tier so a guest-branch test cannot leak into the next one.
+	authState.isAuthenticated = true;
+	authState.isAnonymous = false;
 	collectionsState.collections = [];
 	collectionsState.loading = false;
 });
@@ -134,6 +149,26 @@ describe("collectionsState", () => {
 		mocks.updateCollection.mockRejectedValue(new Error("network"));
 		const ok = await collectionsState.setPublic("c1", true);
 		expect(ok).toBe(false);
+	});
+
+	// firestore.rules deny a guest write that sets isPublic == true, so setPublic
+	// nudges to signup rather than firing a write that would fail silently.
+	it("setPublic nudges a guest to sign up instead of writing", async () => {
+		authState.isAnonymous = true;
+		const ok = await collectionsState.setPublic("c1", true);
+		expect(ok).toBe(false);
+		expect(mocks.updateCollection).not.toHaveBeenCalled();
+		expect(mocks.toastInfo).toHaveBeenCalled();
+		expect(mocks.authDrawerShow).toHaveBeenCalledWith("signup");
+	});
+
+	// Un-publishing stays open to guests — only a full user could have published
+	// in the first place, so the guard fires on the publish direction only.
+	it("setPublic lets a guest un-publish", async () => {
+		authState.isAnonymous = true;
+		const ok = await collectionsState.setPublic("c1", false);
+		expect(ok).toBe(true);
+		expect(mocks.updateCollection).toHaveBeenCalledWith("c1", { isPublic: false });
 	});
 
 	it("remove delegates to the manager and reports success", async () => {

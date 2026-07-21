@@ -3,19 +3,30 @@ import { resolveZap2D } from "../../../../src/lib/shared/effects/translators/can
 import { resolveZap3D } from "../../../../src/lib/shared/effects/translators/webgl3d-translator";
 import type { ZapIntent } from "../../../../src/lib/shared/effects/domain/effects-config";
 
+// Full current ZapIntent. Every field is required — a partial literal leaves the
+// derived params undefined-driven (a missing `glow` made glowBlur NaN), and the
+// translators deliberately do not defend against that: production always feeds a
+// default-merged config (migrations.ts merges DEFAULT_EFFECTS_CONFIG.zap).
 const baseIntent: ZapIntent = {
   intensity: 0.7,
-  color: "#88ccff",
+  leftColor: "#88ccff",
+  rightColor: "#ff8888",
   frequency: 12,
   mode: "arc",
   branching: 0.3,
+  style: "branching",
+  wobbleRate: 0.18,
+  wobbleAmount: 0.5,
+  glow: 0.5,
+  jitter: 0.5,
 };
 
 describe("resolveZap2D", () => {
   it("passes intent through and derives sensible canvas params", () => {
     const out = resolveZap2D(baseIntent);
     expect(out.intensity).toBe(0.7);
-    expect(out.color).toBe("#88ccff");
+    expect(out.leftColor).toBe("#88ccff");
+    expect(out.rightColor).toBe("#ff8888");
     expect(out.segments).toBeGreaterThanOrEqual(4);
     expect(out.jitterAmount).toBeGreaterThan(0);
     expect(out.glowBlur).toBeGreaterThan(0);

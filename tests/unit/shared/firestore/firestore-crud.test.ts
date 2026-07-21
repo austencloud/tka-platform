@@ -14,24 +14,42 @@ const mockWhere = vi.fn();
 const mockOrderBy = vi.fn();
 const mockLimit = vi.fn();
 const mockStartAfter = vi.fn();
-const mockServerTimestamp = vi.fn(() => ({ _isServerTimestamp: true }));
 
-vi.mock("firebase/firestore", () => ({
-  collection: (...args: unknown[]) => mockCollection(...args),
-  doc: (...args: unknown[]) => mockDoc(...args),
-  getDoc: (...args: unknown[]) => mockGetDoc(...args),
-  getDocs: (...args: unknown[]) => mockGetDocs(...args),
-  setDoc: (...args: unknown[]) => mockSetDoc(...args),
-  addDoc: (...args: unknown[]) => mockAddDoc(...args),
-  deleteDoc: (...args: unknown[]) => mockDeleteDoc(...args),
-  onSnapshot: (...args: unknown[]) => mockOnSnapshot(...args),
-  query: (...args: unknown[]) => mockQuery(...args),
-  where: (...args: unknown[]) => mockWhere(...args),
-  orderBy: (...args: unknown[]) => mockOrderBy(...args),
-  limit: (...args: unknown[]) => mockLimit(...args),
-  startAfter: (...args: unknown[]) => mockStartAfter(...args),
-  serverTimestamp: () => mockServerTimestamp(),
-}));
+// vi.mock factories are hoisted above all other top-level code in this file,
+// so the class must be declared INSIDE the factory (a top-level `class`
+// declaration referenced from the factory hits the TDZ — "Cannot access
+// 'X' before initialization" — because the factory runs before the class
+// statement does). Real firebase/firestore exports FieldValue as a class, and
+// serverTimestamp()/increment()/arrayUnion()/deleteField() all return
+// instances of it (see @firebase/firestore dist:
+// ServerTimestampFieldValueImpl extends FieldValue, etc). firestore-helpers.ts's
+// stripUndefined() does `value instanceof FieldValue` to pass these sentinels
+// through untouched — this mock class + the instance below keep that branch real.
+vi.mock("firebase/firestore", () => {
+  class MockFieldValue {
+    readonly _isServerTimestamp: boolean;
+    constructor() {
+      this._isServerTimestamp = true;
+    }
+  }
+  return {
+    collection: (...args: unknown[]) => mockCollection(...args),
+    doc: (...args: unknown[]) => mockDoc(...args),
+    getDoc: (...args: unknown[]) => mockGetDoc(...args),
+    getDocs: (...args: unknown[]) => mockGetDocs(...args),
+    setDoc: (...args: unknown[]) => mockSetDoc(...args),
+    addDoc: (...args: unknown[]) => mockAddDoc(...args),
+    deleteDoc: (...args: unknown[]) => mockDeleteDoc(...args),
+    onSnapshot: (...args: unknown[]) => mockOnSnapshot(...args),
+    query: (...args: unknown[]) => mockQuery(...args),
+    where: (...args: unknown[]) => mockWhere(...args),
+    orderBy: (...args: unknown[]) => mockOrderBy(...args),
+    limit: (...args: unknown[]) => mockLimit(...args),
+    startAfter: (...args: unknown[]) => mockStartAfter(...args),
+    serverTimestamp: () => new MockFieldValue(),
+    FieldValue: MockFieldValue,
+  };
+});
 
 vi.mock("$lib/shared/auth/firebase", () => ({
   getFirestoreInstance: vi.fn().mockResolvedValue({}),

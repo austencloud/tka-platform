@@ -13,16 +13,19 @@ describe("effect-primary-param", () => {
       "bloom",
       "bubbles",
       "charcoal",
-      "echo",
       "fire",
       "frost",
+      // Echo→Ghost and Water→Goo (5931d08ec2) — onion-skin prop sprites and the
+      // goo emitter. Renamed across registry, presets, renderers, and the
+      // persisted-config migrations.
+      "ghost",
+      "goo",
       "ink",
       "led",
       "petals",
       "smoke",
       "sparkles",
       "trails",
-      "water",
       "zap",
     ]);
   });
@@ -67,9 +70,9 @@ describe("effect-primary-param", () => {
     ["charcoal", 0.3],
     ["zap", 0.5],
     ["sparkles", 0.4],
-    ["echo", 0.6],
+    ["ghost", 0.6],
     ["bloom", 0.8],
-    ["water", 0.2],
+    ["goo", 0.2],
     ["bubbles", 0.55],
     ["petals", 0.42],
   ])("%s primary param round-trips to %f", (id, value) => {

@@ -21,6 +21,12 @@ describe("createEmptyChoreoSheet", () => {
       showStepNumbers: true,
       groupSeparator: "rule",
       keepBlocksTogether: true,
+      // Annotation-model layout knobs (578df5229d): "flow" is the dense study
+      // sheet; the cue rail and note strips are the Annotated-mode chrome and
+      // stay off until the user turns them on.
+      packing: "flow",
+      showCueRail: false,
+      showNoteStrips: false,
     });
   });
 });

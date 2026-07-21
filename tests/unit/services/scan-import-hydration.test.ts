@@ -199,7 +199,11 @@ describe("scan-import save/read round-trip (decoded blob → library copy → vi
     );
     expect(member.steps.length).toBe(2);
     expect(member.steps[0]?.motions?.blue?.motionType).toBe(MotionType.PRO);
-  });
+    // This test pays the one-time cost of transforming the mapper's transitive
+    // firebase dep graph (~1.3s alone). Under a loaded parallel full-suite run
+    // that overruns the 5s default and fails a green build, so give the import
+    // headroom. Later tests reuse the cached module and stay fast.
+  }, 20_000);
 
   it("collection member mapping converts birthday Timestamps to Dates", async () => {
     // The card renderer calls birthday.getFullYear() for the footer date; a
