@@ -685,18 +685,32 @@ export function encodePropForURL(propType: PropType): string {
   return PROP_TYPE_ENCODE[propType] ?? PROP_TYPE_ENCODE[PropType.STAFF];
 }
 
-export function parsePropsFromURL(searchParams: URLSearchParams): URLPropOptions {
+/**
+ * QR links in circulation use both the compact one-character form and the
+ * full enum value. Normalize either representation at the URL boundary so
+ * scan rendering and telemetry agree on one durable PropType value.
+ */
+export function parsePropTypeFromURLValue(
+  value: unknown
+): PropType | undefined {
+  if (typeof value !== "string" || !value) return undefined;
+  const compact = PROP_TYPE_DECODE[value];
+  if (compact) return compact;
+  return Object.values(PropType).includes(value as PropType)
+    ? (value as PropType)
+    : undefined;
+}
+
+export function parsePropsFromURL(
+  searchParams: URLSearchParams
+): URLPropOptions {
   const result: URLPropOptions = {};
 
-  const bp = searchParams.get("bp");
-  if (bp && PROP_TYPE_DECODE[bp]) {
-    result.bluePropType = PROP_TYPE_DECODE[bp];
-  }
+  const bluePropType = parsePropTypeFromURLValue(searchParams.get("bp"));
+  if (bluePropType) result.bluePropType = bluePropType;
 
-  const rp = searchParams.get("rp");
-  if (rp && PROP_TYPE_DECODE[rp]) {
-    result.redPropType = PROP_TYPE_DECODE[rp];
-  }
+  const redPropType = parsePropTypeFromURLValue(searchParams.get("rp"));
+  if (redPropType) result.redPropType = redPropType;
 
   return result;
 }
