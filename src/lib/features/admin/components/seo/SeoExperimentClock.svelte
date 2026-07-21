@@ -87,8 +87,10 @@
           {snapshot.phase === "baseline" ? "Now" : "Done"}
         </span>
       </div>
-      <strong>Before picture</strong>
-      <span>{formatWindow(snapshot.windows.baseline, "")}</span>
+      <div class="step-copy">
+        <strong>Before picture</strong>
+        <span>{formatWindow(snapshot.windows.baseline, "")}</span>
+      </div>
     </article>
 
     <article
@@ -101,10 +103,15 @@
         <span class="step-index">2</span>
         <span class="step-state">{primaryState()}</span>
       </div>
-      <strong>First growth check</strong>
-      <span>
-        {formatWindow(snapshot.windows.primary, "Starts after Google indexing")}
-      </span>
+      <div class="step-copy">
+        <strong>First growth check</strong>
+        <span>
+          {formatWindow(
+            snapshot.windows.primary,
+            "Starts after Google indexing"
+          )}
+        </span>
+      </div>
     </article>
 
     <article
@@ -116,13 +123,15 @@
         <span class="step-index">3</span>
         <span class="step-state">{confirmationState()}</span>
       </div>
-      <strong>Proof check</strong>
-      <span>
-        {formatWindow(
-          snapshot.windows.confirmation,
-          "Repeats the test with fresh dates"
-        )}
-      </span>
+      <div class="step-copy">
+        <strong>Proof check</strong>
+        <span>
+          {formatWindow(
+            snapshot.windows.confirmation,
+            "Repeats the test with fresh dates"
+          )}
+        </span>
+      </div>
     </article>
   </div>
 
@@ -157,7 +166,10 @@
 <style>
   .panel {
     container-type: inline-size;
+    display: flex;
     height: 100%;
+    min-height: 0;
+    flex-direction: column;
     padding: clamp(14px, 1.2vw, 20px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 14px;
@@ -214,6 +226,8 @@
 
   .timeline {
     display: grid;
+    min-height: 0;
+    flex: 1;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 8px;
   }
@@ -222,6 +236,7 @@
     display: flex;
     min-width: 0;
     min-height: 82px;
+    height: 100%;
     flex-direction: column;
     gap: 4px;
     padding: 10px;
@@ -265,7 +280,7 @@
   }
 
   .step-state,
-  .timeline-step > span {
+  .step-copy span {
     font-size: var(--font-size-compact, 0.75rem);
     line-height: 1.25;
   }
@@ -274,7 +289,14 @@
     font-weight: 700;
   }
 
-  .timeline-step > strong {
+  .step-copy {
+    display: flex;
+    margin: auto 0;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .step-copy > strong {
     font-size: var(--font-size-min, 0.875rem);
   }
 

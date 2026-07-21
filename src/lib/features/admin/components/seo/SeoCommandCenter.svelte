@@ -127,72 +127,77 @@
       </a>
     </div>
   {:else}
-    <header class="command-header">
-      <div class="title-block">
-        <div class="eyebrow">SEO command center</div>
-        <h2>Flow Arts Software SEO</h2>
-        <p>One answer first: is Google visibility growing?</p>
-      </div>
-      <div class="header-status">
-        <span class="phase-badge">
-          <span class="status-dot" aria-hidden="true"></span>
-          {PHASE_LABELS[snapshot.phase]}
-        </span>
-        <span class="data-date">
-          Data through {formatDate(snapshot.dataThrough)}
-        </span>
-      </div>
-    </header>
-
-    <SeoSignalGrid {snapshot} />
-
-    <div class="overview-grid">
-      <div class="clock-slot">
-        <SeoExperimentClock {snapshot} />
-      </div>
-      <SeoEvidenceGates {snapshot} />
-      <SeoHistoryChart {history} />
-    </div>
-
-    <details class="measurement-details">
-      <summary>
-        <span class="summary-icon" aria-hidden="true">
-          <i class="fas fa-sliders"></i>
-        </span>
-        <span class="summary-copy">
-          <strong>Numbers and data sources</strong>
-          <small>
-            Search topics, collection health, source links, and refresh controls
-          </small>
-        </span>
-        <i class="fas fa-chevron-down summary-chevron" aria-hidden="true"></i>
-      </summary>
-      <div class="details-content">
-        <SeoQueryGroups {snapshot} />
-        <div class="details-side">
-          <section class="data-health" aria-labelledby="data-health-title">
-            <div class="detail-heading">
-              <span>Data plumbing</span>
-              <h3 id="data-health-title">Are the data feeds ready?</h3>
-            </div>
-            <p>
-              Green means that source supplied everything expected for this
-              measurement window.
-            </p>
-            <SeoMeasurementHealth {snapshot} />
-          </section>
-          <SeoSourceActions
-            {refreshedAt}
-            {refreshing}
-            onRefresh={loadEvidence}
-          />
+    <div class="dashboard-layout">
+      <header class="command-header">
+        <div class="title-block">
+          <div class="eyebrow">SEO command center</div>
+          <h2>Flow Arts Software SEO</h2>
+          <p>One answer first: is Google visibility growing?</p>
         </div>
-      </div>
-    </details>
+        <div class="header-status">
+          <span class="phase-badge">
+            <span class="status-dot" aria-hidden="true"></span>
+            {PHASE_LABELS[snapshot.phase]}
+          </span>
+          <span class="data-date">
+            Data through {formatDate(snapshot.dataThrough)}
+          </span>
+        </div>
+      </header>
 
-    {#if loadError}
-      <p class="inline-error" role="alert">{loadError}</p>
-    {/if}
+      <div class="signal-slot">
+        <SeoSignalGrid {snapshot} />
+      </div>
+
+      <div class="overview-grid">
+        <div class="clock-slot">
+          <SeoExperimentClock {snapshot} />
+        </div>
+        <SeoEvidenceGates {snapshot} />
+        <SeoHistoryChart {history} />
+      </div>
+
+      <details class="measurement-details">
+        <summary>
+          <span class="summary-icon" aria-hidden="true">
+            <i class="fas fa-sliders"></i>
+          </span>
+          <span class="summary-copy">
+            <strong>Numbers and data sources</strong>
+            <small>
+              Search topics, collection health, source links, and refresh
+              controls
+            </small>
+          </span>
+          <i class="fas fa-chevron-down summary-chevron" aria-hidden="true"></i>
+        </summary>
+        <div class="details-content">
+          <SeoQueryGroups {snapshot} />
+          <div class="details-side">
+            <section class="data-health" aria-labelledby="data-health-title">
+              <div class="detail-heading">
+                <span>Data plumbing</span>
+                <h3 id="data-health-title">Are the data feeds ready?</h3>
+              </div>
+              <p>
+                Green means that source supplied everything expected for this
+                measurement window.
+              </p>
+              <SeoMeasurementHealth {snapshot} />
+            </section>
+            <SeoSourceActions
+              {refreshedAt}
+              {refreshing}
+              onRefresh={loadEvidence}
+            />
+          </div>
+        </div>
+      </details>
+
+      {#if loadError}
+        <p class="inline-error" role="alert">{loadError}</p>
+      {/if}
+    </div>
   {/if}
 </div>
 
@@ -201,12 +206,13 @@
     --semantic-seo-accent: #2dd4bf;
     --semantic-seo-accent-deep: #0f766e;
     --semantic-seo-violet: #a78bfa;
+    --settings-seo-signals-min-height: 180px;
+    --settings-seo-overview-min-height: 260px;
     container-name: seo-center;
     container-type: inline-size;
     display: flex;
     height: 100%;
     flex-direction: column;
-    gap: clamp(10px, 0.8vw, 14px);
     padding: clamp(12px, 1.2vw, 22px);
     overflow-y: auto;
     color: var(--theme-text, #f8fafc);
@@ -221,6 +227,18 @@
         color-mix(in srgb, var(--semantic-seo-violet) 10%, transparent),
         transparent 26rem
       );
+  }
+
+  .dashboard-layout {
+    display: grid;
+    height: 100%;
+    min-height: 620px;
+    grid-template-rows:
+      auto
+      minmax(var(--settings-seo-signals-min-height), 0.75fr)
+      minmax(var(--settings-seo-overview-min-height), 1.25fr)
+      auto;
+    gap: clamp(10px, 0.8vw, 14px);
   }
 
   .state-block {
@@ -327,6 +345,7 @@
 
   .overview-grid {
     display: grid;
+    min-height: 0;
     grid-template-columns:
       minmax(520px, 1.35fr)
       minmax(300px, 0.82fr)
@@ -336,7 +355,12 @@
   }
 
   .clock-slot {
+    min-height: 0;
     min-width: 0;
+  }
+
+  .signal-slot {
+    min-height: 0;
   }
 
   .measurement-details {
@@ -476,6 +500,12 @@
   }
 
   @container seo-center (max-width: 1240px) {
+    .dashboard-layout {
+      height: auto;
+      min-height: 100%;
+      grid-template-rows: auto;
+    }
+
     .overview-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }

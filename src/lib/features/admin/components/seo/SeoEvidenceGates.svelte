@@ -92,7 +92,10 @@
 
 <style>
   .panel {
+    display: flex;
     height: 100%;
+    min-height: 0;
+    flex-direction: column;
     padding: clamp(14px, 1.2vw, 20px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 14px;
@@ -139,6 +142,7 @@
   .not-due {
     display: flex;
     min-height: 174px;
+    flex: 1;
     align-items: center;
     justify-content: center;
     gap: 13px;
@@ -168,7 +172,8 @@
 
   .criteria-list {
     display: flex;
-    max-height: 190px;
+    min-height: 0;
+    flex: 1;
     flex-direction: column;
     gap: 6px;
     margin: 0;

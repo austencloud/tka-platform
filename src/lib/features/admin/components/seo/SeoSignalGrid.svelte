@@ -101,6 +101,7 @@
 <style>
   .signal-grid {
     display: grid;
+    height: 100%;
     grid-template-columns: minmax(310px, 0.9fr) minmax(0, 2.1fr);
     gap: 10px;
   }
@@ -108,6 +109,7 @@
   .growth-card,
   .signal-card {
     position: relative;
+    height: 100%;
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 14px;
@@ -118,7 +120,8 @@
     display: grid;
     min-height: 172px;
     grid-template-columns: auto minmax(0, 1fr);
-    align-content: start;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    align-content: stretch;
     gap: 7px 18px;
     padding: clamp(16px, 1.4vw, 22px);
     border-color: color-mix(
@@ -223,6 +226,7 @@
 
   .support-signals {
     display: grid;
+    height: 100%;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 10px;
   }
