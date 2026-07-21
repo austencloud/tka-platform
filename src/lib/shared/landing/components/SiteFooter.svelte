@@ -38,6 +38,12 @@
         { label: "Composer", href: "/composer" },
         { label: "About", href: "/about" },
         { label: "Endless LOOPs", href: "/endless-spinner" },
+        // Deliberately NOT in the Props column. TKA is built for static
+        // dual-wielded props; poi reach only the restricted subset whose
+        // rotation stays continuous. Listing "Poi" beside staves/clubs/fans/
+        // buugeng under a "Props" heading reads as "TKA supports poi" at a
+        // glance, which contradicts /notation/poi. Keep it here, as a topic.
+        { label: "Poi and TKA", href: "/notation/poi" },
       ],
     },
     {
@@ -60,7 +66,6 @@
         { label: "Clubs", href: "/notation/clubs" },
         { label: "Fans", href: "/notation/fans" },
         { label: "Buugeng", href: "/notation/buugeng" },
-        { label: "Poi", href: "/notation/poi" },
       ],
     },
     {

@@ -5,10 +5,11 @@
   object playing in the standalone InlineAnimationPlayer with minimal chrome.
   Originated as /composer's ComposerHeroDemo (hardcoded to the CΨΩX fixture);
   generalized so any public page can drop in its own sequence + caption note
-  without re-deriving the LazyMount/reserved-stage/idle-activation plumbing.
+  without re-deriving the LazyMount/reserved-stage activation plumbing.
 
   The player chunk is heavy (whole animation engine), so it goes through
-  LazyMount and only starts importing after hydration hits idle. The stage
+  LazyMount and only starts importing once the stage is near the viewport, the
+  current route morph has finished, and the browser reaches idle. The stage
   reserves either a square canvas or a word-header-plus-square-canvas before
   the player mounts, so the prose below never shifts (no-layout-shift rule).
 
@@ -25,9 +26,11 @@
   swapping a prop.
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { MediaQuery } from "svelte/reactivity";
+  import { activateWhenNear } from "$lib/actions/activate-when-near";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import Crossfade from "$lib/shared/components/Crossfade.svelte";
+  import { isNamedRouteMorphActive } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
@@ -42,6 +45,7 @@
     redPropType,
     onReroll,
     rerolling = false,
+    errorMessage = null,
     onLoopComplete,
     onSequenceBoundary,
     trailSettingsOverride = null,
@@ -65,6 +69,8 @@
     onReroll?: () => void;
     /** Host-owned in-flight flag while a reroll generates. */
     rerolling?: boolean;
+    /** Visible recovery copy when a host cannot produce its sequence. */
+    errorMessage?: string | null;
     /** Forwarded to InlineAnimationPlayer. The homepage hero attract act
         wires this to advance its walk on every loop wraparound; every other
         host omits it and pays no cost (InlineAnimationPlayer no-ops when
@@ -95,12 +101,45 @@
     showWordHeader?: boolean;
   } = $props();
 
+  type LoadStatus = "idle" | "loading" | "loaded" | "error";
+
   const word = $derived(sequence ? simplifyRepeatedWord(sequence.word) : "");
   const heroVisibilityManager = new AnimationVisibilityStateManager({
     ephemeral: true,
   });
+  const hiddenNotationRail =
+    typeof window === "undefined"
+      ? null
+      : new MediaQuery(
+          "(min-width: 42rem) and (max-width: 1180px) and (min-height: 500px) and (max-height: 44rem), (min-width: 560px) and (max-width: 1023px) and (min-height: 300px) and (max-height: 499px)"
+        );
+  const portraitNotationRail =
+    typeof window === "undefined"
+      ? null
+      : new MediaQuery(
+          "(max-width: 41.99rem) and (min-height: 600px) and (orientation: portrait)"
+        );
+  const shouldMountNotationRail = $derived(
+    showNotationStrip && !(hiddenNotationRail?.current ?? false)
+  );
+  const notationOrientation = $derived(
+    portraitNotationRail?.current ? "vertical" : "horizontal"
+  );
 
   let active = $state(false);
+  let playerLoadStatus = $state<LoadStatus>("idle");
+  let notationLoadStatus = $state<LoadStatus>("idle");
+  const pending = $derived(
+    sequence
+      ? playerLoadStatus === "idle" || playerLoadStatus === "loading"
+      : !errorMessage
+  );
+  const notationBusy = $derived(
+    shouldMountNotationRail &&
+      (!sequence ||
+        notationLoadStatus === "idle" ||
+        notationLoadStatus === "loading")
+  );
   let reportedStep = $state(0);
   let reportedSequenceId = $state<string | null>(null);
   const notationStep = $derived(
@@ -115,80 +154,131 @@
     reportedStep = currentStep;
   }
 
-  onMount(() => {
-    // Static prerendered page: let the prose paint first, then pull the engine.
-    if (typeof requestIdleCallback !== "undefined") {
-      requestIdleCallback(() => (active = true), { timeout: 2500 });
-    } else {
-      setTimeout(() => (active = true), 300);
-    }
-  });
+  function activatePlayerWhenNear(node: HTMLElement) {
+    return activateWhenNear(node, {
+      rootMargin: "240px",
+      activate: () => (active = true),
+      deferUntilIdle: true,
+      idleTimeout: 2500,
+      fallbackDelay: 300,
+    });
+  }
 </script>
 
-<div class="hero-demo" class:with-notation-strip={showNotationStrip}>
+{#snippet playerPlaceholder()}
+  <div class="demo-pending" role="status">
+    <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+    <span>Preparing a live sequence...</span>
+  </div>
+{/snippet}
+
+{#snippet notationPlaceholder()}
+  <div class="notation-placeholder" aria-hidden="true"></div>
+{/snippet}
+
+<div
+  class="hero-demo"
+  class:with-notation-strip={showNotationStrip}
+  use:activatePlayerWhenNear
+>
   <figure class="demo-figure">
-    <div
-      class="demo-stage"
-      class:rail-attached={showNotationStrip}
-      class:word-header-attached={showWordHeader}
-    >
-      <!-- Not keyed on sequence id — the mounted player reloads onto a new
-           sequence in place (see script comment above). The reserved stage
-           footprint holds constant, so no layout shift either way. -->
-      <LazyMount
-        loader={() =>
-          import("$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte")}
-        active={active && !!sequence}
-        props={{
-          sequence,
-          autoPlay: true,
-          chrome: "minimal",
-          fill: true,
-          bluePropType,
-          redPropType,
-          onLoopComplete,
-          onSequenceBoundary,
-          trailSettingsOverride,
-          tipEffectMap,
-          externalBpm: externalBpm ?? null,
-          showWordHeader,
-          visibilityManagerOverride: showWordHeader
-            ? heroVisibilityManager
-            : undefined,
-          onStepChange: showNotationStrip ? handleStepChange : undefined,
-        }}
-      />
-    </div>
-    {#if showNotationStrip}
-      <!-- Same StepStrip used by Play with It and focused practice. Compact
-           height-fill makes the pictures legible without making the rail any
-           taller; the fixed shell keeps the homepage stable before chunk load. -->
-      <div
-        class="notation-strip"
-        role="group"
-        aria-label={sequence
-          ? `Pictographs for ${word}`
-          : "Pictographs loading"}
-        aria-busy={!sequence}
-      >
-        <LazyMount
-          loader={() => import("$lib/shared/timeline/StepStrip.svelte")}
-          active={active && !!sequence}
-          props={{
-            sequence,
-            currentStep: notationStep,
-            bpm: externalBpm ?? 60,
-            density: "compact",
-            fillHeight: true,
-            anchor: "center",
-            loop: false,
-            stepPulse: false,
-            bluePropType: bluePropType ?? null,
-            redPropType: redPropType ?? null,
-          }}
-        />
+    <div class="demo-media">
+      <div class="stage-shell">
+        <div
+          class="demo-stage"
+          class:rail-attached={showNotationStrip}
+          class:word-header-attached={showWordHeader}
+          aria-busy={pending}
+        >
+          <!-- Not keyed on sequence id — the mounted player reloads onto a new
+               sequence in place (see script comment above). The reserved stage
+               footprint holds constant, so no layout shift either way. -->
+          <LazyMount
+            loader={() =>
+              import("$lib/features/browse/sequences/display/components/media-viewer/InlineAnimationPlayer.svelte")}
+            active={active && !!sequence && !isNamedRouteMorphActive()}
+            placeholder={playerPlaceholder}
+            onStatusChange={(status) => (playerLoadStatus = status)}
+            props={{
+              sequence,
+              autoPlay: true,
+              chrome: "minimal",
+              fill: true,
+              bluePropType,
+              redPropType,
+              onLoopComplete,
+              onSequenceBoundary,
+              trailSettingsOverride,
+              tipEffectMap,
+              externalBpm: externalBpm ?? null,
+              showWordHeader,
+              visibilityManagerOverride: showWordHeader
+                ? heroVisibilityManager
+                : undefined,
+              onStepChange: shouldMountNotationRail
+                ? handleStepChange
+                : undefined,
+            }}
+          >
+            {#snippet error(_error, retry)}
+              <div class="demo-load-error" role="alert">
+                <span>The live preview could not load.</span>
+                <button type="button" onclick={retry}>Try again</button>
+              </div>
+            {/snippet}
+          </LazyMount>
+
+          {#if errorMessage && !sequence}
+            <div class="demo-load-error" role="alert">
+              <span>{errorMessage}</span>
+            </div>
+          {/if}
+        </div>
       </div>
-    {/if}
+      {#if showNotationStrip}
+        <!-- Same StepStrip used by Play with It and focused practice. Compact
+             height-fill makes the pictures legible without making the rail any
+             taller; the fixed shell keeps the homepage stable before chunk load. -->
+        <div
+          class="notation-strip"
+          role="group"
+          aria-label={sequence
+            ? `Pictographs for ${word}`
+            : "Pictographs loading"}
+          aria-busy={notationBusy}
+        >
+          <LazyMount
+            loader={() => import("$lib/shared/timeline/StepStrip.svelte")}
+            active={active &&
+              !!sequence &&
+              shouldMountNotationRail &&
+              !isNamedRouteMorphActive()}
+            placeholder={notationPlaceholder}
+            onStatusChange={(status) => (notationLoadStatus = status)}
+            props={{
+              sequence,
+              currentStep: notationStep,
+              bpm: externalBpm ?? 60,
+              density: "compact",
+              fillHeight: true,
+              anchor: "center",
+              orientation: notationOrientation,
+              loop: false,
+              stepPulse: false,
+              bluePropType: bluePropType ?? null,
+              redPropType: redPropType ?? null,
+            }}
+          >
+            {#snippet error(_error, retry)}
+              <div class="notation-load-error" role="alert">
+                <span>Pictographs did not load.</span>
+                <button type="button" onclick={retry}>Try again</button>
+              </div>
+            {/snippet}
+          </LazyMount>
+        </div>
+      {/if}
+    </div>
     <!-- Line is always reserved; it becomes visible only once the word is
          known, so the note never shifts sideways when the word lands. Only
          the word crossfades (it's the part that actually changes between
@@ -212,15 +302,32 @@
         type="button"
         class="reroll-button"
         onclick={onReroll}
-        disabled={rerolling || !sequence}
+        disabled={rerolling || (!sequence && !errorMessage)}
       >
         <i
-          class="fas {rerolling ? 'fa-circle-notch fa-spin' : 'fa-dice'}"
+          class="fas {pending || rerolling
+            ? 'fa-circle-notch fa-spin'
+            : errorMessage
+              ? 'fa-rotate-right'
+              : 'fa-dice'}"
           aria-hidden="true"
         ></i>
-        <span>{rerolling ? "Rolling..." : "Roll a new one"}</span>
+        <span
+          >{pending
+            ? "Preparing..."
+            : rerolling
+            ? errorMessage
+              ? "Trying again..."
+              : "Rolling..."
+            : errorMessage
+              ? "Try again"
+              : "Roll a new one"}</span
+        >
       </button>
     </div>
+    {#if errorMessage && sequence}
+      <p class="reroll-error" role="status">{errorMessage}</p>
+    {/if}
   {/if}
 </div>
 
@@ -243,6 +350,13 @@
   .demo-figure {
     margin: 0;
   }
+  .demo-media {
+    width: 100%;
+  }
+  .stage-shell {
+    min-width: 0;
+    container-type: inline-size;
+  }
   .demo-stage {
     position: relative;
     box-sizing: border-box;
@@ -253,6 +367,44 @@
     border: 1px solid oklch(0.4 0.04 270 / 0.14);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
+  }
+  .demo-load-error {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 0.85rem;
+    padding: 1.5rem;
+    color: oklch(0.9 0.02 270);
+    text-align: center;
+    background: oklch(0.13 0.018 270 / 0.92);
+  }
+  .demo-pending {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 0.8rem;
+    color: oklch(0.7 0.04 270);
+    font-size: var(--font-size-min, 0.875rem);
+  }
+  .demo-pending i {
+    color: oklch(0.76 0.12 285);
+    font-size: 1.25rem;
+  }
+  .demo-load-error button {
+    min-height: 44px;
+    padding: 0 1rem;
+    font: inherit;
+    font-weight: 650;
+    color: oklch(0.94 0.02 270);
+    cursor: pointer;
+    border: 1px solid oklch(0.62 0.1 270 / 0.55);
+    border-radius: 10px;
+    background: oklch(0.36 0.08 270 / 0.5);
   }
   .demo-stage.rail-attached {
     border-bottom: 0;
@@ -281,6 +433,48 @@
     background: oklch(0.13 0.018 270 / 0.58);
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
+  }
+  .notation-load-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    height: 100%;
+    padding-inline: 0.75rem;
+    color: oklch(0.82 0.04 270);
+    font-size: var(--font-size-min, 0.875rem);
+  }
+  .notation-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      oklch(0.72 0.04 270 / 0.08),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: notation-placeholder-pulse 1.8s ease-in-out infinite;
+  }
+
+  @keyframes notation-placeholder-pulse {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: -100% 0;
+    }
+  }
+  .notation-load-error button {
+    min-height: 44px;
+    padding-inline: 0.8rem;
+    color: oklch(0.94 0.02 270);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+    border: 1px solid oklch(0.62 0.1 270 / 0.55);
+    border-radius: 9px;
+    background: oklch(0.36 0.08 270 / 0.5);
   }
 
   figcaption {
@@ -358,6 +552,12 @@
     opacity: 0.6;
     cursor: default;
   }
+  .reroll-error {
+    margin: 0.55rem 0 0;
+    color: oklch(0.72 0.1 25);
+    font-size: var(--font-size-min, 0.875rem);
+    text-align: center;
+  }
 
   /* Ultrawide: the hero holds its own against the big-screen composition —
      height-keyed so it scales with the screen, capped at 78rem so a very tall
@@ -386,7 +586,7 @@
   /* On a short Fold, the rail makes the animation itself too small to read.
      The same pictographs remain available throughout the site; this front-door
      preview returns the recovered height to the square canvas. */
-  @media (min-width: 760px) and (max-width: 1180px) and (min-height: 500px) and (max-height: 649px) {
+  @media (min-width: 42rem) and (max-width: 1180px) and (min-height: 500px) and (max-height: 44rem) {
     .with-notation-strip .notation-strip {
       display: none;
     }
@@ -403,12 +603,64 @@
     }
   }
 
+  /* A phone on its side uses the animation without the thumbnail rail. The
+     rail stays dormant, not merely invisible, through shouldMountNotationRail. */
+  @media (min-width: 560px) and (max-width: 1023px) and (min-height: 300px) and (max-height: 499px) {
+    .with-notation-strip .notation-strip {
+      display: none;
+    }
+    .with-notation-strip .demo-stage.rail-attached {
+      border-bottom: 1px solid oklch(0.4 0.04 270 / 0.14);
+      border-radius: 18px;
+    }
+    .with-notation-strip .reroll-row {
+      margin-top: 0.25rem;
+    }
+    .with-notation-strip .reroll-button {
+      padding-inline: 0.75rem;
+      font-size: var(--font-size-min, 0.875rem);
+    }
+  }
+
+  /* Portrait phones pair the square with a true vertical StepStrip. Both
+     columns reserve their complete footprint before either lazy chunk mounts. */
+  @media (max-width: 41.99rem) and (min-height: 600px) and (orientation: portrait) {
+    .demo-media {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 5.25rem;
+      align-items: stretch;
+      gap: 0.5rem;
+    }
+    .with-notation-strip .demo-stage.rail-attached {
+      border-bottom: 1px solid oklch(0.4 0.04 270 / 0.14);
+      border-radius: 18px;
+    }
+    .with-notation-strip .notation-strip {
+      height: auto;
+      border-top: 1px solid oklch(0.4 0.04 270 / 0.14);
+      border-radius: 18px;
+    }
+    .with-notation-strip .reroll-row {
+      margin-top: 0.35rem;
+    }
+    .with-notation-strip .reroll-button {
+      padding-inline: 0.9rem;
+      font-size: var(--font-size-min, 0.875rem);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
+    .notation-placeholder {
+      animation: none;
+    }
     .reroll-button {
       transition: none;
     }
     .reroll-button:hover:not(:disabled) {
       transform: none;
+    }
+    .reroll-button :global(.fa-spin) {
+      animation: none !important;
     }
   }
 </style>

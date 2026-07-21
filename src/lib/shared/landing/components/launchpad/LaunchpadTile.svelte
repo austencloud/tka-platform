@@ -4,8 +4,8 @@
    *
    * One bento tile in the homepage Launchpad grid: a real SSR `<a>` (heading +
    * descriptor always in the markup) with a lazy-mounted living media layer
-   * that only activates once the tile scrolls into view (`active`, driven by
-   * the parent's IntersectionObserver).
+   * that only activates after the tile scrolls into view and reaches its turn
+   * in the parent's idle-mount queue.
    *
    * Chips (LOOP Deck, Staves, ...) are real `<a>` elements and must be
    * siblings of the main tile link, never nested inside it — nested
@@ -23,25 +23,53 @@
   let {
     tile,
     active,
+    visible = active,
     index,
     variant = "home",
     onActivate,
+    onMediaSettled,
   }: {
     tile: LaunchpadTileDef;
     active: boolean;
+    /** Reveal state is separate from decorative-media activation. */
+    visible?: boolean;
     index: number;
     variant?: "home" | "composer";
-    /** Supplied by action-mode consumers; combined with `tile.activate` it swaps the anchor for a button. */
+    /** Supplied by enhanced-action consumers; the tile keeps its href as the no-JS fallback. */
     onActivate?: (tile: LaunchpadTileDef) => void;
+    /** Releases the parent queue after this tile's decorative import settles. */
+    onMediaSettled?: (id: string) => void;
   } = $props();
 
-  // Action mode: an opted-in tile with a handler renders its primary control as
-  // a <button> that fires onActivate (opening a takeover) instead of navigating.
-  // Homepage tiles never set `activate`, so they stay anchors — no behavior
-  // change on the front page.
+  // Action tiles remain real links so they still work before JavaScript loads.
+  // Once enhanced, an ordinary activation opens the in-page experience while
+  // modified clicks keep the browser's new-tab and save-link behavior.
   const isAction = $derived(
     tile.activate === true && typeof onActivate === "function"
   );
+
+  function handleActivate(event: MouseEvent) {
+    if (
+      !isAction ||
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    onActivate?.(tile);
+  }
+
+  function handleMediaStatus(status: "loading" | "loaded" | "error"): void {
+    if (status === "loaded" || status === "error") {
+      onMediaSettled?.(tile.id);
+    }
+  }
 
   // Shared demo fixture backing every live media embed on the grid — the same
   // composer/mandala/pictograph preview data used elsewhere on marketing
@@ -53,7 +81,7 @@
 
 <li
   class="tile variant-{variant} s-{tile.span} t-{tile.id}"
-  class:visible={active}
+  class:visible
   style="--c: {tile.color}; --i: {index}"
   style:view-transition-name={tile.morphName}
   data-tile-id={tile.id}
@@ -76,6 +104,7 @@
                 loader={() =>
                   import("$lib/shared/mandala/components/SequenceMandala.svelte")}
                 {active}
+                onStatusChange={handleMediaStatus}
                 props={{
                   sequence: demoSequence,
                   style: "stroke",
@@ -91,6 +120,7 @@
                 loader={() =>
                   import("$lib/shared/sequence-viewer/components/ChoreoCard.svelte")}
                 {active}
+                onStatusChange={handleMediaStatus}
                 props={{
                   sequence: demoSequence,
                   showQRCode: false,
@@ -106,6 +136,7 @@
                 loader={() =>
                   import("$lib/shared/pictograph/shared/components/PictographContainer.svelte")}
                 {active}
+                onStatusChange={handleMediaStatus}
                 props={{
                   pictographData: demoStep,
                   disableTransitions: true,
@@ -119,6 +150,7 @@
               <LazyMount
                 loader={() => import("./PictographFadeCard.svelte")}
                 {active}
+                onStatusChange={handleMediaStatus}
                 props={{
                   steps: demoSequence.steps.slice(0, 4),
                   startDelayMs: index * 900,
@@ -130,6 +162,7 @@
               <LazyMount
                 loader={() => import("./GlossaryDictionaryCard.svelte")}
                 {active}
+                onStatusChange={handleMediaStatus}
                 props={{ startDelayMs: index * 900 }}
               />
             </span>
@@ -139,6 +172,7 @@
                 loader={() =>
                   import("$lib/features/store/components/BookCoverArt.svelte")}
                 {active}
+                onStatusChange={handleMediaStatus}
                 props={{ width: "100%" }}
               />
             </span>
@@ -147,12 +181,14 @@
               <LazyMount
                 loader={() => import("./AlphabetMarquee.svelte")}
                 {active}
+                onStatusChange={handleMediaStatus}
               />
             </span>
           {:else if tile.mediaLoader}
             <LazyMount
               loader={tile.mediaLoader}
               {active}
+              onStatusChange={handleMediaStatus}
               props={tile.mediaProps}
             />
           {/if}
@@ -165,19 +201,9 @@
       </span>
     {/snippet}
 
-    {#if isAction}
-      <button
-        type="button"
-        class="tile-link"
-        onclick={() => onActivate?.(tile)}
-      >
-        {@render primary()}
-      </button>
-    {:else}
-      <a class="tile-link" href={tile.href}>
-        {@render primary()}
-      </a>
-    {/if}
+    <a class="tile-link" href={tile.href} onclick={handleActivate}>
+      {@render primary()}
+    </a>
 
     <div class="glow" aria-hidden="true"></div>
 
@@ -304,9 +330,8 @@
     display: block;
     color: inherit;
     text-decoration: none;
-    /* Button-reset so action-mode tiles (rendered as a <button> instead of an
-		   <a>) are pixel-identical to the anchor. Every value here is the anchor's
-		   own default, so the homepage anchor path is unchanged. */
+    /* The same full-card link serves navigation and enhanced in-page actions,
+		   so both modes keep one visual and keyboard-focus treatment. */
     appearance: none;
     margin: 0;
     padding: 0;
@@ -393,9 +418,12 @@
 
   /* Text stays clear of the corner mark (top) and the scrim/heading zone
 	   (bottom) — see LaunchpadTile's .body/.mark for those reserved areas. */
+  /* Bottom inset clears the whole .body block, not just the heading. At 3.3rem
+	   the dictionary entry ran 33px into "Glossary / TKA terms, defined." at
+	   1920, stacking two competing definitions on one card. */
   .dictionary-box {
     position: absolute;
-    inset: 2.5rem 1.1rem 3.3rem;
+    inset: 2.5rem 1.1rem 5.75rem;
   }
 
   .guide-cover-box {
@@ -432,6 +460,30 @@
 	   the body text (chips live outside the anchor, stacked on top). */
   .card:has(.chips) .body {
     padding-bottom: 2.9rem;
+  }
+
+  /* Stop the descriptor before the right-anchored media on the two tiles that
+	   have one. The body sits at z-index 2 and the media at 0, so an unbounded
+	   descriptor does not get covered — it renders dim-on-white ON TOP of the
+	   card, which is worse. Measured overlap before this rule: 38px on Choreo
+	   Cards and 39px on The Guide at 1920.
+
+	   Capping the paragraph rather than padding the body, for two reasons. The
+	   heading keeps the full width (a `padding-right` big enough to clear the
+	   card wrapped "Choreo Cards" onto two lines). And a percentage tracks the
+	   media, which is sized in rem and therefore grows with the 1680->3840 root
+	   ramp — a fixed gutter that clears the card at 1920 does not at 3840.
+
+	   Gated above the phone breakpoint because `.tile.t-guide .card .body p` is
+	   more specific than the phone tier's own rules; ungated it leaks onto a
+	   184px tile. Phones set their own cap in the portrait block below. */
+  @media (min-width: 601px) {
+    .tile.t-choreo-cards .card .body p {
+      max-width: 58%;
+    }
+    .tile.t-guide .card .body p {
+      max-width: 55%;
+    }
   }
 
   .body h2 {
@@ -532,7 +584,7 @@
   /* Tablet bento: each destination becomes a horizontal button. Text owns the
 	   left side while a cropped piece of living media stays on the right, so the
 	   denser four-band composition remains recognizable at a glance. */
-  @media (min-width: 760px) and (max-width: 1679px) and (min-height: 500px) {
+  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) {
     .tile.variant-home,
     .tile.variant-home .card {
       border-radius: 1rem;
@@ -625,7 +677,7 @@
   /* Short tablet landscape still keeps all six primary destinations. The
 	   rows become icon + title buttons; descriptors and deep-link chips remain
 	   available on taller tablets and on each destination page. */
-  @media (min-width: 760px) and (max-width: 1679px) and (min-height: 500px) and (max-height: 850px) {
+  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) and (max-height: 850px) {
     .tile.variant-home .mark {
       left: 0.8rem;
     }
@@ -656,7 +708,7 @@
 	   their art and destination names but release their supporting copy. That
 	   gives each half enough room without making a small width change rearrange
 	   the entire launchpad. */
-  @media (min-width: 760px) and (max-width: 1679px) and (min-height: 500px) {
+  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) {
     @container launchpad (max-width: 32rem) {
       .tile.variant-home.t-choreo-cards .body p,
       .tile.variant-home.t-guide .body p,
@@ -676,7 +728,7 @@
   /* A narrow right pane falls back to six single-column buttons. Secondary
 	   chip links and the dictionary preview would turn those rows into miniature
 	   toolbars, so the primary destination remains the clear target. */
-  @media (min-width: 760px) and (max-width: 1679px) and (min-height: 500px) {
+  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) {
     @container launchpad (max-width: 22rem) {
       .tile.variant-home .card:has(.chips) .body {
         padding-bottom: 0.8rem;
@@ -695,7 +747,7 @@
   /* Equal Fold tiles need less empty black surface than the wide tablet cards.
 	   A quiet wash and colored edge give every destination its own identity,
 	   including FAQ and Glossary, which have no visible media at this height. */
-  @media (min-width: 760px) and (max-width: 1180px) and (min-height: 500px) and (max-height: 649px) {
+  @media (min-width: 42rem) and (max-width: 1180px) and (min-height: 500px) and (max-height: 44rem) {
     .tile.variant-home .card {
       border-color: color-mix(in oklch, var(--c) 28%, transparent);
       background:
@@ -715,6 +767,155 @@
     .tile.variant-home.t-faq .body h2,
     .tile.variant-home.t-glossary .body h2 {
       max-width: 100%;
+    }
+  }
+
+  /* Phone bento tiles are compact horizontal cards. Existing media stays on
+	   the right, the destination color carries the left edge, and supporting
+	   copy yields to a clear 14px minimum label. */
+  @media (min-width: 560px) and (max-width: 1023px) and (min-height: 300px) and (max-height: 499px),
+    (max-width: 41.99rem) and (min-height: 600px) and (orientation: portrait) {
+    .tile.variant-home,
+    .tile.variant-home .card {
+      border-radius: 0.75rem;
+    }
+    .tile.variant-home .tile-link:focus-visible {
+      border-radius: 0.75rem;
+    }
+    .tile.variant-home .card {
+      border-color: color-mix(in oklch, var(--c) 28%, transparent);
+      background:
+        linear-gradient(
+          145deg,
+          color-mix(in oklch, var(--c) 12%, transparent),
+          transparent 55%
+        ),
+        oklch(0.16 0.018 270 / 0.58);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.16) inset,
+        3px 0 0 color-mix(in oklch, var(--c) 52%, transparent) inset;
+    }
+    .tile.variant-home .mark {
+      top: 50%;
+      left: 0.625rem;
+      font-size: var(--font-size-min, 0.875rem);
+      opacity: 1;
+      transform: translateY(-50%);
+    }
+    .tile.variant-home .body,
+    .tile.variant-home .card:has(.chips) .body {
+      top: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0.375rem 0.5rem 0.375rem 2.25rem;
+      background: linear-gradient(
+        to right,
+        oklch(0.13 0.02 270 / 0.96) 0%,
+        oklch(0.13 0.02 270 / 0.8) 54%,
+        transparent 100%
+      );
+    }
+    .tile.variant-home .body h2,
+    .tile.variant-home.s-2x2 .body h2,
+    .tile.variant-home.s-2x1 .body h2 {
+      max-width: 68%;
+      font-size: var(--font-size-min, 0.875rem);
+      line-height: 1.15;
+    }
+    .tile.variant-home .body p,
+    .tile.variant-home .chips,
+    .tile.variant-home .dictionary-box {
+      display: none;
+    }
+    .tile.variant-home.t-faq .body h2,
+    .tile.variant-home.t-glossary .body h2 {
+      max-width: 100%;
+    }
+    .tile.variant-home .mandala-box {
+      inset: 0 0 0 auto;
+      width: auto;
+      height: 100%;
+      aspect-ratio: 1;
+      opacity: 0.7;
+    }
+    .tile.variant-home .choreo-card-box {
+      right: 2%;
+      width: 3.5rem;
+    }
+    .tile.variant-home .guide-cover-box {
+      right: 4%;
+      width: 3.25rem;
+    }
+    .tile.variant-home .pictograph-box {
+      opacity: 0.68;
+    }
+  }
+
+  /* Tall portrait phones: give the tiles their meaning back.
+     The tier above reduces every tile to a bare noun — "Composer", "Glossary" —
+     which tells a first-time visitor nothing about which door leads where. The
+     bento's four-band layout (see LaunchpadGrid) buys the height to carry a
+     descriptor again.
+
+     Gated to the same measured 740px floor as that layout: on a 375x667 phone
+     the tiles are 62px, and a descriptor wraps to four lines there and pushes
+     the heading clean out of the card — "Choreo Cards" vanished entirely.
+     Short phones keep the bare labels and still gain the first-read link.
+     Landscape phones keep them too; they genuinely have no room. */
+  @media (max-width: 600px) and (min-height: 740px) and (orientation: portrait) {
+    /* Three lines is the ceiling a 76px tile can hold beside its heading
+       (6px padding x2 + ~16px heading + 3 x 14px lines = 64px of 64px). A
+       fourth line does not clip — it pushes the heading out of the card
+       entirely, which is how "Choreo Cards" lost its title. Clamp, don't hope. */
+    .tile.variant-home .body p {
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      overflow: hidden;
+      max-width: 74%;
+      margin: 0.15rem 0 0;
+      font-size: 0.7rem;
+      line-height: 1.25;
+      color: var(--theme-text-dim, rgba(255, 255, 255, 0.66));
+    }
+    /* Same intent as the desktop right-gutter rule, but capping the paragraph
+       instead of padding the whole body: a 184px tile has no room to spare, and
+       padding-right here squeezed "Choreo Cards" down to a wrapped "Cards".
+       The heading keeps the full width; only the descriptor stops at the card. */
+    .tile.variant-home.t-choreo-cards .body p,
+    .tile.variant-home.t-guide .body p {
+      max-width: 52%;
+    }
+
+  }
+
+  /* Tall phones only — these pair with the four-band bento in LaunchpadGrid,
+     which is gated to the same 740px height floor. Below it the grid stays
+     three rows and neither the full-width Composer nor the FAQ band exists. */
+  @media (max-width: 600px) and (min-height: 740px) and (orientation: portrait) {
+    /* Composer owns the full first row, so its label leads at full size. */
+    .tile.variant-home.t-composer .body h2 {
+      max-width: 100%;
+      font-size: 1.1rem;
+    }
+    .tile.variant-home.t-composer .body p {
+      max-width: 58%;
+      font-size: 0.78rem;
+    }
+    /* FAQ is the slim closing band: label only, centered, no descriptor. */
+    .tile.variant-home.t-faq .body {
+      padding-left: 0.5rem;
+      align-items: center;
+      justify-content: center;
+      background: none;
+    }
+    .tile.variant-home.t-faq .body p {
+      display: none;
+    }
+    .tile.variant-home.t-faq .mark {
+      display: none;
     }
   }
 

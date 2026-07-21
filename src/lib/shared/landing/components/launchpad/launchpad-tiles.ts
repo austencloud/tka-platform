@@ -6,6 +6,8 @@
  * Svelte runtime.
  */
 
+import type { Component } from "svelte";
+
 export interface LaunchpadTileDef {
 	id: string;
 	href: string;
@@ -31,23 +33,23 @@ export interface LaunchpadTileDef {
 	 * LazyMount alongside the closed `media` union. Only used when `media` is
 	 * unset — homepage tiles keep the union branches untouched.
 	 */
-	mediaLoader?: () => Promise<{ default: import("svelte").Component }>;
+	mediaLoader?: () => Promise<{ default: Component }>;
 	/** Props forwarded to the `mediaLoader` component. */
 	mediaProps?: Record<string, unknown>;
 	chips?: { label: string; href: string }[];
 	/** Opt this tile into the pointer-follow magnetic pull (composer only). */
 	magnetic?: boolean;
 	/**
-	 * Opt this tile into action/button mode: its primary control renders as a
-	 * <button> firing the grid's `onActivate(tile)` instead of an <a href>.
-	 * Homepage tiles leave this unset and stay anchors.
+	 * Enhance an ordinary primary link activation with the grid's
+	 * `onActivate(tile)` callback. The href stays in the rendered anchor for
+	 * no-JS navigation and modified-click browser behavior.
 	 */
 	activate?: boolean;
 	/**
 	 * Static view-transition-name for the cross-route shared-element morph
 	 * (landing tile -> destination page hero). Present on both endpoints;
-	 * inert unless a morph navigation runs. Only the composer tile carries one
-	 * for now (rev-3); other tiles are a fast-follow.
+	 * inert unless a morph navigation runs. Rev. 3 pairs all six primary
+	 * destinations; the route allowlist is derived from these names.
 	 */
 	morphName?: string;
 }
@@ -113,7 +115,6 @@ export const LAUNCHPAD_TILES: LaunchpadTileDef[] = [
 			{ label: "Fans", href: "/notation/fans" },
 			{ label: "Clubs", href: "/notation/clubs" },
 			{ label: "Buugeng", href: "/notation/buugeng" },
-			{ label: "Poi", href: "/notation/poi" },
 		],
 	},
 	{

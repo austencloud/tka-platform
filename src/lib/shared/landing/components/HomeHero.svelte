@@ -15,6 +15,7 @@
   import { onMount } from "svelte";
   import SequenceHeroDemo from "./SequenceHeroDemo.svelte";
   import { createHeroAct } from "$lib/shared/landing/data/hero-act.svelte";
+  import { runAfterNamedRouteMorphIdle } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import {
     HERO_TRAIL_PRESET,
     HERO_TIP_EFFECT_MAP,
@@ -23,7 +24,7 @@
   const heroAct = createHeroAct();
 
   onMount(() => {
-    heroAct.start();
+    return runAfterNamedRouteMorphIdle(heroAct.start);
   });
 
   // Pinned so a visitor's persisted Compose playback speed can't skew the
@@ -171,7 +172,7 @@
 
   /* Tablet composition: the page owns the two panes, so this side only has
      to balance its title, player, and two actions inside the available height. */
-  @media (min-width: 760px) and (max-width: 1679px) and (min-height: 500px) {
+  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) {
     .home-hero {
       min-height: 0;
       height: 100%;
@@ -193,7 +194,7 @@
     }
   }
 
-  @media (min-width: 760px) and (max-width: 1679px) and (min-height: 500px) and (max-height: 850px) {
+  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) and (max-height: 850px) {
     .home-hero {
       padding: 0.5rem 0;
       --hero-demo-max-width: min(100%, 30svh);
@@ -216,7 +217,7 @@
   /* A Fold in landscape has tablet width but substantially less height. The
      thumbnail rail disappears at this size, so the animation can spend that
      recovered height on a much wider square without pushing out either CTA. */
-  @media (min-width: 760px) and (max-width: 1180px) and (min-height: 500px) and (max-height: 649px) {
+  @media (min-width: 42rem) and (max-width: 1180px) and (min-height: 500px) and (max-height: 44rem) {
     .home-hero {
       padding: 0.25rem 0;
       --hero-demo-max-width: min(100%, 40svh);
@@ -234,6 +235,68 @@
     .hero-pointer {
       margin-top: 0.25rem;
       font-size: 0.875rem;
+    }
+  }
+
+  /* Sideways phones get a single-line title and a rail-free animation. The
+     first-read link remains in the menu so the live example can stay legible. */
+  @media (min-width: 560px) and (max-width: 1023px) and (min-height: 300px) and (max-height: 499px) {
+    .home-hero {
+      min-height: 0;
+      height: 100%;
+      padding: 0;
+      --hero-demo-max-width: min(100%, 36svh);
+    }
+    .home-hero :global(.hero-demo.with-notation-strip) {
+      margin-top: 0.25rem;
+    }
+    .title-main {
+      max-width: none;
+      font-size: clamp(1.1rem, 7cqi, 1.4rem);
+      white-space: nowrap;
+    }
+    .title-sub {
+      margin-top: 0.1em;
+      font-size: var(--font-size-compact, 0.75rem);
+    }
+    .hero-pointer {
+      display: none;
+    }
+  }
+
+  /* Portrait keeps the title compact, then gives roughly half the usable
+     screen to the paired canvas + vertical notation rail. */
+  @media (max-width: 41.99rem) and (min-height: 600px) and (orientation: portrait) {
+    .home-hero {
+      min-height: 0;
+      padding: 0;
+      justify-content: flex-start;
+      /* 40svh -> 32svh. The demo was taking ~34% of the phone viewport, which
+         squeezed the launchpad below it into six equal 105px strips with no
+         room to rank anything. The reclaimed height pays for the first-read
+         link below and for Composer's full-width band in the bento. */
+      --hero-demo-max-width: min(100%, clamp(13rem, 32svh, 17rem));
+    }
+    .home-hero :global(.hero-demo.with-notation-strip) {
+      margin-top: 0.35rem;
+    }
+    .title-main {
+      font-size: clamp(1.75rem, 9.5vw, 2.1rem);
+    }
+    .title-sub {
+      margin-top: 0.2em;
+      font-size: var(--font-size-min, 0.875rem);
+    }
+    /* Kept visible on phones. For a stranger this is the highest-value link on
+       the page — hiding it here removed the one door that explains the rest,
+       from exactly the audience most likely to need it. */
+    .hero-pointer {
+      margin-top: 0.5rem;
+      font-size: var(--font-size-min, 0.875rem);
+    }
+    .pointer-link {
+      min-height: var(--min-touch-target, 44px);
+      font-size: var(--font-size-min, 0.875rem);
     }
   }
 

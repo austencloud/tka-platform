@@ -5,14 +5,19 @@
    * Homepage semantic routing hub: a real SSR bento grid of destination
    * links (LaunchpadTile) plus a compact secondary link strip. A single
    * IntersectionObserver marks tiles visible as they scroll in — that drives
-   * both the subtle reveal transition and each tile's `active` prop, which
-   * lazy-mounts its living media (mandala/choreo-card/pictograph).
+   * the subtle reveal transition. Decorative media mounts separately, one
+   * tile per idle turn, so returning home never parses six chunks in one frame.
    *
    * Every tile is fully readable and navigable with JS disabled: the reveal
    * transition only ever applies once `jsReady` (client-only, set in
    * onMount) is true, so a no-JS render never ships hidden content.
    */
   import { onMount } from "svelte";
+  import {
+    isNamedRouteMorphActive,
+    runAfterNamedRouteMorph,
+    runAfterNamedRouteMorphIdle,
+  } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import LaunchpadTile from "./LaunchpadTile.svelte";
   import {
     LAUNCHPAD_TILES,
@@ -23,7 +28,7 @@
   // Every prop defaults to the homepage's current behavior, so `<LaunchpadGrid />`
   // (the +page.svelte call site) renders byte-identically to before this became
   // reusable. Consumers like the composer bento override tiles/strip/label/
-  // variant and supply an `onActivate` to drive action-mode tiles.
+  // variant and supply an `onActivate` to enhance opted-in tile links.
   let {
     tiles = LAUNCHPAD_TILES,
     stripLinks = STRIP_LINKS,
@@ -41,33 +46,118 @@
   } = $props();
 
   let bentoEl: HTMLUListElement | undefined = $state();
-  let visible = $state<Set<string>>(new Set());
+  // A destination→home transition constructs this component while the route
+  // morph owner is already active. Seed every tile as visible so the browser's
+  // incoming shared-element snapshot never captures the selected target at the
+  // reveal animation's opacity-zero starting frame.
+  let visible = $state<Set<string>>(
+    isNamedRouteMorphActive()
+      ? new Set(tiles.map((tile) => tile.id))
+      : new Set()
+  );
+  let mediaActive = $state<Set<string>>(new Set());
   let jsReady = $state(false);
+  let reportMediaSettled = $state<(id: string) => void>(() => {});
 
   onMount(() => {
-    jsReady = true;
+    let destroyed = false;
+    let activationScheduled = false;
+    let mediaLoadingId: string | null = null;
+    let cancelScheduled = () => {};
+    const mediaQueue: string[] = [];
+    const queuedMedia = new Set<string>();
+    const mediaIds = new Set(
+      tiles
+        .filter((tile) => tile.media || tile.mediaLoader)
+        .map((tile) => tile.id)
+    );
+
+    // During a return morph, leave the SSR-visible tiles untouched for the new
+    // snapshot. Reveal choreography only takes ownership after the morph.
+    const cancelReveal = runAfterNamedRouteMorph(() => {
+      if (!destroyed) jsReady = true;
+    });
+
+    function scheduleNextMedia(): void {
+      if (
+        destroyed ||
+        activationScheduled ||
+        mediaLoadingId ||
+        mediaQueue.length === 0
+      )
+        return;
+
+      activationScheduled = true;
+      const mountNext = () => {
+        activationScheduled = false;
+        cancelScheduled = () => {};
+        if (destroyed) return;
+
+        const id = mediaQueue.shift();
+        if (!id) return;
+        queuedMedia.delete(id);
+        mediaLoadingId = id;
+        const next = new Set(mediaActive);
+        next.add(id);
+        mediaActive = next;
+      };
+      cancelScheduled = runAfterNamedRouteMorphIdle(mountNext, {
+        timeout: 1800,
+        fallbackDelay: 120,
+      });
+    }
+
+    function queueMedia(id: string): void {
+      if (!mediaIds.has(id)) return;
+      if (mediaActive.has(id) || queuedMedia.has(id)) return;
+      queuedMedia.add(id);
+      mediaQueue.push(id);
+      scheduleNextMedia();
+    }
+
+    function handleMediaSettled(id: string): void {
+      if (id !== mediaLoadingId) return;
+      mediaLoadingId = null;
+      scheduleNextMedia();
+    }
+    reportMediaSettled = handleMediaSettled;
 
     const nodes =
       bentoEl?.querySelectorAll<HTMLLIElement>("li.tile[data-tile-id]") ?? [];
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          const id = (entry.target as HTMLElement).dataset.tileId;
-          if (!id) continue;
-          // One-shot reveal: once a tile has mounted its media, stop
-          // watching it — there's nothing left to react to.
-          observer.unobserve(entry.target);
-          const next = new Set(visible);
-          next.add(id);
-          visible = next;
-        }
-      },
-      { rootMargin: "200px" }
-    );
-    nodes.forEach((node) => observer.observe(node));
+    let observer: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver === "undefined") {
+      // Progressive-enhancement fallback: never let the client-only reveal
+      // class hide links on a browser without viewport observation support.
+      visible = new Set(tiles.map((tile) => tile.id));
+      for (const id of mediaIds) queueMedia(id);
+    } else {
+      observer = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            const id = (entry.target as HTMLElement).dataset.tileId;
+            if (!id) continue;
+            // One-shot reveal: once a tile has mounted its media, stop
+            // watching it — there's nothing left to react to.
+            observer?.unobserve(entry.target);
+            const next = new Set(visible);
+            next.add(id);
+            visible = next;
+            queueMedia(id);
+          }
+        },
+        { rootMargin: "200px" }
+      );
+      nodes.forEach((node) => observer?.observe(node));
+    }
 
-    return () => observer.disconnect();
+    return () => {
+      destroyed = true;
+      reportMediaSettled = () => {};
+      cancelReveal();
+      cancelScheduled();
+      observer?.disconnect();
+    };
   });
 </script>
 
@@ -77,10 +167,12 @@
       {#each tiles as tile, i (tile.id)}
         <LaunchpadTile
           {tile}
-          active={visible.has(tile.id)}
+          visible={visible.has(tile.id)}
+          active={mediaActive.has(tile.id)}
           index={i}
           {variant}
           {onActivate}
+          onMediaSettled={reportMediaSettled}
         />
       {/each}
     </ul>
@@ -133,7 +225,7 @@
 	   read as a wall of panels. Four visual bands restore the bento hierarchy:
 	   the primary routes stay wide, related destinations share a row, and the
 	   whole group can breathe around the hero without leaving the first screen. */
-  @media (min-width: 760px) and (max-width: 1679px) and (min-height: 500px) {
+  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) {
     .launchpad.variant-home {
       height: 100%;
       min-height: 0;
@@ -201,7 +293,7 @@
   /* Short landscape tablets use the same four bands but divide the remaining
 	   height proportionally. The tile component removes supporting copy at this
 	   height, leaving large, stable destination buttons instead of overflow. */
-  @media (min-width: 760px) and (max-width: 1679px) and (min-height: 500px) and (max-height: 850px) {
+  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) and (max-height: 850px) {
     .launchpad.variant-home .launchpad-group {
       grid-template-rows: minmax(0, 1fr) auto;
       align-content: stretch;
@@ -222,7 +314,7 @@
 	   The container fallback becomes a compact six-button rail. The utility
 	   strip switches to two columns slightly sooner so its long labels never
 	   wrap inside four undersized segments. */
-  @media (min-width: 760px) and (max-width: 1679px) and (min-height: 500px) {
+  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) {
     @container launchpad (max-width: 22rem) {
       .launchpad.variant-home .launchpad-group {
         grid-template-rows: minmax(0, 1fr) auto;
@@ -251,7 +343,7 @@
   /* On a short Fold, six equal destinations read faster than two oversized
 	   banner cards. The secondary links return to one compact row, leaving the
 	   bento three generous rows while every control keeps its 44px target. */
-  @media (min-width: 760px) and (max-width: 1180px) and (min-height: 500px) and (max-height: 649px) {
+  @media (min-width: 42rem) and (max-width: 1180px) and (min-height: 500px) and (max-height: 44rem) {
     .launchpad.variant-home .launchpad-group {
       row-gap: 0.5rem;
     }
@@ -276,6 +368,92 @@
     }
     .launchpad.variant-home .strip h3 {
       font-size: var(--font-size-compact, 0.75rem);
+    }
+  }
+
+  /* Both phone compositions use the same compact 2 × 3 destination bento.
+	   Four smaller utility links share one final row so every homepage route
+	   stays available without stealing a full second band from the main tiles. */
+  @media (min-width: 560px) and (max-width: 1023px) and (min-height: 300px) and (max-height: 499px),
+    (max-width: 41.99rem) and (min-height: 600px) and (orientation: portrait) {
+    .launchpad.variant-home {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      max-width: none;
+      margin: 0;
+      padding: 0;
+    }
+    .launchpad.variant-home .launchpad-group {
+      display: grid;
+      grid-template-rows: minmax(0, 1fr) auto;
+      row-gap: 0.375rem;
+      height: 100%;
+      min-height: 0;
+    }
+    .launchpad.variant-home .bento {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      grid-auto-rows: 0;
+      grid-auto-flow: row;
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      gap: 0.375rem;
+    }
+    .launchpad.variant-home .bento :global(.tile) {
+      grid-column: auto;
+      grid-row: auto;
+      min-height: 0;
+    }
+    .launchpad.variant-home .strip {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.375rem;
+    }
+    .launchpad.variant-home .strip a {
+      padding-inline: 0.125rem;
+    }
+    .launchpad.variant-home .strip h3 {
+      font-size: var(--font-size-compact, 0.75rem);
+      line-height: 1.1;
+      text-align: center;
+      white-space: normal;
+    }
+  }
+
+  /* Portrait phones only: rank the bento instead of shipping six equal cards.
+     The tier above collapses every span to `auto`, so a 2x2 Composer reads
+     exactly like a 1x1 Glossary and nothing on screen says which one matters.
+     Four bands restore that: Composer takes the full first row as the primary
+     act, the two learn/hold destinations and the two reference ones pair off
+     beneath it, and FAQ closes as a slim full-width band above the strip.
+     Deliberately NOT applied to the phone-landscape tier next door — that one
+     has ~300px of block space and cannot afford a fourth row.
+
+     The 740px height floor (rather than the tier's own 600px) is measured, not
+     chosen: a fourth row on a 375x667 phone drives every tile to 42px, under
+     the 44px touch minimum. Short phones keep the three-row grid and still get
+     the restored descriptors and first-read link; only phones with the height
+     to spend get the ranked four-band layout. */
+  @media (max-width: 600px) and (min-height: 740px) and (orientation: portrait) {
+    .launchpad.variant-home .bento {
+      /* Row 4 carries a hard 2.75rem floor, not a bare fraction: at 0.62fr it
+         resolved to 40px on a 390x844 phone, under the 44px touch minimum. */
+      grid-template-rows:
+        minmax(0, 1.3fr)
+        minmax(0, 1fr)
+        minmax(0, 1fr)
+        minmax(2.75rem, 0.7fr);
+    }
+    .launchpad.variant-home .bento :global(.tile.t-composer),
+    .launchpad.variant-home .bento :global(.tile.t-faq) {
+      grid-column: 1 / -1;
+    }
+    .launchpad.variant-home .bento :global(.tile.t-composer) {
+      grid-row: 1;
+    }
+    .launchpad.variant-home .bento :global(.tile.t-faq) {
+      grid-row: 4;
     }
   }
 

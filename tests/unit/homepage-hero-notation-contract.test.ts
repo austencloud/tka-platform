@@ -36,10 +36,17 @@ describe("homepage hero notation rail contract", () => {
       'import("$lib/shared/timeline/StepStrip.svelte")'
     );
     expect(sequenceHero).toContain('density: "compact"');
-    expect(sequenceHero).toContain("active={active && !!sequence}");
+    expect(sequenceHero).toContain(
+      "active={active && !!sequence && !isNamedRouteMorphActive()}"
+    );
+    expect(sequenceHero).toMatch(
+      /active=\{active &&\s*!!sequence &&\s*shouldMountNotationRail &&\s*!isNamedRouteMorphActive\(\)\}/
+    );
     expect(stepStrip).toContain(
       "const resolvedCells = $derived(cells ?? buildNotationCells(sequence))"
     );
+    expect(stepStrip).toContain('orientation?: "horizontal" | "vertical"');
+    expect(stepStrip).toContain("translateY(${trackOffset}px)");
   });
 
   it("keys live step reports to the sequence actually loaded in the player", () => {
@@ -110,9 +117,9 @@ describe("homepage hero notation rail contract", () => {
 
   it("gives tablet viewports a complete four-band destination bento", () => {
     const tabletQuery =
-      "@media (min-width: 760px) and (max-width: 1679px) and (min-height: 500px)";
+      "@media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px)";
     const foldLandscapeQuery =
-      "@media (min-width: 760px) and (max-width: 1180px) and (min-height: 500px) and (max-height: 649px)";
+      "@media (min-width: 42rem) and (max-width: 1180px) and (min-height: 500px) and (max-height: 44rem)";
 
     expect(landingPage).toContain(tabletQuery);
     expect(homeHero).toContain(tabletQuery);
@@ -147,5 +154,39 @@ describe("homepage hero notation rail contract", () => {
     expect(launchpadGrid).toContain(
       "grid-template-columns: repeat(4, minmax(0, 1fr))"
     );
+  });
+
+  it("recomposes both phone orientations without falling back to the tall stack", () => {
+    const shortPhoneQuery =
+      "(min-width: 560px) and (max-width: 1023px) and (min-height: 300px) and (max-height: 499px)";
+    const portraitPhoneQuery =
+      "(max-width: 41.99rem) and (min-height: 600px) and (orientation: portrait)";
+
+    for (const source of [
+      landingPage,
+      homeHero,
+      sequenceHero,
+      launchpadGrid,
+      launchpadTile,
+    ]) {
+      expect(source).toContain(shortPhoneQuery);
+      expect(source).toContain(portraitPhoneQuery);
+    }
+
+    expect(sequenceHero).toContain(
+      "grid-template-columns: minmax(0, 1fr) 5.25rem"
+    );
+    expect(sequenceHero).toContain("orientation: notationOrientation");
+    expect(launchpadGrid).toContain("grid-template-rows: minmax(0, 1fr) auto");
+    expect(homeHero).toContain("--hero-demo-max-width: min(100%, 36svh)");
+    // 32svh, not the original 40svh. The demo was taking ~34% of the phone
+    // viewport, which left the launchpad below it as six equal 105px strips
+    // with no room to rank anything or carry a descriptor. Still pinned to an
+    // exact value so the budget cannot drift back silently.
+    expect(homeHero).toContain(
+      "--hero-demo-max-width: min(100%, clamp(13rem, 32svh, 17rem))"
+    );
+    expect(homeHero).toContain("min-height: var(--min-touch-target, 44px)");
+    expect(homeHero).toContain("font-size: var(--font-size-min, 0.875rem)");
   });
 });

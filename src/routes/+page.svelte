@@ -203,7 +203,7 @@
      door, but not enough room for the four-column desktop bento. Width plus a
      modest height floor identifies that geometry without relying on a device
      model or fold posture. Short phone-landscape viewports stay stacked. */
-  @media (min-width: 760px) and (max-width: 1679px) and (min-height: 500px) {
+  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) {
     .content-layer {
       display: grid;
       grid-template-columns: minmax(16rem, 5fr) minmax(0, 7fr);
@@ -230,10 +230,61 @@
 
   /* Foldable landscape: reclaim the narrow vertical bands around the fixed
      header while preserving the same two-pane hierarchy and touch targets. */
-  @media (min-width: 760px) and (max-width: 1180px) and (min-height: 500px) and (max-height: 649px) {
+  @media (min-width: 42rem) and (max-width: 1180px) and (min-height: 500px) and (max-height: 44rem) {
     .content-layer {
       column-gap: 0.75rem;
       padding: 4.25rem 0.75rem 0.5rem;
+    }
+  }
+
+  /* A phone on its side has enough inline room for two panes but almost no
+     block room. The destination bento and its four small utility links stay
+     beside the hero instead of beginning below it. */
+  @media (min-width: 560px) and (max-width: 1023px) and (min-height: 300px) and (max-height: 499px) {
+    .content-layer {
+      display: grid;
+      grid-template-columns: minmax(12rem, 5fr) minmax(0, 7fr);
+      column-gap: 0.5rem;
+      align-items: stretch;
+      width: 100%;
+      max-width: none;
+      height: 100svh;
+      min-height: 300px;
+      margin: 0;
+      padding: 4.25rem 0.5rem 0.25rem;
+    }
+
+    .launchpad-main {
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      max-width: none;
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  /* Portrait phones use the upper portion for title + media and let the
+     destination bento consume every remaining row below it. */
+  @media (max-width: 41.99rem) and (min-height: 600px) and (orientation: portrait) {
+    .content-layer {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      align-items: stretch;
+      width: 100%;
+      height: 100svh;
+      min-height: 600px;
+      padding: 4.25rem 0.5rem 0.5rem;
+    }
+
+    .launchpad-main {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      max-width: none;
+      margin: 0;
+      padding: 0;
     }
   }
 
