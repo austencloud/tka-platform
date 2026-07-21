@@ -23,20 +23,25 @@ vi.mock(
 );
 
 import { createExportOptionsState } from "$lib/shared/animation-panel/state/export-options-state.svelte";
-import { getImageCompositionManager } from "$lib/shared/share/state/image-composition-state.svelte";
+
+type ImageCompositionManager = ReturnType<
+  (typeof import("$lib/shared/share/state/image-composition-state.svelte"))["getImageCompositionManager"]
+>;
 
 const EXPORT_OPTIONS_KEY = "tka_export_options";
 const IMAGE_COMPOSITION_KEY = "tka-image-composition-settings";
 
 describe("card column preferences", () => {
-  const composition = getImageCompositionManager();
+  let composition: ImageCompositionManager;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     localStorage.clear();
     auth.currentUser = null;
     updateSetting.mockClear();
-    composition.setColumnCountForStepCount(8, null);
-    composition.setColumnCountForStepCount(16, null);
+    vi.resetModules();
+    const { getImageCompositionManager } =
+      await import("$lib/shared/share/state/image-composition-state.svelte");
+    composition = getImageCompositionManager();
   });
 
   it("defaults every sequence length to Auto", () => {
@@ -55,14 +60,20 @@ describe("card column preferences", () => {
     expect(persisted.columnCountOverrides).toEqual({ "16": 8 });
   });
 
-  it("returns a sequence length to Auto by removing its saved override", () => {
+  it("persists Auto explicitly so a remote merge cannot restore the old value", () => {
+    composition.setColumnCountForStepCount(8, 4);
     composition.setColumnCountForStepCount(16, 8);
     composition.setColumnCountForStepCount(16, null);
 
     expect(composition.getColumnCountForStepCount(16)).toBeNull();
-    expect(composition.getSettings().columnCountOverrides).not.toHaveProperty(
-      "16"
+    expect(composition.getSettings().columnCountOverrides).toEqual({
+      "8": 4,
+      "16": null,
+    });
+    const persisted = JSON.parse(
+      localStorage.getItem(IMAGE_COMPOSITION_KEY) ?? "{}"
     );
+    expect(persisted.columnCountOverrides).toEqual({ "8": 4, "16": null });
   });
 
   it("saves an authenticated user's manual choice to account settings", () => {
@@ -72,6 +83,19 @@ describe("card column preferences", () => {
     expect(updateSetting).toHaveBeenCalledWith(
       "imageExport",
       expect.objectContaining({ columnCountOverrides: { "16": 8 } })
+    );
+  });
+
+  it("saves an authenticated user's Auto choice as an explicit null", () => {
+    auth.currentUser = { uid: "user-1" };
+    composition.setColumnCountForStepCount(16, 8);
+    updateSetting.mockClear();
+
+    composition.setColumnCountForStepCount(16, null);
+
+    expect(updateSetting).toHaveBeenCalledWith(
+      "imageExport",
+      expect.objectContaining({ columnCountOverrides: { "16": null } })
     );
   });
 

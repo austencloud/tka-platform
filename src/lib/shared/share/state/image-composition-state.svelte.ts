@@ -45,9 +45,10 @@ export interface ImageCompositionSettings {
   startPositionLayoutOverrides: Record<string, "row" | "column">;
 
   // Per-step-count column count overrides.
-  // Keys are step counts as strings. Missing keys mean Auto.
+  // Keys are step counts as strings. Null records an explicit Auto choice;
+  // missing keys also use Auto until the user chooses a layout.
   // Controls how many beat columns ChoreoCards use for that sequence length.
-  columnCountOverrides: Record<string, number>;
+  columnCountOverrides: Record<string, number | null>;
 
   // Per-step-count info-cell choice (QR vs Mandala vs None) for cards with a
   // single empty info cell. Keys are step counts as strings. When absent the
@@ -489,14 +490,11 @@ class ImageCompositionStateManager {
 
   /**
    * Set the column count for a specific step count.
-   * Pass null to remove the override (revert to auto).
+   * Null stays in the persisted map so a merged account-settings write replaces
+   * an older numeric choice instead of leaving that nested value behind.
    */
   setColumnCountForStepCount(stepCount: number, value: number | null): void {
-    if (value === null) {
-      delete this.settings.columnCountOverrides[String(stepCount)];
-    } else {
-      this.settings.columnCountOverrides[String(stepCount)] = value;
-    }
+    this.settings.columnCountOverrides[String(stepCount)] = value;
     this.saveToStorage();
     this.notifyObservers();
   }
