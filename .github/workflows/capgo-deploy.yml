@@ -1,26 +1,39 @@
 name: Deploy OTA Update
 
+# Never ships code that has not passed CI. This fires only after "Web App CI"
+# completes on main, and the job below refuses to run unless that run succeeded.
+# Previously this triggered directly on push, so a red test suite still shipped
+# an OTA bundle to production users.
 on:
   workflow_dispatch:
-  push:
+  workflow_run:
+    workflows: ["Web App CI"]
+    types: [completed]
     branches: [main]
-    paths:
-      - "src/**"
-      - "static/**"
-      - "packages/**"
-      - "svelte.config.js"
-      - "vite.config.ts"
-      - "package.json"
+
+concurrency:
+  group: capgo-ota-production
+  cancel-in-progress: false
 
 jobs:
   deploy-ota:
     name: Build & Push to Capgo
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # workflow_run fires on failure too; only a green CI run may deploy.
+    # Manual dispatch stays available as the escape hatch.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # workflow_run defaults to the default branch tip, which may already
+          # have moved past the commit CI actually validated. Pin to the exact
+          # SHA that passed.
+          ref: ${{ github.event.workflow_run.head_sha || github.ref }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
