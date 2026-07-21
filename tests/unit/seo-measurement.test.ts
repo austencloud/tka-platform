@@ -58,7 +58,7 @@ describe("SEO measurement math", () => {
     const history = parseSeoHistoryRows([
       [
         "2026-06-08T02:00:00.000Z",
-        "2026-06-08",
+        "2026-06-08T00:00:00Z",
         "primary_collecting",
         "collecting",
         "8.2",

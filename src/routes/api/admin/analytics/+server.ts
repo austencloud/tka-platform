@@ -296,7 +296,7 @@ function buildSeoHistoryQuery(): string {
   return `
     SELECT
       toString(timestamp) as captured_at,
-      properties.generated_date as generated_date,
+      toString(toDate(properties.generated_date)) as generated_date,
       properties.phase as phase,
       properties.decision_status as decision_status,
       properties.head_term_position as head_term_position,

@@ -184,6 +184,13 @@ function numberOrNull(value: unknown): number | null {
   return parsed;
 }
 
+function calendarDate(value: unknown): string {
+  const parsed = z.string().min(1).parse(value);
+  const match = /^\d{4}-\d{2}-\d{2}/.exec(parsed);
+  if (!match) throw new Error(`Invalid SEO history date: ${parsed}`);
+  return match[0];
+}
+
 export function parseSeoHistoryRows(
   rows: readonly unknown[][]
 ): SeoHistoryPoint[] {
@@ -191,7 +198,7 @@ export function parseSeoHistoryRows(
   for (const row of rows) {
     const point: SeoHistoryPoint = {
       capturedAt: z.string().min(1).parse(row[0]),
-      generatedDate: z.string().min(1).parse(row[1]),
+      generatedDate: calendarDate(row[1]),
       phase: seoPhaseSchema.parse(row[2]),
       decisionStatus: seoDecisionStatusSchema.parse(row[3]),
       headTermPosition: numberOrNull(row[4]),
