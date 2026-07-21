@@ -86,7 +86,7 @@
     return Math.min(boxW / gridCols, cardBoxH / rows);
   }
   function bestStepCols(leftW: number): number {
-    let best = STEP_COL_CANDIDATES[0];
+    let best: number = STEP_COL_CANDIDATES[0];
     let bestCell = -1;
     for (const sc of STEP_COL_CANDIDATES) {
       const cell = cellSizeFor(leftW, sc);
