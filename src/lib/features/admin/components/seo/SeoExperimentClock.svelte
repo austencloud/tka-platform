@@ -2,58 +2,16 @@
   import type { SeoDashboardSnapshot } from "$lib/features/admin/domain/models/seo-dashboard-model";
   import { formatDate } from "./seo-dashboard-format";
 
-  const DECISION_LABELS: Record<
-    SeoDashboardSnapshot["decision"]["status"],
-    string
-  > = {
-    baseline: "The starting point is being recorded.",
-    awaiting_indexing: "Google indexing is the next step.",
-    collecting: "The first growth check is running.",
-    incomplete_evidence: "Some evidence is missing.",
-    below_target: "Growth has not cleared the target.",
-    primary_target_met: "The first growth check passed.",
-    confirmed_target_met: "Growth passed twice.",
-  };
+  type RoadmapState = "done" | "current" | "later";
 
-  const PHASE_EXPLANATIONS: Record<SeoDashboardSnapshot["phase"], string> = {
-    baseline:
-      "The first growth check starts after the SEO changes are registered as live and a measurement run confirms Google indexing.",
-    awaiting_indexing:
-      "Each measurement run checks the sample pages. The first growth check starts when Google indexing is confirmed.",
-    primary_collecting:
-      "Google appearances are now being compared with similar pages that did not receive the SEO update.",
-    primary_complete:
-      "The first check is complete. A fresh window is testing whether the result happens again.",
-    confirmed:
-      "Both measurement windows are complete. The result now has a before picture and an independent proof check.",
-  };
-
-  const PHASE_BADGES: Record<SeoDashboardSnapshot["phase"], string> = {
-    baseline: "Before",
-    awaiting_indexing: "Waiting",
-    primary_collecting: "Measuring",
-    primary_complete: "Proof check",
-    confirmed: "Complete",
-  };
+  interface RoadmapStep {
+    number: number;
+    title: string;
+    detail: string;
+    state: RoadmapState;
+  }
 
   let { snapshot }: { snapshot: SeoDashboardSnapshot } = $props();
-
-  function primaryState(): string {
-    if (
-      snapshot.phase === "baseline" ||
-      snapshot.phase === "awaiting_indexing"
-    ) {
-      return "Waiting";
-    }
-    if (snapshot.phase === "primary_collecting") return "Now";
-    return "Done";
-  }
-
-  function confirmationState(): string {
-    if (snapshot.phase === "confirmed") return "Done";
-    if (snapshot.phase === "primary_complete") return "Now";
-    return "Later";
-  }
 
   function formatWindow(
     window: { start: string; end: string } | null,
@@ -62,105 +20,126 @@
     if (!window) return fallback;
     return formatDate(window.start) + " to " + formatDate(window.end);
   }
+
+  const roadmap = $derived.by((): RoadmapStep[] => {
+    const startingPointDone = snapshot.windows.baseline.complete;
+    const launchDateDone = snapshot.experimentDates.deploymentDate !== null;
+    const googleFoundPages = snapshot.experimentDates.indexedDate !== null;
+    const firstComparisonDone =
+      snapshot.phase === "primary_complete" || snapshot.phase === "confirmed";
+    const firstComparisonCurrent = snapshot.phase === "primary_collecting";
+    const repeatDone = snapshot.phase === "confirmed";
+    const repeatCurrent = snapshot.phase === "primary_complete";
+
+    return [
+      {
+        number: 1,
+        title: "Save the starting numbers",
+        detail: startingPointDone
+          ? `${formatWindow(snapshot.windows.baseline, "Starting window")} saved`
+          : "The before period is still being collected",
+        state: startingPointDone ? "done" : "current",
+      },
+      {
+        number: 2,
+        title: "Record when the changes go live",
+        detail: launchDateDone
+          ? `Recorded on ${formatDate(snapshot.experimentDates.deploymentDate)}`
+          : "Needed before growth can be measured",
+        state: launchDateDone
+          ? "done"
+          : startingPointDone
+            ? "current"
+            : "later",
+      },
+      {
+        number: 3,
+        title: "Check that Google found the pages",
+        detail: googleFoundPages
+          ? `Confirmed on ${formatDate(snapshot.experimentDates.indexedDate)}`
+          : launchDateDone
+            ? "A measurement run checks the sample pages"
+            : "Starts after the launch date is recorded",
+        state: googleFoundPages ? "done" : launchDateDone ? "current" : "later",
+      },
+      {
+        number: 4,
+        title: "Compare before and after",
+        detail: formatWindow(
+          snapshot.windows.primary,
+          "Starts after Google finds the pages"
+        ),
+        state: firstComparisonDone
+          ? "done"
+          : firstComparisonCurrent
+            ? "current"
+            : "later",
+      },
+      {
+        number: 5,
+        title: "Repeat the check",
+        detail: formatWindow(
+          snapshot.windows.confirmation,
+          "Fresh dates test whether the result holds"
+        ),
+        state: repeatDone ? "done" : repeatCurrent ? "current" : "later",
+      },
+    ];
+  });
+
+  const currentStep = $derived(
+    roadmap.find((step) => step.state === "current") ?? roadmap.at(-1)
+  );
+  const planTitle = $derived(
+    roadmap.every((step) => step.state === "done")
+      ? "All five steps are complete"
+      : `You are on step ${currentStep?.number ?? 1} of 5`
+  );
+
+  function stateLabel(state: RoadmapState): string {
+    if (state === "done") return "Done";
+    if (state === "current") return "Now";
+    return "Later";
+  }
 </script>
 
 <section class="panel" aria-labelledby="experiment-title">
   <div class="panel-heading">
     <div>
-      <span class="panel-kicker">What happens next</span>
-      <h3 id="experiment-title">{DECISION_LABELS[snapshot.decision.status]}</h3>
+      <span class="panel-kicker">The plan</span>
+      <h3 id="experiment-title">{planTitle}</h3>
     </div>
-    <span class="decision-status">{PHASE_BADGES[snapshot.phase]}</span>
+    <span class="decision-status">
+      {roadmap.filter((step) => step.state === "done").length}/5 done
+    </span>
   </div>
 
-  <p class="plain-explanation">{PHASE_EXPLANATIONS[snapshot.phase]}</p>
+  <p class="plain-explanation">
+    Each step clears the way for the next. The highlighted row is the only one
+    that matters right now.
+  </p>
 
-  <div class="timeline" aria-label="Three SEO measurement steps">
-    <article
-      class="timeline-step"
-      class:current={snapshot.phase === "baseline"}
-      class:complete={snapshot.phase !== "baseline"}
-    >
-      <div class="step-topline">
-        <span class="step-index">1</span>
-        <span class="step-state">
-          {snapshot.phase === "baseline" ? "Now" : "Done"}
+  <ol class="roadmap" aria-label="Five steps to measure SEO growth">
+    {#each roadmap as step (step.number)}
+      <li
+        class="roadmap-step step-{step.state}"
+        aria-current={step.state === "current" ? "step" : undefined}
+      >
+        <span class="step-marker" aria-hidden="true">
+          {#if step.state === "done"}
+            <i class="fas fa-check"></i>
+          {:else}
+            {step.number}
+          {/if}
         </span>
-      </div>
-      <div class="step-copy">
-        <strong>Before picture</strong>
-        <span>{formatWindow(snapshot.windows.baseline, "")}</span>
-      </div>
-    </article>
-
-    <article
-      class="timeline-step"
-      class:current={snapshot.phase === "primary_collecting"}
-      class:complete={snapshot.phase === "primary_complete" ||
-        snapshot.phase === "confirmed"}
-    >
-      <div class="step-topline">
-        <span class="step-index">2</span>
-        <span class="step-state">{primaryState()}</span>
-      </div>
-      <div class="step-copy">
-        <strong>First growth check</strong>
-        <span>
-          {formatWindow(
-            snapshot.windows.primary,
-            "Starts after Google indexing"
-          )}
-        </span>
-      </div>
-    </article>
-
-    <article
-      class="timeline-step"
-      class:current={snapshot.phase === "primary_complete"}
-      class:complete={snapshot.phase === "confirmed"}
-    >
-      <div class="step-topline">
-        <span class="step-index">3</span>
-        <span class="step-state">{confirmationState()}</span>
-      </div>
-      <div class="step-copy">
-        <strong>Proof check</strong>
-        <span>
-          {formatWindow(
-            snapshot.windows.confirmation,
-            "Repeats the test with fresh dates"
-          )}
-        </span>
-      </div>
-    </article>
-  </div>
-
-  <div class="experiment-dates">
-    <div>
-      <span>SEO changes live</span>
-      <strong>
-        {snapshot.experimentDates.deploymentDate
-          ? formatDate(snapshot.experimentDates.deploymentDate)
-          : "Not registered"}
-      </strong>
-    </div>
-    <div>
-      <span>Google indexing</span>
-      <strong>
-        {snapshot.experimentDates.indexedDate
-          ? formatDate(snapshot.experimentDates.indexedDate)
-          : "Not confirmed"}
-      </strong>
-    </div>
-    <div>
-      <span>Comparison pages</span>
-      <strong>
-        {snapshot.cohorts.frozen
-          ? snapshot.cohorts.frozenControlCount + " locked"
-          : "Not locked"}
-      </strong>
-    </div>
-  </div>
+        <div class="step-copy">
+          <strong>{step.title}</strong>
+          <span>{step.detail}</span>
+        </div>
+        <span class="step-state">{stateLabel(step.state)}</span>
+      </li>
+    {/each}
+  </ol>
 </section>
 
 <style>
@@ -214,63 +193,59 @@
     font-size: var(--font-size-compact, 0.75rem);
     font-weight: 800;
     white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 
   .plain-explanation {
     max-width: 62rem;
-    margin: 10px 0 13px;
+    margin: 10px 0 12px;
     color: var(--theme-text-dim, rgba(248, 250, 252, 0.64));
-    font-size: var(--font-size-compact, 0.75rem);
+    font-size: var(--font-size-min, 0.875rem);
     line-height: 1.4;
   }
 
-  .timeline {
+  .roadmap {
     display: grid;
     min-height: 0;
     flex: 1;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-rows: repeat(5, minmax(54px, 1fr));
+    gap: 7px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
-  .timeline-step {
-    display: flex;
+  .roadmap-step {
+    display: grid;
     min-width: 0;
-    min-height: 82px;
-    height: 100%;
-    flex-direction: column;
-    gap: 4px;
-    padding: 10px;
+    grid-template-columns: 30px minmax(0, 1fr) 4.5rem;
+    align-items: center;
+    gap: 11px;
+    padding: 8px 10px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
     border-radius: 10px;
     background: color-mix(in srgb, var(--theme-text, #fff) 3%, transparent);
     color: var(--theme-text-dim, rgba(248, 250, 252, 0.46));
   }
 
-  .timeline-step.current {
+  .step-current {
     border-color: color-mix(
       in srgb,
       var(--semantic-seo-accent) 42%,
       transparent
     );
     color: var(--theme-text, #f8fafc);
-    background: color-mix(in srgb, var(--semantic-seo-accent) 7%, transparent);
+    background: color-mix(in srgb, var(--semantic-seo-accent) 9%, transparent);
   }
 
-  .timeline-step.complete {
+  .step-done {
     color: var(--theme-text, #f8fafc);
   }
 
-  .step-topline {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .step-index {
+  .step-marker {
     display: grid;
-    width: 22px;
-    height: 22px;
+    width: 28px;
+    height: 28px;
     place-items: center;
     border-radius: 50%;
     background: color-mix(in srgb, var(--semantic-seo-accent) 15%, transparent);
@@ -279,55 +254,52 @@
     font-weight: 800;
   }
 
-  .step-state,
-  .step-copy span {
-    font-size: var(--font-size-compact, 0.75rem);
-    line-height: 1.25;
-  }
-
-  .step-state {
-    font-weight: 700;
+  .step-done .step-marker {
+    background: color-mix(
+      in srgb,
+      var(--semantic-success, #22c55e) 16%,
+      transparent
+    );
+    color: var(--semantic-success, #22c55e);
   }
 
   .step-copy {
     display: flex;
-    margin: auto 0;
+    min-width: 0;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
   }
 
   .step-copy > strong {
     font-size: var(--font-size-min, 0.875rem);
   }
 
-  .experiment-dates {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-    margin-top: 8px;
-  }
-
-  .experiment-dates > div {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 3px;
-    padding: 8px 10px;
-    border-radius: 9px;
-    background: color-mix(in srgb, var(--theme-text, #fff) 3%, transparent);
-  }
-
-  .experiment-dates span {
-    color: var(--theme-text-dim, rgba(248, 250, 252, 0.52));
-    font-size: var(--font-size-compact, 0.75rem);
-  }
-
-  .experiment-dates strong {
+  .step-copy > span {
     overflow: hidden;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.52));
     font-size: var(--font-size-compact, 0.75rem);
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-variant-numeric: tabular-nums;
+    line-height: 1.3;
+  }
+
+  .step-state {
+    min-width: 4.5rem;
+    padding: 5px 7px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--theme-text, #fff) 5%, transparent);
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .step-current .step-state {
+    background: color-mix(in srgb, var(--semantic-seo-accent) 16%, transparent);
+    color: var(--semantic-seo-accent);
+  }
+
+  .step-done .step-state {
+    color: var(--semantic-success, #22c55e);
   }
 
   @container (max-width: 560px) {
@@ -335,9 +307,17 @@
       flex-direction: column;
     }
 
-    .timeline,
-    .experiment-dates {
-      grid-template-columns: 1fr;
+    .roadmap {
+      grid-template-rows: none;
+    }
+
+    .roadmap-step {
+      grid-template-columns: 30px minmax(0, 1fr);
+    }
+
+    .step-state {
+      grid-column: 2;
+      justify-self: start;
     }
   }
 </style>
