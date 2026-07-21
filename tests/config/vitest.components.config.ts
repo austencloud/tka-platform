@@ -12,9 +12,34 @@ const projectRoot = path.resolve(
 export default defineConfig({
   plugins: [svelte()],
 
-  // axe-core is CJS; pre-bundle it so Vite doesn't re-optimize mid-run.
-  // A cold-start re-optimization reload can flake the first a11y test (esp. in CI).
-  optimizeDeps: { include: ["axe-core"] },
+  // The locale loader's template import prevents Vite's dependency scanner
+  // from completing in CI. List the browser suite's runtime dependencies so
+  // none are discovered halfway through a test and reload the page underneath
+  // Bits UI's effect roots.
+  optimizeDeps: {
+    include: [
+      "@austencloud/backgrounds",
+      "@austencloud/backgrounds/card",
+      "@austencloud/theme",
+      "@capacitor/core",
+      "@capacitor/haptics",
+      "axe-core",
+      "bits-ui",
+      "dexie",
+      "fabric",
+      "fflate",
+      "firebase/app",
+      "firebase/auth",
+      "firebase/database",
+      "firebase/firestore",
+      "firebase/functions",
+      "firebase/messaging",
+      "firebase/storage",
+      "posthog-js",
+      "qr-code-styling",
+      "zod",
+    ],
+  },
 
   resolve: {
     conditions: ["browser"],
