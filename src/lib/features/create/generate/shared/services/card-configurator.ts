@@ -111,6 +111,10 @@ export function buildCardDescriptors(
         loopEnabled,
         onLengthChange: handlers.handleSpellLengthChange ?? handlers.handleLengthChange,
         locked: false,
+        // The length here is the word's own natural length; the handler can only
+        // raise it via spellTargetLength, never shrink it below the tier cap.
+        // Report the overflow instead of asking for an impossible clamp.
+        clampToMax: false,
         minOverride: bridgeInfo?.naturalDisplayLength || undefined,
         subtitle: bridgeSubtitle,
         cardIndex: cardIndex++,

@@ -4,6 +4,7 @@ Shows current length with +/- stepper controls for quick adjustment.
 In spell mode, shows bridge count as subtitle and allows upward adjustment.
 -->
 <script lang="ts">
+  import { untrack } from "svelte";
   import { GenerationMode } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import StepperCard from "./StepperCard/StepperCard.svelte";
@@ -22,6 +23,7 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
     minOverride,
     maxOverride,
     stepOverride,
+    clampToMax = true,
     onLengthChange,
     onStepCapExceeded,
     subtitle = "",
@@ -39,6 +41,13 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
     maxOverride?: number;
     /** Pins the increment for isolated embeds with a fixed set of lengths. */
     stepOverride?: number;
+    /**
+     * Whether an over-cap length can be corrected by pushing a clamped value
+     * back. False when `currentLength` is derived from something the callback
+     * can't shrink (spell mode's word length) — those hosts get
+     * `onStepCapExceeded` instead.
+     */
+    clampToMax?: boolean;
     onLengthChange: (length: number) => void;
     onStepCapExceeded?: () => void;
     subtitle?: string;
@@ -65,10 +74,23 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
   // Clamp the displayed length to the tier cap. If the stored config has a
   // value above the tier limit (e.g., default 16 for a guest with cap 8),
   // push the clamped value back to the parent.
+  //
+  // Only the parent that owns `length` outright can honor this. In spell mode
+  // `currentLength` is derived from the typed word, so a clamp pushed back
+  // through `onLengthChange` can never lower it — the over-cap condition stays
+  // true forever. Those hosts pass `clampToMax={false}` and the cap is enforced
+  // where it can actually be applied: the stepper's own + button, and the
+  // post-build cap in generate-actions.
+  //
+  // The callback is called untracked because the parent rebuilds it on every
+  // config write. Reading it as a dependency meant a fresh closure identity
+  // re-ran this effect, which called it again — an infinite loop that killed
+  // the renderer (`effect_update_depth_exceeded`).
   $effect(() => {
-    if (currentLength > MAX_LENGTH) {
-      onLengthChange(MAX_LENGTH);
-    }
+    if (!clampToMax) return;
+    if (currentLength <= MAX_LENGTH) return;
+    const cappedAt = MAX_LENGTH;
+    untrack(() => onLengthChange(cappedAt));
   });
 
   function handleIncrement() {

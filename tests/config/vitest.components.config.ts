@@ -26,6 +26,14 @@ export default defineConfig({
       "$app/navigation": path.resolve(projectRoot, "tests/setup/stubs/app-navigation.ts"),
       "$app/state": path.resolve(projectRoot, "tests/setup/stubs/app-state.ts"),
       "$app/stores": path.resolve(projectRoot, "tests/setup/stubs/app-stores.ts"),
+      "$env/dynamic/public": path.resolve(
+        projectRoot,
+        "tests/setup/stubs/env-dynamic-public.ts"
+      ),
+      "$env/static/public": path.resolve(
+        projectRoot,
+        "tests/setup/stubs/env-static-public.ts"
+      ),
     },
   },
 

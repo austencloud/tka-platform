@@ -6,3 +6,7 @@ export const preloadData = () => Promise.resolve();
 export const beforeNavigate = () => {};
 export const afterNavigate = () => {};
 export const onNavigate = () => {};
+export const preloadCode = () => Promise.resolve();
+export const pushState = () => {};
+export const replaceState = () => {};
+export const disableScrollHandling = () => {};

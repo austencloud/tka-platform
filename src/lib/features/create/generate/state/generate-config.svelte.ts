@@ -258,6 +258,18 @@ export function createGenerationConfigState(
     if (typeof cleaned.loopType === "string" && cleaned.loopType in STRICT_LOOP_MIGRATION) {
       cleaned.loopType = STRICT_LOOP_MIGRATION[cleaned.loopType];
     }
+
+    // Bail on a write that changes nothing. Reassigning unconditionally handed
+    // every downstream `$derived` a new object reference, which rebuilt every
+    // card descriptor and every handler closure inside it. Effects that read one
+    // of those callbacks then saw a fresh function identity and re-ran, so a
+    // no-op update could re-arm the very effect that issued it.
+    const current = config as unknown as Record<string, unknown>;
+    const changed = Object.keys(cleaned).some(
+      (key) => !Object.is(cleaned[key], current[key])
+    );
+    if (!changed) return;
+
     config = { ...config, ...cleaned };
 
     // Auto-clear duration template if it's no longer valid for the current length
