@@ -125,7 +125,7 @@
     <!-- Header -->
     <div class="auth-hero">
       <div class="auth-logo-badge">
-        <img src="/branding/logo.jpg" alt="The Kinetic Alphabet" width="56" height="56" />
+        <img src="/branding/logo.jpg" alt="Flow Arts Composer" width="56" height="56" />
       </div>
       <div class="auth-heading">
         {#if authMode === "signup"}
