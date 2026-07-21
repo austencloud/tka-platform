@@ -20,8 +20,8 @@
   import SegmentedControl from "$lib/shared/3d/components/controls/SegmentedControl.svelte";
   import LevelSelector from "$lib/shared/components/LevelSelector.svelte";
   import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import { slide, fade } from "svelte/transition";
-  import { quintOut } from "svelte/easing";
+  import { growFade, popIn, flyFade } from "$lib/shared/transitions/motion";
+  import { DURATION, STAGGER } from "$lib/shared/transitions/transitions";
   import {
     formatTurnValue,
     keyToTurnValue,
@@ -72,9 +72,12 @@
   // Level 1 is base motions — there is nothing to dial, so the row isn't there.
   const turnsAvailable = $derived(level > 1);
 
+  // Icon-only: Level is the headline control on this band and the filter was
+  // spending 240px of it on two words. SegmentedControl renders the icon alone
+  // and keeps the label as the aria-label + hover title, so nothing is lost.
   const filterOptions = [
-    { value: "all", label: "All" },
-    { value: "continuous", label: "Continuous" },
+    { value: "all", label: "All", icon: "fas fa-asterisk" },
+    { value: "continuous", label: "Continuous", icon: "fas fa-infinity" },
   ];
   const filterValue = $derived(isContinuousOnly ? "continuous" : "all");
 
@@ -135,8 +138,14 @@
        half's outer (colored) edge — absolutely positioned into a permanently
        reserved gutter, so its appearance never resizes the button row. -->
   {#if turnsAvailable}
-    <div class="oph-turns-row" transition:slide={{ duration: 240, easing: quintOut }}>
-      <div class="hand-half blue">
+    <!-- growFade (not svelte's slide) so the row's own height drives the reflow
+         AND reduced motion collapses it — svelte's JS transitions ignore the
+         media query the CSS layer respects. -->
+    <div
+      class="oph-turns-row"
+      transition:growFade={{ axis: "y", duration: DURATION.emphasis }}
+    >
+      <div class="hand-half blue" in:flyFade={{ y: 6 }}>
         <span class="hand-tag">Blue</span>
         <div class="turn-seg">
           <SegmentedControl
@@ -150,7 +159,7 @@
         {#if !isContinuousOnly && hasBlueTurns}
           <button
             class="spin-inline edge"
-            transition:fade={{ duration: 140 }}
+            transition:popIn
             title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
             aria-label="Toggle blue dash/static spin (currently {dirLabel(blueRotation)})"
             onclick={() => onBlueRotationChange(opposite(blueRotation))}
@@ -160,7 +169,9 @@
           </button>
         {/if}
       </div>
-      <div class="hand-half red">
+      <!-- Red trails blue by one micro-beat: the two halves read as one gesture
+           rather than a single slab dropping in. -->
+      <div class="hand-half red" in:flyFade={{ y: 6, delay: STAGGER.micro }}>
         <span class="hand-tag">Red</span>
         <div class="turn-seg">
           <SegmentedControl
@@ -174,7 +185,7 @@
         {#if !isContinuousOnly && hasRedTurns}
           <button
             class="spin-inline edge"
-            transition:fade={{ duration: 140 }}
+            transition:popIn
             title="Spin direction for dash & static options on this hand (shifts keep their own direction)"
             aria-label="Toggle red dash/static spin (currently {dirLabel(redRotation)})"
             onclick={() => onRedRotationChange(opposite(redRotation))}
@@ -193,9 +204,12 @@
   .oph {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    /* No gap: the row/row spacing lives on .oph-turns-row's margin-top instead,
+       because growFade collapses margins with the height. A flex `gap` would
+       survive the collapse and snap away 12px at the end of the transition. */
+    gap: 0;
     width: 100%;
-    padding: 8px 18px 10px;
+    padding: 12px 16px 14px;
     background: linear-gradient(
       180deg,
       rgba(255, 255, 255, 0.045) 0%,
@@ -225,9 +239,10 @@
     justify-content: flex-end;
   }
 
+  /* Icon-sized. Two 44px targets plus the control's own padding — the ~130px
+     this gives back goes to the level buttons and the turn rows. */
   .filter-seg {
-    width: 240px;
-    max-width: 50vw;
+    width: 7rem;
   }
 
   /* Row 2: two equal halves — blue (left), red (right) — revealed by sliding
@@ -236,6 +251,7 @@
   .oph-turns-row {
     display: flex;
     gap: 10px;
+    margin-top: 12px;
   }
 
   .hand-half {
@@ -247,10 +263,10 @@
     /* The turn buttons fill the half; the spin button is pinned out of flow on
        the colored edge. Its gutter is reserved PERMANENTLY (not only while it
        shows), so the buttons never resize when spin appears or disappears. */
-    --spin-gutter: 86px;
-    padding: 6px 12px;
+    --spin-gutter: 78px;
+    padding: 8px 12px;
     min-width: 260px;
-    border-radius: 10px;
+    border-radius: 12px;
     border: 1px solid;
   }
 

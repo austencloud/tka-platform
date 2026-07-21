@@ -2,7 +2,15 @@
   /**
    * SegmentedControl - iOS-style segmented button group
    * Uses --theme-* and --prop-* CSS variables for consistent theming.
+   *
+   * The option LIST may change at runtime (the construct picker swaps the turn
+   * palette when the level changes: 4 buttons at L2, 8 at L3). Segments are
+   * keyed and FLIPped so survivors glide + scale into their new geometry
+   * instead of the row snapping, and arrivals pop in. Static option lists —
+   * most consumers — never trigger either.
    */
+  import { flip } from "svelte/animate";
+  import { flipDuration, popIn } from "$lib/shared/transitions/motion";
 
   interface Option {
     value: T;
@@ -53,15 +61,18 @@
 >
   <div class="indicator" style="--index: {selectedIndex}"></div>
 
-  {#each options as option}
+  {#each options as option (option.value)}
     <button
       type="button"
       class="segment"
       class:selected={value === option.value}
       onclick={() => handleSelect(option.value)}
       aria-label={option.label}
+      title={option.label}
       aria-pressed={value === option.value}
       disabled={option.disabled}
+      in:popIn
+      animate:flip={{ duration: flipDuration() }}
     >
       {#if option.icon}
         <i class={option.icon} aria-hidden="true"></i>
@@ -96,7 +107,11 @@
     left: calc(3px + (100% - 6px) / var(--count) * var(--index));
     width: calc((100% - 6px) / var(--count) - 2px);
     border-radius: 6px;
-    transition: left var(--duration-normal, 200ms) ease;
+    /* Width too, not just position: when the option count changes the segments
+       resize, and an un-animated indicator would snap while they glide. */
+    transition:
+      left var(--duration-normal, 200ms) cubic-bezier(0.22, 1, 0.36, 1),
+      width var(--duration-normal, 200ms) cubic-bezier(0.22, 1, 0.36, 1);
     z-index: 0;
   }
 

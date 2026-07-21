@@ -85,20 +85,20 @@
   .level-selector {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.625rem;
   }
 
   .lvl {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.55rem;
+    gap: 0.625rem;
     /* Fixed width per button: the three level names differ in length, and a
        content-sized button would resize the whole bar on selection. */
-    width: 11.75rem;
-    height: var(--min-touch-target, 44px);
-    padding: 0 0.75rem;
-    border-radius: 10px;
+    width: 12.25rem;
+    height: 3rem;
+    padding: 0 0.9rem;
+    border-radius: 12px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     cursor: pointer;
@@ -120,8 +120,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.65rem;
-    height: 1.65rem;
+    width: 1.8rem;
+    height: 1.8rem;
     flex-shrink: 0;
     border-radius: 50%;
     border: 1px solid rgba(0, 0, 0, 0.55);
@@ -129,17 +129,18 @@
     color: var(--lvl-ink);
     font-family: Cambria, Georgia, serif;
     font-weight: 700;
-    font-size: 1rem;
+    font-size: 1.05rem;
     line-height: 1;
     /* Unselected levels keep their colour but sit back. */
     opacity: 0.62;
     transition:
       opacity var(--duration-fast, 0.15s) ease,
+      transform var(--duration-normal, 0.2s) cubic-bezier(0.22, 1, 0.36, 1),
       box-shadow var(--duration-fast, 0.15s) ease;
   }
 
   .name {
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     font-weight: 600;
     letter-spacing: 0.01em;
     white-space: nowrap;
@@ -168,8 +169,11 @@
       0 4px 16px -6px var(--lvl-accent);
   }
 
+  /* The badge steps forward on select — a transform, so it never moves a
+     neighbour. */
   .lvl.selected .numeral {
     opacity: 1;
+    transform: scale(1.1);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--lvl-accent) 55%, transparent);
   }
 
