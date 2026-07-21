@@ -8,25 +8,14 @@
 -->
 <script lang="ts">
   import { Popover } from "bits-ui";
-  import { getSoloPropSaveOrchestrator } from "$lib/features/library/get-solo-prop-save-orchestrator";
-  import {
-    MotionColor,
-    RotationDirection,
-  } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-  import type {
-    AssembleState,
-    BuilderStep,
-  } from "../state/assemble-state.svelte";
-  import type { SoloPropStepData } from "$lib/shared/foundation/domain/models/solo-prop-step-data";
-  import type { SoloPropSaveOrchestrator } from "$lib/features/library/services/solo-prop-save-orchestrator";
-  import { createSoloProp } from "$lib/shared/foundation/services/solo-prop-factory";
+  import { RotationDirection } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import type { AssembleState } from "../state/assemble-state.svelte";
   import OrientationExplainer from "./OrientationExplainer.svelte";
   import GridModePicker from "./GridModePicker.svelte";
   import BuilderMotionSettings from "./BuilderMotionSettings.svelte";
   import BuilderOrientationPicker from "./BuilderOrientationPicker.svelte";
+  import BuilderHandPicker from "./BuilderHandPicker.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
-  import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { stepToMotion } from "../services/builder-step-converter";
   import {
     getBuilderControlVisibility,
     getBuilderPhaseInstruction,
@@ -34,15 +23,8 @@
 
   let { builderState }: { builderState: AssembleState } = $props();
 
-  const handColor = $derived(
-    builderState.activeHand === MotionColor.BLUE
-      ? "var(--prop-blue, #2e8bf0)"
-      : "var(--prop-red, #ed1c24)"
-  );
-
   const isAnimating = $derived(builderState.phase === "animating");
   const isComplete = $derived(builderState.phase === "complete");
-  const isBlueHand = $derived(builderState.activeHand === MotionColor.BLUE);
   const controlVisibility = $derived(
     getBuilderControlVisibility(builderState.phase)
   );
@@ -55,86 +37,6 @@
   // Show action button when sequence can be completed or is complete
   const showActions = $derived(builderState.canFinishHand || isComplete);
   const actionsDimmed = $derived(isAnimating);
-
-  // Pulse the inactive hand's side when it has 0 steps
-  const redNeedsAttention = $derived(
-    isBlueHand &&
-      builderState.redSteps.length === 0 &&
-      builderState.blueSteps.length > 0
-  );
-  const blueNeedsAttention = $derived(
-    !isBlueHand &&
-      builderState.blueSteps.length === 0 &&
-      builderState.redSteps.length > 0
-  );
-
-  // Solo prop save: show when exactly one hand has steps and the other is empty
-  const canSaveSoloProp = $derived(
-    (builderState.blueSteps.length > 0 && builderState.redSteps.length === 0) ||
-      (builderState.redSteps.length > 0 && builderState.blueSteps.length === 0)
-  );
-  let isSavingSoloProp = $state(false);
-  let soloPropSaveError = $state<string | null>(null);
-
-  function builderStepToSoloPropStep(
-    step: BuilderStep,
-    color: MotionColor
-  ): SoloPropStepData {
-    const motion = stepToMotion(step, color, builderState.gridMode);
-    return {
-      startLocation: step.startPosition,
-      endLocation: step.endPosition,
-      startOrientation: step.startOrientation,
-      endOrientation: step.endOrientation,
-      motionType: motion.motionType,
-      rotationDirection: motion.rotationDirection,
-      turns: motion.turns,
-      duration: 1,
-    };
-  }
-
-  async function handleSaveSoloProp(): Promise<void> {
-    if (!canSaveSoloProp || isSavingSoloProp) return;
-
-    const steps =
-      builderState.blueSteps.length > 0
-        ? builderState.blueSteps
-        : builderState.redSteps;
-
-    if (steps.length === 0) return;
-
-    isSavingSoloProp = true;
-    soloPropSaveError = null;
-
-    try {
-      const orchestrator =
-        getSoloPropSaveOrchestrator() as SoloPropSaveOrchestrator;
-
-      const color =
-        builderState.blueSteps.length > 0
-          ? MotionColor.BLUE
-          : MotionColor.RED;
-      const soloPropSteps = steps.map((step) =>
-        builderStepToSoloPropStep(step, color)
-      );
-      const startLocation = steps[0]!.startPosition;
-      const startOrientation = steps[0]!.startOrientation;
-
-      const soloPropData = createSoloProp(
-        soloPropSteps,
-        startLocation,
-        startOrientation
-      );
-
-      await orchestrator.save(soloPropData);
-    } catch (err) {
-      console.error("[BuilderControls] Solo prop save failed:", err);
-      soloPropSaveError = "Couldn't save this prop. Try again.";
-      toast.error(soloPropSaveError);
-    } finally {
-      isSavingSoloProp = false;
-    }
-  }
 
   let oriPopoverOpen = $state(false);
   let explainerOpen = $state(false);
@@ -169,11 +71,6 @@
   const phaseInstruction = $derived(
     getBuilderPhaseInstruction(builderState.phase)
   );
-
-  function toggleHand(): void {
-    const next = isBlueHand ? MotionColor.RED : MotionColor.BLUE;
-    builderState.switchToHand(next);
-  }
 </script>
 
 <!-- Grid overlay -->
@@ -293,45 +190,23 @@
 
   <!-- Bottom bar: hand toggle (left) + Complete/New (right) - mobile only -->
   <div class="bottom-bar">
-    <!-- Hand toggle: single pill with both hands -->
-    <button
-      class="hand-toggle"
-      class:toggle-hidden={!showHandToggle}
-      class:needs-attention-red={redNeedsAttention}
-      class:needs-attention-blue={blueNeedsAttention}
-      onclick={toggleHand}
-      aria-label="Switch hand (Blue: {builderState.blueSteps
-        .length}, Red: {builderState.redSteps.length})"
-      tabindex={showHandToggle ? 0 : -1}
-    >
-      <span class="toggle-side blue-side" class:active-side={isBlueHand}>
-        <span class="toggle-dot blue-dot" aria-hidden="true"></span>
-        <span class="toggle-count">{builderState.blueSteps.length}</span>
-      </span>
-      <span class="toggle-divider" aria-hidden="true"></span>
-      <span class="toggle-side red-side" class:active-side={!isBlueHand}>
-        <span class="toggle-count">{builderState.redSteps.length}</span>
-        <span class="toggle-dot red-dot" aria-hidden="true"></span>
-      </span>
-    </button>
+    {#if showHandToggle}
+      <div class="mobile-hand-picker">
+        <BuilderHandPicker
+          activeHand={builderState.activeHand}
+          blueCount={builderState.blueSteps.length}
+          redCount={builderState.redSteps.length}
+          onchange={(hand) => builderState.switchToHand(hand)}
+        />
+      </div>
+    {/if}
 
-    <!-- Action button: Complete or New or Save Solo Prop -->
+    <!-- Action button: Complete or New -->
     <div
       class="action-slot"
-      class:visible={showActions || canSaveSoloProp}
+      class:visible={showActions}
       class:dimmed={actionsDimmed}
     >
-      {#if canSaveSoloProp}
-        <PanelButton
-          variant="secondary"
-          onclick={() => void handleSaveSoloProp()}
-          disabled={isSavingSoloProp}
-        >
-          <i class="fas fa-download" aria-hidden="true"></i>
-          <span>{isSavingSoloProp ? "Saving..." : "Save Solo"}</span>
-        </PanelButton>
-      {/if}
-
       {#if builderState.canFinishHand}
         <PanelButton
           variant="primary"
@@ -355,21 +230,9 @@
 <!-- Action row: below the grid on desktop only -->
 <div
   class="action-row"
-  class:visible={showActions || canSaveSoloProp}
+  class:visible={showActions}
   class:dimmed={actionsDimmed}
-  style="--hand-color: {handColor}"
 >
-  {#if canSaveSoloProp}
-    <PanelButton
-      variant="secondary"
-      onclick={() => void handleSaveSoloProp()}
-      disabled={isSavingSoloProp}
-    >
-      <i class="fas fa-download" aria-hidden="true"></i>
-      <span>{isSavingSoloProp ? "Saving..." : "Save Solo"}</span>
-    </PanelButton>
-  {/if}
-
   {#if builderState.canFinishHand}
     <PanelButton variant="primary" onclick={() => builderState.finishHand()}>
       <i class="fas fa-check" aria-hidden="true"></i>
@@ -384,10 +247,6 @@
     </PanelButton>
   {/if}
 </div>
-
-{#if soloPropSaveError}
-  <p class="save-error" role="alert">{soloPropSaveError}</p>
-{/if}
 
 <OrientationExplainer bind:isOpen={explainerOpen} />
 
@@ -526,98 +385,9 @@
     }
   }
 
-  /* ── Hand toggle ── */
-  .hand-toggle {
-    display: flex;
-    align-items: center;
-    padding: 0;
-    border-radius: 12px;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    background: var(--theme-panel-bg, rgba(18, 18, 28, 0.98));
-    cursor: pointer;
+  .mobile-hand-picker {
+    width: min(210px, 62vw);
     pointer-events: auto;
-    min-height: var(--min-touch-target, 44px);
-    overflow: hidden;
-    transition:
-      opacity 0.2s ease,
-      border-color 0.2s ease;
-  }
-
-  .hand-toggle.toggle-hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .toggle-side {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 12px;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.4));
-    font-weight: 600;
-    transition:
-      background 0.15s ease,
-      color 0.15s ease;
-  }
-
-  .toggle-side.active-side {
-    color: var(--theme-text, #fff);
-  }
-
-  .blue-side.active-side {
-    background: color-mix(in srgb, var(--prop-blue, #2e8bf0) 15%, transparent);
-  }
-
-  .red-side.active-side {
-    background: color-mix(in srgb, var(--prop-red, #ed1c24) 15%, transparent);
-  }
-
-  .toggle-divider {
-    width: 1px;
-    height: 20px;
-    background: var(--theme-stroke-strong, rgba(255, 255, 255, 0.15));
-    flex-shrink: 0;
-  }
-
-  .toggle-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    opacity: 0.4;
-    transition: opacity 0.15s ease;
-  }
-
-  .active-side .toggle-dot {
-    opacity: 1;
-  }
-
-  .blue-dot {
-    background: var(--prop-blue, #2e8bf0);
-  }
-
-  .red-dot {
-    background: var(--prop-red, #ed1c24);
-  }
-
-  .toggle-count {
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 700;
-    min-width: 14px;
-    text-align: center;
-  }
-
-  /* Pulse the red side when it needs attention */
-  .hand-toggle.needs-attention-red {
-    border-color: color-mix(in srgb, var(--prop-red, #ed1c24) 60%, transparent);
-  }
-
-  .hand-toggle.needs-attention-blue {
-    border-color: color-mix(
-      in srgb,
-      var(--prop-blue, #2e8bf0) 60%,
-      transparent
-    );
   }
 
   /* ── Action slot (mobile) ── */
@@ -675,39 +445,21 @@
   }
 
   /* === Focus indicators === */
-  .inline-trigger:focus-visible,
-  .hand-toggle:focus-visible {
+  .inline-trigger:focus-visible {
     outline: 2px solid var(--theme-text, #ffffff);
     outline-offset: 2px;
-  }
-
-  .save-error {
-    flex: 0 0 auto;
-    margin: 0;
-    min-height: 1.2em;
-    color: var(--semantic-error, var(--prop-red));
-    font-size: var(--font-size-compact, 12px);
-    text-align: center;
   }
 
   /* === Reduced motion === */
   @media (prefers-reduced-motion: reduce) {
     .action-row,
     .inline-trigger,
-    .inline-trigger i,
-    .hand-toggle,
-    .toggle-side,
-    .toggle-dot {
+    .inline-trigger i {
       transition: none;
     }
 
     :global(.assemble-popover-panel) {
       animation: none;
-    }
-
-    .hand-toggle.needs-attention-red,
-    .hand-toggle.needs-attention-blue {
-      border-color: var(--theme-accent, #6366f1);
     }
   }
 </style>

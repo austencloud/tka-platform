@@ -96,14 +96,11 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: center;
     gap: var(--settings-spacing-sm, 8px);
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
-    border-radius: var(--settings-radius-lg, 16px);
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    padding: var(--settings-spacing-sm, 8px);
-    box-shadow: 0 4px 16px var(--theme-shadow, rgba(0, 0, 0, 0.3));
+    width: 100%;
     flex-shrink: 0;
-    min-height: 60px;
+    min-height: 48px;
     transition: opacity 0.2s ease;
   }
 
@@ -119,16 +116,17 @@
 
   .bar-content {
     display: flex;
-    flex: 1 1 390px;
+    flex: 1 1 580px;
     align-items: center;
     justify-content: center;
     gap: var(--settings-spacing-sm, 8px);
+    max-width: 610px;
     min-width: 0;
   }
 
   .orientation-content {
-    max-width: 560px;
-    margin: 0 auto;
+    flex-basis: 390px;
+    max-width: 410px;
   }
 
   .bar-placeholder {
@@ -136,12 +134,10 @@
   }
 
   .bar-label {
-    padding: 0 12px;
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 600;
-    letter-spacing: 0.04em;
+    padding: 0 4px;
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
-    text-transform: uppercase;
     flex-shrink: 0;
   }
 
@@ -155,17 +151,6 @@
   @container tool-panel (max-width: 768px) {
     .control-bar {
       display: none;
-    }
-  }
-
-  @container tool-panel (min-width: 769px) and (max-width: 900px) {
-    .control-bar {
-      min-height: 128px;
-      align-content: center;
-    }
-
-    .bar-content {
-      flex: 0 0 100%;
     }
   }
 

@@ -20,17 +20,29 @@ export type KeyboardAction =
   | { type: "undo" }
   | { type: "finish" };
 
-const NUMPAD_TO_LOCATION: Record<string, GridLocation> = {
-  Numpad7: GridLocation.NORTHWEST,
-  Numpad8: GridLocation.NORTH,
-  Numpad9: GridLocation.NORTHEAST,
-  Numpad4: GridLocation.WEST,
-  Numpad5: GridLocation.CENTER,
-  Numpad6: GridLocation.EAST,
-  Numpad1: GridLocation.SOUTHWEST,
-  Numpad2: GridLocation.SOUTH,
-  Numpad3: GridLocation.SOUTHEAST,
-};
+export interface AssembleNumpadPosition {
+  readonly code: string;
+  readonly key: string;
+  readonly label: string;
+  readonly location: GridLocation;
+}
+
+/** The visible numpad map and keyboard parser share this single layout. */
+export const ASSEMBLE_NUMPAD_POSITIONS: readonly AssembleNumpadPosition[] = [
+  { code: "Numpad7", key: "7", label: "NW", location: GridLocation.NORTHWEST },
+  { code: "Numpad8", key: "8", label: "N", location: GridLocation.NORTH },
+  { code: "Numpad9", key: "9", label: "NE", location: GridLocation.NORTHEAST },
+  { code: "Numpad4", key: "4", label: "W", location: GridLocation.WEST },
+  { code: "Numpad5", key: "5", label: "Center", location: GridLocation.CENTER },
+  { code: "Numpad6", key: "6", label: "E", location: GridLocation.EAST },
+  { code: "Numpad1", key: "1", label: "SW", location: GridLocation.SOUTHWEST },
+  { code: "Numpad2", key: "2", label: "S", location: GridLocation.SOUTH },
+  { code: "Numpad3", key: "3", label: "SE", location: GridLocation.SOUTHEAST },
+] as const;
+
+const NUMPAD_TO_LOCATION = new Map(
+  ASSEMBLE_NUMPAD_POSITIONS.map(({ code, location }) => [code, location])
+);
 
 const CARDINAL: Set<GridLocation> = new Set([
   GridLocation.NORTH,
@@ -46,10 +58,10 @@ const INTERCARDINAL: Set<GridLocation> = new Set([
   GridLocation.NORTHWEST,
 ]);
 
-function isLocationValidForMode(
+export function isAssembleKeyboardLocationAvailable(
   location: GridLocation,
   mode: GridMode,
-  showCenter: boolean,
+  showCenter: boolean
 ): boolean {
   if (location === GridLocation.CENTER) return showCenter;
   switch (mode) {
@@ -66,13 +78,20 @@ function isLocationValidForMode(
 
 export function handleAssembleKeyDown(
   e: KeyboardEvent,
-  context: KeyboardContext,
+  context: KeyboardContext
 ): KeyboardAction | null {
   if (context.isInputFocused || context.isModalOpen) return null;
 
-  const location = NUMPAD_TO_LOCATION[e.code];
+  const location = NUMPAD_TO_LOCATION.get(e.code);
   if (location !== undefined) {
-    if (!isLocationValidForMode(location, context.gridMode, context.showCenter)) return null;
+    if (
+      !isAssembleKeyboardLocationAvailable(
+        location,
+        context.gridMode,
+        context.showCenter
+      )
+    )
+      return null;
     return { type: "position", location };
   }
 

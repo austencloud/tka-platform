@@ -10,9 +10,6 @@
   import BuilderInstructionHeader from "$lib/features/assemble-lab/components/BuilderInstructionHeader.svelte";
   import BuilderControls from "$lib/features/assemble-lab/components/BuilderControls.svelte";
   import InteractiveGrid from "$lib/features/assemble-lab/components/InteractiveGrid.svelte";
-  import BuilderTurnBar from "$lib/features/assemble-lab/components/BuilderTurnBar.svelte";
-  import StepStrip from "$lib/features/assemble-lab/components/StepStrip.svelte";
-  import KeyboardHintStrip from "$lib/features/assemble-lab/components/KeyboardHintStrip.svelte";
   import { attachAssembleKeyboard } from "$lib/features/assemble-lab/services/assemble-keyboard-dispatcher";
   import type { SettingsState } from "$lib/shared/settings/state/settings-state.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
@@ -143,15 +140,6 @@
     </div>
   </div>
 
-  <StepStrip {builderState} />
-
-  <div class="turn-bar-section">
-    {#if builderState.keyboardMode}
-      <KeyboardHintStrip {builderState} />
-    {/if}
-    <BuilderTurnBar {builderState} />
-  </div>
-
   <!-- Beat cap nudge - shown when user tries to exceed their tier's beat limit.
        Backdrop click / Escape dismiss via BaseModal. -->
   <BaseModal
@@ -191,8 +179,7 @@
     gap: var(--settings-spacing-sm, 8px);
   }
 
-  .header-section,
-  .turn-bar-section {
+  .header-section {
     flex-shrink: 0;
   }
 
@@ -257,10 +244,6 @@
     }
 
     .header-section {
-      display: none;
-    }
-
-    .turn-bar-section {
       display: none;
     }
   }

@@ -2,7 +2,7 @@
  * Builder Step Converter
  *
  * Converts visual builder's BuilderStep model into PictographData/MotionData.
- * Extracted from StepStrip.svelte's inline conversion logic.
+ * Shared conversion boundary for Assemble's builder and sequence document.
  */
 
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
