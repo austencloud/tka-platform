@@ -45,6 +45,7 @@
     label: string;
     imageUrl: string;
     isLoaded: boolean;
+    renderFailed?: boolean;
     gridColumn: number;
     gridRow: number;
     duration: number;

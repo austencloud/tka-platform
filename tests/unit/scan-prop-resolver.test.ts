@@ -12,6 +12,7 @@ describe("scan prop resolution", () => {
     expect(parsePropsFromURL(new URLSearchParams("bp=P&rp=fan"))).toEqual({
       bluePropType: PropType.POI,
       redPropType: PropType.FAN,
+      catDogMode: true,
     });
     expect(parsePropTypeFromURLValue("not-a-prop")).toBeUndefined();
   });
@@ -57,7 +58,7 @@ describe("scan prop resolution", () => {
     expect(resolveScanPropConfig(sequence)).toEqual({
       bluePropType: PropType.TRIAD,
       redPropType: PropType.BUUGENG,
-      catDogMode: false,
+      catDogMode: true,
     });
   });
 });

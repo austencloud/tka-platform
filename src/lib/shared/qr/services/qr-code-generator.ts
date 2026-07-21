@@ -17,6 +17,17 @@ import {
   QR_IMAGE_CACHE_SCHEMA,
   type QrImageCache,
 } from "./qr-image-cache";
+import {
+  warmSequenceCells,
+  type WarmOptions,
+  type WarmSequenceCellsResult,
+} from "$lib/shared/render/services/warm-sequence-cells";
+import { resolveScanPropConfig } from "./scan-prop-resolver";
+
+type CellWarmer = (
+  sequence: SequenceData,
+  options: WarmOptions
+) => Promise<WarmSequenceCellsResult>;
 
 /**
  * Style presets for quick styling
@@ -107,7 +118,8 @@ export class QRCodeGenerator {
 
   constructor(
     private readonly shortCodeManager: ShortCodeManager,
-    private readonly imageCache: QrImageCache = getQrImageCache()
+    private readonly imageCache: QrImageCache = getQrImageCache(),
+    private readonly cellWarmer: CellWarmer = warmSequenceCells
   ) {}
 
   /**
@@ -242,13 +254,39 @@ export class QRCodeGenerator {
     sequence: SequenceData,
     options?: QRCodeOptions
   ): Promise<QRCodeResult> {
-    const propOptions = {
+    const explicitCatDogMode =
+      options?.bluePropType && options.redPropType
+        ? options.bluePropType !== options.redPropType
+        : undefined;
+    const propConfig = resolveScanPropConfig(sequence, {
       bluePropType: options?.bluePropType,
       redPropType: options?.redPropType,
+      catDogMode: explicitCatDogMode,
+    });
+    const propOptions = {
+      bluePropType: propConfig.bluePropType,
+      redPropType: propConfig.redPropType,
+      catDogMode: propConfig.catDogMode,
       viewMode: options?.viewMode,
       deckId: options?.deckId,
       deckName: options?.deckName,
     };
+
+    // A printable QR is a promise that its landing page is ready. Confirm the
+    // exact prop pair in both supported card themes before minting or returning
+    // the code; scanners should download these cells, never discover that the
+    // publisher's background warm silently failed and rasterize on a phone.
+    await Promise.all(
+      [true, false].map((isDark) =>
+        this.cellWarmer(sequence, {
+          isDark,
+          bluePropType: propConfig.bluePropType,
+          redPropType: propConfig.redPropType,
+          catDogMode: propConfig.catDogMode,
+          requireComplete: true,
+        })
+      )
+    );
 
     // Every QR is the Firebase short code (tka.run/<code>). The dense "offline"
     // s~ path that baked the whole sequence into the URL is gone — those QRs

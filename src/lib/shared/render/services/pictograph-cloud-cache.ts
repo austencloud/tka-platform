@@ -7,11 +7,12 @@
  *
  * READ PATH IS DIRECT-PROBE (not manifest-gated). A scan card has only a handful
  * of cells, so we just attempt the deterministic public URL: a hit downloads, a
- * miss (404) renders locally + uploads (crowd-source). This gives cross-device
- * benefit immediately — the moment render-at-publish or any prior scanner has
- * uploaded a cell, every later device's probe finds it — with no out-of-band
- * manifest-generation step. Misses are negative-cached for the session so the
- * same absent hash is probed at most once per page load. Never throws.
+ * miss is reported to the scan card as an asset-integrity failure. QR creation
+ * and the admin shortcode backfill are the writers; every later device reads the
+ * deterministic object directly, with no manifest lookup. This guarantees the
+ * asset exists before the code can be generated. Scanner devices never need to
+ * initialize or run the pictograph rasterizer. Misses are negative-cached for
+ * the session so the same absent hash is probed at most once per page load.
  *
  * Storage: pictograph-cells/{hash}.webp
  * (Reads require the Storage bucket's CORS to allow the app origin — same bucket

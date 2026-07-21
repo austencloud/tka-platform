@@ -187,6 +187,8 @@ export interface ShortCodeURLOptions {
   bluePropType?: string;
   /** Red prop type to append to URL (encoded as single char) */
   redPropType?: string;
+  /** Whether blue/red prop overrides are intentionally different. */
+  catDogMode?: boolean;
   /** View mode to encode in URL (e.g., "hsb" = hands-solo-blue) */
   viewMode?: string;
   /** Force-embed the full sequenceData in the shortcode record even when

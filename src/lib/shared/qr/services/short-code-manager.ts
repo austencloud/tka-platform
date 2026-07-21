@@ -233,6 +233,7 @@ export interface ShortCodeData {
    * records may use either compact URL codes ("P") or full values ("poi"). */
   bluePropType?: string;
   redPropType?: string;
+  catDogMode?: boolean;
   /** Read by the /q SSR loader's field mask for OG tags. No writer sets them
    *  yet (nothing in this file, `scripts/create-shortcodes-batch.js`, or the
    *  snapshot function emits either), so they are reserved rather than live —
@@ -599,6 +600,9 @@ export class ShortCodeManager {
     // when a URL is reconstructed without params).
     if (options?.bluePropType) record.bluePropType = options.bluePropType;
     if (options?.redPropType) record.redPropType = options.redPropType;
+    if (options?.catDogMode !== undefined) {
+      record.catDogMode = options.catDogMode;
+    }
 
     const shouldEmbed = options?.embedSequenceData || !sequence.ownerId;
     if (shouldEmbed && sequence.steps && sequence.steps.length > 0) {

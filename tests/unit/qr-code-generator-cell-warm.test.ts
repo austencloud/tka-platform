@@ -1,0 +1,101 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const getRawData = vi
+  .fn()
+  .mockResolvedValue(Buffer.from("<svg xmlns='http://www.w3.org/2000/svg'/>"));
+vi.mock("qr-code-styling", () => ({
+  default: class QRCodeStylingMock {
+    getRawData = getRawData;
+  },
+}));
+
+vi.mock("$lib/shared/render/services/warm-sequence-cells", () => ({
+  warmSequenceCells: vi.fn(),
+}));
+
+import { QRCodeGenerator } from "$lib/shared/qr/services/qr-code-generator";
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+
+const sequence = {
+  id: "sequence-1",
+  word: "AB",
+  steps: [{ letter: "A", motions: {} }],
+} as unknown as SequenceData;
+
+const imageCache = {
+  get: vi.fn().mockResolvedValue(null),
+  set: vi.fn().mockResolvedValue(undefined),
+};
+
+describe("QRCodeGenerator canonical cell readiness", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    imageCache.get.mockResolvedValue(null);
+  });
+
+  it("verifies both themes with the printed prop pair before creating a code", async () => {
+    const events: string[] = [];
+    const createShortCode = vi.fn(async () => {
+      events.push("shortcode");
+      return { code: "ABCD", url: "https://tka.run/ABCD", isNew: true };
+    });
+    const warm = vi.fn(async (_sequence, options) => {
+      events.push(options.isDark ? "warm-dark" : "warm-light");
+      return { total: 2, ready: 2, hashes: [], failures: [] };
+    });
+    const generator = new QRCodeGenerator(
+      { createShortCode } as never,
+      imageCache as never,
+      warm
+    );
+
+    await generator.generateForSequence(sequence, {
+      bluePropType: PropType.POI,
+      redPropType: PropType.FAN,
+    });
+
+    expect(warm).toHaveBeenCalledTimes(2);
+    expect(warm).toHaveBeenNthCalledWith(
+      1,
+      sequence,
+      expect.objectContaining({
+        isDark: true,
+        bluePropType: PropType.POI,
+        redPropType: PropType.FAN,
+        catDogMode: true,
+        requireComplete: true,
+      })
+    );
+    expect(warm).toHaveBeenNthCalledWith(
+      2,
+      sequence,
+      expect.objectContaining({ isDark: false, requireComplete: true })
+    );
+    expect(createShortCode).toHaveBeenCalledWith(
+      sequence,
+      expect.objectContaining({
+        bluePropType: PropType.POI,
+        redPropType: PropType.FAN,
+        catDogMode: true,
+      })
+    );
+    expect(events).toEqual(["warm-dark", "warm-light", "shortcode"]);
+  });
+
+  it("does not create or render a QR when canonical assets are incomplete", async () => {
+    const createShortCode = vi.fn();
+    const warm = vi.fn().mockRejectedValue(new Error("assets incomplete"));
+    const generator = new QRCodeGenerator(
+      { createShortCode } as never,
+      imageCache as never,
+      warm
+    );
+
+    await expect(generator.generateForSequence(sequence)).rejects.toThrow(
+      "assets incomplete"
+    );
+    expect(createShortCode).not.toHaveBeenCalled();
+    expect(getRawData).not.toHaveBeenCalled();
+  });
+});

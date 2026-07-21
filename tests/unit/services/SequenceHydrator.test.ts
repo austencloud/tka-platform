@@ -14,7 +14,10 @@ import {
   createSequenceData,
   type SequenceData,
 } from "$lib/shared/foundation/domain/models/sequence-data";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
+import {
+  createMotionData,
+  isVisibleMotion,
+} from "$lib/shared/pictograph/shared/domain/models/motion-data";
 import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
 import {
   MotionType,
@@ -179,6 +182,45 @@ describe("hydrateSequence — encode/decode round-trip", () => {
     expect(hydrated.isCircular).toBe(false);
 
     expect(hydrated.metadata._hydratedAt).toBeTypeOf("number");
+  });
+
+  it("replaces an encoded placeholder start with beat one's visible prop state", async () => {
+    const original = createSequenceData({
+      word: "",
+      name: "",
+      steps: buildDiamondSequence().steps,
+    });
+
+    const { encoded } = encodeSequenceWithCompression(original);
+    const decoded = decodeSequenceWithCompression(encoded);
+
+    expect(decoded.startPosition).toBeTruthy();
+    expect(isVisibleMotion(decoded.startPosition?.motions.blue)).toBe(false);
+    expect(isVisibleMotion(decoded.startPosition?.motions.red)).toBe(false);
+
+    const hydrated = await hydrateSequence(decoded, { loopDetector });
+    const firstStep = hydrated.steps[0]!;
+    const start = hydrated.startPosition!;
+
+    expect(isVisibleMotion(start.motions.blue)).toBe(true);
+    expect(isVisibleMotion(start.motions.red)).toBe(true);
+    expect(start.motions.blue?.motionType).toBe(MotionType.STATIC);
+    expect(start.motions.red?.motionType).toBe(MotionType.STATIC);
+    expect(start.motions.blue?.startLocation).toBe(
+      firstStep.motions.blue.startLocation
+    );
+    expect(start.motions.red?.startLocation).toBe(
+      firstStep.motions.red.startLocation
+    );
+    expect(start.motions.blue?.startOrientation).toBe(
+      firstStep.motions.blue.startOrientation
+    );
+    expect(start.motions.red?.startOrientation).toBe(
+      firstStep.motions.red.startOrientation
+    );
+    expect(start.motions.blue?.propPlacementData).toBeTruthy();
+    expect(start.motions.red?.propPlacementData).toBeTruthy();
+    expect(hydrated.startingPosition).toEqual(start);
   });
 
   it("preserves fractional turns (0.5) through encode → decode", () => {

@@ -189,6 +189,7 @@
     label: string;          // "Start" or step number
     imageUrl: string;       // Rendered image URL (current mode only)
     isLoaded: boolean;      // Whether the real image has loaded (false = show spinner)
+    renderFailed?: boolean; // Cloud-only scan miss: settled, but no image exists
     gridColumn: number;     // 1-based CSS grid column
     gridRow: number;        // 1-based CSS grid row
     duration: number;       // Duration units (1.0 = standard)
@@ -612,6 +613,7 @@
       // context), so a cold scanner downloads pre-rendered cells instead of
       // rasterizing. Unset everywhere else => local render path, no extra latency.
       probeCloud: cloudProbeEnabled,
+      cloudOnly: cloudProbeEnabled,
     };
   }
 
@@ -950,20 +952,31 @@
               onRenderProgress?.(loadedCount, totalCellCount);
             }
           } catch (err) {
-            console.warn("[ChoreoCard] worker render failed for cell", task.cellIndex, err);
+            console.warn("[ChoreoCard] cell image failed for cell", task.cellIndex, err);
+            const current = cells[cellArrayIndex];
+            if (current && current.index === task.cellIndex && !current.isLoaded && !current.renderFailed) {
+              cells[cellArrayIndex] = { ...current, renderFailed: true };
+              // A failed cloud-only lookup is settled too. This removes the
+              // indefinite spinner and lets scan autoplay wait for every lookup.
+              loadedCount++;
+              onRenderProgress?.(loadedCount, totalCellCount);
+            }
           }
         }));
       }
 
-      // Store in global cache for reuse across component remounts
-      storePreviewInCache(cacheKey, {
-        cells: [...cells],
-        columns: cols,
-        rows: rws,
-        durationRows: computedDurationRows,
-        hasMixedDurations: mixed,
-        durationColCount,
-      }, cells);
+      // Never cache an integrity failure as a successful preview. A later retry
+      // must probe the cloud again instead of adopting a blank global-cache hit.
+      if (cells.every((cell) => cell.isLoaded)) {
+        storePreviewInCache(cacheKey, {
+          cells: [...cells],
+          columns: cols,
+          rows: rws,
+          durationRows: computedDurationRows,
+          hasMixedDurations: mixed,
+          durationColCount,
+        }, cells);
+      }
 
       // Now safe to revoke old blob URLs - new ones are in the DOM
       for (const url of oldBlobUrls) {

@@ -209,6 +209,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   import { calculateThumbnailAspectRatio } from "$lib/shared/render/services/layout-calculator";
   import { loadViewMode } from "$lib/shared/sequence-viewer/services/sequence-modal-persistence";
   import { cellPreWarmer } from "$lib/shared/sequence-viewer/services/cell-pre-warmer";
+  import { getScanCardCloudProbe } from "$lib/shared/sequence-viewer/scan-card-cloud-context";
+  import { isViewerReadyToAutoplay } from "$lib/shared/sequence-viewer/services/viewer-autoplay-readiness";
   import { createModalAccessibilityHelper } from "$lib/shared/sequence-viewer/services/modal-accessibility-helper.svelte";
   import { saveSequenceHandoff } from "$lib/shared/coordinators/sequence-handoff.svelte";
   import type { ShareURLMetadata } from "$lib/shared/navigation/services/types";
@@ -360,6 +362,8 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
   let cellsLoaded = $state(0);
   let totalCells = $state(0);
+  let autoplayReadyTimer: ReturnType<typeof setInterval> | null = null;
+  const cloudBackedScan = getScanCardCloudProbe();
 
   function handleRenderProgress(loaded: number, total: number) {
     cellsLoaded = loaded;
@@ -529,6 +533,7 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
   });
 
   onDestroy(() => {
+    if (autoplayReadyTimer !== null) clearInterval(autoplayReadyTimer);
     playback.stopPracticeIfActive();
     keydownCleanup?.();
     imageCompositionCleanup?.();
@@ -653,7 +658,11 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
       const loadedSequence = await hydrateSequenceData(seq);
       if (!loadedSequence) throw new Error("Failed to load sequence");
 
-      cellPreWarmer.preWarmSequence(loadedSequence, "user-blocking");
+      // A scan card is guaranteed at QR creation time to have canonical cloud
+      // assets. Do not launch the local worker pre-warmer on the scanner's phone.
+      if (!cloudBackedScan) {
+        cellPreWarmer.preWarmSequence(loadedSequence, "user-blocking");
+      }
 
       modalAnimationState.setShouldLoop(true);
       modalAnimationState.setPlaybackMode("continuous");
@@ -667,16 +676,20 @@ import { hydrateSequence as hydrateSequenceData } from "$lib/shared/sequence-vie
 
       playbackControllerRef.setSpeed(playback.bpmLocal / 60);
 
-      const MINIMUM_CELLS = 4;
-      const MAX_WAIT_MS = 500;
       const CHECK_INTERVAL_MS = 50;
       const startTime = Date.now();
 
-      const checkReady = setInterval(() => {
-        const enough = cellsLoaded >= Math.min(MINIMUM_CELLS, totalCells) && totalCells > 0;
-        const timedOut = Date.now() - startTime >= MAX_WAIT_MS;
-        if (enough || timedOut) {
-          clearInterval(checkReady);
+      if (autoplayReadyTimer !== null) clearInterval(autoplayReadyTimer);
+      autoplayReadyTimer = setInterval(() => {
+        const ready = isViewerReadyToAutoplay({
+          cloudBackedScan,
+          loadedCells: cellsLoaded,
+          totalCells,
+          elapsedMs: Date.now() - startTime,
+        });
+        if (ready) {
+          clearInterval(autoplayReadyTimer!);
+          autoplayReadyTimer = null;
           if (viewMode !== "image") {
             playbackControllerRef?.togglePlayback();
           }

@@ -1,20 +1,25 @@
 /**
  * Admin warm pass for the canonical scan-card cell store.
  *
- * Drives warmSequenceCells (the exact render-at-publish path the save flow
- * uses — dark mode, intendedProp props, canonical visibility) over every
- * public sequence, so /q scanners download pre-rendered cells instead of
- * rasterizing on their phones. Mirroring the save-path call keeps warmed
- * hashes byte-identical to what a scanner derives.
+ * Drives warmSequenceCells over every durable shortcode, including private,
+ * unlisted, embedded, and legacy physical cards. Each record is resolved and
+ * hydrated through the same path as /q, then warmed with its exact per-hand
+ * props in both supported card themes.
  *
  * Idempotent: renderCell probes the cloud store per cell and only renders +
  * uploads misses (including the IDB-hit upload backfill), so re-runs are
  * cheap. Cancellation takes effect between sequences.
  */
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
 import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
-import { warmSequenceCells } from "./warm-sequence-cells";
+import {
+  warmSequenceCells,
+  type WarmOptions,
+  type WarmSequenceCellsResult,
+} from "$lib/shared/render/services/warm-sequence-cells";
+import type { ShortCodeResolution } from "$lib/shared/qr/services/short-code-manager";
+import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
+import { resolveScanPropConfig } from "$lib/shared/qr/services/scan-prop-resolver";
 
 export interface CellWarmProgress {
   /** Sequences fully processed. */
@@ -34,11 +39,33 @@ export interface CellWarmHandle {
 }
 
 export interface CellWarmDeps {
-  loader?: Pick<PublicSequencesLoader, "loadSequenceMetadata">;
+  listCodes?: () => Promise<readonly string[]>;
+  resolveCode?: (code: string) => Promise<ShortCodeResolution>;
+  warmCells?: (
+    sequence: SequenceData,
+    options: WarmOptions
+  ) => Promise<WarmSequenceCellsResult>;
   /** Concurrent sequences. Cells within a sequence already render in
    *  parallel (bounded by the worker pool), so this mainly controls how much
    *  probe/upload network latency overlaps with rendering. */
   concurrency?: number;
+}
+
+async function listAllShortCodes(): Promise<readonly string[]> {
+  const [{ collection, getDocs }, { getFirestoreInstance }] = await Promise.all([
+    import("firebase/firestore"),
+    import("$lib/shared/auth/firebase"),
+  ]);
+  const firestore = await getFirestoreInstance();
+  const snapshot = await getDocs(collection(firestore, "shortcodes"));
+  return snapshot.docs.map((doc) => doc.id);
+}
+
+async function resolveShortCode(code: string): Promise<ShortCodeResolution> {
+  const { getShortCodeManager } = await import(
+    "$lib/shared/qr/get-short-code-manager"
+  );
+  return getShortCodeManager().resolveShortCodeWithRecord(code);
 }
 
 export function startScanCellWarm(
@@ -56,12 +83,10 @@ export function startScanCellWarm(
   };
 
   const promise = (async (): Promise<CellWarmProgress> => {
-    const loader =
-      deps?.loader ??
-      (await import("$lib/shared/browse/get-browse-loader")).getBrowseLoader();
-
-    const sequences: SequenceData[] = [...(await loader.loadSequenceMetadata())];
-    progress.total = sequences.length;
+    const codes = [...(await (deps?.listCodes ?? listAllShortCodes)())];
+    const resolveCode = deps?.resolveCode ?? resolveShortCode;
+    const warmCells = deps?.warmCells ?? warmSequenceCells;
+    progress.total = codes.length;
     onProgress({ ...progress });
 
     const concurrency = Math.max(1, deps?.concurrency ?? 4);
@@ -70,30 +95,43 @@ export function startScanCellWarm(
     const runWorker = async (): Promise<void> => {
       while (!cancelled) {
         const idx = next++;
-        if (idx >= sequences.length) return;
-        const seq = sequences[idx];
-        if (!seq) continue;
+        if (idx >= codes.length) return;
+        const code = codes[idx];
+        if (!code) continue;
 
         try {
-          const ip = seq.intendedProp;
-          await warmSequenceCells(seq, {
-            isDark: true,
-            bluePropType: ip?.bluePropType,
-            redPropType: ip?.redPropType,
-            catDogMode: ip?.catDogMode ?? false,
+          const resolution = await resolveCode(code);
+          if (!resolution.sequence) {
+            throw new Error(`Shortcode ${code} did not resolve`);
+          }
+          const sequence = await hydrateSequence(resolution.sequence, {
+            loopDetector: null,
           });
+          const propConfig = resolveScanPropConfig(sequence, resolution.record);
+          await Promise.all(
+            [true, false].map((isDark) =>
+              warmCells(sequence, {
+                isDark,
+                ...propConfig,
+                requireComplete: true,
+              })
+            )
+          );
+          progress.current = simplifyRepeatedWord(
+            sequence.word || sequence.name || code
+          );
         } catch {
           progress.failed++;
+          progress.current = code;
         }
 
         progress.done++;
-        progress.current = simplifyRepeatedWord(seq.word || seq.name || seq.id);
         onProgress({ ...progress });
       }
     };
 
     const workers = Array.from(
-      { length: Math.min(concurrency, Math.max(sequences.length, 1)) },
+      { length: Math.min(concurrency, Math.max(codes.length, 1)) },
       () => runWorker(),
     );
     await Promise.all(workers);

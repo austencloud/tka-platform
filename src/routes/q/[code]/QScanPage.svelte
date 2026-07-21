@@ -14,7 +14,7 @@
 
   Flow:
   1. Resolve short code -> SequenceData
-  2. Lazy-load SequenceViewerOrchestrator + SequenceViewerShell + GlyphCache
+  2. Lazy-load SequenceViewerOrchestrator + SequenceViewerShell
      (parallel with step 1)
   3. Mount orchestrator -> shell (full viewer chrome)
 -->
@@ -822,11 +822,9 @@
       const genuine = !isInlineEncoded(shortCode) && isGenuineScan(shortCode);
       const scanPrintId = page.url.searchParams.get("pid") || null;
 
-      // Run the orchestrator/split-pane chunk loads CONCURRENTLY with the full
-      // glyph-cache init instead of chaining the orchestrator behind it. Glyph
-      // init stays awaited — a cold-scan local cell render (cloud miss) needs
-      // the cache populated before the card paints — but it no longer serializes
-      // in front of the chunk import, trimming the critical path by the import time.
+      // Load the shortcode and viewer chunks concurrently. Scan-card cells are
+      // cloud-only, so the phone no longer initializes the complete render glyph
+      // cache or starts a local raster worker before first paint.
       //
       // resolveShortCodeWithRecord, not resolveShortCode: the record is the only
       // client-side source of deck attribution, and it costs nothing extra —
@@ -835,7 +833,6 @@
         shortCodeManager.resolveShortCodeWithRecord(shortCode),
         import("$lib/shared/sequence-viewer/components/SequenceViewerOrchestrator.svelte"),
         import("$lib/shared/sequence-viewer/components/SequenceViewerShell.svelte"),
-        getGlyphCache().initialize(),
       ]);
 
       const record = resolution.record;
@@ -1033,7 +1030,7 @@
     <div class="center-content">
       {#if glyphsReady && loaderWord}
         <div class="word-loader">
-          <TKAWordGlyph word={loaderWord} height={40} darkMode />
+          <TKAWordGlyph word={loaderWord} height={40} darkMode fitToParent />
         </div>
         <div class="loader-progress">
           <ProgressBar percent={loadProgress} height={4} />
@@ -1154,7 +1151,7 @@
             {#snippet title()}
               <!-- displayWord, not rawWord: the glyph row is read by a human,
                    and a repeated word always renders in its smallest form. -->
-              <TKAWordGlyph word={displayWord} height={28} darkMode />
+              <TKAWordGlyph word={displayWord} height={28} darkMode fitToParent />
             {/snippet}
           </ExportTakeover>
         </div>
@@ -1255,6 +1252,7 @@
   .word-loader {
     display: flex;
     justify-content: center;
+    width: 100%;
     animation: word-pulse 1.4s ease-in-out infinite;
   }
 

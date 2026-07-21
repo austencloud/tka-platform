@@ -68,12 +68,21 @@ export function resolveScanPropConfig(
     motionProps(sequence),
   ];
   const candidates = [...scanCandidates, ...sequenceCandidates];
+  const bluePropType =
+    propFromCandidates("bluePropType", candidates) ?? PropType.STAFF;
+  const redPropType =
+    propFromCandidates("redPropType", candidates) ?? PropType.STAFF;
+  const scanCatDogMode = catDogFromCandidates(scanCandidates);
+  const sequenceCatDogMode = catDogFromCandidates(sequenceCandidates);
 
   return {
-    bluePropType:
-      propFromCandidates("bluePropType", candidates) ?? PropType.STAFF,
-    redPropType:
-      propFromCandidates("redPropType", candidates) ?? PropType.STAFF,
-    catDogMode: catDogFromCandidates(candidates) ?? false,
+    bluePropType,
+    redPropType,
+    // A printed per-hand override is stronger evidence than an older
+    // sequence-level false flag. Without this inference, mixed-prop QR URLs
+    // resolved both values correctly and then rendered the red hand as blue.
+    catDogMode:
+      scanCatDogMode ??
+      (bluePropType !== redPropType ? true : (sequenceCatDogMode ?? false)),
   };
 }

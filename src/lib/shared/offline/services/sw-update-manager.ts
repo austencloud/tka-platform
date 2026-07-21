@@ -35,10 +35,14 @@ export function createSwUpdateManager(deps: SwUpdateManagerDeps): () => void {
   const reload = deps.reload ?? (() => location.reload());
 
   let notified = false;
+  let activationRequested = false;
   let refreshing = false;
 
   const apply = () => {
-    registration.waiting?.postMessage({ type: "SKIP_WAITING" });
+    const waiting = registration.waiting;
+    if (!waiting) return;
+    activationRequested = true;
+    waiting.postMessage({ type: "SKIP_WAITING" });
   };
 
   const notify = () => {
@@ -69,10 +73,12 @@ export function createSwUpdateManager(deps: SwUpdateManagerDeps): () => void {
   };
   registration.addEventListener("updatefound", onUpdateFound);
 
-  // The new worker took control (after SKIP_WAITING) → reload once so the page
-  // comes back on fresh code + fresh caches. Guard against a double-fire.
+  // A controllerchange also fires when the very first worker calls
+  // clients.claim(). Reload only after this manager explicitly requested a
+  // waiting update's activation; otherwise a first-time visitor gets bounced
+  // back through the route's loading screen after the page has already opened.
   const onControllerChange = () => {
-    if (refreshing) return;
+    if (!activationRequested || refreshing) return;
     refreshing = true;
     reload();
   };

@@ -64,6 +64,10 @@ function importSpecifierLines(source: string): string[] {
 }
 
 const shellSource = read(SHELL_PATH);
+const scanSource = read("src/routes/q/[code]/QScanPage.svelte");
+const cardHeaderSource = read(
+  "src/lib/shared/sequence-viewer/components/CardHeader.svelte"
+);
 const hostEntries = Object.entries(HOSTS).map(
   ([name, rels]) => [name, rels.map(read).join("\n")] as const,
 );
@@ -73,6 +77,13 @@ describe("SequenceViewerShell host contract", () => {
     expect(shellSource).toContain("exportOverrides");
     expect(shellSource).toContain("openAppHref");
     expect(shellSource).toContain("startInSplit");
+  });
+
+  it("fits glyph titles at both scan entry and card-header boundaries", () => {
+    expect(scanSource.match(/fitToParent/g)).toHaveLength(2);
+    expect(cardHeaderSource).toMatch(
+      /<TKAWordGlyph[\s\S]*?fitToParent[\s\S]*?\/>/
+    );
   });
 
   it.each(hostEntries)("%s renders SequenceViewerShell", (_name, source) => {

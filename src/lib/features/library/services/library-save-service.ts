@@ -14,7 +14,7 @@
  */
 
 import { getErrorHandler } from "$lib/shared/application/get-error-handler";
-import { warmSequenceCells } from "./warm-sequence-cells";
+import { warmSequenceCells } from "$lib/shared/render/services/warm-sequence-cells";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { SequenceVisibility } from "$lib/shared/library/domain/models/library-sequence";
 import { findTagByName, createUserTag } from "./tag-manager";
