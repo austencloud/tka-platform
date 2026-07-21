@@ -90,7 +90,7 @@
   // the count that maximizes cell size for the measured stage — fewer columns
   // (more rows) when the stage is tall, more when it's wide — so the pictographs
   // fill the card instead of shrinking into one thin autoFit row.
-  const STAGE_COL_CANDIDATES = [2, 4, 6, 8];
+  const STAGE_COL_CANDIDATES = [2, 4, 6, 8] as const;
   function bestStageCols(w: number, h: number, steps: number): number {
     if (w <= 0 || h <= 0 || steps <= 0) return Math.min(4, Math.max(1, steps));
     let best = Math.min(STAGE_COL_CANDIDATES[0], steps);

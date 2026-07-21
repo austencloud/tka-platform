@@ -35,7 +35,7 @@
   const SPLIT_KEY = "tka-fuse-splits"; // JSON map: deviceBucket -> px
   const MIN_LEFT = 340; // path column never narrower than this
   const CANVAS_FLOOR = 560; // canvas never narrower than this
-  const STEP_COL_CANDIDATES = [2, 4, 6, 8]; // step columns to weigh (+1 start col)
+  const STEP_COL_CANDIDATES = [2, 4, 6, 8] as const; // step columns to weigh (+1 start col)
   const CARD_GAP = 14; // vertical gap between the stacked blue/red cards
   const CARD_HPAD = 44; // card horizontal padding, both sides
   const CARD_CHROME_V = 96; // card vertical chrome: padding + the Back/Shuffle row
