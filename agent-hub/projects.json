@@ -1,0 +1,20 @@
+{
+  "$comment": [
+    "Projects that get an agent-hub taskbar launcher.",
+    "path: absolute, or relative to this repo's parent directory (so E:\\tka-platform and C:\\code\\tka-platform both work).",
+    "icon: filename in agent-hub/icons/. Missing icon or missing path is skipped, not an error.",
+    "autoDiscover in install.ps1 also picks up any sibling git repo not listed here."
+  ],
+  "projects": [
+    { "name": "TKA Platform",          "path": "tka-platform",          "icon": "tka-platform.ico" },
+    { "name": "Cirque Aflame",         "path": "cirque-aflame",         "icon": "cirque-aflame.ico" },
+    { "name": "Flow Arts Wiki",        "path": "flow-arts-wiki",        "icon": "flowartswiki.ico" },
+    { "name": "Flowtrails",            "path": "flowtrails",            "icon": "flowtrails.ico" },
+    { "name": "Juggle Log",            "path": "juggle-log",            "icon": "juggle-log.ico" },
+    { "name": "Orion Cloud Creations", "path": "orion-cloud-creations", "icon": "occ.ico" },
+    { "name": "Shared Packages",       "path": "shared-packages",       "icon": "shared-packages.ico" },
+    { "name": "Tabscroll",             "path": "tabscroll",             "icon": "tabscroll.ico" },
+    { "name": "Voice Typer",           "path": "voice-typer",           "icon": "voice-typer.ico" },
+    { "name": "Yoga Composer",         "path": "yoga-composer",         "icon": "yoga-composer.ico" }
+  ]
+}

@@ -1,0 +1,5 @@
+# Windows-only tooling: keep CRLF so batch files and PowerShell behave on checkout.
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.cs  text eol=crlf
+*.ico binary
