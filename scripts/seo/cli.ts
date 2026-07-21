@@ -25,6 +25,7 @@ import {
 } from "./search-console";
 import { buildSeoScorecard, writeScorecardFiles } from "./scorecard";
 import { SeoWarehouse, type AiOverviewObservation } from "./warehouse";
+import { publishSeoDashboardSnapshot } from "./dashboard-snapshot";
 
 type Flags = Record<string, string | boolean>;
 
@@ -605,8 +606,9 @@ Commands:
       generatedDate,
       dataThrough: searchDate,
     });
+    await publishSeoDashboardSnapshot(result.scorecard);
     process.stdout.write(
-      `Daily collection completed: ${searchDays} Search Console days, ${postHogDays} PostHog days, and ${inspectionCount} URL inspections; scorecard phase is ${result.scorecard.phase}.\n`
+      `Daily collection completed: ${searchDays} Search Console days, ${postHogDays} PostHog days, and ${inspectionCount} URL inspections; scorecard phase is ${result.scorecard.phase}; admin snapshot published.\n`
     );
     return;
   }

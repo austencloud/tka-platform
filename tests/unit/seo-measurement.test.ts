@@ -22,6 +22,11 @@ import {
 import { getPostHogDashboardSpec } from "../../scripts/seo/provision-posthog-dashboard";
 import { buildSeoScorecard } from "../../scripts/seo/scorecard";
 import {
+  buildSeoDashboardSnapshot,
+  buildSeoSnapshotEvent,
+} from "../../scripts/seo/dashboard-snapshot";
+import { parseSeoHistoryRows } from "../../src/lib/features/admin/domain/models/seo-dashboard-model";
+import {
   buildBulkSearchQuery,
   getWarehouseTableFieldNames,
 } from "../../scripts/seo/warehouse";
@@ -49,6 +54,60 @@ function searchRow(
 }
 
 describe("SEO measurement math", () => {
+  it("normalizes, sorts, and deduplicates dashboard history rows", () => {
+    const history = parseSeoHistoryRows([
+      [
+        "2026-06-08T02:00:00.000Z",
+        "2026-06-08",
+        "primary_collecting",
+        "collecting",
+        "8.2",
+        "140",
+        "0.4",
+        null,
+        "0.8",
+      ],
+      [
+        "2026-06-07T02:00:00.000Z",
+        "2026-06-07",
+        "primary_collecting",
+        "collecting",
+        "9.1",
+        "100",
+        "0.25",
+        null,
+        "0.6",
+      ],
+      [
+        "2026-06-08T03:00:00.000Z",
+        "2026-06-08",
+        "primary_complete",
+        "primary_target_met",
+        "7.4",
+        "160",
+        "0.5",
+        "1",
+        "1",
+      ],
+    ]);
+
+    expect(history).toHaveLength(2);
+    expect(history.map((point) => point.generatedDate)).toEqual([
+      "2026-06-07",
+      "2026-06-08",
+    ]);
+    expect(history[1]).toMatchObject({
+      capturedAt: "2026-06-08T03:00:00.000Z",
+      phase: "primary_complete",
+      decisionStatus: "primary_target_met",
+      headTermPosition: 7.4,
+      treatmentImpressions: 160,
+      organicActivationRate: 0.5,
+      aiCitationRate: 1,
+      indexedRate: 1,
+    });
+  });
+
   it("uses Pacific calendar dates across daylight-saving boundaries", () => {
     expect(
       calendarDateInTimeZone(
@@ -483,6 +542,31 @@ describe("SEO experiment decision", () => {
       sampleComplete: true,
       freshForEvaluation: true,
     });
+
+    const dashboard = buildSeoDashboardSnapshot(scorecard);
+    expect(dashboard).toMatchObject({
+      currentWindow: "primary",
+      phase: "primary_complete",
+      decision: { status: "primary_target_met" },
+      headTerm: { current: { position: 2 } },
+      cohorts: { frozen: true, frozenControlCount: 1 },
+    });
+    expect(dashboard.search.controlAdjusted?.impressionLift).toBe(1);
+    const event = buildSeoSnapshotEvent(dashboard, "test-project-token");
+    expect(event).toMatchObject({
+      event: "seo_measurement_snapshot",
+      distinct_id: "seo-measurement",
+      properties: {
+        $process_person_profile: false,
+        generated_date: "2026-06-07",
+        head_term_position: 2,
+      },
+    });
+    expect(
+      JSON.parse(
+        String((event.properties as Record<string, unknown>).snapshot_json)
+      )
+    ).toEqual(dashboard);
 
     const scorecardWithSecondCitation = buildSeoScorecard({
       ...scorecardInput,

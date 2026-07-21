@@ -22,6 +22,10 @@
     $state(null);
   let postHogError = $state(false);
 
+  let SeoCommandCenter: typeof import("./seo/SeoCommandCenter.svelte").default | null =
+    $state(null);
+  let seoError = $state(false);
+
   // Lazy load Pulse Dashboard (live visitor activity)
   let PulseDashboard: typeof import("./pulse/PulseDashboard.svelte").default | null =
     $state(null);
@@ -51,6 +55,18 @@
       });
   }
 
+  function loadSeo() {
+    seoError = false;
+    import("./seo/SeoCommandCenter.svelte")
+      .then((mod) => {
+        SeoCommandCenter = mod.default;
+      })
+      .catch((err) => {
+        console.error("Failed to load SEO Command Center:", err);
+        seoError = true;
+      });
+  }
+
   function loadPulse() {
     pulseError = false;
     import("./pulse/PulseDashboard.svelte")
@@ -70,6 +86,10 @@
 
     if (activeSection === "analytics" && !PostHogDashboard && !postHogError) {
       loadPostHog();
+    }
+
+    if (activeSection === "seo" && !SeoCommandCenter && !seoError) {
+      loadSeo();
     }
 
     if ((!activeSection || activeSection === "pulse") && !PulseDashboard && !pulseError) {
@@ -197,6 +217,26 @@
             </div>
           {/if}
         </div>
+      {:else if activeSection === "seo"}
+        <div id="seo-panel" role="tabpanel" aria-labelledby="seo-tab">
+          {#if SeoCommandCenter}
+            <SeoCommandCenter />
+          {:else if seoError}
+            <div class="error-state" role="alert">
+              <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+              <p>Failed to load SEO Command Center.</p>
+              <button class="retry-button" onclick={loadSeo}>
+                <i class="fas fa-rotate-right" aria-hidden="true"></i>
+                Retry
+              </button>
+            </div>
+          {:else}
+            <div class="loading-state">
+              <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+              <p>Loading SEO evidence...</p>
+            </div>
+          {/if}
+        </div>
       {/if}
     </main>
   {/if}
@@ -306,6 +346,10 @@
 
   /* Pulse manages its own internal scroll */
   #pulse-panel {
+    height: 100%;
+  }
+
+  #seo-panel {
     height: 100%;
   }
 </style>

@@ -4,7 +4,7 @@
  *
  * POST /api/admin/analytics
  * Per-user: { type: "engagement" | "activity" | "content" | "sessions", userId: string, period?, limit? }
- * Global (Pulse): { type: "pulse-overview" | "pulse-breakdown" | "pulse-feed" | "pulse-live", dimension?, limit? }
+ * Global: Pulse queries plus { type: "seo-scorecard" | "seo-history" }
  *
  * Requires admin role.
  */
@@ -26,7 +26,9 @@ type QueryType =
   | "pulse-overview"
   | "pulse-breakdown"
   | "pulse-feed"
-  | "pulse-live";
+  | "pulse-live"
+  | "seo-scorecard"
+  | "seo-history";
 type TimePeriod = "today" | "week" | "month" | "all";
 type PulseDimension = "country" | "city" | "referrer" | "device";
 
@@ -36,6 +38,8 @@ const GLOBAL_QUERY_TYPES: ReadonlySet<string> = new Set([
   "pulse-breakdown",
   "pulse-feed",
   "pulse-live",
+  "seo-scorecard",
+  "seo-history",
 ]);
 
 /**
@@ -275,6 +279,39 @@ function buildPulseLiveQuery(): string {
   `;
 }
 
+function buildSeoScorecardQuery(): string {
+  return `
+    SELECT
+      toString(timestamp) as captured_at,
+      properties.snapshot_json as snapshot_json
+    FROM events
+    WHERE event = 'seo_measurement_snapshot'
+      AND distinct_id = 'seo-measurement'
+    ORDER BY timestamp DESC
+    LIMIT 1
+  `;
+}
+
+function buildSeoHistoryQuery(): string {
+  return `
+    SELECT
+      toString(timestamp) as captured_at,
+      properties.generated_date as generated_date,
+      properties.phase as phase,
+      properties.decision_status as decision_status,
+      properties.head_term_position as head_term_position,
+      properties.treatment_impressions as treatment_impressions,
+      properties.organic_activation_rate as organic_activation_rate,
+      properties.ai_citation_rate as ai_citation_rate,
+      properties.indexed_rate as indexed_rate
+    FROM events
+    WHERE event = 'seo_measurement_snapshot'
+      AND distinct_id = 'seo-measurement'
+    ORDER BY timestamp ASC
+    LIMIT 180
+  `;
+}
+
 export const POST: RequestHandler = async (event) => {
   try {
     const caller = await requireAdmin(event);
@@ -333,6 +370,12 @@ export const POST: RequestHandler = async (event) => {
         break;
       case "pulse-live":
         query = buildPulseLiveQuery();
+        break;
+      case "seo-scorecard":
+        query = buildSeoScorecardQuery();
+        break;
+      case "seo-history":
+        query = buildSeoHistoryQuery();
         break;
       default:
         throw error(400, `Unknown query type: ${type}`);
