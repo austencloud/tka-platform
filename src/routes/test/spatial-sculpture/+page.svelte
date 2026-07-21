@@ -15,6 +15,7 @@
     type LayoutMode,
     type PrimaryPlane,
     type PropSide,
+    type SculptureMotionMode,
     type SculpturePreset,
     type SpatialBeat,
   } from "./spatial-sculpture-model";
@@ -24,21 +25,16 @@
   let activeHand = $state<PropSide>("blue");
   let preset = $state<SculpturePreset>("acolyte");
   let layoutMode = $state<LayoutMode>("viewport");
+  let motionMode = $state<SculptureMotionMode>("trace");
+  let undulationDepth = $state(34);
+  let undulationPeriod = $state(5);
   let showGrid = $state(true);
   let showNodes = $state(true);
   let showTrails = $state(true);
-  let playing = $state(false);
+  let playing = $state(true);
   let nextBeatNumber = 9;
 
   const activeBeat = $derived(beats[activeBeatIndex] ?? null);
-
-  $effect(() => {
-    if (!playing || beats.length === 0) return;
-    const timer = window.setInterval(() => {
-      activeBeatIndex = (activeBeatIndex + 1) % beats.length;
-    }, 680);
-    return () => window.clearInterval(timer);
-  });
 
   function updateActiveBeat(update: (beat: SpatialBeat) => SpatialBeat): void {
     beats = beats.map((beat, index) =>
@@ -72,6 +68,10 @@
 
   function selectBeat(index: number): void {
     playing = false;
+    activeBeatIndex = Math.max(0, Math.min(index, beats.length - 1));
+  }
+
+  function followPlayhead(index: number): void {
     activeBeatIndex = Math.max(0, Math.min(index, beats.length - 1));
   }
 
@@ -125,10 +125,13 @@
     activeBeatIndex = 2;
     activeHand = "blue";
     preset = "acolyte";
+    motionMode = "trace";
+    undulationDepth = 34;
+    undulationPeriod = 5;
     showGrid = true;
     showNodes = true;
     showTrails = true;
-    playing = false;
+    playing = true;
     nextBeatNumber = 9;
   }
 </script>
@@ -149,7 +152,7 @@
           <h1>Motion Sculpture</h1>
           <span class="prototype-badge">Layout prototype</span>
         </div>
-        <p>Build one loop across three planes, then multiply the path.</p>
+        <p>Build one loop across three planes, then watch the props draw it.</p>
       </div>
     </div>
 
@@ -180,7 +183,12 @@
         {showGrid}
         {showNodes}
         {showTrails}
+        {playing}
+        {motionMode}
+        {undulationDepth}
+        {undulationPeriod}
         onbeatselect={selectBeat}
+        onplayheadbeat={followPlayhead}
         onlocationselect={setLocation}
       />
     </section>
@@ -201,6 +209,9 @@
           beatCount={beats.length}
           {activeHand}
           {preset}
+          {motionMode}
+          {undulationDepth}
+          {undulationPeriod}
           {showGrid}
           {showNodes}
           {showTrails}
@@ -209,6 +220,9 @@
           onorientationchange={setOrientation}
           onturnchange={setTurns}
           onpresetchange={(value) => (preset = value)}
+          onmotionmodechange={(value) => (motionMode = value)}
+          onundulationdepthchange={(value) => (undulationDepth = value)}
+          onundulationperiodchange={(value) => (undulationPeriod = value)}
           ontogglegrid={() => (showGrid = !showGrid)}
           ontogglenodes={() => (showNodes = !showNodes)}
           ontoggletrails={() => (showTrails = !showTrails)}

@@ -5,6 +5,7 @@
   import {
     HAND_OPTIONS,
     LOCATION_LABELS,
+    MOTION_OPTIONS,
     ORIENTATION_OPTIONS,
     PLANE_LABELS,
     PLANE_OPTIONS,
@@ -14,6 +15,7 @@
     type BeatTurns,
     type PrimaryPlane,
     type PropSide,
+    type SculptureMotionMode,
     type SculpturePreset,
     type SpatialBeat,
   } from "./spatial-sculpture-model";
@@ -24,6 +26,9 @@
     beatCount: number;
     activeHand: PropSide;
     preset: SculpturePreset;
+    motionMode: SculptureMotionMode;
+    undulationDepth: number;
+    undulationPeriod: number;
     showGrid: boolean;
     showNodes: boolean;
     showTrails: boolean;
@@ -32,6 +37,9 @@
     onorientationchange: (orientation: BeatOrientation) => void;
     onturnchange: (turns: BeatTurns) => void;
     onpresetchange: (preset: SculpturePreset) => void;
+    onmotionmodechange: (mode: SculptureMotionMode) => void;
+    onundulationdepthchange: (depth: number) => void;
+    onundulationperiodchange: (period: number) => void;
     ontogglegrid: () => void;
     ontogglenodes: () => void;
     ontoggletrails: () => void;
@@ -44,6 +52,9 @@
     beatCount,
     activeHand,
     preset,
+    motionMode,
+    undulationDepth,
+    undulationPeriod,
     showGrid,
     showNodes,
     showTrails,
@@ -52,6 +63,9 @@
     onorientationchange,
     onturnchange,
     onpresetchange,
+    onmotionmodechange,
+    onundulationdepthchange,
+    onundulationperiodchange,
     ontogglegrid,
     ontogglenodes,
     ontoggletrails,
@@ -67,6 +81,12 @@
   const copyCount = $derived(
     PRESET_OPTIONS.find((option) => option.value === preset)?.count ?? 1
   );
+  const minimumLength = $derived(Math.round(100 - undulationDepth));
+  const maximumLength = $derived(Math.round(100 + undulationDepth));
+
+  function rangeValue(event: Event): number {
+    return Number((event.currentTarget as HTMLInputElement).value);
+  }
 </script>
 
 <div class="inspector-stack">
@@ -141,6 +161,59 @@
         size="sm"
       />
     </div>
+  </section>
+
+  <section class="inspector-section">
+    <div class="section-heading">
+      <span>Sculpture motion</span>
+      <span class="section-value">
+        {motionMode === "trace" ? "Trail locked" : "Length-driven"}
+      </span>
+    </div>
+    <SegmentedControl
+      options={MOTION_OPTIONS}
+      value={motionMode}
+      onchange={onmotionmodechange}
+      color="accent"
+      size="sm"
+    />
+    <p class="field-help motion-help">
+      {motionMode === "trace"
+        ? "The props move while the sculpture holds its shape."
+        : "Prop length and every copied trail expand and contract together."}
+    </p>
+    <fieldset class="motion-sliders" disabled={motionMode === "trace"}>
+      <label class="slider-field">
+        <span class="slider-heading">
+          <span>Length swing</span>
+          <output>{minimumLength}–{maximumLength}%</output>
+        </span>
+        <input
+          type="range"
+          min="8"
+          max="55"
+          step="1"
+          value={undulationDepth}
+          oninput={(event) => onundulationdepthchange(rangeValue(event))}
+          aria-label="Undulation length swing"
+        />
+      </label>
+      <label class="slider-field">
+        <span class="slider-heading">
+          <span>Cycle time</span>
+          <output>{undulationPeriod.toFixed(1)} s</output>
+        </span>
+        <input
+          type="range"
+          min="2.5"
+          max="12"
+          step="0.5"
+          value={undulationPeriod}
+          oninput={(event) => onundulationperiodchange(rangeValue(event))}
+          aria-label="Undulation cycle time"
+        />
+      </label>
+    </fieldset>
   </section>
 
   <section class="inspector-section">
@@ -339,6 +412,81 @@
     min-height: 2.7em;
     margin: 0;
     line-height: 1.35;
+  }
+
+  .motion-help {
+    min-height: 3.25em;
+  }
+
+  .motion-sliders {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+    margin: 0;
+    padding: 2px 0 0;
+    border: 0;
+    transition: opacity 160ms ease;
+  }
+
+  .motion-sliders:disabled {
+    opacity: 0.34;
+  }
+
+  .slider-field {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .slider-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.68));
+    font-size: var(--font-size-compact, 12px);
+  }
+
+  .slider-heading output {
+    color: var(--theme-text, #fff);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .slider-field input[type="range"] {
+    width: 100%;
+    height: 5px;
+    margin: 7px 0;
+    appearance: none;
+    border-radius: 999px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.15));
+    cursor: pointer;
+  }
+
+  .slider-field input[type="range"]:focus-visible {
+    outline: 2px solid var(--theme-accent, #8b6cff);
+    outline-offset: 5px;
+  }
+
+  .slider-field input[type="range"]::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+    appearance: none;
+    border: 2px solid var(--theme-panel-bg, #11111b);
+    border-radius: 50%;
+    background: var(--theme-accent, #8b6cff);
+    box-shadow: 0 0 12px
+      color-mix(in srgb, var(--theme-accent, #8b6cff) 48%, transparent);
+  }
+
+  .slider-field input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--theme-panel-bg, #11111b);
+    border-radius: 50%;
+    background: var(--theme-accent, #8b6cff);
+    box-shadow: 0 0 12px
+      color-mix(in srgb, var(--theme-accent, #8b6cff) 48%, transparent);
   }
 
   .split-fields {

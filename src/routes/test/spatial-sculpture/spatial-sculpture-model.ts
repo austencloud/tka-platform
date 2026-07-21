@@ -10,6 +10,7 @@ export type PrimaryPlane = (typeof PRIMARY_PLANES)[number];
 export type PropSide = "blue" | "red";
 export type SculpturePreset = "solo" | "mirror" | "acolyte" | "radial";
 export type LayoutMode = "viewport" | "studio";
+export type SculptureMotionMode = "trace" | "undulate";
 export type BeatOrientation = "in" | "out";
 export type BeatTurns = "0" | "½" | "1";
 
@@ -60,6 +61,14 @@ export const LAYOUT_OPTIONS: { value: LayoutMode; label: string }[] = [
 export const HAND_OPTIONS: { value: PropSide; label: string }[] = [
   { value: "blue", label: "Blue path" },
   { value: "red", label: "Red path" },
+];
+
+export const MOTION_OPTIONS: {
+  value: SculptureMotionMode;
+  label: string;
+}[] = [
+  { value: "trace", label: "Trace" },
+  { value: "undulate", label: "Undulate" },
 ];
 
 export const PLANE_OPTIONS: { value: PrimaryPlane; label: string }[] = [

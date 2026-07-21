@@ -10,12 +10,14 @@
     gridLocationToPosition3D,
   } from "$lib/shared/3d/services/plane-coordinate-mapper";
   import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+  import SpatialSculptureTracer from "./SpatialSculptureTracer.svelte";
   import {
     LOCATION_LABELS,
     LOCATION_ORDER,
     PLANE_LABELS,
     PRIMARY_PLANES,
     type PropSide,
+    type SculptureMotionMode,
     type SculpturePreset,
     type SpatialBeat,
   } from "./spatial-sculpture-model";
@@ -28,7 +30,12 @@
     showGrid: boolean;
     showNodes: boolean;
     showTrails: boolean;
+    playing: boolean;
+    motionMode: SculptureMotionMode;
+    undulationDepth: number;
+    undulationPeriod: number;
     onbeatselect: (index: number) => void;
+    onplayheadbeat: (index: number) => void;
     onlocationselect: (location: GridLocation) => void;
   }
 
@@ -46,13 +53,19 @@
     showGrid,
     showNodes,
     showTrails,
+    playing,
+    motionMode,
+    undulationDepth,
+    undulationPeriod,
     onbeatselect,
+    onplayheadbeat,
     onlocationselect,
   }: Props = $props();
 
   const PATH_RADIUS = 0.86;
   const SCULPTURE_HEIGHT = 0.82;
   const visiblePlaneSet = new Set<PlaneValue>(PRIMARY_PLANES);
+  let sculptureScale = $state(1);
 
   const activeBeat = $derived(beats[activeBeatIndex] ?? null);
   const activeColor = $derived(activeHand === "blue" ? "#38a9ff" : "#ff516a");
@@ -131,6 +144,10 @@
     const location = meshName.slice(targetPrefix.length) as GridLocation;
     if (LOCATION_ORDER.includes(location)) onlocationselect(location);
   }
+
+  function positionTuple(point: Vector3): [number, number, number] {
+    return [point.x, point.y, point.z];
+  }
 </script>
 
 <div class="scene-shell">
@@ -154,49 +171,127 @@
           />
         {/if}
 
-        {#if showTrails && blueCurve && redCurve}
-          {#each copyTransforms as copy, index (`${preset}-${index}`)}
-            <T.Group rotation={[0, copy.rotationY, 0]} scale={copy.scale}>
-              <T.Mesh>
-                <T.TubeGeometry args={[blueCurve, 128, 0.018, 10, true]} />
-                <T.MeshStandardMaterial
-                  color="#38a9ff"
-                  emissive="#0d3a78"
-                  emissiveIntensity={1.35}
-                  roughness={0.24}
-                  metalness={0.12}
-                  transparent
-                  opacity={copy.opacity}
-                  depthWrite={false}
-                  side={DoubleSide}
-                />
-              </T.Mesh>
-              <T.Mesh>
-                <T.TubeGeometry args={[redCurve, 128, 0.018, 10, true]} />
-                <T.MeshStandardMaterial
-                  color="#ff516a"
-                  emissive="#74162b"
-                  emissiveIntensity={1.35}
-                  roughness={0.24}
-                  metalness={0.12}
-                  transparent
-                  opacity={copy.opacity}
-                  depthWrite={false}
-                  side={DoubleSide}
-                />
-              </T.Mesh>
-            </T.Group>
-          {/each}
-        {/if}
+        {#if blueCurve && redCurve}
+          <T.Group scale={[sculptureScale, sculptureScale, sculptureScale]}>
+            {#if showTrails}
+              {#each copyTransforms as copy, index (`${preset}-${index}`)}
+                <T.Group rotation={[0, copy.rotationY, 0]} scale={copy.scale}>
+                  <T.Mesh>
+                    <T.TubeGeometry args={[blueCurve, 128, 0.018, 10, true]} />
+                    <T.MeshStandardMaterial
+                      color="#38a9ff"
+                      emissive="#0d3a78"
+                      emissiveIntensity={1.35}
+                      roughness={0.24}
+                      metalness={0.12}
+                      transparent
+                      opacity={copy.opacity}
+                      depthWrite={false}
+                      side={DoubleSide}
+                    />
+                  </T.Mesh>
+                  <T.Mesh>
+                    <T.TubeGeometry args={[redCurve, 128, 0.018, 10, true]} />
+                    <T.MeshStandardMaterial
+                      color="#ff516a"
+                      emissive="#74162b"
+                      emissiveIntensity={1.35}
+                      roughness={0.24}
+                      metalness={0.12}
+                      transparent
+                      opacity={copy.opacity}
+                      depthWrite={false}
+                      side={DoubleSide}
+                    />
+                  </T.Mesh>
+                </T.Group>
+              {/each}
+            {/if}
 
-        {#if showNodes}
+            {#if showNodes}
+              {#each beats as beat, index (beat.id)}
+                {@const bluePoint = bluePoints[index]}
+                {@const redPoint = redPoints[index]}
+                {#if bluePoint && redPoint}
+                  <T.Mesh
+                    name={`spatial-beat-${index}`}
+                    position={positionTuple(bluePoint)}
+                    renderOrder={6}
+                  >
+                    <T.SphereGeometry
+                      args={[index === activeBeatIndex ? 0.072 : 0.045, 18, 18]}
+                    />
+                    <T.MeshBasicMaterial
+                      color="#38a9ff"
+                      transparent
+                      opacity={index === activeBeatIndex ? 1 : 0.72}
+                      depthWrite={false}
+                    />
+                  </T.Mesh>
+                  <T.Mesh
+                    name={`spatial-beat-${index}`}
+                    position={positionTuple(redPoint)}
+                    renderOrder={6}
+                  >
+                    <T.SphereGeometry
+                      args={[index === activeBeatIndex ? 0.072 : 0.045, 18, 18]}
+                    />
+                    <T.MeshBasicMaterial
+                      color="#ff516a"
+                      transparent
+                      opacity={index === activeBeatIndex ? 1 : 0.72}
+                      depthWrite={false}
+                    />
+                  </T.Mesh>
+                {/if}
+              {/each}
+
+              {#each targetPoints as target (target.location)}
+                <T.Mesh
+                  name={`spatial-target-${target.location}`}
+                  position={positionTuple(target.position)}
+                  renderOrder={8}
+                >
+                  <T.SphereGeometry
+                    args={[
+                      target.location === activeLocation ? 0.09 : 0.066,
+                      18,
+                      18,
+                    ]}
+                  />
+                  <T.MeshBasicMaterial
+                    color={activeColor}
+                    transparent
+                    opacity={target.location === activeLocation ? 0.9 : 0.2}
+                    wireframe={target.location !== activeLocation}
+                    depthWrite={false}
+                  />
+                </T.Mesh>
+              {/each}
+            {/if}
+          </T.Group>
+
+          <SpatialSculptureTracer
+            {blueCurve}
+            {redCurve}
+            {beats}
+            {activeBeatIndex}
+            {activeHand}
+            {playing}
+            {motionMode}
+            {undulationDepth}
+            {undulationPeriod}
+            {onplayheadbeat}
+            onscalechange={(scale) => (sculptureScale = scale)}
+          />
+        {:else if showNodes}
           {#each beats as beat, index (beat.id)}
             {@const bluePoint = bluePoints[index]}
             {@const redPoint = redPoints[index]}
             {#if bluePoint && redPoint}
               <T.Mesh
                 name={`spatial-beat-${index}`}
-                position={bluePoint}
+                position={positionTuple(bluePoint)}
                 renderOrder={6}
               >
                 <T.SphereGeometry
@@ -211,7 +306,7 @@
               </T.Mesh>
               <T.Mesh
                 name={`spatial-beat-${index}`}
-                position={redPoint}
+                position={positionTuple(redPoint)}
                 renderOrder={6}
               >
                 <T.SphereGeometry
@@ -226,36 +321,22 @@
               </T.Mesh>
             {/if}
           {/each}
-
-          {#each targetPoints as target (target.location)}
-            <T.Mesh
-              name={`spatial-target-${target.location}`}
-              position={target.position}
-              renderOrder={8}
-            >
-              <T.SphereGeometry
-                args={[
-                  target.location === activeLocation ? 0.09 : 0.066,
-                  18,
-                  18,
-                ]}
-              />
-              <T.MeshBasicMaterial
-                color={activeColor}
-                transparent
-                opacity={target.location === activeLocation ? 0.9 : 0.2}
-                wireframe={target.location !== activeLocation}
-                depthWrite={false}
-              />
-            </T.Mesh>
-          {/each}
         {/if}
       </T.Group>
     {/snippet}
   </Scene3D>
 
   <div class="scene-hud" aria-live="polite">
-    <span class="hud-step">Beat {activeBeatIndex + 1}</span>
+    <div class="hud-primary">
+      <span class="hud-step">Beat {activeBeatIndex + 1}</span>
+      <span class="motion-badge" data-mode={motionMode}>
+        <i
+          class={motionMode === "trace" ? "fas fa-route" : "fas fa-wave-square"}
+          aria-hidden="true"
+        ></i>
+        {motionMode === "trace" ? "Tracing" : "Undulating"}
+      </span>
+    </div>
     {#if activeBeat}
       <span class="hud-detail">
         {PLANE_LABELS[activeBeat.plane]} · {activeHand === "blue"
@@ -317,6 +398,34 @@
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
     font-variant-numeric: tabular-nums;
+  }
+
+  .hud-primary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .motion-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #8b6cff) 18%,
+      transparent
+    );
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 650;
+  }
+
+  .motion-badge[data-mode="undulate"] {
+    background: color-mix(in srgb, #d66dff 22%, transparent);
+    color: #f2c8ff;
   }
 
   .hud-detail,
