@@ -38,7 +38,28 @@ $ErrorActionPreference = 'Stop'
 
 $Here        = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot    = Split-Path -Parent $Here
-if (-not $ProjectsRoot) { $ProjectsRoot = Split-Path -Parent $RepoRoot }
+
+function Measure-Repos([string]$dir) {
+    if (-not $dir -or -not (Test-Path $dir)) { return 0 }
+    return @(Get-ChildItem $dir -Directory -ErrorAction SilentlyContinue |
+             Where-Object { Test-Path (Join-Path $_.FullName '.git') }).Count
+}
+
+if (-not $ProjectsRoot) {
+    # Normal case: checkouts sit beside this repo. Bootstrapped installs run from
+    # %LOCALAPPDATA% and have no repo parent, so fall back to common layouts and
+    # pick whichever holds the most git repos - a folder with one stray clone
+    # should not beat the drive where everything actually lives.
+    $sibling = Split-Path -Parent $RepoRoot
+    $best = $null; $bestCount = 0
+    foreach ($cand in @($sibling, "$env:USERPROFILE\code", "$env:USERPROFILE\source\repos",
+                        "$env:USERPROFILE\projects", "$env:USERPROFILE\dev",
+                        'C:\code', 'D:\code', 'E:\')) {
+        $n = Measure-Repos $cand
+        if ($n -gt $bestCount) { $best = $cand; $bestCount = $n }
+    }
+    $ProjectsRoot = if ($best) { $best } else { $sibling }
+}
 
 $InstallDir  = Join-Path $env:LOCALAPPDATA 'AgentHub'
 $BinDir      = Join-Path $InstallDir 'bin'
