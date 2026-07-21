@@ -59,6 +59,9 @@ jobs:
       - name: Validate measurement contracts
         run: pnpm run seo:check && pnpm run validate:seo
 
+      - name: Bootstrap measurement warehouse
+        run: pnpm run seo:measure -- bootstrap --repair-empty-tables
+
       - name: Verify provider access
         run: pnpm run seo:verify-access
 
