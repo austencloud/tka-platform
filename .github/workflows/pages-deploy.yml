@@ -1,0 +1,70 @@
+name: Deploy Pages (gated)
+
+# Cloudflare Pages builds tkaflowarts.com from its own Git integration, which
+# fires on every push to main with no knowledge of CI. That shipped whatever was
+# on main, red suite or not.
+#
+# This does NOT move the build into Actions. The production build env (real
+# PUBLIC_POSTHOG_KEY, PUBLIC_GOOGLE_MAPS_API_KEY, etc.) lives in the Cloudflare
+# dashboard; .env.example ships blanks, so building here would silently deploy
+# with analytics and maps disabled. Cloudflare keeps building exactly as it does
+# today — only the TRIGGER moves behind the CI gate, via a Deploy Hook.
+#
+# Requires (see docs/reference/gated-pages-deploy.md):
+#   1. Cloudflare Pages → Settings → Builds & deployments → automatic
+#      production-branch deployments turned OFF.
+#   2. A Deploy Hook for `main`, its URL stored as the repo secret
+#      CLOUDFLARE_PAGES_DEPLOY_HOOK_URL.
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Web App CI"]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: pages-deploy-production
+  cancel-in-progress: false
+
+jobs:
+  trigger-pages-build:
+    name: Trigger Cloudflare Pages build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # workflow_run fires on failure too; only a green CI run may deploy.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Fail if the deploy hook is not configured
+        # Without this the curl below would post to an empty URL, fail soft, and
+        # leave the impression that production deployed when nothing happened.
+        env:
+          HOOK: ${{ secrets.CLOUDFLARE_PAGES_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::CLOUDFLARE_PAGES_DEPLOY_HOOK_URL is not set. Production did NOT deploy." \
+                 "Create a Deploy Hook for main in the Cloudflare Pages dashboard and add it as a repo secret."
+            exit 1
+          fi
+
+      - name: Trigger build
+        env:
+          HOOK: ${{ secrets.CLOUDFLARE_PAGES_DEPLOY_HOOK_URL }}
+          VALIDATED_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          echo "CI passed for $VALIDATED_SHA — requesting a Pages build of main."
+          # A Deploy Hook builds the current tip of its configured branch, not a
+          # specific SHA. If main moved after CI passed, Pages builds the newer
+          # tip. Logged so a mismatch is visible in the run rather than silent.
+          status=$(curl -sS -o /tmp/hook-response -w '%{http_code}' -X POST "$HOOK")
+          echo "Deploy hook responded $status"
+          cat /tmp/hook-response || true
+          echo
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            echo "::error::Deploy hook returned $status. Production did NOT deploy."
+            exit 1
+          fi
+          echo "Pages build queued. Watch it in the Cloudflare dashboard." >> "$GITHUB_STEP_SUMMARY"
+          echo "CI-validated commit: \`$VALIDATED_SHA\`" >> "$GITHUB_STEP_SUMMARY"
