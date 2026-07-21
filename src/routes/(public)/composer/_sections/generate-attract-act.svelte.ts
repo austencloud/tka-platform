@@ -5,11 +5,11 @@
  *
  * A thin SCRIPT on the shared attract-ghost core (attract-ghost.svelte.ts owns
  * the motor model, press gate, and pause/park/resume lifecycle). Each cycle it
- * ponders the four REAL parameter cards, nudges a stepper or two (sometimes
- * flips the grid toggle), presses the REAL Generate button, and settles in to
- * watch the result play — occasionally pausing the canvas to look closer. All
- * presses are real clicks on the real controls, so the demo can only ever do
- * what a visitor could do.
+ * ponders the real parameter cards, nudges a stepper or two (sometimes
+ * flips the grid toggle), presses the REAL Generate button, watches the
+ * workspace reveal, then presses the REAL Play button. Once the canvas opens,
+ * it occasionally pauses to look closer. Every press lands on the control a
+ * visitor would use.
  */
 
 import {
@@ -27,7 +27,9 @@ const STEP_DOWN_SEL = ".card-grid .touch-zone.decrement-zone:not(:disabled)";
 const GRID_SEL = ".card-grid .toggle-card";
 // The section's real Generate button; disabled while the engine runs.
 const GENERATE_SEL = ".generate-button:not(:disabled)";
-// The player stage the result animates in.
+// The generated workspace, its canonical Play action, and the player stage.
+const WORKSPACE_SEL = "[data-demo-workspace]";
+const PLAY_SEL = "[data-demo-play]";
 const STAGE_SEL = "[data-demo-stage]";
 
 export type GenerateAttractAct = AttractActHandle;
@@ -46,8 +48,8 @@ export function createGenerateAttractAct(opts: {
 }): GenerateAttractAct {
   const { core: g, run } = createAttractGhost({ getRoot: opts.getRoot });
 
-  /** Nudge one stepper zone, sometimes twice in a row — stepping length from
-   *  4 to 8 in two presses reads as a decision, not a twitch. */
+  /** Nudge one stepper zone, sometimes twice in a row. Two length presses move
+   *  cleanly from 8 to 16, which reads as a decision rather than a twitch. */
   async function nudgeStepper(): Promise<void> {
     const sel = Math.random() < 0.65 ? STEP_UP_SEL : STEP_DOWN_SEL;
     const zones = await g.waitFor(sel, 1200);
@@ -92,13 +94,21 @@ export function createGenerateAttractAct(opts: {
     if (!gen.length || g.halted()) return;
     await g.moveAndPress(gen[0]!);
 
-    // The engine chunk loads on first press and the beam search takes a
-    // moment — rest beside the stage while it thinks, like a person waiting
-    // on a dice roll. waitFor tolerates the canvas not existing yet.
+    // Stay beside the workspace while generation and the sequential reveal
+    // finish. The Play action does not enter the DOM until both are complete.
+    const workspace = await g.waitFor(WORKSPACE_SEL, 4000);
+    if (!workspace.length || g.halted()) return;
+    await g.restBeside(workspace[0]!);
+
+    const play = await g.waitFor(PLAY_SEL, 7000);
+    if (!play.length || g.halted()) return;
+    await g.dwell(g.jitter(650, 450));
+    await g.moveAndPress(play[0]!);
+
     const stage = await g.waitFor(STAGE_SEL, 4000);
     if (!stage.length || g.halted()) return;
     await g.restBeside(stage[0]!);
-    await g.dwell(g.jitter(2400, 1600)); // watch the result unfold
+    await g.dwell(g.jitter(2400, 1600));
 
     // Sometimes pause the canvas to study a pose, then resume — the same
     // tap-to-toggle demonstration the construct act performs.

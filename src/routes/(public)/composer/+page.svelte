@@ -5,10 +5,11 @@
   import { trackCtaClick } from "../../landing/landing-analytics";
   import FanSkeleton from "./_components/FanSkeleton.svelte";
   import PlayWithItSkeleton from "../../landing/components/PlayWithItSkeleton.svelte";
+  import { activateWhenNear } from "$lib/actions/activate-when-near";
+  import { runAfterNamedRouteMorphIdle } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import { onMount } from "svelte";
   import type { Component } from "svelte";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-  import { generatePerVisitDemo } from "$lib/shared/landing/data/per-visit-demo";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   // The five-wing section components live in ./_sections (graduated out of the
@@ -16,7 +17,17 @@
   // graph (incl. special-arrow-placement -> zod), so they load via CLIENT-ONLY
   // dynamic import inside an IntersectionObserver — never a static top-level
   // import, which would drag zod through the SSR module runner.
-  const loaders: Record<string, () => Promise<{ default: Component }>> = {
+  const SECTION_KEYS = [
+    "construct",
+    "generate",
+    "mandala",
+    "games",
+    "connect",
+    "library",
+  ] as const;
+  type SectionKey = (typeof SECTION_KEYS)[number];
+
+  const loaders: Record<SectionKey, () => Promise<{ default: Component }>> = {
     construct: () => import("./_sections/ConstructSection.svelte"),
     generate: () => import("./_sections/GenerateSection.svelte"),
     mandala: () => import("./_sections/MandalaSection.svelte"),
@@ -24,7 +35,7 @@
     connect: () => import("./_sections/ConnectSection.svelte"),
     library: () => import("./_sections/LibrarySection.svelte"),
   };
-  const comp = $state<Record<string, Component | null>>({
+  const comp = $state<Record<SectionKey, Component | null>>({
     construct: null,
     generate: null,
     mandala: null,
@@ -32,26 +43,39 @@
     connect: null,
     library: null,
   });
-  function loadSection(key: string) {
+  const sectionErrors = $state<Record<SectionKey, string | null>>({
+    construct: null,
+    generate: null,
+    mandala: null,
+    games: null,
+    connect: null,
+    library: null,
+  });
+  const sectionLoads = new Map<SectionKey, Promise<void>>();
+
+  function loadSection(key: SectionKey): void {
+    if (comp[key] || sectionLoads.has(key)) return;
     const loader = loaders[key];
-    if (loader) void loader().then((m) => (comp[key] = m.default));
+    sectionErrors[key] = null;
+    const request = loader()
+      .then((module) => {
+        comp[key] = module.default;
+      })
+      .catch((error) => {
+        sectionErrors[key] = "This interactive section did not load.";
+        console.error(`[composer] failed to load ${key}`, error);
+      })
+      .finally(() => {
+        sectionLoads.delete(key);
+      });
+    sectionLoads.set(key, request);
   }
-  function whenNear(node: HTMLElement, key: string) {
-    if (typeof IntersectionObserver === "undefined") {
-      loadSection(key);
-      return;
-    }
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) {
-          io.disconnect();
-          loadSection(key);
-        }
-      },
-      { rootMargin: "300px" }
-    );
-    io.observe(node);
-    return { destroy: () => io.disconnect() };
+  function whenNear(node: HTMLElement, key: SectionKey) {
+    return activateWhenNear(node, {
+      activate: () => loadSection(key),
+      rootMargin: "300px",
+      deferUntilIdle: true,
+    });
   }
 
   // Per-visit demo: freshly generated for every visitor (no canonical
@@ -59,19 +83,46 @@
   // reloads onto a fresh draw without a page refresh.
   let demoSeq = $state<SequenceData | null>(null);
   let rerollingDemo = $state(false);
+  let demoError = $state<string | null>(null);
+
+  async function generateDemo(): Promise<SequenceData> {
+    const { generatePerVisitDemo } =
+      await import("$lib/shared/landing/data/per-visit-demo");
+    return generatePerVisitDemo();
+  }
+
   onMount(() => {
-    void generatePerVisitDemo().then((seq) => {
-      demoSeq = seq;
+    let mounted = true;
+    const cancel = runAfterNamedRouteMorphIdle(() => {
+      void refreshDemo(() => mounted);
     });
+
+    return () => {
+      mounted = false;
+      cancel();
+    };
   });
-  async function rerollDemo() {
+  async function refreshDemo(isCurrent: () => boolean = () => true): Promise<void> {
     if (rerollingDemo) return;
     rerollingDemo = true;
     try {
-      demoSeq = await generatePerVisitDemo();
+      const sequence = await generateDemo();
+      if (isCurrent()) {
+        demoSeq = sequence;
+        demoError = null;
+      }
+    } catch (error) {
+      if (isCurrent()) {
+        demoError = "The live example did not load.";
+      }
+      console.error("[composer] failed to generate the hero demo", error);
     } finally {
-      rerollingDemo = false;
+      if (isCurrent()) rerollingDemo = false;
     }
+  }
+
+  function rerollDemo(): void {
+    void refreshDemo();
   }
 
   const TITLE = "Flow Arts Composer | Free Flow Arts Software for Choreography";
@@ -158,33 +209,21 @@
   let choreoCardsActive = $state(false);
   let viewer3DActive = $state(false);
   let playWithItActive = $state(false);
-  function activateWhenNear(activate: () => void) {
-    return (node: HTMLElement) => {
-      if (typeof IntersectionObserver === "undefined") {
-        activate();
-        return;
-      }
-      const io = new IntersectionObserver(
-        (entries) => {
-          if (entries.some((e) => e.isIntersecting)) {
-            activate();
-            io.disconnect();
-          }
-        },
-        { rootMargin: "400px" }
-      );
-      io.observe(node);
-      return { destroy: () => io.disconnect() };
-    };
+  function activateDemoWhenNear(node: HTMLElement, activate: () => void) {
+    return activateWhenNear(node, {
+      activate,
+      rootMargin: "400px",
+      deferUntilIdle: true,
+    });
   }
-  const activateTunnelWhenNear = activateWhenNear(() => (tunnelActive = true));
-  const activateChoreoCardsWhenNear = activateWhenNear(
-    () => (choreoCardsActive = true)
-  );
-  const activate3DWhenNear = activateWhenNear(() => (viewer3DActive = true));
-  const activatePlayWithItWhenNear = activateWhenNear(
-    () => (playWithItActive = true)
-  );
+  const activateTunnelWhenNear = (node: HTMLElement) =>
+    activateDemoWhenNear(node, () => (tunnelActive = true));
+  const activateChoreoCardsWhenNear = (node: HTMLElement) =>
+    activateDemoWhenNear(node, () => (choreoCardsActive = true));
+  const activate3DWhenNear = (node: HTMLElement) =>
+    activateDemoWhenNear(node, () => (viewer3DActive = true));
+  const activatePlayWithItWhenNear = (node: HTMLElement) =>
+    activateDemoWhenNear(node, () => (playWithItActive = true));
 
   const ROADMAP = [
     {
@@ -217,6 +256,102 @@
   {@html `<script type="application/ld+json">${breadcrumbJsonLd}</script>`}
 </Seo>
 
+{#snippet sectionPlaceholder(key: SectionKey)}
+  {#if sectionErrors[key]}
+    <div class="section-load-error" role="alert">
+      <span>{sectionErrors[key]}</span>
+      <button type="button" onclick={() => loadSection(key)}>Try again</button>
+    </div>
+  {:else}
+    <div class="ph" aria-hidden="true"></div>
+  {/if}
+{/snippet}
+
+{#snippet retryOverlay(
+  message: string,
+  retry: () => void,
+  announce: boolean,
+  busy: boolean
+)}
+  <div
+    class="lazy-demo-error"
+    role={announce ? "alert" : undefined}
+    aria-live={announce ? "assertive" : "off"}
+  >
+    <span>{message}</span>
+    <button type="button" onclick={retry} disabled={busy}>
+      {busy ? "Trying again..." : "Try again"}
+    </button>
+  </div>
+{/snippet}
+
+{#snippet tunnelSkeleton()}
+  <div class="sk-demo" aria-hidden="true">
+    <div class="sk-stage sk-stage-square"></div>
+    <div class="sk-pill sk-pill-tunnel"></div>
+  </div>
+{/snippet}
+
+{#snippet viewerSkeleton()}
+  <div class="sk-demo" aria-hidden="true">
+    <div class="sk-stage sk-stage-wide"></div>
+    <div class="sk-pill sk-pill-viewer"></div>
+    <div class="sk-pill sk-pill-viewer"></div>
+  </div>
+{/snippet}
+
+{#snippet tunnelLoadError(_error: unknown, retry: () => void)}
+  <div class="demo-error-reserve">
+    {@render tunnelSkeleton()}
+    {@render retryOverlay("This live demo did not load.", retry, true, false)}
+  </div>
+{/snippet}
+
+{#snippet viewerLoadError(_error: unknown, retry: () => void)}
+  <div class="demo-error-reserve">
+    {@render viewerSkeleton()}
+    {@render retryOverlay("This live demo did not load.", retry, true, false)}
+  </div>
+{/snippet}
+
+{#snippet cardsLoadError(_error: unknown, retry: () => void)}
+  <div class="demo-error-reserve">
+    <FanSkeleton shimmer={false} />
+    {@render retryOverlay("This live demo did not load.", retry, true, false)}
+  </div>
+{/snippet}
+
+{#snippet playWithItLoadError(_error: unknown, retry: () => void)}
+  <div class="demo-error-reserve">
+    <PlayWithItSkeleton failed={true} />
+    {@render retryOverlay("This live demo did not load.", retry, true, false)}
+  </div>
+{/snippet}
+
+{#snippet tunnelSequenceError()}
+  <div class="demo-error-reserve">
+    {@render tunnelSkeleton()}
+    {@render retryOverlay(
+      "The live sequence did not load.",
+      rerollDemo,
+      false,
+      rerollingDemo
+    )}
+  </div>
+{/snippet}
+
+{#snippet viewerSequenceError()}
+  <div class="demo-error-reserve">
+    {@render viewerSkeleton()}
+    {@render retryOverlay(
+      "The live sequence did not load.",
+      rerollDemo,
+      false,
+      rerollingDemo
+    )}
+  </div>
+{/snippet}
+
 <div class="editorial">
   <!-- Hero: stacked and centered by default; from 1680px up it splits into a
        duo — copy left, the live notation player right. The shared
@@ -247,6 +382,7 @@
         note="a rotated LOOP from the generator, animating live"
         onReroll={rerollDemo}
         rerolling={rerollingDemo}
+        errorMessage={demoError}
       />
     </div>
 
@@ -320,36 +456,28 @@
         {@const Section = comp.construct}
         <Section />
       {:else}
-        <div class="ph" aria-hidden="true"></div>
+        {@render sectionPlaceholder("construct")}
       {/if}
     </div>
   </section>
 
-  <!-- Generate: stacked below 1680, prose|demo split on 4K (duo-uw + duo-max). -->
-  <section
-    class="editorial-section has-duo duo-uw duo-max"
-    style="--accent:#ec4899"
-  >
-    <div class="section-duo">
-      <div class="duo-copy">
-        <span class="section-kicker">Generate</span>
-        <h2 class="section-title">Or skip the building entirely</h2>
-        <div class="prose">
-          <p>
-            Set your parameters, hit generate, and a valid sequence lands in
-            front of you. Watch it animate, keep it if you like it, run it again
-            if you don't.
-          </p>
-        </div>
-      </div>
-      <div class="duo-demo slot" use:whenNear={"generate"}>
-        {#if comp.generate}
-          {@const Section = comp.generate}
-          <Section />
-        {:else}
-          <div class="ph" aria-hidden="true"></div>
-        {/if}
-      </div>
+  <!-- Generate: prose in the column, the complete toy in a wide centered shell. -->
+  <section class="editorial-section" style="--accent:#ec4899">
+    <span class="section-kicker">Generate</span>
+    <h2 class="section-title">Or skip the building entirely</h2>
+    <div class="prose">
+      <p>
+        Set the recipe and generate a sequence. The pictographs land one by one;
+        press Play to put it in motion.
+      </p>
+    </div>
+    <div class="breakout wide slot" use:whenNear={"generate"}>
+      {#if comp.generate}
+        {@const Section = comp.generate}
+        <Section />
+      {:else}
+        {@render sectionPlaceholder("generate")}
+      {/if}
     </div>
   </section>
 
@@ -375,7 +503,7 @@
         {@const Section = comp.mandala}
         <Section />
       {:else}
-        <div class="ph" aria-hidden="true"></div>
+        {@render sectionPlaceholder("mandala")}
       {/if}
     </div>
   </section>
@@ -396,18 +524,20 @@
         </div>
       </div>
       <div class="duo-demo" use:activateTunnelWhenNear>
-        <LazyMount
-          loader={() => import("./_components/ComposerTunnelDemo.svelte")}
-          active={tunnelActive && !!demoSeq}
-          props={{ sequence: demoSeq }}
-        >
-          {#snippet placeholder()}
-            <div class="sk-demo" aria-hidden="true">
-              <div class="sk-stage sk-stage-square"></div>
-              <div class="sk-pill sk-pill-tunnel"></div>
-            </div>
-          {/snippet}
-        </LazyMount>
+        {#if tunnelActive && demoError && !demoSeq}
+          {@render tunnelSequenceError()}
+        {:else}
+          <LazyMount
+            loader={() => import("./_components/ComposerTunnelDemo.svelte")}
+            active={tunnelActive && !!demoSeq}
+            props={{ sequence: demoSeq }}
+            error={tunnelLoadError}
+          >
+            {#snippet placeholder()}
+              {@render tunnelSkeleton()}
+            {/snippet}
+          </LazyMount>
+        {/if}
       </div>
     </div>
   </section>
@@ -426,6 +556,7 @@
               loader={() =>
                 import("./_components/ComposerChoreoCardsDemo.svelte")}
               active={choreoCardsActive}
+              error={cardsLoadError}
             >
               {#snippet placeholder()}
                 <FanSkeleton />
@@ -472,19 +603,20 @@
       </p>
     </div>
     <div class="breakout cinema" use:activate3DWhenNear>
-      <LazyMount
-        loader={() => import("./_components/Composer3DViewerDemo.svelte")}
-        active={viewer3DActive && !!demoSeq}
-        props={{ sequence: demoSeq }}
-      >
-        {#snippet placeholder()}
-          <div class="sk-demo" aria-hidden="true">
-            <div class="sk-stage sk-stage-wide"></div>
-            <div class="sk-pill sk-pill-viewer"></div>
-            <div class="sk-pill sk-pill-viewer"></div>
-          </div>
-        {/snippet}
-      </LazyMount>
+      {#if viewer3DActive && demoError && !demoSeq}
+        {@render viewerSequenceError()}
+      {:else}
+        <LazyMount
+          loader={() => import("./_components/Composer3DViewerDemo.svelte")}
+          active={viewer3DActive && !!demoSeq}
+          props={{ sequence: demoSeq }}
+          error={viewerLoadError}
+        >
+          {#snippet placeholder()}
+            {@render viewerSkeleton()}
+          {/snippet}
+        </LazyMount>
+      {/if}
     </div>
     <p class="demo-hint">
       Drag to orbit. Switch the scene, or multiply into a ring. This is the real
@@ -522,7 +654,7 @@
         {@const Section = comp.games}
         <Section />
       {:else}
-        <div class="ph" aria-hidden="true"></div>
+        {@render sectionPlaceholder("games")}
       {/if}
     </div>
   </section>
@@ -547,7 +679,7 @@
         {@const Section = comp.connect}
         <Section />
       {:else}
-        <div class="ph" aria-hidden="true"></div>
+        {@render sectionPlaceholder("connect")}
       {/if}
     </div>
   </section>
@@ -573,7 +705,7 @@
         {@const Section = comp.library}
         <Section />
       {:else}
-        <div class="ph" aria-hidden="true"></div>
+        {@render sectionPlaceholder("library")}
       {/if}
     </div>
   </section>
@@ -716,6 +848,7 @@
       <LazyMount
         loader={() => import("../../landing/components/PlayWithItInner.svelte")}
         active={playWithItActive}
+        error={playWithItLoadError}
       >
         {#snippet placeholder()}
           <PlayWithItSkeleton />
@@ -799,17 +932,70 @@
     font-size: 0.9rem;
   }
 
-  /* Demo cell inside a duo centers its content vertically. */
-  .duo-demo.slot {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
   /* Reserve scroll height on the PLACEHOLDER only, so the section observers
      don't all fire at once before load — once a section mounts, the slot sizes
      to its content and leaves no dead gap. */
   .ph {
     min-height: 42vh;
+  }
+
+  .section-load-error {
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 0.9rem;
+    width: 100%;
+    min-height: 42vh;
+    padding: 2rem;
+    color: oklch(0.88 0.025 270);
+    text-align: center;
+    border: 1px solid oklch(0.5 0.06 270 / 0.24);
+    border-radius: 16px;
+    background: oklch(0.16 0.025 270 / 0.5);
+  }
+
+  .demo-error-reserve {
+    position: relative;
+    width: 100%;
+  }
+
+  .demo-error-reserve .sk-demo {
+    animation: none;
+  }
+
+  .lazy-demo-error {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 0.9rem;
+    width: 100%;
+    padding: 2rem;
+    color: oklch(0.88 0.025 270);
+    text-align: center;
+    border: 1px solid oklch(0.5 0.06 270 / 0.24);
+    border-radius: 16px;
+    background: oklch(0.13 0.025 270 / 0.9);
+  }
+
+  .section-load-error button,
+  .lazy-demo-error button {
+    min-height: var(--min-touch-target, 44px);
+    padding: 0 1rem;
+    color: oklch(0.94 0.02 270);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+    border: 1px solid oklch(0.62 0.1 270 / 0.55);
+    border-radius: 10px;
+    background: oklch(0.36 0.08 270 / 0.5);
+  }
+
+  .lazy-demo-error button:disabled {
+    opacity: 0.65;
+    cursor: wait;
   }
 
   /* CTAs inside a duo copy cell: the .hero-ctas defaults carry hero-scale

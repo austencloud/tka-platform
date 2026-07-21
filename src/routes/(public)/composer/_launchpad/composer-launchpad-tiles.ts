@@ -2,12 +2,15 @@
  * composer-launchpad-tiles.ts — the composer bento launchpad's tile defs +
  * target manifest (spec: docs/superpowers/specs/2026-07-20-composer-launchpad-morph-design.md §4).
  *
+ * PARKED PROTOTYPE. Rev. 3 keeps /composer's wings and ships the dive across
+ * homepage route navigation. This remains wired only to the visual test route
+ * as the completed LaunchpadGrid decoupling proof.
+ *
  * Two exports:
  *   - COMPOSER_TILES: 9 per-section tiles (16 grid cells) for the decoupled
- *     LaunchpadGrid (`variant="composer"`). Every tile is `activate: true`, so
- *     the grid renders each primary control as a <button> that fires
- *     `onActivate(tile)` (opening the dive/takeover) instead of navigating.
- *     Tinted by the five wing colors from /composer's wing bands.
+ *     LaunchpadGrid (`variant="composer"`). Every tile keeps a real hash link
+ *     and opts into `onActivate(tile)` as a progressive enhancement that opens
+ *     the dive without sacrificing no-JS or modified-click behavior.
  *   - COMPOSER_TARGETS: the expand target manifest keyed by tile id. Each entry
  *     is a CLIENT-ONLY dynamic import of the rich section (or Outputs demo) the
  *     dive full-bleeds into, plus `needsDemoSeq` — true only for the two targets
@@ -38,9 +41,9 @@ const WING = {
  * Construct 2×2 (4) + Mandala 2×2 (4) + 3D 2×1 (2) + six 1×1 (6) = 16, a clean
  * multiple of 4 so the last row ships no holes.
  *
- * `href` is a graceful-degradation fallback (deep hash into the base route) —
- * unused for navigation because every tile is action-mode, but the interface
- * requires it and a no-JS render should still link somewhere sane.
+ * `href` is the graceful-degradation fallback. The enhanced click opens the
+ * same hash-synced target in place; without JavaScript, the fragment lands on
+ * the matching tile anchor.
  */
 export const COMPOSER_TILES: LaunchpadTileDef[] = [
 	{
