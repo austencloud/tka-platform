@@ -1,25 +1,70 @@
 <script lang="ts">
   import type { SeoDashboardSnapshot } from "$lib/features/admin/domain/models/seo-dashboard-model";
-  import { formatCriterion, formatPercent } from "./seo-dashboard-format";
+  import {
+    formatCriterion,
+    formatInteger,
+    formatPercent,
+  } from "./seo-dashboard-format";
+
+  const PLAIN_LABELS: Record<string, string> = {
+    treatment_impressions: "Enough Google appearances",
+    adjusted_impression_lift: "Visibility grew against comparison pages",
+    adjusted_click_lift: "Google visits grew against comparison pages",
+    head_term_position: "“Flow arts software” moved high enough",
+    indexed_sample_rate: "Google indexed enough sample pages",
+    organic_activation_rate: "Enough search visitors started creating",
+    head_term_ai_citation_rank: "TKA ranked high enough in the AI answer",
+    ai_overview_citation_rate: "Enough AI answers mentioned TKA",
+  };
 
   let { snapshot }: { snapshot: SeoDashboardSnapshot } = $props();
+
+  const passCount = $derived(
+    snapshot.decision.criteria.filter(
+      (criterion) => criterion.status === "pass"
+    ).length
+  );
+
+  function targetText(
+    criterion: SeoDashboardSnapshot["decision"]["criteria"][number]
+  ): string {
+    if (criterion.unit === "ratio") {
+      return "Goal: " + formatPercent(criterion.target);
+    }
+    if (criterion.unit === "position") {
+      return "Goal: position " + criterion.target + " or better";
+    }
+    return "Goal: " + formatInteger(criterion.target);
+  }
 </script>
 
 <section class="panel" aria-labelledby="gates-title">
   <div class="panel-heading">
     <div>
-      <span class="panel-kicker">Registered targets</span>
-      <h3 id="gates-title">Evidence gates</h3>
+      <span class="panel-kicker">The verdict</span>
+      <h3 id="gates-title">What counts as a win</h3>
     </div>
-    <span class="gate-count">{snapshot.decision.criteria.length}</span>
+    {#if snapshot.decision.criteria.length > 0}
+      <span class="gate-count">
+        {passCount}/{snapshot.decision.criteria.length} passed
+      </span>
+    {/if}
   </div>
+  <p class="panel-explanation">
+    These checks prevent one exciting number from being mistaken for proven
+    growth.
+  </p>
+
   {#if snapshot.decision.criteria.length === 0}
     <div class="not-due">
       <i class="fas fa-hourglass-half" aria-hidden="true"></i>
-      <p>
-        No gates are due. The first decision window opens after deployment and
-        confirmed indexing.
-      </p>
+      <div>
+        <strong>No pass or fail yet.</strong>
+        <p>
+          The first verdict opens after the SEO changes are live and Google
+          indexing is confirmed.
+        </p>
+      </div>
     </div>
   {:else}
     <ul class="criteria-list">
@@ -35,12 +80,8 @@
             ></i>
           </span>
           <div class="criterion-copy">
-            <strong>{criterion.label}</strong>
-            <span>
-              Target {criterion.unit === "ratio"
-                ? formatPercent(criterion.target)
-                : criterion.target}
-            </span>
+            <strong>{PLAIN_LABELS[criterion.id] ?? criterion.label}</strong>
+            <span>{targetText(criterion)}</span>
           </div>
           <span class="criterion-value">{formatCriterion(criterion)}</span>
         </li>
@@ -51,7 +92,8 @@
 
 <style>
   .panel {
-    padding: clamp(14px, 1.6vw, 22px);
+    height: 100%;
+    padding: clamp(14px, 1.2vw, 20px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 14px;
     background: var(--theme-card-bg, rgba(15, 23, 42, 0.74));
@@ -62,7 +104,6 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 16px;
   }
 
   .panel-kicker {
@@ -75,11 +116,11 @@
 
   h3 {
     margin: 3px 0 0;
-    font-size: clamp(1rem, 0.92rem + 0.4vw, 1.25rem);
+    font-size: clamp(1rem, 0.92rem + 0.35vw, 1.25rem);
   }
 
   .gate-count {
-    min-width: 2.4rem;
+    min-width: 5.5rem;
     padding: 5px 9px;
     border-radius: 999px;
     background: color-mix(in srgb, var(--theme-text, #fff) 7%, transparent);
@@ -88,55 +129,72 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .not-due {
-    display: flex;
-    min-height: 188px;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 24px;
-    text-align: center;
+  .panel-explanation {
+    margin: 10px 0 13px;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.62));
+    font-size: var(--font-size-compact, 0.75rem);
+    line-height: 1.4;
   }
 
-  .not-due i {
+  .not-due {
+    display: flex;
+    min-height: 174px;
+    align-items: center;
+    justify-content: center;
+    gap: 13px;
+    padding: 20px;
+    border-radius: 11px;
+    background: color-mix(in srgb, var(--theme-text, #fff) 3%, transparent);
+  }
+
+  .not-due > i {
     color: var(--semantic-seo-violet);
-    font-size: 1.5rem;
+    font-size: 1.35rem;
+  }
+
+  .not-due > div {
+    display: flex;
+    max-width: 25rem;
+    flex-direction: column;
+    gap: 5px;
   }
 
   .not-due p {
-    max-width: 25rem;
     margin: 0;
-    color: var(--theme-text-dim, rgba(248, 250, 252, 0.64));
-    font-size: var(--font-size-min, 0.875rem);
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.62));
+    font-size: var(--font-size-compact, 0.75rem);
+    line-height: 1.4;
   }
 
   .criteria-list {
     display: flex;
+    max-height: 190px;
     flex-direction: column;
-    gap: 7px;
+    gap: 6px;
     margin: 0;
     padding: 0;
+    overflow-y: auto;
     list-style: none;
   }
 
   .criterion {
     display: grid;
-    grid-template-columns: 28px minmax(0, 1fr) auto;
+    grid-template-columns: 26px minmax(0, 1fr) auto;
     align-items: center;
-    gap: 9px;
-    padding: 9px;
-    border-radius: 10px;
+    gap: 8px;
+    padding: 8px;
+    border-radius: 9px;
     background: color-mix(in srgb, var(--theme-text, #fff) 4%, transparent);
   }
 
   .criterion-mark {
     display: grid;
-    width: 26px;
-    height: 26px;
+    width: 24px;
+    height: 24px;
     place-items: center;
     border-radius: 50%;
     background: color-mix(in srgb, var(--theme-text, #fff) 7%, transparent);
+    font-size: var(--font-size-compact, 0.75rem);
   }
 
   .criterion-pass .criterion-mark {
@@ -155,12 +213,12 @@
   }
 
   .criterion-copy strong {
-    font-size: var(--font-size-min, 0.875rem);
+    font-size: var(--font-size-compact, 0.75rem);
   }
 
   .criterion-copy span,
   .criterion-value {
-    color: var(--theme-text-dim, rgba(248, 250, 252, 0.58));
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.56));
     font-size: var(--font-size-compact, 0.75rem);
   }
 
@@ -172,7 +230,6 @@
 
   @media (max-width: 520px) {
     .panel-heading {
-      align-items: stretch;
       flex-direction: column;
     }
   }

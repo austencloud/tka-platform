@@ -335,6 +335,12 @@
     overflow: hidden;
   }
 
+  /* The SEO command center owns its responsive grid and uses wide screens. */
+  .admin-content:has(#seo-panel) {
+    max-width: none;
+    overflow: hidden;
+  }
+
   #loop-labeler-panel {
     height: 100%;
   }

@@ -2,9 +2,9 @@
   import type { SeoDashboardSnapshot } from "$lib/features/admin/domain/models/seo-dashboard-model";
   import {
     formatInteger,
-    formatLift,
     formatPercent,
     formatPosition,
+    getSeoGrowthStory,
   } from "./seo-dashboard-format";
 
   let { snapshot }: { snapshot: SeoDashboardSnapshot } = $props();
@@ -23,106 +23,222 @@
       ? snapshot.aiOverview.current
       : snapshot.aiOverview.baseline
   );
+  const growth = $derived(getSeoGrowthStory(snapshot));
 </script>
 
-<section class="signal-grid" aria-label="Current SEO signals">
-  <article class="signal-card head-term-card">
-    <div class="signal-icon">
-      <i class="fas fa-crosshairs" aria-hidden="true"></i>
-    </div>
-    <div class="signal-copy">
-      <span class="signal-label">“flow arts software”</span>
-      <strong>{formatPosition(activeHeadTerm.position)}</strong>
-      <span class="signal-note">Google average position</span>
-    </div>
-  </article>
-
-  <article class="signal-card">
-    <div class="signal-icon">
-      <i class="fas fa-eye" aria-hidden="true"></i>
-    </div>
-    <div class="signal-copy">
-      <span class="signal-label">Search impressions</span>
-      <strong>{formatInteger(activeSearch.impressions)}</strong>
-      <span class="signal-note">
-        {formatLift(snapshot.search.controlAdjusted?.impressionLift)}
+<section class="signal-grid" aria-label="SEO growth summary">
+  <article class="growth-card growth-{growth.tone}">
+    <div class="growth-heading">
+      <span class="growth-icon" aria-hidden="true">
+        <i class="fas fa-arrow-trend-up"></i>
       </span>
+      <span>Growth since the SEO changes</span>
     </div>
+    <strong class="growth-value">{growth.value}</strong>
+    <div class="growth-copy">
+      <b>{growth.headline}</b>
+      <span>{growth.explanation}</span>
+    </div>
+    <p class="next-step">{growth.nextStep}</p>
   </article>
 
-  <article class="signal-card">
-    <div class="signal-icon">
-      <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-    </div>
-    <div class="signal-copy">
-      <span class="signal-label">Organic activation</span>
+  <div class="support-signals">
+    <article class="signal-card rank-card">
+      <div class="signal-icon">
+        <i class="fas fa-crosshairs" aria-hidden="true"></i>
+      </div>
+      <span class="signal-label">Google rank</span>
+      <strong>{formatPosition(activeHeadTerm.position)}</strong>
+      <span class="signal-note">For “flow arts software”</span>
+    </article>
+
+    <article class="signal-card">
+      <div class="signal-icon">
+        <i class="fas fa-eye" aria-hidden="true"></i>
+      </div>
+      <span class="signal-label">Google appearances</span>
+      <strong>{formatInteger(activeSearch.impressions)}</strong>
+      <span class="signal-note">Times tracked pages appeared in results</span>
+    </article>
+
+    <article class="signal-card">
+      <div class="signal-icon">
+        <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+      </div>
+      <span class="signal-label">Search visitors who start creating</span>
       <strong>{formatPercent(activeAcquisition.activationRate)}</strong>
       <span class="signal-note">
         {formatInteger(activeAcquisition.activatedSessions)} activated sessions
       </span>
-    </div>
-  </article>
+    </article>
 
-  <article class="signal-card">
-    <div class="signal-icon">
-      <i class="fas fa-link" aria-hidden="true"></i>
-    </div>
-    <div class="signal-copy">
-      <span class="signal-label">Indexed sample</span>
+    <article class="signal-card">
+      <div class="signal-icon">
+        <i class="fas fa-link" aria-hidden="true"></i>
+      </div>
+      <span class="signal-label">Pages Google can show</span>
       <strong>{formatPercent(snapshot.indexability.indexedRate)}</strong>
       <span class="signal-note">
-        {snapshot.indexability.indexed} of {snapshot.indexability.expected} URLs
+        {snapshot.indexability.indexed} of {snapshot.indexability.expected}
+        sample pages indexed
       </span>
-    </div>
-  </article>
+    </article>
 
-  <article class="signal-card ai-card">
-    <div class="signal-icon">
-      <i class="fas fa-robot" aria-hidden="true"></i>
-    </div>
-    <div class="signal-copy">
-      <span class="signal-label">AI Overview citations</span>
+    <article class="signal-card ai-card">
+      <div class="signal-icon">
+        <i class="fas fa-robot" aria-hidden="true"></i>
+      </div>
+      <span class="signal-label">AI answers mentioning TKA</span>
       <strong>{formatPercent(activeAudit.citationRate)}</strong>
       <span class="signal-note">
-        {activeAudit.citedTka} citations across {activeAudit.auditedQueries} checks
+        {activeAudit.citedTka} mentions across {activeAudit.auditedQueries}
+        checks
       </span>
-    </div>
-  </article>
+    </article>
+  </div>
 </section>
 
 <style>
   .signal-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+    grid-template-columns: minmax(310px, 0.9fr) minmax(0, 2.1fr);
     gap: 10px;
   }
 
+  .growth-card,
   .signal-card {
     position: relative;
-    display: flex;
-    min-height: 132px;
-    gap: 12px;
-    padding: clamp(14px, 1.5vw, 20px);
     overflow: hidden;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: 14px;
-    background: var(--theme-card-bg, rgba(15, 23, 42, 0.74));
+    background: var(--theme-card-bg, rgba(15, 23, 42, 0.78));
   }
 
+  .growth-card {
+    display: grid;
+    min-height: 172px;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-content: start;
+    gap: 7px 18px;
+    padding: clamp(16px, 1.4vw, 22px);
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-seo-accent) 44%,
+      transparent
+    );
+    background:
+      linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--semantic-seo-accent) 12%, transparent),
+        transparent 58%
+      ),
+      var(--theme-card-bg, rgba(15, 23, 42, 0.82));
+  }
+
+  .growth-card::after,
   .signal-card::after {
     position: absolute;
     inset: auto -28px -48px auto;
     width: 110px;
     height: 110px;
     border-radius: 50%;
-    background: color-mix(in srgb, var(--semantic-seo-accent) 9%, transparent);
+    background: color-mix(in srgb, var(--semantic-seo-accent) 8%, transparent);
     content: "";
   }
 
-  .head-term-card {
+  .growth-positive {
     border-color: color-mix(
       in srgb,
-      var(--semantic-seo-accent) 42%,
+      var(--semantic-success, #22c55e) 55%,
+      transparent
+    );
+  }
+
+  .growth-negative {
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-error, #ef4444) 55%,
+      transparent
+    );
+  }
+
+  .growth-heading {
+    display: flex;
+    grid-column: 1 / -1;
+    align-items: center;
+    gap: 9px;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.7));
+    font-size: var(--font-size-min, 0.875rem);
+    font-weight: 700;
+  }
+
+  .growth-icon,
+  .signal-icon {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--semantic-seo-accent) 13%, transparent);
+    color: var(--semantic-seo-accent);
+  }
+
+  .growth-value {
+    align-self: center;
+    font-size: clamp(2rem, 1.45rem + 1.65vw, 3.25rem);
+    line-height: 0.95;
+    letter-spacing: -0.04em;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .growth-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .growth-copy b {
+    font-size: var(--font-size-min, 0.875rem);
+  }
+
+  .growth-copy span,
+  .next-step {
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.62));
+    font-size: var(--font-size-compact, 0.75rem);
+    line-height: 1.35;
+  }
+
+  .next-step {
+    grid-column: 1 / -1;
+    margin: 3px 0 0;
+    padding-top: 9px;
+    border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    color: var(--semantic-seo-accent);
+    font-weight: 700;
+  }
+
+  .support-signals {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .signal-card {
+    display: flex;
+    min-height: 172px;
+    flex-direction: column;
+    gap: 7px;
+    padding: clamp(13px, 1vw, 17px);
+  }
+
+  .rank-card {
+    border-color: color-mix(
+      in srgb,
+      var(--semantic-seo-accent) 34%,
       transparent
     );
   }
@@ -130,20 +246,9 @@
   .ai-card {
     border-color: color-mix(
       in srgb,
-      var(--semantic-seo-violet) 34%,
+      var(--semantic-seo-violet) 32%,
       transparent
     );
-  }
-
-  .signal-icon {
-    display: grid;
-    width: 34px;
-    height: 34px;
-    flex: 0 0 auto;
-    place-items: center;
-    border-radius: 10px;
-    background: color-mix(in srgb, var(--semantic-seo-accent) 13%, transparent);
-    color: var(--semantic-seo-accent);
   }
 
   .ai-card .signal-icon {
@@ -151,38 +256,61 @@
     color: var(--semantic-seo-violet);
   }
 
-  .signal-copy {
-    display: flex;
-    min-width: 0;
-    flex-direction: column;
-    gap: 5px;
-  }
-
   .signal-label {
-    min-height: 2.4em;
-    color: var(--theme-text-dim, rgba(248, 250, 252, 0.68));
-    font-size: var(--font-size-min, 0.875rem);
-    line-height: 1.2;
+    min-height: 2.35em;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.7));
+    font-size: var(--font-size-compact, 0.75rem);
+    font-weight: 700;
+    line-height: 1.18;
   }
 
-  .signal-copy strong {
-    font-size: clamp(1.55rem, 1.15rem + 1.2vw, 2.25rem);
+  .signal-card strong {
+    margin-top: auto;
+    font-size: clamp(1.45rem, 1.15rem + 0.8vw, 2.15rem);
     line-height: 1;
+    letter-spacing: -0.025em;
     font-variant-numeric: tabular-nums;
   }
 
   .signal-note {
-    color: var(--theme-text-dim, rgba(248, 250, 252, 0.56));
+    min-height: 2.6em;
+    color: var(--theme-text-dim, rgba(248, 250, 252, 0.52));
     font-size: var(--font-size-compact, 0.75rem);
+    line-height: 1.3;
   }
 
-  @media (max-width: 520px) {
+  @container seo-center (max-width: 1320px) {
     .signal-grid {
       grid-template-columns: 1fr;
     }
+  }
 
-    .signal-card {
-      min-height: 112px;
+  @container seo-center (max-width: 860px) {
+    .support-signals {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .signal-card:last-child {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @container seo-center (max-width: 520px) {
+    .growth-card {
+      grid-template-columns: 1fr;
+    }
+
+    .growth-heading,
+    .next-step {
+      grid-column: 1;
+    }
+
+    .support-signals {
+      grid-template-columns: 1fr;
+    }
+
+    .signal-card:last-child {
+      grid-column: auto;
     }
   }
 </style>
