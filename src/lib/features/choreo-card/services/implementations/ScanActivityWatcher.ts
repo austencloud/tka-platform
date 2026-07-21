@@ -12,6 +12,7 @@ import {
   where,
 } from "firebase/firestore";
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
+import { parsePropTypeFromURLValue } from "$lib/shared/navigation/services/sequence-encoder";
 import type {
   IScanActivityWatcher,
   ScanActivityAuthor,
@@ -81,6 +82,11 @@ export class ScanActivityWatcher implements IScanActivityWatcher {
               deviceId:
                 typeof data.deviceId === "string" ? data.deviceId : null,
               userId: typeof data.userId === "string" ? data.userId : null,
+              bluePropType:
+                parsePropTypeFromURLValue(data.bluePropType) ?? null,
+              redPropType: parsePropTypeFromURLValue(data.redPropType) ?? null,
+              catDogMode:
+                typeof data.catDogMode === "boolean" ? data.catDogMode : null,
             };
           }
         );

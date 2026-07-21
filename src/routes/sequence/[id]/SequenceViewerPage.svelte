@@ -17,6 +17,7 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { loopDetector } from "$lib/features/create/generate/circular/services/loop-detector";
   import { parsePropsFromURL, parseSequenceRouteId, decodeSequenceWithCompression, isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
+  import { resolveScanPropConfig } from "$lib/shared/qr/services/scan-prop-resolver";
   import { decodeViewMode } from "$lib/shared/browse/domain/browse-view-mode";
   import { getPublicSequenceHashMatcher } from "$lib/shared/sequence-viewer/get-public-sequence-hash-matcher";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
@@ -384,18 +385,28 @@ import type { SequenceRouteMeta, SequenceSeoDocument } from "./sequence-seo";
         typeof window !== "undefined" &&
         isGenuineScan(id)
       ) {
+        const scanUrl = new URL(window.location.href);
+        const scanPropConfig = resolveScanPropConfig(
+          resolvedSequence,
+          parsePropsFromURL(scanUrl.searchParams)
+        );
         shortCodeManager.incrementScanCount(id).catch(() => {});
-        shortCodeManager.logScanEvent(id, {
-          printId: new URL(window.location.href).searchParams.get("pid") || null,
-          country: null,
-          city: null,
-          userAgent: navigator.userAgent,
-          screenWidth: window.screen.width,
-          screenHeight: window.screen.height,
-          referrer: document.referrer || null,
-          userId: null,
-          deviceId: getDeviceId(),
-        }).catch(() => {});
+        shortCodeManager
+          .logScanEvent(id, {
+            printId: scanUrl.searchParams.get("pid") || null,
+            country: null,
+            city: null,
+            userAgent: navigator.userAgent,
+            screenWidth: window.screen.width,
+            screenHeight: window.screen.height,
+            referrer: document.referrer || null,
+            userId: null,
+            deviceId: getDeviceId(),
+            bluePropType: scanPropConfig.bluePropType,
+            redPropType: scanPropConfig.redPropType,
+            catDogMode: scanPropConfig.catDogMode,
+          })
+          .catch(() => {});
       }
 
       if (!resolvedSequence) {

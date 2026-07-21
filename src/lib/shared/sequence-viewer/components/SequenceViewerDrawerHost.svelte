@@ -21,7 +21,11 @@
     openSequenceOverlay,
   } from "../state/sequence-viewer-overlay-state.svelte";
   import { getShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
-  import { isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
+  import {
+    isInlineEncoded,
+    parsePropsFromURL,
+  } from "$lib/shared/navigation/services/sequence-encoder";
+  import { resolveScanPropConfig } from "$lib/shared/qr/services/scan-prop-resolver";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
   import { getLoopDetector } from "$lib/shared/create/get-loop-detector";
@@ -86,18 +90,28 @@
         typeof window !== "undefined" &&
         isGenuineScan(code)
       ) {
+        const scanUrl = new URL(window.location.href);
+        const scanPropConfig = resolveScanPropConfig(
+          resolved,
+          parsePropsFromURL(scanUrl.searchParams)
+        );
         manager.incrementScanCount(code).catch(() => {});
-        manager.logScanEvent(code, {
-          printId: new URL(window.location.href).searchParams.get("pid") || null,
-          country: null,
-          city: null,
-          userAgent: navigator.userAgent,
-          screenWidth: window.screen.width,
-          screenHeight: window.screen.height,
-          referrer: document.referrer || null,
-          userId: null,
-          deviceId: getDeviceId(),
-        }).catch(() => {});
+        manager
+          .logScanEvent(code, {
+            printId: scanUrl.searchParams.get("pid") || null,
+            country: null,
+            city: null,
+            userAgent: navigator.userAgent,
+            screenWidth: window.screen.width,
+            screenHeight: window.screen.height,
+            referrer: document.referrer || null,
+            userId: null,
+            deviceId: getDeviceId(),
+            bluePropType: scanPropConfig.bluePropType,
+            redPropType: scanPropConfig.redPropType,
+            catDogMode: scanPropConfig.catDogMode,
+          })
+          .catch(() => {});
       }
 
       if (overlay.isOpen) return;

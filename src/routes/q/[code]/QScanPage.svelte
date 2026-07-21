@@ -23,7 +23,10 @@
   import { goto } from "$app/navigation";
   import { onMount, onDestroy } from "svelte";
   import { browser } from "$app/environment";
-  import { isInlineEncoded } from "$lib/shared/navigation/services/sequence-encoder";
+  import {
+    isInlineEncoded,
+    parsePropsFromURL,
+  } from "$lib/shared/navigation/services/sequence-encoder";
   import { ShortCodeManager } from "$lib/shared/qr/services/short-code-manager";
   import { configureShortCodeManager } from "$lib/shared/qr/get-short-code-manager";
   import { hydrateSequence } from "$lib/shared/navigation/services/sequence-hydrator";
@@ -44,7 +47,7 @@
   import { authState, initializeAuthListener } from "$lib/shared/auth/state/auth-state.svelte";
   import { simplifyRepeatedWord, compressWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { isDashLetter, getBaseLetter } from "$lib/shared/pictograph/tka-glyph/utils/letter-image-getter";
-  import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+  import { resolveScanPropConfig } from "$lib/shared/qr/services/scan-prop-resolver";
   import { updateSettings } from "$lib/shared/application/state/app-state.svelte";
   import { initializeAppServices } from "$lib/shared/application/state/services.svelte";
   import { settingsService } from "$lib/shared/settings/state/settings-state.svelte";
@@ -588,26 +591,19 @@
       // own. Every scan event from here on carries it.
       updateScanAttribution({ sequenceWord: word });
 
-      // Printed cards encode their prop in the QR URL (?bp=<type>), and the
-      // sequence itself carries intendedProp. Seed the app settings so the
-      // orchestrator's prop resolver renders the scanned card's real prop
-      // (triad/fan/etc.) instead of the staff default. Validate against the
-      // enum so a junk param can't poison the player.
-      const propValues = Object.values(PropType) as string[];
-      const urlProp = page.url.searchParams.get("bp");
-      const urlPropType =
-        urlProp && propValues.includes(urlProp) ? (urlProp as PropType) : null;
-      const seedProp =
-        urlPropType ??
-        (seq.intendedProp?.bluePropType as PropType | undefined) ??
-        null;
-      if (seedProp) {
-        updateSettings({
-          bluePropType: seedProp,
-          redPropType: seedProp,
-          catDogMode: seq.intendedProp?.catDogMode ?? false,
-        });
-      }
+      // The URL identifies the physical card that was scanned. The shortcode
+      // record and sequence intent cover reconstructed links and older cards.
+      // Keep blue and red independent so mixed-prop cards stay mixed.
+      const scanPropConfig = resolveScanPropConfig(
+        seq,
+        parsePropsFromURL(page.url.searchParams),
+        record
+      );
+      updateSettings({
+        bluePropType: scanPropConfig.bluePropType,
+        redPropType: scanPropConfig.redPropType,
+        catDogMode: scanPropConfig.catDogMode,
+      });
 
       OrchestratorComponent = OrchestratorModule.default;
       ShellComponent = ShellModule.default;
@@ -675,6 +671,9 @@
             // be enriched later, so the deck belongs on them too.
             deckId,
             deckName,
+            bluePropType: scanPropConfig.bluePropType,
+            redPropType: scanPropConfig.redPropType,
+            catDogMode: scanPropConfig.catDogMode,
           })
           .catch(() => {});
         void shortCodeManager

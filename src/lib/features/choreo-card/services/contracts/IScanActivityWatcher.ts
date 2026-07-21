@@ -1,3 +1,5 @@
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+
 export interface ScanActivityEventRecord {
   id: string;
   code: string;
@@ -8,6 +10,9 @@ export interface ScanActivityEventRecord {
   lng: number | null;
   deviceId: string | null;
   userId: string | null;
+  bluePropType: PropType | null;
+  redPropType: PropType | null;
+  catDogMode: boolean | null;
 }
 
 export interface ScanActivityCardDocument {

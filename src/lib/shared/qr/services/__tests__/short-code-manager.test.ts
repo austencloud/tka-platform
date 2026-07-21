@@ -98,6 +98,7 @@ vi.mock("$lib/shared/navigation/services/sequence-encoder", () => ({
   decodeSequenceFromQR: vi.fn(),
 }));
 
+import { addDoc } from "firebase/firestore";
 import { ShortCodeManager } from "../short-code-manager";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
@@ -242,5 +243,37 @@ describe("ShortCodeManager allocation", () => {
 
     expect(result.code).toBe("AA11");
     expect(result.isNew).toBe(false);
+  });
+});
+
+describe("ShortCodeManager scan events", () => {
+  it("persists the physical card's resolved prop configuration", async () => {
+    vi.mocked(addDoc).mockClear();
+    const manager = makeManager();
+
+    await manager.logScanEvent("PROP", {
+      printId: "print-1",
+      country: "US",
+      city: "Chicago",
+      userAgent: "test",
+      screenWidth: 1200,
+      screenHeight: 800,
+      referrer: null,
+      userId: "user-1",
+      deviceId: "device-1",
+      bluePropType: "poi",
+      redPropType: "fan",
+      catDogMode: true,
+    });
+
+    expect(vi.mocked(addDoc)).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        bluePropType: "poi",
+        redPropType: "fan",
+        catDogMode: true,
+        timestamp: expect.any(String),
+      })
+    );
   });
 });

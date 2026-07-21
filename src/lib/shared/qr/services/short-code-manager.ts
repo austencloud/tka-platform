@@ -229,6 +229,10 @@ export interface ShortCodeData {
    *  and SSR meta was null on every scan ever recorded. */
   deckId?: string;
   deckName?: string;
+  /** Prop values stored when the physical-card URL was created. Historical
+   * records may use either compact URL codes ("P") or full values ("poi"). */
+  bluePropType?: string;
+  redPropType?: string;
   /** Read by the /q SSR loader's field mask for OG tags. No writer sets them
    *  yet (nothing in this file, `scripts/create-shortcodes-batch.js`, or the
    *  snapshot function emits either), so they are reserved rather than live —
@@ -1252,6 +1256,11 @@ export class ShortCodeManager {
        *  rewritten, Firestore scanEvents can. */
       deckId?: string | null;
       deckName?: string | null;
+      /** Resolved from the scanned URL before persistence. These values belong
+       * to this physical scan, unlike the shared shortcode record. */
+      bluePropType?: string | null;
+      redPropType?: string | null;
+      catDogMode?: boolean | null;
     }
   ): Promise<void> {
     try {
