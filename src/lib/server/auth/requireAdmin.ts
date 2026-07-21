@@ -12,22 +12,15 @@
 import type { RequestEvent } from "@sveltejs/kit";
 import { error } from "@sveltejs/kit";
 import { requireFirebaseUser, type FirebaseUser } from "./requireFirebaseUser";
-import { getAdminDb } from "../firebaseAdmin";
 
-export async function requireAdmin(
-  event: RequestEvent,
-): Promise<FirebaseUser> {
+export function hasAdminClaim(user: FirebaseUser): boolean {
+  return user.admin === true || user.isAdmin === true || user.role === "admin";
+}
+
+export async function requireAdmin(event: RequestEvent): Promise<FirebaseUser> {
   const caller = await requireFirebaseUser(event);
 
-  const db = getAdminDb();
-  const userDoc = await db.collection("users").doc(caller.uid).get();
-
-  if (!userDoc.exists) {
-    throw error(403, "Admin access required");
-  }
-
-  const data = userDoc.data();
-  if (data?.role !== "admin" && data?.isAdmin !== true) {
+  if (!hasAdminClaim(caller)) {
     throw error(403, "Admin access required");
   }
 
