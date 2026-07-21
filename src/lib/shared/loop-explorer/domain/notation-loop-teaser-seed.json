@@ -1,0 +1,422 @@
+{
+  "word": "MW-CΔMW-CΔMW-CΔMW-CΔ",
+  "startPosition": "gamma3",
+  "steps": [
+    {
+      "letter": "M",
+      "startPosition": "gamma3",
+      "endPosition": "gamma13",
+      "stepNumber": 1,
+      "blueMotion": {
+        "motionType": "pro",
+        "startLocation": "n",
+        "endLocation": "w",
+        "rotationDirection": "ccw",
+        "startOrientation": "in",
+        "endOrientation": "counter",
+        "turns": 1.5,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "pro",
+        "startLocation": "e",
+        "endLocation": "s",
+        "rotationDirection": "cw",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 0,
+        "plane": "wall"
+      }
+    },
+    {
+      "letter": "W-",
+      "startPosition": "gamma13",
+      "endPosition": "alpha7",
+      "stepNumber": 2,
+      "blueMotion": {
+        "motionType": "dash",
+        "startLocation": "w",
+        "endLocation": "e",
+        "rotationDirection": "ccw",
+        "startOrientation": "counter",
+        "endOrientation": "clock",
+        "turns": 2,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "pro",
+        "startLocation": "s",
+        "endLocation": "w",
+        "rotationDirection": "cw",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 2,
+        "plane": "wall"
+      }
+    },
+    {
+      "letter": "C",
+      "startPosition": "alpha7",
+      "endPosition": "alpha1",
+      "stepNumber": 3,
+      "blueMotion": {
+        "motionType": "anti",
+        "startLocation": "e",
+        "endLocation": "s",
+        "rotationDirection": "ccw",
+        "startOrientation": "clock",
+        "endOrientation": "clock",
+        "turns": 3,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "pro",
+        "startLocation": "w",
+        "endLocation": "n",
+        "rotationDirection": "cw",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 2,
+        "plane": "wall"
+      }
+    },
+    {
+      "letter": "Δ",
+      "startPosition": "alpha1",
+      "endPosition": "gamma1",
+      "stepNumber": 4,
+      "blueMotion": {
+        "motionType": "anti",
+        "startLocation": "s",
+        "endLocation": "w",
+        "rotationDirection": "ccw",
+        "startOrientation": "clock",
+        "endOrientation": "out",
+        "turns": 1.5,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "static",
+        "startLocation": "n",
+        "endLocation": "n",
+        "rotationDirection": "noRotation",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 0,
+        "plane": "wall"
+      }
+    },
+    {
+      "letter": "M",
+      "startPosition": "gamma1",
+      "endPosition": "gamma11",
+      "stepNumber": 5,
+      "blueMotion": {
+        "motionType": "pro",
+        "startLocation": "w",
+        "endLocation": "s",
+        "rotationDirection": "ccw",
+        "startOrientation": "out",
+        "endOrientation": "clock",
+        "turns": 1.5,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "pro",
+        "startLocation": "n",
+        "endLocation": "e",
+        "rotationDirection": "cw",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 0,
+        "plane": "wall"
+      }
+    },
+    {
+      "letter": "W-",
+      "startPosition": "gamma11",
+      "endPosition": "alpha5",
+      "stepNumber": 6,
+      "blueMotion": {
+        "motionType": "dash",
+        "startLocation": "s",
+        "endLocation": "n",
+        "rotationDirection": "ccw",
+        "startOrientation": "clock",
+        "endOrientation": "counter",
+        "turns": 2,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "pro",
+        "startLocation": "e",
+        "endLocation": "s",
+        "rotationDirection": "cw",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 2,
+        "plane": "wall"
+      }
+    },
+    {
+      "letter": "C",
+      "startPosition": "alpha5",
+      "endPosition": "alpha7",
+      "stepNumber": 7,
+      "blueMotion": {
+        "motionType": "anti",
+        "startLocation": "n",
+        "endLocation": "e",
+        "rotationDirection": "ccw",
+        "startOrientation": "counter",
+        "endOrientation": "counter",
+        "turns": 3,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "pro",
+        "startLocation": "s",
+        "endLocation": "w",
+        "rotationDirection": "cw",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 2,
+        "plane": "wall"
+      }
+    },
+    {
+      "letter": "Δ",
+      "startPosition": "alpha7",
+      "endPosition": "gamma7",
+      "stepNumber": 8,
+      "blueMotion": {
+        "motionType": "anti",
+        "startLocation": "e",
+        "endLocation": "s",
+        "rotationDirection": "ccw",
+        "startOrientation": "counter",
+        "endOrientation": "in",
+        "turns": 1.5,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "static",
+        "startLocation": "w",
+        "endLocation": "w",
+        "rotationDirection": "noRotation",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 0,
+        "plane": "wall"
+      }
+    },
+    {
+      "letter": "M",
+      "startPosition": "gamma7",
+      "endPosition": "gamma9",
+      "stepNumber": 9,
+      "blueMotion": {
+        "motionType": "pro",
+        "startLocation": "s",
+        "endLocation": "e",
+        "rotationDirection": "ccw",
+        "startOrientation": "in",
+        "endOrientation": "counter",
+        "turns": 1.5,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "pro",
+        "startLocation": "w",
+        "endLocation": "n",
+        "rotationDirection": "cw",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 0,
+        "plane": "wall"
+      }
+    },
+    {
+      "letter": "W-",
+      "startPosition": "gamma9",
+      "endPosition": "alpha3",
+      "stepNumber": 10,
+      "blueMotion": {
+        "motionType": "dash",
+        "startLocation": "e",
+        "endLocation": "w",
+        "rotationDirection": "ccw",
+        "startOrientation": "counter",
+        "endOrientation": "clock",
+        "turns": 2,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "pro",
+        "startLocation": "n",
+        "endLocation": "e",
+        "rotationDirection": "cw",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 2,
+        "plane": "wall"
+      }
+    },
+    {
+      "letter": "C",
+      "startPosition": "alpha3",
+      "endPosition": "alpha5",
+      "stepNumber": 11,
+      "blueMotion": {
+        "motionType": "anti",
+        "startLocation": "w",
+        "endLocation": "n",
+        "rotationDirection": "ccw",
+        "startOrientation": "clock",
+        "endOrientation": "clock",
+        "turns": 3,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "pro",
+        "startLocation": "e",
+        "endLocation": "s",
+        "rotationDirection": "cw",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 2,
+        "plane": "wall"
+      }
+    },
+    {
+      "letter": "Δ",
+      "startPosition": "alpha5",
+      "endPosition": "gamma5",
+      "stepNumber": 12,
+      "blueMotion": {
+        "motionType": "anti",
+        "startLocation": "n",
+        "endLocation": "e",
+        "rotationDirection": "ccw",
+        "startOrientation": "clock",
+        "endOrientation": "out",
+        "turns": 1.5,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "static",
+        "startLocation": "s",
+        "endLocation": "s",
+        "rotationDirection": "noRotation",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 0,
+        "plane": "wall"
+      }
+    },
+    {
+      "letter": "M",
+      "startPosition": "gamma5",
+      "endPosition": "gamma15",
+      "stepNumber": 13,
+      "blueMotion": {
+        "motionType": "pro",
+        "startLocation": "e",
+        "endLocation": "n",
+        "rotationDirection": "ccw",
+        "startOrientation": "out",
+        "endOrientation": "clock",
+        "turns": 1.5,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "pro",
+        "startLocation": "s",
+        "endLocation": "w",
+        "rotationDirection": "cw",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 0,
+        "plane": "wall"
+      }
+    },
+    {
+      "letter": "W-",
+      "startPosition": "gamma15",
+      "endPosition": "alpha1",
+      "stepNumber": 14,
+      "blueMotion": {
+        "motionType": "dash",
+        "startLocation": "n",
+        "endLocation": "s",
+        "rotationDirection": "ccw",
+        "startOrientation": "clock",
+        "endOrientation": "counter",
+        "turns": 2,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "pro",
+        "startLocation": "w",
+        "endLocation": "n",
+        "rotationDirection": "cw",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 2,
+        "plane": "wall"
+      }
+    },
+    {
+      "letter": "C",
+      "startPosition": "alpha1",
+      "endPosition": "alpha3",
+      "stepNumber": 15,
+      "blueMotion": {
+        "motionType": "anti",
+        "startLocation": "s",
+        "endLocation": "w",
+        "rotationDirection": "ccw",
+        "startOrientation": "counter",
+        "endOrientation": "counter",
+        "turns": 3,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "pro",
+        "startLocation": "n",
+        "endLocation": "e",
+        "rotationDirection": "cw",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 2,
+        "plane": "wall"
+      }
+    },
+    {
+      "letter": "Δ",
+      "startPosition": "alpha3",
+      "endPosition": "gamma3",
+      "stepNumber": 16,
+      "blueMotion": {
+        "motionType": "anti",
+        "startLocation": "w",
+        "endLocation": "n",
+        "rotationDirection": "ccw",
+        "startOrientation": "counter",
+        "endOrientation": "in",
+        "turns": 1.5,
+        "plane": "wall"
+      },
+      "redMotion": {
+        "motionType": "static",
+        "startLocation": "e",
+        "endLocation": "e",
+        "rotationDirection": "noRotation",
+        "startOrientation": "in",
+        "endOrientation": "in",
+        "turns": 0,
+        "plane": "wall"
+      }
+    }
+  ]
+}

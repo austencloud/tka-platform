@@ -1,59 +1,90 @@
 /**
  * Loop Explorer — Curated Seed Pool (fallback)
  *
- * Pre-verified sequences per (LOOPType, slice), used when
- * `explorer-generator.generateVerifiedExample` exhausts its retries without
- * the detector confirming an exact component-set match. Per spec ("Two-pane
- * linked explanation" / "Self-verifying generation"), this is the LAST
- * resort — the generator always tries live generation first.
+ * `curated-seeds.json` is verification-harness output, not persisted app
+ * data. Its compact wire shape predates canonical `SequenceData`: steps carry
+ * `blueMotion` / `redMotion`, positions are strings, and view-layer defaults
+ * are omitted. Keep that distinction explicit at this boundary. Casting the
+ * JSON straight to `SequenceData` lets those strings reach the animation
+ * engine as if they were `StartPositionData` objects.
  *
- * Populated from `curated-seeds.json`, Task A3's offline verification
- * harness output (`scripts/verify-loop-explorer.mjs`): every implemented
- * combo x legal slice, mass-generated, cross-checked against the app and
- * engine detectors. Shape: `{ [loopType]: { [slice]: SequenceData[] } }` —
- * multiple verified sequences per combo so refresh can vary even on the
- * fallback path. `mirrored_rotated_swapped@halved` has zero verified seeds
- * (see the harness report's Findings section — the combo's own generator
- * path crashes on end-position selection); `findCuratedSeed` returns null
- * for that pair and the showcase shows its "couldn't verify" state, which is
- * honest given no seed has actually been verified.
+ * Seeds hydrate on demand and cache by pool position. Editorial routes import
+ * the dedicated teaser fixture instead, so this complete fallback corpus is
+ * only parsed when the Loop Explorer itself needs it.
  */
 
 import curatedSeedsJson from "./curated-seeds.json";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import {
+  hydrateCuratedSequence,
+  type CuratedSequenceWire,
+} from "./curated-seed-hydrator";
 import type { LoopSlice } from "./legality";
 
-export interface CuratedSeed {
-  readonly loopType: LOOPType;
-  readonly slice: LoopSlice;
-  readonly sequence: SequenceData;
+type CuratedSeedsWire = Record<
+  string,
+  Partial<Record<LoopSlice, readonly CuratedSequenceWire[]>>
+>;
+
+const RAW = curatedSeedsJson as unknown as CuratedSeedsWire;
+const cache = new Map<string, SequenceData | null>();
+
+function hydrateAt(
+  loopType: LOOPType,
+  slice: LoopSlice,
+  index: number
+): SequenceData | null {
+  const key = `${loopType}:${slice}:${index}`;
+  if (cache.has(key)) return cache.get(key) ?? null;
+
+  const wire = RAW[loopType]?.[slice]?.[index];
+  if (!wire) {
+    cache.set(key, null);
+    return null;
+  }
+
+  try {
+    const sequence = hydrateCuratedSequence(wire, loopType, slice, index);
+    cache.set(key, sequence);
+    return sequence;
+  } catch (error) {
+    console.error(`[curated-seeds] rejected ${key}`, error);
+    cache.set(key, null);
+    return null;
+  }
 }
 
-type CuratedSeedsJson = Record<string, Partial<Record<LoopSlice, SequenceData[]>>>;
-
-const RAW = curatedSeedsJson as unknown as CuratedSeedsJson;
-
-/** Flattened for inspection/tests; `findCuratedSeed` reads `RAW` directly. */
-export const CURATED_SEEDS: readonly CuratedSeed[] = Object.entries(RAW).flatMap(
-  ([loopType, bySlice]) =>
-    Object.entries(bySlice ?? {}).flatMap(([slice, sequences]) =>
-      (sequences ?? []).map((sequence) => ({
-        loopType: loopType as LOOPType,
-        slice: slice as LoopSlice,
-        sequence,
-      }))
-    )
-);
+/** Deterministic accessor for SSR/editorial surfaces. */
+export function getCuratedSeed(
+  loopType: LOOPType,
+  slice: LoopSlice,
+  index = 0
+): SequenceData | null {
+  return hydrateAt(loopType, slice, index);
+}
 
 /**
- * Picks a random verified seed for the (loopType, slice) pair so a refresh
- * that falls all the way through to the curated pool still shows variety
- * instead of the same fixed example every time. Returns null when the
- * harness verified zero seeds for this pair (see module doc).
+ * Picks a verified fallback for the explorer. If one entry is malformed,
+ * continue through the pool instead of turning a single bad fixture into a
+ * page-level failure.
  */
-export function findCuratedSeed(loopType: LOOPType, slice: LoopSlice): SequenceData | null {
+export function findCuratedSeed(
+  loopType: LOOPType,
+  slice: LoopSlice
+): SequenceData | null {
   const pool = RAW[loopType]?.[slice];
-  if (!pool || pool.length === 0) return null;
-  return pool[Math.floor(Math.random() * pool.length)] ?? null;
+  if (!pool?.length) return null;
+
+  const startIndex = Math.floor(Math.random() * pool.length);
+  for (let offset = 0; offset < pool.length; offset += 1) {
+    const sequence = hydrateAt(
+      loopType,
+      slice,
+      (startIndex + offset) % pool.length
+    );
+    if (sequence) return sequence;
+  }
+
+  return null;
 }

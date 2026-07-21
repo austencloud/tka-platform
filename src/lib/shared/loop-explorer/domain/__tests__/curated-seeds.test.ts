@@ -1,0 +1,79 @@
+import { describe, expect, it } from "vitest";
+import curatedSeedsJson from "../curated-seeds.json";
+import teaserSeedJson from "../notation-loop-teaser-seed.json";
+import { getCuratedSeed } from "../curated-seeds";
+import { NOTATION_LOOP_TEASER_SEQUENCE } from "../notation-loop-teaser";
+import { LOOPType } from "$lib/shared/foundation/domain/models/generation/circular-models";
+import { FrameBuilder } from "$lib/shared/animation-engine/services/frame-builder";
+import type { LoopSlice } from "../legality";
+
+const sequences = Object.entries(curatedSeedsJson)
+  .flatMap(([loopType, bySlice]) =>
+    Object.entries(bySlice).map(([slice, pool]) =>
+      (pool as unknown[]).map((_entry: unknown, index: number) =>
+        getCuratedSeed(loopType as LOOPType, slice as LoopSlice, index)
+      )
+    )
+  )
+  .flat(2);
+
+describe("curated LOOP seed hydration", () => {
+  it("hydrates the complete wire corpus into canonical motion-bearing sequences", () => {
+    expect(sequences.every(Boolean)).toBe(true);
+    const hydrated = sequences.filter((sequence) => sequence !== null);
+    expect(new Set(hydrated.map((sequence) => sequence.id)).size).toBe(
+      hydrated.length
+    );
+
+    for (const sequence of hydrated) {
+      expect(sequence.startPosition).toEqual(
+        expect.objectContaining({
+          isStartPosition: true,
+          motions: expect.objectContaining({
+            blue: expect.any(Object),
+            red: expect.any(Object),
+          }),
+        })
+      );
+      expect(sequence.steps.length).toBeGreaterThan(0);
+
+      for (const step of sequence.steps) {
+        expect(step.startPosition).not.toBeNull();
+        expect(step.endPosition).not.toBeNull();
+        expect(step.motions.blue.color).toBe("blue");
+        expect(step.motions.red.color).toBe("red");
+        expect(step.motions.blue.isVisible).toBe(true);
+        expect(step.motions.red.isVisible).toBe(true);
+      }
+    }
+  });
+
+  it("returns one stable editorial seed without hydrating it as a string start pose", () => {
+    const first = getCuratedSeed(LOOPType.ROTATED, "quartered");
+    const again = getCuratedSeed(LOOPType.ROTATED, "quartered");
+
+    expect(first).toBe(again);
+    expect(first?.startPosition).not.toBe("gamma3");
+    expect(typeof first?.startPosition).toBe("object");
+    expect(first?.steps[0]?.motions.blue).toEqual(
+      expect.objectContaining({ motionType: expect.any(String) })
+    );
+  });
+
+  it("keeps the lightweight notation fixture locked to the verified corpus", () => {
+    expect(teaserSeedJson).toEqual(curatedSeedsJson.rotated.quartered[0]);
+    expect(NOTATION_LOOP_TEASER_SEQUENCE).toEqual(
+      getCuratedSeed(LOOPType.ROTATED, "quartered")
+    );
+  });
+});
+
+describe("FrameBuilder runtime boundary", () => {
+  it("falls back safely when untrusted data supplies a string step pose", () => {
+    const builder = new FrameBuilder();
+
+    expect(builder.calculateTurnsTuple("gamma3" as never, null)).toBe(
+      "(s, 0, 0)"
+    );
+  });
+});
