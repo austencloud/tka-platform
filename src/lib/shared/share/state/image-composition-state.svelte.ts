@@ -105,13 +105,46 @@ type Observer = () => void;
 class ImageCompositionStateManager {
   private settings = $state<ImageCompositionSettings>({ ...DEFAULT_SETTINGS });
   private observers = new Set<Observer>();
+  // Set by any user-driven save. A change made in this session outranks anything
+  // a later Firestore snapshot carries, so adoption backs off once it's true.
+  private changedThisSession = false;
 
   constructor() {
     if (browser) {
       this.loadSettings();
       // Stay in sync with global dark mode changes
       this.syncWithAnimationVisibility();
+      this.adoptRemoteSettingsOnArrival();
     }
+  }
+
+  /**
+   * Re-seat these settings when the real Firestore copy lands.
+   *
+   * loadSettings() runs at construction, which races Firebase auth restore and
+   * the initial settings fetch — so it can only ever see local copies. Without
+   * this, a stale local copy stayed authoritative for the whole session (and got
+   * pushed back up to Firestore by the "local is newer" branch of
+   * syncFromFirebase, overwriting the good server value). That is what made a
+   * saved "Auto" column choice reappear as 8 on the next launch.
+   */
+  private adoptRemoteSettingsOnArrival(): void {
+    settingsService.onRemoteSettingsApplied?.((remote) => {
+      const incoming = remote.imageExport;
+      if (!incoming || this.changedThisSession) return;
+
+      this.settings = {
+        ...DEFAULT_SETTINGS,
+        ...incoming,
+        // Owned by AnimationVisibilityManager, not by account settings.
+        darkMode: this.settings.darkMode,
+      };
+      this.normalizeOverrides();
+      // Local copy only: writing back through settingsService would echo into
+      // another snapshot and loop.
+      this.writeLocalCopy();
+      this.notifyObservers();
+    });
   }
 
   /**
@@ -134,23 +167,27 @@ class ImageCompositionStateManager {
   }
 
   /**
-   * Load settings from Firebase (if authenticated) or localStorage (if guest)
+   * Load the local copy of these settings.
+   *
+   * NOT a Firestore read. `settingsService.currentSettings.imageExport` at
+   * construction time is the account-settings localStorage MIRROR, which is only
+   * written when a user is signed in — so it goes stale the moment a change is
+   * made before auth restores, and it was outranking the dedicated store below.
+   * The dedicated store is written on every change, signed in or not, so it is
+   * the local source of truth; the mirror only seeds a browser that has none.
+   * The authoritative server copy arrives later via adoptRemoteSettingsOnArrival().
    */
   private loadSettings(): void {
-    // First try to load from Firebase if authenticated
-    const firebaseSettings = settingsService.currentSettings.imageExport;
+    const localCopy = this.readLocalCopy();
+    const accountMirror = settingsService.currentSettings.imageExport;
+    const seed = localCopy ?? (getAuthSync().currentUser ? accountMirror : null);
 
-    if (firebaseSettings && getAuthSync().currentUser) {
-      // Use Firebase settings for authenticated users
-      this.settings = { ...DEFAULT_SETTINGS, ...firebaseSettings };
-      // Fix truncated default that was persisted due to previous save bug
-      if (this.settings.customNotesText === "Created using TKA Scrib") {
-        this.settings.customNotesText = DEFAULT_SETTINGS.customNotesText;
-        this.saveToStorage();
-      }
-    } else {
-      // Fall back to localStorage for guests or if no Firebase settings exist
-      this.loadFromStorage();
+    this.settings = { ...DEFAULT_SETTINGS, ...(seed ?? {}) };
+
+    // Fix truncated default that was persisted due to previous save bug
+    if (this.settings.customNotesText === "Created using TKA Scrib") {
+      this.settings.customNotesText = DEFAULT_SETTINGS.customNotesText;
+      this.saveToStorage();
     }
 
     // Migrate: old persisted "column" default → new "row" default.
@@ -164,25 +201,7 @@ class ImageCompositionStateManager {
       this.saveToStorage();
     }
 
-    // Ensure overrides objects exist for older persisted data
-    if (!this.settings.startPositionLayoutOverrides) {
-      this.settings.startPositionLayoutOverrides = {};
-    }
-    if (!this.settings.columnCountOverrides) {
-      this.settings.columnCountOverrides = {};
-    }
-    if (!this.settings.infoCellChoiceOverrides) {
-      this.settings.infoCellChoiceOverrides = {};
-    }
-    // Clean up any stale overrides for sequences too short to have column options
-    let cleaned = false;
-    for (const key of Object.keys(this.settings.columnCountOverrides)) {
-      if (Number(key) < 4) {
-        delete this.settings.columnCountOverrides[key];
-        cleaned = true;
-      }
-    }
-    if (cleaned) this.saveToStorage();
+    if (this.normalizeOverrides()) this.saveToStorage();
 
     // One-time: retire the "Created using Flow Arts Composer" branding note as a
     // default. Flips ONLY users who never customized the note (text is still the
@@ -207,43 +226,73 @@ class ImageCompositionStateManager {
       }
     }
     // Note: darkMode is synced from AnimationVisibilityManager in syncWithAnimationVisibility()
+
+    // Migrations above run saveToStorage; none of them is a user edit, so a real
+    // remote copy is still allowed to win when it lands.
+    this.changedThisSession = false;
   }
 
-  private loadFromStorage(): void {
+  private readLocalCopy(): Partial<ImageCompositionSettings> | null {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        this.settings = { ...DEFAULT_SETTINGS, ...parsed };
-      }
+      return stored ? (JSON.parse(stored) as Partial<ImageCompositionSettings>) : null;
     } catch {
       console.warn("Failed to load image composition settings from storage");
+      return null;
     }
   }
 
   /**
-   * Save settings to both localStorage and Firebase (if authenticated)
+   * Backfill override maps missing from older persisted data and drop column
+   * overrides for lengths with no column options. Returns true when it changed
+   * something, so the caller can persist.
    */
-  private saveToStorage(): void {
-    if (!browser) return;
+  private normalizeOverrides(): boolean {
+    let changed = false;
+    if (!this.settings.startPositionLayoutOverrides) {
+      this.settings.startPositionLayoutOverrides = {};
+      changed = true;
+    }
+    if (!this.settings.columnCountOverrides) {
+      this.settings.columnCountOverrides = {};
+      changed = true;
+    }
+    if (!this.settings.infoCellChoiceOverrides) {
+      this.settings.infoCellChoiceOverrides = {};
+      changed = true;
+    }
+    for (const key of Object.keys(this.settings.columnCountOverrides)) {
+      if (Number(key) < 4) {
+        delete this.settings.columnCountOverrides[key];
+        changed = true;
+      }
+    }
+    return changed;
+  }
 
-    // Always save to localStorage for immediate persistence and guest users
+  private writeLocalCopy(): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.settings));
     } catch {
       console.warn("Failed to save image composition settings to localStorage");
     }
-
-    // Also save to Firebase if authenticated
-    if (getAuthSync().currentUser) {
-      this.saveToFirebase();
-    }
   }
 
   /**
-   * Save settings to Firebase for authenticated users
+   * Persist to the dedicated local store AND the account-settings mirror.
+   *
+   * The mirror write is deliberately NOT gated on auth. It used to be, which let
+   * the two local copies diverge whenever a change happened before auth restored
+   * — and loadSettings() read the mirror. settingsService only forwards to
+   * Firestore when a user is signed in, so an unconditional call here is still
+   * correct for guests.
    */
-  private saveToFirebase(): void {
+  private saveToStorage(): void {
+    if (!browser) return;
+
+    this.changedThisSession = true;
+    this.writeLocalCopy();
+
     // Spread to create a plain object - settingsService.updateSetting uses === reference
     // equality to skip no-ops, and passing the same $state proxy would always match.
     void settingsService.updateSetting("imageExport", { ...this.settings });

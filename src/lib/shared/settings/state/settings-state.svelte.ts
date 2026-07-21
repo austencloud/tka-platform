@@ -88,6 +88,10 @@ const settingsState = $state<AppSettings>(initialSettings);
 class SettingsState {
   private firebasePersistence: FirebaseSettingsPersister | null = null;
   private unsubscribeFirebaseSync: (() => void) | null = null;
+  // Fired only when settings that genuinely came off Firestore are applied.
+  // Sub-managers (image composition) cache their own slice at construction, which
+  // races auth restore; this is how they learn the authoritative copy arrived.
+  private remoteAppliedListeners = new Set<(settings: AppSettings) => void>();
   private syncInitialized = false;
   private isSavingToFirebase = false;
   private pendingFirebaseSave: Promise<void> | null = null;
@@ -280,6 +284,25 @@ class SettingsState {
     }
 
     this.saveSettingsToStorage(settingsState);
+
+    this.remoteAppliedListeners.forEach((listener) => {
+      try {
+        listener(remoteSettings);
+      } catch (error) {
+        console.error("❌ [SettingsState] Remote-applied listener failed:", error);
+      }
+    });
+  }
+
+  /**
+   * Subscribe to settings that arrived from Firestore (initial sync or a live
+   * snapshot). Distinct from reading `currentSettings`, which at boot is just the
+   * localStorage mirror and can be older than both the local slice stores and the
+   * server copy.
+   */
+  onRemoteSettingsApplied(listener: (settings: AppSettings) => void): () => void {
+    this.remoteAppliedListeners.add(listener);
+    return () => this.remoteAppliedListeners.delete(listener);
   }
 
   cleanup(): void {
