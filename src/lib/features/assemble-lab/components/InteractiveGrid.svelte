@@ -780,6 +780,7 @@
 
 <style>
   .interactive-grid {
+    position: relative;
     width: auto;
     max-width: 100%;
     height: 100%;
