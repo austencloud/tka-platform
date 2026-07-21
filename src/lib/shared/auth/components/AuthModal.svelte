@@ -20,6 +20,8 @@
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
   import { authDrawerState } from "$lib/shared/auth/state/auth-drawer-state.svelte";
   import { AUTH_NUDGE_TEXTS } from "$lib/shared/auth/domain/auth-nudge-trigger";
+  import { getLastAuthMethod } from "$lib/shared/auth/services/last-auth-method.svelte";
+  import LastUsedBadge from "./LastUsedBadge.svelte";
 
   function handleGoogleOneTapError(error: Error) {
     console.error("[AuthModal] Google One Tap sign-in failed", error);
@@ -50,6 +52,12 @@
 
   // Facebook sign-in failure surfaced inline, mirroring AuthSheet/SocialAuthCompact.
   let facebookError = $state<string | null>(null);
+
+  // If this device last signed in with an email method, the social buttons
+  // aren't where the user needs to go — badge the email toggle instead, and let
+  // EmailAuthTabs open on the right tab (magic link vs password).
+  const lastMethod = $derived(getLastAuthMethod());
+  const lastUsedEmail = $derived(lastMethod === "magic-link" || lastMethod === "password");
 
   // Sync internal mode whenever the modal opens with a specific initial mode.
   $effect(() => {
@@ -156,7 +164,16 @@
 
     <!-- Email auth toggle -->
     {#if !showEmailAuth}
-      <button class="email-toggle" onclick={() => (showEmailAuth = true)}>
+      <button
+        class="email-toggle"
+        onclick={() => (showEmailAuth = true)}
+        aria-label={lastUsedEmail
+          ? "Continue with email, last used on this device"
+          : "Continue with email"}
+      >
+        {#if lastUsedEmail}
+          <LastUsedBadge />
+        {/if}
         <i class="fas fa-envelope" aria-hidden="true"></i>
         <span>Continue with email</span>
       </button>
@@ -317,6 +334,9 @@
 
   /* Email toggle button */
   .email-toggle {
+    /* Anchor for the absolutely-positioned LastUsedBadge. The badge is out of
+       flow, so this button's box is unchanged whether or not it renders. */
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;

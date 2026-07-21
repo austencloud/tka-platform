@@ -25,6 +25,8 @@
   import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
   import { FACEBOOK_LOGIN_ENABLED } from "$lib/shared/auth/services/auth-providers.config";
   import { mapAuthError, getAuthErrorCode } from "$lib/shared/auth/services/auth-error-messages";
+  import { getLastAuthMethod } from "$lib/shared/auth/services/last-auth-method.svelte";
+  import LastUsedBadge from "./LastUsedBadge.svelte";
 
   let { mode = "signin", onFacebookAuth } = $props<{
     mode: "signin" | "signup";
@@ -38,6 +40,11 @@
   // WebView (Google/Meta block WebView sign-in). Hide it there until it's
   // wired through the native plugin. browser-guard: Capacitor is client-only.
   const showFacebook = FACEBOOK_LOGIN_ENABLED && !(browser && isNative());
+
+  // Which button this device signed in with last. Removes the "wait, was it
+  // Google or email?" guess that otherwise ends in the wrong provider and an
+  // "account exists with a different credential" dead end.
+  const lastMethod = $derived(getLastAuthMethod());
 
   async function handleGoogleClick() {
     if (isLoading) return;
@@ -110,10 +117,13 @@
       class="social-compact-button social-compact-button--google"
       onclick={handleGoogleClick}
       disabled={isLoading}
-      aria-label={mode === "signin"
-        ? "Sign in with Google"
-        : "Sign up with Google"}
+      aria-label={`${mode === "signin" ? "Sign in with Google" : "Sign up with Google"}${
+        lastMethod === "google" ? ", last used on this device" : ""
+      }`}
     >
+      {#if lastMethod === "google"}
+        <LastUsedBadge />
+      {/if}
       {#if isLoading}
         <ProgressRing percent={-1} size={24} strokeWidth={2} />
         Signing in...
@@ -126,10 +136,13 @@
       <button
         class="social-compact-button social-compact-button--facebook"
         onclick={handleFacebookClick}
-        aria-label={mode === "signin"
-          ? "Sign in with Facebook"
-          : "Sign up with Facebook"}
+        aria-label={`${mode === "signin" ? "Sign in with Facebook" : "Sign up with Facebook"}${
+          lastMethod === "facebook" ? ", last used on this device" : ""
+        }`}
       >
+        {#if lastMethod === "facebook"}
+          <LastUsedBadge />
+        {/if}
         <FacebookIcon />
         Facebook
       </button>
@@ -161,10 +174,16 @@
     gap: clamp(6px, 1vw, 10px);
     width: 100%;
     max-width: 400px;
+    /* Room for the "Last used" badge, which straddles a button's top edge.
+       Reserved unconditionally so the row's geometry is identical whether or
+       not a badge renders — the badge can never move these buttons. */
+    padding-top: 0.5rem;
   }
 
   .social-compact-button {
     flex: 1;
+    /* Anchor for the absolutely-positioned LastUsedBadge. */
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;

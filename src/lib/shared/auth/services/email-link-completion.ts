@@ -146,6 +146,11 @@ export async function completeEmailLinkSignIn(
 
     window.localStorage.removeItem(EMAIL_FOR_SIGN_IN_KEY);
 
+    // Both branches above (anon link + plain sign-in) converge here, so this is
+    // the single point that covers every magic-link completion.
+    const { recordLastAuthMethod } = await import("./last-auth-method.svelte");
+    recordLastAuthMethod("magic-link");
+
     // Magic-link accounts have no password. If this account is email-only (no
     // OAuth provider to fall back on), flag it to require setting one. The boot
     // cloud-sync clears this if the account already has a password (e.g. an

@@ -175,6 +175,10 @@ export class AccountManager {
     // Delete the Firebase Auth account
     await deleteUser(user);
 
+    // The "last used" sign-in hint points at an account that no longer exists.
+    const { clearLastAuthMethod } = await import("./last-auth-method.svelte");
+    clearLastAuthMethod();
+
     // Sign out through the app wrapper (not the raw Firebase SDK signOut) so
     // onboarding cloud-sync state (app-entry, first-run, password-onboarding)
     // gets reset the same way a normal sign-out resets it - otherwise the

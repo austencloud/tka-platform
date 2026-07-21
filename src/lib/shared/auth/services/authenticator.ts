@@ -31,6 +31,7 @@ import { auth, getAuthInstance } from "../firebase";
 import { upgradeAnonymousWithFacebook } from "./anonymous-upgrade";
 import { promptAnonymousImport } from "$lib/shared/auth/state/anonymous-import-prompt.svelte";
 import { clearPendingLink, stashPendingLink } from "./pending-credential-link";
+import { recordLastAuthMethod } from "./last-auth-method.svelte";
 
 /**
  * On an "account exists with a different credential" collision, capture the
@@ -67,6 +68,7 @@ export async function signInWithGoogle(): Promise<void> {
   if (isDesktop()) {
     const { signInWithDesktopOAuth } = await import("$lib/shared/desktop/tauri-auth-bridge");
     await signInWithDesktopOAuth();
+    recordLastAuthMethod("google");
     return;
   }
 
@@ -80,6 +82,7 @@ export async function signInWithGoogle(): Promise<void> {
   if (isNative()) {
     const { nativeGoogleCredential } = await import("./native-google-auth");
     await signInWithCredential(auth, await nativeGoogleCredential());
+    recordLastAuthMethod("google");
     return;
   }
 
@@ -92,11 +95,13 @@ export async function signInWithGoogle(): Promise<void> {
   provider.addScope("profile");
   notePopupCoop();
   await signInWithPopup(authInstance, provider);
+  recordLastAuthMethod("google");
 }
 
 export async function signInWithGoogleCredential(idToken: string): Promise<void> {
   const credential = GoogleAuthProvider.credential(idToken);
   await signInWithCredential(auth, credential);
+  recordLastAuthMethod("google");
 }
 
 export async function signInWithFacebook(): Promise<void> {
@@ -114,6 +119,7 @@ export async function signInWithFacebook(): Promise<void> {
   notePopupCoop();
   try {
     await signInWithPopup(authInstance, provider);
+    recordLastAuthMethod("facebook");
   } catch (error) {
     // Email already owned by a Google/email account: stash the pending Facebook
     // credential so the next sign-in auto-links it, then surface the error so the
@@ -134,6 +140,7 @@ async function setAuthPersistence(): Promise<void> {
 export async function signInWithEmail(email: string, password: string): Promise<void> {
   await setAuthPersistence();
   await signInWithEmailAndPassword(auth, email, password);
+  recordLastAuthMethod("password");
 }
 
 export async function signUpWithEmail(
@@ -154,6 +161,7 @@ export async function signUpWithEmail(
     "$lib/shared/onboarding/state/password-onboarding-state.svelte"
   );
   passwordOnboardingState.markHasPassword();
+  recordLastAuthMethod("password");
 
   await sendEmailVerification(userCredential.user);
 }

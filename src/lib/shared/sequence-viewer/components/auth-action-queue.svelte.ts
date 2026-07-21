@@ -142,6 +142,10 @@ export function createAuthActionQueue() {
       provider.addScope("profile");
       notePopupCoop();
       await signInWithPopup(auth, provider);
+      const { recordLastAuthMethod } = await import(
+        "$lib/shared/auth/services/last-auth-method.svelte"
+      );
+      recordLastAuthMethod("google");
       signInSheetOpen = false;
     } catch (err) {
       const code = (err as { code?: string })?.code;

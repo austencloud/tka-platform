@@ -19,6 +19,7 @@ import {
 } from "firebase/auth";
 import { getAuthInstance } from "$lib/shared/auth/firebase";
 import { stashPendingLink } from "$lib/shared/auth/services/pending-credential-link";
+import { recordLastAuthMethod } from "$lib/shared/auth/services/last-auth-method.svelte";
 import { getPropUnlockManager } from "$lib/shared/gamification/get-prop-unlock-manager";
 import { getLibraryRepository } from "$lib/shared/library/get-library-repository";
 import { toast } from "$lib/shared/toast/state/toast-state.svelte";
@@ -137,11 +138,13 @@ export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
     try {
       await linkWithCredential(anon, credential);
       void notifyUpgradeSignup();
+      recordLastAuthMethod("google");
       return { status: "linked" };
     } catch (error) {
       if (isCollision(error)) {
         await signInWithCredential(auth, credential);
         captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
+        recordLastAuthMethod("google");
         return { status: "collision-signed-in", importable: drafts };
       }
       throw error;
@@ -154,6 +157,7 @@ export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
   try {
     await linkWithPopup(anon, provider);
     void notifyUpgradeSignup();
+    recordLastAuthMethod("google");
     return { status: "linked" };
   } catch (error) {
     if (isCollision(error)) {
@@ -161,6 +165,7 @@ export async function upgradeAnonymousWithGoogle(): Promise<UpgradeResult> {
       if (cred) await signInWithCredential(auth, cred);
       else throw error;
       captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
+      recordLastAuthMethod("google");
       return { status: "collision-signed-in", importable: drafts };
     }
     throw error;
@@ -178,6 +183,7 @@ export async function upgradeAnonymousWithFacebook(): Promise<UpgradeResult> {
   try {
     await linkWithPopup(anon, provider);
     void notifyUpgradeSignup();
+    recordLastAuthMethod("facebook");
     return { status: "linked" };
   } catch (error) {
     if (isCollision(error)) {
@@ -185,6 +191,7 @@ export async function upgradeAnonymousWithFacebook(): Promise<UpgradeResult> {
       if (cred) await signInWithCredential(auth, cred);
       else throw error;
       captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
+      recordLastAuthMethod("facebook");
       return { status: "collision-signed-in", importable: drafts };
     }
     // The Facebook email already belongs to a DIFFERENT provider's account
@@ -215,11 +222,13 @@ export async function upgradeAnonymousWithEmail(
   try {
     await linkWithCredential(anon, credential);
     void notifyUpgradeSignup();
+    recordLastAuthMethod("password");
     return { status: "linked" };
   } catch (error) {
     if (isCollision(error)) {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
+      recordLastAuthMethod("password");
       return { status: "collision-signed-in", importable: drafts };
     }
     throw error;
@@ -260,5 +269,6 @@ export async function upgradeMagicLinkCollision(
   const drafts = await captureAnonDrafts(anonUid);
   await signInWithEmailLink(auth, email, link);
   captureEvent("guest_upgraded_to_account", { status: "collision-signed-in" });
+  recordLastAuthMethod("magic-link");
   return drafts;
 }

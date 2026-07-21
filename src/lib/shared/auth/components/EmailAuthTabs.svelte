@@ -11,7 +11,9 @@
 
   import EmailPasswordAuth from "./EmailPasswordAuth.svelte";
   import EmailLinkAuth from "./EmailLinkAuth.svelte";
+  import LastUsedBadge from "./LastUsedBadge.svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
+  import { getLastAuthMethod } from "$lib/shared/auth/services/last-auth-method.svelte";
 
   interface Props {
     mode?: "signin" | "signup";
@@ -19,8 +21,14 @@
 
   let { mode = $bindable("signin") }: Props = $props();
 
-  // Default to magic link (passwordless) as modern best practice
-  let activeTab = $state<"magic" | "password">("magic");
+  const lastMethod = getLastAuthMethod();
+
+  // Default to magic link (passwordless) as modern best practice — unless this
+  // device last signed in with a password, in which case landing on the magic
+  // tab just makes the user hunt for the form they actually want.
+  let activeTab = $state<"magic" | "password">(
+    lastMethod === "password" ? "password" : "magic"
+  );
 </script>
 
 <div class="email-auth-tabs">
@@ -31,7 +39,13 @@
       class="tab"
       class:active={activeTab === "magic"}
       onclick={() => (activeTab = "magic")}
+      aria-label={lastMethod === "magic-link"
+        ? "Magic Link, last used on this device"
+        : undefined}
     >
+      {#if lastMethod === "magic-link"}
+        <LastUsedBadge />
+      {/if}
       <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
       <span>Magic Link</span>
     </button>
@@ -41,7 +55,13 @@
       class="tab"
       class:active={activeTab === "password"}
       onclick={() => (activeTab = "password")}
+      aria-label={lastMethod === "password"
+        ? `${t("auth_password")}, last used on this device`
+        : undefined}
     >
+      {#if lastMethod === "password"}
+        <LastUsedBadge />
+      {/if}
       <i class="fas fa-key" aria-hidden="true"></i>
       <span>{t("auth_password")}</span>
     </button>
@@ -67,7 +87,9 @@
   .tab-bar {
     display: flex;
     gap: 4px;
-    padding: 4px;
+    /* Extra top padding reserves the space the "Last used" badge straddles
+       into. Unconditional, so the bar's height never depends on the badge. */
+    padding: 0.5rem 4px 4px;
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
     border-radius: clamp(8px, 1.2vh, 12px);
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
@@ -75,6 +97,8 @@
 
   .tab {
     flex: 1;
+    /* Anchor for the absolutely-positioned LastUsedBadge. */
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
