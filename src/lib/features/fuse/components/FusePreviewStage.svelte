@@ -1,11 +1,6 @@
 <script lang="ts">
   import { Popover } from "bits-ui";
-  import BpmChips from "$lib/shared/animation-engine/components/controls/BpmChips.svelte";
   import BpmQuickPopover from "$lib/shared/animation-engine/components/controls/BpmQuickPopover.svelte";
-  import {
-    PLAYBACK_MAX_BPM,
-    PLAYBACK_MIN_BPM,
-  } from "$lib/shared/animation-engine/domain/constants/timing";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import ActionButton from "$lib/shared/components/selection/ActionButton.svelte";
   import { getSequenceDisplayName } from "$lib/shared/foundation/services/word-deriver";
@@ -111,19 +106,6 @@
          badge on FuseAnimationPreview). No standalone transport button — the
          app-wide direction is canvas-tap for play/pause. -->
     <div class="stage-controls">
-      <!-- Wide desktop: the tempo controls live in the open, spending the
-           Fuse button's spare width. Narrower layouts fall back to the
-           popover so the row still fits. -->
-      <div class="bpm-inline">
-        <BpmChips
-          bpm={fuseState.bpm}
-          min={PLAYBACK_MIN_BPM}
-          max={PLAYBACK_MAX_BPM}
-          variant="full"
-          onBpmChange={(value) => fuseState.setBpm(value)}
-        />
-      </div>
-
       <div class="bpm-compact">
         <Popover.Root bind:open={tempoOpen}>
           <Popover.Trigger>
