@@ -73,6 +73,11 @@ describe("shortcode scan-cell backfill", () => {
       warmCells: vi.fn(),
     }).promise;
 
-    expect(result).toMatchObject({ done: 1, total: 1, failed: 1 });
+    expect(result).toMatchObject({
+      done: 1,
+      total: 1,
+      failed: 1,
+      failedCodes: ["BROKEN"],
+    });
   });
 });

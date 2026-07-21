@@ -41,9 +41,81 @@ export interface WarmSequenceCellsResult {
 
 export class IncompleteCellWarmError extends Error {
   constructor(readonly result: WarmSequenceCellsResult) {
-    super(`Canonical scan assets incomplete: ${result.ready}/${result.total} ready`);
+    super(
+      `Canonical scan assets incomplete: ${result.ready}/${result.total} ready`
+    );
     this.name = "IncompleteCellWarmError";
   }
+}
+
+// A full legacy backfill walks thousands of shortcode records that collapse to
+// a much smaller set of canonical pictographs. Once a strict warm has rendered,
+// uploaded, and read a hash back, keep that proof for the rest of the browser
+// session. Concurrent sequences that share a cell also join the same promise,
+// so the worker pool never rasterizes an identical canonical object twice.
+const verifiedCloudHashes = new Set<string>();
+const pendingVerifiedWarms = new Map<string, Promise<void>>();
+
+async function renderCanonicalCell(
+  data: PictographData,
+  cell: "start" | number,
+  isDark: boolean,
+  renderOptions: PreviewCellRenderOptions,
+  hash: string,
+  verifyUpload: boolean
+): Promise<void> {
+  let url: string | null = null;
+  try {
+    url = await renderCell(
+      data,
+      cell === "start" ? undefined : cell,
+      isDark,
+      renderOptions
+    );
+
+    if (verifyUpload) {
+      const stored = await pictographCloudCache.download(hash);
+      if (!stored) throw new Error("uploaded object could not be read back");
+    }
+  } finally {
+    if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+  }
+}
+
+async function ensureVerifiedCanonicalCell(
+  data: PictographData,
+  cell: "start" | number,
+  isDark: boolean,
+  renderOptions: PreviewCellRenderOptions,
+  hash: string
+): Promise<void> {
+  if (verifiedCloudHashes.has(hash)) return;
+
+  let pending = pendingVerifiedWarms.get(hash);
+  if (!pending) {
+    pending = renderCanonicalCell(
+      data,
+      cell,
+      isDark,
+      renderOptions,
+      hash,
+      true
+    ).then(() => {
+      verifiedCloudHashes.add(hash);
+    });
+    pendingVerifiedWarms.set(hash, pending);
+
+    const clearPending = (): void => {
+      if (pendingVerifiedWarms.get(hash) === pending) {
+        pendingVerifiedWarms.delete(hash);
+      }
+    };
+    // Register both outcomes so cleanup never creates a detached rejected
+    // promise. Every caller still awaits `pending` and receives the failure.
+    void pending.then(clearPending, clearPending);
+  }
+
+  await pending;
 }
 
 export async function warmSequenceCells(
@@ -71,19 +143,29 @@ export async function warmSequenceCells(
 
   const outcomes = await Promise.all(
     entries.map(async ({ cell, data }) => {
-      let url: string | null = null;
       try {
-        const hash = await deriveCloudCellHash(data, opts.isDark ?? true, renderOptions);
-        url = await renderCell(
+        const hash = await deriveCloudCellHash(
           data,
-          cell === "start" ? undefined : cell,
           opts.isDark ?? true,
           renderOptions
         );
-
         if (opts.requireComplete) {
-          const stored = await pictographCloudCache.download(hash);
-          if (!stored) throw new Error("uploaded object could not be read back");
+          await ensureVerifiedCanonicalCell(
+            data,
+            cell,
+            opts.isDark ?? true,
+            renderOptions,
+            hash
+          );
+        } else {
+          await renderCanonicalCell(
+            data,
+            cell,
+            opts.isDark ?? true,
+            renderOptions,
+            hash,
+            false
+          );
         }
 
         return { hash } as const;
@@ -94,8 +176,6 @@ export async function warmSequenceCells(
             reason: error instanceof Error ? error.message : String(error),
           },
         } as const;
-      } finally {
-        if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
       }
     })
   );
@@ -117,4 +197,10 @@ export async function warmSequenceCells(
     throw new IncompleteCellWarmError(result);
   }
   return result;
+}
+
+/** Test-only reset of the strict warm proof registry. */
+export function _resetWarmStateForTest(): void {
+  verifiedCloudHashes.clear();
+  pendingVerifiedWarms.clear();
 }

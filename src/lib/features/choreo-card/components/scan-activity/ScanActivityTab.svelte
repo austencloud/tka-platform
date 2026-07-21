@@ -12,6 +12,14 @@
   import FilterChipBase from "$lib/shared/browse/components/filter-chips/FilterChipBase.svelte";
   import RecentScansList from "./RecentScansList.svelte";
   import ScanCardPeek from "./ScanCardPeek.svelte";
+  import ScanCellWarmControls from "./ScanCellWarmControls.svelte";
+  import type { ScanCellWarmState } from "$lib/features/choreo-card/state/scan-cell-warm-state.svelte";
+
+  interface Props {
+    cellWarmState: ScanCellWarmState;
+  }
+
+  let { cellWarmState }: Props = $props();
 
   const { state: scanState } = getScanActivityContext();
   const apiKey = $derived(env.PUBLIC_GOOGLE_MAPS_API_KEY ?? "");
@@ -180,6 +188,11 @@
       />
     {/if}
   </div>
+
+  <ScanCellWarmControls
+    state={cellWarmState}
+    selectedCode={scanState.selectedCode}
+  />
 
   <div class="metrics" aria-label="Scan summary for the current view">
     <div>

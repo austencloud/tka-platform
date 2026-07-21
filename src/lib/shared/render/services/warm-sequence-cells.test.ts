@@ -15,21 +15,30 @@ vi.mock("$lib/shared/render/services/cloud-cell-key", () => ({
     deriveCloudCellHash(args[0] as { letter?: string }),
 }));
 
-const cloudDownload = vi.fn().mockResolvedValue(new Blob(["ready"], { type: "image/webp" }));
+const cloudDownload = vi
+  .fn()
+  .mockResolvedValue(new Blob(["ready"], { type: "image/webp" }));
 vi.mock("$lib/shared/render/services/pictograph-cloud-cache", () => ({
   download: (...args: unknown[]) => cloudDownload(...args),
 }));
 
-vi.mock("$lib/shared/pictograph/shared/services/start-position-deriver", () => ({
-  startPositionDeriver: {
-    getOrDeriveStartPosition: (sequence: { startPosition?: unknown }) =>
-      sequence.startPosition ?? null,
-  },
-}));
+vi.mock(
+  "$lib/shared/pictograph/shared/services/start-position-deriver",
+  () => ({
+    startPositionDeriver: {
+      getOrDeriveStartPosition: (sequence: { startPosition?: unknown }) =>
+        sequence.startPosition ?? null,
+    },
+  })
+);
 
 globalThis.URL.revokeObjectURL = vi.fn();
 
-import { IncompleteCellWarmError, warmSequenceCells } from "./warm-sequence-cells";
+import {
+  _resetWarmStateForTest,
+  IncompleteCellWarmError,
+  warmSequenceCells,
+} from "./warm-sequence-cells";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
@@ -44,9 +53,12 @@ const sequence = {
 
 describe("warmSequenceCells", () => {
   beforeEach(() => {
+    _resetWarmStateForTest();
     vi.clearAllMocks();
     renderCell.mockResolvedValue("blob:fake");
-    cloudDownload.mockResolvedValue(new Blob(["ready"], { type: "image/webp" }));
+    cloudDownload.mockResolvedValue(
+      new Blob(["ready"], { type: "image/webp" })
+    );
   });
 
   it("verifies start and every step under the exact canonical prop pair", async () => {
@@ -90,5 +102,37 @@ describe("warmSequenceCells", () => {
     await expect(
       warmSequenceCells(sequence, { requireComplete: true })
     ).rejects.toBeInstanceOf(IncompleteCellWarmError);
+  });
+
+  it("renders each verified hash once across concurrent sequences and later calls", async () => {
+    await Promise.all([
+      warmSequenceCells(sequence, { requireComplete: true }),
+      warmSequenceCells(sequence, { requireComplete: true }),
+    ]);
+
+    expect(renderCell).toHaveBeenCalledTimes(3);
+    expect(cloudDownload).toHaveBeenCalledTimes(3);
+
+    await warmSequenceCells(sequence, { requireComplete: true });
+
+    expect(renderCell).toHaveBeenCalledTimes(3);
+    expect(cloudDownload).toHaveBeenCalledTimes(3);
+  });
+
+  it("retries a hash after strict verification fails", async () => {
+    cloudDownload.mockResolvedValueOnce(null);
+    await expect(
+      warmSequenceCells(sequence, { requireComplete: true })
+    ).rejects.toBeInstanceOf(IncompleteCellWarmError);
+
+    cloudDownload.mockResolvedValue(
+      new Blob(["ready"], { type: "image/webp" })
+    );
+    await warmSequenceCells(sequence, { requireComplete: true });
+
+    // The two hashes that verified successfully remain reusable; only the
+    // failed hash is rendered and read back again.
+    expect(renderCell).toHaveBeenCalledTimes(4);
+    expect(cloudDownload).toHaveBeenCalledTimes(4);
   });
 });

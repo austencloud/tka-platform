@@ -27,6 +27,8 @@ export interface CellWarmProgress {
   total: number;
   /** Sequences whose warm threw (skipped, run continues). */
   failed: number;
+  /** Exact shortcode ids that can be retried without repeating the full run. */
+  failedCodes: readonly string[];
   /** Display word of the sequence just processed. */
   current?: string;
   finished: boolean;
@@ -52,25 +54,23 @@ export interface CellWarmDeps {
 }
 
 async function listAllShortCodes(): Promise<readonly string[]> {
-  const [{ collection, getDocs }, { getFirestoreInstance }] = await Promise.all([
-    import("firebase/firestore"),
-    import("$lib/shared/auth/firebase"),
-  ]);
+  const [{ collection, getDocs }, { getFirestoreInstance }] = await Promise.all(
+    [import("firebase/firestore"), import("$lib/shared/auth/firebase")]
+  );
   const firestore = await getFirestoreInstance();
   const snapshot = await getDocs(collection(firestore, "shortcodes"));
   return snapshot.docs.map((doc) => doc.id);
 }
 
 async function resolveShortCode(code: string): Promise<ShortCodeResolution> {
-  const { getShortCodeManager } = await import(
-    "$lib/shared/qr/get-short-code-manager"
-  );
+  const { getShortCodeManager } =
+    await import("$lib/shared/qr/get-short-code-manager");
   return getShortCodeManager().resolveShortCodeWithRecord(code);
 }
 
 export function startScanCellWarm(
   onProgress: (p: CellWarmProgress) => void,
-  deps?: CellWarmDeps,
+  deps?: CellWarmDeps
 ): CellWarmHandle {
   let cancelled = false;
 
@@ -78,6 +78,7 @@ export function startScanCellWarm(
     done: 0,
     total: 0,
     failed: 0,
+    failedCodes: [],
     finished: false,
     cancelled: false,
   };
@@ -122,6 +123,7 @@ export function startScanCellWarm(
           );
         } catch {
           progress.failed++;
+          progress.failedCodes = [...progress.failedCodes, code];
           progress.current = code;
         }
 
@@ -132,7 +134,7 @@ export function startScanCellWarm(
 
     const workers = Array.from(
       { length: Math.min(concurrency, Math.max(codes.length, 1)) },
-      () => runWorker(),
+      () => runWorker()
     );
     await Promise.all(workers);
 
