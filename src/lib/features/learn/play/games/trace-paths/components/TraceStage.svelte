@@ -128,13 +128,34 @@ Pointer discipline
     }
   }
 
+  /**
+   * Measure the surface as soon as it exists, and again whenever it resizes.
+   *
+   * This used to run only from `handlePointerDown`, which meant the physical
+   * touch floor was unknown for the whole of the first round — the one round on
+   * a phone it most needed to protect — and the route strokes drew at a fallback
+   * scale until something was touched. All panels render the same square, so
+   * whichever reports first is the right answer for all of them.
+   */
+  function measured(element: HTMLElement) {
+    measurePanel(element);
+    const observer = new ResizeObserver(() => measurePanel(element));
+    observer.observe(element);
+    return { destroy: () => observer.disconnect() };
+  }
+
   function flush(): void {
     frameHandle = null;
     for (const [pointerId, samples] of pending) {
       if (samples.length === 0) continue;
-      trace.pointerMove(pointerId, samples);
+      // Drain each BUFFER, never the map. `pending`'s keys are also this
+      // component's active-pointer registry — every move, up, cancel and lost
+      // capture below early-returns on a missing key. Clearing the map here
+      // made a stroke go deaf after its first animation frame: the rest of the
+      // gesture was never graded, the lift never released its capture, and a
+      // pointercancel never reached the pause it is required to trigger.
+      trace.pointerMove(pointerId, samples.splice(0, samples.length));
     }
-    pending.clear();
   }
 
   function scheduleFlush(): void {
@@ -301,7 +322,15 @@ Pointer discipline
 
 <div class="trace-stage">
   <div class="stage-area" class:side-by-side={sideBySide} bind:this={stageArea}>
-    {#each panels as panelHands (panelHands[0])}
+    <!-- Keyed by SLOT, not by hand. One Hand mode swaps which hand a panel
+         shows the moment that hand satisfies its beat — while the finger is
+         still down. Keying on the hand made Svelte destroy the very element
+         holding that pointer's capture, and a detached capture element fires
+         `lostpointercapture`, which this component (correctly) treats as an
+         interruption. The round paused itself, twice a beat, out of a run it was
+         grading. The slot count is stable, so the surface survives the swap and
+         only its props change. -->
+    {#each panels as panelHands, panelIndex (panelIndex)}
       {@const hand = panelHands[0]!}
       <div class="panel">
         <div class="panel-label {hand === MotionColor.BLUE ? 'blue' : 'red'}">
@@ -316,6 +345,7 @@ Pointer discipline
           class="surface"
           role="application"
           aria-label="{handName(hand)} trace surface"
+          use:measured
           onpointerdown={(e) => {
             handlePointerDown(e, hand);
             handleTap(e, hand);

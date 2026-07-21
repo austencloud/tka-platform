@@ -225,6 +225,9 @@ function scaledConfig(
     checkpointRadius: grow(base.checkpointRadius),
     holdRadius: grow(base.holdRadius),
     corridorRadius: grow(base.corridorRadius),
+    // The floor itself, so the evaluator's per-segment checkpoint shrink knows
+    // where it must stop. `withPhysicalFloor(0, mm)` IS the floor.
+    touchFloorRadius: withPhysicalFloor(0, stageSideMm),
     accuracyFalloff: base.accuracyFalloff * scale,
   };
 }
@@ -322,6 +325,12 @@ export function createTracePathsState(options: TracePathsStateOptions = {}) {
     const current = computeRound();
     if (!current) return [];
     const present = TRACE_HANDS.filter((hand) => current.hands[hand]);
+    // Tap Route uses no pointers at all, so there is nothing for One Hand mode
+    // to relieve — and narrowing here would strand it: the rotation advances on
+    // the evaluator's `satisfied` map, which taps never touch, so the second
+    // hand's grid would never appear while the ordered waypoint list kept
+    // demanding it. Two accessibility switches would deadlock each other.
+    if (settings.tapRouteMode) return present;
     if (!settings.oneHandMode || present.length < 2) return present;
     const pending = present.find((hand) => !satisfied[hand]);
     return [pending ?? present[0]!];
@@ -647,8 +656,26 @@ export function createTracePathsState(options: TracePathsStateOptions = {}) {
     const mm = sidePx * MM_PER_CSS_PX;
     if (!Number.isFinite(mm) || Math.abs(mm - stageSideMm) < 1) return;
     stageSideMm = mm;
-    // Mid-round resizing must not move the goalposts on a trace already being
-    // graded, so the new floor applies from the next round onward.
+
+    // The stage can only report its real size once it has laid out, which is
+    // after the FIRST round's evaluator was already built — with stageSideMm
+    // still 0, i.e. with no physical floor at all. That is exactly the phone
+    // case the floor exists for, so the first round would be the one round it
+    // never protected. Rebuilding is safe while the round is still in preview:
+    // nothing has been traced, no hand is armed, so there is no grading in
+    // flight to disturb.
+    //
+    // From `arming` onward it is not safe, and the round keeps the tolerances
+    // it started with. Mid-round resizing must never move the goalposts on a
+    // trace already being graded, so the new floor waits for the next round.
+    const current = computeRound();
+    if (phase.name === "preview" && current) {
+      evaluator = createTraceEvaluator(
+        current,
+        scaledConfig(toleranceScale, stageSideMm)
+      );
+      syncFromEvaluator();
+    }
   }
 
   function setToleranceScale(scale: number): void {

@@ -141,14 +141,26 @@ export const GAME_REGISTRY: GameDefinition[] = [
     // The ladder walks one axis at a time: one hand before two, route shown
     // before route remembered, one hop before a chain. Each level adds a
     // single new demand so a miss tells the player exactly what to work on.
+    //
+    // STAR THRESHOLDS ARE ON A DIFFERENT SCALE THAN THE QUIZ GAMES ABOVE. A quiz
+    // round stacks a speed bonus and a streak multiplier on top of its base, so
+    // its ceiling is several times questionCount. A performance round is priced
+    // by `scoreTraceRound` and hard-capped at 100 points (quality is clamped to
+    // 1), and the engine takes that number verbatim — no bonus, no multiplier.
+    // So a fixed level's ceiling is exactly questionCount * 100, and every
+    // threshold below is a fraction of THAT: 50% / 70% / 85%. Copying a quiz
+    // ladder here is how the third star became unearnable on seven of eight
+    // levels. Level 8 is survival — it has no round count, so its ceiling is
+    // open and its thresholds read as "how many clean rounds before three
+    // misses" (7 / 12 / 18).
     levels: [
-      { levelNumber: 1, title: "Touch the Route", mode: { kind: "fixed", questionCount: 6 }, constraints: { handCount: 1, showRoute: true, traceStepCount: 1, toleranceScale: 1.3 }, stars: { one: 300, two: 500, three: 700 } },
-      { levelNumber: 2, title: "Keep the Line", mode: { kind: "fixed", questionCount: 8 }, constraints: { handCount: 1, showRoute: true, traceStepCount: 1, toleranceScale: 1 }, stars: { one: 400, two: 650, three: 900 } },
-      { levelNumber: 3, title: "Remember the Route", mode: { kind: "fixed", questionCount: 8 }, constraints: { handCount: 1, showRoute: false, traceStepCount: 1, toleranceScale: 1 }, stars: { one: 400, two: 650, three: 900 } },
-      { levelNumber: 4, title: "Meet the Other Hand", mode: { kind: "fixed", questionCount: 8 }, constraints: { handCount: 2, showRoute: true, traceStepCount: 1, toleranceScale: 1.1 }, stars: { one: 450, two: 700, three: 950 } },
-      { levelNumber: 5, title: "Hold and Move", mode: { kind: "fixed", questionCount: 8 }, constraints: { handCount: 2, showRoute: true, traceStepCount: 1, requireHold: true, toleranceScale: 1 }, stars: { one: 450, two: 750, three: 1000 } },
-      { levelNumber: 6, title: "Chain the Beats", mode: { kind: "fixed", questionCount: 8 }, constraints: { handCount: 2, showRoute: true, traceStepCount: 3, toleranceScale: 1 }, stars: { one: 500, two: 800, three: 1100 } },
-      { levelNumber: 7, title: "Trace the Sequence", mode: { kind: "fixed", questionCount: 6 }, constraints: { handCount: 2, showRoute: false, traceStepCount: 6, wordLength: 3, toleranceScale: 1 }, stars: { one: 500, two: 850, three: 1200 } },
+      { levelNumber: 1, title: "Touch the Route", mode: { kind: "fixed", questionCount: 6 }, constraints: { handCount: 1, showRoute: true, traceStepCount: 1, toleranceScale: 1.3 }, stars: { one: 300, two: 420, three: 510 } },
+      { levelNumber: 2, title: "Keep the Line", mode: { kind: "fixed", questionCount: 8 }, constraints: { handCount: 1, showRoute: true, traceStepCount: 1, toleranceScale: 1 }, stars: { one: 400, two: 560, three: 680 } },
+      { levelNumber: 3, title: "Remember the Route", mode: { kind: "fixed", questionCount: 8 }, constraints: { handCount: 1, showRoute: false, traceStepCount: 1, toleranceScale: 1 }, stars: { one: 400, two: 560, three: 680 } },
+      { levelNumber: 4, title: "Meet the Other Hand", mode: { kind: "fixed", questionCount: 8 }, constraints: { handCount: 2, showRoute: true, traceStepCount: 1, toleranceScale: 1.1 }, stars: { one: 400, two: 560, three: 680 } },
+      { levelNumber: 5, title: "Hold and Move", mode: { kind: "fixed", questionCount: 8 }, constraints: { handCount: 2, showRoute: true, traceStepCount: 1, requireHold: true, toleranceScale: 1 }, stars: { one: 400, two: 560, three: 680 } },
+      { levelNumber: 6, title: "Chain the Beats", mode: { kind: "fixed", questionCount: 8 }, constraints: { handCount: 2, showRoute: true, traceStepCount: 3, toleranceScale: 1 }, stars: { one: 400, two: 560, three: 680 } },
+      { levelNumber: 7, title: "Trace the Sequence", mode: { kind: "fixed", questionCount: 6 }, constraints: { handCount: 2, showRoute: false, traceStepCount: 6, wordLength: 3, toleranceScale: 1 }, stars: { one: 300, two: 420, three: 510 } },
       { levelNumber: 8, title: "Challenge", mode: { kind: "survival", maxMisses: 3 }, constraints: { handCount: 2, showRoute: false, traceStepCount: 6, wordLength: 3, toleranceScale: 0.8 }, stars: { one: 700, two: 1200, three: 1800 } },
     ],
   },

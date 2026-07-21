@@ -69,6 +69,9 @@
     get records() {
       return engine.records;
     },
+    get rounds() {
+      return engine.rounds;
+    },
     get questionIndex() {
       return engine.questionIndex;
     },
@@ -85,6 +88,9 @@
     backToLevels: () => withViewTransition(() => engine.backToLevels()),
     markQuestionShown: engine.markQuestionShown,
     submitAnswer: engine.submitAnswer,
+    /* Unwrapped, exactly like submitAnswer: wrapping a round submission in a
+       View Transition would stutter the moment a player lifts their hands. */
+    submitRound: engine.submitRound,
     complete: engine.complete,
     destroy: engine.destroy,
   };
@@ -169,6 +175,12 @@
   function persistPlayAttempt(game: GameDefinition, result: ArcadeSessionResult) {
     const userId = getEffectiveUserId();
     if (!userId || userId === "anonymous") return;
+
+    /* Quiz history is a QUIZ record. A performance game has no QuizType and no
+       option list, so there is no attempt here to describe — persisting one
+       wrote the literal string "undefined" into the user's quizHistory and let
+       a hand-tracing run move their quiz mastery and trend. */
+    if (!game.quizType) return;
 
     const conceptId =
       letterToConceptMapper.getConceptId("A") ?? String(game.quizType);

@@ -225,23 +225,26 @@ Three things it is careful about:
   <!-- Tap Route mode: the same route as numbered stops. No dragging, no second
        pointer, and the numbers make the ORDER explicit rather than implied. -->
   {#if tapRouteMode}
+    <!-- Filtered to the hands THIS stage draws, exactly like the route loop
+         above. The waypoint list is the whole round's, and a stop only responds
+         on the grid that owns it — drawing red's stops on blue's panel puts
+         live-looking numbers on a surface that silently ignores them. `index` stays
+         the list-wide index so the printed number still reads as true order. -->
     {#each tapWaypoints as waypoint, index (waypoint.hand + "-" + waypoint.beatIndex)}
-      {@const at = toStage(waypoint.at)}
-      {@const done = index < tapProgress}
-      {@const next = index === tapProgress}
-      <g
-        class="tap-stop {handClass(waypoint.hand)}"
-        class:done
-        class:next
-      >
-        <circle cx={at.x} cy={at.y} r={Math.max(touchFloorRadius, 44)} />
-        <text
-          x={at.x}
-          y={at.y}
-          text-anchor="middle"
-          dominant-baseline="central">{index + 1}</text
-        >
-      </g>
+      {#if hands.includes(waypoint.hand)}
+        {@const at = toStage(waypoint.at)}
+        {@const done = index < tapProgress}
+        {@const next = index === tapProgress}
+        <g class="tap-stop {handClass(waypoint.hand)}" class:done class:next>
+          <circle cx={at.x} cy={at.y} r={Math.max(touchFloorRadius, 44)} />
+          <text
+            x={at.x}
+            y={at.y}
+            text-anchor="middle"
+            dominant-baseline="central">{index + 1}</text
+          >
+        </g>
+      {/if}
     {/each}
   {/if}
 </g>

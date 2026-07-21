@@ -82,6 +82,19 @@ export interface TraceEvaluatorConfig {
   readonly endZoneRadius: number;
   /** Radius of each intermediate checkpoint along the route. */
   readonly checkpointRadius: number;
+  /**
+   * The physical touch floor, already normalized against the rendered stage.
+   *
+   * `checkpointRadius` is only a CEILING — `effectiveCheckpointRadius` shrinks
+   * it per segment so a fat checkpoint cannot be claimed by a straight shortcut
+   * across an arc. That shrink used to run unbounded, which quietly undid the
+   * floor `trace-config.ts` declares absolute: on a phone, interior checkpoints
+   * resolved to about a quarter of the 6mm a fingertip can actually be reported
+   * within, so a player inside the corridor still missed them and the round
+   * scored zero. This is the line the shrink may not cross. 0 = physical size
+   * unknown (the evaluator running standalone), and then the shrink is free.
+   */
+  readonly touchFloorRadius: number;
   /** How far a holding hand may drift before the hold is broken. */
   readonly holdRadius: number;
   /** Half-width of the route corridor; outside this is an excursion. */
@@ -120,6 +133,10 @@ export const DEFAULT_TRACE_EVALUATOR_CONFIG: TraceEvaluatorConfig = {
   // apart from a straight shortcut across it, so each segment shrinks this to
   // whatever its geometry can actually discriminate.
   checkpointRadius: TRACE_CHECKPOINT_RADIUS,
+  // Standalone the evaluator has no idea how big the stage rendered, so there
+  // is no floor to hold. The state factory fills this in from the measured
+  // stage (see `scaledConfig`).
+  touchFloorRadius: 0,
   regressionAllowance: TRACE_PROGRESS_REGRESSION_ALLOWANCE,
   synchronyToleranceMs: TRACE_SYNCHRONY_WINDOW_MS,
   frechetSamples: TRACE_PATH_SAMPLE_COUNT,
@@ -382,12 +399,20 @@ function chordDeviation(path: readonly NormalizedPoint[]): number {
  *    a straight drag between the endpoints passes through it. Without this,
  *    a generous global tolerance quietly turns every arc into a chord and the
  *    game stops being a trace at all.
+ *
+ * And one hard bound under both of them: the physical touch floor. Where the two
+ * caps want to go finer than a fingertip can be reported, they lose. Asking for
+ * precision the digitizer does not have is not discrimination, it is noise, and
+ * the floor is declared absolute in `trace-config.ts`. On a stage large enough
+ * for the caps to sit above the floor — every desktop, most tablets — nothing
+ * about the discrimination changes.
  */
 function effectiveCheckpointRadius(
   ceiling: number,
   path: readonly NormalizedPoint[],
   totalLength: number,
-  checkpointCount: number
+  checkpointCount: number,
+  touchFloor: number
 ): number {
   let radius = ceiling;
   if (checkpointCount > 0 && totalLength > 0) {
@@ -395,7 +420,9 @@ function effectiveCheckpointRadius(
   }
   const bulge = chordDeviation(path);
   if (bulge > 1e-6) radius = Math.min(radius, bulge * 0.6);
-  return radius;
+  // The floor can never push a checkpoint ABOVE its ceiling — the ceiling is
+  // already floored by the caller, so this only ever undoes an over-shrink.
+  return Math.max(radius, Math.min(ceiling, touchFloor));
 }
 
 function buildSlot(
@@ -490,7 +517,8 @@ function buildSlot(
       config.checkpointRadius,
       path,
       totalLength,
-      checkpoints.length
+      checkpoints.length,
+      config.touchFloorRadius
     ),
   };
 }
@@ -734,6 +762,36 @@ export function createTraceEvaluator(
     }
   }
 
+  /**
+   * How far into its own queue a SATISFIED hold may read while the other hands
+   * on this beat have gone quiet.
+   *
+   * A hold ends when the beat ends, and the beat ends when the OTHER hand
+   * arrives. Queues fill one hand at a time, one rAF batch at a time, so a
+   * holding hand's batch routinely already contains samples from AFTER the
+   * moment the beat really ended — the player's perfectly correct move into the
+   * next beat. Judging those against the hold slot reports a hold the player
+   * never broke, and since the beat can then no longer advance, the round
+   * stalls until they physically walk back to the hold point.
+   *
+   * When the other hand still has samples queued, `drain` interleaves by
+   * timestamp and that is enough. When it has none, we genuinely do not know yet
+   * whether it was about to end the beat, so the hold waits at the last moment
+   * that hand reported. The wait lasts exactly until its next batch arrives, and
+   * a genuine break lands then. A beat with no second hand has nothing to wait
+   * for and reads freely.
+   */
+  function holdHorizon(hand: TraceHand): number {
+    let horizon = Number.POSITIVE_INFINITY;
+    for (const other of slots[beatIndex]!) {
+      if (other.hand === hand || other.kind === "absent") continue;
+      const state = runtime.get(other.hand)!;
+      if (state.queue.length > 0) continue;
+      horizon = Math.min(horizon, state.lastT ?? Number.NEGATIVE_INFINITY);
+    }
+    return horizon;
+  }
+
   function allSatisfied(): boolean {
     if (beatIndex >= slots.length) return false;
     return slots[beatIndex]!.every(
@@ -741,38 +799,57 @@ export function createTraceEvaluator(
     );
   }
 
+  /**
+   * Consume queued samples IN TIMESTAMP ORDER across hands, one at a time.
+   *
+   * Delivery granularity must not change grading. Samples arrive per hand, per
+   * animation frame, so draining one hand's whole queue before looking at the
+   * other would judge it against a beat the other hand had already ended (or
+   * not yet ended). Picking the earliest queued sample each pass reconstructs
+   * the order the fingers actually moved in, whatever order the batches showed
+   * up in.
+   */
   function drain(): void {
-    let progressed = true;
-    while (progressed) {
-      progressed = false;
+    for (;;) {
+      if (beatIndex >= slots.length) return;
+
+      let picked: Slot | null = null;
+      let pickedState: HandRuntime | null = null;
 
       for (const hand of hands) {
         const slot = slotFor(hand, beatIndex);
         if (!slot || slot.kind === "absent") continue;
         const state = runtime.get(hand)!;
+        const head = state.queue[0];
+        if (!head) continue;
 
-        if (slot.kind === "hold") {
-          // A holding hand watches every sample it has: it can leave the zone
-          // at any moment, and that has to be noticed immediately.
-          while (state.queue.length > 0) {
-            consume(slot, state.queue.shift()!);
-            progressed = true;
-          }
-        } else {
-          // A moving hand stops consuming the instant it arrives. Whatever is
-          // left in the queue belongs to the next beat and waits for the gate.
-          while (slot.satisfiedAtMs === null && state.queue.length > 0) {
-            consume(slot, state.queue.shift()!);
-            progressed = true;
-          }
+        // A moving hand stops the instant it arrives. Whatever is left in its
+        // queue belongs to the next beat and waits for the gate.
+        if (slot.kind === "move" && slot.satisfiedAtMs !== null) continue;
+        // A hand still getting to its hold point watches everything — it has to
+        // be able to arrive. Once it is ON the point, see `holdHorizon`.
+        if (
+          slot.kind === "hold" &&
+          slot.satisfiedAtMs !== null &&
+          head.t > holdHorizon(slot.hand)
+        ) {
+          continue;
+        }
+
+        if (!picked || head.t < pickedState!.queue[0]!.t) {
+          picked = slot;
+          pickedState = state;
         }
       }
+
+      if (picked) consume(picked, pickedState!.queue.shift()!);
 
       if (allSatisfied()) {
         beatIndex++;
         activateBeat();
-        progressed = true;
+        continue;
       }
+      if (!picked) return;
     }
   }
 

@@ -388,3 +388,156 @@ describe("shared-grid preflight", () => {
     expect(result.passes).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Regressions
+// ---------------------------------------------------------------------------
+
+describe("regression: the physical touch floor bounds the checkpoint shrink", () => {
+  /**
+   * `checkpointRadius` is only a ceiling — each segment shrinks it so a fat
+   * checkpoint cannot be claimed by a straight shortcut across an arc. That
+   * shrink used to run unbounded, which undid the floor `trace-config.ts`
+   * declares absolute: on a phone-sized stage an interior checkpoint resolved
+   * to roughly a quarter of the millimetres a fingertip can be reported within,
+   * so a player well inside the corridor still missed it, coverage fell under
+   * the hard gate, and a correct round scored zero.
+   */
+  const ARC_ROUND: TraceRoundGeometry = { beats: [beat(0, { blue: move(N, E) })] };
+
+  /** The route, nudged a constant distance to the outside of its own curve. */
+  function offsetTrace(offset: number): TraceSample[] {
+    const centre = { x: 0.5, y: 0.5 };
+    return perfectTrace(N, E, 40).map((sample) => {
+      const dx = sample.x - centre.x;
+      const dy = sample.y - centre.y;
+      const length = Math.hypot(dx, dy) || 1;
+      return {
+        x: sample.x + (dx / length) * offset,
+        y: sample.y + (dy / length) * offset,
+        t: sample.t,
+      };
+    });
+  }
+
+  // A stage ~90mm across (a phone panel) puts the 6mm floor at 0.0667 of the
+  // stage, while the unbounded shrink lands this segment's checkpoints at
+  // ~0.0265 — the gap the player fell into.
+  const PHONE_FLOOR = 6 / 90;
+
+  it("scores a corridor-legal trace as covered when the floor is known", () => {
+    const evaluator = createTraceEvaluator(ARC_ROUND, {
+      ...DEFAULT_TRACE_EVALUATOR_CONFIG,
+      touchFloorRadius: PHONE_FLOOR,
+      startZoneRadius: PHONE_FLOOR,
+      endZoneRadius: PHONE_FLOOR,
+      corridorRadius: PHONE_FLOOR,
+    });
+    // Half the corridor off the spine: inside the band the player is told to
+    // stay in, and outside the un-floored checkpoint radius.
+    evaluator.ingest("blue", offsetTrace(PHONE_FLOOR * 0.5));
+    const metrics = evaluator.finish();
+
+    expect(metrics.coverage).toBe(1);
+    expect(scoreTraceRound(metrics).points).toBeGreaterThan(0);
+
+    // And the same trace with the floor withheld is the bug: the shrink takes
+    // the interior checkpoints below what the hardware can report, the player
+    // misses them from inside the corridor, and the hard coverage gate zeroes a
+    // correct round.
+    const unfloored = createTraceEvaluator(ARC_ROUND, {
+      ...DEFAULT_TRACE_EVALUATOR_CONFIG,
+      touchFloorRadius: 0,
+      startZoneRadius: PHONE_FLOOR,
+      endZoneRadius: PHONE_FLOOR,
+      corridorRadius: PHONE_FLOOR,
+    });
+    unfloored.ingest("blue", offsetTrace(PHONE_FLOOR * 0.5));
+    const unflooredMetrics = unfloored.finish();
+    expect(unflooredMetrics.coverage).toBeLessThan(1);
+    expect(scoreTraceRound(unflooredMetrics).points).toBe(0);
+  });
+
+  it("leaves the shrink alone when no physical size is known", () => {
+    // touchFloorRadius 0 is the standalone evaluator: discrimination is free to
+    // go as tight as the geometry allows, exactly as before.
+    const evaluator = createTraceEvaluator(ARC_ROUND);
+    evaluator.ingest("blue", perfectTrace(N, E, 40));
+    expect(evaluator.finish().coverage).toBe(1);
+  });
+});
+
+describe("regression: a hold does not eat the next beat's samples", () => {
+  /**
+   * Queues fill one hand at a time, one animation frame at a time, so a holding
+   * hand's batch routinely already contains samples from after the moment the
+   * beat really ended. Draining all of them against the hold slot reported a
+   * hold the player never broke — and since the beat could then no longer
+   * advance, the round stalled until they walked back to the hold point.
+   */
+  const HOLD_THEN_MOVE: TraceRoundGeometry = {
+    beats: [
+      beat(0, { blue: hold(S), red: move(N, E) }),
+      beat(1, { blue: move(S, W), red: hold(E) }),
+    ],
+  };
+
+  it("completes both beats when a whole frame arrives in one batch", () => {
+    const evaluator = createTraceEvaluator(HOLD_THEN_MOVE);
+
+    // A correct performance: blue holds S for exactly as long as red takes to
+    // travel N→E, then leaves once the beat is over. Both halves of blue's
+    // gesture land in the SAME ingest, which is the failing shape — the hold
+    // used to be judged against blue's beat-1 departure and report a break the
+    // player never made.
+    evaluator.ingest("blue", [
+      ...holdTrace(S, 20, 0, 16),
+      ...perfectTrace(S, W, 20, 320, 16),
+    ]);
+    evaluator.ingest("red", [
+      ...perfectTrace(N, E, 20, 0, 16),
+      ...holdTrace(E, 20, 320, 16),
+    ]);
+
+    const state = evaluator.state;
+    expect(state.completedBeats).toBe(2);
+    expect(
+      state.divergences.filter((d) => d.reason === "hold-broken")
+    ).toHaveLength(0);
+  });
+
+  it("grades the same gesture identically however it is batched", () => {
+    // The invariant behind the fix: how the browser chopped the stroke into
+    // frames is not something the player did, so it cannot change the grade.
+    const blue = [...holdTrace(S, 20, 0, 16), ...perfectTrace(S, W, 20, 320, 16)];
+    const red = [...perfectTrace(N, E, 20, 0, 16), ...holdTrace(E, 20, 320, 16)];
+
+    const batched = createTraceEvaluator(HOLD_THEN_MOVE);
+    batched.ingest("blue", blue);
+    batched.ingest("red", red);
+
+    const trickled = createTraceEvaluator(HOLD_THEN_MOVE);
+    for (const sample of blue) trickled.ingest("blue", [sample]);
+    for (const sample of red) trickled.ingest("red", [sample]);
+
+    expect(batched.state.completedBeats).toBe(trickled.state.completedBeats);
+    expect(batched.state.divergences.map((d) => d.reason)).toEqual(
+      trickled.state.divergences.map((d) => d.reason)
+    );
+  });
+
+  it("still reports a hold the player genuinely broke", () => {
+    const evaluator = createTraceEvaluator(HOLD_THEN_MOVE);
+    // Blue leaves S while red is still travelling — a real break. Red's samples
+    // run past blue's departure, so the horizon does not hide it.
+    evaluator.ingest("blue", [
+      ...holdTrace(S, 3, 0, 16),
+      ...perfectTrace(S, W, 10, 48, 16),
+    ]);
+    evaluator.ingest("red", perfectTrace(N, E, 40, 0, 16));
+
+    expect(
+      evaluator.state.divergences.some((d) => d.reason === "hold-broken")
+    ).toBe(true);
+  });
+});

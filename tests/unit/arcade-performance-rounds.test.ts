@@ -409,3 +409,32 @@ describe("game registry capabilities", () => {
     ]);
   });
 });
+
+describe("regression: trace-paths star thresholds are reachable", () => {
+  /**
+   * A performance round is priced by `scoreTraceRound` and hard-capped at 100
+   * points (quality is clamped to 1), and the engine takes that number verbatim
+   * — no speed bonus, no streak multiplier. So a fixed level's ceiling is
+   * exactly questionCount * 100. The ladder originally carried thresholds
+   * copied from the quiz games, whose rounds stack both bonuses, and the third
+   * star was arithmetically unearnable on seven of the eight levels.
+   */
+  const PERFORMANCE_ROUND_CAP = 100;
+
+  it("a flawless run clears three stars on every fixed level", () => {
+    const trace = GAME_REGISTRY.find((g) => g.id === "trace-paths");
+    expect(trace).toBeDefined();
+
+    for (const level of trace!.levels) {
+      if (level.mode.kind !== "fixed") continue;
+      const ceiling = level.mode.questionCount * PERFORMANCE_ROUND_CAP;
+      expect(
+        level.stars.three,
+        `level ${level.levelNumber} "${level.title}" caps at ${ceiling}`
+      ).toBeLessThanOrEqual(ceiling);
+      // And the ladder still climbs.
+      expect(level.stars.one).toBeLessThan(level.stars.two);
+      expect(level.stars.two).toBeLessThan(level.stars.three);
+    }
+  });
+});

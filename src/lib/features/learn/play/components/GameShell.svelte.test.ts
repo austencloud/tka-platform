@@ -53,6 +53,7 @@ const GAME: GameDefinition = {
   tagline: "test",
   accentColor: "#000",
   quizType: "pictograph_to_letter" as never,
+  capabilities: { scoring: "quiz" },
   levels: [],
 };
 
