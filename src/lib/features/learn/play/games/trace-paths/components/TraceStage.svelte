@@ -46,9 +46,11 @@ Pointer discipline
     showRoute: boolean;
     /** Leaving the run entirely. Stays reachable for the whole round. */
     onExit: () => void;
+    /** Test surfaces can name the same escape action more honestly. */
+    exitLabel?: string;
   }
 
-  let { showRoute, onExit }: Props = $props();
+  let { showRoute, onExit, exitLabel = "Exit" }: Props = $props();
 
   const trace = getTracePaths();
 
@@ -332,7 +334,11 @@ Pointer discipline
          only its props change. -->
     {#each panels as panelHands, panelIndex (panelIndex)}
       {@const hand = panelHands[0]!}
-      <div class="panel">
+      <div
+        class="panel"
+        class:blue={hand === MotionColor.BLUE}
+        class:red={hand === MotionColor.RED}
+      >
         <div class="panel-label {hand === MotionColor.BLUE ? 'blue' : 'red'}">
           <span class="panel-glyph" aria-hidden="true"
             >{hand === MotionColor.BLUE ? "B" : "R"}</span
@@ -394,7 +400,7 @@ Pointer discipline
     >
       {paused ? "Resume" : "Pause"}
     </button>
-    <button type="button" class="control" onclick={onExit}>Exit</button>
+    <button type="button" class="control" onclick={onExit}>{exitLabel}</button>
   </div>
 </div>
 
@@ -436,6 +442,14 @@ Pointer discipline
     /* Each panel takes an equal share and stays square inside it. */
     flex: 1 1 0;
     height: 100%;
+  }
+
+  .panel.blue {
+    --hand-color: var(--prop-blue, #3575e2);
+  }
+
+  .panel.red {
+    --hand-color: var(--prop-red, #ed1c24);
   }
 
   .panel-label {
@@ -481,8 +495,16 @@ Pointer discipline
     max-height: 100%;
     border-radius: 1rem;
     overflow: hidden;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    border: 1px solid
+      color-mix(
+        in srgb,
+        var(--hand-color) 36%,
+        var(--theme-stroke, rgba(255, 255, 255, 0.14))
+      );
     background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    box-shadow:
+      0 1.25rem 3rem rgba(0, 0, 0, 0.2),
+      inset 0 0 0 1px color-mix(in srgb, var(--hand-color) 12%, transparent);
     /* Scoped to the surface: the page around it keeps normal scroll and zoom. */
     touch-action: none;
     -webkit-user-select: none;
@@ -509,24 +531,47 @@ Pointer discipline
     justify-content: center;
     gap: 0.5rem;
     flex-shrink: 0;
+    align-self: center;
+    padding: 0.25rem;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
+    border-radius: 999px;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    box-shadow: 0 0.75rem 2rem rgba(0, 0, 0, 0.16);
   }
 
   .control {
     min-width: 6rem;
     min-height: var(--min-touch-target);
     padding: 0 1rem;
-    border-radius: 0.75rem;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.14));
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.06));
+    border-radius: 999px;
+    border: 0;
+    background: transparent;
     color: var(--theme-text, #fff);
     font-size: var(--font-size-sm);
     font-weight: 600;
     cursor: pointer;
-    transition: background var(--duration-fast) ease;
+    touch-action: manipulation;
+    transition:
+      background var(--duration-fast) ease,
+      transform var(--duration-fast) ease;
   }
 
-  .control:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
+  .control:last-child {
+    background: color-mix(
+      in srgb,
+      var(--theme-accent, #818cf8) 18%,
+      transparent
+    );
+  }
+
+  @media (hover: hover) {
+    .control:hover {
+      background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.12));
+    }
+  }
+
+  .control:active {
+    transform: scale(0.97);
   }
 
   .control:focus-visible {
