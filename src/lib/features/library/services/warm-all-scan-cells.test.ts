@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("$lib/shared/navigation/services/sequence-hydrator", () => ({
   hydrateSequence: vi.fn(async (sequence) => sequence),
@@ -12,7 +12,7 @@ vi.mock("$lib/shared/qr/services/scan-prop-resolver", () => ({
   })),
 }));
 
-import { startScanCellWarm } from "./warm-all-scan-cells";
+import { listAllShortCodes, startScanCellWarm } from "./warm-all-scan-cells";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 
 const sequence = {
@@ -22,6 +22,39 @@ const sequence = {
 } as unknown as SequenceData;
 
 describe("shortcode scan-cell backfill", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("lists Firestore document names without transferring shortcode payloads", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        {
+          document: {
+            name: "projects/tka/databases/(default)/documents/shortcodes/0017",
+          },
+        },
+        { readTime: "2026-07-21T00:00:00Z" },
+        {
+          document: {
+            name: "projects/tka/databases/(default)/documents/shortcodes/ABCD",
+          },
+        },
+      ],
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(listAllShortCodes()).resolves.toEqual(["0017", "ABCD"]);
+
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit;
+    const body = JSON.parse(String(request.body));
+    expect(request.method).toBe("POST");
+    expect(body.structuredQuery.select).toEqual({
+      fields: [{ fieldPath: "__name__" }],
+    });
+  });
+
   it("warms every QR record with exact props in both themes", async () => {
     const warmCells = vi.fn().mockResolvedValue({
       total: 2,

@@ -53,13 +53,57 @@ export interface CellWarmDeps {
   concurrency?: number;
 }
 
-async function listAllShortCodes(): Promise<readonly string[]> {
-  const [{ collection, getDocs }, { getFirestoreInstance }] = await Promise.all(
-    [import("firebase/firestore"), import("$lib/shared/auth/firebase")]
+const FIRESTORE_PROJECT_ID = "the-kinetic-alphabet";
+
+interface FirestoreRunQueryRow {
+  document?: { name?: unknown };
+}
+
+/**
+ * List every durable shortcode without downloading the full documents. A
+ * normal client-SDK collection read transfers embedded sequences and metadata
+ * for ~20k records just to keep each id. Firestore's REST projection returns
+ * only `__name__`, including fresh records that are not in the daily R2
+ * snapshot yet.
+ */
+export async function listAllShortCodes(): Promise<readonly string[]> {
+  const response = await fetch(
+    `https://firestore.googleapis.com/v1/projects/${FIRESTORE_PROJECT_ID}` +
+      "/databases/(default)/documents:runQuery",
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: "shortcodes" }],
+          select: { fields: [{ fieldPath: "__name__" }] },
+          orderBy: [
+            {
+              field: { fieldPath: "__name__" },
+              direction: "ASCENDING",
+            },
+          ],
+        },
+      }),
+    }
   );
-  const firestore = await getFirestoreInstance();
-  const snapshot = await getDocs(collection(firestore, "shortcodes"));
-  return snapshot.docs.map((doc) => doc.id);
+
+  if (!response.ok) {
+    throw new Error(
+      `Shortcode list query failed: ${response.status} ${response.statusText}`
+    );
+  }
+
+  const rows = (await response.json()) as FirestoreRunQueryRow[];
+  const marker = "/documents/shortcodes/";
+  return rows.flatMap((row) => {
+    const name = row.document?.name;
+    if (typeof name !== "string") return [];
+    const markerIndex = name.indexOf(marker);
+    if (markerIndex === -1) return [];
+    const code = name.slice(markerIndex + marker.length);
+    return code && !code.includes("/") ? [code] : [];
+  });
 }
 
 async function resolveShortCode(code: string): Promise<ShortCodeResolution> {
