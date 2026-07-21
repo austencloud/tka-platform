@@ -11,6 +11,11 @@ import type {
   RenderBackend,
   BackendStats,
 } from "$lib/shared/render-graph/domain/backend";
+import type { FrameGraph } from "$lib/shared/render-graph/domain/frame-graph";
+import type {
+  TrailPassPayload,
+  TrailTipState,
+} from "$lib/shared/render-graph/domain/trail-pass";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 
 /**
@@ -31,15 +36,17 @@ import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
  * jsdom, so these tests bypass it: poke the private canvas/backend fields
  * with a stub RenderBackend and zero the warmup counter. renderFrame()
  * only branches on canvas/backend truthiness and calls backend methods
- * that don't need to do anything for these assertions (which inspect the
- * overlay's own ring/tail state, not backend output).
+ * that don't need a GPU for these assertions. Tests inspect both the overlay's
+ * source state and the graph payload handed to the backend.
  */
 
-function makeStubBackend(): RenderBackend {
+function makeStubBackend(
+  onExecuteFrame?: (graph: FrameGraph) => void
+): RenderBackend {
   return {
     kind: "webgl2",
     initialize: async () => {},
-    executeFrame: () => {},
+    executeFrame: (graph) => onExecuteFrame?.(graph),
     resize: () => {},
     clearScreen: () => {},
     dispose: () => {},
@@ -51,7 +58,9 @@ function makeStubBackend(): RenderBackend {
   };
 }
 
-function makeOverlay(): TrailOverlayWebGL2 {
+function makeOverlay(
+  onExecuteFrame?: (graph: FrameGraph) => void
+): TrailOverlayWebGL2 {
   const overlay = new TrailOverlayWebGL2();
   const overlayInternals = overlay as unknown as {
     canvas: HTMLCanvasElement | null;
@@ -61,11 +70,16 @@ function makeOverlay(): TrailOverlayWebGL2 {
     warmupFramesRemaining: number;
   };
   overlayInternals.canvas = document.createElement("canvas");
-  overlayInternals.backend = makeStubBackend();
+  overlayInternals.backend = makeStubBackend(onExecuteFrame);
   overlayInternals.width = 500;
   overlayInternals.height = 500;
   overlayInternals.warmupFramesRemaining = 0;
   return overlay;
+}
+
+function trailTipsFrom(graph: FrameGraph): TrailTipState[] {
+  const pass = graph.passes.find((candidate) => candidate.kind === "trail");
+  return (pass?.payload as TrailPassPayload | undefined)?.tips ?? [];
 }
 
 /** A staff-type PropState at a given center-path angle (radians). Constant
@@ -210,6 +224,92 @@ describe("TrailOverlayWebGL2 prop-swap suppression", () => {
       })
     );
     expect(blueLeftRingOf(overlay).length).toBe(ringSizeBeforeSuppression);
+  });
+
+  it("keeps the outgoing prop trail in decay-only passes while the replacement starts fresh", () => {
+    const trailFrames: TrailTipState[][] = [];
+    const overlay = makeOverlay((graph) => {
+      trailFrames.push(trailTipsFrom(graph));
+    });
+
+    // Two moving staff frames establish both per-tip accumulator FBOs.
+    overlay.renderFrame(baseParams({ blueProp: propAt(0), currentTime: 0 }));
+    overlay.renderFrame(
+      baseParams({ blueProp: propAt(0.05), currentTime: 16 })
+    );
+    expect(trailFrames.at(-1)?.map((tip) => tip.tipId)).toEqual([
+      "blue-left",
+      "blue-right",
+    ]);
+
+    // The reroll changes to a one-ended fan. Both outgoing staff identities
+    // remain in the graph with no stamp path, so the backend decays and blits
+    // their existing pixels instead of dropping them on the mask change.
+    overlay.renderFrame(
+      baseParams({
+        blueProp: propAt(0.2),
+        bluePropType: "fan",
+        currentTime: 32,
+        bluePropSwapSuppressed: true,
+      })
+    );
+    const duringSwap = trailFrames.at(-1) ?? [];
+    expect(duringSwap.map((tip) => tip.tipId)).toEqual([
+      "blue-left",
+      "blue-right",
+    ]);
+    expect(duringSwap.every((tip) => tip.path.length === 0)).toBe(true);
+
+    // Once suppression lifts, the fan needs two captures to form a drawable
+    // path. It uses the next epoch while both staff FBOs keep fading beside it.
+    overlay.renderFrame(
+      baseParams({
+        blueProp: propAt(0.2),
+        bluePropType: "fan",
+        currentTime: 48,
+        bluePropSwapSuppressed: false,
+      })
+    );
+    overlay.renderFrame(
+      baseParams({
+        blueProp: propAt(0.25),
+        bluePropType: "fan",
+        currentTime: 64,
+        bluePropSwapSuppressed: false,
+      })
+    );
+
+    const replacementFrame = trailFrames.at(-1) ?? [];
+    expect(
+      replacementFrame.find((tip) => tip.tipId === "blue-right-e1")?.path.length
+    ).toBeGreaterThanOrEqual(2);
+    expect(
+      replacementFrame
+        .filter(
+          (tip) => tip.tipId === "blue-left" || tip.tipId === "blue-right"
+        )
+        .every((tip) => tip.path.length === 0)
+    ).toBe(true);
+
+    // Retirement is bounded by the configured fade duration. Once that time
+    // has elapsed, the old identities leave the graph and backend GC owns the
+    // now-invisible FBOs.
+    for (let frame = 0; frame < 40; frame++) {
+      overlay.renderFrame(
+        baseParams({
+          blueProp: propAt(0.3),
+          bluePropType: "fan",
+          currentTime: 164 + frame * 100,
+          deltaTime: 0.1,
+          bluePropSwapSuppressed: false,
+        })
+      );
+    }
+    expect(
+      (trailFrames.at(-1) ?? []).some(
+        (tip) => tip.tipId === "blue-left" || tip.tipId === "blue-right"
+      )
+    ).toBe(false);
   });
 
   it("resets the ring and tail when suppression lifts without connecting pre- and post-swap points", () => {

@@ -185,8 +185,9 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
 
   // Per-tip trail flags from previous frame, encoded as a 4-bit mask
   // (bit0=blue-left, bit1=blue-right, bit2=red-left, bit3=red-right).
-  // When the mask changes, accumulators for affected colors are cleared
-  // so stale pixels from deactivated tips don't persist.
+  // A mask change resets source rings but deliberately leaves painted pixels
+  // in the per-color accumulator, where normal destination-out decay retires
+  // them without an abrupt visual cut.
   private prevTipTrailMask = 0xF;
 
   initialize(container: HTMLElement, width: number, height: number): void {
@@ -420,10 +421,10 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
     const redRightTrails = redTrailConfig.right.type !== "none" &&
       (!hasMap || resolveEffect(1, effectTipIndex(redTrailConfig.right, 1), tipMap!, {}) === "trails");
 
-    // Detect tip-set changes. When a tip transitions from trailing to
-    // non-trailing, its already-painted pixels are baked into the
-    // accumulator. Clear the affected color's accumulator + ring buffers
-    // so those stale pixels don't persist.
+    // Detect tip-set changes. Reset source rings so a newly enabled tip cannot
+    // connect to an old endpoint, but preserve each affected accumulator. Its
+    // already-painted pixels are exactly the outgoing trail and should fade
+    // through the regular destination-out pass instead of vanishing here.
     const tipMask =
       (blueLeftTrails ? 1 : 0) |
       (blueRightTrails ? 2 : 0) |
@@ -436,13 +437,11 @@ export class TrailOverlayCanvas implements ITrailOverlayCanvas {
         this.blueLeftRing = [];
         this.blueRightRing = [];
         this.blueLayerRings = [];
-        this.blueAccumCtx?.clearRect(0, 0, this.width, this.height);
       }
       if (redBitsChanged) {
         this.redLeftRing = [];
         this.redRightRing = [];
         this.redLayerRings = [];
-        this.redAccumCtx?.clearRect(0, 0, this.width, this.height);
       }
       this.prevTipTrailMask = tipMask;
     }

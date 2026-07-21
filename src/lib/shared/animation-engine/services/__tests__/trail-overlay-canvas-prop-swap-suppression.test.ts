@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { PropState } from "$lib/shared/foundation/domain/types/prop-state";
 import {
   DEFAULT_TRAIL_SETTINGS,
@@ -92,5 +92,41 @@ describe("TrailOverlayCanvas prop-swap suppression", () => {
     expect(ringsOf(overlay).left).toHaveLength(0);
     expect(ringsOf(overlay).right).toHaveLength(1);
     expect(ringsOf(overlay).right[0]?.tipIndex).toBe(2);
+  });
+
+  it("decays the painted accumulator instead of clearing it when the prop tip mask changes", () => {
+    const overlay = makeOverlay();
+    const clearRect = vi.fn();
+    const fillRect = vi.fn();
+    const internals = overlay as unknown as {
+      blueAccumCtx: OffscreenCanvasRenderingContext2D | null;
+    };
+    internals.blueAccumCtx = {
+      clearRect,
+      fillRect,
+      save: () => {},
+      restore: () => {},
+    } as unknown as OffscreenCanvasRenderingContext2D;
+
+    overlay.renderFrame(baseParams({ blueProp: propAt(0), currentTime: 0 }));
+    overlay.renderFrame(
+      baseParams({ blueProp: propAt(0.05), currentTime: 16 })
+    );
+    clearRect.mockClear();
+    fillRect.mockClear();
+
+    overlay.renderFrame(
+      baseParams({
+        blueProp: propAt(0.2),
+        bluePropType: "fan",
+        currentTime: 32,
+        bluePropSwapSuppressed: true,
+      })
+    );
+
+    // Staff → fan removes the left-tip bit. The accumulator must survive that
+    // topology change, while destination-out still runs its normal fade pass.
+    expect(clearRect).not.toHaveBeenCalled();
+    expect(fillRect).toHaveBeenCalledOnce();
   });
 });

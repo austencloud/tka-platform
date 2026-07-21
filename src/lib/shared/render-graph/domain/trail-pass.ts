@@ -20,7 +20,9 @@ export interface TrailTipState {
    * Current leading-edge points in NDC, oldest first.
    *
    * Coordinates: (-1,-1) bottom-left, (+1,+1) top-right, y up. Callers
-   * translate from app-space. Expect ~5-20 points; backend smooths.
+   * translate from app-space. Expect ~5-20 points; backend smooths. An empty
+   * path is a decay-only pass: the backend advances and blits the existing
+   * accumulator for this tipId without stamping new geometry.
    */
   path: Array<[number, number]>;
   /** RGBA, each channel in 0..1. Alpha is the max opacity at the head. */

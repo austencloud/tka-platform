@@ -64,6 +64,23 @@ const RING_BUFFER_HEADROOM = 20;
 const DEFAULT_LEADING_EDGE = 20;
 const GLOW_RATIO = 2.5;
 const TRAIL_ENDPOINT_DIMENSIONS = { width: 252.8, height: 77.8 };
+// WebGL2Backend clamps one decay step to 100ms after a long frame. Retired
+// accumulator lifetime advances by the same amount so a background-tab resume
+// cannot expire a trail faster than the GPU actually faded it.
+const MAX_RETIREMENT_DECAY_STEP_MS = 100;
+
+type TrailColor = "blue" | "red";
+
+interface TrailAccumulatorIdentity {
+  color: TrailColor;
+  /** Multiplier contributed by tunnel spotlighting, independent of the
+   *  color's visibility envelope. */
+  visibilityScale: number;
+}
+
+interface RetiredTrailAccumulator extends TrailAccumulatorIdentity {
+  remainingMs: number;
+}
 
 function effectTipIndex(source: TrailPointSource, logicalEnd: 0 | 1): number {
   return source.type === "tip" ? source.index : logicalEnd;
@@ -157,6 +174,14 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   private blueTipEpoch = 0;
   private redTipEpoch = 0;
 
+  // Accumulator identities that have actually received a drawable path. A
+  // prop swap moves the current color's identities into `retiredAccumulators`
+  // and advances its epoch. The old FBOs then receive decay-only passes while
+  // the replacement prop starts on fresh FBOs, so the outgoing choreography
+  // fades instead of disappearing or connecting to new tip geometry.
+  private activeAccumulators = new Map<string, TrailAccumulatorIdentity>();
+  private retiredAccumulators = new Map<string, RetiredTrailAccumulator>();
+
   // Per-color alpha envelope. Matches prop fade timing (300 ms in /
   // 200 ms out with cubic ease-out) so the trail appears and disappears
   // alongside the prop instead of snapping in/out.
@@ -180,8 +205,9 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
   // the rAF delta) and makes export deterministic (its dt is the fixed 1/60 step).
   private backendClockMs = 0;
 
-  // Per-tip trail mask from previous frame (4 bits).
-  private prevTipTrailMask = 0xF;
+  // Per-tip trail mask from previous frame (4 bits). Null until the first
+  // drawable frame so an initial one-ended prop does not retire blank FBOs.
+  private prevTipTrailMask: number | null = null;
 
   initialize(container: HTMLElement, width: number, height: number): void {
     this.dispose();
@@ -247,7 +273,12 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // visibility envelope and the backend's decay so the trail's timing is
     // frame-rate-independent: live advances it by the rAF delta (unchanged
     // behavior), the offscreen export by the fixed 1/60 step (deterministic).
-    this.backendClockMs += Math.max(0, params.deltaTime * 1000);
+    const frameDeltaMs = Math.max(0, params.deltaTime * 1000);
+    const retirementDecayStepMs = Math.min(
+      frameDeltaMs,
+      MAX_RETIREMENT_DECAY_STEP_MS,
+    );
+    this.backendClockMs += frameDeltaMs;
 
     const {
       trailSettings,
@@ -278,6 +309,22 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       Math.floor(trailSettings.tailLength ?? DEFAULT_LEADING_EDGE),
     );
     this.ringCapacity = Math.max(RING_BUFFER_MIN, leadingEdge + RING_BUFFER_HEADROOM);
+
+    // A prop hot-swap is a visual source handoff, not a request to erase the
+    // pixels already on stage. Rotate each affected color onto a fresh tip-id
+    // epoch and keep submitting the old identities as decay-only passes for
+    // one full trail lifetime. This also prevents either side of the swap from
+    // sharing an accumulator with mismatched endpoint geometry.
+    const bluePropSwapStarted =
+      bluePropSwapSuppressed && !this.lastBluePropSwapSuppressed;
+    const redPropSwapStarted =
+      redPropSwapSuppressed && !this.lastRedPropSwapSuppressed;
+    if (bluePropSwapStarted) {
+      this.retireColorAccumulators("blue", trailSettings.fadeDurationMs);
+    }
+    if (redPropSwapStarted) {
+      this.retireColorAccumulators("red", trailSettings.fadeDurationMs);
+    }
 
     if (this.lastTrackingMode !== null && this.lastTrackingMode !== trailSettings.trackingMode) {
       this.blueLeftRing = [];
@@ -316,6 +363,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
         this.layerTails[i]!.blueRight = createTailState(leadingEdge);
       }
       if (this.blueEnvelopeWasZero) {
+        this.forgetColorAccumulators("blue");
         this.blueTipEpoch++;
         this.blueEnvelopeWasZero = false;
       }
@@ -332,6 +380,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
         this.layerTails[i]!.redRight = createTailState(leadingEdge);
       }
       if (this.redEnvelopeWasZero) {
+        this.forgetColorAccumulators("red");
         this.redTipEpoch++;
         this.redEnvelopeWasZero = false;
       }
@@ -399,26 +448,30 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       (blueRightTrails ? 2 : 0) |
       (redLeftTrails ? 4 : 0) |
       (redRightTrails ? 8 : 0);
-    if (tipMask !== this.prevTipTrailMask) {
+    if (this.prevTipTrailMask !== null && tipMask !== this.prevTipTrailMask) {
       const blueBitsChanged = (tipMask & 0x3) !== (this.prevTipTrailMask & 0x3);
       const redBitsChanged = (tipMask & 0xC) !== (this.prevTipTrailMask & 0xC);
       if (blueBitsChanged) {
+        if (!bluePropSwapSuppressed) {
+          this.retireColorAccumulators("blue", trailSettings.fadeDurationMs);
+        }
         this.blueLeftRing = [];
         this.blueRightRing = [];
         this.blueLeftTail = createTailState(leadingEdge);
         this.blueRightTail = createTailState(leadingEdge);
-        this.blueTipEpoch++;
       }
       if (redBitsChanged) {
+        if (!redPropSwapSuppressed) {
+          this.retireColorAccumulators("red", trailSettings.fadeDurationMs);
+        }
         this.redLeftRing = [];
         this.redRightRing = [];
         this.redLeftTail = createTailState(leadingEdge);
         this.redRightTail = createTailState(leadingEdge);
-        this.redTipEpoch++;
       }
       if (blueBitsChanged || redBitsChanged) this.resetLayerState();
-      this.prevTipTrailMask = tipMask;
     }
+    this.prevTipTrailMask = tipMask;
 
     let blueLeftMoved = false;
     let blueRightMoved = false;
@@ -511,6 +564,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     const alpha = Math.max(0, Math.min(1, trailSettings.maxOpacity));
 
     const tips: TrailTipState[] = [];
+    const submittedAccumulatorIds = new Set<string>();
 
     // Epoch-scoped tipIds let the backend spin up a fresh accumulator FBO
     // after a full fade-out without wiping the whole backend.
@@ -529,11 +583,17 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
       ring: TrailPoint[],
       rgb: [number, number, number],
       tail: TailState,
-      envelope: number,
+      color: TrailColor,
+      colorAlpha: number,
+      visibilityScale: number,
     ) => {
-      if (envelope <= 0) return;
+      const blitAlpha = colorAlpha * visibilityScale;
+      if (blitAlpha <= 0) return;
       const path = computeVisiblePath(ring, tail, this.width, this.height);
       if (path.length < 2) return;
+      submittedAccumulatorIds.add(tipId);
+      this.retiredAccumulators.delete(tipId);
+      this.activeAccumulators.set(tipId, { color, visibilityScale });
       tips.push({
         tipId,
         path,
@@ -544,7 +604,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
         decayPerSecond,
         fadeExponent: FADE_EXPONENT,
         blendMode: "alpha",
-        blitAlpha: envelope,
+        blitAlpha,
       });
     };
 
@@ -553,10 +613,14 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     // envelope fades its whole trail toward the black stage.
     const selected = params.tunnelSelectedLayer ?? null;
     const baseF = spotlightFactor(selected, 0);
-    pushTip(`blue-left${blueSuffix}`, this.blueLeftRing, [bR, bG, bB], this.blueLeftTail, blueAlpha * baseF);
-    pushTip(`blue-right${blueSuffix}`, this.blueRightRing, [bR, bG, bB], this.blueRightTail, blueAlpha * baseF);
-    pushTip(`red-left${redSuffix}`, this.redLeftRing, [rR, rG, rB], this.redLeftTail, redAlpha * baseF);
-    pushTip(`red-right${redSuffix}`, this.redRightRing, [rR, rG, rB], this.redRightTail, redAlpha * baseF);
+    if (!bluePropSwapSuppressed) {
+      pushTip(`blue-left${blueSuffix}`, this.blueLeftRing, [bR, bG, bB], this.blueLeftTail, "blue", blueAlpha, baseF);
+      pushTip(`blue-right${blueSuffix}`, this.blueRightRing, [bR, bG, bB], this.blueRightTail, "blue", blueAlpha, baseF);
+    }
+    if (!redPropSwapSuppressed) {
+      pushTip(`red-left${redSuffix}`, this.redLeftRing, [rR, rG, rB], this.redLeftTail, "red", redAlpha, baseF);
+      pushTip(`red-right${redSuffix}`, this.redRightRing, [rR, rG, rB], this.redRightTail, "red", redAlpha, baseF);
+    }
 
     // Overlaid tunnel-layer tips. Each layer's blue/red rings get a distinct
     // spectrum color (tunnelPropColor, parsed via the same hexToRgb) so every
@@ -579,10 +643,56 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
         : ([rR, rG, rB] as [number, number, number]);
       // Layer i is copy arm i+1 — dim it when another performer is spotlit.
       const f = spotlightFactor(selected, i + 1);
-      pushTip(`L${i}-blue-left${blueSuffix}`, rings.blueLeft, blueLayerRgb, tails.blueLeft, blueAlpha * f);
-      pushTip(`L${i}-blue-right${blueSuffix}`, rings.blueRight, blueLayerRgb, tails.blueRight, blueAlpha * f);
-      pushTip(`L${i}-red-left${redSuffix}`, rings.redLeft, redLayerRgb, tails.redLeft, redAlpha * f);
-      pushTip(`L${i}-red-right${redSuffix}`, rings.redRight, redLayerRgb, tails.redRight, redAlpha * f);
+      if (!bluePropSwapSuppressed) {
+        pushTip(`L${i}-blue-left${blueSuffix}`, rings.blueLeft, blueLayerRgb, tails.blueLeft, "blue", blueAlpha, f);
+        pushTip(`L${i}-blue-right${blueSuffix}`, rings.blueRight, blueLayerRgb, tails.blueRight, "blue", blueAlpha, f);
+      }
+      if (!redPropSwapSuppressed) {
+        pushTip(`L${i}-red-left${redSuffix}`, rings.redLeft, redLayerRgb, tails.redLeft, "red", redAlpha, f);
+        pushTip(`L${i}-red-right${redSuffix}`, rings.redRight, redLayerRgb, tails.redRight, "red", redAlpha, f);
+      }
+    }
+
+    // A source can briefly stop producing a drawable path after any ring reset
+    // (or permanently when a tunnel layer disappears). Keep its existing FBO
+    // decaying instead of dropping it from the graph. If that exact identity
+    // produces a path again, pushTip cancels this temporary retirement.
+    for (const [tipId, identity] of this.activeAccumulators) {
+      if (submittedAccumulatorIds.has(tipId)) continue;
+      this.retiredAccumulators.set(tipId, {
+        ...identity,
+        remainingMs: Math.max(16.67, trailSettings.fadeDurationMs),
+      });
+      this.activeAccumulators.delete(tipId);
+    }
+
+    // Old prop accumulators remain in the graph with an empty path. The
+    // backend's normal pass still decays and blits their existing FBO pixels,
+    // but drawStamp has nothing to add. Once one configured trail lifetime has
+    // elapsed, stop submitting the identity and let backend GC reclaim it.
+    for (const [tipId, retired] of this.retiredAccumulators) {
+      if (retired.remainingMs <= 0) {
+        this.retiredAccumulators.delete(tipId);
+        continue;
+      }
+      const retiredAlpha =
+        (retired.color === "blue" ? blueAlpha : redAlpha) *
+        retired.visibilityScale;
+      tips.push({
+        tipId,
+        path: [],
+        color: retired.color === "blue"
+          ? [bR, bG, bB, alpha]
+          : [rR, rG, rB, alpha],
+        thickness: thicknessNdc,
+        taperTailRatio: MIN_TAIL_WIDTH_RATIO,
+        glow: 0,
+        decayPerSecond,
+        fadeExponent: FADE_EXPONENT,
+        blendMode: "alpha",
+        blitAlpha: retiredAlpha,
+      });
+      retired.remainingMs -= retirementDecayStepMs;
     }
 
     const payload: TrailPassPayload = { tips };
@@ -613,7 +723,7 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     this.blueEnvelopeWasZero = false;
     this.redEnvelopeWasZero = false;
     this.warmupFramesRemaining = TrailOverlayWebGL2.WARMUP_FRAMES;
-    this.prevTipTrailMask = 0xF;
+    this.prevTipTrailMask = null;
     this.freshAccumulators();
   }
 
@@ -661,11 +771,44 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
     this.redLeftRing = [];
     this.redRightRing = [];
     this.resetLayerState();
+    this.activeAccumulators.clear();
+    this.retiredAccumulators.clear();
   }
 
   // -------------------------------------------------------------------
   // Internal
   // -------------------------------------------------------------------
+
+  /** Move every FBO currently fed by one prop color into a decay-only
+   *  generation, then advance the live tip-id epoch for the replacement. */
+  private retireColorAccumulators(
+    color: TrailColor,
+    fadeDurationMs: number,
+  ): void {
+    const remainingMs = Math.max(16.67, fadeDurationMs);
+    for (const [tipId, identity] of this.activeAccumulators) {
+      if (identity.color !== color) continue;
+      this.retiredAccumulators.set(tipId, { ...identity, remainingMs });
+      this.activeAccumulators.delete(tipId);
+    }
+
+    if (color === "blue") {
+      this.blueTipEpoch++;
+    } else {
+      this.redTipEpoch++;
+    }
+  }
+
+  /** Forget orphaned identities after a completed visibility fade. Their FBOs
+   *  remain unreachable and are reclaimed by the backend's idle-tip sweep. */
+  private forgetColorAccumulators(color: TrailColor): void {
+    for (const [tipId, identity] of this.activeAccumulators) {
+      if (identity.color === color) this.activeAccumulators.delete(tipId);
+    }
+    for (const [tipId, identity] of this.retiredAccumulators) {
+      if (identity.color === color) this.retiredAccumulators.delete(tipId);
+    }
+  }
 
   /** Drop the per-tip accumulator FBOs for a blank-slate trail without touching
    *  the backend. Bumping the tip epochs re-keys every tipId, so the next render
@@ -676,9 +819,12 @@ export class TrailOverlayWebGL2 implements ITrailOverlayCanvas {
    *  WebGL2Backend — synchronously recompiling all 27 shader programs on every
    *  trails-off transition (~240ms ANGLE LINK_STATUS stall on Windows). That was
    *  the freeze when switching away from trails. Keeping the backend warm also
-   *  makes re-entering trails instant. Same mechanism the fade-out / tip-mask
-   *  paths already use (blueTipEpoch++ / redTipEpoch++). */
+   *  makes re-entering trails instant. The prop-swap retirement path uses the
+   *  same epoch mechanism while continuing to submit the outgoing identities
+   *  until their normal decay completes. */
   private freshAccumulators(): void {
+    this.activeAccumulators.clear();
+    this.retiredAccumulators.clear();
     if (!this.backend) return;
     this.blueTipEpoch++;
     this.redTipEpoch++;
