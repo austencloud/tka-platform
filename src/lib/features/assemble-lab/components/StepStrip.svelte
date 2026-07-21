@@ -3,6 +3,7 @@
   so placing the first prop never steals space from the grid.
 -->
 <script lang="ts">
+  import { untrack } from "svelte";
   import { scale } from "svelte/transition";
   import { flip } from "svelte/animate";
   import { dragHandle, dragHandleZone, type DndEvent } from "svelte-dnd-action";
@@ -189,13 +190,21 @@
   );
 
   $effect(() => {
-    const nextById = new Map(sourceItems.map((item) => [item.id, item]));
+    const nextItems = sourceItems;
+    const currentItems = untrack(() => displayItems);
+    if (nextItems.length === 0 && currentItems.length === 0) return;
+
+    const nextById = new Map(nextItems.map((item) => [item.id, item]));
     const sameItems =
-      displayItems.length === sourceItems.length &&
-      displayItems.every((item) => nextById.has(item.id));
+      currentItems.length === nextItems.length &&
+      currentItems.every((item) => nextById.has(item.id));
+
+    // Dragging owns the temporary display order. Source changes only refresh
+    // each thumbnail's data; they must not subscribe this effect to that
+    // mutable order or every assignment immediately schedules another run.
     displayItems = sameItems
-      ? displayItems.map((item) => nextById.get(item.id) ?? item)
-      : sourceItems;
+      ? currentItems.map((item) => nextById.get(item.id) ?? item)
+      : nextItems;
   });
 
   const hasContent = $derived(totalSteps > 0 || startPictograph !== null);
