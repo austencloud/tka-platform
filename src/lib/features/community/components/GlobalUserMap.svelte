@@ -4,7 +4,7 @@
   Google Maps display with clustered user location markers
 -->
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { t } from "$lib/shared/i18n/i18n.svelte";
   import type { UserLocationWithProfile } from "../domain/models/user-location";
   import UserProfileMarker from "./UserProfileMarker.svelte";
@@ -104,7 +104,7 @@
     onMapReady();
   }
 
-  function createMarkers(): void {
+  function createMarkers(incoming: typeof locations): void {
     if (!map) return;
 
     // Always clear existing markers first
@@ -114,14 +114,14 @@
     markers.length = 0;
 
     // If no locations, we're done (markers cleared)
-    if (locations.length === 0) {
+    if (incoming.length === 0) {
       return;
     }
 
     const { AdvancedMarkerElement, PinElement } = google.maps.marker;
 
     // Create markers for each user location
-    for (const location of locations) {
+    for (const location of incoming) {
       const pin = new PinElement({
         background: "#4a9eff",
         borderColor: "#ffffff",
@@ -164,18 +164,20 @@
     selectedUser = null;
   }
 
-  // Recreate markers when locations change. Reading `locations.length`
-  // registers the prop as a reactive dependency; createMarkers() reads the
-  // current value via closure.
+  // Recreate markers when locations change. Google Maps marker handles are
+  // imperative objects, so keep their cleanup and replacement outside
+  // Svelte's dependency tracking.
   $effect(() => {
-    locations.length;
-    if (mapReady) {
+    const incoming = locations;
+    if (!mapReady) return;
+
+    untrack(() => {
       try {
-        createMarkers();
+        createMarkers(incoming);
       } catch (caught) {
         showMapFailure(caught);
       }
-    }
+    });
   });
 
   function createScanMarkers(incoming: typeof scanMarkers): void {
@@ -207,19 +209,25 @@
   $effect(() => {
     const incoming = scanMarkers;
     if (!mapReady) return;
-    try {
-      createScanMarkers(incoming);
-    } catch (caught) {
-      showMapFailure(caught);
-    }
+
+    untrack(() => {
+      try {
+        createScanMarkers(incoming);
+      } catch (caught) {
+        showMapFailure(caught);
+      }
+    });
   });
 
   // Center map on user location when it changes
   $effect(() => {
-    if (mapReady && map && userLocation) {
-      map.panTo(userLocation);
-      map.setZoom(10); // City-level zoom
-    }
+    const center = userLocation;
+    if (!mapReady || !center) return;
+
+    untrack(() => {
+      map?.panTo(center);
+      map?.setZoom(10); // City-level zoom
+    });
   });
 </script>
 

@@ -22,7 +22,17 @@ export class GoogleMapsLibraryLoader implements IGoogleMapsLibraryLoader {
       // that case the official loader can use the existing import function
       // without configuring Google Maps a second time.
       if (typeof google === "undefined" || !google.maps?.importLibrary) {
-        setOptions({ key: normalizedKey, v: "weekly" });
+        // Google recommends `loading=async` for the bootstrap request. The
+        // pinned loader forwards bootstrap parameters but has not exposed this
+        // supported Maps URL option in its TypeScript type yet.
+        const options: Parameters<typeof setOptions>[0] & {
+          loading: "async";
+        } = {
+          key: normalizedKey,
+          v: "weekly",
+          loading: "async",
+        };
+        setOptions(options);
       }
       this.apiKey = normalizedKey;
     }

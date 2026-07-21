@@ -30,6 +30,7 @@ describe("GoogleMapsLibraryLoader", () => {
     expect(mapsApi.setOptions).toHaveBeenCalledWith({
       key: "maps-key",
       v: "weekly",
+      loading: "async",
     });
     expect(mapsApi.importLibrary.mock.calls).toEqual([["maps"], ["marker"]]);
   });
