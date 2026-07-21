@@ -39,6 +39,8 @@
     prefetch = false,
     props = {},
     placeholder,
+    error,
+    onStatusChange,
   }: {
     /** Dynamic import of the component module. */
     loader: () => Promise<{ default: Component<any> }>;
@@ -50,9 +52,14 @@
     props?: Record<string, unknown>;
     /** Same-footprint skeleton shown (and SSR'd) until the component mounts. */
     placeholder?: Snippet;
+    /** Visible recovery state for a failed chunk load. */
+    error?: Snippet<[unknown, () => void]>;
+    /** Mount-attempt lifecycle for truthful parent loading states and queues. */
+    onStatusChange?: (status: "loading" | "loaded" | "error") => void;
   } = $props();
 
   let Loaded = $state<Component<any> | null>(null);
+  let loadError = $state<unknown>(null);
   let started = false;
   // Single in-flight import shared by mount + prefetch, so warming the chunk
   // and the eventual mount never double-fetch.
@@ -62,12 +69,37 @@
     return (modPromise ??= loader());
   }
 
+  function mountLoadedComponent(): void {
+    if (started) return;
+    started = true;
+    onStatusChange?.("loading");
+    void load().then(
+      (module) => {
+        loadError = null;
+        Loaded = module.default;
+        onStatusChange?.("loaded");
+      },
+      (caught) => {
+        loadError = caught;
+        console.error("[LazyMount] failed to load component", caught);
+        onStatusChange?.("error");
+      }
+    );
+  }
+
+  function retry(): void {
+    // This can recover application loaders and transient promises. Production
+    // stale Vite chunks are recovered by hooks.client.ts's vite:preloadError
+    // cache-busted navigation because browsers cache failed module-map entries.
+    modPromise = null;
+    started = false;
+    loadError = null;
+    mountLoadedComponent();
+  }
+
   $effect(() => {
     if (active && !started) {
-      started = true;
-      load()
-        .then((m) => (Loaded = m.default))
-        .catch((err) => console.error("[LazyMount] failed to load component", err));
+      mountLoadedComponent();
     }
   });
 
@@ -80,13 +112,21 @@
         ? (cb) => requestIdleCallback(cb, { timeout: 2000 })
         : (cb) => setTimeout(cb, 200);
     schedule(() => {
-      if (!modPromise) load().catch(() => { /* mount path will surface real errors */ });
+      if (!modPromise) {
+        load().catch(() => {
+          // Prefetch is speculative. Let the active mount make a fresh request
+          // and own the visible recovery state if the chunk is still missing.
+          modPromise = null;
+        });
+      }
     });
   });
 </script>
 
 {#if Loaded}
   <Loaded {...props} />
+{:else if loadError && error}
+  {@render error(loadError, retry)}
 {:else if placeholder}
   {@render placeholder()}
 {/if}
