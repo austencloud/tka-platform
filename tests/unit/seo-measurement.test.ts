@@ -322,6 +322,12 @@ describe("SEO cohorts and data-source contracts", () => {
     expect(funnel).toContain("FROM sessions");
     expect(funnel).toContain("\"$channel_type\" = 'Organic Search'");
     expect(funnel).toContain("windowFunnel(86400)");
+    expect(funnel).toContain(
+      "toIntOrZero(toString(relevant_events.properties.sequence_length)) >= 1"
+    );
+    expect(funnel).toContain(
+      "toIntOrZero(toString(relevant_events.properties.beat_count)) >= 1"
+    );
     expect(funnel).toContain("toDate('2026-07-09')");
     expect(vitals).toContain("event = '$web_vitals'");
     expect(vitals).toContain('properties."$web_vitals_LCP_value"');
@@ -362,6 +368,12 @@ describe("SEO cohorts and data-source contracts", () => {
       "SEO | Composer CLS p75",
     ]);
     expect(spec[0]?.query).toContain("windowFunnel(86400)");
+    expect(spec[0]?.query).toContain(
+      "toIntOrZero(toString(relevant_events.properties.sequence_length)) >= 1"
+    );
+    expect(spec[0]?.query).toContain(
+      "toIntOrZero(toString(relevant_events.properties.beat_count)) >= 1"
+    );
     expect(spec[2]?.query).toContain("$web_vitals");
   });
 

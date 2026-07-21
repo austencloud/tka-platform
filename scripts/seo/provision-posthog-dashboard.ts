@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
 import { loadSeoMeasurementConfig } from "./config";
+import { safeHogQlInteger } from "./posthog";
 
 const DASHBOARD_NAME = "SEO | Flow Arts Software";
 const MANAGED_TAG = "seo-measurement-managed";
@@ -74,10 +75,12 @@ per_session AS (
         AND relevant_events.properties.destination = '/create',
       (
         relevant_events.event = 'sequence_generate'
-        AND relevant_events.properties.sequence_length >= 1
+        AND ${safeHogQlInteger(
+          "relevant_events.properties.sequence_length"
+        )} >= 1
       ) OR (
         relevant_events.event = 'sequence_autosaved'
-        AND relevant_events.properties.beat_count >= 1
+        AND ${safeHogQlInteger("relevant_events.properties.beat_count")} >= 1
       ),
       relevant_events.event IN (
         'sequence_save',
