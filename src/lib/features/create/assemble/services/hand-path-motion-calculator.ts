@@ -11,6 +11,7 @@ import {
   GridMode,
 } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import {
+  HandPath,
   HandMotionType,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
@@ -142,6 +143,30 @@ export function calculateRotationDirection(
   return isClockwise
     ? RotationDirection.CLOCKWISE
     : RotationDirection.COUNTER_CLOCKWISE;
+}
+
+/** Derive the persisted hand-path label from the same ring calculation. */
+export function calculateHandPath(
+  from: GridLocation,
+  to: GridLocation,
+  gridMode: GridMode
+): HandPath {
+  const motionType = calculateMotionType(from, to, gridMode);
+  switch (motionType) {
+    case HandMotionType.STATIC:
+      return HandPath.STATIC;
+    case HandMotionType.DASH:
+      return HandPath.DASH;
+    case HandMotionType.HASH_IN:
+      return HandPath.HASH_IN;
+    case HandMotionType.HASH_OUT:
+      return HandPath.HASH_OUT;
+    case HandMotionType.SHIFT:
+      return calculateRotationDirection(from, to, gridMode) ===
+        RotationDirection.COUNTER_CLOCKWISE
+        ? HandPath.COUNTER_CLOCKWISE
+        : HandPath.CLOCKWISE;
+  }
 }
 
 /**

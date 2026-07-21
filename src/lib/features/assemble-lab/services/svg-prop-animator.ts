@@ -8,6 +8,7 @@ import {
   deriveBuilderMotionGeometry,
   lerpAngle,
   normalizeAnglePositive,
+  type BuilderMotionGeometry,
 } from "./builder-motion-geometry";
 
 // 950x950 SVG coordinate space
@@ -18,6 +19,71 @@ const GRID_RADIUS = 143.1; // distance from center to hand points
 function applyEasing(t: number): number {
   const preset = getAnimationVisibilityManager().getEffortPreset();
   return applyEffort(preset, t);
+}
+
+function pointOnBuilderPath(
+  geometry: BuilderMotionGeometry,
+  progress: number
+): { x: number; y: number } {
+  const {
+    startCenterAngle,
+    endCenterAngle,
+    isSamePoint,
+    isStraightPath,
+    startRadius,
+    endRadius,
+  } = geometry;
+  const radius = startRadius + (endRadius - startRadius) * progress;
+
+  if (isStraightPath) {
+    const startX = Math.cos(startCenterAngle) * startRadius;
+    const startY = Math.sin(startCenterAngle) * startRadius;
+    const endX = Math.cos(endCenterAngle) * endRadius;
+    const endY = Math.sin(endCenterAngle) * endRadius;
+    return {
+      x: CENTER + (startX + (endX - startX) * progress) * GRID_RADIUS,
+      y: CENTER + (startY + (endY - startY) * progress) * GRID_RADIUS,
+    };
+  }
+
+  const angle = isSamePoint
+    ? startCenterAngle
+    : lerpAngle(startCenterAngle, endCenterAngle, progress);
+  return {
+    x: CENTER + Math.cos(angle) * radius * GRID_RADIUS,
+    y: CENTER + Math.sin(angle) * radius * GRID_RADIUS,
+  };
+}
+
+export interface BuilderMotionPathParams {
+  readonly startPosition: AnimationParams["startPosition"];
+  readonly endPosition: AnimationParams["endPosition"];
+  readonly rotationDirection: AnimationParams["rotationDirection"];
+  readonly turnCount: number;
+  readonly startOrientation: AnimationParams["startOrientation"];
+}
+
+/** The exact route used by the prop animator, exposed for candidate previews. */
+export function getBuilderMotionPathD(
+  params: BuilderMotionPathParams,
+  segments = 24
+): string | null {
+  if (params.startPosition === params.endPosition) return null;
+  const geometry = deriveBuilderMotionGeometry(
+    params.startPosition,
+    params.endPosition,
+    params.startOrientation,
+    params.rotationDirection,
+    params.turnCount
+  );
+  const points = Array.from({ length: segments + 1 }, (_, index) =>
+    pointOnBuilderPath(geometry, index / segments)
+  );
+  const [first, ...rest] = points;
+  if (!first) return null;
+  return `M${first.x},${first.y} ${rest
+    .map((point) => `L${point.x},${point.y}`)
+    .join(" ")}`;
 }
 
 export class SvgPropAnimator {
@@ -51,29 +117,15 @@ export class SvgPropAnimator {
       rotationDirection,
       turnCount
     );
-    const {
-      startCenterAngle,
-      endCenterAngle,
-      startStaffAngle,
-      staffRotationDelta,
-      isSamePoint,
-      isStraightPath: useCartesian,
-      startRadius,
-      endRadius,
-    } = geometry;
-    const startX = useCartesian ? Math.cos(startCenterAngle) * startRadius : 0;
-    const startY = useCartesian ? Math.sin(startCenterAngle) * startRadius : 0;
-    const endX = useCartesian ? Math.cos(endCenterAngle) * endRadius : 0;
-    const endY = useCartesian ? Math.sin(endCenterAngle) * endRadius : 0;
+    const { startStaffAngle, staffRotationDelta, isSamePoint } = geometry;
 
     // Instant jump for 0 duration
     if (duration <= 0) {
+      const endPoint = pointOnBuilderPath(geometry, 1);
       this.applyTransform(
         element,
-        endCenterAngle,
-        useCartesian,
-        endX,
-        endY,
+        endPoint.x,
+        endPoint.y,
         normalizeAnglePositive(startStaffAngle + staffRotationDelta),
         propCenter
       );
@@ -89,37 +141,14 @@ export class SvgPropAnimator {
         const rawProgress = Math.min(elapsed / duration, 1);
         const t = applyEasing(rawProgress);
 
-        // Interpolate center position
-        let displayAngle: number;
-        let cartX = 0;
-        let cartY = 0;
-
-        if (useCartesian) {
-          // Cartesian lerp (straight line - for dashes and hash motions)
-          cartX = startX + (endX - startX) * t;
-          cartY = startY + (endY - startY) * t;
-          displayAngle = Math.atan2(cartY, cartX);
-        } else if (isSamePoint) {
-          displayAngle = startCenterAngle;
-        } else {
-          // Angular lerp (arc path)
-          displayAngle = lerpAngle(startCenterAngle, endCenterAngle, t);
-        }
+        const point = pointOnBuilderPath(geometry, isSamePoint ? 1 : t);
 
         // Interpolate staff rotation
         const staffAngle = normalizeAnglePositive(
           startStaffAngle + staffRotationDelta * t
         );
 
-        this.applyTransform(
-          element,
-          displayAngle,
-          useCartesian,
-          cartX,
-          cartY,
-          staffAngle,
-          propCenter
-        );
+        this.applyTransform(element, point.x, point.y, staffAngle, propCenter);
 
         if (rawProgress < 1) {
           this.animationFrameId = requestAnimationFrame(tick);
@@ -148,24 +177,11 @@ export class SvgPropAnimator {
   /** Apply transform to SVG element in 950x950 space */
   private applyTransform(
     element: SVGGElement,
-    centerAngle: number,
-    isDash: boolean,
-    cartX: number,
-    cartY: number,
+    x: number,
+    y: number,
     staffAngle: number,
     propCenter: { x: number; y: number }
   ): void {
-    let x: number;
-    let y: number;
-
-    if (isDash) {
-      x = CENTER + cartX * GRID_RADIUS;
-      y = CENTER + cartY * GRID_RADIUS;
-    } else {
-      x = CENTER + Math.cos(centerAngle) * GRID_RADIUS;
-      y = CENTER + Math.sin(centerAngle) * GRID_RADIUS;
-    }
-
     // Convert staff angle from radians to degrees for SVG transform
     const rotDeg = (staffAngle * 180) / PI;
 

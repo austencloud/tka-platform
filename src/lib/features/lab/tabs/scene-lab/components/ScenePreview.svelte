@@ -39,7 +39,7 @@
   import { composerRegistry } from "$lib/shared/3d/scene-composer/registry";
   import { FilePersistence } from "$lib/shared/3d/scene-composer/persistence/file-persistence";
   import type { ComposerPlacement } from "$lib/shared/3d/scene-composer/types";
-  import type { Command } from "$lib/shared/3d/scene-composer/command-stack.svelte";
+  import type { Command } from "$lib/shared/history/command-stack.svelte";
   import { getSceneLabContext } from "../context/scene-lab-context";
   import { createSceneLabPlayerState } from "../state/scene-lab-player-state.svelte";
 

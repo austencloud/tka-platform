@@ -80,6 +80,7 @@ export function dispatchAssembleKeyboardAction(
       // is already down and we're adding a motion (not the first placement).
       if (
         hooks?.onStepCapExceeded &&
+        builderState.stepEditMode === null &&
         (builderState.phase === "placing" ||
           builderState.phase === "building") &&
         builderState.currentPosition !== null
@@ -128,7 +129,7 @@ export function dispatchAssembleKeyboardAction(
       );
       break;
     case "undo":
-      void builderState.undoStep();
+      builderState.undoStep();
       break;
     case "finish":
       if (builderState.canFinishHand) builderState.finishHand();

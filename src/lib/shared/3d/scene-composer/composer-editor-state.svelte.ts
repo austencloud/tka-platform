@@ -4,7 +4,7 @@ import { Vector3, type Object3D } from "three";
 import type CameraControls from "camera-controls";
 import type { ObjectDefinition } from "../procedural-engine/objects/object-catalog";
 import type { ComposerPlacement } from "./types";
-import { CommandStack } from "./command-stack.svelte";
+import { CommandStack } from "$lib/shared/history/command-stack.svelte";
 
 export type ComposerMode = "browse" | "select" | "place";
 

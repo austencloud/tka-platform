@@ -21,12 +21,14 @@ function makeState(overrides: Partial<AssembleState> = {}) {
     currentOrientation: Orientation.IN,
     rotationDirection: RotationDirection.CLOCKWISE,
     turnCount: 0,
+    stepEditMode: null,
+    canFinishHand: true,
     handlePointClick: vi.fn(),
     setTurnCount: vi.fn(),
     setRotationDirection: vi.fn(),
     setOrientation: vi.fn(),
     switchToHand: vi.fn(),
-    undoStep: vi.fn().mockResolvedValue(undefined),
+    undoStep: vi.fn().mockReturnValue(true),
     finishHand: vi.fn(),
     ...overrides,
   };
@@ -71,6 +73,20 @@ describe("dispatchAssembleKeyboardAction", () => {
       );
       expect(onStepCapExceeded).not.toHaveBeenCalled();
       expect(s.handlePointClick).toHaveBeenCalledWith(GridLocation.NORTH);
+    });
+
+    it("does not apply the step cap while replacing a destination", () => {
+      const s = makeState({ stepEditMode: "replace" });
+      const onStepCapExceeded = vi.fn(() => true);
+
+      dispatchAssembleKeyboardAction(
+        s,
+        { type: "position", location: GridLocation.EAST },
+        { onStepCapExceeded }
+      );
+
+      expect(onStepCapExceeded).not.toHaveBeenCalled();
+      expect(s.handlePointClick).toHaveBeenCalledWith(GridLocation.EAST);
     });
   });
 

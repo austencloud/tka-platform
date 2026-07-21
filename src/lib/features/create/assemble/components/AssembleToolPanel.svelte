@@ -1,8 +1,7 @@
 <!--
   AssembleToolPanel - Tool panel content for the Assemble tab.
 
-  Idle: side-by-side guidance panel + grid, centered together.
-  Building: panel disappears, grid recenters via flex layout.
+  The grid stays anchored while phase-specific controls update in reserved slots.
 -->
 <script lang="ts">
   import { untrack } from "svelte";
@@ -12,7 +11,6 @@
   import BuilderControls from "$lib/features/assemble-lab/components/BuilderControls.svelte";
   import InteractiveGrid from "$lib/features/assemble-lab/components/InteractiveGrid.svelte";
   import BuilderTurnBar from "$lib/features/assemble-lab/components/BuilderTurnBar.svelte";
-  import AssembleIdlePanel from "$lib/features/assemble-lab/components/AssembleIdlePanel.svelte";
   import StepStrip from "$lib/features/assemble-lab/components/StepStrip.svelte";
   import KeyboardHintStrip from "$lib/features/assemble-lab/components/KeyboardHintStrip.svelte";
   import { attachAssembleKeyboard } from "$lib/features/assemble-lab/services/assemble-keyboard-dispatcher";
@@ -85,10 +83,6 @@
     });
   });
 
-  const isIdle = $derived(
-    builderState.phase === "idle" && builderState.stepCount === 0
-  );
-
   // Load last-used grid preferences from settings.
   // Wrapped in $effect.pre so tabState is read reactively (avoids state_referenced_locally).
   //
@@ -109,7 +103,9 @@
           props.tabState.assembleBuilderState.setGridMode(preferredGridMode);
         }
         if (preferredShowCenter) {
-          props.tabState.assembleBuilderState.setShowCenter(preferredShowCenter);
+          props.tabState.assembleBuilderState.setShowCenter(
+            preferredShowCenter
+          );
         }
       });
     } catch {
@@ -136,20 +132,11 @@
     </div>
   {/if}
 
-  <div class="header-section" class:hidden={isIdle}>
+  <div class="header-section">
     <BuilderInstructionHeader {builderState} />
   </div>
 
-  <div class="main-area" class:idle-layout={isIdle}>
-    <div
-      class="panel-slot"
-      class:collapsed={!isIdle}
-      aria-hidden={!isIdle}
-      inert={!isIdle}
-    >
-      <AssembleIdlePanel {builderState} />
-    </div>
-
+  <div class="main-area">
     <div class="grid-slot">
       <InteractiveGrid {builderState} onStepCapExceeded={checkBeatCap} />
       <BuilderControls {builderState} />
@@ -158,7 +145,7 @@
 
   <StepStrip {builderState} />
 
-  <div class="turn-bar-section" class:hidden={isIdle}>
+  <div class="turn-bar-section">
     {#if builderState.keyboardMode}
       <KeyboardHintStrip {builderState} />
     {/if}
@@ -209,11 +196,6 @@
     flex-shrink: 0;
   }
 
-  .header-section.hidden,
-  .turn-bar-section.hidden {
-    display: none;
-  }
-
   .main-area {
     flex: 1;
     min-height: 0;
@@ -222,32 +204,6 @@
     justify-content: center;
     gap: 0;
     min-width: 0;
-    transition: gap var(--duration-normal, 200ms) ease;
-  }
-
-  .main-area.idle-layout {
-    gap: var(--settings-spacing-xl, 32px);
-  }
-
-  .panel-slot {
-    flex: 0 1 320px;
-    min-width: 260px;
-    max-width: 340px;
-    opacity: 1;
-    overflow: hidden;
-    transition:
-      flex-basis var(--duration-normal, 200ms) ease,
-      min-width var(--duration-normal, 200ms) ease,
-      max-width var(--duration-normal, 200ms) ease,
-      opacity var(--duration-fast, 150ms) ease;
-  }
-
-  .panel-slot.collapsed {
-    flex-basis: 0;
-    min-width: 0;
-    max-width: 0;
-    opacity: 0;
-    pointer-events: none;
   }
 
   .grid-slot {
@@ -284,33 +240,6 @@
     text-align: center;
   }
 
-  /* A portrait desktop has enough height for the full builder, but not enough
-     width for the setup card and square grid side by side. Stack and scroll the
-     idle composition inside the tool panel instead of clipping it. */
-  @container tool-panel (max-width: 950px) {
-    .main-area.idle-layout {
-      flex-direction: column;
-      justify-content: flex-start;
-      overflow-y: auto;
-      overflow-x: hidden;
-      gap: var(--settings-spacing-md, 12px);
-    }
-
-    .panel-slot:not(.collapsed) {
-      flex: 0 0 auto;
-      min-width: 0;
-      max-width: 100%;
-      width: 100%;
-    }
-
-    .main-area.idle-layout .grid-slot {
-      flex: 0 0 min(620px, calc(100cqw - 24px));
-      width: min(100%, 620px);
-      height: auto;
-      aspect-ratio: 1;
-    }
-  }
-
   /* ── Mobile ── */
   @container tool-panel (max-width: 768px) {
     .assemble-tool-panel {
@@ -327,7 +256,7 @@
       width: 100%;
     }
 
-    .header-section:not(.hidden) {
+    .header-section {
       display: none;
     }
 
@@ -337,8 +266,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .main-area,
-    .panel-slot {
+    .main-area {
       transition: none;
     }
   }

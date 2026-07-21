@@ -4,7 +4,7 @@
   import { Vector3, Color, type Object3D, type Camera } from "three";
   import { onMount, onDestroy } from "svelte";
   import type { ComposerEditorState } from "./composer-editor-state.svelte";
-  import type { Command } from "./command-stack.svelte";
+  import type { Command } from "$lib/shared/history/command-stack.svelte";
 
   interface Props {
     editorState: ComposerEditorState;

@@ -78,11 +78,17 @@ export function deriveBuilderMotionGeometry(
 
   let staffRotationDelta = turnRotation;
   if (!isSamePoint && !isStraightPath) {
-    const arcDirection = centerMovement > 0 ? 1 : -1;
-    const isPro =
-      arcDirection === directionSign || Math.abs(centerMovement) < 0.01;
-    staffRotationDelta =
-      (isPro ? centerMovement : -centerMovement) + turnRotation;
+    if (turnCount === -0.5) {
+      // Float holds the prop's absolute angle on every curved path, including
+      // 45-degree and wider paths on the merged eight-point grid.
+      staffRotationDelta = 0;
+    } else {
+      const arcDirection = centerMovement > 0 ? 1 : -1;
+      const isPro =
+        arcDirection === directionSign || Math.abs(centerMovement) < 0.01;
+      staffRotationDelta =
+        (isPro ? centerMovement : -centerMovement) + turnRotation;
+    }
   }
 
   return {

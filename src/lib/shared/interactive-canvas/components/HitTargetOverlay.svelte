@@ -17,7 +17,12 @@
     activePhaseColor: "blue" | "red" | null;
     currentPosition: GridLocation | null;
     disabled: boolean;
+    showCenter?: boolean;
+    pulseTargets?: boolean;
+    keyLabels?: Partial<Record<GridLocation, string>>;
+    labelForLocation?: (location: GridLocation, defaultLabel: string) => string;
     onPointClick: (location: GridLocation) => void;
+    onPointPreview?: (location: GridLocation | null) => void;
   }
 
   let {
@@ -25,12 +30,17 @@
     activePhaseColor = null,
     currentPosition = null,
     disabled = false,
+    showCenter = false,
+    pulseTargets = true,
+    keyLabels = {},
+    labelForLocation,
     onPointClick,
+    onPointPreview,
   }: Props = $props();
 
   const hitRadius = getHitTargetRadius();
 
-  const hitTargets = $derived(getHitTargets(gridMode));
+  const hitTargets = $derived(getHitTargets(gridMode, showCenter));
 
   function handleClick(location: GridLocation): void {
     if (disabled) return;
@@ -44,9 +54,10 @@
     }
   }
 
-  function getLabel(location: GridLocation): string {
+  function getLabel(location: GridLocation, defaultLabel: string): string {
+    if (labelForLocation) return labelForLocation(location, defaultLabel);
     const phase = activePhaseColor === "blue" ? "Blue" : activePhaseColor === "red" ? "Red" : "";
-    return `${phase} ${location}`.trim();
+    return `${phase} ${defaultLabel}`.trim();
   }
 </script>
 
@@ -57,6 +68,16 @@
   preserveAspectRatio="xMidYMid meet"
 >
   {#each hitTargets as target (target.location)}
+    {#if keyLabels[target.location]}
+      <text
+        x={target.x}
+        y={target.y + 5}
+        class="key-label"
+        text-anchor="middle"
+        dominant-baseline="middle"
+        aria-hidden="true">{keyLabels[target.location]}</text
+      >
+    {/if}
     <circle
       cx={target.x}
       cy={target.y}
@@ -65,12 +86,18 @@
       class:is-selected={currentPosition === target.location}
       class:phase-blue={activePhaseColor === "blue"}
       class:phase-red={activePhaseColor === "red"}
+      class:pulse={pulseTargets}
       class:disabled={disabled}
       role="button"
-      tabindex="0"
-      aria-label={getLabel(target.location)}
+      tabindex={disabled ? -1 : 0}
+      aria-disabled={disabled}
+      aria-label={getLabel(target.location, target.label)}
       onclick={() => handleClick(target.location)}
       onkeydown={(e) => handleKeydown(e, target.location)}
+      onpointerenter={() => onPointPreview?.(target.location)}
+      onpointerleave={() => onPointPreview?.(null)}
+      onfocus={() => onPointPreview?.(target.location)}
+      onblur={() => onPointPreview?.(null)}
     />
   {/each}
 </svg>
@@ -104,12 +131,18 @@
   .hit-target.phase-blue:not(.is-selected):not(.disabled) {
     fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 8%, transparent);
     stroke: color-mix(in srgb, var(--prop-blue, #2e8bf0) 50%, transparent);
+  }
+
+  .hit-target.pulse.phase-blue:not(.is-selected):not(.disabled) {
     animation: pulse-blue 1.8s ease-in-out infinite;
   }
 
   .hit-target.phase-red:not(.is-selected):not(.disabled) {
     fill: color-mix(in srgb, var(--prop-red, #ed1c24) 8%, transparent);
     stroke: color-mix(in srgb, var(--prop-red, #ed1c24) 50%, transparent);
+  }
+
+  .hit-target.pulse.phase-red:not(.is-selected):not(.disabled) {
     animation: pulse-red 1.8s ease-in-out infinite;
   }
 
@@ -145,6 +178,15 @@
     outline: none;
     stroke-width: 4;
     stroke: var(--theme-accent, #3b82f6);
+  }
+
+  .key-label {
+    fill: var(--theme-text, #ffffff);
+    font-size: 28px;
+    font-weight: 800;
+    font-family: var(--font-mono, monospace);
+    pointer-events: none;
+    user-select: none;
   }
 
   @keyframes pulse-blue {

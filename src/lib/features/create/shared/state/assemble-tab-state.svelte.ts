@@ -4,8 +4,8 @@
  * Manages the Assemble tab's integration into the Create module.
  * Owns an isolated SequenceState and builder state (from assemble-lab).
  *
- * Undo is handled by builderState.undoStep() directly (per-step granularity),
- * wired through CreateModuleState.undo() when activeTab === "assemble".
+ * Assemble owns document-level command history because builder path edits must
+ * restore both hands and their start poses together.
  *
  * Builder mutations update the editable sequence document directly. Sequence
  * editor mutations hydrate the builder through the same state boundary.
@@ -24,6 +24,7 @@ import { createSequenceState } from "./sequence-state-orchestrator.svelte";
 import type { SequenceState } from "./sequence-state-orchestrator.svelte";
 import { createAssembleState } from "$lib/features/assemble-lab/state/assemble-state.svelte";
 import type {
+  AssembleDocumentChange,
   AssembleState,
   BuilderPhase,
 } from "$lib/features/assemble-lab/state/assemble-state.svelte";
@@ -33,6 +34,7 @@ import {
   convertToPictographs,
   lookupLetter,
   sequenceToBuilderHydration,
+  withCalculatedArrowLocations,
 } from "$lib/features/assemble-lab/services/builder-step-converter";
 import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
@@ -58,12 +60,15 @@ export function createAssembleTabState(
   let sequenceState: SequenceState | null = null;
   let isApplyingBuilderChange = false;
   let isDestroyed = false;
+  let lastSynchronizedDocument: SequenceData | null = null;
   const letterCache = new Map<string, Letter | null>();
 
   // The builder reports document changes at the mutation boundary. This keeps
   // sequence edits and builder edits out of competing reactive effects.
   const builderState: AssembleState = createAssembleState({
     onDocumentChange: syncBuilderToSequence,
+    captureDocument: () => sequenceState?.currentSequence ?? null,
+    restoreDocument: restoreBuilderDocument,
   });
 
   // Isolated editable sequence document for this tab.
@@ -83,21 +88,37 @@ export function createAssembleTabState(
       })
     : null;
 
-  // Undo for assemble tab is handled directly by builderState.undoStep()
-  // (wired through CreateModuleState.undo() which delegates to builderState
-  // when activeTab === "assemble"). No snapshot-based undo controller needed.
-
   function sameMotionCore(left: MotionData, right: MotionData): boolean {
     return (
       left.isVisible === right.isVisible &&
+      left.motionType === right.motionType &&
       left.startLocation === right.startLocation &&
       left.endLocation === right.endLocation &&
       left.rotationDirection === right.rotationDirection &&
       left.turns === right.turns &&
       left.startOrientation === right.startOrientation &&
       left.endOrientation === right.endOrientation &&
+      left.handPath === right.handPath &&
       left.gridMode === right.gridMode
     );
+  }
+
+  function mergeBuilderMotion(
+    generated: MotionData,
+    existing: MotionData | undefined
+  ): MotionData {
+    if (!existing) return generated;
+    if (sameMotionCore(existing, generated)) return existing;
+
+    return {
+      ...existing,
+      ...generated,
+      propType: existing.propType,
+      arrowPlacementData: existing.arrowPlacementData,
+      propPlacementData: existing.propPlacementData,
+      pathShape: existing.pathShape,
+      plane: existing.plane,
+    };
   }
 
   function mergeBuilderStep(
@@ -107,12 +128,11 @@ export function createAssembleTabState(
   ): StepData {
     if (!existing) return generated;
 
-    const blue = sameMotionCore(existing.motions.blue, generated.motions.blue)
-      ? existing.motions.blue
-      : generated.motions.blue;
-    const red = sameMotionCore(existing.motions.red, generated.motions.red)
-      ? existing.motions.red
-      : generated.motions.red;
+    const blue = mergeBuilderMotion(
+      generated.motions.blue,
+      existing.motions.blue
+    );
+    const red = mergeBuilderMotion(generated.motions.red, existing.motions.red);
 
     return {
       ...generated,
@@ -123,35 +143,35 @@ export function createAssembleTabState(
     };
   }
 
-  function syncBuilderToSequence(): void {
+  function syncBuilderToSequence(change?: AssembleDocumentChange): void {
     if (!sequenceState || isApplyingBuilderChange || isDestroyed) return;
 
     const blueSteps = builderState.blueSteps;
     const redSteps = builderState.redSteps;
     const gridMode = builderState.gridMode;
     const startPicto = convertToStartPosition(
+      builderState.startPoses,
       blueSteps,
       redSteps,
-      builderState.currentPosition,
-      builderState.currentOrientation,
-      builderState.activeHand,
       gridMode
     );
     const current = sequenceState.currentSequence;
+    const metadataSteps = remapMetadataSteps(current?.steps ?? [], change);
     const generatedSteps = convertToPictographs(
       blueSteps,
       redSteps,
       gridMode
-    ).map((pictograph, index) =>
-      createStepData({
-        ...pictograph,
+    ).map((pictograph, index) => {
+      const letter = metadataSteps[index]?.letter ?? null;
+      return createStepData({
+        ...withCalculatedArrowLocations({ ...pictograph, letter }),
         stepNumber: index + 1,
-        duration: current?.steps[index]?.duration ?? 1,
-        letter: current?.steps[index]?.letter ?? null,
-      })
-    );
+        duration: metadataSteps[index]?.duration ?? 1,
+        letter,
+      });
+    });
     const steps = generatedSteps.map((step, index) =>
-      mergeBuilderStep(step, current?.steps[index], index)
+      mergeBuilderStep(step, metadataSteps[index], index)
     );
     const startPosition = startPicto
       ? createStartPositionData({ ...startPicto })
@@ -161,6 +181,7 @@ export function createAssembleTabState(
     try {
       if (!startPosition && steps.length === 0) {
         if (current) sequenceState.setCurrentSequence(null);
+        lastSynchronizedDocument = null;
         return;
       }
 
@@ -193,10 +214,39 @@ export function createAssembleTabState(
       };
       next = { ...next, word: generateSequenceWord(next) };
       sequenceState.setCurrentSequence(next);
+      lastSynchronizedDocument = sequenceState.currentSequence;
     } finally {
       isApplyingBuilderChange = false;
     }
 
+    scheduleLetterLookups();
+  }
+
+  function remapMetadataSteps(
+    steps: readonly StepData[],
+    change?: AssembleDocumentChange
+  ): StepData[] {
+    const remapped = [...steps];
+    if (!change) return remapped;
+    if (change.type === "delete-step") {
+      remapped.splice(change.index, 1);
+      return remapped;
+    }
+
+    const [moved] = remapped.splice(change.fromIndex, 1);
+    if (moved) remapped.splice(change.toIndex, 0, moved);
+    return remapped;
+  }
+
+  function restoreBuilderDocument(document: unknown): void {
+    if (!sequenceState || isDestroyed) return;
+    isApplyingBuilderChange = true;
+    try {
+      sequenceState.setCurrentSequence(document as SequenceData | null);
+      lastSynchronizedDocument = sequenceState.currentSequence;
+    } finally {
+      isApplyingBuilderChange = false;
+    }
     scheduleLetterLookups();
   }
 
@@ -235,12 +285,12 @@ export function createAssembleTabState(
         builderState.gridMode
       );
       letterCache.set(key, null);
-      void lookupLetter(blueMotion, redMotion, builderState.gridMode).then(
-        (letter) => {
+      void lookupLetter(blueMotion, redMotion, builderState.gridMode)
+        .then((letter) => {
           letterCache.set(key, letter);
           applyResolvedLetter(index, key, letter);
-        }
-      );
+        })
+        .catch(() => undefined);
     }
   }
 
@@ -255,13 +305,20 @@ export function createAssembleTabState(
     if (!current || !step || step.letter === letter) return;
 
     const steps = current.steps.map((candidate, candidateIndex) =>
-      candidateIndex === index ? { ...candidate, letter } : candidate
+      candidateIndex === index
+        ? withCalculatedArrowLocations({
+            ...candidate,
+            letter,
+            gridMode: candidate.gridMode ?? current.gridMode,
+          })
+        : candidate
     );
     let next: SequenceData = { ...current, steps, word: "" };
     next = { ...next, word: generateSequenceWord(next) };
     isApplyingBuilderChange = true;
     try {
       sequenceState.setCurrentSequence(next);
+      lastSynchronizedDocument = sequenceState.currentSequence;
     } finally {
       isApplyingBuilderChange = false;
     }
@@ -270,11 +327,19 @@ export function createAssembleTabState(
   function syncSequenceToBuilder(sequence: SequenceData | null): void {
     if (isApplyingBuilderChange || isDestroyed) return;
     if (sequence) {
-      builderState.hydrateFromSequence(sequenceToBuilderHydration(sequence));
+      const previousDocument = lastSynchronizedDocument;
+      lastSynchronizedDocument = sequence;
+      const hydration = sequenceToBuilderHydration(sequence);
+      if (previousDocument?.id === sequence.id) {
+        builderState.hydrateFromExternalSequence(hydration, previousDocument);
+      } else {
+        builderState.hydrateFromSequence(hydration);
+      }
       scheduleLetterLookups();
       return;
     }
 
+    lastSynchronizedDocument = null;
     builderState.hydrateFromSequence({
       blueSteps: [],
       redSteps: [],
@@ -344,14 +409,20 @@ export function createAssembleTabState(
       return sequenceState;
     },
 
-    // Undo is handled by builderState.undoStep() via CreateModuleState.undo()
+    // History is owned by the builder and delegated through CreateModuleState.
     get canUndo() {
       return builderState.canUndo;
     },
+    get canRedo() {
+      return builderState.canRedo;
+    },
     undo: () => {
       if (!builderState.canUndo) return false;
-      void builderState.undoStep();
-      return true;
+      return builderState.undoStep();
+    },
+    redo: () => {
+      if (!builderState.canRedo) return false;
+      return builderState.redoStep();
     },
 
     // Initialization

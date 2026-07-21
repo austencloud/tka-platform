@@ -15,6 +15,7 @@ import {
   MotionType,
   Orientation,
   RotationDirection,
+  SkewDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
 
@@ -81,6 +82,30 @@ function makeBlueSequence(): SequenceData {
   };
 }
 
+function makeTwoStepBlueSequence(): SequenceData {
+  const sequence = makeBlueSequence();
+  const first = sequence.steps[0]!;
+  const secondBlue = createMotionData({
+    ...first.motions.blue,
+    startLocation: GridLocation.EAST,
+    endLocation: GridLocation.SOUTH,
+    startOrientation: first.motions.blue.endOrientation,
+    endOrientation: Orientation.OUT,
+  });
+  return {
+    ...sequence,
+    steps: [
+      first,
+      createStepData({
+        id: "assemble-step-2",
+        motions: { [MotionColor.BLUE]: secondBlue },
+        stepNumber: 2,
+        duration: 7,
+      }),
+    ],
+  };
+}
+
 afterEach(() => {
   for (const state of states.splice(0)) state.destroy();
 });
@@ -118,6 +143,20 @@ describe("Assemble tab document synchronization", () => {
     expect(
       sequenceState.currentSequence?.steps[0]?.motions.blue.pathShape
     ).toBe("concave");
+    await Promise.resolve();
+    expect(tabState.assembleBuilderState.canUndo).toBe(true);
+
+    expect(tabState.undo()).toBe(true);
+    expect(sequenceState.currentSequence?.steps[0]?.duration).toBe(2);
+    expect(tabState.assembleBuilderState.blueSteps[0]?.endPosition).toBe(
+      GridLocation.EAST
+    );
+
+    expect(tabState.redo()).toBe(true);
+    expect(sequenceState.currentSequence?.steps[0]?.duration).toBe(3);
+    expect(tabState.assembleBuilderState.blueSteps[0]?.endPosition).toBe(
+      GridLocation.SOUTH
+    );
 
     tabState.assembleBuilderState.handlePointClick(GridLocation.WEST);
     tabState.assembleBuilderState.handlePointClick(GridLocation.SOUTH);
@@ -134,6 +173,58 @@ describe("Assemble tab document synchronization", () => {
     expect(
       sequenceState.currentSequence?.steps[0]?.motions.blue.pathShape
     ).toBe("concave");
+  });
+
+  it("regenerates route-derived metadata after a path edit", async () => {
+    const tabState = createAssembleTabState(sequenceRepository);
+    states.push(tabState);
+    const sequenceState = tabState.sequenceState!;
+    const initial = makeBlueSequence();
+    const initialStep = initial.steps[0]!;
+    const markedBlue = createMotionData({
+      ...initialStep.motions.blue,
+      arrowLocation: GridLocation.SOUTHWEST,
+      segment: { t0: 0, t1: 0.5 },
+      skewSteps: 2,
+      skewDir: SkewDirection.PLUS,
+    });
+    const markedStep = {
+      ...initialStep,
+      motions: { ...initialStep.motions, blue: markedBlue },
+    };
+    sequenceState.setCurrentSequence({ ...initial, steps: [markedStep] });
+
+    sequenceState.setCurrentSequence({
+      ...initial,
+      steps: [
+        {
+          ...markedStep,
+          motions: {
+            ...markedStep.motions,
+            blue: {
+              ...markedBlue,
+              endLocation: GridLocation.SOUTH,
+              endOrientation: Orientation.OUT,
+            },
+          },
+        },
+      ],
+    });
+
+    tabState.assembleBuilderState.handlePointClick(GridLocation.WEST);
+    tabState.assembleBuilderState.handlePointClick(GridLocation.SOUTH);
+
+    await vi.waitFor(() => {
+      expect(
+        sequenceState.currentSequence?.steps[0]?.motions.red.isVisible
+      ).toBe(true);
+    });
+    const rebuilt = sequenceState.currentSequence?.steps[0]?.motions.blue;
+    expect(rebuilt?.arrowLocation).toBe(GridLocation.EAST);
+    expect(rebuilt?.segment).toBeUndefined();
+    expect(rebuilt?.skewSteps).toBeNull();
+    expect(rebuilt?.skewDir).toBeNull();
+    expect(rebuilt?.pathShape).toBe("concave");
   });
 
   it("hydrates persisted progress before the builder can publish an empty document", async () => {
@@ -182,5 +273,70 @@ describe("Assemble tab document synchronization", () => {
     expect(
       sequenceState.currentSequence?.steps[0]?.motions.blue.endLocation
     ).toBe(GridLocation.SOUTH);
+  });
+
+  it("carries step metadata through builder deletion, undo, and redo", () => {
+    const tabState = createAssembleTabState(sequenceRepository);
+    states.push(tabState);
+    const sequenceState = tabState.sequenceState!;
+    sequenceState.setCurrentSequence(makeTwoStepBlueSequence());
+
+    tabState.assembleBuilderState.deleteStepAt(0);
+
+    expect(sequenceState.currentSequence?.steps).toHaveLength(1);
+    expect(sequenceState.currentSequence?.steps[0]?.duration).toBe(7);
+
+    tabState.assembleBuilderState.undoStep();
+    expect(
+      sequenceState.currentSequence?.steps.map((step) => step.duration)
+    ).toEqual([2, 7]);
+
+    tabState.assembleBuilderState.redoStep();
+    expect(sequenceState.currentSequence?.steps).toHaveLength(1);
+    expect(sequenceState.currentSequence?.steps[0]?.duration).toBe(7);
+  });
+
+  it("keeps grid focus stable when an editor changes metadata only", async () => {
+    const tabState = createAssembleTabState(sequenceRepository);
+    states.push(tabState);
+    const sequenceState = tabState.sequenceState!;
+    const initial = makeBlueSequence();
+    sequenceState.setCurrentSequence(initial);
+    tabState.assembleBuilderState.selectStep(0);
+
+    sequenceState.setCurrentSequence({
+      ...initial,
+      steps: [{ ...initial.steps[0]!, duration: 9 }],
+    });
+    await Promise.resolve();
+
+    expect(tabState.assembleBuilderState.activeHand).toBe(MotionColor.RED);
+    expect(tabState.assembleBuilderState.selectedStepIndex).toBe(0);
+    expect(tabState.assembleBuilderState.phase).toBe("idle");
+    expect(tabState.assembleBuilderState.undoLabel).toBe("Edit sequence");
+  });
+
+  it("groups a synchronous workspace batch into one history entry", async () => {
+    const tabState = createAssembleTabState(sequenceRepository);
+    states.push(tabState);
+    const sequenceState = tabState.sequenceState!;
+    const initial = makeBlueSequence();
+    sequenceState.setCurrentSequence(initial);
+
+    tabState.assembleBuilderState.beginExternalEdit("Batch Edit");
+    sequenceState.setCurrentSequence({
+      ...initial,
+      steps: [{ ...initial.steps[0]!, duration: 4 }],
+    });
+    sequenceState.setCurrentSequence({
+      ...initial,
+      steps: [{ ...initial.steps[0]!, duration: 6 }],
+    });
+    await Promise.resolve();
+
+    expect(tabState.assembleBuilderState.undoLabel).toBe("Batch Edit");
+    expect(tabState.undo()).toBe(true);
+    expect(sequenceState.currentSequence?.steps[0]?.duration).toBe(2);
+    expect(tabState.assembleBuilderState.canUndo).toBe(false);
   });
 });

@@ -1,11 +1,9 @@
 /**
  * Assemble State - Free-Form Dual-Hand Model
  *
- * Build both hands' paths in any order using the hand switcher.
- * Each click after the first creates a motion (the prop animates to the clicked point).
- * Complete when both hands have equal step counts.
- *
- * Terminology: "step" = one motion (start→end position). "beat" is NOT used.
+ * Both hand paths share one editable timeline. Every document mutation records
+ * a reversible snapshot, while selection and hand switching stay lightweight
+ * interface state.
  */
 
 import {
@@ -17,10 +15,14 @@ import {
   Orientation,
   RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { CommandStack } from "$lib/shared/history/command-stack.svelte";
 import {
-  calculateBuilderEndOrientation,
-  deriveBuilderMotionGeometry,
-} from "../services/builder-motion-geometry";
+  createBuilderStep,
+  moveBuilderStep,
+  removeBuilderStep,
+  replaceBuilderStepDestination,
+  type BuilderPose,
+} from "../services/builder-path-editor";
 
 export type BuilderPhase =
   | "idle"
@@ -38,33 +40,36 @@ export interface BuilderStep {
   readonly endOrientation: Orientation;
 }
 
+export type BuilderStartPose = BuilderPose;
+export type BuilderStepEditMode = "replace";
+export type AssembleDocumentChange =
+  | { readonly type: "delete-step"; readonly index: number }
+  | {
+      readonly type: "move-step";
+      readonly fromIndex: number;
+      readonly toIndex: number;
+    };
+
 export interface AssembleStateHydration {
   readonly blueSteps: readonly BuilderStep[];
   readonly redSteps: readonly BuilderStep[];
   readonly gridMode: GridMode;
-  readonly startPoses: Partial<
-    Record<
-      MotionColor,
-      { readonly location: GridLocation; readonly orientation: Orientation }
-    >
-  >;
+  readonly startPoses: Partial<Record<MotionColor, BuilderStartPose>>;
 }
 
 export interface AssembleStateOptions {
-  onDocumentChange?: () => void;
+  onDocumentChange?: (change?: AssembleDocumentChange) => void;
+  captureDocument?: () => unknown;
+  restoreDocument?: (document: unknown) => void;
 }
 
-/**
- * Public shape of the assemble builder state. Declared explicitly (rather than
- * inferred via ReturnType) so the API surface consumed by components is stable
- * under refactors.
- */
 export interface AssembleState {
   readonly phase: BuilderPhase;
   readonly activeHand: MotionColor;
   readonly gridMode: GridMode;
   readonly blueSteps: BuilderStep[];
   readonly redSteps: BuilderStep[];
+  readonly startPoses: Partial<Record<MotionColor, BuilderStartPose>>;
   readonly currentPosition: GridLocation | null;
   readonly currentOrientation: Orientation;
   readonly rotationDirection: RotationDirection;
@@ -74,15 +79,40 @@ export interface AssembleState {
   readonly activeSteps: BuilderStep[];
   readonly stepCount: number;
   readonly canUndo: boolean;
+  readonly canRedo: boolean;
+  readonly undoLabel: string | undefined;
+  readonly redoLabel: string | undefined;
   readonly canFinishHand: boolean;
   readonly showCenter: boolean;
   readonly canChangeGridMode: boolean;
   readonly keyboardMode: boolean;
+  readonly selectedStepIndex: number | null;
+  readonly stepEditMode: BuilderStepEditMode | null;
+  readonly canReorderSteps: boolean;
+  readonly canReplaceSelectedStep: boolean;
+  readonly candidateStartPosition: GridLocation | null;
+  readonly candidateStartOrientation: Orientation;
+  readonly candidateRotationDirection: RotationDirection;
+  readonly candidateTurnCount: number;
 
   handlePointClick(location: GridLocation): void;
   finishHand(): void;
-  undoStep(): Promise<void>;
-  truncateAtStep(stepIndex: number): void;
+  undoStep(): boolean;
+  redoStep(): boolean;
+  clearHistory(): void;
+  selectStep(index: number | null): void;
+  deleteStepAt(index: number): void;
+  deleteSelectedStep(): void;
+  moveStep(fromIndex: number, toIndex: number): void;
+  moveSelectedStep(direction: -1 | 1): void;
+  beginReplaceSelectedStep(): void;
+  cancelStepEdit(): void;
+  beginExternalEdit(label: string): void;
+  hydrateFromExternalSequence(
+    snapshot: AssembleStateHydration,
+    previousDocument: unknown,
+    label?: string
+  ): void;
   hydrateFromSequence(snapshot: AssembleStateHydration): void;
   reset(): void;
   setRotationDirection(dir: RotationDirection): void;
@@ -94,58 +124,64 @@ export interface AssembleState {
   toggleKeyboardMode(): void;
   setAnimationCallback(
     cb: (step: BuilderStep, durationMs?: number) => Promise<void>
-  ): void;
-  setUndoAnimationCallback(
-    cb: (step: BuilderStep, wasPlacement: boolean) => Promise<void>
-  ): void;
+  ): () => void;
+}
+
+interface AssembleSnapshot {
+  readonly phase: Exclude<BuilderPhase, "animating">;
+  readonly activeHand: MotionColor;
+  readonly gridMode: GridMode;
+  readonly showCenter: boolean;
+  readonly startPoses: Partial<Record<MotionColor, BuilderStartPose>>;
+  readonly blueSteps: BuilderStep[];
+  readonly redSteps: BuilderStep[];
+  readonly currentPosition: GridLocation | null;
+  readonly currentOrientation: Orientation;
+  readonly rotationDirection: RotationDirection;
+  readonly turnCount: number;
+  readonly selectedStepIndex: number | null;
+  readonly stepEditMode: BuilderStepEditMode | null;
+  readonly document: unknown;
 }
 
 export function createAssembleState(
   options: AssembleStateOptions = {}
 ): AssembleState {
-  // Phase & hand
   let phase = $state<BuilderPhase>("idle");
   let activeHand = $state<MotionColor>(MotionColor.BLUE);
   let gridMode = $state<GridMode>(GridMode.DIAMOND);
-  let showCenter = $state<boolean>(false);
-  let keyboardMode = $state<boolean>(false);
-
-  function notifyDocumentChange(): void {
-    options.onDocumentChange?.();
-  }
-
-  // Per-hand completed steps
+  let showCenter = $state(false);
+  let keyboardMode = $state(false);
   let blueSteps = $state<BuilderStep[]>([]);
   let redSteps = $state<BuilderStep[]>([]);
-
-  // Current position of the active hand's prop (where it sits right now)
+  let startPoses = $state<Partial<Record<MotionColor, BuilderStartPose>>>({});
   let currentPosition = $state<GridLocation | null>(null);
   let currentOrientation = $state<Orientation>(Orientation.IN);
-
-  // Controls (set BEFORE clicking the next point)
   let rotationDirection = $state<RotationDirection>(
     RotationDirection.CLOCKWISE
   );
-  let turnCount = $state<number>(0);
+  let turnCount = $state(0);
+  let selectedStepIndex = $state<number | null>(null);
+  let stepEditMode = $state<BuilderStepEditMode | null>(null);
 
-  // Animation callback - set by the component to trigger SvgPropAnimator
+  const history = new CommandStack();
+
   let onAnimationRequest = $state<
     ((step: BuilderStep, durationMs?: number) => Promise<void>) | null
   >(null);
+  let pendingAction: (() => void) | null = null;
+  let pendingExternalEdit: {
+    readonly before: AssembleSnapshot;
+    readonly label: string;
+  } | null = null;
+  let externalEditFinalizeScheduled = false;
 
-  // Undo animation callback - plays the reverse animation before state is modified
-  let onUndoAnimationRequest = $state<
-    ((step: BuilderStep, wasPlacement: boolean) => Promise<void>) | null
-  >(null);
-
-  // Derived
   const activeSteps = $derived(
     activeHand === MotionColor.BLUE ? blueSteps : redSteps
   );
   const stepCount = $derived(blueSteps.length + redSteps.length);
-  const canUndo = $derived(
-    (phase === "building" && activeSteps.length > 0) || phase === "placing"
-  );
+  const canUndo = $derived(history.canUndo && phase !== "animating");
+  const canRedo = $derived(history.canRedo && phase !== "animating");
   const canFinishHand = $derived(
     (phase === "building" || phase === "animating") &&
       blueSteps.length > 0 &&
@@ -155,231 +191,163 @@ export function createAssembleState(
   const canChangeGridMode = $derived(
     blueSteps.length === 0 && redSteps.length === 0
   );
-
-  /** First click - place prop at a grid point */
-  function placeFirstPoint(location: GridLocation): void {
-    currentPosition = location;
-    // Center uses compass orientations, perimeter uses radial orientations
-    currentOrientation =
-      location === GridLocation.CENTER ? Orientation.CENTER_N : Orientation.IN;
-    phase = "placing";
-    notifyDocumentChange();
-  }
-
-  // Action queued during animation - executed when animation completes
-  let pendingAction: (() => void) | null = null;
-
-  /** Subsequent clicks - create a motion from currentPosition to the clicked point */
-  async function addMotion(endLocation: GridLocation): Promise<void> {
-    if (currentPosition === null) return;
-
-    // Float (-0.5 turns) only applies to shifts. For dashes/statics there's
-    // no arc to cancel, so fall back to 0 turns.
-    const geometry = deriveBuilderMotionGeometry(
-      currentPosition,
-      endLocation,
-      currentOrientation,
-      rotationDirection,
-      turnCount
-    );
-    const effectiveTurns =
-      turnCount < 0 && (geometry.isSamePoint || geometry.isStraightPath)
-        ? 0
-        : turnCount;
-
-    // Calculate end orientation accounting for arc-based staff rotation
-    const endOri = calculateBuilderEndOrientation(
-      currentOrientation,
-      currentPosition,
-      endLocation,
-      rotationDirection,
-      effectiveTurns
-    );
-
-    const step: BuilderStep = {
-      startPosition: currentPosition,
-      endPosition: endLocation,
-      rotationDirection,
-      turnCount: effectiveTurns,
-      startOrientation: currentOrientation,
-      endOrientation: endOri,
-    };
-
-    // Start animation (non-blocking) and add step to state simultaneously
-    // so the workspace pictograph scales in while the prop is still moving
-    phase = "animating";
-    const animationPromise = onAnimationRequest
-      ? onAnimationRequest(step)
-      : Promise.resolve();
-
-    // Add step immediately - workspace reacts in parallel with prop animation
-    if (activeHand === MotionColor.BLUE) {
-      blueSteps = [...blueSteps, step];
-    } else {
-      redSteps = [...redSteps, step];
+  const canReorderSteps = $derived(
+    blueSteps.length > 1 && blueSteps.length === redSteps.length
+  );
+  const canReplaceSelectedStep = $derived(
+    selectedStepIndex !== null &&
+      selectedStepIndex >= 0 &&
+      selectedStepIndex < activeSteps.length &&
+      phase !== "animating" &&
+      phase !== "complete"
+  );
+  const candidateStartPosition = $derived.by(() => {
+    if (stepEditMode === "replace" && selectedStepIndex !== null) {
+      return activeSteps[selectedStepIndex]?.startPosition ?? null;
     }
-
-    // Advance position immediately so rapid interactions feel responsive
-    currentPosition = endLocation;
-    currentOrientation = endOri;
-    notifyDocumentChange();
-
-    // Wait for animation to finish before leaving animating phase
-    await animationPromise;
-    phase = "building";
-
-    // Execute any action queued during animation (e.g. finishHand)
-    if (pendingAction) {
-      const action = pendingAction;
-      pendingAction = null;
-      action();
-    }
-  }
-
-  /** Main click handler - routes to placeFirstPoint or addMotion */
-  function handlePointClick(location: GridLocation): void {
-    if (phase === "animating") return; // ignore during animation
-
-    if (phase === "idle" || phase === "placing") {
-      if (currentPosition === null) {
-        placeFirstPoint(location);
-      } else {
-        addMotion(location);
-      }
-      return;
-    }
-
-    if (phase === "building") {
-      addMotion(location);
-      return;
-    }
-  }
-
-  /** Mark the sequence as complete (both hands must have steps) */
-  function finishHand(): void {
-    if (!canFinishHand) return;
-
-    // If animating, queue it to run after animation completes
-    if (phase === "animating") {
-      pendingAction = finishHand;
-      return;
-    }
-
-    phase = "complete";
-  }
-
-  /** Undo last step from active hand, with optional reverse animation */
-  async function undoStep(): Promise<void> {
-    if (phase === "animating") return; // block during animation
-
-    if (phase === "placing" && currentPosition !== null) {
-      // Undo the initial placement - animate scale-out then remove
-      phase = "animating";
-      if (onUndoAnimationRequest) {
-        // Create a dummy step representing the placement (start = end = current)
-        const placementStep: BuilderStep = {
-          startPosition: currentPosition,
-          endPosition: currentPosition,
-          rotationDirection: RotationDirection.CLOCKWISE,
-          turnCount: 0,
-          startOrientation: currentOrientation,
-          endOrientation: currentOrientation,
-        };
-        await onUndoAnimationRequest(placementStep, true);
-      }
-      currentPosition = null;
-      phase = "idle";
-      notifyDocumentChange();
-      return;
-    }
-
-    const steps = activeHand === MotionColor.BLUE ? blueSteps : redSteps;
-    if (steps.length === 0) return;
-
-    const lastStep = steps[steps.length - 1]!;
-
-    // Play reverse animation before modifying state
-    phase = "animating";
-    if (onUndoAnimationRequest) {
-      await onUndoAnimationRequest(lastStep, false);
-    }
-
-    if (activeHand === MotionColor.BLUE) {
-      blueSteps = blueSteps.slice(0, -1);
-    } else {
-      redSteps = redSteps.slice(0, -1);
-    }
-
-    // Restore position to the start of the removed step
-    currentPosition = lastStep.startPosition;
-    currentOrientation = lastStep.startOrientation;
-    phase =
-      blueSteps.length > 0 || redSteps.length > 0 ? "building" : "placing";
-    notifyDocumentChange();
-  }
-
-  /**
-   * Truncate both hands' steps at the given index (removes step at index and all after).
-   * Used when the user deletes a pictograph from the workspace grid.
-   * Since each pictograph maps to one index in both blueSteps and redSteps,
-   * we truncate both arrays to that index.
-   */
-  function truncateAtStep(stepIndex: number): void {
-    if (stepIndex <= 0) {
-      // Removing the first step clears everything
-      reset();
-      return;
-    }
-
-    blueSteps = blueSteps.slice(0, stepIndex);
-    redSteps = redSteps.slice(0, stepIndex);
-
-    // Restore current position from the last remaining step of the active hand
-    const activeArr = activeHand === MotionColor.BLUE ? blueSteps : redSteps;
-    if (activeArr.length > 0) {
-      const last = activeArr[activeArr.length - 1]!;
-      currentPosition = last.endPosition;
-      currentOrientation = last.endOrientation;
-      phase = "building";
-    } else {
-      currentPosition = null;
-      currentOrientation = Orientation.IN;
-      phase = "idle";
-    }
-    notifyDocumentChange();
-  }
-
-  /** Restore an editable builder session from the sequence document. */
-  function hydrateFromSequence(snapshot: AssembleStateHydration): void {
-    blueSteps = [...snapshot.blueSteps];
-    redSteps = [...snapshot.redSteps];
-    gridMode = snapshot.gridMode;
-    showCenter =
-      [...blueSteps, ...redSteps].some(
-        (step) =>
-          step.startPosition === GridLocation.CENTER ||
-          step.endPosition === GridLocation.CENTER
-      ) ||
-      Object.values(snapshot.startPoses).some(
-        (pose) => pose?.location === GridLocation.CENTER
+    return currentPosition;
+  });
+  const candidateStartOrientation = $derived.by(() => {
+    if (stepEditMode === "replace" && selectedStepIndex !== null) {
+      return (
+        activeSteps[selectedStepIndex]?.startOrientation ?? currentOrientation
       );
-
-    if (blueSteps.length > redSteps.length) {
-      activeHand = MotionColor.RED;
-    } else if (redSteps.length > blueSteps.length) {
-      activeHand = MotionColor.BLUE;
-    } else if (
-      blueSteps.length === 0 &&
-      snapshot.startPoses[MotionColor.RED] &&
-      !snapshot.startPoses[MotionColor.BLUE]
-    ) {
-      activeHand = MotionColor.RED;
-    } else {
-      activeHand = MotionColor.BLUE;
     }
+    return currentOrientation;
+  });
+  const candidateRotationDirection = $derived.by(() => {
+    if (stepEditMode === "replace" && selectedStepIndex !== null) {
+      return (
+        activeSteps[selectedStepIndex]?.rotationDirection ?? rotationDirection
+      );
+    }
+    return rotationDirection;
+  });
+  const candidateTurnCount = $derived.by(() => {
+    if (stepEditMode === "replace" && selectedStepIndex !== null) {
+      return activeSteps[selectedStepIndex]?.turnCount ?? turnCount;
+    }
+    return turnCount;
+  });
 
-    const active = activeHand === MotionColor.BLUE ? blueSteps : redSteps;
-    const last = active[active.length - 1];
+  let showOrientationArrow = $state(false);
+  let arrowOrientation = $state<Orientation>(Orientation.IN);
+  let arrowTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  function notifyDocumentChange(change?: AssembleDocumentChange): void {
+    options.onDocumentChange?.(change);
+  }
+
+  function cloneSteps(steps: readonly BuilderStep[]): BuilderStep[] {
+    return steps.map((step) => ({ ...step }));
+  }
+
+  function cloneStartPoses(
+    poses: Partial<Record<MotionColor, BuilderStartPose>>
+  ): Partial<Record<MotionColor, BuilderStartPose>> {
+    const next: Partial<Record<MotionColor, BuilderStartPose>> = {};
+    const blue = poses[MotionColor.BLUE];
+    const red = poses[MotionColor.RED];
+    if (blue) next[MotionColor.BLUE] = { ...blue };
+    if (red) next[MotionColor.RED] = { ...red };
+    return next;
+  }
+
+  function cloneDocument(document: unknown): unknown {
+    if (document === undefined) return undefined;
+    return JSON.parse(JSON.stringify(document)) as unknown;
+  }
+
+  function stablePhase(): Exclude<BuilderPhase, "animating"> {
+    return phase === "animating" ? "building" : phase;
+  }
+
+  function takeSnapshot(): AssembleSnapshot {
+    return {
+      phase: stablePhase(),
+      activeHand,
+      gridMode,
+      showCenter,
+      startPoses: cloneStartPoses(startPoses),
+      blueSteps: cloneSteps(blueSteps),
+      redSteps: cloneSteps(redSteps),
+      currentPosition,
+      currentOrientation,
+      rotationDirection,
+      turnCount,
+      selectedStepIndex,
+      stepEditMode,
+      document: cloneDocument(options.captureDocument?.()),
+    };
+  }
+
+  function restoreSnapshot(snapshot: AssembleSnapshot): void {
+    pendingAction = null;
+    pendingExternalEdit = null;
+    phase = snapshot.phase;
+    activeHand = snapshot.activeHand;
+    gridMode = snapshot.gridMode;
+    showCenter = snapshot.showCenter;
+    startPoses = cloneStartPoses(snapshot.startPoses);
+    blueSteps = cloneSteps(snapshot.blueSteps);
+    redSteps = cloneSteps(snapshot.redSteps);
+    currentPosition = snapshot.currentPosition;
+    currentOrientation = snapshot.currentOrientation;
+    rotationDirection = snapshot.rotationDirection;
+    turnCount = snapshot.turnCount;
+    selectedStepIndex = snapshot.selectedStepIndex;
+    stepEditMode = snapshot.stepEditMode;
+    showOrientationArrow = false;
+    if (options.restoreDocument && snapshot.document !== undefined) {
+      options.restoreDocument(cloneDocument(snapshot.document));
+    } else {
+      notifyDocumentChange();
+    }
+  }
+
+  function recordSnapshot(label: string, before: AssembleSnapshot): void {
+    const after = takeSnapshot();
+    if (JSON.stringify(before) === JSON.stringify(after)) return;
+    history.record({
+      label,
+      execute: () => restoreSnapshot(after),
+      undo: () => restoreSnapshot(before),
+    });
+  }
+
+  function finalizeExternalEdit(): void {
+    externalEditFinalizeScheduled = false;
+    const pending = pendingExternalEdit;
+    pendingExternalEdit = null;
+    if (pending) recordSnapshot(pending.label, pending.before);
+  }
+
+  function scheduleExternalEditFinalization(): void {
+    if (externalEditFinalizeScheduled) return;
+    externalEditFinalizeScheduled = true;
+    queueMicrotask(finalizeExternalEdit);
+  }
+
+  function handLabel(hand: MotionColor): string {
+    return hand === MotionColor.BLUE ? "Blue" : "Red";
+  }
+
+  function poseForHand(hand: MotionColor): BuilderStartPose | null {
+    const pose = startPoses[hand];
+    if (pose) return pose;
+    const steps = hand === MotionColor.BLUE ? blueSteps : redSteps;
+    const first = steps[0];
+    return first
+      ? {
+          location: first.startPosition,
+          orientation: first.startOrientation,
+        }
+      : null;
+  }
+
+  function syncActiveCursor(): void {
+    const steps = activeHand === MotionColor.BLUE ? blueSteps : redSteps;
+    const last = steps[steps.length - 1];
     if (last) {
       currentPosition = last.endPosition;
       currentOrientation = last.endOrientation;
@@ -387,10 +355,10 @@ export function createAssembleState(
       return;
     }
 
-    const startPose = snapshot.startPoses[activeHand];
-    if (startPose) {
-      currentPosition = startPose.location;
-      currentOrientation = startPose.orientation;
+    const pose = poseForHand(activeHand);
+    if (pose) {
+      currentPosition = pose.location;
+      currentOrientation = pose.orientation;
       phase = "placing";
       return;
     }
@@ -400,19 +368,325 @@ export function createAssembleState(
     phase = "idle";
   }
 
-  /** Full reset */
+  function placeFirstPoint(location: GridLocation): void {
+    const before = takeSnapshot();
+    const orientation =
+      location === GridLocation.CENTER ? Orientation.CENTER_N : Orientation.IN;
+    currentPosition = location;
+    currentOrientation = orientation;
+    startPoses = {
+      ...startPoses,
+      [activeHand]: { location, orientation },
+    };
+    phase = "placing";
+    notifyDocumentChange();
+    recordSnapshot(`Place ${handLabel(activeHand)} start`, before);
+  }
+
+  async function addMotion(endLocation: GridLocation): Promise<void> {
+    if (currentPosition === null) return;
+    const before = takeSnapshot();
+    const hand = activeHand;
+    const step = createBuilderStep(
+      { location: currentPosition, orientation: currentOrientation },
+      endLocation,
+      rotationDirection,
+      turnCount
+    );
+
+    phase = "animating";
+    const animationPromise = onAnimationRequest
+      ? onAnimationRequest(step)
+      : Promise.resolve();
+
+    if (hand === MotionColor.BLUE) blueSteps = [...blueSteps, step];
+    else redSteps = [...redSteps, step];
+
+    currentPosition = endLocation;
+    currentOrientation = step.endOrientation;
+    selectedStepIndex = null;
+    stepEditMode = null;
+    notifyDocumentChange();
+
+    try {
+      await animationPromise;
+    } finally {
+      phase = "building";
+      const handSteps = hand === MotionColor.BLUE ? blueSteps : redSteps;
+      recordSnapshot(`Add ${handLabel(hand)} step ${handSteps.length}`, before);
+    }
+
+    if (pendingAction) {
+      const action = pendingAction;
+      pendingAction = null;
+      action();
+    }
+  }
+
+  function replaceSelectedDestination(location: GridLocation): void {
+    if (!canReplaceSelectedStep || selectedStepIndex === null) return;
+    const pose = poseForHand(activeHand);
+    if (!pose) return;
+
+    const before = takeSnapshot();
+    if (activeHand === MotionColor.BLUE) {
+      blueSteps = replaceBuilderStepDestination(
+        blueSteps,
+        selectedStepIndex,
+        location,
+        pose
+      );
+    } else {
+      redSteps = replaceBuilderStepDestination(
+        redSteps,
+        selectedStepIndex,
+        location,
+        pose
+      );
+    }
+    const replacedIndex = selectedStepIndex;
+    stepEditMode = null;
+    syncActiveCursor();
+    notifyDocumentChange();
+    recordSnapshot(
+      `Replace ${handLabel(activeHand)} step ${replacedIndex + 1}`,
+      before
+    );
+  }
+
+  function handlePointClick(location: GridLocation): void {
+    if (phase === "animating" || phase === "complete") return;
+    if (stepEditMode === "replace") {
+      replaceSelectedDestination(location);
+      return;
+    }
+    if (currentPosition === null) {
+      placeFirstPoint(location);
+      return;
+    }
+    void addMotion(location);
+  }
+
+  function finishHand(): void {
+    if (!canFinishHand) return;
+    if (phase === "animating") {
+      pendingAction = finishHand;
+      return;
+    }
+    const before = takeSnapshot();
+    phase = "complete";
+    selectedStepIndex = null;
+    stepEditMode = null;
+    recordSnapshot("Complete sequence", before);
+  }
+
+  function undoStep(): boolean {
+    if (phase === "animating") return false;
+    finalizeExternalEdit();
+    if (!history.canUndo) return false;
+    return history.undo();
+  }
+
+  function redoStep(): boolean {
+    if (phase === "animating") return false;
+    finalizeExternalEdit();
+    if (!history.canRedo) return false;
+    return history.redo();
+  }
+
+  function clearHistory(): void {
+    pendingExternalEdit = null;
+    externalEditFinalizeScheduled = false;
+    history.clear();
+  }
+
+  function selectStep(index: number | null): void {
+    if (phase === "animating") return;
+    const total = Math.max(blueSteps.length, redSteps.length);
+    if (index === null || index < 0 || index >= total) {
+      selectedStepIndex = null;
+      stepEditMode = null;
+      return;
+    }
+    if (selectedStepIndex === index) {
+      selectedStepIndex = null;
+      stepEditMode = null;
+      return;
+    }
+    selectedStepIndex = index;
+    stepEditMode = null;
+  }
+
+  function deleteStepAt(index: number): void {
+    if (phase === "animating") return;
+    const total = Math.max(blueSteps.length, redSteps.length);
+    if (index < 0 || index >= total) return;
+    const before = takeSnapshot();
+    const bluePose = poseForHand(MotionColor.BLUE);
+    const redPose = poseForHand(MotionColor.RED);
+    if (bluePose) blueSteps = removeBuilderStep(blueSteps, index, bluePose);
+    if (redPose) redSteps = removeBuilderStep(redSteps, index, redPose);
+    selectedStepIndex = null;
+    stepEditMode = null;
+    syncActiveCursor();
+    notifyDocumentChange({ type: "delete-step", index });
+    recordSnapshot(`Delete step ${index + 1}`, before);
+  }
+
+  function deleteSelectedStep(): void {
+    if (selectedStepIndex === null) return;
+    deleteStepAt(selectedStepIndex);
+  }
+
+  function moveStep(fromIndex: number, toIndex: number): void {
+    if (!canReorderSteps || phase === "animating") return;
+    const total = blueSteps.length;
+    if (
+      fromIndex < 0 ||
+      fromIndex >= total ||
+      toIndex < 0 ||
+      toIndex >= total ||
+      fromIndex === toIndex
+    ) {
+      return;
+    }
+    const bluePose = poseForHand(MotionColor.BLUE);
+    const redPose = poseForHand(MotionColor.RED);
+    if (!bluePose || !redPose) return;
+
+    const before = takeSnapshot();
+    blueSteps = moveBuilderStep(blueSteps, fromIndex, toIndex, bluePose);
+    redSteps = moveBuilderStep(redSteps, fromIndex, toIndex, redPose);
+    selectedStepIndex = toIndex;
+    stepEditMode = null;
+    syncActiveCursor();
+    notifyDocumentChange({ type: "move-step", fromIndex, toIndex });
+    recordSnapshot(`Move step ${fromIndex + 1} to ${toIndex + 1}`, before);
+  }
+
+  function moveSelectedStep(direction: -1 | 1): void {
+    if (selectedStepIndex === null) return;
+    moveStep(selectedStepIndex, selectedStepIndex + direction);
+  }
+
+  function beginReplaceSelectedStep(): void {
+    if (!canReplaceSelectedStep) return;
+    stepEditMode = "replace";
+  }
+
+  function cancelStepEdit(): void {
+    stepEditMode = null;
+  }
+
+  function applyHydration(snapshot: AssembleStateHydration): void {
+    pendingAction = null;
+    blueSteps = cloneSteps(snapshot.blueSteps);
+    redSteps = cloneSteps(snapshot.redSteps);
+    startPoses = cloneStartPoses(snapshot.startPoses);
+    gridMode = snapshot.gridMode;
+    showCenter =
+      [...blueSteps, ...redSteps].some(
+        (step) =>
+          step.startPosition === GridLocation.CENTER ||
+          step.endPosition === GridLocation.CENTER
+      ) ||
+      Object.values(startPoses).some(
+        (pose) => pose?.location === GridLocation.CENTER
+      );
+
+    if (blueSteps.length > redSteps.length) activeHand = MotionColor.RED;
+    else if (redSteps.length > blueSteps.length) activeHand = MotionColor.BLUE;
+    else if (
+      blueSteps.length === 0 &&
+      startPoses[MotionColor.RED] &&
+      !startPoses[MotionColor.BLUE]
+    ) {
+      activeHand = MotionColor.RED;
+    } else activeHand = MotionColor.BLUE;
+
+    selectedStepIndex = null;
+    stepEditMode = null;
+    syncActiveCursor();
+  }
+
+  function beginExternalEdit(label: string): void {
+    if (pendingExternalEdit) return;
+    pendingExternalEdit = { before: takeSnapshot(), label };
+  }
+
+  function matchesCurrentHydration(snapshot: AssembleStateHydration): boolean {
+    return (
+      gridMode === snapshot.gridMode &&
+      JSON.stringify(startPoses) === JSON.stringify(snapshot.startPoses) &&
+      JSON.stringify(blueSteps) === JSON.stringify(snapshot.blueSteps) &&
+      JSON.stringify(redSteps) === JSON.stringify(snapshot.redSteps)
+    );
+  }
+
+  function hydrateFromExternalSequence(
+    snapshot: AssembleStateHydration,
+    previousDocument: unknown,
+    label = "Edit sequence"
+  ): void {
+    if (!pendingExternalEdit) {
+      pendingExternalEdit = {
+        before: {
+          ...takeSnapshot(),
+          document: cloneDocument(previousDocument),
+        },
+        label,
+      };
+    }
+    if (!matchesCurrentHydration(snapshot)) {
+      const previousHand = activeHand;
+      const previousSelection = selectedStepIndex;
+      applyHydration(snapshot);
+      const previousHandHasContent =
+        Boolean(startPoses[previousHand]) ||
+        (previousHand === MotionColor.BLUE
+          ? blueSteps.length > 0
+          : redSteps.length > 0);
+      if (previousHandHasContent) activeHand = previousHand;
+      const total = Math.max(blueSteps.length, redSteps.length);
+      selectedStepIndex =
+        previousSelection !== null && previousSelection < total
+          ? previousSelection
+          : null;
+      syncActiveCursor();
+    }
+    scheduleExternalEditFinalization();
+  }
+
+  function hydrateFromSequence(snapshot: AssembleStateHydration): void {
+    pendingExternalEdit = null;
+    externalEditFinalizeScheduled = false;
+    applyHydration(snapshot);
+    history.clear();
+  }
+
   function reset(): void {
+    const hasContent =
+      blueSteps.length > 0 ||
+      redSteps.length > 0 ||
+      Object.keys(startPoses).length > 0;
+    if (!hasContent) return;
+    const before = takeSnapshot();
+    pendingAction = null;
     phase = "idle";
     activeHand = MotionColor.BLUE;
     blueSteps = [];
     redSteps = [];
+    startPoses = {};
     currentPosition = null;
     currentOrientation = Orientation.IN;
     rotationDirection = RotationDirection.CLOCKWISE;
     turnCount = 0;
     gridMode = GridMode.DIAMOND;
     showCenter = false;
+    selectedStepIndex = null;
+    stepEditMode = null;
     notifyDocumentChange();
+    recordSnapshot("Clear sequence", before);
   }
 
   function setRotationDirection(dir: RotationDirection): void {
@@ -423,15 +697,8 @@ export function createAssembleState(
     turnCount = turns;
   }
 
-  // Transient orientation indicator state
-  let showOrientationArrow = $state(false);
-  let arrowOrientation = $state<Orientation>(Orientation.IN);
-  let arrowTimeout: ReturnType<typeof setTimeout> | null = null;
-
-  function setOrientation(ori: Orientation): void {
-    // When at center, translate radial orientations to center orientations.
-    // The UI shows in/out/clock/counter but center needs centerN/centerE/etc.
-    // Use NORTH as the reference: in→centerS, out→centerN, clock→centerE, counter→centerW
+  function setOrientation(orientation: Orientation): void {
+    let nextOrientation = orientation;
     if (currentPosition === GridLocation.CENTER) {
       const radialToCenterAtNorth: Record<string, Orientation> = {
         [Orientation.IN]: Orientation.CENTER_S,
@@ -439,16 +706,25 @@ export function createAssembleState(
         [Orientation.CLOCK]: Orientation.CENTER_E,
         [Orientation.COUNTER]: Orientation.CENTER_W,
       };
-      const translated = radialToCenterAtNorth[ori];
-      if (translated) {
-        ori = translated;
-      }
+      nextOrientation =
+        radialToCenterAtNorth[nextOrientation] ?? nextOrientation;
     }
-    currentOrientation = ori;
+    if (nextOrientation === currentOrientation) return;
 
-    // Show directional arrow only when prop is placed
+    const before = takeSnapshot();
+    currentOrientation = nextOrientation;
+    if (phase === "placing" && currentPosition !== null) {
+      startPoses = {
+        ...startPoses,
+        [activeHand]: {
+          location: currentPosition,
+          orientation: nextOrientation,
+        },
+      };
+    }
+
     if (currentPosition !== null) {
-      arrowOrientation = ori;
+      arrowOrientation = nextOrientation;
       showOrientationArrow = true;
       if (arrowTimeout) clearTimeout(arrowTimeout);
       arrowTimeout = setTimeout(() => {
@@ -456,72 +732,72 @@ export function createAssembleState(
         arrowTimeout = null;
       }, 1000);
     }
-    if (phase === "placing") notifyDocumentChange();
+    if (phase === "placing") {
+      notifyDocumentChange();
+      recordSnapshot(`Turn ${handLabel(activeHand)} start`, before);
+    }
   }
 
   function setGridMode(mode: GridMode): void {
-    if (mode === gridMode) return;
-    if (blueSteps.length > 0 || redSteps.length > 0) return;
-    if (
-      currentPosition !== null &&
-      !isLocationValidForMode(currentPosition, mode, showCenter)
-    ) {
-      currentPosition = null;
-      phase = "idle";
+    if (mode === gridMode || !canChangeGridMode) return;
+    const before = Object.keys(startPoses).length > 0 ? takeSnapshot() : null;
+    const nextPoses = cloneStartPoses(startPoses);
+    for (const hand of [MotionColor.BLUE, MotionColor.RED]) {
+      const pose = nextPoses[hand];
+      if (pose && !isLocationValidForMode(pose.location, mode, showCenter)) {
+        delete nextPoses[hand];
+      }
     }
+    startPoses = nextPoses;
     gridMode = mode;
+    syncActiveCursor();
     notifyDocumentChange();
+    if (before) recordSnapshot("Change grid", before);
   }
 
   function setShowCenter(show: boolean): void {
-    if (show === showCenter) return;
-    if (blueSteps.length > 0 || redSteps.length > 0) return;
-    if (!show && currentPosition === GridLocation.CENTER) {
-      currentPosition = null;
-      phase = "idle";
+    if (show === showCenter || !canChangeGridMode) return;
+    const before = Object.keys(startPoses).length > 0 ? takeSnapshot() : null;
+    if (!show) {
+      const nextPoses = cloneStartPoses(startPoses);
+      for (const hand of [MotionColor.BLUE, MotionColor.RED]) {
+        if (nextPoses[hand]?.location === GridLocation.CENTER) {
+          delete nextPoses[hand];
+        }
+      }
+      startPoses = nextPoses;
     }
     showCenter = show;
+    syncActiveCursor();
     notifyDocumentChange();
+    if (before) {
+      recordSnapshot(show ? "Show center point" : "Hide center point", before);
+    }
   }
 
   function toggleKeyboardMode(): void {
     keyboardMode = !keyboardMode;
   }
 
-  /** Switch to a specific hand, restoring that hand's last position */
   function switchToHand(hand: MotionColor): void {
-    if (hand === activeHand) return;
-    if (phase === "animating" || phase === "complete") return;
-
-    activeHand = hand;
-    const steps = hand === MotionColor.BLUE ? blueSteps : redSteps;
-    if (steps.length > 0) {
-      const last = steps[steps.length - 1]!;
-      currentPosition = last.endPosition;
-      currentOrientation = last.endOrientation;
-      phase = "building";
-    } else {
-      currentPosition = null;
-      currentOrientation = Orientation.IN;
-      phase = "idle";
+    if (hand === activeHand || phase === "animating" || phase === "complete") {
+      return;
     }
-    notifyDocumentChange();
+    activeHand = hand;
+    stepEditMode = null;
+    syncActiveCursor();
   }
 
   function setAnimationCallback(
-    cb: (step: BuilderStep, durationMs?: number) => Promise<void>
-  ): void {
-    onAnimationRequest = cb;
-  }
-
-  function setUndoAnimationCallback(
-    cb: (step: BuilderStep, wasPlacement: boolean) => Promise<void>
-  ): void {
-    onUndoAnimationRequest = cb;
+    callback: (step: BuilderStep, durationMs?: number) => Promise<void>
+  ): () => void {
+    onAnimationRequest = callback;
+    return () => {
+      if (onAnimationRequest === callback) onAnimationRequest = null;
+    };
   }
 
   return {
-    // Readable state
     get phase() {
       return phase;
     },
@@ -536,6 +812,9 @@ export function createAssembleState(
     },
     get redSteps() {
       return redSteps;
+    },
+    get startPoses() {
+      return startPoses;
     },
     get currentPosition() {
       return currentPosition;
@@ -564,6 +843,15 @@ export function createAssembleState(
     get canUndo() {
       return canUndo;
     },
+    get canRedo() {
+      return canRedo;
+    },
+    get undoLabel() {
+      return history.undoLabel;
+    },
+    get redoLabel() {
+      return history.redoLabel;
+    },
     get canFinishHand() {
       return canFinishHand;
     },
@@ -576,12 +864,44 @@ export function createAssembleState(
     get keyboardMode() {
       return keyboardMode;
     },
-
-    // Actions
+    get selectedStepIndex() {
+      return selectedStepIndex;
+    },
+    get stepEditMode() {
+      return stepEditMode;
+    },
+    get canReorderSteps() {
+      return canReorderSteps;
+    },
+    get canReplaceSelectedStep() {
+      return canReplaceSelectedStep;
+    },
+    get candidateStartPosition() {
+      return candidateStartPosition;
+    },
+    get candidateStartOrientation() {
+      return candidateStartOrientation;
+    },
+    get candidateRotationDirection() {
+      return candidateRotationDirection;
+    },
+    get candidateTurnCount() {
+      return candidateTurnCount;
+    },
     handlePointClick,
     finishHand,
     undoStep,
-    truncateAtStep,
+    redoStep,
+    clearHistory,
+    selectStep,
+    deleteStepAt,
+    deleteSelectedStep,
+    moveStep,
+    moveSelectedStep,
+    beginReplaceSelectedStep,
+    cancelStepEdit,
+    beginExternalEdit,
+    hydrateFromExternalSequence,
     hydrateFromSequence,
     reset,
     setRotationDirection,
@@ -592,22 +912,22 @@ export function createAssembleState(
     switchToHand,
     toggleKeyboardMode,
     setAnimationCallback,
-    setUndoAnimationCallback,
   };
 }
+
 function isLocationValidForMode(
   location: GridLocation,
   mode: GridMode,
   centerEnabled: boolean
 ): boolean {
   if (location === GridLocation.CENTER) return centerEnabled;
-  const CARDINAL: GridLocation[] = [
+  const cardinal: GridLocation[] = [
     GridLocation.NORTH,
     GridLocation.EAST,
     GridLocation.SOUTH,
     GridLocation.WEST,
   ];
-  const INTERCARDINAL: GridLocation[] = [
+  const intercardinal: GridLocation[] = [
     GridLocation.NORTHEAST,
     GridLocation.SOUTHEAST,
     GridLocation.SOUTHWEST,
@@ -615,11 +935,11 @@ function isLocationValidForMode(
   ];
   switch (mode) {
     case GridMode.DIAMOND:
-      return CARDINAL.includes(location);
+      return cardinal.includes(location);
     case GridMode.BOX:
-      return INTERCARDINAL.includes(location);
+      return intercardinal.includes(location);
     case GridMode.SKEWED:
-      return CARDINAL.includes(location) || INTERCARDINAL.includes(location);
+      return cardinal.includes(location) || intercardinal.includes(location);
     default:
       return true;
   }

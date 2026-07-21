@@ -26,6 +26,7 @@
   import ViewSequenceButton from "./buttons/ViewSequenceButton.svelte";
   import SaveToLibraryButton from "./buttons/SaveToLibraryButton.svelte";
   import { workspaceButtonsInZone } from "../workspace-button-layout";
+  import { navigationState } from "$lib/shared/navigation/state/navigation-state.svelte";
 
   // Get context - ButtonPanel is ONLY used inside CreateModule, so context is always available
   const { CreateModuleState, panelState } = getCreateModuleContext();
@@ -59,6 +60,7 @@
   const canClearSequence = $derived(CreateModuleState.canClearSequence());
   const isExportPanelOpen = $derived(panelState.isExportPanelOpen);
   const canSaveToLibrary = $derived(CreateModuleState.canShowActionButtons());
+  const isAssembleTab = $derived(navigationState.activeTab === "assemble");
   const currentSequence = $derived.by(() => {
     const tabState = CreateModuleState.getActiveTabSequenceState();
     return tabState?.currentSequence ?? null;
@@ -109,6 +111,11 @@
           <div transition:presenceTransition>
             <UndoButton {CreateModuleState} />
           </div>
+          {#if isAssembleTab}
+            <div transition:presenceTransition>
+              <UndoButton {CreateModuleState} direction="redo" />
+            </div>
+          {/if}
         {:else if btn.id === "clear" && canClearSequence && onClearSequence}
           <div transition:presenceTransition>
             <ClearSequencePanelButton onclick={onClearSequence} />

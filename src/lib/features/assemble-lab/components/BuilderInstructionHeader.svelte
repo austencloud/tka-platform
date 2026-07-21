@@ -48,13 +48,9 @@
     return "";
   });
 
-  // Hand switcher: always rendered to reserve space (prevents layout shift).
-  // Hidden on complete or when both hands are empty.
-  const switcherHidden = $derived(
-    builderState.phase === "complete" ||
-      (builderState.blueSteps.length === 0 &&
-        builderState.redSteps.length === 0)
-  );
+  // Always reserve the hand switcher. It also lets either hand place the first
+  // prop, rather than forcing blue to create a motion before red can start.
+  const switcherHidden = $derived(builderState.phase === "complete");
 
   // Pulse the inactive hand's button when it has no steps yet
   const blueNeedsAttention = $derived(
@@ -87,15 +83,13 @@
     {otherHandHint || "\u00A0"}
   </span>
 
-  {#if builderState.canChangeGridMode}
-    <GridModePicker
-      gridMode={builderState.gridMode}
-      showCenter={builderState.showCenter}
-      disabled={!builderState.canChangeGridMode}
-      onGridModeChange={(mode) => builderState.setGridMode(mode)}
-      onCenterChange={(show) => builderState.setShowCenter(show)}
-    />
-  {/if}
+  <GridModePicker
+    gridMode={builderState.gridMode}
+    showCenter={builderState.showCenter}
+    disabled={!builderState.canChangeGridMode}
+    onGridModeChange={(mode) => builderState.setGridMode(mode)}
+    onCenterChange={(show) => builderState.setShowCenter(show)}
+  />
 
   <div
     class="hand-switcher"
@@ -274,24 +268,11 @@
   .hand-switch-btn.needs-attention {
     border-color: color-mix(in srgb, var(--btn-color) 50%, transparent);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
-    animation: hand-nudge 2s ease-in-out infinite;
+    box-shadow: 0 0 8px 0 color-mix(in srgb, var(--btn-color) 24%, transparent);
   }
 
   .hand-switch-btn.needs-attention .hand-dot {
     opacity: 0.8;
-  }
-
-  @keyframes hand-nudge {
-    0%,
-    100% {
-      border-color: color-mix(in srgb, var(--btn-color) 30%, transparent);
-      box-shadow: 0 0 0 0 color-mix(in srgb, var(--btn-color) 0%, transparent);
-    }
-    50% {
-      border-color: var(--btn-color);
-      box-shadow: 0 0 8px 0
-        color-mix(in srgb, var(--btn-color) 30%, transparent);
-    }
   }
 
   .hand-switch-btn:focus-visible {
@@ -329,8 +310,6 @@
     }
 
     .hand-switch-btn.needs-attention {
-      animation: none;
-      /* Still show the border so the nudge is visible without motion */
       border-color: var(--btn-color);
     }
   }

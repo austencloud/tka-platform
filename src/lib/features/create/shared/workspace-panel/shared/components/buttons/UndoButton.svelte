@@ -10,10 +10,12 @@
   // Props
   let {
     CreateModuleState,
-    onUndo = () => {},
+    direction = "undo",
+    onAction = () => {},
   }: {
     CreateModuleState: CreateModuleState;
-    onUndo?: () => void;
+    direction?: "undo" | "redo";
+    onAction?: () => void;
   } = $props();
 
   // Resolve haptic feedback service
@@ -48,15 +50,22 @@
   };
 
   // Derived state for button text/tooltip
-  const undoButtonText = $derived(() => {
-    if (!CreateModuleState.canUndo) return "Nothing to Undo";
+  const canAct = $derived(
+    direction === "undo" ? CreateModuleState.canUndo : CreateModuleState.canRedo
+  );
 
-    // Assemble tab uses per-step undo - no history entries to inspect
+  const historyButtonText = $derived(() => {
+    if (!canAct)
+      return direction === "undo" ? "Nothing to Undo" : "Nothing to Redo";
+
     if (isAssembleTab) {
       const builder = CreateModuleState.assembleTabState?.assembleBuilderState;
-      if (builder?.phase === "placing") return "Undo Placement";
-      return "Undo Step";
+      const label =
+        direction === "undo" ? builder?.undoLabel : builder?.redoLabel;
+      return `${direction === "undo" ? "Undo" : "Redo"} ${label ?? "Last Action"}`;
     }
+
+    if (direction === "redo") return "Redo Last Action";
 
     const lastEntry =
       CreateModuleState.undoHistory[CreateModuleState.undoHistory.length - 1];
@@ -68,15 +77,19 @@
     return `Undo ${lastType ? typeDescriptions[lastType] : "Last Action"}`;
   });
 
-  const undoTooltip = $derived(() => {
-    if (!CreateModuleState.canUndo) return "No actions to undo";
+  const historyTooltip = $derived(() => {
+    if (!canAct) {
+      return direction === "undo" ? "No actions to undo" : "No actions to redo";
+    }
 
-    // Assemble tab: simple tooltip
     if (isAssembleTab) {
       const builder = CreateModuleState.assembleTabState?.assembleBuilderState;
-      if (builder?.phase === "placing") return "Undo: Remove placement";
-      return "Undo: Remove last step from active hand";
+      const label =
+        direction === "undo" ? builder?.undoLabel : builder?.redoLabel;
+      return `${direction === "undo" ? "Undo" : "Redo"}: ${label ?? "last action"}`;
     }
+
+    if (direction === "redo") return "Redo last action";
 
     const lastEntry =
       CreateModuleState.undoHistory[CreateModuleState.undoHistory.length - 1];
@@ -88,25 +101,27 @@
   });
 
   // Simple click handler
-  function handleUndo() {
+  function handleAction() {
     hapticService?.trigger("selection");
-    const success = CreateModuleState.undo();
+    const success =
+      direction === "undo"
+        ? CreateModuleState.undo()
+        : CreateModuleState.redo();
     if (success) {
-      onUndo();
+      onAction();
     }
   }
 </script>
 
-<!-- Simple tap-to-undo button -->
 <button
   class="undo-button"
-  class:disabled={!CreateModuleState.canUndo}
-  onclick={handleUndo}
-  disabled={!CreateModuleState.canUndo}
-  title={undoTooltip()}
-  aria-label={undoButtonText()}
+  class:disabled={!canAct}
+  onclick={handleAction}
+  disabled={!canAct}
+  title={historyTooltip()}
+  aria-label={historyButtonText()}
 >
-  <UndoGlyph size={20} />
+  <UndoGlyph size={20} {direction} />
 </button>
 
 <style>

@@ -44,6 +44,14 @@ export function createCreateModuleState(
   SequenceTransformer?: SequenceTransformer,
   sequenceValidationService?: SequenceValidator
 ) {
+  function formatUndoOperation(type: UndoOperationType): string {
+    return type
+      .toLowerCase()
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  }
+
   // Create sequence state (shared/legacy - kept for backwards compatibility)
   const ReversalDetector: ReversalDetector | undefined = reversalDetector;
   const sequenceState = createSequenceState({
@@ -251,8 +259,8 @@ export function createCreateModuleState(
         return _generatorTabState?.undoController || null;
       }
       case "assemble": {
-        // Assemble tab uses builderState.undoStep() directly, not a snapshot-based controller.
-        // canUndo/undo() are handled above with special-case logic.
+        // Assemble keeps a command stack inside its builder state because its
+        // edits reflow two coordinated paths rather than raw sequence records.
         return null;
       }
       default:
@@ -296,30 +304,39 @@ export function createCreateModuleState(
       return getActiveTabUndoController();
     },
     pushUndoSnapshot: (type: UndoOperationType, metadata?: UndoMetadata) => {
+      const activeTab = navigationState.activeTab as BuildModeId;
+      if (activeTab === "assemble") {
+        _assembleTabState?.assembleBuilderState.beginExternalEdit(
+          metadata?.description ?? formatUndoOperation(type)
+        );
+        return;
+      }
       const controller = getActiveTabUndoController();
       controller?.pushUndoSnapshot(type, metadata);
     },
     undo: () => {
-      // Assemble tab uses per-step undo (builderState.undoStep), not snapshot-based undo.
-      // undoStep() is async (plays reverse animation) but callers don't need to await it -
-      // the animation phase blocks further input until it completes.
       const activeTab = navigationState.activeTab as BuildModeId;
       if (activeTab === "assemble") {
         const builder = _assembleTabState?.assembleBuilderState;
-        if (builder?.canUndo) {
-          void builder.undoStep();
-          return true;
-        }
-        return false;
+        return builder?.undoStep() ?? false;
       }
       const controller = getActiveTabUndoController();
       return controller?.undo() || false;
     },
     redo: () => {
+      const activeTab = navigationState.activeTab as BuildModeId;
+      if (activeTab === "assemble") {
+        return _assembleTabState?.assembleBuilderState.redoStep() ?? false;
+      }
       const controller = getActiveTabUndoController();
       return controller?.redo() || false;
     },
     clearUndoHistory: () => {
+      const activeTab = navigationState.activeTab as BuildModeId;
+      if (activeTab === "assemble") {
+        _assembleTabState?.assembleBuilderState.clearHistory();
+        return;
+      }
       const controller = getActiveTabUndoController();
       controller?.clearUndoHistory();
     },
@@ -336,7 +353,6 @@ export function createCreateModuleState(
       controller?.setOnUndoingOptionCallback(callback);
     },
     get canUndo() {
-      // Assemble tab uses builderState.canUndo (per-step), not snapshot-based undo
       const activeTab = navigationState.activeTab as BuildModeId;
       if (activeTab === "assemble") {
         return _assembleTabState?.assembleBuilderState.canUndo || false;
@@ -345,6 +361,10 @@ export function createCreateModuleState(
       return controller?.canUndo || false;
     },
     get canRedo() {
+      const activeTab = navigationState.activeTab as BuildModeId;
+      if (activeTab === "assemble") {
+        return _assembleTabState?.assembleBuilderState.canRedo || false;
+      }
       const controller = getActiveTabUndoController();
       return controller?.canRedo || false;
     },
@@ -365,6 +385,9 @@ export function createCreateModuleState(
       return controller?.getTimeline() || [];
     },
     getOperationDescription: (type: UndoOperationType) => {
+      if ((navigationState.activeTab as BuildModeId) === "assemble") {
+        return formatUndoOperation(type);
+      }
       const controller = getActiveTabUndoController();
       return controller?.getOperationDescription(type) || "Unknown";
     },

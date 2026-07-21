@@ -99,6 +99,7 @@
   });
 
   const isGeneratorTab = $derived(navigationState.activeTab === "generate");
+  const isAssembleTab = $derived(navigationState.activeTab === "assemble");
 
   // Assemble tab: collapse tool panel when sequence is complete
   const isAssembleComplete = $derived(
@@ -110,7 +111,9 @@
   const isFuseTab = $derived(navigationState.activeTab === "fuse");
 
   // Workspace visible only when there's actual content to show
-  const shouldShowWorkspace = $derived(!isInputMode && !isFuseTab && hasWorkspaceContent);
+  const shouldShowWorkspace = $derived(
+    !isInputMode && !isFuseTab && (hasWorkspaceContent || isAssembleTab)
+  );
 
   // Color border based on active CREATE tab (for visual workspace distinction)
   const workspaceBorderColor = $derived.by(() => {
@@ -159,6 +162,7 @@
   class:workspace-visible={shouldShowWorkspace}
   class:tool-panel-collapsed={isAssembleComplete}
   class:generator-active={isGeneratorTab}
+  class:assemble-active={isAssembleTab}
 >
   <!-- Workspace Panel - Visible based on tab and content -->
   <div
@@ -183,6 +187,11 @@
               : {}),
           }}
         />
+      {:else if isAssembleTab}
+        <div class="assemble-workspace-placeholder">
+          <i class="fas fa-layer-group" aria-hidden="true"></i>
+          <p>Build on the grid. Pictographs appear here.</p>
+        </div>
       {/if}
     </div>
 
@@ -254,6 +263,12 @@
     grid-template-rows: 5fr 4fr;
   }
 
+  /* Assemble keeps both surfaces mounted from the first frame. The workspace
+     is an overview; the larger lower region is the actual construction tool. */
+  .layout-wrapper.workspace-visible.assemble-active:not(.side-by-side) {
+    grid-template-rows: 3fr 7fr;
+  }
+
   /* Side-by-side layout - horizontal instead of vertical */
   .layout-wrapper.side-by-side {
     grid-template-rows: 1fr;
@@ -309,6 +324,29 @@
     min-height: 0;
     position: relative;
     overflow: hidden;
+  }
+
+  .assemble-workspace-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--settings-spacing-sm, 8px);
+    padding: var(--settings-spacing-lg, 20px);
+    color: var(--theme-text-dim);
+    text-align: center;
+  }
+
+  .assemble-workspace-placeholder i {
+    font-size: var(--font-size-lg, 18px);
+    color: var(--theme-accent);
+  }
+
+  .assemble-workspace-placeholder p {
+    margin: 0;
+    font-size: var(--font-size-min, 14px);
   }
 
   .button-panel-wrapper {

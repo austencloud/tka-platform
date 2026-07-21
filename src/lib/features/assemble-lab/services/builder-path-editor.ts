@@ -1,0 +1,123 @@
+import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
+import {
+  Orientation,
+  type RotationDirection,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import type { BuilderStep } from "../state/assemble-state.svelte";
+import {
+  calculateBuilderEndOrientation,
+  deriveBuilderMotionGeometry,
+} from "./builder-motion-geometry";
+
+export interface BuilderPose {
+  readonly location: GridLocation;
+  readonly orientation: Orientation;
+}
+
+export function createBuilderStep(
+  startPose: BuilderPose,
+  endPosition: GridLocation,
+  rotationDirection: RotationDirection,
+  turnCount: number
+): BuilderStep {
+  const geometry = deriveBuilderMotionGeometry(
+    startPose.location,
+    endPosition,
+    startPose.orientation,
+    rotationDirection,
+    turnCount
+  );
+  const effectiveTurns =
+    turnCount < 0 && (geometry.isSamePoint || geometry.isStraightPath)
+      ? 0
+      : turnCount;
+  const endOrientation = calculateBuilderEndOrientation(
+    startPose.orientation,
+    startPose.location,
+    endPosition,
+    rotationDirection,
+    effectiveTurns
+  );
+
+  return {
+    startPosition: startPose.location,
+    endPosition,
+    rotationDirection,
+    turnCount: effectiveTurns,
+    startOrientation: startPose.orientation,
+    endOrientation,
+  };
+}
+
+/** Reconnect every motion after a delete, replacement, or reorder. */
+export function reflowBuilderPath(
+  steps: readonly BuilderStep[],
+  startPose: BuilderPose
+): BuilderStep[] {
+  let cursor = startPose;
+  const reflowed: BuilderStep[] = [];
+
+  for (const step of steps) {
+    const next = createBuilderStep(
+      cursor,
+      step.endPosition,
+      step.rotationDirection,
+      step.turnCount
+    );
+    reflowed.push(next);
+    cursor = {
+      location: next.endPosition,
+      orientation: next.endOrientation,
+    };
+  }
+
+  return reflowed;
+}
+
+export function removeBuilderStep(
+  steps: readonly BuilderStep[],
+  index: number,
+  startPose: BuilderPose
+): BuilderStep[] {
+  if (index < 0 || index >= steps.length) return [...steps];
+  return reflowBuilderPath(
+    steps.filter((_, candidateIndex) => candidateIndex !== index),
+    startPose
+  );
+}
+
+export function replaceBuilderStepDestination(
+  steps: readonly BuilderStep[],
+  index: number,
+  destination: GridLocation,
+  startPose: BuilderPose
+): BuilderStep[] {
+  if (index < 0 || index >= steps.length) return [...steps];
+  const replaced = steps.map((step, candidateIndex) =>
+    candidateIndex === index ? { ...step, endPosition: destination } : step
+  );
+  return reflowBuilderPath(replaced, startPose);
+}
+
+export function moveBuilderStep(
+  steps: readonly BuilderStep[],
+  fromIndex: number,
+  toIndex: number,
+  startPose: BuilderPose
+): BuilderStep[] {
+  if (
+    fromIndex < 0 ||
+    fromIndex >= steps.length ||
+    toIndex < 0 ||
+    toIndex >= steps.length ||
+    fromIndex === toIndex
+  ) {
+    return [...steps];
+  }
+
+  const reordered = [...steps];
+  const [moved] = reordered.splice(fromIndex, 1);
+  if (!moved) return [...steps];
+  reordered.splice(toIndex, 0, moved);
+  return reflowBuilderPath(reordered, startPose);
+}

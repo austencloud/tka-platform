@@ -17,15 +17,15 @@
   import {
     MotionColor,
     Orientation,
-    RotationDirection,
   } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
   import GridSvg from "$lib/shared/pictograph/grid/components/GridSvg.svelte";
   import type { GridHitTarget } from "$lib/shared/assemble-lab/domain/types";
+  import { getHitTargets } from "$lib/shared/assemble-lab/services/grid-hit-target-calculator";
+  import HitTargetOverlay from "$lib/shared/interactive-canvas/components/HitTargetOverlay.svelte";
   import {
-    getHitTargets,
-    getHitTargetRadius,
-  } from "$lib/shared/assemble-lab/services/grid-hit-target-calculator";
-  import { SvgPropAnimator } from "../services/svg-prop-animator";
+    getBuilderMotionPathD,
+    SvgPropAnimator,
+  } from "../services/svg-prop-animator";
   import type {
     AssembleState,
     BuilderStep,
@@ -60,8 +60,6 @@
   const hitTargets = $derived(
     getHitTargets(builderState.gridMode, builderState.showCenter)
   );
-  const hitRadius = getHitTargetRadius();
-
   const LOCATION_TO_KEY_LABEL: Record<string, string> = {
     [GridLocation.NORTHWEST]: "7",
     [GridLocation.NORTH]: "8",
@@ -91,6 +89,7 @@
   // Prop SVG render data (loaded async, keyed on prop type + color)
   let bluePropData = $state<PropRenderData | null>(null);
   let redPropData = $state<PropRenderData | null>(null);
+  let previewLocation = $state<GridLocation | null>(null);
 
   // Reactive prop types for rotation checks
   const currentBluePropType = $derived(
@@ -181,12 +180,6 @@
     return steps[steps.length - 1]!.endPosition;
   }
 
-  // Resolve the starting position of a hand path
-  function getStartPosition(steps: BuilderStep[]): GridLocation | null {
-    if (steps.length === 0) return null;
-    return steps[0]!.startPosition;
-  }
-
   // Compute rotation for a prop at a specific location/orientation
   // Hands don't rotate - always return 0 for hand props
   function getRotation(
@@ -224,12 +217,13 @@
         fill: "forwards",
       });
       anim.onfinish = () => resolve();
+      anim.oncancel = () => resolve();
     });
   }
 
   // Register animation callback on state so addMotion() can trigger animation
   $effect(() => {
-    builderState.setAnimationCallback(
+    const clearAnimationCallback = builderState.setAnimationCallback(
       async (step: BuilderStep, durationMs?: number) => {
         if (!activePropGroupRef) return;
         const animations: Promise<void>[] = [];
@@ -317,59 +311,11 @@
         await Promise.all(animations);
       }
     );
-  });
-
-  // Register undo animation callback - plays reverse animation before state changes
-  $effect(() => {
-    builderState.setUndoAnimationCallback(
-      async (step: BuilderStep, wasPlacement: boolean) => {
-        if (!activePropGroupRef) return;
-
-        if (wasPlacement) {
-          // Scale-out: reverse of the scale-in animation
-          const anim = activePropGroupRef.animate(
-            [
-              { transform: activePropGroupRef.style.transform, opacity: 1 },
-              {
-                transform:
-                  activePropGroupRef.style.transform.replace(
-                    /scale\([^)]*\)/,
-                    ""
-                  ) + " scale(0)",
-                opacity: 0,
-              },
-            ],
-            {
-              duration: 200,
-              easing: "cubic-bezier(0.4, 0, 1, 1)",
-              fill: "forwards",
-            }
-          );
-          await new Promise<void>((resolve) => {
-            anim.onfinish = () => resolve();
-          });
-          return;
-        }
-
-        // Reverse animation: animate prop from end back to start
-        // Flip the rotation direction so the prop rewinds along the same arc
-        const reverseDirection =
-          step.rotationDirection === RotationDirection.CLOCKWISE
-            ? RotationDirection.COUNTER_CLOCKWISE
-            : RotationDirection.CLOCKWISE;
-
-        await animator.animate({
-          element: activePropGroupRef,
-          startPosition: step.endPosition,
-          endPosition: step.startPosition,
-          rotationDirection: reverseDirection,
-          turnCount: step.turnCount,
-          startOrientation: step.endOrientation,
-          durationMs: ANIMATION_DURATION_MS,
-          propCenter: activePropCenter,
-        });
-      }
-    );
+    return () => {
+      clearAnimationCallback();
+      animator.cancel();
+      ghostAnimator.cancel();
+    };
   });
 
   // Detect when a first-click placement happens (for scale-in animation).
@@ -418,39 +364,66 @@
   });
 
   // Click handler for hit targets
-  function handleTargetClick(target: GridHitTarget): void {
+  function handleTargetClick(location: GridLocation): void {
     // When a prop is already placed (placing/building phase), clicking creates a
     // motion on the active hand. Check the beat cap before allowing it.
     if (
       onStepCapExceeded &&
+      builderState.stepEditMode === null &&
       (builderState.phase === "placing" || builderState.phase === "building") &&
       builderState.currentPosition !== null
     ) {
       if (onStepCapExceeded()) return;
     }
-    builderState.handlePointClick(target.location);
-  }
-
-  // Determine if a target is clickable in the current phase
-  function isActiveTarget(_target: GridHitTarget): boolean {
-    if (builderState.phase === "idle") return true;
-    if (builderState.phase === "placing" || builderState.phase === "building")
-      return true;
-    return false;
+    builderState.handlePointClick(location);
   }
 
   // Accessible label for each hit target
-  function getTargetLabel(target: GridHitTarget): string {
+  function getTargetLabel(
+    _location: GridLocation,
+    defaultLabel: string
+  ): string {
     const handLabel =
       builderState.activeHand === MotionColor.BLUE ? "Blue" : "Red";
+    if (builderState.stepEditMode === "replace") {
+      return `Set ${handLabel} step ${
+        (builderState.selectedStepIndex ?? 0) + 1
+      } destination to ${defaultLabel}`;
+    }
     if (builderState.phase === "idle") {
-      return `Place ${handLabel} prop at ${target.label}`;
+      return `Place ${handLabel} prop at ${defaultLabel}`;
     }
     if (builderState.phase === "placing" || builderState.phase === "building") {
-      return `Move ${handLabel} prop to ${target.label}`;
+      return `Move ${handLabel} prop to ${defaultLabel}`;
     }
-    return target.label;
+    return defaultLabel;
   }
+
+  const candidatePathD = $derived.by(() => {
+    const startPosition = builderState.candidateStartPosition;
+    if (
+      startPosition === null ||
+      previewLocation === null ||
+      builderState.phase === "animating" ||
+      builderState.phase === "complete"
+    ) {
+      return null;
+    }
+    return getBuilderMotionPathD({
+      startPosition,
+      endPosition: previewLocation,
+      startOrientation: builderState.candidateStartOrientation,
+      rotationDirection: builderState.candidateRotationDirection,
+      turnCount: builderState.candidateTurnCount,
+    });
+  });
+
+  const activePhaseColor = $derived<"blue" | "red">(
+    builderState.activeHand === MotionColor.BLUE ? "blue" : "red"
+  );
+  const targetsDisabled = $derived(
+    builderState.phase === "animating" || builderState.phase === "complete"
+  );
 
   // Blue's final orientation (for complete-phase rendering)
   const blueFinalOrientation = $derived.by(() => {
@@ -571,7 +544,18 @@
     <!-- Layer 1: Grid lines and points -->
     <GridSvg gridMode={builderState.gridMode} />
 
-    <!-- Layer 2: Reserved for future motion visualization -->
+    <!-- Layer 2: The route the next click will create. -->
+    {#if candidatePathD}
+      <path
+        class="candidate-path"
+        class:blue-path={builderState.activeHand === MotionColor.BLUE}
+        class:red-path={builderState.activeHand === MotionColor.RED}
+        d={candidatePathD}
+        fill="none"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    {/if}
 
     <!-- Layer 3: Ghost props (the inactive hand animated in sync during building).
          Fades out when the active hand goes past the other hand's last step. -->
@@ -777,44 +761,21 @@
         {/if}
       {/if}
     {/if}
-
-    <!-- Layer 5: Hit targets (always on top for clicks) -->
-    {#each hitTargets as target (target.location)}
-      {#if builderState.keyboardMode}
-        <text
-          x={target.x}
-          y={target.y + 5}
-          class="key-label"
-          class:key-invalid={!isActiveTarget(target)}
-          text-anchor="middle"
-          dominant-baseline="middle"
-          aria-hidden="true"
-          >{LOCATION_TO_KEY_LABEL[target.location] ?? ""}</text
-        >
-      {/if}
-      <circle
-        cx={target.x}
-        cy={target.y}
-        r={hitRadius}
-        class="hit-target"
-        class:active-hand-blue={builderState.activeHand === MotionColor.BLUE}
-        class:active-hand-red={builderState.activeHand === MotionColor.RED}
-        class:current-position={builderState.currentPosition ===
-          target.location && builderState.phase !== "idle"}
-        class:disabled={!isActiveTarget(target)}
-        role="button"
-        tabindex="0"
-        aria-label={getTargetLabel(target)}
-        onclick={() => handleTargetClick(target)}
-        onkeydown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleTargetClick(target);
-          }
-        }}
-      />
-    {/each}
   </svg>
+  <HitTargetOverlay
+    gridMode={builderState.gridMode}
+    showCenter={builderState.showCenter}
+    {activePhaseColor}
+    currentPosition={builderState.currentPosition}
+    disabled={targetsDisabled}
+    pulseTargets={false}
+    keyLabels={builderState.keyboardMode ? LOCATION_TO_KEY_LABEL : {}}
+    labelForLocation={getTargetLabel}
+    onPointClick={handleTargetClick}
+    onPointPreview={(location) => {
+      previewLocation = location;
+    }}
+  />
 </div>
 
 <style>
@@ -858,6 +819,24 @@
     width: 100%;
     height: 100%;
     display: block;
+  }
+
+  .candidate-path {
+    pointer-events: none;
+    stroke-width: 8;
+    stroke-dasharray: 16 12;
+    opacity: 0.72;
+    filter: drop-shadow(0 0 7px currentColor);
+  }
+
+  .candidate-path.blue-path {
+    stroke: var(--prop-blue, #2e8bf0);
+    color: var(--prop-blue, #2e8bf0);
+  }
+
+  .candidate-path.red-path {
+    stroke: var(--prop-red, #ed1c24);
+    color: var(--prop-red, #ed1c24);
   }
 
   /* Background now uses SVG gradient defined in <defs> */
@@ -925,129 +904,6 @@
     }
   }
 
-  /* Hit targets - default (idle phase, no hand color yet) */
-  .hit-target {
-    fill: var(--theme-stroke, rgba(255, 255, 255, 0.06));
-    stroke: var(--theme-text-muted, rgba(255, 255, 255, 0.3));
-    stroke-width: 2.5;
-    cursor: pointer;
-    transition:
-      fill 0.15s ease,
-      stroke 0.15s ease,
-      stroke-width 0.15s ease;
-  }
-
-  /* Available targets pulse in the active hand's color */
-  .hit-target.active-hand-blue:not(.disabled):not(.current-position) {
-    fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 10%, transparent);
-    stroke: color-mix(in srgb, var(--prop-blue, #2e8bf0) 60%, transparent);
-    animation: pulse-blue 1.8s ease-in-out infinite;
-  }
-
-  .hit-target.active-hand-red:not(.disabled):not(.current-position) {
-    fill: color-mix(in srgb, var(--prop-red, #ed1c24) 10%, transparent);
-    stroke: color-mix(in srgb, var(--prop-red, #ed1c24) 60%, transparent);
-    animation: pulse-red 1.8s ease-in-out infinite;
-  }
-
-  /* Current position - solid ring, no pulse, still clickable */
-  .hit-target.current-position {
-    animation: none;
-    cursor: pointer;
-  }
-
-  .hit-target.current-position.active-hand-blue {
-    fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 25%, transparent);
-    stroke: var(--prop-blue, #2e8bf0);
-    stroke-width: 3;
-    stroke-opacity: 1;
-  }
-
-  .hit-target.current-position.active-hand-red {
-    fill: color-mix(in srgb, var(--prop-red, #ed1c24) 25%, transparent);
-    stroke: var(--prop-red, #ed1c24);
-    stroke-width: 3;
-    stroke-opacity: 1;
-  }
-
-  /* Hover: brighter fill + thicker stroke */
-  .hit-target:not(.disabled):not(.current-position):hover {
-    stroke-width: 3.5;
-  }
-
-  .hit-target.active-hand-blue:not(.disabled):not(.current-position):hover {
-    fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 25%, transparent);
-    stroke: var(--prop-blue, #2e8bf0);
-  }
-
-  .hit-target.active-hand-red:not(.disabled):not(.current-position):hover {
-    fill: color-mix(in srgb, var(--prop-red, #ed1c24) 25%, transparent);
-    stroke: var(--prop-red, #ed1c24);
-  }
-
-  .hit-target:focus-visible {
-    outline: none;
-    stroke-width: 4;
-    stroke: var(--theme-accent, #3b82f6);
-  }
-
-  .hit-target.disabled {
-    cursor: not-allowed;
-    opacity: 0.3;
-    pointer-events: none;
-  }
-
-  .key-label {
-    font-size: 28px;
-    font-weight: 700;
-    fill: var(--key-label-fill, rgba(255, 255, 255, 0.25));
-    pointer-events: none;
-    font-family: var(--font-mono, monospace);
-    user-select: none;
-  }
-
-  .key-label.key-invalid {
-    fill: var(--key-label-fill-invalid, rgba(255, 255, 255, 0.08));
-  }
-
-  /* Blue pulse - fill + stroke + subtle scale */
-  @keyframes pulse-blue {
-    0% {
-      fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 6%, transparent);
-      stroke: color-mix(in srgb, var(--prop-blue, #2e8bf0) 40%, transparent);
-      stroke-width: 2;
-    }
-    50% {
-      fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 20%, transparent);
-      stroke: color-mix(in srgb, var(--prop-blue, #2e8bf0) 90%, transparent);
-      stroke-width: 3.5;
-    }
-    100% {
-      fill: color-mix(in srgb, var(--prop-blue, #2e8bf0) 6%, transparent);
-      stroke: color-mix(in srgb, var(--prop-blue, #2e8bf0) 40%, transparent);
-      stroke-width: 2;
-    }
-  }
-
-  /* Red pulse - fill + stroke + subtle scale */
-  @keyframes pulse-red {
-    0% {
-      fill: color-mix(in srgb, var(--prop-red, #ed1c24) 6%, transparent);
-      stroke: color-mix(in srgb, var(--prop-red, #ed1c24) 40%, transparent);
-      stroke-width: 2;
-    }
-    50% {
-      fill: color-mix(in srgb, var(--prop-red, #ed1c24) 20%, transparent);
-      stroke: color-mix(in srgb, var(--prop-red, #ed1c24) 90%, transparent);
-      stroke-width: 3.5;
-    }
-    100% {
-      fill: color-mix(in srgb, var(--prop-red, #ed1c24) 6%, transparent);
-      stroke: color-mix(in srgb, var(--prop-red, #ed1c24) 40%, transparent);
-      stroke-width: 2;
-    }
-  }
-
   /* Orientation ring indicator */
   .ori-indicator {
     pointer-events: none;
@@ -1075,11 +931,6 @@
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
-    .hit-target.active-hand-blue:not(.disabled):not(.current-position),
-    .hit-target.active-hand-red:not(.disabled):not(.current-position) {
-      animation: none;
-    }
-
     .scale-in {
       animation: none;
     }

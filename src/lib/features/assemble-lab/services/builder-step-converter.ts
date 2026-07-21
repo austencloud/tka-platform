@@ -21,11 +21,16 @@ import type { PictographData } from "$lib/shared/pictograph/shared/domain/models
 import type { Letter } from "$lib/shared/foundation/domain/models/letter";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import {
+  calculateHandPath,
   calculateMotionType,
   calculateRotationDirection,
 } from "$lib/features/create/assemble/services/hand-path-motion-calculator";
 import { motionQueryHandler } from "$lib/shared/pictograph/shared/services/motion-query-handler";
-import type { BuilderStep } from "../state/assemble-state.svelte";
+import { arrowLocationCalculator } from "$lib/shared/pictograph/arrow/positioning/calculation/services/arrow-location-calculator";
+import type {
+  BuilderStartPose,
+  BuilderStep,
+} from "../state/assemble-state.svelte";
 
 /** Derive MotionType (PRO/ANTI/DASH/STATIC) from step data */
 export function resolveMotionType(
@@ -64,11 +69,6 @@ export function resolveMotionType(
   }
 }
 
-export interface BuilderStartPose {
-  readonly location: GridLocation;
-  readonly orientation: Orientation;
-}
-
 export interface BuilderHydration {
   readonly blueSteps: BuilderStep[];
   readonly redSteps: BuilderStep[];
@@ -82,7 +82,7 @@ export function motionToBuilderStep(motion: MotionData): BuilderStep {
     startPosition: motion.startLocation,
     endPosition: motion.endLocation,
     rotationDirection: motion.rotationDirection,
-    turnCount: motion.turns,
+    turnCount: motion.turns === "fl" ? -0.5 : motion.turns,
     startOrientation: motion.startOrientation,
     endOrientation: motion.endOrientation,
   };
@@ -159,24 +159,67 @@ export function stepToMotion(
   gridMode: GridMode
 ): MotionData {
   const motionType = resolveMotionType(step, gridMode);
+  const hasNoBaseRotation =
+    motionType === MotionType.DASH || motionType === MotionType.STATIC;
   const resolvedRotation =
-    step.startPosition === step.endPosition
+    motionType === MotionType.FLOAT ||
+    (hasNoBaseRotation && step.turnCount === 0)
       ? RotationDirection.NO_ROTATION
       : step.rotationDirection;
+  const resolvedTurns = motionType === MotionType.FLOAT ? "fl" : step.turnCount;
 
-  return createMotionData({
+  const motion = createMotionData({
     color,
     startLocation: step.startPosition,
     endLocation: step.endPosition,
     motionType,
     rotationDirection: resolvedRotation,
-    turns: step.turnCount,
+    turns: resolvedTurns,
     startOrientation: step.startOrientation,
     endOrientation: step.endOrientation,
     gridMode,
     arrowLocation: step.startPosition,
+    handPath: calculateHandPath(step.startPosition, step.endPosition, gridMode),
     isVisible: true,
   });
+
+  return withCalculatedArrowLocations({
+    id: "builder-motion",
+    motions: { [color]: motion },
+    gridMode,
+  }).motions[color]!;
+}
+
+/** Keep persisted arrow locations aligned with the canonical pictograph pipeline. */
+export function withCalculatedArrowLocations<T extends PictographData>(
+  pictograph: T
+): T {
+  const blue = pictograph.motions[MotionColor.BLUE];
+  const red = pictograph.motions[MotionColor.RED];
+
+  return {
+    ...pictograph,
+    motions: {
+      ...(blue && {
+        [MotionColor.BLUE]: {
+          ...blue,
+          arrowLocation: arrowLocationCalculator.calculateLocation(
+            blue,
+            pictograph
+          ),
+        },
+      }),
+      ...(red && {
+        [MotionColor.RED]: {
+          ...red,
+          arrowLocation: arrowLocationCalculator.calculateLocation(
+            red,
+            pictograph
+          ),
+        },
+      }),
+    },
+  } as T;
 }
 
 export function createStaticMotion(
@@ -226,64 +269,58 @@ export function convertToPictographs(
         gridMode
       );
 
-    result.push({
-      id: `builder-step-${i}`,
-      motions,
-      gridMode,
-    });
+    result.push(
+      withCalculatedArrowLocations({
+        id: `builder-step-${i}`,
+        motions,
+        gridMode,
+      })
+    );
   }
 
   return result;
 }
 
 export function convertToStartPosition(
+  startPoses: Partial<Record<MotionColor, BuilderStartPose>>,
   blueSteps: BuilderStep[],
   redSteps: BuilderStep[],
-  currentPosition: GridLocation | null,
-  currentOrientation: Orientation,
-  activeHand: MotionColor,
   gridMode: GridMode
 ): PictographData | null {
   const firstBlue = blueSteps[0];
   const firstRed = redSteps[0];
-  const isPlacing = currentPosition !== null;
 
-  // Determine blue start
-  let bluePos: GridLocation | null = null;
-  let blueOri: Orientation = Orientation.IN;
-  if (firstBlue) {
-    bluePos = firstBlue.startPosition;
-    blueOri = firstBlue.startOrientation;
-  } else if (isPlacing && activeHand === MotionColor.BLUE) {
-    bluePos = currentPosition;
-    blueOri = currentOrientation;
-  }
+  const bluePose =
+    startPoses[MotionColor.BLUE] ??
+    (firstBlue
+      ? {
+          location: firstBlue.startPosition,
+          orientation: firstBlue.startOrientation,
+        }
+      : null);
+  const redPose =
+    startPoses[MotionColor.RED] ??
+    (firstRed
+      ? {
+          location: firstRed.startPosition,
+          orientation: firstRed.startOrientation,
+        }
+      : null);
 
-  // Determine red start
-  let redPos: GridLocation | null = null;
-  let redOri: Orientation = Orientation.IN;
-  if (firstRed) {
-    redPos = firstRed.startPosition;
-    redOri = firstRed.startOrientation;
-  } else if (isPlacing && activeHand === MotionColor.RED) {
-    redPos = currentPosition;
-    redOri = currentOrientation;
-  }
-
-  if (!bluePos && !redPos) return null;
+  if (!bluePose && !redPose) return null;
 
   const motions: PictographData["motions"] = {};
-  if (bluePos)
+  if (bluePose)
     motions[MotionColor.BLUE] = createStaticMotion(
-      bluePos,
-      blueOri,
+      bluePose.location,
+      bluePose.orientation,
       MotionColor.BLUE,
       gridMode
     );
-  if (redPos)
+  if (redPose)
     motions[MotionColor.RED] = createStaticMotion(
-      redPos,
-      redOri,
+      redPose.location,
+      redPose.orientation,
       MotionColor.RED,
       gridMode
     );

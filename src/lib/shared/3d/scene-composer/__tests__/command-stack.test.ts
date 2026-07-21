@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { CommandStack, type Command } from "../command-stack.svelte";
+import { CommandStack, type Command } from "$lib/shared/history/command-stack.svelte";
 
 // State is tracked in closure variables rather than on `this`. The CommandStack
 // stores commands in `$state([])` arrays, which deep-proxy their contents — so
@@ -72,6 +72,28 @@ describe("CommandStack", () => {
 		stack.undo();
 		stack.execute(cmd2);
 		expect(stack.canRedo).toBe(false);
+	});
+
+	it("records a command whose initial mutation already happened", () => {
+		const cmd = makeCommand("Move Step");
+		stack.record(cmd);
+		expect(cmd.executed).toBe(false);
+		expect(stack.undoLabel).toBe("Move Step");
+
+		stack.undo();
+		expect(cmd.undone).toBe(true);
+	});
+
+	it("bounds retained history", () => {
+		const bounded = new CommandStack(2);
+		bounded.record(makeCommand("first"));
+		bounded.record(makeCommand("second"));
+		bounded.record(makeCommand("third"));
+
+		bounded.undo();
+		expect(bounded.undoLabel).toBe("second");
+		bounded.undo();
+		expect(bounded.canUndo).toBe(false);
 	});
 
 	it("clear() resets both stacks", () => {

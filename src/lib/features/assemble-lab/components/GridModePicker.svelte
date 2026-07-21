@@ -26,12 +26,15 @@
     { value: GridMode.BOX, label: "Box" },
     { value: GridMode.SKEWED, label: "Merged" },
   ];
+  const modeOptions = $derived(
+    MODES.map((option) => ({ ...option, disabled }))
+  );
 </script>
 
 <div class="grid-mode-picker" class:disabled>
   <div class="mode-segment">
     <SegmentedControl
-      options={MODES}
+      options={modeOptions}
       value={gridMode}
       onchange={(mode) => onGridModeChange(mode)}
       size="sm"

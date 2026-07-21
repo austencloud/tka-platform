@@ -163,12 +163,12 @@ import { getStepOperator } from "$lib/features/create/shared/get-step-operator";
         return;
       }
 
-      // For assemble tab, truncate builder steps instead of modifying sequence state
-      // (the reactive bridge would overwrite any direct sequence state changes)
+      // Assemble owns path continuity. Delete the selected timeline step there
+      // so both hands reconnect instead of losing the entire suffix.
       if (navigationState.activeTab === "assemble") {
         const assembleTabState = createModuleState.assembleTabState;
         const stepIndex = stepNumber - 1;
-        assembleTabState?.assembleBuilderState?.truncateAtStep(stepIndex);
+        assembleTabState?.assembleBuilderState?.deleteStepAt(stepIndex);
         return;
       }
 

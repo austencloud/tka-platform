@@ -8,11 +8,18 @@
   is safe to render inside either component.
 -->
 <script lang="ts">
-  let { size = 20 }: { size?: number } = $props();
+  let {
+    size = 20,
+    direction = "undo",
+  }: {
+    size?: number;
+    direction?: "undo" | "redo";
+  } = $props();
 </script>
 
 <svg
   class="undo-glyph"
+  class:redo={direction === "redo"}
   width={size}
   height={size}
   viewBox="0 0 24 24"
@@ -39,5 +46,9 @@
 <style>
   .undo-glyph {
     flex-shrink: 0;
+  }
+
+  .undo-glyph.redo {
+    transform: scaleX(-1);
   }
 </style>

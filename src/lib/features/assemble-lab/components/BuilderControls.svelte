@@ -26,7 +26,7 @@
   import BuilderOrientationPicker from "./BuilderOrientationPicker.svelte";
   import PanelButton from "$lib/shared/components/panel/PanelButton.svelte";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import { resolveMotionType } from "../services/builder-step-converter";
+  import { stepToMotion } from "../services/builder-step-converter";
   import {
     getBuilderControlVisibility,
     getBuilderPhaseInstruction,
@@ -76,15 +76,19 @@
   let isSavingSoloProp = $state(false);
   let soloPropSaveError = $state<string | null>(null);
 
-  function builderStepToSoloPropStep(step: BuilderStep): SoloPropStepData {
+  function builderStepToSoloPropStep(
+    step: BuilderStep,
+    color: MotionColor
+  ): SoloPropStepData {
+    const motion = stepToMotion(step, color, builderState.gridMode);
     return {
       startLocation: step.startPosition,
       endLocation: step.endPosition,
       startOrientation: step.startOrientation,
       endOrientation: step.endOrientation,
-      motionType: resolveMotionType(step, builderState.gridMode),
-      rotationDirection: step.rotationDirection,
-      turns: step.turnCount < 0 ? "fl" : step.turnCount,
+      motionType: motion.motionType,
+      rotationDirection: motion.rotationDirection,
+      turns: motion.turns,
       duration: 1,
     };
   }
@@ -106,7 +110,13 @@
       const orchestrator =
         getSoloPropSaveOrchestrator() as SoloPropSaveOrchestrator;
 
-      const soloPropSteps = steps.map(builderStepToSoloPropStep);
+      const color =
+        builderState.blueSteps.length > 0
+          ? MotionColor.BLUE
+          : MotionColor.RED;
+      const soloPropSteps = steps.map((step) =>
+        builderStepToSoloPropStep(step, color)
+      );
       const startLocation = steps[0]!.startPosition;
       const startOrientation = steps[0]!.startOrientation;
 
@@ -599,43 +609,15 @@
 
   /* Pulse the red side when it needs attention */
   .hand-toggle.needs-attention-red {
-    animation: toggle-pulse-red 2s ease-in-out infinite;
+    border-color: color-mix(in srgb, var(--prop-red, #ed1c24) 60%, transparent);
   }
 
   .hand-toggle.needs-attention-blue {
-    animation: toggle-pulse-blue 2s ease-in-out infinite;
-  }
-
-  @keyframes toggle-pulse-red {
-    0%,
-    100% {
-      border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    }
-    50% {
-      border-color: color-mix(
-        in srgb,
-        var(--prop-red, #ed1c24) 60%,
-        transparent
-      );
-      box-shadow: 0 0 12px 0
-        color-mix(in srgb, var(--prop-red, #ed1c24) 20%, transparent);
-    }
-  }
-
-  @keyframes toggle-pulse-blue {
-    0%,
-    100% {
-      border-color: var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    }
-    50% {
-      border-color: color-mix(
-        in srgb,
-        var(--prop-blue, #2e8bf0) 60%,
-        transparent
-      );
-      box-shadow: 0 0 12px 0
-        color-mix(in srgb, var(--prop-blue, #2e8bf0) 20%, transparent);
-    }
+    border-color: color-mix(
+      in srgb,
+      var(--prop-blue, #2e8bf0) 60%,
+      transparent
+    );
   }
 
   /* ── Action slot (mobile) ── */
@@ -725,7 +707,6 @@
 
     .hand-toggle.needs-attention-red,
     .hand-toggle.needs-attention-blue {
-      animation: none;
       border-color: var(--theme-accent, #6366f1);
     }
   }
