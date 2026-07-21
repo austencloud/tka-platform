@@ -13,6 +13,7 @@ Uses stepper pattern for direct increment/decrement interaction
     currentIntensity,
     allowedValues,
     onIntensityChange,
+    brightBackgroundOverride,
     shadowColor = "0deg 0% 0%", // Neutral shadow (adapts to any color)
     gridColumnSpan = 2,
     cardIndex = 0,
@@ -21,14 +22,23 @@ Uses stepper pattern for direct increment/decrement interaction
     currentIntensity: number;
     allowedValues: number[];
     onIntensityChange: (intensity: number) => void;
+    /** Pins the palette for isolated embeds that do not share app settings. */
+    brightBackgroundOverride?: boolean;
     shadowColor?: string;
     gridColumnSpan?: number;
     cardIndex?: number;
     headerFontSize?: string;
   }>();
 
-  // Check if we're on a bright background (Aurora, Winter, etc.)
-  const useDarkColors = $derived(isBrightBackground(settingsService.settings.backgroundType ?? BackgroundType.WINTER));
+  // The app follows its selected background. Isolated embeds can pin the
+  // palette so a visitor's saved setting cannot restyle the card.
+  const useDarkColors = $derived.by(
+    () =>
+      brightBackgroundOverride ??
+      isBrightBackground(
+        settingsService.settings.backgroundType ?? BackgroundType.WINTER
+      )
+  );
 
   // Find current index in allowed values
   const currentIndex = $derived(allowedValues.indexOf(currentIntensity));
@@ -120,7 +130,8 @@ Uses stepper pattern for direct increment/decrement interaction
     } else if (value >= transitionEnd) {
       return "rgb(255, 255, 255)";
     } else {
-      const progress = (value - transitionStart) / (transitionEnd - transitionStart);
+      const progress =
+        (value - transitionStart) / (transitionEnd - transitionStart);
       const grayValue = Math.round(progress * 255);
       return `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
     }
@@ -135,10 +146,14 @@ Uses stepper pattern for direct increment/decrement interaction
 
   const description = $derived(getDescription(currentIntensity));
   const dynamicColor = $derived(
-    useDarkColors ? getBrightBgColor(currentIntensity) : getDefaultColor(currentIntensity)
+    useDarkColors
+      ? getBrightBgColor(currentIntensity)
+      : getDefaultColor(currentIntensity)
   );
   const textColor = $derived(
-    useDarkColors ? getBrightBgTextColor(currentIntensity) : getDefaultTextColor(currentIntensity)
+    useDarkColors
+      ? getBrightBgTextColor(currentIntensity)
+      : getDefaultTextColor(currentIntensity)
   );
 </script>
 

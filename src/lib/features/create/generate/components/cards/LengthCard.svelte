@@ -8,7 +8,10 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
   import { t } from "$lib/shared/i18n/i18n.svelte.js";
   import StepperCard from "./StepperCard/StepperCard.svelte";
   import { authState } from "$lib/shared/auth/state/auth-state.svelte";
-  import { resolveAccessTier, getMaxBeats } from "$lib/shared/auth/domain/access-tier";
+  import {
+    resolveAccessTier,
+    getMaxBeats,
+  } from "$lib/shared/auth/domain/access-tier";
   import { isPremiumOrAbove } from "$lib/shared/auth/domain/models/user-role";
 
   let {
@@ -17,6 +20,8 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
     loopEnabled = false,
     locked = false,
     minOverride,
+    maxOverride,
+    stepOverride,
     onLengthChange,
     onStepCapExceeded,
     subtitle = "",
@@ -30,6 +35,10 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
     loopEnabled?: boolean;
     locked?: boolean;
     minOverride?: number;
+    /** Pins the ceiling for isolated embeds that must not inherit auth tier. */
+    maxOverride?: number;
+    /** Pins the increment for isolated embeds with a fixed set of lengths. */
+    stepOverride?: number;
     onLengthChange: (length: number) => void;
     onStepCapExceeded?: () => void;
     subtitle?: string;
@@ -39,13 +48,19 @@ In spell mode, shows bridge count as subtitle and allows upward adjustment.
     headerFontSize?: string;
   }>();
 
-  const accessTier = $derived(
-    resolveAccessTier(authState.isAuthenticated, authState.isAnonymous, isPremiumOrAbove(authState.role))
-  );
-  const MAX_LENGTH = $derived(getMaxBeats(accessTier));
+  const MAX_LENGTH = $derived.by(() => {
+    if (maxOverride !== undefined) return maxOverride;
+
+    const accessTier = resolveAccessTier(
+      authState.isAuthenticated,
+      authState.isAnonymous,
+      isPremiumOrAbove(authState.role)
+    );
+    return getMaxBeats(accessTier);
+  });
 
   const MIN_LENGTH = $derived(minOverride ?? (loopEnabled ? 4 : 4));
-  const STEP = $derived(loopEnabled ? 2 : 1);
+  const STEP = $derived(stepOverride ?? (loopEnabled ? 2 : 1));
 
   // Clamp the displayed length to the tier cap. If the stored config has a
   // value above the tier limit (e.g., default 16 for a guest with cap 8),

@@ -1,9 +1,10 @@
 <!--
   StepStrip.svelte
 
-  Focus-locked read-ahead carousel: the active pictograph is pinned center under a
-  gold focus frame; the whole track slides one cell-stride left per step. Neighbors
-  dim + shrink with distance (spotlight). Virtualized window keeps the DOM lean.
+  Focus-locked read-ahead carousel: the active pictograph is pinned under a gold
+  focus frame; the track advances one cell-stride across a horizontal rail or up
+  a vertical rail. Neighbors dim + shrink with distance (spotlight). A virtualized
+  window keeps the DOM lean.
 
   Pure view: it reads notation cells (or derives them from a sequence) plus a float
   currentStep + bpm and renders. No engine, no playback ownership. Extracted from
@@ -25,6 +26,7 @@
     cellSize = 72,
     density = "standard",
     anchor = "center",
+    orientation = "horizontal",
     fillHeight = false,
     loop = false,
     bluePropType = null,
@@ -46,9 +48,12 @@
     /** Standard preserves the original Play with It geometry. Compact keeps
      *  the focus treatment while fitting an editorial/card-sized rail. */
     density?: "standard" | "compact";
-    /** "start" pins the focus toward the left so upcoming cells fill the space
-     *  to the right and finished moves fall off-screen; "center" keeps it mid. */
+    /** "start" pins the focus toward the leading edge so upcoming cells fill
+     *  the remaining axis; "center" keeps it in the middle. */
     anchor?: "center" | "start";
+    /** Horizontal is the established timeline rail. Vertical keeps the same
+     *  focus and virtualization behavior in narrow portrait media columns. */
+    orientation?: "horizontal" | "vertical";
     /** Size cells from the container height instead of using cellSize. Standard
      *  density leaves room around the focus in a tall practice column; compact
      *  density uses nearly all of a short rail's height. */
@@ -68,6 +73,7 @@
   const BUFFER = 3;
   const resolvedCells = $derived(cells ?? buildNotationCells(sequence));
   const heroScale = $derived(density === "compact" ? 1.15 : 1.32);
+  const vertical = $derived(orientation === "vertical");
 
   let currentStepNumber = $derived(Math.floor(currentStep ?? 0));
   let activeIndex = $derived(
@@ -109,10 +115,13 @@
   let stripContainerWidth = $state(375);
   let stripContainerHeight = $state(70);
 
-  // Focus position. "start" pins it a touch in from the left so upcoming cells
-  // fill the space to the right; "center" keeps it mid. The frame is centred on
-  // the focus cell either way.
-  const FOCUS_MARGIN = $derived(Math.max(28, stripContainerWidth * 0.1));
+  const stripPrimarySize = $derived(
+    vertical ? stripContainerHeight : stripContainerWidth
+  );
+
+  // Focus position. "start" pins it a touch in from the leading edge so
+  // upcoming cells fill the remaining axis; "center" keeps it in the middle.
+  const FOCUS_MARGIN = $derived(Math.max(28, stripPrimarySize * 0.1));
 
   // Effective cell px. fillHeight sizes the focus to a fraction of the column
   // HEIGHT — so it stays clearly smaller than the animation canvas — but is also
@@ -122,6 +131,7 @@
   const WIDTH_CELLS = 2.4; // ≈ how many cell-widths share the row
   const COMPACT_RAIL_INSET = 4;
   const COMPACT_VISIBLE_CELLS = 5.25;
+  const COMPACT_VERTICAL_CELLS = 3.4;
   const compactCell = $derived.by(() => {
     if (stripContainerWidth <= 375) return 44;
     if (stripContainerWidth <= 440) return 48;
@@ -129,6 +139,11 @@
     return 64;
   });
   const effCell = $derived.by(() => {
+    if (vertical) {
+      const byWidth = (stripContainerWidth - COMPACT_RAIL_INSET) / heroScale;
+      const byHeight = stripContainerHeight / COMPACT_VERTICAL_CELLS;
+      return Math.max(44, Math.floor(Math.min(byWidth, byHeight)));
+    }
     if (!fillHeight) return density === "compact" ? compactCell : cellSize;
 
     // The homepage rail is intentionally short. Its compact cells should use
@@ -151,10 +166,10 @@
   );
   const viewportHeight = $derived(FRAME + verticalHeadroom);
 
-  let focusLeft = $derived(
-    anchor === "start" ? FOCUS_MARGIN : stripContainerWidth / 2 - effCell / 2
+  let focusOffset = $derived(
+    anchor === "start" ? FOCUS_MARGIN : stripPrimarySize / 2 - effCell / 2
   );
-  let frameLeft = $derived(focusLeft - (FRAME - effCell) / 2);
+  let frameOffset = $derived(focusOffset - (FRAME - effCell) / 2);
 
   // Windowed render list of virtual indices around the focus. For loop, indices
   // run past the ends and map to cells circularly (seamless wrap); otherwise they
@@ -168,13 +183,13 @@
     let end: number;
     if (anchor === "start") {
       // Forward-biased: one finished cell (graceful exit) + as many upcoming as
-      // the width holds. No deep past — practice only needs what's next.
+      // the primary axis holds. No deep past — practice only needs what's next.
       const ahead =
-        Math.ceil((stripContainerWidth - focusLeft) / STRIDE) + BUFFER;
+        Math.ceil((stripPrimarySize - focusOffset) / STRIDE) + BUFFER;
       start = a - 1;
       end = a + ahead + 1;
     } else {
-      const half = Math.ceil(stripContainerWidth / STRIDE / 2) + BUFFER;
+      const half = Math.ceil(stripPrimarySize / STRIDE / 2) + BUFFER;
       start = a - half;
       end = a + half + 1;
     }
@@ -191,18 +206,18 @@
     return out;
   });
 
-  let trackX = $state(0);
+  let trackOffset = $state(0);
   let animateTrack = $state(false);
   let prevVirtual = -1;
   $effect(() => {
     const idx = virtualActive;
-    const left = focusLeft;
+    const focus = focusOffset;
     // virtualActive only decreases on init or a backward scrub — loop wraps keep
     // increasing, so the track slides forward through the wrap with no snap.
     const isBackOrInit = prevVirtual === -1 || idx < prevVirtual;
     animateTrack = !isBackOrInit;
     prevVirtual = idx;
-    trackX = left - idx * STRIDE;
+    trackOffset = focus - idx * STRIDE;
   });
 
   // Slide duration tracks the step interval (half a step, clamped) — fast tempos
@@ -244,12 +259,16 @@
     class="step-viewport"
     class:anchor-start={anchor === "start"}
     class:fill-height={fillHeight}
+    class:vertical
     bind:this={stepStripEl}
     style="--slide-dur: {slideDurMs}ms; --cell: {effCell}px; --frame: {FRAME}px; {fillHeight
       ? 'height: 100%'
       : `height: ${viewportHeight}px`}"
   >
-    <div class="step-focus" style="left: {frameLeft}px">
+    <div
+      class="step-focus"
+      style="{vertical ? 'top' : 'left'}: {frameOffset}px"
+    >
       {#if stepPulse}
         <div class="step-progress" style="transform: scaleX({stepPhase})"></div>
       {/if}
@@ -257,7 +276,9 @@
     <div
       class="step-track"
       class:no-anim={!animateTrack}
-      style="transform: translateX({trackX}px)"
+      style="transform: {vertical
+        ? `translateY(${trackOffset}px)`
+        : `translateX(${trackOffset}px)`}"
     >
       {#each renderCells as item (item.vi)}
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -266,7 +287,8 @@
           class:start-cell={item.cell.isStart}
           class:is-focus={item.dist === 0}
           class:clickable={!!onCellClick}
-          style="left: {item.vi * STRIDE}px; opacity: {cellOpacity(item.dist)}"
+          style="{vertical ? 'top' : 'left'}: {item.vi *
+            STRIDE}px; opacity: {cellOpacity(item.dist)}"
           role={onCellClick ? "button" : undefined}
           tabindex={onCellClick ? 0 : undefined}
           onclick={onCellClick
@@ -325,8 +347,27 @@
   .step-viewport.fill-height {
     height: 100%;
   }
-  /* Start-anchored: focus sits left, so fade only the upcoming (right) edge —
-     the left stays solid so the big focus pictograph is never dimmed. */
+  .step-viewport.vertical {
+    height: 100%;
+    border-top: 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      black 10%,
+      black 90%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      black 10%,
+      black 90%,
+      transparent 100%
+    );
+  }
+  /* Start-anchored: fade only the upcoming edge. The leading edge stays solid
+     so the large focus pictograph is never dimmed. */
   .step-viewport.anchor-start {
     -webkit-mask-image: linear-gradient(
       to right,
@@ -335,6 +376,20 @@
       transparent 100%
     );
     mask-image: linear-gradient(to right, black 0, black 86%, transparent 100%);
+  }
+  .step-viewport.vertical.anchor-start {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      black 0,
+      black 86%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      black 0,
+      black 86%,
+      transparent 100%
+    );
   }
   /* Cells are absolutely placed at vi * STRIDE inside the track; the track
      translateX slides the whole window. (Absolute, not flex, so the virtual
@@ -346,6 +401,9 @@
     left: 0;
     will-change: transform;
     transition: transform var(--slide-dur, 420ms) cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .step-viewport.vertical .step-track {
+    right: 0;
   }
   .step-track.no-anim {
     transition: none;
@@ -363,6 +421,12 @@
     z-index: 2;
     overflow: hidden; /* clip the countdown line to the rounded frame */
     transition: left 0.2s ease;
+  }
+  .step-viewport.vertical .step-focus {
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%);
+    transition: top 0.2s ease;
   }
   /* Calm per-step countdown: a thin amber line fills left→right across the step,
      reaching full as the next move takes focus. Replaces the distracting border
@@ -387,6 +451,11 @@
     border-radius: 6px;
     overflow: hidden;
     transition: opacity var(--slide-dur, 420ms) ease;
+  }
+  .step-viewport.vertical .step-cell {
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%);
   }
   .step-cell.clickable {
     cursor: pointer;

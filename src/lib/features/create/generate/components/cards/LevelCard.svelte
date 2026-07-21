@@ -14,19 +14,29 @@ Uses stepper pattern for space-efficient level selection
   let {
     currentLevel,
     onLevelChange,
+    brightBackgroundOverride,
     gridColumnSpan = 2,
     cardIndex = 0,
     headerFontSize = "9px",
   } = $props<{
     currentLevel: DifficultyLevel;
     onLevelChange: (level: DifficultyLevel) => void;
+    /** Pins the palette for isolated embeds that do not share app settings. */
+    brightBackgroundOverride?: boolean;
     gridColumnSpan?: number;
     cardIndex?: number;
     headerFontSize?: string;
   }>();
 
-  // Check if we're on a bright background (Aurora, Winter, etc.)
-  const useDarkColors = $derived(isBrightBackground(settingsService.settings.backgroundType ?? BackgroundType.WINTER));
+  // The app follows its selected background. Isolated embeds can pin the
+  // palette so a visitor's saved setting cannot restyle the card.
+  const useDarkColors = $derived.by(
+    () =>
+      brightBackgroundOverride ??
+      isBrightBackground(
+        settingsService.settings.backgroundType ?? BackgroundType.WINTER
+      )
+  );
 
   // 🎨 Level display data - default colors from canonical difficulty-styles.ts
   const LEVEL_MAP: Record<DifficultyLevel, number> = {
@@ -122,7 +132,9 @@ Uses stepper pattern for space-efficient level selection
   };
 
   // Use appropriate color set based on background
-  const levelData = $derived(useDarkColors ? brightBgLevelData : defaultLevelData);
+  const levelData = $derived(
+    useDarkColors ? brightBgLevelData : defaultLevelData
+  );
 
   // Convert DifficultyLevel to numeric value for stepper
   const levelToNumber = LEVEL_MAP;
