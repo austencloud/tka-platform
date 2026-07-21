@@ -24,6 +24,11 @@ interface TableDefinition {
   clusterFields?: string[];
 }
 
+export interface SchemaPreparationResult {
+  createdTables: string[];
+  repairedTables: string[];
+}
+
 export interface CollectionDay {
   source: "gsc_api" | "posthog" | "url_inspection" | "ai_overview";
   date: string;
@@ -80,7 +85,6 @@ const TABLES: TableDefinition[] = [
       { name: "query", type: "STRING" },
       { name: "country", type: "STRING", mode: "REQUIRED" },
       { name: "device", type: "STRING", mode: "REQUIRED" },
-      { name: "market", type: "STRING", mode: "REQUIRED" },
       { name: "clicks", type: "INTEGER", mode: "REQUIRED" },
       { name: "impressions", type: "INTEGER", mode: "REQUIRED" },
       { name: "position", type: "FLOAT", mode: "REQUIRED" },
@@ -204,6 +208,7 @@ const TABLES: TableDefinition[] = [
       { name: "query", type: "STRING", mode: "REQUIRED" },
       { name: "locale", type: "STRING", mode: "REQUIRED" },
       { name: "device", type: "STRING", mode: "REQUIRED" },
+      { name: "market", type: "STRING", mode: "REQUIRED" },
       { name: "ai_overview_present", type: "BOOLEAN", mode: "REQUIRED" },
       { name: "cited_tka", type: "BOOLEAN", mode: "REQUIRED" },
       { name: "cited_url", type: "STRING" },
@@ -218,6 +223,10 @@ function tableDefinition(name: string): TableDefinition {
   const definition = TABLES.find((candidate) => candidate.name === name);
   if (!definition) throw new Error(`Unknown SEO warehouse table: ${name}`);
   return definition;
+}
+
+export function getWarehouseTableFieldNames(name: string): string[] {
+  return tableDefinition(name).schema.map((field) => field.name);
 }
 
 function dateValue(value: unknown): string {
@@ -336,7 +345,30 @@ export class SeoWarehouse {
     return rows as T[];
   }
 
-  async ensureSchema(options: { createDataset?: boolean } = {}): Promise<void> {
+  private async createTable(definition: TableDefinition): Promise<void> {
+    await this.bigquery.dataset(this.datasetId).createTable(definition.name, {
+      schema: { fields: definition.schema },
+      ...(definition.partitionField
+        ? {
+            timePartitioning: {
+              type: "DAY",
+              field: definition.partitionField,
+            },
+          }
+        : {}),
+      ...(definition.clusterFields
+        ? { clustering: { fields: definition.clusterFields } }
+        : {}),
+    });
+  }
+
+  async ensureSchema(
+    options: { createDataset?: boolean; repairEmptyTables?: boolean } = {}
+  ): Promise<SchemaPreparationResult> {
+    const result: SchemaPreparationResult = {
+      createdTables: [],
+      repairedTables: [],
+    };
     const dataset = this.bigquery.dataset(this.datasetId, {
       location: this.location,
     });
@@ -358,20 +390,8 @@ export class SeoWarehouse {
       const table = dataset.table(definition.name);
       const [tableExists] = await table.exists();
       if (!tableExists) {
-        await dataset.createTable(definition.name, {
-          schema: { fields: definition.schema },
-          ...(definition.partitionField
-            ? {
-                timePartitioning: {
-                  type: "DAY",
-                  field: definition.partitionField,
-                },
-              }
-            : {}),
-          ...(definition.clusterFields
-            ? { clustering: { fields: definition.clusterFields } }
-            : {}),
-        });
+        await this.createTable(definition);
+        result.createdTables.push(definition.name);
         continue;
       }
 
@@ -398,12 +418,40 @@ export class SeoWarehouse {
           found.mode !== (field.mode ?? "NULLABLE")
         );
       });
-      if (mismatches.length > 0) {
+      const expectedNames = new Set(
+        definition.schema.map((field) => field.name)
+      );
+      const unexpected = metadataFields
+        .map((field) => field.name)
+        .filter((name) => !expectedNames.has(name));
+      const issues = [
+        ...mismatches.map((field) => field.name),
+        ...unexpected.map((name) => `${name} (unexpected)`),
+      ];
+      if (issues.length === 0) continue;
+
+      if (!options.repairEmptyTables) {
         throw new Error(
-          `BigQuery table ${definition.name} has an incompatible schema: ${mismatches.map((field) => field.name).join(", ")}`
+          `BigQuery table ${definition.name} has an incompatible schema: ${issues.join(", ")}`
         );
       }
+
+      const rows = await this.query<{ row_count: unknown }>(
+        `SELECT COUNT(*) AS row_count FROM ${this.tablePath(definition.name)}`
+      );
+      const rowCount = numberValue(rows[0]?.row_count);
+      if (rowCount !== 0) {
+        throw new Error(
+          `BigQuery table ${definition.name} has an incompatible schema and ${rowCount} rows; refusing to replace a non-empty table.`
+        );
+      }
+
+      await table.delete();
+      await this.createTable(definition);
+      result.repairedTables.push(definition.name);
     }
+
+    return result;
   }
 
   private async replaceRows(options: {

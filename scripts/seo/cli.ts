@@ -359,8 +359,11 @@ function parseBoolean(value: string, column: string): boolean {
 
 async function main(): Promise<void> {
   loadLocalEnvironment();
-  const command = process.argv[2] ?? "help";
-  const flags = parseFlags(process.argv.slice(3));
+  const rawArguments = process.argv.slice(2);
+  const argumentsAfterSeparator =
+    rawArguments[0] === "--" ? rawArguments.slice(1) : rawArguments;
+  const command = argumentsAfterSeparator[0] ?? "help";
+  const flags = parseFlags(argumentsAfterSeparator.slice(1));
   const config = loadSeoMeasurementConfig(
     stringFlag(flags, "config", {
       fallback: "config/seo-measurement.json",
@@ -372,7 +375,7 @@ async function main(): Promise<void> {
     process.stdout.write(`Flow Arts Composer SEO measurement
 
 Commands:
-  bootstrap [--create-dataset]
+  bootstrap [--create-dataset] [--repair-empty-tables]
   verify-access
   backfill --from YYYY-MM-DD --to YYYY-MM-DD
   collect-posthog --from YYYY-MM-DD --to YYYY-MM-DD
@@ -387,9 +390,15 @@ Commands:
   }
 
   if (command === "bootstrap") {
-    await warehouse.ensureSchema({
+    const result = await warehouse.ensureSchema({
       createDataset: flags["create-dataset"] === true,
+      repairEmptyTables: flags["repair-empty-tables"] === true,
     });
+    if (result.repairedTables.length > 0) {
+      process.stdout.write(
+        `Repaired empty tables: ${result.repairedTables.join(", ")}.\n`
+      );
+    }
     process.stdout.write("SEO warehouse schema is ready.\n");
     return;
   }
@@ -557,14 +566,15 @@ Commands:
   if (command === "daily") {
     const generatedDate = today(config);
     const searchDate = finalSearchDate(config);
+    let searchDays = 0;
     if (config.warehouse.performanceSource === "api") {
       const searchStart = config.experiment.deploymentDate
         ? rangeEndingAt(
             addDays(config.experiment.deploymentDate, -1),
             config.experiment.baselineDays
           ).start
-        : addDays(searchDate, -6);
-      await repairSearchRange({
+        : rangeEndingAt(searchDate, config.experiment.baselineDays).start;
+      searchDays = await repairSearchRange({
         warehouse,
         siteUrl: config.site.searchConsoleProperty,
         startDate: searchStart,
@@ -576,15 +586,15 @@ Commands:
       config.experiment.instrumentationStartDate &&
       config.experiment.instrumentationStartDate <= postHogEnd
         ? config.experiment.instrumentationStartDate
-        : addDays(postHogEnd, -6);
-    await repairPostHogRange({
+        : rangeEndingAt(postHogEnd, config.experiment.baselineDays).start;
+    const postHogDays = await repairPostHogRange({
       warehouse,
       config,
       startDate: postHogStart,
       endDate: postHogEnd,
       refreshFrom: addDays(postHogEnd, -2),
     });
-    await collectInspections({
+    const inspectionCount = await collectInspections({
       warehouse,
       config,
       captureDate: generatedDate,
@@ -596,7 +606,7 @@ Commands:
       dataThrough: searchDate,
     });
     process.stdout.write(
-      `Daily collection completed; scorecard phase is ${result.scorecard.phase}.\n`
+      `Daily collection completed: ${searchDays} Search Console days, ${postHogDays} PostHog days, and ${inspectionCount} URL inspections; scorecard phase is ${result.scorecard.phase}.\n`
     );
     return;
   }

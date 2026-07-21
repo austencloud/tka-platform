@@ -21,7 +21,10 @@ import {
 } from "../../scripts/seo/posthog";
 import { getPostHogDashboardSpec } from "../../scripts/seo/provision-posthog-dashboard";
 import { buildSeoScorecard } from "../../scripts/seo/scorecard";
-import { buildBulkSearchQuery } from "../../scripts/seo/warehouse";
+import {
+  buildBulkSearchQuery,
+  getWarehouseTableFieldNames,
+} from "../../scripts/seo/warehouse";
 
 const config = loadSeoMeasurementConfig();
 
@@ -278,6 +281,15 @@ describe("SEO cohorts and data-source contracts", () => {
     expect(query).toContain("GROUP BY data_date, page, query, country, device");
   });
 
+  it("stores market context only with AI Overview observations", () => {
+    expect(getWarehouseTableFieldNames("gsc_api_daily")).not.toContain(
+      "market"
+    );
+    expect(getWarehouseTableFieldNames("ai_overview_observations")).toContain(
+      "market"
+    );
+  });
+
   it("defines the managed PostHog dashboard with strict funnel and vital queries", () => {
     const spec = getPostHogDashboardSpec({
       host: "tkaflowarts.com",
@@ -298,6 +310,16 @@ describe("SEO cohorts and data-source contracts", () => {
     const ignore = readFileSync(resolve(process.cwd(), ".gitignore"), "utf8");
     expect(ignore).toContain("/seo-reports/");
     expect(ignore).toContain("gha-creds-*.json");
+  });
+
+  it("repairs only empty incompatible tables before provider checks", () => {
+    const workflow = readFileSync(
+      resolve(process.cwd(), ".github/workflows/seo-measurement.yml"),
+      "utf8"
+    );
+    expect(workflow).toContain(
+      "pnpm run seo:measure -- bootstrap --repair-empty-tables"
+    );
   });
 });
 

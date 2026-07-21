@@ -242,6 +242,9 @@ The scheduled workflow runs at 12:37 UTC. It stores metrics and scorecards only
 in private BigQuery tables. GitHub logs contain completion and freshness status,
 not queries, traffic counts, or report artifacts. Local reports are written to
 the ignored `seo-reports/` directory. With the API source active, each run
+validates the warehouse first. It may replace an incompatible table only when
+an exact row count confirms the table is empty; it refuses to replace tables
+that contain data. The daily collection fills the complete registered baseline,
 repairs missing finalized Search Console dates from the registered baseline
 onward. It also repairs missing PostHog dates from the instrumentation date and
 refreshes the last three PostHog days to include late completion events.
@@ -270,6 +273,9 @@ scorecard uses that crawl date as the primary-window start. A configured
 ```bash
 # Create or validate BigQuery tables
 pnpm run seo:bootstrap
+
+# Replace incompatible tables only when an exact count confirms they are empty
+pnpm run seo:measure -- bootstrap --repair-empty-tables
 
 # Check Search Console, BigQuery, and PostHog without printing metrics
 pnpm run seo:verify-access
