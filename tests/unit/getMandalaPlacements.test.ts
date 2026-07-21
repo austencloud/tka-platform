@@ -123,6 +123,17 @@ describe("getMandalaPlacements — col-0 empties (both hands visible)", () => {
 			{ row: 4, col: 1, variant: "red" },
 		]);
 	});
+
+	it("caps a six-row workspace column at one combined mandala", () => {
+		const res = getMandalaPlacements(
+			args({ stepCount: 22, cols: 5, rows: 6, showQRCode: false }),
+		);
+		expect(res.placements).toEqual([
+			{ row: 2, col: 1, variant: "blue" },
+			{ row: 3, col: 1, variant: "full" },
+			{ row: 4, col: 1, variant: "red" },
+		]);
+	});
 });
 
 describe("getMandalaPlacements — single-hand visibility", () => {

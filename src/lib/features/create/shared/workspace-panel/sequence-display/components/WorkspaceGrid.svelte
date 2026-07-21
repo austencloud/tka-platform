@@ -172,25 +172,17 @@
   // --- Mandala fill ---
   type MandalaShow = "blue" | "red" | "both";
 
+  const hasStartPosition = $derived(
+    startPosition !== null &&
+      !("isBlank" in startPosition && startPosition.isBlank),
+  );
+
   const isLightBackground = $derived(
     settingsService.settings.backgroundType === BackgroundType.CELESTIAL,
   );
 
-  function applyVariantCycling(cells: Array<{ show: MandalaShow }>) {
-    if (cells.length === 2) {
-      cells[0]!.show = "blue";
-      cells[1]!.show = "red";
-    } else if (cells.length >= 3) {
-      cells[0]!.show = "blue";
-      cells[cells.length - 1]!.show = "red";
-    }
-  }
-
   const standardMandalaCells = $derived.by(() => {
     if (isTimelineMode || steps.length === 0) return [];
-    const hasStartPosition =
-      startPosition !== null &&
-      !("isBlank" in startPosition && startPosition.isBlank);
     const { placements } = getMandalaPlacements({
       stepCount: steps.length,
       cols: gridLayout.totalColumns,
@@ -214,12 +206,32 @@
     if (!isTimelineMode) return [];
     const rowCount = timelineRows.length;
     if (rowCount < 2 || steps.length === 0) return [];
-    const cells: Array<{ index: number; show: MandalaShow }> = [];
-    for (let i = 1; i < rowCount; i++) {
-      cells.push({ index: i, show: "both" });
-    }
-    applyVariantCycling(cells);
-    return cells;
+    const { placements } = getMandalaPlacements({
+      stepCount: steps.length,
+      cols: gridLayout.totalColumns,
+      rows: rowCount,
+      includeStartPosition: hasStartPosition,
+      showQRCode: false,
+      blueVisible: true,
+      redVisible: true,
+      mandalaEnabled: true,
+      startPositionLayout: "column",
+    });
+
+    // Every timeline row still needs a left-column cell to stay aligned with
+    // the steps. Only the card-rule placements receive artwork; the remaining
+    // cells stay blank.
+    return Array.from({ length: rowCount - 1 }, (_, index) => {
+      const placement = placements.find(({ row }) => row === index + 2);
+      return {
+        index: index + 1,
+        show: placement
+          ? placement.variant === "full"
+            ? ("both" as const)
+            : placement.variant
+          : null,
+      };
+    });
   });
 
   const mandalaSize = $derived(Math.round(cellSize * MANDALA_CELL_SCALE));
@@ -373,21 +385,26 @@
           {#each timelineStartMandalas as cell (cell.index)}
             <!-- svelte-ignore a11y_no_static_element_interactions -->
             <div
-              class="timeline-cell mandala-cell"
-              class:light-bg={isLightBackground}
+              class="timeline-cell"
+              class:mandala-cell={cell.show !== null}
+              class:light-bg={cell.show !== null && isLightBackground}
               use:registerMandalaCell
-              oncontextmenu={(e) => handleMandalaContextMenu(e, cell.show)}
+              oncontextmenu={(e) => {
+                if (cell.show !== null) handleMandalaContextMenu(e, cell.show);
+              }}
             >
-              <SequenceMandala
-                sequence={{ steps }}
-                mode="card-back"
-                style="stroke"
-                show={cell.show}
-                size={mandalaSize}
-                bluePropType={effectiveBluePropType}
-                redPropType={effectiveRedPropType}
-                pathShape={mandalaPathShape}
-              />
+              {#if cell.show !== null}
+                <SequenceMandala
+                  sequence={{ steps }}
+                  mode="card-back"
+                  style="stroke"
+                  show={cell.show}
+                  size={mandalaSize}
+                  bluePropType={effectiveBluePropType}
+                  redPropType={effectiveRedPropType}
+                  pathShape={mandalaPathShape}
+                />
+              {/if}
             </div>
           {/each}
         </div>

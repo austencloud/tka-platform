@@ -1,5 +1,15 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { calculateGridLayout } from "../../src/lib/shared/create/utils/grid-calculations";
+
+const workspaceGridSource = readFileSync(
+  resolve(
+    process.cwd(),
+    "src/lib/features/create/shared/workspace-panel/sequence-display/components/WorkspaceGrid.svelte"
+  ),
+  "utf8"
+);
 
 describe("calculateGridLayout workspace column selection", () => {
   it("uses four step columns when a tall workspace makes them larger", () => {
@@ -38,5 +48,15 @@ describe("calculateGridLayout workspace column selection", () => {
 
     expect(layout.columns).toBe(8);
     expect(layout.rows).toBe(5);
+  });
+});
+
+describe("WorkspaceGrid mandala placement", () => {
+  it("shares capped mandala placement across both workspace layouts", () => {
+    expect(workspaceGridSource.match(/getMandalaPlacements\(\{/g)).toHaveLength(
+      2
+    );
+    expect(workspaceGridSource).not.toContain("applyVariantCycling");
+    expect(workspaceGridSource).toContain("{#if cell.show !== null}");
   });
 });
