@@ -2,69 +2,13 @@ import { collection, getDocs, query, where, limit, startAfter, orderBy, type Que
 import { getFirestoreInstance } from "$lib/shared/auth/firebase";
 import type { Catalog } from "../domain/models/Catalog";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { createSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import type { StepData } from "$lib/shared/foundation/domain/models/step-data";
-import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-import { createMotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { createStepData } from "$lib/shared/foundation/domain/factories/create-step-data";
-import type { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
-import type { MotionData } from "$lib/shared/pictograph/shared/domain/models/motion-data";
-import { Letter } from "$lib/shared/foundation/domain/models/letter";
 import {
   getSystemCatalogsPath,
   getSystemCatalogSequencesPath,
 } from "$lib/shared/library/data/firestore-paths";
-import { reversalDetector } from "$lib/shared/create/services/reversal-detector";
+import { hydrateSequence } from "./sequence-render-hydrator";
 
-/**
- * Derive the TKA letter from a grid position string.
- * Alpha positions → α, Beta → β, Gamma → γ
- */
-function letterFromGridPosition(gridPosition: unknown): Letter | null {
-  if (!gridPosition) return null;
-  const pos = String(gridPosition).toLowerCase();
-  if (pos.startsWith("alpha")) return Letter.ALPHA;
-  if (pos.startsWith("beta")) return Letter.BETA;
-  if (pos.startsWith("gamma")) return Letter.GAMMA;
-  return null;
-}
-
-/**
- * Hydrate raw motion data by running through createMotionData()
- * to fill in defaults (arrowPlacementData, propPlacementData, etc.)
- */
-function hydrateMotions(
-  motions: PictographData["motions"] | undefined
-): Partial<Record<MotionColor, MotionData>> {
-  const hydrated: Partial<Record<MotionColor, MotionData>> = {};
-  for (const [color, motion] of Object.entries(motions ?? {})) {
-    if (motion) {
-      hydrated[color as MotionColor] = createMotionData(motion);
-    }
-  }
-  return hydrated;
-}
-
-function hydrateSteps(
-  steps: readonly StepData[] | undefined
-): readonly StepData[] {
-  if (!steps || steps.length === 0) return [];
-  return steps.map((step, index) => {
-    const raw = step as unknown as Record<string, unknown>;
-    const beat = typeof raw.beat === "number" ? raw.beat : undefined;
-    // The factory fills any hand missing from the raw Firestore blob with an
-    // invisible placeholder (both-required canonical Step shape).
-    return createStepData({
-      ...step,
-      stepNumber: step.stepNumber ?? (beat !== undefined ? beat + 1 : index + 1),
-      duration: step.duration ?? 1,
-      blueReversal: step.blueReversal ?? false,
-      redReversal: step.redReversal ?? false,
-      isBlank: step.isBlank ?? false,
-      motions: hydrateMotions(step.motions),
-    });
-  });
-}
+export { hydrateSequence } from "./sequence-render-hydrator";
 
 const CATALOG_CACHE_KEY = "catalogLoader.cachedCatalogs";
 
@@ -172,36 +116,4 @@ export async function loadCatalogSequencesPage(
 // Shared hydration logic for a single Firestore document
 function hydrateDoc(d: QueryDocumentSnapshot): SequenceData {
   return hydrateSequence({ id: d.id, ...d.data() });
-}
-
-/**
- * Hydrate a RAW catalog sequence blob (Firestore doc data, or a doc embedded
- * elsewhere — e.g. shop product coverCards) into render-ready SequenceData:
- * createMotionData fills arrow/prop placement data, steps get canonical
- * placeholders, reversals derive when absent. Rendering a raw blob without
- * this silently drops every arrow and prop.
- */
-export function hydrateSequence(raw: Record<string, unknown>): SequenceData {
-  const seq = createSequenceData(raw);
-
-  const startPosition = seq.startPosition
-    ? {
-        ...seq.startPosition,
-        motions: hydrateMotions(seq.startPosition.motions),
-        letter: seq.startPosition.letter ?? letterFromGridPosition(seq.startPosition.gridPosition),
-      }
-    : undefined;
-
-  const hydrated: SequenceData = {
-    ...seq,
-    steps: hydrateSteps(seq.steps),
-    ...(startPosition && { startPosition }),
-  };
-
-  const hasStoredReversals = hydrated.steps.some(
-    (s) => s.blueReversal !== undefined || s.redReversal !== undefined
-  );
-  if (hasStoredReversals) return hydrated;
-
-  return reversalDetector.processReversals(hydrated);
 }

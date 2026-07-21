@@ -15,6 +15,7 @@ vi.mock("firebase/firestore", () => ({
   onSnapshot: vi.fn(() => vi.fn()),
   orderBy: vi.fn(),
   query: vi.fn(),
+  startAfter: vi.fn(),
   where: vi.fn(),
 }));
 vi.mock("$lib/shared/auth/firebase", () => ({
@@ -25,6 +26,8 @@ import {
   buildScanMapPins,
   createScanActivityState,
   filterScanEvents,
+  scanPropConfigForPreview,
+  sequenceForScanPreview,
   summarizeScanActivity,
   type ScanEventRow,
   type CodeEntry,
@@ -35,7 +38,8 @@ import type {
   ScanActivityCardDocument,
 } from "$lib/features/choreo-card/services/contracts/IScanActivityWatcher";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
-import { getDocs, where } from "firebase/firestore";
+import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import { getDocs, onSnapshot, where } from "firebase/firestore";
 
 function ev(partial: Partial<ScanEventRow>): ScanEventRow {
   return {
@@ -48,9 +52,51 @@ function ev(partial: Partial<ScanEventRow>): ScanEventRow {
     lng: null,
     deviceId: null,
     userId: null,
+    bluePropType: null,
+    redPropType: null,
+    catDogMode: null,
     ...partial,
   };
 }
+
+describe("scan preview prop configuration", () => {
+  const entry = {
+    code: "PROP",
+    bluePropType: PropType.FAN,
+    redPropType: PropType.FAN,
+    catDogMode: false,
+    decoded: {
+      intendedProp: {
+        bluePropType: PropType.STAFF,
+        redPropType: PropType.STAFF,
+        catDogMode: false,
+      },
+    } as SequenceData,
+    previewSource: "encoded",
+  } as CodeEntry;
+
+  it("uses the physical scan event ahead of card and sequence defaults", () => {
+    const event = ev({
+      bluePropType: PropType.POI,
+      redPropType: PropType.CLUB,
+      catDogMode: true,
+    });
+
+    expect(scanPropConfigForPreview(entry, event)).toEqual({
+      bluePropType: PropType.POI,
+      redPropType: PropType.CLUB,
+      catDogMode: true,
+    });
+  });
+
+  it("uses stored card props for events recorded before prop telemetry", () => {
+    expect(scanPropConfigForPreview(entry, ev({}))).toEqual({
+      bluePropType: PropType.FAN,
+      redPropType: PropType.FAN,
+      catDogMode: false,
+    });
+  });
+});
 
 function decoder() {
   return vi.fn(async () => ({ steps: [] }) as unknown as SequenceData);
@@ -213,6 +259,174 @@ describe("scan activity view transforms", () => {
 });
 
 describe("scan activity state", () => {
+  it("builds previews from embedded sequence data when legacy cards have no encoded blob", async () => {
+    let pushEvents: (events: ScanEventRow[]) => void = () => {};
+    const decodeSequence = decoder();
+    const state = createScanActivityState({
+      data: {
+        watchRecentEvents: vi.fn(async (onEvents) => {
+          pushEvents = onEvents;
+          return vi.fn();
+        }),
+        loadCards: vi.fn(async () => [
+          {
+            code: "LEGACY",
+            data: {
+              ownerId: "owner-1",
+              sequence: "BOOK",
+              scanCount: 4,
+              sequenceData: {
+                startPosition: {
+                  id: "embedded-start",
+                  gridPosition: "alpha1",
+                  isStartPosition: true,
+                  motions: {
+                    blue: {
+                      color: "blue",
+                      motionType: "static",
+                      rotationDirection: "noRotation",
+                      startLocation: "s",
+                      endLocation: "s",
+                      turns: 0,
+                      startOrientation: "in",
+                      endOrientation: "in",
+                    },
+                    red: {
+                      color: "red",
+                      motionType: "static",
+                      rotationDirection: "noRotation",
+                      startLocation: "n",
+                      endLocation: "n",
+                      turns: 0,
+                      startOrientation: "in",
+                      endOrientation: "in",
+                    },
+                  },
+                },
+                steps: [
+                  {
+                    id: "embedded-step",
+                    beat: 0,
+                    letter: "A",
+                    startPosition: "alpha1",
+                    endPosition: "beta1",
+                    motions: {
+                      blue: {
+                        color: "blue",
+                        motionType: "pro",
+                        rotationDirection: "cw",
+                        startLocation: "s",
+                        endLocation: "e",
+                        turns: 1,
+                        startOrientation: "in",
+                        endOrientation: "out",
+                      },
+                      red: {
+                        color: "red",
+                        motionType: "dash",
+                        rotationDirection: "noRotation",
+                        startLocation: "s",
+                        endLocation: "n",
+                        turns: 0,
+                        startOrientation: "in",
+                        endOrientation: "in",
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        ]),
+        loadAuthor: vi.fn(async () => ({ displayName: "Austen" })),
+      },
+      decodeSequence,
+    });
+    const event = ev({
+      id: "shortcodes/LEGACY/scanEvents/event",
+      code: "LEGACY",
+    });
+
+    await state.connect("owner-1", true);
+    pushEvents([event]);
+    await vi.waitFor(() => expect(state.codes).toHaveLength(1));
+
+    expect(state.codes[0]).toMatchObject({
+      code: "LEGACY",
+      word: "BOOK",
+      metadataAvailable: true,
+      integrityOk: true,
+      decoded: {
+        id: "LEGACY",
+        name: "BOOK",
+        word: "BOOK",
+        ownerId: "owner-1",
+        startPosition: {
+          id: "embedded-start",
+          gridPosition: "alpha1",
+        },
+        steps: [{ id: "embedded-step", stepNumber: 1 }],
+      },
+    });
+
+    const decoded = state.codes[0]?.decoded;
+    expect(decoded?.steps[0]?.motions.blue).toMatchObject({
+      propType: "staff",
+      color: "blue",
+    });
+    expect(decoded?.steps[0]?.motions.blue.arrowPlacementData).toBeDefined();
+    expect(decoded?.steps[0]?.motions.blue.propPlacementData).toBeDefined();
+    expect(decoded?.steps[0]?.motions.red.arrowPlacementData).toBeDefined();
+    expect(decoded?.steps[0]?.motions.red.propPlacementData).toBeDefined();
+    expect(
+      decoded?.startPosition?.motions.blue.propPlacementData
+    ).toBeDefined();
+    expect(decoded?.startPosition?.motions.red.propPlacementData).toBeDefined();
+    expect(sequenceForScanPreview(state.codes[0] ?? null)?.id).toBe(
+      "scan-activity-embedded-v1-LEGACY"
+    );
+
+    state.selectEvent(event.id);
+    expect(decodeSequence).not.toHaveBeenCalled();
+    state.disconnect();
+  });
+
+  it("does not claim an empty embedded payload can render a preview", async () => {
+    let pushEvents: (events: ScanEventRow[]) => void = () => {};
+    const state = createScanActivityState({
+      data: {
+        watchRecentEvents: vi.fn(async (onEvents) => {
+          pushEvents = onEvents;
+          return vi.fn();
+        }),
+        loadCards: vi.fn(async () => [
+          {
+            code: "EMPTY",
+            data: {
+              sequence: "EMPTY",
+              sequenceData: { steps: [] },
+            },
+          },
+        ]),
+        loadAuthor: vi.fn(async () => ({ displayName: "Unknown" })),
+      },
+      decodeSequence: decoder(),
+    });
+
+    await state.connect("owner-1", true);
+    pushEvents([
+      ev({ id: "shortcodes/EMPTY/scanEvents/event", code: "EMPTY" }),
+    ]);
+    await vi.waitFor(() => expect(state.codes).toHaveLength(1));
+
+    expect(state.codes[0]).toMatchObject({
+      metadataAvailable: true,
+      integrityOk: false,
+      decoded: null,
+    });
+    state.disconnect();
+  });
+
   it("publishes the first event window before card metadata finishes", async () => {
     let pushEvents: (events: ScanEventRow[]) => void = () => {};
     let resolveCards: (cards: ScanActivityCardDocument[]) => void = () => {};
@@ -665,6 +879,7 @@ describe("scan activity state", () => {
               encoded: "encoded-card",
               sequenceName: "BOOK",
               scanCount: 1,
+              sequenceData: { steps: [{ id: "embedded-fallback" }] },
             },
           },
         ]),
@@ -681,10 +896,149 @@ describe("scan activity state", () => {
     pushEvents([event]);
     await vi.waitFor(() => expect(state.codes).toHaveLength(1));
     expect(decodeSequence).not.toHaveBeenCalled();
+    expect(state.codes[0]?.decoded).toBeNull();
 
     state.selectEvent(event.id);
     await vi.waitFor(() => expect(decodeSequence).toHaveBeenCalledTimes(1));
     expect(decodeSequence).toHaveBeenCalledWith("encoded-card");
+    expect(sequenceForScanPreview(state.codes[0] ?? null)).toBe(
+      state.codes[0]?.decoded
+    );
+    state.disconnect();
+  });
+
+  it("hydrates decoded shortcode motions before rendering their scanned props", async () => {
+    let pushEvents: (events: ScanEventRow[]) => void = () => {};
+    const decodeSequence = vi.fn(async () =>
+      ({
+        id: "decoded-prop-card",
+        word: "PROP",
+        steps: [
+          {
+            id: "decoded-step",
+            stepNumber: 1,
+            duration: 1,
+            motions: {
+              blue: {
+                color: "blue",
+                motionType: "static",
+                rotationDirection: "noRotation",
+                startLocation: "s",
+                endLocation: "s",
+                turns: 0,
+                startOrientation: "in",
+                endOrientation: "in",
+                propType: PropType.POI,
+              },
+              red: {
+                color: "red",
+                motionType: "static",
+                rotationDirection: "noRotation",
+                startLocation: "n",
+                endLocation: "n",
+                turns: 0,
+                startOrientation: "in",
+                endOrientation: "in",
+                propType: PropType.FAN,
+              },
+            },
+          },
+        ],
+      }) as unknown as SequenceData
+    );
+    const state = createScanActivityState({
+      data: {
+        watchRecentEvents: vi.fn(async (onEvents) => {
+          pushEvents = onEvents;
+          return vi.fn();
+        }),
+        loadCards: vi.fn(async () => [
+          { code: "PROP", data: { encoded: "encoded-prop-card" } },
+        ]),
+        loadAuthor: vi.fn(async () => ({ displayName: "Unknown" })),
+      },
+      decodeSequence,
+    });
+    const event = ev({
+      id: "shortcodes/PROP/scanEvents/event",
+      code: "PROP",
+    });
+
+    await state.connect("owner-1", true);
+    pushEvents([event]);
+    await vi.waitFor(() => expect(state.codes).toHaveLength(1));
+    state.selectEvent(event.id);
+    await vi.waitFor(() => expect(state.codes[0]?.decoding).toBe(false));
+
+    const decoded = state.codes[0]?.decoded;
+    expect(decoded?.steps[0]?.motions.blue.propType).toBe(PropType.POI);
+    expect(decoded?.steps[0]?.motions.red.propType).toBe(PropType.FAN);
+    expect(decoded?.steps[0]?.motions.blue.propPlacementData).toBeDefined();
+    expect(decoded?.steps[0]?.motions.red.propPlacementData).toBeDefined();
+    expect(scanPropConfigForPreview(state.codes[0] ?? null, event)).toEqual({
+      bluePropType: PropType.POI,
+      redPropType: PropType.FAN,
+      catDogMode: false,
+    });
+    state.disconnect();
+  });
+
+  it("uses embedded sequence data when the preferred encoded payload cannot decode", async () => {
+    let pushEvents: (events: ScanEventRow[]) => void = () => {};
+    const decodeSequence = vi.fn(async () => {
+      throw new Error("Invalid motion encoding: soweiou0aS");
+    });
+    const state = createScanActivityState({
+      data: {
+        watchRecentEvents: vi.fn(async (onEvents) => {
+          pushEvents = onEvents;
+          return vi.fn();
+        }),
+        loadCards: vi.fn(async () => [
+          {
+            code: "0017",
+            data: {
+              encoded: "s~q1:broken-legacy-payload",
+              sequenceName: "UΛZ-Δ-",
+              sequenceData: {
+                word: "UΛZ-Δ-",
+                steps: [{ id: "embedded-fallback-step" }],
+              },
+            },
+          },
+        ]),
+        loadAuthor: vi.fn(async () => ({ displayName: "Unknown" })),
+      },
+      decodeSequence,
+    });
+    const event = ev({
+      id: "shortcodes/0017/scanEvents/event",
+      code: "0017",
+    });
+
+    await state.connect("owner-1", true);
+    pushEvents([event]);
+    await vi.waitFor(() => expect(state.codes).toHaveLength(1));
+    expect(state.codes[0]?.decoded).toBeNull();
+
+    state.selectEvent(event.id);
+    await vi.waitFor(() => expect(state.codes[0]?.decoding).toBe(false));
+
+    expect(decodeSequence).toHaveBeenCalledWith("s~q1:broken-legacy-payload");
+    expect(state.codes[0]).toMatchObject({
+      code: "0017",
+      integrityOk: true,
+      integrityReason: undefined,
+      previewSource: "embedded",
+      decoded: {
+        id: "0017",
+        word: "UΛZ-Δ-",
+        steps: [{ id: "embedded-fallback-step" }],
+      },
+    });
+    expect(sequenceForScanPreview(state.codes[0] ?? null)?.id).toBe(
+      "scan-activity-embedded-v1-0017"
+    );
     state.disconnect();
   });
 
@@ -725,6 +1079,41 @@ describe("scan activity state", () => {
 });
 
 describe("ScanActivityWatcher", () => {
+  it("publishes the prop configuration stored on each scan event", async () => {
+    const receiveEvents = vi.fn();
+    vi.mocked(onSnapshot).mockImplementationOnce(
+      ((...args: unknown[]) => {
+        const onNext = args[1] as (snapshot: unknown) => void;
+        onNext({
+          docs: [
+            {
+              ref: { path: "shortcodes/PROP/scanEvents/event-1" },
+              data: () => ({
+                timestamp: "2026-07-20T12:00:00.000Z",
+                bluePropType: "P",
+                redPropType: "fan",
+                catDogMode: true,
+              }),
+            },
+          ],
+        });
+        return vi.fn();
+      }) as never
+    );
+
+    const watcher = new ScanActivityWatcher();
+    await watcher.watchRecentEvents(receiveEvents, vi.fn());
+
+    expect(receiveEvents).toHaveBeenCalledWith([
+      expect.objectContaining({
+        code: "PROP",
+        bluePropType: PropType.POI,
+        redPropType: PropType.FAN,
+        catDogMode: true,
+      }),
+    ]);
+  });
+
   it("loads shortcode documents in document-id batches of at most 30", async () => {
     vi.mocked(getDocs).mockResolvedValue({ docs: [] } as never);
     const watcher = new ScanActivityWatcher();
@@ -741,16 +1130,26 @@ describe("ScanActivityWatcher", () => {
 });
 
 describe("GlobalUserMap scan marker contract", () => {
-  it("uses click listeners supported by the weekly Maps channel", () => {
-    const source = readFileSync(
-      resolve(
-        process.cwd(),
-        "src/lib/features/community/components/GlobalUserMap.svelte"
-      ),
-      "utf8"
-    );
+  const source = readFileSync(
+    resolve(
+      process.cwd(),
+      "src/lib/features/community/components/GlobalUserMap.svelte"
+    ),
+    "utf8"
+  );
 
+  it("uses click listeners supported by the weekly Maps channel", () => {
     expect(source.match(/marker\.addListener\("click"/g)).toHaveLength(2);
     expect(source).not.toContain('addEventListener("gmp-click"');
+  });
+
+  it("keeps imperative marker rebuilds outside effect tracking", () => {
+    expect(source).toContain('import { onMount, untrack } from "svelte"');
+    expect(source).toMatch(
+      /untrack\(\(\) => \{\s*try \{\s*createMarkers\(incoming\)/s
+    );
+    expect(source).toMatch(
+      /untrack\(\(\) => \{\s*try \{\s*createScanMarkers\(incoming\)/s
+    );
   });
 });

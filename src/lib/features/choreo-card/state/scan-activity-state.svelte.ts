@@ -1,4 +1,11 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { parsePropTypeFromURLValue } from "$lib/shared/navigation/services/sequence-encoder";
+import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
+import {
+  resolveScanPropConfig,
+  type ScanPropConfig,
+} from "$lib/shared/qr/services/scan-prop-resolver";
+import { hydrateSequence } from "../services/sequence-render-hydrator";
 import type {
   IScanActivityWatcher,
   ScanActivityCardDocument,
@@ -16,14 +23,45 @@ export interface CodeEntry {
   lastScannedAt: string | null;
   lastCity: string | null;
   lastCountry: string | null;
+  bluePropType: PropType | null;
+  redPropType: PropType | null;
+  catDogMode: boolean | null;
   metadataAvailable: boolean;
+  embeddedFallback: SequenceData | null;
   decoded: SequenceData | null;
+  previewSource: "encoded" | "embedded" | null;
   integrityOk: boolean;
   integrityReason?: string;
   decoding: boolean;
 }
 
-export interface ScanEventRow extends ScanActivityEventRecord {}
+const EMBEDDED_PREVIEW_RENDER_VERSION = 1;
+
+/**
+ * Embedded legacy cards briefly rendered before their runtime motion fields
+ * were restored, so those blank images can exist in local/cloud thumbnail
+ * caches. Keep their corrected previews in a versioned cache namespace while
+ * encoded cards retain their established identity.
+ */
+export function sequenceForScanPreview(
+  entry: CodeEntry | null
+): SequenceData | null {
+  if (!entry?.decoded) return null;
+  if (entry.previewSource !== "embedded") return entry.decoded;
+  return {
+    ...entry.decoded,
+    id: `scan-activity-embedded-v${EMBEDDED_PREVIEW_RENDER_VERSION}-${entry.code}`,
+  };
+}
+
+export function scanPropConfigForPreview(
+  entry: CodeEntry | null,
+  event: ScanActivityEventRecord | null
+): ScanPropConfig {
+  return resolveScanPropConfig(sequenceForScanPreview(entry), event, entry);
+}
+
+export type ScanEventRow = ScanActivityEventRecord;
 
 export interface ScanMapPin {
   id: string;
@@ -82,6 +120,32 @@ function nullableText(value: unknown): string | null {
 function codeWord(data: Record<string, unknown>): string {
   const embedded = data.sequenceData as { word?: unknown } | undefined;
   return text(data.sequenceName) || text(embedded?.word) || text(data.sequence);
+}
+
+function embeddedSequenceFromDocument(
+  document: ScanActivityCardDocument
+): SequenceData | null {
+  const value = document.data.sequenceData;
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  const embedded = value as Partial<SequenceData> & {
+    beats?: SequenceData["steps"];
+  };
+  const steps = embedded.steps ?? embedded.beats;
+  if (!Array.isArray(steps) || steps.length === 0) return null;
+
+  const word = codeWord(document.data);
+  const ownerId = nullableText(document.data.ownerId);
+  // Shortcode embeds intentionally contain only durable motion fields. Restore
+  // the derived arrow/prop placement data before handing them to the thumbnail
+  // renderer; wrapping the blob in createSequenceData() leaves every cell with
+  // a letter and grid but no renderable motions.
+  return hydrateSequence({
+    ...embedded,
+    id: document.code,
+    ...(word && { word, name: word }),
+    ...(ownerId && { ownerId }),
+  });
 }
 
 export function buildScanMapPins(
@@ -167,6 +231,9 @@ export function summarizeScanActivity(
 function entryFromDocument(document: ScanActivityCardDocument): CodeEntry {
   const data = document.data;
   const encoded = text(data.encoded);
+  const embeddedSequence = embeddedSequenceFromDocument(document);
+  const initialPreview = encoded ? null : embeddedSequence;
+  const hasPreviewSource = Boolean(encoded || embeddedSequence);
   return {
     code: document.code,
     word: codeWord(data),
@@ -177,10 +244,17 @@ function entryFromDocument(document: ScanActivityCardDocument): CodeEntry {
     lastScannedAt: toISOString(data.lastScannedAt),
     lastCity: nullableText(data.lastCity),
     lastCountry: nullableText(data.lastCountry),
+    bluePropType: parsePropTypeFromURLValue(text(data.bluePropType)) ?? null,
+    redPropType: parsePropTypeFromURLValue(text(data.redPropType)) ?? null,
+    catDogMode: typeof data.catDogMode === "boolean" ? data.catDogMode : null,
     metadataAvailable: true,
-    decoded: null,
-    integrityOk: Boolean(encoded),
-    integrityReason: encoded ? undefined : "Card data is unavailable.",
+    embeddedFallback: embeddedSequence,
+    decoded: initialPreview,
+    previewSource: initialPreview ? "embedded" : null,
+    integrityOk: hasPreviewSource,
+    integrityReason: hasPreviewSource
+      ? undefined
+      : "Card data is unavailable.",
     decoding: false,
   };
 }
@@ -196,8 +270,13 @@ function unavailableEntry(code: string): CodeEntry {
     lastScannedAt: null,
     lastCity: null,
     lastCountry: null,
+    bluePropType: null,
+    redPropType: null,
+    catDogMode: null,
     metadataAvailable: false,
+    embeddedFallback: null,
     decoded: null,
+    previewSource: null,
     integrityOk: false,
     integrityReason: "Card record is unavailable.",
     decoding: false,
@@ -239,7 +318,8 @@ export function createScanActivityState({
   let unsubscribe: (() => void) | null = null;
   let connectionGeneration = 0;
 
-  const visibleEvents = $derived.by(() => {
+  function currentVisibleEvents(): ScanEventRow[] {
+    // `byCode` itself is not reactive; `codes` changes whenever it does.
     void codes;
     return filterScanEvents(recentEvents, byCode, {
       scope,
@@ -247,31 +327,7 @@ export function createScanActivityState({
       search,
       city: cityFilter,
     });
-  });
-  const mapPins = $derived(
-    buildScanMapPins(visibleEvents, (code) => byCode.get(code)?.word)
-  );
-  const summary = $derived(summarizeScanActivity(recentEvents, visibleEvents));
-  const selectedEvent = $derived(
-    selectedEventId
-      ? (recentEvents.find((event) => event.id === selectedEventId) ?? null)
-      : null
-  );
-  const selectedCard = $derived.by(() => {
-    void codes;
-    return selectedCode ? (byCode.get(selectedCode) ?? null) : null;
-  });
-  const relatedEvents = $derived(
-    selectedCode
-      ? recentEvents
-          .filter(
-            (event) =>
-              event.code === selectedCode && event.id !== selectedEventId
-          )
-          .slice(0, 5)
-      : []
-  );
-
+  }
   function publishCards(): void {
     codes = [...byCode.values()].sort((a, b) => {
       const aTime = a.lastScannedAt ?? a.createdAt;
@@ -302,14 +358,17 @@ export function createScanActivityState({
     decoded: SequenceData,
     entry: CodeEntry
   ): Promise<SequenceData> {
+    const renderReady = hydrateSequence(
+      decoded as unknown as Record<string, unknown>
+    );
     const author = entry.ownerId ? await lookupAuthor(entry.ownerId) : null;
     return {
-      ...decoded,
-      word: entry.word || decoded.word,
-      name: entry.word || decoded.name,
-      ownerId: entry.ownerId ?? decoded.ownerId,
-      author: author?.displayName ?? decoded.author,
-      displayName: entry.word || decoded.displayName,
+      ...renderReady,
+      word: entry.word || renderReady.word,
+      name: entry.word || renderReady.name,
+      ownerId: entry.ownerId ?? renderReady.ownerId,
+      author: author?.displayName ?? renderReady.author,
+      displayName: entry.word || renderReady.displayName,
     } as SequenceData;
   }
 
@@ -320,9 +379,22 @@ export function createScanActivityState({
 
     const cached = decodeCache.get(entry.encoded);
     if (cached) {
-      entry.decoded = cached.decoded;
-      entry.integrityOk = cached.decoded !== null;
-      entry.integrityReason = cached.reason;
+      if (cached.decoded) {
+        entry.decoded = cached.decoded;
+        entry.previewSource = "encoded";
+        entry.integrityOk = true;
+        entry.integrityReason = undefined;
+      } else if (entry.embeddedFallback) {
+        entry.decoded = entry.embeddedFallback;
+        entry.previewSource = "embedded";
+        entry.integrityOk = true;
+        entry.integrityReason = undefined;
+      } else {
+        entry.decoded = null;
+        entry.previewSource = null;
+        entry.integrityOk = false;
+        entry.integrityReason = cached.reason;
+      }
       publishCards();
       return;
     }
@@ -337,15 +409,26 @@ export function createScanActivityState({
       const current = byCode.get(entry.code);
       if (current?.encoded === encoded) {
         current.decoded = enriched;
+        current.previewSource = "encoded";
         current.integrityOk = true;
+        current.integrityReason = undefined;
       }
     } catch (caught) {
       const reason = (caught as Error).message;
       decodeCache.set(encoded, { decoded: null, reason });
       const current = byCode.get(entry.code);
       if (current?.encoded === encoded) {
-        current.integrityOk = false;
-        current.integrityReason = reason;
+        if (current.embeddedFallback) {
+          current.decoded = current.embeddedFallback;
+          current.previewSource = "embedded";
+          current.integrityOk = true;
+          current.integrityReason = undefined;
+        } else {
+          current.decoded = null;
+          current.previewSource = null;
+          current.integrityOk = false;
+          current.integrityReason = reason;
+        }
       }
     } finally {
       const current = byCode.get(entry.code);
@@ -392,8 +475,13 @@ export function createScanActivityState({
       for (const document of documents) {
         const prior = byCode.get(document.code);
         const next = entryFromDocument(document);
-        if (prior?.metadataAvailable && prior.encoded === next.encoded) {
+        if (
+          prior?.metadataAvailable &&
+          next.encoded &&
+          prior.encoded === next.encoded
+        ) {
           next.decoded = prior.decoded;
+          next.previewSource = prior.previewSource;
           next.integrityOk = prior.integrityOk;
           next.integrityReason = prior.integrityReason;
           next.decoding = prior.decoding;
@@ -601,13 +689,16 @@ export function createScanActivityState({
       return recentEvents;
     },
     get visibleEvents() {
-      return visibleEvents;
+      return currentVisibleEvents();
     },
     get mapPins() {
-      return mapPins;
+      return buildScanMapPins(
+        currentVisibleEvents(),
+        (code) => byCode.get(code)?.word
+      );
     },
     get summary() {
-      return summary;
+      return summarizeScanActivity(recentEvents, currentVisibleEvents());
     },
     get status() {
       return status;
@@ -640,13 +731,25 @@ export function createScanActivityState({
       return selectedCode;
     },
     get selectedEvent() {
-      return selectedEvent;
+      return selectedEventId
+        ? (recentEvents.find((event) => event.id === selectedEventId) ?? null)
+        : null;
     },
     get selectedCard() {
-      return selectedCard;
+      // `byCode` is deliberately non-reactive; `codes` is its publication
+      // signal, so read it here before resolving the current map entry.
+      void codes;
+      return selectedCode ? (byCode.get(selectedCode) ?? null) : null;
     },
     get relatedEvents() {
-      return relatedEvents;
+      return selectedCode
+        ? recentEvents
+            .filter(
+              (event) =>
+                event.code === selectedCode && event.id !== selectedEventId
+            )
+            .slice(0, 5)
+        : [];
     },
     connect,
     disconnect,

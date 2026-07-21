@@ -5,9 +5,11 @@
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import { formatTimeAgo } from "$lib/shared/i18n/i18n-formatters";
   import { toast } from "$lib/shared/toast/state/toast-state.svelte";
-  import type {
-    CodeEntry,
-    ScanEventRow,
+  import {
+    scanPropConfigForPreview,
+    sequenceForScanPreview,
+    type CodeEntry,
+    type ScanEventRow,
   } from "$lib/features/choreo-card/state/scan-activity-state.svelte";
 
   interface Props {
@@ -23,6 +25,8 @@
     $props();
 
   const word = $derived(simplifyRepeatedWord(entry?.word || code));
+  const previewSequence = $derived(sequenceForScanPreview(entry));
+  const previewProps = $derived(scanPropConfigForPreview(entry, event));
   const location = $derived(
     event
       ? [event.city, event.country].filter(Boolean).join(", ") ||
@@ -81,8 +85,15 @@
 
   <div class="inspector-grid">
     <div class="thumb">
-      {#if entry?.decoded}
-        <PropAwareThumbnail sequence={entry.decoded} eager allowQR={false} />
+      {#if previewSequence}
+        <PropAwareThumbnail
+          sequence={previewSequence}
+          bluePropType={previewProps.bluePropType}
+          redPropType={previewProps.redPropType}
+          catDogModeEnabled={previewProps.catDogMode}
+          eager
+          allowQR={false}
+        />
       {:else}
         <div class="thumb-empty" aria-live="polite">
           <i class="fas fa-id-card" aria-hidden="true"></i>
