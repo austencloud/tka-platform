@@ -31,6 +31,13 @@ type QueryType =
   | "seo-history";
 type TimePeriod = "today" | "week" | "month" | "all";
 type PulseDimension = "country" | "city" | "referrer" | "device";
+type AnalyticsStage =
+  | "authorize"
+  | "rate_limit"
+  | "read_request"
+  | "build_query"
+  | "posthog"
+  | "audit";
 
 /** Global pulse queries are site-wide; per-user queries require a userId. */
 const GLOBAL_QUERY_TYPES: ReadonlySet<string> = new Set([
@@ -312,13 +319,60 @@ function buildSeoHistoryQuery(): string {
   `;
 }
 
+function statusFromError(err: unknown): number | null {
+  if (typeof err !== "object" || err === null || !("status" in err)) {
+    return null;
+  }
+  const status = Number((err as { status: unknown }).status);
+  return Number.isInteger(status) && status >= 400 && status <= 599
+    ? status
+    : null;
+}
+
+function bodyMessageFromError(err: unknown): string | null {
+  if (typeof err !== "object" || err === null || !("body" in err)) return null;
+  const body = (err as { body?: unknown }).body;
+  if (typeof body !== "object" || body === null || !("message" in body)) {
+    return null;
+  }
+  const message = (body as { message?: unknown }).message;
+  return typeof message === "string" && message ? message : null;
+}
+
+function safeAnalyticsFailure(err: unknown, stage: AnalyticsStage): Response {
+  const errorStatus = statusFromError(err);
+  const status = errorStatus ?? 500;
+  const expectedMessage = bodyMessageFromError(err);
+  const clientMessage =
+    expectedMessage ??
+    (status < 500 && err instanceof Error
+      ? err.message
+      : stage === "posthog"
+        ? "PostHog could not answer the analytics request."
+        : "Analytics could not complete this request.");
+
+  console.error("[analytics] Request failed:", {
+    stage,
+    status,
+    message: err instanceof Error ? err.message : String(err),
+  });
+
+  return json(
+    { success: false, message: clientMessage, code: stage },
+    { status }
+  );
+}
+
 export const POST: RequestHandler = async (event) => {
+  let stage: AnalyticsStage = "authorize";
   try {
     const caller = await requireAdmin(event);
 
+    stage = "rate_limit";
     const blocked = await withRateLimit(event, RATE_LIMITS.ADMIN, "user", caller.uid);
     if (blocked) return blocked;
 
+    stage = "read_request";
     const body = await event.request.json();
     const { type, userId, period, limit, dimension } = body as {
       type: QueryType;
@@ -340,6 +394,7 @@ export const POST: RequestHandler = async (event) => {
       throw error(400, "Invalid userId format");
     }
 
+    stage = "build_query";
     let query: string;
     switch (type) {
       case "engagement":
@@ -381,8 +436,10 @@ export const POST: RequestHandler = async (event) => {
         throw error(400, `Unknown query type: ${type}`);
     }
 
+    stage = "posthog";
     const result = await executeHogQLQuery(query);
 
+    stage = "audit";
     logAdminAction({
       uid: caller.uid,
       action: "analytics_query",
@@ -393,10 +450,6 @@ export const POST: RequestHandler = async (event) => {
 
     return json({ success: true, type, results: result?.results ?? [] });
   } catch (err: unknown) {
-    if (typeof err === "object" && err !== null && "status" in err) {
-      throw err;
-    }
-    console.error("[analytics] Unhandled error:", err);
-    throw error(500, "Analytics query failed");
+    return safeAnalyticsFailure(err, stage);
   }
 };
