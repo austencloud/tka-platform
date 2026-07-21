@@ -359,8 +359,11 @@ function parseBoolean(value: string, column: string): boolean {
 
 async function main(): Promise<void> {
   loadLocalEnvironment();
-  const command = process.argv[2] ?? "help";
-  const flags = parseFlags(process.argv.slice(3));
+  const rawArguments = process.argv.slice(2);
+  const argumentsAfterSeparator =
+    rawArguments[0] === "--" ? rawArguments.slice(1) : rawArguments;
+  const command = argumentsAfterSeparator[0] ?? "help";
+  const flags = parseFlags(argumentsAfterSeparator.slice(1));
   const config = loadSeoMeasurementConfig(
     stringFlag(flags, "config", {
       fallback: "config/seo-measurement.json",
