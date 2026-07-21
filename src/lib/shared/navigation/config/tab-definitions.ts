@@ -418,6 +418,16 @@ export const ADMIN_TABS: Section[] = [
     gradient: "linear-gradient(135deg, #22d3ee 0%, #06b6d4 100%)",
   },
   {
+    id: "seo",
+    labelKey: "tab_admin_seo",
+    descKey: "tab_desc_admin_seo",
+    label: "SEO",
+    icon: '<i class="fas fa-magnifying-glass" aria-hidden="true"></i>',
+    description: "Search rank, indexing, and AI citation evidence",
+    color: "#14b8a6",
+    gradient: "linear-gradient(135deg, #2dd4bf 0%, #0f766e 100%)",
+  },
+  {
     id: "analytics",
     labelKey: "tab_admin_analytics",
     descKey: "tab_desc_admin_analytics",

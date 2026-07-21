@@ -236,12 +236,17 @@ Create these Actions variables:
 | `SEO_INSTRUMENTATION_START_DATE` | first production date for the new funnel events                                                |
 | `SEO_INDEXED_DATE`               | optional manual override; leave blank for inspection-based detection                           |
 
-Create one Actions secret: `POSTHOG_PERSONAL_API_KEY`.
+Create two Actions secrets: `POSTHOG_PERSONAL_API_KEY` for private queries and
+`POSTHOG_PROJECT_TOKEN` for publishing the admin dashboard snapshot. The project
+token is the same public token used by the production PostHog client.
 
 The scheduled workflow runs at 12:37 UTC. It stores metrics and scorecards only
 in private BigQuery tables. GitHub logs contain completion and freshness status,
 not queries, traffic counts, or report artifacts. Local reports are written to
 the ignored `seo-reports/` directory. With the API source active, each run
+publishes one personless `seo_measurement_snapshot` event to the private PostHog
+project so the authenticated Admin UI can read the latest scorecard without a
+Google credential. Each run also
 validates the warehouse first. It may replace an incompatible table only when
 an exact row count confirms the table is empty; it refuses to replace tables
 that contain data. The daily collection fills the complete registered baseline,
