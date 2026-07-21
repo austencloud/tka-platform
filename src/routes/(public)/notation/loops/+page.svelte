@@ -1,12 +1,12 @@
 <script lang="ts">
   import Seo from "$lib/shared/components/Seo.svelte";
+  import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
-  import LoopExplorer from "$lib/shared/loop-explorer/components/LoopExplorer.svelte";
+  import { activateWhenNear } from "$lib/actions/activate-when-near";
   import LOOPIconStrip from "$lib/shared/components/LOOPIconStrip.svelte";
   import { LOOPComponent } from "$lib/shared/foundation/domain/models/generation/generate-models";
   import { LOOP_COMPONENTS } from "$lib/shared/browse/domain/constants/loop-constants";
-  import curatedSeedsJson from "$lib/shared/loop-explorer/domain/curated-seeds.json";
-  import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import { NOTATION_LOOP_TEASER_SEQUENCE } from "$lib/shared/loop-explorer/domain/notation-loop-teaser";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   const TITLE = "The LOOP Algebra | The Kinetic Alphabet";
@@ -17,9 +17,7 @@
   // The hero's live example: a real verified sequence from A3's harness, not
   // a mockup. Rotated/quartered passed 25/25 exact-match runs, so it shows
   // the deepest form (90-degree steps, four passes) cleanly.
-  const heroSequence = (
-    curatedSeedsJson as unknown as Record<string, Record<string, SequenceData[]>>
-  ).rotated?.quartered?.[0] as SequenceData | undefined;
+  const heroSequence = NOTATION_LOOP_TEASER_SEQUENCE;
 
   // Fixed-point table, grounded in MCP get_domain_topic("loop"). Rotation has
   // no L1-L4 fixed point, which is WHY it can never sit outside another
@@ -60,6 +58,14 @@
   // the LOOPIconStrip instances below. Reuses the same LOOP_COMPONENT_MAP
   // data the picker and card exports already read from (never-hand-roll).
   const LEGEND = LOOP_COMPONENTS;
+
+  let explorerActive = $state(false);
+  const activateExplorerWhenNear = (node: HTMLElement) =>
+    activateWhenNear(node, {
+      activate: () => (explorerActive = true),
+      rootMargin: "500px",
+      deferUntilIdle: true,
+    });
 </script>
 
 <Seo title={TITLE} description={DESCRIPTION} canonical={URL} ogType="article">
@@ -127,8 +133,28 @@
         classify a LOOP — nothing here is staged.
       </p>
     </div>
-    <div class="explorer-wrap">
-      <LoopExplorer />
+    <div class="explorer-wrap" use:activateExplorerWhenNear>
+      <LazyMount
+        loader={() =>
+          import("$lib/shared/loop-explorer/components/LoopExplorer.svelte")}
+        active={explorerActive}
+      >
+        {#snippet placeholder()}
+          <div class="explorer-placeholder" aria-hidden="true">
+            <div class="explorer-placeholder-picker"></div>
+            <div class="explorer-placeholder-body">
+              <div></div>
+              <div></div>
+            </div>
+          </div>
+        {/snippet}
+        {#snippet error(_error, retry)}
+          <div class="explorer-load-error" role="alert">
+            <span>The LOOP explorer did not load.</span>
+            <button type="button" onclick={retry}>Try again</button>
+          </div>
+        {/snippet}
+      </LazyMount>
     </div>
   </section>
 
@@ -324,6 +350,66 @@
 
   .explorer-wrap {
     margin-top: 1.6rem;
+  }
+
+  .explorer-placeholder,
+  .explorer-load-error {
+    min-height: 34rem;
+  }
+
+  .explorer-placeholder {
+    display: grid;
+    grid-template-rows: 5.5rem minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+
+  .explorer-placeholder-picker,
+  .explorer-placeholder-body > div {
+    border: 1px solid oklch(0.4 0.04 270 / 0.16);
+    border-radius: 16px;
+    background: oklch(0.16 0.018 270 / 0.45);
+  }
+
+  .explorer-placeholder-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+    gap: 1.75rem;
+  }
+
+  .explorer-load-error {
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 0.85rem;
+    padding: 2rem;
+    color: oklch(0.88 0.025 270);
+    text-align: center;
+    border: 1px solid oklch(0.4 0.04 270 / 0.16);
+    border-radius: 16px;
+    background: oklch(0.16 0.018 270 / 0.45);
+  }
+
+  .explorer-load-error button {
+    min-height: var(--min-touch-target, 44px);
+    padding-inline: 1rem;
+    color: oklch(0.94 0.02 270);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+    border: 1px solid oklch(0.62 0.1 270 / 0.55);
+    border-radius: 10px;
+    background: oklch(0.36 0.08 270 / 0.5);
+  }
+
+  @media (max-width: 767px) {
+    .explorer-placeholder {
+      min-height: 46rem;
+    }
+    .explorer-placeholder-body {
+      grid-template-columns: 1fr;
+      grid-template-rows: repeat(2, minmax(0, 1fr));
+      gap: 1.25rem;
+    }
   }
 
   .inline-tok {

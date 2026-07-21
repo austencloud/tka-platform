@@ -1,17 +1,23 @@
 <script lang="ts">
+  import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
-  import ShapeMatrixTeaser from "$lib/shared/shape-matrix/components/ShapeMatrixTeaser.svelte";
+  import { activateWhenNear } from "$lib/actions/activate-when-near";
   import demoJson from "$lib/shared/landing/data/demo-sequence.json";
-  import loopSeedsJson from "$lib/shared/loop-explorer/domain/curated-seeds.json";
+  import { NOTATION_LOOP_TEASER_SEQUENCE } from "$lib/shared/loop-explorer/domain/notation-loop-teaser";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   const heroDemoSequence = demoJson as unknown as SequenceData;
   // Same verified rotated/quartered example the /notation/loops hero uses —
   // a real detector-checked LOOP, not a mockup.
-  const loopTeaserSequence = (
-    loopSeedsJson as unknown as Record<string, Record<string, SequenceData[]>>
-  ).rotated?.quartered?.[0] as SequenceData | undefined;
+  const loopTeaserSequence = NOTATION_LOOP_TEASER_SEQUENCE;
+  let shapeMatrixActive = $state(false);
+  const activateShapeMatrixWhenNear = (node: HTMLElement) =>
+    activateWhenNear(node, {
+      activate: () => (shapeMatrixActive = true),
+      rootMargin: "300px",
+      deferUntilIdle: true,
+    });
 
   // Every source verified live during the 2026-07-17 research pass and again in
   // the 2026-07-18 audit. Primary pages, not generic bios, so each link
@@ -421,7 +427,23 @@
     </div>
 
     <div class="matrix-teaser-wrap">
-      <ShapeMatrixTeaser />
+      <div class="shape-matrix-teaser-slot" use:activateShapeMatrixWhenNear>
+        <LazyMount
+          loader={() =>
+            import("$lib/shared/shape-matrix/components/ShapeMatrixTeaser.svelte")}
+          active={shapeMatrixActive}
+        >
+          {#snippet placeholder()}
+            <div class="shape-matrix-teaser-placeholder" aria-hidden="true"></div>
+          {/snippet}
+          {#snippet error(_error, retry)}
+            <div class="shape-matrix-teaser-error" role="alert">
+              <span>The shape matrix did not load.</span>
+              <button type="button" onclick={retry}>Try again</button>
+            </div>
+          {/snippet}
+        </LazyMount>
+      </div>
       <a href="/notation/shape-matrix" class="cta-button matrix-teaser-cta">
         <span>Explore the full shape matrix</span>
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
@@ -838,15 +860,57 @@
     max-width: min(20rem, 80%);
   }
 
-  /* Live teaser: reserved-height stage (inside ShapeMatrixTeaser) plus the
-     call-to-action button, stacked and centered. The stage itself owns its
-     no-layout-shift box; this wrapper only handles spacing. */
+  /* Live teaser: a reserved-height lazy slot plus the call-to-action button,
+     stacked and centered. The slot holds geometry while the matrix chunk and
+     its calculation graph stay out of route-transition work. */
   .matrix-teaser-wrap {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 1.4rem;
     margin: 2rem 0;
+  }
+
+  .shape-matrix-teaser-slot {
+    width: min(60vw, 26rem);
+    max-width: 100%;
+  }
+
+  .shape-matrix-teaser-placeholder {
+    width: 100%;
+    height: min(60vw, 26rem);
+    border: 1px solid oklch(0.4 0.04 270 / 0.16);
+    border-radius: 16px;
+    background:
+      linear-gradient(135deg, transparent 40%, oklch(0.7 0.04 270 / 0.07), transparent 60%),
+      #0a0f14;
+  }
+
+  .shape-matrix-teaser-error {
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    gap: 0.85rem;
+    width: 100%;
+    height: min(60vw, 26rem);
+    padding: 1.5rem;
+    color: oklch(0.88 0.025 270);
+    text-align: center;
+    border: 1px solid oklch(0.4 0.04 270 / 0.16);
+    border-radius: 16px;
+    background: #0a0f14;
+  }
+
+  .shape-matrix-teaser-error button {
+    min-height: var(--min-touch-target, 44px);
+    padding-inline: 1rem;
+    color: oklch(0.94 0.02 270);
+    font: inherit;
+    font-weight: 650;
+    cursor: pointer;
+    border: 1px solid oklch(0.62 0.1 270 / 0.55);
+    border-radius: 10px;
+    background: oklch(0.36 0.08 270 / 0.5);
   }
 
   .caps-teaser-trace {
