@@ -379,10 +379,10 @@ describe("updateFacebookProfilePictureIfNeeded", () => {
 });
 
 describe("kill switch", () => {
-  it("FACEBOOK_LOGIN_ENABLED is on (flow verified end to end 2026-06-22)", () => {
-    // Flipping this is an intentional, reviewed change. If Facebook auth
-    // regresses, set it back to false to pull the UI entry points — the guard
-    // exists so the value is never changed by accident.
-    expect(FACEBOOK_LOGIN_ENABLED).toBe(true);
+  it("keeps Facebook entry points off until a non-role account passes production", () => {
+    // Meta currently accepts consent and then rejects people without an app
+    // role. Keep this assertion paired with the reviewed kill switch so a
+    // provider-only test cannot accidentally expose the broken public path.
+    expect(FACEBOOK_LOGIN_ENABLED).toBe(false);
   });
 });

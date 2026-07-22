@@ -353,13 +353,13 @@ describe("scan activity state", () => {
 
     expect(state.codes[0]).toMatchObject({
       code: "LEGACY",
-      word: "BOOK",
+      word: "A",
       metadataAvailable: true,
       integrityOk: true,
       decoded: {
         id: "LEGACY",
-        name: "BOOK",
-        word: "BOOK",
+        name: "A",
+        word: "A",
         ownerId: "owner-1",
         startPosition: {
           id: "embedded-start",
