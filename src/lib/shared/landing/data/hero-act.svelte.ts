@@ -20,8 +20,22 @@
  */
 import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { TnDElement } from "$lib/features/choreo-card/domain/tnd-element";
 import type { PreparedSequenceHandoff } from "$lib/shared/animation-engine/domain/chaining-types";
 import { generatePerVisitDemo } from "$lib/shared/landing/data/per-visit-demo";
+
+/** Fraction of hero draws that come from the shape matrix (rest are generated). */
+const DEFAULT_MATRIX_FRACTION = 2 / 3;
+/** Fraction of GENERATED draws rendered in box mode (45° hand-path rotation). */
+const DEFAULT_BOX_FRACTION = 1 / 3;
+
+/** One hero draw: the sequence plus its TnD element (present only for shape-matrix
+ *  draws — generated draws carry no element and show no indicator). */
+interface HeroDraw {
+  sequence: SequenceData;
+  element: TnDElement | null;
+}
 
 /**
  * Poi is deliberately excluded from the cycle. Austen's 2026-07-18 poi
@@ -62,9 +76,18 @@ export function createHeroAct(options?: {
   /** Injectable so the opening prop stays deterministic in tests. The real
    *  homepage uses Math.random, sampled once inside the client-only start(). */
   random?: () => number;
+  /** Fraction of draws sourced from the shape matrix (default 2/3). Set 0 to
+   *  disable — then no source roll is drawn (random call order is preserved). */
+  matrixFraction?: number;
+  /** Fraction of GENERATED draws shown in box mode (default 1/3). Set 0 to
+   *  disable — then no box roll is drawn. */
+  boxFraction?: number;
 }) {
   const random = options?.random ?? Math.random;
+  const matrixFraction = options?.matrixFraction ?? DEFAULT_MATRIX_FRACTION;
+  const boxFraction = options?.boxFraction ?? DEFAULT_BOX_FRACTION;
   let current = $state<SequenceData | null>(null);
+  let currentElement = $state<TnDElement | null>(null);
   let currentProp = $state<PropType>(PropType.STAFF);
   // True while the first sequence is generating or a later swap is in flight.
   // This drives the dice button's "Rolling..." state and guards against a
@@ -75,7 +98,7 @@ export function createHeroAct(options?: {
   // prop it will play with. Null while generation hasn't landed yet — the
   // loop-boundary handler treats that as "not ready" and keeps looping
   // `current` instead of advancing into a gap.
-  let preparedNext: SequenceData | null = null;
+  let preparedNext: HeroDraw | null = null;
   let preparedNextProp: PropType = nextPropInCycle(currentProp);
   let passesSinceAdvance = 0;
   let started = false;
@@ -83,6 +106,55 @@ export function createHeroAct(options?: {
   function pickInitialProp(): PropType {
     const index = Math.floor(random() * PROP_CYCLE.length);
     return PROP_CYCLE[index] ?? PropType.STAFF;
+  }
+
+  /**
+   * Produce one hero draw. Two in three come from the shape matrix (a
+   * constructed cell+mode realization with a re-derived TnD element); the rest
+   * are the generated per-visit LOOP, a third of which render in box mode. Both
+   * heavy paths (matrix pool, box transform) are dynamic-imported so the initial
+   * landing bundle stays lean and Firebase-free.
+   */
+  async function drawHeroSequence(opts: {
+    propType: PropType;
+    chainStartPosition?: StartPositionData | null;
+  }): Promise<HeroDraw> {
+    // Short-circuit so a disabled fraction (0) draws no random — keeps the
+    // random call order identical to the pre-matrix act for callers that opt out.
+    if (matrixFraction > 0 && random() < matrixFraction) {
+      try {
+        const { drawMatrixRealization } = await import(
+          "$lib/shared/landing/data/shape-matrix-hero-pool"
+        );
+        const draw = await drawMatrixRealization({
+          chainStartPosition: opts.chainStartPosition ?? null,
+          random,
+        });
+        if (draw) return { sequence: draw.sequence, element: draw.element };
+      } catch {
+        // fall through to the generated draw
+      }
+    }
+
+    let sequence = await generatePerVisitDemo({
+      propType: opts.propType,
+      // Only constrain the start when chaining — an unconstrained first draw
+      // omits it entirely (matches the pre-matrix call shape).
+      ...(opts.chainStartPosition
+        ? { startPosition: opts.chainStartPosition }
+        : {}),
+    });
+    if (boxFraction > 0 && random() < boxFraction) {
+      try {
+        const { applyBoxMode } = await import(
+          "$lib/features/choreo-card/services/deck-variation"
+        );
+        sequence = applyBoxMode(sequence, "box");
+      } catch {
+        // keep the diamond sequence on any transform failure
+      }
+    }
+    return { sequence, element: null };
   }
 
   /** Kicks off generation of the sequence that will follow `current`,
@@ -94,19 +166,19 @@ export function createHeroAct(options?: {
     preparedNextProp = targetProp;
     preparedNext = null;
     const chainedStartPosition = current.startPosition ?? null;
-    void generatePerVisitDemo({
+    void drawHeroSequence({
       propType: targetProp,
-      startPosition: chainedStartPosition,
-    }).then((seq) => {
+      chainStartPosition: chainedStartPosition,
+    }).then((draw) => {
       // A dice press mid-generation may have already advanced past this
       // draw's target prop; only claim it if it's still the one we asked for.
       if (preparedNextProp === targetProp) {
-        preparedNext = seq;
+        preparedNext = draw;
       }
     });
-    // generatePerVisitDemo already falls back to FALLBACK_DEMO internally on
-    // any generation failure, so this promise doesn't reject — there's no
-    // separate failure branch to handle here.
+    // drawHeroSequence never rejects (matrix failures fall back to the generated
+    // draw, which itself falls back to FALLBACK_DEMO), so there's no separate
+    // failure branch to handle here.
   }
 
   /** Swaps to the next sequence for a manual dice press: the pre-generated
@@ -115,20 +187,21 @@ export function createHeroAct(options?: {
     if (busy || !current) return;
     busy = true;
     try {
-      let seq = preparedNext;
+      let draw = preparedNext;
       let prop = preparedNextProp;
-      if (!seq) {
+      if (!draw) {
         prop = nextPropInCycle(currentProp);
         const chainedStartPosition = current.startPosition ?? null;
-        seq = await generatePerVisitDemo({
+        draw = await drawHeroSequence({
           propType: prop,
-          startPosition: chainedStartPosition,
+          chainStartPosition: chainedStartPosition,
         });
       }
       // A manual roll is one state transaction: the incoming word must never
       // render for even one frame with the outgoing prop. The renderer begins
       // its sprite crossfade from this prop-type change.
-      current = seq;
+      current = draw.sequence;
+      currentElement = draw.element;
       currentProp = prop;
       passesSinceAdvance = 0;
       prepareNext(prop);
@@ -148,18 +221,19 @@ export function createHeroAct(options?: {
     if (passesSinceAdvance < PASSES_PER_SEQUENCE) return null;
     if (busy || !preparedNext) return null;
 
-    const sequence = preparedNext;
+    const draw = preparedNext;
     const prop = preparedNextProp;
     return {
-      sequence,
+      sequence: draw.sequence,
       accept() {
         // The offer and acceptance happen synchronously in one rAF callback.
         // The identity guard keeps this transaction safe if that contract is
         // ever widened to permit an asynchronous controller.
-        if (busy || preparedNext !== sequence || preparedNextProp !== prop) {
+        if (busy || preparedNext !== draw || preparedNextProp !== prop) {
           return;
         }
-        current = sequence;
+        current = draw.sequence;
+        currentElement = draw.element;
         currentProp = prop;
         preparedNext = null;
         passesSinceAdvance = 0;
@@ -187,9 +261,10 @@ export function createHeroAct(options?: {
     currentProp = initialProp;
     preparedNextProp = nextPropInCycle(initialProp);
     busy = true;
-    void generatePerVisitDemo({ propType: initialProp })
-      .then((seq) => {
-        current = seq;
+    void drawHeroSequence({ propType: initialProp })
+      .then((draw) => {
+        current = draw.sequence;
+        currentElement = draw.element;
         passesSinceAdvance = 0;
         prepareNext(initialProp);
       })
@@ -201,6 +276,9 @@ export function createHeroAct(options?: {
   return {
     get sequence() {
       return current;
+    },
+    get element() {
+      return currentElement;
     },
     get propType() {
       return currentProp;

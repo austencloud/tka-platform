@@ -55,6 +55,7 @@
 
   <SequenceHeroDemo
     sequence={heroAct.sequence}
+    element={heroAct.element}
     note="played straight from its notation"
     onReroll={handleReroll}
     rerolling={heroAct.rerolling}

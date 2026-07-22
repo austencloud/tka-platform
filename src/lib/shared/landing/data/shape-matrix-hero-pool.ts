@@ -1,0 +1,232 @@
+/**
+ * Shape-Matrix Hero Pool (firebase-free)
+ *
+ * Supplies the home hero with sequences drawn from the full shape-matrix
+ * possibility space. Nothing is baked per-sequence: the 22 base words load once
+ * from a static JSON (`/data/hero/tnd-base-words.json`), the cell space is
+ * ENUMERATED in code (buildFlowerAxis + applyFilter — pure), and each draw
+ * CONSTRUCTS one realization at runtime via `applyVariationDescriptor` (turn
+ * pattern + orientation + grid). This keeps the landing bundle Firebase-free —
+ * the construction pipeline was split out of its firebase-tainted host modules
+ * (see turn-pattern-apply.ts / reversal-transform-apply.ts / tnd-base-index.ts).
+ *
+ * Space: diamond×diamond ∪ box×box cells (never mixed — "diamond on box" is not
+ * ready), across all 7 turn ratios × 6 VTG modes. The measured pool is 724 cells
+ * × 6 modes = 4344 realizations, every one loop-closed (uniform per-hand turns on
+ * a 4-beat rotated loop preserve closure by parity). The closure gate stays as a
+ * safety net for any future non-uniform descriptor.
+ *
+ * The element indicator's TnD element is RE-DERIVED from the final played
+ * geometry (post box + post rotation), never carried from the cell's nominal
+ * mode — the element is not rotation-invariant for opposite-direction cells
+ * (diamond quarter-opp rotates to box tog-opp), so carrying it would mislabel.
+ */
+
+import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import type { StartPositionData } from "$lib/shared/foundation/domain/models/start-position-data";
+import type { CardVariation } from "$lib/features/choreo-card/domain/models/DeckRelease";
+import { hydrateSequence } from "$lib/features/choreo-card/services/sequence-render-hydrator";
+import {
+  loadDiamondEdges,
+  type CsvEdge,
+} from "$lib/features/choreo-card/services/pictograph-letter-lookup";
+import {
+  buildBaseIndex,
+  resolveBase,
+} from "$lib/shared/shape-matrix/services/tnd-base-index";
+import { applyVariationDescriptor } from "$lib/features/choreo-card/services/deck-variation";
+import { rotateSequenceGeometry } from "$lib/shared/create/services/sequence-derived-fields";
+import { deriveTnDFromPictograph } from "$lib/shared/pictograph/shared/domain/utils/tnd-deriver";
+import {
+  buildFlowerAxis,
+  type Flower,
+} from "$lib/shared/shape-matrix/domain/flower-signature";
+import { applyFilter } from "$lib/shared/shape-matrix/domain/filter-flower-axis";
+import { MODE_ORDER } from "$lib/shared/shape-matrix/services/shape-matrix-realizations";
+import { TURN_VALUES } from "$lib/features/choreo-card/domain/turn-pattern-parser";
+import {
+  Orientation,
+  TnDMode,
+} from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+import { TND_BY_FAMILY, type TnDElement } from "$lib/features/choreo-card/domain/tnd-element";
+
+const BASE_WORDS_URL = "/data/hero/tnd-base-words.json";
+
+/** Max cells to try before giving up (returns null → caller uses a generated draw). */
+const MAX_DRAWS = 16;
+
+/** Derived TnD mode → element family id (pure; the tainted copies in
+ *  deck-composer/browse-filter can't be imported on a firebase-free page). */
+const TND_MODE_TO_FAMILY: Readonly<Record<TnDMode, string>> = {
+  [TnDMode.SPLIT_SAME]: "split-same",
+  [TnDMode.TOG_SAME]: "tog-same",
+  [TnDMode.QUARTER_SAME]: "quarter-same",
+  [TnDMode.SPLIT_OPP]: "split-opp",
+  [TnDMode.TOG_OPP]: "tog-opp",
+  [TnDMode.QUARTER_OPP]: "quarter-opp",
+};
+
+interface Cell {
+  blue: Flower;
+  red: Flower;
+  grid: "diamond" | "box";
+}
+
+interface PoolData {
+  idx: Map<string, SequenceData>;
+  edges: CsvEdge[];
+  cells: Cell[];
+}
+
+let poolPromise: Promise<PoolData> | null = null;
+
+async function loadPool(): Promise<PoolData> {
+  if (!poolPromise) {
+    poolPromise = (async () => {
+      const [wordsRaw, edges] = await Promise.all([
+        fetch(BASE_WORDS_URL).then((r) => {
+          if (!r.ok) throw new Error(`hero base words ${r.status}`);
+          return r.json() as Promise<Record<string, unknown>[]>;
+        }),
+        loadDiamondEdges(),
+      ]);
+      const idx = buildBaseIndex(wordsRaw.map((w) => hydrateSequence(w)));
+
+      const axis = buildFlowerAxis();
+      const diamond = applyFilter(
+        axis,
+        { style: "all", turns: new Set(TURN_VALUES), ori: "all", grid: "diamond" },
+        true,
+      );
+      const box = applyFilter(
+        axis,
+        { style: "all", turns: new Set(TURN_VALUES), ori: "all", grid: "box" },
+        true,
+      );
+      const cells: Cell[] = [];
+      for (const blue of diamond) for (const red of diamond) cells.push({ blue, red, grid: "diamond" });
+      for (const blue of box) for (const red of box) cells.push({ blue, red, grid: "box" });
+
+      return { idx, edges, cells };
+    })().catch((e) => {
+      // Reset so a transient failure (e.g. offline first paint) can retry on the
+      // next draw instead of poisoning the promise for the whole session.
+      poolPromise = null;
+      throw e;
+    });
+  }
+  return poolPromise;
+}
+
+function fmtTurn(v: number): string {
+  return Number.isInteger(v) ? String(v) : v.toFixed(1);
+}
+
+function oriToOrientation(o: "in" | "out"): Orientation {
+  return o === "in" ? Orientation.IN : Orientation.OUT;
+}
+
+/** Key identifying a start pose by its two hands' start locations (what rotation
+ *  actually moves). Two poses with the same key are the same grid position. */
+function startLocKey(sp: StartPositionData | undefined | null): string | null {
+  const b = sp?.motions?.blue?.startLocation;
+  const r = sp?.motions?.red?.startLocation;
+  return b && r ? `${b}|${r}` : null;
+}
+
+/**
+ * Rotate a realization so its start pose matches `targetKey`, using only 90°
+ * steps (even 45° counts) so the cell's grid identity (diamond/box) is preserved
+ * — an odd 45° step would toggle it. Returns null when no quarter-rotation of
+ * this realization lands on the target (e.g. wrong position family).
+ */
+function rotateToStartKey(seq: SequenceData, targetKey: string): SequenceData | null {
+  for (const steps of [0, 2, 4, 6]) {
+    const rotated = steps === 0 ? seq : rotateSequenceGeometry(seq, steps);
+    if (startLocKey(rotated.startPosition) === targetKey) return rotated;
+  }
+  return null;
+}
+
+/** Re-derive the TnD element from the final played geometry (first visible step). */
+function elementOf(seq: SequenceData): TnDElement | null {
+  const step = seq.steps.find((s) => !s.isBlank) ?? seq.steps[0];
+  if (!step) return null;
+  const { tndMode } = deriveTnDFromPictograph(step as never);
+  if (!tndMode) return null;
+  const family = TND_MODE_TO_FAMILY[tndMode];
+  return family ? (TND_BY_FAMILY[family] ?? null) : null;
+}
+
+export interface MatrixDraw {
+  sequence: SequenceData;
+  element: TnDElement;
+}
+
+/**
+ * Draw one shape-matrix realization. Picks a random cell + mode, constructs the
+ * realization, and re-derives its element. When `chainStartPosition` is given,
+ * rotates the result (90° steps) so it starts where the previous sequence ended;
+ * a draw that can't reach that position is skipped, and if none can, returns null
+ * so the caller falls back to a generated draw rather than teleporting.
+ */
+export async function drawMatrixRealization(opts?: {
+  chainStartPosition?: StartPositionData | null;
+  random?: () => number;
+}): Promise<MatrixDraw | null> {
+  if (typeof window === "undefined") return null; // client-only (fetch)
+
+  let pool: PoolData;
+  try {
+    pool = await loadPool();
+  } catch {
+    return null; // couldn't load base words/edges — caller uses a generated draw
+  }
+  const { idx, edges, cells } = pool;
+  if (cells.length === 0) return null;
+  const random = opts?.random ?? Math.random;
+  const targetKey = opts?.chainStartPosition
+    ? startLocKey(opts.chainStartPosition)
+    : null;
+
+  for (let attempt = 0; attempt < MAX_DRAWS; attempt++) {
+    const cell = cells[Math.floor(random() * cells.length)];
+    const mode = MODE_ORDER[Math.floor(random() * MODE_ORDER.length)];
+    if (!cell || !mode) continue;
+
+    const base = resolveBase(idx, mode, cell.blue.style, cell.red.style);
+    if (!base) continue;
+
+    const descriptor: CardVariation = {
+      turnPattern: `${fmtTurn(cell.blue.turns)}|${fmtTurn(cell.red.turns)}`,
+      gridMode: cell.grid,
+      startOriPair: {
+        blue: oriToOrientation(cell.blue.ori),
+        red: oriToOrientation(cell.red.ori),
+      },
+    };
+
+    let sequence: SequenceData;
+    let turnLoopClosed: boolean;
+    try {
+      ({ sequence, turnLoopClosed } = applyVariationDescriptor(base, descriptor, edges));
+    } catch {
+      continue;
+    }
+    if (!turnLoopClosed) continue;
+
+    if (targetKey) {
+      const rotated = rotateToStartKey(sequence, targetKey);
+      if (!rotated) continue; // this cell can't reach the chain target — try another
+      sequence = rotated;
+    }
+
+    const element = elementOf(sequence);
+    if (!element) continue;
+
+    // Plain-ify (strip any reactive proxies) before handing to the player.
+    return { sequence: JSON.parse(JSON.stringify(sequence)) as SequenceData, element };
+  }
+
+  return null;
+}

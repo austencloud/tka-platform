@@ -33,6 +33,7 @@
   import { isNamedRouteMorphActive } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import { simplifyRepeatedWord } from "$lib/shared/foundation/utils/word-simplifier";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+  import type { TnDElement } from "$lib/features/choreo-card/domain/tnd-element";
   import type { TrailSettings } from "$lib/shared/animation-engine/domain/types/trail-types";
   import type { TipEffectMap } from "$lib/shared/animation-engine/domain/types/tip-effect-types";
   import type { PreparedSequenceHandoff } from "$lib/shared/animation-engine/domain/chaining-types";
@@ -40,6 +41,7 @@
 
   let {
     sequence,
+    element = null,
     note,
     bluePropType,
     redPropType,
@@ -58,6 +60,10 @@
         per-visit generated demo) — the stage box and caption line keep their
         reserved footprint and the player mounts when it lands. */
     sequence: SequenceData | null;
+    /** TnD element of the current sequence, shown as a small bottom-right badge
+        on the canvas. Present only for shape-matrix draws (the homepage hero);
+        null (default) on generated draws and every other host — no badge. */
+    element?: TnDElement | null;
     note: string;
     /** Optional prop-type override so per-prop pages can render the same
         sequence with fans/clubs/buugeng instead of the default staves. */
@@ -104,6 +110,13 @@
   type LoadStatus = "idle" | "loading" | "loaded" | "error";
 
   const word = $derived(sequence ? simplifyRepeatedWord(sequence.word) : "");
+
+  // Persist the last element so its icon can fade OUT (stays rendered through the
+  // fade) when a generated draw sets element back to null. Only `visible` toggles.
+  let shownElement = $state<TnDElement | null>(null);
+  $effect(() => {
+    if (element) shownElement = element;
+  });
   const heroVisibilityManager = new AnimationVisibilityStateManager({
     ephemeral: true,
   });
@@ -231,6 +244,23 @@
           {#if errorMessage && !sequence}
             <div class="demo-load-error" role="alert">
               <span>{errorMessage}</span>
+            </div>
+          {/if}
+
+          <!-- TnD element indicator (shape-matrix draws only). Absolutely
+               positioned inside the fixed-size stage, so it never shifts layout;
+               fades on the current element and clips to the stage's rounded
+               corners via the parent's overflow:hidden. -->
+          {#if shownElement}
+            <div
+              class="element-badge"
+              class:visible={!!element}
+              style="--el-accent: {shownElement.accentColor}"
+              role="img"
+              aria-label={element ? `${shownElement.element} element` : undefined}
+              aria-hidden={element ? undefined : "true"}
+            >
+              <img src={shownElement.iconPath} alt="" />
             </div>
           {/if}
         </div>
@@ -394,6 +424,54 @@
   .demo-pending i {
     color: oklch(0.76 0.12 285);
     font-size: 1.25rem;
+  }
+
+  /* TnD element badge — bottom-right of the canvas, sized in cqi so it scales
+     with the stage (the stage-shell is a container). Absolute + always-reserved,
+     so no-layout-shift; only opacity/scale animate. */
+  .element-badge {
+    position: absolute;
+    right: clamp(8px, 3cqi, 16px);
+    bottom: clamp(8px, 3cqi, 16px);
+    z-index: 3;
+    display: grid;
+    place-items: center;
+    width: clamp(28px, 11cqi, 48px);
+    height: clamp(28px, 11cqi, 48px);
+    padding: clamp(3px, 1.4cqi, 6px);
+    border-radius: 50%;
+    background: oklch(0.14 0.02 270 / 0.55);
+    border: 1.5px solid var(--el-accent, oklch(0.6 0.04 270));
+    box-shadow:
+      0 0 0 1px oklch(0 0 0 / 0.25),
+      0 2px 8px oklch(0 0 0 / 0.35);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    opacity: 0;
+    transform: scale(0.9);
+    transition:
+      opacity 280ms ease,
+      transform 280ms ease;
+    pointer-events: none;
+  }
+  .element-badge.visible {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .element-badge img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 2px oklch(0 0 0 / 0.4));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .element-badge {
+      transition: none;
+      transform: none;
+    }
+    .element-badge.visible {
+      transform: none;
+    }
   }
   .demo-load-error button {
     min-height: 44px;

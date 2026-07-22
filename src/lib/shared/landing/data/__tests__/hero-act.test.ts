@@ -13,10 +13,15 @@ import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 
 const mocks = vi.hoisted(() => ({
   generatePerVisitDemo: vi.fn(),
+  drawMatrixRealization: vi.fn(),
 }));
 
 vi.mock("$lib/shared/landing/data/per-visit-demo", () => ({
   generatePerVisitDemo: mocks.generatePerVisitDemo,
+}));
+
+vi.mock("$lib/shared/landing/data/shape-matrix-hero-pool", () => ({
+  drawMatrixRealization: mocks.drawMatrixRealization,
 }));
 
 import {
@@ -52,11 +57,30 @@ function flush(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+/**
+ * These tests exercise the act's orchestration (cycling, prefetch, chaining)
+ * against the generated per-visit draw, which they mock. The shape-matrix source
+ * is a separate feature with its own tests, so it is disabled here — fraction 0
+ * draws no source/box roll, keeping the random call order identical to the
+ * pre-matrix act.
+ */
+const NO_MATRIX = { matrixFraction: 0, boxFraction: 0 } as const;
+
 function createStaffFirstAct() {
-  return createHeroAct({ random: () => 0 });
+  return createHeroAct({ random: () => 0, ...NO_MATRIX });
 }
 
 let callCount = 0;
+
+const FAKE_ELEMENT = {
+  familyId: "split-same",
+  name: "Split-Same",
+  element: "water",
+  accentColor: "#3568a0",
+  darkComplement: "#1a3a5e",
+  iconPath: "/images/elements/water-v2.png",
+  cardTintOpacity: 0.25,
+};
 
 beforeEach(() => {
   callCount = 0;
@@ -67,12 +91,14 @@ beforeEach(() => {
       return fakeSequence(`gen-${callCount}`, `pos-${callCount}`);
     }
   );
+  mocks.drawMatrixRealization.mockReset();
+  mocks.drawMatrixRealization.mockResolvedValue(null);
 });
 
 describe("createHeroAct", () => {
   it("waits until client start before choosing and generating the opening prop", async () => {
     const random = vi.fn(() => 0.75);
-    const act = createHeroAct({ random });
+    const act = createHeroAct({ random, ...NO_MATRIX });
     expect(act.sequence).toBeNull();
     expect(act.propType).toBe(PropType.STAFF);
     expect(random).not.toHaveBeenCalled();
@@ -99,7 +125,7 @@ describe("createHeroAct", () => {
     [0.5, PropType.CLUB],
     [0.999, PropType.BUUGENG],
   ] as const)("maps the random draw %s to %s", async (draw, expectedProp) => {
-    const act = createHeroAct({ random: () => draw });
+    const act = createHeroAct({ random: () => draw, ...NO_MATRIX });
 
     act.start();
     await flush();
@@ -115,7 +141,7 @@ describe("createHeroAct", () => {
   });
 
   it("pre-generates the next prop after the fresh first sequence lands", async () => {
-    const act = createHeroAct({ random: () => 0.5 });
+    const act = createHeroAct({ random: () => 0.5, ...NO_MATRIX });
     act.start();
     await flush();
 
@@ -131,11 +157,11 @@ describe("createHeroAct", () => {
       .fn<() => number>()
       .mockReturnValueOnce(0)
       .mockReturnValueOnce(0.5);
-    const firstVisit = createHeroAct({ random });
+    const firstVisit = createHeroAct({ random, ...NO_MATRIX });
     firstVisit.start();
     await flush();
 
-    const secondVisit = createHeroAct({ random });
+    const secondVisit = createHeroAct({ random, ...NO_MATRIX });
     secondVisit.start();
     await flush();
 
@@ -148,7 +174,7 @@ describe("createHeroAct", () => {
   });
 
   it("cycles from the randomly selected opening prop and wraps around", async () => {
-    const act = createHeroAct({ random: () => 0.25 });
+    const act = createHeroAct({ random: () => 0.25, ...NO_MATRIX });
     act.start();
     await flush();
     const seen: PropType[] = [act.propType];
@@ -329,5 +355,44 @@ describe("createHeroAct", () => {
     expect(act.sequence?.id).not.toBe(initialSequenceId);
     expect(act.propType).toBe(PropType.FAN);
     expect(act.rerolling).toBe(false);
+  });
+});
+
+describe("createHeroAct — shape-matrix source", () => {
+  it("uses a matrix realization and exposes its element when the matrix draw wins", async () => {
+    mocks.drawMatrixRealization.mockResolvedValue({
+      sequence: fakeSequence("matrix-1", "pos-m"),
+      element: FAKE_ELEMENT,
+    });
+    // matrixFraction 1 → source roll always picks the matrix; boxFraction 0.
+    const act = createHeroAct({ random: () => 0, matrixFraction: 1, boxFraction: 0 });
+    act.start();
+    await flush();
+
+    expect(mocks.drawMatrixRealization).toHaveBeenCalled();
+    expect(mocks.generatePerVisitDemo).not.toHaveBeenCalled();
+    expect(act.sequence?.id).toBe("matrix-1");
+    expect(act.element).toEqual(FAKE_ELEMENT);
+  });
+
+  it("falls back to a generated draw (no element) when the matrix draw returns null", async () => {
+    mocks.drawMatrixRealization.mockResolvedValue(null);
+    const act = createHeroAct({ random: () => 0, matrixFraction: 1, boxFraction: 0 });
+    act.start();
+    await flush();
+
+    expect(mocks.drawMatrixRealization).toHaveBeenCalled();
+    expect(mocks.generatePerVisitDemo).toHaveBeenCalled();
+    expect(act.sequence?.id).toBe("gen-1");
+    expect(act.element).toBeNull();
+  });
+
+  it("generated draws never carry an element (no indicator)", async () => {
+    const act = createHeroAct({ random: () => 0, matrixFraction: 0, boxFraction: 0 });
+    act.start();
+    await flush();
+
+    expect(mocks.drawMatrixRealization).not.toHaveBeenCalled();
+    expect(act.element).toBeNull();
   });
 });
