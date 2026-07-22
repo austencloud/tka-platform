@@ -62,6 +62,13 @@ describe("warmSequenceCells", () => {
   });
 
   it("verifies start and every step under the exact canonical prop pair", async () => {
+    const readsByHash = new Map<string, number>();
+    cloudDownload.mockImplementation(async (hash: string) => {
+      const reads = (readsByHash.get(hash) ?? 0) + 1;
+      readsByHash.set(hash, reads);
+      return reads === 1 ? null : new Blob(["ready"], { type: "image/webp" });
+    });
+
     const result = await warmSequenceCells(sequence, {
       isDark: true,
       bluePropType: PropType.POI,
@@ -72,7 +79,7 @@ describe("warmSequenceCells", () => {
 
     expect(result).toMatchObject({ total: 3, ready: 3, failures: [] });
     expect(renderCell).toHaveBeenCalledTimes(3);
-    expect(cloudDownload).toHaveBeenCalledTimes(3);
+    expect(cloudDownload).toHaveBeenCalledTimes(6);
     const options = renderCell.mock.calls[0]![3] as {
       size: number;
       bluePropType: PropType;
@@ -87,6 +94,16 @@ describe("warmSequenceCells", () => {
       catDogModeEnabled: true,
       uploadCanonical: true,
     });
+  });
+
+  it("accepts an existing canonical object without rendering or reading it twice", async () => {
+    const result = await warmSequenceCells(sequence, {
+      requireComplete: true,
+    });
+
+    expect(result).toMatchObject({ total: 3, ready: 3, failures: [] });
+    expect(cloudDownload).toHaveBeenCalledTimes(3);
+    expect(renderCell).not.toHaveBeenCalled();
   });
 
   it("reports individual failures in best-effort mode", async () => {
@@ -105,34 +122,48 @@ describe("warmSequenceCells", () => {
   });
 
   it("renders each verified hash once across concurrent sequences and later calls", async () => {
+    const readsByHash = new Map<string, number>();
+    cloudDownload.mockImplementation(async (hash: string) => {
+      const reads = (readsByHash.get(hash) ?? 0) + 1;
+      readsByHash.set(hash, reads);
+      return reads === 1 ? null : new Blob(["ready"], { type: "image/webp" });
+    });
+
     await Promise.all([
       warmSequenceCells(sequence, { requireComplete: true }),
       warmSequenceCells(sequence, { requireComplete: true }),
     ]);
 
     expect(renderCell).toHaveBeenCalledTimes(3);
-    expect(cloudDownload).toHaveBeenCalledTimes(3);
+    expect(cloudDownload).toHaveBeenCalledTimes(6);
 
     await warmSequenceCells(sequence, { requireComplete: true });
 
     expect(renderCell).toHaveBeenCalledTimes(3);
-    expect(cloudDownload).toHaveBeenCalledTimes(3);
+    expect(cloudDownload).toHaveBeenCalledTimes(6);
   });
 
   it("retries a hash after strict verification fails", async () => {
-    cloudDownload.mockResolvedValueOnce(null);
+    const readsByHash = new Map<string, number>();
+    let failedHashReadable = false;
+    cloudDownload.mockImplementation(async (hash: string) => {
+      const reads = (readsByHash.get(hash) ?? 0) + 1;
+      readsByHash.set(hash, reads);
+      if (reads === 1) return null;
+      if (hash === "hash-alpha" && !failedHashReadable) return null;
+      return new Blob(["ready"], { type: "image/webp" });
+    });
+
     await expect(
       warmSequenceCells(sequence, { requireComplete: true })
     ).rejects.toBeInstanceOf(IncompleteCellWarmError);
 
-    cloudDownload.mockResolvedValue(
-      new Blob(["ready"], { type: "image/webp" })
-    );
+    failedHashReadable = true;
     await warmSequenceCells(sequence, { requireComplete: true });
 
     // The two hashes that verified successfully remain reusable; only the
-    // failed hash is rendered and read back again.
-    expect(renderCell).toHaveBeenCalledTimes(4);
-    expect(cloudDownload).toHaveBeenCalledTimes(4);
+    // failed hash is probed again after its transient read-back failure.
+    expect(renderCell).toHaveBeenCalledTimes(3);
+    expect(cloudDownload).toHaveBeenCalledTimes(7);
   });
 });

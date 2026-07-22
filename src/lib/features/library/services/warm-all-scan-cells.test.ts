@@ -113,4 +113,37 @@ describe("shortcode scan-cell backfill", () => {
       failedCodes: ["BROKEN"],
     });
   });
+
+  it("keeps the existing 16-worker renderer fed during a full pass", async () => {
+    const codes = Array.from({ length: 20 }, (_, index) => `C${index}`);
+    let active = 0;
+    let peak = 0;
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+
+    const handle = startScanCellWarm(vi.fn(), {
+      listCodes: async () => codes,
+      resolveCode: async () => {
+        active++;
+        peak = Math.max(peak, active);
+        await gate;
+        active--;
+        return { sequence, record: null };
+      },
+      warmCells: vi.fn().mockResolvedValue({
+        total: 2,
+        ready: 2,
+        hashes: [],
+        failures: [],
+      }),
+    });
+
+    await vi.waitFor(() => expect(peak).toBe(16));
+    release();
+    await handle.promise;
+
+    expect(peak).toBe(16);
+  });
 });

@@ -64,6 +64,16 @@ async function renderCanonicalCell(
   hash: string,
   verifyUpload: boolean
 ): Promise<void> {
+  // Most legacy cards collapse onto pictographs that a previous card already
+  // uploaded. A successful cloud read is the strict proof this pass needs, so
+  // stop there. Sending the same blob through IndexedDB and then downloading
+  // it a second time made large backfills spend most of their time moving an
+  // object that was already ready for scanners.
+  if (verifyUpload) {
+    const stored = await pictographCloudCache.download(hash);
+    if (stored) return;
+  }
+
   let url: string | null = null;
   try {
     url = await renderCell(

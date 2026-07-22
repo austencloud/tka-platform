@@ -54,6 +54,10 @@ export interface CellWarmDeps {
 }
 
 const FIRESTORE_PROJECT_ID = "the-kinetic-alphabet";
+// The renderer already owns a 16-worker ceiling. Keep that pool fed while
+// shortcode reads and cloud probes wait on the network; four sequence lanes
+// left three quarters of the available workers idle during the legacy pass.
+const DEFAULT_CONCURRENCY = 16;
 
 interface FirestoreRunQueryRow {
   document?: { name?: unknown };
@@ -134,7 +138,7 @@ export function startScanCellWarm(
     progress.total = codes.length;
     onProgress({ ...progress });
 
-    const concurrency = Math.max(1, deps?.concurrency ?? 4);
+    const concurrency = Math.max(1, deps?.concurrency ?? DEFAULT_CONCURRENCY);
     let next = 0;
 
     const runWorker = async (): Promise<void> => {
