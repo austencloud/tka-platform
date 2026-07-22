@@ -12,7 +12,7 @@ import {
   controlAdjustedDelta,
   controlAdjustedLift,
   rangeEndingAt,
-  selectMatchedControls,
+  selectControls,
   type SearchMetricRow,
 } from "../../scripts/seo/core";
 import {
@@ -88,6 +88,7 @@ describe("SEO measurement math", () => {
         "0.5",
         "1",
         "1",
+        "visibility_emergence",
       ],
     ]);
 
@@ -105,6 +106,7 @@ describe("SEO measurement math", () => {
       organicActivationRate: 0.5,
       aiCitationRate: 1,
       indexedRate: 1,
+      evaluationMode: "visibility_emergence",
     });
   });
 
@@ -211,7 +213,7 @@ describe("SEO measurement math", () => {
       rows.push(searchRow(date, inverse, 30 - index * 3, 1, 5));
     }
 
-    const controls = selectMatchedControls({
+    const controls = selectControls({
       rows,
       baseline: {
         start: "2026-01-01",
@@ -224,11 +226,42 @@ describe("SEO measurement math", () => {
       minimumImpressions: 5,
       maximumControls: 1,
       minimumCorrelation: 0.1,
+      selectionMode: "matched_pretrend",
     });
 
     expect(controls).toHaveLength(1);
     expect(controls[0]?.page).toBe(matched);
     expect(controls[0]?.correlation).toBeCloseTo(1);
+  });
+
+  it("freezes volume-backed reference pages when the treatment baseline is zero", () => {
+    const treatment = "https://tkaflowarts.com/composer";
+    const reference = "https://tkaflowarts.com/about";
+    const controls = selectControls({
+      rows: [
+        searchRow("2026-01-01", reference, 4, 0, 20),
+        searchRow("2026-01-02", reference, 5, 0, 20),
+      ],
+      baseline: {
+        start: "2026-01-01",
+        end: "2026-01-02",
+        days: 2,
+        complete: true,
+      },
+      treatmentPages: new Set([treatment]),
+      candidatePages: [reference],
+      minimumImpressions: 5,
+      maximumControls: 5,
+      minimumCorrelation: 0.1,
+      selectionMode: "contextual_volume",
+    });
+
+    expect(controls).toHaveLength(1);
+    expect(controls[0]).toMatchObject({
+      page: reference,
+      baselineImpressions: 9,
+      correlation: 0,
+    });
   });
 
   it("suppresses ratio lift on zero baselines and adjusts absolute deltas", () => {
@@ -293,8 +326,16 @@ describe("SEO cohorts and data-source contracts", () => {
       <url><loc>https://example.com/sequence/NOT-OURS</loc></url>
     </urlset>`;
     const sitemap = parseSitemapUrls(xml, config.site.origin);
-    const first = buildSeoCohorts(config, sitemap);
-    const second = buildSeoCohorts(config, [...sitemap].reverse());
+    const cohortConfig = {
+      ...config,
+      controls: {
+        ...config.controls,
+        candidateExactPaths: [],
+        candidatePathPrefixes: ["/guide/level-1/"],
+      },
+    };
+    const first = buildSeoCohorts(cohortConfig, sitemap);
+    const second = buildSeoCohorts(cohortConfig, [...sitemap].reverse());
 
     expect(first).toEqual(second);
     expect(first.treatmentPages).toContain(
@@ -391,6 +432,9 @@ describe("SEO cohorts and data-source contracts", () => {
     expect(workflow).toContain(
       "pnpm run seo:measure -- bootstrap --repair-empty-tables"
     );
+    expect(workflow).toContain("operation:");
+    expect(workflow).toContain("prepare-launch");
+    expect(workflow).toContain("pnpm run seo:measure -- freeze-controls");
   });
 });
 
@@ -400,6 +444,7 @@ describe("SEO experiment decision", () => {
       ...config,
       experiment: {
         ...config.experiment,
+        evaluationMode: "relative_lift" as const,
         deploymentDate: "2026-06-01",
         indexedDate: "2026-06-03",
         instrumentationStartDate: "2026-06-03",
@@ -571,6 +616,8 @@ describe("SEO experiment decision", () => {
       properties: {
         $process_person_profile: false,
         generated_date: "2026-06-07",
+        deployment_date: "2026-06-01",
+        evaluation_mode: "relative_lift",
         head_term_position: 2,
       },
     });
@@ -619,5 +666,117 @@ describe("SEO experiment decision", () => {
     expect(scorecardWithPartialInspection.decision.status).toBe(
       "incomplete_evidence"
     );
+  });
+
+  it("judges visibility emergence with fixed counts when the baseline is zero", () => {
+    const experimentConfig = {
+      ...config,
+      experiment: {
+        ...config.experiment,
+        evaluationMode: "visibility_emergence" as const,
+        deploymentDate: "2026-06-01",
+        indexedDate: "2026-06-03",
+        instrumentationStartDate: "2026-06-03",
+        baselineDays: 2,
+        primaryDays: 2,
+        confirmationDays: 2,
+      },
+      successCriteria: {
+        ...config.successCriteria,
+        minimumTreatmentImpressionsForDecision: 10,
+        minimumTreatmentClicksForDecision: 2,
+      },
+    };
+    const treatment = "https://tkaflowarts.com/composer";
+    const primaryDates = ["2026-06-03", "2026-06-04"];
+    const scorecard = buildSeoScorecard({
+      config: experimentConfig,
+      generatedAt: "2026-06-07T00:00:00.000Z",
+      generatedDate: "2026-06-07",
+      dataThrough: "2026-06-04",
+      cohorts: {
+        treatmentPages: [treatment],
+        controlCandidates: [],
+        inspectionSample: [treatment],
+      },
+      controls: [],
+      searchRows: [
+        searchRow("2026-06-03", treatment, 8, 1, 2),
+        searchRow("2026-06-04", treatment, 8, 1, 2),
+        searchRow("2026-06-03", treatment, 4, 1, 2, "flow arts software"),
+        searchRow("2026-06-04", treatment, 4, 1, 2, "flow arts software"),
+      ],
+      funnelRows: primaryDates.map((date) => ({
+        date,
+        organicComposerSessions: 4,
+        composerOpenedSessions: 3,
+        activatedSessions: 2,
+        completedSessions: 1,
+        lcpP75: 2000,
+        inpP75: 150,
+        clsP75: 0.05,
+      })),
+      collectionDays: ["2026-05-30", "2026-05-31", ...primaryDates].map(
+        (date) => ({ date, truncated: false })
+      ),
+      postHogCollectionDays: primaryDates.map((date) => ({
+        date,
+        truncated: false,
+      })),
+      inspections: [
+        {
+          captureDate: "2026-06-04",
+          capturedAt: "2026-06-04T12:00:00.000Z",
+          inspectionUrl: treatment,
+          siteUrl: experimentConfig.site.searchConsoleProperty,
+          verdict: "PASS",
+          coverageState: "Submitted and indexed",
+          robotsTxtState: "ALLOWED",
+          indexingState: "INDEXING_ALLOWED",
+          pageFetchState: "SUCCESSFUL",
+          lastCrawlTime: "2026-06-04T01:00:00.000Z",
+          googleCanonical: treatment,
+          userCanonical: treatment,
+          crawledAs: "MOBILE",
+          sitemaps: ["https://tkaflowarts.com/sitemap.xml"],
+          referringUrls: [],
+          inspectionResultLink: null,
+        },
+      ],
+      aiObservations: experimentConfig.aiOverviewQueries.map((query) => ({
+        observedDate: "2026-06-04",
+        query,
+        locale: "en-US",
+        device: "desktop",
+        market: "United States",
+        aiOverviewPresent: true,
+        citedTka: true,
+        citedUrl: treatment,
+        rankInCitations: 1,
+        notes: null,
+      })),
+      cohortFrozen: true,
+    });
+
+    expect(scorecard.search.baseline.impressions).toBe(0);
+    expect(scorecard.search.primary?.controlAdjusted.impressionLift).toBeNull();
+    expect(scorecard.aiOverview.baseline.auditDate).toBeNull();
+    expect(scorecard.decision.status).toBe("primary_target_met");
+    expect(
+      scorecard.decision.criteria.map((criterion) => criterion.id)
+    ).toEqual([
+      "treatment_impressions",
+      "treatment_clicks",
+      "head_term_position",
+      "indexed_sample_rate",
+      "organic_activation_rate",
+      "head_term_ai_citation_rank",
+      "ai_overview_citation_rate",
+    ]);
+    expect(
+      scorecard.decision.criteria.every(
+        (criterion) => criterion.status === "pass"
+      )
+    ).toBe(true);
   });
 });

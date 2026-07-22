@@ -26,6 +26,16 @@
     confirmed: "Measurement complete",
   };
 
+  function phaseLabel(value: SeoDashboardSnapshot): string {
+    if (
+      value.evaluationMode === "visibility_emergence" &&
+      value.phase === "primary_collecting"
+    ) {
+      return "Measuring new search visibility";
+    }
+    return PHASE_LABELS[value.phase];
+  }
+
   let loading = $state(true);
   let refreshing = $state(false);
   let loadError = $state<string | null>(null);
@@ -74,8 +84,13 @@
         history = [];
         return;
       }
-      snapshot = seoDashboardSnapshotSchema.parse(JSON.parse(encodedSnapshot));
-      history = parseSeoHistoryRows(historyRows);
+      const parsedSnapshot = seoDashboardSnapshotSchema.parse(
+        JSON.parse(encodedSnapshot)
+      );
+      snapshot = parsedSnapshot;
+      history = parseSeoHistoryRows(historyRows).filter(
+        (point) => point.evaluationMode === parsedSnapshot.evaluationMode
+      );
       refreshedAt = new Date();
     } catch (caught) {
       const failure =
@@ -137,7 +152,7 @@
         <div class="header-status">
           <span class="phase-badge">
             <span class="status-dot" aria-hidden="true"></span>
-            {PHASE_LABELS[snapshot.phase]}
+            {phaseLabel(snapshot)}
           </span>
           <span class="data-date">
             Numbers through {formatDate(snapshot.dataThrough)}

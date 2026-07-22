@@ -12,6 +12,9 @@ function snapshotFor(
   options: {
     deploymentDate?: string | null;
     impressionLift?: number | null;
+    evaluationMode?: SeoDashboardSnapshot["evaluationMode"];
+    currentImpressions?: number | null;
+    decisionStatus?: SeoDashboardSnapshot["decision"]["status"];
   } = {}
 ): SeoDashboardSnapshot {
   const controlAdjusted =
@@ -26,10 +29,24 @@ function snapshotFor(
 
   return {
     phase,
+    evaluationMode: options.evaluationMode ?? "relative_lift",
     experimentDates: {
       deploymentDate: options.deploymentDate ?? null,
     },
-    search: { controlAdjusted },
+    search: {
+      controlAdjusted,
+      current:
+        options.currentImpressions === null ||
+        options.currentImpressions === undefined
+          ? null
+          : {
+              impressions: options.currentImpressions,
+              clicks: 0,
+              ctr: null,
+              position: null,
+            },
+    },
+    decision: { status: options.decisionStatus ?? "collecting" },
   } as SeoDashboardSnapshot;
 }
 
@@ -81,6 +98,33 @@ describe("getSeoGrowthStory", () => {
 
     expect(story.headline).toBe("The increase held up twice.");
     expect(story.nextStep).toContain("before-and-after test is complete");
+  });
+
+  it("reports absolute visibility without inventing a percentage from zero", () => {
+    const story = getSeoGrowthStory(
+      snapshotFor("primary_collecting", {
+        evaluationMode: "visibility_emergence",
+        currentImpressions: 14,
+      })
+    );
+
+    expect(story.value).toBe("14 appearances");
+    expect(story.headline).toBe("Google visibility has started.");
+    expect(story.explanation).toContain("no percentage is guessed");
+    expect(story.tone).toBe("positive");
+  });
+
+  it("explains the Search Console delay before the first emergence reading", () => {
+    const story = getSeoGrowthStory(
+      snapshotFor("primary_collecting", {
+        evaluationMode: "visibility_emergence",
+        currentImpressions: null,
+      })
+    );
+
+    expect(story.value).toBe("Clock started");
+    expect(story.explanation).toContain("three days");
+    expect(story.tone).toBe("waiting");
   });
 });
 

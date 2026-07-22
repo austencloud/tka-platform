@@ -13,7 +13,7 @@ import {
   calendarDateInTimeZone,
   contiguousDateRanges,
   rangeEndingAt,
-  selectMatchedControls,
+  selectControls,
   type FunnelDailyRow,
 } from "./core";
 import { fetchPostHogSeoDaily } from "./posthog";
@@ -516,7 +516,7 @@ Commands:
       fetchSeoCohorts(config),
       warehouse.getSearchRows(baseline.start, baseline.end),
     ]);
-    const controls = selectMatchedControls({
+    const controls = selectControls({
       rows,
       baseline,
       treatmentPages: new Set(cohorts.treatmentPages),
@@ -524,6 +524,7 @@ Commands:
       minimumImpressions: config.controls.minimumBaselineImpressions,
       maximumControls: config.controls.maximumControls,
       minimumCorrelation: config.controls.minimumPretrendCorrelation,
+      selectionMode: config.controls.selectionMode,
     });
     if (controls.length === 0) {
       throw new Error(
@@ -540,7 +541,11 @@ Commands:
       baselineEnd: baseline.end,
       force: flags.force === true,
     });
-    process.stdout.write(`Frozen ${controls.length} pre-change controls.\n`);
+    const label =
+      config.controls.selectionMode === "contextual_volume"
+        ? "pre-change reference pages"
+        : "pre-change matched controls";
+    process.stdout.write(`Frozen ${controls.length} ${label}.\n`);
     return;
   }
 

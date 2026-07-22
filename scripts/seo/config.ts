@@ -32,6 +32,7 @@ const configSchema = z
       performanceSource: z.enum(["api", "bulk"]),
     }),
     experiment: z.object({
+      evaluationMode: z.enum(["relative_lift", "visibility_emergence"]),
       deploymentDate: calendarDate,
       indexedDate: calendarDate,
       instrumentationStartDate: calendarDate,
@@ -46,13 +47,16 @@ const configSchema = z
       sitemapPathPrefixes: z.array(z.string().startsWith("/")),
     }),
     controls: z.object({
-      candidatePathPrefixes: z.array(z.string().startsWith("/")).min(1),
+      selectionMode: z.enum(["matched_pretrend", "contextual_volume"]),
+      candidateExactPaths: z.array(z.string().startsWith("/")),
+      candidatePathPrefixes: z.array(z.string().startsWith("/")),
       minimumBaselineImpressions: z.number().nonnegative(),
       maximumControls: z.number().int().positive(),
       minimumPretrendCorrelation: z.number().min(-1).max(1),
     }),
     successCriteria: z.object({
       minimumTreatmentImpressionsForDecision: z.number().int().positive(),
+      minimumTreatmentClicksForDecision: z.number().int().positive(),
       minimumControlAdjustedImpressionLift: z.number().min(-1),
       minimumControlAdjustedClickLift: z.number().min(-1),
       maximumHeadTermPosition: z.number().positive(),
@@ -100,6 +104,16 @@ const configSchema = z
         code: "custom",
         path: ["experiment", "indexedDate"],
         message: "indexedDate cannot precede deploymentDate",
+      });
+    }
+    if (
+      value.controls.candidateExactPaths.length === 0 &&
+      value.controls.candidatePathPrefixes.length === 0
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["controls"],
+        message: "at least one control candidate path is required",
       });
     }
     const queryGroupIds = value.queryGroups.map((group) => group.id);

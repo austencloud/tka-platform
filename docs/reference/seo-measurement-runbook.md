@@ -4,24 +4,27 @@ This experiment answers a narrow question: did the Flow Arts Software work
 increase qualified Google visibility and bring people into a useful Composer
 session?
 
-The scorecard does not treat a traffic spike as proof. It compares a registered
-28-day baseline with a 28-day primary window, corrects the change against pages
-that followed a similar pre-change trend, then repeats the test for another 28
-days. Search performance, indexing, Composer behavior, and AI Overview citations
-stay separate until the final decision.
+The scorecard does not treat a traffic spike as proof. This launch uses a
+registered visibility-emergence design because the treatment pages recorded no
+Search Console impressions before deployment. A 28-day primary window must
+clear fixed search and product-use targets, then a second 28-day window repeats
+the same test. Search performance, indexing, Composer behavior, and AI Overview
+citations stay separate until the final decision.
 
-This is a controlled before-and-after study, not a randomized trial. A confirmed
-result measures the deployed SEO package against pages with similar prior
-trends. Concurrent campaigns, major sitewide changes, and search-engine updates
-can still affect attribution. Search Console also withholds some query detail,
-and each AI Overview audit is a point-in-time observation.
+This is an observational before-and-after study, not a randomized trial. The
+pre-launch series contains no treatment variance, so it cannot support a
+matched-control lift estimate. Frozen reference pages show whether the whole
+site moved at the same time, but they are context rather than a synthetic
+counterfactual. Concurrent campaigns, sitewide changes, and search-engine
+updates can still affect attribution. Search Console also withholds some query
+detail, and each AI Overview audit is a point-in-time observation.
 
 ## What gets measured
 
 | Evidence                   | Primary measure                                                                                     | Source                              |
 | -------------------------- | --------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | Category ownership         | Impressions, clicks, CTR, and average position for `flow arts software` and registered query groups | Search Console                      |
-| Page visibility            | Treatment-page search metrics relative to frozen controls                                           | Search Console                      |
+| Page visibility            | Treatment-page search metrics with frozen sitewide reference pages                                  | Search Console                      |
 | Indexing                   | Indexed verdict and Google-selected canonical for a stable URL sample                               | URL Inspection API                  |
 | Product use                | Organic Composer launch, activation, and completion by session                                      | PostHog                             |
 | Field performance          | Daily p75 LCP, INP, and CLS                                                                         | PostHog native `$web_vitals`        |
@@ -40,20 +43,23 @@ report reference](https://support.google.com/webmasters/answer/16984139).
 The registered settings live in `config/seo-measurement.json`.
 
 - Baseline: 28 complete days ending the day before production deployment.
+- Evaluation mode: `visibility_emergence`. The pre-launch treatment count was
+  zero, so fixed absolute targets replace percentage-lift gates.
 - Primary window: 28 days beginning when Google first recrawls the canonical
   Composer page after deployment.
 - Confirmation window: the next 28 days.
 - Final-data lag: three days.
 - Treatment: `/composer`, `/roots/software`, and canonical `/sequence/` URLs in
   the sitemap.
-- Control candidates: indexed Level 1 guide pages.
-- Control selection: baseline impressions, daily pre-trend correlation, and
-  normalized slope. Treatment pages, control candidates, the inspection sample,
-  and selected controls are written once to BigQuery. They do not change during
-  the experiment, even when the sitemap changes.
+- Reference candidates: `/about`, `/guide`, `/support`, `/create`, and `/shop`.
+- Reference selection: pre-launch volume and stability. Treatment pages,
+  reference candidates, the inspection sample, and selected reference pages are
+  written once to BigQuery. They do not change during the experiment, even when
+  the sitemap changes.
 - Search source: one source for all three windows. Do not compare an API baseline
   with a bulk-export primary window.
-- AI Overview baseline: the latest complete 20-query audit in the 28-day
+- AI Overview observation: the first complete post-launch audit is recorded as
+  the first observed state. It is not backdated or described as a pre-launch
   baseline. Each decision window uses its own latest complete audit.
 - AI audit context: signed out, English (United States), desktop, with the
   Google Search region set to United States.
@@ -61,8 +67,7 @@ The registered settings live in `config/seo-measurement.json`.
 The preregistered decision gates are:
 
 - at least 100 treatment impressions in the evaluation window;
-- at least 25% control-adjusted impression lift;
-- at least 25% control-adjusted click lift;
+- at least 5 treatment clicks in the evaluation window;
 - average position 3 or better for `flow arts software`;
 - TKA listed as citation rank 1 for the `flow arts software` AI Overview;
 - at least 90% of the inspected treatment sample indexed;
@@ -70,10 +75,10 @@ The preregistered decision gates are:
 - TKA cited in at least 50% of AI Overviews found in the audit grid.
 
 A primary result becomes confirmed only when the second 28-day window clears the
-same gates. Missing dates, truncated API days, zero baselines, absent controls,
-missing baseline or current-window AI audits, and instrumentation gaps block a
-win declaration. A partial or stale URL Inspection sample and missing PostHog
-dates also block their respective gates.
+same gates. Missing dates, truncated API days, unfrozen cohorts, a missing
+current-window AI audit, and instrumentation gaps block a win declaration. A
+partial or stale URL Inspection sample and missing PostHog dates also block
+their respective gates.
 
 ## Metric definitions
 
@@ -82,7 +87,14 @@ Search Console position is impression-weighted. API rows use
 zero-based formula, `SUM(sum_position) / SUM(impressions) + 1`. CTR is always
 `SUM(clicks) / SUM(impressions)`.
 
-Control-adjusted count lift is a ratio of ratios:
+The active visibility-emergence contract reports absolute impressions and
+clicks. It never adds a pseudocount or invents a percentage from the zero
+baseline. Frozen reference-page trends remain visible as context and do not
+decide the result.
+
+The scorecard retains a `relative_lift` mode for future experiments with a
+non-zero baseline. In that mode, control-adjusted count lift is a ratio of
+ratios:
 
 ```text
 (treatment post / treatment pre) / median(control post / control pre) - 1
@@ -240,7 +252,9 @@ Create two Actions secrets: `POSTHOG_PERSONAL_API_KEY` for private queries and
 `POSTHOG_PROJECT_TOKEN` for publishing the admin dashboard snapshot. The project
 token is the same public token used by the production PostHog client.
 
-The scheduled workflow runs at 12:37 UTC. It stores metrics and scorecards only
+The scheduled workflow runs at 12:37 UTC. A manual `prepare-launch` operation
+backfills the registered baseline, freezes the cohorts and reference pages, then
+publishes a fresh snapshot. The workflow stores metrics and scorecards only
 in private BigQuery tables. GitHub logs contain completion and freshness status,
 not queries, traffic counts, or report artifacts. Local reports are written to
 the ignored `seo-reports/` directory. With the API source active, each run
@@ -259,9 +273,11 @@ refreshes the last three PostHog days to include late completion events.
 1. Bootstrap the private tables with `pnpm run seo:bootstrap`.
 2. Confirm all three providers with `pnpm run seo:verify-access`.
 3. Backfill finalized Search Console data through the day before deployment.
-4. Freeze the treatment, inspection, and matched-control cohorts before reading
+4. Freeze the treatment, inspection, and reference-page cohorts before reading
    post-change results.
-5. Complete the fixed AI Overview audit before the production deployment.
+5. Complete the fixed AI Overview audit before deployment when planning a new
+   experiment. For this already-live launch, record the first audit as a
+   post-launch observation.
 6. Register the production deployment and instrumentation dates in GitHub
    Actions variables.
 7. Enable the scheduled workflow.
@@ -288,7 +304,7 @@ pnpm run seo:verify-access
 # Backfill the API baseline
 pnpm run seo:measure -- backfill --from YYYY-MM-DD --to YYYY-MM-DD
 
-# Freeze page cohorts and matched controls against the registered baseline
+# Freeze page cohorts and reference pages against the registered baseline
 pnpm run seo:measure -- freeze-controls
 
 # Collect one daily cycle and store the scorecard
@@ -318,8 +334,8 @@ and [usage limits](https://developers.google.com/webmaster-tools/limits).
 production date is known but a qualifying post-deployment crawl is not.
 `collecting` means one of the 28-day windows is still open.
 
-`incomplete_evidence` is not a loss. It means a required source, date, control,
-or audit is missing and no available gate has already failed. `below_target`
+`incomplete_evidence` is not a loss. It means a required source, date, frozen
+cohort, or audit is missing and no available gate has already failed. `below_target`
 means at least one registered gate definitively failed, even if another gate is
 still pending. `primary_target_met` is the first win. Only
 `confirmed_target_met` closes the experiment.

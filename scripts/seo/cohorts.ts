@@ -72,11 +72,20 @@ export function buildSeoCohorts(
     ...new Set([...exactPages, ...sitemapTreatment]),
   ].sort();
   const treatmentSet = new Set(treatmentPages);
-  const controlCandidates = sitemapUrls.filter(
+  const sitemapSet = new Set(sitemapUrls);
+  const exactControlCandidates = config.controls.candidateExactPaths
+    .map((path) => canonicalUrl(config.site.origin, path))
+    .filter((url) => sitemapSet.has(url));
+  const prefixControlCandidates = sitemapUrls.filter(
     (url) =>
       !treatmentSet.has(url) &&
       hasPrefix(url, config.controls.candidatePathPrefixes)
   );
+  const controlCandidates = [
+    ...new Set([...exactControlCandidates, ...prefixControlCandidates]),
+  ]
+    .filter((url) => !treatmentSet.has(url))
+    .sort();
   const remainingSlots = Math.max(
     0,
     config.treatment.inspectionSampleLimit - exactPages.length

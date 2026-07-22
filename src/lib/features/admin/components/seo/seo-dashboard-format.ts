@@ -85,6 +85,50 @@ export function getSeoGrowthStory(
     };
   }
 
+  if (snapshot.evaluationMode === "visibility_emergence") {
+    const impressions = snapshot.search.current?.impressions;
+    if (impressions === null || impressions === undefined) {
+      return {
+        value: "Clock started",
+        headline: "Google found the updated Composer page.",
+        explanation:
+          "Search Console waits three days before finalizing a reading. The first post-index number will appear after that delay.",
+        nextStep: "Wait for the first finalized Google reading.",
+        tone: "waiting",
+      };
+    }
+
+    const targetMet =
+      snapshot.decision.status === "primary_target_met" ||
+      snapshot.decision.status === "confirmed_target_met";
+    const targetMissed = snapshot.decision.status === "below_target";
+    return {
+      value: `${formatInteger(impressions)} appearances`,
+      headline: targetMet
+        ? "The visibility target was met."
+        : targetMissed
+          ? "The measurement window missed its target."
+          : impressions > 0
+            ? "Google visibility has started."
+            : "Waiting for the first Google appearance.",
+      explanation:
+        "The pre-launch count was zero. This launch uses fixed search and product-use targets, so no percentage is guessed.",
+      nextStep:
+        snapshot.phase === "confirmed"
+          ? "The full two-window check is complete."
+          : snapshot.phase === "primary_complete"
+            ? "Repeat the same targets with fresh dates."
+            : "Keep collecting until the first 28-day window closes.",
+      tone: targetMet
+        ? "positive"
+        : targetMissed
+          ? "negative"
+          : impressions > 0
+            ? "positive"
+            : "waiting",
+    };
+  }
+
   const impressionLift = snapshot.search.controlAdjusted?.impressionLift;
   if (impressionLift === null || impressionLift === undefined) {
     return {

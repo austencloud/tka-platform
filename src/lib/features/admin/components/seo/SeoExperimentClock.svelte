@@ -64,7 +64,10 @@
       },
       {
         number: 4,
-        title: "Compare before and after",
+        title:
+          snapshot.evaluationMode === "visibility_emergence"
+            ? "Measure the new visibility"
+            : "Compare before and after",
         detail: formatWindow(
           snapshot.windows.primary,
           "Starts after Google finds the pages"
@@ -115,8 +118,8 @@
   </div>
 
   <p class="plain-explanation">
-    Each step clears the way for the next. The highlighted row is the only one
-    that matters right now.
+    The highlighted row is the one that matters right now. Later steps stay
+    quiet until their dates arrive.
   </p>
 
   <ol class="roadmap" aria-label="Five steps to measure SEO growth">

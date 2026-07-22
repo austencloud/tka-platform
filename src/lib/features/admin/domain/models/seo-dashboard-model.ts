@@ -71,6 +71,9 @@ export const seoDashboardSnapshotSchema = z.object({
   dataThrough: z.string().min(1),
   phase: seoPhaseSchema,
   performanceSource: z.enum(["api", "bulk"]),
+  evaluationMode: z
+    .enum(["relative_lift", "visibility_emergence"])
+    .default("relative_lift"),
   currentWindow: z.enum(["primary", "confirmation"]).nullable(),
   experimentDates: z.object({
     deploymentDate: z.string().nullable(),
@@ -174,6 +177,7 @@ export interface SeoHistoryPoint {
   organicActivationRate: number | null;
   aiCitationRate: number | null;
   indexedRate: number | null;
+  evaluationMode: "relative_lift" | "visibility_emergence";
 }
 
 function numberOrNull(value: unknown): number | null {
@@ -206,6 +210,10 @@ export function parseSeoHistoryRows(
       organicActivationRate: numberOrNull(row[6]),
       aiCitationRate: numberOrNull(row[7]),
       indexedRate: numberOrNull(row[8]),
+      evaluationMode:
+        row[9] === "visibility_emergence"
+          ? "visibility_emergence"
+          : "relative_lift",
     };
     byDate.set(point.generatedDate, point);
   }

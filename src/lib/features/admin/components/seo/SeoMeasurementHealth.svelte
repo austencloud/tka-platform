@@ -47,11 +47,18 @@
   <article class="health-card" class:healthy={snapshot.cohorts.frozen}>
     <span class="health-dot" aria-hidden="true"></span>
     <div>
-      <strong>Comparison pages</strong>
+      <strong>
+        {snapshot.evaluationMode === "visibility_emergence"
+          ? "Reference pages"
+          : "Comparison pages"}
+      </strong>
       <span>
         {snapshot.cohorts.frozen
-          ? snapshot.cohorts.frozenControlCount + " locked for a fair test"
-          : "Must be locked before the SEO changes"}
+          ? snapshot.cohorts.frozenControlCount +
+            (snapshot.evaluationMode === "visibility_emergence"
+              ? " locked as search context"
+              : " locked for a fair test")
+          : "Must be locked before measurement starts"}
       </span>
     </div>
   </article>

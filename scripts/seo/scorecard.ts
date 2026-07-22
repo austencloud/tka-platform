@@ -75,6 +75,7 @@ export interface SeoScorecard {
   dataThrough: string;
   phase: ReturnType<typeof buildExperimentWindows>["phase"];
   performanceSource: "api" | "bulk";
+  evaluationMode: SeoMeasurementConfig["experiment"]["evaluationMode"];
   experimentDates: {
     deploymentDate: string | null;
     indexedDate: string | null;
@@ -551,36 +552,67 @@ function buildDecision(options: {
   const ready = useConfirmation
     ? options.phase === "confirmed"
     : options.phase === "primary_complete" || options.phase === "confirmed";
+  const searchCriteria: EvidenceCriterion[] =
+    options.config.experiment.evaluationMode === "visibility_emergence"
+      ? [
+          criterion({
+            id: "treatment_impressions",
+            label: "Treatment impressions available for a decision",
+            actual: comparison?.current.impressions ?? null,
+            target:
+              options.config.successCriteria
+                .minimumTreatmentImpressionsForDecision,
+            unit: "count",
+            ready,
+            pass: (actual, target) => actual >= target,
+          }),
+          criterion({
+            id: "treatment_clicks",
+            label: "Treatment clicks available for a decision",
+            actual: comparison?.current.clicks ?? null,
+            target:
+              options.config.successCriteria.minimumTreatmentClicksForDecision,
+            unit: "count",
+            ready,
+            pass: (actual, target) => actual >= target,
+          }),
+        ]
+      : [
+          criterion({
+            id: "treatment_impressions",
+            label: "Treatment impressions available for a decision",
+            actual: comparison?.current.impressions ?? null,
+            target:
+              options.config.successCriteria
+                .minimumTreatmentImpressionsForDecision,
+            unit: "count",
+            ready,
+            pass: (actual, target) => actual >= target,
+          }),
+          criterion({
+            id: "adjusted_impression_lift",
+            label: "Control-adjusted impression lift",
+            actual: comparison?.controlAdjusted.impressionLift ?? null,
+            target:
+              options.config.successCriteria
+                .minimumControlAdjustedImpressionLift,
+            unit: "ratio",
+            ready,
+            pass: (actual, target) => actual >= target,
+          }),
+          criterion({
+            id: "adjusted_click_lift",
+            label: "Control-adjusted click lift",
+            actual: comparison?.controlAdjusted.clickLift ?? null,
+            target:
+              options.config.successCriteria.minimumControlAdjustedClickLift,
+            unit: "ratio",
+            ready,
+            pass: (actual, target) => actual >= target,
+          }),
+        ];
   const criteria: EvidenceCriterion[] = [
-    criterion({
-      id: "treatment_impressions",
-      label: "Treatment impressions available for a decision",
-      actual: comparison?.current.impressions ?? null,
-      target:
-        options.config.successCriteria.minimumTreatmentImpressionsForDecision,
-      unit: "count",
-      ready,
-      pass: (actual, target) => actual >= target,
-    }),
-    criterion({
-      id: "adjusted_impression_lift",
-      label: "Control-adjusted impression lift",
-      actual: comparison?.controlAdjusted.impressionLift ?? null,
-      target:
-        options.config.successCriteria.minimumControlAdjustedImpressionLift,
-      unit: "ratio",
-      ready,
-      pass: (actual, target) => actual >= target,
-    }),
-    criterion({
-      id: "adjusted_click_lift",
-      label: "Control-adjusted click lift",
-      actual: comparison?.controlAdjusted.clickLift ?? null,
-      target: options.config.successCriteria.minimumControlAdjustedClickLift,
-      unit: "ratio",
-      ready,
-      pass: (actual, target) => actual >= target,
-    }),
+    ...searchCriteria,
     criterion({
       id: "head_term_position",
       label: 'Average position for "flow arts software"',
@@ -639,7 +671,8 @@ function buildDecision(options: {
   if (
     !options.cohortFrozen ||
     !options.searchDataComplete ||
-    !options.aiBaselineComplete
+    (options.config.experiment.evaluationMode === "relative_lift" &&
+      !options.aiBaselineComplete)
   ) {
     return {
       status: "incomplete_evidence",
@@ -874,6 +907,7 @@ export function buildSeoScorecard(input: ScorecardInput): SeoScorecard {
     dataThrough: input.dataThrough,
     phase: windows.phase,
     performanceSource: input.config.warehouse.performanceSource,
+    evaluationMode: input.config.experiment.evaluationMode,
     experimentDates: {
       deploymentDate: input.config.experiment.deploymentDate,
       indexedDate: input.config.experiment.indexedDate,
@@ -943,8 +977,21 @@ function formatRatio(value: number | null): string {
   return value === null ? "Not available" : `${(value * 100).toFixed(1)}%`;
 }
 
-function comparisonRows(comparison: MetricComparison | null): string {
+function comparisonRows(
+  comparison: MetricComparison | null,
+  evaluationMode: SeoScorecard["evaluationMode"]
+): string {
   if (!comparison) return "No comparison window is open yet.";
+  if (evaluationMode === "visibility_emergence") {
+    return [
+      "| Metric | Pre-launch | Current | Absolute change |",
+      "| --- | ---: | ---: | ---: |",
+      `| Impressions | ${comparison.baseline.impressions} | ${comparison.current.impressions} | ${comparison.raw.impressions} |`,
+      `| Clicks | ${comparison.baseline.clicks} | ${comparison.current.clicks} | ${comparison.raw.clicks} |`,
+      `| CTR | ${formatRatio(comparison.baseline.ctr)} | ${formatRatio(comparison.current.ctr)} | ${formatNumber(comparison.raw.ctrPercentagePoints)} pp |`,
+      `| Average position | ${formatNumber(comparison.baseline.position)} | ${formatNumber(comparison.current.position)} | ${formatNumber(comparison.raw.positionImprovement)} places better |`,
+    ].join("\n");
+  }
   return [
     "| Metric | Baseline | Current | Control-adjusted change |",
     "| --- | ---: | ---: | ---: |",
@@ -981,6 +1028,8 @@ Data through: ${scorecard.dataThrough} (Pacific Time)
 
 Experiment phase: ${scorecard.phase}
 
+Evaluation mode: ${scorecard.evaluationMode}
+
 Decision: ${scorecard.decision.status}
 
 Deployment date: ${scorecard.experimentDates.deploymentDate ?? "not registered"}
@@ -989,7 +1038,7 @@ Indexed date: ${scorecard.experimentDates.indexedDate ?? "not detected"} (${scor
 
 ## Search performance
 
-${comparisonRows(activeComparison)}
+${comparisonRows(activeComparison, scorecard.evaluationMode)}
 
 ## Evidence gates
 
@@ -1003,7 +1052,7 @@ ${criteria}
 - Truncated dates: ${scorecard.dataQuality.truncatedSearchDates.join(", ") || "none"}
 - PostHog days collected: ${scorecard.dataQuality.collectedPostHogDays}/${scorecard.dataQuality.expectedPostHogDays}
 - Missing PostHog dates: ${scorecard.dataQuality.missingPostHogDates.join(", ") || "none"}
-- Frozen controls: ${scorecard.cohorts.frozenControls.length}
+- Frozen ${scorecard.evaluationMode === "visibility_emergence" ? "reference pages" : "controls"}: ${scorecard.cohorts.frozenControls.length}
 - Experiment cohorts frozen: ${scorecard.cohorts.frozen ? "yes" : "no"}
 
 ## Indexing and AI Overviews
@@ -1013,7 +1062,7 @@ ${criteria}
 - Inspection is fresh for the evaluation window: ${scorecard.indexability.freshForEvaluation ? "yes" : "no"}
 - Indexed inspection sample: ${scorecard.indexability.indexed}/${scorecard.indexability.expected}
 - Canonical matches: ${scorecard.indexability.canonicalMatches}/${scorecard.indexability.expected}
-- Baseline AI audit: ${scorecard.aiOverview.baseline.auditDate ?? "not collected"} (${scorecard.aiOverview.baseline.auditedQueries}/${scorecard.aiOverview.baseline.expectedQueries} queries)
+- Pre-launch AI audit: ${scorecard.aiOverview.baseline.auditDate ?? "not collected"} (${scorecard.aiOverview.baseline.auditedQueries}/${scorecard.aiOverview.baseline.expectedQueries} queries; ${scorecard.evaluationMode === "visibility_emergence" ? "not required for this launch" : "required"})
 - Current-window AI audit: ${scorecard.aiOverview.current.auditDate ?? "not collected"} (${scorecard.aiOverview.current.auditedQueries}/${scorecard.aiOverview.current.expectedQueries} queries)
 - TKA citation rate when an AI Overview appeared: ${formatRatio(scorecard.aiOverview.current.citationRate)}
 - Citation-rate change from baseline: ${formatRatio(scorecard.aiOverview.citationRateChange)}

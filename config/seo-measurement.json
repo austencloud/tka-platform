@@ -15,6 +15,7 @@
     "performanceSource": "api"
   },
   "experiment": {
+    "evaluationMode": "visibility_emergence",
     "deploymentDate": null,
     "indexedDate": null,
     "instrumentationStartDate": null,
@@ -29,13 +30,16 @@
     "sitemapPathPrefixes": ["/sequence/"]
   },
   "controls": {
-    "candidatePathPrefixes": ["/guide/level-1/"],
+    "selectionMode": "contextual_volume",
+    "candidateExactPaths": ["/about", "/guide", "/support", "/create", "/shop"],
+    "candidatePathPrefixes": [],
     "minimumBaselineImpressions": 5,
     "maximumControls": 5,
     "minimumPretrendCorrelation": 0.1
   },
   "successCriteria": {
     "minimumTreatmentImpressionsForDecision": 100,
+    "minimumTreatmentClicksForDecision": 5,
     "minimumControlAdjustedImpressionLift": 0.25,
     "minimumControlAdjustedClickLift": 0.25,
     "maximumHeadTermPosition": 3,

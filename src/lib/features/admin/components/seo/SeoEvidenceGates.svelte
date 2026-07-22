@@ -10,6 +10,7 @@
 
   const PLAIN_LABELS: Record<string, string> = {
     treatment_impressions: "Enough Google appearances",
+    treatment_clicks: "Enough visits from Google",
     adjusted_impression_lift: "Visibility grew against comparison pages",
     adjusted_click_lift: "Google visits grew against comparison pages",
     head_term_position: "“Flow arts software” moved high enough",
@@ -22,15 +23,6 @@
   type EvidenceView = "summary" | "exact";
 
   const OUTCOME_GROUPS = [
-    {
-      label: "More people see and visit TKA pages",
-      note: "Google appearances and clicks both rise.",
-      criterionIds: [
-        "treatment_impressions",
-        "adjusted_impression_lift",
-        "adjusted_click_lift",
-      ],
-    },
     {
       label: "“flow arts software” moves toward the top",
       note: "A lower position number is better. #1 is the top result.",
@@ -63,8 +55,26 @@
     ).length
   );
 
+  const visibilityOutcome = $derived(
+    snapshot.evaluationMode === "visibility_emergence"
+      ? {
+          label: "People see and visit TKA pages",
+          note: "Google appearances and visits must reach fixed targets.",
+          criterionIds: ["treatment_impressions", "treatment_clicks"],
+        }
+      : {
+          label: "More people see and visit TKA pages",
+          note: "Google appearances and clicks both rise.",
+          criterionIds: [
+            "treatment_impressions",
+            "adjusted_impression_lift",
+            "adjusted_click_lift",
+          ],
+        }
+  );
+
   const outcomes = $derived(
-    OUTCOME_GROUPS.map((group) => ({
+    [visibilityOutcome, ...OUTCOME_GROUPS].map((group) => ({
       ...group,
       status: getSeoOutcomeStatus(
         snapshot.decision.criteria,
@@ -109,7 +119,9 @@
       </span>
     </div>
     <p class="panel-explanation">
-      One good-looking number is not enough. These outcomes have to agree.
+      {snapshot.evaluationMode === "visibility_emergence"
+        ? "The pre-launch count was zero. These fixed outcomes decide whether visibility truly appeared."
+        : "One good-looking number is not enough. These outcomes have to agree."}
     </p>
 
     <ul class="outcome-list">

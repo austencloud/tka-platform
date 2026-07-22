@@ -4,6 +4,15 @@ on:
   schedule:
     - cron: "37 12 * * *"
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Measurement operation
+        required: true
+        default: collect
+        type: choice
+        options:
+          - collect
+          - prepare-launch
 
 concurrency:
   group: seo-measurement
@@ -67,7 +76,15 @@ jobs:
         run: pnpm run seo:verify-access
 
       - name: Collect and store SEO evidence
+        if: github.event_name != 'workflow_dispatch' || inputs.operation == 'collect'
         run: pnpm run seo:daily
+
+      - name: Backfill, freeze, and publish the registered launch
+        if: github.event_name == 'workflow_dispatch' && inputs.operation == 'prepare-launch'
+        run: |
+          pnpm run seo:daily
+          pnpm run seo:measure -- freeze-controls
+          pnpm run seo:daily
 
       - name: Record collector status
         if: success()

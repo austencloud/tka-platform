@@ -126,7 +126,11 @@ async function executeHogQLQuery(
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("[analytics] PostHog query failed:", response.status, errorText);
+    console.error(
+      "[analytics] PostHog query failed:",
+      response.status,
+      errorText
+    );
     throw error(502, `PostHog API error: ${response.status}`);
   }
 
@@ -310,7 +314,8 @@ function buildSeoHistoryQuery(): string {
       properties.treatment_impressions as treatment_impressions,
       properties.organic_activation_rate as organic_activation_rate,
       properties.ai_citation_rate as ai_citation_rate,
-      properties.indexed_rate as indexed_rate
+      properties.indexed_rate as indexed_rate,
+      properties.evaluation_mode as evaluation_mode
     FROM events
     WHERE event = 'seo_measurement_snapshot'
       AND distinct_id = 'seo-measurement'
@@ -369,7 +374,12 @@ export const POST: RequestHandler = async (event) => {
     const caller = await requireAdmin(event);
 
     stage = "rate_limit";
-    const blocked = await withRateLimit(event, RATE_LIMITS.ADMIN, "user", caller.uid);
+    const blocked = await withRateLimit(
+      event,
+      RATE_LIMITS.ADMIN,
+      "user",
+      caller.uid
+    );
     if (blocked) return blocked;
 
     stage = "read_request";
@@ -413,7 +423,12 @@ export const POST: RequestHandler = async (event) => {
         query = buildPulseOverviewQuery();
         break;
       case "pulse-breakdown": {
-        const dims: PulseDimension[] = ["country", "city", "referrer", "device"];
+        const dims: PulseDimension[] = [
+          "country",
+          "city",
+          "referrer",
+          "device",
+        ];
         if (!dimension || !dims.includes(dimension)) {
           throw error(400, "pulse-breakdown requires a valid dimension");
         }

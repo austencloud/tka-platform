@@ -57,6 +57,8 @@ export interface ControlMatch {
   normalizedSlopeDifference: number;
 }
 
+export type ControlSelectionMode = "matched_pretrend" | "contextual_volume";
+
 export interface FunnelDailyRow {
   date: string;
   organicComposerSessions: number;
@@ -309,7 +311,7 @@ function normalizedSlope(values: readonly number[]): number {
   return slope / Math.max(yMean, 1);
 }
 
-export function selectMatchedControls(options: {
+export function selectControls(options: {
   rows: readonly SearchMetricRow[];
   baseline: DateWindow;
   treatmentPages: ReadonlySet<string>;
@@ -317,6 +319,7 @@ export function selectMatchedControls(options: {
   minimumImpressions: number;
   maximumControls: number;
   minimumCorrelation: number;
+  selectionMode: ControlSelectionMode;
 }): ControlMatch[] {
   const treatmentSeries = dailyImpressions(
     options.rows,
@@ -326,7 +329,7 @@ export function selectMatchedControls(options: {
   const treatmentTotal = treatmentSeries.reduce((sum, value) => sum + value, 0);
   const treatmentSlope = normalizedSlope(treatmentSeries);
 
-  return [...new Set(options.candidatePages)]
+  const candidates = [...new Set(options.candidatePages)]
     .filter((page) => !options.treatmentPages.has(page))
     .map((page): ControlMatch => {
       const series = dailyImpressions(
@@ -355,11 +358,21 @@ export function selectMatchedControls(options: {
         normalizedSlopeDifference,
       };
     })
-    .filter(
-      (match) =>
-        match.baselineImpressions >= options.minimumImpressions &&
-        match.correlation >= options.minimumCorrelation
-    )
+    .filter((match) => match.baselineImpressions >= options.minimumImpressions);
+
+  if (options.selectionMode === "contextual_volume") {
+    return candidates
+      .sort(
+        (left, right) =>
+          left.normalizedSlopeDifference - right.normalizedSlopeDifference ||
+          right.baselineImpressions - left.baselineImpressions ||
+          left.page.localeCompare(right.page)
+      )
+      .slice(0, options.maximumControls);
+  }
+
+  return candidates
+    .filter((match) => match.correlation >= options.minimumCorrelation)
     .sort(
       (left, right) =>
         right.score - left.score || left.page.localeCompare(right.page)
