@@ -30,9 +30,9 @@ import {
   getCompatiblePatterns,
 } from "../domain/reversal-patterns";
 import { resolvePattern, type ResolvedReversalPattern } from "../domain/reversal-transform";
-import { transformSequence } from "./reversal-seed-service";
+import { transformSequence } from "./reversal-transform-apply";
 import type { CsvEdge } from "./pictograph-letter-lookup";
-import { applyPattern } from "$lib/shared/create/services/turn-pattern-manager";
+import { applyPattern } from "$lib/shared/create/services/turn-pattern-apply";
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import { updateSequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
 import type {
