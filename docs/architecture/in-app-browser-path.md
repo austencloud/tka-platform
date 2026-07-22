@@ -1,6 +1,13 @@
 # In-App Browser Path
 
-Status: design, ready for implementation
+Status: SUPERSEDED (2026-07-22) by
+`docs/superpowers/specs/2026-07-22-kill-the-bar-app-forward-design.md` and its
+implemented plan. That spec is app-forward and corrects this doc's §3 claim that
+iOS escape is "manual only": fresh 2026 evidence shows `x-safari-https://` opens
+Safari on iOS 17+, so the shipped path fires it optimistically (iOS 17+) with a
+guided fallback, measured by the existing escape telemetry. This doc is kept for
+its investigation record; do not implement from it.
+
 Date: 2026-07-21
 Origin: production incident 2026-07-20 22:38 CDT, Instagram DM to `/create/construct`
 
