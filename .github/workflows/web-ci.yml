@@ -60,7 +60,6 @@ jobs:
   component-tests:
     name: Component Tests (browser)
     runs-on: ubuntu-latest
-    continue-on-error: true # non-blocking until P3 (see plan)
 
     steps:
       - name: Checkout repository
@@ -89,3 +88,7 @@ jobs:
 
       - name: Component tests (Vitest browser mode)
         run: pnpm run test:components:ci
+        continue-on-error: true # The broader component suite is still being hardened.
+
+      - name: Critical QR regressions
+        run: pnpm run test:qr-critical:components
