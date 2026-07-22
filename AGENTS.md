@@ -6,6 +6,21 @@ Only the AAA+ approach. No quick fixes, no simplified implementations, no "good 
 
 Don't say: "simplified implementation", "for now", "quick fix", "to save tokens", "might be overkill", "simpler approach", "revisit later".
 
+## Git Branches and Worktrees
+
+**Never create a Git branch or Git worktree unless Austen explicitly requests
+that exact action in the current conversation.** Work in the existing primary
+checkout on `main`.
+
+A large task, risky refactor, parallel session, handoff, pull request, or dirty
+working tree does not grant permission to create a branch or worktree. If
+in-flight changes overlap the requested work, identify the exact files and
+report the blocker. Do not create an isolated checkout as a workaround.
+
+When Austen explicitly requests a branch or worktree, create only the requested
+one and remove it after its work is merged. Never leave completed branches or
+worktrees behind.
+
 ## MCP-Only for TKA Rendering
 
 Never render pictographs or sequences via bash scripts, inline code, or base64. Only `generate_pictograph` and `generate_sequence` MCP tools. If MCP is unavailable, STOP and tell the user to restart Codex.
@@ -108,7 +123,7 @@ The rules above are a summary. The authoritative, enforced set is in `.claude/ru
 - `verification-protocol.md` + `no-fabrication.md` + `no-assumption-without-evidence.md` — every "done"/"fixed" needs proof in the same message. Never claim a file/function/behavior exists without grep or Read output in the same turn.
 - `mcp-ground-truth.md` — never state a TKA domain fact (letter behavior, VTG, position, pictograph) from memory. It must come from an MCP call. See the MCP section below for the catch on this machine.
 - `commit-only-your-own-changes.md` — the git index is SHARED across parallel agents. Always `git commit -m "..." -- <explicit paths>`. Never a bare `git commit`, never `git add -A`/`.`/`-u`.
-- `worktree-workflow.md` — branch/parallel work happens in a git worktree outside the watched checkout, not by editing the primary checkout.
+- `worktree-workflow.md`: work on `main`; branch and worktree creation requires Austen's explicit request in the current conversation.
 - `fast-iteration-loop.md` + `resource-budget.md` — no full `npm run check`/`build` in the inner loop; capture check output once then grep it; reuse a running dev server before spawning one; one `svelte-check` machine-wide.
 - Design/UI rules: `no-checkboxes.md`, `chip-primitives.md`, `crossfade-primitive.md`, `no-layout-shift.md`, `clickables-look-like-buttons.md`, `clickable-links.md`, `simplified-word-display.md`, `sequence-viewer-shell.md`, `primitive-discovery.md`.
 - Domain rules: `tka-domain.md`, `verify-at-canonical-source.md`.
@@ -121,9 +136,9 @@ Austen runs several agents against this repo at once. Assume other work is in fl
 
 - **Port 5173 is Austen's dev server. Never start, stop, restart, or kill it.** It serves HTTPS/2 (h2) only — every localhost URL, curl, and link is `https://`, never `http://` (http returns ERR_EMPTY_RESPONSE). To see your own change in a browser, run your own server on a free port: `vite --port 5174`. Diagnose his with `curl -k https://localhost:5173/...`.
 - **Shared git index.** Scope every commit with an explicit pathspec (see `commit-only-your-own-changes.md`). Do not stage or revert files you did not touch — they belong to another session.
-- **Worktrees for branches.** Do not switch the primary checkout off `main`. See `worktree-workflow.md`.
+- **No new branches or worktrees by default.** Stay on `main`. Create either only when Austen explicitly requests it in the current conversation. See `worktree-workflow.md`.
 - **Windows shell.** Primary shell is PowerShell. A Git Bash tool exists but never query system processes or run bare `find` from it (it walks from `/`). Use PowerShell for process/registry work.
-- **This is a pnpm workspace** (`packageManager` in `package.json`; `packages/*` are members). Do not `rm -rf node_modules` in a worktree whose `node_modules` is a junction to the primary.
+- **This is a pnpm workspace** (`packageManager` in `package.json`; `packages/*` are members). When cleaning up an inherited or explicitly requested worktree, never recursively delete a `node_modules` junction to the primary checkout.
 
 ## MCP: full domain toolset is wired (server `flow-arts`, 43 tools)
 

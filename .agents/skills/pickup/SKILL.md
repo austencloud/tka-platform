@@ -25,7 +25,9 @@ git fetch origin
   working tree and `git show origin/main:<path>` — it may have landed on main
   after this checkout last pulled.
 - Branch handoff → `handoff/<name>` branches (e.g. `handoff/hero-split-4k`).
-  Follow the current `worktree-workflow.md`: work on main by default and use an isolated worktree only when the task genuinely needs it.
+  Follow `worktree-workflow.md`: stay in the primary checkout on `main`. Do not
+  create a branch or worktree unless Austen explicitly requested it in the
+  current conversation.
 - No match → list the candidates you did find and ask which one. Don't guess
   between two plausible handoffs.
 

@@ -11,8 +11,9 @@ abandoned after their verification loops ended), **a 5 GB `svelte-check`**
 second `npm run check`, 8 Claude sessions, and ~30 Chrome processes.
 
 Worktrees were suspected first. Wrong target: only 2 of the 7 servers were in
-worktrees, and the 5 GB check costs the same wherever it runs. Worktrees remain
-mandatory (`worktree-workflow.md`). The real cost centers are **dev servers and
+worktrees, and the 5 GB check costs the same wherever it runs. Worktree creation
+now requires Austen's explicit request in the current conversation; see
+`worktree-workflow.md`. The real cost centers are **dev servers and
 type-checks**, which agents spawn freely and never reap.
 
 ## The Rule
@@ -34,8 +35,8 @@ Get-CimInstance Win32_Process -Filter "Name='node.exe'" |
 - If **2 or more agent servers** (anything ≠ :5173) are already running, do NOT
   start another. `curl` an existing one — any running server serves its
   checkout's current files, which is all read-only verification needs.
-- Only spawn your own when your checkout genuinely isn't served (e.g. your
-  worktree has no server) AND the free-RAM gate (#3) passes.
+- Only spawn your own when the current checkout genuinely is not served and the
+  free-RAM gate (#3) passes.
 
 ### 2. Reap what you spawn
 
@@ -73,9 +74,9 @@ one caps the machine.
 
 ## What this rule does NOT do
 
-- It does not gate worktrees. Worktrees are directories; they cost nothing
-  until a server or check runs inside them. (As of 2026-07-18 worktrees are no
-  longer mandatory — work on main directly; see `worktree-workflow.md`.)
+- It does not authorize worktrees. Branch and worktree creation still requires
+  Austen's explicit request in the current conversation; see
+  `worktree-workflow.md`.
 - It does not license killing OTHER sessions' processes. A live session's
   server or in-flight check belongs to that session; contention gets surfaced
   to Austen, not resolved by fratricide.
@@ -87,12 +88,11 @@ one caps the machine.
 - Starting a `svelte-check` while another is running anywhere on the machine.
 - Any heavy spawn when available memory is under 4 GB.
 - Killing `:5173` or another live session's processes to free budget.
-- Blaming overload on worktrees — the cost centers are dev servers and checks,
-  not worktrees (which are retired as the default anyway).
+- Treating the resource budget as permission to create a worktree.
 
 ## Related
 
 - `fast-iteration-loop.md` — capture-once-grep-many; one check per turn
-- `worktree-workflow.md` — worktrees stay mandatory; own server on a free port
+- `worktree-workflow.md`: branches and worktrees require explicit permission
 - `CLAUDE.md` → Dev Server (:5173 is Austen's), Bash Gotchas (no Git Bash
   process queries)

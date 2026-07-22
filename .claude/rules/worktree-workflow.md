@@ -1,53 +1,45 @@
-# Work on Main — ENFORCED (worktree mandate reversed 2026-07-18)
+# Work on Main (ENFORCED)
 
-## The Rule (current)
+## The rule
 
-**Work directly on `main` in the primary checkout (`C:/tka-platform`). Do not
-spin up a worktree or a feature branch for routine work.** Commit to main and
-push frequently.
+**Work directly on `main` in the primary checkout (`E:/tka-platform`). Never
+create a Git branch or Git worktree unless Austen explicitly requests that exact
+action in the current conversation.**
 
-Austen's directive (2026-07-18): revert the mandatory-worktree policy —
-everything on main, all the time.
+Task size, risk, parallelism, handoffs, pull requests, and a dirty working tree
+do not grant permission. If the requested files overlap another session's
+in-flight changes, do not edit those files and do not create an isolated
+checkout. Report the exact overlap as the blocker.
 
-## Why this reverses the old policy
+## Operating pattern
 
-From 2026-07-14 until 2026-07-18, every branch/parallel task required its own
-worktree, for isolation from clobbering + HMR churn across the many parallel
-sessions Austen runs. That policy is retired. The worktree ceremony (junctions
-vs real installs, `build:packages`, Vite `fs.allow`, the C-machine native-build
-breakage that stops the full app from even booting in a fresh worktree) cost
-more than the isolation was worth. Working on main directly is simpler.
+1. Keep the primary checkout on `main`.
+2. Fetch before integrating remote work. Update `main` only when incoming paths
+   do not overlap uncommitted changes.
+3. Commit only the files owned by the current task, using explicit pathspecs.
+4. Push completed units frequently so other sessions can synchronize safely.
 
-## What this means
+## Explicitly requested exceptions
 
-1. **Primary checkout stays on `main`.** Edit, commit, and push there.
-2. **No feature-branch worktrees by default.** Don't create `C:/worktrees/...`
-   for ordinary work.
-3. **Commit + push frequently.** The sessions share the one checkout, so small
-   frequent commits are how you avoid clobbering each other's uncommitted work:
-   `git pull --rebase` before a big edit, commit a unit the moment it's done,
-   push.
-4. **Merge-to-main-when-done still stands** (that was never the friction) — see
-   `feedback_merge_to_main_when_done`.
+When Austen explicitly requests a branch or worktree in the current
+conversation:
 
-## The tradeoff being re-accepted
-
-The old policy existed because concurrent sessions editing one working dir
-clobber each other's uncommitted files and thrash `:5173`'s HMR. On main
-directly, that risk returns. Mitigate with frequent commits/pushes and
-`git pull --rebase`. If a task genuinely needs isolation (a risky refactor you
-don't want touching others' in-flight work), a worktree is still **allowed** —
-it is simply no longer the **default**, and no longer mandatory.
+- Create only the requested branch or worktree. Do not add an integration or
+  verification worktree around it.
+- Merge completed work into `main` and remove the branch or worktree in the same
+  task.
+- Never delete a dirty worktree until every uncommitted path is proven landed,
+  intentionally discarded by Austen, or preserved elsewhere.
 
 ## Still true
 
 - `:5173` is Austen's dev server on the primary checkout — never `npm run dev`,
   never kill it (`CLAUDE.md` → Dev Server). Use `vite --port <free>` for your own.
 - **Scoped commits only** (`commit-only-your-own-changes.md`): the shared index
-  means `git commit -- <paths>`, never a bare `git add -A` + commit that sweeps
-  another session's staged work into yours.
+  means `git commit -- <paths>`, never a bare `git add -A` plus commit that
+  sweeps another session's staged work into yours.
 
 ## Related
 
 - `commit-only-your-own-changes.md`, `fast-iteration-loop.md`, `resource-budget.md`
-- Global `CLAUDE.md` → Branching & Worktrees
+- Root `AGENTS.md` -> Git Branches and Worktrees

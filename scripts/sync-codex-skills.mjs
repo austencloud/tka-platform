@@ -369,12 +369,6 @@ function replaceCurrentRepoPolicies(relativePath, content) {
   if (relativePath === "tika/grading-reference.md") {
     adapted = replaceTikaQuestions(adapted);
   }
-  if (relativePath === "pickup/SKILL.md") {
-    adapted = adapted.replace(
-      "Work in a worktree per `worktree-workflow.md`; never switch this checkout.",
-      "Follow the current `worktree-workflow.md`: work on main by default and use an isolated worktree only when the task genuinely needs it."
-    );
-  }
   if (relativePath === "handoff/SKILL.md") {
     adapted = adapted.replace(
       "tell\n  Austen exactly where it lives with a `file://` link.",
