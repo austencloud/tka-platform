@@ -12,13 +12,17 @@
 <LegalPageShell>
   <div class="header-content">
     <h1>Privacy Policy</h1>
-    <p class="last-updated">Last Updated: July 21, 2026</p>
+    <p class="last-updated">Last Updated: July 22, 2026</p>
   </div>
 
   <div class="legal-card">
     <!-- Summary Box -->
     <div class="summary-box">
       <h2>Quick Summary</h2>
+      <p>
+        Flow Arts Composer and The Kinetic Alphabet are operated by Austen
+        Cloud.
+      </p>
       <ul>
         <li>
           Flow Arts Composer collects only what's needed to provide the service

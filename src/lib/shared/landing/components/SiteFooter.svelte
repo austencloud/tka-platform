@@ -121,7 +121,8 @@
 
     <div class="bottom">
       <p class="legal-line">
-        © {year} The Kinetic Alphabet · Made by Austen Cloud
+        Flow Arts Composer and The Kinetic Alphabet are operated by Austen
+        Cloud. © {year} Austen Cloud.
       </p>
       <nav class="bottom-links" aria-label="Support and legal links">
         <a href="/support"
