@@ -20,6 +20,12 @@
  */
 
 import { Capacitor } from "@capacitor/core";
+import { resolveEscapeTarget, type EscapeTarget } from "./escape-target";
+import {
+  isAppLaunched,
+  playStoreUrl,
+  appStoreUrl,
+} from "../config/app-availability";
 
 interface BrowserPattern {
   pattern: RegExp;
@@ -49,18 +55,6 @@ const IN_APP_BROWSER_PATTERNS: BrowserPattern[] = [
   { pattern: /\bwv\b/i, name: "WebView" },
   { pattern: /WebView/i, name: "WebView" },
 ];
-
-/**
- * Real iOS browsers that omit the vestigial "Safari/" token.
- *
- * The last-resort heuristic in detect() flags any iOS user-agent without that
- * token, and Opera for iOS (OPT/, and OPX/ for Opera GX) is the one mainstream
- * browser that drops it — so a fully capable browser was getting flagged.
- * Chrome (CriOS), Firefox (FxiOS), Edge (EdgiOS), Brave, and DuckDuckGo all
- * still carry it. This list is the maintenance point when the next vendor
- * drops it.
- */
-const IOS_REAL_BROWSERS = /\bOPT\/|\bOPX\//i;
 
 export type InAppBrowserPlatform = "ios" | "android" | "other";
 
@@ -169,6 +163,12 @@ export class InAppBrowserDetector {
     const vendor = (navigator as { vendor?: string }).vendor || "";
     const combined = `${ua} ${vendor}`;
 
+    // Named apps only. There used to be a last-resort "iOS UA with no Safari
+    // token" heuristic here, but that flagged real browsers that drop the
+    // vestigial token (Opera for iOS ships OPT/ with no Safari/), and the whole
+    // point of detection is to never lie to a capable browser. A named match
+    // cannot false-positive; an unnamed webview simply isn't handled, which is
+    // the safe direction — the visitor gets the full app, no escape chrome.
     for (const { pattern, name } of IN_APP_BROWSER_PATTERNS) {
       if (pattern.test(combined)) {
         this.cachedResult = { isInApp: true, name };
@@ -176,20 +176,32 @@ export class InAppBrowserDetector {
       }
     }
 
-    // Last resort: an iOS user-agent with no Safari token is usually a webview
-    // that declined to name itself. Known-good browsers are cleared first, so
-    // an Opera user doesn't get told their browser is somebody's webview.
-    if (
-      this.isIOS() &&
-      !IOS_REAL_BROWSERS.test(combined) &&
-      !combined.includes("Safari")
-    ) {
-      this.cachedResult = { isInApp: true, name: "App" };
-      return this.cachedResult;
-    }
-
     this.cachedResult = { isInApp: false, name: null };
     return this.cachedResult;
+  }
+
+  /** iOS major version parsed from the UA, or null when not iOS / unparseable. */
+  getIosMajorVersion(): number | null {
+    if (typeof navigator === "undefined") return null;
+    // "CPU iPhone OS 18_7 like Mac OS X", or "CPU OS 26_5" on iPad.
+    const match = navigator.userAgent.match(/OS (\d+)[_.]/);
+    return this.isIOS() && match ? Number(match[1]) : null;
+  }
+
+  /**
+   * The escape action for this environment, composed from the detector's own
+   * signals plus the launch flag. One call so every escape surface stays in
+   * lockstep and nothing hardcodes a browser-vs-app decision.
+   */
+  getEscapeTarget(searchParams?: URLSearchParams): EscapeTarget {
+    return resolveEscapeTarget({
+      platform: this.getPlatform(),
+      iosMajorVersion: this.getIosMajorVersion(),
+      appLaunched: isAppLaunched(searchParams),
+      currentUrl: typeof window !== "undefined" ? window.location.href : "",
+      playStoreUrl: playStoreUrl(),
+      appStoreUrl: appStoreUrl(),
+    });
   }
 
   private isAndroid(): boolean {
