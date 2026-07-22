@@ -13,38 +13,48 @@
  */
 
 import posthog from "posthog-js";
+import type { CaptureOptions, BeforeSendFn, CaptureResult } from "posthog-js";
 import { browser } from "$app/environment";
+import {
+  PUBLIC_POSTHOG_HOST,
+  PUBLIC_POSTHOG_KEY,
+  PUBLIC_POSTHOG_PROJECT_ID,
+} from "$env/static/public";
 import { getDeviceId } from "$lib/shared/foundation/services/device-id";
 
-// `$env/dynamic/public` throws on module-eval in a worker (no globalThis
-// sveltekit env object), which crashes the composition worker the moment it
-// imports anything in this module's graph (authState -> posthog). Load it
-// lazily so importing this module is worker-safe; the loader is only ever
-// awaited from browser-guarded code paths, so the worker never fetches it.
-type PublicEnv = Record<string, string | undefined>;
-let _publicEnv: PublicEnv | null = null;
-async function loadPublicEnv(): Promise<PublicEnv> {
-  if (_publicEnv) return _publicEnv;
-  ({ env: _publicEnv } = (await import("$env/dynamic/public")) as {
-    env: PublicEnv;
-  });
-  return _publicEnv;
-}
-
-// Start that fetch the moment this module evaluates instead of at the top of
-// initPostHog(). Awaiting it there put a second serial round trip in front of
-// posthog.init() — the scan page paid it after the posthog chunk had already
-// landed, delaying replay start by exactly that hop. Prefetching overlaps it
-// with posthog-js's own evaluation; initPostHog() then resolves from _publicEnv.
-//
-// `document` is the worker guard: a web worker has no document, so the
-// composition worker never fetches (and never crashes on) the env module. A
-// rejection is swallowed here and simply retried by the await in initPostHog().
-if (typeof document !== "undefined") {
-  void loadPublicEnv().catch(() => {});
-}
+// Capacitor serves a static bundle and has no server route for SvelteKit's
+// /_app/env.js. Build-time public constants work in the WebView and remain safe
+// when this module appears in a worker import graph.
+const publicEnv = {
+  PUBLIC_POSTHOG_HOST,
+  PUBLIC_POSTHOG_KEY,
+  PUBLIC_POSTHOG_PROJECT_ID,
+};
 
 let initialized = false;
+let initializationPromise: Promise<void> | null = null;
+type PostHogReadyListener = (instance: typeof posthog) => void;
+const postHogReadyListeners = new Set<PostHogReadyListener>();
+
+/**
+ * Run setup that must land inside PostHog's `loaded` callback, before its
+ * initial pageview is captured. Already-ready callers run synchronously.
+ */
+export function onPostHogReady(listener: PostHogReadyListener): () => void {
+  if (!browser) return () => {};
+  if (initialized) {
+    listener(posthog);
+    return () => {};
+  }
+  postHogReadyListeners.add(listener);
+  return () => postHogReadyListeners.delete(listener);
+}
+
+function notifyPostHogReady(instance: typeof posthog): void {
+  const listeners = [...postHogReadyListeners];
+  postHogReadyListeners.clear();
+  for (const listener of listeners) listener(instance);
+}
 
 // Whether this page load ever identified a real user to PostHog. resetUser()
 // reads it so an ungated call can't churn the identity of a visitor who was
@@ -94,14 +104,106 @@ function resolveBootstrapDistinctId(token: string): string | undefined {
 }
 
 /**
+ * Contract verified against the installed posthog-js@1.341.0 (matches the
+ * `^1.335.3` range in package.json), not trusted from memory:
+ *
+ *   // @posthog/types/dist/capture.d.ts:64
+ *   export type BeforeSendFn = (cr: CaptureResult | null) => CaptureResult | null;
+ *   // @posthog/types/dist/posthog-config.d.ts:1061
+ *   before_send?: BeforeSendFn | BeforeSendFn[];
+ *
+ * And the dispatcher itself (posthog-js/dist/main.js, function `cs`) drops the
+ * event whenever the returned value is nullish — `null` and a bare `undefined`
+ * (an implicit return) are indistinguishable to it. There is no exception and
+ * no build-time signal for a branch that forgets to return: it just silently
+ * stops sending. So every non-drop branch below returns `event` explicitly,
+ * never falls off the end of the function.
+ *
+ * Three console.error strings confirmed as SDK/browser chatter, not app bugs —
+ * they were 80%+ of $exception volume on the Instagram-referral session that
+ * prompted this audit (docs/architecture/in-app-browser-path.md), burying real
+ * errors under noise nobody could act on. This is a DENYLIST: only an event
+ * matching one of these three patterns is dropped, everything else — including
+ * event shapes this list has never seen — passes through untouched. An
+ * allowlist here would silently kill unknown-but-legitimate event types.
+ */
+const EXCEPTION_NOISE = [
+  // Firestore's multi-tab lease election, thrown by a secondary tab that lost
+  // the primary-client negotiation. This was pinned to three action names on
+  // the claim that they were the only callers of the readwrite-primary path;
+  // grepping the installed SDK (@firebase/firestore 4.14.1,
+  // dist/common-7a7519be.esm.js) says otherwise — runTransaction(_,
+  // "readwrite-primary") is reached by "Acknowledge batch", "Apply remote
+  // event", "Backfill Indexes", "Collect garbage", "Reject batch" and
+  // "maybeGarbageCollectMultiClientState", plus "Release target" when its
+  // conditional picks readwrite-primary. The two busiest (a queued write being
+  // acknowledged, a live onSnapshot applying an update) were the ones missing,
+  // so the filter did nothing for the common case. Every caller of this path is
+  // SDK background maintenance by construction, never app code, so match the
+  // message shape rather than re-enumerating a list that drifts with the SDK.
+  /Failed to obtain primary lease for action '[^']+'/,
+  // Browser-native scheduling backpressure, permitted by the spec.
+  /ResizeObserver loop completed with undelivered notifications/,
+  // iOS Safari has no FCM support. Guarded at the call site now
+  // (foreground-message-handler.ts), this covers any path that still reaches
+  // the SDK's own feature-detection throw.
+  /messaging\/unsupported-browser/,
+];
+
+/**
+ * PostHog `before_send` hook: drops known-noise `$exception` events before
+ * they leave the browser. Every other event — including every other
+ * `$exception` — passes through unchanged. See the contract note above before
+ * touching the early returns; each one must `return event`, never fall through.
+ */
+export const dropKnownNoise: BeforeSendFn = (event: CaptureResult | null) => {
+  // Null in means null out — a prior before_send already rejected it, not
+  // ours to override.
+  if (!event) return event;
+  if (event.event !== "$exception") return event;
+
+  const list = event.properties?.$exception_list;
+  if (!Array.isArray(list)) return event;
+
+  // Only the root exception is tested, never the whole chain. posthog's
+  // ErrorPropertiesBuilder.convertToExceptionList flattens an Error's .cause
+  // chain into this same array — root first, then causes — so a `.some()` over
+  // all of it would drop a real, actionable report whenever a noisy SDK error
+  // happened to be attached as its cause. Losing the outer "Sequence save
+  // failed" to a Firestore lease error nested underneath is exactly the silent
+  // blackout this filter must not cause. Noise arrives unwrapped, at index 0.
+  const root = list[0];
+  const isNoise =
+    typeof root?.value === "string" &&
+    EXCEPTION_NOISE.some((pattern) => pattern.test(root.value));
+  return isNoise ? null : event;
+};
+
+/**
  * Initialize PostHog analytics.
  * Call once on app startup in +layout.svelte.
  */
-export async function initPostHog(): Promise<void> {
-  if (!browser) return;
-  if (initialized) return;
+export function initPostHog(): Promise<void> {
+  if (!browser) return Promise.resolve();
 
-  const env = await loadPublicEnv();
+  // The in-flight check MUST come before the `initialized` check.
+  // `initializePostHog` is async but never awaits internally, so its body —
+  // including `initialized = true` — runs synchronously on the first call.
+  // `.finally()` still defers, so `initializationPromise` is genuinely pending
+  // at that moment. Testing `initialized` first therefore sent every concurrent
+  // caller down the fast path and handed each a fresh resolved promise instead
+  // of the shared one, defeating the point of sharing it.
+  if (initializationPromise) return initializationPromise;
+  if (initialized) return Promise.resolve();
+
+  initializationPromise = initializePostHog().finally(() => {
+    initializationPromise = null;
+  });
+  return initializationPromise;
+}
+
+async function initializePostHog(): Promise<void> {
+  const env = publicEnv;
   if (!env.PUBLIC_POSTHOG_KEY) {
     console.warn("[PostHog] No API key found. Analytics disabled.");
     return;
@@ -171,8 +273,21 @@ export async function initPostHog(): Promise<void> {
       inlineStylesheet: true,
     },
 
+    // Registered unconditionally (not gated on captureEnabled): capture_exceptions
+    // is already false in dev, so this never sees a $exception there anyway, and
+    // the hook must be present the moment prod traffic starts flowing.
+    before_send: dropKnownNoise,
+
     // Load feature flags immediately
-    loaded: (posthog) => {
+    loaded: () => {
+      // Deliberately ignores the callback's own argument and uses the imported
+      // singleton. Same object at runtime, but posthog-js types the parameter
+      // as the narrower PostHogInterface, which is missing ~60 members the
+      // ready-listeners' `typeof posthog` contract expects.
+      //
+      // Scan attribution must be registered here, before posthog-js schedules
+      // the initial $pageview immediately after this callback returns.
+      notifyPostHogReady(posthog);
       // Reload feature flags to ensure fresh state
       posthog.reloadFeatureFlags();
     },
@@ -252,10 +367,35 @@ export function captureException(
  */
 export function captureEvent(
   eventName: string,
-  properties?: Record<string, unknown>
+  properties?: Record<string, unknown>,
+  options?: CaptureOptions
 ): void {
   if (!browser || !initialized || import.meta.env.DEV) return;
-  posthog.capture(eventName, properties);
+  captureEventWithPostHog(posthog, eventName, properties, options);
+}
+
+/** Deliver events queued before `initialized` flips inside the loaded hook. */
+export function captureEventWithPostHog(
+  instance: typeof posthog,
+  eventName: string,
+  properties?: Record<string, unknown>,
+  options?: CaptureOptions
+): void {
+  if (!browser || import.meta.env.DEV) return;
+  // Analytics is an observer, never a participant. Every capture in the app
+  // funnels through here, and several sit on the critical path of a flow that
+  // must not break: trackCheckoutStarted fires between the Stripe session
+  // resolving and the redirect, inside the caller's try/catch — an SDK throw
+  // there would surface to the buyer as "checkout isn't available" while a
+  // perfectly good Stripe URL sat in hand. Same shape in BuyButton (throw =
+  // item never added) and CartButton (throw = drawer never opens). Swallowing
+  // here means no present or future call site has to remember to defend
+  // itself, and a broken metric can never cost a conversion.
+  try {
+    instance.capture(eventName, properties, options);
+  } catch (error) {
+    console.warn(`[posthog] capture failed for "${eventName}"`, error);
+  }
 }
 
 /**
@@ -329,7 +469,7 @@ export async function getSessionReplayUrl(): Promise<string | null> {
   const sessionId = posthog.get_session_id();
   if (!sessionId) return null;
 
-  const env = await loadPublicEnv();
+  const env = publicEnv;
   if (!env.PUBLIC_POSTHOG_PROJECT_ID) return null;
 
   return `https://us.posthog.com/project/${env.PUBLIC_POSTHOG_PROJECT_ID}/replay/${sessionId}`;

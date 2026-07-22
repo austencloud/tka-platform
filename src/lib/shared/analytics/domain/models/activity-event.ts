@@ -63,7 +63,17 @@ export type ActivityEventType =
   | "shop_loop_advanced_customized"
   | "shop_loop_pack_selected"
   | "shop_loop_custom_entered"
-  | "shop_loop_architect_opened";
+  | "shop_loop_architect_opened"
+  // Shop conversion funnel — ordered steps, chartable end to end in PostHog.
+  // These overlap the usage-gate events above on purpose: those answer "is the
+  // feature used", these answer "where does the buyer drop off". Don't collapse
+  // one into the other. Spec: docs/architecture/landing-analytics-taxonomy.md
+  | "shop_product_viewed"
+  | "shop_variant_selected"
+  | "shop_add_to_cart"
+  | "shop_cart_opened"
+  | "shop_checkout_started"
+  | "shop_purchase_completed";
 
 /**
  * Metadata that can be attached to events
