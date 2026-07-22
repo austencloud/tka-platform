@@ -12,6 +12,7 @@
   import BuilderOrientationPicker from "./BuilderOrientationPicker.svelte";
   import OrientationExplainer from "./OrientationExplainer.svelte";
   import { getBuilderControlVisibility } from "../services/builder-phase-presentation";
+  import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 
   let { builderState }: { builderState: AssembleState } = $props();
 
@@ -53,7 +54,13 @@
   );
 </script>
 
-<div class="control-bar" class:dimmed={barDimmed} class:hidden-bar={barHidden}>
+<div
+  class="control-bar"
+  class:dimmed={barDimmed}
+  class:hidden-bar={barHidden}
+  class:blue-hand={builderState.activeHand === MotionColor.BLUE}
+  class:red-hand={builderState.activeHand === MotionColor.RED}
+>
   <!-- Placing phase: orientation pills (persists during animating/done to prevent layout shift) -->
   {#if showPlacing}
     <div class="bar-content orientation-content">
@@ -81,10 +88,16 @@
     </div>
   {/if}
 
-  <!-- Idle: empty placeholder preserves bar height -->
+  <!-- Idle: explain what will occupy this reserved control row. -->
   {#if showPlaceholder}
     <div class="bar-content bar-placeholder">
-      <span class="bar-label muted">&nbsp;</span>
+      <span class="tap-cue" aria-hidden="true">
+        <i class="fas fa-hand-pointer"></i>
+      </span>
+      <span class="idle-copy">
+        <strong>First touch sets position.</strong>
+        <span>Orientation and motion controls open next.</span>
+      </span>
     </div>
   {/if}
 </div>
@@ -105,7 +118,6 @@
   }
 
   .control-bar.dimmed {
-    opacity: 0.3;
     pointer-events: none;
   }
 
@@ -131,6 +143,63 @@
 
   .bar-placeholder {
     justify-content: center;
+    gap: 10px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
+  }
+
+  .control-bar.blue-hand {
+    --cue-color: var(--prop-blue, #2e8bf0);
+  }
+
+  .control-bar.red-hand {
+    --cue-color: var(--prop-red, #ed1c24);
+  }
+
+  .tap-cue {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 34px;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--cue-color) 48%, transparent);
+    border-radius: 11px;
+    background: color-mix(in srgb, var(--cue-color) 12%, transparent);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 0 18px color-mix(in srgb, var(--cue-color) 14%, transparent);
+    color: var(--cue-color);
+    animation: tap-cue 1.8s ease-in-out infinite;
+  }
+
+  .idle-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 1px;
+    line-height: 1.25;
+  }
+
+  .idle-copy strong {
+    color: var(--theme-text, #fff);
+    font-size: var(--font-size-min, 14px);
+  }
+
+  .idle-copy span {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-min, 14px);
+  }
+
+  @keyframes tap-cue {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    45% {
+      transform: translateY(-2px);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 0 24px color-mix(in srgb, var(--cue-color) 24%, transparent);
+    }
   }
 
   .bar-label {
@@ -139,12 +208,6 @@
     font-weight: 700;
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.5));
     flex-shrink: 0;
-  }
-
-  .bar-label.muted {
-    text-transform: none;
-    font-size: var(--font-size-min, 14px);
-    font-weight: 500;
   }
 
   /* Hidden on mobile - BuilderControls popover handles it */
@@ -158,6 +221,10 @@
   @media (prefers-reduced-motion: reduce) {
     .control-bar {
       transition: none;
+    }
+
+    .tap-cue {
+      animation: none;
     }
   }
 </style>

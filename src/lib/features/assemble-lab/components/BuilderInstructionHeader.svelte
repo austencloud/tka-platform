@@ -4,6 +4,7 @@
 -->
 <script lang="ts">
   import { MotionColor } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
+  import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
   import type { AssembleState } from "../state/assemble-state.svelte";
   import { getBuilderPhaseInstruction } from "../services/builder-phase-presentation";
   import BuilderHandPicker from "./BuilderHandPicker.svelte";
@@ -24,6 +25,17 @@
   );
   const phaseMessage = $derived(getBuilderPhaseInstruction(builderState.phase));
   const controlsDisabled = $derived(builderState.phase === "complete");
+  const gridStatusLabel = $derived.by(() => {
+    const modeLabel =
+      builderState.gridMode === GridMode.BOX
+        ? "Box"
+        : builderState.gridMode === GridMode.SKEWED
+          ? "Merged"
+          : "Diamond";
+    return builderState.showCenter
+      ? `${modeLabel} + center`
+      : `${modeLabel} grid`;
+  });
 
   const otherHandHint = $derived.by(() => {
     if (builderState.phase === "complete" || builderState.phase === "idle") {
@@ -54,13 +66,19 @@
 
     <div class="control-cell grid-control">
       <span class="control-label">Grid</span>
-      <GridModePicker
-        gridMode={builderState.gridMode}
-        showCenter={builderState.showCenter}
-        disabled={!builderState.canChangeGridMode}
-        onGridModeChange={(mode) => builderState.setGridMode(mode)}
-        onCenterChange={(show) => builderState.setShowCenter(show)}
-      />
+      {#if builderState.canChangeGridMode}
+        <GridModePicker
+          gridMode={builderState.gridMode}
+          showCenter={builderState.showCenter}
+          onGridModeChange={(mode) => builderState.setGridMode(mode)}
+          onCenterChange={(show) => builderState.setShowCenter(show)}
+        />
+      {:else}
+        <div class="grid-status" aria-label="Grid fixed to {gridStatusLabel}">
+          <strong>{gridStatusLabel}</strong>
+          <span>Fixed for this build</span>
+        </div>
+      {/if}
     </div>
 
     <div class="control-cell hand-control">
@@ -87,36 +105,25 @@
 
 <style>
   .control-header {
-    width: min(100%, 1040px);
-    margin-inline: auto;
-    padding: 10px 12px;
+    width: 100%;
+    padding: 12px;
     border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
     border-radius: var(--settings-radius-lg, 16px);
-    background: linear-gradient(
-      135deg,
-      color-mix(
-        in srgb,
-        var(--theme-panel-bg, rgba(14, 18, 28, 0.88)) 86%,
-        transparent
-      ),
-      color-mix(
-        in srgb,
-        var(--theme-accent, #8b6cff) 7%,
-        var(--theme-panel-bg, rgba(14, 18, 28, 0.82))
-      )
+    background: color-mix(
+      in srgb,
+      var(--theme-panel-bg, rgba(14, 18, 28, 0.94)) 94%,
+      var(--theme-accent, #8b6cff)
     );
     box-shadow:
-      0 16px 36px color-mix(in srgb, var(--theme-shadow, #000) 24%, transparent),
+      0 14px 34px color-mix(in srgb, var(--theme-shadow, #000) 28%, transparent),
       inset 0 1px 0 rgba(255, 255, 255, 0.07);
-    backdrop-filter: blur(22px) saturate(145%);
-    -webkit-backdrop-filter: blur(22px) saturate(145%);
   }
 
   .primary-row {
     display: grid;
     grid-template-columns: minmax(190px, 1fr) auto auto auto;
     align-items: end;
-    gap: 10px;
+    gap: 12px;
     min-width: 0;
   }
 
@@ -186,6 +193,32 @@
     width: 300px;
   }
 
+  .grid-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--settings-spacing-sm, 8px);
+    min-height: var(--min-touch-target, 44px);
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    border-radius: var(--settings-radius-md, 12px);
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.05));
+    color: var(--theme-text, #fff);
+  }
+
+  .grid-status strong {
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+  }
+
+  .grid-status span {
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.6));
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
   .hand-control {
     width: 180px;
   }
@@ -195,8 +228,8 @@
   }
 
   .motion-row {
-    margin-top: 9px;
-    padding-top: 9px;
+    margin-top: 10px;
+    padding-top: 10px;
     border-top: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.09));
   }
 

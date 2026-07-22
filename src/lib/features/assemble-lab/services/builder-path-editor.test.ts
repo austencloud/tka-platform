@@ -6,6 +6,7 @@ import {
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import {
   createBuilderStep,
+  getBuilderComparisonStep,
   moveBuilderStep,
   removeBuilderStep,
   replaceBuilderStepDestination,
@@ -84,5 +85,25 @@ describe("builder path editing", () => {
       GridLocation.SOUTH,
     ]);
     expectContinuous(edited as ReturnType<typeof makePath>);
+  });
+
+  it("matches a new motion preview to the other hand's next beat", () => {
+    const inactivePath = makePath();
+
+    expect(getBuilderComparisonStep([], inactivePath)).toBe(inactivePath[0]);
+    expect(getBuilderComparisonStep([inactivePath[0]!], inactivePath)).toBe(
+      inactivePath[1]
+    );
+    expect(getBuilderComparisonStep(inactivePath, inactivePath)).toBeNull();
+  });
+
+  it("matches a replacement preview to the selected beat", () => {
+    const activePath = makePath();
+    const inactivePath = makePath();
+
+    expect(getBuilderComparisonStep(activePath, inactivePath, 1)).toBe(
+      inactivePath[1]
+    );
+    expect(getBuilderComparisonStep(activePath, inactivePath, 8)).toBeNull();
   });
 });

@@ -58,18 +58,7 @@
   .hand-picker {
     display: grid;
     grid-template-columns: repeat(2, minmax(78px, 1fr));
-    gap: 4px;
-    padding: 3px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: var(--settings-radius-md, 12px);
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, rgba(15, 18, 28, 0.84)) 78%,
-      transparent
-    );
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(16px) saturate(140%);
-    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    gap: 6px;
   }
 
   .hand-option {
@@ -82,15 +71,15 @@
     min-height: var(--min-touch-target, 44px);
     padding: 7px 10px;
     overflow: hidden;
-    border: 1px solid color-mix(in srgb, var(--hand-color) 18%, transparent);
-    border-radius: calc(var(--settings-radius-md, 12px) - 3px);
+    border: 1px solid color-mix(in srgb, var(--hand-color) 28%, transparent);
+    border-radius: var(--settings-radius-md, 12px);
     background: linear-gradient(
       135deg,
-      color-mix(in srgb, var(--hand-color) 9%, transparent),
+      color-mix(in srgb, var(--hand-color) 12%, transparent),
       color-mix(
         in srgb,
-        var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 70%,
-        transparent
+        var(--theme-card-bg, rgba(255, 255, 255, 0.04)) 88%,
+        var(--hand-color)
       )
     );
     color: color-mix(in srgb, var(--theme-text, #fff) 62%, transparent);
@@ -117,7 +106,7 @@
   }
 
   .hand-option:hover:not(:disabled) {
-    border-color: color-mix(in srgb, var(--hand-color) 48%, transparent);
+    border-color: color-mix(in srgb, var(--hand-color) 62%, transparent);
     color: var(--theme-text, #fff);
   }
 

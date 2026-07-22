@@ -38,15 +38,20 @@
         return "Diamond";
     }
   });
+  const guideHandColor = $derived(
+    builderState.activeHand === MotionColor.BLUE
+      ? "var(--prop-blue, #2e8bf0)"
+      : "var(--prop-red, #ed1c24)"
+  );
 
   function toggleKeyboardMode(): void {
-    const enabling = !builderState.keyboardMode;
+    const disabling = builderState.keyboardMode;
     builderState.toggleKeyboardMode();
-    guideOpen = enabling;
+    if (disabling) guideOpen = false;
   }
 </script>
 
-<div class="keyboard-control">
+<div class="keyboard-control" style:--numpad-color={guideHandColor}>
   <button
     type="button"
     class="mode-button"
@@ -57,7 +62,9 @@
       : "Turn on numpad building"}
     onclick={toggleKeyboardMode}
   >
-    <i class="fas fa-keyboard" aria-hidden="true"></i>
+    <span class="mode-icon" aria-hidden="true">
+      <i class="fas fa-keyboard"></i>
+    </span>
     <span>Numpad</span>
     <span class="mode-state">{builderState.keyboardMode ? "On" : "Off"}</span>
   </button>
@@ -69,10 +76,12 @@
           {...props}
           type="button"
           class="guide-button"
-          aria-label="Show numpad controls"
-          title="Numpad controls"
+          class:open={guideOpen}
+          aria-label="Show numpad key map"
+          title="Numpad key map"
         >
-          <i class="fas fa-question" aria-hidden="true"></i>
+          <span>Keys</span>
+          <i class="fas fa-chevron-down" aria-hidden="true"></i>
         </button>
       {/snippet}
     </Popover.Trigger>
@@ -83,70 +92,104 @@
         sideOffset={8}
         collisionPadding={12}
         class="keyboard-guide-panel"
-        aria-label="Numpad controls"
+        aria-label="Numpad key map"
+        style={`--numpad-color: ${guideHandColor};`}
       >
         <div class="guide-heading">
-          <div>
-            <strong>Build with the numpad</strong>
-            <span>Number keys match the points on the grid.</span>
-          </div>
-          <span class="current-settings">
-            {handLabel} / {rotationLabel} / {turnLabel}
-          </span>
-        </div>
-
-        <div class="guide-layout">
-          <section
-            class="position-guide"
-            aria-labelledby="position-guide-title"
-          >
-            <h3 id="position-guide-title">Pick the next point</h3>
-            <div class="numpad-grid">
-              {#each ASSEMBLE_NUMPAD_POSITIONS as position}
-                {@const available = isAssembleKeyboardLocationAvailable(
-                  position.location,
-                  builderState.gridMode,
-                  builderState.showCenter
-                )}
-                <div class="position-key" class:unavailable={!available}>
-                  <kbd>{position.key}</kbd>
-                  <span>{position.label}</span>
-                </div>
-              {/each}
+          <div class="guide-title">
+            <span class="guide-icon" aria-hidden="true">
+              <i class="fas fa-keyboard"></i>
+            </span>
+            <div>
+              <strong>Numpad map</strong>
+              <span>Numbers pick points. The outer keys shape the move.</span>
             </div>
-            <p>{gridLabel} points are bright. Unavailable keys are dimmed.</p>
-          </section>
-
-          <section class="action-guide" aria-labelledby="action-guide-title">
-            <h3 id="action-guide-title">Shape the move</h3>
-            <dl>
-              <div>
-                <dt><kbd>+</kbd><kbd>−</kbd></dt>
-                <dd>Turns</dd>
-              </div>
-              <div>
-                <dt><kbd>*</kbd></dt>
-                <dd>Direction</dd>
-              </div>
-              <div>
-                <dt><kbd>/</kbd></dt>
-                <dd>Orientation</dd>
-              </div>
-              <div>
-                <dt><kbd>0</kbd></dt>
-                <dd>Switch hand</dd>
-              </div>
-              <div>
-                <dt><kbd>.</kbd></dt>
-                <dd>Undo</dd>
-              </div>
-              <div>
-                <dt><kbd>Enter</kbd></dt>
-                <dd>Complete hand</dd>
-              </div>
-            </dl>
-          </section>
+          </div>
+          <div
+            class="current-settings"
+            aria-label={`Current settings: ${handLabel}, ${rotationLabel}, ${turnLabel}`}
+          >
+            <strong>{handLabel}</strong>
+            <span>{rotationLabel}</span>
+            <span>{turnLabel}</span>
+          </div>
         </div>
+
+        <div class="numpad-deck">
+          <div class="numpad-board" aria-label="Physical numpad layout">
+            <div class="board-mark" aria-hidden="true">
+              <span>NUM</span>
+              <strong>{gridLabel}</strong>
+            </div>
+
+            <kbd
+              class="keycap action-key slash-key"
+              aria-label="Slash: orientation"
+            >
+              <strong>/</strong><span>Orientation</span>
+            </kbd>
+            <kbd
+              class="keycap action-key multiply-key"
+              aria-label="Asterisk: direction"
+            >
+              <strong>*</strong><span>Direction</span>
+            </kbd>
+            <kbd
+              class="keycap action-key minus-key"
+              aria-label="Minus: decrease turns"
+            >
+              <strong>-</strong><span>Turn</span>
+            </kbd>
+
+            {#each ASSEMBLE_NUMPAD_POSITIONS as position}
+              {@const available = isAssembleKeyboardLocationAvailable(
+                position.location,
+                builderState.gridMode,
+                builderState.showCenter
+              )}
+              <kbd
+                class="keycap position-key"
+                class:unavailable={!available}
+                style={`grid-area: key${position.key}`}
+                aria-disabled={!available}
+                aria-label={`${position.key}: ${position.label}${available ? "" : ", unavailable"}`}
+              >
+                <strong>{position.key}</strong>
+                <span>{position.label}</span>
+              </kbd>
+            {/each}
+
+            <kbd
+              class="keycap action-key plus-key"
+              aria-label="Plus: increase turns"
+            >
+              <strong>+</strong><span>Turn</span>
+            </kbd>
+            <kbd
+              class="keycap action-key zero-key"
+              aria-label="Zero: switch hand"
+            >
+              <strong>0</strong><span>Switch hand</span>
+            </kbd>
+            <kbd
+              class="keycap action-key decimal-key"
+              aria-label="Decimal: undo"
+            >
+              <strong>.</strong><span>Undo</span>
+            </kbd>
+            <kbd
+              class="keycap action-key enter-key"
+              aria-label="Enter: complete hand"
+            >
+              <strong>Enter</strong><span>Finish hand</span>
+            </kbd>
+          </div>
+        </div>
+
+        <p class="guide-foot">
+          Bright number keys match the points available on the {gridLabel.toLowerCase()}
+          grid.
+        </p>
       </Popover.Content>
     </Popover.Portal>
   </Popover.Root>
@@ -156,88 +199,134 @@
   .keyboard-control {
     display: flex;
     align-items: stretch;
-    gap: 3px;
-    padding: 3px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
-    border-radius: var(--settings-radius-md, 12px);
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, rgba(15, 18, 28, 0.84)) 78%,
-      transparent
-    );
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(16px) saturate(140%);
-    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    gap: 6px;
   }
 
   .mode-button,
   .guide-button {
     min-height: var(--min-touch-target, 44px);
-    border: 1px solid transparent;
-    background: transparent;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--theme-card-bg, #181b27) 88%, white 4%),
+      color-mix(in srgb, var(--theme-card-bg, #181b27) 88%, black 8%)
+    );
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 2px 0 color-mix(in srgb, var(--theme-shadow, #000) 45%, transparent);
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
     cursor: pointer;
     transition:
       background var(--duration-fast, 150ms) ease,
       border-color var(--duration-fast, 150ms) ease,
-      color var(--duration-fast, 150ms) ease;
+      box-shadow var(--duration-fast, 150ms) ease,
+      color var(--duration-fast, 150ms) ease,
+      transform var(--duration-fast, 150ms) ease;
   }
 
   .mode-button {
     display: flex;
     align-items: center;
-    gap: 7px;
-    padding: 6px 10px;
-    border-radius: calc(var(--settings-radius-md, 12px) - 3px);
+    gap: 8px;
+    padding: 5px 8px 5px 6px;
+    border-radius: var(--settings-radius-md, 12px);
     font-size: var(--font-size-min, 14px);
     font-weight: 700;
   }
 
   .mode-button.active {
-    border-color: color-mix(
-      in srgb,
-      var(--theme-accent, #8b6cff) 52%,
-      transparent
-    );
+    border-color: color-mix(in srgb, var(--numpad-color) 56%, transparent);
     background: linear-gradient(
       135deg,
-      color-mix(in srgb, var(--theme-accent, #8b6cff) 26%, transparent),
-      color-mix(in srgb, var(--theme-accent, #8b6cff) 10%, transparent)
+      color-mix(
+        in srgb,
+        var(--numpad-color) 24%,
+        var(--theme-card-bg, #181b27)
+      ),
+      color-mix(in srgb, var(--numpad-color) 8%, var(--theme-card-bg, #181b27))
     );
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 2px 0 color-mix(in srgb, var(--theme-shadow, #000) 45%, transparent),
+      0 0 18px color-mix(in srgb, var(--numpad-color) 16%, transparent);
     color: var(--theme-text, #fff);
   }
 
+  .mode-icon {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--theme-shadow, #000) 28%, transparent);
+    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.22);
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.7));
+  }
+
+  .active .mode-icon {
+    border-color: color-mix(in srgb, var(--numpad-color) 62%, transparent);
+    color: var(--numpad-color);
+  }
+
   .mode-state {
-    padding: 2px 6px;
-    border-radius: 999px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.08));
+    min-width: 32px;
+    padding: 3px 6px;
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 7px;
+    background: color-mix(in srgb, var(--theme-shadow, #000) 35%, transparent);
     color: var(--theme-text-dim, rgba(255, 255, 255, 0.5));
     font-size: var(--font-size-compact, 12px);
     font-weight: 700;
   }
 
   .active .mode-state {
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b6cff) 30%,
-      transparent
-    );
-    color: var(--theme-text, #fff);
+    border-color: color-mix(in srgb, var(--numpad-color) 44%, transparent);
+    background: color-mix(in srgb, var(--numpad-color) 18%, transparent);
+    color: var(--numpad-color);
   }
 
   .guide-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: var(--min-touch-target, 44px);
-    padding: 0;
-    border-radius: calc(var(--settings-radius-md, 12px) - 3px);
+    gap: 7px;
+    min-width: var(--min-touch-target, 44px);
+    padding: 0 10px;
+    border-radius: var(--settings-radius-md, 12px);
+    font-size: var(--font-size-min, 14px);
+    font-weight: 700;
+  }
+
+  .guide-button i {
+    font-size: 11px;
+    transition: transform var(--duration-fast, 150ms) ease;
+  }
+
+  .guide-button.open {
+    border-color: color-mix(in srgb, var(--numpad-color) 44%, transparent);
+    color: var(--theme-text, #fff);
+  }
+
+  .guide-button.open i {
+    transform: rotate(180deg);
   }
 
   .mode-button:hover,
   .guide-button:hover {
-    background: var(--theme-card-hover-bg, rgba(255, 255, 255, 0.08));
+    border-color: color-mix(in srgb, var(--numpad-color) 38%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--numpad-color) 10%,
+      var(--theme-card-hover-bg, #202432)
+    );
     color: var(--theme-text, #fff);
+  }
+
+  .mode-button:active,
+  .guide-button:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
   .mode-button:focus-visible,
@@ -247,165 +336,306 @@
   }
 
   :global(.keyboard-guide-panel) {
-    width: min(600px, calc(100vw - 24px));
-    padding: 14px;
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
-    border-radius: var(--settings-radius-lg, 16px);
-    background: color-mix(
-      in srgb,
-      var(--theme-panel-bg, #111520) 92%,
-      transparent
-    );
+    position: relative;
+    width: min(560px, calc(100vw - 24px));
+    padding: 16px;
+    overflow: hidden;
+    border: 1px solid color-mix(in srgb, var(--numpad-color) 34%, transparent);
+    border-radius: var(--settings-radius-lg, 18px);
+    background:
+      linear-gradient(
+        135deg,
+        color-mix(in srgb, var(--numpad-color) 13%, transparent),
+        transparent 42%
+      ),
+      color-mix(in srgb, var(--theme-panel-bg, #111520) 94%, transparent);
+    backdrop-filter: blur(22px) saturate(1.18);
     box-shadow:
       0 22px 54px color-mix(in srgb, var(--theme-shadow, #000) 48%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(24px) saturate(150%);
-    -webkit-backdrop-filter: blur(24px) saturate(150%);
+      0 0 32px color-mix(in srgb, var(--numpad-color) 12%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
     color: var(--theme-text, #fff);
     z-index: var(--z-dropdown, 100);
+    animation: keyboard-guide-in var(--duration-normal, 200ms)
+      var(--ease-out, cubic-bezier(0.22, 1, 0.36, 1));
+  }
+
+  :global(.keyboard-guide-panel)::before {
+    position: absolute;
+    top: 0;
+    right: 18px;
+    left: 18px;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--numpad-color),
+      transparent
+    );
+    content: "";
+    opacity: 0.72;
   }
 
   .guide-heading {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 2px 2px 12px;
+    padding: 1px 1px 13px;
     border-bottom: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
   }
 
-  .guide-heading > div {
+  .guide-title {
     display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .guide-title > div {
+    display: flex;
+    min-width: 0;
     flex-direction: column;
     gap: 2px;
+  }
+
+  .guide-icon {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--numpad-color) 48%, transparent);
+    border-radius: 11px;
+    background: color-mix(in srgb, var(--numpad-color) 14%, transparent);
+    box-shadow: 0 0 20px
+      color-mix(in srgb, var(--numpad-color) 14%, transparent);
+    color: var(--numpad-color);
   }
 
   .guide-heading strong {
     font-size: 16px;
   }
 
-  .guide-heading span,
-  .position-guide p {
+  .guide-title span,
+  .guide-foot {
     color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
     font-size: var(--font-size-compact, 12px);
   }
 
   .current-settings {
+    display: flex;
     flex: 0 0 auto;
-    padding: 5px 8px;
-    border-radius: 8px;
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b6cff) 14%,
-      transparent
-    );
+    align-items: center;
+    gap: 8px;
+    padding: 7px 9px;
+    border: 1px solid color-mix(in srgb, var(--numpad-color) 28%, transparent);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--theme-shadow, #000) 24%, transparent);
     font-variant-numeric: tabular-nums;
-    font-weight: 700;
+    font-size: var(--font-size-compact, 12px);
   }
 
-  .guide-layout {
+  .current-settings strong {
+    color: var(--numpad-color);
+  }
+
+  .current-settings span {
+    position: relative;
+    padding-left: 9px;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.68));
+  }
+
+  .current-settings span::before {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 1px;
+    height: 14px;
+    background: var(--theme-stroke, rgba(255, 255, 255, 0.12));
+    content: "";
+    transform: translateY(-50%);
+  }
+
+  .numpad-deck {
+    margin-top: 14px;
+    padding: 10px;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.14));
+    border-radius: 15px;
+    background: color-mix(in srgb, var(--theme-shadow, #000) 42%, transparent);
+    box-shadow:
+      inset 0 2px 12px rgba(0, 0, 0, 0.34),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  }
+
+  .numpad-board {
     display: grid;
-    grid-template-columns: minmax(220px, 0.9fr) minmax(220px, 1.1fr);
-    gap: 16px;
-    padding-top: 12px;
+    grid-template-areas:
+      "mark slash multiply minus"
+      "key7 key8 key9 plus"
+      "key4 key5 key6 plus"
+      "key1 key2 key3 enter"
+      "zero zero decimal enter";
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: repeat(5, minmax(46px, auto));
+    gap: 7px;
   }
 
-  .guide-layout h3 {
-    margin: 0 0 8px;
-    color: var(--theme-text, #fff);
+  .board-mark {
+    display: flex;
+    grid-area: mark;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    padding: 4px 9px;
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.48));
+    line-height: 1.1;
+  }
+
+  .board-mark span {
+    font-family: var(--font-mono, monospace);
+    font-size: var(--font-size-compact, 12px);
+    font-weight: 800;
+    letter-spacing: 0.12em;
+  }
+
+  .board-mark strong {
+    overflow: hidden;
+    color: var(--numpad-color);
     font-size: var(--font-size-min, 14px);
-    font-weight: 700;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .numpad-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 5px;
+  .keycap {
+    display: flex;
+    min-width: 0;
+    min-height: 46px;
+    padding: 6px 8px 8px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    box-sizing: border-box;
+    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
+    border-radius: 9px;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--theme-card-bg, #1c202c) 92%, white 4%),
+      color-mix(in srgb, var(--theme-card-bg, #1c202c) 88%, black 12%)
+    );
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 3px 0 rgba(0, 0, 0, 0.36);
+    color: var(--theme-text, #fff);
+    font-family: inherit;
+    text-align: center;
+  }
+
+  .keycap strong {
+    font-family: var(--font-mono, monospace);
+    font-size: 17px;
+    line-height: 1;
+  }
+
+  .keycap span {
+    overflow: hidden;
+    max-width: 100%;
+    color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
+    font-size: var(--font-size-compact, 12px);
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .position-key {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-    min-height: 44px;
-    padding: 5px 8px;
-    border: 1px solid
-      color-mix(in srgb, var(--theme-accent, #8b6cff) 34%, transparent);
-    border-radius: 8px;
-    background: color-mix(
-      in srgb,
-      var(--theme-accent, #8b6cff) 12%,
-      transparent
+    border-color: color-mix(in srgb, var(--numpad-color) 56%, transparent);
+    background: linear-gradient(
+      180deg,
+      color-mix(
+        in srgb,
+        var(--numpad-color) 20%,
+        var(--theme-card-bg, #1c202c)
+      ),
+      color-mix(in srgb, var(--numpad-color) 8%, var(--theme-card-bg, #1c202c))
     );
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.12),
+      0 3px 0 rgba(0, 0, 0, 0.38),
+      0 0 14px color-mix(in srgb, var(--numpad-color) 10%, transparent);
+  }
+
+  .position-key strong {
+    color: var(--numpad-color);
   }
 
   .position-key.unavailable {
     border-color: var(--theme-stroke, rgba(255, 255, 255, 0.08));
-    background: transparent;
-    opacity: 0.32;
+    background: color-mix(in srgb, var(--theme-shadow, #000) 28%, transparent);
+    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.24);
+    opacity: 0.24;
   }
 
-  .position-key span {
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.62));
-    font-size: var(--font-size-compact, 12px);
+  .position-key.unavailable strong {
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.42));
   }
 
-  .position-guide p {
-    margin: 7px 0 0;
-    line-height: 1.35;
+  .slash-key {
+    grid-area: slash;
   }
 
-  .action-guide dl {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 5px;
-    margin: 0;
+  .multiply-key {
+    grid-area: multiply;
   }
 
-  .action-guide dl > div {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  .minus-key {
+    grid-area: minus;
+  }
+
+  .plus-key {
+    grid-area: plus;
+  }
+
+  .zero-key {
+    grid-area: zero;
+    flex-direction: row;
     gap: 8px;
-    min-height: 44px;
-    padding: 6px 8px;
-    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
-    border-radius: 8px;
-    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
-  .action-guide dt {
-    display: flex;
-    gap: 3px;
+  .decimal-key {
+    grid-area: decimal;
   }
 
-  .action-guide dd {
-    margin: 0;
-    color: var(--theme-text-muted, rgba(255, 255, 255, 0.64));
-    font-size: var(--font-size-compact, 12px);
-    text-align: right;
+  .enter-key {
+    grid-area: enter;
   }
 
-  :global(.keyboard-guide-panel kbd) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 28px;
-    min-height: 28px;
-    padding: 3px 6px;
-    border: 1px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.18));
-    border-radius: 6px;
-    background: color-mix(
-      in srgb,
-      var(--theme-card-bg, rgba(255, 255, 255, 0.08)) 82%,
-      black
+  .plus-key,
+  .enter-key {
+    background: linear-gradient(
+      180deg,
+      color-mix(
+        in srgb,
+        var(--numpad-color) 13%,
+        var(--theme-card-bg, #1c202c)
+      ),
+      color-mix(in srgb, var(--numpad-color) 5%, var(--theme-card-bg, #1c202c))
     );
-    box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.22);
-    color: var(--theme-text, #fff);
-    font-family: var(--font-mono, monospace);
-    font-size: var(--font-size-compact, 12px);
-    font-weight: 800;
+  }
+
+  .guide-foot {
+    margin: 10px 2px 0;
+    line-height: 1.35;
+    text-align: center;
+  }
+
+  @keyframes keyboard-guide-in {
+    from {
+      opacity: 0;
+      scale: 0.97;
+      translate: 0 -6px;
+    }
   }
 
   @media (hover: none), (pointer: coarse) {
@@ -415,20 +645,38 @@
   }
 
   @media (max-width: 560px) {
-    .guide-heading,
-    .guide-layout {
-      grid-template-columns: 1fr;
+    .guide-heading {
+      align-items: flex-start;
+      flex-direction: column;
     }
 
-    .guide-heading {
-      flex-direction: column;
+    .current-settings {
+      align-self: stretch;
+      justify-content: center;
+    }
+
+    .numpad-deck {
+      padding: 7px;
+    }
+
+    .numpad-board {
+      gap: 5px;
+    }
+
+    .keycap {
+      padding-inline: 4px;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .mode-button,
-    .guide-button {
+    .guide-button,
+    .guide-button i {
       transition: none;
+    }
+
+    :global(.keyboard-guide-panel) {
+      animation: none;
     }
   }
 </style>

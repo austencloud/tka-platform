@@ -1,7 +1,7 @@
 import type { GridLocation } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
-import {
+import type {
   Orientation,
-  type RotationDirection,
+  RotationDirection,
 } from "$lib/shared/pictograph/shared/domain/enums/pictograph-enums";
 import type { BuilderStep } from "../state/assemble-state.svelte";
 import {
@@ -120,4 +120,15 @@ export function moveBuilderStep(
   if (!moved) return [...steps];
   reordered.splice(toIndex, 0, moved);
   return reflowBuilderPath(reordered, startPose);
+}
+
+/** Find the other hand's motion at the beat currently being previewed. */
+export function getBuilderComparisonStep(
+  activeSteps: readonly BuilderStep[],
+  inactiveSteps: readonly BuilderStep[],
+  editIndex: number | null = null
+): BuilderStep | null {
+  const previewIndex = editIndex ?? activeSteps.length;
+  if (previewIndex < 0) return null;
+  return inactiveSteps[previewIndex] ?? null;
 }

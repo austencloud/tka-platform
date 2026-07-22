@@ -7,7 +7,7 @@
   SVG Layers (render order):
   0. Dark background rect
   1. GridSvg (grid lines and hand points)
-  2. Completed step motion arrows (lines with arrowheads)
+  2. Active and inactive hand hover-path previews
   3. Ghost prop for inactive hand (animated in sync during the other hand's building phase)
   4. Active hand's prop indicator (animated <g> driven by SvgPropAnimator)
   5. Hit target circles (always on top for click capture)
@@ -26,6 +26,7 @@
     getBuilderMotionPathD,
     SvgPropAnimator,
   } from "../services/svg-prop-animator";
+  import { getBuilderComparisonStep } from "../services/builder-path-editor";
   import type {
     AssembleState,
     BuilderStep,
@@ -418,6 +419,34 @@
     });
   });
 
+  const comparisonStep = $derived.by(() => {
+    const activeSteps =
+      builderState.activeHand === MotionColor.BLUE
+        ? builderState.blueSteps
+        : builderState.redSteps;
+    const inactiveSteps =
+      builderState.activeHand === MotionColor.BLUE
+        ? builderState.redSteps
+        : builderState.blueSteps;
+    const editIndex =
+      builderState.stepEditMode === "replace"
+        ? builderState.selectedStepIndex
+        : null;
+    return getBuilderComparisonStep(activeSteps, inactiveSteps, editIndex);
+  });
+
+  const comparisonPathD = $derived.by(() => {
+    const step = comparisonStep;
+    if (candidatePathD === null || step === null) return null;
+    return getBuilderMotionPathD({
+      startPosition: step.startPosition,
+      endPosition: step.endPosition,
+      startOrientation: step.startOrientation,
+      rotationDirection: step.rotationDirection,
+      turnCount: step.turnCount,
+    });
+  });
+
   const activePhaseColor = $derived<"blue" | "red">(
     builderState.activeHand === MotionColor.BLUE ? "blue" : "red"
   );
@@ -544,16 +573,30 @@
     <!-- Layer 1: Grid lines and points -->
     <GridSvg gridMode={builderState.gridMode} />
 
-    <!-- Layer 2: The route the next click will create. -->
+    <!-- Layer 2: Compare the other hand's same-beat route with the next click. -->
+    {#if comparisonPathD}
+      <path
+        class="comparison-path motion-preview-path"
+        class:blue-path={builderState.activeHand === MotionColor.RED}
+        class:red-path={builderState.activeHand === MotionColor.BLUE}
+        d={comparisonPathD}
+        fill="none"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      />
+    {/if}
+
     {#if candidatePathD}
       <path
-        class="candidate-path"
+        class="candidate-path motion-preview-path"
         class:blue-path={builderState.activeHand === MotionColor.BLUE}
         class:red-path={builderState.activeHand === MotionColor.RED}
         d={candidatePathD}
         fill="none"
         stroke-linecap="round"
         stroke-linejoin="round"
+        aria-hidden="true"
       />
     {/if}
 
@@ -781,38 +824,39 @@
 <style>
   .interactive-grid {
     position: relative;
-    width: auto;
+    width: min(100cqi, 100cqb);
+    height: auto;
     max-width: 100%;
-    height: 100%;
     max-height: 100%;
     aspect-ratio: 1;
-    justify-self: center;
+    place-self: start center;
+    box-sizing: border-box;
     border-radius: var(--settings-radius-lg, 20px);
     overflow: hidden;
-    border: 1.5px solid var(--theme-stroke, rgba(255, 255, 255, 0.08));
+    border: 1.5px solid var(--theme-stroke-strong, rgba(255, 255, 255, 0.16));
     box-shadow:
-      0 8px 32px var(--theme-shadow, rgba(0, 0, 0, 0.3)),
+      0 18px 48px color-mix(in srgb, var(--theme-shadow, #000) 38%, transparent),
+      0 0 0 1px color-mix(in srgb, var(--theme-accent, #8b6cff) 8%, transparent),
       inset 0 1px 0 var(--theme-card-bg, rgba(255, 255, 255, 0.04));
   }
 
   /* Semi-transparent background - lets the app background bleed through */
   .interactive-grid :global(.grid-bg) {
-    opacity: 0.75;
+    opacity: 0.9;
     transition: opacity 0.3s ease;
   }
 
   /* Slightly more transparent on mobile */
   @container tool-panel (max-width: 768px) {
     .interactive-grid {
-      width: 100%;
-      height: auto;
+      place-self: center;
       border-radius: var(--settings-radius-lg, 16px);
       border-color: var(--theme-stroke, rgba(255, 255, 255, 0.06));
       box-shadow: 0 4px 20px var(--theme-shadow, rgba(0, 0, 0, 0.3));
     }
 
     .interactive-grid :global(.grid-bg) {
-      opacity: 0.7;
+      opacity: 0.82;
     }
   }
 
@@ -822,22 +866,46 @@
     display: block;
   }
 
-  .candidate-path {
+  .motion-preview-path {
     pointer-events: none;
-    stroke-width: 8;
-    stroke-dasharray: 16 12;
-    opacity: 0.72;
     filter: drop-shadow(0 0 7px currentColor);
+    animation: preview-path-in var(--duration-fast, 150ms) ease-out;
   }
 
-  .candidate-path.blue-path {
+  .comparison-path {
+    stroke-width: 14;
+    opacity: 0.34;
+  }
+
+  .candidate-path {
+    stroke-width: 8;
+    stroke-dasharray: 16 12;
+    opacity: 0.82;
+    animation:
+      preview-path-in var(--duration-fast, 150ms) ease-out,
+      candidate-path-flow 900ms linear infinite;
+  }
+
+  .motion-preview-path.blue-path {
     stroke: var(--prop-blue, #2e8bf0);
     color: var(--prop-blue, #2e8bf0);
   }
 
-  .candidate-path.red-path {
+  .motion-preview-path.red-path {
     stroke: var(--prop-red, #ed1c24);
     color: var(--prop-red, #ed1c24);
+  }
+
+  @keyframes preview-path-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  @keyframes candidate-path-flow {
+    to {
+      stroke-dashoffset: -28;
+    }
   }
 
   /* Background now uses SVG gradient defined in <defs> */
@@ -932,6 +1000,11 @@
 
   /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
+    .motion-preview-path,
+    .candidate-path {
+      animation: none;
+    }
+
     .scale-in {
       animation: none;
     }
