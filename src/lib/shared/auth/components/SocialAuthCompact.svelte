@@ -40,7 +40,9 @@
   import { page } from "$app/state";
   import { getInAppBrowserDetector } from "$lib/shared/auth/get-in-app-browser-detector";
   import { captureEvent } from "$lib/shared/analytics/services/posthog";
+  import { analyticsRoute } from "$lib/shared/analytics/analytics-context";
   import { getInstagramAuthErrorMessage } from "$lib/shared/auth/services/instagram-auth";
+  import InAppEscapeControls from "./InAppEscapeControls.svelte";
 
   let { mode = "signin", onFacebookAuth } = $props<{
     mode: "signin" | "signup";
@@ -92,6 +94,23 @@
     return `${provider} blocks sign-in inside this browser. Use the Magic Link option, or open this page in ${escapeTarget}.`;
   }
 
+  // The escape action (button label + fired URL) for this environment. Revealed
+  // only after a provider tap, so a guest who never reaches for social sign-in
+  // never sees escape chrome. Named escapeAction to avoid the escapeTarget
+  // string const above.
+  let showEscapeNote = $state(false);
+  const escapeAction = $derived(
+    detector.getEscapeTarget(page.url.searchParams)
+  );
+
+  function revealEscapeNote() {
+    showEscapeNote = true;
+    captureEvent("inapp_browser_signin_intent", {
+      method: escapeAction.method,
+      route: analyticsRoute(),
+    });
+  }
+
   // Which button this device signed in with last. Removes the "wait, was it
   // Google or email?" guess that otherwise ends in the wrong provider and an
   // "account exists with a different credential" dead end.
@@ -107,6 +126,7 @@
     if (inAppBrowser) {
       googleError = blockedProviderMessage("Google");
       captureEvent("inapp_auth_social_intercepted", { provider: "google" });
+      revealEscapeNote();
       return;
     }
 
@@ -174,6 +194,7 @@
     if (inAppBrowser) {
       facebookError = blockedProviderMessage("Facebook");
       captureEvent("inapp_auth_social_intercepted", { provider: "facebook" });
+      revealEscapeNote();
       return;
     }
     onFacebookAuth?.();
@@ -184,6 +205,7 @@
     if (inAppBrowser) {
       instagramError = blockedProviderMessage("Instagram");
       captureEvent("inapp_auth_social_intercepted", { provider: "instagram" });
+      revealEscapeNote();
       return;
     }
 
@@ -284,6 +306,12 @@
   {/if}
   {#if instagramError}
     <p class="error-message" role="alert">{instagramError}</p>
+  {/if}
+  {#if showEscapeNote}
+    <div class="escape-note">
+      <p class="escape-note-lead">Or open this page in your browser:</p>
+      <InAppEscapeControls target={escapeAction} route={analyticsRoute()} />
+    </div>
   {/if}
 </div>
 
@@ -393,5 +421,24 @@
     margin: 0;
     font-size: var(--font-size-compact);
     color: var(--semantic-error, var(--semantic-error));
+  }
+
+  .escape-note {
+    width: 100%;
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--theme-card-bg, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--theme-stroke, rgba(255, 255, 255, 0.1));
+    border-radius: 0.75rem;
+  }
+
+  .escape-note-lead {
+    margin: 0;
+    font-size: var(--font-size-compact);
+    color: var(--theme-text-dim, rgba(255, 255, 255, 0.7));
+    text-align: center;
   }
 </style>
