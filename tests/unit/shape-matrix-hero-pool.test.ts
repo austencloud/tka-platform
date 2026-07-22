@@ -156,9 +156,9 @@ describe("hero pool — drawMatrixRealization (public API)", () => {
     // Deterministic RNG: fixed value picks the first cell/mode consistently.
     const draw = await drawMatrixRealization({ random: () => 0.01 });
     expect(draw).not.toBeNull();
-    // A 4-beat flower tiled ×4 → 16 beats, so a matrix draw holds the stage as
-    // long as the generated 16-count draws instead of flashing by.
-    expect(draw!.sequence.steps.length).toBe(16);
+    // A 4-beat flower tiled ×2 → 8 beats, so a matrix draw reads as a full
+    // flower cycle instead of flashing by.
+    expect(draw!.sequence.steps.length).toBe(8);
     // Tiled steps chain seamlessly and carry unique ids (no two steps collide).
     const ids = draw!.sequence.steps.map((s) => s.id);
     expect(new Set(ids).size).toBe(ids.length);

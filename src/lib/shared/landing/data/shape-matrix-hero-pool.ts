@@ -11,10 +11,10 @@
  * (see turn-pattern-apply.ts / reversal-transform-apply.ts / tnd-base-index.ts).
  *
  * Space: diamond×diamond ∪ box×box cells (never mixed — "diamond on box" is not
- * ready), across all 7 turn ratios × 6 VTG modes. The measured pool is 724 cells
- * × 6 modes = 4344 realizations, every one loop-closed (uniform per-hand turns on
- * a 4-beat rotated loop preserve closure by parity). The closure gate stays as a
- * safety net for any future non-uniform descriptor.
+ * ready), across the turn ratios up to MAX_TURNS × 6 VTG modes. Every uniform
+ * per-hand turn on a 4-beat rotated loop preserves closure by parity, so every
+ * realization loop-closes; the closure gate stays as a safety net for any future
+ * non-uniform descriptor. Each draw is then tiled REPEAT× (see below).
  *
  * The element indicator's TnD element is RE-DERIVED from the final played
  * geometry (post box + post rotation), never carried from the cell's nominal
@@ -57,13 +57,13 @@ const MAX_DRAWS = 16;
 
 /** Turn ceiling for hero draws — busy high-turn flowers read as noise at this
  *  size, so the pool caps per-hand turns here. */
-const MAX_TURNS = 1.5;
+const MAX_TURNS = 1;
 const ALLOWED_TURNS = TURN_VALUES.filter((t) => t <= MAX_TURNS);
 
 /** A matrix realization is a 4-beat rotated flower that closes back to its start
- *  pose; tiling it this many times gives a ~16-beat play that holds the hero
- *  stage as long as the generated 16-count draws instead of flashing by. */
-const REPEAT = 4;
+ *  pose; tiling it this many times gives an 8-beat play that reads as a full
+ *  flower cycle without flashing by. */
+const REPEAT = 2;
 
 /** Derived TnD mode → element family id (pure; the tainted copies in
  *  deck-composer/browse-filter can't be imported on a firebase-free page). */
