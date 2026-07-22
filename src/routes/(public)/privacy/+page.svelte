@@ -12,9 +12,7 @@
 <LegalPageShell>
   <div class="header-content">
     <h1>Privacy Policy</h1>
-    <p class="last-updated">
-      Last Updated: January 16, 2026
-    </p>
+    <p class="last-updated">Last Updated: July 21, 2026</p>
   </div>
 
   <div class="legal-card">
@@ -22,23 +20,32 @@
     <div class="summary-box">
       <h2>Quick Summary</h2>
       <ul>
-        <li>Flow Arts Composer collects only what's needed to provide the service</li>
+        <li>
+          Flow Arts Composer collects only what's needed to provide the service
+        </li>
         <li>Your data is stored on Firebase servers (US and other regions)</li>
         <li>Your data is never sold or used for ML training</li>
         <li>You can export or delete your data anytime</li>
-        <li>Questions? Email <a href="mailto:tkaflowarts@gmail.com">tkaflowarts@gmail.com</a></li>
+        <li>
+          Questions? Email <a href="mailto:tkaflowarts@gmail.com"
+            >tkaflowarts@gmail.com</a
+          >
+        </li>
       </ul>
     </div>
 
     <section id="information-collected">
       <h2>1. Information Collected</h2>
       <p>
-        When you use Flow Arts Composer, the following types of information are collected:
+        When you use Flow Arts Composer, the following types of information are
+        collected:
       </p>
       <ul>
         <li>
           <strong>Account Information:</strong> Email address and display name when
-          you create an account
+          you create an account. If you choose Instagram sign-in, TKA stores your
+          Instagram account ID, username, and professional account type. TKA does
+          not store your Instagram access token.
         </li>
         <li>
           <strong>Usage Data:</strong> How you interact with the application, including
@@ -49,8 +56,8 @@
           system for optimization purposes
         </li>
         <li>
-          <strong>Messages:</strong> Content of messages you send to other users
-          through the in-app messaging feature
+          <strong>Messages:</strong> Content of messages you send to other users through
+          the in-app messaging feature
         </li>
       </ul>
     </section>
@@ -70,43 +77,69 @@
     <section id="data-storage">
       <h2>3. Data Storage and Security</h2>
       <p>
-        Your data is stored securely using <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">Firebase</a> services, including:
+        Your data is stored securely using <a
+          href="https://firebase.google.com/support/privacy"
+          target="_blank"
+          rel="noopener noreferrer">Firebase</a
+        > services, including:
       </p>
       <ul>
-        <li><strong>Firebase Authentication:</strong> Handles sign-in and account security</li>
-        <li><strong>Cloud Firestore:</strong> Stores your sequences, settings, and profile</li>
-        <li><strong>Firebase Storage:</strong> Stores any uploaded images or media</li>
+        <li>
+          <strong>Firebase Authentication:</strong> Handles sign-in and account security
+        </li>
+        <li>
+          <strong>Cloud Firestore:</strong> Stores your sequences, settings, and profile
+        </li>
+        <li>
+          <strong>Firebase Storage:</strong> Stores any uploaded images or media
+        </li>
       </ul>
       <p>
-        Your data may be stored on servers in the United States and other countries where Google operates data centers. Appropriate technical and organizational measures are in place to protect your personal information against unauthorized access, alteration, disclosure, or destruction.
+        Your data may be stored on servers in the United States and other
+        countries where Google operates data centers. Appropriate technical and
+        organizational measures are in place to protect your personal
+        information against unauthorized access, alteration, disclosure, or
+        destruction.
       </p>
     </section>
 
     <section id="messages">
       <h2>4. Messages and Communications</h2>
       <p>
-        When you use the messaging feature to communicate with other users,
-        your messages are stored to deliver them and maintain your conversation
+        When you use the messaging feature to communicate with other users, your
+        messages are stored to deliver them and maintain your conversation
         history.
       </p>
       <p>
-        <strong>When messages may be reviewed:</strong> Messages may be reviewed by the developer only to respond to abuse reports or to provide support when you contact Flow Arts Composer about a conversation issue.
+        <strong>When messages may be reviewed:</strong> Messages may be reviewed by
+        the developer only to respond to abuse reports or to provide support when
+        you contact Flow Arts Composer about a conversation issue.
       </p>
       <p>
-        <strong>Your messages are not:</strong> Sold, shared with third parties, or used for machine learning training. Your conversations are not used to train AI models.
+        <strong>Your messages are not:</strong> Sold, shared with third parties, or
+        used for machine learning training. Your conversations are not used to train
+        AI models.
       </p>
     </section>
 
     <section id="data-sharing">
       <h2>5. Data Sharing</h2>
       <p>
-        Your personal information is never sold. Data may be shared only in
-        the following circumstances:
+        Your personal information is never sold. Data may be shared only in the
+        following circumstances:
       </p>
       <ul>
         <li>With your consent when you choose to share sequences publicly</li>
         <li>
-          With Firebase/Google as the infrastructure provider (see their <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">privacy policy</a>)
+          With Firebase/Google as the infrastructure provider (see their <a
+            href="https://firebase.google.com/support/privacy"
+            target="_blank"
+            rel="noopener noreferrer">privacy policy</a
+          >)
+        </li>
+        <li>
+          With Meta when you choose Instagram or Facebook sign-in. Meta receives
+          the information needed to authorize that sign-in.
         </li>
         <li>When required by law or to protect legal rights</li>
       </ul>
@@ -124,48 +157,74 @@
         <li>Export your sequences and content</li>
       </ul>
       <p>
-        To delete your account, visit the <a href="/delete-account">account deletion page</a>.
+        To delete your account, visit the <a href="/delete-account"
+          >account deletion page</a
+        >.
+      </p>
+      <p>
+        You can also submit a data deletion request from Instagram's authorized
+        apps settings. TKA removes the Instagram account ID, username, account
+        type, and connection record. If Instagram is your only sign-in method,
+        the request deletes your TKA account because it would no longer have a
+        usable login.
       </p>
 
       <h3>EU Users (GDPR)</h3>
-      <p>If you're in the European Union, you additionally have the right to:</p>
+      <p>
+        If you're in the European Union, you additionally have the right to:
+      </p>
       <ul>
         <li>Object to processing of your personal data</li>
-        <li>Request data portability (receive your data in a structured format)</li>
+        <li>
+          Request data portability (receive your data in a structured format)
+        </li>
         <li>Lodge a complaint with your local data protection authority</li>
       </ul>
 
       <h3>California Users (CCPA)</h3>
       <p>
-        Flow Arts Composer is a small independent project that falls below CCPA revenue thresholds. However, California users are afforded the same rights: you can request to know what data is held, request deletion, and will not face discrimination for exercising these rights.
+        Flow Arts Composer is a small independent project that falls below CCPA
+        revenue thresholds. However, California users are afforded the same
+        rights: you can request to know what data is held, request deletion, and
+        will not face discrimination for exercising these rights.
       </p>
     </section>
 
     <section id="data-retention">
       <h2>7. Data Retention</h2>
       <p>
-        Your data is retained for as long as your account is active. When you delete your account:
+        Your data is retained for as long as your account is active. When you
+        delete your account:
       </p>
       <ul>
         <li>Your profile, sequences, and settings are deleted immediately</li>
-        <li>Backup data may persist for up to 30 days before being permanently removed</li>
+        <li>
+          Backup data may persist for up to 30 days before being permanently
+          removed
+        </li>
         <li>Anonymized usage statistics may be retained indefinitely</li>
       </ul>
       <p>
-        To delete your account and all associated data, visit the <a href="/delete-account">account deletion page</a>.
+        To delete your account and all associated data, visit the <a
+          href="/delete-account">account deletion page</a
+        >.
       </p>
       <p>
-        When you delete your account, a minimal record is kept for 12 months: your name, email, the deletion date, and any reason you choose to provide. This record exists solely to document and audit the deletion itself, as required under data protection law. After 12 months it is permanently removed.
+        When you delete your account, a minimal record is kept for 12 months:
+        your name, email, the deletion date, and any reason you choose to
+        provide. This record exists solely to document and audit the deletion
+        itself, as required under data protection law. After 12 months it is
+        permanently removed.
       </p>
     </section>
 
     <section id="cookies">
       <h2>8. Cookies and Local Storage</h2>
       <p>
-        Flow Arts Composer uses local storage and cookies to maintain your session
-        and remember your preferences. These are essential for the application
-        to function properly. Cookies are not used for advertising or cross-site
-        tracking.
+        Flow Arts Composer uses local storage and cookies to maintain your
+        session and remember your preferences. These are essential for the
+        application to function properly. Cookies are not used for advertising
+        or cross-site tracking.
       </p>
     </section>
 
@@ -174,10 +233,21 @@
       <p>Flow Arts Composer uses the following third-party services:</p>
       <ul>
         <li>
-          <strong>Firebase:</strong> Authentication, database, and storage (<a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">privacy policy</a>)
+          <strong>Firebase:</strong> Authentication, database, and storage (<a
+            href="https://firebase.google.com/support/privacy"
+            target="_blank"
+            rel="noopener noreferrer">privacy policy</a
+          >)
         </li>
         <li>
-          <strong>PostHog:</strong> Anonymous usage statistics to understand how people use TKA. This includes page views, approximate location, device type, and session recordings. You can disable this in your browser settings or by using an ad blocker.
+          <strong>PostHog:</strong> Anonymous usage statistics to understand how people
+          use TKA. This includes page views, approximate location, device type, and
+          session recordings. You can disable this in your browser settings or by
+          using an ad blocker.
+        </li>
+        <li>
+          <strong>Meta:</strong> Optional Instagram and Facebook account authorization.
+          Instagram sign-in is available only for creator and business accounts.
         </li>
       </ul>
     </section>
@@ -185,10 +255,10 @@
     <section id="childrens-privacy">
       <h2>10. Children's Privacy</h2>
       <p>
-        Flow Arts Composer is not intended for children under 13 years of age. Personal
-        information is not knowingly collected from children under 13. If
-        you believe a child has provided personal information, please
-        get in touch so it can be deleted.
+        Flow Arts Composer is not intended for children under 13 years of age.
+        Personal information is not knowingly collected from children under 13.
+        If you believe a child has provided personal information, please get in
+        touch so it can be deleted.
       </p>
     </section>
 

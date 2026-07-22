@@ -9,13 +9,9 @@
    * apart. See docs/superpowers/specs/2026-07-16-unified-guide-shell-design.md
    * (G2).
    *
-   * SiteHeader is mounted directly (not via MarketingChrome - that also
-   * brings the cosmic background + view-transition machinery this shell
-   * doesn't want). Because no MarketingChrome runs on the guide subtree,
-   * nothing seeds the --theme-* / --semantic-* vars SiteHeader's descendants
-   * (RobustAvatar) read - so this shell runs the theme pipeline itself,
-   * browser-only, same precedent as the /q standalone host
-   * (.claude/rules/sequence-viewer-shell.md).
+   * Deep Guide pages mount SiteHeader directly and run their own theme pipeline.
+   * The /guide hub is the exception: the root MarketingChrome owns its persistent
+   * header/footer so the homepage shared-element morph does not replace chrome.
    *
    * Callers keep their own `<svelte:head>` font/preconnect blocks and their
    * own `setActiveSectionContext` wiring - that's route-specific, not shell
@@ -25,6 +21,7 @@
   import type { Snippet } from "svelte";
   import { onMount } from "svelte";
   import { browser } from "$app/environment";
+  import { page } from "$app/state";
   import GuideSidebar from "./GuideSidebar.svelte";
   import SiteHeader from "$lib/shared/landing/components/SiteHeader.svelte";
   import SiteFooter from "$lib/shared/landing/components/SiteFooter.svelte";
@@ -39,13 +36,14 @@
   } = $props();
 
   let sidebarOpen = $state(false);
+  const ownsStandaloneChrome = $derived(page.url.pathname !== "/guide");
 
   function closeSidebar() {
     sidebarOpen = false;
   }
 
   onMount(() => {
-    if (!browser) return;
+    if (!browser || !ownsStandaloneChrome) return;
     void (async () => {
       const { applyThemeForBackground } = await import(
         "$lib/shared/settings/utils/background-theme-calculator"
@@ -56,7 +54,9 @@
   });
 </script>
 
-<SiteHeader />
+{#if ownsStandaloneChrome}
+  <SiteHeader />
+{/if}
 
 <div class="guide-layout">
   <button
@@ -86,9 +86,11 @@
      the content (widened to the composition width in guide.css). The bleed
      wrapper (styled in guide.css) continues the guide navy behind the
      footer's translucent gradient. -->
-<div class="guide-footer-bleed">
-  <SiteFooter />
-</div>
+{#if ownsStandaloneChrome}
+  <div class="guide-footer-bleed">
+    <SiteFooter />
+  </div>
+{/if}
 
 <style>
   /* SiteHeader is a fixed 64px bar (56px once scrolled) that doesn't push

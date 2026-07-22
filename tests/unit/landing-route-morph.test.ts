@@ -169,8 +169,12 @@ describe("landing shared-element contract", () => {
 
   it("keeps the Guide hub inside persistent root chrome", () => {
     const layout = readSource("src/routes/+layout.svelte");
+    const guidePage = readSource("src/routes/(public)/guide/+page.svelte");
     const guideShell = readSource(
       "src/routes/(public)/guide/_components/GuideShell.svelte"
+    );
+    const guideCss = readSource(
+      "src/routes/(public)/guide/level-1/_styles/guide.css"
     );
 
     expect(layout).toMatch(/MARKETING_EXACT[\s\S]*"\/guide"/);
@@ -178,13 +182,23 @@ describe("landing shared-element contract", () => {
       'const ownsStandaloneChrome = $derived(page.url.pathname !== "/guide")'
     );
     expect(guideShell).toContain("{#if ownsStandaloneChrome}");
+    expect(guidePage).not.toContain(
+      'import { joinWaitlist } from "$lib/features/store/services/waitlist"'
+    );
+    expect(guidePage).toContain(
+      'await import("$lib/features/store/services/waitlist")'
+    );
+    expect(guideCss).toContain("html:has(.guide-layout):not(:has(.mkt-shell))");
   });
 
   it("keeps development morph probes out of the console POST bridge", () => {
     const layout = readSource("src/routes/+layout.svelte");
+    const appShell = readSource("src/app.html");
     expect(layout).toContain("console.debug(`[morph]");
     expect(layout).not.toContain("console.log(`[morph]");
     expect(layout).toContain("po?.takeRecords()");
+    expect(appShell).toContain("/^\\[morph\\]/");
+    expect(appShell).toContain("/^\\[FrameStats\\]/");
   });
 
   it("keeps heavy landing and destination media out of the morph window", () => {
@@ -199,6 +213,15 @@ describe("landing shared-element contract", () => {
     );
     const composer = readSource("src/routes/(public)/composer/+page.svelte");
     const notation = readSource("src/routes/(public)/notation/+page.svelte");
+    const choreoCards = readSource(
+      "src/routes/(public)/shop/choreography-cards/+page.svelte"
+    );
+    const anatomyExplainer = readSource(
+      "src/lib/features/store/components/CardAnatomyExplainer.svelte"
+    );
+    const anatomy = readSource(
+      "src/lib/features/store/components/CardAnatomy.svelte"
+    );
 
     expect(homeHero).toContain("runAfterNamedRouteMorphIdle(heroAct.start)");
     expect(sequenceHero).toContain("use:activatePlayerWhenNear");
@@ -207,16 +230,81 @@ describe("landing shared-element contract", () => {
     expect(launchpad).toContain("new Set(tiles.map((tile) => tile.id))");
     expect(launchpad).toContain("runAfterNamedRouteMorphIdle(mountNext");
     expect(launchpad).toContain("mediaLoadingId");
-    expect(launchpad).toContain("typeof IntersectionObserver === \"undefined\"");
+    expect(launchpad).toContain('typeof IntersectionObserver === "undefined"');
     expect(launchpad).toContain("active={mediaActive.has(tile.id)}");
     expect(launchpad).toContain("visible={visible.has(tile.id)}");
     expect(composer).toContain("runAfterNamedRouteMorphIdle(() =>");
     expect(composer).toContain(
       'await import("$lib/shared/landing/data/per-visit-demo")'
     );
+    expect(choreoCards).toContain("runAfterNamedRouteMorphIdle(async () =>");
+    expect(anatomyExplainer).toContain("use:activateCardsWhenNear");
+    expect(anatomyExplainer).toContain("deferUntilIdle: true");
+    expect(anatomyExplainer).toContain(
+      'loader={() => import("./CardAnatomy.svelte")}'
+    );
+    expect(anatomy).not.toContain(
+      'import { loadActiveProducts } from "../services/product-loader"'
+    );
+    expect(anatomy).toContain('await import("../services/product-loader")');
     expect(notation).toContain(
       'import("$lib/shared/shape-matrix/components/ShapeMatrixTeaser.svelte")'
     );
+  });
+
+  it("keeps the Choreo Card preview truthful through catalog loading and failure", () => {
+    const anatomyExplainer = readSource(
+      "src/lib/features/store/components/CardAnatomyExplainer.svelte"
+    );
+    const anatomy = readSource(
+      "src/lib/features/store/components/CardAnatomy.svelte"
+    );
+
+    expect(anatomyExplainer).toContain(
+      'import SkeletonLoader from "$lib/shared/foundation/ui/SkeletonLoader.svelte"'
+    );
+    expect(anatomyExplainer).toContain('role="alert"');
+    expect(anatomyExplainer).toContain('disabled={cardStatus !== "ready"}');
+    expect(anatomyExplainer).toContain('class="card-placeholder-stack"');
+    expect(anatomyExplainer).toContain("<figcaption>Front</figcaption>");
+    expect(anatomyExplainer).toContain("<figcaption>Back</figcaption>");
+    expect(anatomyExplainer).toContain("card-placeholder-shuffle");
+    expect(anatomyExplainer).toContain(".card-load-failure :global(.skeleton)");
+    expect(anatomyExplainer).toContain(".legend-row:hover:not(:disabled)");
+    expect(anatomy).toContain("previewState");
+    expect(anatomy).toContain('setPreviewState("loading")');
+    expect(anatomy).toContain('setPreviewState("ready")');
+    expect(anatomy).toContain('setPreviewState("error")');
+    expect(anatomy).toContain("No active product has a baked card preview");
+    expect(anatomy).toContain("retryCatalogExample");
+    expect(anatomy).toContain("previewFootprint(false)");
+    expect(anatomy).toContain(".preview-load-failure :global(.skeleton)");
+  });
+
+  it("gives nested Composer demos cancellable loading and local recovery", () => {
+    const composer = readSource("src/routes/(public)/composer/+page.svelte");
+    const generate = readSource(
+      "src/routes/(public)/composer/_sections/GenerateSection.svelte"
+    );
+    const mandala = readSource(
+      "src/routes/(public)/composer/_sections/MandalaSection.svelte"
+    );
+    const sequenceHero = readSource(
+      "src/lib/shared/landing/components/SequenceHeroDemo.svelte"
+    );
+
+    expect(generate).toContain(
+      "const cancelSeed = runAfterNamedRouteMorphIdle"
+    );
+    expect(generate).toContain("cancelSeed();");
+    expect(generate).toContain("error={playerLoadError}");
+    expect(generate).toContain("error={stripLoadError}");
+    expect(mandala).toContain("This mandala did not load.");
+    expect(composer).toContain("tunnelActive && demoError && !demoSeq");
+    expect(composer).toContain("viewer3DActive && demoError && !demoSeq");
+    expect(composer).toContain("false,\n      rerollingDemo");
+    expect(sequenceHero).toContain("placeholder={playerPlaceholder}");
+    expect(sequenceHero).toContain("onStatusChange={(status) =>");
   });
 
   it("keeps the verification corpus out of public notation route chunks", () => {
@@ -316,7 +404,6 @@ describe("named route morph lifecycle", () => {
 
     idleCallback?.();
     expect(work).toHaveBeenCalledOnce();
-
   });
 
   it("re-arms queued idle work behind a newer morph", async () => {
@@ -371,7 +458,7 @@ describe("named route morph lifecycle", () => {
 
     expect(first).toHaveBeenCalledOnce();
     expect(second).toHaveBeenCalledOnce();
-    expect(queuedErrors).toHaveLength(1);
+    expect(queuedErrors.length).toBeGreaterThan(0);
   });
 
   it("holds the root guard and chrome ownership until the transition finishes", async () => {

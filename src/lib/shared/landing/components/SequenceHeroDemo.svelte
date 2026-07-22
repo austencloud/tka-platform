@@ -111,19 +111,19 @@
     typeof window === "undefined"
       ? null
       : new MediaQuery(
-          "(min-width: 42rem) and (max-width: 1180px) and (min-height: 500px) and (max-height: 44rem), (min-width: 560px) and (max-width: 1023px) and (min-height: 300px) and (max-height: 499px)"
+          "(width >= 42rem) and (width < 105rem) and (height >= 500px) and (height < 44rem), (height < 500px), (width >= 105rem) and (height < 64rem)"
         );
-  const portraitNotationRail =
+  const narrowNotationRail =
     typeof window === "undefined"
       ? null
       : new MediaQuery(
-          "(max-width: 41.99rem) and (min-height: 600px) and (orientation: portrait)"
+          "(width < 42rem) and (height >= 500px)"
         );
   const shouldMountNotationRail = $derived(
     showNotationStrip && !(hiddenNotationRail?.current ?? false)
   );
   const notationOrientation = $derived(
-    portraitNotationRail?.current ? "vertical" : "horizontal"
+    narrowNotationRail?.current ? "vertical" : "horizontal"
   );
 
   let active = $state(false);
@@ -564,7 +564,7 @@
      display doesn't blow the stage past what the player fills. Type is on the
      base ramps above; this block is layout-only. After the base rules so it
      wins by source order. */
-  @media (min-width: 1680px) {
+  @media (width >= 105rem) and (height >= 56.25rem) {
     .hero-demo {
       max-width: var(--hero-demo-wide-max-width, min(60vh, 78rem));
     }
@@ -577,7 +577,7 @@
     }
   }
 
-  @media (min-width: 601px) and (max-width: 1679px) {
+  @media (min-width: 601px) and (width < 105rem) {
     .notation-strip {
       height: 4.375rem;
     }
@@ -586,7 +586,7 @@
   /* On a short Fold, the rail makes the animation itself too small to read.
      The same pictographs remain available throughout the site; this front-door
      preview returns the recovered height to the square canvas. */
-  @media (min-width: 42rem) and (max-width: 1180px) and (min-height: 500px) and (max-height: 44rem) {
+  @media (width >= 42rem) and (width < 105rem) and (height >= 500px) and (height < 44rem) {
     .with-notation-strip .notation-strip {
       display: none;
     }
@@ -603,9 +603,11 @@
     }
   }
 
-  /* A phone on its side uses the animation without the thumbnail rail. The
-     rail stays dormant, not merely invisible, through shouldMountNotationRail. */
-  @media (min-width: 560px) and (max-width: 1023px) and (min-height: 300px) and (max-height: 499px) {
+  /* Short viewports use the animation without the thumbnail rail at every
+     width. The rail stays dormant, not merely invisible, through
+     shouldMountNotationRail. */
+  @media (height < 500px),
+    (width >= 105rem) and (height < 64rem) {
     .with-notation-strip .notation-strip {
       display: none;
     }
@@ -622,9 +624,10 @@
     }
   }
 
-  /* Portrait phones pair the square with a true vertical StepStrip. Both
-     columns reserve their complete footprint before either lazy chunk mounts. */
-  @media (max-width: 41.99rem) and (min-height: 600px) and (orientation: portrait) {
+  /* Narrow, tall-enough viewports pair the square with a true vertical
+     StepStrip. Both columns reserve their complete footprint before either
+     lazy chunk mounts. */
+  @media (width < 42rem) and (height >= 500px) {
     .demo-media {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 5.25rem;

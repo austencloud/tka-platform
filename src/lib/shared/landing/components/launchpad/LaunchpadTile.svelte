@@ -16,9 +16,13 @@
   import { pressSpring } from "$lib/actions/press-spring";
   import { magnetic } from "$lib/actions/magnetic";
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
-  import type { LaunchpadTileDef } from "./launchpad-tiles";
+  import { hrefSlug, isProductionTileId, type LaunchpadTileDef } from "./launchpad-tiles";
   import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
   import demoJson from "$lib/shared/landing/data/demo-sequence.json";
+  import {
+    trackLaunchpadClick,
+    type LaunchpadTileId,
+  } from "$lib/shared/analytics/landing-events";
 
   let {
     tile,
@@ -49,6 +53,24 @@
   );
 
   function handleActivate(event: MouseEvent) {
+    // Fires before the isAction/modifier-key guard below on purpose: all six
+    // production tiles have `activate` unset, so the guard returns
+    // immediately for every real click on this page. Tracking must not be
+    // conditioned on the enhanced in-page takeover — plain navigation clicks
+    // (and modifier/new-tab clicks, which hit this handler too but are left
+    // otherwise untouched below) need to count just as much as intercepted
+    // ones (landing-analytics-taxonomy §5).
+    // Membership-checked, not asserted. `LaunchpadTileDef.id` is a plain
+    // string and this component also renders non-canonical tile lists (the
+    // composer bento, ids like "construct"/"mandala"), which a bare
+    // `as LaunchpadTileId` would wave straight into a union the taxonomy
+    // defines as exactly six values. Anything outside it reports null rather
+    // than quietly widening the breakdown.
+    trackLaunchpadClick({
+      target: "tile",
+      tile_id: isProductionTileId(tile.id) ? (tile.id as LaunchpadTileId) : null,
+    });
+
     if (
       !isAction ||
       event.defaultPrevented ||
@@ -210,7 +232,17 @@
     {#if tile.chips}
       <ul class="chips">
         {#each tile.chips as chip (chip.href)}
-          <li><a class="chip" href={chip.href}>{chip.label}</a></li>
+          <li>
+            <a
+              class="chip"
+              href={chip.href}
+              onclick={() =>
+                trackLaunchpadClick({
+                  target: "chip",
+                  chip_id: hrefSlug(chip.href),
+                })}>{chip.label}</a
+            >
+          </li>
         {/each}
       </ul>
     {/if}
@@ -584,7 +616,7 @@
   /* Tablet bento: each destination becomes a horizontal button. Text owns the
 	   left side while a cropped piece of living media stays on the right, so the
 	   denser four-band composition remains recognizable at a glance. */
-  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) {
+  @media (width >= 42rem) and (width < 105rem) and (height >= 500px) {
     .tile.variant-home,
     .tile.variant-home .card {
       border-radius: 1rem;
@@ -677,7 +709,7 @@
   /* Short tablet landscape still keeps all six primary destinations. The
 	   rows become icon + title buttons; descriptors and deep-link chips remain
 	   available on taller tablets and on each destination page. */
-  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) and (max-height: 850px) {
+  @media (width >= 42rem) and (width < 105rem) and (height >= 500px) and (max-height: 850px) {
     .tile.variant-home .mark {
       left: 0.8rem;
     }
@@ -708,7 +740,7 @@
 	   their art and destination names but release their supporting copy. That
 	   gives each half enough room without making a small width change rearrange
 	   the entire launchpad. */
-  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) {
+  @media (width >= 42rem) and (width < 105rem) and (height >= 500px) {
     @container launchpad (max-width: 32rem) {
       .tile.variant-home.t-choreo-cards .body p,
       .tile.variant-home.t-guide .body p,
@@ -728,7 +760,7 @@
   /* A narrow right pane falls back to six single-column buttons. Secondary
 	   chip links and the dictionary preview would turn those rows into miniature
 	   toolbars, so the primary destination remains the clear target. */
-  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) {
+  @media (width >= 42rem) and (width < 105rem) and (height >= 500px) {
     @container launchpad (max-width: 22rem) {
       .tile.variant-home .card:has(.chips) .body {
         padding-bottom: 0.8rem;
@@ -770,11 +802,12 @@
     }
   }
 
-  /* Phone bento tiles are compact horizontal cards. Existing media stays on
-	   the right, the destination color carries the left edge, and supporting
-	   copy yields to a clear 14px minimum label. */
-  @media (min-width: 560px) and (max-width: 1023px) and (min-height: 300px) and (max-height: 499px),
-    (max-width: 41.99rem) and (min-height: 600px) and (orientation: portrait) {
+  /* Narrow bento tiles are compact horizontal cards. Existing media stays on
+     the right, the destination color carries the left edge, and supporting
+     copy yields to a clear 14px minimum label. */
+  @media (width < 42rem),
+    (height < 500px),
+    (width >= 105rem) and (height < 56.25rem) {
     .tile.variant-home,
     .tile.variant-home .card {
       border-radius: 0.75rem;
@@ -855,28 +888,43 @@
   /* Tall portrait phones: give the tiles their meaning back.
      The tier above reduces every tile to a bare noun — "Composer", "Glossary" —
      which tells a first-time visitor nothing about which door leads where. The
-     bento's four-band layout (see LaunchpadGrid) buys the height to carry a
-     descriptor again.
-
-     Gated to the same measured 740px floor as that layout: on a 375x667 phone
-     the tiles are 62px, and a descriptor wraps to four lines there and pushes
-     the heading clean out of the card — "Choreo Cards" vanished entirely.
-     Short phones keep the bare labels and still gain the first-read link.
-     Landscape phones keep them too; they genuinely have no room. */
-  @media (max-width: 600px) and (min-height: 740px) and (orientation: portrait) {
-    /* Three lines is the ceiling a 76px tile can hold beside its heading
-       (6px padding x2 + ~16px heading + 3 x 14px lines = 64px of 64px). A
-       fourth line does not clip — it pushes the heading out of the card
-       entirely, which is how "Choreo Cards" lost its title. Clamp, don't hope. */
+     bento's auto rows (see LaunchpadGrid) let the complete label and descriptor
+     establish card height. This switches the body from an absolute overlay to
+     normal flow, so overflow is structurally impossible: copy changes grow the
+     row and the page scrolls. Short and landscape phones keep label-only cards. */
+  @media (width < 42rem) and (min-height: 740px) and (orientation: portrait) {
+    .tile.variant-home {
+      display: flex;
+    }
+    .tile.variant-home .card {
+      display: grid;
+      flex: 1 1 auto;
+      height: auto;
+    }
+    .tile.variant-home .tile-link {
+      position: relative;
+      inset: auto;
+      display: block;
+      min-height: 2.75rem;
+    }
+    .tile.variant-home .body,
+    .tile.variant-home .card:has(.chips) .body {
+      position: relative;
+      inset: auto;
+      min-height: 2.75rem;
+    }
+    .tile.variant-home .body h2 {
+      flex: 0 0 auto;
+    }
     .tile.variant-home .body p {
-      display: -webkit-box;
-      -webkit-box-orient: vertical;
-      -webkit-line-clamp: 3;
-      line-clamp: 3;
-      overflow: hidden;
+      display: block;
+      flex: 0 0 auto;
+      overflow: visible;
+      -webkit-line-clamp: unset;
+      line-clamp: unset;
       max-width: 74%;
       margin: 0.15rem 0 0;
-      font-size: 0.7rem;
+      font-size: var(--font-size-compact, 0.75rem);
       line-height: 1.25;
       color: var(--theme-text-dim, rgba(255, 255, 255, 0.66));
     }
@@ -888,13 +936,12 @@
     .tile.variant-home.t-guide .body p {
       max-width: 52%;
     }
-
   }
 
   /* Tall phones only — these pair with the four-band bento in LaunchpadGrid,
      which is gated to the same 740px height floor. Below it the grid stays
      three rows and neither the full-width Composer nor the FAQ band exists. */
-  @media (max-width: 600px) and (min-height: 740px) and (orientation: portrait) {
+  @media (width < 42rem) and (min-height: 740px) and (orientation: portrait) {
     /* Composer owns the full first row, so its label leads at full size. */
     .tile.variant-home.t-composer .body h2 {
       max-width: 100%;
@@ -916,6 +963,42 @@
     }
     .tile.variant-home.t-faq .mark {
       display: none;
+    }
+  }
+
+  /* A wide, extra-tall phone has room for full-size destination copy. Use the
+     launchpad's own width for this decision, then let the existing auto rows
+     absorb the larger type and padding. Nothing here fixes a card height. */
+  @media (width < 42rem) and (min-height: 56rem) and (orientation: portrait) {
+    @container launchpad (min-width: 24rem) {
+      .tile.variant-home .tile-link,
+      .tile.variant-home .body,
+      .tile.variant-home .card:has(.chips) .body {
+        min-height: 3.25rem;
+      }
+      .tile.variant-home .body,
+      .tile.variant-home .card:has(.chips) .body {
+        padding: 0.625rem 0.75rem 0.625rem 2.5rem;
+      }
+      .tile.variant-home .mark {
+        left: 0.75rem;
+        font-size: 1rem;
+      }
+      .tile.variant-home .body h2,
+      .tile.variant-home.s-2x2 .body h2,
+      .tile.variant-home.s-2x1 .body h2 {
+        font-size: 1rem;
+      }
+      .tile.variant-home .body p {
+        font-size: 0.8125rem;
+        line-height: 1.3;
+      }
+      .tile.variant-home.t-composer .body h2 {
+        font-size: 1.2rem;
+      }
+      .tile.variant-home.t-composer .body p {
+        font-size: var(--font-size-min, 0.875rem);
+      }
     }
   }
 

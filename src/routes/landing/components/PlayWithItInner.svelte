@@ -34,6 +34,7 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   import ProgressRing from "$lib/shared/components/loading/ProgressRing.svelte";
   import { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
   import { foldTrailIntentIntoSettings } from "$lib/shared/effects/translators/canvas2d-translator";
+  import { trackDemoInteraction } from "$lib/shared/analytics/landing-events";
 
   // ── Factory state ──────────────────────────────────────────────────────────
   let playback = $state<EndlessPlaybackState | null>(null);
@@ -148,6 +149,10 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   // ── Prop switching (AnimationPanel Props section) ───────────────────────────
   function handlePropChange(newProp: PropType) {
     if (newProp === currentPropType) return;
+    // After the no-op guard, so re-picking the prop you're already on doesn't
+    // register as a swap. The route id rides along automatically — this player
+    // is embedded on /composer, the landing page, and /embed/spinner.
+    trackDemoInteraction("change_prop", { prop_type: newProp });
     currentPropType = newProp;
     playback?.setPropType(newProp);
 
@@ -163,8 +168,13 @@ import { sequenceTransformer } from "$lib/shared/create/services/sequence-transf
   }
 
   // ── Play / Pause (AnimationPanel Effects section transport) ─────────────────
+  // Three affordances funnel through here: tap-to-toggle on the canvas, the
+  // sidebar transport, and the mobile ControlDock. One handler, one event.
   function togglePlayPause() {
     if (!playback?.playbackController) return;
+    // `isPlaying` still holds the pre-toggle value here, so send its inverse —
+    // the state the visitor is moving INTO is what the metric wants.
+    trackDemoInteraction("toggle_play", { is_playing: !isPlaying });
     playback.playbackController.togglePlayback();
   }
 

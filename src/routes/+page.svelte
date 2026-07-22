@@ -203,7 +203,7 @@
      door, but not enough room for the four-column desktop bento. Width plus a
      modest height floor identifies that geometry without relying on a device
      model or fold posture. Short phone-landscape viewports stay stacked. */
-  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) {
+  @media (width >= 42rem) and (width < 105rem) and (height >= 500px) {
     .content-layer {
       display: grid;
       grid-template-columns: minmax(16rem, 5fr) minmax(0, 7fr);
@@ -240,7 +240,8 @@
   /* A phone on its side has enough inline room for two panes but almost no
      block room. The destination bento and its four small utility links stay
      beside the hero instead of beginning below it. */
-  @media (min-width: 560px) and (max-width: 1023px) and (min-height: 300px) and (max-height: 499px) {
+  @media (width >= 35rem) and (height < 500px),
+    (width >= 105rem) and (height < 56.25rem) {
     .content-layer {
       display: grid;
       grid-template-columns: minmax(12rem, 5fr) minmax(0, 7fr);
@@ -265,26 +266,45 @@
     }
   }
 
-  /* Portrait phones use the upper portion for title + media and let the
-     destination bento consume every remaining row below it. */
-  @media (max-width: 41.99rem) and (min-height: 600px) and (orientation: portrait) {
+  /* The compact state owns every viewport below 35rem, plus the remaining
+     narrow portrait band below 42rem. At 35rem a short viewport moves to the
+     side-by-side state above; at 500px it moves back here. Range comparisons
+     make those seams exhaustive even when browser zoom produces fractional
+     CSS pixels. A hard launchpad floor preserves three touch rows plus the
+     utility row; shorter viewports scroll instead of shrinking controls. */
+  @media (width < 35rem),
+    (width < 42rem) and (height >= 500px) {
     .content-layer {
+      --settings-home-compact-launchpad-min-height: 12.375rem;
       display: grid;
-      grid-template-rows: auto minmax(0, 1fr);
+      grid-template-rows:
+        auto
+        minmax(var(--settings-home-compact-launchpad-min-height), 1fr);
       align-items: stretch;
       width: 100%;
-      height: 100svh;
-      min-height: 600px;
+      min-height: 100svh;
       padding: 4.25rem 0.5rem 0.5rem;
     }
 
     .launchpad-main {
       width: 100%;
       height: 100%;
-      min-height: 0;
+      min-height: var(--settings-home-compact-launchpad-min-height);
       max-width: none;
       margin: 0;
       padding: 0;
+    }
+  }
+
+  /* Once mobile cards carry descriptions, their content owns the row height.
+     The main element still receives the rest of a tall screen from the outer
+     grid, so center the intrinsic launchpad inside that space. This keeps a
+     roomy phone balanced without stretching the cards or masking their copy. */
+  @media (width < 42rem) and (min-height: 740px) and (orientation: portrait) {
+    .launchpad-main {
+      display: grid;
+      align-items: center;
+      height: auto;
     }
   }
 
@@ -294,7 +314,7 @@
      (per the 4K landing spec's wave-3 rule). Below 1680px the stacked layout
      above is untouched. The shared shell band keeps this composition aligned
      with the header while growing continuously on 4K/5K screens. */
-  @media (min-width: 1680px) {
+  @media (width >= 105rem) and (height >= 56.25rem) {
     .content-layer {
       display: grid;
       grid-template-columns: minmax(32.5rem, 5fr) minmax(0, 7fr);

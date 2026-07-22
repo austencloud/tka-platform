@@ -26,9 +26,9 @@ const START_SEL =
 // option-card was the bug that froze the act at step 0: waitFor timed out every
 // cycle and the loop restarted from the start position forever.)
 const OPTION_SEL = '[data-testid="option-card"], [data-testid="option-item"]';
-// The section's canonical green play button (ViewSequenceButton inside the
-// [data-demo-play] slot) — the act presses it after the last step so every
-// attract cycle ends on the real payoff: the sequence animating.
+// The section uses ViewSequenceButton's Play variant inside [data-demo-play].
+// The act presses it after the last step so every attract cycle ends on the
+// real payoff: the sequence animating.
 const PLAY_SEL = "[data-demo-play] button";
 // The play-phase canvas stage. The act "taps" it mid-playback to pause and
 // resume — teaching the tap-to-toggle interaction by demonstrating it.
@@ -102,7 +102,7 @@ export function createConstructAttractAct(opts: {
     const root = opts.getRoot();
     if (!root || g.halted()) return;
     const cells = [...root.querySelectorAll<HTMLElement>(CELL_SEL)].filter(
-      (el) => el.offsetParent !== null,
+      (el) => el.offsetParent !== null
     );
     const last = cells[cells.length - 1];
     if (!last) return;
@@ -111,7 +111,7 @@ export function createConstructAttractAct(opts: {
     const rr = root.getBoundingClientRect();
     await g.glideTo(
       r.right - rr.left + g.jitter(10, 12),
-      r.bottom - rr.top + g.jitter(6, 10),
+      r.bottom - rr.top + g.jitter(6, 10)
     );
     await g.dwell(g.jitter(650, 650));
   }
@@ -193,7 +193,9 @@ export function createConstructAttractAct(opts: {
     const turnMoment =
       Math.random() < 0.7 ? 1 + Math.floor(Math.random() * 2) : -1;
     const filterMoment =
-      Math.random() < 0.35 ? Math.floor(Math.random() * opts.stepsPerCycle) : -1;
+      Math.random() < 0.35
+        ? Math.floor(Math.random() * opts.stepsPerCycle)
+        : -1;
 
     // Resume at the next unbuilt step. If the visitor already built past the
     // attract act's usual four-count, keep every step and head straight to Play.

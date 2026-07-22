@@ -14,13 +14,14 @@
 -->
 <script lang="ts">
   import GuideShell from "./_components/GuideShell.svelte";
-  import { joinWaitlist } from "$lib/features/store/services/waitlist";
   import { bodyPagesByGroup } from "./level-1/_data/guide-manifest";
   import { seoForSlug } from "./level-1/_data/guide-page-seo";
 
   // The guide's actual first page - "Start reading" goes straight there.
   const firstTopic = bodyPagesByGroup()[0]?.entries[0]?.entry;
-  const firstTopicHref = firstTopic ? `/guide/level-1/${firstTopic.id}` : "/guide/level-1";
+  const firstTopicHref = firstTopic
+    ? `/guide/level-1/${firstTopic.id}`
+    : "/guide/level-1";
   const firstTopicLabel = firstTopic
     ? seoForSlug(firstTopic.id, firstTopic.title).h1
     : "Level 1";
@@ -30,7 +31,9 @@
   let errorMessage = $state("");
 
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const canSubmit = $derived(EMAIL_RE.test(email.trim()) && status !== "submitting");
+  const canSubmit = $derived(
+    EMAIL_RE.test(email.trim()) && status !== "submitting"
+  );
 
   async function handleSubmit(e: Event) {
     e.preventDefault();
@@ -42,6 +45,11 @@
     status = "submitting";
     errorMessage = "";
     try {
+      // Firestore is only needed after someone submits. Keeping it behind the
+      // gesture prevents the Guide route morph from fetching and parsing the
+      // Firebase graph for visitors who are only here to read.
+      const { joinWaitlist } =
+        await import("$lib/features/store/services/waitlist");
       await joinWaitlist(email, "guide-coming-soon");
       status = "done";
     } catch (err) {
@@ -67,7 +75,10 @@
     content="The Kinetic Alphabet guide: a written guide to flow arts notation. Read Level 1 topic by topic, plus Level 2 and the Codex."
   />
   <meta property="og:site_name" content="The Kinetic Alphabet" />
-  <meta property="og:image" content="https://tkaflowarts.com/branding/og-image.png" />
+  <meta
+    property="og:image"
+    content="https://tkaflowarts.com/branding/og-image.png"
+  />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta property="og:image:alt" content="The Kinetic Alphabet" />
@@ -80,10 +91,17 @@
     name="twitter:description"
     content="The Kinetic Alphabet guide: a written guide to flow arts notation. Read Level 1 topic by topic, plus Level 2 and the Codex."
   />
-  <meta name="twitter:image" content="https://tkaflowarts.com/branding/og-image.png" />
+  <meta
+    name="twitter:image"
+    content="https://tkaflowarts.com/branding/og-image.png"
+  />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin="anonymous"
+  />
   <link
     href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&display=swap"
     rel="stylesheet"
@@ -91,17 +109,17 @@
 </svelte:head>
 
 <GuideShell>
-<!-- guide-page-route: the shared guide.css hook that lets a route span the
+  <!-- guide-page-route: the shared guide.css hook that lets a route span the
      full guide-content width instead of the narrow prose column (see
      guide.css's `.guide-content > .guide-page-route` rule) - needed so the
      2200px recomposition below actually gets the width to recompose into. -->
-<main class="guide guide-page-route">
+  <main class="guide guide-page-route">
     <section class="hero" style:view-transition-name="launchpad-guide">
       <h1>The Kinetic Alphabet Guide</h1>
       <p class="lede">
-        Written notation for flow arts. Level 1 covers the grid, hand
-        positions and motions, letters, and words. Level 2 covers turns and
-        the intermediate system.
+        Written notation for flow arts. Level 1 covers the grid, hand positions
+        and motions, letters, and words. Level 2 covers turns and the
+        intermediate system.
       </p>
       <div class="hero-ctas">
         <a class="btn btn-primary" href={firstTopicHref}>
@@ -146,11 +164,15 @@
           {#if status === "done"}
             <div class="confirmed" role="status">
               <i class="fas fa-circle-check" aria-hidden="true"></i>
-              <span>You're on the list. You'll get an email when new sections land.</span>
+              <span
+                >You're on the list. You'll get an email when new sections land.</span
+              >
             </div>
           {:else}
             <form class="notify-form" onsubmit={handleSubmit}>
-              <label class="sr-only" for="guide-notify-email">Email address</label>
+              <label class="sr-only" for="guide-notify-email"
+                >Email address</label
+              >
               <input
                 id="guide-notify-email"
                 class="text-input"
@@ -168,7 +190,11 @@
                 <span>Notify me</span>
               </button>
             </form>
-            <p class="error-line" class:visible={status === "error"} aria-live="polite">
+            <p
+              class="error-line"
+              class:visible={status === "error"}
+              aria-live="polite"
+            >
               {errorMessage}
             </p>
           {/if}
@@ -180,15 +206,18 @@
 
 <style>
   .guide {
-    font-family: system-ui, -apple-system, sans-serif;
+    font-family:
+      system-ui,
+      -apple-system,
+      sans-serif;
     --landing-heading-font: "Playfair Display", Georgia, serif;
     color: #ece9f5;
   }
 
   /* ── Hero ─────────────────────────────────────────────────────────── */
-  /* Widths/spacing in rem so the whole hub rides guide.css's >=1680px root
-     ramp (16px→24px) in lockstep - values are 1:1 with the old px at the 16px
-     root, so nothing changes below 1680px. */
+  /* Widths and spacing use rem so browser text preferences scale the hub as a
+     unit. Unlike standalone Guide chapters, this exact route keeps the public
+     site's root metrics so the persistent header cannot jump during a morph. */
   .hero {
     max-width: 47.5rem;
     margin: 0 auto;
@@ -201,7 +230,11 @@
     font-family: var(--page-title-font, "Fraunces", Georgia, serif);
     font-style: italic;
     font-weight: 700;
-    font-variation-settings: "opsz" 144, "wght" 700, "SOFT" 0, "WONK" 1;
+    font-variation-settings:
+      "opsz" 144,
+      "wght" 700,
+      "SOFT" 0,
+      "WONK" 1;
     font-size: clamp(2rem, 5vw, 3.2rem);
     line-height: 1.1;
     letter-spacing: -0.015em;
@@ -239,7 +272,10 @@
     text-decoration: none;
     font-weight: 700;
     font-size: 1.05rem;
-    transition: filter 0.18s ease, transform 0.18s ease, background 0.18s ease;
+    transition:
+      filter 0.18s ease,
+      transform 0.18s ease,
+      background 0.18s ease;
   }
   .btn:hover {
     transform: translateY(-2px);
@@ -399,7 +435,9 @@
     color: #fff;
     font-size: 0.95rem;
     font-family: inherit;
-    transition: border-color 0.2s ease, background 0.2s ease;
+    transition:
+      border-color 0.2s ease,
+      background 0.2s ease;
   }
   .text-input::placeholder {
     color: rgba(255, 255, 255, 0.4);
@@ -482,11 +520,9 @@
      sidebar - the two share one glance instead of a long scroll. Pure grid
      placement on existing DOM; below 2200px the original stacked flow is
      untouched. */
-  /* 1680 — the same seam guide.css starts its root ramp at, so the hub
-     recomposes into two columns exactly when the shell around it starts
-     scaling. At 2200 this never fired on a 4K monitor at 200% OS scaling
-     (~1920 CSS px), so the hub stayed single-column on the most common 4K
-     setup while the rest of the guide had already scaled up. */
+  /* 1680 is early enough to reach the two-column composition on a 4K monitor
+     at 200% OS scaling (~1920 CSS px). The page recomposes locally while the
+     persistent public header keeps the same metrics it had on the homepage. */
   @media (min-width: 1680px) {
     .guide {
       display: grid;
@@ -495,8 +531,7 @@
         "hero hero"
         "more notify";
       column-gap: 6rem;
-      /* rem so the composition rides guide.css's root ramp; at the 24px root
-         (3840px viewport) this is 2400px, centered in the guide-content track. */
+      /* A bounded reading composition, centered in the guide-content track. */
       max-width: 100rem;
       margin: 0 auto;
       align-items: start;
@@ -538,8 +573,8 @@
       padding: 0;
     }
 
-    /* No font-size bumps here anymore: the root ramp already scales every rem
-       size on this page; keeping the old explicit bumps would double-scale. */
+    /* Typography already uses responsive clamps; the ultrawide rule changes
+       composition without changing the document root or persistent chrome. */
     .lede {
       max-width: 50rem;
     }

@@ -11,6 +11,7 @@
    * open the in-place LegalSheet instead of navigating.
    */
   import LegalSheet from "$lib/shared/legal/components/LegalSheet.svelte";
+  import { trackCtaClick } from "$lib/shared/analytics/landing-events";
 
   let sheetOpen = $state(false);
   let sheetType = $state<"terms" | "privacy">("terms");
@@ -91,7 +92,16 @@
           >TKA</a
         >
         <p class="tagline">Notation for flow arts.</p>
-        <a class="composer-cta" href="/create" data-sveltekit-reload>
+        <a
+          class="composer-cta"
+          href="/create"
+          data-sveltekit-reload
+          onclick={() =>
+            trackCtaClick("footer", {
+              cta_type: "open_composer",
+              destination: "/create",
+            })}
+        >
           <i class="fas fa-rocket" aria-hidden="true"></i>
           Open Flow Arts Composer
         </a>

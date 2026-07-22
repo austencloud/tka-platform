@@ -117,9 +117,11 @@ describe("homepage hero notation rail contract", () => {
 
   it("gives tablet viewports a complete four-band destination bento", () => {
     const tabletQuery =
-      "@media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px)";
+      "@media (width >= 42rem) and (width < 105rem) and (height >= 500px)";
     const foldLandscapeQuery =
       "@media (min-width: 42rem) and (max-width: 1180px) and (min-height: 500px) and (max-height: 44rem)";
+    const shortSplitQuery =
+      "@media (width >= 42rem) and (width < 105rem) and (height >= 500px) and (height < 44rem)";
 
     expect(landingPage).toContain(tabletQuery);
     expect(homeHero).toContain(tabletQuery);
@@ -140,8 +142,11 @@ describe("homepage hero notation rail contract", () => {
     );
     expect(launchpadTile).toContain("max-height: 850px");
 
-    for (const source of [landingPage, homeHero, sequenceHero, launchpadGrid]) {
+    for (const source of [landingPage, launchpadGrid]) {
       expect(source).toContain(foldLandscapeQuery);
+    }
+    for (const source of [homeHero, sequenceHero]) {
+      expect(source).toContain(shortSplitQuery);
     }
     expect(homeHero).toContain("--hero-demo-max-width: min(100%, 40svh)");
     expect(sequenceHero).toMatch(
@@ -156,12 +161,28 @@ describe("homepage hero notation rail contract", () => {
     );
   });
 
-  it("recomposes both phone orientations without falling back to the tall stack", () => {
-    const shortPhoneQuery =
-      "(min-width: 560px) and (max-width: 1023px) and (min-height: 300px) and (max-height: 499px)";
-    const portraitPhoneQuery =
-      "(max-width: 41.99rem) and (min-height: 600px) and (orientation: portrait)";
+  it("recomposes narrow and short phone viewports without falling back to the tall stack", () => {
+    const shortWideQuery = "(width >= 35rem) and (height < 500px)";
+    const compactPageQuery =
+      "@media (width < 35rem),\n    (width < 42rem) and (height >= 500px)";
+    const verticalRailQuery =
+      "(width < 42rem) and (height >= 500px)";
+    const tallPortraitQuery =
+      "@media (width < 42rem) and (min-height: 740px) and (orientation: portrait)";
+    const roomyPortraitQuery =
+      "@media (width < 42rem) and (min-height: 56rem) and (orientation: portrait)";
 
+    for (const source of [landingPage, homeHero]) {
+      expect(source).toContain(shortWideQuery);
+      expect(source).toContain(compactPageQuery);
+    }
+    expect(sequenceHero).toContain("(height < 500px)");
+    expect(sequenceHero).toContain(verticalRailQuery);
+    for (const source of [launchpadGrid, launchpadTile]) {
+      expect(source).toContain("(width < 42rem)");
+      expect(source).toContain("(height < 500px)");
+      expect(source).toContain("(width >= 105rem) and (height < 56.25rem)");
+    }
     for (const source of [
       landingPage,
       homeHero,
@@ -169,8 +190,16 @@ describe("homepage hero notation rail contract", () => {
       launchpadGrid,
       launchpadTile,
     ]) {
-      expect(source).toContain(shortPhoneQuery);
-      expect(source).toContain(portraitPhoneQuery);
+      expect(source).not.toContain("max-height: 499px");
+    }
+    for (const source of [landingPage, homeHero, sequenceHero, launchpadGrid]) {
+      expect(source).toContain("(width >= 105rem) and (height >= 56.25rem)");
+    }
+    for (const source of [landingPage, launchpadGrid, launchpadTile]) {
+      expect(source).toContain(tallPortraitQuery);
+    }
+    for (const source of [homeHero, launchpadGrid, launchpadTile]) {
+      expect(source).toContain(roomyPortraitQuery);
     }
 
     expect(sequenceHero).toContain(
@@ -184,9 +213,31 @@ describe("homepage hero notation rail contract", () => {
     // with no room to rank anything or carry a descriptor. Still pinned to an
     // exact value so the budget cannot drift back silently.
     expect(homeHero).toContain(
-      "--hero-demo-max-width: min(100%, clamp(13rem, 32svh, 17rem))"
+      "--hero-demo-max-width: min(100%, clamp(12rem, 32svh, 17rem))"
+    );
+    expect(homeHero).toContain(
+      "--hero-demo-max-width: min(100%, clamp(17rem, 34svh, 21rem))"
     );
     expect(homeHero).toContain("min-height: var(--min-touch-target, 44px)");
     expect(homeHero).toContain("font-size: var(--font-size-min, 0.875rem)");
+    expect(landingPage).toContain(
+      "--settings-home-compact-launchpad-min-height: 12.375rem"
+    );
+    expect(landingPage).toContain("align-items: center");
+    expect(launchpadGrid).toContain("grid-template-rows:\n        auto");
+    expect(launchpadGrid).toContain("--settings-home-tall-gap");
+    expect(launchpadTile).toContain(
+      ".tile.variant-home .card {\n      display: grid;\n      flex: 1 1 auto;\n      height: auto;"
+    );
+    expect(launchpadTile).toContain(
+      ".tile.variant-home .tile-link {\n      position: relative;\n      inset: auto;\n      display: block;\n      min-height: 2.75rem;"
+    );
+    expect(launchpadTile).toContain(
+      ".tile.variant-home .body,\n    .tile.variant-home .card:has(.chips) .body {\n      position: relative;"
+    );
+    expect(launchpadTile).toContain("-webkit-line-clamp: unset");
+    expect(launchpadTile).not.toContain("-webkit-line-clamp: 3");
+    expect(launchpadTile).not.toContain("font-size: 0.7rem");
+    expect(launchpadTile).toContain("@container launchpad (min-width: 24rem)");
   });
 });

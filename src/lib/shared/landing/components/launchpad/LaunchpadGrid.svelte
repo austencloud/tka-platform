@@ -22,8 +22,10 @@
   import {
     LAUNCHPAD_TILES,
     STRIP_LINKS,
+    hrefSlug,
     type LaunchpadTileDef,
   } from "./launchpad-tiles";
+  import { trackLaunchpadClick } from "$lib/shared/analytics/landing-events";
 
   // Every prop defaults to the homepage's current behavior, so `<LaunchpadGrid />`
   // (the +page.svelte call site) renders byte-identically to before this became
@@ -181,7 +183,14 @@
       <ul class="strip">
         {#each stripLinks as link (link.href)}
           <li>
-            <a href={link.href}>
+            <a
+              href={link.href}
+              onclick={() =>
+                trackLaunchpadClick({
+                  target: "strip",
+                  strip_id: hrefSlug(link.href),
+                })}
+            >
               <h3>{link.label}</h3>
             </a>
           </li>
@@ -225,7 +234,7 @@
 	   read as a wall of panels. Four visual bands restore the bento hierarchy:
 	   the primary routes stay wide, related destinations share a row, and the
 	   whole group can breathe around the hero without leaving the first screen. */
-  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) {
+  @media (width >= 42rem) and (width < 105rem) and (height >= 500px) {
     .launchpad.variant-home {
       height: 100%;
       min-height: 0;
@@ -293,7 +302,7 @@
   /* Short landscape tablets use the same four bands but divide the remaining
 	   height proportionally. The tile component removes supporting copy at this
 	   height, leaving large, stable destination buttons instead of overflow. */
-  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) and (max-height: 850px) {
+  @media (width >= 42rem) and (width < 105rem) and (height >= 500px) and (max-height: 850px) {
     .launchpad.variant-home .launchpad-group {
       grid-template-rows: minmax(0, 1fr) auto;
       align-content: stretch;
@@ -314,7 +323,7 @@
 	   The container fallback becomes a compact six-button rail. The utility
 	   strip switches to two columns slightly sooner so its long labels never
 	   wrap inside four undersized segments. */
-  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) {
+  @media (width >= 42rem) and (width < 105rem) and (height >= 500px) {
     @container launchpad (max-width: 22rem) {
       .launchpad.variant-home .launchpad-group {
         grid-template-rows: minmax(0, 1fr) auto;
@@ -371,11 +380,12 @@
     }
   }
 
-  /* Both phone compositions use the same compact 2 × 3 destination bento.
-	   Four smaller utility links share one final row so every homepage route
-	   stays available without stealing a full second band from the main tiles. */
-  @media (min-width: 560px) and (max-width: 1023px) and (min-height: 300px) and (max-height: 499px),
-    (max-width: 41.99rem) and (min-height: 600px) and (orientation: portrait) {
+  /* Narrow widths and short heights share the compact 2 × 3 destination bento.
+     Four smaller utility links use one final row so every homepage route stays
+     available without stealing a second full band from the main tiles. */
+  @media (width < 42rem),
+    (height < 500px),
+    (width >= 105rem) and (height < 56.25rem) {
     .launchpad.variant-home {
       width: 100%;
       height: 100%;
@@ -430,20 +440,27 @@
      Deliberately NOT applied to the phone-landscape tier next door — that one
      has ~300px of block space and cannot afford a fourth row.
 
-     The 740px height floor (rather than the tier's own 600px) is measured, not
-     chosen: a fourth row on a 375x667 phone drives every tile to 42px, under
-     the 44px touch minimum. Short phones keep the three-row grid and still get
-     the restored descriptors and first-read link; only phones with the height
-     to spend get the ranked four-band layout. */
-  @media (max-width: 600px) and (min-height: 740px) and (orientation: portrait) {
+     At this tier the text itself sizes each row. This is the important part:
+     descriptions are no longer absolutely positioned inside fractional tracks,
+     so a longer label or copy change grows the page instead of being clipped. */
+  @media (width < 42rem) and (min-height: 740px) and (orientation: portrait) {
+    .launchpad.variant-home,
+    .launchpad.variant-home .launchpad-group,
     .launchpad.variant-home .bento {
-      /* Row 4 carries a hard 2.75rem floor, not a bare fraction: at 0.62fr it
-         resolved to 40px on a 390x844 phone, under the 44px touch minimum. */
+      height: auto;
+    }
+    .launchpad.variant-home .launchpad-group {
+      grid-template-rows: auto auto;
+    }
+    .launchpad.variant-home .bento {
       grid-template-rows:
-        minmax(0, 1.3fr)
-        minmax(0, 1fr)
-        minmax(0, 1fr)
-        minmax(2.75rem, 0.7fr);
+        auto
+        auto
+        auto
+        minmax(2.75rem, auto);
+    }
+    .launchpad.variant-home .bento :global(.tile) {
+      min-height: 2.75rem;
     }
     .launchpad.variant-home .bento :global(.tile.t-composer),
     .launchpad.variant-home .bento :global(.tile.t-faq) {
@@ -457,10 +474,25 @@
     }
   }
 
+  /* On a roomy portrait screen, spacing can breathe with the viewport instead
+     of leaving every destination packed into the top of its available row. */
+  @media (width < 42rem) and (min-height: 56rem) and (orientation: portrait) {
+    .launchpad.variant-home {
+      --settings-home-tall-gap: clamp(0.5rem, 1svh, 0.625rem);
+    }
+    .launchpad.variant-home .launchpad-group {
+      row-gap: var(--settings-home-tall-gap);
+    }
+    .launchpad.variant-home .bento,
+    .launchpad.variant-home .strip {
+      gap: var(--settings-home-tall-gap);
+    }
+  }
+
   /* Split tier (one-viewport composition, see +page.svelte): the right pane
 	   owns width and spacing, and rows become height-keyed so three rows plus
 	   the strip always fit the viewport beside the hero. */
-  @media (min-width: 1680px) {
+  @media (width >= 105rem) and (height >= 56.25rem) {
     .launchpad {
       max-width: none;
       padding: 0;

@@ -227,12 +227,15 @@
     try {
       let generationOrchestrator: (typeof import("$lib/shared/create/services/generation-orchestrator"))["generationOrchestrator"];
       try {
-        ({ generationOrchestrator } = await import(
-          "$lib/shared/create/services/generation-orchestrator"
-        ));
+        ({ generationOrchestrator } =
+          await import("$lib/shared/create/services/generation-orchestrator"));
       } catch (error) {
-        if (isCurrentRun()) generationError = "The generator did not load. Try again.";
-        console.error("[composer generate] generator module failed to load", error);
+        if (isCurrentRun())
+          generationError = "The generator did not load. Try again.";
+        console.error(
+          "[composer generate] generator module failed to load",
+          error
+        );
         return;
       }
 
@@ -516,7 +519,7 @@
                 <BackButton onclick={showSequence} />
               {:else if current && !generating && !revealing}
                 <span data-demo-play>
-                  <ViewSequenceButton onclick={playCurrent} />
+                  <ViewSequenceButton purpose="play" onclick={playCurrent} />
                 </span>
               {:else}
                 <span class="action-placeholder" aria-hidden="true"></span>
@@ -1006,6 +1009,10 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .generate-section :global(.fa-spin) {
+      animation: none !important;
+    }
+
     .generate-button {
       transition: none;
     }

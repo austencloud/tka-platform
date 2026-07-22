@@ -135,12 +135,12 @@
           steps = [];
           playing = false;
         }
-      },
+      }
     );
 
     // Reduced motion → never create the act; section is plainly interactive.
     const reduced = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
+      "(prefers-reduced-motion: reduce)"
     ).matches;
     if (!reduced && bandEl) {
       act = createConstructAttractAct({
@@ -156,7 +156,7 @@
           act?.setVisible(visible);
           if (visible) act?.start();
         },
-        { threshold: 0.25 },
+        { threshold: 0.25 }
       );
       io.observe(bandEl);
     }
@@ -192,7 +192,7 @@
 
   // Full sequence fed to the option picker: start position + every picked step.
   const currentSequence = $derived<PictographData[]>(
-    startPosition ? [startPosition, ...steps] : [],
+    startPosition ? [startPosition, ...steps] : []
   );
 
   // Three phases, derived straight from state. Hitting the 8-step cap plays
@@ -202,7 +202,7 @@
       ? "pick-start"
       : playing || steps.length >= MAX_STEPS
         ? "play"
-        : "add-step",
+        : "add-step"
   );
 
   // sequence.word is DATA (the expanded letters); what the user reads is the
@@ -218,16 +218,19 @@
   const startStepData = $derived<StepData | null>(
     startPosition
       ? {
-          ...pictographDataToStepData(startPosition, startPosition.id ?? "demo-start"),
+          ...pictographDataToStepData(
+            startPosition,
+            startPosition.id ?? "demo-start"
+          ),
           stepNumber: 0,
         }
-      : null,
+      : null
   );
   const stepData = $derived<StepData[]>(
     steps.map((p, i) => ({
       ...pictographDataToStepData(p, p.id ?? `demo-step-${i}`),
       stepNumber: i + 1,
-    })),
+    }))
   );
 
   let wsW = $state(0);
@@ -237,9 +240,15 @@
   // fixed-height and must NEVER scroll — cap the cell to what the frame can
   // actually show (frame minus the grid's own 16px padding ring).
   const gridLayout = $derived.by(() => {
-    const raw = calculateGridLayout(stepData.length, wsW || 600, wsH || 240, null, {
-      manualColumnCount: STEP_COLUMNS,
-    });
+    const raw = calculateGridLayout(
+      stepData.length,
+      wsW || 600,
+      wsH || 240,
+      null,
+      {
+        manualColumnCount: STEP_COLUMNS,
+      }
+    );
     const maxCell = Math.floor(((wsH || 240) - 40) / raw.rows);
     return { ...raw, cellSize: Math.min(raw.cellSize, maxCell) };
   });
@@ -263,12 +272,15 @@
           thumbnails: [],
           gridMode,
         } as unknown as SequenceData)
-      : null,
+      : null
   );
 
   // The player reports the playing step (0-indexed; null = start position) and
   // the workspace highlights it via the canonical selection mechanism.
-  function handlePlayerStepChange(stepIndex: number | null, isPlaying: boolean) {
+  function handlePlayerStepChange(
+    stepIndex: number | null,
+    isPlaying: boolean
+  ) {
     playingStepNumber = stepIndex === null ? 0 : stepIndex + 1;
     playerIsPlaying = isPlaying;
   }
@@ -290,7 +302,8 @@
     playerController.seekToStep(0);
     startHoldTimer = setTimeout(() => {
       startHoldTimer = null;
-      if (playerController && !playerIsPlaying) playerController.togglePlayback();
+      if (playerController && !playerIsPlaying)
+        playerController.togglePlayback();
     }, 700);
   }
 
@@ -327,231 +340,235 @@
   onfocusincapture={takeover}
 >
   <div class="demo-shell">
-  <!-- Two column stacks: prop + workspace left, turns + picker right. Each
+    <!-- Two column stacks: prop + workspace left, turns + picker right. Each
        control sits directly above the panel it affects, and the turns strip
        lives INSIDE the right column — when it slides away for the play phase
        the player pane (flex: 1) expands upward into the freed strip and the
        canvas gets bigger. The columns' total height stays constant across
        phases (the strip's space is reserved), so the page never shifts. -->
-  <div class="demo-columns">
-    <div class="demo-col">
-    <div class="tool-group">
-      <span class="tool-label">Prop</span>
-      <PropPicker
-        value={demoProp}
-        onchange={(p) => (demoProp = p)}
-        options={SHOP_PROP_OPTIONS}
-      />
-    </div>
+    <div class="demo-columns">
+      <div class="demo-col">
+        <div class="tool-group">
+          <span class="tool-label">Prop</span>
+          <PropPicker
+            value={demoProp}
+            onchange={(p) => (demoProp = p)}
+            options={SHOP_PROP_OPTIONS}
+          />
+        </div>
 
-    <!-- WORKSPACE: the real WorkspaceGrid — start column + step columns. -->
-    <div class="workspace">
-      <!-- Canonical word display: the same WordLabel the real workspace shows
+        <!-- WORKSPACE: the real WorkspaceGrid — start column + step columns. -->
+        <div class="workspace">
+          <!-- Canonical word display: the same WordLabel the real workspace shows
            top-center (TKA glyphs, click-to-copy, letter highlighting during
            playback). No step counter — the app doesn't count steps at you. -->
-      <header
-        class="demo-status word-label-area"
-        aria-live={tookOver ? "polite" : "off"}
-      >
-        {#if rawWord}
-          <WordLabel
-            word={rawWord}
-            activeStepNumber={phase === "play" && playingStepNumber
-              ? playingStepNumber
-              : null}
-          />
-        {:else}
-          <p class="hint">
-            {#if phase === "pick-start" && act && !tookOver}
-              Watch it build — or tap anything to take over.
-            {:else if phase === "pick-start"}
-              Pick a starting position to begin.
+          <header
+            class="demo-status word-label-area"
+            aria-live={tookOver ? "polite" : "off"}
+          >
+            {#if rawWord}
+              <WordLabel
+                word={rawWord}
+                activeStepNumber={phase === "play" && playingStepNumber
+                  ? playingStepNumber
+                  : null}
+              />
             {:else}
-              Tap a pictograph to add it.
+              <p class="hint">
+                {#if phase === "pick-start" && act && !tookOver}
+                  Watch it build — or tap anything to take over.
+                {:else if phase === "pick-start"}
+                  Pick a starting position to begin.
+                {:else}
+                  Tap a pictograph to add it.
+                {/if}
+              </p>
             {/if}
-          </p>
-        {/if}
-      </header>
+          </header>
 
-      <div class="ws-frame" bind:clientWidth={wsW} bind:clientHeight={wsH}>
-        {#if startStepData}
-          <WorkspaceGrid
-            steps={stepData}
-            startPosition={startStepData}
-            {gridLayout}
-            displayState={workspaceDisplayState}
-            scrollState={workspaceScrollState}
-            selectedStepNumber={phase === "play" ? playingStepNumber : null}
-            onStepClick={phase === "play"
-              ? (stepNumber) => handleWorkspaceStepClick(stepNumber)
-              : undefined}
-            onStartClick={phase === "play" ? handleWorkspaceStartClick : undefined}
-            getStepKey={(beat, index) => beat.id ?? `demo-key-${index}`}
-            getDurationDisplay={(stepIndex) => String(stepIndex + 1)}
-            bluePropTypeOverride={demoProp}
-            redPropTypeOverride={demoProp}
-            sequenceWord={rawWord}
-          />
-        {:else}
-          <p class="ws-empty" aria-hidden="true">
-            The sequence appears here as it's built.
-          </p>
-        {/if}
-      </div>
+          <div class="ws-frame" bind:clientWidth={wsW} bind:clientHeight={wsH}>
+            {#if startStepData}
+              <WorkspaceGrid
+                steps={stepData}
+                startPosition={startStepData}
+                {gridLayout}
+                displayState={workspaceDisplayState}
+                scrollState={workspaceScrollState}
+                selectedStepNumber={phase === "play" ? playingStepNumber : null}
+                onStepClick={phase === "play"
+                  ? (stepNumber) => handleWorkspaceStepClick(stepNumber)
+                  : undefined}
+                onStartClick={phase === "play"
+                  ? handleWorkspaceStartClick
+                  : undefined}
+                getStepKey={(beat, index) => beat.id ?? `demo-key-${index}`}
+                getDurationDisplay={(stepIndex) => String(stepIndex + 1)}
+                bluePropTypeOverride={demoProp}
+                redPropTypeOverride={demoProp}
+                sequenceWord={rawWord}
+              />
+            {:else}
+              <p class="ws-empty" aria-hidden="true">
+                The sequence appears here as it's built.
+              </p>
+            {/if}
+          </div>
 
-      <!-- The app's ButtonPanel center zone, miniaturized: the canonical green
+          <!-- The app's ButtonPanel center zone, miniaturized: the canonical green
            View/Play button sits bottom-center of the workspace; during play
            the SAME slot crossfades to Build another (answers "where does Build
            another go on wide screens" — the canonical action slot, not under
            the canvas). -->
-      <div class="action-slot">
-        <!-- Left zone: the real app's clear button — back out of a build to
+          <div class="action-slot">
+            <!-- Left zone: the real app's clear button — back out of a build to
              pick a different start position. Play phase has Build another. -->
-        <div class="slot-side">
-          {#if phase === "add-step"}
-            <ClearSequenceButton onclick={reset} />
-          {/if}
-        </div>
-        <Crossfade key={phase} duration={DURATION.normal}>
-          {#if phase === "add-step"}
-            <span
-              data-demo-play
-              style:visibility={steps.length > 0 ? "visible" : "hidden"}
-            >
-              <ViewSequenceButton onclick={() => (playing = true)} />
-            </span>
-          {:else if phase === "play"}
-            <div class="play-actions">
-              <!-- Back to the option picker with the build intact — "one more
-                   step". Hidden at the 8-step cap (nothing to go back to). -->
-              {#if steps.length < MAX_STEPS}
-                <button
-                  type="button"
-                  class="cta-btn quiet"
-                  onclick={() => {
-                    playing = false;
-                    playingStepNumber = null;
-                    dropPlayerRefs();
-                  }}
-                >
-                  <i class="fas fa-arrow-left" aria-hidden="true"></i>
-                  Keep building
-                </button>
+            <div class="slot-side">
+              {#if phase === "add-step"}
+                <ClearSequenceButton onclick={reset} />
               {/if}
-              <button
-                type="button"
-                class="cta-btn"
-                data-demo-again
-                onclick={reset}
-              >
-                <i class="fas fa-rotate-left" aria-hidden="true"></i>
-                Build another
-              </button>
             </div>
-          {/if}
-        </Crossfade>
-        <div class="slot-side" aria-hidden="true"></div>
+            <Crossfade key={phase} duration={DURATION.normal}>
+              {#if phase === "add-step"}
+                <span
+                  data-demo-play
+                  style:visibility={steps.length > 0 ? "visible" : "hidden"}
+                >
+                  <ViewSequenceButton
+                    purpose="play"
+                    onclick={() => (playing = true)}
+                  />
+                </span>
+              {:else if phase === "play"}
+                <div class="play-actions">
+                  <!-- Back to the option picker with the build intact — "one more
+                   step". Hidden at the 8-step cap (nothing to go back to). -->
+                  {#if steps.length < MAX_STEPS}
+                    <button
+                      type="button"
+                      class="cta-btn quiet"
+                      onclick={() => {
+                        playing = false;
+                        playingStepNumber = null;
+                        dropPlayerRefs();
+                      }}
+                    >
+                      <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                      Keep building
+                    </button>
+                  {/if}
+                  <button
+                    type="button"
+                    class="cta-btn"
+                    data-demo-again
+                    onclick={reset}
+                  >
+                    <i class="fas fa-rotate-left" aria-hidden="true"></i>
+                    Build another
+                  </button>
+                </div>
+              {/if}
+            </Crossfade>
+            <div class="slot-side" aria-hidden="true"></div>
+          </div>
+        </div>
       </div>
-    </div>
-    </div>
 
-    <div class="demo-col">
-    <!-- Turns imply "you can change the playing sequence's turns" — not true
+      <div class="demo-col">
+        <!-- Turns imply "you can change the playing sequence's turns" — not true
          during playback, so they slide away for the play phase (freeing their
          strip for the player) and return on Keep building / Build another. -->
-    {#if phase !== "play"}
-      <div
-        class="turns-pair"
-        transition:slide={{ duration: motionDuration(DURATION.normal) }}
-      >
-        <div class="tool-group turns-group blue">
-          <span class="tool-label"
-            ><span class="hand-dot blue" aria-hidden="true"></span>Blue
-            turns</span
+        {#if phase !== "play"}
+          <div
+            class="turns-pair"
+            transition:slide={{ duration: motionDuration(DURATION.normal) }}
           >
-          <SegmentedControl
-            options={TURN_OPTIONS}
-            value={blueTurnsValue}
-            onchange={(v) => (blueTurnsValue = v)}
-            color="blue"
-          />
-        </div>
-        <div class="tool-group turns-group red">
-          <span class="tool-label"
-            ><span class="hand-dot red" aria-hidden="true"></span>Red
-            turns</span
-          >
-          <SegmentedControl
-            options={TURN_OPTIONS}
-            value={redTurnsValue}
-            onchange={(v) => (redTurnsValue = v)}
-            color="red"
-          />
-        </div>
-      </div>
-    {/if}
-
-    <!-- PICKER / PLAYER: the real primitives; phase swap lives HERE only. -->
-    <div class="picker-pane">
-      {#if phase === "pick-start"}
-        {#await import("$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte") then mod}
-          <mod.default
-            {startPositionState}
-            embedded
-            bluePropTypeOverride={demoProp}
-            redPropTypeOverride={demoProp}
-          />
-        {/await}
-      {:else if phase === "add-step"}
-        {#await import("$lib/features/create/construct/option-picker/components/OptionPicker.svelte") then mod}
-          <!-- The FULL option set: every letter family, sectioned into the
-               real swipe layout (embla pages + arrows), with the picker's own
-               All/Continuous filter pill. The old Type-1-only training wheels
-               are off — this is the real construct experience in miniature. -->
-          <mod.default
-            {currentSequence}
-            currentGridMode={gridMode}
-            onOptionSelected={handleOptionSelected}
-            bluePropTypeOverride={demoProp}
-            redPropTypeOverride={demoProp}
-            blueTurnsOverride={blueTurns}
-            redTurnsOverride={redTurns}
-          />
-        {/await}
-      {:else if playSequence}
-        {#await import("$lib/shared/sequence-viewer/components/AnimationPlayer.svelte") then mod}
-          <div class="play-pane">
-            <!-- No transport chrome: tap the canvas to pause/play (hoverHint
-                 teaches it on mouse, the act demonstrates it live). The thin
-                 progress line doubles as a scrubber, and the workspace cells
-                 seek on click — the viewer's two scrub affordances, both here. -->
-            <div class="player-frame" data-demo-stage>
-              <mod.default
-                sequence={playSequence}
-                autoPlay
-                showControls={false}
-                hideWordHeader
-                tapToToggle
-                progressLine
-                progressLineSeekable
-                hoverHint="badge"
-                bluePropType={demoProp}
-                redPropType={demoProp}
-                trailSettingsOverride={HERO_TRAIL_PRESET}
-                tipEffectMap={HERO_TIP_EFFECT_MAP}
-                onStepChange={handlePlayerStepChange}
-                onTogglePlaybackRef={(fn: () => void) => (playerToggle = fn)}
-                onControllerReady={(ctrl: AnimationPlaybackController) =>
-                  (playerController = ctrl)}
+            <div class="tool-group turns-group blue">
+              <span class="tool-label"
+                ><span class="hand-dot blue" aria-hidden="true"></span>Blue
+                turns</span
+              >
+              <SegmentedControl
+                options={TURN_OPTIONS}
+                value={blueTurnsValue}
+                onchange={(v) => (blueTurnsValue = v)}
+                color="blue"
+              />
+            </div>
+            <div class="tool-group turns-group red">
+              <span class="tool-label"
+                ><span class="hand-dot red" aria-hidden="true"></span>Red turns</span
+              >
+              <SegmentedControl
+                options={TURN_OPTIONS}
+                value={redTurnsValue}
+                onchange={(v) => (redTurnsValue = v)}
+                color="red"
               />
             </div>
           </div>
-        {/await}
-      {/if}
-    </div>
-    </div>
-  </div>
+        {/if}
 
+        <!-- PICKER / PLAYER: the real primitives; phase swap lives HERE only. -->
+        <div class="picker-pane">
+          {#if phase === "pick-start"}
+            {#await import("$lib/features/create/construct/start-position-picker/components/StartPositionPicker.svelte") then mod}
+              <mod.default
+                {startPositionState}
+                embedded
+                bluePropTypeOverride={demoProp}
+                redPropTypeOverride={demoProp}
+              />
+            {/await}
+          {:else if phase === "add-step"}
+            {#await import("$lib/features/create/construct/option-picker/components/OptionPicker.svelte") then mod}
+              <!-- The FULL option set: every letter family, sectioned into the
+               real swipe layout (embla pages + arrows), with the picker's own
+               All/Continuous filter pill. The old Type-1-only training wheels
+               are off — this is the real construct experience in miniature. -->
+              <mod.default
+                {currentSequence}
+                currentGridMode={gridMode}
+                onOptionSelected={handleOptionSelected}
+                bluePropTypeOverride={demoProp}
+                redPropTypeOverride={demoProp}
+                blueTurnsOverride={blueTurns}
+                redTurnsOverride={redTurns}
+              />
+            {/await}
+          {:else if playSequence}
+            {#await import("$lib/shared/sequence-viewer/components/AnimationPlayer.svelte") then mod}
+              <div class="play-pane">
+                <!-- No transport chrome: tap the canvas to pause/play (hoverHint
+                 teaches it on mouse, the act demonstrates it live). The thin
+                 progress line doubles as a scrubber, and the workspace cells
+                 seek on click — the viewer's two scrub affordances, both here. -->
+                <div class="player-frame" data-demo-stage>
+                  <mod.default
+                    sequence={playSequence}
+                    autoPlay
+                    showControls={false}
+                    hideWordHeader
+                    tapToToggle
+                    progressLine
+                    progressLineSeekable
+                    hoverHint="badge"
+                    bluePropType={demoProp}
+                    redPropType={demoProp}
+                    trailSettingsOverride={HERO_TRAIL_PRESET}
+                    tipEffectMap={HERO_TIP_EFFECT_MAP}
+                    onStepChange={handlePlayerStepChange}
+                    onTogglePlaybackRef={(fn: () => void) =>
+                      (playerToggle = fn)}
+                    onControllerReady={(ctrl: AnimationPlaybackController) =>
+                      (playerController = ctrl)}
+                  />
+                </div>
+              </div>
+            {/await}
+          {/if}
+        </div>
+      </div>
+    </div>
   </div>
 
   {#if act}

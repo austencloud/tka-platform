@@ -17,6 +17,10 @@
   import RobustAvatar from "../../components/avatar/RobustAvatar.svelte";
   import NavDropdown, { type NavDropdownItem } from "./NavDropdown.svelte";
   import type { authState as AuthStateModule } from "../../auth/state/auth-state.svelte";
+  import { trackCtaClick } from "$lib/shared/analytics/landing-events";
+  import { analyticsRoute } from "$lib/shared/analytics/analytics-context";
+  import { trackAuthModalOpened, type AuthCta } from "$lib/shared/analytics/auth-events";
+  import { clearAuthSubmissionBridge } from "$lib/shared/auth/services/auth-analytics-bridge";
 
   let scrolled = $state(false);
   let mobileOpen = $state(false);
@@ -115,7 +119,8 @@
     onClose: () => void;
   }> | null>(null);
 
-  async function openSignIn() {
+  async function openSignIn(cta: AuthCta) {
+    trackAuthModalOpened(analyticsRoute(), cta);
     accountOpen = false;
     mobileOpen = false;
     await ensureAuthLoaded();
@@ -133,8 +138,16 @@
   // the modal opens for a guest — which slammed the modal shut on the same frame
   // it appeared ("pops forward then disappears backward"). isFullAccount only
   // flips true on a real, non-anonymous sign-in, which is the actual success.
+  // Also drops the auth-submission bridge (auth-analytics-bridge.ts): by the
+  // time isFullAccount flips true, user_signed_up has already fired from
+  // auth-state.svelte.ts and picked up the registered method/auth_mode, so
+  // it's safe - and necessary - to clear them here before anything else in
+  // this session could pick them up by accident.
   $effect(() => {
-    if (authModalOpen && authApi?.isFullAccount) authModalOpen = false;
+    if (authModalOpen && authApi?.isFullAccount) {
+      authModalOpen = false;
+      clearAuthSubmissionBridge();
+    }
   });
 
   // Two shapes: a plain link, or a labeled group that renders as a disclosure
@@ -417,11 +430,22 @@
           {/if}
         </div>
       {:else}
-        <button type="button" class="signin auth-slot" onclick={openSignIn}
+        <button
+          type="button"
+          class="signin auth-slot"
+          onclick={() => openSignIn("header_desktop_signin")}
           >Sign in</button
         >
       {/if}
-      <a class="cta" href="/create" data-sveltekit-reload
+      <a
+        class="cta"
+        href="/create"
+        data-sveltekit-reload
+        onclick={() =>
+          trackCtaClick("header_desktop", {
+            cta_type: "open_composer",
+            destination: "/create",
+          })}
         >Open Flow Arts Composer</a
       >
     </nav>
@@ -499,7 +523,18 @@
   </ul>
 
   <div class="m-actions" style="--i:{NAV.length}">
-    <a class="m-cta" href="/create" data-sveltekit-reload onclick={close}>
+    <a
+      class="m-cta"
+      href="/create"
+      data-sveltekit-reload
+      onclick={() => {
+        trackCtaClick("header_mobile", {
+          cta_type: "open_composer",
+          destination: "/create",
+        });
+        close();
+      }}
+    >
       <i class="fas fa-rocket" aria-hidden="true"></i>
       <span>Open Flow Arts Composer</span>
     </a>
@@ -516,7 +551,10 @@
         Sign out
       </button>
     {:else if authReady}
-      <button type="button" class="m-signin" onclick={openSignIn}
+      <button
+        type="button"
+        class="m-signin"
+        onclick={() => openSignIn("header_mobile_signin")}
         >Sign in</button
       >
     {/if}

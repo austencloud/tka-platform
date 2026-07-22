@@ -2,7 +2,12 @@
   import LazyMount from "$lib/shared/components/LazyMount.svelte";
   import Seo from "$lib/shared/components/Seo.svelte";
   import SequenceHeroDemo from "$lib/shared/landing/components/SequenceHeroDemo.svelte";
-  import { trackCtaClick } from "../../landing/landing-analytics";
+  import {
+    trackCtaClick,
+    trackDemoInteraction,
+    trackSectionView,
+  } from "$lib/shared/analytics/landing-events";
+  import { analyticsRoute } from "$lib/shared/analytics/analytics-context";
   import FanSkeleton from "./_components/FanSkeleton.svelte";
   import PlayWithItSkeleton from "../../landing/components/PlayWithItSkeleton.svelte";
   import { activateWhenNear } from "$lib/actions/activate-when-near";
@@ -70,9 +75,16 @@
       });
     sectionLoads.set(key, request);
   }
+  // The lazy-load observer doubles as the scroll-depth signal: the section key
+  // that decides which chunk to import is the same key analytics wants. No
+  // second IntersectionObserver — activateWhenNear disconnects on first
+  // intersection, so this fires once per page load per section.
   function whenNear(node: HTMLElement, key: SectionKey) {
     return activateWhenNear(node, {
-      activate: () => loadSection(key),
+      activate: () => {
+        trackSectionView(key, analyticsRoute());
+        loadSection(key);
+      },
       rootMargin: "300px",
       deferUntilIdle: true,
     });
@@ -123,6 +135,18 @@
 
   function rerollDemo(): void {
     void refreshDemo();
+  }
+
+  // Error recovery isn't engagement. The two retry overlays below call
+  // rerollDemo() directly and stay untracked for that reason — but the hero's
+  // own button is dual-purpose: SequenceHeroDemo swaps its dice icon for
+  // fa-rotate-right and its label to "Try again" whenever errorMessage is set,
+  // while onclick stays bound to this same callback. So a click during an error
+  // is a retry, not a "show me another one", and has to route through the same
+  // untracked path as the overlays.
+  function rerollHeroDemo(): void {
+    if (!demoError) trackDemoInteraction("try_another");
+    rerollDemo();
   }
 
   const TITLE = "Flow Arts Composer | Free Flow Arts Software for Choreography";
@@ -209,21 +233,31 @@
   let choreoCardsActive = $state(false);
   let viewer3DActive = $state(false);
   let playWithItActive = $state(false);
-  function activateDemoWhenNear(node: HTMLElement, activate: () => void) {
+  // Same deal as whenNear: mounting the demo IS the section-reached event, so
+  // the section name rides along with the activation instead of earning its own
+  // observer.
+  function activateDemoWhenNear(
+    node: HTMLElement,
+    section: string,
+    activate: () => void
+  ) {
     return activateWhenNear(node, {
-      activate,
+      activate: () => {
+        trackSectionView(section, analyticsRoute());
+        activate();
+      },
       rootMargin: "400px",
       deferUntilIdle: true,
     });
   }
   const activateTunnelWhenNear = (node: HTMLElement) =>
-    activateDemoWhenNear(node, () => (tunnelActive = true));
+    activateDemoWhenNear(node, "tunnel", () => (tunnelActive = true));
   const activateChoreoCardsWhenNear = (node: HTMLElement) =>
-    activateDemoWhenNear(node, () => (choreoCardsActive = true));
+    activateDemoWhenNear(node, "choreo_cards", () => (choreoCardsActive = true));
   const activate3DWhenNear = (node: HTMLElement) =>
-    activateDemoWhenNear(node, () => (viewer3DActive = true));
+    activateDemoWhenNear(node, "viewer_3d", () => (viewer3DActive = true));
   const activatePlayWithItWhenNear = (node: HTMLElement) =>
-    activateDemoWhenNear(node, () => (playWithItActive = true));
+    activateDemoWhenNear(node, "play_with_it", () => (playWithItActive = true));
 
   const ROADMAP = [
     {
@@ -322,7 +356,7 @@
 {/snippet}
 
 {#snippet playWithItLoadError(_error: unknown, retry: () => void)}
-  <div class="demo-error-reserve">
+  <div class="demo-error-reserve playwithit-error-reserve">
     <PlayWithItSkeleton failed={true} />
     {@render retryOverlay("This live demo did not load.", retry, true, false)}
   </div>
@@ -380,7 +414,7 @@
       <SequenceHeroDemo
         sequence={demoSeq}
         note="a rotated LOOP from the generator, animating live"
-        onReroll={rerollDemo}
+        onReroll={rerollHeroDemo}
         rerolling={rerollingDemo}
         errorMessage={demoError}
       />
@@ -957,6 +991,13 @@
   .demo-error-reserve {
     position: relative;
     width: 100%;
+  }
+
+  .playwithit-error-reserve {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
   }
 
   .demo-error-reserve .sk-demo {

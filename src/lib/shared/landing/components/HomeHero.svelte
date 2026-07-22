@@ -20,6 +20,10 @@
     HERO_TRAIL_PRESET,
     HERO_TIP_EFFECT_MAP,
   } from "$lib/shared/landing/data/hero-trail-preset";
+  import {
+    trackCtaClick,
+    trackDemoInteraction,
+  } from "$lib/shared/analytics/landing-events";
 
   const heroAct = createHeroAct();
 
@@ -30,6 +34,15 @@
   // Pinned so a visitor's persisted Compose playback speed can't skew the
   // marketing surface — every visitor sees the act at the same tempo.
   const HERO_BPM = 60;
+
+  // Mirrors composer/+page.svelte's rerollHeroDemo: the dice button is the
+  // only reroll on this page, so the tracking call and the actual advance
+  // stay paired in one wrapper rather than threading a callback into
+  // SequenceHeroDemo (shared by 16+ files, per landing-analytics-taxonomy §5).
+  function handleReroll(): void {
+    trackDemoInteraction("try_another");
+    void heroAct.advanceNow();
+  }
 </script>
 
 <section class="home-hero">
@@ -43,7 +56,7 @@
   <SequenceHeroDemo
     sequence={heroAct.sequence}
     note="played straight from its notation"
-    onReroll={heroAct.advanceNow}
+    onReroll={handleReroll}
     rerolling={heroAct.rerolling}
     bluePropType={heroAct.propType}
     redPropType={heroAct.propType}
@@ -56,7 +69,14 @@
   />
 
   <p class="hero-pointer">
-    New here? Start with <a href="/about" class="pointer-link">What is TKA?</a>
+    New here? Start with
+    <a
+      href="/about"
+      class="pointer-link"
+      onclick={() =>
+        trackCtaClick("hero", { cta_type: "what_is_tka", destination: "/about" })}
+      >What is TKA?</a
+    >
   </p>
 </section>
 
@@ -162,17 +182,23 @@
     }
   }
 
-  @media (max-width: 600px) {
+  /* The mobile fallback is intentionally scroll-safe. Compact one-viewport
+     layouts override these values below; unusually short windows still keep
+     the title clear of the fixed header and cap the player by block space. */
+  @media (width < 42rem) {
     .home-hero {
-      /* Mobile may be shorter than a viewport; never taller. */
       min-height: auto;
-      padding: 2rem 1.25rem 1.75rem;
+      padding: calc(64px + 1rem) 1.25rem 1.75rem;
+      --hero-demo-max-width: min(
+        100%,
+        clamp(12rem, calc(100svh - 13rem), 24rem)
+      );
     }
   }
 
   /* Tablet composition: the page owns the two panes, so this side only has
      to balance its title, player, and two actions inside the available height. */
-  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) {
+  @media (width >= 42rem) and (width < 105rem) and (height >= 500px) {
     .home-hero {
       min-height: 0;
       height: 100%;
@@ -194,7 +220,7 @@
     }
   }
 
-  @media (min-width: 42rem) and (max-width: 1679px) and (min-height: 500px) and (max-height: 850px) {
+  @media (width >= 42rem) and (width < 105rem) and (height >= 500px) and (max-height: 850px) {
     .home-hero {
       padding: 0.5rem 0;
       --hero-demo-max-width: min(100%, 30svh);
@@ -214,10 +240,10 @@
     }
   }
 
-  /* A Fold in landscape has tablet width but substantially less height. The
-     thumbnail rail disappears at this size, so the animation can spend that
-     recovered height on a much wider square without pushing out either CTA. */
-  @media (min-width: 42rem) and (max-width: 1180px) and (min-height: 500px) and (max-height: 44rem) {
+  /* A short split pane cannot carry the title, horizontal thumbnail rail,
+     player controls, and CTA without climbing behind the fixed header. The
+     rail disappears here and the recovered height returns to the square. */
+  @media (width >= 42rem) and (width < 105rem) and (height >= 500px) and (height < 44rem) {
     .home-hero {
       padding: 0.25rem 0;
       --hero-demo-max-width: min(100%, 40svh);
@@ -240,7 +266,8 @@
 
   /* Sideways phones get a single-line title and a rail-free animation. The
      first-read link remains in the menu so the live example can stay legible. */
-  @media (min-width: 560px) and (max-width: 1023px) and (min-height: 300px) and (max-height: 499px) {
+  @media (width >= 35rem) and (height < 500px),
+    (width >= 105rem) and (height < 56.25rem) {
     .home-hero {
       min-height: 0;
       height: 100%;
@@ -264,9 +291,11 @@
     }
   }
 
-  /* Portrait keeps the title compact, then gives roughly half the usable
-     screen to the paired canvas + vertical notation rail. */
-  @media (max-width: 41.99rem) and (min-height: 600px) and (orientation: portrait) {
+  /* Narrow screens stay in the compact hierarchy at every height. Below
+     500px the rail is removed by SequenceHeroDemo, so the same footprint gives
+     the square back its usable width while the page remains scroll-safe. */
+  @media (width < 35rem),
+    (width < 42rem) and (height >= 500px) {
     .home-hero {
       min-height: 0;
       padding: 0;
@@ -275,7 +304,7 @@
          squeezed the launchpad below it into six equal 105px strips with no
          room to rank anything. The reclaimed height pays for the first-read
          link below and for Composer's full-width band in the bento. */
-      --hero-demo-max-width: min(100%, clamp(13rem, 32svh, 17rem));
+      --hero-demo-max-width: min(100%, clamp(12rem, 32svh, 17rem));
     }
     .home-hero :global(.hero-demo.with-notation-strip) {
       margin-top: 0.35rem;
@@ -300,10 +329,19 @@
     }
   }
 
+  /* Extra-tall phones have enough block space to give the live example its
+     intended visual weight. The width remains capped by the component, while
+     the height query prevents this larger stage from crowding shorter phones. */
+  @media (width < 42rem) and (min-height: 56rem) and (orientation: portrait) {
+    .home-hero {
+      --hero-demo-max-width: min(100%, clamp(17rem, 34svh, 21rem));
+    }
+  }
+
   /* Split tier: the page composes hero (left pane) + launchpad (right pane)
      into one viewport (see +page.svelte). The pane owns the height, so the
      stacked-mode viewport sizing comes off. */
-  @media (min-width: 1680px) {
+  @media (width >= 105rem) and (height >= 56.25rem) {
     .home-hero {
       min-height: 0;
       height: 100%;

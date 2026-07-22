@@ -3,6 +3,7 @@
   import { onMount } from "svelte";
   import type { CoverCard } from "$lib/features/store/domain/models/product";
   import CardAnatomyExplainer from "$lib/features/store/components/CardAnatomyExplainer.svelte";
+  import { runAfterNamedRouteMorphIdle } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import "$lib/shared/landing/styles/public-editorial.css";
 
   // Real baked card fronts, one fan per deck line (variety proof under
@@ -12,22 +13,37 @@
   let loopCards = $state<CoverCard[]>([]);
   let tndCards = $state<CoverCard[]>([]);
 
-  onMount(async () => {
-    try {
-      const { loadActiveProducts } = await import(
-        "$lib/features/store/services/product-loader"
-      );
-      const products = await loadActiveProducts();
-      const loopSkus = products.filter((p) => p.listing === "loop-deck");
-      const tndSkus = products.filter((p) => p.listing === "tnd-trilogy");
-      const perFlavor = loopSkus
-        .map((p) => p.coverCards?.[0])
-        .filter((c): c is CoverCard => c != null);
-      loopCards = perFlavor.length >= 4 ? perFlavor : (loopSkus[0]?.coverCards ?? perFlavor);
-      tndCards = tndSkus[0]?.coverCards ?? [];
-    } catch (error) {
-      console.warn("[choreo-cards] deck fan load failed; tiles stay text-only", error);
-    }
+  onMount(() => {
+    let mounted = true;
+    const cancel = runAfterNamedRouteMorphIdle(async () => {
+      try {
+        const { loadActiveProducts } = await import(
+          "$lib/features/store/services/product-loader"
+        );
+        const products = await loadActiveProducts();
+        if (!mounted) return;
+        const loopSkus = products.filter((p) => p.listing === "loop-deck");
+        const tndSkus = products.filter((p) => p.listing === "tnd-trilogy");
+        const perFlavor = loopSkus
+          .map((p) => p.coverCards?.[0])
+          .filter((c): c is CoverCard => c != null);
+        loopCards =
+          perFlavor.length >= 4
+            ? perFlavor
+            : (loopSkus[0]?.coverCards ?? perFlavor);
+        tndCards = tndSkus[0]?.coverCards ?? [];
+      } catch (error) {
+        console.warn(
+          "[choreo-cards] deck fan load failed; tiles stay text-only",
+          error
+        );
+      }
+    });
+
+    return () => {
+      mounted = false;
+      cancel();
+    };
   });
 
   const DESCRIPTION =

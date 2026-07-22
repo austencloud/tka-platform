@@ -152,3 +152,25 @@ export const HERO_POINTER = {
 	label: "What is TKA?",
 	href: "/about",
 } as const;
+
+/**
+ * Stable, bounded slug for a launchpad href, used as `chip_id` and `strip_id`
+ * in `landing_launchpad_click`. Chips and strip links carry no id of their own
+ * (only label/href), and raw href is the cardinality hazard the taxonomy rules
+ * out — a path-derived slug is stable across copy edits and small by
+ * construction.
+ *
+ * It lives here, imported by both LaunchpadTile and LaunchpadGrid, because
+ * those two feed ONE breakdown in PostHog. Two copies of the rule is two ways
+ * for that breakdown to silently split in half the first time the rule changes.
+ */
+export function hrefSlug(href: string): string {
+	return href.replace(/^\//, "").replace(/\//g, "-");
+}
+
+/** Is this one of the six production tiles the `LaunchpadTileId` union names?
+ *  LaunchpadTile also renders non-canonical tile lists (the composer bento),
+ *  whose ids must never reach the closed union. */
+export function isProductionTileId(id: string): boolean {
+	return LAUNCHPAD_TILES.some((tile) => tile.id === id);
+}

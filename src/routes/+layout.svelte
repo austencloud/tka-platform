@@ -11,6 +11,7 @@
   import { runNamedRouteMorph } from "$lib/shared/transitions/named-route-morph-state.svelte";
   import { getPresenceTracker } from "$lib/shared/presence/get-presence-tracker";
   import { isConstrainedConnection } from "$lib/shared/platform/network-conditions";
+  import { getIabBannerHeight } from "$lib/shared/auth/state/iab-banner-state.svelte";
   import type { LayoutData } from "./$types";
   import "../app.css";
   // Chip toggle tokens - maps --chip-* to TKA design values
@@ -61,8 +62,7 @@
       attach(vt: { ready: Promise<void>; finished: Promise<void> }) {
         vt.ready.then(
           () => console.debug(`[morph] ${route} snapshot→ready ${since()}ms`),
-          (error) =>
-            console.debug(`[morph] ${route} snapshot rejected`, error)
+          (error) => console.debug(`[morph] ${route} snapshot rejected`, error)
         );
         vt.finished.then(
           () => {
@@ -160,9 +160,9 @@
   // content transitions — no flash of the body's saved-theme gradient between
   // pages. App routes (everything else) render children exactly as before.
   // Exact marketing pages + whole subtrees (/shop/*) that all render the same
-  // persistent cosmic chrome. The whole /guide subtree (hub included) now owns
-  // its own shell chrome via GuideShell — clicking Guide lands directly in the
-  // sidebar shell instead of a separate cosmic-background landing page first.
+  // persistent cosmic chrome. The exact /guide hub stays here so its homepage
+  // shared element can morph beneath a stationary header; deeper Guide routes
+  // own their standalone header/footer through GuideShell.
   const MARKETING_EXACT = new Set([
     "/",
     "/about",
@@ -195,6 +195,19 @@
     if (data?.geo) {
       getPresenceTracker()?.setLocation(data.geo);
     }
+  });
+
+  // The in-app browser banner used to render only on /sequence/*, so that one
+  // page read the banner state directly and padded its own footer. It now shows
+  // on every route, so the reservation is published here as a root variable any
+  // surface can consume — `padding-bottom: var(--iab-banner-height, 0px)`.
+  // Height is measured by the banner, since its copy wraps differently by width.
+  $effect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.style.setProperty(
+      "--iab-banner-height",
+      `${getIabBannerHeight()}px`
+    );
   });
 
   /**
@@ -341,6 +354,27 @@
 
     // Landing doesn't need DI container or auth - mark ready immediately
     containerReady = true;
+
+    // The in-app browser banner is not app-shell chrome. /q/* QR scans and
+    // /sequence/* share links are landing-mode routes (config/domains.ts
+    // PUBLIC_PATH_PREFIXES), and those are precisely the links that get pasted
+    // into an Instagram DM. This component only ever loaded in app mode, so the
+    // sequence-viewer banner branch it used to carry could never actually
+    // render. Idle-deferred: it is a warning bar, never on the critical path.
+    const loadIabPrompt = () => {
+      import("$lib/shared/auth/components/InAppBrowserPrompt.svelte")
+        .then(({ default: component }) => {
+          InAppBrowserPromptComp = component;
+        })
+        .catch((error) =>
+          console.warn("In-app browser prompt failed:", error)
+        );
+    };
+    if (typeof requestIdleCallback !== "undefined") {
+      requestIdleCallback(loadIabPrompt, { timeout: 3000 });
+    } else {
+      setTimeout(loadIabPrompt, 0);
+    }
 
     return () => {
       if (window.visualViewport) {

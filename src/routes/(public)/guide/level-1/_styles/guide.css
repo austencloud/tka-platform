@@ -12,9 +12,11 @@
   /* Tangerine = chancery (Corsiva's lineage), tall x-height → legible. Chosen
      2026-06-26 from /sketches/2026-06-26-guide-title-fonts.html. Swap this one
      line to change every guide title. */
-  --guide-script: "Tangerine", "Segoe Script", cursive; /* calligraphic page titles */
+  --guide-script:
+    "Tangerine", "Segoe Script", cursive; /* calligraphic page titles */
   --guide-script-weight: 700; /* Tangerine has a true bold */
-  --guide-display: "Cormorant Garamond", Georgia, serif; /* serif body/captions */
+  --guide-display:
+    "Cormorant Garamond", Georgia, serif; /* serif body/captions */
 
   /* Shared page-title treatment - edit HERE to change EVERY guide title's size
      and placement at once. Values are px on the 816×1056 sheet (1pt = 4/3px):
@@ -74,8 +76,8 @@
   min-height: 100vh;
   padding-top: 64px;
   background: oklch(0.13 0.015 270);
-  color: oklch(0.90 0.01 270);
-  font-family: 'Inter', system-ui, sans-serif;
+  color: oklch(0.9 0.01 270);
+  font-family: "Inter", system-ui, sans-serif;
 }
 
 /* === Sidebar === */
@@ -90,7 +92,7 @@
   overflow-y: auto;
   overflow-x: clip;
   background: oklch(0.15 0.02 270 / 0.6);
-  border-right: 1px solid oklch(0.30 0.04 270 / 0.3);
+  border-right: 1px solid oklch(0.3 0.04 270 / 0.3);
   backdrop-filter: blur(24px);
   padding: 1.5rem 0;
   z-index: 10;
@@ -144,10 +146,10 @@
 
 /* === Typography === */
 .guide-content h1 {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   font-size: clamp(2.4rem, 1.8rem + 2vw, 4.2rem);
   font-weight: 750;
-  font-variation-settings: 'opsz' 32;
+  font-variation-settings: "opsz" 32;
   letter-spacing: -0.04em;
   line-height: 1.05;
   color: oklch(0.95 0.01 270);
@@ -175,10 +177,10 @@
 }
 
 .guide-content h2 {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   font-size: clamp(1.3rem, 1rem + 0.8vw, 1.75rem);
   font-weight: 650;
-  font-variation-settings: 'opsz' 24;
+  font-variation-settings: "opsz" 24;
   letter-spacing: -0.015em;
   margin: 0 0 1rem;
   padding-bottom: 0;
@@ -189,14 +191,14 @@
 .guide-content h3 {
   font-size: clamp(1.05rem, 0.95rem + 0.3vw, 1.25rem);
   font-weight: 600;
-  font-variation-settings: 'opsz' 20;
+  font-variation-settings: "opsz" 20;
   margin: 2rem 0 0.75rem;
-  color: oklch(0.80 0.04 270);
+  color: oklch(0.8 0.04 270);
 }
 
 .guide-content p {
   font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.1rem);
-  font-variation-settings: 'opsz' 16;
+  font-variation-settings: "opsz" 16;
   line-height: 1.72;
   margin: 0 0 1.25rem;
   color: oklch(0.72 0.01 270);
@@ -208,7 +210,8 @@
   font-weight: 600;
 }
 
-.guide-content ul, .guide-content ol {
+.guide-content ul,
+.guide-content ol {
   color: oklch(0.72 0.01 270);
   font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.1rem);
   line-height: 1.72;
@@ -227,15 +230,31 @@
 }
 
 /* === Type Color Coding === */
-.type-dual-shift { color: oklch(0.72 0.15 220); }
-.type-shift { color: oklch(0.65 0.15 280); }
-.type-cross-shift { color: oklch(0.70 0.15 160); }
-.type-dash { color: oklch(0.72 0.15 60); }
-.type-dual-dash { color: oklch(0.70 0.15 190); }
-.type-static { color: oklch(0.60 0.02 270); }
+.type-dual-shift {
+  color: oklch(0.72 0.15 220);
+}
+.type-shift {
+  color: oklch(0.65 0.15 280);
+}
+.type-cross-shift {
+  color: oklch(0.7 0.15 160);
+}
+.type-dash {
+  color: oklch(0.72 0.15 60);
+}
+.type-dual-dash {
+  color: oklch(0.7 0.15 190);
+}
+.type-static {
+  color: oklch(0.6 0.02 270);
+}
 
-.hand-blue { color: oklch(0.55 0.20 260); }
-.hand-red { color: oklch(0.60 0.20 25); }
+.hand-blue {
+  color: oklch(0.55 0.2 260);
+}
+.hand-red {
+  color: oklch(0.6 0.2 25);
+}
 
 /* === Sections === */
 .guide-section {
@@ -245,12 +264,12 @@
   margin-bottom: 2rem;
   padding: 2rem 0;
   background: oklch(0.16 0.018 270 / 0.4);
-  border: 1px solid oklch(0.30 0.04 270 / 0.1);
+  border: 1px solid oklch(0.3 0.04 270 / 0.1);
   border-radius: 20px;
   backdrop-filter: blur(12px);
   box-shadow:
     0 8px 32px oklch(0.05 0.02 270 / 0.25),
-    inset 0 1px 0 oklch(0.40 0.04 270 / 0.06);
+    inset 0 1px 0 oklch(0.4 0.04 270 / 0.06);
 }
 
 .guide-section > * {
@@ -284,8 +303,14 @@
     animation-range: entry 0% entry 30%;
   }
   @keyframes guide-reveal {
-    from { opacity: 0; transform: translateY(40px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
@@ -303,13 +328,13 @@
   height: auto;
   border-radius: 8px;
   background: oklch(0.14 0.015 270 / 0.6);
-  border: 1px solid oklch(0.30 0.04 270 / 0.12);
+  border: 1px solid oklch(0.3 0.04 270 / 0.12);
   padding: 1rem;
 }
 
 .guide-diagram figcaption {
   font-size: 0.85rem;
-  color: oklch(0.50 0.02 270);
+  color: oklch(0.5 0.02 270);
   margin-top: 0.75rem;
   text-align: center;
 }
@@ -339,14 +364,14 @@
   justify-content: center;
   font-weight: 600;
   font-size: 0.9rem;
-  color: oklch(0.80 0.04 270);
+  color: oklch(0.8 0.04 270);
   padding-right: 0.75rem;
 }
 
 .guide-pictograph-grid .row-sublabel {
   font-weight: 400;
   font-size: 0.8rem;
-  color: oklch(0.50 0.02 270);
+  color: oklch(0.5 0.02 270);
   display: block;
 }
 
@@ -362,15 +387,17 @@
   border-radius: 10px;
   overflow: hidden;
   background: oklch(0.14 0.015 270 / 0.5);
-  transition: border-color 200ms ease, box-shadow 200ms ease;
+  transition:
+    border-color 200ms ease,
+    box-shadow 200ms ease;
 }
 
 .guide-pictograph.bordered .pictograph-wrapper {
-  border: 1px solid oklch(0.30 0.04 270 / 0.15);
+  border: 1px solid oklch(0.3 0.04 270 / 0.15);
 }
 
 .guide-pictograph.bordered .pictograph-wrapper:hover {
-  border-color: oklch(0.50 0.15 270 / 0.35);
+  border-color: oklch(0.5 0.15 270 / 0.35);
   box-shadow: 0 0 24px oklch(0.45 0.15 270 / 0.1);
 }
 
@@ -383,16 +410,25 @@
 
 /* Sizes - rem (7.5/11.25/17.5 == 120/180/280px at the 16px root) so cells ride
    the >=1680px root ramp with the prose beside them. */
-.guide-pictograph.size-sm .pictograph-wrapper { width: 7.5rem; height: 7.5rem; }
-.guide-pictograph.size-md .pictograph-wrapper { width: 11.25rem; height: 11.25rem; }
-.guide-pictograph.size-lg .pictograph-wrapper { width: 17.5rem; height: 17.5rem; }
+.guide-pictograph.size-sm .pictograph-wrapper {
+  width: 7.5rem;
+  height: 7.5rem;
+}
+.guide-pictograph.size-md .pictograph-wrapper {
+  width: 11.25rem;
+  height: 11.25rem;
+}
+.guide-pictograph.size-lg .pictograph-wrapper {
+  width: 17.5rem;
+  height: 17.5rem;
+}
 
 /* === Sequence player === */
 .guide-sequence-player {
   margin: 1.5rem 0;
   padding: 1rem;
   background: oklch(0.16 0.018 270 / 0.5);
-  border: 1px solid oklch(0.30 0.04 270 / 0.15);
+  border: 1px solid oklch(0.3 0.04 270 / 0.15);
   border-radius: 12px;
 }
 
@@ -400,7 +436,7 @@
   font-weight: 600;
   font-size: 0.95rem;
   margin-bottom: 0.75rem;
-  color: oklch(0.80 0.04 270);
+  color: oklch(0.8 0.04 270);
 }
 
 .guide-sequence-player .beat-strip {
@@ -436,9 +472,9 @@
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 50%;
-  border: 2px solid oklch(0.60 0.04 270);
+  border: 2px solid oklch(0.6 0.04 270);
   background: none;
-  color: oklch(0.80 0.04 270);
+  color: oklch(0.8 0.04 270);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -447,7 +483,7 @@
 }
 
 .guide-sequence-player .play-btn:hover {
-  background: oklch(0.20 0.02 270 / 0.4);
+  background: oklch(0.2 0.02 270 / 0.4);
 }
 
 .guide-sequence-player .beat-dots {
@@ -459,7 +495,7 @@
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 50%;
-  background: oklch(0.30 0.02 270);
+  background: oklch(0.3 0.02 270);
   cursor: pointer;
   border: none;
   padding: 0;
@@ -471,9 +507,9 @@
 
 .guide-sequence-player .speed-toggle {
   font-size: 0.8rem;
-  color: oklch(0.50 0.02 270);
+  color: oklch(0.5 0.02 270);
   cursor: pointer;
-  border: 1px solid oklch(0.30 0.04 270 / 0.3);
+  border: 1px solid oklch(0.3 0.04 270 / 0.3);
   border-radius: 6px;
   padding: 2px 8px;
   background: none;
@@ -489,14 +525,14 @@
   font-size: 0.95rem;
   padding: 0.5rem 0.75rem;
   margin-bottom: 1.5rem;
-  color: oklch(0.70 0.10 270);
+  color: oklch(0.7 0.1 270);
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
 .guide-nav .nav-title a {
-  color: oklch(0.70 0.10 270);
+  color: oklch(0.7 0.1 270);
   text-decoration: none;
 }
 
@@ -523,7 +559,7 @@
 }
 
 .guide-nav .chapter-title:hover {
-  background: oklch(0.20 0.02 270 / 0.4);
+  background: oklch(0.2 0.02 270 / 0.4);
   color: oklch(0.75 0.04 270);
 }
 
@@ -552,17 +588,17 @@
 
 .guide-nav .section-link:hover {
   color: oklch(0.65 0.04 270);
-  background: oklch(0.20 0.02 270 / 0.3);
+  background: oklch(0.2 0.02 270 / 0.3);
 }
 
 .guide-nav .section-link.active {
-  color: oklch(0.78 0.10 270);
+  color: oklch(0.78 0.1 270);
   font-weight: 550;
   background: oklch(0.25 0.04 270 / 0.3);
 }
 
 .guide-nav .section-link.active::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 12px;
   top: 50%;
@@ -576,7 +612,7 @@
 /* === Fallback indicator (dev only) === */
 .guide-pictograph .fallback-badge {
   font-size: 0.65rem;
-  color: oklch(0.70 0.15 60);
+  color: oklch(0.7 0.15 60);
   background: oklch(0.25 0.05 60 / 0.3);
   padding: 1px 6px;
   border-radius: 3px;
@@ -664,9 +700,18 @@
       [full-end];
   }
 
-  .guide-pictograph.size-sm .pictograph-wrapper { width: 6.25rem; height: 6.25rem; }
-  .guide-pictograph.size-md .pictograph-wrapper { width: 8.75rem; height: 8.75rem; }
-  .guide-pictograph.size-lg .pictograph-wrapper { width: 13.75rem; height: 13.75rem; }
+  .guide-pictograph.size-sm .pictograph-wrapper {
+    width: 6.25rem;
+    height: 6.25rem;
+  }
+  .guide-pictograph.size-md .pictograph-wrapper {
+    width: 8.75rem;
+    height: 8.75rem;
+  }
+  .guide-pictograph.size-lg .pictograph-wrapper {
+    width: 13.75rem;
+    height: 13.75rem;
+  }
 
   .guide-pictograph-grid {
     overflow-x: auto;
@@ -692,10 +737,11 @@
      measure in the shell (sidebar, 90ch prose track, FlowFrame's 62rem frame,
      cards, nav, footer type) grows by the SAME multiplier, so no element can
      outgrow its neighbours - the disjointed-4K failure is impossible by
-     construction. Scoped via :has to pages that mount the guide shell:
-     /book and /print import this file but never render .guide-layout, so
-     their fixed-inch artboards stay at the 16px root. */
-  html:has(.guide-layout) {
+     construction. Scoped via :has to standalone pages that mount the guide
+     shell: /book and /print never render .guide-layout, while the exact /guide
+     hub lives inside persistent .mkt-shell chrome and must retain the same root
+     metrics as the homepage during its shared-element morph. */
+  html:has(.guide-layout):not(:has(.mkt-shell)) {
     font-size: clamp(16px, calc(16px + (100vw - 1680px) * 8 / 2160), 24px);
   }
 
@@ -742,10 +788,11 @@
      (13.75rem rail + 118rem content) instead of the site's 1720px cap,
      which reads inset against the wider content between them. The header
      has no global class of its own; on guide pages the only <header> with
-     an .inner child is SiteHeader's (.topic-hero has none), and the :has
-     scope keeps this off every other public page. */
-  html:has(.guide-layout) header > .inner,
-  html:has(.guide-layout) .site-footer > .inner {
+     an .inner child is SiteHeader's (.topic-hero has none). The exact Guide hub
+     uses MarketingChrome, so excluding .mkt-shell also keeps that persistent
+     header geometrically identical to the homepage snapshot. */
+  html:has(.guide-layout):not(:has(.mkt-shell)) header > .inner,
+  html:has(.guide-layout):not(:has(.mkt-shell)) .site-footer > .inner {
     max-width: min(131.75rem, 92vw);
   }
 }
