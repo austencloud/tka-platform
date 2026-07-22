@@ -29,6 +29,7 @@ import {
   type SequenceData,
   createSequenceData,
 } from "$lib/shared/foundation/domain/models/sequence-data";
+import { deriveWordFromBeats } from "$lib/shared/foundation/services/word-deriver";
 import type { PublicSequencesLoader } from "$lib/shared/browse/services/public-sequences-loader";
 import {
   encodeSequenceForQR,
@@ -583,12 +584,21 @@ export class ShortCodeManager {
 
     // Build the full record once. Encoding is expensive - don't redo it per
     // collision-retry attempt.
+    // The card's display word must be the TKA word, never the sequence's
+    // library `name`. Unnamed sequences get an auto-name — "Sequence 2:21:45 PM"
+    // (Construct) or "Assemble Sequence" (Assemble) — and the old
+    // `sequence.word || sequence.name` fallback baked that junk into the
+    // shortcode, so every surface that reads sequenceName (admin scan feed, card
+    // thumbnail, SSR OG meta) showed the auto-name instead of the letters. Every
+    // minted code carries steps (the durability invariant below requires encoded
+    // or sequenceData.steps), so the letters are always derivable here.
+    const resolvedWord = sequence.word || deriveWordFromBeats(sequence.steps ?? []);
     const record: Record<string, unknown> = {
-      sequence: fallbackId || "",
+      sequence: resolvedWord || fallbackId || "",
       createdAt: new Date().toISOString(),
       createdBy: "system",
       scanCount: 0,
-      sequenceName: sequence.word || sequence.name || "",
+      sequenceName: resolvedWord || "",
     };
     if (sequence.id) record.sequenceId = sequence.id;
     if (sequence.ownerId) record.ownerId = sequence.ownerId;

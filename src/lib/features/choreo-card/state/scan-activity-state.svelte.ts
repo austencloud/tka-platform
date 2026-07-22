@@ -1,4 +1,5 @@
 import type { SequenceData } from "$lib/shared/foundation/domain/models/sequence-data";
+import { deriveWordFromBeats } from "$lib/shared/foundation/services/word-deriver";
 import { parsePropTypeFromURLValue } from "$lib/shared/navigation/services/sequence-encoder";
 import type { PropType } from "$lib/shared/pictograph/prop/domain/enums/prop-type";
 import {
@@ -118,8 +119,22 @@ function nullableText(value: unknown): string | null {
 }
 
 function codeWord(data: Record<string, unknown>): string {
-  const embedded = data.sequenceData as { word?: unknown } | undefined;
-  return text(data.sequenceName) || text(embedded?.word) || text(data.sequence);
+  const embedded = data.sequenceData as
+    | { word?: unknown; steps?: unknown }
+    | undefined;
+  // Prefer the letters of the actual steps over the stored sequenceName: older
+  // codes minted before the word fix baked in a junk auto-name ("Sequence
+  // 2:21:45 PM", "Assemble Sequence"), so the stored name can't be trusted as
+  // the display word. Returns raw joined letters; callers simplify.
+  const fromSteps = Array.isArray(embedded?.steps)
+    ? deriveWordFromBeats(embedded.steps as Parameters<typeof deriveWordFromBeats>[0])
+    : "";
+  return (
+    fromSteps ||
+    text(data.sequenceName) ||
+    text(embedded?.word) ||
+    text(data.sequence)
+  );
 }
 
 function embeddedSequenceFromDocument(
@@ -361,14 +376,21 @@ export function createScanActivityState({
     const renderReady = hydrateSequence(
       decoded as unknown as Record<string, unknown>
     );
+    // The decoded steps are ground truth. Encoded-only codes have no embedded
+    // steps at entry time, so entry.word is still the stored (possibly junk)
+    // sequenceName here — prefer the letters of the decoded sequence over it.
+    const decodedWord =
+      deriveWordFromBeats(renderReady.steps ?? []) ||
+      renderReady.word ||
+      entry.word;
     const author = entry.ownerId ? await lookupAuthor(entry.ownerId) : null;
     return {
       ...renderReady,
-      word: entry.word || renderReady.word,
-      name: entry.word || renderReady.name,
+      word: decodedWord,
+      name: decodedWord || renderReady.name,
       ownerId: entry.ownerId ?? renderReady.ownerId,
       author: author?.displayName ?? renderReady.author,
-      displayName: entry.word || renderReady.displayName,
+      displayName: decodedWord || renderReady.displayName,
     } as SequenceData;
   }
 
