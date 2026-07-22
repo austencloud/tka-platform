@@ -22,6 +22,11 @@ import {
   deriveMotionType,
   getHandpathDirection,
 } from "$lib/shared/render/core/calculations/orientation";
+import {
+  decodeLegacySequence,
+  detectLegacySequenceFormat,
+  encodeLegacySequence,
+} from "./legacy-sequence-codec";
 
 const LOCATION_ENCODE: Record<GridLocation, string> = {
   [GridLocation.NORTH]: "no",
@@ -435,6 +440,10 @@ export function encodeSequence(sequence: SequenceData): string {
 export function decodeSequence(encoded: string): SequenceData {
   if (!encoded) throw new Error("Cannot decode empty sequence");
 
+  if (detectLegacySequenceFormat(encoded)) {
+    return decodeLegacySequence(encoded);
+  }
+
   const parts = encoded.split("|");
   if (parts.length < 2) throw new Error("Invalid sequence encoding - missing data");
 
@@ -657,8 +666,22 @@ export async function decodeSequenceFromQR(encoded: string): Promise<SequenceDat
     const { CompositionalDecoder } = await import(
       "$lib/shared/qr/services/compositional-decoder"
     );
+    // A recipe's hash covers the flat wire representation, not just its
+    // motions. Recipes printed before 2026-05-30 therefore have to be
+    // reconstructed with the matching historical encoder before the hash can
+    // be verified. The decompressed seed tells us which immutable format was
+    // used; current recipes continue through the current encoder.
+    const recipeParts = data.split(":");
+    const compressedSeed = recipeParts.slice(3).join(":");
+    const seedFlat = decompressFromQR(compressedSeed);
+    const legacyFormat = detectLegacySequenceFormat(seedFlat);
     const decoder = new CompositionalDecoder(
-      { encode: (s) => encodeSequence(s) },
+      {
+        encode: (s) =>
+          legacyFormat
+            ? encodeLegacySequence(s, legacyFormat)
+            : encodeSequence(s),
+      },
       { decode: (s) => decodeSequence(s) },
       { decompressString: (s) => decompressFromQR(s) }
     );

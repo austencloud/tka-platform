@@ -1117,7 +1117,12 @@ export class ShortCodeManager {
     if (data.encoded) {
       try {
         const decoded = await decodeSequenceFromQR(data.encoded);
-        return { ...decoded, id: code } as SequenceData;
+        const word = importedWord(data);
+        return {
+          ...decoded,
+          id: code,
+          ...(word && { word, name: word }),
+        } as SequenceData;
       } catch (err) {
         // encoded blob failed to decode — fall through to other strategies
       }

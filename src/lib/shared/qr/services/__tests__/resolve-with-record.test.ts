@@ -65,6 +65,7 @@ describe("resolveShortCodeWithRecord", () => {
 		});
 		const { sequence, record } = await manager.resolveShortCodeWithRecord("AB3D");
 		expect(sequence?.id).toBe("AB3D");
+		expect(sequence?.word).toBe("KAKA");
 		expect(record?.deckId).toBe("deck-loop-01");
 		expect(record?.deckName).toBe("LOOP Deck One");
 	});
