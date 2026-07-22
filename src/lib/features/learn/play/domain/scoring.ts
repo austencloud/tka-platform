@@ -28,10 +28,13 @@ export function scoreAnswer(input: {
   isCorrect: boolean;
   answerTimeMs: number;
   streakBefore: number;
+  rewardsSpeed?: boolean;
 }): number {
   if (!input.isCorrect) return 0;
+  const timeBonus =
+    input.rewardsSpeed === false ? 0 : speedBonus(input.answerTimeMs);
   return Math.round(
-    (BASE_POINTS + speedBonus(input.answerTimeMs)) * streakMultiplier(input.streakBefore)
+    (BASE_POINTS + timeBonus) * streakMultiplier(input.streakBefore)
   );
 }
 

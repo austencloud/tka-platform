@@ -24,7 +24,12 @@ export type ArcadePhase =
   | { name: "hub" }
   | { name: "level-select"; game: GameDefinition }
   | { name: "playing"; game: GameDefinition; level: LevelDefinition }
-  | { name: "results"; game: GameDefinition; level: LevelDefinition; result: ArcadeSessionResult };
+  | {
+      name: "results";
+      game: GameDefinition;
+      level: LevelDefinition;
+      result: ArcadeSessionResult;
+    };
 
 /** Wall-clock-derived countdown tick — 250ms is frequent enough to feel live
  * without being a per-frame reactivity cost. */
@@ -44,6 +49,10 @@ export function createArcadeSession() {
   let rounds = $state<RoundRecord[]>([]);
   let records = $state<AnswerRecord[]>([]);
   let questionIndex = $state(0);
+  // The deck cursor advances as soon as an answer is scored, while this
+  // presentation cursor advances only when the next question is on screen.
+  // Keeping them separate prevents feedback for question 1 from reading 2/8.
+  let presentedQuestionIndex = $state(0);
   let questionShownAt = 0; // ms epoch, not reactive
   let startedAt = 0;
   // countdown clock
@@ -74,7 +83,10 @@ export function createArcadeSession() {
   function startClock(totalSeconds: number) {
     timeRemaining = totalSeconds;
     clockHandle = setInterval(() => {
-      const remaining = Math.max(0, totalSeconds - (Date.now() - startedAt) / 1000);
+      const remaining = Math.max(
+        0,
+        totalSeconds - (Date.now() - startedAt) / 1000
+      );
       timeRemaining = remaining;
       if (remaining <= 0) {
         complete();
@@ -95,6 +107,7 @@ export function createArcadeSession() {
     rounds = [];
     records = [];
     questionIndex = 0;
+    presentedQuestionIndex = 0;
     questionShownAt = 0;
     timeRemaining = 0;
     startedAt = Date.now();
@@ -105,6 +118,7 @@ export function createArcadeSession() {
   }
 
   function markQuestionShown() {
+    presentedQuestionIndex = questionIndex;
     questionShownAt = Date.now();
   }
 
@@ -134,16 +148,23 @@ export function createArcadeSession() {
    */
   function submitRound<TMetrics>(event: ArcadeRoundEvent<TMetrics>) {
     if (phase.name !== "playing") return;
-    const { level } = phase;
+    const { game, level } = phase;
 
     const isCorrect = roundIsCorrect(event);
     const answerTimeMs =
-      event.kind === "performance" ? event.elapsedMs : Date.now() - questionShownAt;
+      event.kind === "performance"
+        ? event.elapsedMs
+        : Date.now() - questionShownAt;
     const streakBefore = streak;
     const points =
       event.kind === "performance"
         ? event.points
-        : scoreAnswer({ isCorrect, answerTimeMs, streakBefore });
+        : scoreAnswer({
+            isCorrect,
+            answerTimeMs,
+            streakBefore,
+            rewardsSpeed: game.capabilities.rewardsSpeed,
+          });
 
     streak = isCorrect ? streak + 1 : 0;
     longestStreak = Math.max(longestStreak, streak);
@@ -164,9 +185,17 @@ export function createArcadeSession() {
     questionIndex += 1;
 
     const mode = level.mode;
-    if (mode.kind === "fixed" && rounds.length >= mode.questionCount) {
+    if (
+      mode.kind === "fixed" &&
+      rounds.length >= mode.questionCount &&
+      !game.capabilities.gameControlsCompletion
+    ) {
       complete();
-    } else if (mode.kind === "survival" && misses >= mode.maxMisses) {
+    } else if (
+      mode.kind === "survival" &&
+      misses >= mode.maxMisses &&
+      !game.capabilities.gameControlsCompletion
+    ) {
       complete();
     }
     // countdown: clock owns completion
@@ -253,6 +282,9 @@ export function createArcadeSession() {
     get questionIndex() {
       return questionIndex;
     },
+    get presentedQuestionIndex() {
+      return presentedQuestionIndex;
+    },
     get timeRemaining() {
       return timeRemaining;
     },
@@ -279,6 +311,7 @@ export function setArcadeSessionContext(s: ArcadeSession) {
 }
 export function getArcadeSession(): ArcadeSession {
   const s = getContext<ArcadeSession>(KEY);
-  if (!s) throw new Error("Arcade session context missing — PlayHub must set it");
+  if (!s)
+    throw new Error("Arcade session context missing — PlayHub must set it");
   return s;
 }

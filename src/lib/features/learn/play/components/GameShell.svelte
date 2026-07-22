@@ -40,6 +40,7 @@ animations, exactly as the legacy quizzes did.
   import CardToMandalaGame from "../games/CardToMandalaGame.svelte";
   import MotionToMandalaGame from "../games/MotionToMandalaGame.svelte";
   import TracePathsGame from "../games/trace-paths/TracePathsGame.svelte";
+  import WordBridgeGame from "../games/word-bridges/WordBridgeGame.svelte";
 
   const session = getArcadeSession();
 
@@ -60,7 +61,9 @@ animations, exactly as the legacy quizzes did.
    * chrome is decided, and the next immersive game silently gets the wrong
    * shell.
    */
-  const immersive = $derived(playing?.game.capabilities.immersiveStage === true);
+  const immersive = $derived(
+    playing?.game.capabilities.immersiveStage === true
+  );
 
   // Score display springs toward the engine's true score — the number the
   // player sees rolls up instead of snapping. "stiff" preset: fast, no
@@ -71,13 +74,16 @@ animations, exactly as the legacy quizzes did.
   });
   const displayedScore = $derived(Math.round(scoreSpring.current));
 
-  // Fixed-mode question readout, capped so the post-answer index bump during
-  // feedback never shows "11/10".
+  // Fixed-mode question readout follows what is actually on screen. The deck
+  // cursor advances when an answer is scored; the presentation cursor waits
+  // until Continue has revealed the next question.
   const questionCount = $derived(
     playing?.level.mode.kind === "fixed" ? playing.level.mode.questionCount : 0
   );
   const questionNumber = $derived(
-    questionCount > 0 ? Math.min(session.questionIndex + 1, questionCount) : 0
+    questionCount > 0
+      ? Math.min(session.presentedQuestionIndex + 1, questionCount)
+      : 0
   );
 
   const maxMisses = $derived(
@@ -153,8 +159,13 @@ animations, exactly as the legacy quizzes did.
                  progress in its live region. -->
           {:else if playing.level.mode.kind === "fixed"}
             <!-- Ghost-sizer reserves the widest readout so 9→10 never shifts -->
-            <span class="q-progress" aria-label="Question {questionNumber} of {questionCount}">
-              <span class="q-sizer" aria-hidden="true">{questionCount}/{questionCount}</span>
+            <span
+              class="q-progress"
+              aria-label="Question {questionNumber} of {questionCount}"
+            >
+              <span class="q-sizer" aria-hidden="true"
+                >{questionCount}/{questionCount}</span
+              >
               <span class="q-live">{questionNumber}/{questionCount}</span>
             </span>
           {:else if playing.level.mode.kind === "survival"}
@@ -175,7 +186,8 @@ animations, exactly as the legacy quizzes did.
                 strokeWidth={3}
                 color="var(--game-accent)"
               />
-              <span class="timer-text">{formatTime(session.timeRemaining)}</span>
+              <span class="timer-text">{formatTime(session.timeRemaining)}</span
+              >
             </div>
           {/if}
         </div>
@@ -216,6 +228,8 @@ animations, exactly as the legacy quizzes did.
           <CardToMandalaGame constraints={playing.level.constraints} />
         {:else if playing.game.id === "motion-to-mandala"}
           <MotionToMandalaGame constraints={playing.level.constraints} />
+        {:else if playing.game.id === "word-bridges"}
+          <WordBridgeGame constraints={playing.level.constraints} />
         {:else if playing.game.id === "trace-paths"}
           <TracePathsGame constraints={playing.level.constraints} />
         {/if}
@@ -461,5 +475,4 @@ animations, exactly as the legacy quizzes did.
       font-size: var(--font-size-2xl);
     }
   }
-
 </style>

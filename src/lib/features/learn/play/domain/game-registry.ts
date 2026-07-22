@@ -8,7 +8,7 @@ import { QuizType } from "../../quiz/domain/enums/quiz-enums";
 import type { GameCapabilities, GameDefinition } from "./arcade-types";
 
 /**
- * The eight original games are all the same shape: pick an option, the engine
+ * The original quiz games are all the same shape: pick an option, the engine
  * prices it. Spelled out on every entry rather than defaulted, so the shell
  * reads a game's hosting requirements off the entry instead of assuming.
  */
@@ -123,6 +123,19 @@ export const GAME_REGISTRY: GameDefinition[] = [
       { levelNumber: 1, title: "Four Blooms", mode: { kind: "fixed", questionCount: 6 }, constraints: { optionCount: 4, stepCount: 8 }, stars: { one: 350, two: 600, three: 850 } },
       { levelNumber: 2, title: "Six Blooms", mode: { kind: "fixed", questionCount: 8 }, constraints: { optionCount: 6, stepCount: 8 }, stars: { one: 500, two: 800, three: 1100 } },
       { levelNumber: 3, title: "Lookalikes", mode: { kind: "fixed", questionCount: 8 }, constraints: { optionCount: 6, stepCount: 8 }, stars: { one: 550, two: 900, three: 1250 } },
+    ],
+  },
+  {
+    id: "word-bridges",
+    title: "Mind the Gap",
+    tagline: "Find the breaks. Build the missing links.",
+    accentColor: "#06b6d4",
+    capabilities: { scoring: "quiz", rewardsSpeed: false, gameControlsCompletion: true },
+    quizType: QuizType.WORD_BRIDGES,
+    levels: [
+      { levelNumber: 1, title: "Runs as Written", mode: { kind: "fixed", questionCount: 8 }, constraints: { bridgeTask: "validity", optionCount: 2 }, stars: { one: 400, two: 700, three: 1000 } },
+      { levelNumber: 2, title: "Count the Bridges", mode: { kind: "fixed", questionCount: 8 }, constraints: { bridgeTask: "count", optionCount: 4 }, stars: { one: 400, two: 700, three: 1000 } },
+      { levelNumber: 3, title: "Choose the Bridge", mode: { kind: "fixed", questionCount: 8 }, constraints: { bridgeTask: "repair", optionCount: 4 }, stars: { one: 400, two: 700, three: 1000 } },
     ],
   },
   {

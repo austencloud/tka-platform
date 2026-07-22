@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createArcadeSession } from "$lib/features/learn/play/state/arcade-session-state.svelte";
 import { scoreAnswer } from "$lib/features/learn/play/domain/scoring";
-import type { GameDefinition, LevelDefinition } from "$lib/features/learn/play/domain/arcade-types";
+import type {
+  GameDefinition,
+  LevelDefinition,
+} from "$lib/features/learn/play/domain/arcade-types";
 import type { QuizAnswerEvent } from "$lib/features/learn/quiz/domain/models/quiz-models";
 
 function evt(isCorrect: boolean): QuizAnswerEvent {
@@ -30,7 +33,18 @@ const GAME: GameDefinition = {
   tagline: "test",
   accentColor: "#000",
   quizType: "pictograph_to_letter" as never,
+  capabilities: { scoring: "quiz" },
   levels: [],
+};
+
+const DELIBERATE_GAME: GameDefinition = {
+  ...GAME,
+  id: "word-bridges",
+  capabilities: {
+    scoring: "quiz",
+    rewardsSpeed: false,
+    gameControlsCompletion: true,
+  },
 };
 
 function fixedLevel(questionCount: number): LevelDefinition {
@@ -73,7 +87,11 @@ describe("createArcadeSession", () => {
     session.startLevel(GAME, fixedLevel(5));
     session.markQuestionShown();
 
-    const expected = scoreAnswer({ isCorrect: true, answerTimeMs: 0, streakBefore: 0 });
+    const expected = scoreAnswer({
+      isCorrect: true,
+      answerTimeMs: 0,
+      streakBefore: 0,
+    });
     session.submitAnswer(evt(true));
 
     expect(session.score).toBe(expected);
@@ -112,10 +130,47 @@ describe("createArcadeSession", () => {
     expect(session.phase.result.correctCount).toBe(2);
     expect(session.phase.result.totalCount).toBe(2);
     expect(session.phase.result.grade).toBe("S"); // 100% accuracy
-    expect(session.phase.result.starsEarned).toBe(computeExpectedStars(session.score, level));
+    expect(session.phase.result.starsEarned).toBe(
+      computeExpectedStars(session.score, level)
+    );
   });
 
-  function computeExpectedStars(score: number, level: LevelDefinition): 0 | 1 | 2 | 3 {
+  it("supports untimed scoring and game-controlled final feedback", () => {
+    const session = createArcadeSession();
+    const level = fixedLevel(1);
+    session.startLevel(DELIBERATE_GAME, level);
+    session.markQuestionShown();
+
+    session.submitAnswer(evt(true));
+
+    expect(session.score).toBe(100);
+    expect(session.questionIndex).toBe(1);
+    expect(session.phase.name).toBe("playing");
+
+    session.complete();
+    expect(session.phase.name).toBe("results");
+  });
+
+  it("keeps progress on the answered question until the next question is shown", () => {
+    const session = createArcadeSession();
+    session.startLevel(GAME, fixedLevel(2));
+
+    session.markQuestionShown();
+    expect(session.questionIndex).toBe(0);
+    expect(session.presentedQuestionIndex).toBe(0);
+
+    session.submitAnswer(evt(true));
+    expect(session.questionIndex).toBe(1);
+    expect(session.presentedQuestionIndex).toBe(0);
+
+    session.markQuestionShown();
+    expect(session.presentedQuestionIndex).toBe(1);
+  });
+
+  function computeExpectedStars(
+    score: number,
+    level: LevelDefinition
+  ): 0 | 1 | 2 | 3 {
     if (score >= level.stars.three) return 3;
     if (score >= level.stars.two) return 2;
     if (score >= level.stars.one) return 1;

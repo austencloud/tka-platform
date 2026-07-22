@@ -31,6 +31,15 @@ describe("scoreAnswer", () => {
     expect(scoreAnswer({ isCorrect: true, answerTimeMs: 1000, streakBefore: 3 })).toBe(225));
   it("slow right answer = base only at x1", () =>
     expect(scoreAnswer({ isCorrect: true, answerTimeMs: 9000, streakBefore: 0 })).toBe(BASE_POINTS));
+  it("can disable the speed bonus without disabling streak scoring", () =>
+    expect(
+      scoreAnswer({
+        isCorrect: true,
+        answerTimeMs: 100,
+        streakBefore: 3,
+        rewardsSpeed: false,
+      })
+    ).toBe(150));
 });
 
 describe("computeGrade", () => {

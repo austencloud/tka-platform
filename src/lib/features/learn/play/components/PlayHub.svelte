@@ -75,6 +75,9 @@
     get questionIndex() {
       return engine.questionIndex;
     },
+    get presentedQuestionIndex() {
+      return engine.presentedQuestionIndex;
+    },
     get timeRemaining() {
       return engine.timeRemaining;
     },
@@ -104,8 +107,19 @@
      reads out loud. Module-constant, so it is fixed at first paint and can't
      shift the layout. */
   const COUNT_WORDS = [
-    "Zero", "One", "Two", "Three", "Four", "Five", "Six",
-    "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
+    "Zero",
+    "One",
+    "Two",
+    "Three",
+    "Four",
+    "Five",
+    "Six",
+    "Seven",
+    "Eight",
+    "Nine",
+    "Ten",
+    "Eleven",
+    "Twelve",
   ];
   const gameCountWord =
     COUNT_WORDS[GAME_REGISTRY.length] ?? String(GAME_REGISTRY.length);
@@ -172,7 +186,10 @@
   /* QuizTab's persistQuizAttempt, ported: same guest guard, same wrong-answer
      shape for gap detection — but score/counts/duration are the engine's real
      values instead of the old coin-flip session's. Fire-and-forget. */
-  function persistPlayAttempt(game: GameDefinition, result: ArcadeSessionResult) {
+  function persistPlayAttempt(
+    game: GameDefinition,
+    result: ArcadeSessionResult
+  ) {
     const userId = getEffectiveUserId();
     if (!userId || userId === "anonymous") return;
 
@@ -252,7 +269,9 @@
     <div class="hub-content">
       <header class="hub-hero">
         <h2 class="hero-title">Play</h2>
-        <p class="hero-sub">{gameCountWord} games. Your best scores are waiting.</p>
+        <p class="hero-sub">
+          {gameCountWord} games. Your best scores are waiting.
+        </p>
       </header>
 
       <ul class="game-grid">

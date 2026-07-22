@@ -10,33 +10,19 @@
  * Failure mode: resolves to an empty array (network/CSV error) — previews
  * render their stage without pictographs rather than erroring the hub.
  */
-import { letterQueryHandler } from "$lib/shared/pictograph/tka-glyph/services/letter-query-handler";
-import { GridMode } from "$lib/shared/pictograph/grid/domain/enums/grid-enums";
 import type { PictographData } from "$lib/shared/pictograph/shared/domain/models/pictograph-data";
-
-let byLetter: Promise<Map<string, PictographData>> | null = null;
-
-function loadAll(): Promise<Map<string, PictographData>> {
-  byLetter ??= letterQueryHandler
-    .getAllPictographVariations(GridMode.DIAMOND)
-    .then((all) => {
-      const map = new Map<string, PictographData>();
-      for (const picto of all) {
-        const key = picto.letter ? String(picto.letter) : null;
-        if (key && !map.has(key)) map.set(key, picto);
-      }
-      return map;
-    })
-    .catch(() => new Map<string, PictographData>());
-  return byLetter;
-}
+import { loadPlayPictographPool } from "../../services/pictograph-pool";
 
 /** Resolve real PictographData for the requested letters (missing ones skipped). */
 export async function loadPreviewPictographs(
   letters: string[]
 ): Promise<PictographData[]> {
-  const map = await loadAll();
-  return letters
-    .map((letter) => map.get(letter))
-    .filter((p): p is PictographData => !!p);
+  try {
+    const pool = await loadPlayPictographPool();
+    return letters
+      .map((letter) => pool.get(letter)?.[0])
+      .filter((p): p is PictographData => !!p);
+  } catch {
+    return [];
+  }
 }

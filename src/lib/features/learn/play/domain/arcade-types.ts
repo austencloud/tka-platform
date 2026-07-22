@@ -18,6 +18,7 @@ export type GameId =
   | "mandala-match"
   | "card-to-mandala"
   | "motion-to-mandala"
+  | "word-bridges"
   | "trace-paths";
 
 /**
@@ -38,7 +39,13 @@ export interface GameCapabilities {
   supportsTwoPointers?: boolean;
   /** Who computes the round's points. See the note above. */
   scoring: "quiz" | "performance";
+  /** False keeps quiz scoring accuracy-based instead of rewarding fast answers. */
+  rewardsSpeed?: boolean;
+  /** Lets a game keep final-answer feedback open until it explicitly completes. */
+  gameControlsCompletion?: boolean;
 }
+
+export type BridgeTask = "validity" | "count" | "repair";
 
 /**
  * A performance round's own metrics, carried through the engine untouched.
@@ -91,6 +98,8 @@ export interface QuestionConstraints {
   paceEndSeconds?: number;
   /** Sequence length for the mandala game family (8-count to start; raise for harder tiers). */
   stepCount?: number;
+  /** Bridge-game question family for this level. */
+  bridgeTask?: BridgeTask;
 
   // --- Performance (trace-paths) constraints ---------------------------
   // All optional: quiz games never set them, and the trace game reads them
