@@ -9,6 +9,7 @@
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 import type { PushPayload } from "./types";
+import { getAndroidChannelId } from "./androidChannels";
 
 const db = admin.firestore();
 
@@ -20,11 +21,7 @@ const db = admin.firestore();
  * tokens accumulating forever (15 zombies observed on 2026-07-09).
  */
 function tokenDocId(token: string): string {
-  return crypto
-    .createHash("sha256")
-    .update(token)
-    .digest("hex")
-    .slice(0, 32);
+  return crypto.createHash("sha256").update(token).digest("hex").slice(0, 32);
 }
 
 /** FCM error codes that indicate a token is permanently invalid */
@@ -43,6 +40,13 @@ const STALE_TOKEN_ERRORS = new Set([
  * subscriptions FCM keeps "accepting" (returns success) yet never delivers to.
  */
 const STALE_TOKEN_MAX_AGE_MS = 270 * 24 * 60 * 60 * 1000;
+
+type PushTransport = "web" | "android-native";
+
+interface ActiveToken {
+  token: string;
+  transport: PushTransport;
+}
 
 /**
  * Maps notification types to their preference key in the user's
@@ -82,37 +86,71 @@ export async function sendPushToUser(
   payload: PushPayload,
   unreadCount: number
 ): Promise<void> {
-  const tokens = await getActiveTokens(userId);
-  if (tokens.length === 0) {
+  const activeTokens = await getActiveTokens(userId);
+  if (activeTokens.length === 0) {
     return;
   }
 
-  const message: admin.messaging.MulticastMessage = {
-    tokens,
-    data: {
-      title: payload.title,
-      body: payload.body,
-      url: payload.url,
-      tag: payload.tag,
-      type: payload.type,
-      unreadCount: String(unreadCount),
-      ...(payload.conversationId
-        ? { conversationId: payload.conversationId }
-        : {}),
-      ...(payload.notificationId
-        ? { notificationId: payload.notificationId }
-        : {}),
-    },
-    webpush: {
-      headers: { Urgency: "high" },
-      fcmOptions: { link: payload.url },
-    },
+  const data = {
+    title: payload.title,
+    body: payload.body,
+    url: payload.url,
+    tag: payload.tag,
+    type: payload.type,
+    unreadCount: String(unreadCount),
+    ...(payload.conversationId
+      ? { conversationId: payload.conversationId }
+      : {}),
+    ...(payload.notificationId
+      ? { notificationId: payload.notificationId }
+      : {}),
   };
+  const webTokens = activeTokens
+    .filter(({ transport }) => transport === "web")
+    .map(({ token }) => token);
+  const androidTokens = activeTokens
+    .filter(({ transport }) => transport === "android-native")
+    .map(({ token }) => token);
 
-  const response = await admin.messaging().sendEachForMulticast(message);
+  const sends: Promise<admin.messaging.BatchResponse>[] = [];
+  if (webTokens.length > 0) {
+    sends.push(
+      admin.messaging().sendEachForMulticast({
+        tokens: webTokens,
+        data,
+        webpush: {
+          headers: { Urgency: "high" },
+          fcmOptions: { link: payload.url },
+        },
+      })
+    );
+  }
+  if (androidTokens.length > 0) {
+    sends.push(
+      admin.messaging().sendEachForMulticast({
+        tokens: androidTokens,
+        data,
+        notification: { title: payload.title, body: payload.body },
+        android: {
+          priority: "high",
+          notification: {
+            channelId: getAndroidChannelId(payload.type),
+            tag: payload.tag,
+            defaultSound: true,
+          },
+        },
+      })
+    );
+  }
 
-  if (response.failureCount > 0) {
-    await cleanupStaleTokens(userId, tokens, response.responses);
+  const responses = await Promise.all(sends);
+  let responseIndex = 0;
+  for (const tokens of [webTokens, androidTokens]) {
+    if (tokens.length === 0) continue;
+    const response = responses[responseIndex++];
+    if (response.failureCount > 0) {
+      await cleanupStaleTokens(userId, tokens, response.responses);
+    }
   }
 }
 
@@ -126,7 +164,8 @@ export async function sendDataToUser(
   userId: string,
   data: Record<string, string>
 ): Promise<void> {
-  const tokens = await getActiveTokens(userId);
+  const activeTokens = await getActiveTokens(userId);
+  const tokens = activeTokens.map(({ token }) => token);
   if (tokens.length === 0) return;
 
   const response = await admin.messaging().sendEachForMulticast({
@@ -227,7 +266,7 @@ export async function getUnreadCount(userId: string): Promise<number> {
  * FCM never flags as invalid. Cleanup is awaited only when something is
  * actually stale, so the common path adds no latency.
  */
-async function getActiveTokens(userId: string): Promise<string[]> {
+async function getActiveTokens(userId: string): Promise<ActiveToken[]> {
   const tokensSnapshot = await db
     .collection("users")
     .doc(userId)
@@ -235,7 +274,7 @@ async function getActiveTokens(userId: string): Promise<string[]> {
     .get();
 
   const now = Date.now();
-  const live: string[] = [];
+  const live: ActiveToken[] = [];
   const staleRefs: admin.firestore.DocumentReference[] = [];
 
   tokensSnapshot.docs.forEach((doc) => {
@@ -248,11 +287,16 @@ async function getActiveTokens(userId: string): Promise<string[]> {
     const refreshedAt = (
       data.lastRefreshed as admin.firestore.Timestamp | undefined
     )?.toMillis?.();
-    if (refreshedAt !== undefined && now - refreshedAt > STALE_TOKEN_MAX_AGE_MS) {
+    if (
+      refreshedAt !== undefined &&
+      now - refreshedAt > STALE_TOKEN_MAX_AGE_MS
+    ) {
       staleRefs.push(doc.ref);
       return;
     }
-    live.push(token);
+    const transport =
+      data.transport === "android-native" ? "android-native" : "web";
+    live.push({ token, transport });
   });
 
   if (staleRefs.length > 0) {
