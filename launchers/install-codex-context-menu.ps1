@@ -3,10 +3,9 @@
 
     Registers (or repairs) the "Open with Codex" right-click menu entry for
     folders and folder backgrounds in Windows Explorer. It also installs the
-    TKA Codex status line in the user's config.toml. This is the Codex twin
-    of install-claude-context-menu.ps1 — same HKCU Classes hive, same
-    wt.exe + cmd /k pattern, so opening Codex on a folder is as convenient as
-    opening Claude Code.
+    TKA Codex status line and terminal title in the user's config.toml. This is the Codex twin
+    of install-claude-context-menu.ps1. Both use the same HKCU Classes hive and
+    the shared Agent Hub terminal launcher when it is installed.
 
     Why full-path resolution: `codex` is installed as an npm global shim at
     %APPDATA%\npm\codex.cmd. That dir is usually on PATH, but the menu command
@@ -22,7 +21,7 @@
     entry stops working.
 
     Usage:  powershell -ExecutionPolicy Bypass -File launchers\install-codex-context-menu.ps1
-    Footer: add -StatusLineOnly to configure only the Codex footer.
+    Status UI: add -StatusLineOnly to configure only the Codex footer and terminal title.
     Remove: add  -Uninstall  to delete the menu entries.
 #>
 
@@ -50,14 +49,66 @@ $StatusLineItems = @(
     'git-branch'
 )
 
-function Set-CodexStatusLine {
+# Put the persisted /rename value first so Alt+Tab exposes the session name.
+# Project name keeps the repository visible beside it.
+$TerminalTitleItems = @(
+    'thread-title',
+    'project-name'
+)
+
+function Set-TuiArraySetting([string]$Content, [string]$Name, [string[]]$Items) {
+    $newline = if ($Content.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $lines = [regex]::Split($Content, '\r?\n')
+    $settingIndexes = @(
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match ('^[ \t]*(?:tui\.)?' + [regex]::Escape($Name) + '[ \t]*=')) { $i }
+        }
+    )
+    $settingToml = $Name + ' = [' + (($Items | ForEach-Object { '"' + $_ + '"' }) -join ', ') + ']'
+
+    if ($settingIndexes.Count -gt 0) {
+        $firstIndex = $settingIndexes[0]
+        $prefix = if ($lines[$firstIndex] -match '^[ \t]*tui\.') { 'tui.' } else { '' }
+        $lines[$firstIndex] = $prefix + $settingToml
+
+        # Collapse duplicates left by older installers or manual edits.
+        $duplicateIndexes = @($settingIndexes | Select-Object -Skip 1)
+        return @(
+            for ($i = 0; $i -lt $lines.Count; $i++) {
+                if ($i -notin $duplicateIndexes) { $lines[$i] }
+            }
+        ) -join $newline
+    }
+
+    if ($Content -match '(?m)^\s*\[tui\]\s*$') {
+        return [regex]::Replace(
+            $Content,
+            '(?m)^(\s*\[tui\]\s*)$',
+            '$1' + $newline + $settingToml,
+            1
+        )
+    }
+
+    # A dotted root key is valid TOML and avoids reopening an implicitly
+    # created [tui] table when configs already contain [tui.*] subtables.
+    $dottedLine = 'tui.' + $settingToml
+    $firstTable = [regex]::Match($Content, '(?m)^\s*\[')
+    if ($firstTable.Success) {
+        return $Content.Insert($firstTable.Index, $dottedLine + $newline + $newline)
+    }
+    if ($Content.Length -gt 0 -and -not $Content.EndsWith($newline)) {
+        $Content += $newline
+    }
+    return $Content + $dottedLine + $newline
+}
+
+function Set-CodexStatusSurfaces {
     $codexHome = if ($env:CODEX_HOME) {
         $env:CODEX_HOME
     } else {
         Join-Path $env:USERPROFILE '.codex'
     }
     $configPath = Join-Path $codexHome 'config.toml'
-    $statusLineToml = 'status_line = [' + (($StatusLineItems | ForEach-Object { '"' + $_ + '"' }) -join ', ') + ']'
 
     New-Item -ItemType Directory -Path $codexHome -Force | Out-Null
     $content = if (Test-Path -LiteralPath $configPath) {
@@ -65,58 +116,16 @@ function Set-CodexStatusLine {
     } else {
         ''
     }
-
-    $newline = if ($content.Contains("`r`n")) { "`r`n" } else { "`n" }
-    $lines = [regex]::Split($content, '\r?\n')
-    $statusLineIndexes = @(
-        for ($i = 0; $i -lt $lines.Count; $i++) {
-            if ($lines[$i] -match '^[ \t]*(?:tui\.)?status_line[ \t]*=') { $i }
-        }
-    )
-
-    if ($statusLineIndexes.Count -gt 0) {
-        $firstIndex = $statusLineIndexes[0]
-        $prefix = if ($lines[$firstIndex] -match '^[ \t]*tui\.') { 'tui.' } else { '' }
-        $lines[$firstIndex] = $prefix + $statusLineToml
-
-        # Collapse duplicates left by older installers or manual edits.
-        $duplicateIndexes = @($statusLineIndexes | Select-Object -Skip 1)
-        $content = @(
-            for ($i = 0; $i -lt $lines.Count; $i++) {
-                if ($i -notin $duplicateIndexes) { $lines[$i] }
-            }
-        ) -join $newline
-    } elseif ($content -match '(?m)^\s*\[tui\]\s*$') {
-        $content = [regex]::Replace(
-            $content,
-            '(?m)^(\s*\[tui\]\s*)$',
-            '$1' + [Environment]::NewLine + $statusLineToml,
-            1
-        )
-    } else {
-        # A dotted root key is valid TOML and avoids reopening an implicitly
-        # created [tui] table when configs already contain [tui.*] subtables.
-        $dottedLine = 'tui.' + $statusLineToml
-        $firstTable = [regex]::Match($content, '(?m)^\s*\[')
-        if ($firstTable.Success) {
-            $content = $content.Insert(
-                $firstTable.Index,
-                $dottedLine + [Environment]::NewLine + [Environment]::NewLine
-            )
-        } else {
-            if ($content.Length -gt 0 -and -not $content.EndsWith([Environment]::NewLine)) {
-                $content += [Environment]::NewLine
-            }
-            $content += $dottedLine + [Environment]::NewLine
-        }
-    }
+    $content = Set-TuiArraySetting $content 'status_line' $StatusLineItems
+    $content = Set-TuiArraySetting $content 'terminal_title' $TerminalTitleItems
 
     $tempPath = "$configPath.tmp"
     [IO.File]::WriteAllText($tempPath, $content, [Text.UTF8Encoding]::new($false))
     Move-Item -LiteralPath $tempPath -Destination $configPath -Force
 
-    Write-Host "Configured Codex status line in $configPath"
-    Write-Host "  $($StatusLineItems -join ' | ')"
+    Write-Host "Configured Codex status surfaces in $configPath"
+    Write-Host "  footer: $($StatusLineItems -join ' | ')"
+    Write-Host "  title:  $($TerminalTitleItems -join ' | ')"
 }
 
 function Remove-MenuKeys {
@@ -134,10 +143,10 @@ if ($Uninstall) {
     return
 }
 
-Set-CodexStatusLine
+Set-CodexStatusSurfaces
 
 if ($StatusLineOnly) {
-    Write-Host "`nRestart Codex to show the new footer."
+    Write-Host "`nRestart Codex to load the new footer and terminal title."
     return
 }
 
@@ -167,10 +176,16 @@ $nodeExe = (Get-Command node.exe -ErrorAction SilentlyContinue).Source
 if (-not $nodeExe) { $nodeExe = 'C:\Program Files\nodejs\node.exe' }
 $iconRef = "$nodeExe,0"
 
-# Windows Terminal opens the shell in the target folder (-d), then cmd /k keeps
-# the window alive after Codex exits. %1 = clicked folder, %V = folder background.
-$dirCommand = "wt.exe -d `"%1`" cmd /k `"$codexCmd`" --dangerously-bypass-approvals-and-sandbox"
-$bgCommand  = "wt.exe -d `"%V`" cmd /k `"$codexCmd`" --dangerously-bypass-approvals-and-sandbox"
+# Agent Hub owns cross-CLI color leasing when installed. The direct Windows
+# Terminal fallback keeps this context menu usable on machines without it.
+$agentTerminal = Join-Path $env:LOCALAPPDATA 'AgentHub\bin\AgentTerminalLauncher.exe'
+if (Test-Path -LiteralPath $agentTerminal) {
+    $dirCommand = "`"$agentTerminal`" -Agent codex -Project `"%1`" -Executable `"$codexCmd`""
+    $bgCommand  = "`"$agentTerminal`" -Agent codex -Project `"%V`" -Executable `"$codexCmd`""
+} else {
+    $dirCommand = "wt.exe -d `"%1`" cmd /k `"$codexCmd`" --dangerously-bypass-approvals-and-sandbox"
+    $bgCommand  = "wt.exe -d `"%V`" cmd /k `"$codexCmd`" --dangerously-bypass-approvals-and-sandbox"
+}
 
 # --- Write the keys ---------------------------------------------------------
 function Set-MenuKey {

@@ -10,6 +10,12 @@ set "SHORTCUT_DIR=%USERPROFILE%\launchers"
 set "SHORTCUT=%SHORTCUT_DIR%\TKA Platform.lnk"
 set "BAT_FILE=%~f0"
 set "ICON=%REPO_ROOT%\scripts\launchers\icons\tka-platform.ico"
+set "AGENT_TERMINAL=%LOCALAPPDATA%\AgentHub\bin\AgentTerminalLauncher.exe"
+
+if not defined TKA_AGENT_TERMINAL if exist "%AGENT_TERMINAL%" (
+    "%AGENT_TERMINAL%" -Agent claude -Project "%REPO_ROOT%" -Bat "%BAT_FILE%"
+    exit /b
+)
 
 if not exist "%SHORTCUT%" (
     if not exist "%SHORTCUT_DIR%" mkdir "%SHORTCUT_DIR%"

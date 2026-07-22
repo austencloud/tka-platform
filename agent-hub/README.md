@@ -3,6 +3,10 @@
 A taskbar popover that asks **Claude or Codex?** and opens the chosen agent in the
 project you clicked.
 
+Every Agent Hub launch opens its own Windows Terminal window. Claude and Codex
+draw from one 16-color palette, so no two live Agent Hub sessions share a tab
+color. Closing a session releases its color automatically.
+
 Pin one shortcut per repo. Click it, a card appears at your cursor with the
 project's icon and two buttons. Pick one and the agent's terminal opens in that
 directory, already carrying the bypass flags.
@@ -38,7 +42,7 @@ project's existing `launchers\start-*.bat`.
 
 ### What it does
 
-1. Compiles two small executables with the .NET Framework compiler that ships
+1. Compiles four small executables with the .NET Framework compiler that ships
    with Windows. No SDK, no npm, no downloads.
 2. Installs them to `%LOCALAPPDATA%\AgentHub\bin` along with the icons.
 3. Creates one shortcut per project in `%USERPROFILE%\AgentHub` and the Start Menu.
@@ -76,7 +80,7 @@ the remembered per-project agent. Taskbar pins have to be unpinned by hand.
 
 ## How it works
 
-Two executables, because the click has to feel instant:
+Four executables split the popover and terminal lifecycles:
 
 - **AgentChooserStub.exe** is what the shortcut launches. It does nothing but
   write `project|name|icon` to a named pipe and exit, so it starts in tens of
@@ -85,6 +89,11 @@ Two executables, because the click has to feel instant:
   off-screen, warms the fonts and layout, then waits on the pipe. On a ping it
   positions the pre-built card at your cursor and shows it. Selection hides the
   window rather than closing it, so the second click is as fast as the first.
+- **AgentTerminalLauncher.exe** claims the first free color, then opens a new
+  Windows Terminal window with that tab color.
+- **AgentTerminalSession.exe** runs inside the new window and holds the named
+  color lease until the agent exits. Windows releases the lease if the terminal
+  is closed forcefully.
 
 If the host isn't running when you click, the stub cold-starts it and passes the
 arguments through, so a shortcut always works.
@@ -95,11 +104,13 @@ State lives in `%LOCALAPPDATA%\AgentHub`:
 |---|---|
 | `last.ini` | Per-project last agent, used for the Enter shortcut and the default highlight. |
 | `debug.flag` | Create this empty file to turn on verbose logging to `host.log`. |
+| `launch-errors.log` | Terminal startup failures, written only when a launch fails. |
 
-Launching an agent runs `<project>\launchers\start-<agent>.bat`. Each repo owns
-that file, so a project can customize how its agent starts (extra env, a wrapper
-binary, a status line) without touching agent-hub. If the bat is missing, the
-host falls back to running `claude` or `codex` from PATH.
+Launching an agent opens `wt.exe -w new` and runs
+`<project>\launchers\start-<agent>.bat` inside it. Each repo owns that file, so a
+project can customize how its agent starts (extra env, a wrapper binary, a
+status line) without touching agent-hub. If the bat is missing, the session
+host runs `claude` or `codex` from PATH.
 
 ## Troubleshooting
 
@@ -124,9 +135,9 @@ feature in Windows Features and re-run.
 the popover is already open: the click's mousedown hides it, then the same
 click's ping reopens it. See `KNOWN-ISSUES.md`.
 
-**The agent opens in a plain console instead of Windows Terminal.** Make Windows
-Terminal the default console host: Terminal → Settings → Startup → Default
-terminal application.
+**The agent window does not open or has no tab color.** Re-run the installer and
+confirm that all four executables exist in `%LOCALAPPDATA%\AgentHub\bin`. Then
+check `%LOCALAPPDATA%\AgentHub\launch-errors.log`.
 
 ## Source layout
 
@@ -135,7 +146,7 @@ agent-hub/
   install.ps1        build + install + shortcuts + logon entry
   uninstall.ps1
   projects.json      project list (path, display name, icon)
-  src/               C# sources for the two executables
+  src/               C# sources for the four executables
   icons/             project icons
   templates/         start-claude.bat / start-codex.bat written into bare repos
   KNOWN-ISSUES.md

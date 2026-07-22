@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -291,16 +292,26 @@ class Popup : Window
             string bat = string.IsNullOrEmpty(_project) ? null : Path.Combine(_project, "launchers\\start-" + agent + ".bat");
             var psi = new ProcessStartInfo();
             psi.WorkingDirectory = string.IsNullOrEmpty(_project) ? Environment.CurrentDirectory : _project;
-            if (bat != null && File.Exists(bat)) { psi.FileName = "cmd.exe"; psi.Arguments = "/c \"" + bat + "\""; }
+            string terminalLauncher = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "AgentTerminalLauncher.exe");
+            if (File.Exists(terminalLauncher))
+            {
+                psi.FileName = terminalLauncher;
+                psi.Arguments = "-Agent " + QuoteProcessArg(agent) + " -Project " + QuoteProcessArg(psi.WorkingDirectory);
+                if (bat != null && File.Exists(bat)) psi.Arguments += " -Bat " + QuoteProcessArg(bat);
+                psi.UseShellExecute = false;
+                psi.CreateNoWindow = true;
+            }
+            else if (bat != null && File.Exists(bat)) { psi.FileName = "cmd.exe"; psi.Arguments = "/c \"" + bat + "\""; psi.UseShellExecute = true; }
             else
             {
                 string cli = agent == "codex" ? "codex --dangerously-bypass-approvals-and-sandbox" : "claude --dangerously-skip-permissions";
                 psi.FileName = "cmd.exe"; psi.Arguments = "/k cd /d \"" + psi.WorkingDirectory + "\" ^&^& " + cli;
+                psi.UseShellExecute = true;
             }
-            psi.UseShellExecute = true;
             Process.Start(psi);
+            Log("launched " + agent + " for " + psi.WorkingDirectory + (File.Exists(terminalLauncher) ? " through colored terminal" : " through fallback"));
         }
-        catch { }
+        catch (Exception ex) { Log("launch failed: " + ex.Message); }
         WriteLast(agent);
         HideIt();
     }
@@ -441,5 +452,31 @@ class Popup : Window
     }
 
     static double Clamp01(double v) { return v < 0 ? 0 : (v > 1 ? 1 : v); }
+    static string QuoteProcessArg(string value)
+    {
+        if (string.IsNullOrEmpty(value)) return "\"\"";
+        var result = new StringBuilder();
+        result.Append('"');
+        int slashes = 0;
+        foreach (char ch in value)
+        {
+            if (ch == '\\') slashes++;
+            else if (ch == '"')
+            {
+                result.Append('\\', slashes * 2 + 1);
+                result.Append('"');
+                slashes = 0;
+            }
+            else
+            {
+                result.Append('\\', slashes);
+                result.Append(ch);
+                slashes = 0;
+            }
+        }
+        result.Append('\\', slashes * 2);
+        result.Append('"');
+        return result.ToString();
+    }
     static SolidColorBrush Brush(string hex) { return new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex)); }
 }

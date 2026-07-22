@@ -4,12 +4,10 @@
     Registers (or repairs) the "Open with Claude Code" right-click menu entry
     for folders and folder backgrounds in Windows Explorer.
 
-    Why this exists: the Claude Code native installer moved the binary to
-    %USERPROFILE%\.local\bin\claude.exe and does NOT reliably add that folder to
-    PATH. The old context-menu command called a bare `claude`, which then failed
-    to resolve. This script resolves the real claude.exe location, writes the
-    command with its full path (PATH-independent), and attaches Claude's own
-    embedded icon to the menu entry.
+    Why this exists: Claude Code may be installed through the native installer
+    or npm, and neither layout guarantees that claude.exe itself is on PATH.
+    This script resolves the real executable, writes the command with its full
+    path (PATH-independent), and attaches Claude's embedded icon to the menu.
 
     Re-run this any time a Claude Code update relocates the binary and the menu
     entry stops working.
@@ -51,11 +49,16 @@ function Resolve-ClaudeExe {
     $onPath = (Get-Command claude.exe -ErrorAction SilentlyContinue).Source
     if ($onPath -and (Test-Path $onPath)) { return (Resolve-Path $onPath).Path }
 
-    # 2) Native installer default location.
+    # 2) npm package native binary. The PATH shim is usually claude.cmd/ps1,
+    # but the packaged executable provides the icon and launches directly.
+    $npmNative = Join-Path $env:APPDATA 'npm\node_modules\@anthropic-ai\claude-code\bin\claude.exe'
+    if (Test-Path $npmNative) { return (Resolve-Path $npmNative).Path }
+
+    # 3) Native installer default location.
     $native = Join-Path $env:USERPROFILE '.local\bin\claude.exe'
     if (Test-Path $native) { return (Resolve-Path $native).Path }
 
-    # 3) Versioned install dir fallback (newest wins).
+    # 4) Versioned install dir fallback (newest wins).
     $versionsDir = Join-Path $env:USERPROFILE '.local\share\claude\versions'
     if (Test-Path $versionsDir) {
         $candidate = Get-ChildItem $versionsDir -Filter 'claude.exe' -Recurse -ErrorAction SilentlyContinue |
@@ -73,10 +76,16 @@ Write-Host "Using claude.exe: $claudeExe"
 # correctly-sized variant (16/32px) from its icon group for the menu.
 $iconRef = "$claudeExe,0"
 
-# Windows Terminal opens the shell in the target folder (-d), then cmd /k keeps
-# the window alive after Claude exits. %1 = clicked folder, %V = folder background.
-$dirCommand = "wt.exe -d `"%1`" cmd /k `"$claudeExe`" --dangerously-skip-permissions"
-$bgCommand  = "wt.exe -d `"%V`" cmd /k `"$claudeExe`" --dangerously-skip-permissions"
+# Agent Hub owns cross-CLI color leasing when installed. The direct Windows
+# Terminal fallback keeps this context menu usable on machines without it.
+$agentTerminal = Join-Path $env:LOCALAPPDATA 'AgentHub\bin\AgentTerminalLauncher.exe'
+if (Test-Path -LiteralPath $agentTerminal) {
+    $dirCommand = "`"$agentTerminal`" -Agent claude -Project `"%1`" -Executable `"$claudeExe`""
+    $bgCommand  = "`"$agentTerminal`" -Agent claude -Project `"%V`" -Executable `"$claudeExe`""
+} else {
+    $dirCommand = "wt.exe -d `"%1`" cmd /k `"$claudeExe`" --dangerously-skip-permissions"
+    $bgCommand  = "wt.exe -d `"%V`" cmd /k `"$claudeExe`" --dangerously-skip-permissions"
+}
 
 # --- Write the keys ---------------------------------------------------------
 function Set-MenuKey {

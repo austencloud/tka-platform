@@ -76,12 +76,13 @@ in `HideIt`. This has not been tried.
 - Not a WPF or DWM rendering artifact. Frame captures are clean.
 - Unrelated to `Prewarm()`, the off-screen show/hide that warms layout at startup.
 
-## 2. Agents may open in the classic console instead of Windows Terminal
+## 2. Resolved: agents opened in the classic console
 
-The host launches `<project>\launchers\start-<agent>.bat` through `cmd.exe` and
-lets Windows decide the console host. If agents open in the old console, set
-Windows Terminal as the default: Terminal -> Settings -> Startup -> Default
-terminal application.
+The host now launches `wt.exe -w new` explicitly through
+`AgentTerminalLauncher.exe`. It no longer depends on the system's default
+console host. The same launcher assigns one unused tab color across Claude and
+Codex, and `AgentTerminalSession.exe` holds that color lease for the life of the
+session.
 
 ### Retired: hidden terminal pre-warming
 

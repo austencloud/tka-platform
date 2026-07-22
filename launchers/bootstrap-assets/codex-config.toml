@@ -10,6 +10,7 @@
 model = "gpt-5.6-sol"
 model_reasoning_effort = "xhigh"
 personality = "pragmatic"
+tui.terminal_title = ["thread-title", "project-name"]
 
 [marketplaces.claude-plugins-official]
 source_type = "git"

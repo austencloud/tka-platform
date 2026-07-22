@@ -5,6 +5,14 @@ REM project-specific launcher; the installer never overwrites an existing file.
 REM Strip inherited NO_COLOR so Claude Code renders its branding.
 set "NO_COLOR="
 set "REPO_ROOT=%~dp0.."
+set "BAT_FILE=%~f0"
+set "AGENT_TERMINAL=%LOCALAPPDATA%\AgentHub\bin\AgentTerminalLauncher.exe"
+
+if not defined TKA_AGENT_TERMINAL if exist "%AGENT_TERMINAL%" (
+    "%AGENT_TERMINAL%" -Agent claude -Project "%REPO_ROOT%" -Bat "%BAT_FILE%"
+    exit /b
+)
+
 cd /d "%REPO_ROOT%"
 
 where claude >nul 2>&1

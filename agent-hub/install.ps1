@@ -5,7 +5,7 @@
   the chosen agent in the project you clicked.
 
 .DESCRIPTION
-  Compiles the resident host + featherweight stub with the .NET Framework
+  Compiles the resident host, stub, terminal launcher, and session host with the .NET Framework
   compiler that ships with Windows (no SDK needed), installs them to
   %LOCALAPPDATA%\AgentHub, creates one shortcut per project, and registers the
   host to start at logon.
@@ -90,7 +90,7 @@ if (-not (Test-Path $csc)) {
 Write-Ok $csc
 
 # ------------------------------------------------------------------- 2. build
-Write-Step "Building AgentChooserHost.exe and AgentChooserStub.exe"
+Write-Step "Building Agent Hub executables"
 New-Item -ItemType Directory -Force $BinDir, $IconDir | Out-Null
 
 # Stop a running host so its exe can be replaced.
@@ -122,6 +122,23 @@ $stubArgs = @('/nologo', '/target:winexe', "/out:$BinDir\AgentChooserStub.exe",
 & $csc @stubArgs
 if ($LASTEXITCODE -ne 0) { throw "Stub build failed (csc exit $LASTEXITCODE)" }
 Write-Ok "built AgentChooserStub.exe"
+
+$terminalSource = Join-Path $Here 'src\AgentTerminalLauncher.cs'
+$terminalLauncherArgs = @('/nologo', '/target:winexe', "/out:$BinDir\AgentTerminalLauncher.exe",
+                          '/reference:System.dll', '/reference:System.Core.dll', $terminalSource)
+& $csc @terminalLauncherArgs
+if ($LASTEXITCODE -ne 0) { throw "Terminal launcher build failed (csc exit $LASTEXITCODE)" }
+Write-Ok "built AgentTerminalLauncher.exe"
+
+$terminalSessionArgs = @('/nologo', '/target:exe', "/out:$BinDir\AgentTerminalSession.exe",
+                         '/reference:System.dll', '/reference:System.Core.dll', $terminalSource)
+& $csc @terminalSessionArgs
+if ($LASTEXITCODE -ne 0) { throw "Terminal session host build failed (csc exit $LASTEXITCODE)" }
+Write-Ok "built AgentTerminalSession.exe"
+
+& (Join-Path $BinDir 'AgentTerminalSession.exe') -SelfTest
+if ($LASTEXITCODE -ne 0) { throw "Terminal launcher self-test failed (exit $LASTEXITCODE)" }
+Write-Ok "terminal color leasing self-test passed"
 
 Copy-Item (Join-Path $Here 'icons\*') $IconDir -Force
 Write-Ok "copied $((Get-ChildItem $IconDir).Count) icons"
