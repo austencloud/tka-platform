@@ -4,12 +4,12 @@
  * FACEBOOK_LOGIN_ENABLED gates every interactive Facebook entry point (the
  * sign-in/sign-up button and the "Add Facebook" link in settings).
  *
- * Enabled 2026-06-22 after the real Facebook flow was verified end to end via
- * /test/facebook-login (popup + consent + account creation). Set back to false
- * to pull the entry points if Facebook auth regresses; the underlying services
- * stay intact either way.
+ * Disabled 2026-07-22 after a non-role account completed Meta consent but was
+ * rejected because the app is not publicly available. Re-enable only after a
+ * non-role account completes the production flow end to end; the underlying
+ * services stay intact either way.
  */
-export const FACEBOOK_LOGIN_ENABLED = true;
+export const FACEBOOK_LOGIN_ENABLED = false;
 
 /**
  * Instagram uses Meta's professional-account OAuth plus Firebase custom auth.
