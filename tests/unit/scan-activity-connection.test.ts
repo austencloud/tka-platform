@@ -57,6 +57,7 @@ describe("scan activity connection lifecycle", () => {
 
       await Promise.resolve();
       await Promise.resolve();
+      expect(watchRecentEvents).toHaveBeenCalledTimes(1);
     } finally {
       harness.dispose();
     }

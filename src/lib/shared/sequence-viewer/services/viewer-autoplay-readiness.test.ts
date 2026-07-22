@@ -24,6 +24,17 @@ describe("isViewerReadyToAutoplay", () => {
     ).toBe(true);
   });
 
+  it("does not treat an empty cloud-backed card as ready, even after a long wait", () => {
+    expect(
+      isViewerReadyToAutoplay({
+        cloudBackedScan: true,
+        loadedCells: 0,
+        totalCells: 0,
+        elapsedMs: 30_000,
+      })
+    ).toBe(false);
+  });
+
   it("keeps the existing four-cell or timeout behavior outside scans", () => {
     expect(
       isViewerReadyToAutoplay({

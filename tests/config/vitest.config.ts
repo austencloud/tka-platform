@@ -22,6 +22,13 @@ export default defineConfig({
       "tests/integration/**/*.{test,spec}.{js,ts}",
       "tests/debug/**/*.{test,spec}.{js,ts}",
       "src/**/__tests__/**/*.{test,spec}.{js,ts}",
+      "src/lib/features/library/services/warm-all-scan-cells.test.ts",
+      "src/lib/shared/offline/services/sw-update-manager.test.ts",
+      "src/lib/shared/render/services/cloud-cell-key.test.ts",
+      "src/lib/shared/render/services/pictograph-cloud-cache.test.ts",
+      "src/lib/shared/render/services/warm-sequence-cells.test.ts",
+      "src/lib/shared/sequence-viewer/services/preview-cell-renderer.cloud-tier.test.ts",
+      "src/lib/shared/sequence-viewer/services/viewer-autoplay-readiness.test.ts",
       "src/lib/features/assemble-lab/**/*.{test,spec}.{js,ts}",
       "src/lib/features/train/prop-tracking-lab/**/*.{test,spec}.{js,ts}",
     ],
@@ -41,9 +48,18 @@ export default defineConfig({
 
     alias: {
       $lib: path.resolve(projectRoot, "src/lib"),
-      "$app/environment": path.resolve(projectRoot, "tests/setup/stubs/app-environment.ts"),
-      "$app/navigation": path.resolve(projectRoot, "tests/setup/stubs/app-navigation.ts"),
-      "$app/stores": path.resolve(projectRoot, "tests/setup/stubs/app-stores.ts"),
+      "$app/environment": path.resolve(
+        projectRoot,
+        "tests/setup/stubs/app-environment.ts"
+      ),
+      "$app/navigation": path.resolve(
+        projectRoot,
+        "tests/setup/stubs/app-navigation.ts"
+      ),
+      "$app/stores": path.resolve(
+        projectRoot,
+        "tests/setup/stubs/app-stores.ts"
+      ),
       $shared: path.resolve(projectRoot, "src/lib/shared"),
     },
 
@@ -63,5 +79,4 @@ export default defineConfig({
   resolve: {
     conditions: ["browser"],
   },
-
 });
