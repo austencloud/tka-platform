@@ -57,6 +57,16 @@ function flush(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+/** Await macrotasks until `pred()` holds (or a bounded tick budget elapses). A
+ *  matrix-source draw adds a dynamic `import()` hop, so a single flush() tick can
+ *  return before the act's state settles under CPU contention (parallel forks) —
+ *  poll instead of guessing a tick count, removing the timing race. */
+async function flushUntil(pred: () => boolean, ticks = 50): Promise<void> {
+  for (let i = 0; i < ticks && !pred(); i++) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+}
+
 /**
  * These tests exercise the act's orchestration (cycling, prefetch, chaining)
  * against the generated per-visit draw, which they mock. The shape-matrix source
@@ -80,6 +90,7 @@ const FAKE_ELEMENT = {
   darkComplement: "#1a3a5e",
   iconPath: "/images/elements/water-v2.png",
   cardTintOpacity: 0.25,
+  iconScale: 0.9,
 };
 
 beforeEach(() => {
@@ -367,7 +378,7 @@ describe("createHeroAct — shape-matrix source", () => {
     // matrixFraction 1 → source roll always picks the matrix; boxFraction 0.
     const act = createHeroAct({ random: () => 0, matrixFraction: 1, boxFraction: 0 });
     act.start();
-    await flush();
+    await flushUntil(() => act.sequence != null);
 
     expect(mocks.drawMatrixRealization).toHaveBeenCalled();
     expect(mocks.generatePerVisitDemo).not.toHaveBeenCalled();
@@ -379,7 +390,7 @@ describe("createHeroAct — shape-matrix source", () => {
     mocks.drawMatrixRealization.mockResolvedValue(null);
     const act = createHeroAct({ random: () => 0, matrixFraction: 1, boxFraction: 0 });
     act.start();
-    await flush();
+    await flushUntil(() => act.sequence != null);
 
     expect(mocks.drawMatrixRealization).toHaveBeenCalled();
     expect(mocks.generatePerVisitDemo).toHaveBeenCalled();
